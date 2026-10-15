@@ -65,6 +65,8 @@ pub struct LPort {
     pub position: KVector,
     /// `LPort.getSize()`.
     pub size: KVector,
+    /// `LPort.getAnchor()`: the point the edges meet the port at, relative to the port.
+    pub anchor: KVector,
     /// Indices into `LGraph::edges` of the edges that leave the port.
     pub outgoing: Vec<usize>,
     /// Indices into `LGraph::edges` of the edges that enter the port.
@@ -79,6 +81,7 @@ impl LPort {
             side,
             position: KVector::default(),
             size: KVector::default(),
+            anchor: KVector::default(),
             outgoing: Vec::new(),
             incoming: Vec::new(),
         }

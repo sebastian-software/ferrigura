@@ -61,6 +61,7 @@ pub const PORT_CONSTRAINTS: &str = "org.eclipse.elk.portConstraints";
 pub const SPACING_EDGE_LABEL: &str = "org.eclipse.elk.spacing.edgeLabel";
 pub const SPACING_LABEL_LABEL: &str = "org.eclipse.elk.spacing.labelLabel";
 pub const EDGE_LABELS_PLACEMENT: &str = "org.eclipse.elk.edgeLabels.placement";
+pub const EDGE_LABELS_SIDE_SELECTION: &str = "org.eclipse.elk.layered.edgeLabels.sideSelection";
 pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_NODE_INFLUENCE: &str =
     "org.eclipse.elk.layered.considerModelOrder.crossingCounterNodeInfluence";
 pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_PORT_INFLUENCE: &str =
