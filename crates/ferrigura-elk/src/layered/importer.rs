@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{
     ComponentOrderingStrategy, EdgeLabelPlacement, GraphProperties, OrderingStrategy,
+    PortConstraints,
 };
 use crate::core::math::KVector;
 use crate::error::LayoutError;
@@ -61,10 +62,28 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
             model_order += 1;
             model_order - 1
         });
+        // `transformNode`: a node without port constraints is free; any other constraint is
+        // not supported by the port sides yet.
+        let mut properties = child.properties.clone();
+        match properties.enum_of::<PortConstraints>(options::PORT_CONSTRAINTS) {
+            None | Some(PortConstraints::UNDEFINED) => properties.set(
+                options::PORT_CONSTRAINTS,
+                Some(OptionValue::Enum {
+                    class: "PortConstraints",
+                    name: "FREE".to_string(),
+                }),
+            ),
+            Some(PortConstraints::FREE) => {}
+            Some(_) => {
+                graph
+                    .graph_properties
+                    .insert(GraphProperties::NON_FREE_PORTS);
+            }
+        }
         graph.nodes.push(LNode {
             id: child.id.clone(),
             designation: format!("{}.{}", root.id, child.id),
-            properties: child.properties.clone(),
+            properties,
             size: KVector {
                 x: child.shape.width,
                 y: child.shape.height,

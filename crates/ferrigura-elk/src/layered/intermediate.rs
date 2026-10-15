@@ -20,6 +20,7 @@ use crate::layered::dummies;
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
 use crate::layered::phases::PhaseStep;
+use crate::layered::ports;
 
 /// One step of the algorithm: a phase implementation or an intermediate processor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -91,6 +92,12 @@ pub fn run(
         }
         IntermediateProcessorStrategy::LABEL_DUMMY_INSERTER => {
             dummies::insert_label_dummies(graph);
+        }
+        IntermediateProcessorStrategy::PORT_SIDE_PROCESSOR => {
+            ports::process_port_sides(graph);
+        }
+        IntermediateProcessorStrategy::PORT_LIST_SORTER => {
+            ports::sort_ports(graph)?;
         }
         IntermediateProcessorStrategy::LABEL_AND_NODE_SIZE_PROCESSOR => {
             // Without labels or size constraints the processor leaves the nodes alone.
