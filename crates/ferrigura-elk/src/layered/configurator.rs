@@ -12,31 +12,29 @@
 
 use crate::core::alg::LayoutProcessorConfiguration;
 use crate::core::data::enums::{
-    CrossingMinimizationStrategy, CycleBreakingStrategy, Direction, EdgeRouting, GreedySwitchType,
-    HierarchyHandling, IntermediateProcessorStrategy as S, LayeringStrategy, NodePlacementStrategy,
-    NodePromotionStrategy, OrderingStrategy,
+    CrossingMinimizationStrategy, CycleBreakingStrategy, Direction, EdgeRouting, GraphProperties,
+    GreedySwitchType, HierarchyHandling, IntermediateProcessorStrategy as S, LayeringStrategy,
+    NodePlacementStrategy, NodePromotionStrategy, OrderingStrategy,
 };
 use crate::java::random::Random;
 use crate::layered::LayoutError;
 use crate::layered::intermediate::Step;
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
-use crate::layered::phases::{P1, P3, P4, P5, PHASES, PhaseStep};
+use crate::layered::phases::{P1, P2, P3, P4, P5, PHASES, PhaseStep};
 
 /// `GraphConfigurator.prepareGraphForLayout`: sets `lgraph.processors`.
 pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
-    if !graph.graph_properties.is_empty() {
+    // Centred labels are handled by their processors; other features (end labels, hyperedges,
+    // hierarchical ports, ...) need processors that are not ported yet.
+    if let Some(feature) = graph
+        .graph_properties
+        .iter()
+        .find(|feature| **feature != GraphProperties::CENTER_LABELS)
+    {
         return Err(LayoutError::Unsupported(format!(
-            "graph features {:?}",
-            graph.graph_properties
+            "graph feature {feature:?}"
         )));
-    }
-    // Edges need the processors that place and route them, which are not ported yet.
-    if !graph.edges.is_empty() {
-        return Err(LayoutError::Unsupported(
-            "edges (the layering, crossing minimization and routing with edges are not ported yet)"
-                .to_string(),
-        ));
     }
     if !graph.properties.has(options::DIRECTION)
         || graph.properties.enum_of::<Direction>(options::DIRECTION) == Some(Direction::UNDEFINED)
@@ -123,6 +121,17 @@ fn phase_independent(graph: &LGraph) -> Result<LayoutProcessorConfiguration<S>, 
         .add_before(P4, S::LABEL_AND_NODE_SIZE_PROCESSOR)
         .add_before(P5, S::LAYER_SIZE_AND_GRAPH_HEIGHT_CALCULATOR)
         .add_after(P5, S::END_LABEL_SORTER);
+    // `OrthogonalEdgeRouter`'s additions for centred labels.
+    if graph
+        .graph_properties
+        .contains(&GraphProperties::CENTER_LABELS)
+    {
+        config
+            .add_before(P2, S::LABEL_DUMMY_INSERTER)
+            .add_before(P4, S::LABEL_DUMMY_SWITCHER)
+            .add_before(P4, S::LABEL_SIDE_SELECTOR)
+            .add_after(P5, S::LABEL_DUMMY_REMOVER);
+    }
     if props.enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
         == Some(HierarchyHandling::INCLUDE_CHILDREN)
     {

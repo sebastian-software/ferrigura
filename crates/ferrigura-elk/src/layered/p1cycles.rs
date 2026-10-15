@@ -141,6 +141,23 @@ pub fn reverse_edge(graph: &mut LGraph, edge: usize) {
     edge.bend_points.reverse();
 }
 
+/// `ReversedEdgeRestorer.process`: every reversed edge is reversed back, as the outgoing edges
+/// of each port are met, layer by layer. Each port's list is copied when it is reached, as the
+/// Java `toEdgeArray` does.
+pub fn restore_reversed_edges(graph: &mut LGraph) {
+    for layer in graph.layers.clone() {
+        for node in layer {
+            for port in graph.nodes[node].ports.clone() {
+                for edge in graph.ports[port].outgoing.clone() {
+                    if graph.edges[edge].reversed {
+                        reverse_edge(graph, edge);
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// `ArrayList.remove(edge)`: the first occurrence of the edge leaves the list.
 fn remove_edge(list: &mut Vec<usize>, edge: usize) {
     if let Some(index) = list.iter().position(|&found| found == edge) {
@@ -201,5 +218,18 @@ mod tests {
         break_cycles(&mut graph);
         assert!(!graph.cyclic);
         assert!(graph.edges.iter().all(|edge| !edge.reversed));
+    }
+
+    #[test]
+    fn a_reversed_edge_is_restored() {
+        let mut graph = graph_with(2, &[(0, 1), (1, 0)]);
+        break_cycles(&mut graph);
+        graph.layers = vec![vec![0], vec![1]];
+        graph.nodes[0].layer = Some(0);
+        graph.nodes[1].layer = Some(1);
+        restore_reversed_edges(&mut graph);
+        assert!(!graph.edges[1].reversed);
+        assert_eq!(graph.ports[graph.edges[1].source].node, 1);
+        assert_eq!(graph.ports[graph.edges[1].target].node, 0);
     }
 }

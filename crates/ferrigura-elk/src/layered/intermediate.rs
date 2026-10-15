@@ -134,11 +134,7 @@ pub fn run(
         }
         // Reversed edges are restored by a processor that is not ported yet; with none, it does nothing.
         IntermediateProcessorStrategy::REVERSED_EDGE_RESTORER => {
-            if graph.edges.iter().any(|edge| edge.reversed) {
-                return Err(LayoutError::Unsupported(
-                    "restoring reversed edges (ReversedEdgeRestorer)".to_string(),
-                ));
-            }
+            crate::layered::p1cycles::restore_reversed_edges(graph);
         }
         IntermediateProcessorStrategy::END_LABEL_SORTER => {
             if graph
