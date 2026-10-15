@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.graph/src/org/eclipse/elk/graph/properties/MapPropertyHolder.java
+//!
 //! Property holders, `org.eclipse.elk.graph.properties.MapPropertyHolder`.
 //!
 //! A holder stores only values that were set. Reading an unset property gives

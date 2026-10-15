@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/graph/LGraph.java
+//!
 //! The layered graph, `LGraph` and friends in `org.eclipse.elk.alg.layered.graph`.
 //!
 //! Stage C step 2 covers the root graph and its layerless nodes. Layers, ports,

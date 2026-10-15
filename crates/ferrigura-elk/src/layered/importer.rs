@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/graph/transform/ElkGraphImporter.java
+//!
 //! The layered graph from the ELK graph: `ElkGraphImporter` and `ElkGraphTransformer.importGraph`.
 //!
 //! Only graphs with nodes and no edges, ports or labels are imported so far.

@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/intermediate/IntermediateProcessorStrategy.java and the processors it creates
+//!
 //! Intermediate processors, `IntermediateProcessorStrategy` and its processors.
 //!
 //! Each strategy gives the task name the processor logs, as its `begin` call

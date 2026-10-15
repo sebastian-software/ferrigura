@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.graph/src/org/eclipse/elk/graph/ElkNode.java (and ElkPort, ElkLabel, ElkEdge, ElkShape)
+//!
 //! The ELK graph model, `org.eclipse.elk.graph` in the Java sources.
 //!
 //! The Java model is generated EMF; the port keeps the fields and the property

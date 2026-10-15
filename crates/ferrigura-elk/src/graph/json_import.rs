@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.graph.json/src/org/eclipse/elk/graph/json/JsonImporter.xtend
+//!
 //! Reads the elkjs JSON graph into the ELK graph model.
 //!
 //! Follows `JsonImporter.xtend` (ELK, `org.eclipse.elk.graph.json`) in its

@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: src/java-additional/org/eclipse/elk/graph/json/JsonAdapter.xtend in elkjs 0.9.3 (kieler/elkjs a8304cf)
+//!
 //! The elkjs JSON graph format, read and written with serde.
 //!
 //! Shapes and rules follow elkjs 0.9.3: ELK's `JsonImporter` (plugin

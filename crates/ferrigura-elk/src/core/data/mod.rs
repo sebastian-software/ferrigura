@@ -1,3 +1,8 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.core/src/org/eclipse/elk/core/data/LayoutMetaDataService.java
+//! Source: plugins/org.eclipse.elk.core/src/org/eclipse/elk/core/data/LayoutOptionData.java
+//!
 //! Layout option metadata, `org.eclipse.elk.core.data` in the Java sources.
 //!
 //! [`OPTIONS`] is generated from the melk files (see `tools/gen_option_registry.py`).

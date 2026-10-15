@@ -1,3 +1,8 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/ElkLayered.java
+//! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/LayeredLayoutProvider.java
+//!
 //! `LayeredLayoutProvider` and `ElkLayered`: the driver of the layered algorithm.
 
 use crate::core::data::enums::HierarchyHandling;

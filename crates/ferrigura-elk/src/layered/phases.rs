@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/{p1cycles,p2layers,p3order,p4nodes,p5edges}/
+//!
 //! The five phases and their implementations, `LayeredPhases` and the strategy
 //! enums that create them (`CycleBreakingStrategy`, `LayeringStrategy`, and so on).
 //!

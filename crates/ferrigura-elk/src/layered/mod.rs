@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/
+//!
 //! ELK Layered, `org.eclipse.elk.alg.layered` in the Java sources.
 //!
 //! Stage C of M4 covers the driver, the graph configuration and the processor

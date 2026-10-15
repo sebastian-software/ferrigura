@@ -1,3 +1,7 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.core/src/org/eclipse/elk/core/util/BasicProgressMonitor.java
+//!
 //! `BasicProgressMonitor` as elkjs runs it, with the logging tree of `collectLogs`.
 //!
 //! Java semantics kept: `begin` names a monitor only once, `subTask` creates a

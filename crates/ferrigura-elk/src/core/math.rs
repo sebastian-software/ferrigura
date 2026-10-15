@@ -1,3 +1,8 @@
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.core/src/org/eclipse/elk/core/math/KVector.java
+//! Source: plugins/org.eclipse.elk.core/src/org/eclipse/elk/core/math/Spacing.java
+//!
 //! Geometry types of ELK core, `org.eclipse.elk.core.math`.
 //!
 //! Ports `KVector` (the parts layout needs) and the `Spacing` family behind
