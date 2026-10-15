@@ -32,8 +32,10 @@ export const log: Record<keyof typeof LEVELS, typeof console.log> = {
 export const setLogLevel = function (level: keyof typeof LEVELS | number = 'fatal') {
   let numericLevel: number = LEVELS.fatal;
   if (typeof level === 'string') {
-    if (level.toLowerCase() in LEVELS) {
-      numericLevel = LEVELS[level];
+    const name = level.toLowerCase();
+    // `hasOwn`, not `in`: `constructor` and the other `Object.prototype` members are no level.
+    if (Object.hasOwn(LEVELS, name)) {
+      numericLevel = LEVELS[name as LogLevel];
     }
   } else if (typeof level === 'number') {
     numericLevel = level;
