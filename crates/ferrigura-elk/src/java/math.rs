@@ -9,12 +9,18 @@ pub fn round_int(x: f64) -> i32 {
     x as i32
 }
 
-/// `java.lang.Math.round(double)`: `floor(x + 0.5)`, widened to `i64`.
+/// `Math.round(double)` as elkjs runs it: GWT compiles Java's call to JavaScript's
+/// `Math.round`, which rounds ties toward +infinity and gives exact results near
+/// the edges of the double range.
 ///
-/// Rust's `f64::round` rounds half away from zero, which differs for
-/// negative halves (`-2.5` rounds to `-3` in Rust and to `-2` in Java).
+/// `floor(x + 0.5)` is wrong at `0.49999999999999994` (the addition rounds up to
+/// 1.0) and above 2^52 (the addition rounds to an even integer), so the value is
+/// taken from the floor and the fractional part instead. Non-finite input follows
+/// Java's `long` conversion, which saturates; NaN gives zero.
 pub fn java_round(x: f64) -> i64 {
-    (x + 0.5).floor() as i64
+    let floor = x.floor();
+    let rounded = if x - floor >= 0.5 { floor + 1.0 } else { floor };
+    rounded as i64
 }
 
 #[cfg(test)]
@@ -30,9 +36,31 @@ mod tests {
     }
 
     #[test]
-    fn java_round_is_floor_of_x_plus_half() {
+    fn java_round_rounds_ties_toward_positive_infinity() {
         assert_eq!(java_round(2.5), 3);
         assert_eq!(java_round(-2.5), -2);
         assert_eq!(java_round(-2.6), -3);
+        assert_eq!(java_round(0.5), 1);
+        assert_eq!(java_round(-0.5), 0);
+    }
+
+    #[test]
+    fn java_round_is_exact_just_below_one_half() {
+        // `x + 0.5` would round up to 1.0 here, but Math.round gives 0.
+        assert_eq!(java_round(0.49999999999999994), 0);
+    }
+
+    #[test]
+    fn java_round_is_exact_above_two_to_the_52() {
+        // `x + 0.5` would round to an even integer here; the value is already integral.
+        let x = 4_503_599_627_370_497.0_f64; // 2^52 + 1
+        assert_eq!(java_round(x), 4_503_599_627_370_497);
+    }
+
+    #[test]
+    fn java_round_saturates_and_maps_nan_to_zero() {
+        assert_eq!(java_round(f64::NAN), 0);
+        assert_eq!(java_round(f64::INFINITY), i64::MAX);
+        assert_eq!(java_round(f64::NEG_INFINITY), i64::MIN);
     }
 }
