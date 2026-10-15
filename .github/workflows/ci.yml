@@ -72,3 +72,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Differential parse against the TypeScript reference
         run: pnpm port:diff ${{ matrix.diagram }}
+      - name: Pie header rules against the reference DB setters
+        if: matrix.diagram == 'pie'
+        run: pnpm port:check-header
