@@ -62,6 +62,13 @@ pub const SPACING_EDGE_LABEL: &str = "org.eclipse.elk.spacing.edgeLabel";
 pub const SPACING_LABEL_LABEL: &str = "org.eclipse.elk.spacing.labelLabel";
 pub const EDGE_LABELS_PLACEMENT: &str = "org.eclipse.elk.edgeLabels.placement";
 pub const EDGE_LABELS_SIDE_SELECTION: &str = "org.eclipse.elk.layered.edgeLabels.sideSelection";
+pub const EDGE_LABELS_CENTER_LABEL_PLACEMENT_STRATEGY: &str =
+    "org.eclipse.elk.layered.edgeLabels.centerLabelPlacementStrategy";
+pub const EDGE_LABELS_INLINE: &str = "org.eclipse.elk.edgeLabels.inline";
+pub const SPACING_EDGE_NODE_BETWEEN_LAYERS: &str =
+    "org.eclipse.elk.layered.spacing.edgeNodeBetweenLayers";
+pub const SPACING_NODE_NODE_BETWEEN_LAYERS: &str =
+    "org.eclipse.elk.layered.spacing.nodeNodeBetweenLayers";
 pub const UNNECESSARY_BENDPOINTS: &str = "org.eclipse.elk.layered.unnecessaryBendpoints";
 pub const PRIORITY_SHORTNESS: &str = "org.eclipse.elk.layered.priority.shortness";
 pub const LAYER_CONSTRAINT: &str = "org.eclipse.elk.layered.layering.layerConstraint";
@@ -120,6 +127,10 @@ mod tests {
             PORT_CONSTRAINTS,
             SPACING_EDGE_LABEL,
             SPACING_LABEL_LABEL,
+            EDGE_LABELS_CENTER_LABEL_PLACEMENT_STRATEGY,
+            EDGE_LABELS_INLINE,
+            SPACING_EDGE_NODE_BETWEEN_LAYERS,
+            SPACING_NODE_NODE_BETWEEN_LAYERS,
         ] {
             assert!(option_by_id(id).is_some(), "{id} is not registered");
         }

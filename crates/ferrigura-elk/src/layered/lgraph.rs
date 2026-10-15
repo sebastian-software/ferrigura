@@ -4,13 +4,14 @@
 //! keeps the Java object graph's sharing explicit. Edges, ports and nested graphs
 //! come with the processors that use them; the importer rejects them for now.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::core::data::JavaEnum;
 use crate::core::data::enums::{GraphProperties, NodeType, PortSide};
 use crate::core::data::property::PropertyHolder;
 use crate::core::math::{KVector, Spacing};
 use crate::java::random::Random;
+use crate::layered::labels::LabelSide;
 
 /// A node of the layered graph, `LNode`.
 #[derive(Debug, Clone, Default)]
@@ -45,6 +46,10 @@ pub struct LNode {
     pub long_edge_target: Option<usize>,
     /// `InternalProperties.LONG_EDGE_HAS_LABEL_DUMMIES`.
     pub long_edge_has_label_dummies: bool,
+    /// `InternalProperties.LABEL_SIDE` of a label dummy: the side its labels go on.
+    pub label_side: LabelSide,
+    /// `InternalProperties.LONG_EDGE_BEFORE_LABEL_DUMMY`: a long edge dummy that precedes a label dummy.
+    pub long_edge_before_label_dummy: bool,
 }
 
 /// Whether a port is where an edge leaves or enters its node, `PortType`.
@@ -71,6 +76,9 @@ pub struct LPort {
     pub outgoing: Vec<usize>,
     /// Indices into `LGraph::edges` of the edges that enter the port.
     pub incoming: Vec<usize>,
+    /// `InternalProperties.MAX_EDGE_THICKNESS`: the largest thickness of the port's edges, set when
+    /// the port has end labels.
+    pub max_edge_thickness: Option<f64>,
 }
 
 impl LPort {
@@ -84,6 +92,7 @@ impl LPort {
             anchor: KVector::default(),
             outgoing: Vec::new(),
             incoming: Vec::new(),
+            max_edge_thickness: None,
         }
     }
 }
@@ -172,6 +181,11 @@ pub struct LGraph {
     pub edges: Vec<LEdge>,
     /// `InternalProperties.CYCLIC`: the cycle breaker reversed some edges.
     pub cyclic: bool,
+    /// `LayeredOptions.JUNCTION_POINTS` of the edges, keyed by the edge's index in `edges`. An
+    /// edge without an entry has none (Java's `null`). The orthogonal router sets these.
+    /// They are kept here rather than on `LEdge`: the `LEdge` literals in `importer.rs` and
+    /// `dummies.rs` do not use `..Default`, so a new `LEdge` field would not compile.
+    pub junction_points: BTreeMap<usize, Vec<KVector>>,
 }
 
 impl LGraph {

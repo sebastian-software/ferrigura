@@ -56,6 +56,15 @@ pub fn task_name(
         S::END_LABEL_SORTER => "Sort end labels",
         S::REVERSED_EDGE_RESTORER => "Restoring reversed edges",
         S::HIERARCHICAL_NODE_RESIZER => "Resize child graph to fit parent.",
+        S::LABEL_DUMMY_SWITCHER => "Label dummy switching",
+        S::LABEL_DUMMY_REMOVER => "Label dummy removal",
+        S::LABEL_SIDE_SELECTOR => {
+            let mode = graph
+                .properties
+                .enum_of::<EdgeLabelSideSelection>(options::EDGE_LABELS_SIDE_SELECTION)
+                .map_or("null", JavaEnum::java_name);
+            return Ok(format!("Label side selection ({mode})"));
+        }
         S::SORT_BY_INPUT_ORDER_OF_MODEL => {
             let order = graph
                 .properties
@@ -158,6 +167,15 @@ pub fn run(
         }
         IntermediateProcessorStrategy::HIERARCHICAL_NODE_RESIZER => {
             resize_root(graph)?;
+        }
+        IntermediateProcessorStrategy::LABEL_DUMMY_SWITCHER => {
+            crate::layered::labels::label_dummy_switching(graph)?;
+        }
+        IntermediateProcessorStrategy::LABEL_SIDE_SELECTOR => {
+            crate::layered::labels::label_side_selection(graph)?;
+        }
+        IntermediateProcessorStrategy::LABEL_DUMMY_REMOVER => {
+            crate::layered::labels::label_dummy_removal(graph)?;
         }
         _ => {}
     }
