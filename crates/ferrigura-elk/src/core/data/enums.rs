@@ -1901,6 +1901,57 @@ const ALL_NODE_PROMOTION_STRATEGY: &[NodePromotionStrategy] = &[
     NodePromotionStrategy::MODEL_ORDER_RIGHT_TO_LEFT,
 ];
 
+/// The ELK enum `NodeType`, constants in declaration order (their ordinals).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub enum NodeType {
+    #[default]
+    NORMAL,
+    LONG_EDGE,
+    EXTERNAL_PORT,
+    NORTH_SOUTH_PORT,
+    LABEL,
+    BREAKING_POINT,
+}
+
+impl JavaEnum for NodeType {
+    /// `Enum.valueOf`, falling back to an ordinal index as `enumForString` does.
+    fn from_java_text(text: &str) -> Option<Self> {
+        match text {
+            "NORMAL" => Some(NodeType::NORMAL),
+            "LONG_EDGE" => Some(NodeType::LONG_EDGE),
+            "EXTERNAL_PORT" => Some(NodeType::EXTERNAL_PORT),
+            "NORTH_SOUTH_PORT" => Some(NodeType::NORTH_SOUTH_PORT),
+            "LABEL" => Some(NodeType::LABEL),
+            "BREAKING_POINT" => Some(NodeType::BREAKING_POINT),
+            _ => text
+                .parse::<usize>()
+                .ok()
+                .and_then(|index| ALL_NODE_TYPE.get(index).copied()),
+        }
+    }
+
+    fn java_name(self) -> &'static str {
+        match self {
+            NodeType::NORMAL => "NORMAL",
+            NodeType::LONG_EDGE => "LONG_EDGE",
+            NodeType::EXTERNAL_PORT => "EXTERNAL_PORT",
+            NodeType::NORTH_SOUTH_PORT => "NORTH_SOUTH_PORT",
+            NodeType::LABEL => "LABEL",
+            NodeType::BREAKING_POINT => "BREAKING_POINT",
+        }
+    }
+}
+
+/// Every constant of `NodeType`, in ordinal order.
+const ALL_NODE_TYPE: &[NodeType] = &[
+    NodeType::NORMAL,
+    NodeType::LONG_EDGE,
+    NodeType::EXTERNAL_PORT,
+    NodeType::NORTH_SOUTH_PORT,
+    NodeType::LABEL,
+    NodeType::BREAKING_POINT,
+];
+
 /// The ELK enum `OptimizationGoal`, constants in declaration order (their ordinals).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum OptimizationGoal {
@@ -3126,6 +3177,7 @@ pub fn canonical_constant(class: &str, text: &str) -> Option<Option<&'static str
         "NodePromotionStrategy" => {
             NodePromotionStrategy::from_java_text(text).map(JavaEnum::java_name)
         }
+        "NodeType" => NodeType::from_java_text(text).map(JavaEnum::java_name),
         "OptimizationGoal" => OptimizationGoal::from_java_text(text).map(JavaEnum::java_name),
         "OrderWeighting" => OrderWeighting::from_java_text(text).map(JavaEnum::java_name),
         "OrderingStrategy" => OrderingStrategy::from_java_text(text).map(JavaEnum::java_name),

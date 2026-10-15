@@ -228,10 +228,15 @@ pub fn melk_default_value(spec: &OptionSpec) -> Option<OptionValue> {
     if let Ok(number) = text.parse::<i32>() {
         return Some(OptionValue::Int(number));
     }
-    if text.contains('.')
-        && let Some(number) = crate::core::math::parse_java_double(text)
+    // Java float and double literals may carry a suffix: `20f`, `0.5d`.
+    let literal = text.strip_suffix(['f', 'F', 'd', 'D']).unwrap_or(text);
+    if (literal.contains('.') || literal != text)
+        && let Some(number) = crate::core::math::parse_java_double(literal)
     {
         return Some(OptionValue::Double(number));
+    }
+    if let Ok(number) = literal.parse::<i32>() {
+        return Some(OptionValue::Int(number));
     }
     if let OptionKind::Enum(class) = spec.kind {
         let constant = text.rsplit('.').next()?;

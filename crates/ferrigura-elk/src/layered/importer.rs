@@ -11,6 +11,7 @@ use crate::core::math::KVector;
 use crate::error::LayoutError;
 use crate::graph::ElkNode;
 use crate::layered::lgraph::{LGraph, LNode};
+use crate::layered::spacings::{SPACING_BASE_VALUE, apply_base_value};
 
 /// `importGraph` for a root whose children are plain nodes.
 pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
@@ -19,6 +20,7 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
     }
     let mut graph = LGraph {
         properties: root.properties.clone(),
+        root_id: root.id.clone(),
         ..LGraph::default()
     };
     for child in &root.children {
@@ -36,14 +38,21 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
         }
         graph.nodes.push(LNode {
             id: child.id.clone(),
+            designation: format!("{}.{}", root.id, child.id),
             properties: child.properties.clone(),
             size: KVector {
                 x: child.shape.width,
                 y: child.shape.height,
             },
-            layer: None,
+            ..LNode::default()
         });
     }
     graph.layerless_nodes = (0..graph.nodes.len()).collect();
+    // `ElkGraphImporter.importGraph`: the base value derives the spacings before the graph is laid out.
+    if root.properties.has(SPACING_BASE_VALUE)
+        && let Some(base) = root.properties.double_of(SPACING_BASE_VALUE)
+    {
+        apply_base_value(&mut graph, base);
+    }
     Ok(graph)
 }

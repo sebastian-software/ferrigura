@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gen_option_registry as registry  # noqa: E402
 
 # Enums that have no option but are ordered or named by the layered algorithm.
-EXTRA_ENUMS = ["IntermediateProcessorStrategy", "LayeredPhases", "GraphProperties", "LayerConstraint"]
+EXTRA_ENUMS = ["IntermediateProcessorStrategy", "LayeredPhases", "GraphProperties", "LayerConstraint", "NodeType", "PortSide"]
 
 
 def screaming(name):
@@ -134,9 +134,13 @@ def main():
             skipped.append((name, "has a body"))
             continue
         lines.append("/// The ELK enum `%s`, constants in declaration order (their ordinals)." % name)
-        lines.append("#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]")
+        # NodeType defaults to NORMAL, as the nodes of a new graph do.
+        derive = "Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash" + (", Default" if name == "NodeType" else "")
+        lines.append("#[derive(%s)]" % derive)
         lines.append("pub enum %s {" % name)
-        for constant in names:
+        for position, constant in enumerate(names):
+            if position == 0 and name == "NodeType":
+                lines.append("    #[default]")
             lines.append("    %s," % constant)
         lines.append("}")
         lines.append("")
