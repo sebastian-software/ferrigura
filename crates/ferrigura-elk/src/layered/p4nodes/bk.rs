@@ -1,200 +1,87 @@
-//! Brandes & Koepf node placement, `org.eclipse.elk.alg.layered.p4nodes.bk` in the Java sources.
+//! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
+//! SPDX-License-Identifier: EPL-2.0
+//! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/p4nodes/bk/BKNodePlacer.java
 //!
-//! Ported from `BKNodePlacer`, `BKAlignedLayout`, `BKAligner`, `BKCompactor`,
-//! `NeighborhoodInformation` and `ThresholdStrategy` (the null and simple
-//! strategies). The Java arrays indexed by `LNode.id` are vectors indexed by the
-//! placement id, which `NeighborhoodInformation` gives each node in layer order.
+//! Brandes & Koepf node placement, `BKNodePlacer`. It builds four candidate layouts, one for each
+//! combination of vertical and horizontal direction, and applies the smallest feasible one, or the
+//! balanced median of the four. The work is split as in Java: [`neighborhood`] (`NeighborhoodInformation`),
+//! [`aligned_layout`] (`BKAlignedLayout`), [`aligner`] (`BKAligner`), [`compactor`] (`BKCompactor`) and
+//! [`threshold`] (`ThresholdStrategy`). This file holds `BKNodePlacer` itself, with the conflict marking,
+//! the balancing and the feasibility check, and the static helpers `getEdge`, `getBlocks` and `getClasses`.
 //!
-//! Edges are not imported yet, so every neighbour list is empty and the
-//! edge-dependent branches are not reached. Where Java would reach them, this
-//! port reports `Unsupported` rather than skipping them.
+//! A node is referred to by its placement id (`LNode.id` in Java). The marked edges are a set of edge
+//! indices. Java's `HashSet<LEdge>` iterates in identity-hash order, which depends on elkjs's run and not on
+//! the graph, so the `Marked edges` log lists them in the order they were marked instead.
+//!
+//! Not ported: `getLayoutProcessorConfiguration`, which adds `HIERARCHICAL_PORT_POSITION_PROCESSOR` before
+//! edge routing for graphs with external ports. That belongs to the processor configurator, so this placer
+//! refuses such graphs with `Unsupported` rather than leaving the processor out.
 
-use std::collections::VecDeque;
-use std::fmt::Write as _;
+pub mod aligned_layout;
+pub mod aligner;
+pub mod compactor;
+pub mod neighborhood;
+pub mod threshold;
 
-use indexmap::IndexMap;
+mod access;
 
-use crate::core::data::JavaEnum;
-use crate::core::data::enums::{EdgeStraighteningStrategy, FixedAlignment, NodeType};
-use crate::core::data::property::PropertyHolder;
+use indexmap::{IndexMap, IndexSet};
+
+use crate::core::data::enums::{FixedAlignment, GraphProperties, NodeType};
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::error::LayoutError;
 use crate::json::js_number_string;
-use crate::layered::lgraph::{LGraph, LNode};
+use crate::layered::lgraph::{LEdge, LGraph};
 use crate::layered::options;
-use crate::layered::spacings;
 
-/// `VDirection`, with `None` for the balanced layout (`vdir == null`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VDirection {
-    Down,
-    Up,
-}
+use access::{connected_edges, incoming_edges, java_max, java_min, lnode};
+pub use aligned_layout::{AlignedLayout, HDirection, VDirection};
+use neighborhood::NeighborhoodInformation;
+use threshold::ThresholdKind;
 
-/// `HDirection`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HDirection {
-    Right,
-    Left,
-}
+/// `BKNodePlacer.MIN_LAYERS_FOR_CONFLICTS`: conflicts need at least three layers.
+const MIN_LAYERS_FOR_CONFLICTS: usize = 3;
 
-/// `NeighborhoodInformation`: layer and node indices, and the neighbour lists.
-#[derive(Debug, Clone, Default)]
-pub struct NeighborhoodInformation {
-    pub node_count: usize,
-    /// Index of each layer, by layer id.
-    pub layer_index: Vec<usize>,
-    /// Index of each node within its layer, by placement id.
-    pub node_index: Vec<usize>,
-    /// Arena index of each node, by placement id.
-    pub node_of_id: Vec<usize>,
-    /// Neighbour placement ids. Empty until edges are imported.
-    pub left_neighbors: Vec<Vec<usize>>,
-    pub right_neighbors: Vec<Vec<usize>>,
-}
-
-impl NeighborhoodInformation {
-    /// `NeighborhoodInformation.buildFor`: assigns the placement ids in layer order.
-    pub fn build_for(graph: &mut LGraph) -> Self {
-        let mut ni = NeighborhoodInformation {
-            node_count: graph.layers.iter().map(Vec::len).sum(),
-            layer_index: vec![0; graph.layers.len()],
-            node_index: vec![0; graph.layers.iter().map(Vec::len).sum()],
-            node_of_id: vec![0; graph.layers.iter().map(Vec::len).sum()],
-            left_neighbors: Vec::new(),
-            right_neighbors: Vec::new(),
-        };
-        let mut next_id = 0;
-        for (layer_id, layer) in graph.layers.iter().enumerate() {
-            ni.layer_index[layer_id] = layer_id;
-            for (index_in_layer, &node) in layer.iter().enumerate() {
-                graph.nodes[node].placement_id = next_id;
-                ni.node_index[next_id] = index_in_layer;
-                ni.node_of_id[next_id] = node;
-                graph.nodes[node].layer = Some(layer_id);
-                next_id += 1;
-            }
-        }
-        // Without edges every node has no neighbours on either side.
-        ni.left_neighbors = vec![Vec::new(); ni.node_count];
-        ni.right_neighbors = vec![Vec::new(); ni.node_count];
-        ni
-    }
-}
-
-/// `BKAlignedLayout`: one candidate placement of the nodes.
-#[derive(Debug, Clone)]
-pub struct AlignedLayout {
-    /// Root of each node's block; `None` in the balanced layout, as in Java.
-    pub root: Vec<Option<usize>>,
-    pub block_size: Vec<f64>,
-    pub align: Vec<usize>,
-    pub inner_shift: Vec<f64>,
-    pub sink: Vec<usize>,
-    pub shift: Vec<f64>,
-    pub y: Vec<Option<f64>>,
-    pub vdir: Option<VDirection>,
-    pub hdir: Option<HDirection>,
-    pub su: Vec<bool>,
-    pub od: Vec<bool>,
-}
-
-impl AlignedLayout {
-    fn new(node_count: usize, vdir: Option<VDirection>, hdir: Option<HDirection>) -> Self {
-        AlignedLayout {
-            root: vec![None; node_count],
-            block_size: vec![0.0; node_count],
-            align: vec![0; node_count],
-            inner_shift: vec![0.0; node_count],
-            sink: vec![0; node_count],
-            shift: vec![0.0; node_count],
-            y: vec![None; node_count],
-            vdir,
-            hdir,
-            su: vec![false; node_count],
-            od: vec![true; node_count],
-        }
-    }
-
-    /// The root of a node's block. Only the balanced layout leaves roots unset, and
-    /// nothing reads them from there, so the node itself is the fallback.
-    fn root_of(&self, id: usize) -> usize {
-        self.root[id].unwrap_or(id)
-    }
-
-    /// `y` of a node, which is always set once the layout is built.
-    fn y_of(&self, id: usize) -> f64 {
-        self.y[id].unwrap_or(0.0)
-    }
-
-    /// `layoutSize()`: the height the layout takes up.
-    fn layout_size(&self, graph: &LGraph, ni: &NeighborhoodInformation) -> f64 {
-        let mut min = f64::INFINITY;
-        let mut max = f64::NEG_INFINITY;
-        for layer in &graph.layers {
-            for &node in layer {
-                let id = graph.nodes[node].placement_id;
-                let y_min = self.y_of(id);
-                let y_max = y_min + self.block_size[self.root_of(id)];
-                min = min.min(y_min);
-                max = max.max(y_max);
-            }
-        }
-        let _ = ni;
-        max - min
-    }
-
-    /// `toString()`: the direction names, or `BALANCED`.
-    fn name(&self) -> String {
-        let mut result = String::new();
-        match self.hdir {
-            Some(HDirection::Right) => result.push_str("RIGHT"),
-            Some(HDirection::Left) => result.push_str("LEFT"),
-            None => {}
-        }
-        match self.vdir {
-            Some(VDirection::Down) => result.push_str("DOWN"),
-            Some(VDirection::Up) => result.push_str("UP"),
-            None => result.push_str("BALANCED"),
-        }
-        result
-    }
-}
-
-/// `LNode.toString()`: `n_<designation>`, with the type in brackets for non-normal nodes.
-fn node_text(node: &LNode) -> String {
-    let mut text = String::from("n");
-    if node.node_type != NodeType::NORMAL {
-        let _ = write!(text, "({})", node.node_type.java_name().to_lowercase());
-    }
-    let _ = write!(text, "_{}", node.designation);
-    text
-}
-
-/// `Map.toString()` of an insertion-ordered map of blocks or classes.
-fn map_text(entries: &[(Option<String>, Vec<String>)]) -> String {
-    let parts: Vec<String> = entries
-        .iter()
-        .map(|(key, values)| {
-            format!(
-                "{}=[{}]",
-                key.clone().unwrap_or_else(|| "null".to_string()),
-                values.join(", ")
-            )
-        })
-        .collect();
-    format!("{{{}}}", parts.join(", "))
-}
-
-/// `BKNodePlacer.process`: places the nodes of each layer.
+/// `BKNodePlacer.process`: sets the y coordinate of every node.
 pub fn place(
     graph: &mut LGraph,
     progress: &mut ProgressMonitor,
     monitor: Monitor,
 ) -> Result<(), LayoutError> {
+    if graph
+        .graph_properties
+        .contains(&GraphProperties::EXTERNAL_PORTS)
+    {
+        return Err(LayoutError::Unsupported(
+            "hierarchical ports need HIERARCHICAL_PORT_POSITION_PROCESSOR before edge routing, \
+             which the processor configurator does not add yet"
+                .to_string(),
+        ));
+    }
     progress.begin(monitor, "Brandes & Koepf node placement", 1.0);
+
+    let ni = NeighborhoodInformation::build_for(graph);
+    let positions = node_positions(graph, &ni, progress, monitor)?;
+    for (node, y) in positions {
+        graph.nodes[node].position.y = y;
+    }
+
+    progress.done(monitor);
+    Ok(())
+}
+
+/// The body of `process` that does not change the graph: builds the layouts, chooses one, and returns
+/// the y coordinate of each node, by arena index.
+fn node_positions(
+    graph: &LGraph,
+    ni: &NeighborhoodInformation,
+    progress: &mut ProgressMonitor,
+    monitor: Monitor,
+) -> Result<Vec<(usize, f64)>, LayoutError> {
     let logging = progress.is_logging_enabled();
-    let mut ni = NeighborhoodInformation::build_for(graph);
+
+    // A balanced layout is wanted if no fixed alignment is set and straight edges are not favoured,
+    // or if a balanced alignment is enforced.
     let align = graph
         .properties
         .enum_of::<FixedAlignment>(options::NODE_PLACEMENT_BK_FIXED_ALIGNMENT)
@@ -204,25 +91,23 @@ pub fn place(
         .bool_of(options::NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES);
     let produce_balanced_layout = (align == FixedAlignment::NONE && !favor_straight_edges)
         || align == FixedAlignment::BALANCED;
-    mark_conflicts(graph, &ni)?;
+    let straightening = ThresholdKind::for_graph(graph);
 
-    let layouts = create_layouts(align, ni.node_count);
-    let mut layouts = layouts;
+    // The type 1 conflicts, which are the same for all four layouts.
+    let marked_edges = mark_conflicts(graph, ni)?;
 
-    let aligner_state = AlignerState::new();
+    let mut layouts = create_layouts(align, ni.node_count);
     for layout in layouts.iter_mut() {
-        vertical_alignment(graph, &ni, layout);
-        inside_block_shift(graph, &ni, layout)?;
+        aligner::vertical_alignment(graph, ni, layout, &marked_edges);
+        aligner::inside_block_shift(graph, ni, layout)?;
     }
-    let threshold = Threshold::for_graph(graph);
     for layout in layouts.iter_mut() {
-        horizontal_compaction(graph, &ni, layout, threshold)?;
+        compactor::horizontal_compaction(graph, ni, layout, straightening)?;
     }
-    let _ = aligner_state;
 
     if logging {
         for layout in &layouts {
-            let size = layout.layout_size(graph, &ni);
+            let size = layout.layout_size(graph);
             progress.log(
                 monitor,
                 format!("{} size is {}", layout.name(), js_number_string(size)),
@@ -230,61 +115,70 @@ pub fn place(
         }
     }
 
-    let mut chosen: Option<AlignedLayout> = None;
-    if produce_balanced_layout {
-        let balanced = create_balanced_layout(graph, &ni, &layouts);
-        if check_order_constraint(graph, &balanced, progress, monitor) {
-            chosen = Some(balanced);
-        }
-    }
-    if chosen.is_none() {
-        for layout in &layouts {
-            if check_order_constraint(graph, layout, progress, monitor) {
-                let better = match &chosen {
-                    None => true,
-                    Some(current) => {
-                        current.layout_size(graph, &ni) > layout.layout_size(graph, &ni)
+    // The balanced layout if one is wanted and it respects the order. Otherwise the feasible layout
+    // with the smallest size, the first of equal ones. Without a feasible layout, the first one.
+    let balanced = if produce_balanced_layout {
+        let candidate = create_balanced_layout(graph, ni, &layouts);
+        check_order_constraint(graph, &candidate, progress, monitor).then_some(candidate)
+    } else {
+        None
+    };
+    let chosen: &AlignedLayout = match &balanced {
+        Some(layout) => layout,
+        None => {
+            let mut best: Option<usize> = None;
+            for (index, layout) in layouts.iter().enumerate() {
+                if check_order_constraint(graph, layout, progress, monitor) {
+                    let replace = match best {
+                        None => true,
+                        Some(current) => {
+                            layouts[current].layout_size(graph) > layout.layout_size(graph)
+                        }
+                    };
+                    if replace {
+                        best = Some(index);
                     }
-                };
-                if better {
-                    chosen = Some(layout.clone());
                 }
             }
+            match best {
+                Some(index) => &layouts[index],
+                None => layouts.first().ok_or_else(|| {
+                    LayoutError::Unsupported("node placement built no layout".to_string())
+                })?,
+            }
         }
-    }
-    let chosen = match chosen {
-        Some(layout) => layout,
-        None => layouts
-            .first()
-            .cloned()
-            .ok_or_else(|| LayoutError::Unsupported("no candidate placement".to_string()))?,
     };
-
-    for layer in &graph.layers {
-        for &node in layer {
-            let id = graph.nodes[node].placement_id;
-            graph.nodes[node].position.y = chosen.y_of(id) + chosen.inner_shift[id];
-        }
-    }
 
     if logging {
         progress.log(monitor, format!("Chosen node placement: {}", chosen.name()));
-        let blocks = get_blocks(graph, &chosen);
+        let blocks = get_blocks(graph, chosen);
+        progress.log(monitor, format!("Blocks: {}", map_text(graph, ni, &blocks)));
+        let classes = get_classes(chosen, progress, monitor);
         progress.log(
             monitor,
-            format!("Blocks: {}", map_text(&blocks_text(graph, &blocks))),
+            format!("Classes: {}", map_text(graph, ni, &classes)),
         );
-        let classes = get_classes(graph, &chosen, progress, monitor);
-        let classes_text = classes_text(graph, &classes);
-        progress.log(monitor, format!("Classes: {}", map_text(&classes_text)));
-        progress.log(monitor, "Marked edges: []");
+        let marked: Vec<String> = marked_edges
+            .iter()
+            .map(|&edge| edge_text(graph, &graph.edges[edge]))
+            .collect();
+        progress.log(monitor, format!("Marked edges: [{}]", marked.join(", ")));
     }
-    ni.node_count = 0;
-    progress.done(monitor);
-    Ok(())
+
+    // The position is the y of the block plus the shift of the node inside it.
+    let positions = graph
+        .layers
+        .iter()
+        .flatten()
+        .map(|&node| {
+            let id = graph.nodes[node].placement_id;
+            (node, chosen.y_of(id) + chosen.inner_shift[id])
+        })
+        .collect();
+    Ok(positions)
 }
 
-/// The layouts `BKNodePlacer` builds for the fixed alignment: all four for the default.
+/// The layouts `BKNodePlacer` builds: one for a fixed alignment, all four otherwise.
 fn create_layouts(align: FixedAlignment, node_count: usize) -> Vec<AlignedLayout> {
     use HDirection::{Left, Right};
     use VDirection::{Down, Up};
@@ -302,231 +196,149 @@ fn create_layouts(align: FixedAlignment, node_count: usize) -> Vec<AlignedLayout
     }
 }
 
-/// `markConflicts`: type 1 conflicts need long edges, which are not imported yet.
-fn mark_conflicts(graph: &LGraph, _ni: &NeighborhoodInformation) -> Result<(), LayoutError> {
-    let has_edges = false;
-    if graph.layers.len() >= 3 && has_edges {
-        return Err(LayoutError::Unsupported(
-            "conflict marking between layers".to_string(),
-        ));
-    }
-    Ok(())
-}
-
-/// The state `BKAligner` and `BKCompactor` share, kept for the list of pending items.
-#[derive(Debug, Default)]
-struct AlignerState;
-
-impl AlignerState {
-    fn new() -> Self {
-        AlignerState
-    }
-}
-
-/// `BKAligner.verticalAlignment`: each node starts as its own block, and blocks
-/// join along the neighbour lists (empty without edges).
-fn vertical_alignment(graph: &LGraph, ni: &NeighborhoodInformation, bal: &mut AlignedLayout) {
-    for layer in &graph.layers {
-        for &node in layer {
-            let id = graph.nodes[node].placement_id;
-            bal.root[id] = Some(id);
-            bal.align[id] = id;
-            bal.inner_shift[id] = 0.0;
-        }
-    }
-    // No neighbours without edges, so no blocks join and nothing else changes.
-    let _ = (ni, bal.hdir);
-}
-
-/// `BKAligner.insideBlockShift`: positions the nodes of each block inside it.
-///
-/// A block of one node is the only kind without edges. For it, Java's loop over
-/// the block runs once and the node shifts by its top margin.
-fn inside_block_shift(
+/// `markConflicts`: marks the non-inner segments that cross an inner segment (type 1 conflicts), so that
+/// the vertical alignment does not join across them. Returns the marked edges in the order they were
+/// marked.
+fn mark_conflicts(
     graph: &LGraph,
-    _ni: &NeighborhoodInformation,
-    bal: &mut AlignedLayout,
-) -> Result<(), LayoutError> {
-    for root in block_roots(graph, bal) {
-        let root_node = &graph.nodes[node_of(graph, root)];
-        let space_above = root_node.margin.top;
-        let space_below = root_node.size.y + root_node.margin.bottom;
-        bal.inner_shift[root] = 0.0;
-        if bal.align[root] != root {
-            // Blocks of more than one node are joined along edges, which are not imported yet.
-            return Err(LayoutError::Unsupported(
-                "blocks of more than one node need edges".to_string(),
-            ));
-        }
-        bal.inner_shift[root] += space_above;
-        bal.block_size[root] = space_above + space_below;
+    ni: &NeighborhoodInformation,
+) -> Result<IndexSet<usize>, LayoutError> {
+    let mut marked_edges = IndexSet::new();
+    let number_of_layers = graph.layers.len();
+    if number_of_layers < MIN_LAYERS_FOR_CONFLICTS {
+        return Ok(marked_edges);
     }
-    Ok(())
-}
 
-/// The placement ids of the block roots, in layer order (the keys of `getBlocks`).
-fn block_roots(graph: &LGraph, bal: &AlignedLayout) -> Vec<usize> {
-    let mut roots = Vec::new();
-    for layer in &graph.layers {
-        for &node in layer {
-            let root = bal.root_of(graph.nodes[node].placement_id);
-            if !roots.contains(&root) {
-                roots.push(root);
+    let layer_size: Vec<usize> = graph.layers.iter().map(Vec::len).collect();
+
+    // The names follow the paper, as in Java: `k` are positions in the layers, and `l` a node index.
+    for i in 1..number_of_layers - 1 {
+        let current_layer = &graph.layers[i + 1];
+        let mut k_0: i64 = 0;
+        let mut l: usize = 0;
+
+        for l_1 in 0..layer_size[i + 1] {
+            let v_l_i = graph.nodes[current_layer[l_1]].placement_id;
+
+            if l_1 == layer_size[i + 1] - 1 || incident_to_inner_segment(graph, ni, v_l_i, i + 1, i)
+            {
+                let mut k_1 = layer_size[i] as i64 - 1;
+                if incident_to_inner_segment(graph, ni, v_l_i, i + 1, i) {
+                    let first = ni.left_neighbors[v_l_i].first().ok_or_else(|| {
+                        LayoutError::Format(
+                            "an inner segment has no upper neighbour, which elkjs fails on"
+                                .to_string(),
+                        )
+                    })?;
+                    k_1 = ni.node_index[first.node] as i64;
+                }
+
+                while l <= l_1 {
+                    let v_l = graph.nodes[current_layer[l]].placement_id;
+                    if !incident_to_inner_segment(graph, ni, v_l, i + 1, i) {
+                        for upper in &ni.left_neighbors[v_l] {
+                            let k = ni.node_index[upper.node] as i64;
+                            if k < k_0 || k > k_1 {
+                                marked_edges.insert(upper.edge);
+                            }
+                        }
+                    }
+                    l += 1;
+                }
+
+                k_0 = k_1;
             }
         }
     }
-    roots
+    Ok(marked_edges)
 }
 
-/// Arena index of a placement id, found through the layers.
-fn node_of(graph: &LGraph, id: usize) -> usize {
-    graph
-        .layers
-        .iter()
-        .flatten()
-        .copied()
-        .find(|&node| graph.nodes[node].placement_id == id)
-        .unwrap_or(0)
-}
-
-/// `getBlocks`: the nodes of each block, keyed by root, in layer order.
-fn get_blocks(graph: &LGraph, bal: &AlignedLayout) -> Vec<(Option<usize>, Vec<usize>)> {
-    let mut blocks: IndexMap<Option<usize>, Vec<usize>> = IndexMap::new();
-    for layer in &graph.layers {
-        for &node in layer {
-            let id = graph.nodes[node].placement_id;
-            let root = bal.root[id];
-            blocks.entry(root).or_default().push(node);
+/// `incidentToInnerSegment(node, layer1, layer2)`: whether the node is a dummy of a long edge that
+/// comes from a dummy in `layer2`, with the node in `layer1`.
+fn incident_to_inner_segment(
+    graph: &LGraph,
+    ni: &NeighborhoodInformation,
+    v: usize,
+    layer1: usize,
+    layer2: usize,
+) -> bool {
+    let node = lnode(graph, ni, v);
+    if node.node_type != NodeType::LONG_EDGE {
+        return false;
+    }
+    for edge in incoming_edges(graph, node) {
+        let source = &graph.nodes[graph.ports[graph.edges[edge].source].node];
+        if source.node_type == NodeType::LONG_EDGE
+            && ni.layer_index[source.layer.expect("a placed node has a layer")] == layer2
+            && ni.layer_index[node.layer.expect("a placed node has a layer")] == layer1
+        {
+            return true;
         }
     }
-    blocks.into_iter().collect()
+    false
 }
 
-fn blocks_text(
-    graph: &LGraph,
-    blocks: &[(Option<usize>, Vec<usize>)],
-) -> Vec<(Option<String>, Vec<String>)> {
-    blocks
-        .iter()
-        .map(|(root, nodes)| {
-            (
-                root.map(|id| node_text(&graph.nodes[node_of(graph, id)])),
-                nodes
-                    .iter()
-                    .map(|&node| node_text(&graph.nodes[node]))
-                    .collect(),
-            )
-        })
-        .collect()
-}
-
-/// `getClasses`: the roots grouped by their sink, in root order. A balanced layout
-/// has no roots, which gives a `None` entry and no classes.
-fn get_classes(
-    graph: &LGraph,
-    bal: &AlignedLayout,
-    progress: &mut ProgressMonitor,
-    monitor: Monitor,
-) -> Vec<(Option<usize>, Vec<usize>)> {
-    let mut roots: Vec<Option<usize>> = Vec::new();
-    for layer in &graph.layers {
-        for &node in layer {
-            let root = bal.root[graph.nodes[node].placement_id];
-            if !roots.contains(&root) {
-                roots.push(root);
-            }
-        }
-    }
-    let mut classes: IndexMap<Option<usize>, Vec<usize>> = IndexMap::new();
-    for root in roots {
-        match root {
-            None => {
-                progress.log(monitor, "There are no classes in a balanced layout.");
-                break;
-            }
-            Some(id) => {
-                let sink = bal.sink[id];
-                classes.entry(Some(sink)).or_default().push(id);
-            }
-        }
-    }
-    classes.into_iter().collect()
-}
-
-fn classes_text(
-    graph: &LGraph,
-    classes: &[(Option<usize>, Vec<usize>)],
-) -> Vec<(Option<String>, Vec<String>)> {
-    classes
-        .iter()
-        .map(|(sink, roots)| {
-            (
-                sink.map(|id| node_text(&graph.nodes[node_of(graph, id)])),
-                roots
-                    .iter()
-                    .map(|&id| node_text(&graph.nodes[node_of(graph, id)]))
-                    .collect(),
-            )
-        })
-        .collect()
-}
-
-/// `createBalancedLayout`: averages the four candidate layouts, shifted onto the
-/// narrowest one.
+/// `createBalancedLayout`: the median of the four layouts, each shifted onto the smallest one.
 fn create_balanced_layout(
     graph: &LGraph,
     ni: &NeighborhoodInformation,
     layouts: &[AlignedLayout],
 ) -> AlignedLayout {
-    let count = layouts.len();
+    let no_of_layouts = layouts.len();
     let mut balanced = AlignedLayout::new(ni.node_count, None, None);
-    let mut min = vec![f64::from(i32::MAX); count];
-    let mut max = vec![f64::from(i32::MIN); count];
+    let mut width = vec![0.0; no_of_layouts];
+    let mut min = vec![f64::from(i32::MAX); no_of_layouts];
+    let mut max = vec![f64::from(i32::MIN); no_of_layouts];
     let mut min_width_layout = 0;
-    let widths: Vec<f64> = layouts
-        .iter()
-        .map(|layout| layout.layout_size(graph, ni))
-        .collect();
-    for index in 0..count {
-        if widths[min_width_layout] > widths[index] {
-            min_width_layout = index;
+
+    for (i, bal) in layouts.iter().enumerate() {
+        width[i] = bal.layout_size(graph);
+        if width[min_width_layout] > width[i] {
+            min_width_layout = i;
         }
-        let bal = &layouts[index];
         for layer in &graph.layers {
             for &node in layer {
                 let id = graph.nodes[node].placement_id;
+                // The inner shift is part of the position here.
                 let node_pos_y = bal.y_of(id) + bal.inner_shift[id];
-                min[index] = min[index].min(node_pos_y);
-                max[index] = max[index].max(node_pos_y + graph.nodes[node].size.y);
+                min[i] = java_min(min[i], node_pos_y);
+                max[i] = java_max(max[i], node_pos_y + graph.nodes[node].size.y);
             }
         }
     }
-    let mut shift = vec![0.0; count];
-    for index in 0..count {
-        shift[index] = if layouts[index].vdir == Some(VDirection::Down) {
-            min[min_width_layout] - min[index]
-        } else {
-            max[min_width_layout] - max[index]
-        };
-    }
-    let mut calculated = vec![0.0; count];
+
+    // The shift of each layout onto the smallest one, from its top for DOWN and from its bottom for UP.
+    let shift: Vec<f64> = layouts
+        .iter()
+        .enumerate()
+        .map(|(i, layout)| {
+            if layout.vdir == Some(VDirection::Down) {
+                min[min_width_layout] - min[i]
+            } else {
+                max[min_width_layout] - max[i]
+            }
+        })
+        .collect();
+
+    let mut calculated_ys = vec![0.0; no_of_layouts];
     for layer in &graph.layers {
         for &node in layer {
             let id = graph.nodes[node].placement_id;
-            for index in 0..count {
-                calculated[index] =
-                    layouts[index].y_of(id) + layouts[index].inner_shift[id] + shift[index];
+            for (i, layout) in layouts.iter().enumerate() {
+                // It is important to include the inner shift here.
+                calculated_ys[i] = layout.y_of(id) + layout.inner_shift[id] + shift[i];
             }
-            // Java's Arrays.sort on doubles: ascending, with NaN last; there are no NaNs here.
-            calculated.sort_by(|a, b| a.total_cmp(b));
-            balanced.y[id] = Some((calculated[1] + calculated[2]) / 2.0);
+            // Arrays.sort on doubles: ascending, -0.0 before 0.0 and NaN last, which `total_cmp` gives too.
+            calculated_ys.sort_by(f64::total_cmp);
+            balanced.y[id] = Some((calculated_ys[1] + calculated_ys[2]) / 2.0);
+            // The inner shift is in the balanced y now, so it is not used any more.
             balanced.inner_shift[id] = 0.0;
         }
     }
     balanced
 }
 
-/// `checkOrderConstraint`: whether the nodes of each layer fit one after another.
+/// `checkOrderConstraint`: whether the nodes of each layer are in order and do not overlap.
 fn check_order_constraint(
     graph: &LGraph,
     bal: &AlignedLayout,
@@ -540,6 +352,7 @@ fn check_order_constraint(
         for &node in layer {
             let current = &graph.nodes[node];
             let id = current.placement_id;
+            // Both the top border and the bottom border must lie beyond the current position.
             let top = bal.y_of(id) + bal.inner_shift[id] - current.margin.top;
             let bottom =
                 bal.y_of(id) + bal.inner_shift[id] + current.size.y + current.margin.bottom;
@@ -549,14 +362,13 @@ fn check_order_constraint(
             } else {
                 feasible = false;
                 if progress.is_logging_enabled() {
-                    let before = previous
-                        .map(|p| node_text(&graph.nodes[p]))
-                        .unwrap_or_default();
+                    let before =
+                        previous.map_or_else(|| "null".to_string(), |p| graph.nodes[p].text_name());
                     progress.log(
                         monitor,
                         format!(
                             "bk node placement breaks on {} which should have been after {}",
-                            node_text(current),
+                            current.text_name(),
                             before
                         ),
                     );
@@ -565,325 +377,369 @@ fn check_order_constraint(
             }
         }
     }
+
     if progress.is_logging_enabled() {
         progress.log(monitor, format!("{} is feasible: {}", bal.name(), feasible));
     }
     feasible
 }
 
-/// `BKCompactor.horizontalCompaction`: assigns the y positions of the blocks.
-fn horizontal_compaction(
+/// `getEdge(source, target)`: the first connected edge of `source` that joins it to `target`.
+pub(super) fn get_edge(
     graph: &LGraph,
     ni: &NeighborhoodInformation,
-    bal: &mut AlignedLayout,
-    threshold: Threshold,
-) -> Result<(), LayoutError> {
+    source: usize,
+    target: usize,
+) -> Option<usize> {
+    let target_arena = ni.node_of_id[target];
+    connected_edges(graph, lnode(graph, ni, source))
+        .into_iter()
+        .find(|&edge| {
+            graph.ports[graph.edges[edge].target].node == target_arena
+                || graph.ports[graph.edges[edge].source].node == target_arena
+        })
+}
+
+/// `getBlocks(bal)`: the nodes of each block, by its root, in layer order. The key is `None` for the
+/// balanced layout, which has no roots.
+pub(super) fn get_blocks(
+    graph: &LGraph,
+    bal: &AlignedLayout,
+) -> IndexMap<Option<usize>, Vec<usize>> {
+    let mut blocks: IndexMap<Option<usize>, Vec<usize>> = IndexMap::new();
     for layer in &graph.layers {
         for &node in layer {
             let id = graph.nodes[node].placement_id;
-            bal.sink[id] = id;
-            bal.shift[id] = if bal.vdir == Some(VDirection::Up) {
-                f64::NEG_INFINITY
-            } else {
-                f64::INFINITY
-            };
+            blocks.entry(bal.root[id]).or_default().push(id);
         }
     }
-    let mut classes = ClassGraph::default();
-    let mut layers: Vec<&Vec<usize>> = graph.layers.iter().collect();
-    if bal.hdir == Some(HDirection::Left) {
-        layers.reverse();
-    }
-    for y in bal.y.iter_mut() {
-        *y = None;
-    }
-    for layer in &layers {
-        let mut nodes: Vec<usize> = (*layer).clone();
-        if bal.vdir == Some(VDirection::Up) {
-            nodes.reverse();
-        }
-        for node in nodes {
-            let id = graph.nodes[node].placement_id;
-            if bal.root_of(id) == id {
-                place_block(graph, ni, bal, threshold, &mut classes, id)?;
-            }
-        }
-    }
-    place_classes(bal, &mut classes);
-    for layer in &layers {
-        for &node in layer.iter() {
-            let id = graph.nodes[node].placement_id;
-            let root = bal.root_of(id);
-            bal.y[id] = bal.y[root];
-            if id == root {
-                let sink_shift = bal.shift[bal.sink[id]];
-                let shifts = (bal.vdir == Some(VDirection::Up) && sink_shift > f64::NEG_INFINITY)
-                    || (bal.vdir == Some(VDirection::Down) && sink_shift < f64::INFINITY);
-                if shifts {
-                    bal.y[id] = bal.y[id].map(|value| value + sink_shift);
-                }
-            }
-        }
-    }
-    threshold.post_process()?;
-    Ok(())
+    blocks
 }
 
-/// `placeBlock`: places the block with the given root, after the blocks it depends on.
-fn place_block(
+/// `getClasses(bal, monitor)`: the block roots of each class, by sink. A balanced layout has no classes.
+fn get_classes(
+    bal: &AlignedLayout,
+    progress: &mut ProgressMonitor,
+    monitor: Monitor,
+) -> IndexMap<Option<usize>, Vec<usize>> {
+    // The block roots, in node id order, as `Arrays.asList(bal.root)` gives them.
+    let roots: IndexSet<Option<usize>> = bal.root.iter().copied().collect();
+    let mut classes: IndexMap<Option<usize>, Vec<usize>> = IndexMap::new();
+    for root in roots {
+        match root {
+            None => {
+                progress.log(monitor, "There are no classes in a balanced layout.");
+                break;
+            }
+            Some(root) => {
+                let sink = bal.sink[root];
+                classes.entry(Some(sink)).or_default().push(root);
+            }
+        }
+    }
+    classes
+}
+
+/// `Map.toString()` of a block or class map: `{key=[value, ...], ...}`, with `null` for no key.
+fn map_text(
     graph: &LGraph,
     ni: &NeighborhoodInformation,
-    bal: &mut AlignedLayout,
-    threshold: Threshold,
-    classes: &mut ClassGraph,
-    root: usize,
-) -> Result<(), LayoutError> {
-    if bal.y[root].is_some() {
-        return Ok(());
-    }
-    let mut is_initial_assignment = true;
-    bal.y[root] = Some(0.0);
-    let mut current = root;
-    let mut thresh = if bal.vdir == Some(VDirection::Down) {
-        f64::NEG_INFINITY
-    } else {
-        f64::INFINITY
-    };
-    loop {
-        let current_index = ni.node_index[current];
-        let current_node = &graph.nodes[ni.node_of_id[current]];
-        let layer_len = graph.layers[ni.layer_index[current_node.layer.unwrap_or(0)]].len();
-        let has_neighbor = (bal.vdir == Some(VDirection::Down) && current_index > 0)
-            || (bal.vdir == Some(VDirection::Up) && current_index + 1 < layer_len);
-        if has_neighbor {
-            let layer = &graph.layers[ni.layer_index[current_node.layer.unwrap_or(0)]];
-            let neighbor_node = if bal.vdir == Some(VDirection::Up) {
-                layer[current_index + 1]
-            } else {
-                layer[current_index - 1]
+    map: &IndexMap<Option<usize>, Vec<usize>>,
+) -> String {
+    let entries: Vec<String> = map
+        .iter()
+        .map(|(key, values)| {
+            let key_text = match key {
+                Some(id) => lnode(graph, ni, *id).text_name(),
+                None => "null".to_string(),
             };
-            let neighbor = graph.nodes[neighbor_node].placement_id;
-            let neighbor_root = bal.root_of(neighbor);
-            place_block(graph, ni, bal, threshold, classes, neighbor_root)?;
-            thresh = threshold.calculate(bal, thresh, root, current);
-            if bal.sink[root] == root {
-                bal.sink[root] = bal.sink[neighbor_root];
-            }
-            if bal.sink[root] == bal.sink[neighbor_root] {
-                let spacing = spacings::vertical(graph, current_node, &graph.nodes[neighbor_node]);
-                let neighbor_node_ref = &graph.nodes[neighbor_node];
-                if bal.vdir == Some(VDirection::Up) {
-                    let current_block_position = bal.y_of(root);
-                    let new_position = bal.y_of(neighbor_root) + bal.inner_shift[neighbor]
-                        - neighbor_node_ref.margin.top
-                        - spacing
-                        - current_node.margin.bottom
-                        - current_node.size.y
-                        - bal.inner_shift[current];
-                    bal.y[root] = Some(if is_initial_assignment {
-                        is_initial_assignment = false;
-                        new_position.min(thresh)
-                    } else {
-                        current_block_position.min(new_position.min(thresh))
-                    });
-                } else {
-                    let current_block_position = bal.y_of(root);
-                    let new_position = bal.y_of(neighbor_root)
-                        + bal.inner_shift[neighbor]
-                        + neighbor_node_ref.size.y
-                        + neighbor_node_ref.margin.bottom
-                        + spacing
-                        + current_node.margin.top
-                        - bal.inner_shift[current];
-                    bal.y[root] = Some(if is_initial_assignment {
-                        is_initial_assignment = false;
-                        new_position.max(thresh)
-                    } else {
-                        current_block_position.max(new_position.max(thresh))
-                    });
-                }
-            } else {
-                // Two different sinks: the classes are separated by the node spacing.
-                let spacing = graph
-                    .properties
-                    .double_of(spacings::SPACING_NODE_NODE)
-                    .unwrap_or(0.0);
-                let sink_node = bal.sink[root];
-                let neighbor_sink = bal.sink[neighbor_root];
-                classes.add_edge(
-                    sink_node,
-                    neighbor_sink,
-                    spacing,
-                    bal,
-                    graph,
-                    ni,
-                    current,
-                    neighbor_node,
-                    current_node,
-                );
-            }
-        } else {
-            thresh = threshold.calculate(bal, thresh, root, current);
-        }
-        current = bal.align[current];
-        if current == root {
-            break;
-        }
-    }
-    threshold.finish_block(root);
-    Ok(())
+            let values_text: Vec<String> = values
+                .iter()
+                .map(|&id| lnode(graph, ni, id).text_name())
+                .collect();
+            format!("{}=[{}]", key_text, values_text.join(", "))
+        })
+        .collect();
+    format!("{{{}}}", entries.join(", "))
 }
 
-/// `ClassNode`s and their `ClassEdge`s, keyed by sink in creation order.
-#[derive(Debug, Default)]
-struct ClassGraph {
-    nodes: IndexMap<usize, ClassNode>,
+/// `LEdge.toString()`: `e_<designation> <source port>[<source node>] -> <target port>[<target node>]`.
+///
+/// The designation is the first label's text, or else the edge's id. The port designation is its index
+/// in its node, which is what Java prints for a port with no label and no origin identifier. The importer
+/// keeps neither for edges or ports, so the text can differ from Java where those are set.
+fn edge_text(graph: &LGraph, edge: &LEdge) -> String {
+    let mut text = String::from("e_");
+    match edge.labels.first() {
+        Some(label) if !label.text.is_empty() => text.push_str(&label.text),
+        _ if !edge.id.is_empty() => text.push_str(&edge.id),
+        _ => {}
+    }
+    let source = &graph.ports[edge.source];
+    let target = &graph.ports[edge.target];
+    text.push_str(&format!(
+        " {}[{}] -> {}[{}]",
+        port_index(graph, edge.source),
+        graph.nodes[source.node].text_name(),
+        port_index(graph, edge.target),
+        graph.nodes[target.node].text_name(),
+    ));
+    text
 }
 
-#[derive(Debug, Default, Clone)]
-struct ClassNode {
-    class_shift: Option<f64>,
-    outgoing: Vec<(usize, f64)>,
-    indegree: usize,
+/// `LPort.getIndex()`: the position of the port in its node's port list.
+fn port_index(graph: &LGraph, port: usize) -> usize {
+    let owner = graph.ports[port].node;
+    graph.nodes[owner]
+        .ports
+        .iter()
+        .position(|&found| found == port)
+        .unwrap_or(0)
 }
-
-impl ClassGraph {
-    /// `ClassNode.addEdge` for the separation a pair of blocks needs.
-    #[allow(clippy::too_many_arguments)]
-    fn add_edge(
-        &mut self,
-        sink: usize,
-        neighbor_sink: usize,
-        spacing: f64,
-        bal: &AlignedLayout,
-        graph: &LGraph,
-        ni: &NeighborhoodInformation,
-        current: usize,
-        neighbor_node: usize,
-        current_node: &LNode,
-    ) {
-        let neighbor = &graph.nodes[neighbor_node];
-        let neighbor_id = neighbor.placement_id;
-        let separation = if bal.vdir == Some(VDirection::Up) {
-            bal.y_of(bal.root_of(current))
-                + bal.inner_shift[current]
-                + current_node.size.y
-                + current_node.margin.bottom
-                + spacing
-                - (bal.y_of(bal.root_of(neighbor_id)) + bal.inner_shift[neighbor_id]
-                    - neighbor.margin.top)
-        } else {
-            bal.y_of(bal.root_of(current)) + bal.inner_shift[current]
-                - current_node.margin.top
-                - bal.y_of(bal.root_of(neighbor_id))
-                - bal.inner_shift[neighbor_id]
-                - neighbor.size.y
-                - neighbor.margin.bottom
-                - spacing
-        };
-        let _ = ni;
-        self.nodes.entry(sink).or_default();
-        self.nodes.entry(neighbor_sink).or_default();
-        if let Some(source) = self.nodes.get_mut(&sink) {
-            source.outgoing.push((neighbor_sink, separation));
-        }
-        if let Some(target) = self.nodes.get_mut(&neighbor_sink) {
-            target.indegree += 1;
-        }
-    }
-}
-
-/// `placeClasses`: shifts the blocks of each class, from the classes with no incoming edge.
-fn place_classes(bal: &mut AlignedLayout, classes: &mut ClassGraph) {
-    let mut queue: VecDeque<usize> = VecDeque::new();
-    for (&sink, node) in classes.nodes.iter() {
-        if node.indegree == 0 {
-            queue.push_back(sink);
-        }
-    }
-    while let Some(sink) = queue.pop_front() {
-        let shift = classes
-            .nodes
-            .get(&sink)
-            .and_then(|node| node.class_shift)
-            .unwrap_or(0.0);
-        if let Some(node) = classes.nodes.get_mut(&sink) {
-            node.class_shift = Some(shift);
-        }
-        let outgoing = classes
-            .nodes
-            .get(&sink)
-            .map(|node| node.outgoing.clone())
-            .unwrap_or_default();
-        for (target_sink, separation) in outgoing {
-            let vdir = bal.vdir;
-            if let Some(target) = classes.nodes.get_mut(&target_sink) {
-                target.class_shift = Some(match target.class_shift {
-                    None => shift + separation,
-                    Some(current) if vdir == Some(VDirection::Down) => {
-                        current.min(shift + separation)
-                    }
-                    Some(current) => current.max(shift + separation),
-                });
-                target.indegree -= 1;
-                if target.indegree == 0 {
-                    queue.push_back(target_sink);
-                }
-            }
-        }
-    }
-    for (&sink, node) in classes.nodes.iter() {
-        bal.shift[sink] = node.class_shift.unwrap_or(0.0);
-    }
-}
-
-/// `ThresholdStrategy`: the null strategy, or the simple one for straightened edges.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Threshold {
-    Null,
-    Simple,
-}
-
-impl Threshold {
-    fn for_graph(graph: &LGraph) -> Threshold {
-        match graph
-            .properties
-            .enum_of::<EdgeStraighteningStrategy>(options::NODE_PLACEMENT_BK_EDGE_STRAIGHTENING)
-        {
-            Some(EdgeStraighteningStrategy::IMPROVE_STRAIGHTNESS) => Threshold::Simple,
-            _ => Threshold::Null,
-        }
-    }
-
-    /// `calculateThreshold`. Without edges the simple strategy finds no bound, which is
-    /// the same infinity as the null strategy.
-    fn calculate(self, bal: &AlignedLayout, _old: f64, _root: usize, _current: usize) -> f64 {
-        match (self, bal.vdir) {
-            (_, Some(VDirection::Up)) => f64::INFINITY,
-            _ => f64::NEG_INFINITY,
-        }
-    }
-
-    fn finish_block(self, _root: usize) {}
-
-    fn post_process(self) -> Result<(), LayoutError> {
-        Ok(())
-    }
-}
-
-/// `PropertyHolder` import kept for the option reads above.
-#[allow(dead_code)]
-fn _property_holder_type(_: &PropertyHolder) {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::data::OptionValue;
+    use crate::core::math::KVector;
+    use crate::layered::graph_util::create_port;
+    use crate::layered::lgraph::{LNode, PortType};
+
+    /// Adds a node of the given height to layer `layer`, after the nodes already there.
+    fn add_node(
+        graph: &mut LGraph,
+        designation: &str,
+        height: f64,
+        node_type: NodeType,
+        layer: usize,
+    ) -> usize {
+        graph.nodes.push(LNode {
+            designation: designation.to_string(),
+            size: KVector { x: 10.0, y: height },
+            node_type,
+            ..LNode::default()
+        });
+        let index = graph.nodes.len() - 1;
+        while graph.layers.len() <= layer {
+            graph.layers.push(Vec::new());
+        }
+        graph.layers[layer].push(index);
+        index
+    }
+
+    /// Adds an edge from `source` to `target`, with a port at the origin of each node.
+    fn add_edge(graph: &mut LGraph, source: usize, target: usize) -> usize {
+        let out = create_port(graph, source, PortType::OUTPUT);
+        let inn = create_port(graph, target, PortType::INPUT);
+        graph.edges.push(LEdge {
+            source: out,
+            target: inn,
+            thickness: 1.0,
+            ..LEdge::default()
+        });
+        let edge = graph.edges.len() - 1;
+        graph.ports[out].outgoing.push(edge);
+        graph.ports[inn].incoming.push(edge);
+        edge
+    }
+
+    /// The placement id of an arena node, once the neighbourhood has assigned them.
+    fn id_of(graph: &LGraph, arena: usize) -> usize {
+        graph.nodes[arena].placement_id
+    }
+
+    /// Two layers of one node of height 10 each, joined by an edge whose source port sits 5 below the
+    /// top of its node. The target port is at the top of its node.
+    fn offset_chain() -> LGraph {
+        let mut graph = LGraph::default();
+        let a = add_node(&mut graph, "a", 10.0, NodeType::NORMAL, 0);
+        let b = add_node(&mut graph, "b", 10.0, NodeType::NORMAL, 1);
+        let edge = add_edge(&mut graph, a, b);
+        let out = graph.edges[edge].source;
+        graph.ports[out].position.y = 5.0;
+        graph
+    }
+
+    #[test]
+    fn a_normal_edge_crossing_a_long_edge_is_marked() {
+        // Layer 1 holds the dummy d and the node b, and layer 2 the node c and the dummy e. The long
+        // edge d -> e crosses b -> c, so b -> c is marked.
+        let mut graph = LGraph::default();
+        let a = add_node(&mut graph, "a", 10.0, NodeType::NORMAL, 0);
+        let d = add_node(&mut graph, "d", 10.0, NodeType::LONG_EDGE, 1);
+        let b = add_node(&mut graph, "b", 10.0, NodeType::NORMAL, 1);
+        let c = add_node(&mut graph, "c", 10.0, NodeType::NORMAL, 2);
+        let e = add_node(&mut graph, "e", 10.0, NodeType::LONG_EDGE, 2);
+        add_edge(&mut graph, a, d);
+        add_edge(&mut graph, d, e);
+        let crossing = add_edge(&mut graph, b, c);
+        let ni = NeighborhoodInformation::build_for(&mut graph);
+        let marked = mark_conflicts(&graph, &ni).expect("marking");
+        assert_eq!(marked.into_iter().collect::<Vec<_>>(), vec![crossing]);
+    }
+
+    #[test]
+    fn a_node_joins_the_first_neighbour_going_down_and_the_last_going_up() {
+        let mut graph = LGraph::default();
+        let p0 = add_node(&mut graph, "p0", 10.0, NodeType::NORMAL, 0);
+        let p1 = add_node(&mut graph, "p1", 10.0, NodeType::NORMAL, 0);
+        let x = add_node(&mut graph, "x", 10.0, NodeType::NORMAL, 1);
+        add_edge(&mut graph, p0, x);
+        add_edge(&mut graph, p1, x);
+        let ni = NeighborhoodInformation::build_for(&mut graph);
+        let marked = IndexSet::new();
+
+        let mut down = AlignedLayout::new(3, Some(VDirection::Down), Some(HDirection::Right));
+        aligner::vertical_alignment(&graph, &ni, &mut down, &marked);
+        assert_eq!(down.root_of(id_of(&graph, x)), id_of(&graph, p0));
+
+        let mut up = AlignedLayout::new(3, Some(VDirection::Up), Some(HDirection::Right));
+        aligner::vertical_alignment(&graph, &ni, &mut up, &marked);
+        assert_eq!(up.root_of(id_of(&graph, x)), id_of(&graph, p1));
+    }
+
+    #[test]
+    fn a_marked_edge_is_not_joined() {
+        let mut graph = LGraph::default();
+        let p0 = add_node(&mut graph, "p0", 10.0, NodeType::NORMAL, 0);
+        let p1 = add_node(&mut graph, "p1", 10.0, NodeType::NORMAL, 0);
+        let x = add_node(&mut graph, "x", 10.0, NodeType::NORMAL, 1);
+        let first = add_edge(&mut graph, p0, x);
+        add_edge(&mut graph, p1, x);
+        let ni = NeighborhoodInformation::build_for(&mut graph);
+        let marked: IndexSet<usize> = [first].into_iter().collect();
+        let mut down = AlignedLayout::new(3, Some(VDirection::Down), Some(HDirection::Right));
+        aligner::vertical_alignment(&graph, &ni, &mut down, &marked);
+        // The edge from p0 is marked, so x joins p1.
+        assert_eq!(down.root_of(id_of(&graph, x)), id_of(&graph, p1));
+    }
+
+    #[test]
+    fn a_node_with_three_neighbours_joins_the_middle_one() {
+        let mut graph = LGraph::default();
+        let p0 = add_node(&mut graph, "p0", 10.0, NodeType::NORMAL, 0);
+        let p1 = add_node(&mut graph, "p1", 10.0, NodeType::NORMAL, 0);
+        let p2 = add_node(&mut graph, "p2", 10.0, NodeType::NORMAL, 0);
+        let x = add_node(&mut graph, "x", 10.0, NodeType::NORMAL, 1);
+        add_edge(&mut graph, p0, x);
+        add_edge(&mut graph, p1, x);
+        add_edge(&mut graph, p2, x);
+        let ni = NeighborhoodInformation::build_for(&mut graph);
+        let marked = IndexSet::new();
+        for vdir in [VDirection::Down, VDirection::Up] {
+            let mut layout = AlignedLayout::new(4, Some(vdir), Some(HDirection::Right));
+            aligner::vertical_alignment(&graph, &ni, &mut layout, &marked);
+            assert_eq!(
+                layout.root_of(id_of(&graph, x)),
+                id_of(&graph, p1),
+                "{vdir:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_port_offset_moves_the_target_inside_its_block_and_balances_the_chain() {
+        // Each of the four layouts is 15 high: the block of a and b spans 5 below the top of a
+        // because b's port is level with a's port. The balanced y of b is therefore 5.
+        let mut graph = offset_chain();
+        let (mut progress, root) = ProgressMonitor::new(true);
+        place(&mut graph, &mut progress, root).expect("place");
+        assert_eq!(graph.nodes[0].position.y, 0.0);
+        assert_eq!(graph.nodes[1].position.y, 5.0);
+        assert_eq!(
+            progress.trace(root).logs,
+            vec![
+                "RIGHTDOWN size is 15",
+                "RIGHTUP size is 15",
+                "LEFTDOWN size is 15",
+                "LEFTUP size is 15",
+                "BALANCED is feasible: true",
+                "Chosen node placement: BALANCED",
+                "Blocks: {null=[n_a, n_b]}",
+                "There are no classes in a balanced layout.",
+                "Classes: {}",
+                "Marked edges: []",
+            ]
+        );
+    }
+
+    #[test]
+    fn a_long_edge_chain_is_one_block_and_the_fixed_layout_is_applied() {
+        let mut graph = LGraph::default();
+        let a = add_node(&mut graph, "a", 10.0, NodeType::NORMAL, 0);
+        let d = add_node(&mut graph, "d", 10.0, NodeType::LONG_EDGE, 1);
+        let b = add_node(&mut graph, "b", 10.0, NodeType::NORMAL, 2);
+        add_edge(&mut graph, a, d);
+        add_edge(&mut graph, d, b);
+        graph.properties.set(
+            options::NODE_PLACEMENT_BK_FIXED_ALIGNMENT,
+            Some(OptionValue::Enum {
+                class: "FixedAlignment",
+                name: "RIGHTDOWN".to_string(),
+            }),
+        );
+        let (mut progress, root) = ProgressMonitor::new(true);
+        place(&mut graph, &mut progress, root).expect("place");
+        for node in &graph.nodes {
+            assert_eq!(node.position.y, 0.0, "{}", node.designation);
+        }
+        assert_eq!(
+            progress.trace(root).logs,
+            vec![
+                "RIGHTDOWN size is 10",
+                "RIGHTDOWN is feasible: true",
+                "Chosen node placement: RIGHTDOWN",
+                "Blocks: {n_a=[n_a, n(long_edge)_d, n_b]}",
+                "Classes: {n_a=[n_a]}",
+                "Marked edges: []",
+            ]
+        );
+    }
+
+    #[test]
+    fn nodes_of_a_layer_do_not_overlap_after_placement() {
+        // Invariant only: the expected coordinates of this graph are not derived by hand. Every
+        // layer must come out in order, with each node below the one before it.
+        let mut graph = LGraph::default();
+        let a = add_node(&mut graph, "a", 12.0, NodeType::NORMAL, 0);
+        let b = add_node(&mut graph, "b", 30.0, NodeType::NORMAL, 0);
+        let c = add_node(&mut graph, "c", 8.0, NodeType::NORMAL, 1);
+        let d = add_node(&mut graph, "d", 20.0, NodeType::LONG_EDGE, 1);
+        let e = add_node(&mut graph, "e", 16.0, NodeType::NORMAL, 2);
+        let f = add_node(&mut graph, "f", 10.0, NodeType::NORMAL, 2);
+        add_edge(&mut graph, a, d);
+        add_edge(&mut graph, b, c);
+        add_edge(&mut graph, d, f);
+        add_edge(&mut graph, c, e);
+        add_edge(&mut graph, a, c);
+        let (mut progress, root) = ProgressMonitor::new(false);
+        place(&mut graph, &mut progress, root).expect("place");
+        for layer in &graph.layers {
+            for pair in layer.windows(2) {
+                let upper = &graph.nodes[pair[0]];
+                let lower = &graph.nodes[pair[1]];
+                assert!(
+                    lower.position.y >= upper.position.y + upper.size.y,
+                    "{} overlaps {}",
+                    upper.designation,
+                    lower.designation
+                );
+            }
+        }
+    }
 
     #[test]
     fn map_text_matches_java_map_to_string() {
-        let text = map_text(&[(Some("n_root.a".to_string()), vec!["n_root.a".to_string()])]);
-        assert_eq!(text, "{n_root.a=[n_root.a]}");
-        let balanced = map_text(&[(None, vec!["n_root.a".to_string(), "n_root.b".to_string()])]);
-        assert_eq!(balanced, "{null=[n_root.a, n_root.b]}");
+        let mut graph = LGraph::default();
+        let a = add_node(&mut graph, "a", 10.0, NodeType::NORMAL, 0);
+        let b = add_node(&mut graph, "b", 10.0, NodeType::NORMAL, 0);
+        let ni = NeighborhoodInformation::build_for(&mut graph);
+        let mut blocks: IndexMap<Option<usize>, Vec<usize>> = IndexMap::new();
+        blocks.insert(Some(id_of(&graph, a)), vec![id_of(&graph, a)]);
+        blocks.insert(None, vec![id_of(&graph, a), id_of(&graph, b)]);
+        assert_eq!(
+            map_text(&graph, &ni, &blocks),
+            "{n_a=[n_a], null=[n_a, n_b]}"
+        );
     }
 }
