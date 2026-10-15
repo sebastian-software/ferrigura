@@ -168,7 +168,7 @@ fn import_edges(
 /// centred label makes the graph need label dummies, a head or tail one end labels.
 fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LLabel> {
     let mut labels = Vec::new();
-    for label in &edge.labels {
+    for (index, label) in edge.labels.iter().enumerate() {
         let text = label.text.clone().unwrap_or_default();
         if text.is_empty() || label.properties.bool_of(options::NO_LAYOUT) {
             continue;
@@ -204,6 +204,7 @@ fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LLabel> {
             position: KVector::default(),
             properties,
             end_label_edge: None,
+            origin: Some(index),
         });
     }
     labels

@@ -133,6 +133,9 @@ pub struct LLabel {
     pub properties: PropertyHolder,
     /// `InternalProperties.END_LABEL_EDGE`: the edge a head or tail label was moved from.
     pub end_label_edge: Option<usize>,
+    /// `InternalProperties.ORIGIN` of a label: its index among the labels of its ELK edge, so
+    /// that the position can be written back to the right label.
+    pub origin: Option<usize>,
 }
 
 impl LNode {

@@ -72,6 +72,15 @@ pub fn layout(graph: &json::JsonNode, logging: bool) -> Result<Layout, LayoutErr
                 ..json::JsonEdgeSection::default()
             })
             .collect();
+        // The labels with text are laid out; the others keep what the input gave them.
+        for (json_label, label) in json.labels.iter_mut().zip(edge.labels.iter()) {
+            if label.text.as_deref().is_some_and(|text| !text.is_empty()) {
+                json_label.x = Some(label.shape.x);
+                json_label.y = Some(label.shape.y);
+                json_label.width = Some(label.shape.width);
+                json_label.height = Some(label.shape.height);
+            }
+        }
     }
     Ok(Layout {
         graph: output,

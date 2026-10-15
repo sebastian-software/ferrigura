@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 use crate::core::math::KVector;
 use crate::error::LayoutError;
-use crate::graph::{ElkEdgeSection, ElkNode};
+use crate::graph::{ElkEdgeSection, ElkNode, Shape};
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
 
@@ -42,6 +42,7 @@ pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutErro
         }
     }
     let mut sections = Vec::new();
+    let mut label_shapes = Vec::new();
     {
         let index_of: HashMap<&str, usize> = root
             .edges
@@ -52,11 +53,31 @@ pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutErro
         for edge in edge_list {
             if let Some(&index) = index_of.get(graph.edges[edge].id.as_str()) {
                 sections.push((index, edge_section(graph, edge, offset)));
+                // `applyEdgeLayout`'s labels: each one's place, offset like the edge.
+                for label in &graph.edges[edge].labels {
+                    if let Some(origin) = label.origin {
+                        label_shapes.push((
+                            index,
+                            origin,
+                            Shape {
+                                x: label.position.x + offset.x,
+                                y: label.position.y + offset.y,
+                                width: label.size.x,
+                                height: label.size.y,
+                            },
+                        ));
+                    }
+                }
             }
         }
     }
     for (index, section) in sections {
         root.edges[index].sections = vec![section];
+    }
+    for (index, origin, shape) in label_shapes {
+        if let Some(label) = root.edges[index].labels.get_mut(origin) {
+            label.shape = shape;
+        }
     }
     // `applyParentNodeLayout`: the root takes the actual size, unless its size is fixed.
     if !root.properties.bool_of(options::NODE_SIZE_FIXED_GRAPH_SIZE) {
@@ -164,5 +185,72 @@ mod tests {
         assert_eq!(section.start, KVector { x: 27.0, y: 72.0 });
         assert_eq!(section.end, KVector { x: 47.0, y: 112.0 });
         assert_eq!(section.bend_points, vec![KVector { x: 62.0, y: 72.0 }]);
+    }
+
+    /// A label's place is offset like the edge, and it is written to its own ELK label.
+    #[test]
+    fn a_label_is_written_back_to_its_elk_label_offset_like_the_edge() {
+        use crate::graph::ElkLabel;
+        use crate::layered::lgraph::{LEdge, LLabel, LNode};
+        let mut graph = LGraph {
+            nodes: vec![LNode::default(), LNode::default()],
+            layerless_nodes: vec![0, 1],
+            ..LGraph::default()
+        };
+        graph.padding = crate::core::math::Spacing {
+            top: 12.0,
+            left: 12.0,
+            bottom: 12.0,
+            right: 12.0,
+        };
+        graph.ports = vec![
+            LPort::new(0, crate::core::data::enums::PortSide::EAST),
+            LPort::new(1, crate::core::data::enums::PortSide::WEST),
+        ];
+        graph.nodes[0].ports = vec![0];
+        graph.nodes[1].ports = vec![1];
+        graph.ports[0].outgoing.push(0);
+        graph.ports[1].incoming.push(0);
+        graph.edges.push(LEdge {
+            id: "e".to_string(),
+            source: 0,
+            target: 1,
+            labels: vec![LLabel {
+                size: KVector { x: 20.0, y: 10.0 },
+                position: KVector { x: 3.0, y: 4.0 },
+                origin: Some(0),
+                ..LLabel::default()
+            }],
+            ..LEdge::default()
+        });
+        let mut root = ElkNode {
+            children: vec![
+                ElkNode {
+                    id: "a".to_string(),
+                    ..ElkNode::default()
+                },
+                ElkNode {
+                    id: "b".to_string(),
+                    ..ElkNode::default()
+                },
+            ],
+            edges: vec![ElkEdge {
+                id: "e".to_string(),
+                sources: vec!["a".to_string()],
+                targets: vec!["b".to_string()],
+                labels: vec![ElkLabel {
+                    text: Some("x".to_string()),
+                    ..ElkLabel::default()
+                }],
+                ..ElkEdge::default()
+            }],
+            ..ElkNode::default()
+        };
+        apply_layout(&graph, &mut root).unwrap();
+        let shape = root.edges[0].labels[0].shape;
+        assert_eq!(
+            (shape.x, shape.y, shape.width, shape.height),
+            (15.0, 16.0, 20.0, 10.0)
+        );
     }
 }
