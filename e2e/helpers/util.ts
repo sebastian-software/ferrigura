@@ -218,7 +218,8 @@ export const verifyScreenshot = async (
     return;
   }
 
-  await expect(target).toHaveScreenshot(snapshotName);
+  // Compare with the same options the baseline was captured with above.
+  await expect(target).toHaveScreenshot(snapshotName, { animations: 'disabled', scale: 'device' });
 };
 
 /**

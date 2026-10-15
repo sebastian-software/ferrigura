@@ -1,13 +1,12 @@
 ---
 description: >-
-  Sets flowchart.htmlLabels to false in config to force SVG (non-HTML) edge
+  Sets htmlLabels to false in config to force SVG (non-HTML) edge
   label rendering, then renders a CUSTOMER/ORDER/LINE-ITEM/ADDRESS/INVOICE
   schema with both single-word and quoted multi-word relationship labels,
   verifying labels stay legible without HTML label support.
 config:
   logLevel: 1
-  flowchart:
-    htmlLabels: false
+  htmlLabels: false
 ---
 erDiagram
   CUSTOMER ||--o{ ORDER : places

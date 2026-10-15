@@ -79,7 +79,7 @@ looks.forEach((look) => {
               look,
               theme,
               htmlLabels: false,
-              flowchart: { htmlLabels: false },
+              htmlLabels: false,
             });
           });
 

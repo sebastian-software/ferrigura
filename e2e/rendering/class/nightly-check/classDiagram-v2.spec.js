@@ -52,7 +52,7 @@ test.describe('Class diagram V2', () => {
       }
       `,
       ],
-      { logLevel: 1, flowchart: { htmlLabels: false } }
+      { logLevel: 1, htmlLabels: false }
     );
   });
 });

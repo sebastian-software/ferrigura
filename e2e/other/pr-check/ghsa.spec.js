@@ -5,26 +5,26 @@ test.describe('CSS injections', () => {
   test('should not allow CSS injections outside of the diagram', async ({ page }, testInfo) => {
     await urlSnapshotTest(page, testInfo, '/ghsa1.html', {
       logLevel: 1,
-      flowchart: { htmlLabels: false },
+      htmlLabels: false,
     });
   });
   test('should not allow adding styletags affecting the page', async ({ page }, testInfo) => {
     await urlSnapshotTest(page, testInfo, '/ghsa3.html', {
       logLevel: 1,
-      flowchart: { htmlLabels: false },
+      htmlLabels: false,
     });
   });
   test('should not allow manipulating styletags using arrowheads', async ({ page }, testInfo) => {
     await openURLAndVerifyRendering(page, testInfo, '/xss23-css.html', {
       logLevel: 1,
       arrowMarkerAbsolute: false,
-      flowchart: { htmlLabels: true },
+      htmlLabels: true,
     });
   });
   test('should sanitize CSS in class definitions', async ({ page }, testInfo) => {
     await urlSnapshotTest(page, testInfo, '/css-injection.html', {
       logLevel: 1,
-      flowchart: { htmlLabels: false },
+      htmlLabels: false,
     });
     await expect(page.locator('.otp-3')).not.toHaveCSS(
       'background-image',

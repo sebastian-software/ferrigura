@@ -124,7 +124,7 @@ looks.forEach((look) => {
           await imgSnapshotTest(page, testInfo, flowchartCode, {
             look,
             htmlLabels: false,
-            flowchart: { htmlLabels: false },
+            htmlLabels: false,
           });
         });
 

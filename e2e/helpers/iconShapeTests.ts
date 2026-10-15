@@ -91,7 +91,6 @@ export function registerIconShapeTests(forms: readonly IconShapeForm[]): void {
               await imgSnapshotTest(page, testInfo, flowchartCode, {
                 look,
                 htmlLabels: false,
-                flowchart: { htmlLabels: false },
               });
             });
 

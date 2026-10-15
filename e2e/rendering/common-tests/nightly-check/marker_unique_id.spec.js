@@ -5,7 +5,7 @@ test.describe('Marker Unique IDs Per Diagram', () => {
   test('should render a blue arrow tip in second digram', async ({ page }, testInfo) => {
     await urlSnapshotTest(page, testInfo, '/marker_unique_id.html', {
       logLevel: 1,
-      flowchart: { htmlLabels: false },
+      htmlLabels: false,
     });
   });
 
