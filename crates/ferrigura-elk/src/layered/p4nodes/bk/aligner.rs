@@ -11,7 +11,7 @@ use crate::core::data::enums::NodeType;
 use crate::error::LayoutError;
 use crate::layered::lgraph::LGraph;
 
-use super::access::{java_max, lnode};
+use super::access::{java_max, lnode, name_of};
 use super::aligned_layout::{AlignedLayout, HDirection, VDirection};
 use super::neighborhood::{Neighbor, NeighborhoodInformation};
 use super::{get_blocks, get_edge};
@@ -132,8 +132,8 @@ pub fn inside_block_shift(
             let edge = get_edge(graph, ni, current, next).ok_or_else(|| {
                 LayoutError::Format(format!(
                     "node placement found no edge between {} and {}",
-                    lnode(graph, ni, current).text_name(),
-                    lnode(graph, ni, next).text_name()
+                    name_of(graph, ni, current),
+                    name_of(graph, ni, next)
                 ))
             })?;
             let source = &graph.ports[graph.edges[edge].source];

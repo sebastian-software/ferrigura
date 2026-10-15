@@ -34,7 +34,7 @@ use crate::json::js_number_string;
 use crate::layered::lgraph::{LEdge, LGraph};
 use crate::layered::options;
 
-use access::{connected_edges, incoming_edges, java_max, java_min, lnode};
+use access::{connected_edges, incoming_edges, java_max, java_min, lnode, name_of};
 pub use aligned_layout::{AlignedLayout, HDirection, VDirection};
 use neighborhood::NeighborhoodInformation;
 use threshold::ThresholdKind;
@@ -363,12 +363,12 @@ fn check_order_constraint(
                 feasible = false;
                 if progress.is_logging_enabled() {
                     let before =
-                        previous.map_or_else(|| "null".to_string(), |p| graph.nodes[p].text_name());
+                        previous.map_or_else(|| "null".to_string(), |p| graph.node_name(p));
                     progress.log(
                         monitor,
                         format!(
                             "bk node placement breaks on {} which should have been after {}",
-                            current.text_name(),
+                            graph.node_name(node),
                             before
                         ),
                     );
@@ -450,13 +450,11 @@ fn map_text(
         .iter()
         .map(|(key, values)| {
             let key_text = match key {
-                Some(id) => lnode(graph, ni, *id).text_name(),
+                Some(id) => name_of(graph, ni, *id),
                 None => "null".to_string(),
             };
-            let values_text: Vec<String> = values
-                .iter()
-                .map(|&id| lnode(graph, ni, id).text_name())
-                .collect();
+            let values_text: Vec<String> =
+                values.iter().map(|&id| name_of(graph, ni, id)).collect();
             format!("{}=[{}]", key_text, values_text.join(", "))
         })
         .collect();
@@ -480,9 +478,9 @@ fn edge_text(graph: &LGraph, edge: &LEdge) -> String {
     text.push_str(&format!(
         " {}[{}] -> {}[{}]",
         port_index(graph, edge.source),
-        graph.nodes[source.node].text_name(),
+        graph.node_name(source.node),
         port_index(graph, edge.target),
-        graph.nodes[target.node].text_name(),
+        graph.node_name(target.node),
     ));
     text
 }

@@ -138,21 +138,6 @@ pub struct LLabel {
     pub origin: Option<usize>,
 }
 
-impl LNode {
-    /// `LNode.toString()`: `n_<designation>`, with the type in brackets for non-normal nodes.
-    pub fn text_name(&self) -> String {
-        if self.node_type == NodeType::NORMAL {
-            format!("n_{}", self.designation)
-        } else {
-            format!(
-                "n({})_{}",
-                self.node_type.java_name().to_lowercase(),
-                self.designation
-            )
-        }
-    }
-}
-
 /// The root layered graph, `LGraph`.
 #[derive(Debug, Clone, Default)]
 pub struct LGraph {
@@ -192,6 +177,29 @@ pub struct LGraph {
 }
 
 impl LGraph {
+    /// `LNode.toString()` of the node at `node`: `n_<designation>`, with the type in brackets for
+    /// non-normal nodes. A node without a designation of its own, such as a dummy, takes its
+    /// index in its layer, as `LNode.getDesignation` does, or -1 when it is in no layer.
+    pub fn node_name(&self, node: usize) -> String {
+        let data = &self.nodes[node];
+        let designation = if data.designation.is_empty() {
+            data.layer
+                .and_then(|layer| self.layers[layer].iter().position(|&member| member == node))
+                .map_or(-1, |index| index as i64)
+                .to_string()
+        } else {
+            data.designation.clone()
+        };
+        if data.node_type == NodeType::NORMAL {
+            format!("n_{designation}")
+        } else {
+            format!(
+                "n({})_{designation}",
+                data.node_type.java_name().to_lowercase()
+            )
+        }
+    }
+
     /// `LEdge.setTarget(port)`: the edge leaves its old target's incoming list and joins the new port's.
     pub fn set_edge_target(&mut self, edge: usize, port: usize) {
         let old = self.edges[edge].target;

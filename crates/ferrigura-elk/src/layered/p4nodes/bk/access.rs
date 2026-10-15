@@ -16,6 +16,11 @@ pub fn lnode<'g>(graph: &'g LGraph, ni: &NeighborhoodInformation, id: usize) -> 
     &graph.nodes[ni.node_of_id[id]]
 }
 
+/// `LNode.toString()` of the node with the given placement id.
+pub fn name_of(graph: &LGraph, ni: &NeighborhoodInformation, id: usize) -> String {
+    graph.node_name(ni.node_of_id[id])
+}
+
 /// The placement id of the node a port belongs to, `port.getNode().id`.
 pub fn port_node_id(graph: &LGraph, port: usize) -> usize {
     graph.nodes[graph.ports[port].node].placement_id

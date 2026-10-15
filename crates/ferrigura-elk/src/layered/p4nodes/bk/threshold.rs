@@ -17,7 +17,9 @@ use crate::core::data::enums::EdgeStraighteningStrategy;
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
 
-use super::access::{incoming_edges, is_in_layer_edge, lnode, outgoing_edges, port_node_id};
+use super::access::{
+    incoming_edges, is_in_layer_edge, lnode, name_of, outgoing_edges, port_node_id,
+};
 use super::aligned_layout::{AlignedLayout, HDirection, VDirection};
 use super::neighborhood::NeighborhoodInformation;
 
@@ -352,7 +354,7 @@ fn get_other(graph: &LGraph, ni: &NeighborhoodInformation, edge: usize, n: usize
         // cannot be reached.
         panic!(
             "node {} is neither source nor target of edge {}",
-            lnode(graph, ni, n).text_name(),
+            name_of(graph, ni, n),
             edge
         );
     }

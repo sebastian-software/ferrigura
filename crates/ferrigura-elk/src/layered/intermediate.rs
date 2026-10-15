@@ -414,7 +414,7 @@ fn sort_by_input_model(
                     monitor,
                     format!(
                         "Node {} ports: [{}]",
-                        node_name(graph, node),
+                        graph.node_name(node),
                         ports.join(", ")
                     ),
                 );
@@ -441,7 +441,7 @@ fn sort_by_input_model(
         }
         let names: Vec<String> = graph.layers[layer_index]
             .iter()
-            .map(|&node| node_name(graph, node))
+            .map(|&node| graph.node_name(node))
             .collect();
         progress.log(
             monitor,
@@ -456,32 +456,6 @@ fn sort_by_input_model(
     Ok(())
 }
 
-/// `LNode.toString()`: `n_<designation>`, with the type in brackets for other types. A node
-/// without a designation of its own, such as a dummy, is designated by its place in its layer.
-fn node_name(graph: &LGraph, node: usize) -> String {
-    let data = &graph.nodes[node];
-    let designation = if data.designation.is_empty() {
-        data.layer
-            .and_then(|layer| {
-                graph.layers[layer]
-                    .iter()
-                    .position(|&member| member == node)
-            })
-            .map_or(-1, |index| index as i64)
-            .to_string()
-    } else {
-        data.designation.clone()
-    };
-    if data.node_type == NodeType::NORMAL {
-        format!("n_{designation}")
-    } else {
-        format!(
-            "n({})_{designation}",
-            data.node_type.java_name().to_lowercase()
-        )
-    }
-}
-
 /// `LPort.toString()`: `p_<index>[<owner>]`, with the single edge's other end, as ` << ` for an
 /// incoming and ` >> ` for an outgoing edge, when the port has only that one edge.
 fn port_name(graph: &LGraph, port: usize) -> String {
@@ -494,18 +468,14 @@ fn port_name(graph: &LGraph, port: usize) -> String {
             .position(|&member| member == port)
             .map_or(-1, |index| index as i64)
     };
-    let mut text = format!(
-        "p_{}[{}]",
-        index_on_owner(port),
-        node_name(graph, data.node)
-    );
+    let mut text = format!("p_{}[{}]", index_on_owner(port), graph.node_name(data.node));
     if data.incoming.len() == 1 && data.outgoing.is_empty() {
         let source = graph.edges[data.incoming[0]].source;
         if source != port {
             text += &format!(
                 " << {}[{}]",
                 index_on_owner(source),
-                node_name(graph, graph.ports[source].node)
+                graph.node_name(graph.ports[source].node)
             );
         }
     }
@@ -515,7 +485,7 @@ fn port_name(graph: &LGraph, port: usize) -> String {
             text += &format!(
                 " >> {}[{}]",
                 index_on_owner(target),
-                node_name(graph, graph.ports[target].node)
+                graph.node_name(graph.ports[target].node)
             );
         }
     }
