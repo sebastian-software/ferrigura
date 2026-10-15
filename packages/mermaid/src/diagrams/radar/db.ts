@@ -11,12 +11,7 @@ import {
   setAccTitle,
   setDiagramTitle,
 } from '../common/commonDb.js';
-import type {
-  Axis,
-  Curve,
-  Option,
-  Entry,
-} from '../../../../parser/dist/src/language/generated/ast.js';
+import type { Axis, Curve, Option, Entry } from '@mermaid-js/parser';
 import type { RadarAxis, RadarCurve, RadarOptions, RadarDB, RadarData } from './types.js';
 import { log } from '../../logger.js';
 

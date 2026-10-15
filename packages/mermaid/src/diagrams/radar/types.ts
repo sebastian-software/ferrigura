@@ -1,4 +1,4 @@
-import type { Axis, Curve, Option } from '../../../../parser/dist/src/language/generated/ast.js';
+import type { Axis, Curve, Option } from '@mermaid-js/parser';
 import type { RadarDiagramConfig } from '../../config.type.js';
 import type { DiagramDBBase } from '../../diagram-api/types.js';
 

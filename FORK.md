@@ -86,8 +86,8 @@ These are deprecated, legacy or redundant, but removing them changes user-visibl
 - `defaultConfig.ts` copied the whole flowchart section into `c4.flowchart`, apparently to default `flowchart.inheritDir` to `false`. The schema already sets that default in the right place, so the copy only put a stray `flowchart` section under `c4`.
 - `mermaid.run()` reported a diagram that failed to render to `parseError` three times: from the public `render()` it went through, from its per-diagram error handler, and once more when it rethrew the first failure. It now reports each failing diagram once. Errors outside any diagram, such as passing neither `nodes` nor `querySelector`, still reach `parseError` once.
 - `setLogLevel('DEBUG')` silenced every level, fatal included: it lowercased the name to check it, then looked up the original spelling and got `undefined`. Names inherited from `Object.prototype`, such as `constructor`, passed the check the same way. Level names are now case-insensitive, and anything else falls back to `fatal`.
+- The radar diagram imported its AST types through a relative path into the parser's `dist/` output. That worked inside the monorepo but ended up in mermaid's published `diagrams/radar/types.d.ts`, where nothing exists at that path. The parser now exports `Axis`, `Curve`, `Entry` and `Option`, and the radar diagram imports them from `@mermaid-js/parser`.
 
 ## Upstream bugs noticed along the way (not fixed)
 
-- The radar diagram imports types from the parser's `dist/` output instead of the package.
 - Railroad: like Wardley, `railroad` is missing from the schema defaults generator's key list in `.build/jsonSchema.ts`. Options only railroad has, such as `arcRadius`, `compactMode` and `verticalSeparation`, are therefore not in `configKeys`, and front matter or directives drop them.
