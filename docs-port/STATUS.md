@@ -1,25 +1,25 @@
 # Port status
 
-Last updated: 2026-10-15. Planning is done. M4 Stage A and B are done, and Stage C has its nodes-only checkpoint (`crates/ferrigura-elk`, see `elk/PLAN.md` §10). The other milestones have no Rust code yet.
+Last updated: 2026-10-16. Planning is done. M4 Stage A and B are done, and Stage C's nodes-only checkpoint is met for 20 of the 22 supported corpus cases, in coordinates and trace (`crates/ferrigura-elk`, see `elk/PLAN.md` §10). The other milestones have no Rust code yet.
 
 Each session updates its section when it stops: what changed, what is next, what blocks it. Test counts per diagram type are meant to be written by a script once M1 delivers it; until then they are maintained by hand.
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                                                                                                          |
-| ---------------------------------- | ----------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1 Parser foundation: pie and info | not started | main   | Starts first; builds the shared infrastructure                                                                                                 |
-| M2 First slice: pie to SVG         | not started | —      | After M1, in parallel with M3                                                                                                                  |
-| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                                                                                                                  |
-| M4 ELK Layered port                | in progress | elk    | Stage B corpus done; Stage C at the nodes-only checkpoint (names and nesting match elkjs, logs and coordinates pending); see `elk/PLAN.md` §10 |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                                                                                            |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                                                                       |
+| Milestone                          | Status      | Strand | Notes                                                                                                                                                                    |
+| ---------------------------------- | ----------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M1 Parser foundation: pie and info | not started | main   | Starts first; builds the shared infrastructure                                                                                                                           |
+| M2 First slice: pie to SVG         | not started | —      | After M1, in parallel with M3                                                                                                                                            |
+| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                                                                                                                                            |
+| M4 ELK Layered port                | in progress | elk    | Stage B corpus done; Stage C nodes-only checkpoint met for 20 of 22 supported cases (coordinates and trace match elkjs exactly); layer sweep next; see `elk/PLAN.md` §10 |
+| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                                                                                                                      |
+| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                                                                                                 |
 
 ## Strands
 
-| Strand | Session            | Worktree                                                                       | Working on                                                                                                                                             | Next                                                                | Blocked by                                                                                                |
-| ------ | ------------------ | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| elk    | port-m4-elk-fe5cfa | `.claude/worktrees/port-m4-elk-fe5cfa` (branch `sebastian/port-m4-elk-fe5cfa`) | M4: corpus of 132 ELK calls, differential harness, scope and pin confirmed; driver runs nodes-only roots, trace names match elkjs on 3 synthetic cases | Brandes & Koepf with its logs, then network simplex and edge import | None (uncommitted: `Cargo.lock` only; the root `Cargo.toml` members line is for the coordinator to merge) |
+| Strand | Session            | Worktree                                                                       | Working on                                                                                                                                               | Next                                                                     | Blocked by                                                                                                |
+| ------ | ------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| elk    | port-m4-elk-fe5cfa | `.claude/worktrees/port-m4-elk-fe5cfa` (branch `sebastian/port-m4-elk-fe5cfa`) | M4: nodes-only geometry (layer sizes, router placement, resizer, transfer); 20 of 22 supported corpus cases match elkjs exactly in coordinates and trace | Layer sweep crossing minimization (synthetic-3 and -5), then edge import | None (uncommitted: `Cargo.lock` only; the root `Cargo.toml` members line is for the coordinator to merge) |
 
 ## P1 diagram types
 

@@ -273,7 +273,7 @@ Not yet ported, with the checkpoint in mind: `alg.common/networksimplex` (`Netwo
 
 ## 10. Stage C status: the nodes-only checkpoint
 
-The checkpoint from the coordinator: a nodes-only corpus graph runs through the Rust driver with the same processor trace as elkjs. **Met for names and nesting** on `synthetic__nodes-only-1`, `-3` and `-5` (`tests/trace.rs`). **Not met for logs**: Brandes & Koepf writes 10 log messages on elkjs's side and none on ours (`print_logs_side_by_side`).
+The checkpoint from the coordinator: a nodes-only corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for 20 of the 22 supported corpus cases**: every Mermaid nodes-only case and `synthetic__nodes-only-1` match elkjs in names, nesting, the full trace with the Brandes & Koepf logs, node boxes and root size (`tests/trace.rs`, `tests/differential.rs`). **Not met for `synthetic__nodes-only-3` and `-5`**: elkjs orders their nodes in the layers by its layer sweep, which is not ported. Their node order differs, so the coordinates differ (by 180 and 270), and the logs that print the order differ too. Their names and nesting match.
 
 Corrections to §3, which lists the configurations as if they were unconditional:
 
@@ -291,16 +291,17 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 - **Node promotion** is `org.eclipse.elk.layered.layering.nodePromotion.strategy`, under `layering` (the corrected reader).
 - **elkjs mutates its input** (the Stage B agent's finding): it adds `x`, `y`, `width`, `height`, `logging` and `$H` to the object it is given. The corpus stores the input before layout, so the port reads the same graph elkjs read.
 - **Output `$H`.** elkjs adds GWT identity hashes to its output. The corpus strips them; the port does not produce them.
+- **Two generator and reader bugs, both fixed.** The melk reader returned no default for `new ElkPadding(12)`, so the root padding was absent; it now reads the all-sides `ElkPadding` and `ElkMargin` constructors. The enum generator let a nested `SelfHyperLoopLabels.Alignment` replace the core `Alignment`, which lost `AUTOMATIC`; a top-level enum in its own file now wins. Only that enum changed in the generated file.
 
 ### Coverage
 
-- Corpus: 22 of 132 cases pass the driver (the 3 synthetic and 19 nodes-only Mermaid cases). The other 110 need edges (108) or nested graphs (2), and report `Unsupported`. Positions are not computed yet, so the coordinate test is ignored.
-- Crate tests: 29 unit tests and the trace test pass; `clippy -D warnings` is clean.
+- Corpus: 22 of 132 cases pass the driver (the 3 synthetic and 19 nodes-only Mermaid cases). The other 110 need edges (108) or nested graphs (2), and report `Unsupported`.
+- Of the 22, 20 match elkjs exactly in node boxes and root size (`coordinates_match_elkjs`, tolerance 0, floor 20). The same 20 match the full trace, names and logs (`report_agreement_on_supported_cases`).
+- Crate tests: 41 unit tests and the differential and trace tests pass, with their diagnostics still ignored; `clippy -D warnings` is clean.
 
 ### Next, in order
 
-1. Brandes & Koepf placement with its logs (`p4nodes/bk`): this is what the trace and the coordinates need next.
-2. Network simplex (`alg.common/networksimplex`) for connected graphs.
-3. Edge import, then the processors that edges need.
-4. `doLayout` with `ComponentsProcessor`, for containers with `SEPARATE_CHILDREN`.
-5. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
+1. The layer sweep crossing minimizer (`p3order`): `GraphInfoHolder`, the barycenter heuristic, and the seeded `java.util.Random` tie-breaking that `LayerSweepCrossingMinimizer` uses without `considerModelOrder`. This closes `synthetic__nodes-only-3` and `-5`; after it the logs test can cover all 22 cases.
+2. Edge import, then the orthogonal router with edges (`p5edges`), the processors that edges need, and network simplex for connected graphs.
+3. `doLayout` with `ComponentsProcessor`, for containers with `SEPARATE_CHILDREN`.
+4. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
