@@ -11,6 +11,26 @@ flowchart LR
   text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, swimlane, cose-bilkent] --> svg[SVG]
 ```
 
+## Size compared with Mermaid 12.2.0
+
+Measured on 15 October 2026 against upstream commit `e28fbd9de`, with both checkouts built by `pnpm build`. Compressed sizes use gzip level 9 and Brotli quality 11; 1 kB is 1,000 bytes.
+
+|                                              | Mermaid 12.2.0 |  ferraid | Change |
+| -------------------------------------------- | -------------: | -------: | -----: |
+| `mermaid.min.js` (IIFE), minified            |        5.49 MB |  5.42 MB |  −1.3% |
+| `mermaid.min.js` (IIFE), gzip                |       1,567 kB | 1,542 kB |  −1.6% |
+| `mermaid.min.js` (IIFE), Brotli              |       1,177 kB | 1,157 kB |  −1.7% |
+| ESM entry `mermaid.esm.min.mjs`, gzip        |        11.6 kB |  11.3 kB |  −2.4% |
+| ESM entry and all lazy chunks, gzip          |       1,579 kB | 1,556 kB |  −1.5% |
+| npm tarball of `mermaid`, packed             |        26.0 MB |  25.5 MB |  −2.0% |
+| Library source lines, without tests and docs |        114,970 |  109,747 |  −4.5% |
+| Workspace packages                           |              9 |        2 |     −7 |
+| Packages resolved in `pnpm-lock.yaml`        |          2,409 |    1,280 |   −47% |
+| Files tracked in the repository              |          4,272 |    3,762 |   −12% |
+| Runtime dependencies of `mermaid`            |             23 |       23 |      0 |
+
+So far the cleanup has mostly removed what surrounds the library: seven packages, the website and the tooling they needed, which halves what `pnpm install` resolves. The bundles are only about 2% smaller, and most of that comes from removing the dagre layout. Most of the dead code removed from the library was never bundled in the first place, because nothing imported it.
+
 ## Repository layout
 
 | Path                        | Contents                                                                |
