@@ -541,7 +541,7 @@ async function createServer() {
   // Also expose dev-explorer public assets (libavoid.wasm, etc.) at root
   // so demo pages under /e2e/platform/ and /demos/ can resolve a
   // bare "libavoid.wasm" without going through the /dev/ namespace.
-  // index:false so this doesn't shadow the cypress/demos default index.
+  // index:false so this doesn't shadow the demos default index.
   app.use(express.static(devExplorerPublicDir, { index: false }));
 
   for (const { packageName } of Object.values(packageOptions)) {
