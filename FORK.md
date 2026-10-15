@@ -78,10 +78,10 @@ These are deprecated, legacy or redundant, but removing them changes user-visibl
 ## Upstream bugs fixed
 
 - A `%%{init}%%` directive was ignored when an earlier directive search on the same page had failed: the shared global `directiveRegex` kept its `lastIndex` after a `JSON.parse` error. `mermaid.run()` triggered this for any diagram whose front matter mentioned a directive in prose, because it ran an extra, debug-only directive search first.
+- A Gantt chart with the `topAxis` keyword failed to parse: the grammar called `yy.TopAxis()`, which the db never defined. It now calls `enableTopAxis()`.
 
 ## Upstream bugs noticed along the way (not fixed)
 
-- Gantt: the grammar calls `yy.TopAxis()` for the `topAxis` keyword, but the db only defines `enableTopAxis`.
 - Architecture: the detector accepts `architecture`, but the grammar only accepts `architecture-beta`.
 - Requirement: the detector accepts `requirement`, but the grammar only accepts `requirementDiagram`.
 - C4: the detector anchors only `C4Context` to the start of the text; the other four keywords match anywhere.
