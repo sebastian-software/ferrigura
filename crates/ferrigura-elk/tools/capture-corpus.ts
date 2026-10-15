@@ -3,8 +3,9 @@
  * Differential ELK corpus generator for the ferrigura-elk port.
  *
  * 1. Renders the Mermaid e2e fixtures in scope in Chromium with ELK forced on
- *    (`layout: 'elk'`), capturing every graph Mermaid hands to elkjs. The capture
- *    hook is packages/mermaid/src/rendering-util/layout-algorithms/elk/elkCapture.ts.
+ *    (`layout: 'elk'`), capturing every graph Mermaid hands to elkjs. The page gets
+ *    a `__mermaidElkCapture` callback before Mermaid loads; render.ts calls it with
+ *    the input (copied before layout) and the result.
  * 2. Re-runs each captured input through Node elkjs (same bundle Mermaid ships),
  *    with `logging: true`, and compares the result with the browser result.
  * 3. Writes one case per captured call to crates/ferrigura-elk/tests/corpus/,
@@ -69,7 +70,10 @@ interface Fixture {
   inPrCheck: boolean;
 }
 
-/** One entry of `globalThis.mermaidElkCaptures`, as written by elkCapture.ts. */
+/** Version of the capture entry shape; bump it when `CapturedCall` changes. */
+const CAPTURE_VERSION = 1;
+
+/** One entry of `globalThis.mermaidElkCaptures`, written by the page's capture callback. */
 interface CapturedCall {
   version: number;
   index: number;
@@ -242,9 +246,36 @@ async function renderWithElkCapture(
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   try {
-    await page.addInitScript(() => {
-      (globalThis as unknown as { mermaidCaptureElk?: boolean }).mermaidCaptureElk = true;
-    });
+    await page.addInitScript((version: number) => {
+      // The hook render.ts calls with (input, output) after every elkjs layout.
+      interface Capture {
+        version: number;
+        index: number;
+        algorithm: string | null;
+        input: unknown;
+        output: unknown;
+      }
+      const page = globalThis as unknown as {
+        mermaidElkCaptures?: Capture[];
+        __mermaidElkCapture?: (input: unknown, output: unknown) => void;
+      };
+      page.mermaidElkCaptures = [];
+      page.__mermaidElkCapture = (input: unknown, output: unknown) => {
+        const captures = page.mermaidElkCaptures ?? [];
+        const algorithm = (input as { layoutOptions?: Record<string, unknown> }).layoutOptions?.[
+          'elk.algorithm'
+        ];
+        captures.push({
+          version,
+          index: captures.length,
+          algorithm: typeof algorithm === 'string' ? algorithm : null,
+          input,
+          // Round-trip the result so the record holds plain JSON, as the input does.
+          output: JSON.parse(JSON.stringify(output)),
+        });
+        page.mermaidElkCaptures = captures;
+      };
+    }, CAPTURE_VERSION);
     await page.goto(`${baseUrl}/e2e.html?graph=${encodeGraph(fixture.text)}`, {
       waitUntil: 'load',
     });
