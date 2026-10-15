@@ -57,6 +57,9 @@ pub const NODE_SIZE_CONSTRAINTS: &str = "org.eclipse.elk.nodeSize.constraints";
 pub const NODE_SIZE_OPTIONS: &str = "org.eclipse.elk.nodeSize.options";
 pub const NODE_SIZE_FIXED_GRAPH_SIZE: &str = "org.eclipse.elk.nodeSize.fixedGraphSize";
 pub const NO_LAYOUT: &str = "org.eclipse.elk.noLayout";
+pub const PORT_CONSTRAINTS: &str = "org.eclipse.elk.portConstraints";
+pub const SPACING_EDGE_LABEL: &str = "org.eclipse.elk.spacing.edgeLabel";
+pub const SPACING_LABEL_LABEL: &str = "org.eclipse.elk.spacing.labelLabel";
 pub const EDGE_LABELS_PLACEMENT: &str = "org.eclipse.elk.edgeLabels.placement";
 pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_NODE_INFLUENCE: &str =
     "org.eclipse.elk.layered.considerModelOrder.crossingCounterNodeInfluence";
@@ -110,6 +113,9 @@ mod tests {
             CONSIDER_MODEL_ORDER_CROSSING_COUNTER_PORT_INFLUENCE,
             NO_LAYOUT,
             EDGE_LABELS_PLACEMENT,
+            PORT_CONSTRAINTS,
+            SPACING_EDGE_LABEL,
+            SPACING_LABEL_LABEL,
         ] {
             assert!(option_by_id(id).is_some(), "{id} is not registered");
         }

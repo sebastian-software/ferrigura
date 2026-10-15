@@ -18,6 +18,7 @@ use crate::core::data::enums::{
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
+use crate::layered::p1cycles;
 use crate::layered::p3order;
 use crate::layered::p5edges;
 
@@ -110,6 +111,9 @@ impl PhaseStep {
         if self == PhaseStep::Layering(LayeringStrategy::NETWORK_SIMPLEX) {
             network_simplex_layering(graph, progress, monitor)?;
         }
+        if let PhaseStep::CycleBreaking(strategy) = self {
+            cycle_breaking(graph, strategy)?;
+        }
         if matches!(self, PhaseStep::CrossingMinimization(_)) {
             p3order::sweep(graph)?;
         }
@@ -170,6 +174,24 @@ impl PhaseStep {
             }
         }
         Ok(Some(config))
+    }
+}
+
+/// The cycle breaking of phase 1. Without edges there are no cycles, whatever the strategy;
+/// with edges only the depth-first breaker is ported.
+fn cycle_breaking(graph: &mut LGraph, strategy: CycleBreakingStrategy) -> Result<(), LayoutError> {
+    if graph.edges.is_empty() {
+        return Ok(());
+    }
+    match strategy {
+        CycleBreakingStrategy::DEPTH_FIRST => {
+            p1cycles::break_cycles(graph);
+            Ok(())
+        }
+        other => Err(LayoutError::Unsupported(format!(
+            "cycle breaking {} is not ported yet",
+            other.java_name()
+        ))),
     }
 }
 

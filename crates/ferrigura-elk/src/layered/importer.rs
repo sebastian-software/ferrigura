@@ -137,6 +137,9 @@ fn import_edges(
             labels,
             model_order: edge_model_order,
             properties: edge.properties.clone(),
+            reversed: false,
+            bend_points: Vec::new(),
+            thickness: 1.0,
         });
     }
     Ok(())
@@ -181,6 +184,7 @@ fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LLabel> {
             },
             position: KVector::default(),
             properties,
+            end_label_edge: None,
         });
     }
     labels

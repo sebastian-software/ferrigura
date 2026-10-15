@@ -35,6 +35,16 @@ pub struct LNode {
     pub layer: Option<usize>,
     /// `LNode.getPorts()`: indices into `LGraph::ports`, in order.
     pub ports: Vec<usize>,
+    /// `InternalProperties.ORIGIN` of a dummy: the index of the edge it was made for.
+    pub origin_edge: Option<usize>,
+    /// `InternalProperties.REPRESENTED_LABELS` of a label dummy: the labels it holds.
+    pub represented_labels: Vec<LLabel>,
+    /// `InternalProperties.LONG_EDGE_SOURCE`: the port the long edge leaves at its first node.
+    pub long_edge_source: Option<usize>,
+    /// `InternalProperties.LONG_EDGE_TARGET`: the port the long edge enters at its last node.
+    pub long_edge_target: Option<usize>,
+    /// `InternalProperties.LONG_EDGE_HAS_LABEL_DUMMIES`.
+    pub long_edge_has_label_dummies: bool,
 }
 
 /// Whether a port is where an edge leaves or enters its node, `PortType`.
@@ -90,6 +100,13 @@ pub struct LEdge {
     pub model_order: Option<usize>,
     /// The options of the ELK edge.
     pub properties: PropertyHolder,
+    /// `InternalProperties.REVERSED`: the edge runs against its input direction after a reversal.
+    pub reversed: bool,
+    /// `LEdge.getBendPoints()`, in the internal left-to-right frame.
+    pub bend_points: Vec<KVector>,
+    /// `LEdge.THICKNESS`: the line thickness, 1 by default. A programmatic option, so the
+    /// registry does not hold it and the importer sets this field directly.
+    pub thickness: f64,
 }
 
 /// A label of an edge, `LLabel`.
@@ -102,6 +119,8 @@ pub struct LLabel {
     pub position: KVector,
     /// The options of the ELK label, such as its placement.
     pub properties: PropertyHolder,
+    /// `InternalProperties.END_LABEL_EDGE`: the edge a head or tail label was moved from.
+    pub end_label_edge: Option<usize>,
 }
 
 impl LNode {
@@ -148,9 +167,25 @@ pub struct LGraph {
     pub ports: Vec<LPort>,
     /// The edges, indexed by the ports' outgoing and incoming lists.
     pub edges: Vec<LEdge>,
+    /// `InternalProperties.CYCLIC`: the cycle breaker reversed some edges.
+    pub cyclic: bool,
 }
 
 impl LGraph {
+    /// `LEdge.setTarget(port)`: the edge leaves its old target's incoming list and joins the new port's.
+    pub fn set_edge_target(&mut self, edge: usize, port: usize) {
+        let old = self.edges[edge].target;
+        if let Some(index) = self.ports[old]
+            .incoming
+            .iter()
+            .position(|&found| found == edge)
+        {
+            self.ports[old].incoming.remove(index);
+        }
+        self.edges[edge].target = port;
+        self.ports[port].incoming.push(edge);
+    }
+
     /// `LGraph.getActualSize()`: the size with the padding around it.
     pub fn actual_size(&self) -> KVector {
         KVector {

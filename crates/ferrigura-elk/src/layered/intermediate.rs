@@ -16,6 +16,7 @@ use crate::core::data::enums::{
 use crate::core::math::{KVector, Spacing};
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::layered::LayoutError;
+use crate::layered::dummies;
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
 use crate::layered::phases::PhaseStep;
@@ -46,6 +47,7 @@ pub fn task_name(
         S::LABEL_AND_NODE_SIZE_PROCESSOR => "Node and Port Label Placement and Node Sizing",
         S::INNERMOST_NODE_MARGIN_CALCULATOR => "Node margin calculation",
         S::LAYER_SIZE_AND_GRAPH_HEIGHT_CALCULATOR => "Layer size calculation",
+        S::LABEL_DUMMY_INSERTER => "Label dummy insertions",
         S::LONG_EDGE_JOINER => "Edge joining",
         S::END_LABEL_SORTER => "Sort end labels",
         S::REVERSED_EDGE_RESTORER => "Restoring reversed edges",
@@ -86,6 +88,9 @@ pub fn run(
         }
         IntermediateProcessorStrategy::LAYER_SIZE_AND_GRAPH_HEIGHT_CALCULATOR => {
             layer_size_and_graph_height(graph)?;
+        }
+        IntermediateProcessorStrategy::LABEL_DUMMY_INSERTER => {
+            dummies::insert_label_dummies(graph);
         }
         IntermediateProcessorStrategy::LABEL_AND_NODE_SIZE_PROCESSOR => {
             // Without labels or size constraints the processor leaves the nodes alone.
