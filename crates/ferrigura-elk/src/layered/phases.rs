@@ -18,6 +18,7 @@ use crate::core::data::enums::{
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
+use crate::layered::p5edges;
 
 /// Phase index of `LayeredPhases.P1_CYCLE_BREAKING` and the others, by ordinal.
 pub const P1: usize = 0;
@@ -107,6 +108,9 @@ impl PhaseStep {
         progress.begin(monitor, &name, 1.0);
         if self == PhaseStep::Layering(LayeringStrategy::NETWORK_SIMPLEX) {
             network_simplex_layering(graph, progress, monitor)?;
+        }
+        if matches!(self, PhaseStep::EdgeRouting(_)) {
+            p5edges::route_nodes_only(graph)?;
         }
         progress.done(monitor);
         Ok(())
