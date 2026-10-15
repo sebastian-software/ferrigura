@@ -46,6 +46,7 @@ Diagrams that still use a removed keyword fail with an "unknown diagram" error.
 ### Behaviour changes
 
 - The triangle shape and swimlane lane labels now follow the root `htmlLabels` option (default on) like every other shape. Before, they read `flowchart.htmlLabels`, which defaulted to off.
+- Replacing `flowchart.htmlLabels: false` with root `htmlLabels: false` is not a pure rename. Upstream applied the nested option only where code went through its compatibility shim (edge and cluster labels, most flowchart shapes); class boxes, ER entities and a few other shapes read the root option and kept HTML labels. With the root option, those switch to SVG text too.
 
 ## What else was removed
 
@@ -66,6 +67,10 @@ These are deprecated, legacy or redundant, but removing them changes user-visibl
 - **Keyword aliases that upstream never deprecated.** `graph` (alias of `flowchart`), `classDiagram-v2`, `stateDiagram-v2`; `ishikawa-beta` and `treemap-beta`, whose docs still use the beta keyword; `architecture-beta`, whose grammar accepts nothing else.
 - **`securityLevel: 'antiscript'`.** The schema describes it as allowing HTML and clicks, but the code treats it exactly like `strict`.
 - **Smaller internals.** The `arrowMarkerAbsolute` copies in each diagram section; the deprecated `createLabel.js` wrapper around `createText`; the `D3Element = any` type; the `"./*"` deep-import entry in `package.json` exports; layout test infrastructure (`ddlt`, `layout-utils`, the agentflow conformance runner) living in `src`; the size-capture dev hook in `createGraph.ts`; the single `uuid` use; 47 JavaScript files that could move to TypeScript; and duplicated helpers (three ways to select the SVG root, two viewport helpers, two curve maps).
+
+## Upstream bugs fixed
+
+- A `%%{init}%%` directive was ignored when an earlier directive search on the same page had failed: the shared global `directiveRegex` kept its `lastIndex` after a `JSON.parse` error. `mermaid.run()` triggered this for any diagram whose front matter mentioned a directive in prose, because it ran an extra, debug-only directive search first.
 
 ## Upstream bugs noticed along the way (not fixed)
 

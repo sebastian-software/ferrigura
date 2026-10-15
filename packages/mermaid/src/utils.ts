@@ -171,6 +171,9 @@ export const detectDirective = function (
     );
     let match: RegExpExecArray | null;
     const result: Directive[] = [];
+    // `directiveRegex` is global and shared: a previous call that threw midway (e.g. on
+    // invalid JSON) leaves `lastIndex` behind, which would skip directives in this text.
+    directiveRegex.lastIndex = 0;
     while ((match = directiveRegex.exec(text)) !== null) {
       // This is necessary to avoid infinite loops with zero-width matches
       if (match.index === directiveRegex.lastIndex) {

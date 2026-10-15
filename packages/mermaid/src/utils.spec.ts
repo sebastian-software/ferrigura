@@ -215,6 +215,16 @@ describe('when detecting chart type ', function () {
     expect(detectDirective('%%{wrap: }%%', 'wrap')).toEqual(wrap);
     expect(detectDirective('graph', 'wrap')).not.toEqual(wrap);
   });
+  it('should find a directive after a previous search failed on invalid JSON', () => {
+    // A failing search must not leave the shared regex's lastIndex behind.
+    expect(detectDirective('a `%%{init: ...}%%` mention', /init/)).toEqual({
+      type: undefined,
+      args: null,
+    });
+    expect(utils.detectInit('%%{init: {"theme": "dark"}}%%\nflowchart TD\nA-->B')).toEqual({
+      theme: 'dark',
+    });
+  });
   it('should handle an initialize definition', function () {
     const str = `
 %%{initialize: { 'logLevel': 0, 'theme': 'dark' }}%%
