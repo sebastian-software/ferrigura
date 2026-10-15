@@ -89,11 +89,12 @@ pub fn sort_ports(graph: &mut LGraph) -> Result<(), LayoutError> {
     for node in graph.layers.iter().flatten().copied().collect::<Vec<_>>() {
         let constraints = constraints_of(graph, node);
         if is_order_fixed(constraints) {
-            return Err(LayoutError::Unsupported(
-                "port order fixed by the constraints".to_string(),
-            ));
-        }
-        if is_side_fixed(constraints) {
+            // `CMP_COMBINED`: by side, then by position along the side. The port index that
+            // FIXED_ORDER also sorts by is not modelled, since ports have none here.
+            let mut ports = graph.nodes[node].ports.clone();
+            sort::sort_by(&mut ports, |&a, &b| combined_order(graph, a, b));
+            graph.nodes[node].ports = ports;
+        } else if is_side_fixed(constraints) {
             let mut ports = graph.nodes[node].ports.clone();
             sort::sort_by(&mut ports, |&a, &b| {
                 side_ordinal(graph.ports[a].side).cmp(&side_ordinal(graph.ports[b].side))
@@ -103,6 +104,22 @@ pub fn sort_ports(graph: &mut LGraph) -> Result<(), LayoutError> {
         }
     }
     Ok(())
+}
+
+/// `CMP_PORT_SIDE.thenComparing(CMP_FIXED_ORDER_AND_FIXED_POS)`: the side ordinal, then along
+/// the side: x for north and reversed x for south, y for east and reversed y for west. Ports
+/// compare as equal when the comparison is between different sides, as the Java does.
+fn combined_order(graph: &LGraph, a: usize, b: usize) -> std::cmp::Ordering {
+    let (first, second) = (&graph.ports[a], &graph.ports[b]);
+    side_ordinal(first.side)
+        .cmp(&side_ordinal(second.side))
+        .then_with(|| match first.side {
+            PortSide::NORTH => first.position.x.total_cmp(&second.position.x),
+            PortSide::EAST => first.position.y.total_cmp(&second.position.y),
+            PortSide::SOUTH => second.position.x.total_cmp(&first.position.x),
+            PortSide::WEST => second.position.y.total_cmp(&first.position.y),
+            PortSide::UNDEFINED => std::cmp::Ordering::Equal,
+        })
 }
 
 /// `PortSide.ordinal()`: the declaration order of the sides, which the generated enum keeps.
