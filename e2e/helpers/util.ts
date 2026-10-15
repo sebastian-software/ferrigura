@@ -1,12 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, sep } from 'node:path';
+import { dirname } from 'node:path';
 import { expect, type Page, type TestInfo } from '@playwright/test';
 import { Buffer } from 'buffer';
 import type { MermaidConfig } from '../../packages/mermaid/src/config.type.js';
-import { applitoolsBatch, applitoolsTestName } from './applitools.ts';
-import { buildCaptureMetadata, writeArgosMetadataSidecar } from './argos-metadata.ts';
 import { collectCoverage, startCoverage } from './coverage.js';
 
 interface E2EConfig {
@@ -14,13 +12,6 @@ interface E2EConfig {
   listId?: string;
   name?: string;
   screenshot?: boolean;
-  /**
-   * Relative path (without extension) for the captured screenshot, mirroring how
-   * the source is stored — e.g. the mmd runner passes `diagrams/<type>/<name>`
-   * so the composite sheets group by diagram folder instead of the runner spec file.
-   * When unset, the screenshot is written under the spec's own folder.
-   */
-  screenshotPath?: string;
   /** Fail when mermaid renders its syntax-error diagram instead of the requested type. Default true. */
   rejectErrorDiagram?: boolean;
 }
@@ -198,7 +189,7 @@ export const openURLAndVerifyRendering = async (
   }
 
   if (screenshot) {
-    await verifyScreenshot(page, testInfo, name, options.screenshotPath, url);
+    await verifyScreenshot(page, testInfo, name);
   }
 
   await collectCoverage(page, testInfo);
@@ -207,91 +198,27 @@ export const openURLAndVerifyRendering = async (
 export const verifyScreenshot = async (
   page: Page,
   testInfo: TestInfo,
-  name: string,
-  screenshotPath?: string,
-  pageUrl?: string
+  name: string
 ): Promise<void> => {
-  const useAppli = !!process.env.USE_APPLI;
-  const useArgos = process.env.RUN_VISUAL_TEST === 'true';
-
   // Capture only the rendered diagram SVG so each screenshot is a tight crop of
   // the diagram rather than the whole viewport (mostly empty space). Fall back
   // to the full page when there is no top-level diagram SVG — e.g. sandboxed
-  // diagrams (the SVG lives in an iframe) and the iife/xss/external-diagram tests.
+  // diagrams (the SVG lives in an iframe) and the iife/xss tests.
   const svg = diagramSvg(page).first();
   const hasSvg = (await svg.count()) > 0;
   const target = hasSvg ? svg : page;
-  const specRelPath = relative(testInfo.project.testDir, testInfo.file).split(sep).join('/');
 
-  if (useAppli) {
-    // One Applitools batch per diagram folder or spec file, a check per screenshot
-    // scoped to the diagram SVG (full window when there is none). API key, branch,
-    // and parent branch are read from the APPLITOOLS_* env vars by the SDK.
-    // Imported lazily so the SDK is only loaded for Applitools runs.
-    const { Eyes, ClassicRunner, Target } = await import('@applitools/eyes-playwright');
-    const runId = process.env.APPLITOOLS_BATCH_ID;
-    if (!runId) {
-      throw new Error(
-        'APPLITOOLS_BATCH_ID is unset; playwright.config.ts should seed it for USE_APPLI runs'
-      );
-    }
-    const eyes = new Eyes(new ClassicRunner());
-    eyes.setConfiguration({
-      appName: 'Mermaid',
-      batch: applitoolsBatch(runId, specRelPath, screenshotPath),
-    });
-    await eyes.open(page, 'Mermaid', applitoolsTestName(name, specRelPath, screenshotPath));
-    await eyes.check(
-      'Click!',
-      hasSvg ? Target.region('svg[aria-roledescription]') : Target.window().fully()
-    );
-    await eyes.close(true);
+  const snapshotName = `${name}.png`;
+  const snapshotPath = testInfo.snapshotPath(snapshotName, { kind: 'screenshot' });
+
+  if (!existsSync(snapshotPath)) {
+    mkdirSync(dirname(snapshotPath), { recursive: true });
+    const screenshot = await target.screenshot({ animations: 'disabled', scale: 'device' });
+    writeFileSync(snapshotPath, screenshot);
     return;
   }
 
-  if (useArgos) {
-    // Capture a native PNG; a dedicated CI job composites these into sheets
-    // (grouped by folder) and uploads them once.
-    const screenshotDir = process.env.SCREENSHOT_DIR ?? 'e2e/screenshots';
-    const sanitizeSegment = (segment: string) =>
-      segment.replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '');
-    let outPath: string;
-    if (screenshotPath) {
-      // Mirror the source's storage path (e.g. diagrams/<type>/<name>) so the
-      // sheets group by that folder rather than the runner spec file.
-      const safeSubpath = screenshotPath.split('/').map(sanitizeSegment).join('/');
-      outPath = join(screenshotDir, `${safeSubpath}.png`);
-    } else {
-      // `name` carries the spec path + test title and may contain characters
-      // GitHub artifacts reject (" : < > | * ?) or path separators; flatten it to
-      // a safe slug. The spec folder lives in specRelPath, which the batch job
-      // groups by, so the filename only needs to be unique within the spec.
-      outPath = join(screenshotDir, specRelPath, `${sanitizeSegment(name)}.png`);
-    }
-    mkdirSync(dirname(outPath), { recursive: true });
-    const buffer = await target.screenshot({ animations: 'disabled', scale: 'device' });
-    writeFileSync(outPath, buffer);
-    await writeArgosMetadataSidecar(
-      outPath,
-      buildCaptureMetadata({
-        testInfo,
-        screenshotPath,
-        url: pageUrl ?? page.url(),
-      })
-    );
-  } else {
-    const snapshotName = `${name}.png`;
-    const snapshotPath = testInfo.snapshotPath(snapshotName, { kind: 'screenshot' });
-
-    if (!existsSync(snapshotPath)) {
-      mkdirSync(dirname(snapshotPath), { recursive: true });
-      const screenshot = await target.screenshot({ animations: 'disabled', scale: 'device' });
-      writeFileSync(snapshotPath, screenshot);
-      return;
-    }
-
-    await expect(target).toHaveScreenshot(snapshotName);
-  }
+  await expect(target).toHaveScreenshot(snapshotName);
 };
 
 /**

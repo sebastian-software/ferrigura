@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { basename } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import 'dotenv/config';
 
@@ -14,9 +13,6 @@ function resolveE2EPort(): string {
     return process.env.MERMAID_DEV_PORT;
   }
   const worktreeRoot = process.cwd();
-  if (basename(worktreeRoot) === 'alana-mermaid') {
-    return '9000';
-  }
   const hash = createHash('sha1').update(worktreeRoot).digest();
   return String(9000 + (hash.readUInt16BE(0) % 100));
 }
@@ -26,11 +22,6 @@ process.env.MERMAID_PORT ??= port;
 process.env.MERMAID_DEV_PORT ??= port;
 
 const devCommand = process.env.E2E_COVERAGE ? 'pnpm dev:coverage' : 'pnpm dev';
-
-// Seeded in the runner process so every worker inherits the same id.
-if (process.env.USE_APPLI) {
-  process.env.APPLITOOLS_BATCH_ID ??= Date.now().toString();
-}
 
 export default defineConfig({
   testDir: 'e2e',
@@ -59,8 +50,7 @@ export default defineConfig({
     baseURL: `http://localhost:${port}`,
     ...devices['Desktop Chrome'],
     viewport: { width: 1440, height: 1024 },
-    // Render at 2x device pixels so diagram screenshots have enough resolution to
-    // stay sharp when the Argos grid enlarges them to fill a cell.
+    // Render at 2x device pixels so diagram screenshots stay sharp.
     deviceScaleFactor: 2,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

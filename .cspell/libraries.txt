@@ -2,7 +2,6 @@
 acyclicer
 Antlr
 Appli
-applitools
 Asciidoctor
 Astah
 automerge

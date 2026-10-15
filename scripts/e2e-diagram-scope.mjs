@@ -58,10 +58,6 @@ const IGNORABLE_PREFIXES = [
   'README.md',
   'README.zh-CN.md',
   // Config/tooling that doesn't affect rendering
-  'renovate.json',
-  'docker-compose.yml',
-  'Dockerfile',
-  'netlify.toml',
   'cspell.config.yaml',
   // Documentation (source and generated)
   'packages/mermaid/src/docs/',

@@ -124,7 +124,7 @@ export const snapshotNameKey = (relativePath: string): string =>
 /**
  * Throws if two fixtures collapse to the same snapshot name — otherwise they
  * would write/compare the same screenshot and one would silently mask the
- * other (and churn the Argos baseline). Called once at test registration.
+ * other. Called once at test registration.
  */
 export const assertUniqueSnapshotNames = (relativePaths: readonly string[]): void => {
   const byKey = new Map<string, string[]>();

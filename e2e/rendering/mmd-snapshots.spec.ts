@@ -74,11 +74,7 @@ const registerFixtureNode = (node: FixtureTree): void => {
       if (fixedClock) {
         await page.clock.install({ time: new Date(fixedClock) });
       }
-      // Mirror the fixture's storage path so Argos sheets group by diagram
-      // folder (e.g. diagrams/packet) rather than the runner spec file.
-      await imgSnapshotTest(page, testInfo, source, {
-        screenshotPath: `diagrams/${relativePath.replace(/\.mmd$/i, '')}`,
-      });
+      await imgSnapshotTest(page, testInfo, source);
     });
   }
 };
