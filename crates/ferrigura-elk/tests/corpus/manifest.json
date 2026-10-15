@@ -1034,6 +1034,38 @@
    "edgeLabels": true
   },
   {
+   "name": "synthetic__edges-chain-3",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-cycle-3",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-diamond-4",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-long-3",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__nodes-only-1",
    "fixture": null,
    "nodes": 1,

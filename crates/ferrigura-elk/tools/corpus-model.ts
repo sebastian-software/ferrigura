@@ -172,3 +172,67 @@ export function nodesOnlyGraph(count: number): Record<string, unknown> {
     edges: [],
   };
 }
+
+/**
+ * Hand-built graphs with edges and no labels, for the steps before label dummies: a chain, a
+ * diamond (fan-out, then fan-in), a cycle, and a long edge that skips a layer. Nodes are 50 by
+ * 40, and the root has Mermaid's options.
+ */
+export function syntheticEdgeGraphs(): { name: string; graph: Record<string, unknown> }[] {
+  const graph = (ids: string[], pairs: [string, string][]): Record<string, unknown> => ({
+    id: 'root',
+    layoutOptions: rootLayoutOptionsDefault(),
+    children: ids.map((id) => ({ id, width: 50, height: 40 })),
+    edges: pairs.map(([source, target], index) => ({
+      id: `e${index}`,
+      sources: [source],
+      targets: [target],
+    })),
+  });
+  return [
+    {
+      name: 'synthetic__edges-chain-3',
+      graph: graph(
+        ['n0', 'n1', 'n2'],
+        [
+          ['n0', 'n1'],
+          ['n1', 'n2'],
+        ]
+      ),
+    },
+    {
+      name: 'synthetic__edges-diamond-4',
+      graph: graph(
+        ['n0', 'n1', 'n2', 'n3'],
+        [
+          ['n0', 'n1'],
+          ['n0', 'n2'],
+          ['n1', 'n3'],
+          ['n2', 'n3'],
+        ]
+      ),
+    },
+    {
+      name: 'synthetic__edges-cycle-3',
+      graph: graph(
+        ['n0', 'n1', 'n2'],
+        [
+          ['n0', 'n1'],
+          ['n1', 'n2'],
+          ['n2', 'n0'],
+        ]
+      ),
+    },
+    {
+      name: 'synthetic__edges-long-3',
+      graph: graph(
+        ['n0', 'n1', 'n2'],
+        [
+          ['n0', 'n1'],
+          ['n1', 'n2'],
+          ['n0', 'n2'],
+        ]
+      ),
+    },
+  ];
+}

@@ -15,6 +15,8 @@
  *
  *   pnpm exec tsx crates/ferrigura-elk/tools/capture-corpus.ts
  *
+ * With `--synthetic-only` it regenerates just the hand-built cases, without a browser.
+ *
  * It starts `pnpm dev` on the port the e2e setup derives for this checkout, or
  * reuses a dev server that is already answering there, and stops it when done.
  */
@@ -32,6 +34,7 @@ import {
   jsonRoundTrip,
   nodesOnlyGraph,
   slugify,
+  syntheticEdgeGraphs,
   stripGwtHashKeys,
   type GraphStats,
   type Json,
@@ -371,8 +374,68 @@ function caseFileContent(record: CaseRecord): string {
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * `--synthetic-only`: regenerates only the hand-built cases (the nodes-only ones and the edge
+ * graphs of `syntheticEdgeGraphs`) through Node elkjs, and replaces only their files and manifest
+ * entries. The browser captures are left as they are.
+ */
+async function writeSyntheticOnly(): Promise<void> {
+  const generated: CaseRecord[] = [];
+  const add = async (name: string, graph: Record<string, unknown>): Promise<void> => {
+    const input = jsonRoundTrip(graph) as Json;
+    const run = await runNodeElk(input);
+    generated.push({
+      name,
+      fixture: null,
+      algorithm: 'elk.layered',
+      input,
+      output: run.output,
+      trace: run.trace,
+      stats: graphStats(input as Record<string, unknown>),
+    });
+  };
+  for (const count of SYNTHETIC_NODE_COUNTS) {
+    await add(`synthetic__nodes-only-${count}`, nodesOnlyGraph(count));
+  }
+  for (const { name, graph } of syntheticEdgeGraphs()) {
+    await add(name, graph);
+  }
+  generated.sort(byName);
+  for (const record of generated) {
+    writeFileSync(join(CORPUS_DIR, `${record.name}.json`), caseFileContent(record));
+  }
+  const manifestPath = join(CORPUS_DIR, 'manifest.json');
+  const existing = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+    version: number;
+    cases: { name: string }[];
+  };
+  const kept = existing.cases.filter((entry) => !entry.name.startsWith('synthetic__'));
+  const cases = [
+    ...kept,
+    ...generated.map((record) => ({
+      name: record.name,
+      fixture: record.fixture,
+      nodes: record.stats.nodes,
+      edges: record.stats.edges,
+      compound: record.stats.compound,
+      edgeLabels: record.stats.edgeLabels,
+    })),
+  ].sort(byName);
+  writeFileSync(
+    manifestPath,
+    `${JSON.stringify({ version: existing.version, cases }, null, JSON_INDENT)}\n`
+  );
+  console.log(
+    `Wrote ${generated.length} synthetic cases: ${generated.map((r) => r.name).join(', ')}`
+  );
+}
+
 async function main(): Promise<void> {
   console.log(`elkjs ${ELKJS_VERSION} (${mermaidRequire.resolve('elkjs/lib/elk.bundled.js')})`);
+  if (process.argv.includes('--synthetic-only')) {
+    await writeSyntheticOnly();
+    return;
+  }
 
   const fixtures = selectFixtures();
   const prCheckCount = fixtures.filter((fixture) => fixture.inPrCheck).length;
