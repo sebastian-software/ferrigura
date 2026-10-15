@@ -10,5 +10,6 @@
 //! Public License 2.0 notice of the original sources; see `LICENSE` and `NOTICE.md`.
 
 pub mod core;
+pub mod graph;
 pub mod java;
 pub mod json;

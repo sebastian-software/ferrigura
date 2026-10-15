@@ -62,6 +62,8 @@ pub struct JsonNode {
     pub layout_options: Option<LayoutOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<LayoutOptions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub individual_spacings: Option<LayoutOptions>,
     pub ports: Vec<JsonPort>,
     pub labels: Vec<JsonLabel>,
     pub children: Vec<JsonNode>,
