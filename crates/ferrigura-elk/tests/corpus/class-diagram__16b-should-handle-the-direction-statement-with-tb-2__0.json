@@ -1,0 +1,744 @@
+{
+ "version": 1,
+ "name": "class-diagram__16b-should-handle-the-direction-statement-with-tb-2__0",
+ "fixture": "e2e/diagrams/class-diagram/pr-check/16b-should-handle-the-direction-statement-with-tb-2.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "Student",
+    "label": "Student",
+    "text": "Student",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-idCard : IdCard",
+      "id": "idCard : IdCard"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 0,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 149.6484375,
+    "height": 114
+   },
+   {
+    "id": "IdCard",
+    "label": "IdCard",
+    "text": "IdCard",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-id : int",
+      "id": "id : int"
+     },
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-name : string",
+      "id": "name : string"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 1,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 131.765625,
+    "height": 135
+   },
+   {
+    "id": "Bike",
+    "label": "Bike",
+    "text": "Bike",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-id : int",
+      "id": "id : int"
+     },
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-name : string",
+      "id": "name : string"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 2,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 124.3828125,
+    "height": 135
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_Student_IdCard_1",
+    "start": "Student",
+    "end": "IdCard",
+    "type": "normal",
+    "label": "carries",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "aggregation",
+    "startLabelRight": "1",
+    "endLabelLeft": "1",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "carries",
+    "arrowhead": "normal",
+    "width": 42.015625,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 6.125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Student"
+    ],
+    "targets": [
+     "IdCard"
+    ],
+    "sourceId": "Student",
+    "targetId": "IdCard",
+    "labels": [
+     {
+      "width": 42.015625,
+      "height": 21,
+      "orgWidth": 42.015625,
+      "orgHeight": 21,
+      "text": "carries",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Student_Bike_2",
+    "start": "Student",
+    "end": "Bike",
+    "type": "normal",
+    "label": "rides",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "aggregation",
+    "startLabelRight": "1",
+    "endLabelLeft": "1",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "rides",
+    "arrowhead": "normal",
+    "width": 30.359375,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 6.125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Student"
+    ],
+    "targets": [
+     "Bike"
+    ],
+    "sourceId": "Student",
+    "targetId": "Bike",
+    "labels": [
+     {
+      "width": 30.359375,
+      "height": 21,
+      "orgWidth": 30.359375,
+      "orgHeight": 21,
+      "text": "rides",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "Student",
+    "label": "Student",
+    "text": "Student",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-idCard : IdCard",
+      "id": "idCard : IdCard"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 0,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 149.6484375,
+    "height": 114,
+    "x": 87.095703125,
+    "y": 12
+   },
+   {
+    "id": "IdCard",
+    "label": "IdCard",
+    "text": "IdCard",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-id : int",
+      "id": "id : int"
+     },
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-name : string",
+      "id": "name : string"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 1,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 131.765625,
+    "height": 135,
+    "x": 12,
+    "y": 280
+   },
+   {
+    "id": "Bike",
+    "label": "Bike",
+    "text": "Bike",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-id : int",
+      "id": "id : int"
+     },
+     {
+      "memberType": "attribute",
+      "visibility": "-",
+      "classifier": "",
+      "text": "\\-name : string",
+      "id": "name : string"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 2,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 124.3828125,
+    "height": 135,
+    "x": 183.765625,
+    "y": 280
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_Student_IdCard_1",
+    "start": "Student",
+    "end": "IdCard",
+    "type": "normal",
+    "label": "carries",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "aggregation",
+    "startLabelRight": "1",
+    "endLabelLeft": "1",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "carries",
+    "arrowhead": "normal",
+    "width": 42.015625,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 6.125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Student"
+    ],
+    "targets": [
+     "IdCard"
+    ],
+    "sourceId": "Student",
+    "targetId": "IdCard",
+    "labels": [
+     {
+      "width": 42.015625,
+      "height": 21,
+      "orgWidth": 42.015625,
+      "orgHeight": 21,
+      "text": "carries",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 56.3828125,
+      "y": 186.5
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 145.31184895833331,
+      "y": 130
+     },
+     {
+      "terminal": "endLeft",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 82.8828125,
+      "y": 247.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Student_IdCard_1_s0",
+      "startPoint": {
+       "x": 140.31184895833331,
+       "y": 126
+      },
+      "endPoint": {
+       "x": 77.8828125,
+       "y": 280
+      },
+      "bendPoints": [
+       {
+        "x": 140.31184895833331,
+        "y": 166.5
+       },
+       {
+        "x": 77.8828125,
+        "y": 166.5
+       }
+      ],
+      "incomingShape": "Student",
+      "outgoingShape": "IdCard"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Student_Bike_2",
+    "start": "Student",
+    "end": "Bike",
+    "type": "normal",
+    "label": "rides",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "aggregation",
+    "startLabelRight": "1",
+    "endLabelLeft": "1",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "rides",
+    "arrowhead": "normal",
+    "width": 30.359375,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 6.125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Student"
+    ],
+    "targets": [
+     "Bike"
+    ],
+    "sourceId": "Student",
+    "targetId": "Bike",
+    "labels": [
+     {
+      "width": 30.359375,
+      "height": 21,
+      "orgWidth": 30.359375,
+      "orgHeight": 21,
+      "text": "rides",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 230.45703125,
+      "y": 186.5
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 188.52799479166666,
+      "y": 130
+     },
+     {
+      "terminal": "endLeft",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 250.95703125,
+      "y": 247.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Student_Bike_2_s0",
+      "startPoint": {
+       "x": 183.52799479166666,
+       "y": 126
+      },
+      "endPoint": {
+       "x": 245.95703125,
+       "y": 280
+      },
+      "bendPoints": [
+       {
+        "x": 183.52799479166666,
+        "y": 166.5
+       },
+       {
+        "x": 245.95703125,
+        "y": 166.5
+       }
+      ],
+      "incomingShape": "Student",
+      "outgoingShape": "Bike"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 320.1484375,
+  "height": 427
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.Student ports: [p_0[n_root.Student] >> 1[n(label)_0], p_1[n_root.Student] >> 1[n(label)_1]]",
+         "Layer 0: L_0[n_root.Student]",
+         "Layer 1: L_1[n(label)_0, n(label)_1]",
+         "Node n_root.IdCard ports: [p_0[n_root.IdCard] << 0[n(label)_0]]",
+         "Node n_root.Bike ports: [p_0[n_root.Bike] << 0[n(label)_1]]",
+         "Layer 2: L_2[n_root.IdCard, n_root.Bike]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "End label pre-processing"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 296.1484375",
+         "RIGHTUP size is 296.1484375",
+         "LEFTDOWN size is 296.1484375",
+         "LEFTUP size is 296.1484375",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.Student, n(label)_0, n(label)_1, n_root.IdCard, n_root.Bike]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "End label post-processing"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

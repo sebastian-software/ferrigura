@@ -1,0 +1,530 @@
+{
+ "version": 1,
+ "name": "er-diagram__an-er-diagram-with-lr-direction-elk-layout__0",
+ "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-lr-direction-elk-layout.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "RIGHT",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-CAR-0",
+    "label": "CAR",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81
+   },
+   {
+    "id": "entity-NAMED-DRIVER-1",
+    "label": "NAMED-DRIVER",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "labelStyle": "",
+    "width": 148.125,
+    "height": 81
+   },
+   {
+    "id": "entity-PERSON-2",
+    "label": "PERSON",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 2,
+    "isGroup": false,
+    "labelStyle": "",
+    "width": 99.125,
+    "height": 81
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-CAR-0_entity-NAMED-DRIVER-1_0",
+    "type": "normal",
+    "start": "entity-CAR-0",
+    "end": "entity-NAMED-DRIVER-1",
+    "label": "allows",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "allows",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 38.90625,
+    "height": 21,
+    "sources": [
+     "entity-CAR-0"
+    ],
+    "targets": [
+     "entity-NAMED-DRIVER-1"
+    ],
+    "sourceId": "entity-CAR-0",
+    "targetId": "entity-NAMED-DRIVER-1",
+    "labels": [
+     {
+      "width": 38.90625,
+      "height": 21,
+      "orgWidth": 38.90625,
+      "orgHeight": 21,
+      "text": "allows",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-PERSON-2_entity-NAMED-DRIVER-1_1",
+    "type": "normal",
+    "start": "entity-PERSON-2",
+    "end": "entity-NAMED-DRIVER-1",
+    "label": "is",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "is",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 10.125,
+    "height": 21,
+    "sources": [
+     "entity-PERSON-2"
+    ],
+    "targets": [
+     "entity-NAMED-DRIVER-1"
+    ],
+    "sourceId": "entity-PERSON-2",
+    "targetId": "entity-NAMED-DRIVER-1",
+    "labels": [
+     {
+      "width": 10.125,
+      "height": 21,
+      "orgWidth": 10.125,
+      "orgHeight": 21,
+      "text": "is",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "RIGHT",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-CAR-0",
+    "label": "CAR",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81,
+    "x": 12,
+    "y": 12
+   },
+   {
+    "id": "entity-NAMED-DRIVER-1",
+    "label": "NAMED-DRIVER",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "labelStyle": "",
+    "width": 148.125,
+    "height": 81,
+    "x": 230.90625,
+    "y": 72.5
+   },
+   {
+    "id": "entity-PERSON-2",
+    "label": "PERSON",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 2,
+    "isGroup": false,
+    "labelStyle": "",
+    "width": 99.125,
+    "height": 81,
+    "x": 12.875,
+    "y": 133
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-CAR-0_entity-NAMED-DRIVER-1_0",
+    "type": "normal",
+    "start": "entity-CAR-0",
+    "end": "entity-NAMED-DRIVER-1",
+    "label": "allows",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "allows",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 38.90625,
+    "height": 21,
+    "sources": [
+     "entity-CAR-0"
+    ],
+    "targets": [
+     "entity-NAMED-DRIVER-1"
+    ],
+    "sourceId": "entity-CAR-0",
+    "targetId": "entity-NAMED-DRIVER-1",
+    "labels": [
+     {
+      "width": 38.90625,
+      "height": 21,
+      "orgWidth": 38.90625,
+      "orgHeight": 21,
+      "text": "allows",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 152,
+      "y": 41.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-CAR-0_entity-NAMED-DRIVER-1_0_s0",
+      "startPoint": {
+       "x": 112,
+       "y": 52.5
+      },
+      "endPoint": {
+       "x": 230.90625,
+       "y": 102.83333333333334
+      },
+      "bendPoints": [
+       {
+        "x": 210.90625,
+        "y": 52.5
+       },
+       {
+        "x": 210.90625,
+        "y": 102.83333333333334
+       }
+      ],
+      "incomingShape": "entity-CAR-0",
+      "outgoingShape": "entity-NAMED-DRIVER-1"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-PERSON-2_entity-NAMED-DRIVER-1_1",
+    "type": "normal",
+    "start": "entity-PERSON-2",
+    "end": "entity-NAMED-DRIVER-1",
+    "label": "is",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "is",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 10.125,
+    "height": 21,
+    "sources": [
+     "entity-PERSON-2"
+    ],
+    "targets": [
+     "entity-NAMED-DRIVER-1"
+    ],
+    "sourceId": "entity-PERSON-2",
+    "targetId": "entity-NAMED-DRIVER-1",
+    "labels": [
+     {
+      "width": 10.125,
+      "height": 21,
+      "orgWidth": 10.125,
+      "orgHeight": 21,
+      "text": "is",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 166.390625,
+      "y": 162.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-PERSON-2_entity-NAMED-DRIVER-1_1_s0",
+      "startPoint": {
+       "x": 112,
+       "y": 173.5
+      },
+      "endPoint": {
+       "x": 230.90625,
+       "y": 123.16666666666667
+      },
+      "bendPoints": [
+       {
+        "x": 210.90625,
+        "y": 173.5
+       },
+       {
+        "x": 210.90625,
+        "y": 123.16666666666667
+       }
+      ],
+      "incomingShape": "entity-PERSON-2",
+      "outgoingShape": "entity-NAMED-DRIVER-1"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 391.03125,
+  "height": 226
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.entity-CAR-0 ports: [p_0[n_root.entity-CAR-0] >> 1[n(label)_0]]",
+         "Node n_root.entity-PERSON-2 ports: [p_0[n_root.entity-PERSON-2] >> 1[n(label)_1]]",
+         "Layer 0: L_0[n_root.entity-CAR-0, n_root.entity-PERSON-2]",
+         "Layer 1: L_1[n(label)_0, n(label)_1]",
+         "Node n_root.entity-NAMED-DRIVER-1 ports: [p_0[n_root.entity-NAMED-DRIVER-1] << 0[n(label)_1], p_1[n_root.entity-NAMED-DRIVER-1] << 0[n(label)_0]]",
+         "Layer 2: L_2[n_root.entity-NAMED-DRIVER-1]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_DOWN)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 202",
+         "RIGHTUP size is 202",
+         "LEFTDOWN size is 202",
+         "LEFTUP size is 202",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.entity-CAR-0, n_root.entity-PERSON-2, n(label)_0, n(label)_1, n_root.entity-NAMED-DRIVER-1]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

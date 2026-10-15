@@ -1,0 +1,2487 @@
+{
+ "version": 1,
+ "name": "state-diagram__should-render-multiple-composit-states__0",
+ "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-multiple-composit-states.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "stateStart",
+    "label": "root_start",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "root_start",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 14,
+    "height": 14
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "TV",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "TV",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 16.8125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "stateStart",
+      "label": "TV_start",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "TV_start",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14,
+      "height": 14
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Off",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Off",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "On",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "On",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 16.8125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "TV",
+      "width": 16.8125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(24.8125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "Console",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "Console",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 1,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 58.8125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "stateStart",
+      "label": "Console_start",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Console_start",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Console",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14,
+      "height": 14
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Off2",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Off2",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Console",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "On2",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "On2",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Console",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedWithTitle",
+      "label": "Playing",
+      "cssClasses": " statediagram-state statediagram-cluster statediagram-cluster-alt",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Playing",
+      "dir": "TB",
+      "type": "group",
+      "isGroup": true,
+      "colorIndex": 2,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Console",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "labelBBox": {
+       "width": 58.8125,
+       "height": 21
+      },
+      "children": [
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "Alive",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "Alive",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "Playing",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "Dead",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "Dead",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "Playing",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37
+       }
+      ],
+      "labelData": {
+       "width": 58.8125,
+       "height": 19,
+       "wrappingWidth": 120
+      },
+      "labels": [
+       {
+        "text": "Playing",
+        "width": 58.8125,
+        "height": 19
+       }
+      ],
+      "layoutOptions": {
+       "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+       "nodeSize.minimum": "(66.8125, 0)",
+       "spacing.baseValue": 24,
+       "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+       "elk.spacing.edgeEdge": 20,
+       "spacing.nodeNode": 50,
+       "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+       "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+       "elk.layered.mergeEdges": false,
+       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+       "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+       "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+       "elk.algorithm": "elk.layered",
+       "elk.direction": "DOWN",
+       "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+      }
+     }
+    ],
+    "labelData": {
+     "width": 58.8125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "Console",
+      "width": 58.8125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(66.8125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "root_start",
+    "end": "TV",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "root_start"
+    ],
+    "targets": [
+     "TV"
+    ],
+    "sourceId": "root_start",
+    "targetId": "TV",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge1",
+    "start": "TV_start",
+    "end": "Off",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Off to start with",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Off to start with",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "TV_start"
+    ],
+    "targets": [
+     "Off"
+    ],
+    "sourceId": "TV_start",
+    "targetId": "Off",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "Off to start with",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge2",
+    "start": "On",
+    "end": "Off",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Turn off",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Turn off",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 67.21875,
+    "height": 21,
+    "sources": [
+     "On"
+    ],
+    "targets": [
+     "Off"
+    ],
+    "sourceId": "On",
+    "targetId": "Off",
+    "labels": [
+     {
+      "width": 67.21875,
+      "height": 21,
+      "orgWidth": 67.21875,
+      "orgHeight": 21,
+      "text": "Turn off",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge3",
+    "start": "Off",
+    "end": "On",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Turn on",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Turn on",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 58.8125,
+    "height": 21,
+    "sources": [
+     "Off"
+    ],
+    "targets": [
+     "On"
+    ],
+    "sourceId": "Off",
+    "targetId": "On",
+    "labels": [
+     {
+      "width": 58.8125,
+      "height": 21,
+      "orgWidth": 58.8125,
+      "orgHeight": 21,
+      "text": "Turn on",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge4",
+    "start": "TV",
+    "end": "Console",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "TV"
+    ],
+    "targets": [
+     "Console"
+    ],
+    "sourceId": "TV",
+    "targetId": "Console",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge5",
+    "start": "Console_start",
+    "end": "Off2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Off to start with",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Off to start with",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "Console_start"
+    ],
+    "targets": [
+     "Off2"
+    ],
+    "sourceId": "Console_start",
+    "targetId": "Off2",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "Off to start with",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge6",
+    "start": "On2",
+    "end": "Off2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Turn off",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Turn off",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 67.21875,
+    "height": 21,
+    "sources": [
+     "On2"
+    ],
+    "targets": [
+     "Off2"
+    ],
+    "sourceId": "On2",
+    "targetId": "Off2",
+    "labels": [
+     {
+      "width": 67.21875,
+      "height": 21,
+      "orgWidth": 67.21875,
+      "orgHeight": 21,
+      "text": "Turn off",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge7",
+    "start": "Off2",
+    "end": "On2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Turn on",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Turn on",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 58.8125,
+    "height": 21,
+    "sources": [
+     "Off2"
+    ],
+    "targets": [
+     "On2"
+    ],
+    "sourceId": "Off2",
+    "targetId": "On2",
+    "labels": [
+     {
+      "width": 58.8125,
+      "height": 21,
+      "orgWidth": 58.8125,
+      "orgHeight": 21,
+      "text": "Turn on",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge8",
+    "start": "On2",
+    "end": "Playing",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "On2"
+    ],
+    "targets": [
+     "Playing"
+    ],
+    "sourceId": "On2",
+    "targetId": "Playing",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge9",
+    "start": "Alive",
+    "end": "Dead",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Alive"
+    ],
+    "targets": [
+     "Dead"
+    ],
+    "sourceId": "Alive",
+    "targetId": "Dead",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge10",
+    "start": "Dead",
+    "end": "Alive",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Dead"
+    ],
+    "targets": [
+     "Alive"
+    ],
+    "sourceId": "Dead",
+    "targetId": "Alive",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "stateStart",
+    "label": "root_start",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "root_start",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 14,
+    "height": 14,
+    "x": 118,
+    "y": 12
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "TV",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "TV",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 16.8125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "stateStart",
+      "label": "TV_start",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "TV_start",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14,
+      "height": 14,
+      "x": 84.7,
+      "y": 48
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Off",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Off",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 27.5,
+      "y": 131
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "On",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "On",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 27.5,
+      "y": 309
+     }
+    ],
+    "labelData": {
+     "width": 16.8125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "TV",
+      "width": 16.8125,
+      "height": 19,
+      "x": 88.78125000000001,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(24.8125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 30.812499999999986,
+    "y": 66,
+    "width": 194.37500000000003,
+    "height": 370
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "Console",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "Console",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 1,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 58.8125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "stateStart",
+      "label": "Console_start",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Console_start",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Console",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14,
+      "height": 14,
+      "x": 105.19999999999999,
+      "y": 48
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Off2",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Off2",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Console",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 47.999999999999986,
+      "y": 131
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "On2",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "On2",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Console",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 47.999999999999986,
+      "y": 309
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedWithTitle",
+      "label": "Playing",
+      "cssClasses": " statediagram-state statediagram-cluster statediagram-cluster-alt",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Playing",
+      "dir": "TB",
+      "type": "group",
+      "isGroup": true,
+      "colorIndex": 2,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Console",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "labelBBox": {
+       "width": 58.8125,
+       "height": 21
+      },
+      "children": [
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "Alive",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "Alive",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "Playing",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37,
+        "x": 24,
+        "y": 48
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "Dead",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "Dead",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "Playing",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37,
+        "x": 24,
+        "y": 109
+       }
+      ],
+      "labelData": {
+       "width": 58.8125,
+       "height": 19,
+       "wrappingWidth": 120
+      },
+      "labels": [
+       {
+        "text": "Playing",
+        "width": 58.8125,
+        "height": 19,
+        "x": 62.59375,
+        "y": 5
+       }
+      ],
+      "layoutOptions": {
+       "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+       "nodeSize.minimum": "(66.8125, 0)",
+       "spacing.baseValue": 24,
+       "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+       "elk.spacing.edgeEdge": 20,
+       "spacing.nodeNode": 50,
+       "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+       "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+       "elk.layered.mergeEdges": false,
+       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+       "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+       "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+       "elk.algorithm": "elk.layered",
+       "elk.direction": "DOWN",
+       "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+      },
+      "x": 24,
+      "y": 370,
+      "width": 184,
+      "height": 170
+     }
+    ],
+    "labelData": {
+     "width": 58.8125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "Console",
+      "width": 58.8125,
+      "height": 19,
+      "x": 86.59375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(66.8125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 12,
+    "y": 476,
+    "width": 232,
+    "height": 564
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "root_start",
+    "end": "TV",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "root_start"
+    ],
+    "targets": [
+     "TV"
+    ],
+    "sourceId": "root_start",
+    "targetId": "TV",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge0_s0",
+      "startPoint": {
+       "x": 128,
+       "y": 26
+      },
+      "endPoint": {
+       "x": 128,
+       "y": 66
+      },
+      "incomingShape": "root_start",
+      "outgoingShape": "TV"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge1",
+    "start": "TV_start",
+    "end": "Off",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Off to start with",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Off to start with",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "TV_start"
+    ],
+    "targets": [
+     "Off"
+    ],
+    "sourceId": "TV_start",
+    "targetId": "Off",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "Off to start with",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 24,
+      "y": 86
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge1_s0",
+      "startPoint": {
+       "x": 95.5,
+       "y": 62
+      },
+      "endPoint": {
+       "x": 95.5,
+       "y": 131
+      },
+      "incomingShape": "TV_start",
+      "outgoingShape": "Off"
+     }
+    ],
+    "container": "TV"
+   },
+   {
+    "id": "edge2",
+    "start": "On",
+    "end": "Off",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Turn off",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Turn off",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 67.21875,
+    "height": 21,
+    "sources": [
+     "On"
+    ],
+    "targets": [
+     "Off"
+    ],
+    "sourceId": "On",
+    "targetId": "Off",
+    "labels": [
+     {
+      "width": 67.21875,
+      "height": 21,
+      "orgWidth": 67.21875,
+      "orgHeight": 21,
+      "text": "Turn off",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 103.15625,
+      "y": 228
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge2_s0",
+      "startPoint": {
+       "x": 114.56666666666668,
+       "y": 309
+      },
+      "endPoint": {
+       "x": 114.56666666666668,
+       "y": 168
+      },
+      "bendPoints": [
+       {
+        "x": 114.56666666666669,
+        "y": 279
+       },
+       {
+        "x": 137.15625,
+        "y": 279
+       },
+       {
+        "x": 137.15625,
+        "y": 198
+       },
+       {
+        "x": 114.56666666666669,
+        "y": 198
+       }
+      ],
+      "incomingShape": "On",
+      "outgoingShape": "Off"
+     }
+    ],
+    "container": "TV"
+   },
+   {
+    "id": "edge3",
+    "start": "Off",
+    "end": "On",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Turn on",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Turn on",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 58.8125,
+    "height": 21,
+    "sources": [
+     "Off"
+    ],
+    "targets": [
+     "On"
+    ],
+    "sourceId": "Off",
+    "targetId": "On",
+    "labels": [
+     {
+      "width": 58.8125,
+      "height": 21,
+      "orgWidth": 58.8125,
+      "orgHeight": 21,
+      "text": "Turn on",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 24.343750000000007,
+      "y": 228
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge3_s0",
+      "startPoint": {
+       "x": 76.43333333333334,
+       "y": 168
+      },
+      "endPoint": {
+       "x": 76.43333333333334,
+       "y": 309
+      },
+      "bendPoints": [
+       {
+        "x": 76.43333333333334,
+        "y": 198
+       },
+       {
+        "x": 53.84375000000001,
+        "y": 198
+       },
+       {
+        "x": 53.84375000000001,
+        "y": 279
+       },
+       {
+        "x": 76.43333333333334,
+        "y": 279
+       }
+      ],
+      "incomingShape": "Off",
+      "outgoingShape": "On"
+     }
+    ],
+    "container": "TV"
+   },
+   {
+    "id": "edge4",
+    "start": "TV",
+    "end": "Console",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "TV"
+    ],
+    "targets": [
+     "Console"
+    ],
+    "sourceId": "TV",
+    "targetId": "Console",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge4_s0",
+      "startPoint": {
+       "x": 128,
+       "y": 436
+      },
+      "endPoint": {
+       "x": 128,
+       "y": 476
+      },
+      "incomingShape": "TV",
+      "outgoingShape": "Console"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge5",
+    "start": "Console_start",
+    "end": "Off2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Off to start with",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Off to start with",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "Console_start"
+    ],
+    "targets": [
+     "Off2"
+    ],
+    "sourceId": "Console_start",
+    "targetId": "Off2",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "Off to start with",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 44.499999999999986,
+      "y": 86
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge5_s0",
+      "startPoint": {
+       "x": 115.99999999999999,
+       "y": 62
+      },
+      "endPoint": {
+       "x": 115.99999999999999,
+       "y": 131
+      },
+      "incomingShape": "Console_start",
+      "outgoingShape": "Off2"
+     }
+    ],
+    "container": "Console"
+   },
+   {
+    "id": "edge6",
+    "start": "On2",
+    "end": "Off2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Turn off",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Turn off",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 67.21875,
+    "height": 21,
+    "sources": [
+     "On2"
+    ],
+    "targets": [
+     "Off2"
+    ],
+    "sourceId": "On2",
+    "targetId": "Off2",
+    "labels": [
+     {
+      "width": 67.21875,
+      "height": 21,
+      "orgWidth": 67.21875,
+      "orgHeight": 21,
+      "text": "Turn off",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 123.65625,
+      "y": 228
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge6_s0",
+      "startPoint": {
+       "x": 135.06666666666666,
+       "y": 309
+      },
+      "endPoint": {
+       "x": 135.06666666666666,
+       "y": 168
+      },
+      "bendPoints": [
+       {
+        "x": 135.06666666666666,
+        "y": 279
+       },
+       {
+        "x": 157.65625,
+        "y": 279
+       },
+       {
+        "x": 157.65625,
+        "y": 198
+       },
+       {
+        "x": 135.06666666666666,
+        "y": 198
+       }
+      ],
+      "incomingShape": "On2",
+      "outgoingShape": "Off2"
+     }
+    ],
+    "container": "Console"
+   },
+   {
+    "id": "edge7",
+    "start": "Off2",
+    "end": "On2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Turn on",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Turn on",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 58.8125,
+    "height": 21,
+    "sources": [
+     "Off2"
+    ],
+    "targets": [
+     "On2"
+    ],
+    "sourceId": "Off2",
+    "targetId": "On2",
+    "labels": [
+     {
+      "width": 58.8125,
+      "height": 21,
+      "orgWidth": 58.8125,
+      "orgHeight": 21,
+      "text": "Turn on",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 44.84374999999999,
+      "y": 228
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge7_s0",
+      "startPoint": {
+       "x": 96.93333333333332,
+       "y": 168
+      },
+      "endPoint": {
+       "x": 96.93333333333332,
+       "y": 309
+      },
+      "bendPoints": [
+       {
+        "x": 96.93333333333332,
+        "y": 198
+       },
+       {
+        "x": 74.34375,
+        "y": 198
+       },
+       {
+        "x": 74.34375,
+        "y": 279
+       },
+       {
+        "x": 96.93333333333332,
+        "y": 279
+       }
+      ],
+      "incomingShape": "Off2",
+      "outgoingShape": "On2"
+     }
+    ],
+    "container": "Console"
+   },
+   {
+    "id": "edge8",
+    "start": "On2",
+    "end": "Playing",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "On2"
+    ],
+    "targets": [
+     "Playing"
+    ],
+    "sourceId": "On2",
+    "targetId": "Playing",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge8_s0",
+      "startPoint": {
+       "x": 115.99999999999999,
+       "y": 346
+      },
+      "endPoint": {
+       "x": 115.99999999999999,
+       "y": 370
+      },
+      "incomingShape": "On2",
+      "outgoingShape": "Playing"
+     }
+    ],
+    "container": "Console"
+   },
+   {
+    "id": "edge9",
+    "start": "Alive",
+    "end": "Dead",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Alive"
+    ],
+    "targets": [
+     "Dead"
+    ],
+    "sourceId": "Alive",
+    "targetId": "Dead",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge9_s0",
+      "startPoint": {
+       "x": 111.06666666666668,
+       "y": 85
+      },
+      "endPoint": {
+       "x": 111.06666666666668,
+       "y": 109
+      },
+      "incomingShape": "Alive",
+      "outgoingShape": "Dead"
+     }
+    ],
+    "container": "Playing"
+   },
+   {
+    "id": "edge10",
+    "start": "Dead",
+    "end": "Alive",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Dead"
+    ],
+    "targets": [
+     "Alive"
+    ],
+    "sourceId": "Dead",
+    "targetId": "Alive",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge10_s0",
+      "startPoint": {
+       "x": 72.93333333333334,
+       "y": 109
+      },
+      "endPoint": {
+       "x": 72.93333333333334,
+       "y": 85
+      },
+      "incomingShape": "Dead",
+      "outgoingShape": "Alive"
+     }
+    ],
+    "container": "Playing"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 256,
+  "height": 1052
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 25 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LabelDummyInserter",
+     "   Slot 04: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 05: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 09: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 14: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LabelDummySwitcher",
+     "   Slot 16: org.eclipse.elk.alg.layered.intermediate.LabelSideSelector",
+     "   Slot 17: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 19: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 21: org.eclipse.elk.alg.layered.intermediate.LabelDummyRemover",
+     "   Slot 22: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 23: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 24: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Label dummy insertions"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Label dummy switching"
+     },
+     {
+      "name": "Label side selection (SMART_UP)"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 168.96458333333334",
+       "RIGHTUP size is 165.07395833333334",
+       "LEFTDOWN size is 168.96458333333334",
+       "LEFTUP size is 165.07395833333334",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.TV.TV_start, n(label)_0, n_root.TV.Off, n(label)_0, n(label)_1, n_root.TV.On]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Label dummy removal"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.Console.Playing.Alive, n_root.Console.Playing.Dead]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 25 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LabelDummyInserter",
+     "   Slot 04: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 05: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 09: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 14: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LabelDummySwitcher",
+     "   Slot 16: org.eclipse.elk.alg.layered.intermediate.LabelSideSelector",
+     "   Slot 17: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 19: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 21: org.eclipse.elk.alg.layered.intermediate.LabelDummyRemover",
+     "   Slot 22: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 23: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 24: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Label dummy insertions"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Label dummy switching"
+     },
+     {
+      "name": "Label side selection (SMART_UP)"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 189.46458333333334",
+       "RIGHTUP size is 185.74583333333334",
+       "LEFTDOWN size is 189.46458333333334",
+       "LEFTUP size is 185.74583333333334",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.Console.Console_start, n(label)_0, n_root.Console.Off2, n(label)_0, n(label)_1, n_root.Console.On2, n_Playing]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Label dummy removal"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.root_start ports: [p_0[n_root.root_start] >> 1[n_TV]]",
+         "Layer 0: L_0[n_root.root_start]",
+         "Node n_TV ports: [p_0[n_TV] >> 0[n_Console], p_1[n_TV] << 0[n_root.root_start]]",
+         "Layer 1: L_1[n_TV]",
+         "Node n_Console ports: [p_0[n_Console] << 0[n_TV]]",
+         "Layer 2: L_2[n_Console]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 232",
+         "RIGHTUP size is 232",
+         "LEFTDOWN size is 232",
+         "LEFTUP size is 232",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.root_start, n_TV, n_Console]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}
