@@ -6,8 +6,9 @@
 //! they affect results: `java.util.Random`, the merge sort used by
 //! `Collections.sort`, and 32-bit integer arithmetic.
 //!
-//! Each module names the Java class it ports. Files keep the Eclipse Public
-//! License 2.0 notice of the original sources; see `LICENSE` and `NOTICE.md`.
+//! Modules are named after the Java packages they port. Files keep the Eclipse
+//! Public License 2.0 notice of the original sources; see `LICENSE` and `NOTICE.md`.
 
+pub mod core;
 pub mod java;
 pub mod json;
