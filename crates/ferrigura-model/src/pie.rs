@@ -6,15 +6,15 @@ use crate::CANONICAL_VERSION;
 
 /// A parsed pie diagram: its header texts and its slices in the order they were first given.
 ///
-/// Texts are the source text after the grammar's value rules, without HTML sanitisation; escaping
-/// for output is a rendering concern.
+/// Texts are the source text after the grammar's value rules, unsanitised and unescaped; the
+/// conventions are in `docs-port/canonical-model.md`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PieDiagram {
     /// Canonical model version, see [`CANONICAL_VERSION`].
     pub version: u32,
-    /// Diagram title from `title`, or from the front matter when the text has none; empty if
-    /// neither is given.
+    /// Diagram title: the grammar's `title` when it is non-empty, else the front matter's; empty if
+    /// neither is given. See `docs-port/canonical-model.md`, Title precedence.
     pub title: String,
     /// Accessible title from `accTitle`, empty if absent.
     pub acc_title: String,

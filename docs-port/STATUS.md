@@ -29,7 +29,7 @@ Verified: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `
 
 Deferred to M2: `pieRenderer.spec.ts` (SVG and DOM); the three configuration tests in `pie.spec.ts` (`getConfig`, and the two `it.todo` cases), which need the configuration model.
 
-Open decisions, sent to the coordinating session with defaults applied: header texts in the canonical model are unsanitised source text, because DOMPurify needs a DOM and would HTML-serialise them, so escaping is M2's job; the info model keeps the grammar's header and not the build's version; the front matter title is the fallback for pie only.
+Canonical-model conventions are confirmed by the coordinating session and written down in [canonical-model.md](./canonical-model.md): unsanitised text, the info model without the build version, and title precedence with the front matter as a fallback for pie only. `pnpm port:check-header` compares the pie header rules with the real DB setters.
 
 Known gaps: the front matter `title` is read as a plain or quoted scalar, not with the full YAML reader; comment lines inside a multi-line `accDescr` block are not removed before lexing, as the reference does; sanitisation of header and label text is not ported; the CI jobs have not run on GitHub yet.
 
@@ -47,11 +47,11 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 | state     | `diagrams/state/parser/stateDiagram.jison`       |          9 |     121 |      145 | —                | —                      | —                        | —      | —      | —      |
 | ER        | `diagrams/er/parser/erDiagram.jison`             |          3 |     142 |      206 | —                | —                      | —                        | —      | —      | —      |
 | gantt     | `diagrams/gantt/parser/gantt.jison`              |          2 |      40 |       52 | —                | —                      | —                        | —      | —      | —      |
-| pie       | `packages/parser/…/pie/pie.langium`              |          2 |      16 |       24 | ferrigura-syntax | 26 / 29 (3 ignored)    | 79 inputs, no difference | —      | —      | —      |
+| pie       | `packages/parser/…/pie/pie.langium`              |          2 |      16 |       24 | ferrigura-syntax | 26 / 29 (3 ignored)    | 87 inputs, no difference | —      | —      | —      |
 | timeline  | `diagrams/timeline/parser/timeline.jison`        |          1 |      11 |       30 | —                | —                      | —                        | —      | —      | —      |
 | gitGraph  | `packages/parser/…/gitGraph/gitGraph.langium`    |          1 |      69 |      135 | —                | —                      | —                        | —      | —      | —      |
 | journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | —                | —                      | —                        | —      | —      | —      |
-| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                  | 15 inputs, no difference | —      | —      | —      |
+| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                  | 17 inputs, no difference | —      | —      | —      |
 
 ## Spikes
 
