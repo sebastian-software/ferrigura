@@ -17,6 +17,8 @@ export default defineConfig({
     globals: true,
     exclude: [
       ...defaultExclude,
+      // Worktrees the Claude desktop app creates inside the repository.
+      '.claude/**',
       'e2e/rendering/**',
       'e2e/other/**',
       './tests/**',
