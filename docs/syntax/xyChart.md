@@ -103,7 +103,7 @@ A bar chart offers the capability to graphically depict bars.
 Named line and bar plots are automatically shown in a legend. Unnamed plots are omitted from the legend.
 
 ```mermaid-example
-xychart-beta
+xychart
   title "An Example Chart"
   x-axis ["90d", "60d", "30d", "7d", "1d", "Current"]
   y-axis "Seconds" 0 --> 198.2
@@ -113,7 +113,7 @@ xychart-beta
 ```
 
 ```mermaid
-xychart-beta
+xychart
   title "An Example Chart"
   x-axis ["90d", "60d", "30d", "7d", "1d", "Current"]
   y-axis "Seconds" 0 --> 198.2

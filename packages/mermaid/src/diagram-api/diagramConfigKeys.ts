@@ -5,7 +5,6 @@
  */
 const DIAGRAM_CONFIG_KEY_ALIASES: Record<string, string> = {
   'flowchart-v2': 'flowchart',
-  'flowchart-elk': 'flowchart',
   classDiagram: 'class',
   stateDiagram: 'state',
   xychart: 'xyChart',

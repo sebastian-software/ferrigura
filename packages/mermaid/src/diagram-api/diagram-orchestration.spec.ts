@@ -18,7 +18,6 @@ describe('diagram-orchestration', () => {
       { text: 'graph TD;', expected: 'flowchart-v2' },
       { text: 'flowchart TD;', expected: 'flowchart-v2' },
       { text: 'flowchart-v2 TD;', expected: 'flowchart-v2' },
-      { text: 'flowchart-elk TD;', expected: 'flowchart-elk' },
       { text: 'swimlane-beta TD;', expected: 'swimlane' },
       { text: 'error', expected: 'error' },
       { text: 'C4Context;', expected: 'c4' },
@@ -50,10 +49,7 @@ describe('diagram-orchestration', () => {
       expect(detectType('flowchart TD; A-->B')).toBe('flowchart-v2');
     });
 
-    it('keeps flowchart-elk as its own explicit keyword', () => {
-      // The only remaining way to ask for ELK by diagram type. Everything else asks with
-      // `layout: elk`.
-      expect(detectType('flowchart-elk TD; A-->B')).toBe('flowchart-elk');
+    it('routes swimlane-beta to the swimlane diagram', () => {
       expect(detectType('swimlane-beta TD; A-->B')).toBe('swimlane');
     });
 

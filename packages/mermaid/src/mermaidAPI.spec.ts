@@ -864,12 +864,6 @@ graph TD;A--x|text including URL space|B;`)
       { textDiagramType: 'journey', expectedType: 'journey' },
       { textDiagramType: 'pie', expectedType: 'pie' },
       { textDiagramType: 'packet', expectedType: 'packet' },
-      { textDiagramType: 'packet-beta', expectedType: 'packet' },
-      {
-        textDiagramType: 'xychart-beta',
-        expectedType: 'xychart',
-        content: 'x-axis "Attempts" 10000 --> 10000\ny-axis "Passing tests" 1 --> 1\nbar [1]',
-      },
       {
         textDiagramType: 'xychart',
         expectedType: 'xychart',

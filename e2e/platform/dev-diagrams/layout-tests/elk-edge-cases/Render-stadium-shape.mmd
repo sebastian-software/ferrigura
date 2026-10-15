@@ -1,12 +1,13 @@
 ---
 config:
+  layout: elk
+  htmlLabels: false
   flowchart:
-    htmlLabels: false
     fontFamily: 'courier'
   elk:
     nodePlacementAlignment: NONE
 ---
-flowchart-elk TD
+flowchart TD
       A([stadium shape test])
       A -->|Get money| B([Go shopping])
       B --> C([Let me think...<br />Do I want something for work,<br />something to spend every free second with,<br />or something to get around?])

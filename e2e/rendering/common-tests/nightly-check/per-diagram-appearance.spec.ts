@@ -15,7 +15,7 @@ const listed = `erDiagram
   ORDER ||--|{ LINE_ITEM : contains
 `;
 
-const unlisted = `block-beta
+const unlisted = `block
   columns 1
   block:group
     A["one"]

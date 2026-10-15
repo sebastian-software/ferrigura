@@ -3,7 +3,7 @@ import "../common/common";
 
 entry Packet:
   NEWLINE*
-  ("packet"| "packet-beta")
+  "packet"
   (
     TitleAndAccessibilities
     | blocks+=PacketBlock

@@ -15,7 +15,6 @@ import classDiagramV2 from '../diagrams/class/classDetector-V2.js';
 import stateV2 from '../diagrams/state/stateDetector-V2.js';
 import journey from '../diagrams/user-journey/journeyDetector.js';
 import errorDiagram from '../diagrams/error/errorDiagram.js';
-import flowchartElk from '../diagrams/flowchart/elk/detector.js';
 import timeline from '../diagrams/timeline/detector.js';
 import mindmap from '../diagrams/mindmap/detector.js';
 import kanban from '../diagrams/kanban/detector.js';
@@ -82,7 +81,7 @@ export const addDiagrams = () => {
     }
   );
 
-  registerLazyLoadedDiagrams(flowchartElk, mindmap, architecture);
+  registerLazyLoadedDiagrams(mindmap, architecture);
 
   // Ordering of detectors is important. The first one to return true will be used.
   registerLazyLoadedDiagrams(

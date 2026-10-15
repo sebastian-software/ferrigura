@@ -309,7 +309,6 @@ describe('[Text] when parsing', () => {
     const keywords = [
       'graph',
       'flowchart',
-      'flowchart-elk',
       'style',
       'default',
       'linkStyle',

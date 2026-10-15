@@ -5,12 +5,6 @@ import { expectNoErrorsOrAlternatives, packetParse as parse } from './test-util.
 
 describe('packet', () => {
   it.each([
-    `packet-beta`,
-    `  packet-beta  `,
-    `\tpacket-beta\t`,
-    `
-    \tpacket-beta
-    `,
     `packet`,
     `  packet  `,
     `\tpacket\t`,

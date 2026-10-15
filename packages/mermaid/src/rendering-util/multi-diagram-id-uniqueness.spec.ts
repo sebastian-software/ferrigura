@@ -75,17 +75,17 @@ const DIAGRAMS: Record<string, string> = {
     Campaign A: [0.3, 0.6]
     Campaign B: [0.45, 0.23]`,
 
-  sankey: `sankey-beta
+  sankey: `sankey
     Source,Target,5
     Source,Target2,3`,
 
-  xychart: `xychart-beta
+  xychart: `xychart
     title "Sales"
     x-axis [jan, feb, mar]
     y-axis "Revenue"
     bar [10, 20, 30]`,
 
-  packet: `packet-beta
+  packet: `packet
     0-15: "Source Port"
     16-31: "Destination Port"`,
 
@@ -162,7 +162,7 @@ union A, B`,
     System(system, "System")
     Rel(user, system, "Uses")`,
 
-  block: `block-beta
+  block: `block
     columns 1
     a["A"]
     b["B"]`,
@@ -297,10 +297,6 @@ describe('Multi-diagram ID uniqueness', () => {
     'error', // internal error-handling pseudo-diagram
     '---', // YAML front-matter parse-error pseudo-diagram
     'info', // simple diagnostic diagram with no generated IDs
-    'flowchart', // legacy alias, covered by flowchart-v2
-    'class', // legacy alias, covered by classDiagram
-    'state', // legacy alias, covered by stateDiagram
-    'flowchart-elk', // ELK layout variant, same renderer as flowchart-v2
     'mindmap', // uses unified pipeline (IDs are prefixed), but cytoscape crashes in JSDOM
   ]);
 

@@ -1465,8 +1465,8 @@ config:
   layout: dagre
 ```
 
-The `flowchart-elk` diagram type still works, but is no longer needed — it
-predates `layout` and selected what is now the default.
+The `flowchart-elk` diagram type has been removed. It predates `layout` and
+selected what is now the default; write `flowchart` instead.
 
 The `defaultRenderer` option of the `flowchart`, `class` and `state` config
 sections was removed in v12. It named a rendering engine at a time when there

@@ -2,31 +2,22 @@
 references:
   - "File: /packages/mermaid/src/diagrams/flowchart/flowDiagram.ts"
   - "File: /packages/mermaid/src/diagrams/flowchart/flowDb.ts"
-  - "File: /packages/mermaid/src/diagrams/flowchart/flowDetector.ts"
   - "File: /packages/mermaid/src/diagrams/flowchart/flowDetector-v2.ts"
   - "File: /packages/mermaid/src/diagrams/flowchart/flowRenderer-v3-unified.ts"
   - "File: /packages/mermaid/src/diagrams/flowchart/styles.ts"
   - "File: /packages/mermaid/src/diagrams/flowchart/types.ts"
-  - "File: /packages/mermaid/src/diagrams/flowchart/flowChartShapes.js"
   - "File: /packages/mermaid/src/diagrams/flowchart/parser/flowParser.ts"
-  - "File: /packages/mermaid/src/diagrams/flowchart/elk/detector.ts"
 generationTime: 2025-07-23T10:31:53.266Z
 ---
 flowchart TD
     %% Entry Points and Detection
     Input["User Input Text"] --> Detection{Detection Phase}
     
-    Detection --> flowDetector["flowDetector.ts<br/>detector(txt, config)"]
     Detection --> flowDetectorV2["flowDetector-v2.ts<br/>detector(txt, config)"]
-    Detection --> elkDetector["elk/detector.ts<br/>detector(txt, config)"]
-    
-    flowDetector --> |"Checks /^\s*graph/"| DetectLegacy{Legacy Flowchart?}
-    flowDetectorV2 --> |"Checks /^\s*flowchart/"| DetectNew{New Flowchart?}
-    elkDetector --> |"Checks /^\s*flowchart-elk/"| DetectElk{ELK Layout?}
-    
-    DetectLegacy --> |Yes| LoadDiagram
+
+    flowDetectorV2 --> |"Checks /^\s*(graph|flowchart)/"| DetectNew{Flowchart?}
+
     DetectNew --> |Yes| LoadDiagram
-    DetectElk --> |Yes| LoadDiagram
     
     %% Loading Phase
     LoadDiagram["loader() function"] --> flowDiagram["flowDiagram.ts<br/>diagram object"]
@@ -171,14 +162,12 @@ flowchart TD
     
     %% Layout Algorithm Selection
     SetupLayoutData --> LayoutAlgorithm{Layout Algorithm}
-    LayoutAlgorithm --> Dagre["dagre<br/>(default)"]
-    LayoutAlgorithm --> DagreWrapper["dagre-wrapper<br/>(v2 renderer)"]
-    LayoutAlgorithm --> ELK["elk<br/>(external package)"]
+    LayoutAlgorithm --> ELK["elk<br/>(default)"]
+    LayoutAlgorithm --> Dagre["dagre"]
     
     %% Testing Components
     FlowDBClass --> TestFiles["Test Files"]
     TestFiles --> flowDbSpec["flowDb.spec.ts"]
-    TestFiles --> flowChartShapesSpec["flowChartShapes.spec.js"]
     TestFiles --> ParserTests["parser/*.spec.js files<br/>- flow-text.spec.js<br/>- flow-edges.spec.js<br/>- flow-style.spec.js<br/>- subgraph.spec.js"]
     
     %% Configuration

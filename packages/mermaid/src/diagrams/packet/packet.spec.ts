@@ -11,12 +11,6 @@ describe('packet diagrams', () => {
     }
   });
 
-  it('should handle a packet-beta definition', async () => {
-    const str = `packet-beta`;
-    await expect(parser.parse(str)).resolves.not.toThrow();
-    expect(db.getPacket()).toMatchInlineSnapshot('[]');
-  });
-
   it('should handle a packet definition', async () => {
     const str = `packet`;
     await expect(parser.parse(str)).resolves.not.toThrow();

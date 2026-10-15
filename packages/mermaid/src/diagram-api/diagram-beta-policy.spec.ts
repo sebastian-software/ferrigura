@@ -4,6 +4,8 @@
  * - NEVER_BETA_DIAGRAMS: stable diagrams that never had a beta phase (frozen list).
  * - GRADUATED_DIAGRAMS: diagrams that left beta but keep an optional `-beta` suffix for
  *   backwards compatibility. The detector must accept both `{id}` and `{id}-beta`.
+ * - STABLE_DIAGRAMS: diagrams that left beta and dropped the `-beta` alias. The detector
+ *   must accept `{id}` and reject `{id}-beta`.
  * - Any other registered diagram must require `-beta` in its syntax: the detector accepts
  *   the `-beta` keyword and rejects the same keyword without the `-beta` suffix. For
  *   diagrams whose keyword differs from `{id}-beta`, list the keyword in BETA_KEYWORD_OVERRIDES.
@@ -39,7 +41,6 @@ const NEVER_BETA_DIAGRAMS = new Set([
   'quadrantChart',
   'eventmodeling',
   'mindmap',
-  'flowchart-elk',
 ]);
 
 /**
@@ -49,15 +50,12 @@ const NEVER_BETA_DIAGRAMS = new Set([
  * detector must keep accepting the optional `-beta` suffix. The test below enforces that
  * both `{id}` and `{id}-beta` are detected.
  */
-const GRADUATED_DIAGRAMS = new Set([
-  'sankey',
-  'packet',
-  'xychart',
-  'block',
-  'ishikawa',
-  'architecture',
-  'treemap',
-]);
+const GRADUATED_DIAGRAMS = new Set(['ishikawa', 'architecture', 'treemap']);
+
+/**
+ * Diagrams that graduated from beta and no longer accept the `-beta` keyword.
+ */
+const STABLE_DIAGRAMS = new Set(['sankey', 'packet', 'xychart', 'block']);
 
 /** Internal or pseudo-diagram types — not subject to beta policy. */
 const EXCLUDED_DIAGRAMS = new Set(['error', '---']);
@@ -83,7 +81,12 @@ describe('diagram beta policy', () => {
     const violations: string[] = [];
 
     for (const [id, { detector }] of Object.entries(detectors)) {
-      if (NEVER_BETA_DIAGRAMS.has(id) || GRADUATED_DIAGRAMS.has(id) || EXCLUDED_DIAGRAMS.has(id)) {
+      if (
+        NEVER_BETA_DIAGRAMS.has(id) ||
+        GRADUATED_DIAGRAMS.has(id) ||
+        STABLE_DIAGRAMS.has(id) ||
+        EXCLUDED_DIAGRAMS.has(id)
+      ) {
         continue;
       }
 
@@ -123,11 +126,28 @@ describe('diagram beta policy', () => {
     ).toEqual([]);
   });
 
+  it('stable diagrams reject the dropped -beta keyword', () => {
+    const violations: string[] = [];
+
+    for (const id of STABLE_DIAGRAMS) {
+      const { detector } = detectors[id] ?? {};
+      if (!detector || !detector(id) || detector(`${id}-beta`)) {
+        violations.push(id);
+      }
+    }
+
+    expect(
+      violations,
+      `Stable diagram(s) must accept \`{id}\` and reject \`{id}-beta\`: ${violations.join(', ')}`
+    ).toEqual([]);
+  });
+
   it('beta-policy lists contain no stale or overlapping entries', () => {
     const registered = new Set(Object.keys(detectors));
     const lists = {
       NEVER_BETA_DIAGRAMS,
       GRADUATED_DIAGRAMS,
+      STABLE_DIAGRAMS,
     };
 
     for (const [name, set] of Object.entries(lists)) {
@@ -135,7 +155,7 @@ describe('diagram beta policy', () => {
       expect(stale, `Stale ${name}: ${stale.join(', ')}`).toEqual([]);
     }
 
-    const all = [...NEVER_BETA_DIAGRAMS, ...GRADUATED_DIAGRAMS];
+    const all = [...NEVER_BETA_DIAGRAMS, ...GRADUATED_DIAGRAMS, ...STABLE_DIAGRAMS];
     const duplicates = all.filter((id, i) => all.indexOf(id) !== i);
     expect(duplicates, `Diagram(s) listed in multiple sets: ${duplicates.join(', ')}`).toEqual([]);
   });

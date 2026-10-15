@@ -9,7 +9,7 @@ test.describe('Block diagram', () => {
     await renderGraph(
       page,
       testInfo,
-      `block-beta
+      `block
   block:ID
     A
     B["This label is intentionally very wide so that it clearly exceeds the two hundred pixel default wrap threshold"]

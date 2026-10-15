@@ -54,11 +54,11 @@ describe('diagram detection', () => {
   test('should allow external diagrams to override internal ones with same ID', async () => {
     const title = 'overridden';
     addDetector(
-      'flowchart-elk',
-      (str) => str.startsWith('flowchart-elk'),
-      () => Promise.resolve(getDummyDiagram('flowchart-elk', title))
+      'pie',
+      (str) => str.startsWith('pie'),
+      () => Promise.resolve(getDummyDiagram('pie', title))
     );
-    const diagram = await Diagram.fromText('flowchart-elk TD; A-->B');
+    const diagram = await Diagram.fromText('pie title Pets');
     expect(diagram).toBeInstanceOf(Diagram);
     expect(diagram.db.getDiagramTitle?.()).toBe(title);
   });

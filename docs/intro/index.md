@@ -291,7 +291,7 @@ quadrantChart
 ### [XY Chart](../syntax/xyChart.md)
 
 ```mermaid-example
-xychart-beta
+xychart
     title "Sales Revenue"
     x-axis [jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec]
     y-axis "Revenue (in $)" 4000 --> 11000
@@ -300,7 +300,7 @@ xychart-beta
 ```
 
 ```mermaid
-xychart-beta
+xychart
     title "Sales Revenue"
     x-axis [jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec]
     y-axis "Revenue (in $)" 4000 --> 11000

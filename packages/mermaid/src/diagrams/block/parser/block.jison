@@ -36,7 +36,6 @@ CRLF \u000D\u000A
 
 %%
 
-"block-beta"              { yy.getLogger().debug('Found block-beta'); return 'BLOCK_DIAGRAM_KEY'; }
 "block:"                  { yy.getLogger().debug('Found id-block'); return 'id-block'; }
 "block"                   { yy.getLogger().debug('Found block'); return 'BLOCK_DIAGRAM_KEY'; }
 

@@ -15,7 +15,7 @@ describe('Block diagram', function () {
     });
 
     it('a diagram with a node', () => {
-      const str = `block-beta
+      const str = `block
           id
       `;
 
@@ -417,7 +417,7 @@ columns 1
       expect(B.styles).toContain('fill:#f9F');
     });
     it('should log a warning when block width exceeds column width', () => {
-      const str = `block-beta
+      const str = `block
   columns 1
   A:1
   B:2

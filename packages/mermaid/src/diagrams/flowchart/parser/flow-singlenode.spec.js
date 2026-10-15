@@ -9,7 +9,6 @@ setConfig({
 const keywords = [
   'graph',
   'flowchart',
-  'flowchart-elk',
   'style',
   'default',
   'linkStyle',
@@ -312,7 +311,6 @@ describe('[Singlenodes] when parsing', () => {
   const errorKeywords = [
     'graph',
     'flowchart',
-    'flowchart-elk',
     'style',
     'linkStyle',
     'interpolate',

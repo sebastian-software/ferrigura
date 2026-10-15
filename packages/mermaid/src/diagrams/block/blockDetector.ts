@@ -3,7 +3,7 @@ import type { DiagramDetector, ExternalDiagramDefinition } from '../../diagram-a
 const id = 'block';
 
 const detector: DiagramDetector = (txt) => {
-  return /^\s*block(-beta)?/.test(txt);
+  return /^\s*block(?![\w-])/.test(txt);
 };
 
 const loader = async () => {

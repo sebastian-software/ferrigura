@@ -294,7 +294,6 @@ describe('per-diagram appearance defaults', () => {
         expect(defaultConfig).toHaveProperty(getDiagramConfigKey(type));
       }
       expect(getDiagramConfigKey('flowchart-v2')).toBe('flowchart');
-      expect(getDiagramConfigKey('flowchart-elk')).toBe('flowchart');
       expect(getDiagramConfigKey('classDiagram')).toBe('class');
       expect(getDiagramConfigKey('stateDiagram')).toBe('state');
     });

@@ -30,7 +30,7 @@ describe('block colour slots', () => {
   const indexOf = (id: string) => db.getBlock(id)?.colorIndex;
 
   it('numbers composites in declaration order', () => {
-    block.parse(`block-beta
+    block.parse(`block
       block:first
         a
       end
@@ -47,7 +47,7 @@ describe('block colour slots', () => {
 
   it('gives no slot to a simple block', () => {
     // The flowchart colours containers and leaves its nodes alone; so does this.
-    block.parse(`block-beta
+    block.parse(`block
       a
       b
       block:group
@@ -64,7 +64,7 @@ describe('block colour slots', () => {
   it('numbers an outer composite before one nested inside it', () => {
     // Source order, not completion order: a container is declared before its children,
     // so it must take the lower slot even though it closes last.
-    block.parse(`block-beta
+    block.parse(`block
       block:outer
         block:inner
           a
@@ -83,7 +83,7 @@ describe('block colour slots', () => {
   it('runs one counter across the whole diagram', () => {
     // Not per container. Restarting the count inside each one would open every
     // container's first child on the same colour as its cousins.
-    block.parse(`block-beta
+    block.parse(`block
       block:a1
         block:a2
           x
