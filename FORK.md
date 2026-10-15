@@ -81,10 +81,10 @@ These are deprecated, legacy or redundant, but removing them changes user-visibl
 - A Gantt chart with the `topAxis` keyword failed to parse: the grammar called `yy.TopAxis()`, which the db never defined. It now calls `enableTopAxis()`.
 - An architecture diagram starting with the graduated `architecture` keyword passed detection and then failed to parse: the grammar accepted only `architecture-beta`, and the token builder guarded a keyword that did not exist. The grammar now accepts both, as the beta policy requires.
 - The requirement diagram detector also claimed text starting with `requirement`, which its grammar rejects. It now matches only `requirementDiagram`, so such text gets the "unknown diagram" error instead of a parse error.
+- The C4 detector anchored only `C4Context` to the start of the text. `C4Container`, `C4Component`, `C4Dynamic` and `C4Deployment` matched anywhere, and since C4 is checked before most diagrams, a flowchart or sequence diagram that merely mentioned one of them was rendered as C4.
 
 ## Upstream bugs noticed along the way (not fixed)
 
-- C4: the detector anchors only `C4Context` to the start of the text; the other four keywords match anywhere.
 - Wardley: its config section is keyed `wardley-beta` and is missing from `diagramConfigKeys.ts`, so per-diagram `theme`, `look` and `layout` are not applied.
 - `flowchart.inheritDir` gets its default from a `c4.flowchart` block in `defaultConfig.ts`.
 - `mermaid.run()` calls `parseError` twice for a diagram that fails to render.

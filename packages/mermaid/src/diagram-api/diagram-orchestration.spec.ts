@@ -90,6 +90,14 @@ describe('diagram-orchestration', () => {
       expect(() => detectType('requirement r {\n  }')).toThrow(/No diagram type detected/);
     });
 
+    it.each(['C4Context', 'C4Container', 'C4Component', 'C4Dynamic', 'C4Deployment'])(
+      'detects %s only at the start of the text',
+      (keyword) => {
+        expect(detectType(`${keyword}\n  title Example`)).toBe('c4');
+        expect(detectType(`flowchart TD\n  A[${keyword}] --> B`)).toBe('flowchart-v2');
+      }
+    );
+
     it('should not detect flowchart if pie contains flowchart', () => {
       expect(
         detectType(`pie title: "flowchart"
