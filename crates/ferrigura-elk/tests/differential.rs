@@ -113,9 +113,7 @@ fn largest_difference(ours: &JsonNode, theirs: &Value) -> Result<f64, String> {
 }
 
 /// Cases whose coordinates match elkjs. The floor only goes up, as `SUPPORTED_FLOOR` does.
-/// The 20 cases are the supported ones without a crossing-order difference; the two
-/// synthetic nodes-only cases with three and five nodes need the layer sweep ordering.
-const MATCHING_FLOOR: usize = 20;
+const MATCHING_FLOOR: usize = 22;
 
 #[test]
 fn coordinates_match_elkjs() {

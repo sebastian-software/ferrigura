@@ -1,9 +1,8 @@
 //! The processor trace of the layered driver against elkjs's, on corpus graphs.
 //!
 //! The first test compares the task names and their nesting, which is the
-//! processor sequence. The second also compares the log messages that the
-//! processors write; they come from Brandes & Koepf and the other processors
-//! whose ports are still to do, so it stays ignored until they are.
+//! processor sequence, on the nodes-only cases. The second compares the full
+//! trace with the log messages, on every case the port lays out.
 
 use std::path::PathBuf;
 
@@ -22,6 +21,25 @@ fn corpus_case(name: &str) -> Value {
     let text = std::fs::read_to_string(&path)
         .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
     serde_json::from_str(&text).unwrap()
+}
+
+/// The names of all corpus cases, from the manifest.
+fn corpus_names() -> Vec<String> {
+    let path: PathBuf = [
+        env!("CARGO_MANIFEST_DIR"),
+        "tests",
+        "corpus",
+        "manifest.json",
+    ]
+    .iter()
+    .collect();
+    let manifest: Value = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    manifest["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|case| case["name"].as_str().unwrap().to_string())
+        .collect()
 }
 
 /// Removes the `logs` keys, leaving names and nesting.
@@ -57,11 +75,33 @@ fn nodes_only_trace_matches_elkjs_names_and_nesting() {
     }
 }
 
+/// Cases whose full trace, logs included, matches elkjs. The floor only goes up.
+const TRACE_MATCHING_FLOOR: usize = 22;
+
 #[test]
-#[ignore = "port: Brandes & Koepf and the other processors do not log their messages yet"]
-fn nodes_only_trace_matches_elkjs_including_logs() {
-    let case = corpus_case("synthetic__nodes-only-3");
-    assert_eq!(layout_trace(&case), case["trace"]);
+fn supported_traces_match_elkjs_including_logs() {
+    let mut matching = Vec::new();
+    for name in corpus_names() {
+        let case = corpus_case(&name);
+        let input: JsonNode = serde_json::from_value(case["input"].clone()).unwrap();
+        let Ok(layout) = ferrigura_elk::layout(&input, true) else {
+            continue;
+        };
+        if layout.trace.to_json() == case["trace"] {
+            matching.push(name);
+        } else {
+            println!("logs differ  {name}");
+        }
+    }
+    println!(
+        "{} supported cases have the same trace, logs included",
+        matching.len()
+    );
+    assert!(
+        matching.len() >= TRACE_MATCHING_FLOOR,
+        "{} cases have the same trace; the floor is {TRACE_MATCHING_FLOOR}",
+        matching.len()
+    );
 }
 
 #[test]
