@@ -13,4 +13,5 @@ Text is the only thing ferrigura measures; every other size is calculated. Measu
 ## Consequences
 
 - Lexica covers Latin scripts only; CJK, Arabic and emoji need registered fallback fonts.
+- Subsets are made with `skera` (fontations' port of `hb-subset`), and every embedded subset gets a font family name of its own, because `@font-face` rules are global to an HTML page and two diagrams with different subsets under one name break each other's labels.
 - Revised on 2026-10-15 after the [text measurement spike](../spikes/text-measurement.md), which found widths within Chromium's 1/64 px rounding, exact text box heights, and identical wrapping.

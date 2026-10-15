@@ -38,9 +38,36 @@ Mermaid does not wrap SVG labels with CSS rules. `createFormattedText` and `spli
 - **One shaping run per word**, as Mermaid's per-word `tspan`s do, so no kerning is applied across a space.
 - **Vertical metrics rounded like Chromium's:** ascent and descent to whole pixels, so text sits where a browser will draw it.
 
+## Part 2: embedding subsets
+
+**Question.** If ferrigura embeds only the glyphs a diagram uses, does a browser still draw every label at the width measured in Rust?
+
+**Answer.** Yes, in Chromium, both inline and through `<img>`, as long as every diagram's fonts get a family name of their own.
+
+Setup: `src/bin/embed.rs` subsets each face with `skera` 0.8 (Google's fontations subsetter, a port of `hb-subset`) to the characters of the labels drawn in it. The subsets keep HarfBuzz's default layout features, so ligatures and kerning survive, and they drop hinting. The program writes them into the SVG as `@font-face` data URLs (TTF, base64), and each label carries its Rust width. `embed-check.ts` opens the SVGs in Chromium. Run on 2026-10-15 with the 1,690 requests of the corpus that have no wrap width.
+
+| Check                                                                           | Result                                                    |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Rust width with the subset vs with the full font, all 1,690 labels              | identical; vertical metrics identical                     |
+| Chromium, SVG opened as a document: width vs Rust                               | max 0.0155 px; text box height exact                      |
+| Same SVG through `<img>` (data URL) vs as a document                            | pixel-identical; without the fonts it is not              |
+| Two diagrams inline in one HTML page, own family names (`fg1-sans`, `fg2-sans`) | both max 0.0155 px                                        |
+| Same, one shared family name                                                    | 33 of 549 labels in the first diagram wrong, up to 1.8 px |
+| Size of one face, about 95 characters                                           | 9–12.5 KB, from 52–72 KB                                  |
+| A diagram with 57 labels in one face                                            | 26 KB SVG, 7.8 KB gzipped                                 |
+
+Consequences for M2:
+
+- **Family names unique per subset.** `@font-face` rules are global to the HTML page, even inside an inline SVG's `<style>`, and of two rules with the same family and descriptors the later one wins. Name the family after a hash of the subset (for example `fg-3fa9c1-sans`), so diagrams with the same subset share it and others cannot break each other.
+- **One family per font, styles as descriptors.** Regular, italic, bold and bold italic are four `@font-face` rules of one family with `font-weight` and `font-style`; a label switches style with `font-weight="700"`, which Chromium matched to the right face.
+- **`white-space: pre` on `text`, not on the root.** Chromium computes `white-space: nowrap` for `text` even when the root says `pre`, and drops a label's leading and trailing spaces. The rule must target `text` (or `xml:space="preserve"` on the element).
+- **Keep legacy `kern` tables.** `skera`, like `hb-subset`, drops `kern` by default; Lexica keeps its kerning in `GPOS`, but a registered font may not, so ferrigura's subset call does not drop it.
+
 ## Not covered yet
 
 - Mixed styles within one line (bold or italic words from Markdown); a straightforward extension of the per-word measurement.
 - Fallback fonts for scripts Lexica does not cover (CJK, Arabic, emoji).
 - Caching of shaper data and per-word widths; not needed at 5 µs per measurement.
 - Whether `Intl.Segmenter` and `unicode-segmentation` agree on graphemes for the newest emoji sequences.
+- Firefox and WebKit: `embed-check.ts` takes the engine as an argument, but the Playwright builds of both were not installed for this run.
+- WOFF2: the subsets are embedded as TTF; WOFF2 would roughly halve them, but needs a Rust encoder that has not been evaluated.
