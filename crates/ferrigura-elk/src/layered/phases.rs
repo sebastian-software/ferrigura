@@ -19,6 +19,7 @@ use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
 use crate::layered::p1cycles;
+use crate::layered::p2layers;
 use crate::layered::p3order;
 use crate::layered::p5edges;
 
@@ -109,7 +110,7 @@ impl PhaseStep {
         let name = self.task_name(graph)?;
         progress.begin(monitor, &name, 1.0);
         if self == PhaseStep::Layering(LayeringStrategy::NETWORK_SIMPLEX) {
-            network_simplex_layering(graph, progress, monitor)?;
+            p2layers::network_simplex_layering(graph, progress, monitor)?;
         }
         if let PhaseStep::CycleBreaking(strategy) = self {
             cycle_breaking(graph, strategy)?;
@@ -198,31 +199,3 @@ fn cycle_breaking(graph: &mut LGraph, strategy: CycleBreakingStrategy) -> Result
 /// `crossMinType` of `LayerSweepCrossingMinimizer` for graphs without hierarchical
 /// ports; the other heuristics need options Mermaid never sets.
 const CROSS_MIN_TYPE: &str = "BARYCENTER";
-
-/// `NetworkSimplexLayerer.process` for the nodes-only path: every node is its own
-/// connected component, so each one gets a subtask and sits in layer 0.
-fn network_simplex_layering(
-    graph: &mut LGraph,
-    progress: &mut ProgressMonitor,
-    monitor: Monitor,
-) -> Result<(), LayoutError> {
-    if graph.layerless_nodes.is_empty() {
-        return Ok(());
-    }
-    for &node in &graph.layerless_nodes.clone() {
-        let Some(sub) = progress.sub_task(monitor, 1.0) else {
-            return Err(LayoutError::Unsupported(
-                "subtask of a finished monitor".to_string(),
-            ));
-        };
-        progress.begin(sub, "Network simplex", 1.0);
-        progress.done(sub);
-        graph.nodes[node].layer = Some(0);
-    }
-    if graph.layers.is_empty() {
-        graph.layers.push(Vec::new());
-    }
-    graph.layers[0] = graph.layerless_nodes.clone();
-    graph.layerless_nodes.clear();
-    Ok(())
-}

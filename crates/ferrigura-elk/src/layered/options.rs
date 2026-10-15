@@ -63,6 +63,7 @@ pub const SPACING_LABEL_LABEL: &str = "org.eclipse.elk.spacing.labelLabel";
 pub const EDGE_LABELS_PLACEMENT: &str = "org.eclipse.elk.edgeLabels.placement";
 pub const EDGE_LABELS_SIDE_SELECTION: &str = "org.eclipse.elk.layered.edgeLabels.sideSelection";
 pub const UNNECESSARY_BENDPOINTS: &str = "org.eclipse.elk.layered.unnecessaryBendpoints";
+pub const PRIORITY_SHORTNESS: &str = "org.eclipse.elk.layered.priority.shortness";
 pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_NODE_INFLUENCE: &str =
     "org.eclipse.elk.layered.considerModelOrder.crossingCounterNodeInfluence";
 pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_PORT_INFLUENCE: &str =
