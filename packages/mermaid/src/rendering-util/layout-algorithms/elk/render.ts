@@ -1290,6 +1290,12 @@ async function runElkLayout(
       __mermaidProfiler?: { begin(name: string): void; end(): void };
     }
   ).__mermaidProfiler;
+  // ELK capture (dev / test tooling only). Snapshot the graph before elkjs sees
+  // it, since elkjs is free to mutate what it is handed. The capture module is
+  // loaded below only when the flag is set; see layout-algorithms/elk/elkCapture.ts.
+  const captureInput = (globalThis as unknown as { mermaidCaptureElk?: boolean }).mermaidCaptureElk
+    ? JSON.parse(JSON.stringify(elkGraph))
+    : undefined;
   try {
     // Time the actual external elkjs call ("layoutCore") on its own.
     profiler?.begin('layoutCore');
@@ -1303,6 +1309,14 @@ async function runElkLayout(
     // Pass the object, not a pre-serialised string: `JSON.stringify` of the
     // whole laid-out graph ran on every render regardless of log level.
     log.debug('APA01 layout result:', graph);
+    if (captureInput !== undefined) {
+      const { recordElkCapture } = await import('./elkCapture.js');
+      recordElkCapture({
+        input: captureInput,
+        output: graph,
+        algorithm: elkGraph.layoutOptions?.['elk.algorithm'],
+      });
+    }
     return graph;
   } catch (error) {
     log.error('ELK layout error:', error);
