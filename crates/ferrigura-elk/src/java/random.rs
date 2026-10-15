@@ -71,6 +71,21 @@ impl Random {
     pub fn next_boolean(&mut self) -> bool {
         self.next_internal(1) != 0
     }
+
+    /// `nextFloat()` in `[0, 1)`: 24 bits over 2^24, which a float holds exactly.
+    pub fn next_float(&mut self) -> f64 {
+        f64::from(self.next_internal(24)) / 16_777_216.0
+    }
+
+    /// `nextLong()`: two `next(32)` steps, the first one the high half, both signed.
+    pub fn next_long(&mut self) -> i64 {
+        (i64::from(self.next_internal(32)) << 32).wrapping_add(i64::from(self.next_internal(32)))
+    }
+
+    /// `setSeed(seed)`: restarts the generator as `new Random(seed)` does.
+    pub fn set_seed(&mut self, seed: i64) {
+        *self = Random::new(seed);
+    }
 }
 
 #[cfg(test)]

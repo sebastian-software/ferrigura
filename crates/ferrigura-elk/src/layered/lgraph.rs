@@ -10,6 +10,7 @@ use crate::core::data::JavaEnum;
 use crate::core::data::enums::{GraphProperties, NodeType};
 use crate::core::data::property::PropertyHolder;
 use crate::core::math::{KVector, Spacing};
+use crate::java::random::Random;
 
 /// A node of the layered graph, `LNode`.
 #[derive(Debug, Clone, Default)]
@@ -72,6 +73,8 @@ pub struct LGraph {
     pub padding: Spacing,
     /// `Layer.getSize()` of each entry of `layers`, set by the layer size calculation.
     pub layer_sizes: Vec<KVector>,
+    /// `InternalProperties.RANDOM`: the generator the crossing minimization draws from.
+    pub random: Option<Random>,
 }
 
 impl LGraph {

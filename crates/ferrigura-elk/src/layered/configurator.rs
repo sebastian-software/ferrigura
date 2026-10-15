@@ -16,6 +16,7 @@ use crate::core::data::enums::{
     HierarchyHandling, IntermediateProcessorStrategy as S, LayeringStrategy, NodePlacementStrategy,
     NodePromotionStrategy, OrderingStrategy,
 };
+use crate::java::random::Random;
 use crate::layered::LayoutError;
 use crate::layered::intermediate::Step;
 use crate::layered::lgraph::LGraph;
@@ -38,8 +39,22 @@ pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
         ));
     }
     configure_graph_properties(graph);
+    graph.random = Some(random_source(graph)?);
     graph.processors = assemble(graph)?;
     Ok(())
+}
+
+/// `GraphConfigurator`: the generator for `elk.randomSeed`. Layered's default seed is 1
+/// (`supports` in Layered.melk, which the registry does not read). Seed 0 asks for a
+/// system seed, which cannot be reproduced.
+fn random_source(graph: &LGraph) -> Result<Random, LayoutError> {
+    let seed = graph.properties.int_of(options::RANDOM_SEED).unwrap_or(1);
+    if seed == 0 {
+        return Err(LayoutError::Unsupported(
+            "randomSeed 0 asks for a system seed".to_string(),
+        ));
+    }
+    Ok(Random::new(i64::from(seed)))
 }
 
 /// `GraphConfigurator.configureGraphProperties`: the defaults the processors read.

@@ -56,6 +56,10 @@ pub const PADDING: &str = "org.eclipse.elk.padding";
 pub const NODE_SIZE_CONSTRAINTS: &str = "org.eclipse.elk.nodeSize.constraints";
 pub const NODE_SIZE_OPTIONS: &str = "org.eclipse.elk.nodeSize.options";
 pub const NODE_SIZE_FIXED_GRAPH_SIZE: &str = "org.eclipse.elk.nodeSize.fixedGraphSize";
+pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_NODE_INFLUENCE: &str =
+    "org.eclipse.elk.layered.considerModelOrder.crossingCounterNodeInfluence";
+pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_PORT_INFLUENCE: &str =
+    "org.eclipse.elk.layered.considerModelOrder.crossingCounterPortInfluence";
 
 #[cfg(test)]
 mod tests {
@@ -100,6 +104,8 @@ mod tests {
             NODE_SIZE_CONSTRAINTS,
             NODE_SIZE_OPTIONS,
             NODE_SIZE_FIXED_GRAPH_SIZE,
+            CONSIDER_MODEL_ORDER_CROSSING_COUNTER_NODE_INFLUENCE,
+            CONSIDER_MODEL_ORDER_CROSSING_COUNTER_PORT_INFLUENCE,
         ] {
             assert!(option_by_id(id).is_some(), "{id} is not registered");
         }
