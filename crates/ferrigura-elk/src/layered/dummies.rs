@@ -69,6 +69,32 @@ pub fn insert_label_dummies(graph: &mut LGraph) {
     graph.layerless_nodes.extend(new_dummies);
 }
 
+/// `LongEdgeSplitter.process`: an edge that reaches past the next layer is split by a dummy in
+/// that layer, layer by layer, so that every edge runs between neighbouring layers. Graphs with
+/// two layers or fewer have no such edges.
+pub fn split_long_edges(graph: &mut LGraph) {
+    if graph.layers.len() <= 2 {
+        return;
+    }
+    for layer in 0..graph.layers.len() - 1 {
+        let next = layer + 1;
+        for node in graph.layers[layer].clone() {
+            for port in graph.nodes[node].ports.clone() {
+                for edge in graph.ports[port].outgoing.clone() {
+                    let target_node = graph.ports[graph.edges[edge].target].node;
+                    let target_layer = graph.nodes[target_node].layer;
+                    if target_layer != Some(layer) && target_layer != Some(next) {
+                        let dummy = new_dummy_node(graph, NodeType::LONG_EDGE, edge);
+                        graph.nodes[dummy].layer = Some(next);
+                        graph.layers[next].push(dummy);
+                        split_edge(graph, edge, dummy);
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// `LabelDummyInserter.edgeNeedsToBeProcessed`: the edge joins two nodes and has a centred label.
 fn needs_label_dummy(graph: &LGraph, edge: usize) -> bool {
     let edge = &graph.edges[edge];
@@ -307,6 +333,34 @@ mod tests {
         assert!(graph.edges[0].labels.is_empty());
         assert_eq!(graph.ports[graph.edges[0].target].node, dummy);
         assert_eq!(graph.ports[graph.edges[1].source].node, dummy);
+        assert_eq!(graph.ports[graph.edges[1].target].node, 1);
+    }
+
+    #[test]
+    fn an_edge_past_the_next_layer_gets_a_dummy_in_that_layer() {
+        let mut graph = LGraph {
+            nodes: vec![LNode::default(), LNode::default()],
+            layers: vec![vec![0], Vec::new(), vec![1]],
+            ..LGraph::default()
+        };
+        graph.nodes[0].layer = Some(0);
+        graph.nodes[1].layer = Some(2);
+        let source = create_port(&mut graph, 0, PortType::OUTPUT);
+        let target = create_port(&mut graph, 1, PortType::INPUT);
+        graph.ports[source].outgoing.push(0);
+        graph.ports[target].incoming.push(0);
+        graph.edges.push(LEdge {
+            source,
+            target,
+            thickness: 1.0,
+            ..LEdge::default()
+        });
+        split_long_edges(&mut graph);
+        let dummy = 2;
+        assert_eq!(graph.nodes[dummy].node_type, NodeType::LONG_EDGE);
+        assert_eq!(graph.nodes[dummy].layer, Some(1));
+        assert_eq!(graph.layers[1], vec![dummy]);
+        assert_eq!(graph.ports[graph.edges[0].target].node, dummy);
         assert_eq!(graph.ports[graph.edges[1].target].node, 1);
     }
 }

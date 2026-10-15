@@ -98,6 +98,9 @@ pub fn run(
         IntermediateProcessorStrategy::PORT_SIDE_PROCESSOR => {
             ports::process_port_sides(graph);
         }
+        IntermediateProcessorStrategy::LONG_EDGE_SPLITTER => {
+            dummies::split_long_edges(graph);
+        }
         IntermediateProcessorStrategy::PORT_LIST_SORTER => {
             ports::sort_ports(graph)?;
         }
