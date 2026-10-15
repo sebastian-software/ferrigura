@@ -10,6 +10,7 @@ Measures label text in Rust with the bundled fonts and compares the result with 
 | `compare.py`       | Prints the differences                                                                                    |
 | `src/bin/embed.rs` | Part 2: subsets the fonts to the labels, embeds them in SVGs with the Rust widths                         |
 | `embed-check.ts`   | Part 2: checks those SVGs in a browser (document, `<img>`, two diagrams in one page)                      |
+| `anchor-check.ts`  | Part 3: where WebKit and Chromium draw a kerned line under five placements                                |
 | `lab/`             | Part 3: a page that draws kerning and ligature lines in fourteen CSS variants, served by `lab/server.mjs` |
 | `fonts/`           | Lexica Ultralegible and Atkinson Hyperlegible Mono, SIL Open Font License (see the `OFL-*.txt`)           |
 
