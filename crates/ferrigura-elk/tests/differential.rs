@@ -75,6 +75,42 @@ fn corpus_summary() {
     );
 }
 
+/// Each edge's route as a flat list of numbers: the number of sections, then per section its
+/// start, the number of its bend points and the bend points, and its end.
+fn edge_routes(value: &Value) -> Vec<Vec<f64>> {
+    let point = |value: &Value| {
+        [
+            value["x"].as_f64().unwrap_or(0.0),
+            value["y"].as_f64().unwrap_or(0.0),
+        ]
+    };
+    value["edges"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|edge| {
+            let sections = edge["sections"]
+                .as_array()
+                .map(Vec::as_slice)
+                .unwrap_or_default();
+            let mut route = vec![sections.len() as f64];
+            for section in sections {
+                route.extend(point(&section["startPoint"]));
+                let bends = section["bendPoints"]
+                    .as_array()
+                    .map(Vec::as_slice)
+                    .unwrap_or_default();
+                route.push(bends.len() as f64);
+                for bend in bends {
+                    route.extend(point(bend));
+                }
+                route.extend(point(&section["endPoint"]));
+            }
+            route
+        })
+        .collect()
+}
+
 /// The largest difference between the port's node boxes and elkjs's, and between the root sizes.
 /// Errors when the nodes differ in number or order: that is not a difference in coordinates.
 fn largest_difference(ours: &JsonNode, theirs: &Value) -> Result<f64, String> {
@@ -98,6 +134,22 @@ fn largest_difference(ours: &JsonNode, theirs: &Value) -> Result<f64, String> {
             .into_iter()
             .map(f64::abs)
             .fold(worst, f64::max);
+    }
+    let (ours_routes, theirs_routes) = (edge_routes(&ours_value), edge_routes(theirs));
+    if ours_routes.len() != theirs_routes.len() {
+        return Err(format!(
+            "{} edges, elkjs has {}",
+            ours_routes.len(),
+            theirs_routes.len()
+        ));
+    }
+    for (ours_route, theirs_route) in ours_routes.iter().zip(&theirs_routes) {
+        if ours_route.len() != theirs_route.len() {
+            return Err("an edge route with another shape".to_string());
+        }
+        for (a, b) in ours_route.iter().zip(theirs_route) {
+            worst = worst.max((a - b).abs());
+        }
     }
     let size = |value: &Value| {
         (
