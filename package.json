@@ -61,6 +61,8 @@
     "test:watch:em": "vitest --watch packages/parser/tests/eventmodeling.test.ts",
     "test:coverage": "vitest --coverage",
     "test:check:tsc": "tsx scripts/tsc-check.ts",
+    "port:diff": "tsx tools/port/diff.ts",
+    "port:status": "tsx tools/port/status.ts",
     "prepare": "husky && pnpm build",
     "pre-commit": "lint-staged"
   },
