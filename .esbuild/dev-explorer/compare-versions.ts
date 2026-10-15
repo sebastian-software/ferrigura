@@ -152,7 +152,6 @@ export function describeBundle(
       format: 'esm',
       api: 'async',
       mermaidUrl: '/mermaid.esm.mjs',
-      elkUrl: '/mermaid-layout-elk.esm.mjs',
       bestEffort: false,
     };
   }

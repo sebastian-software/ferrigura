@@ -332,36 +332,29 @@ const renderKatexUnsanitized = async (text: string, config: MermaidConfig): Prom
     return text.replace(katexRegex, 'MathML is unsupported in this environment.');
   }
 
-  if (injected.includeLargeFeatures) {
-    const { default: katex } = await import('katex');
-    const outputMode =
-      config.forceLegacyMathML || (!isMathMLSupported() && config.legacyMathML)
-        ? 'htmlAndMathml'
-        : 'mathml';
-    return text
-      .split(lineBreakRegex)
-      .map((line) =>
-        hasKatex(line)
-          ? `<div style="display: flex; align-items: center; justify-content: center; white-space: nowrap;">${line}</div>`
-          : `<div>${line}</div>`
-      )
-      .join('')
-      .replace(katexRegex, (_, c) =>
-        katex
-          .renderToString(c, {
-            throwOnError: true,
-            displayMode: true,
-            output: outputMode,
-          })
-          .replace(/\n/g, ' ')
-          .replace(/<annotation.*<\/annotation>/g, '')
-      );
-  }
-
-  return text.replace(
-    katexRegex,
-    'Katex is not supported in @mermaid-js/tiny. Please use the full mermaid library.'
-  );
+  const { default: katex } = await import('katex');
+  const outputMode =
+    config.forceLegacyMathML || (!isMathMLSupported() && config.legacyMathML)
+      ? 'htmlAndMathml'
+      : 'mathml';
+  return text
+    .split(lineBreakRegex)
+    .map((line) =>
+      hasKatex(line)
+        ? `<div style="display: flex; align-items: center; justify-content: center; white-space: nowrap;">${line}</div>`
+        : `<div>${line}</div>`
+    )
+    .join('')
+    .replace(katexRegex, (_, c) =>
+      katex
+        .renderToString(c, {
+          throwOnError: true,
+          displayMode: true,
+          output: outputMode,
+        })
+        .replace(/\n/g, ' ')
+        .replace(/<annotation.*<\/annotation>/g, '')
+    );
 };
 
 /**

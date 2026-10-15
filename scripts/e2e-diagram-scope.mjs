@@ -62,7 +62,6 @@ const IGNORABLE_PREFIXES = [
   // Documentation (source and generated)
   'packages/mermaid/src/docs/',
   'packages/mermaid/src/vitepress/',
-  'packages/tiny/',
   'docs/',
   // Changeset descriptions
   '.changeset/',
@@ -121,7 +120,6 @@ const SHARED_PREFIXES = [
   'packages/parser/',
   // Layout engine packages
   'packages/dagre-wrapper/',
-  'packages/mermaid-layout-elk/',
   // Playwright: config and cross-cutting test utilities
   'e2e/other/',
   'e2e/helpers/',

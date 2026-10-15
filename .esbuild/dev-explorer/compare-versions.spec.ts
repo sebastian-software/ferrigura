@@ -22,13 +22,12 @@ import {
 const CDN = 'https://cdn.jsdelivr.net/npm';
 
 describe('describeBundle', () => {
-  it('uses the local dev bundles plus the local layout-elk for dev', () => {
+  it('uses the local dev bundle for dev (elk is built in)', () => {
     expect(describeBundle('dev')).toEqual({
       version: 'dev',
       format: 'esm',
       api: 'async',
       mermaidUrl: '/mermaid.esm.mjs',
-      elkUrl: '/mermaid-layout-elk.esm.mjs',
       bestEffort: false,
     });
   });

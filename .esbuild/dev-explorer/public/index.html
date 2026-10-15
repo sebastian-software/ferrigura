@@ -9,18 +9,13 @@
     <link rel="stylesheet" href="/dev/styles.css?v=8" />
   </head>
   <body>
-    <!-- Mermaid ESM + ELK layout loaders (required for `layout: 'elk'`) -->
+    <!-- Mermaid ESM bundle (ELK layouts are built in) -->
     <script type="module">
       // Expose a single async hook so the app can reliably await Mermaid "activation".
       // This avoids races where the UI calls initialize/render before layouts/diagrams are ready.
       window.mermaidReady = (async () => {
         try {
-          const [{ default: mermaid }, { default: layouts }] = await Promise.all([
-            import('/mermaid.esm.mjs'),
-            import('/mermaid-layout-elk.esm.mjs'),
-          ]);
-
-          mermaid.registerLayoutLoaders(layouts);
+          const { default: mermaid } = await import('/mermaid.esm.mjs');
 
           // Legacy Font Awesome syntax (`fa:fa-bell`, `fab:fa-twitter`, ...) falls back to
           // `<i class="fa fa-bell">`/`<i class="fab fa-twitter">` elements whenever no matching
@@ -37,7 +32,7 @@
           window.mermaid = mermaid;
           return mermaid;
         } catch (err) {
-          console.error('[dev-explorer] Failed to initialize mermaid (ESM + elk loaders).', err);
+          console.error('[dev-explorer] Failed to initialize mermaid.', err);
           throw err;
         }
       })();

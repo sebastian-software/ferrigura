@@ -10,8 +10,6 @@
   ],
   "ignorePatterns": [
     "packages/parser/**",
-    "packages/mermaid-layout-elk/**",
-    "packages/tiny/**",
     "cypress/**",
     "demos/**",
     "docs/**",

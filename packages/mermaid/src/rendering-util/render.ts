@@ -56,10 +56,6 @@ export const getLayoutLoaderDefinition = (name: string): LayoutLoaderDefinition 
 /**
  * Every ELK entry shares one loader, so all of them resolve to the same lazily
  * imported chunk and elkjs is fetched at most once.
- *
- * The loader is declared here rather than imported from the ELK plugin entry so
- * that the tiny build, which compiles this branch away, does not retain a
- * dynamic import of elkjs.
  */
 const elkLayoutLoaders = (): LayoutLoaderDefinition[] => {
   const loader = async () => await import('./layout-algorithms/elk/index.js');
@@ -80,18 +76,11 @@ const registerDefaultLayoutLoaders = () => {
       name: 'swimlane',
       loader: async () => await import('./layout-algorithms/swimlanes/index.js'),
     },
-    // elkjs is ~1.6 MB of source, so it is excluded from the tiny build along
-    // with the other large features. `getRegisteredLayoutAlgorithm` then falls
-    // back to dagre for diagrams that ask for an ELK layout there.
-    ...(injected.includeLargeFeatures
-      ? [
-          {
-            name: 'cose-bilkent',
-            loader: async () => await import('./layout-algorithms/cose-bilkent/index.js'),
-          },
-          ...elkLayoutLoaders(),
-        ]
-      : []),
+    {
+      name: 'cose-bilkent',
+      loader: async () => await import('./layout-algorithms/cose-bilkent/index.js'),
+    },
+    ...elkLayoutLoaders(),
   ]);
 };
 
@@ -125,9 +114,9 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
 const LAST_RESORT_LAYOUT = 'dagre';
 
 /**
- * Get the registered layout algorithm, falling back when it is not available -- `elk` and
- * `cose-bilkent` ship only in large-feature builds (the tiny build omits them), so a diagram
- * type may name either as its default. `fallback` may itself be absent, so `dagre` closes the chain.
+ * Get the registered layout algorithm, falling back when it is not available -- `layout` is
+ * settable from front matter, so it may name a layout nobody registered. `fallback` may itself
+ * be absent, so `dagre` closes the chain.
  */
 export const getRegisteredLayoutAlgorithm = (
   algorithm = '',

@@ -58,7 +58,6 @@ const typeDependency = (name: string): string => {
  */
 const PACKAGES = {
   mermaid: 'mermaid',
-  '@mermaid-js/layout-elk': 'mermaid-layout-elk',
   '@mermaid-js/parser': 'parser',
 };
 

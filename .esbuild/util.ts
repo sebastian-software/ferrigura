@@ -21,7 +21,6 @@ export interface MermaidBuildOptions extends BuildOptions {
   metafile: boolean;
   format: 'esm' | 'iife';
   options: PackageOptions;
-  includeLargeFeatures: boolean;
   /** Compile the render profiler into the bundle (dev/profiling builds only). */
   profiling: boolean;
 }
@@ -31,7 +30,6 @@ export const defaultOptions: Omit<MermaidBuildOptions, 'entryName' | 'options'> 
   metafile: false,
   core: false,
   format: 'esm',
-  includeLargeFeatures: true,
   profiling: false,
 } as const;
 
@@ -52,17 +50,11 @@ const buildOptions = (override: BuildOptions): BuildOptions => {
   };
 };
 
-const getFileName = (
-  fileName: string,
-  { core, format, minify, includeLargeFeatures }: MermaidBuildOptions
-) => {
+const getFileName = (fileName: string, { core, format, minify }: MermaidBuildOptions) => {
   if (core) {
     fileName += '.core';
   } else if (format === 'esm') {
     fileName += '.esm';
-  }
-  if (!includeLargeFeatures) {
-    fileName += '.tiny';
   }
   if (minify) {
     fileName += '.min';
@@ -76,7 +68,6 @@ export const getBuildConfig = (options: MermaidBuildOptions): BuildOptions => {
     format,
     options: { name, file, packageName },
     globalName = 'mermaid',
-    includeLargeFeatures,
     profiling,
     ...rest
   } = options;
@@ -97,7 +88,6 @@ export const getBuildConfig = (options: MermaidBuildOptions): BuildOptions => {
     chunkNames: `chunks/${outFileName}/[name]-[hash]`,
     define: {
       // This needs to be stringified for esbuild
-      'injected.includeLargeFeatures': `${includeLargeFeatures}`,
       'injected.profiling': `${profiling}`,
       'injected.version': `'${version}'`,
       'import.meta.vitest': 'undefined',
@@ -112,11 +102,7 @@ export const getBuildConfig = (options: MermaidBuildOptions): BuildOptions => {
     //
     // peerDependencies must be external too. The consumer is the one that
     // supplies them, so inlining one ships a second copy of that package —
-    // with its own module-level singletons — inside this bundle. For the
-    // layout plugins that peer dep is mermaid itself: a runtime (non-type)
-    // import of it resolves through `exports` to dist/mermaid.core.mjs and
-    // esbuild would inline the whole thing, so the plugin would run against
-    // its own stale mermaid rather than the host's.
+    // with its own module-level singletons — inside this bundle.
     external.push(...Object.keys(dependencies ?? {}), ...Object.keys(peerDependencies ?? {}));
     output.external = external;
   }

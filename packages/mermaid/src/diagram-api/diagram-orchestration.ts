@@ -82,9 +82,7 @@ export const addDiagrams = () => {
     }
   );
 
-  if (injected.includeLargeFeatures) {
-    registerLazyLoadedDiagrams(flowchartElk, mindmap, architecture);
-  }
+  registerLazyLoadedDiagrams(flowchartElk, mindmap, architecture);
 
   // Ordering of detectors is important. The first one to return true will be used.
   registerLazyLoadedDiagrams(

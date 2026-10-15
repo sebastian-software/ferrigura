@@ -1,7 +1,6 @@
 /**
- * A diagram type may name a layout as its default, but `elk` and `cose-bilkent` ship only
- * in large-feature builds (the tiny build omits them), so the resolution every renderer
- * runs before `render()` has to terminate at something always registered.
+ * A diagram or its front matter may name a layout nobody registered, so the resolution
+ * every renderer runs before `render()` has to terminate at something always registered.
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getRegisteredLayoutAlgorithm, registerLayoutLoaders } from './render.js';
@@ -15,7 +14,6 @@ describe('layout fallback', () => {
   it('returns a registered layout unchanged', () => {
     expect(getRegisteredLayoutAlgorithm('dagre')).toBe('dagre');
     expect(getRegisteredLayoutAlgorithm('swimlane')).toBe('swimlane');
-    // Bundled by default now; only the tiny build omits it.
     expect(getRegisteredLayoutAlgorithm('elk')).toBe('elk');
   });
 
@@ -33,8 +31,6 @@ describe('layout fallback', () => {
   });
 
   it('falls through to dagre when the caller-supplied fallback is absent too', () => {
-    // Mindmap's fallback is `cose-bilkent`, absent from tiny. Before the chain ended at
-    // dagre this threw, so an unregistered `mindmap.layout` would have taken tiny down.
     vi.spyOn(log, 'warn').mockImplementation(() => undefined);
     expect(
       getRegisteredLayoutAlgorithm('no-such-layout', { fallback: 'not-registered-either' })
@@ -52,7 +48,7 @@ describe('layout fallback', () => {
   );
 
   it('resolves a layout the moment it is registered', () => {
-    // What `@mermaid-js/layout-elk` does, and what tiny users do by hand.
+    // What an external layout package does.
     registerLayoutLoaders([
       {
         name: 'test-only-layout',

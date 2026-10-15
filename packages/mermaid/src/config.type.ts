@@ -97,8 +97,7 @@ export interface MermaidConfig {
   /**
    * Defines which layout algorithm to use for rendering the diagram.
    *
-   * Defaults to `elk`, which is bundled with mermaid. The `tiny` build omits
-   * ELK to stay small and falls back to `dagre`.
+   * Defaults to `elk`, which is bundled with mermaid.
    *
    */
   layout?: string;

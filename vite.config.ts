@@ -55,7 +55,6 @@ export default defineConfig({
   },
   define: {
     // Needs to be string
-    'injected.includeLargeFeatures': 'true',
     'injected.profiling': 'false',
     'import.meta.vitest': 'undefined',
     packageVersion: "'0.0.0'",

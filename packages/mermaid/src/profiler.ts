@@ -307,7 +307,7 @@ class Profiler {
 
 type GlobalWithProfiler = typeof globalThis & {
   __mermaidProfiler?: Profiler;
-  injected?: { includeLargeFeatures: boolean; profiling: boolean; version: string };
+  injected?: { profiling: boolean; version: string };
 };
 
 // `injected.*` are build-time constants that esbuild's `define` replaces with
@@ -317,19 +317,18 @@ type GlobalWithProfiler = typeof globalThis & {
 // production-equivalent default. Bundled builds replace `injected.profiling` with a
 // literal and never read this object, so it has no effect there.
 (globalThis as GlobalWithProfiler).injected ??= {
-  includeLargeFeatures: true,
   profiling: false,
   version: '0.0.0',
 };
 
 // A SINGLE profiler instance shared across every mermaid bundle on the page.
 //
-// External layout packages (e.g. @mermaid-js/layout-elk) are built as separate
-// bundles that inline their own copy of mermaid's rendering pipeline — including
-// this module and the phase spans inside createCommonLayoutRenderer. Without
-// sharing, each bundle gets its own Profiler, so the elk layout's phase spans
-// would land in a different instance than the one the rest of the render
-// (parse/serialize/start/stop) and the Dev Explorer use — and silently vanish.
+// External layout packages are built as separate bundles that may inline their
+// own copy of mermaid's rendering pipeline — including this module and the phase
+// spans inside createCommonLayoutRenderer. Without sharing, each bundle gets its
+// own Profiler, so a layout's phase spans would land in a different instance
+// than the one the rest of the render (parse/serialize/start/stop) and the Dev
+// Explorer use — and silently vanish.
 // Resolving the instance from globalThis collapses them into one, so spans from
 // every bundle nest into the same tree.
 //
