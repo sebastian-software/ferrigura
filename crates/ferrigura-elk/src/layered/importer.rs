@@ -4,23 +4,25 @@
 //!
 //! The layered graph from the ELK graph: `ElkGraphImporter` and `ElkGraphTransformer.importGraph`.
 //!
-//! Only graphs with nodes and no edges, ports or labels are imported so far.
-//! Anything else is reported as unsupported.
+//! Graphs of plain nodes and edges between them. Ports and labels on nodes, nested
+//! graphs and self loops are reported as unsupported.
+
+use std::collections::HashMap;
 
 use crate::core::data::OptionValue;
-use crate::core::data::enums::{ComponentOrderingStrategy, OrderingStrategy};
+use crate::core::data::enums::{
+    ComponentOrderingStrategy, EdgeLabelPlacement, GraphProperties, OrderingStrategy,
+};
 use crate::core::math::KVector;
 use crate::error::LayoutError;
-use crate::graph::ElkNode;
-use crate::layered::lgraph::{LGraph, LNode};
+use crate::graph::{ElkEdge, ElkNode};
+use crate::layered::graph_util::create_port;
+use crate::layered::lgraph::{LEdge, LGraph, LLabel, LNode, PortType};
 use crate::layered::options;
 use crate::layered::spacings::{SPACING_BASE_VALUE, apply_base_value};
 
-/// `importGraph` for a root whose children are plain nodes.
+/// `importGraph` for a root whose children are plain nodes, joined by edges.
 pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
-    if !root.edges.is_empty() {
-        return Err(LayoutError::Unsupported("edges".to_string()));
-    }
     let mut graph = LGraph {
         properties: root.properties.clone(),
         root_id: root.id.clone(),
@@ -78,7 +80,110 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
     {
         apply_base_value(&mut graph, base);
     }
+    import_edges(root, &mut graph, needs_model_order)?;
     Ok(graph)
+}
+
+/// `importFlatGraph` for the root's edges: each edge gets a port of its own on its source and
+/// on its target node, as `transformEdge` creates them for edges that meet nodes.
+fn import_edges(
+    root: &ElkNode,
+    graph: &mut LGraph,
+    needs_model_order: bool,
+) -> Result<(), LayoutError> {
+    let index_of: HashMap<String, usize> = graph
+        .nodes
+        .iter()
+        .enumerate()
+        .map(|(index, node)| (node.id.clone(), index))
+        .collect();
+    let mut model_order = 0;
+    for edge in &root.edges {
+        // The model order counts every edge of the graph, laid out or not.
+        let edge_model_order = needs_model_order.then(|| {
+            model_order += 1;
+            model_order - 1
+        });
+        if edge.properties.bool_of(options::NO_LAYOUT) {
+            continue;
+        }
+        let (Some(source), Some(target)) = (edge.sources.first(), edge.targets.first()) else {
+            return Err(LayoutError::Unsupported(format!(
+                "edge {} without a source or a target",
+                edge.id
+            )));
+        };
+        let (Some(&source_node), Some(&target_node)) =
+            (index_of.get(source.as_str()), index_of.get(target.as_str()))
+        else {
+            return Err(LayoutError::Unsupported(format!(
+                "edge {} to a node outside the root",
+                edge.id
+            )));
+        };
+        if source_node == target_node {
+            return Err(LayoutError::Unsupported(format!("self loop {}", edge.id)));
+        }
+        let source_port = create_port(graph, source_node, PortType::OUTPUT);
+        let target_port = create_port(graph, target_node, PortType::INPUT);
+        let index = graph.edges.len();
+        graph.ports[source_port].outgoing.push(index);
+        graph.ports[target_port].incoming.push(index);
+        let labels = import_edge_labels(edge, graph);
+        graph.edges.push(LEdge {
+            id: edge.id.clone(),
+            source: source_port,
+            target: target_port,
+            labels,
+            model_order: edge_model_order,
+            properties: edge.properties.clone(),
+        });
+    }
+    Ok(())
+}
+
+/// `transformEdge`'s labels: those with text and laid out, with their placement recorded. A
+/// centred label makes the graph need label dummies, a head or tail one end labels.
+fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LLabel> {
+    let mut labels = Vec::new();
+    for label in &edge.labels {
+        let text = label.text.clone().unwrap_or_default();
+        if text.is_empty() || label.properties.bool_of(options::NO_LAYOUT) {
+            continue;
+        }
+        let placement = label
+            .properties
+            .enum_of::<EdgeLabelPlacement>(options::EDGE_LABELS_PLACEMENT)
+            .unwrap_or(EdgeLabelPlacement::CENTER);
+        let mut properties = label.properties.clone();
+        match placement {
+            EdgeLabelPlacement::HEAD | EdgeLabelPlacement::TAIL => {
+                graph.graph_properties.insert(GraphProperties::END_LABELS);
+            }
+            EdgeLabelPlacement::CENTER => {
+                graph
+                    .graph_properties
+                    .insert(GraphProperties::CENTER_LABELS);
+                properties.set(
+                    options::EDGE_LABELS_PLACEMENT,
+                    Some(OptionValue::Enum {
+                        class: "EdgeLabelPlacement",
+                        name: "CENTER".to_string(),
+                    }),
+                );
+            }
+        }
+        labels.push(LLabel {
+            text,
+            size: KVector {
+                x: label.shape.width,
+                y: label.shape.height,
+            },
+            position: KVector::default(),
+            properties,
+        });
+    }
+    labels
 }
 
 /// `ElkGraphImporter.needsModelOrderBasedOnParent`: whether the graph's options use the input order.

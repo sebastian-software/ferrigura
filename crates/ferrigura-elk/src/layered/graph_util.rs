@@ -4,9 +4,60 @@
 //!
 //! The helpers of `LGraphUtil` that the layered processors share.
 
-use crate::core::data::enums::Alignment;
-use crate::layered::lgraph::{LGraph, LNode};
+use crate::core::data::enums::{Alignment, Direction, GraphProperties, PortSide};
+use crate::layered::lgraph::{LGraph, LNode, LPort, PortType};
 use crate::layered::options;
+
+/// `LGraphUtil.createPort(node, null, type, graph)` for a port of its own: it sits on the side
+/// that edges of its type leave or enter by, in the layout direction. Returns its index in
+/// `LGraph::ports`; merged ports are not ported yet.
+pub fn create_port(graph: &mut LGraph, node: usize, port_type: PortType) -> usize {
+    let direction = graph
+        .properties
+        .enum_of::<Direction>(options::DIRECTION)
+        .unwrap_or(Direction::UNDEFINED);
+    let default_side = side_from_direction(direction);
+    let side = match port_type {
+        PortType::OUTPUT => default_side,
+        PortType::INPUT => opposed(default_side),
+    };
+    let across_flow = match direction {
+        Direction::LEFT | Direction::RIGHT => matches!(side, PortSide::NORTH | PortSide::SOUTH),
+        Direction::UP | Direction::DOWN => matches!(side, PortSide::EAST | PortSide::WEST),
+        _ => false,
+    };
+    if across_flow {
+        graph
+            .graph_properties
+            .insert(GraphProperties::NORTH_SOUTH_PORTS);
+    }
+    graph.ports.push(LPort::new(node, side));
+    let index = graph.ports.len() - 1;
+    graph.nodes[node].ports.push(index);
+    index
+}
+
+/// `PortSide.fromDirection`: the side that a flow in `direction` leaves a node by.
+pub fn side_from_direction(direction: Direction) -> PortSide {
+    match direction {
+        Direction::UP => PortSide::NORTH,
+        Direction::DOWN => PortSide::SOUTH,
+        Direction::LEFT => PortSide::WEST,
+        Direction::RIGHT => PortSide::EAST,
+        _ => PortSide::UNDEFINED,
+    }
+}
+
+/// `PortSide.opposed()`.
+pub fn opposed(side: PortSide) -> PortSide {
+    match side {
+        PortSide::NORTH => PortSide::SOUTH,
+        PortSide::SOUTH => PortSide::NORTH,
+        PortSide::EAST => PortSide::WEST,
+        PortSide::WEST => PortSide::EAST,
+        PortSide::UNDEFINED => PortSide::UNDEFINED,
+    }
+}
 
 /// `LGraphUtil.placeNodesHorizontally(layer, xoffset)`: places the nodes of one layer across
 /// the layer's width, by their alignment, and sets their x positions.

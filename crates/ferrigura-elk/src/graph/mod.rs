@@ -51,10 +51,12 @@ pub struct ElkLabel {
     pub properties: PropertyHolder,
 }
 
-/// An edge. Edges are not imported yet; the field is here for the model's shape.
+/// An edge. Its endpoints are node ids; edges at ports are not supported yet.
 #[derive(Debug, Clone, Default)]
 pub struct ElkEdge {
     pub id: String,
+    pub sources: Vec<String>,
+    pub targets: Vec<String>,
     pub properties: PropertyHolder,
     pub labels: Vec<ElkLabel>,
 }

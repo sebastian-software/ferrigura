@@ -7,7 +7,7 @@
 use std::collections::BTreeSet;
 
 use crate::core::data::JavaEnum;
-use crate::core::data::enums::{GraphProperties, NodeType};
+use crate::core::data::enums::{GraphProperties, NodeType, PortSide};
 use crate::core::data::property::PropertyHolder;
 use crate::core::math::{KVector, Spacing};
 use crate::java::random::Random;
@@ -33,6 +33,75 @@ pub struct LNode {
     pub model_order: Option<usize>,
     /// The layer it was assigned to, once layering has run.
     pub layer: Option<usize>,
+    /// `LNode.getPorts()`: indices into `LGraph::ports`, in order.
+    pub ports: Vec<usize>,
+}
+
+/// Whether a port is where an edge leaves or enters its node, `PortType`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PortType {
+    INPUT,
+    OUTPUT,
+}
+
+/// A port of a node, `LPort`: the place where edges meet the node.
+#[derive(Debug, Clone)]
+pub struct LPort {
+    /// The index of the node in `LGraph::nodes`.
+    pub node: usize,
+    /// `LPort.getSide()`: the side of the node the port sits on.
+    pub side: PortSide,
+    /// `LPort.getPosition()`, relative to the node.
+    pub position: KVector,
+    /// `LPort.getSize()`.
+    pub size: KVector,
+    /// Indices into `LGraph::edges` of the edges that leave the port.
+    pub outgoing: Vec<usize>,
+    /// Indices into `LGraph::edges` of the edges that enter the port.
+    pub incoming: Vec<usize>,
+}
+
+impl LPort {
+    /// A port on `side` of `node`, without edges and at the node's origin.
+    pub fn new(node: usize, side: PortSide) -> Self {
+        LPort {
+            node,
+            side,
+            position: KVector::default(),
+            size: KVector::default(),
+            outgoing: Vec::new(),
+            incoming: Vec::new(),
+        }
+    }
+}
+
+/// An edge of the layered graph, `LEdge`.
+#[derive(Debug, Clone, Default)]
+pub struct LEdge {
+    /// The id of the ELK edge this came from.
+    pub id: String,
+    /// The index in `LGraph::ports` of the port the edge leaves.
+    pub source: usize,
+    /// The index in `LGraph::ports` of the port the edge enters.
+    pub target: usize,
+    /// `LEdge.getLabels()`: the labels with text, in the order of the ELK edge.
+    pub labels: Vec<LLabel>,
+    /// `InternalProperties.MODEL_ORDER`, when the input order matters.
+    pub model_order: Option<usize>,
+    /// The options of the ELK edge.
+    pub properties: PropertyHolder,
+}
+
+/// A label of an edge, `LLabel`.
+#[derive(Debug, Clone, Default)]
+pub struct LLabel {
+    pub text: String,
+    /// `LLabel.getSize()`.
+    pub size: KVector,
+    /// `LLabel.getPosition()`, relative to the edge.
+    pub position: KVector,
+    /// The options of the ELK label, such as its placement.
+    pub properties: PropertyHolder,
 }
 
 impl LNode {
@@ -75,6 +144,10 @@ pub struct LGraph {
     pub layer_sizes: Vec<KVector>,
     /// `InternalProperties.RANDOM`: the generator the crossing minimization draws from.
     pub random: Option<Random>,
+    /// The ports of the nodes, indexed by `LNode::ports`.
+    pub ports: Vec<LPort>,
+    /// The edges, indexed by the ports' outgoing and incoming lists.
+    pub edges: Vec<LEdge>,
 }
 
 impl LGraph {

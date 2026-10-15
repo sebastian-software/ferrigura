@@ -16,8 +16,8 @@
 use crate::core::data::property::PropertyHolder;
 use crate::core::data::{option_by_suffix, parse_value};
 use crate::error::LayoutError;
-use crate::graph::{ElkLabel, ElkNode, ElkPort, Shape};
-use crate::json::{JsonLabel, JsonNode, JsonPort, option_pairs_of};
+use crate::graph::{ElkEdge, ElkLabel, ElkNode, ElkPort, Shape};
+use crate::json::{JsonEdge, JsonLabel, JsonNode, JsonPort, option_pairs_of};
 
 /// `transformNode` for the root, with no parent.
 pub fn import_graph(root: &JsonNode) -> Result<ElkNode, LayoutError> {
@@ -47,13 +47,49 @@ fn transform_node(json: &JsonNode) -> Result<ElkNode, LayoutError> {
     for child in &json.children {
         node.children.push(transform_node(child)?);
     }
-    if !json.edges.is_empty() {
+    for edge in &json.edges {
+        node.edges.push(transform_edge(edge)?);
+    }
+    Ok(node)
+}
+
+/// `transformEdge`: the endpoints, the options and the labels. Endpoints at ports, and edges
+/// without exactly one source and one target, are not supported yet.
+fn transform_edge(json: &JsonEdge) -> Result<ElkEdge, LayoutError> {
+    if json.source_port.is_some() || json.target_port.is_some() {
         return Err(LayoutError::Unsupported(format!(
-            "edges in graph {} (edge import is the next step)",
+            "edge {} at ports",
             json.id
         )));
     }
-    Ok(node)
+    let endpoints = |list: &[String], single: &Option<String>| -> Vec<String> {
+        if list.is_empty() {
+            single.iter().cloned().collect()
+        } else {
+            list.to_vec()
+        }
+    };
+    let sources = endpoints(&json.sources, &json.source);
+    let targets = endpoints(&json.targets, &json.target);
+    if sources.len() != 1 || targets.len() != 1 {
+        return Err(LayoutError::Unsupported(format!(
+            "edge {} with several sources or targets",
+            json.id
+        )));
+    }
+    let mut edge = ElkEdge {
+        id: json.id.clone(),
+        sources,
+        targets,
+        labels: transform_labels(&json.labels)?,
+        ..ElkEdge::default()
+    };
+    transform_properties(
+        json.layout_options.as_ref(),
+        json.properties.as_ref(),
+        &mut edge.properties,
+    )?;
+    Ok(edge)
 }
 
 /// `transformProperties`: `layoutOptions` if present, else `properties`.
@@ -175,14 +211,28 @@ mod tests {
     }
 
     #[test]
-    fn edges_are_reported_as_unsupported() {
+    fn edges_between_nodes_are_read_and_edges_at_ports_are_not() {
         let root = parse(json!({
             "id": "root",
             "children": [{ "id": "a" }, { "id": "b" }],
-            "edges": [{ "id": "e", "sources": ["a"], "targets": ["b"] }]
+            "edges": [{
+                "id": "e",
+                "sources": ["a"],
+                "targets": ["b"],
+                "labels": [{ "text": "x", "width": 4, "height": 2 }]
+            }]
+        }));
+        let node = import_graph(&root).unwrap();
+        assert_eq!(node.edges.len(), 1);
+        assert_eq!(node.edges[0].sources, vec!["a".to_string()]);
+        assert_eq!(node.edges[0].labels.len(), 1);
+        let at_ports = parse(json!({
+            "id": "root",
+            "children": [{ "id": "a" }, { "id": "b" }],
+            "edges": [{ "id": "e", "sources": ["a"], "targets": ["b"], "sourcePort": "p" }]
         }));
         assert!(matches!(
-            import_graph(&root),
+            import_graph(&at_ports),
             Err(LayoutError::Unsupported(_))
         ));
     }

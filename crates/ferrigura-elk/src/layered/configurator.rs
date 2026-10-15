@@ -31,6 +31,13 @@ pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
             graph.graph_properties
         )));
     }
+    // Edges need the processors that place and route them, which are not ported yet.
+    if !graph.edges.is_empty() {
+        return Err(LayoutError::Unsupported(
+            "edges (the layering, crossing minimization and routing with edges are not ported yet)"
+                .to_string(),
+        ));
+    }
     if !graph.properties.has(options::DIRECTION)
         || graph.properties.enum_of::<Direction>(options::DIRECTION) == Some(Direction::UNDEFINED)
     {
