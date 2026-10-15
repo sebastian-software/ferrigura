@@ -271,9 +271,9 @@ Java class to Rust module, as ported. `partial` means the nodes-only path works 
 
 Not yet ported, with the checkpoint in mind: `alg.common/networksimplex` (`NetworkSimplex` itself), the Brandes & Koepf placer and its logs, edge import, `doLayout` with `ComponentsProcessor`, nested graphs, and every processor the nodes-only path skips.
 
-## 10. Stage C status: the nodes-only checkpoint
+## 10. Stage C status
 
-The checkpoint from the coordinator: a nodes-only corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for 20 of the 22 supported corpus cases**: every Mermaid nodes-only case and `synthetic__nodes-only-1` match elkjs in names, nesting, the full trace with the Brandes & Koepf logs, node boxes and root size (`tests/trace.rs`, `tests/differential.rs`). **Not met for `synthetic__nodes-only-3` and `-5`**: elkjs orders their nodes in the layers by its layer sweep, which is not ported. Their node order differs, so the coordinates differ (by 180 and 270), and the logs that print the order differ too. Their names and nesting match.
+The checkpoint from the coordinator: a corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for the 61 supported corpus cases in node boxes, edge sections and label boxes** (tolerance 0, `tests/differential.rs`), and for 60 of them in the full trace with the logs (`tests/trace.rs`). The one case whose trace differs, `state-diagram-v2__elk-start-end-edge-centering__0`, prints one Brandes & Koepf size one ulp away from elkjs (`14.013293266296388` against `14.013293266296387`); its coordinates still match. The nodes-only cases, including `synthetic__nodes-only-3` and `-5` whose node order comes from the layer sweep, match in names, nesting and the full trace.
 
 Corrections to §3, which lists the configurations as if they were unconditional:
 
@@ -295,21 +295,23 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 
 ### Coverage
 
-- Corpus: 22 of 132 cases pass the driver (the 3 synthetic and 19 nodes-only Mermaid cases). The other 110 need edges (108) or nested graphs (2), and report `Unsupported`.
-- Of the 22, 20 match elkjs exactly in node boxes and root size (`coordinates_match_elkjs`, tolerance 0, floor 20). The same 20 match the full trace, names and logs (`report_agreement_on_supported_cases`).
-- Crate tests: 41 unit tests and the differential and trace tests pass, with their diagnostics still ignored; `clippy -D warnings` is clean.
+- Corpus: 61 of 136 cases pass the driver. The other 75 report `Unsupported`: 31 sort several ports by model order (`ModelOrderPortComparator`, not ported), 24 are nested graphs, 6 need end labels, 4 sort nodes without a model order, 3 have self loops, 4 are UP or LEFT directions, 1 has layer constraints, and 2 are non-layered algorithms (`elk.box`, `elk.rectpacking`).
+- All 61 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 61). 60 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 60).
+- Crate tests: 137 unit tests; the differential and trace tests pass, with their diagnostics still ignored; `clippy -D warnings` is clean.
 
 ### Next, in order
 
-1. The layer sweep crossing minimizer (`p3order`): `GraphInfoHolder`, the barycenter heuristic, and the seeded `java.util.Random` tie-breaking that `LayerSweepCrossingMinimizer` uses without `considerModelOrder`. This closes `synthetic__nodes-only-3` and `-5`; after it the logs test can cover all 22 cases.
-2. Edge import, then the orthogonal router with edges (`p5edges`), the processors that edges need, and network simplex for connected graphs.
-3. `doLayout` with `ComponentsProcessor`, for containers with `SEPARATE_CHILDREN`.
-4. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
+1. `ModelOrderPortComparator`: the 31 cases that sort several ports by model order.
+2. Nested graphs (`RecursiveGraphLayoutEngine`, and `ComponentsProcessor` for `SEPARATE_CHILDREN`): 24 cases.
+3. End labels (head and tail labels): 6 cases.
+4. The rest: node sorting without a model order, self loops, UP and LEFT directions, layer constraints, and the two non-layered algorithms (14 cases).
+5. The one-ulp Brandes & Koepf size in `state-diagram-v2__elk-start-end-edge-centering__0`.
+6. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
 
-### Edge pipeline: state and order (work in progress)
+### Edge pipeline: state and order
 
 The simplest corpus case with edges, `requirement__a-simple-requirement-diagram-elk-layout__0` (two nodes, one edge with a centred label), needs the 26 processors that its elkjs trace lists, in order: transformation to the input direction, edge and layer constraint reversal, depth-first cycle removal, label dummy insertions, layer constraint pre-processing, network simplex layering, layer constraint post-processing, edge splitting, port side processing, port order processing, sort by input model (with ports), minimize crossings, layer constraint edge reversal, node and port label placement and node sizing, node margin calculation, label dummy switching, label side selection, Brandes & Koepf, layer size calculation, orthogonal edge routing, edge joining, label dummy removal, sort end labels, restoring reversed edges, the resizer, and the transformation back.
 
-Done on this branch, in order: edges between nodes with their labels are imported (a port per edge end, as `transformEdge` does); the depth-first cycle breaker with `LEdge.reverse`; the label dummy insertion and the long edge split (`dummies.rs`); the port sides and the port order (`ports.rs`); the DOWN transform of ports, edges and the label side (`intermediate.rs`); the network simplex solver (`common/networksimplex.rs`, ported by a sub-agent and checked by its tests) and the layerer (`p2layers.rs`); the sort by input model with its port and layer logs; the long edge join (`dummies.rs`); the guards for layer constraints, reversed edges, and end labels; the sweep guard for layers of several nodes with edges (`p3order.rs`); and the transfer of edge routes as sections (`transfer.rs`, output in `lib.rs`). The nodes-only corpus still matches elkjs in coordinates and trace after each step. The configurator still rejects graphs with edges, so the corpus coverage stays at 22 until the pipeline is complete.
+Done on this branch, in order: edge import with a port per end; the depth-first cycle breaker and the reversed edge restorer; label dummy insertion, the long edge split and join; port sides and port order; the DOWN transform; network simplex and the layerer; the sort by input model with its logs; the layer sweep with edges; the transfer of edge sections and label boxes; the orthogonal router; Brandes & Koepf with edges; the label dummy switcher, side selector and remover; node margins and the label and node sizes; and the configurator, which now accepts edges and centred labels.
 
-Still open, in dependency order: the orthogonal router with edges (`p5edges`, a sub-agent); the label dummy switcher, the label side selector and the label dummy remover (`labels.rs`, a sub-agent); Brandes & Koepf with edges (`p4nodes/bk.rs`, a sub-agent); the node dimension calculation of `alg.common/nodespacing` for the margins and the port placement, about 6000 Java lines of which the reduced path needs a large part (not started; port positions decide the edge anchors); the label positions in the transfer; the edge comparison in the differential test; and then enabling the configurator for edges and centred labels, which is the step that makes the corpus cases reach the new code.
+Still open: the features in the coverage list above, and the one-ulp Brandes & Koepf size in `state-diagram-v2__elk-start-end-edge-centering__0`.
