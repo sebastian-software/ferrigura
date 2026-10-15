@@ -12,8 +12,9 @@
 use crate::core::data::JavaEnum;
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{
-    Alignment, Direction, DirectionCongruency, EdgeLabelSideSelection,
-    IntermediateProcessorStrategy, NodeType, OrderingStrategy, PortConstraints, PortSide,
+    Alignment, Direction, DirectionCongruency, EdgeLabelSideSelection, GraphProperties,
+    IntermediateProcessorStrategy, LayerConstraint, NodeType, OrderingStrategy, PortConstraints,
+    PortSide,
 };
 use crate::core::math::{KVector, Spacing};
 use crate::core::util::progress::{Monitor, ProgressMonitor};
@@ -103,6 +104,42 @@ pub fn run(
         }
         IntermediateProcessorStrategy::LONG_EDGE_JOINER => {
             dummies::join_long_edges(graph);
+        }
+        // Without layer constraints these steps change nothing; with them, they are not ported.
+        IntermediateProcessorStrategy::EDGE_AND_LAYER_CONSTRAINT_EDGE_REVERSER
+        | IntermediateProcessorStrategy::LAYER_CONSTRAINT_PREPROCESSOR
+        | IntermediateProcessorStrategy::LAYER_CONSTRAINT_POSTPROCESSOR
+        | IntermediateProcessorStrategy::IN_LAYER_CONSTRAINT_PROCESSOR => {
+            let constrained = graph.nodes.iter().any(|node| {
+                matches!(
+                    node.properties
+                        .enum_of::<LayerConstraint>(options::LAYER_CONSTRAINT),
+                    Some(constraint) if constraint != LayerConstraint::NONE
+                )
+            });
+            if constrained {
+                return Err(LayoutError::Unsupported(
+                    "layer constraints (the layer constraint processors)".to_string(),
+                ));
+            }
+        }
+        // Reversed edges are restored by a processor that is not ported yet; with none, it does nothing.
+        IntermediateProcessorStrategy::REVERSED_EDGE_RESTORER => {
+            if graph.edges.iter().any(|edge| edge.reversed) {
+                return Err(LayoutError::Unsupported(
+                    "restoring reversed edges (ReversedEdgeRestorer)".to_string(),
+                ));
+            }
+        }
+        IntermediateProcessorStrategy::END_LABEL_SORTER => {
+            if graph
+                .graph_properties
+                .contains(&GraphProperties::END_LABELS)
+            {
+                return Err(LayoutError::Unsupported(
+                    "head and tail labels (the end label processors)".to_string(),
+                ));
+            }
         }
         IntermediateProcessorStrategy::PORT_LIST_SORTER => {
             ports::sort_ports(graph)?;
