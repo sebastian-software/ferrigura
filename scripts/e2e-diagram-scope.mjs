@@ -55,6 +55,9 @@ const IGNORABLE_PREFIXES = [
   'CONTRIBUTING.md',
   'README.md',
   'FORK.md',
+  'GLOSSARY.md',
+  // Port planning and status
+  'docs-port/',
   // Config/tooling that doesn't affect rendering
   'cspell.config.yaml',
   // Documentation (source and generated)

@@ -31,6 +31,10 @@ Measured on 15 October 2026 against upstream commit `e28fbd9de`, with both check
 
 So far the cleanup has mostly removed what surrounds the library: seven packages, the website and the tooling they needed, which halves what `pnpm install` resolves. The bundles are only about 2% smaller, and most of that comes from removing the dagre layout. Most of the dead code removed from the library was never bundled in the first place, because nothing imported it.
 
+## Rust port
+
+The fork is being ported to Rust as **ferrigura**: a library, a command-line tool and a Node.js addon that render diagram text to SVG without a browser. [docs-port/](./docs-port/README.md) holds the plan, the decisions and the status; the TypeScript implementation stays as the reference until each diagram type reaches parity.
+
 ## Repository layout
 
 | Path                        | Contents                                                                |
