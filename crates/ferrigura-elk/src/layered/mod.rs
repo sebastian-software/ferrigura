@@ -19,6 +19,7 @@ pub mod importer;
 pub mod intermediate;
 pub mod labels;
 pub mod lgraph;
+pub mod nodespacing;
 pub mod options;
 pub mod p1cycles;
 pub mod p2layers;

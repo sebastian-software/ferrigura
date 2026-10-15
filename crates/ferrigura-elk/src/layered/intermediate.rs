@@ -154,16 +154,10 @@ pub fn run(
             ports::sort_ports(graph)?;
         }
         IntermediateProcessorStrategy::LABEL_AND_NODE_SIZE_PROCESSOR => {
-            // Without labels or size constraints the processor leaves the nodes alone.
-            if graph.nodes.iter().any(|node| {
-                !node
-                    .properties
-                    .enum_set_is_empty(options::NODE_SIZE_CONSTRAINTS)
-            }) {
-                return Err(LayoutError::Unsupported(
-                    "node size constraints".to_string(),
-                ));
-            }
+            crate::layered::nodespacing::label_and_node_size(graph)?;
+        }
+        IntermediateProcessorStrategy::INNERMOST_NODE_MARGIN_CALCULATOR => {
+            crate::layered::nodespacing::node_margins(graph)?;
         }
         IntermediateProcessorStrategy::HIERARCHICAL_NODE_RESIZER => {
             resize_root(graph)?;
