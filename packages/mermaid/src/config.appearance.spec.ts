@@ -11,6 +11,7 @@ import {
   setSiteConfig,
   reset,
 } from './config.js';
+import { detectors } from './diagram-api/detectType.js';
 import { addDiagrams } from './diagram-api/diagram-orchestration.js';
 import { getDiagramConfigKey } from './diagram-api/diagramConfigKeys.js';
 import { mermaidAPI } from './mermaidAPI.js';
@@ -137,6 +138,14 @@ describe('per-diagram appearance defaults', () => {
       expect((await configFor('classDiagram-v2\n  class Duck')).theme).toBe('forest');
     });
 
+    it('reaches a diagram type whose section is named after its beta keyword', async () => {
+      // The wardley diagram's id is `wardley`, its config section `wardley-beta`.
+      mermaidAPI.initialize({ 'wardley-beta': { theme: 'forest', look: 'handDrawn' } });
+      const config = await configFor('wardley-beta\n  component A [0.5, 0.5]');
+      expect(config.theme).toBe('forest');
+      expect(config.look).toBe('handDrawn');
+    });
+
     it('opts a diagram type into a layout', async () => {
       mermaidAPI.initialize({ er: { layout: 'elk.stress' } });
       expect((await configFor(REDESIGNED_DIAGRAMS.er)).layout).toBe('elk.stress');
@@ -157,6 +166,13 @@ describe('per-diagram appearance defaults', () => {
       expect(config.themeVariables.primaryColor).toBe(
         theme.forest.getThemeVariables().primaryColor
       );
+    });
+
+    it('frontmatter reaches a diagram type whose section is named after its beta keyword', async () => {
+      const config = await configFor(
+        '---\nconfig:\n  wardley-beta:\n    look: handDrawn\n---\nwardley-beta\n  component A [0.5, 0.5]'
+      );
+      expect(config.look).toBe('handDrawn');
     });
 
     it('a diagram-scoped frontmatter value beats a global one in the same frontmatter', async () => {
@@ -296,6 +312,15 @@ describe('per-diagram appearance defaults', () => {
       expect(getDiagramConfigKey('flowchart-v2')).toBe('flowchart');
       expect(getDiagramConfigKey('classDiagram')).toBe('class');
       expect(getDiagramConfigKey('stateDiagram')).toBe('state');
+    });
+
+    it('maps every registered diagram type to a config section', () => {
+      // Only these have nothing to configure.
+      const unconfigurable = new Set(['error', '---', 'info']);
+      const missing = Object.keys(detectors).filter(
+        (type) => !unconfigurable.has(type) && !(getDiagramConfigKey(type) in defaultConfig)
+      );
+      expect(missing).toEqual([]);
     });
   });
 });

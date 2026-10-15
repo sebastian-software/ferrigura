@@ -82,11 +82,12 @@ These are deprecated, legacy or redundant, but removing them changes user-visibl
 - An architecture diagram starting with the graduated `architecture` keyword passed detection and then failed to parse: the grammar accepted only `architecture-beta`, and the token builder guarded a keyword that did not exist. The grammar now accepts both, as the beta policy requires.
 - The requirement diagram detector also claimed text starting with `requirement`, which its grammar rejects. It now matches only `requirementDiagram`, so such text gets the "unknown diagram" error instead of a parse error.
 - The C4 detector anchored only `C4Context` to the start of the text. `C4Container`, `C4Component`, `C4Dynamic` and `C4Deployment` matched anywhere, and since C4 is checked before most diagrams, a flowchart or sequence diagram that merely mentioned one of them was rendered as C4.
+- The Wardley config section, keyed `wardley-beta`, never applied its `theme`, `look` and `layout`: `diagramConfigKeys.ts` did not map the `wardley` diagram type to it, and the schema defaults generator skipped it, so the section was missing from `defaultConfig` and front matter or directives dropped it as an unknown key.
 
 ## Upstream bugs noticed along the way (not fixed)
 
-- Wardley: its config section is keyed `wardley-beta` and is missing from `diagramConfigKeys.ts`, so per-diagram `theme`, `look` and `layout` are not applied.
 - `flowchart.inheritDir` gets its default from a `c4.flowchart` block in `defaultConfig.ts`.
 - `mermaid.run()` calls `parseError` twice for a diagram that fails to render.
 - `setLogLevel` lowercases a string level to check it, but looks up the original spelling.
 - The radar diagram imports types from the parser's `dist/` output instead of the package.
+- Railroad: like Wardley, `railroad` is missing from the schema defaults generator's key list in `.build/jsonSchema.ts`. Options only railroad has, such as `arcRadius`, `compactMode` and `verticalSeparation`, are therefore not in `configKeys`, and front matter or directives drop them.

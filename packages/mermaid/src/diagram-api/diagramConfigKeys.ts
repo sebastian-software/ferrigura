@@ -2,6 +2,7 @@
  * Diagram types whose id differs from the `MermaidConfig` key their configuration lives
  * under. Several share one section on purpose: they are renderers or parser versions of
  * one diagram, so a setting made under `flowchart`, `class` or `state` must reach any of them.
+ * `wardley` keeps the section named after its beta keyword, which existing configs use.
  */
 const DIAGRAM_CONFIG_KEY_ALIASES: Record<string, string> = {
   'flowchart-v2': 'flowchart',
@@ -11,6 +12,7 @@ const DIAGRAM_CONFIG_KEY_ALIASES: Record<string, string> = {
   railroadAbnf: 'railroad',
   railroadEbnf: 'railroad',
   railroadPeg: 'railroad',
+  wardley: 'wardley-beta',
 };
 
 /**
