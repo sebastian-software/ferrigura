@@ -106,3 +106,23 @@ fn coordinates_match_elkjs() {
     }
     println!("compared {compared} cases; largest coordinate difference {worst}");
 }
+
+/// Cases that pass the driver today. The floor only goes up: a change that makes a
+/// case unsupported again fails here, and so does CI. Raise it as the port grows.
+const SUPPORTED_FLOOR: usize = 22;
+
+#[test]
+fn supported_cases_do_not_regress() {
+    let supported = case_names()
+        .into_iter()
+        .filter(|name| {
+            let case = load(name);
+            let input: JsonNode = serde_json::from_value(case["input"].clone()).unwrap();
+            ferrigura_elk::layout(&input, false).is_ok()
+        })
+        .count();
+    assert!(
+        supported >= SUPPORTED_FLOOR,
+        "{supported} corpus cases pass the driver; the floor is {SUPPORTED_FLOOR}"
+    );
+}

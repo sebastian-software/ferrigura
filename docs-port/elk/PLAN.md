@@ -286,8 +286,9 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 
 ### Findings
 
-- **Option ids.** The registry is generated from the same ten melk files that elkjs bundles, and suffix lookup runs over all of them, as `getOptionDataBySuffix` does. Mermaid's `elk.layered.layering.coffmanGraham.layerBound` matches no registered id: melk declares `coffmanGraham` at the algorithm level, so the registered id is `org.eclipse.elk.layered.coffmanGraham.layerBound`. The port drops the Mermaid key as elkjs does. Neither key changed the layout of an edgeless COFFMAN_GRAHAM graph in elkjs, so whether the option matters needs a corpus case with edges.
-- **Node promotion** is `org.eclipse.elk.layered.nodePromotion.strategy`, not under `layering`.
+- **Option ids.** The registry is generated from the same ten melk files that elkjs bundles, and suffix lookup runs over all of them, as `getOptionDataBySuffix` does. The first version of the generator read the melk nesting line by line and got 30 ids wrong; it now tracks brace blocks, and every registered id is found as a literal in the elkjs 0.9.3 bundle (the algorithm ids aside).
+- **Mermaid's `layeringLayerBound` key is effective.** `elk.layered.layering.coffmanGraham.layerBound` is a suffix of the registered id `org.eclipse.elk.layered.layering.coffmanGraham.layerBound`. On an 8-node graph with edges and COFFMAN_GRAHAM, elkjs gives 8 layers with bound 1 and 6 with bound 2 under that key, and 5 layers (no effect) under the shorter spellings `elk.layered.coffmanGraham.layerBound` and `org.eclipse.elk.layered.coffmanGraham.layerBound`. So the Mermaid key works; the shorter forms do not.
+- **Node promotion** is `org.eclipse.elk.layered.layering.nodePromotion.strategy`, under `layering` (the corrected reader).
 - **elkjs mutates its input** (the Stage B agent's finding): it adds `x`, `y`, `width`, `height`, `logging` and `$H` to the object it is given. The corpus stores the input before layout, so the port reads the same graph elkjs read.
 - **Output `$H`.** elkjs adds GWT identity hashes to its output. The corpus strips them; the port does not produce them.
 
