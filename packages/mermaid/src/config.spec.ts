@@ -67,6 +67,13 @@ describe('when working with site config', () => {
     expect(config.elk?.nodePlacementAlignment).toBeUndefined();
   });
 
+  it('keeps the flowchart inheritDir default in the flowchart section', () => {
+    const config = configApi.getConfig();
+
+    expect(config.flowchart?.inheritDir).toBe(false);
+    expect(config.c4).not.toHaveProperty('flowchart');
+  });
+
   it('should not force class diagram padding', () => {
     const config = configApi.getConfig();
 

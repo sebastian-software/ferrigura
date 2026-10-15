@@ -96,11 +96,6 @@ const config: RequiredDeep<MermaidConfig> = {
         fontWeight: this.personFontWeight,
       };
     },
-    flowchart: {
-      ...defaultConfigJson.flowchart,
-      inheritDir: false, // default to legacy behavior
-    },
-
     external_personFont: function () {
       return {
         fontFamily: this.external_personFontFamily,

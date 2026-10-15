@@ -83,10 +83,10 @@ These are deprecated, legacy or redundant, but removing them changes user-visibl
 - The requirement diagram detector also claimed text starting with `requirement`, which its grammar rejects. It now matches only `requirementDiagram`, so such text gets the "unknown diagram" error instead of a parse error.
 - The C4 detector anchored only `C4Context` to the start of the text. `C4Container`, `C4Component`, `C4Dynamic` and `C4Deployment` matched anywhere, and since C4 is checked before most diagrams, a flowchart or sequence diagram that merely mentioned one of them was rendered as C4.
 - The Wardley config section, keyed `wardley-beta`, never applied its `theme`, `look` and `layout`: `diagramConfigKeys.ts` did not map the `wardley` diagram type to it, and the schema defaults generator skipped it, so the section was missing from `defaultConfig` and front matter or directives dropped it as an unknown key.
+- `defaultConfig.ts` copied the whole flowchart section into `c4.flowchart`, apparently to default `flowchart.inheritDir` to `false`. The schema already sets that default in the right place, so the copy only put a stray `flowchart` section under `c4`.
 
 ## Upstream bugs noticed along the way (not fixed)
 
-- `flowchart.inheritDir` gets its default from a `c4.flowchart` block in `defaultConfig.ts`.
 - `mermaid.run()` calls `parseError` twice for a diagram that fails to render.
 - `setLogLevel` lowercases a string level to check it, but looks up the original spelling.
 - The radar diagram imports types from the parser's `dist/` output instead of the package.
