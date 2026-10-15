@@ -4,7 +4,7 @@ import "arch";
 
 entry Architecture:
     NEWLINE*
-    "architecture-beta"
+    ("architecture" | "architecture-beta")
     (
         NEWLINE
         | TitleAndAccessibilities

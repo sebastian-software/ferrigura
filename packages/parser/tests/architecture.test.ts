@@ -17,6 +17,27 @@ describe('architecture', () => {
       expectNoErrorsOrAlternatives(result);
       expect(result.value.$type).toBe(Architecture.$type);
     });
+
+    it.each([`architecture`, `  architecture  `, `architecture %% comment`])(
+      'should handle the graduated keyword without -beta',
+      (context: string) => {
+        const result = parse(context);
+        expectNoErrorsOrAlternatives(result);
+        expect(result.value.$type).toBe(Architecture.$type);
+      }
+    );
+
+    it('should handle the graduated keyword with a service', () => {
+      const result = parse(`architecture
+        service db(database)[Database]`);
+      expectNoErrorsOrAlternatives(result);
+      expect(result.value.services[0].id).toBe('db');
+    });
+
+    it('should reject other text glued to the keyword', () => {
+      const result = parse(`architectures`);
+      expect(result.parserErrors.length + result.lexerErrors.length).toBeGreaterThan(0);
+    });
   });
 
   describe('should handle TitleAndAccessibilities', () => {

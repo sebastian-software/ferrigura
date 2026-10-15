@@ -71,7 +71,7 @@ ELK has been the default since 12.0. The dagre layout was the fallback for unreg
 These are deprecated, legacy or redundant, but removing them changes user-visible behaviour or needs a decision first:
 
 - **`%%{init}%%` and `%%{wrap}%%` directives.** Deprecated in the docs since 10.5 in favour of front matter; about 140 e2e fixtures still use them.
-- **Keyword aliases that upstream never deprecated.** `graph` (alias of `flowchart`), `classDiagram-v2`, `stateDiagram-v2`; `ishikawa-beta` and `treemap-beta`, whose docs still use the beta keyword; `architecture-beta`, whose grammar accepts nothing else.
+- **Keyword aliases that upstream never deprecated.** `graph` (alias of `flowchart`), `classDiagram-v2`, `stateDiagram-v2`; `ishikawa-beta`, `treemap-beta` and `architecture-beta`, whose docs still use the beta keyword.
 - **`securityLevel: 'antiscript'`.** The schema describes it as allowing HTML and clicks, but the code treats it exactly like `strict`.
 - **Smaller internals.** The `arrowMarkerAbsolute` copies in each diagram section; the deprecated `createLabel.js` wrapper around `createText`; the `D3Element = any` type; the `"./*"` deep-import entry in `package.json` exports; layout test infrastructure (`ddlt`, `layout-utils`, the agentflow conformance runner) living in `src`; the size-capture dev hook in `createGraph.ts`; the single `uuid` use; 47 JavaScript files that could move to TypeScript; and duplicated helpers (three ways to select the SVG root, two viewport helpers, two curve maps).
 
@@ -79,10 +79,10 @@ These are deprecated, legacy or redundant, but removing them changes user-visibl
 
 - A `%%{init}%%` directive was ignored when an earlier directive search on the same page had failed: the shared global `directiveRegex` kept its `lastIndex` after a `JSON.parse` error. `mermaid.run()` triggered this for any diagram whose front matter mentioned a directive in prose, because it ran an extra, debug-only directive search first.
 - A Gantt chart with the `topAxis` keyword failed to parse: the grammar called `yy.TopAxis()`, which the db never defined. It now calls `enableTopAxis()`.
+- An architecture diagram starting with the graduated `architecture` keyword passed detection and then failed to parse: the grammar accepted only `architecture-beta`, and the token builder guarded a keyword that did not exist. The grammar now accepts both, as the beta policy requires.
 
 ## Upstream bugs noticed along the way (not fixed)
 
-- Architecture: the detector accepts `architecture`, but the grammar only accepts `architecture-beta`.
 - Requirement: the detector accepts `requirement`, but the grammar only accepts `requirementDiagram`.
 - C4: the detector anchors only `C4Context` to the start of the text; the other four keywords match anywhere.
 - Wardley: its config section is keyed `wardley-beta` and is missing from `diagramConfigKeys.ts`, so per-diagram `theme`, `look` and `layout` are not applied.
