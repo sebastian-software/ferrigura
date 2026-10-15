@@ -84,6 +84,12 @@ describe('diagram-orchestration', () => {
       ).toBe('er');
     });
 
+    it('detects a requirement diagram only by its requirementDiagram keyword', () => {
+      // The grammar accepts nothing else, so a bare `requirement` must not be routed to it.
+      expect(detectType('requirementDiagram\n  requirement r {\n  }')).toBe('requirement');
+      expect(() => detectType('requirement r {\n  }')).toThrow(/No diagram type detected/);
+    });
+
     it('should not detect flowchart if pie contains flowchart', () => {
       expect(
         detectType(`pie title: "flowchart"

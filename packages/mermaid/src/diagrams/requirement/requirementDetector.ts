@@ -7,7 +7,7 @@ import type {
 const id = 'requirement';
 
 const detector: DiagramDetector = (txt) => {
-  return /^\s*requirement(Diagram)?/.test(txt);
+  return /^\s*requirementDiagram/.test(txt);
 };
 
 const loader: DiagramLoader = async () => {
