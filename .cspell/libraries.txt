@@ -32,6 +32,7 @@ Foswiki
 Gitea
 graphlib
 Grav
+Hyperlegible
 icones
 iconify
 Inkdrop
@@ -42,6 +43,7 @@ jsonschema
 katex
 khroma
 langium
+Lexica
 libavoid
 mathml
 matplotlib
@@ -80,6 +82,7 @@ tsbuildinfo
 tseslint
 Tuleap
 Typora
+Ultralegible
 uninstrumented
 unocss
 unplugin

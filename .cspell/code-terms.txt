@@ -12,6 +12,7 @@ bary
 Bigdecimal
 birel
 BIREL
+bolditalic
 bqstring
 BQUOTE
 bramp

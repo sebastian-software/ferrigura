@@ -180,7 +180,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['e2e/**', '.esbuild/**'],
+    files: ['e2e/**', '.esbuild/**', 'tools/port/**'],
     rules: {
       'no-console': 'off',
       // Dev tooling files often use lower-friction style (single-line ifs,
