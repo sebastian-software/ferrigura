@@ -11,6 +11,7 @@
  */
 import { registerDetectors, type Reference } from './reference.ts';
 import { runExporter } from './exporter.ts';
+import { pieHeader } from './pie-header.ts';
 
 interface PieSlice {
   label: string;
@@ -60,9 +61,7 @@ await runExporter(loadModules, async (input, { preprocess, parser, db }) => {
 
   return {
     version: 1,
-    title: ast.title || frontMatterTitle || '',
-    accTitle: ast.accTitle ? ast.accTitle.replace(/^\s+/g, '') : '',
-    accDescr: ast.accDescr ? ast.accDescr.replace(/\n\s+/g, '\n') : '',
+    ...pieHeader(ast, frontMatterTitle),
     showData: db.getShowData(),
     sections: [...db.getSections()].map(([label, value]) => ({ label, value })),
   };

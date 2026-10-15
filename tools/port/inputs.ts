@@ -8,6 +8,7 @@ import { join, relative } from 'node:path';
 
 import ts from 'typescript';
 
+import { explicitCases } from './cases.ts';
 import type { PortInput } from './reference.ts';
 
 const root = new URL('../../', import.meta.url);
@@ -85,6 +86,10 @@ export async function collectInputs(type: string): Promise<PortInput[]> {
         candidates.push({ source: doc, text: block });
       }
     }
+  }
+
+  for (const text of explicitCases[type] ?? []) {
+    candidates.push({ source: 'tools/port/cases.ts', text });
   }
 
   const seen = new Set<string>();

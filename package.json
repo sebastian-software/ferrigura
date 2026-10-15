@@ -63,6 +63,7 @@
     "test:check:tsc": "tsx scripts/tsc-check.ts",
     "port:diff": "tsx tools/port/diff.ts",
     "port:status": "tsx tools/port/status.ts",
+    "port:check-header": "tsx tools/port/check-header.ts",
     "prepare": "husky && pnpm build",
     "pre-commit": "lint-staged"
   },
