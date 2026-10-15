@@ -10,7 +10,9 @@
 //! their name is needed, so they cannot silently do nothing.
 
 use crate::core::data::JavaEnum;
-use crate::core::data::enums::{IntermediateProcessorStrategy, OrderingStrategy};
+use crate::core::data::enums::{
+    Direction, DirectionCongruency, IntermediateProcessorStrategy, OrderingStrategy,
+};
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
@@ -73,6 +75,79 @@ pub fn run(
 ) -> Result<(), LayoutError> {
     let name = task_name(strategy, graph)?;
     progress.begin(monitor, &name, 1.0);
+    match strategy {
+        IntermediateProcessorStrategy::DIRECTION_PREPROCESSOR
+        | IntermediateProcessorStrategy::DIRECTION_POSTPROCESSOR => {
+            transform_direction(graph)?;
+        }
+        IntermediateProcessorStrategy::SORT_BY_INPUT_ORDER_OF_MODEL => {
+            sort_by_input_model(graph, progress, monitor);
+        }
+        _ => {}
+    }
     progress.done(monitor);
     Ok(())
+}
+
+/// `GraphTransformer.process` under `DirectionCongruency.READING_DIRECTION`: a
+/// transpose for `DOWN`, nothing for `RIGHT`. The mirror transforms for `LEFT` and
+/// `UP` need the graph's size and offset, which are not ported yet.
+fn transform_direction(graph: &mut LGraph) -> Result<(), LayoutError> {
+    let congruency = graph
+        .properties
+        .enum_of::<DirectionCongruency>(options::DIRECTION_CONGRUENCY);
+    if congruency != Some(DirectionCongruency::READING_DIRECTION) {
+        return Err(LayoutError::Unsupported(
+            "direction congruency other than reading direction".to_string(),
+        ));
+    }
+    match graph.properties.enum_of::<Direction>(options::DIRECTION) {
+        Some(Direction::DOWN) => {
+            for node in &mut graph.nodes {
+                std::mem::swap(&mut node.position.x, &mut node.position.y);
+                std::mem::swap(&mut node.size.x, &mut node.size.y);
+            }
+            Ok(())
+        }
+        Some(Direction::RIGHT) => Ok(()),
+        other => Err(LayoutError::Unsupported(format!(
+            "direction {other:?} (mirror transforms)"
+        ))),
+    }
+}
+
+/// `SortByInputModelProcessor.process` for graphs without ports: each layer is sorted by
+/// the nodes' model order, and the logs name the port lists and the layer.
+fn sort_by_input_model(graph: &mut LGraph, progress: &mut ProgressMonitor, monitor: Monitor) {
+    for layer_index in 0..graph.layers.len() {
+        for &node in &graph.layers[layer_index] {
+            // Nodes without ports (the importer rejects ports) keep an empty port list.
+            progress.log(
+                monitor,
+                format!("Node {} ports: []", graph.nodes[node].text_name()),
+            );
+        }
+        let mut sorted = graph.layers[layer_index].clone();
+        let orders: Vec<usize> = graph
+            .nodes
+            .iter()
+            .map(|node| node.model_order.unwrap_or(0))
+            .collect();
+        // Collections.sort: the GWT merge sort, so the comparator is observed in the same order.
+        crate::java::sort::sort_by(&mut sorted, |&a, &b| orders[a].cmp(&orders[b]));
+        graph.layers[layer_index] = sorted;
+        let names: Vec<String> = graph.layers[layer_index]
+            .iter()
+            .map(|&node| graph.nodes[node].text_name())
+            .collect();
+        progress.log(
+            monitor,
+            format!(
+                "Layer {}: L_{}[{}]",
+                layer_index,
+                layer_index,
+                names.join(", ")
+            ),
+        );
+    }
 }

@@ -37,8 +37,26 @@ pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
             "a graph without a direction (LGraphUtil.getDirection is not ported)".to_string(),
         ));
     }
+    configure_graph_properties(graph);
     graph.processors = assemble(graph)?;
     Ok(())
+}
+
+/// `GraphConfigurator.configureGraphProperties`: the defaults the processors read.
+fn configure_graph_properties(graph: &mut LGraph) {
+    if !graph
+        .properties
+        .has(options::NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES)
+    {
+        let orthogonal = graph
+            .properties
+            .enum_of::<EdgeRouting>(options::EDGE_ROUTING)
+            == Some(EdgeRouting::ORTHOGONAL);
+        graph.properties.set(
+            options::NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES,
+            Some(crate::core::data::OptionValue::Boolean(orthogonal)),
+        );
+    }
 }
 
 /// The phase implementations the strategy options select.

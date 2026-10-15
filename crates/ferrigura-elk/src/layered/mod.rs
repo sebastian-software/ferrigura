@@ -17,5 +17,6 @@ pub mod importer;
 pub mod intermediate;
 pub mod lgraph;
 pub mod options;
+pub mod p4nodes;
 pub mod phases;
 pub mod spacings;

@@ -23,6 +23,15 @@ pub const NODE_PLACEMENT_STRATEGY: &str = "org.eclipse.elk.layered.nodePlacement
 pub const NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES: &str =
     "org.eclipse.elk.layered.nodePlacement.favorStraightEdges";
 pub const EDGE_ROUTING: &str = "org.eclipse.elk.edgeRouting";
+pub const CONSIDER_MODEL_ORDER_NO_MODEL_ORDER: &str =
+    "org.eclipse.elk.layered.considerModelOrder.noModelOrder";
+pub const CONSIDER_MODEL_ORDER_COMPONENTS: &str =
+    "org.eclipse.elk.layered.considerModelOrder.components";
+pub const DIRECTION_CONGRUENCY: &str = "org.eclipse.elk.layered.directionCongruency";
+pub const NODE_PLACEMENT_BK_FIXED_ALIGNMENT: &str =
+    "org.eclipse.elk.layered.nodePlacement.bk.fixedAlignment";
+pub const NODE_PLACEMENT_BK_EDGE_STRAIGHTENING: &str =
+    "org.eclipse.elk.layered.nodePlacement.bk.edgeStraightening";
 pub const FEEDBACK_EDGES: &str = "org.eclipse.elk.layered.feedbackEdges";
 pub const CONSIDER_MODEL_ORDER_STRATEGY: &str =
     "org.eclipse.elk.layered.considerModelOrder.strategy";
@@ -61,6 +70,11 @@ mod tests {
             NODE_PLACEMENT_STRATEGY,
             NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES,
             EDGE_ROUTING,
+            DIRECTION_CONGRUENCY,
+            CONSIDER_MODEL_ORDER_NO_MODEL_ORDER,
+            CONSIDER_MODEL_ORDER_COMPONENTS,
+            NODE_PLACEMENT_BK_FIXED_ALIGNMENT,
+            NODE_PLACEMENT_BK_EDGE_STRAIGHTENING,
             FEEDBACK_EDGES,
             CONSIDER_MODEL_ORDER_STRATEGY,
             NODE_PROMOTION_STRATEGY,

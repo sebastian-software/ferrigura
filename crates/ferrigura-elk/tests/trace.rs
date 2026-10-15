@@ -67,7 +67,8 @@ fn nodes_only_trace_matches_elkjs_including_logs() {
 #[test]
 #[ignore = "diagnostic: prints the log messages side by side"]
 fn print_logs_side_by_side() {
-    let case = corpus_case("synthetic__nodes-only-3");
+    let name = std::env::var("ELK_CASE").unwrap_or_else(|_| "synthetic__nodes-only-3".to_string());
+    let case = corpus_case(&name);
     let ours = layout_trace(&case);
     fn collect(value: &Value, out: &mut Vec<(String, Vec<String>)>) {
         if let Some(name) = value["name"].as_str() {
@@ -86,6 +87,9 @@ fn print_logs_side_by_side() {
             collect(child, out);
         }
     }
+    if let Ok(path) = std::env::var("ELK_TRACE_OUT") {
+        std::fs::write(path, serde_json::to_string_pretty(&ours).unwrap()).unwrap();
+    }
     let (mut ours_list, mut theirs_list) = (Vec::new(), Vec::new());
     collect(&ours, &mut ours_list);
     collect(&case["trace"], &mut theirs_list);
@@ -93,6 +97,40 @@ fn print_logs_side_by_side() {
         if ours_item != theirs_item {
             println!("ours:   {:?} {:?}", ours_item.0, ours_item.1);
             println!("elkjs:  {:?} {:?}", theirs_item.0, theirs_item.1);
+        }
+    }
+}
+
+/// Names, logs and the first difference, for each corpus case the driver supports.
+#[test]
+#[ignore = "diagnostic: prints how the supported corpus cases agree with elkjs"]
+fn report_agreement_on_supported_cases() {
+    let manifest: Value = serde_json::from_str(
+        &std::fs::read_to_string(
+            [
+                env!("CARGO_MANIFEST_DIR"),
+                "tests",
+                "corpus",
+                "manifest.json",
+            ]
+            .iter()
+            .collect::<PathBuf>(),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    for case in manifest["cases"].as_array().unwrap() {
+        let name = case["name"].as_str().unwrap();
+        let case = corpus_case(name);
+        let input: JsonNode = serde_json::from_value(case["input"].clone()).unwrap();
+        match ferrigura_elk::layout(&input, true) {
+            Err(error) => println!("skip   {name}: {error}"),
+            Ok(layout) => {
+                let ours = layout.trace.to_json();
+                let names = without_logs(&ours) == without_logs(&case["trace"]);
+                let logs = ours == case["trace"];
+                println!("names={names} logs={logs}  {name}");
+            }
         }
     }
 }

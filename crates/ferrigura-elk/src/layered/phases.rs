@@ -100,6 +100,9 @@ impl PhaseStep {
         progress: &mut ProgressMonitor,
         monitor: Monitor,
     ) -> Result<(), LayoutError> {
+        if self == PhaseStep::NodePlacement(NodePlacementStrategy::BRANDES_KOEPF) {
+            return crate::layered::p4nodes::bk::place(graph, progress, monitor);
+        }
         let name = self.task_name(graph)?;
         progress.begin(monitor, &name, 1.0);
         if self == PhaseStep::Layering(LayeringStrategy::NETWORK_SIMPLEX) {

@@ -6,6 +6,7 @@
 
 use std::collections::BTreeSet;
 
+use crate::core::data::JavaEnum;
 use crate::core::data::enums::{GraphProperties, NodeType};
 use crate::core::data::property::PropertyHolder;
 use crate::core::math::{KVector, Spacing};
@@ -27,8 +28,25 @@ pub struct LNode {
     pub node_type: NodeType,
     /// The index the Brandes & Koepf placer gives the node (`LNode.id` in Java), set per placement.
     pub placement_id: usize,
+    /// `InternalProperties.MODEL_ORDER`: the node's place in the input, when the model order is needed.
+    pub model_order: Option<usize>,
     /// The layer it was assigned to, once layering has run.
     pub layer: Option<usize>,
+}
+
+impl LNode {
+    /// `LNode.toString()`: `n_<designation>`, with the type in brackets for non-normal nodes.
+    pub fn text_name(&self) -> String {
+        if self.node_type == NodeType::NORMAL {
+            format!("n_{}", self.designation)
+        } else {
+            format!(
+                "n({})_{}",
+                self.node_type.java_name().to_lowercase(),
+                self.designation
+            )
+        }
+    }
 }
 
 /// The root layered graph, `LGraph`.
