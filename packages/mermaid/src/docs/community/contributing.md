@@ -39,10 +39,6 @@ cd mermaid
 
 ### Install Requirements
 
-We support **development within Docker** environment along with **host setup**. You may choose it up to your preferences.
-
-**Host**
-
 These are the tools we use for working with the code and documentation:
 
 - [Node.js](https://nodejs.org/en/).
@@ -52,54 +48,15 @@ The following commands must be sufficient enough to start with:
 
 ```bash
 curl -fsSL https://get.pnpm.io/install.sh | sh -
-pnpm env use --global 20
+pnpm env use --global 22
 ```
 
 You may also need to reload `.shrc` or `.bashrc` afterwards.
 
-**Docker**
-
-[Install Docker](https://docs.docker.com/engine/install/). And that is pretty much all you need.
-
-Optionally, to run GUI (Cypress) within Docker you will also need an X11 server installed.
-You might already have it installed, so check this by running:
-
-```bash
-echo $DISPLAY
-```
-
-If the `$DISPLAY` variable is not empty, then an X11 server is running. Otherwise you may need to install one.
-
 ### Install Packages
-
-**Host**
-
-Install packages:
 
 ```bash
 pnpm install
-```
-
-**Docker**
-
-For development using Docker there is a self-documented `run` bash script, which provides convenient aliases for `docker compose` commands.
-
-Make sure that `./run` script is executable:
-
-```bash
-chmod +x run
-```
-
-```tip
-To get detailed help simply type `./run` or `./run help`.
-
-It also has short _Development quick start guide_ embedded.
-```
-
-Then install packages:
-
-```bash
-./run pnpm install
 ```
 
 ### Verify Everything Works
@@ -108,16 +65,8 @@ This step is optional, but it helps to make sure that everything in development 
 
 You can run the `test` script to verify that pnpm is working _and_ that the repository has been cloned correctly:
 
-**Host**
-
 ```bash
 pnpm test
-```
-
-**Docker**
-
-```bash
-./run pnpm test
 ```
 
 The `test` script and others are in the top-level `package.json` file.
@@ -242,32 +191,16 @@ The core of Mermaid is located under `packages/mermaid/src`.
 
 ### Building Mermaid Locally
 
-**Host**
-
 ```bash
 pnpm run build
-```
-
-**Docker**
-
-```bash
-./run build
 ```
 
 This will build the Mermaid library.
 
 ### Running Mermaid Locally
 
-**Host**
-
 ```bash
 pnpm run dev
-```
-
-**Docker**
-
-```bash
-./run dev
 ```
 
 After starting the dev server open <http://localhost:9000> in your browser.
@@ -322,14 +255,6 @@ When writing new tests, it's easier to have the tests automatically run as you m
 pnpm test:watch
 ```
 
-**Docker**
-
-When using Docker prepend your command with `./run`:
-
-```sh
-./run pnpm test
-```
-
 ##### Testing the DOM
 
 One can use `jsdomIt` to test any part of Mermaid that interacts with the DOM, as long as it is not related to the layout.
@@ -362,20 +287,10 @@ This ensures that the rendering of that feature in the E2E will be reviewed in t
 
 To start working with the E2E tests:
 
-**Host**
+- Run `pnpm e2e` to run the Playwright suite; it starts the dev server itself.
+- Run `pnpm playwright:ui` to pick and debug tests interactively.
 
-- Run `pnpm dev` to start the dev server
-- Start **Cypress** by running `pnpm cypress:open`
-
-**Docker**
-
-- Enable local connections for x11 server `xhost +local:`
-- Run `./run pnpm dev` to start the dev server
-- Start **Cypress** by running `./run pnpm cypress:open --project .`
-
-The rendering tests are very straightforward to create. There is a function `imgSnapshotTest`, which takes a diagram in text form and the mermaid options, and it renders that diagram in Cypress.
-
-When running in CI it will take a snapshot of the rendered diagram and compare it with the snapshot from last build and flag it for review if it differs. When the changes in PR only apply to specific diagrams, only the rendering tests for those diagrams will be run in CI. If a change is not related to a specific diagram, the full test-suite will be run.
+The simplest rendering test is a `.mmd` fixture under `e2e/diagrams/<diagram>/<tier>/`, which the snapshot runner picks up on its own. For tests that need code, there is a function `imgSnapshotTest`, which takes a diagram in text form and the mermaid options, renders that diagram in the browser and compares a screenshot of it with the local baseline in `e2e/__snapshots__/`. The first run records the baselines. See [E2E tests](./e2e-tests.md) for details.
 
 This is what a rendering test looks like:
 
