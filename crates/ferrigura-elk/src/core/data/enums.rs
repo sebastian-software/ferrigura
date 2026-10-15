@@ -8,20 +8,24 @@ use super::JavaEnum;
 /// The ELK enum `Alignment`, constants in declaration order (their ordinals).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Alignment {
-    CENTER,
+    AUTOMATIC,
     LEFT,
     RIGHT,
     TOP,
+    BOTTOM,
+    CENTER,
 }
 
 impl JavaEnum for Alignment {
     /// `Enum.valueOf`, falling back to an ordinal index as `enumForString` does.
     fn from_java_text(text: &str) -> Option<Self> {
         match text {
-            "CENTER" => Some(Alignment::CENTER),
+            "AUTOMATIC" => Some(Alignment::AUTOMATIC),
             "LEFT" => Some(Alignment::LEFT),
             "RIGHT" => Some(Alignment::RIGHT),
             "TOP" => Some(Alignment::TOP),
+            "BOTTOM" => Some(Alignment::BOTTOM),
+            "CENTER" => Some(Alignment::CENTER),
             _ => text
                 .parse::<usize>()
                 .ok()
@@ -31,20 +35,24 @@ impl JavaEnum for Alignment {
 
     fn java_name(self) -> &'static str {
         match self {
-            Alignment::CENTER => "CENTER",
+            Alignment::AUTOMATIC => "AUTOMATIC",
             Alignment::LEFT => "LEFT",
             Alignment::RIGHT => "RIGHT",
             Alignment::TOP => "TOP",
+            Alignment::BOTTOM => "BOTTOM",
+            Alignment::CENTER => "CENTER",
         }
     }
 }
 
 /// Every constant of `Alignment`, in ordinal order.
 const ALL_ALIGNMENT: &[Alignment] = &[
-    Alignment::CENTER,
+    Alignment::AUTOMATIC,
     Alignment::LEFT,
     Alignment::RIGHT,
     Alignment::TOP,
+    Alignment::BOTTOM,
+    Alignment::CENTER,
 ];
 
 /// The ELK enum `AnnulusWedgeCriteria`, constants in declaration order (their ordinals).

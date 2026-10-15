@@ -51,7 +51,10 @@ def find_sources(elk_root):
                 body = registry.strip_comments_java(handle.read())
             for match in re.finditer(r"\benum\s+(\w+)\s*(?:implements[^{]*)?\{", body):
                 name = match.group(1)
-                rank = preference(path)
+                # A top-level enum in its own file beats a nested one of the same name:
+                # `SelfHyperLoopLabels.Alignment` must not hide the core `Alignment`.
+                nested = os.path.basename(path) != name + ".java"
+                rank = (nested, preference(path))
                 if name not in found or rank < found[name][0]:
                     found[name] = (rank, path, body, match.end())
     return found
