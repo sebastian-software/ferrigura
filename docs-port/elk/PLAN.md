@@ -273,7 +273,7 @@ Not yet ported, with the checkpoint in mind: `alg.common/networksimplex` (`Netwo
 
 ## 10. Stage C status
 
-The checkpoint from the coordinator: a corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for the 61 supported corpus cases in node boxes, edge sections and label boxes** (tolerance 0, `tests/differential.rs`), and for 60 of them in the full trace with the logs (`tests/trace.rs`). The one case whose trace differs, `state-diagram-v2__elk-start-end-edge-centering__0`, prints one Brandes & Koepf size one ulp away from elkjs (`14.013293266296388` against `14.013293266296387`); its coordinates still match. The nodes-only cases, including `synthetic__nodes-only-3` and `-5` whose node order comes from the layer sweep, match in names, nesting and the full trace.
+The checkpoint from the coordinator: a corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for all 96 supported corpus cases**: node boxes, edge sections and label boxes match elkjs exactly (tolerance 0, `tests/differential.rs`), and the full trace matches with its logs (`tests/trace.rs`).
 
 Corrections to §3, which lists the configurations as if they were unconditional:
 
@@ -292,26 +292,26 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 - **elkjs mutates its input** (the Stage B agent's finding): it adds `x`, `y`, `width`, `height`, `logging` and `$H` to the object it is given. The corpus stores the input before layout, so the port reads the same graph elkjs read.
 - **Output `$H`.** elkjs adds GWT identity hashes to its output. The corpus strips them; the port does not produce them.
 - **Two generator and reader bugs, both fixed.** The melk reader returned no default for `new ElkPadding(12)`, so the root padding was absent; it now reads the all-sides `ElkPadding` and `ElkMargin` constructors. The enum generator let a nested `SelfHyperLoopLabels.Alignment` replace the core `Alignment`, which lost `AUTOMATIC`; a top-level enum in its own file now wins. Only that enum changed in the generated file.
+- **JSON numbers.** serde_json's default float parser is not correctly rounded. The inputs and the reference outputs are read through it, so both are read with `float_roundtrip`, which makes them exact as JavaScript reads them. Until that was enabled, the differential test reported differences of about 1e-14 on cases that were otherwise identical. The one-ulp Brandes & Koepf size in `state-diagram-v2__elk-start-end-edge-centering__0` had the same cause, a width of `14.013293266296387` read one ulp away.
 
 ### Coverage
 
-- Corpus: 61 of 136 cases pass the driver. The other 75 report `Unsupported`: 31 sort several ports by model order (`ModelOrderPortComparator`, not ported), 24 are nested graphs, 6 need end labels, 4 sort nodes without a model order, 3 have self loops, 4 are UP or LEFT directions, 1 has layer constraints, and 2 are non-layered algorithms (`elk.box`, `elk.rectpacking`).
-- All 61 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 61). 60 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 60).
+- Corpus: 96 of 136 cases pass the driver. The other 40 report `Unsupported`: 24 are nested graphs, 6 need end labels, 4 are UP or LEFT directions, 3 have self loops, 1 has layer constraints, and 2 are non-layered algorithms (`elk.box`, `elk.rectpacking`).
+- All 96 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 96). All 96 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 96).
 - Crate tests: 137 unit tests; the differential and trace tests pass, with their diagnostics still ignored; `clippy -D warnings` is clean.
 
 ### Next, in order
 
-1. `ModelOrderPortComparator`: the 31 cases that sort several ports by model order.
-2. Nested graphs (`RecursiveGraphLayoutEngine`, and `ComponentsProcessor` for `SEPARATE_CHILDREN`): 24 cases.
-3. End labels (head and tail labels): 6 cases.
-4. The rest: node sorting without a model order, self loops, UP and LEFT directions, layer constraints, and the two non-layered algorithms (14 cases).
-5. The one-ulp Brandes & Koepf size in `state-diagram-v2__elk-start-end-edge-centering__0`.
-6. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
+1. UP and LEFT directions through `GraphTransformer`: 4 cases.
+2. End labels (head and tail labels): 6 cases.
+3. Self loops (3) and layer constraints (1).
+4. Nested graphs (24): `CompoundGraphPreprocessor` and `Postprocessor`, the hierarchical port processors, and `RecursiveGraphLayoutEngine` for `SEPARATE_CHILDREN`. The two non-layered algorithms stay excluded.
+5. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
 
 ### Edge pipeline: state and order
 
 The simplest corpus case with edges, `requirement__a-simple-requirement-diagram-elk-layout__0` (two nodes, one edge with a centred label), needs the 26 processors that its elkjs trace lists, in order: transformation to the input direction, edge and layer constraint reversal, depth-first cycle removal, label dummy insertions, layer constraint pre-processing, network simplex layering, layer constraint post-processing, edge splitting, port side processing, port order processing, sort by input model (with ports), minimize crossings, layer constraint edge reversal, node and port label placement and node sizing, node margin calculation, label dummy switching, label side selection, Brandes & Koepf, layer size calculation, orthogonal edge routing, edge joining, label dummy removal, sort end labels, restoring reversed edges, the resizer, and the transformation back.
 
-Done on this branch, in order: edge import with a port per end; the depth-first cycle breaker and the reversed edge restorer; label dummy insertion, the long edge split and join; port sides and port order; the DOWN transform; network simplex and the layerer; the sort by input model with its logs; the layer sweep with edges; the transfer of edge sections and label boxes; the orthogonal router; Brandes & Koepf with edges; the label dummy switcher, side selector and remover; node margins and the label and node sizes; and the configurator, which now accepts edges and centred labels.
+Done on this branch, in order: edge import with a port per end; the depth-first cycle breaker and the reversed edge restorer; label dummy insertion, the long edge split and join; port sides and port order; the DOWN transform; network simplex and the layerer; the sort by input model, with the model order comparators (`preserveorder.rs`); the layer sweep with edges; the transfer of edge sections and label boxes; the orthogonal router; Brandes & Koepf with edges; the label dummy switcher, side selector and remover; node margins and the label and node sizes; the port-based alignment of `placeNodesHorizontally`; and the configurator, which now accepts edges and centred labels.
 
-Still open: the features in the coverage list above, and the one-ulp Brandes & Koepf size in `state-diagram-v2__elk-start-end-edge-centering__0`.
+Still open: the features in the coverage list above.
