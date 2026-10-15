@@ -14,10 +14,12 @@ use crate::layered::importer;
 use crate::layered::intermediate::{self, Step};
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
+use crate::layered::transfer;
 
-/// `LayeredLayoutProvider.layout(elkgraph, monitor)` for one root graph.
+/// `LayeredLayoutProvider.layout(elkgraph, monitor)` for one root graph: lays it out and
+/// writes the positions and the root's size back into it.
 pub fn layout(
-    root: &ElkNode,
+    root: &mut ElkNode,
     progress: &mut ProgressMonitor,
     monitor: Monitor,
 ) -> Result<(), LayoutError> {
@@ -31,7 +33,8 @@ pub fn layout(
                 .to_string(),
         ));
     }
-    do_compound_layout(&mut graph, progress, monitor)
+    do_compound_layout(&mut graph, progress, monitor)?;
+    transfer::apply_layout(&graph, root)
 }
 
 /// `ElkLayered.doCompoundLayout`.

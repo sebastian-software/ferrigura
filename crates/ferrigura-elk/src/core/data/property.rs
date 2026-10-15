@@ -92,6 +92,22 @@ impl PropertyHolder {
         }
     }
 
+    /// `EnumSet.contains` for an `EnumSet` option; false when there is no value.
+    pub fn enum_set_contains(&self, id: &str, name: &str) -> bool {
+        matches!(
+            self.value_or_default(id),
+            Some(OptionValue::EnumSet { names, .. }) if names.iter().any(|found| found == name)
+        )
+    }
+
+    /// `EnumSet.isEmpty` for an `EnumSet` option; true when there is no value.
+    pub fn enum_set_is_empty(&self, id: &str) -> bool {
+        match self.value_or_default(id) {
+            Some(OptionValue::EnumSet { names, .. }) => names.is_empty(),
+            _ => true,
+        }
+    }
+
     /// Whether the option's kind is one this holder can answer for, for tests.
     pub fn kind_of(id: &str) -> OptionKind {
         spec_of(id).kind

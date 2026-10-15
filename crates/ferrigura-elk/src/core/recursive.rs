@@ -16,7 +16,7 @@ use crate::layered::options;
 
 /// `layout(layoutGraph, progressMonitor)`: the monitor's root task is "Recursive Graph Layout".
 pub fn layout(
-    root: &ElkNode,
+    root: &mut ElkNode,
     progress: &mut ProgressMonitor,
     monitor: Monitor,
 ) -> Result<(), LayoutError> {

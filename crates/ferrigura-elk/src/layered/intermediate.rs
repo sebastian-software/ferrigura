@@ -87,9 +87,50 @@ pub fn run(
         IntermediateProcessorStrategy::LAYER_SIZE_AND_GRAPH_HEIGHT_CALCULATOR => {
             layer_size_and_graph_height(graph)?;
         }
+        IntermediateProcessorStrategy::LABEL_AND_NODE_SIZE_PROCESSOR => {
+            // Without labels or size constraints the processor leaves the nodes alone.
+            if graph.nodes.iter().any(|node| {
+                !node
+                    .properties
+                    .enum_set_is_empty(options::NODE_SIZE_CONSTRAINTS)
+            }) {
+                return Err(LayoutError::Unsupported(
+                    "node size constraints".to_string(),
+                ));
+            }
+        }
+        IntermediateProcessorStrategy::HIERARCHICAL_NODE_RESIZER => {
+            resize_root(graph)?;
+        }
         _ => {}
     }
     progress.done(monitor);
+    Ok(())
+}
+
+/// `HierarchicalNodeResizingProcessor.process` for the root graph: the nodes leave their
+/// layers for the layerless list, and the graph's size becomes its actual size less the padding.
+fn resize_root(graph: &mut LGraph) -> Result<(), LayoutError> {
+    if graph
+        .properties
+        .enum_set_contains(options::NODE_SIZE_CONSTRAINTS, "MINIMUM_SIZE")
+    {
+        return Err(LayoutError::Unsupported(
+            "a minimum node size on the root".to_string(),
+        ));
+    }
+    for layer in std::mem::take(&mut graph.layers) {
+        graph.layerless_nodes.extend(layer);
+    }
+    graph.layer_sizes.clear();
+    for &node in &graph.layerless_nodes {
+        graph.nodes[node].layer = None;
+    }
+    // `resizeGraph` without a minimum size: the adjusted size is the actual size, so the
+    // offset does not change and the size is the actual size less the padding.
+    let actual = graph.actual_size();
+    graph.size.x = actual.x - graph.padding.left - graph.padding.right;
+    graph.size.y = actual.y - graph.padding.top - graph.padding.bottom;
     Ok(())
 }
 
