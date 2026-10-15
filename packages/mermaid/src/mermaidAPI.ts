@@ -154,12 +154,6 @@ export const createCssStyles = (
       cssStyles.cssRules.length
     );
   }
-  if (config.altFontFamily !== undefined) {
-    cssStyles.insertRule(
-      `:root { --mermaid-alt-font-family: ${config.altFontFamily}}`,
-      cssStyles.cssRules.length
-    );
-  }
 
   // classDefs defined in the diagram text
   if (classDefs instanceof Map) {

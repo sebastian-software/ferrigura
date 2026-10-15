@@ -77,7 +77,7 @@ export const sanitizeDirective = (args: any): void => {
       continue;
     }
 
-    const cssMatchers = ['themeCSS', 'fontFamily', 'altFontFamily'];
+    const cssMatchers = ['themeCSS', 'fontFamily'];
     for (const cssKey of cssMatchers) {
       if (key.includes(cssKey)) {
         log.debug('sanitizing css option', key);

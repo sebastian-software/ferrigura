@@ -20,6 +20,8 @@ const config: RequiredDeep<MermaidConfig> = {
   // Set, even though they're `undefined` so that `configKeys` finds these keys
   // TODO: Should we replace these with `null` so that they can go in the JSON Schema?
   deterministicIDSeed: undefined,
+  // Front matter and directives may only set keys `configKeys` knows about.
+  htmlLabels: undefined,
   elk: {
     // mergeEdges is needed here to be considered
     mergeEdges: false,

@@ -278,7 +278,7 @@ describe('Multi-diagram ID uniqueness', () => {
     mermaid.initialize({
       deterministicIds: true,
       deterministicIDSeed: '',
-      flowchart: { htmlLabels: false },
+      htmlLabels: false,
       sequence: { useMaxWidth: false },
       logLevel: 5,
     });

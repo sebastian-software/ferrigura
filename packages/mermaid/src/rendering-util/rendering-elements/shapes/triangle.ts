@@ -5,7 +5,7 @@ import type { Node } from '../../types.js';
 import { styles2String, userNodeOverrides } from './handDrawnShapeStyles.js';
 import rough from 'roughjs';
 import { createPathFromPoints } from './util.js';
-import { evaluate } from '../../../diagrams/common/common.js';
+import { getEffectiveHtmlLabels } from '../../../config.js';
 import { getConfig } from '../../../diagram-api/diagramAPI.js';
 import type { D3Selection } from '../../../types.js';
 
@@ -29,7 +29,7 @@ export async function triangle<T extends SVGGraphicsElement>(parent: D3Selection
   }
 
   const { shapeSvg, bbox, label } = await labelHelper(parent, node, getNodeClasses(node));
-  const useHtmlLabels = evaluate(getConfig().flowchart?.htmlLabels);
+  const useHtmlLabels = getEffectiveHtmlLabels(getConfig());
   const w = (node?.width ? node?.width : bbox.width) + labelPaddingX;
   const h = node?.height ? node?.height : w + bbox.height;
   const tw = h;

@@ -270,9 +270,6 @@ properties:
   htmlLabels:
     description: |
       Flag for setting whether or not a html tag should be used for rendering labels on nodes and edges.
-      **Note:** Diagram-specific `htmlLabels` settings (e.g., `flowchart.htmlLabels`) are deprecated.
-      Use this root-level `htmlLabels` setting instead. The root-level `htmlLabels` takes precedence
-      over any diagram-specific settings.
     type: boolean
   fontFamily:
     description: |
@@ -281,9 +278,6 @@ properties:
       See https://developer.mozilla.org/en-US/docs/Web/CSS/font-family
     type: string
     default: '"trebuchet ms", verdana, arial, sans-serif;'
-  altFontFamily:
-    # TODO: seems to be unused, except for in tests
-    type: string
   logLevel:
     description: |
       This option decides the amount of logging to be used by mermaid.
@@ -357,19 +351,10 @@ properties:
     items:
       type: string
     uniqueItems: false # Should be enabled, but it may be a breaking change from the old config
-  legacyMathML:
-    description: |
-      This option specifies if Mermaid can expect the dependent to include KaTeX stylesheets for browsers
-      without their own MathML implementation. If this option is disabled and MathML is not supported, the math
-      equations are replaced with a warning. If this option is enabled and MathML is not supported, Mermaid will
-      fall back to legacy rendering for KaTeX.
-    type: boolean
-    default: false
   forceLegacyMathML:
     description: |
       This option forces Mermaid to rely on KaTeX's own stylesheet for rendering MathML. Due to differences between OS
       fonts and browser's MathML implementation, this option is recommended if consistent rendering is important.
-      If set to true, ignores legacyMathML.
     type: boolean
     default: false
   deterministicIds:
@@ -1590,7 +1575,6 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
       - diagramPadding
       - layoutDirection
       - minEntityWidth
-      - minEntityHeight
       - entityPadding
       - stroke
       - fill
@@ -1627,11 +1611,6 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
         description: The minimum width of an entity box. Expressed in pixels.
         type: integer
         default: 100
-        minimum: 0
-      minEntityHeight:
-        description: The minimum height of an entity box. Expressed in pixels.
-        type: integer
-        default: 75
         minimum: 0
       entityPadding:
         description: |
@@ -1707,21 +1686,12 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
       arrowMarkerAbsolute:
         # TODO: use $ref: '#/properties/arrowMarkerAbsolute' to copy main setting
         type: boolean
-      dividerMargin:
-        type: number
-        default: 10
-      sizeUnit:
-        type: number
-        default: 5
       padding:
         type: number
         default: 8
       textHeight:
         type: number
         default: 10
-      titleShift:
-        type: number
-        default: -15
       noteMargin:
         type: number
         default: 10
@@ -1731,35 +1701,12 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
       rankSpacing:
         type: integer
         minimum: 0
-      forkWidth:
-        type: number
-        default: 70
-      forkHeight:
-        type: number
-        default: 7
-      # Used
-      miniPadding:
-        type: number
-        default: 2
-      fontSizeFactor:
-        description: |
-          Font size factor, this is used to guess the width of the edges labels
-          before rendering by dagre layout.
-          This might need updating if/when switching font
-        type: number
-        default: 5.02
       fontSize:
         type: number
         default: 24
       labelHeight:
         type: number
         default: 16
-      edgeLengthFactor:
-        type: string
-        default: '20'
-      compositTitleSize:
-        type: number
-        default: 35
       radius:
         type: number
         default: 5
@@ -1783,9 +1730,6 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
         default: 25
       # YAML anchor reference, don't use $ref since ajv doesn't load defaults
       arrowMarkerAbsolute: *arrowMarkerAbsolute
-      dividerMargin:
-        type: number
-        default: 10
       padding:
         type: number
         default: 5
@@ -1800,9 +1744,6 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
         minimum: 0
       diagramPadding:
         $ref: '#/$defs/ErDiagramConfig/properties/diagramPadding'
-      htmlLabels:
-        type: boolean
-        default: false
       hideEmptyMembersBox:
         type: boolean
         default: false
@@ -2542,18 +2483,6 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
       diagramPadding:
         $ref: '#/$defs/ErDiagramConfig/properties/diagramPadding'
         default: 8
-      htmlLabels:
-        description: |
-          **DEPRECATED: Use global `htmlLabels` instead.**
-
-          Flag for setting whether or not a html tag should be used for rendering labels on nodes and edges.
-          This property is deprecated.
-          Please use the global `htmlLabels` configuration instead.
-        type:
-          - boolean
-          - 'null'
-        deprecated: true
-        default: null
       nodeSpacing:
         description: |
           Defines the spacing between nodes on the same level

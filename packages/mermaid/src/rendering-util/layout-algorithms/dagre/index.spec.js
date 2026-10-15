@@ -60,7 +60,7 @@ describe('getEdgesToRender', () => {
     mermaid.initialize({
       deterministicIds: true,
       deterministicIDSeed: '',
-      flowchart: { htmlLabels: false },
+      htmlLabels: false,
       logLevel: 5,
     });
   });

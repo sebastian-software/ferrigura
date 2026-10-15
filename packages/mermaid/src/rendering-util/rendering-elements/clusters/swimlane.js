@@ -1,5 +1,5 @@
 import { getConfig } from '../../../diagram-api/diagramAPI.js';
-import { evaluate } from '../../../config.js';
+import { getEffectiveHtmlLabels } from '../../../config.js';
 import { log } from '../../../logger.js';
 import { select } from 'd3';
 import rough from 'roughjs';
@@ -34,7 +34,7 @@ export const swimlane = async (parent, node) => {
   // `[data-color-id]` rules come from the flowchart stylesheet, which swimlanes reuses.
   stampColorSlot(shapeSvg, node.colorIndex, theme, borderColorArray);
 
-  const useHtmlLabels = evaluate(siteConfig.flowchart.htmlLabels);
+  const useHtmlLabels = getEffectiveHtmlLabels(siteConfig);
 
   // Determine if this is a left-to-right layout (title on left, rotated)
   const isLR = node.direction === 'LR';

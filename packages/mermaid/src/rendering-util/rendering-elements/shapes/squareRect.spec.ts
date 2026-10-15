@@ -55,7 +55,6 @@ beforeEach(() => {
   configApi.reset();
   configApi.setConfig({
     htmlLabels: false,
-    flowchart: { htmlLabels: false },
     theme: 'redux-color',
   });
 });

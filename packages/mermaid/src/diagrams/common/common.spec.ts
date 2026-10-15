@@ -73,7 +73,7 @@ describe('Sanitize text', () => {
     const maliciousStr = 'javajavascript:script:alert(1)';
     const result = sanitizeText(maliciousStr, {
       securityLevel: 'strict',
-      flowchart: { htmlLabels: true },
+      htmlLabels: true,
     });
     expect(result).not.toContain('javascript:alert(1)');
   });
@@ -82,7 +82,7 @@ describe('Sanitize text', () => {
     const htmlStr = '<p>This is a <strong>bold</strong> text</p>';
     const result = sanitizeText(htmlStr, {
       securityLevel: 'sandbox',
-      flowchart: { htmlLabels: true },
+      htmlLabels: true,
     });
     expect(result).toContain('<p>');
     expect(result).toContain('<strong>');
@@ -94,7 +94,7 @@ describe('Sanitize text', () => {
     const maliciousStr = '<p>Hello <script>alert(1)</script> world</p>';
     const result = sanitizeText(maliciousStr, {
       securityLevel: 'sandbox',
-      flowchart: { htmlLabels: true },
+      htmlLabels: true,
     });
     expect(result).not.toContain('<script>');
     expect(result).not.toContain('alert(1)');

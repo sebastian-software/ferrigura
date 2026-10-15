@@ -241,11 +241,9 @@ describe('mermaidAPI', () => {
 
   describe('createCssStyles', () => {
     const serif = 'serif';
-    const sansSerif = 'sans-serif';
     const mocked_config_with_htmlLabels: MermaidConfig = {
       themeCSS: '.default {color: red;}',
       fontFamily: serif,
-      altFontFamily: sansSerif,
       htmlLabels: true,
     };
 
@@ -257,11 +255,6 @@ describe('mermaidAPI', () => {
     it('gets the fontFamily from the config', () => {
       const styles = createCssStyles(mocked_config_with_htmlLabels, new Map());
       expect(styles).toMatch(/(.*)\n:root {--mermaid-font-family: serif(.*)/);
-    });
-
-    it('gets the alt fontFamily from the config', () => {
-      const styles = createCssStyles(mocked_config_with_htmlLabels, undefined);
-      expect(styles).toMatch(/(.*)\n:root {--mermaid-alt-font-family: sans-serif(.*)/);
     });
 
     describe('there are some classDefs', () => {
@@ -356,23 +349,10 @@ describe('mermaidAPI', () => {
           expect_correct_styles_with_htmlElements(mocked_config_with_htmlLabels);
         });
 
-        it('there are flowchart.htmlLabels in the configuration', () => {
-          const mocked_config_flowchart_htmlLabels: MermaidConfig = {
-            themeCSS: 'default',
-            fontFamily: 'serif',
-            altFontFamily: 'sans-serif',
-            flowchart: {
-              htmlLabels: true,
-            },
-          };
-          expect_correct_styles_with_htmlElements(mocked_config_flowchart_htmlLabels);
-        });
-
         describe('no htmlLabels in the configuration', () => {
           const mocked_config_no_htmlLabels: MermaidConfig = {
             themeCSS: 'default',
             fontFamily: 'serif',
-            altFontFamily: 'sans-serif',
             htmlLabels: false, // Explicitly set to false
           };
 
@@ -1100,7 +1080,7 @@ treeView-beta
         theme: 'forest',
         fontFamily: 'Arial',
         themeVariables: { fontFamily: 'Arial', fontSize: '16px' },
-        flowchart: { htmlLabels: false },
+        htmlLabels: false,
       });
 
       const diagramText = `---
@@ -1110,8 +1090,7 @@ config:
   themeVariables:
     fontFamily: "Courier New"
     fontSize: "20px"
-  flowchart:
-    htmlLabels: true
+  htmlLabels: true
 ---
 flowchart TD
   A --> B
@@ -1124,7 +1103,7 @@ flowchart TD
       expect(config.fontFamily).toBe('Courier');
       expect(config.themeVariables.fontFamily).toBe('Courier New');
       expect(config.themeVariables.fontSize).toBe('20px');
-      expect(config.flowchart?.htmlLabels).toBe(true);
+      expect(config.htmlLabels).toBe(true);
 
       const svgNode = ensureNodeFromSelector('svg', new JSDOM(svg).window.document);
       expect(svgNode).not.toBeNull();
@@ -1224,7 +1203,7 @@ flowchart TD
           theme: 'forest',
           fontFamily: 'Arial',
           themeVariables: { fontFamily: 'Arial', fontSize: '16px' },
-          flowchart: { htmlLabels: false },
+          htmlLabels: false,
         });
 
         const diagramText = `---
@@ -1234,8 +1213,7 @@ config:
   themeVariables:
     fontFamily: "Courier New"
     fontSize: "20px"
-  flowchart:
-    htmlLabels: true
+  htmlLabels: true
 ---
 flowchart TD
   A --> B
@@ -1248,7 +1226,7 @@ flowchart TD
         expect(config.fontFamily).toBe('Courier');
         expect(config.themeVariables.fontFamily).toBe('Courier New');
         expect(config.themeVariables.fontSize).toBe('20px');
-        expect(config.flowchart?.htmlLabels).toBe(true);
+        expect(config.htmlLabels).toBe(true);
 
         const svgNode = ensureNodeFromSelector('svg', new JSDOM(svg).window.document);
         expect(svgNode).not.toBeNull();

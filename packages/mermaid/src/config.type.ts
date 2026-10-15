@@ -256,9 +256,6 @@ export interface MermaidConfig {
   darkMode?: boolean;
   /**
    * Flag for setting whether or not a html tag should be used for rendering labels on nodes and edges.
-   * **Note:** Diagram-specific `htmlLabels` settings (e.g., `flowchart.htmlLabels`) are deprecated.
-   * Use this root-level `htmlLabels` setting instead. The root-level `htmlLabels` takes precedence
-   * over any diagram-specific settings.
    *
    */
   htmlLabels?: boolean;
@@ -269,7 +266,6 @@ export interface MermaidConfig {
    *
    */
   fontFamily?: string;
-  altFontFamily?: string;
   /**
    * This option decides the amount of logging to be used by mermaid.
    *
@@ -297,17 +293,8 @@ export interface MermaidConfig {
    */
   secure?: string[];
   /**
-   * This option specifies if Mermaid can expect the dependent to include KaTeX stylesheets for browsers
-   * without their own MathML implementation. If this option is disabled and MathML is not supported, the math
-   * equations are replaced with a warning. If this option is enabled and MathML is not supported, Mermaid will
-   * fall back to legacy rendering for KaTeX.
-   *
-   */
-  legacyMathML?: boolean;
-  /**
    * This option forces Mermaid to rely on KaTeX's own stylesheet for rendering MathML. Due to differences between OS
    * fonts and browser's MathML implementation, this option is recommended if consistent rendering is important.
-   * If set to true, ignores legacyMathML.
    *
    */
   forceLegacyMathML?: boolean;
@@ -420,16 +407,6 @@ export interface FlowchartDiagramConfig extends BaseDiagramConfig {
    *
    */
   diagramPadding?: number;
-  /**
-   * @deprecated
-   * **DEPRECATED: Use global `htmlLabels` instead.**
-   *
-   * Flag for setting whether or not a html tag should be used for rendering labels on nodes and edges.
-   * This property is deprecated.
-   * Please use the global `htmlLabels` configuration instead.
-   *
-   */
-  htmlLabels?: boolean | null;
   /**
    * Defines the spacing between nodes on the same level
    *
@@ -1150,7 +1127,6 @@ export interface ClassDiagramConfig extends BaseDiagramConfig {
    *
    */
   arrowMarkerAbsolute?: boolean;
-  dividerMargin?: number;
   padding?: number;
   textHeight?: number;
   nodeSpacing?: number;
@@ -1161,7 +1137,6 @@ export interface ClassDiagramConfig extends BaseDiagramConfig {
    *
    */
   diagramPadding?: number;
-  htmlLabels?: boolean;
   hideEmptyMembersBox?: boolean;
   /**
    * When true (default), nested namespaces render as hierarchical clusters,
@@ -1231,28 +1206,13 @@ export interface StateDiagramConfig extends BaseDiagramConfig {
    */
   titleTopMargin?: number;
   arrowMarkerAbsolute?: boolean;
-  dividerMargin?: number;
-  sizeUnit?: number;
   padding?: number;
   textHeight?: number;
-  titleShift?: number;
   noteMargin?: number;
   nodeSpacing?: number;
   rankSpacing?: number;
-  forkWidth?: number;
-  forkHeight?: number;
-  miniPadding?: number;
-  /**
-   * Font size factor, this is used to guess the width of the edges labels
-   * before rendering by dagre layout.
-   * This might need updating if/when switching font
-   *
-   */
-  fontSizeFactor?: number;
   fontSize?: number;
   labelHeight?: number;
-  edgeLengthFactor?: string;
-  compositTitleSize?: number;
   radius?: number;
 }
 /**
@@ -1303,10 +1263,6 @@ export interface ErDiagramConfig extends BaseDiagramConfig {
    * The minimum width of an entity box. Expressed in pixels.
    */
   minEntityWidth?: number;
-  /**
-   * The minimum height of an entity box. Expressed in pixels.
-   */
-  minEntityHeight?: number;
   /**
    * The minimum internal padding between text in an entity box and the enclosing box borders.
    * Expressed in pixels.

@@ -146,7 +146,7 @@ const actorNode = (shape: Node['shape'], extra: Record<string, unknown> = {}) =>
 
 beforeEach(() => {
   document.body.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg"></svg>';
-  configApi.setConfig({ htmlLabels: false, flowchart: { htmlLabels: false } });
+  configApi.setConfig({ htmlLabels: false });
 });
 
 describe('use-case shared shape registration', () => {
@@ -308,7 +308,7 @@ describe('use-case actor shapes', () => {
       configurable: true,
       value: () => box(300, 1000, 80, 20),
     });
-    configApi.setConfig({ htmlLabels: true, flowchart: { htmlLabels: true } });
+    configApi.setConfig({ htmlLabels: true });
 
     try {
       const node = actorNode('usecaseActor', { stereotype: 'Analyst' });
@@ -335,7 +335,7 @@ describe('use-case actor shapes', () => {
       } else {
         Reflect.deleteProperty(HTMLElement.prototype, 'getBoundingClientRect');
       }
-      configApi.setConfig({ htmlLabels: false, flowchart: { htmlLabels: false } });
+      configApi.setConfig({ htmlLabels: false });
     }
   });
 });
@@ -392,7 +392,7 @@ describe('business use case and JSON table', () => {
       configurable: true,
       value: () => box(300, 1000, 70, 18),
     });
-    configApi.setConfig({ htmlLabels: true, flowchart: { htmlLabels: true } });
+    configApi.setConfig({ htmlLabels: true });
 
     try {
       const node = actorNode('usecaseBusiness', {
@@ -419,7 +419,7 @@ describe('business use case and JSON table', () => {
       } else {
         Reflect.deleteProperty(HTMLElement.prototype, 'getBoundingClientRect');
       }
-      configApi.setConfig({ htmlLabels: false, flowchart: { htmlLabels: false } });
+      configApi.setConfig({ htmlLabels: false });
     }
   });
 
@@ -479,7 +479,7 @@ describe('business use case and JSON table', () => {
       configurable: true,
       value: () => box(300, 1000, 80, 20),
     });
-    configApi.setConfig({ htmlLabels: true, flowchart: { htmlLabels: true } });
+    configApi.setConfig({ htmlLabels: true });
 
     try {
       const node = actorNode('usecaseJsonTable', {
@@ -517,7 +517,7 @@ describe('business use case and JSON table', () => {
       } else {
         Reflect.deleteProperty(HTMLElement.prototype, 'getBoundingClientRect');
       }
-      configApi.setConfig({ htmlLabels: false, flowchart: { htmlLabels: false } });
+      configApi.setConfig({ htmlLabels: false });
     }
   });
 });

@@ -60,7 +60,6 @@ export async function rectWithTitle<T extends SVGGraphicsElement>(
     true
   );
 
-  //if (evaluate(getConfig()?.flowchart?.htmlLabels)) {
   const div = descr.children[0];
   const dv = select(descr);
   bbox = div.getBoundingClientRect();

@@ -314,15 +314,12 @@ const renderKatexUnsanitized = async (text: string, config: MermaidConfig): Prom
     return text;
   }
 
-  if (!(isMathMLSupported() || config.legacyMathML || config.forceLegacyMathML)) {
+  if (!(isMathMLSupported() || config.forceLegacyMathML)) {
     return text.replace(katexRegex, 'MathML is unsupported in this environment.');
   }
 
   const { default: katex } = await import('katex');
-  const outputMode =
-    config.forceLegacyMathML || (!isMathMLSupported() && config.legacyMathML)
-      ? 'htmlAndMathml'
-      : 'mathml';
+  const outputMode = config.forceLegacyMathML ? 'htmlAndMathml' : 'mathml';
   return text
     .split(lineBreakRegex)
     .map((line) =>

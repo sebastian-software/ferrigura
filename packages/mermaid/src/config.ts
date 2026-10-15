@@ -138,7 +138,6 @@ const updateCurrentConfig = (siteCfg: MermaidConfig, _directives: MermaidConfig[
   }
 
   currentConfig = cfg;
-  checkConfig(currentConfig);
   return currentConfig;
 };
 
@@ -303,33 +302,6 @@ export const reset = (config = siteConfig): void => {
   updateCurrentConfig(config, directives);
 };
 
-const ConfigWarning = {
-  LAZY_LOAD_DEPRECATED:
-    'The configuration options lazyLoadedDiagrams and loadExternalDiagramsAtStartup are deprecated. Please use registerExternalDiagrams instead.',
-  FLOWCHART_HTML_LABELS_DEPRECATED:
-    'flowchart.htmlLabels is deprecated. Please use global htmlLabels instead.',
-} as const;
-
-type ConfigWarningStrings = keyof typeof ConfigWarning;
-const issuedWarnings: Partial<Record<ConfigWarningStrings, boolean>> = {};
-const issueWarning = (warning: ConfigWarningStrings) => {
-  if (issuedWarnings[warning]) {
-    return;
-  }
-  log.warn(ConfigWarning[warning]);
-  issuedWarnings[warning] = true;
-};
-
-const checkConfig = (config: MermaidConfig) => {
-  if (!config) {
-    return;
-  }
-  // @ts-expect-error Properties were removed in v10. Warning should exist.
-  if (config.lazyLoadedDiagrams || config.loadExternalDiagramsAtStartup) {
-    issueWarning('LAZY_LOAD_DEPRECATED');
-  }
-};
-
 export const getUserDefinedConfig = (): MermaidConfig => {
   let userConfig: MermaidConfig = {};
 
@@ -345,14 +317,10 @@ export const getUserDefinedConfig = (): MermaidConfig => {
 };
 
 /**
- * Helper function to handle deprecated flowchart.htmlLabels
+ * Resolves the root `htmlLabels` option, which defaults to `true`.
  * @param config - The configuration object (merged config with defaults)
- * @returns The effective htmlLabels value based on precedence: root flowchart  default
+ * @returns Whether labels are rendered as HTML
  */
 export const getEffectiveHtmlLabels = (config: MermaidConfig): boolean => {
-  // != instead of !== handles null case
-  if (config.flowchart?.htmlLabels != undefined) {
-    issueWarning('FLOWCHART_HTML_LABELS_DEPRECATED');
-  }
-  return evaluate(config.htmlLabels ?? config.flowchart?.htmlLabels ?? true);
+  return evaluate(config.htmlLabels ?? true);
 };
