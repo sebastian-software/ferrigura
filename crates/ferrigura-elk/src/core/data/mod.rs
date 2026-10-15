@@ -60,6 +60,8 @@ pub struct OptionSpec {
     pub melk_default: Option<&'static str>,
     /// The melk file that declares it, or `generated`.
     pub source: &'static str,
+    /// Ids this option had in older ELK releases (`legacyIds` in melk).
+    pub legacy_ids: &'static [&'static str],
 }
 
 /// A parsed option value.
@@ -103,15 +105,23 @@ pub fn option_by_id(id: &str) -> Option<&'static OptionSpec> {
 /// `getOptionDataBySuffix`: the one option whose id ends with `suffix`.
 ///
 /// Returns `None` for an empty suffix, for no match, and for more than one
-/// match. Legacy ids are not registered for the algorithms elkjs bundles, so
-/// they are not consulted.
+/// match. Legacy ids are consulted only when no current id matches, as in ELK.
 pub fn option_by_suffix(suffix: &str) -> Option<&'static OptionSpec> {
     if suffix.is_empty() {
         return None;
     }
+    unique_match(suffix, |spec| std::slice::from_ref(&spec.id))
+        .or_else(|| unique_match(suffix, |spec| spec.legacy_ids))
+}
+
+/// The option whose ids (as given by `ids_of`) are matched by `suffix`, if exactly one is.
+fn unique_match<'a>(
+    suffix: &str,
+    ids_of: impl Fn(&'static OptionSpec) -> &'a [&'static str],
+) -> Option<&'static OptionSpec> {
     let mut found = None;
     for spec in OPTIONS {
-        if suffix_matches(spec.id, suffix) {
+        if ids_of(spec).iter().any(|id| suffix_matches(id, suffix)) {
             if found.is_some() {
                 return None;
             }
@@ -267,8 +277,8 @@ mod tests {
 
     #[test]
     fn integer_options_reject_fractions_like_java() {
-        // Declared at the algorithm level in Layered.melk, not under `layering`.
-        let spec = option_by_id("org.eclipse.elk.layered.coffmanGraham.layerBound").unwrap();
+        let spec =
+            option_by_id("org.eclipse.elk.layered.layering.coffmanGraham.layerBound").unwrap();
         assert_eq!(parse_value(spec, "4").unwrap(), Some(OptionValue::Int(4)));
         assert_eq!(parse_value(spec, "4.0").unwrap(), None);
     }

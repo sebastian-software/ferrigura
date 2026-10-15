@@ -26,7 +26,7 @@ pub const EDGE_ROUTING: &str = "org.eclipse.elk.edgeRouting";
 pub const FEEDBACK_EDGES: &str = "org.eclipse.elk.layered.feedbackEdges";
 pub const CONSIDER_MODEL_ORDER_STRATEGY: &str =
     "org.eclipse.elk.layered.considerModelOrder.strategy";
-pub const NODE_PROMOTION_STRATEGY: &str = "org.eclipse.elk.layered.nodePromotion.strategy";
+pub const NODE_PROMOTION_STRATEGY: &str = "org.eclipse.elk.layered.layering.nodePromotion.strategy";
 pub const POST_COMPACTION_STRATEGY: &str =
     "org.eclipse.elk.layered.compaction.postCompaction.strategy";
 pub const WRAPPING_STRATEGY: &str = "org.eclipse.elk.layered.wrapping.strategy";

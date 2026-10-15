@@ -11,6 +11,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "LayoutAlgorithmData",
         melk_default: None,
         source: "generated",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.alignment",
@@ -18,6 +19,23 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "Alignment",
         melk_default: Some("Alignment.AUTOMATIC"),
         source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.animTimeFactor",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("100"),
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.animate",
+        kind: OptionKind::Boolean,
+        melk_type: "boolean",
+        melk_default: Some("true"),
+        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.aspectRatio",
@@ -25,6 +43,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: None,
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.box.packingMode",
@@ -32,6 +51,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "PackingMode",
         melk_default: Some("BoxLayoutProvider.PackingMode.SIMPLE"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.commentBox",
@@ -39,6 +59,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.compaction.compactionStrategy",
@@ -46,6 +67,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "CompactionStrategy",
         melk_default: Some("CompactionStrategy.DEPTH_FIRST"),
         source: "SPOrE.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.compaction.orthogonal",
@@ -53,6 +75,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "SPOrE.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.contentAlignment",
@@ -60,6 +83,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EnumSet<ContentAlignment>",
         melk_default: Some("ContentAlignment.topLeft()"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.debugMode",
@@ -67,6 +91,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.direction",
@@ -74,6 +99,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "Direction",
         melk_default: Some("Direction.UNDEFINED"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.disco.componentCompaction.componentLayoutAlgorithm",
@@ -81,6 +107,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "String",
         melk_default: None,
         source: "Disco.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.disco.componentCompaction.strategy",
@@ -88,13 +115,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "CompactionStrategy",
         melk_default: Some("CompactionStrategy.POLYOMINO"),
         source: "Disco.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.east",
-        kind: OptionKind::Enum("PortAlignment"),
-        melk_type: "PortAlignment",
-        melk_default: None,
-        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.edgeLabels.inline",
@@ -102,6 +123,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.edgeLabels.placement",
@@ -109,6 +131,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EdgeLabelPlacement",
         melk_default: Some("EdgeLabelPlacement.CENTER"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.edgeRouting",
@@ -116,6 +139,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EdgeRouting",
         melk_default: Some("EdgeRouting.UNDEFINED"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.expandNodes",
@@ -123,6 +147,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.force.iterations",
@@ -130,6 +155,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("300"),
         source: "Force.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.force.model",
@@ -137,6 +163,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "ForceModelStrategy",
         melk_default: Some("ForceModelStrategy.FRUCHTERMAN_REINGOLD"),
         source: "Force.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.force.repulsion",
@@ -144,6 +171,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("5.0"),
         source: "Force.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.force.repulsivePower",
@@ -151,6 +179,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("0"),
         source: "Force.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.force.temperature",
@@ -158,20 +187,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("0.001"),
         source: "Force.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.hierarchicalNodeAspectRatio",
-        kind: OptionKind::Double,
-        melk_type: "double",
-        melk_default: Some("1.414"),
-        source: "Core.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.hierarchicalNodeWidth",
-        kind: OptionKind::Double,
-        melk_type: "double",
-        melk_default: Some("150"),
-        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.hierarchyHandling",
@@ -179,6 +195,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "HierarchyHandling",
         melk_default: Some("HierarchyHandling.INHERIT"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.insideSelfLoops.activate",
@@ -186,6 +203,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.insideSelfLoops.yo",
@@ -193,6 +211,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.interactive",
@@ -200,6 +219,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.interactiveLayout",
@@ -207,6 +227,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.junctionPoints",
+        kind: OptionKind::Object("KVectorChain"),
+        melk_type: "KVectorChain",
+        melk_default: Some("new KVectorChain()"),
+        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.allowNonFlowPortsToSwitchSides",
@@ -214,13 +243,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.layered.coffmanGraham.layerBound",
-        kind: OptionKind::Int,
-        melk_type: "int",
-        melk_default: Some("Integer.MAX_VALUE"),
-        source: "Layered.melk",
+        legacy_ids: &["org.eclipse.elk.layered.northOrSouthPort"],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.compaction.connectedComponents",
@@ -228,6 +251,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.compaction.postCompaction.constraints",
@@ -235,6 +259,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "ConstraintCalculationStrategy",
         melk_default: Some("ConstraintCalculationStrategy.SCANLINE"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.compaction.postCompaction.strategy",
@@ -242,6 +267,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "GraphCompactionStrategy",
         melk_default: Some("GraphCompactionStrategy.NONE"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.considerModelOrder.components",
@@ -249,6 +275,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "ComponentOrderingStrategy",
         melk_default: Some("ComponentOrderingStrategy.NONE"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.considerModelOrder.crossingCounterNodeInfluence",
@@ -256,6 +283,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("0"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.considerModelOrder.crossingCounterPortInfluence",
@@ -263,6 +291,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("0"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.considerModelOrder.longEdgeStrategy",
@@ -270,6 +299,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "LongEdgeOrderingStrategy",
         melk_default: Some("LongEdgeOrderingStrategy.DUMMY_NODE_OVER"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.considerModelOrder.noModelOrder",
@@ -277,6 +307,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.considerModelOrder.portModelOrder",
@@ -284,6 +315,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.considerModelOrder.strategy",
@@ -291,6 +323,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "OrderingStrategy",
         melk_default: Some("OrderingStrategy.NONE"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.forceNodeModelOrder",
@@ -298,6 +331,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.greedySwitch.activationThreshold",
@@ -305,6 +339,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("40"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.greedySwitch.type",
@@ -312,6 +347,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "GreedySwitchType",
         melk_default: Some("GreedySwitchType.TWO_SIDED"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.greedySwitchHierarchical.type",
@@ -319,6 +355,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "GreedySwitchType",
         melk_default: Some("GreedySwitchType.OFF"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.hierarchicalSweepiness",
@@ -326,6 +363,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("0.1"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.inLayerPredOf",
@@ -333,6 +371,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "String",
         melk_default: Some("null"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.inLayerSuccOf",
@@ -340,6 +379,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "String",
         melk_default: Some("null"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.positionChoiceConstraint",
@@ -347,6 +387,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "Integer",
         melk_default: Some("null"),
         source: "Layered.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.layered.crossingMinimization.positionId",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("-1"),
+        source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.semiInteractive",
@@ -354,6 +403,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.crossingMinimization.strategy",
@@ -361,6 +411,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "CrossingMinimizationStrategy",
         melk_default: Some("CrossingMinimizationStrategy.LAYER_SWEEP"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.cycleBreaking.strategy",
@@ -368,6 +419,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "CycleBreakingStrategy",
         melk_default: Some("CycleBreakingStrategy.GREEDY"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.directionCongruency",
@@ -375,6 +427,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "DirectionCongruency",
         melk_default: Some("DirectionCongruency.READING_DIRECTION"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.edgeLabels.centerLabelPlacementStrategy",
@@ -382,6 +435,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "CenterEdgeLabelPlacementStrategy",
         melk_default: Some("CenterEdgeLabelPlacementStrategy.MEDIAN_LAYER"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.edgeLabels.sideSelection",
@@ -389,6 +443,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EdgeLabelSideSelection",
         melk_default: Some("EdgeLabelSideSelection.SMART_DOWN"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.edgeRouting.polyline.slopedEdgeZoneWidth",
@@ -396,6 +451,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("2.0"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.edgeRouting.selfLoopDistribution",
@@ -403,6 +459,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "SelfLoopDistributionStrategy",
         melk_default: Some("SelfLoopDistributionStrategy.NORTH"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.edgeRouting.selfLoopOrdering",
@@ -410,6 +467,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "SelfLoopOrderingStrategy",
         melk_default: Some("SelfLoopOrderingStrategy.STACKED"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.edgeRouting.splines.mode",
@@ -417,6 +475,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "SplineRoutingMode",
         melk_default: Some("SplineRoutingMode.SLOPPY"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.edgeRouting.splines.sloppy.layerSpacingFactor",
@@ -424,6 +483,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("0.2"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.feedbackEdges",
@@ -431,6 +491,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.generatePositionAndLayerIds",
@@ -438,6 +499,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.highDegreeNodes.threshold",
@@ -445,6 +507,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("16"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.highDegreeNodes.treatment",
@@ -452,6 +515,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.highDegreeNodes.treeHeight",
@@ -459,6 +523,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("5"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.interactiveReferencePoint",
@@ -466,6 +531,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "InteractiveReferencePoint",
         melk_default: Some("InteractiveReferencePoint.CENTER"),
         source: "Layered.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.layered.layering.coffmanGraham.layerBound",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("Integer.MAX_VALUE"),
+        source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.layering.layerChoiceConstraint",
@@ -473,6 +547,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "Integer",
         melk_default: Some("null"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.layering.layerConstraint",
@@ -480,6 +555,47 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "LayerConstraint",
         melk_default: Some("LayerConstraint.NONE"),
         source: "Layered.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.layered.layering.layerId",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("-1"),
+        source: "Layered.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.layered.layering.minWidth.upperBoundOnWidth",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("4"),
+        source: "Layered.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.layered.layering.minWidth.upperLayerEstimationScalingFactor",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("2"),
+        source: "Layered.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.layered.layering.nodePromotion.maxIterations",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("0"),
+        source: "Layered.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.layered.layering.nodePromotion.strategy",
+        kind: OptionKind::Enum("NodePromotionStrategy"),
+        melk_type: "NodePromotionStrategy",
+        melk_default: Some("NodePromotionStrategy.NONE"),
+        source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.layering.strategy",
@@ -487,6 +603,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "LayeringStrategy",
         melk_default: Some("LayeringStrategy.NETWORK_SIMPLEX"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.mergeEdges",
@@ -494,6 +611,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.mergeHierarchyEdges",
@@ -501,20 +619,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("true"),
         source: "Layered.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.layered.minWidth.upperBoundOnWidth",
-        kind: OptionKind::Int,
-        melk_type: "int",
-        melk_default: Some("4"),
-        source: "Layered.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.layered.minWidth.upperLayerEstimationScalingFactor",
-        kind: OptionKind::Int,
-        melk_type: "int",
-        melk_default: Some("2"),
-        source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.nodePlacement.bk.edgeStraightening",
@@ -522,6 +627,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EdgeStraighteningStrategy",
         melk_default: Some("EdgeStraighteningStrategy.IMPROVE_STRAIGHTNESS"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.nodePlacement.bk.fixedAlignment",
@@ -529,6 +635,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "FixedAlignment",
         melk_default: Some("FixedAlignment.NONE"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.nodePlacement.favorStraightEdges",
@@ -536,6 +643,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: None,
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.nodePlacement.linearSegments.deflectionDampening",
@@ -543,6 +651,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("0.3"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.nodePlacement.networkSimplex.nodeFlexibility",
@@ -550,6 +659,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "NodeFlexibility",
         melk_default: None,
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.nodePlacement.strategy",
@@ -557,20 +667,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "NodePlacementStrategy",
         melk_default: Some("NodePlacementStrategy.BRANDES_KOEPF"),
         source: "Layered.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.layered.nodePromotion.maxIterations",
-        kind: OptionKind::Int,
-        melk_type: "int",
-        melk_default: Some("0"),
-        source: "Layered.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.layered.nodePromotion.strategy",
-        kind: OptionKind::Enum("NodePromotionStrategy"),
-        melk_type: "NodePromotionStrategy",
-        melk_default: Some("NodePromotionStrategy.NONE"),
-        source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.portSortingStrategy",
@@ -578,6 +675,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "PortSortingStrategy",
         melk_default: Some("PortSortingStrategy.INPUT_ORDER"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.priority.direction",
@@ -585,6 +683,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("0"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.priority.shortness",
@@ -592,6 +691,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("0"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.priority.straightness",
@@ -599,6 +699,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("0"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.spacing.baseValue",
@@ -606,6 +707,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: None,
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.spacing.edgeEdgeBetweenLayers",
@@ -613,6 +715,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.spacing.edgeNodeBetweenLayers",
@@ -620,6 +723,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.spacing.nodeNodeBetweenLayers",
@@ -627,6 +731,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("20"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.thoroughness",
@@ -634,6 +739,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("7"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.unnecessaryBendpoints",
@@ -641,6 +747,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.additionalEdgeSpacing",
@@ -648,6 +755,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.correctionFactor",
@@ -655,6 +763,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("1.0"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.cutting.cuts",
@@ -662,6 +771,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "List<Integer>",
         melk_default: None,
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.cutting.msd.freedom",
@@ -669,6 +779,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "Integer",
         melk_default: Some("1"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.cutting.strategy",
@@ -676,6 +787,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "CuttingStrategy",
         melk_default: Some("CuttingStrategy.MSD"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.multiEdge.distancePenalty",
@@ -683,6 +795,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("2.0"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.multiEdge.improveCuts",
@@ -690,6 +803,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("true"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.multiEdge.improveWrappedEdges",
@@ -697,6 +811,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("true"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.strategy",
@@ -704,6 +819,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "WrappingStrategy",
         melk_default: Some("WrappingStrategy.OFF"),
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.validify.forbiddenIndices",
@@ -711,6 +827,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "List<Integer>",
         melk_default: None,
         source: "Layered.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.layered.wrapping.validify.strategy",
@@ -718,6 +835,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "ValidifyStrategy",
         melk_default: Some("ValidifyStrategy.GREEDY"),
         source: "Layered.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.layoutAncestors",
+        kind: OptionKind::Boolean,
+        melk_type: "boolean",
+        melk_default: Some("false"),
+        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.margins",
@@ -725,6 +851,23 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "ElkMargin",
         melk_default: Some("new ElkMargin()"),
         source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.maxAnimTime",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("4000"),
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.minAnimTime",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("400"),
+        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.mrtree.compaction",
@@ -732,6 +875,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Tree.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.mrtree.edgeEndTextureLength",
@@ -739,6 +883,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("7"),
         source: "Tree.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.mrtree.edgeRoutingMode",
@@ -746,6 +891,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EdgeRoutingMode",
         melk_default: Some("EdgeRoutingMode.AVOID_OVERLAP"),
         source: "Tree.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.mrtree.positionConstraint",
@@ -753,6 +899,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("-1"),
         source: "Tree.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.mrtree.searchOrder",
@@ -760,6 +907,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "TreeifyingOrder",
         melk_default: Some("TreeifyingOrder.DFS"),
         source: "Tree.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.mrtree.treeLevel",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("0"),
+        source: "Tree.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.mrtree.weighting",
@@ -767,6 +923,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "OrderWeighting",
         melk_default: Some("OrderWeighting.MODEL_ORDER"),
         source: "Tree.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.noLayout",
@@ -774,6 +931,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.nodeLabels.padding",
@@ -781,6 +939,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "ElkPadding",
         melk_default: Some("new ElkPadding(5)"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.nodeLabels.placement",
@@ -788,6 +947,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EnumSet<NodeLabelPlacement>",
         melk_default: Some("NodeLabelPlacement.fixed"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.nodeSize.constraints",
@@ -795,6 +955,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EnumSet<SizeConstraint>",
         melk_default: Some("EnumSet.noneOf(SizeConstraint)"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.nodeSize.fixedGraphSize",
@@ -802,6 +963,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.nodeSize.minimum",
@@ -809,6 +971,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "KVector",
         melk_default: Some("new KVector(0, 0)"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.nodeSize.options",
@@ -816,20 +979,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EnumSet<SizeOptions>",
         melk_default: Some("EnumSet.of(SizeOptions.DEFAULT_MINIMUM_SIZE)"),
         source: "Core.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.nodeType",
-        kind: OptionKind::Enum("TopdownNodeTypes"),
-        melk_type: "TopdownNodeTypes",
-        melk_default: Some("null"),
-        source: "Core.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.north",
-        kind: OptionKind::Enum("PortAlignment"),
-        melk_type: "PortAlignment",
-        melk_default: None,
-        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.omitNodeMicroLayout",
@@ -837,6 +987,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.overlapRemoval.maxIterations",
@@ -844,6 +995,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("64"),
         source: "SPOrE.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.overlapRemoval.runScanline",
@@ -851,6 +1003,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("true"),
         source: "SPOrE.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.padding",
@@ -858,6 +1011,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "ElkPadding",
         melk_default: Some("new ElkPadding(12)"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.partitioning.activate",
@@ -865,6 +1019,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "Boolean",
         melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.partitioning.partition",
@@ -872,6 +1027,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "Integer",
         melk_default: None,
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.polyomino.fill",
@@ -879,6 +1035,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("true"),
         source: "Polyomino.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.polyomino.highLevelSort",
@@ -888,6 +1045,7 @@ pub static OPTIONS: &[OptionSpec] = &[
             "HighLevelSortingCriterion.NUM_OF_EXTERNAL_SIDES_THAN_NUM_OF_EXTENSIONS_LAST",
         ),
         source: "Polyomino.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.polyomino.lowLevelSort",
@@ -895,6 +1053,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "LowLevelSortingCriterion",
         melk_default: Some("LowLevelSortingCriterion.BY_SIZE_AND_SHAPE"),
         source: "Polyomino.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.polyomino.traversalStrategy",
@@ -902,6 +1061,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "TraversalStrategy",
         melk_default: Some("TraversalStrategy.QUADRANTS_LINE_BY_LINE"),
         source: "Polyomino.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.port.anchor",
@@ -909,6 +1069,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "KVector",
         melk_default: None,
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.port.borderOffset",
@@ -916,6 +1077,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: None,
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.port.index",
@@ -923,6 +1085,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: None,
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.port.side",
@@ -930,6 +1093,39 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "PortSide",
         melk_default: Some("PortSide.UNDEFINED"),
         source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.portAlignment.east",
+        kind: OptionKind::Enum("PortAlignment"),
+        melk_type: "PortAlignment",
+        melk_default: None,
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.portAlignment.north",
+        kind: OptionKind::Enum("PortAlignment"),
+        melk_type: "PortAlignment",
+        melk_default: None,
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.portAlignment.south",
+        kind: OptionKind::Enum("PortAlignment"),
+        melk_type: "PortAlignment",
+        melk_default: None,
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.portAlignment.west",
+        kind: OptionKind::Enum("PortAlignment"),
+        melk_type: "PortAlignment",
+        melk_default: None,
+        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.portConstraints",
@@ -937,6 +1133,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "PortConstraints",
         melk_default: Some("PortConstraints.UNDEFINED"),
         source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.portLabels.nextToPortIfPossible",
+        kind: OptionKind::Boolean,
+        melk_type: "boolean",
+        melk_default: Some("false"),
+        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.portLabels.placement",
@@ -944,6 +1149,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "EnumSet<PortLabelPlacement>",
         melk_default: Some("PortLabelPlacement.outside"),
         source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.portLabels.treatAsGroup",
+        kind: OptionKind::Boolean,
+        melk_type: "boolean",
+        melk_default: Some("true"),
+        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.position",
@@ -951,6 +1165,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "KVector",
         melk_default: None,
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.priority",
@@ -958,6 +1173,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: None,
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.processingOrder.preferredRoot",
@@ -965,6 +1181,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "String",
         melk_default: Some("null"),
         source: "SPOrE.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.processingOrder.rootSelection",
@@ -972,6 +1189,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "RootSelection",
         melk_default: Some("RootSelection.CENTER_NODE"),
         source: "SPOrE.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.processingOrder.spanningTreeCostFunction",
@@ -979,6 +1197,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "SpanningTreeCostFunction",
         melk_default: Some("SpanningTreeCostFunction.CIRCLE_UNDERLAP"),
         source: "SPOrE.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.processingOrder.treeConstruction",
@@ -986,6 +1205,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "TreeConstructionStrategy",
         melk_default: Some("TreeConstructionStrategy.MINIMUM_SPANNING_TREE"),
         source: "SPOrE.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.progressBar",
+        kind: OptionKind::Boolean,
+        melk_type: "boolean",
+        melk_default: Some("false"),
+        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.centerOnRoot",
@@ -993,6 +1221,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.compactionStepSize",
@@ -1000,6 +1229,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("1"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.compactor",
@@ -1007,6 +1237,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "CompactionStrategy",
         melk_default: Some("CompactionStrategy.NONE"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.optimizationCriteria",
@@ -1014,6 +1245,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "RadialTranslationStrategy",
         melk_default: Some("RadialTranslationStrategy.NONE"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.orderId",
@@ -1021,6 +1253,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("0"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.radius",
@@ -1028,6 +1261,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("0.0"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.rotate",
@@ -1035,6 +1269,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.rotation.computeAdditionalWedgeSpace",
@@ -1042,6 +1277,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.rotation.outgoingEdgeAngles",
@@ -1049,6 +1285,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.rotation.targetAngle",
@@ -1056,6 +1293,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("0"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.sorter",
@@ -1063,6 +1301,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "SortingStrategy",
         melk_default: Some("SortingStrategy.NONE"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.radial.wedgeCriteria",
@@ -1070,6 +1309,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "AnnulusWedgeCriteria",
         melk_default: Some("AnnulusWedgeCriteria.NODE_SIZE"),
         source: "Radial.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.randomSeed",
@@ -1077,6 +1317,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: None,
         source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.rectpacking.currentPosition",
+        kind: OptionKind::Int,
+        melk_type: "int",
+        melk_default: Some("-1"),
+        source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.desiredPosition",
@@ -1084,6 +1333,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("-1"),
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.inNewRow",
@@ -1091,6 +1341,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.packing.compaction.iterations",
@@ -1098,6 +1349,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("1"),
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.packing.compaction.rowHeightReevaluation",
@@ -1105,6 +1357,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.packing.strategy",
@@ -1112,6 +1365,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "PackingStrategy",
         melk_default: Some("PackingStrategy.COMPACTION"),
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.trybox",
@@ -1119,6 +1373,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.whiteSpaceElimination.strategy",
@@ -1126,6 +1381,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "WhiteSpaceEliminationStrategy",
         melk_default: None,
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.widthApproximation.lastPlaceShift",
@@ -1133,6 +1389,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("true"),
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.widthApproximation.optimizationGoal",
@@ -1140,6 +1397,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "OptimizationGoal",
         melk_default: Some("OptimizationGoal.MAX_SCALE_DRIVEN"),
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.widthApproximation.strategy",
@@ -1147,6 +1405,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "WidthApproximationStrategy",
         melk_default: Some("WidthApproximationStrategy.GREEDY"),
         source: "RectPacking.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.rectpacking.widthApproximation.targetWidth",
@@ -1154,13 +1413,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("-1"),
         source: "RectPacking.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.scaleCap",
-        kind: OptionKind::Double,
-        melk_type: "double",
-        melk_default: Some("1"),
-        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.separateConnectedComponents",
@@ -1168,20 +1421,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: None,
         source: "Core.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.sizeApproximator",
-        kind: OptionKind::Enum("TopdownSizeApproximator"),
-        melk_type: "TopdownSizeApproximator",
-        melk_default: Some("null"),
-        source: "Core.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.south",
-        kind: OptionKind::Enum("PortAlignment"),
-        melk_type: "PortAlignment",
-        melk_default: None,
-        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.commentComment",
@@ -1189,6 +1429,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.commentNode",
@@ -1196,6 +1437,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.componentComponent",
@@ -1203,6 +1445,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("20f"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.edgeEdge",
@@ -1210,6 +1453,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.edgeLabel",
@@ -1217,6 +1461,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("2"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.edgeNode",
@@ -1224,6 +1469,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.individual",
@@ -1231,6 +1477,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "IndividualSpacings",
         melk_default: None,
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.labelLabel",
@@ -1238,6 +1485,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("0"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.labelNode",
@@ -1245,6 +1493,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("5"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.labelPortHorizontal",
@@ -1252,6 +1501,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("1"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.labelPortVertical",
@@ -1259,6 +1509,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("1"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.nodeNode",
@@ -1266,6 +1517,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("20"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.nodeSelfLoop",
@@ -1273,6 +1525,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.portPort",
@@ -1280,6 +1533,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.spacing.portsSurrounding",
@@ -1287,6 +1541,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "ElkMargin",
         melk_default: Some("new ElkMargin(0)"),
         source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.stress.desiredEdgeLength",
@@ -1294,6 +1549,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("100.0"),
         source: "Stress.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.stress.dimension",
@@ -1301,6 +1557,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "Dimension",
         melk_default: Some("Dimension.XY"),
         source: "Stress.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.stress.epsilon",
@@ -1308,6 +1565,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "double",
         melk_default: Some("10e-4"),
         source: "Stress.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.stress.fixed",
@@ -1315,6 +1573,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Stress.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.stress.iterationLimit",
@@ -1322,6 +1581,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "int",
         melk_default: Some("Integer.MAX_VALUE"),
         source: "Stress.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.structure.structureExtractionStrategy",
@@ -1329,6 +1589,47 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "StructureExtractionStrategy",
         melk_default: Some("StructureExtractionStrategy.DELAUNAY_TRIANGULATION"),
         source: "SPOrE.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.topdown.hierarchicalNodeAspectRatio",
+        kind: OptionKind::Double,
+        melk_type: "double",
+        melk_default: Some("1.414"),
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.topdown.hierarchicalNodeWidth",
+        kind: OptionKind::Double,
+        melk_type: "double",
+        melk_default: Some("150"),
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.topdown.nodeType",
+        kind: OptionKind::Enum("TopdownNodeTypes"),
+        melk_type: "TopdownNodeTypes",
+        melk_default: Some("null"),
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.topdown.scaleCap",
+        kind: OptionKind::Double,
+        melk_type: "double",
+        melk_default: Some("1"),
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.topdown.sizeApproximator",
+        kind: OptionKind::Enum("TopdownSizeApproximator"),
+        melk_type: "TopdownSizeApproximator",
+        melk_default: Some("null"),
+        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.topdownLayout",
@@ -1336,13 +1637,7 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "boolean",
         melk_default: Some("false"),
         source: "Core.melk",
-    },
-    OptionSpec {
-        id: "org.eclipse.elk.treatAsGroup",
-        kind: OptionKind::Boolean,
-        melk_type: "boolean",
-        melk_default: Some("true"),
-        source: "Core.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
         id: "org.eclipse.elk.underlyingLayoutAlgorithm",
@@ -1350,12 +1645,30 @@ pub static OPTIONS: &[OptionSpec] = &[
         melk_type: "String",
         melk_default: None,
         source: "SPOrE.melk",
+        legacy_ids: &[],
     },
     OptionSpec {
-        id: "org.eclipse.elk.west",
-        kind: OptionKind::Enum("PortAlignment"),
-        melk_type: "PortAlignment",
-        melk_default: None,
+        id: "org.eclipse.elk.validateGraph",
+        kind: OptionKind::Boolean,
+        melk_type: "boolean",
+        melk_default: Some("false"),
         source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.validateOptions",
+        kind: OptionKind::Boolean,
+        melk_type: "boolean",
+        melk_default: Some("true"),
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.zoomToFit",
+        kind: OptionKind::Boolean,
+        melk_type: "boolean",
+        melk_default: Some("false"),
+        source: "Core.melk",
+        legacy_ids: &[],
     },
 ];

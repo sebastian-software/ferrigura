@@ -53,7 +53,7 @@ def OPTIONS_SOURCE_ENUMS(elk_root):
     kinds = java_types(elk_root)
     names = set()
     for relative in MELK_FILES:
-        for _, type_text, _ in parse_melk(os.path.join(elk_root, relative)):
+        for _, type_text, _, _ in parse_melk(os.path.join(elk_root, relative)):
             kind, arg = classify(type_text, kinds)
             if kind in ("Enum", "EnumSet"):
                 names.add(arg)
@@ -61,38 +61,70 @@ def OPTIONS_SOURCE_ENUMS(elk_root):
 
 
 def parse_melk(path):
-    """Yield (id, type_text, default_text, file_name) for each option in one melk file."""
+    """Yield (id, type_text, default_text) for each option, from brace-matched blocks.
+
+    The melk grammar nests groups and options in braces; a line-based reader loses
+    track of the nesting when a block closes on an unexpected line, so the reader
+    keeps a stack of open blocks. String literals are blanked first, so braces in
+    descriptions do not count.
+    """
     with open(path, encoding="utf-8") as handle:
         text = strip_comments(handle.read())
-    prefix = None
-    groups = []
-    option = None
-    for line in text.split("\n"):
-        match = PREFIX_RE.match(line)
-        if match and prefix is None:
-            prefix = match.group(1)
-            continue
-        if option is None:
-            match = GROUP_RE.match(line)
-            if match:
-                groups.append(match.group(1))
+    text = re.sub(r'"(?:\\.|[^"\\])*"', '""', text)
+    prefix_match = re.search(r"idPrefix\s+([\w.^]+)", text)
+    prefix = prefix_match.group(1).replace("^", "") if prefix_match else None
+    stack = []  # entries: dict(kind, name, type, start, groups)
+    statement_start = 0
+    results = []
+    group_names = []
+    for index, char in enumerate(text):
+        if char == "{":
+            header = text[statement_start:index].strip()
+            statement_start = index + 1
+            group_match = re.search(r"(?:^|\s)group\s+(\w+)\s*$", header)
+            option_match = re.search(
+                r"(?:^|\s)option\s+(\w+)\s*:\s*([\w.<>\[\], ]+?)\s*$", header
+            )
+            if group_match:
+                stack.append({"kind": "group", "name": group_match.group(1), "start": index})
+                group_names.append(group_match.group(1))
+            elif option_match and "programmatic" not in header:
+                # Programmatic options are Java-only and are not registered with elkjs.
+                stack.append(
+                    {
+                        "kind": "option",
+                        "name": option_match.group(1).replace("^", ""),
+                        "type": option_match.group(2).strip(),
+                        "start": index,
+                        "groups": list(group_names),
+                    }
+                )
+            else:
+                stack.append({"kind": "other", "start": index})
+        elif char == "}":
+            statement_start = index + 1
+            if not stack:
                 continue
-            match = OPTION_RE.match(line)
-            if match:
-                option = {"name": match.group(1), "type": match.group(2).strip(), "groups": list(groups), "default": None}
-                continue
-            if line.strip() == "}" and groups:
-                groups.pop()
-            continue
-        match = DEFAULT_RE.match(line)
-        if match and option["default"] is None:
-            option["default"] = match.group(1)
-        if line.strip() == "}":
-            yield_id = ".".join([prefix] + option["groups"] + [option["name"]])
-            yield (yield_id, option["type"], option["default"])
-            option = None
+            block = stack.pop()
+            if block["kind"] == "group":
+                group_names.pop()
+            elif block["kind"] == "option":
+                body = text[block["start"] + 1 : index]
+                default_match = re.search(r"(?m)^\s*default\s*=\s*(.+?)\s*$", body)
+                default = default_match.group(1) if default_match else None
+                legacy_match = re.search(r"(?m)^\s*legacyIds\s+(.+?)\s*$", body)
+                legacy = (
+                    [item for item in re.split(r"[\s,]+", legacy_match.group(1)) if item]
+                    if legacy_match
+                    else []
+                )
+                option_id = ".".join([prefix] + block["groups"] + [block["name"]])
+                results.append((option_id, block["type"], default, legacy))
+        elif char == ";":
+            statement_start = index + 1
     if prefix is None:
         raise SystemExit(f"no idPrefix in {path}")
+    return results
 
 
 def java_types(elk_root):
@@ -150,15 +182,15 @@ def main():
     seen = set()
     for relative in MELK_FILES:
         path = os.path.join(elk_root, relative)
-        for option_id, type_text, default_text in parse_melk(path):
+        for option_id, type_text, default_text, legacy_ids in parse_melk(path):
             if option_id in seen:
                 raise SystemExit(f"duplicate option id {option_id}")
             seen.add(option_id)
             kind, arg = classify(type_text, kinds)
-            rows.append((option_id, kind, arg, type_text, default_text, os.path.basename(relative)))
+            rows.append((option_id, kind, arg, type_text, default_text, os.path.basename(relative), legacy_ids))
     # `org.eclipse.elk.algorithm` is not declared in any melk file: the metacompiler
     # generates it from the `algorithm` blocks. Its value is a layout algorithm id.
-    rows.append(("org.eclipse.elk.algorithm", "Algorithm", "LayoutAlgorithmData", "LayoutAlgorithmData", None, "generated"))
+    rows.append(("org.eclipse.elk.algorithm", "Algorithm", "LayoutAlgorithmData", "LayoutAlgorithmData", None, "generated", []))
     rows.sort(key=lambda row: row[0])
     lines = [
         "// @generated by crates/ferrigura-elk/tools/gen_option_registry.py from the ELK melk",
@@ -169,7 +201,7 @@ def main():
         "/// Every option elkjs 0.9.3 registers, sorted by id.",
         "pub static OPTIONS: &[OptionSpec] = &[",
     ]
-    for option_id, kind, arg, type_text, default_text, source in rows:
+    for option_id, kind, arg, type_text, default_text, source, legacy_ids in rows:
         if kind == "Primitive":
             kind_text = f"OptionKind::{arg}"
         elif kind == "EnumSet":
@@ -187,7 +219,8 @@ def main():
             default_rust = f"Some({default_rust})"
         lines.append(
             f"    OptionSpec {{ id: {rust_str(option_id)}, kind: {kind_text}, "
-            f"melk_type: {rust_str(type_text)}, melk_default: {default_rust}, source: {rust_str(source)} }},"
+            f"melk_type: {rust_str(type_text)}, melk_default: {default_rust}, source: {rust_str(source)}, "
+            f"legacy_ids: &[{', '.join(rust_str(item) for item in legacy_ids)}] }},"
         )
     lines.append("];")
     lines.append("")
