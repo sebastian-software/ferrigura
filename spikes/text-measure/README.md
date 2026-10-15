@@ -40,4 +40,6 @@ cargo +stable run --release --bin embed -- /tmp/requests.json /tmp/embed
 ../../node_modules/.bin/tsx embed-check.ts /tmp/embed
 ```
 
+Append `webkit` or `firefox` to run the checks in another engine (Part 3); this needs `playwright install webkit firefox`.
+
 The crate is standalone (it declares its own empty `[workspace]`), so it does not join the ferrigura workspace. It is a spike: M2 turns what it learned into `ferrigura-text`.

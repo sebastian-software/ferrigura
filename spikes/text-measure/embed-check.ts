@@ -1,8 +1,9 @@
 /**
  * Check the SVGs written by `cargo run --bin embed` in Chromium:
  *
- * 1. `all.svg` opened as a document: every embedded face loads, and every label is drawn at the
- *    width and text box height Rust measured (`data-width`, `data-height`).
+ * 1. `all.svg`, `all-plain.svg` and `all-length.svg` opened as documents: every embedded face
+ *    loads, and every label is laid out at the width and text box height Rust measured
+ *    (`data-width`, `data-height`), by `getComputedTextLength` and by the width of `getBBox`.
  * 2. The same SVG shown through `<img>`: pixel-identical to the document, so the embedded fonts
  *    also load where scripts and external resources are off.
  * 3. Two diagrams inlined in one HTML page, once with unique font family names and once with a
@@ -29,8 +30,10 @@ const log = (line: string) => process.stdout.write(`${line}\n`);
 interface Check {
   texts: number;
   maxWidthDiff: number;
+  maxBoxDiff: number;
   maxHeightDiff: number;
   over: number;
+  overBox: number;
 }
 
 /** Compares every `<text data-width>` under `root` with what the browser lays out. */
@@ -41,29 +44,35 @@ async function measure(target: Page, root: string): Promise<Check> {
     await document.fonts.ready;
     const texts = [...document.querySelectorAll<SVGTextElement>(`${selector} text[data-width]`)];
     let maxWidthDiff = 0;
+    let maxBoxDiff = 0;
     let maxHeightDiff = 0;
     let over = 0;
+    let overBox = 0;
     for (const text of texts) {
+      const box = text.getBBox();
       const widthDiff = Math.abs(text.getComputedTextLength() - Number(text.dataset.width));
-      const heightDiff = Math.abs(text.getBBox().height - Number(text.dataset.height));
+      const boxDiff = Math.abs(box.width - Number(text.dataset.width));
+      const heightDiff = Math.abs(box.height - Number(text.dataset.height));
       maxWidthDiff = Math.max(maxWidthDiff, widthDiff);
+      maxBoxDiff = Math.max(maxBoxDiff, boxDiff);
       maxHeightDiff = Math.max(maxHeightDiff, heightDiff);
-      if (widthDiff > 0.02) {
-        over++;
-      }
+      over += widthDiff > 0.02 ? 1 : 0;
+      overBox += boxDiff > 0.02 ? 1 : 0;
     }
-    return { texts: texts.length, maxWidthDiff, maxHeightDiff, over };
+    return { texts: texts.length, maxWidthDiff, maxBoxDiff, maxHeightDiff, over, overBox };
   }, root);
 }
 
 const report = (label: string, c: Check) =>
   log(
-    `${label.padEnd(34)} ${String(c.texts).padStart(5)} labels  width max ${c.maxWidthDiff.toFixed(4)} px  height max ${c.maxHeightDiff.toFixed(4)} px  ${c.over} over 0.02 px`
+    `${label.padEnd(34)} ${String(c.texts).padStart(5)} labels  length max ${c.maxWidthDiff.toFixed(4)} px (${c.over} over 0.02)  box max ${c.maxBoxDiff.toFixed(4)} px (${c.overBox} over 0.02)  height max ${c.maxHeightDiff.toFixed(4)} px`
   );
 
 // 1. As a document.
-await page.goto(url('all.svg'));
-report('all.svg as document', await measure(page, 'svg'));
+for (const name of ['all.svg', 'all-plain.svg', 'all-length.svg']) {
+  await page.goto(url(name));
+  report(name, await measure(page, 'svg'));
+}
 const faces = await page.evaluate(() =>
   [...document.fonts].map((f) => `${f.family} ${f.weight} ${f.style}: ${f.status}`)
 );

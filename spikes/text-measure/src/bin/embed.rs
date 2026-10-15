@@ -6,6 +6,9 @@
 //!
 //! - `all.svg`: every request without a wrap width, one label per row, its Rust width in
 //!   `data-width`, a red outline of that width, and the subsets as data-URL web fonts.
+//! - `all-plain.svg`: the same with kerning and ligatures switched off, in CSS and in the Rust
+//!   measurement.
+//! - `all-length.svg`: the same as `all.svg`, with the Rust width also set as `textLength`.
 //! - `half-a.svg`, `half-b.svg`: the same labels split into two diagrams with their own subsets
 //!   and unique font family names; `shared-a.svg`, `shared-b.svg`: the same with one shared name.
 //! - `sizes.json`: original and subset font sizes per face.
@@ -16,7 +19,7 @@ use std::path::Path;
 
 use base64::Engine;
 use harfrust::font::Font;
-use harfrust::{Buffer, ShapeOptions, ShaperFont, shape};
+use harfrust::{Buffer, Feature, ShapeOptions, ShaperFont, Tag, shape};
 use serde::{Deserialize, Serialize};
 use skera::{DEFAULT_LAYOUT_FEATURES, Plan, SubsetFlags, subset_font};
 use write_fonts::read::FontRef;
@@ -80,6 +83,17 @@ struct FaceSize {
     characters: usize,
 }
 
+/// How the labels of one SVG are measured and drawn.
+#[derive(Clone, Copy, PartialEq)]
+enum Variant {
+    /// The font's default features, kerning and ligatures included.
+    Kerned,
+    /// Kerning and ligatures off, in CSS and in the measurement.
+    Plain,
+    /// As `Kerned`, with the measured width set as `textLength`.
+    Length,
+}
+
 struct Face {
     style: &'static str,
     data: Vec<u8>,
@@ -88,14 +102,24 @@ struct Face {
     font_style: &'static str,
 }
 
-/// Advance width of `text` at `size` pixels, shaped with `data`.
-fn width(data: &[u8], text: &str, size: f64) -> Result<f64, String> {
+/// Advance width of `text` at `size` pixels, shaped with `data`. `plain` switches off what CSS
+/// `font-kerning: none` and `font-variant-ligatures: none` switch off.
+fn width(data: &[u8], text: &str, size: f64, plain: bool) -> Result<f64, String> {
     let font = Font::new(data.to_vec(), 0).ok_or("not a font")?;
     let shaper = ShaperFont::new(&font);
     let mut buffer = Buffer::new();
     buffer.push_str(text);
     buffer.guess_segment_properties();
-    shape(&shaper, &mut buffer, ShapeOptions::new()).map_err(|e| format!("{e:?}"))?;
+    let off: Vec<Feature> = if plain {
+        [b"kern", b"liga", b"clig", b"calt"]
+            .iter()
+            .map(|tag| Feature::new(Tag::new(tag), 0, ..))
+            .collect()
+    } else {
+        Vec::new()
+    };
+    shape(&shaper, &mut buffer, ShapeOptions::new().features(&off))
+        .map_err(|e| format!("{e:?}"))?;
     let units: i64 = buffer
         .glyph_positions()
         .iter()
@@ -159,7 +183,9 @@ fn write_svg(
     faces: &[Face],
     requests: &[Request],
     prefix: &str,
+    variant: Variant,
 ) -> Result<Vec<(String, Vec<u8>)>, String> {
+    let plain = variant == Variant::Plain;
     let mut characters: BTreeMap<&str, BTreeSet<char>> = BTreeMap::new();
     for request in requests {
         characters
@@ -169,7 +195,11 @@ fn write_svg(
     }
     // Browsers set `white-space: nowrap` on `text` in their own stylesheet, so a rule on the root
     // does not reach it; spaces at the ends of a label are kept only with a rule on `text`.
-    let mut css = String::from("text{white-space:pre}");
+    let mut css = String::from(if plain {
+        "text{white-space:pre;font-kerning:none;font-variant-ligatures:none}"
+    } else {
+        "text{white-space:pre}"
+    });
     let mut subsets = BTreeMap::new();
     for face in faces {
         let Some(chars) = characters.get(face.style) else {
@@ -193,8 +223,8 @@ fn write_svg(
             .iter()
             .find(|f| f.style == request.style)
             .ok_or("unknown style")?;
-        let w = width(&face.data, &request.text, request.size)?;
-        let w_subset = width(&subsets[face.style], &request.text, request.size)?;
+        let w = width(&face.data, &request.text, request.size, plain)?;
+        let w_subset = width(&subsets[face.style], &request.text, request.size, plain)?;
         if w != w_subset {
             return Err(format!(
                 "subset changes the width of {:?}: {w} vs {w_subset}",
@@ -216,10 +246,15 @@ fn write_svg(
         let top = (ascender * request.size / upem).round();
         let bottom = (-descender * request.size / upem).round();
         let baseline = y + top;
+        let length = if variant == Variant::Length {
+            format!(" textLength=\"{w}\" lengthAdjust=\"spacing\"")
+        } else {
+            String::new()
+        };
         let _ = writeln!(
             body,
             "<rect x=\"10\" y=\"{y}\" width=\"{w}\" height=\"{}\" fill=\"none\" stroke=\"#e33\" stroke-width=\"0.5\"/>\
-             <text id=\"t{index}\" data-width=\"{w}\" data-height=\"{}\" x=\"10\" y=\"{baseline}\" font-family=\"{prefix}-{}\" font-size=\"{}\" font-weight=\"{}\" font-style=\"{}\">{}</text>",
+             <text id=\"t{index}\" data-width=\"{w}\" data-height=\"{}\" x=\"10\" y=\"{baseline}\" font-family=\"{prefix}-{}\" font-size=\"{}\" font-weight=\"{}\" font-style=\"{}\"{length}>{}</text>",
             top + bottom,
             top + bottom,
             face.family,
@@ -271,7 +306,27 @@ fn main() -> Result<(), String> {
         .filter(|r| r.wrap_width.is_none())
         .collect();
 
-    let subsets = write_svg(&out.join("all.svg"), &faces, &labels, "fg0")?;
+    let subsets = write_svg(
+        &out.join("all.svg"),
+        &faces,
+        &labels,
+        "fg0",
+        Variant::Kerned,
+    )?;
+    write_svg(
+        &out.join("all-plain.svg"),
+        &faces,
+        &labels,
+        "fg0",
+        Variant::Plain,
+    )?;
+    write_svg(
+        &out.join("all-length.svg"),
+        &faces,
+        &labels,
+        "fg0",
+        Variant::Length,
+    )?;
     let sizes: Vec<FaceSize> = subsets
         .iter()
         .map(|(style, data)| {
@@ -318,10 +373,10 @@ fn main() -> Result<(), String> {
         })
         .cloned()
         .collect();
-    write_svg(&out.join("half-a.svg"), &faces, &a, "fg1")?;
-    write_svg(&out.join("half-b.svg"), &faces, &b, "fg2")?;
-    write_svg(&out.join("shared-a.svg"), &faces, &a, "fg")?;
-    write_svg(&out.join("shared-b.svg"), &faces, &b, "fg")?;
+    write_svg(&out.join("half-a.svg"), &faces, &a, "fg1", Variant::Kerned)?;
+    write_svg(&out.join("half-b.svg"), &faces, &b, "fg2", Variant::Kerned)?;
+    write_svg(&out.join("shared-a.svg"), &faces, &a, "fg", Variant::Kerned)?;
+    write_svg(&out.join("shared-b.svg"), &faces, &b, "fg", Variant::Kerned)?;
 
     std::fs::write(
         out.join("sizes.json"),

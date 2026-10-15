@@ -63,11 +63,37 @@ Consequences for M2:
 - **`white-space: pre` on `text`, not on the root.** Chromium computes `white-space: nowrap` for `text` even when the root says `pre`, and drops a label's leading and trailing spaces. The rule must target `text` (or `xml:space="preserve"` on the element).
 - **Keep legacy `kern` tables.** `skera`, like `hb-subset`, drops `kern` by default; Lexica keeps its kerning in `GPOS`, but a registered font may not, so ferrigura's subset call does not drop it.
 
+## Part 3: WebKit, and kerning
+
+**Question.** Do other engines draw the embedded labels at the Rust width too?
+
+**Answer.** WebKit does not, as long as the text is kerned: it lays out SVG `text` without kerning and without ligatures, while its HTML and canvas text keep both. Two ways make WebKit match exactly. Firefox could not be tested.
+
+Setup: `embed.rs` also writes `all-plain.svg`, with `font-kerning: none` and `font-variant-ligatures: none` on `text` and the Rust widths measured with `kern`, `liga`, `clig` and `calt` off, and `all-length.svg`, which is `all.svg` with every label's Rust width set as `textLength` (`lengthAdjust="spacing"`). `embed-check.ts <dir> webkit` runs the checks in WebKit 26.5 (Playwright). Run on 2026-10-16.
+
+| Check, 1,690 labels                                                  | Chromium                             | WebKit                                                  |
+| -------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------- |
+| `all.svg`, kerned: width vs Rust                                     | max 0.0155 px                        | 956 labels off, up to 16 px (3.2 px on ordinary labels) |
+| Same labels as HTML text or canvas, kerned                           | (Part 1)                             | HTML max 0.74 px (spaces case), canvas max 0.0003 px    |
+| `all-plain.svg`, kerning and ligatures off on both sides             | max 0.0155 px                        | max 0.0003 px                                           |
+| `all-length.svg`, kerned with `textLength`: character extent vs Rust | max 0.0155 px; pixels shift subpixel | max 0.0155 px                                           |
+| Text box height vs Rust (ascent and descent rounded to whole pixels) | exact                                | off by 0.16–0.38 px, depending on size                  |
+| `<img>` vs document                                                  | pixel-identical                      | pixel-identical                                         |
+
+The largest WebKit differences are the kerning test line (`AVATAR Type WAVE Yo Te LT`, 16 px wider at 24 px) and the ligature test line (`office fluffy fjord affinity`). WebKit does not round ascent and descent to whole pixels the way Chromium does, so the text box sits up to 0.4 px differently. In Chromium, `getBBox` includes ink that overhangs the advance (a leading `j`, italics), so the checks compare character positions and `getComputedTextLength`, not the box width.
+
+Two options for M2:
+
+- **Plain text: kerning and ligatures off**, in the measurement and in the SVG's CSS. Exact in both engines, nothing per label, and every browser draws the same glyphs. The cost is typography: Lexica's kerning and its `fi`/`fl` ligatures are gone.
+- **Kerned text with `textLength`** on every text line. Chromium draws kerned text; WebKit draws unkerned glyphs, spread to the measured width. Exact in both, but the two engines show different spacing, and `textLength` has to be set per line, which mixed styles inside a line make harder.
+
+The geometry comparison with the JS reference (M5) is unaffected either way, as long as the reference run uses the same font settings.
+
 ## Not covered yet
 
 - Mixed styles within one line (bold or italic words from Markdown); a straightforward extension of the per-word measurement.
 - Fallback fonts for scripts Lexica does not cover (CJK, Arabic, emoji).
 - Caching of shaper data and per-word widths; not needed at 5 µs per measurement.
 - Whether `Intl.Segmenter` and `unicode-segmentation` agree on graphemes for the newest emoji sequences.
-- Firefox and WebKit: `embed-check.ts` takes the engine as an argument, but the Playwright builds of both were not installed for this run.
+- Firefox: Playwright's Firefox 153 build (1538) hangs at launch on macOS 27.0.1, also outside the shell sandbox and with software rendering; to be run on Linux, for example in CI.
 - WOFF2: the subsets are embedded as TTF; WOFF2 would roughly halve them, but needs a Rust encoder that has not been evaluated.
