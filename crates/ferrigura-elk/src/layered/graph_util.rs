@@ -5,7 +5,7 @@
 //! The helpers of `LGraphUtil` that the layered processors share.
 
 use crate::core::data::enums::{Alignment, Direction, GraphProperties, PortSide};
-use crate::layered::lgraph::{LGraph, LNode, LPort, PortType};
+use crate::layered::lgraph::{LGraph, LPort, PortType};
 use crate::layered::options;
 
 /// `LGraphUtil.createPort(node, null, type, graph)` for a port of its own: it sits on the side
@@ -72,7 +72,7 @@ pub fn place_nodes_horizontally(graph: &mut LGraph, layer: usize, xoffset: f64) 
     });
     for &index in &members {
         let node = &graph.nodes[index];
-        let ratio = alignment_ratio(node);
+        let ratio = alignment_ratio(graph, index);
         let node_width = node.size.x;
         let mut xpos = (layer_width - node_width) * ratio;
         if ratio > 0.5 {
@@ -93,12 +93,32 @@ pub fn place_nodes_horizontally(graph: &mut LGraph, layer: usize, xoffset: f64) 
 }
 
 /// The ratio that `placeNodesHorizontally` takes from a node's alignment. The automatic case
-/// is port-based in the Java source; these nodes have no ports, so it gives the centre.
-fn alignment_ratio(node: &LNode) -> f64 {
-    match node.properties.enum_of::<Alignment>(options::ALIGNMENT) {
+/// follows the ports: the share of the edge ports that leave the node, or the centre when the
+/// node has no edge ports.
+fn alignment_ratio(graph: &LGraph, index: usize) -> f64 {
+    match graph.nodes[index]
+        .properties
+        .enum_of::<Alignment>(options::ALIGNMENT)
+    {
         Some(Alignment::LEFT) => 0.0,
         Some(Alignment::RIGHT) => 1.0,
-        _ => 0.5,
+        Some(Alignment::CENTER) => 0.5,
+        _ => {
+            let ports = &graph.nodes[index].ports;
+            let inports = ports
+                .iter()
+                .filter(|&&port| !graph.ports[port].incoming.is_empty())
+                .count();
+            let outports = ports
+                .iter()
+                .filter(|&&port| !graph.ports[port].outgoing.is_empty())
+                .count();
+            if inports + outports == 0 {
+                0.5
+            } else {
+                outports as f64 / (inports + outports) as f64
+            }
+        }
     }
 }
 
@@ -108,6 +128,7 @@ mod tests {
     use crate::core::data::OptionValue;
     use crate::core::data::property::PropertyHolder;
     use crate::core::math::KVector;
+    use crate::layered::lgraph::LNode;
 
     /// A layer with one node of the given width, in a layer of width 50.
     fn one_node_layer(alignment: Option<&str>) -> LGraph {
