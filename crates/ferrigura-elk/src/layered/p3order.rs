@@ -35,6 +35,14 @@ pub fn sweep(graph: &mut LGraph) -> Result<(), LayoutError> {
     if graph.layers.len() == 1 && graph.layers[0].len() == 1 && !hierarchical {
         return Ok(());
     }
+    // With edges, the order of a layer depends on the barycenters of the connected ports, which
+    // are not ported yet. A layer of one node has no order to change, so it is left alone.
+    if !graph.edges.is_empty() && graph.layers.iter().any(|layer| layer.len() > 1) {
+        return Err(LayoutError::Unsupported(
+            "crossing minimization of layers with several nodes and edges (the barycenter with ports)"
+                .to_string(),
+        ));
+    }
     if graph.properties.bool_of(options::FORCE_NODE_MODEL_ORDER) {
         return Err(LayoutError::Unsupported(
             "crossingMinimization.forceNodeModelOrder (ModelOrderBarycenterHeuristic)".to_string(),
