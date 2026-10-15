@@ -66,8 +66,6 @@ const IGNORABLE_PREFIXES = [
   // Documentation (source and generated)
   'packages/mermaid/src/docs/',
   'packages/mermaid/src/vitepress/',
-  'packages/examples/',
-  'packages/mermaid-local-editor/',
   'packages/tiny/',
   'docs/',
   // Changeset descriptions
@@ -128,10 +126,6 @@ const SHARED_PREFIXES = [
   // Layout engine packages
   'packages/dagre-wrapper/',
   'packages/mermaid-layout-elk/',
-  'packages/mermaid-layout-tidy-tree/',
-  // Plugin packages (separate bundles but tested in main suite)
-  'packages/mermaid-zenuml/',
-  'packages/mermaid-example-diagram/',
   // Playwright: config and cross-cutting test utilities
   'e2e/other/',
   'e2e/helpers/',

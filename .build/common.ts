@@ -18,32 +18,12 @@ export const packageOptions = {
     packageName: 'mermaid',
     file: 'mermaid.ts',
   },
-  'mermaid-example-diagram': {
-    name: 'mermaid-example-diagram',
-    packageName: 'mermaid-example-diagram',
-    file: 'detector.ts',
-  },
-  'mermaid-zenuml': {
-    name: 'mermaid-zenuml',
-    packageName: 'mermaid-zenuml',
-    file: 'detector.ts',
-  },
   'mermaid-layout-elk': {
     name: 'mermaid-layout-elk',
     packageName: 'mermaid-layout-elk',
     // Built from mermaid's own ELK source (path is relative to the package's
     // `src`) so the plugin and the bundled layout are the same implementation.
     file: '../../mermaid/src/rendering-util/layout-algorithms/elk/plugin.ts',
-  },
-  'mermaid-layout-tidy-tree': {
-    name: 'mermaid-layout-tidy-tree',
-    packageName: 'mermaid-layout-tidy-tree',
-    file: 'index.ts',
-  },
-  examples: {
-    name: 'mermaid-examples',
-    packageName: 'examples',
-    file: 'index.ts',
   },
 } as const satisfies Record<string, PackageOptions>;
 

@@ -1,6 +1,3 @@
-import externalExample from './mermaid-example-diagram.esm.mjs';
-import tidyTree from './mermaid-layout-tidy-tree.esm.mjs';
-import zenUml from './mermaid-zenuml.esm.mjs';
 import mermaid from './mermaid.esm.mjs';
 
 function b64ToUtf8(str) {
@@ -87,13 +84,6 @@ const contentLoaded = async function () {
       document.getElementsByTagName('body')[0].appendChild(div);
     }
 
-    await mermaid.registerExternalDiagrams([externalExample, zenUml]);
-
-    // ELK is bundled with mermaid and registered automatically. Registering the
-    // standalone package here would override that with a second, self-contained
-    // copy, so the suite would be exercising the plugin build rather than the
-    // layout users actually get.
-    mermaid.registerLayoutLoaders(tidyTree);
     mermaid.initialize(graphObj.mermaid);
     /**
      *  CC-BY-4.0

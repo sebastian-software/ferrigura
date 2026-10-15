@@ -11,10 +11,6 @@
   "ignorePatterns": [
     "packages/parser/**",
     "packages/mermaid-layout-elk/**",
-    "packages/mermaid-layout-tidy-tree/**",
-    "packages/mermaid-zenuml/**",
-    "packages/mermaid-example-diagram/**",
-    "packages/examples/**",
     "packages/tiny/**",
     "cypress/**",
     "demos/**",

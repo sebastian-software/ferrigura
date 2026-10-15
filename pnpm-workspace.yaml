@@ -3,7 +3,6 @@ packages:
   - 'packages/*'
   - 'packages/mermaid/src/docs'
   - 'packages/mermaid/src/vitepress'
-  - 'tests/*'
 minimumReleaseAgeExclude:
   # Renovate security update: dompurify@3.3.2 || 3.4.0 || 3.4.12
   - dompurify@3.3.2 || 3.4.0 || 3.4.12

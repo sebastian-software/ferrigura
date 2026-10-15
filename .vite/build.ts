@@ -101,7 +101,7 @@ export const getBuildConfig = ({ minify, core, watch, entryName }: BuildOptions)
 
   if (watch && config.build) {
     config.build.watch = {
-      include: ['packages/mermaid-example-diagram/src/**', 'packages/mermaid/src/**'],
+      include: ['packages/mermaid/src/**'],
     };
   }
 
@@ -126,10 +126,6 @@ await generateLangium();
 if (watch) {
   await build(getBuildConfig({ minify: false, watch, core: false, entryName: 'parser' }));
   void build(getBuildConfig({ minify: false, watch, core: false, entryName: 'mermaid' }));
-  if (!mermaidOnly) {
-    void build(getBuildConfig({ minify: false, watch, entryName: 'mermaid-example-diagram' }));
-    void build(getBuildConfig({ minify: false, watch, entryName: 'mermaid-zenuml' }));
-  }
 } else if (visualize) {
   await build(getBuildConfig({ minify: false, watch, core: false, entryName: 'parser' }));
   await build(getBuildConfig({ minify: false, core: true, entryName: 'mermaid' }));
