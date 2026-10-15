@@ -9,6 +9,7 @@
 //! Modules are named after the Java packages they port. Files keep the Eclipse
 //! Public License 2.0 notice of the original sources; see `LICENSE` and `NOTICE.md`.
 
+pub mod common;
 pub mod core;
 pub mod error;
 pub mod graph;
