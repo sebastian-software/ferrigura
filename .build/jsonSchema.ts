@@ -37,6 +37,7 @@ const MERMAID_CONFIG_DIAGRAM_KEYS = [
   'venn',
   'wardley-beta',
   'cynefin',
+  'railroad',
 ] as const;
 
 /**

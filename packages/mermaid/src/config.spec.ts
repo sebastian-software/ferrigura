@@ -82,16 +82,21 @@ describe('when working with site config', () => {
 
   it('should retain railroad directives after sanitization', () => {
     configApi.saveConfigFromInitialize({});
-    configApi.addDirective({
-      railroad: {
-        fontSize: 18,
-        fontFamily: 'Courier New',
-      },
-    });
+    const railroad = {
+      fontSize: 18,
+      fontFamily: 'Courier New',
+      // Options only railroad has, so `configKeys` knows them only from its schema defaults
+      arcRadius: 4,
+      compactMode: true,
+      verticalSeparation: 12,
+      horizontalSeparation: 16,
+      showMarkers: false,
+      markerRadius: 3,
+    };
+    // A copy, since sanitizeDirective deletes unknown keys in place
+    configApi.addDirective({ railroad: { ...railroad } });
 
-    const currentConfig = configApi.getConfig();
-    expect(currentConfig.railroad?.fontSize).toBe(18);
-    expect(currentConfig.railroad?.fontFamily).toBe('Courier New');
+    expect(configApi.getConfig().railroad).toMatchObject(railroad);
   });
   it('should set reset config properly', () => {
     const config_0 = { fontFamily: 'foo-font', fontSize: 150 };

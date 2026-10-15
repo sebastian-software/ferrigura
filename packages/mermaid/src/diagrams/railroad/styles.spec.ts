@@ -1,6 +1,7 @@
 import { beforeEach, describe, it, expect } from 'vitest';
 import * as configApi from '../../config.js';
 import themes from '../../themes/index.js';
+import { DEFAULT_RAILROAD_CONFIG } from './railroadTypes.js';
 import { getStyles } from './styles.js';
 
 describe('Railroad Styles', () => {
@@ -219,6 +220,52 @@ describe('Railroad Styles', () => {
       expect(styles).toContain('fill: #CCCCCC');
       expect(styles).toContain('stroke: #DDDDDD');
       expect(styles).toContain('fill: #EEEEEE');
+    });
+  });
+
+  describe('default config', () => {
+    it('should match the renderer fallbacks and leave colours and typography to the theme', () => {
+      const {
+        compactMode,
+        padding,
+        verticalSeparation,
+        horizontalSeparation,
+        arcRadius,
+        strokeWidth,
+        showMarkers,
+        markerRadius,
+      } = DEFAULT_RAILROAD_CONFIG;
+
+      // Every option is listed, so front matter and directives may set it. The ones
+      // `buildRailroadStyleOptions` derives from the theme stay undefined; the schema's
+      // fixed values would otherwise win over the theme.
+      expect(configApi.defaultConfig.railroad).toStrictEqual({
+        useMaxWidth: true,
+        compactMode,
+        padding,
+        verticalSeparation,
+        horizontalSeparation,
+        arcRadius,
+        strokeWidth,
+        showMarkers,
+        markerRadius,
+        fontSize: undefined,
+        fontFamily: undefined,
+        terminalFill: undefined,
+        terminalStroke: undefined,
+        terminalTextColor: undefined,
+        nonTerminalFill: undefined,
+        nonTerminalStroke: undefined,
+        nonTerminalTextColor: undefined,
+        lineColor: undefined,
+        markerFill: undefined,
+        commentFill: undefined,
+        commentStroke: undefined,
+        commentTextColor: undefined,
+        specialFill: undefined,
+        specialStroke: undefined,
+        ruleNameColor: undefined,
+      });
     });
   });
 });
