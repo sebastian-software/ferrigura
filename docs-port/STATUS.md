@@ -1,31 +1,31 @@
 # Port status
 
-Last updated: 2026-10-15. M1 is implemented on branch `sebastian/port-m1-parser-4d51c2`, not merged; pie and info parse and match the reference on every collected input.
+Last updated: 2026-10-16. M1 is merged into `main`: pie and info parse and match the reference on every collected input. M4 is in progress on branch `sebastian/port-m4-elk-fe5cfa`.
 
 Each session updates its section when it stops: what changed, what is next, what blocks it. Test counts and the differential column are written by `pnpm port:status`, which reads the Rust specs and the last `pnpm port:diff` run; run it after both.
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                     |
-| ---------------------------------- | ----------- | ------ | --------------------------------------------------------- |
-| M1 Parser foundation: pie and info | in review   | main   | Branch `sebastian/port-m1-parser-4d51c2`; see M1 handover |
-| M2 First slice: pie to SVG         | not started | —      | After M1, in parallel with M3                             |
-| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                             |
-| M4 ELK Layered port                | not started | elk    | Independent; can start on day one                         |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                       |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                  |
+| Milestone                          | Status      | Strand | Notes                                                    |
+| ---------------------------------- | ----------- | ------ | -------------------------------------------------------- |
+| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                    |
+| M2 First slice: pie to SVG         | not started | —      | After M1, in parallel with M3                            |
+| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                            |
+| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md` |
+| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                      |
+| M6 Remaining P1 diagrams           | not started | —      | After M5                                                 |
 
 ## Strands
 
-| Strand | Session                              | Worktree                                  | Working on                                                                   | Next                                                 | Blocked by                                                 |
-| ------ | ------------------------------------ | ----------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
-| main   | M1 session (`port-m1-parser-4d51c2`) | `.claude/worktrees/port-m1-parser-4d51c2` | M1: `ferrigura-syntax`, `ferrigura-model`, the JS exporters, the harness, CI | Review and merge; then M2 takes the pie model to SVG | Answers to the canonical-model questions (see M1 handover) |
+| Strand | Session | Worktree | Working on         | Next                                      | Blocked by |
+| ------ | ------- | -------- | ------------------ | ----------------------------------------- | ---------- |
+| main   | —       | —        | M1 done and merged | M2 (pie to SVG) and M3 (flowchart parser) | —          |
 
 ## M1 handover
 
 Done: a Cargo workspace (`crates/ferrigura-model`, `crates/ferrigura-syntax`, stable toolchain pinned); the shared lexer on `logos`, the shared rules of `common.langium` (`title`, `accTitle`, `accDescr`), minimal front matter (CRLF, quote normalisation, the front matter `title`); the pie and info parsers with the pie DB rules; the canonical models `PieDiagram` and `InfoDiagram` (version 1, camelCase JSON); the pie and info specs ported with their test names; JS exporters in `tools/port/` run with tsx; the differential harness `pnpm port:diff <pie|info>`; `pnpm port:status`; CI jobs `rust` and `port-diff`.
 
-Verified: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test --workspace` pass; `pnpm port:diff pie` reports 79 inputs and `pnpm port:diff info` 15 inputs, both with no difference; eslint and prettier pass on `tools/port`. Hand-picked edge cases (front matter, CRLF, directives, escapes, duplicate labels, negative values, malformed numbers) agree as well.
+Verified: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test --workspace` pass; `pnpm port:diff pie` reports 87 inputs and `pnpm port:diff info` 17 inputs, both with no difference; `pnpm port:check-header` finds no difference on 82 inputs; eslint and prettier pass on `tools/port`. Hand-picked edge cases (front matter, CRLF, directives, escapes, duplicate labels, negative values, malformed numbers) agree as well.
 
 Deferred to M2: `pieRenderer.spec.ts` (SVG and DOM); the three configuration tests in `pie.spec.ts` (`getConfig`, and the two `it.todo` cases), which need the configuration model.
 
@@ -33,7 +33,7 @@ Canonical-model conventions are confirmed by the coordinating session and writte
 
 Known gaps: the front matter `title` is read as a plain or quoted scalar, not with the full YAML reader; comment lines inside a multi-line `accDescr` block are not removed before lexing, as the reference does; sanitisation of header and label text is not ported; the CI jobs have not run on GitHub yet.
 
-Next: review, then merge. M2 needs `ferrigura-text` for measurement and the pie layout; the configuration model is the first M2 item because two pie specs wait for it.
+Merged into `main` on 2026-10-16 after review; the checks above pass on `main`. Next: M2 needs `ferrigura-text` for measurement and the pie layout; the configuration model is the first M2 item because two pie specs wait for it.
 
 ## P1 diagram types
 
