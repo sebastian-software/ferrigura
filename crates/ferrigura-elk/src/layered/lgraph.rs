@@ -64,4 +64,22 @@ pub struct LGraph {
     pub root_id: String,
     /// The processor steps `GraphConfigurator` assembled.
     pub processors: Vec<crate::layered::intermediate::Step>,
+    /// `LGraph.getSize()`: the drawing without padding, in the internal left-to-right direction.
+    pub size: KVector,
+    /// `LGraph.getOffset()`: shifts the drawing, so the topmost node of the layers starts at zero.
+    pub offset: KVector,
+    /// `LGraph.getPadding()`: top, left, bottom, right.
+    pub padding: Spacing,
+    /// `Layer.getSize()` of each entry of `layers`, set by the layer size calculation.
+    pub layer_sizes: Vec<KVector>,
+}
+
+impl LGraph {
+    /// `LGraph.getActualSize()`: the size with the padding around it.
+    pub fn actual_size(&self) -> KVector {
+        KVector {
+            x: self.size.x + self.padding.left + self.padding.right,
+            y: self.size.y + self.padding.top + self.padding.bottom,
+        }
+    }
 }

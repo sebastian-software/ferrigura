@@ -51,6 +51,11 @@ pub const SEPARATE_CONNECTED_COMPONENTS: &str = "org.eclipse.elk.separateConnect
 pub const ALGORITHM: &str = "org.eclipse.elk.algorithm";
 pub const FORCE_NODE_MODEL_ORDER: &str =
     "org.eclipse.elk.layered.crossingMinimization.forceNodeModelOrder";
+pub const ALIGNMENT: &str = "org.eclipse.elk.alignment";
+pub const PADDING: &str = "org.eclipse.elk.padding";
+pub const NODE_SIZE_CONSTRAINTS: &str = "org.eclipse.elk.nodeSize.constraints";
+pub const NODE_SIZE_OPTIONS: &str = "org.eclipse.elk.nodeSize.options";
+pub const NODE_SIZE_FIXED_GRAPH_SIZE: &str = "org.eclipse.elk.nodeSize.fixedGraphSize";
 
 #[cfg(test)]
 mod tests {
@@ -90,6 +95,11 @@ mod tests {
             SEPARATE_CONNECTED_COMPONENTS,
             ALGORITHM,
             FORCE_NODE_MODEL_ORDER,
+            ALIGNMENT,
+            PADDING,
+            NODE_SIZE_CONSTRAINTS,
+            NODE_SIZE_OPTIONS,
+            NODE_SIZE_FIXED_GRAPH_SIZE,
         ] {
             assert!(option_by_id(id).is_some(), "{id} is not registered");
         }

@@ -13,6 +13,7 @@ use crate::core::data::JavaEnum;
 use crate::core::data::enums::{
     Direction, DirectionCongruency, IntermediateProcessorStrategy, OrderingStrategy,
 };
+use crate::core::math::Spacing;
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
@@ -103,16 +104,31 @@ fn transform_direction(graph: &mut LGraph) -> Result<(), LayoutError> {
     }
     match graph.properties.enum_of::<Direction>(options::DIRECTION) {
         Some(Direction::DOWN) => {
+            // `GraphTransformer.transposeAll`. The label padding and the label placement
+            // are not transposed: the port has no labels yet.
             for node in &mut graph.nodes {
                 std::mem::swap(&mut node.position.x, &mut node.position.y);
                 std::mem::swap(&mut node.size.x, &mut node.size.y);
             }
+            std::mem::swap(&mut graph.offset.x, &mut graph.offset.y);
+            std::mem::swap(&mut graph.size.x, &mut graph.size.y);
+            graph.padding = transposed(graph.padding);
             Ok(())
         }
         Some(Direction::RIGHT) => Ok(()),
         other => Err(LayoutError::Unsupported(format!(
             "direction {other:?} (mirror transforms)"
         ))),
+    }
+}
+
+/// `GraphTransformer.transpose(Spacing)`: the top and bottom sides move to the left and right.
+fn transposed(spacing: Spacing) -> Spacing {
+    Spacing {
+        top: spacing.left,
+        left: spacing.top,
+        bottom: spacing.right,
+        right: spacing.bottom,
     }
 }
 

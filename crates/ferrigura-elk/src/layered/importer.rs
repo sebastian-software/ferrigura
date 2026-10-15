@@ -7,6 +7,7 @@
 //! Only graphs with nodes and no edges, ports or labels are imported so far.
 //! Anything else is reported as unsupported.
 
+use crate::core::data::OptionValue;
 use crate::core::data::enums::{ComponentOrderingStrategy, OrderingStrategy};
 use crate::core::math::KVector;
 use crate::error::LayoutError;
@@ -24,6 +25,15 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
         properties: root.properties.clone(),
         root_id: root.id.clone(),
         ..LGraph::default()
+    };
+    // `ElkGraphImporter`: the root's padding is the margin the drawing keeps inside the root node.
+    graph.padding = match root.properties.value_or_default(options::PADDING) {
+        Some(OptionValue::Padding(spacing)) => spacing,
+        _ => {
+            return Err(LayoutError::Unsupported(
+                "a root without a padding value".to_string(),
+            ));
+        }
     };
     let needs_model_order = needs_model_order_based_on_parent(root);
     let mut model_order = 0;

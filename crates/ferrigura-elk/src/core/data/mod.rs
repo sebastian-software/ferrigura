@@ -212,13 +212,40 @@ impl UnsupportedKind {
     }
 }
 
+/// `new ElkPadding(12)`, `new ElkMargin(0)` or `new ElkMargin()`: every side gets the
+/// one value, and no argument gives zero on every side.
+fn constructor_default(kind: &OptionKind, text: &str) -> Option<OptionValue> {
+    let (class, args) = text.strip_prefix("new ")?.split_once('(')?;
+    let args = args.strip_suffix(')')?.trim();
+    let value = if args.is_empty() {
+        0.0
+    } else {
+        args.parse::<f64>().ok()?
+    };
+    let sides = Spacing {
+        top: value,
+        left: value,
+        bottom: value,
+        right: value,
+    };
+    match (kind, class) {
+        (OptionKind::Object("ElkPadding"), "ElkPadding") => Some(OptionValue::Padding(sides)),
+        (OptionKind::Object("ElkMargin"), "ElkMargin") => Some(OptionValue::Margin(sides)),
+        _ => None,
+    }
+}
+
 /// The default of an option as the melk file gives it, when it is a literal this
-/// port reads: booleans, numbers, `Integer.MAX_VALUE` and enum constants.
+/// port reads: booleans, numbers, `Integer.MAX_VALUE`, enum constants, and the
+/// all-sides `ElkPadding` and `ElkMargin` constructors.
 ///
-/// Expressions such as `new ElkPadding(12)` or `EnumSet.of(...)` return `None`:
-/// their defaults are set by the typed reader, not read from the text.
+/// Other expressions such as `EnumSet.of(...)` return `None`: their defaults are
+/// set by the typed reader, not read from the text.
 pub fn melk_default_value(spec: &OptionSpec) -> Option<OptionValue> {
     let text = spec.melk_default?;
+    if let Some(value) = constructor_default(&spec.kind, text) {
+        return Some(value);
+    }
     match text {
         "true" => return Some(OptionValue::Boolean(true)),
         "false" => return Some(OptionValue::Boolean(false)),
@@ -286,6 +313,20 @@ mod tests {
             option_by_id("org.eclipse.elk.layered.layering.coffmanGraham.layerBound").unwrap();
         assert_eq!(parse_value(spec, "4").unwrap(), Some(OptionValue::Int(4)));
         assert_eq!(parse_value(spec, "4.0").unwrap(), None);
+    }
+
+    #[test]
+    fn padding_default_is_the_all_sides_constructor() {
+        let padding = option_by_id("org.eclipse.elk.padding").unwrap();
+        assert_eq!(
+            melk_default_value(padding),
+            Some(OptionValue::Padding(Spacing {
+                top: 12.0,
+                left: 12.0,
+                bottom: 12.0,
+                right: 12.0
+            }))
+        );
     }
 
     #[test]
