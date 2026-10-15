@@ -2,15 +2,17 @@
 //!
 //! Each case in `tests/corpus` holds the ELK JSON graph Mermaid gave elkjs and
 //! elkjs's result. `corpus_summary` lists, per case, whether the port lays it
-//! out and why not; `coordinates_match_elkjs` compares every node position that
-//! the port produced. Both are ignored until the port covers the cases.
+//! out and why not; `coordinates_match_elkjs` compares the node boxes and the
+//! root size with elkjs's, and lists the cases that differ.
 
 use std::path::PathBuf;
 
 use ferrigura_elk::json::JsonNode;
 use serde_json::Value;
 
-const TOLERANCE: f64 = 1e-9;
+/// Coordinates must agree exactly: the port reproduces elkjs's arithmetic, so a
+/// difference is a bug, not rounding. A tolerance needs a documented cause here.
+const TOLERANCE: f64 = 0.0;
 
 fn corpus_dir() -> PathBuf {
     [env!("CARGO_MANIFEST_DIR"), "tests", "corpus"]
@@ -73,38 +75,77 @@ fn corpus_summary() {
     );
 }
 
+/// The largest difference between the port's node boxes and elkjs's, and between the root sizes.
+/// Errors when the nodes differ in number or order: that is not a difference in coordinates.
+fn largest_difference(ours: &JsonNode, theirs: &Value) -> Result<f64, String> {
+    let ours_value = serde_json::to_value(ours).unwrap();
+    let (mut ours_boxes, mut theirs_boxes) = (Vec::new(), Vec::new());
+    node_boxes(&ours_value, &mut ours_boxes);
+    node_boxes(theirs, &mut theirs_boxes);
+    if ours_boxes.len() != theirs_boxes.len() {
+        return Err(format!(
+            "{} nodes, elkjs has {}",
+            ours_boxes.len(),
+            theirs_boxes.len()
+        ));
+    }
+    let mut worst = 0.0_f64;
+    for (a, b) in ours_boxes.iter().zip(&theirs_boxes) {
+        if a.0 != b.0 {
+            return Err(format!("node {} where elkjs has {}", a.0, b.0));
+        }
+        worst = [a.1 - b.1, a.2 - b.2, a.3 - b.3, a.4 - b.4]
+            .into_iter()
+            .map(f64::abs)
+            .fold(worst, f64::max);
+    }
+    let size = |value: &Value| {
+        (
+            value["width"].as_f64().unwrap_or(0.0),
+            value["height"].as_f64().unwrap_or(0.0),
+        )
+    };
+    let ((ours_width, ours_height), (theirs_width, theirs_height)) =
+        (size(&ours_value), size(theirs));
+    Ok(worst
+        .max((ours_width - theirs_width).abs())
+        .max((ours_height - theirs_height).abs()))
+}
+
+/// Cases whose coordinates match elkjs. The floor only goes up, as `SUPPORTED_FLOOR` does.
+/// The 20 cases are the supported ones without a crossing-order difference; the two
+/// synthetic nodes-only cases with three and five nodes need the layer sweep ordering.
+const MATCHING_FLOOR: usize = 20;
+
 #[test]
-#[ignore = "port: coordinates are compared only once the processors that place nodes are ported"]
 fn coordinates_match_elkjs() {
-    let mut worst: f64 = 0.0;
-    let mut compared = 0;
+    let mut matching = Vec::new();
+    let mut differing = Vec::new();
     for name in case_names() {
         let case = load(&name);
         let input: JsonNode = serde_json::from_value(case["input"].clone()).unwrap();
         let Ok(layout) = ferrigura_elk::layout(&input, false) else {
             continue;
         };
-        let ours_value = serde_json::to_value(&layout.graph).unwrap();
-        let (mut ours, mut theirs) = (Vec::new(), Vec::new());
-        node_boxes(&ours_value, &mut ours);
-        node_boxes(&case["output"], &mut theirs);
-        assert_eq!(ours.len(), theirs.len(), "{name}: node count");
-        for (a, b) in ours.iter().zip(&theirs) {
-            assert_eq!(a.0, b.0, "{name}: node order");
-            let difference = [a.1 - b.1, a.2 - b.2, a.3 - b.3, a.4 - b.4]
-                .into_iter()
-                .map(f64::abs)
-                .fold(0.0, f64::max);
-            worst = worst.max(difference);
-            assert!(
-                difference <= TOLERANCE,
-                "{name}: node {} differs by {difference}",
-                a.0
-            );
+        match largest_difference(&layout.graph, &case["output"]) {
+            Ok(difference) if difference <= TOLERANCE => matching.push(name),
+            Ok(difference) => differing.push(format!("{name}: differs by {difference}")),
+            Err(reason) => differing.push(format!("{name}: {reason}")),
         }
-        compared += 1;
     }
-    println!("compared {compared} cases; largest coordinate difference {worst}");
+    for line in &differing {
+        println!("differs  {line}");
+    }
+    println!(
+        "{} cases match elkjs, {} differ",
+        matching.len(),
+        differing.len()
+    );
+    assert!(
+        matching.len() >= MATCHING_FLOOR,
+        "{} cases match elkjs; the floor is {MATCHING_FLOOR}",
+        matching.len()
+    );
 }
 
 /// Cases that pass the driver today. The floor only goes up: a change that makes a
