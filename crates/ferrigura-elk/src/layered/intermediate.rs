@@ -11,9 +11,9 @@
 
 use crate::core::data::JavaEnum;
 use crate::core::data::enums::{
-    Direction, DirectionCongruency, IntermediateProcessorStrategy, OrderingStrategy,
+    Direction, DirectionCongruency, IntermediateProcessorStrategy, NodeType, OrderingStrategy,
 };
-use crate::core::math::Spacing;
+use crate::core::math::{KVector, Spacing};
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
@@ -84,9 +84,57 @@ pub fn run(
         IntermediateProcessorStrategy::SORT_BY_INPUT_ORDER_OF_MODEL => {
             sort_by_input_model(graph, progress, monitor);
         }
+        IntermediateProcessorStrategy::LAYER_SIZE_AND_GRAPH_HEIGHT_CALCULATOR => {
+            layer_size_and_graph_height(graph)?;
+        }
         _ => {}
     }
     progress.done(monitor);
+    Ok(())
+}
+
+/// `LayerSizeAndGraphHeightCalculator.process`: the size of each layer, the graph's height,
+/// and the offset that moves the topmost node of the layers to zero.
+fn layer_size_and_graph_height(graph: &mut LGraph) -> Result<(), LayoutError> {
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+    let mut found_nodes = false;
+    let mut sizes = Vec::with_capacity(graph.layers.len());
+    for layer in &graph.layers {
+        let mut layer_size = KVector::default();
+        let (Some(&first), Some(&last)) = (layer.first(), layer.last()) else {
+            sizes.push(layer_size);
+            continue;
+        };
+        found_nodes = true;
+        for &node in layer {
+            let node = &graph.nodes[node];
+            if node.node_type == NodeType::EXTERNAL_PORT {
+                return Err(LayoutError::Unsupported(
+                    "external ports in the layer size calculation".to_string(),
+                ));
+            }
+            layer_size.x = layer_size
+                .x
+                .max(node.size.x + node.margin.left + node.margin.right);
+        }
+        let first = &graph.nodes[first];
+        let top = first.position.y - first.margin.top;
+        let last = &graph.nodes[last];
+        let bottom = last.position.y + last.size.y + last.margin.bottom;
+        layer_size.y = bottom - top;
+        min_y = min_y.min(top);
+        max_y = max_y.max(bottom);
+        sizes.push(layer_size);
+    }
+    // Without nodes the graph's height is zero, as the Java sets the extremes.
+    if !found_nodes {
+        min_y = 0.0;
+        max_y = 0.0;
+    }
+    graph.layer_sizes = sizes;
+    graph.size.y = max_y - min_y;
+    graph.offset.y -= min_y;
     Ok(())
 }
 
