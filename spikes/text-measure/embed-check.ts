@@ -2,8 +2,10 @@
  * Check the SVGs written by `cargo run --bin embed` in Chromium:
  *
  * 1. `all.svg`, `all-plain.svg` and `all-length.svg` opened as documents: every embedded face
- *    loads, and every label is laid out at the width and text box height Rust measured
- *    (`data-width`, `data-height`), by `getComputedTextLength` and by the width of `getBBox`.
+ *    loads, and every label is drawn at the width Rust measured (`data-width`): the extent from
+ *    the start of the first character to the end of the last. `getComputedTextLength` and the
+ *    `getBBox` height are reported too; WebKit computes the length without kerning and
+ *    ligatures although it draws both, so only the drawn extent is comparable across engines.
  * 2. The same SVG shown through `<img>`: pixel-identical to the document, so the embedded fonts
  *    also load where scripts and external resources are off.
  * 3. Two diagrams inlined in one HTML page, once with unique font family names and once with a
@@ -29,11 +31,11 @@ const log = (line: string) => process.stdout.write(`${line}\n`);
 
 interface Check {
   texts: number;
-  maxWidthDiff: number;
-  maxBoxDiff: number;
+  maxExtentDiff: number;
+  maxLengthDiff: number;
   maxHeightDiff: number;
   over: number;
-  overBox: number;
+  overLength: number;
 }
 
 /** Compares every `<text data-width>` under `root` with what the browser lays out. */
@@ -43,29 +45,31 @@ async function measure(target: Page, root: string): Promise<Check> {
     await Promise.all([...document.fonts].map((face) => face.load()));
     await document.fonts.ready;
     const texts = [...document.querySelectorAll<SVGTextElement>(`${selector} text[data-width]`)];
-    let maxWidthDiff = 0;
-    let maxBoxDiff = 0;
+    let maxExtentDiff = 0;
+    let maxLengthDiff = 0;
     let maxHeightDiff = 0;
     let over = 0;
-    let overBox = 0;
+    let overLength = 0;
     for (const text of texts) {
-      const box = text.getBBox();
-      const widthDiff = Math.abs(text.getComputedTextLength() - Number(text.dataset.width));
-      const boxDiff = Math.abs(box.width - Number(text.dataset.width));
-      const heightDiff = Math.abs(box.height - Number(text.dataset.height));
-      maxWidthDiff = Math.max(maxWidthDiff, widthDiff);
-      maxBoxDiff = Math.max(maxBoxDiff, boxDiff);
+      const width = Number(text.dataset.width);
+      const n = text.getNumberOfChars();
+      const extent = n ? text.getEndPositionOfChar(n - 1).x - text.getStartPositionOfChar(0).x : 0;
+      const extentDiff = Math.abs(extent - width);
+      const lengthDiff = Math.abs(text.getComputedTextLength() - width);
+      const heightDiff = Math.abs(text.getBBox().height - Number(text.dataset.height));
+      maxExtentDiff = Math.max(maxExtentDiff, extentDiff);
+      maxLengthDiff = Math.max(maxLengthDiff, lengthDiff);
       maxHeightDiff = Math.max(maxHeightDiff, heightDiff);
-      over += widthDiff > 0.02 ? 1 : 0;
-      overBox += boxDiff > 0.02 ? 1 : 0;
+      over += extentDiff > 0.02 ? 1 : 0;
+      overLength += lengthDiff > 0.02 ? 1 : 0;
     }
-    return { texts: texts.length, maxWidthDiff, maxBoxDiff, maxHeightDiff, over, overBox };
+    return { texts: texts.length, maxExtentDiff, maxLengthDiff, maxHeightDiff, over, overLength };
   }, root);
 }
 
 const report = (label: string, c: Check) =>
   log(
-    `${label.padEnd(34)} ${String(c.texts).padStart(5)} labels  length max ${c.maxWidthDiff.toFixed(4)} px (${c.over} over 0.02)  box max ${c.maxBoxDiff.toFixed(4)} px (${c.overBox} over 0.02)  height max ${c.maxHeightDiff.toFixed(4)} px`
+    `${label.padEnd(34)} ${String(c.texts).padStart(5)} labels  drawn max ${c.maxExtentDiff.toFixed(4)} px (${c.over} over 0.02)  getComputedTextLength max ${c.maxLengthDiff.toFixed(4)} px (${c.overLength} over)  getBBox height max ${c.maxHeightDiff.toFixed(4)} px`
   );
 
 // 1. As a document.

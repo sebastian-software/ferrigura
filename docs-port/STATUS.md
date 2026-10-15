@@ -55,14 +55,13 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 
 ## Spikes
 
-| Spike                                                     | Result                                                                                                                                                                                                                                                                                                                                                        |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Text measurement](./spikes/text-measurement.md) (for M2) | Widths match Chromium within its 1/64 px rounding, text box heights exactly, Mermaid's wrapping in 270 of 270 cases; about 5 µs per text. Embedded font subsets (`skera`) draw every label at the Rust width, also through `<img>`; family names must be unique per subset. WebKit draws SVG text unkerned: exact only with kerning off, or with `textLength` |
+| Spike                                                     | Result                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Text measurement](./spikes/text-measurement.md) (for M2) | Widths match Chromium within its 1/64 px rounding, text box heights exactly, Mermaid's wrapping in 270 of 270 cases; about 5 µs per text. Embedded font subsets (`skera`) draw every label at the Rust width, also through `<img>`; family names must be unique per subset. Kerned labels are drawn at the Rust width in Chromium, Safari and Firefox; WebKit's `getComputedTextLength` and `getBBox` ignore kerning and must not be used for checks |
 
 ## Open items
 
 - Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release; then create `sebastian-software/ferrigura` and rename the repository.
 - Open `help wanted` issues for every P3 diagram type and for math in labels once the GitHub repository exists.
 - Decide the mindmap layout when P2 starts.
-- Decide for M2 whether labels are drawn plain (kerning and ligatures off) or kerned with `textLength`, see the [text measurement spike](./spikes/text-measurement.md), Part 3.
 - Replace the inherited changesets setup with release-please when the first crate is published.
