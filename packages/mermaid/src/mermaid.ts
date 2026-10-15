@@ -61,6 +61,9 @@ export interface RunOptions {
   suppressErrors?: boolean;
 }
 
+/** Errors `handleError` has already passed to `parseError`, so `run` does not report them again. */
+const reportedErrors = new WeakSet<DetailedError>();
+
 const handleError = (error: unknown, errors: DetailedError[], parseError?: ParseErrorFunction) => {
   log.warn(error);
   if (isDetailedError(error)) {
@@ -69,19 +72,23 @@ const handleError = (error: unknown, errors: DetailedError[], parseError?: Parse
     if (parseError) {
       parseError(error.str, error.hash);
     }
-    errors.push({ ...error, message: error.str, error });
+    const detailedError = { ...error, message: error.str, error };
+    reportedErrors.add(detailedError);
+    errors.push(detailedError);
   } else {
     // assume it is just error string and pass it on
     if (parseError) {
       parseError(error);
     }
     if (error instanceof Error) {
-      errors.push({
+      const detailedError = {
         str: error.message,
         message: error.message,
         hash: error.name,
         error,
-      });
+      };
+      reportedErrors.add(detailedError);
+      errors.push(detailedError);
     }
   }
 };
@@ -117,7 +124,8 @@ const run = async function (
     if (isDetailedError(e)) {
       log.error(e.str);
     }
-    if (mermaid.parseError) {
+    // A diagram that failed to render was reported by `handleError` already.
+    if (mermaid.parseError && !reportedErrors.has(e as DetailedError)) {
       mermaid.parseError(e as string);
     }
     if (!options.suppressErrors) {
@@ -174,7 +182,7 @@ const runThrowsErrors = async function (
       .replace(/<br\s*\/?>/gi, '<br/>');
 
     try {
-      const { svg, bindFunctions } = await render(id, txt, element);
+      const { svg, bindFunctions } = await queueRender(id, txt, element);
       element.innerHTML = svg;
       if (postRenderCallback) {
         await postRenderCallback(id);
@@ -328,7 +336,21 @@ const parse: typeof mermaidAPI.parse = async (text, parseOptions) => {
  *   element will be removed when rendering is completed.
  * @returns Returns the SVG Definition and BindFunctions.
  */
-const render: typeof mermaidAPI.render = (id, text, container) => {
+const render: typeof mermaidAPI.render = async (id, text, container) => {
+  try {
+    return await queueRender(id, text, container);
+  } catch (e) {
+    log.error('Error parsing', e);
+    mermaid.parseError?.(e);
+    throw e;
+  }
+};
+
+/**
+ * Queues a `mermaidAPI.render` call behind the ones before it. Unlike {@link render}, it does
+ * not report a failure to `parseError`, so `run` can report each diagram once.
+ */
+const queueRender: typeof mermaidAPI.render = (id, text, container) => {
   return new Promise((resolve, reject) => {
     // This promise will resolve when the mermaidAPI.render call is done.
     // It will be queued first and will be executed when it is first in line
@@ -342,8 +364,6 @@ const render: typeof mermaidAPI.render = (id, text, container) => {
             resolve(r);
           },
           (e) => {
-            log.error('Error parsing', e);
-            mermaid.parseError?.(e);
             rej(e);
             reject(e);
           }

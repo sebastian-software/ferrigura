@@ -55,6 +55,35 @@ describe('when using mermaid and ', () => {
       // in Node.JS (only works in browser)
       expect(mermaidAPI.render).toHaveBeenCalled();
     });
+
+    it('should call parseError once for a diagram that fails to render', async () => {
+      const node = document.createElement('div');
+      node.appendChild(document.createTextNode('graph TD;\na;'));
+      vi.mocked(mermaidAPI.render).mockRejectedValueOnce(new Error('render failed'));
+      const parseError = vi.fn();
+      mermaid.parseError = parseError;
+
+      try {
+        await mermaid.run({ nodes: [node], suppressErrors: true });
+      } finally {
+        mermaid.parseError = undefined;
+      }
+
+      expect(parseError).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call parseError once when there is nothing to look for', async () => {
+      const parseError = vi.fn();
+      mermaid.parseError = parseError;
+
+      try {
+        await mermaid.run({ querySelector: undefined, suppressErrors: true });
+      } finally {
+        mermaid.parseError = undefined;
+      }
+
+      expect(parseError).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('when using #registerExternalDiagrams', () => {
