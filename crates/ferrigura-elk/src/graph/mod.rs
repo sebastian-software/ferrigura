@@ -9,6 +9,7 @@
 //! [`ElkPort`], [`ElkLabel`] and [`ElkEdge`] are its parts.
 
 use crate::core::data::property::PropertyHolder;
+use crate::core::math::KVector;
 
 pub mod json_import;
 
@@ -59,4 +60,14 @@ pub struct ElkEdge {
     pub targets: Vec<String>,
     pub properties: PropertyHolder,
     pub labels: Vec<ElkLabel>,
+    /// The route of the edge, as the layout sets it: `ElkEdge.getSections()`.
+    pub sections: Vec<ElkEdgeSection>,
+}
+
+/// A section of an edge's route: its end points and the bend points between them.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ElkEdgeSection {
+    pub start: KVector,
+    pub end: KVector,
+    pub bend_points: Vec<KVector>,
 }

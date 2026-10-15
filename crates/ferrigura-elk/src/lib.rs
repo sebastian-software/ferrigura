@@ -43,6 +43,36 @@ pub fn layout(graph: &json::JsonNode, logging: bool) -> Result<Layout, LayoutErr
         json.width = Some(node.shape.width);
         json.height = Some(node.shape.height);
     }
+    // Each edge's route: one section, `<id>_s<index>`, with its shapes as the endpoint ids.
+    for (json, edge) in output.edges.iter_mut().zip(elk.edges.iter()) {
+        json.sections = edge
+            .sections
+            .iter()
+            .enumerate()
+            .map(|(index, section)| json::JsonEdgeSection {
+                id: format!("{}_s{}", edge.id, index),
+                start_point: Some(json::JsonPoint {
+                    x: section.start.x,
+                    y: section.start.y,
+                }),
+                end_point: Some(json::JsonPoint {
+                    x: section.end.x,
+                    y: section.end.y,
+                }),
+                bend_points: section
+                    .bend_points
+                    .iter()
+                    .map(|point| json::JsonPoint {
+                        x: point.x,
+                        y: point.y,
+                    })
+                    .collect(),
+                incoming_shape: edge.sources.first().cloned(),
+                outgoing_shape: edge.targets.first().cloned(),
+                ..json::JsonEdgeSection::default()
+            })
+            .collect();
+    }
     Ok(Layout {
         graph: output,
         trace,
