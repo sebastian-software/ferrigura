@@ -11,51 +11,6 @@ import { styles2String, userNodeOverrides } from './handDrawnShapeStyles.js';
 import rough from 'roughjs';
 import type { D3Selection } from '../../../types.js';
 
-export const createStadiumPathD = (
-  x: number,
-  y: number,
-  totalWidth: number,
-  totalHeight: number
-) => {
-  const radius = totalHeight / 2;
-  return [
-    'M',
-    x + radius,
-    y, // Move to the start of the top-left arc
-    'H',
-    x + totalWidth - radius, // Draw horizontal line to the start of the top-right arc
-    'A',
-    radius,
-    radius,
-    0,
-    0,
-    1,
-    x + totalWidth,
-    y + radius, // Draw top-right arc
-    'H',
-    x, // Draw horizontal line to the start of the bottom-right arc
-    'A',
-    radius,
-    radius,
-    0,
-    0,
-    1,
-    x + totalWidth - radius,
-    y + totalHeight, // Draw bottom-right arc
-    'H',
-    x + radius, // Draw horizontal line to the start of the bottom-left arc
-    'A',
-    radius,
-    radius,
-    0,
-    0,
-    1,
-    x,
-    y + radius, // Draw bottom-left arc
-    'Z', // Close the path
-  ].join(' ');
-};
-
 const arcPointCount = 50;
 
 const stadiumDimensions = (

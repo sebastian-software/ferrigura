@@ -435,10 +435,6 @@ class Theme {
     /* -------------------------------------------------- */
     /* EntityRelationship diagrams                        */
 
-    this.attributeBackgroundColorOdd =
-      this.attributeBackgroundColorOdd || lighten(this.background, 12);
-    this.attributeBackgroundColorEven =
-      this.attributeBackgroundColorEven || lighten(this.background, 2);
     /* -------------------------------------------------- */
 
     this.nodeBorder = this.nodeBorder || '#999';

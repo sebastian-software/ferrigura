@@ -21,7 +21,7 @@ describe('state note edges', () => {
   let stateDb: StateDB;
 
   beforeEach(() => {
-    stateDb = new StateDB(2);
+    stateDb = new StateDB();
     parser.yy = stateDb;
     stateDiagram.parser.yy = stateDb;
     stateDiagram.parser.yy.clear();

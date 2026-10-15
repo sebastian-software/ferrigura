@@ -7,7 +7,9 @@ import type { MindmapNode } from './mindmapTypes.js';
 import defaultConfig from '../../defaultConfig.js';
 import type { LayoutData, Node, Edge } from '../../rendering-util/types.js';
 import { getUserDefinedConfig } from '../../config.js';
-import { MAX_SECTIONS } from './svgDraw.js';
+
+/** Number of colour sections a mindmap cycles through. */
+const MAX_SECTIONS = 12;
 
 // Extend Node type for mindmap-specific properties
 export type MindmapLayoutNode = Node & {

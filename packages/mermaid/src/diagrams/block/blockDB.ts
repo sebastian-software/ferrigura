@@ -247,16 +247,6 @@ export function typeStr2Type(typeStr: string) {
   }
 }
 
-export function edgeTypeStr2Type(typeStr: string): string {
-  log.debug('typeStr2Type', typeStr);
-  switch (typeStr) {
-    case '==':
-      return 'thick';
-    default:
-      return 'normal';
-  }
-}
-
 export function edgeStrToEdgeData(typeStr: string): string {
   const lastChar = typeStr.trim().slice(-1);
   switch (lastChar) {
@@ -366,7 +356,6 @@ export const getClasses = function () {
 const db = {
   getConfig: () => configApi.getConfig().block,
   typeStr2Type: typeStr2Type,
-  edgeTypeStr2Type: edgeTypeStr2Type,
   edgeStrToEdgeData,
   edgeStrToEdgeStartData,
   edgeStrToThickness,

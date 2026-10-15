@@ -29,7 +29,6 @@ import type { DiagramCode, DiagramMetadata, DiagramStyleClassDef } from './diagr
 import { Diagram } from './Diagram.js';
 import { evaluate } from './diagrams/common/common.js';
 import errorRenderer from './diagrams/error/errorRenderer.js';
-import { attachFunctions } from './interactionDb.js';
 import { log, setLogLevel } from './logger.js';
 import { profiler } from './profiler.js';
 import { preprocessDiagram } from './preprocess.js';
@@ -656,7 +655,6 @@ const renderDiagram = async function (
       });
     }
 
-    attachFunctions();
     return code;
   };
 

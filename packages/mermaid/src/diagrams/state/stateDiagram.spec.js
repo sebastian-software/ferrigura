@@ -5,7 +5,7 @@ describe('state diagram, ', function () {
   describe('when parsing an info graph it', function () {
     let stateDb;
     beforeEach(function () {
-      stateDb = new StateDB(1);
+      stateDb = new StateDB();
       parser.yy = stateDb;
     });
 
@@ -403,7 +403,7 @@ describe('state diagram, ', function () {
   describe('click directive', function () {
     let stateDb;
     beforeEach(function () {
-      stateDb = new StateDB(1);
+      stateDb = new StateDB();
     });
 
     it('should store links from click statements manually passed to extract()', function () {

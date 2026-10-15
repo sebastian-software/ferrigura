@@ -510,16 +510,6 @@ export class ClassDB implements DiagramDB {
     LOLLIPOP: 4,
   };
 
-  // Utility function to escape HTML meta-characters
-  private escapeHtml(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
   private readonly setupToolTips = (element: Element) => {
     const tooltipElem = createTooltip();
 

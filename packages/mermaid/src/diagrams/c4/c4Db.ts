@@ -673,13 +673,6 @@ export const getC4ShapeInRow = function () {
 export const getC4BoundaryInRow = function () {
   return c4BoundaryInRow;
 };
-export const getCurrentBoundaryParse = function () {
-  return currentBoundaryParse;
-};
-
-export const getParentBoundaryParse = function () {
-  return parentBoundaryParse;
-};
 
 export const getC4ShapeArray = function (parentBoundary?: string | null) {
   if (parentBoundary === undefined || parentBoundary === null) {
@@ -800,8 +793,6 @@ export default {
   getC4Shape,
   getC4ShapeKeys,
   getBoundaries,
-  getCurrentBoundaryParse,
-  getParentBoundaryParse,
   getRels,
   getTitle,
   getC4Type,

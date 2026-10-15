@@ -1,9 +1,5 @@
 import { invert, darken, lighten, adjust, isDark } from 'khroma';
 import { applyOverride, mkBorder } from './theme-helpers.js';
-import {
-  oldAttributeBackgroundColorEven,
-  oldAttributeBackgroundColorOdd,
-} from './erDiagram-oldHardcodedValues.js';
 
 // const Color = require ( 'khroma/dist/color' ).default
 // Color.format.hex.stringify(Color.parse('hsl(210, 66.6666666667%, 95%)')); // => "#EAF2FB"
@@ -444,10 +440,6 @@ class Theme {
     /* -------------------------------------------------- */
     /* EntityRelationship diagrams                        */
 
-    this.attributeBackgroundColorOdd =
-      this.attributeBackgroundColorOdd || oldAttributeBackgroundColorOdd;
-    this.attributeBackgroundColorEven =
-      this.attributeBackgroundColorEven || oldAttributeBackgroundColorEven;
     /* -------------------------------------------------- */
   }
   calculate(overrides) {

@@ -1,4 +1,4 @@
-/** Decorates with functions required by mermaids dagre-wrapper. */
+/** Decorates graphlib graphs with the cluster bookkeeping the dagre layout needs. */
 import { log } from '../../../logger.js';
 import * as graphlib from 'dagre-d3-es/src/graphlib/index.js';
 

@@ -7,32 +7,6 @@ import { insertPolygonShape } from './insertPolygonShape.js';
 import type { D3Selection } from '../../../types.js';
 import { handleUndefinedAttr } from '../../../utils.js';
 
-export const createSubroutinePathD = (
-  x: number,
-  y: number,
-  width: number,
-  height: number
-): string => {
-  const offset = 8;
-  return [
-    `M${x - offset},${y}`,
-    `H${x + width + offset}`,
-    `V${y + height}`,
-    `H${x - offset}`,
-    `V${y}`,
-    'M',
-    x,
-    y,
-    'H',
-    x + width,
-    'V',
-    y + height,
-    'H',
-    x,
-    'Z',
-  ].join(' ');
-};
-
 // width of the frame on the left and right side of the shape
 const FRAME_WIDTH = 8;
 

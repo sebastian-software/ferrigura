@@ -58,7 +58,7 @@ describe('stateRenderer v3 clickable links', () => {
     async (nodeClass) => {
       renderState.nodeClass = nodeClass;
 
-      const stateDb = new StateDB(1);
+      const stateDb = new StateDB();
       stateDb.setRootDoc([{ stmt: 'state', id: 'A', description: 'Google' }]);
       stateDb.addLink('A', '"https://google.com"', '"Visit Google"');
 

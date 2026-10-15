@@ -30,7 +30,6 @@ export const getCommonDb = () => {
 };
 
 const diagrams: Record<string, DiagramDefinition> = {};
-export type Detectors = Record<string, DiagramDetector>;
 
 /**
  * Registers the given diagram with Mermaid.

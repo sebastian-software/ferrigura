@@ -8,7 +8,7 @@ describe('state diagram V2, ', function () {
     /** @type {StateDB} */
     let stateDb;
     beforeEach(function () {
-      stateDb = new StateDB(2);
+      stateDb = new StateDB();
       parser.yy = stateDb;
       stateDiagram.parser.yy = stateDb;
       stateDiagram.parser.yy.clear();

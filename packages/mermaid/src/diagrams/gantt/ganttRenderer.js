@@ -31,10 +31,6 @@ import { configureSvgSize } from '../../setupGraphViewbox.js';
 
 dayjs.extend(dayjsDuration);
 
-export const setConf = function () {
-  log.debug('Something is calling, setConf, remove the call');
-};
-
 /**
  * This will map any day of the week that can be set in the `weekday` option to
  * the corresponding d3-time function that is used to calculate the ticks.
@@ -900,6 +896,5 @@ export const draw = function (text, id, version, diagObj) {
 };
 
 export default {
-  setConf,
   draw,
 };

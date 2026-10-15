@@ -6,9 +6,6 @@ import verticalRenderer from './timelineRendererVertical.js';
 import styles from './styles.js';
 
 const rendererSelector = {
-  setConf: () => {
-    // no-op
-  },
   draw: (text: string, id: string, version: string, diagObj: any) => {
     const direction = diagObj?.db?.getDirection?.() ?? 'LR';
     if (direction === 'TD') {

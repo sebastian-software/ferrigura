@@ -9,7 +9,7 @@ setConfig({
 describe('state parser can parse...', () => {
   let stateDb;
   beforeEach(function () {
-    stateDb = new StateDB(2);
+    stateDb = new StateDB();
     stateDiagram.parser.yy = stateDb;
     stateDiagram.parser.yy.clear();
   });

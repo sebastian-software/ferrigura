@@ -4,17 +4,6 @@
  */
 
 /**
- * Edge routing and spacing constants
- */
-export const EDGE_ROUTING = {
-  /** Spacing between parallel edges in the same corridor (px) */
-  EDGE_GAP: 12,
-
-  /** Horizontal offset from lane boundary to corridor center (px) */
-  LANE_MARGIN: 20,
-} as const;
-
-/**
  * Numerical precision constants
  */
 export const PRECISION = {

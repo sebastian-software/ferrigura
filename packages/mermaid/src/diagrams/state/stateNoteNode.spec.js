@@ -23,7 +23,7 @@ describe('state diagram note nodes', function () {
   let nodes;
 
   beforeEach(function () {
-    stateDb = new StateDB(2);
+    stateDb = new StateDB();
     parser.yy = stateDb;
     stateDiagram.parser.yy = stateDb;
     stateDiagram.parser.yy.clear();

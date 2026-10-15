@@ -2031,13 +2031,6 @@ const buildMessageModel = function (msg, actors, diagObj) {
   };
 };
 
-export const adjustValueByDirection = (msg, actors, value) => {
-  const [fromLeft] = activationBounds(msg.from, actors);
-  const [toLeft] = activationBounds(msg.to, actors);
-  const isArrowToRight = fromLeft <= toLeft;
-  return isArrowToRight ? -value : value;
-};
-
 const calculateLoopBounds = async function (messages, actors, _maxWidthPerActor, diagObj) {
   const loops = {};
   const stack = [];

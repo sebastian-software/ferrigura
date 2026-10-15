@@ -344,8 +344,5 @@ export const drawEvents = function (
 };
 
 export default {
-  setConf: () => {
-    // no-op
-  },
   draw,
 };

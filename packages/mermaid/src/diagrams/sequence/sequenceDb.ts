@@ -545,14 +545,6 @@ export class SequenceDB implements DiagramDB {
     }
   }
 
-  public getActorProperty(actor: Actor, key: string) {
-    if (actor?.properties !== undefined) {
-      return actor.properties[key];
-    }
-
-    return undefined;
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
   public apply(param: any | AddMessageParams | AddMessageParams[]) {
     if (Array.isArray(param)) {

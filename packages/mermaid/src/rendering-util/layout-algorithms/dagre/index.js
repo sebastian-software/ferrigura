@@ -35,7 +35,6 @@ const getDefaultSelfLoopSide = (rankdir = 'TB') => {
 };
 
 const shouldMergeSelfLoopSegments = (diagramType) =>
-  diagramType === 'flowchart' ||
   diagramType === 'flowchart-v2' ||
   diagramType === 'stateDiagram' ||
   diagramType === 'er' ||

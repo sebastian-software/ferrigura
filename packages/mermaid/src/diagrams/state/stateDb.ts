@@ -227,7 +227,7 @@ export class StateDB {
     DEPENDENCY: 3,
   } as const;
 
-  constructor(private version: 1 | 2) {
+  constructor() {
     this.clear();
     // Bind methods used by JISON
     this.setRootDoc = this.setRootDoc.bind(this);
@@ -321,11 +321,7 @@ export class StateDB {
   setRootDoc(o: Stmt[]) {
     log.info('Setting root doc', o);
     this.rootDoc = o;
-    if (this.version === 1) {
-      this.extract(o);
-    } else {
-      this.extract(this.getRootDocV2());
-    }
+    this.extract(this.getRootDocV2());
   }
 
   docTranslator(parent: RootStmt | StateStmt, node: Stmt, first: boolean) {
@@ -488,10 +484,6 @@ export class StateDB {
 
   getStates() {
     return this.currentDocument.states;
-  }
-
-  logDocuments() {
-    log.info('Documents = ', this.documents);
   }
 
   getRelations() {

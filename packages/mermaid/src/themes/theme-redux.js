@@ -1,9 +1,5 @@
 import { darken, lighten, adjust, invert, isDark } from 'khroma';
 import { applyOverride, mkBorder } from './theme-helpers.js';
-import {
-  oldAttributeBackgroundColorEven,
-  oldAttributeBackgroundColorOdd,
-} from './erDiagram-oldHardcodedValues.js';
 
 class Theme {
   constructor() {
@@ -382,10 +378,6 @@ class Theme {
     /* -------------------------------------------------- */
     /* EntityRelationship diagrams                        */
     this.erEdgeLabelBackground = '#FFFFFF';
-    this.attributeBackgroundColorOdd =
-      this.attributeBackgroundColorOdd || oldAttributeBackgroundColorOdd;
-    this.attributeBackgroundColorEven =
-      this.attributeBackgroundColorEven || oldAttributeBackgroundColorEven;
     /* -------------------------------------------------- */
   }
   calculate(overrides) {

@@ -9,7 +9,7 @@ setConfig({
 describe('ClassDefs and classes when parsing a State diagram', () => {
   let stateDb;
   beforeEach(function () {
-    stateDb = new StateDB(2);
+    stateDb = new StateDB();
     stateDiagram.parser.yy = stateDb;
     stateDiagram.parser.yy.clear();
   });

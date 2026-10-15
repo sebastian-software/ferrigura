@@ -364,29 +364,6 @@ export const calculatePoint = (points: Point[], distanceToTraverse: number): Poi
   throw new Error('Could not find a suitable point for the given distance');
 };
 
-const calcCardinalityPosition = (
-  isRelationTypePresent: boolean,
-  points: Point[],
-  initialPosition: Point
-) => {
-  log.info(`our points ${JSON.stringify(points)}`);
-  if (points[0] !== initialPosition) {
-    points = points.reverse();
-  }
-  // Traverse only 25 total distance along points to find cardinality point
-  const distanceToCardinalityPoint = 25;
-  const center = calculatePoint(points, distanceToCardinalityPoint);
-  // if relation is present (Arrows will be added), change cardinality point off-set distance (d)
-  const d = isRelationTypePresent ? 10 : 5;
-  //Calculate Angle for x and y axis
-  const angle = Math.atan2(points[0].y - center.y, points[0].x - center.x);
-  const cardinalityPosition = { x: 0, y: 0 };
-  //Calculation cardinality position using angle, center point on the line/curve but perpendicular and with offset-distance
-  cardinalityPosition.x = Math.sin(angle) * d + (points[0].x + center.x) / 2;
-  cardinalityPosition.y = -Math.cos(angle) * d + (points[0].y + center.y) / 2;
-  return cardinalityPosition;
-};
-
 /**
  * Calculates the terminal label position.
  *
@@ -874,7 +851,6 @@ export default {
   isSubstringInArray,
   interpolateToCurve,
   calcLabelPosition,
-  calcCardinalityPosition,
   calcTerminalLabelPosition,
   formatUrl,
   getStylesFromArray,
@@ -924,10 +900,6 @@ export const encodeEntities = function (text: string): string {
  */
 export const decodeEntities = function (text: string): string {
   return text.replace(/ﬂ°°/g, '&#').replace(/ﬂ°/g, '&').replace(/¶ß/g, ';');
-};
-
-export const isString = (value: unknown): value is string => {
-  return typeof value === 'string';
 };
 
 export const getEdgeId = (

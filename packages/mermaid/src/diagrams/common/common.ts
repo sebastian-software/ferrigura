@@ -8,20 +8,6 @@ import type { MermaidConfig } from '../../config.type.js';
 export const lineBreakRegex = /<\/?br\s*\/?>/gi;
 const lineBreakTestRegex = new RegExp(lineBreakRegex.source, 'i');
 
-/**
- * Gets the rows of lines in a string
- *
- * @param s - The string to check the lines for
- * @returns The rows in that string
- */
-export const getRows = (s?: string): string[] => {
-  if (!s) {
-    return [''];
-  }
-  const str = breakToPlaceholder(s).replace(/\\n/g, '#br#');
-  return str.split('#br#');
-};
-
 const setupDompurifyHooksIfNotSetup = (() => {
   let setup = false;
 
@@ -372,7 +358,6 @@ export const renderKatexSanitized = async (
 };
 
 export default {
-  getRows,
   sanitizeText,
   sanitizeTextOrArray,
   hasBreaks,

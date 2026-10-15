@@ -246,32 +246,6 @@ export const updateNodeBounds = <T extends SVGGraphicsElement>(
   node.height = bbox.height;
 };
 
-/**
- * @param parent - Parent element to append the polygon to
- * @param w - Width of the polygon
- * @param h - Height of the polygon
- * @param points - Array of points to create the polygon
- */
-export function insertPolygonShape(
-  parent: D3Selection<SVGGElement>,
-  w: number,
-  h: number,
-  points: Point[]
-) {
-  return parent
-    .insert('polygon', ':first-child')
-    .attr(
-      'points',
-      points
-        .map(function (d) {
-          return d.x + ',' + d.y;
-        })
-        .join(' ')
-    )
-    .attr('class', 'label-container')
-    .attr('transform', 'translate(' + -w / 2 + ',' + h / 2 + ')');
-}
-
 export const getNodeClasses = (node: Node, extra?: string) =>
   (node.look === 'handDrawn' ? 'rough-node' : 'node') + ' ' + node.cssClasses + ' ' + (extra || '');
 

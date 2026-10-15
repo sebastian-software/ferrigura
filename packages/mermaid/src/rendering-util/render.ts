@@ -6,9 +6,6 @@ import { insertLookDefs } from './insertLookDefs.js';
 import type { LayoutData } from './types.js';
 import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
 
-// console.log('MUST be removed, this only for keeping dev server working');
-// import tmp from './layout-algorithms/dagre/index.js';
-
 export interface RenderOptions {
   algorithm?: string;
 }

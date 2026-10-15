@@ -845,33 +845,6 @@ export const insertCluster = async (elem, node) => {
   return cluster;
 };
 
-export const getClusterTitleWidth = (elem, node) => {
-  // TODO: Doesn't this need an `await`?
-  const label = createLabel(elem, node.label, node.labelStyle, undefined, true);
-  const width = label.getBBox().width;
-  elem.node().removeChild(label);
-  return width;
-};
-
 export const clear = () => {
   clusterElems = new Map();
-};
-
-export const positionCluster = (node) => {
-  log.info(
-    'Position cluster (' +
-      node.id +
-      ', ' +
-      node.x +
-      ', ' +
-      node.y +
-      ') (' +
-      node?.width +
-      ', ' +
-      node?.height +
-      ')',
-    clusterElems.get(node.id)
-  );
-  const el = clusterElems.get(node.id);
-  el.cluster.attr('transform', 'translate(' + node.x + ', ' + node.y + ')');
 };
