@@ -101,6 +101,9 @@ pub fn run(
         IntermediateProcessorStrategy::LONG_EDGE_SPLITTER => {
             dummies::split_long_edges(graph);
         }
+        IntermediateProcessorStrategy::LONG_EDGE_JOINER => {
+            dummies::join_long_edges(graph);
+        }
         IntermediateProcessorStrategy::PORT_LIST_SORTER => {
             ports::sort_ports(graph)?;
         }

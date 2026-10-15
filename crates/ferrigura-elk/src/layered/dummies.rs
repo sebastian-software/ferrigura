@@ -69,6 +69,93 @@ pub fn insert_label_dummies(graph: &mut LGraph) {
     graph.layerless_nodes.extend(new_dummies);
 }
 
+/// `LongEdgeJoiner.process`: every long-edge dummy is joined away and leaves its layer.
+pub fn join_long_edges(graph: &mut LGraph) {
+    let add_unnecessary = graph.properties.bool_of(options::UNNECESSARY_BENDPOINTS);
+    for layer in 0..graph.layers.len() {
+        let mut index = 0;
+        while index < graph.layers[layer].len() {
+            let node = graph.layers[layer][index];
+            if graph.nodes[node].node_type == NodeType::LONG_EDGE {
+                join_at(graph, node, add_unnecessary);
+                graph.layers[layer].remove(index);
+            } else {
+                index += 1;
+            }
+        }
+    }
+}
+
+/// `LongEdgeJoiner.joinAt`: the edges that enter a dummy's west port continue to the targets of
+/// the edges that leave its east port. Each surviving edge takes the dropped edge's place in
+/// its target's incoming list, and gets the bend points and labels of the dropped one (and,
+/// when asked, a bend point at the dummy's first port). Junction points are not ported yet.
+pub fn join_at(graph: &mut LGraph, dummy: usize, add_unnecessary_bendpoints: bool) {
+    let (Some(input_port), Some(output_port)) = (
+        first_port_on(graph, dummy, PortSide::WEST),
+        first_port_on(graph, dummy, PortSide::EAST),
+    ) else {
+        return;
+    };
+    let edge_count = graph.ports[input_port].incoming.len();
+    let unnecessary = graph.nodes[dummy]
+        .ports
+        .first()
+        .map(|&port| absolute_anchor(graph, dummy, port));
+    for _ in 0..edge_count {
+        let (Some(&surviving), Some(&dropped)) = (
+            graph.ports[input_port].incoming.first(),
+            graph.ports[output_port].outgoing.first(),
+        ) else {
+            break;
+        };
+        let target = graph.edges[dropped].target;
+        let index = graph.ports[target]
+            .incoming
+            .iter()
+            .position(|&edge| edge == dropped)
+            .unwrap_or(0);
+        remove_first(&mut graph.ports[input_port].incoming, surviving);
+        graph.edges[surviving].target = target;
+        graph.ports[target].incoming.insert(index, surviving);
+        remove_first(&mut graph.ports[output_port].outgoing, dropped);
+        remove_first(&mut graph.ports[target].incoming, dropped);
+        if let (true, Some(point)) = (add_unnecessary_bendpoints, unnecessary) {
+            graph.edges[surviving].bend_points.push(point);
+        }
+        let dropped_bends = graph.edges[dropped].bend_points.clone();
+        graph.edges[surviving].bend_points.extend(dropped_bends);
+        let dropped_labels = graph.edges[dropped].labels.clone();
+        graph.edges[surviving].labels.extend(dropped_labels);
+    }
+}
+
+/// The first port of `node` on `side`, in the node's port order.
+fn first_port_on(graph: &LGraph, node: usize, side: PortSide) -> Option<usize> {
+    graph.nodes[node]
+        .ports
+        .iter()
+        .copied()
+        .find(|&port| graph.ports[port].side == side)
+}
+
+/// `LPort.getAbsoluteAnchor`: the node's position, plus the port's position and anchor.
+fn absolute_anchor(graph: &LGraph, node: usize, port: usize) -> KVector {
+    let owner = graph.nodes[node].position;
+    let port = &graph.ports[port];
+    KVector {
+        x: owner.x + port.position.x + port.anchor.x,
+        y: owner.y + port.position.y + port.anchor.y,
+    }
+}
+
+/// `ArrayList.remove(item)`: the first occurrence leaves the list.
+fn remove_first(list: &mut Vec<usize>, item: usize) {
+    if let Some(index) = list.iter().position(|&found| found == item) {
+        list.remove(index);
+    }
+}
+
 /// `LongEdgeSplitter.process`: an edge that reaches past the next layer is split by a dummy in
 /// that layer, layer by layer, so that every edge runs between neighbouring layers. Graphs with
 /// two layers or fewer have no such edges.
@@ -362,5 +449,32 @@ mod tests {
         assert_eq!(graph.layers[1], vec![dummy]);
         assert_eq!(graph.ports[graph.edges[0].target].node, dummy);
         assert_eq!(graph.ports[graph.edges[1].target].node, 1);
+    }
+
+    #[test]
+    fn joining_a_split_edge_restores_it() {
+        let mut graph = LGraph {
+            nodes: vec![LNode::default(), LNode::default()],
+            layers: vec![vec![0], Vec::new(), vec![1]],
+            ..LGraph::default()
+        };
+        graph.nodes[0].layer = Some(0);
+        graph.nodes[1].layer = Some(2);
+        let source = create_port(&mut graph, 0, PortType::OUTPUT);
+        let target = create_port(&mut graph, 1, PortType::INPUT);
+        graph.ports[source].outgoing.push(0);
+        graph.ports[target].incoming.push(0);
+        graph.edges.push(LEdge {
+            source,
+            target,
+            thickness: 1.0,
+            ..LEdge::default()
+        });
+        split_long_edges(&mut graph);
+        join_long_edges(&mut graph);
+        assert!(graph.layers[1].is_empty());
+        assert_eq!(graph.ports[graph.edges[0].target].node, 1);
+        assert_eq!(graph.ports[target].incoming, vec![0]);
+        assert!(graph.ports[source].outgoing == vec![0]);
     }
 }
