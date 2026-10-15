@@ -119,7 +119,7 @@ impl PhaseStep {
             p3order::sweep(graph)?;
         }
         if matches!(self, PhaseStep::EdgeRouting(_)) {
-            p5edges::route_nodes_only(graph)?;
+            p5edges::route(graph)?;
         }
         progress.done(monitor);
         Ok(())
