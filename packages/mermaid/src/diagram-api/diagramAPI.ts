@@ -61,11 +61,7 @@ export const registerDiagram = (
     getConfig,
     sanitizeText,
     setupGraphViewbox,
-    getCommonDb(),
-    () => {
-      // parseDirective is removed in https://github.com/mermaid-js/mermaid/pull/4759.
-      // This is a no-op for legacy support.
-    }
+    getCommonDb()
   );
 };
 

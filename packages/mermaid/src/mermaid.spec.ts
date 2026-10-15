@@ -18,24 +18,17 @@ afterEach(() => {
 
 describe('when using mermaid and ', () => {
   describe('when detecting chart type ', () => {
-    it('should not start rendering with mermaid.startOnLoad set to false', () => {
-      mermaid.startOnLoad = false;
+    it('should not start rendering with startOnLoad set to false', () => {
+      mermaidAPI.updateSiteConfig({ startOnLoad: false });
       document.body.innerHTML = '<div class="mermaid">graph TD;\na;</div>';
       spyOn(mermaid, 'run');
       mermaid.contentLoaded();
       expect(mermaid.run).not.toHaveBeenCalled();
+      mermaidAPI.updateSiteConfig({ startOnLoad: true });
     });
 
-    it('should start rendering with both startOnLoad set', () => {
-      mermaid.startOnLoad = true;
-      document.body.innerHTML = '<div class="mermaid">graph TD;\na;</div>';
-      spyOn(mermaid, 'run');
-      mermaid.contentLoaded();
-      expect(mermaid.run).toHaveBeenCalled();
-    });
-
-    it('should start rendering with mermaid.startOnLoad', () => {
-      mermaid.startOnLoad = true;
+    it('should start rendering with startOnLoad set', () => {
+      mermaidAPI.updateSiteConfig({ startOnLoad: true });
       document.body.innerHTML = '<div class="mermaid">graph TD;\na;</div>';
       spyOn(mermaid, 'run');
       mermaid.contentLoaded();
@@ -213,9 +206,9 @@ describe('when using mermaid and ', () => {
 
     it('should return false for invalid definition WITH a parseError() callback defined', async () => {
       let parseErrorWasCalled = false;
-      mermaid.setParseErrorHandler(() => {
+      mermaid.parseError = () => {
         parseErrorWasCalled = true;
-      });
+      };
       await expect(
         mermaid.parse('this is not a mermaid diagram definition')
       ).rejects.toThrowErrorMatchingInlineSnapshot(

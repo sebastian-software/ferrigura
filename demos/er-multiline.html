@@ -209,7 +209,7 @@
         callback,
       });
       // setTimeout(() => {
-      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+      await mermaid.run();
       // }, 1000);
       mermaid.parseError = function (err, hash) {
         console.error('In parse error:');

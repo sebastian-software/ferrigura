@@ -709,12 +709,6 @@ export const getBoundaries = function (parentBoundary?: string | null) {
   }
 };
 
-// cspell:ignore getBoundarys
-/**
- * @deprecated Use {@link getBoundaries} instead
- */
-export const getBoundarys = getBoundaries;
-
 export const getRels = function () {
   return rels;
 };
@@ -806,7 +800,6 @@ export default {
   getC4Shape,
   getC4ShapeKeys,
   getBoundaries,
-  getBoundarys,
   getCurrentBoundaryParse,
   getParentBoundaryParse,
   getRels,

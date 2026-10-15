@@ -14,13 +14,13 @@
       await mermaid.initialize({ startOnLoad: false });
       await mermaid.run();
 
-      await mermaid.mermaidAPI.initialize({ securityLevel: 'strict' });
+      mermaid.initialize({ securityLevel: 'strict' });
       try {
         console.log('rendering');
-        await mermaid.mermaidAPI.render('graphDiv', `>`);
+        await mermaid.render('graphDiv', `>`);
       } catch (e) {}
 
-      const { svg } = await mermaid.mermaidAPI.render('graphDiv', `graph LR\n a --> b`);
+      const { svg } = await mermaid.render('graphDiv', `graph LR\n a --> b`);
       document.getElementById('graph').innerHTML = svg;
     </script>
   </body>

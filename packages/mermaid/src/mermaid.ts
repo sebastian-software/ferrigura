@@ -92,7 +92,7 @@ const handleError = (error: unknown, errors: DetailedError[], parseError?: Parse
  * Function that goes through the document to find the chart definitions in there and render them.
  *
  * The function tags the processed attributes with the attribute data-processed and ignores found
- * elements with the attribute already set. This way the init function can be triggered several
+ * elements with the attribute already set. This way the run function can be triggered several
  * times.
  *
  * ```mermaid
@@ -146,10 +146,6 @@ const runThrowsErrors = async function (
   }
 
   log.debug(`Found ${nodesToProcess.length} diagrams`);
-  if (conf?.startOnLoad !== undefined) {
-    log.debug('Start On Load: ' + conf?.startOnLoad);
-    mermaidAPI.updateSiteConfig({ startOnLoad: conf?.startOnLoad });
-  }
 
   // generate the id of the diagram
   const idGenerator = new utils.InitIDGenerator(conf.deterministicIds, conf.deterministicIDSeed);
@@ -177,10 +173,6 @@ const runThrowsErrors = async function (
       .trim()
       .replace(/<br\s*\/?>/gi, '<br/>');
 
-    const init = utils.detectInit(txt);
-    if (init) {
-      log.debug('Detected early reinit: ', init);
-    }
     try {
       const { svg, bindFunctions } = await render(id, txt, element);
       element.innerHTML = svg;
@@ -211,42 +203,6 @@ const initialize = function (config: MermaidConfig) {
 };
 
 /**
- * ## init
- *
- * @deprecated Use {@link initialize} and {@link run} instead.
- *
- * Renders the mermaid diagrams
- *
- * @param config - **Deprecated**, please set configuration in {@link initialize}.
- * @param nodes - **Default**: `.mermaid`. One of the following:
- * - A DOM Node
- * - An array of DOM nodes (as would come from a jQuery selector)
- * - A W3C selector, a la `.mermaid`
- * @param callback - Called once for each rendered diagram's id.
- */
-const init = async function (
-  config?: MermaidConfig,
-  nodes?: string | HTMLElement | NodeListOf<HTMLElement>,
-  callback?: (id: string) => unknown
-) {
-  log.warn('mermaid.init is deprecated. Please use run instead.');
-  if (config) {
-    initialize(config);
-  }
-  const runOptions: RunOptions = { postRenderCallback: callback, querySelector: '.mermaid' };
-  if (typeof nodes === 'string') {
-    runOptions.querySelector = nodes;
-  } else if (nodes) {
-    if (nodes instanceof HTMLElement) {
-      runOptions.nodes = [nodes];
-    } else {
-      runOptions.nodes = nodes;
-    }
-  }
-  await run(runOptions);
-};
-
-/**
  * Used to register external diagram types.
  * @param diagrams - Array of {@link ExternalDiagramDefinition}.
  * @param opts - If opts.lazyLoad is false, the diagrams will be loaded immediately.
@@ -267,16 +223,13 @@ const registerExternalDiagrams = async (
 };
 
 /**
- * ##contentLoaded Callback function that is called when page is loaded. This functions fetches
- * configuration for mermaid rendering and calls init for rendering the mermaid diagrams on the
- * page.
+ * ##contentLoaded Callback function that is called when page is loaded. If the `startOnLoad`
+ * configuration is enabled, it calls {@link run} to render the mermaid diagrams on the page.
  */
 const contentLoaded = function () {
-  if (mermaid.startOnLoad) {
-    const { startOnLoad } = mermaidAPI.getConfig();
-    if (startOnLoad) {
-      mermaid.run().catch((err) => log.error('Mermaid failed to initialize', err));
-    }
+  const { startOnLoad } = mermaidAPI.getConfig();
+  if (startOnLoad) {
+    mermaid.run().catch((err) => log.error('Mermaid failed to initialize', err));
   }
 };
 
@@ -286,24 +239,6 @@ if (typeof document !== 'undefined') {
    */
   window.addEventListener('load', contentLoaded, false);
 }
-
-/**
- * ## setParseErrorHandler  Alternative to directly setting parseError using:
- *
- * ```js
- * mermaid.parseError = function(err,hash) {
- *   forExampleDisplayErrorInGui(err);  // do something with the error
- * };
- * ```
- *
- * This is provided for environments where the mermaid object can't directly have a new member added
- * to it (eg. dart interop wrapper). (Initially there is no parseError member of mermaid).
- *
- * @param parseErrorHandler - New parseError() callback.
- */
-const setParseErrorHandler = function (parseErrorHandler: (err: any, hash: any) => void) {
-  mermaid.parseError = parseErrorHandler;
-};
 
 const executionQueue: (() => Promise<unknown>)[] = [];
 let executionQueueRunning = false;
@@ -431,43 +366,28 @@ const getRegisteredDiagramsMetadata = (): Pick<ExternalDiagramDefinition, 'id'>[
 };
 
 export interface Mermaid {
-  startOnLoad: boolean;
   parseError?: ParseErrorFunction;
-  /**
-   * @deprecated Use {@link parse} and {@link render} instead. Please [open a discussion](https://github.com/mermaid-js/mermaid/discussions) if your use case does not fit the new API.
-   * @internal
-   */
-  mermaidAPI: typeof mermaidAPI;
   parse: typeof parse;
   render: typeof render;
-  /**
-   * @deprecated Use {@link initialize} and {@link run} instead.
-   */
-  init: typeof init;
   run: typeof run;
   registerLayoutLoaders: typeof registerLayoutLoaders;
   registerExternalDiagrams: typeof registerExternalDiagrams;
   initialize: typeof initialize;
   contentLoaded: typeof contentLoaded;
-  setParseErrorHandler: typeof setParseErrorHandler;
   detectType: typeof detectType;
   registerIconPacks: typeof registerIconPacks;
   getRegisteredDiagramsMetadata: typeof getRegisteredDiagramsMetadata;
 }
 
 const mermaid: Mermaid = {
-  startOnLoad: true,
-  mermaidAPI,
   parse,
   render,
-  init,
   run,
   registerExternalDiagrams,
   registerLayoutLoaders,
   initialize,
   parseError: undefined,
   contentLoaded,
-  setParseErrorHandler,
   detectType,
   registerIconPacks,
   getRegisteredDiagramsMetadata,

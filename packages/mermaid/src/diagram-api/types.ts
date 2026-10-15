@@ -34,8 +34,6 @@ export interface InjectUtils {
   _sanitizeText: any;
   _setupGraphViewbox: any;
   _commonDb: any;
-  /** @deprecated as directives will be pre-processed since https://github.com/mermaid-js/mermaid/pull/4759 */
-  _parseDirective: any;
 }
 
 /**
@@ -132,9 +130,7 @@ export interface DiagramDefinition {
     _getConfig: InjectUtils['_getConfig'],
     _sanitizeText: InjectUtils['_sanitizeText'],
     _setupGraphViewbox: InjectUtils['_setupGraphViewbox'],
-    _commonDb: InjectUtils['_commonDb'],
-    /** @deprecated as directives will be pre-processed since https://github.com/mermaid-js/mermaid/pull/4759 */
-    _parseDirective: InjectUtils['_parseDirective']
+    _commonDb: InjectUtils['_commonDb']
   ) => void;
 }
 
