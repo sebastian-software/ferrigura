@@ -180,7 +180,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['e2e/**', 'demos/**', '.esbuild/**'],
+    files: ['e2e/**', '.esbuild/**'],
     rules: {
       'no-console': 'off',
       // Dev tooling files often use lower-friction style (single-line ifs,
@@ -245,7 +245,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.spec.{ts,js}', 'e2e/**', 'demos/**', '**/docs/**'],
+    files: ['**/*.spec.{ts,js}', 'e2e/**', '**/docs/**'],
     rules: {
       'jsdoc/require-jsdoc': 'off',
       '@typescript-eslint/no-unused-vars': 'off',

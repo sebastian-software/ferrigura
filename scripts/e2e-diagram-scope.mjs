@@ -50,13 +50,11 @@ export const SKIP = 'SKIP';
 const IGNORABLE_PREFIXES = [
   // Root-level repo metadata
   'img/',
-  'CITATION.cff',
-  'FUNDING.json',
   'LICENSE',
   'CODE_OF_CONDUCT.md',
   'CONTRIBUTING.md',
   'README.md',
-  'README.zh-CN.md',
+  'FORK.md',
   // Config/tooling that doesn't affect rendering
   'cspell.config.yaml',
   // Documentation (source and generated)
@@ -66,30 +64,8 @@ const IGNORABLE_PREFIXES = [
   '.changeset/',
   // AI assistant / agent config
   '.claude/',
-  'assistant/',
-  // GitHub metadata that doesn't affect rendering
-  '.github/workflows/build-docs.yml',
-  '.github/workflows/publish-docs.yml',
-  '.github/ISSUE_TEMPLATE/',
-  '.github/CODEOWNERS',
-  '.github/FUNDING.yml',
-  '.github/workflows/autofix.yml',
-  '.github/workflows/check-readme-in-sync.yml',
-  '.github/workflows/codeql.yml',
-  '.github/workflows/dependency-review.yml',
-  '.github/workflows/issue-triage.yml',
-  '.github/workflows/link-checker.yml',
-  '.github/workflows/lint.yml',
-  '.github/workflows/pr-labeler.yml',
-  '.github/workflows/renovatebot-config-lint.yml',
-  '.github/workflows/scorecard.yml',
-  '.github/workflows/unlock-reopened-issues.yml',
-  '.github/workflows/update-browserlist.yml',
-  '.github/workflows/validate-lockfile.yml',
   // Doc-related scripts
   'packages/mermaid/scripts/docs',
-  // Demos
-  'demos/',
 ];
 
 // Files ending with these suffixes are ignorable UNLESS they live inside a

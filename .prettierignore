@@ -15,6 +15,3 @@ packages/mermaid/src/config.type.ts
 generated/
 # Intermediate typedoc output (git-ignored), copied into docs/ by `docs:build`
 packages/mermaid/src/docs/config/setup
-# Ignore the files creates in /demos/dev except for example.html
-demos/dev/**
-!/demos/dev/example.html

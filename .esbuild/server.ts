@@ -529,6 +529,8 @@ async function createServer() {
     }
   });
 
+  // The dev explorer is the entry page; Playwright also waits for `/` to answer.
+  app.get('/', (_req, res) => res.redirect('/dev/'));
   // Static assets for the dev-explorer UI.
   app.use('/dev/assets', express.static(devExplorerDistDir));
   // Serve `/dev/` (and `/dev`) from public/, including index.html.
@@ -539,15 +541,13 @@ async function createServer() {
     })
   );
   // Also expose dev-explorer public assets (libavoid.wasm, etc.) at root
-  // so demo pages under /e2e/platform/ and /demos/ can resolve a
-  // bare "libavoid.wasm" without going through the /dev/ namespace.
-  // index:false so this doesn't shadow the demos default index.
+  // so pages under /e2e/platform/ can resolve a bare "libavoid.wasm"
+  // without going through the /dev/ namespace.
   app.use(express.static(devExplorerPublicDir, { index: false }));
 
   for (const { packageName } of Object.values(packageOptions)) {
     app.use(express.static(`./packages/${packageName}/dist`));
   }
-  app.use(express.static('demos'));
   app.use(express.static('e2e/platform'));
 
   app.listen(devPort, () => {

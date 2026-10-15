@@ -62,6 +62,8 @@ ELK has been the default since 12.0. The dagre layout was the fallback for unreg
 
 **Project infrastructure.** Upstream's GitHub workflows, issue templates, Netlify, Docker, Renovate, funding and citation files, the Chinese README copy, and the Applitools/Argos visual-testing integration. One workflow, `.github/workflows/ci.yml`, runs lint, the schema/type sync check, the circular-dependency check, unit tests and the out-of-tree TypeScript check. Playwright compares against local screenshot baselines.
 
+**Demo pages.** The 38 hand-written pages under `demos/` that the dev server used to serve at `/`. The dev explorer at `/dev/` covers the same ground: it browses the e2e fixtures and `e2e/platform/dev-diagrams/`, and `/` now redirects there.
+
 **Documentation website.** The VitePress site (theme, landing page, news, ecosystem and integration pages) and the generated JSON Schema reference. The Markdown reference docs stay in `packages/mermaid/src/docs` and are rendered to `docs/` for GitHub.
 
 **Dead code** (about 4,000 lines). Upstream dropped the legacy `flowchart`, `class` and `state` diagram ids in 12.0, but their renderers stayed behind: `class/classRenderer.js`, `class/svgDraw.js`, the duplicate `class/classDiagram.ts`, `state/stateRenderer.js`, `state/shapes.js`, `state/stateDiagram.ts`, the StateDB v1 path, `er/erRenderer.js`, `er/erMarkers.js`, `flowchart/flowChartShapes.js` and the pre-unified `mindmap/svgDraw.ts`. Also gone: `interactionDb.ts` (never populated), the orphaned copies `block/blockUtils.ts` and `shapes/document.ts`, and helpers, `setConf` stubs and types nothing called.

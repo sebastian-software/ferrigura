@@ -468,16 +468,9 @@ Do not assume the address. The port is derived from the path of the checkout, so
 
 Open `/dev/` and you get the explorer: the fixture tree on one side, the diagram on the other, a code tab for editing the source, and a layout picker for comparing your algorithm against the others on the same input. It reloads when you change the source, so an edit to your algorithm redraws the diagram without you touching the browser.
 
-For a diagram that is not in the fixture tree, copy the standalone page template instead:
+For a diagram that is not in the fixture tree yet, save it as a `.mmd` file under `e2e/platform/dev-diagrams/` and pick it in the explorer. Name your layout in the frontmatter:
 
-```bash
-cp demos/dev/example.html demos/dev/grid.html
 ```
-
-That lands at `/dev/grid.html` on the same server. Put the diagram in the page and name your layout in the frontmatter:
-
-```html
-<pre class="mermaid">
 ---
 config:
   layout: grid
@@ -485,7 +478,6 @@ config:
 flowchart TB
   A --> B
   B --> C
-</pre>
 ```
 
 A workflow that holds up over a long session:

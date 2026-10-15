@@ -262,16 +262,13 @@ A documentation test keeps your examples honest. `usecase.docs.spec.ts` reads th
 `syntax/usecase.md`, extracts every ` ```mermaid-example ` block, and parses it. Copy that pattern
 and your documentation cannot drift into examples that no longer work.
 
-## Step 8: Documentation and demos
+## Step 8: Documentation
 
 Write your syntax page as `packages/mermaid/src/docs/syntax/<diagram>.md`. Edit only the files
 under `src/docs/`; the top-level `/docs` folder is generated and your changes there will be
 overwritten. Mark the version with the placeholder, as `usecase.md` does with
 `# Use case diagrams (12.0.0+)`, and the release process substitutes the real
 number.
-
-Add a demo page at `demos/<diagram>.html` and link it from `demos/index.html`, following any
-of the existing demos.
 
 If your syntax introduces new keywords, add them to `.cspell/mermaid-terms.txt`. The pre-commit
 hook runs CSpell and will otherwise reject the commit.
@@ -305,7 +302,6 @@ review.
 - [ ] `.mmd` fixtures in `e2e/diagrams/<diagram>/` for visual regression
 - [ ] Documentation examples covered by a docs spec
 - [ ] Syntax page under `src/docs/syntax/`, with `MERMAID_RELEASE_VERSION`
-- [ ] Demo page and `demos/index.html` link
 - [ ] New keywords added to `.cspell/mermaid-terms.txt`
 - [ ] Changeset created (`minor`, `feat:`)
 - [ ] PR targets `develop` and links its issue

@@ -20,7 +20,10 @@ async function createServer() {
     app.use(express.static(`./packages/${packageName}/dist`));
   }
   app.use(vite.middlewares);
-  app.use(express.static('demos'));
+  // Playwright waits for `/` to answer before it starts the e2e run.
+  app.get('/', (_req, res) => {
+    res.type('text').send('mermaid dev server: open a page from e2e/platform, e.g. /e2e.html');
+  });
   app.use(express.static('e2e/platform'));
 
   app.listen(port, () => {

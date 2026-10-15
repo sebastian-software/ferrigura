@@ -11,11 +11,8 @@
     "./.esbuild/**/*.ts",
     "./.vite/*.ts",
     "./playwright.config.ts",
-    "./tests",
     "./scripts",
     "./e2e",
-    "./__mocks__",
-    "./demos/dev",
     "./vite.config.ts",
     "./vitest.workspace.js",
     "eslint.config.js"

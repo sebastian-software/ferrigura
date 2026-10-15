@@ -212,11 +212,9 @@ Note: By default, the Mermaid service will run on port 9000. To use a different 
 
 ### Make Changes
 
-Have a look at <http://localhost:9000>. There is a list of demos that can be used to see and test your changes.
+Have a look at <http://localhost:9000/dev/>, the dev explorer. It lists the e2e fixtures and the diagrams under `e2e/platform/dev-diagrams/`, renders the one you pick, and lets you edit its source.
 
-If you need a specific diagram, you can duplicate the `example.html` file in `/demos/dev` and add your own mermaid code to your copy.
-
-That will be served at <http://localhost:9000/dev/your-file-name.html>.
+To try a specific diagram, save it as a `.mmd` file under `e2e/platform/dev-diagrams/` and pick it in the explorer.
 After making code changes, the dev server will rebuild the mermaid library and automatically reload the page.
 
 Edit files in `packages/mermaid/src` as required.

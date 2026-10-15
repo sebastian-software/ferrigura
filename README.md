@@ -39,7 +39,6 @@ So far the cleanup has mostly removed what surrounds the library: seven packages
 | `packages/parser`           | Langium grammars used by the newer diagram types (`@mermaid-js/parser`) |
 | `packages/mermaid/src/docs` | Markdown reference docs (source); `docs/` holds the generated copy      |
 | `e2e`                       | Playwright rendering tests and `.mmd` fixtures                          |
-| `demos`                     | Pages served by the dev server for manual testing                       |
 
 ## Development
 
@@ -53,7 +52,7 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` starts the dev server with live rebuilds. Open `/dev/` for the diagram explorer, or the root for the demo pages.
+`pnpm dev` starts the dev server with live rebuilds; its root redirects to the diagram explorer at `/dev/`. To try a diagram of your own, save it as a `.mmd` file under `e2e/platform/dev-diagrams/` and pick it there.
 
 ```bash
 pnpm test

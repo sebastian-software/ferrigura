@@ -41,6 +41,7 @@ const buildPackage = async (entryName: keyof typeof packageOptions) => {
   const results = await Promise.all(buildConfigs.map((option) => build(getBuildConfig(option))));
 
   if (shouldVisualize) {
+    await mkdir('stats', { recursive: true });
     for (const { metafile } of results) {
       if (!metafile?.outputs) {
         continue;
@@ -61,7 +62,6 @@ const handler = (e) => {
 
 const main = async () => {
   await generateLangium();
-  await mkdir('stats', { recursive: true });
   const packageNames = Object.keys(packageOptions) as (keyof typeof packageOptions)[];
   // it should build `parser` before `mermaid` because it's a dependency
   for (const pkg of packageNames) {

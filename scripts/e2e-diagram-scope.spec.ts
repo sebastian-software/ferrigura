@@ -60,7 +60,7 @@ describe('detectScope', () => {
   });
 
   it('falls back to full suite when CI config is touched', () => {
-    expect(detectScope(['.github/workflows/e2e.yml'])).toBe('');
+    expect(detectScope(['.github/workflows/ci.yml'])).toBe('');
   });
 
   it('falls back to full suite when package.json is touched', () => {
@@ -168,30 +168,7 @@ describe('ignorable files (docs-only, changesets, etc.)', () => {
   });
 
   it('returns SKIP when only AI/assistant config changes', () => {
-    expect(detectScope(['.claude/settings.json', 'assistant/CONVENTIONS.md'])).toBe(SKIP);
-  });
-
-  it('returns SKIP when only docs CI workflows change', () => {
-    expect(
-      detectScope(['.github/workflows/build-docs.yml', '.github/workflows/publish-docs.yml'])
-    ).toBe(SKIP);
-  });
-
-  it('returns SKIP when only demo files change', () => {
-    expect(detectScope(['demos/architecture.html'])).toBe(SKIP);
-  });
-
-  it('scopes to diagram when diagram source + file in demo folder changed', () => {
-    const result = detectScope([
-      'packages/mermaid/src/diagrams/flowchart/flowchartDb.ts',
-      'demos/sequence.html',
-    ]);
-    expect(result.split(',')).toEqual(
-      expect.arrayContaining([
-        `${SPEC_BASE_DIR}/flowchart/`,
-        `${SPEC_BASE_DIR}/mmd-snapshots.spec.ts`,
-      ])
-    );
+    expect(detectScope(['.claude/settings.json'])).toBe(SKIP);
   });
 
   it('scopes to diagram when diagram source + docs both change', () => {
@@ -216,9 +193,9 @@ describe('ignorable files (docs-only, changesets, etc.)', () => {
     ).toBe('');
   });
 
-  it('falls back to full suite for non-docs CI workflows', () => {
-    // e2e.yml affects test execution — not ignorable
-    expect(detectScope(['.github/workflows/e2e.yml'])).toBe('');
+  it('falls back to full suite for CI workflows', () => {
+    // ci.yml affects test execution — not ignorable
+    expect(detectScope(['.github/workflows/ci.yml'])).toBe('');
   });
 });
 
