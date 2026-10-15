@@ -14,8 +14,6 @@ Please note that you can switch versions through the dropdown box at the top rig
 
 For the majority of users, Using the [Live Editor](https://mermaid.live/) would be sufficient, however you may also opt to deploy mermaid as a dependency or using the [Mermaid API](./setup/README.md).
 
-We have compiled some Video [Tutorials](../ecosystem/tutorials.md) on how to use the Mermaid Live Editor.
-
 ### Installing and Hosting Mermaid on a Webpage
 
 **Using the npm package:**
@@ -126,35 +124,6 @@ Mermaid can load multiple diagrams, in the same page.
 > Try it out, save this code as HTML and load it using any browser.
 > (Except Internet Explorer, please don't use Internet Explorer.)
 
-## Tiny Mermaid
-
-We offer a smaller version of Mermaid that's approximately half the size of the full library. This tiny version doesn't include Mindmap Diagrams, Architecture Diagrams, KaTeX rendering, lazy loading, or the ELK layout engine.
-
-If you need a more lightweight version without these features, you can use [Mermaid Tiny](https://github.com/mermaid-js/mermaid/tree/develop/packages/tiny).
-
-### ELK and the tiny build
-
-The tiny build has never included ELK, and still doesn't — it is a large dependency and staying small is the point of that build. Diagrams that ask for an ELK layout here fall back to Dagre and still render; nothing breaks, they are simply laid out by Dagre.
-
-What changed in v12.0.0 is the main package, not this one: ELK used to be an opt-in `@mermaid-js/layout-elk` install, and is now bundled with `mermaid` and used by default. So **if you want a Mermaid without ELK, the tiny build is the way to get one** — it is no longer simply a matter of not installing the layout package.
-
-If you want the tiny build _and_ ELK, register `@mermaid-js/layout-elk` alongside it. That package continues to be published for exactly this case:
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@mermaid-js/tiny/dist/mermaid.tiny.js"></script>
-<script type="module">
-  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs';
-
-  // The tiny build is an IIFE that assigns `globalThis.mermaid`, so it is loaded
-  // with a plain `<script>` tag and used as a global — there is no default
-  // export to import.
-  mermaid.registerLayoutLoaders(elkLayouts);
-  mermaid.initialize({ startOnLoad: true, layout: 'elk' });
-</script>
-```
-
-Registering the package also makes the named ELK algorithms available — `elk.stress`, `elk.force`, `elk.mrtree`, `elk.sporeOverlap`, `elk.box` and `elk.rectpacking`. On a normal `mermaid` build you do not need this package at all: registering it is harmless but redundant, since the same layouts are already built in.
-
 ## Enabling Click Event and Tags in Nodes
 
 A `securityLevel` configuration has to first be cleared. `securityLevel` sets the level of trust for the parsed diagrams and limits click functionality. This was introduced in version 8.2 as a security improvement, aimed at preventing malicious use.
@@ -246,34 +215,6 @@ mermaid.initialize({ startOnLoad: false });
 await mermaid.run({
   suppressErrors: true,
 });
-```
-
-### Calling `mermaid.init` - Deprecated
-
-```warning
-mermaid.init is deprecated in v10 and will be removed in a future release. Please use mermaid.run instead.
-```
-
-By default, `mermaid.init` will be called when the document is ready, finding all elements with
-`class="mermaid"`. If you are adding content after mermaid is loaded, or otherwise need
-finer-grained control of this behavior, you can call `init` yourself with:
-
-- a configuration object
-- some nodes, as
-  - a node
-  - an array-like of nodes
-  - or W3C selector that will find your nodes
-
-Example:
-
-```javascript
-mermaid.init({ noteMargin: 10 }, '.someOtherClass');
-```
-
-Or with no config object, and a jQuery selection:
-
-```javascript
-mermaid.init(undefined, $('#someId .yetAnotherClass'));
 ```
 
 ## Usage with webpack
@@ -419,8 +360,8 @@ bindEventHandler('change', 'code', textFieldUpdated);
 
 ## Configuration
 
-You can pass the required configuration to the `mermaid.initialize` call. This is the preferred way of configuring mermaid.
-The list of configuration objects are described [in the mermaidAPI documentation](./setup/README.md).
+You can pass the required configuration to the `mermaid.initialize` call.
+The list of configuration objects are described [in the Mermaid API documentation](./setup/README.md).
 
 ```html
 <script type="module">
@@ -428,28 +369,6 @@ The list of configuration objects are described [in the mermaidAPI documentation
   let config = { startOnLoad: true, htmlLabels: true, flowchart: { useMaxWidth: false } };
   mermaid.initialize(config);
 </script>
-```
-
-```note
-This is the preferred way of configuring mermaid.
-```
-
-### The following methods are deprecated and are kept only for backwards compatibility.
-
-## Using the mermaid object
-
-It is possible to set some configuration via the mermaid object. The two parameters that are supported using this
-approach are:
-
-- mermaid.startOnLoad
-- mermaid.htmlLabels
-
-```javascript
-mermaid.startOnLoad = true;
-```
-
-```warning
-This way of setting the configuration is deprecated. Instead the preferred way is to use the initialize method. This functionality is only kept for backwards compatibility.
 ```
 
 <!---

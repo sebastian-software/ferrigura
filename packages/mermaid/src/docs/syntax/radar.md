@@ -121,7 +121,7 @@ radar-beta
 
 ## Configuration
 
-Please refer to the [configuration](/config/schema-docs/config-defs-radar-diagram-config.html) guide for details.
+See `RadarDiagramConfig` in the configuration schema (`packages/mermaid/src/schemas/config.schema.yaml`) for all options.
 
 | Parameter       | Description                              | Default Value |
 | --------------- | ---------------------------------------- | ------------- |

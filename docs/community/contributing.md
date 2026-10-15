@@ -254,7 +254,7 @@ pnpm run build
 ./run build
 ```
 
-This will build the Mermaid library and the documentation site.
+This will build the Mermaid library.
 
 ### Running Mermaid Locally
 
@@ -438,48 +438,35 @@ If it is not in the documentation, it's like it never happened. Wouldn't that be
 
 Documentation is located in the [`packages/mermaid/src/docs`](https://github.com/mermaid-js/mermaid/tree/develop/packages/mermaid/src/docs) folder. Just pick the right section and start typing.
 
-The contents of [mermaid.js.org](https://mermaid.js.org/) are based on the docs from the `master` branch. Updates committed to the `master` branch are reflected in the [Mermaid Docs](https://mermaid.js.org/) once published.
+The Markdown in `/docs` is generated from these sources, and it is what GitHub renders.
 
 ```mermaid-example
 flowchart LR
   classDef default fill:#fff,color:black,stroke:black
 
-  source["Edit /packages/mermaid/src/docs"] -- automatic processing--> published["View /docs which will be published on Official Website"]
+  source["Edit /packages/mermaid/src/docs"] -- automatic processing--> published["View /docs, rendered by GitHub"]
 ```
 
 ```mermaid
 flowchart LR
   classDef default fill:#fff,color:black,stroke:black
 
-  source["Edit /packages/mermaid/src/docs"] -- automatic processing--> published["View /docs which will be published on Official Website"]
+  source["Edit /packages/mermaid/src/docs"] -- automatic processing--> published["View /docs, rendered by GitHub"]
 ```
 
-### Running the Documentation Website Locally
+### Building the Documentation
 
-**[The mermaid documentation site](https://mermaid.js.org/) is powered by [Vitepress](https://vitepress.vuejs.org/).**
-
-Start development server for the documentation site
-
-**Host**
+The pre-commit hook regenerates `/docs` when you commit changes to `packages/mermaid/src/docs`. To regenerate it by hand, run:
 
 ```bash
-pnpm --filter mermaid run docs:dev
+pnpm --filter mermaid docs:build
 ```
 
-or
+To check that `/docs` matches its sources without changing anything, run:
 
 ```bash
-cd packages/mermaid
-pnpm docs:dev
+pnpm --filter mermaid docs:verify
 ```
-
-**Docker**
-
-```bash
-./run docs:dev
-```
-
-Open <http://localhost:3333/> in your browser.
 
 ### Formatting
 
@@ -488,7 +475,7 @@ The documentation is written in Markdown. To get acquainted with its syntax [see
 You can use `note`, `tip`, `warning` and `danger` in triple backticks to add a note, tip, warning or danger box.
 
 > **‼️ Danger**
-> Do not use vitepress specific markdown syntax `::: warning` as it will not be processed correctly.
+> Do not use container syntax such as `::: warning`. It is not processed and shows up as plain text.
 
 Here are a few examples:
 
@@ -521,17 +508,6 @@ This is a danger alert
 
 > **‼️ Danger**
 > This is a danger alert
-
-### Navigation
-
-If you want to propose changes to how the documentation is _organized_, such as adding a new section or re-arranging or renaming a section, you must update the **sidebar navigation**, which is defined in [the vitepress config](../.vitepress/config.ts). The same goes for **topbar**.
-
-### Build Docs
-
-The content of `/docs` folder is built with GitHub Actions.
-
-> **Warning**
-> So as to allow automatic compilation of documentation pages you have to enable GitHub Actions on your fork first
 
 ## Submit your pull request
 

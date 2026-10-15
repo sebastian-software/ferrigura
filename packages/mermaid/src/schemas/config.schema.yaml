@@ -12,18 +12,15 @@
 #     JSON Schema using the `ajv` NPM package.
 #     Non-JSON values, like functions or `undefined`, still need to be manually
 #     set in `src/defaultConfig.ts`)
-#   - `src/docs.mts`
-#     Used to generate Markdown documentation for this JSON Schema by using
-#     the `@adobe/jsonschema2md` NPM package.
 
 # Useful things to know when editing this file
 # - Use the `|` character for multi-line strings
-# - Use `meta:enum` to document enum values (from jsonschema2md)
+# - Use `meta:enum` to document enum values
 # - Use `tsType` to override the TypeScript type (from json-schema-to-typescript)
 # - If adding a new object to `MermaidConfig` (e.g. a new diagram type),
-#   you may need to add it to `.build/jsonSchema.ts`, `src/docs.mts`
+#   you may need to add it to `.build/jsonSchema.ts`
 #   and `scripts/create-types-from-json-schema.mjs`
-#   to get the default values/docs/types to generate properly.
+#   to get the default values/types to generate properly.
 $id: https://mermaid.js.org/schemas/config.schema.json
 $schema: https://json-schema.org/draft/2019-09/schema
 title: Mermaid Config

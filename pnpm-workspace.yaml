@@ -1,8 +1,6 @@
 minimumReleaseAge: 4320 # 4320 minutes = 3 days
 packages:
   - 'packages/*'
-  - 'packages/mermaid/src/docs'
-  - 'packages/mermaid/src/vitepress'
 minimumReleaseAgeExclude:
   # Renovate security update: dompurify@3.3.2 || 3.4.0 || 3.4.12
   - dompurify@3.3.2 || 3.4.0 || 3.4.12

@@ -1,8 +1,3 @@
----
-title: Block Diagram Syntax
-outline: 'deep' # shows all h3 headings in outline in Vitepress
----
-
 # Block Diagrams Documentation
 
 ## Introduction to Block Diagrams

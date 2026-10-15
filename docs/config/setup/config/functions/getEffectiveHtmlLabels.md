@@ -12,9 +12,9 @@
 
 > **getEffectiveHtmlLabels**(`config`): `boolean`
 
-Defined in: [packages/mermaid/src/config.ts:352](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/config.ts#L352)
+Defined in: [packages/mermaid/src/config.ts:324](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/config.ts#L324)
 
-Helper function to handle deprecated flowchart.htmlLabels
+Resolves the root `htmlLabels` option, which defaults to `true`.
 
 ## Parameters
 
@@ -28,4 +28,4 @@ The configuration object (merged config with defaults)
 
 `boolean`
 
-The effective htmlLabels value based on precedence: root flowchart default
+Whether labels are rendered as HTML

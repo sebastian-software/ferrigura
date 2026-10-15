@@ -69,7 +69,7 @@ function validateSchema(jsonSchema: unknown): asserts jsonSchema is JSONSchemaTy
   });
 
   ajv.addKeyword({
-    keyword: 'meta:enum', // used by jsonschema2md (in docs.mts script)
+    keyword: 'meta:enum', // documents enum values
     errors: false,
   });
   ajv.addKeyword({

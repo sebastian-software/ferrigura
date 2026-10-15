@@ -95,7 +95,7 @@ Each row is mirrored on its own, so a packet wider than `bitsPerRow` reads as a 
 
 ## Configuration
 
-Please refer to the [configuration](/config/schema-docs/config-defs-packet-diagram-config.html) guide for details.
+See `PacketDiagramConfig` in the configuration schema (`packages/mermaid/src/schemas/config.schema.yaml`) for all options.
 
 <!--
 

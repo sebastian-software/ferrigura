@@ -236,7 +236,6 @@ A --> C[End]
 
 Some common flowchart configurations are:
 
-- ~~_htmlLabels_~~: Deprecated, [prefer setting this at the root level](/config/schema-docs/config#htmllabels).
 - _curve_: linear/curve
 - _diagramPadding_: number
 - _useMaxWidth_: number

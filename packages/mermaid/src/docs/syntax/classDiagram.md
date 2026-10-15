@@ -837,7 +837,7 @@ classDiagram
 
 It is possible to hide the empty members box of a class node.
 
-This is done by changing the **hideEmptyMembersBox** value of the class diagram configuration. For more information on how to edit the Mermaid configuration see the [configuration page.](https://mermaid.js.org/config/configuration.html)
+This is done by changing the **hideEmptyMembersBox** value of the class diagram configuration. For more information on how to edit the Mermaid configuration see the [configuration page.](../config/configuration.md)
 
 ### Possible configuration parameters:
 

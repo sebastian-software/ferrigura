@@ -61,7 +61,6 @@ const IGNORABLE_PREFIXES = [
   'cspell.config.yaml',
   // Documentation (source and generated)
   'packages/mermaid/src/docs/',
-  'packages/mermaid/src/vitepress/',
   'docs/',
   // Changeset descriptions
   '.changeset/',

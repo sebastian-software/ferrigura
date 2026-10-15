@@ -276,19 +276,4 @@ cspell:ignore Buzan
 
 ## Layouts
 
-Mermaid also supports a Tidy Tree layout for mindmaps.
-
-```
----
-config:
-  layout: tidy-tree
----
-mindmap
-root((mindmap is a long thing))
-  A
-  B
-  C
-  D
-```
-
-Instructions to add and register tidy-tree layout are present in [Tidy Tree Configuration](/config/tidy-tree)
+Mindmaps use the `cose-bilkent` layout unless a diagram asks for another one. See [Layouts](../config/layouts.md) for the available layout algorithms.

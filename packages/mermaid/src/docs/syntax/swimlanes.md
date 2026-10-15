@@ -1,8 +1,3 @@
----
-title: Swimlanes Diagram Syntax
-outline: 'deep'
----
-
 # Swimlanes Diagram (v11.16.0+)
 
 ```warning

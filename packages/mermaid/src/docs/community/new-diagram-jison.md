@@ -181,7 +181,7 @@ import {
 } from '../../commonDb';
 ```
 
-The accessibility title and description are inserted into the SVG element in the `render` function in mermaidAPI.
+The accessibility title and description are inserted into the SVG element in the `render` function in `mermaidAPI.ts`.
 
 ## Theming
 

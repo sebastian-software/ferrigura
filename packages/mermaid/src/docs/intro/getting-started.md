@@ -1,7 +1,3 @@
----
-outline: 'deep' # shows all h3 headings in outline in Vitepress
----
-
 # Mermaid User Guide
 
 ## Mermaid is composed of three parts
@@ -15,15 +11,13 @@ This section talks about the different ways to **deploy** Mermaid.
 If you are a beginner:
 
 - Check out the [Diagram Syntax](syntax-reference.md) page
-- Check out the [Tutorials](../ecosystem/tutorials.md) page
 
 ## Ways to use Mermaid
 
-1. [Using the Mermaid Live Editor](getting-started.md#_1-using-the-mermaid-live-editor)
-2. [Using the Mermaid Chart Editor](getting-started.md#_2-using-the-mermaid-chart-editor)
-3. [Using Mermaid Plugins and Integrations](getting-started.md#_3-using-mermaid-plugins)
-4. [Calling the Mermaid JavaScript API](getting-started.md#_4-calling-the-mermaid-javascript-api)
-5. [Adding Mermaid as a dependency](getting-started.md#_5-adding-mermaid-as-a-dependency)
+1. [Using the Mermaid Live Editor](#1-using-the-mermaid-live-editor)
+2. [Using Mermaid Plugins and Integrations](#2-using-mermaid-plugins)
+3. [Calling the Mermaid JavaScript API](#3-calling-the-mermaid-javascript-api)
+4. [Adding Mermaid as a dependency](#4-adding-mermaid-as-a-dependency)
 
 To learn more, visit the [Usage](../config/usage.md) page.
 
@@ -117,42 +111,11 @@ And, here is the diagram view from the above example:
 
 <https://mermaid.live/view?gist=https://gist.github.com/sidharthv96/6268a23e673a533dcb198f241fd7012a>
 
-## 2. Using the Mermaid Chart Editor
-
-Available at the [Mermaid Chart](https://mermaid.ai/) website.
-
-Mermaid Chart is a web-based diagram editor that allows you to create and edit diagrams in your browser. It is built by the team behind Mermaid.
-
-Features include:
-
-- AI diagramming
-- Collaboration & multi-user editing
-- Storage
-- and more
-
-To learn more, visit the [Mermaid Chart page](/ecosystem/mermaid-chart.html) in the Ecosystem section of the documentation.
-
-Or go to the [Mermaid Chart website](https://mermaid.ai/app/sign-up) to sign up for a Free account.
-
-## 3. Using Mermaid Plugins
+## 2. Using Mermaid Plugins
 
 ### Mermaid Plugins
 
 You can generate Mermaid diagrams from within popular applications using plug-ins.
-
-For a list of Mermaid Plugins and Integrations, visit the [Integrations page](../ecosystem/integrations-community.md).
-
-### Mermaid Chart Plugins
-
-Mermaid Chart plugins are available for:
-
-- [ChatGPT](https://mermaid.ai/docs/plugins/mermaid-chart-gpt)
-- [JetBrains IDE](https://mermaid.ai/docs/plugins/jetbrains-ide)
-- [Microsoft PowerPoint](https://mermaid.ai/docs/plugins/microsoft-powerpoint)
-- [Microsoft Word](https://mermaid.ai/docs/plugins/microsoft-word)
-- [Visual Studio Code](https://mermaid.ai/docs/plugins/visual-studio-code)
-
-To learn more, visit the [Mermaid Chart Plugins](https://mermaid.ai/plugins) page.
 
 ### Native Mermaid Support
 
@@ -167,7 +130,7 @@ flowchart LR
 ```
 ````
 
-## 4. Calling the Mermaid JavaScript API
+## 3. Calling the Mermaid JavaScript API
 
 This method can be used with any common web server like `Apache`, `IIS`, `Nginx`, and `Node Express`.
 
@@ -232,7 +195,7 @@ Rendering in Mermaid is initialized by the `mermaid.initialize()` call. However,
 | ----------- | --------------------------------- | ------- | ----------- |
 | startOnLoad | Toggle for Rendering upon loading | Boolean | true, false |
 
-In this example, the `mermaidAPI` is being called through the `CDN`:
+In this example, Mermaid is loaded from the `CDN`:
 
 ```html
 <html>
@@ -326,7 +289,7 @@ See [Usage § Fonts](../config/usage.md#fonts) for full details.
 </html>
 ```
 
-## 5. Adding Mermaid as a dependency
+## 4. Adding Mermaid as a dependency
 
 Below are the steps for adding Mermaid as a dependency:
 

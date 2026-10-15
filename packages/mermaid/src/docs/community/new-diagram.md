@@ -240,7 +240,7 @@ The syntax for accessible titles and descriptions is described in [the Accessibi
 
 You get both for free once your db re-exports the setters shown in
 [Step 2](#step-2-the-database). The values are inserted into the SVG element in the `render`
-function in mermaidAPI.
+function in `mermaidAPI.ts`.
 
 ## Step 7: Tests
 
@@ -254,15 +254,15 @@ Visual regression tests come from `.mmd` fixtures. Put one file per scenario in
 `e2e/diagrams/<diagram>/`, and that is the whole job:
 `e2e/rendering/mmd-snapshots.spec.ts` walks that directory, renders each fixture, and snapshots
 it, grouping the results by folder. Screenshot names must be unique across the whole tree, and the
-run fails fast if two fixtures collide. `e2e/sheet-order.json` holds the ordering. Run the suite
-with `pnpm e2e`. Cover realistic diagrams rather than one minimal smoke test, and include a
-fixture per theme if your styling is at all involved.
+run fails fast if two fixtures collide. Run the suite with `pnpm e2e`. Cover realistic diagrams
+rather than one minimal smoke test, and include a fixture per theme if your styling is at all
+involved.
 
 A documentation test keeps your examples honest. `usecase.docs.spec.ts` reads the published
 `syntax/usecase.md`, extracts every ` ```mermaid-example ` block, and parses it. Copy that pattern
 and your documentation cannot drift into examples that no longer work.
 
-## Step 8: Documentation, demos, and examples
+## Step 8: Documentation and demos
 
 Write your syntax page as `packages/mermaid/src/docs/syntax/<diagram>.md`. Edit only the files
 under `src/docs/`; the top-level `/docs` folder is generated and your changes there will be
@@ -270,17 +270,8 @@ overwritten. Mark the version with the placeholder, as `usecase.md` does with
 `# Use case diagrams (12.0.0+)`, and the release process substitutes the real
 number.
 
-Add the page to the sidebar in `.vitepress/config.ts` under `sidebarSyntax()`. A page with no
-sidebar entry is reachable only by URL, which in practice means nobody reads it.
-
 Add a demo page at `demos/<diagram>.html` and link it from `demos/index.html`, following any
 of the existing demos.
-
-Add at least one entry to the `@mermaid-js/examples` package, which is what tools like
-mermaid.live use to help people get started. Duplicate an existing file such as
-`packages/examples/src/examples/flowchart.ts`, adapt it, then import it in
-`packages/examples/src/index.ts` and add it to the `examples` array. Mark one example as the
-default, and add more to show off individual features.
 
 If your syntax introduces new keywords, add them to `.cspell/mermaid-terms.txt`. The pre-commit
 hook runs CSpell and will otherwise reject the commit.
@@ -313,9 +304,8 @@ review.
 - [ ] Unit tests for parser and db, covering invalid input
 - [ ] `.mmd` fixtures in `e2e/diagrams/<diagram>/` for visual regression
 - [ ] Documentation examples covered by a docs spec
-- [ ] Syntax page under `src/docs/syntax/`, with `MERMAID_RELEASE_VERSION` and a sidebar entry
+- [ ] Syntax page under `src/docs/syntax/`, with `MERMAID_RELEASE_VERSION`
 - [ ] Demo page and `demos/index.html` link
-- [ ] Example added to `@mermaid-js/examples`, one marked default
 - [ ] New keywords added to `.cspell/mermaid-terms.txt`
 - [ ] Changeset created (`minor`, `feat:`)
 - [ ] PR targets `develop` and links its issue

@@ -10,7 +10,7 @@
 
 # Interface: Mermaid
 
-Defined in: [packages/mermaid/src/mermaid.ts:433](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L433)
+Defined in: [packages/mermaid/src/mermaid.ts:368](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L368)
 
 ## Properties
 
@@ -18,11 +18,10 @@ Defined in: [packages/mermaid/src/mermaid.ts:433](https://github.com/mermaid-js/
 
 > **contentLoaded**: () => `void`
 
-Defined in: [packages/mermaid/src/mermaid.ts:451](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L451)
+Defined in: [packages/mermaid/src/mermaid.ts:376](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L376)
 
-\##contentLoaded Callback function that is called when page is loaded. This functions fetches
-configuration for mermaid rendering and calls init for rendering the mermaid diagrams on the
-page.
+\##contentLoaded Callback function that is called when page is loaded. If the `startOnLoad`
+configuration is enabled, it calls [run](#run) to render the mermaid diagrams on the page.
 
 #### Returns
 
@@ -34,7 +33,7 @@ page.
 
 > **detectType**: (`text`, `config?`) => `string`
 
-Defined in: [packages/mermaid/src/mermaid.ts:453](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L453)
+Defined in: [packages/mermaid/src/mermaid.ts:377](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L377)
 
 Detects the type of the graph text.
 
@@ -90,7 +89,7 @@ A graph definition key
 
 > **getRegisteredDiagramsMetadata**: () => `Pick`<[`ExternalDiagramDefinition`](ExternalDiagramDefinition.md), `"id"`>\[]
 
-Defined in: [packages/mermaid/src/mermaid.ts:455](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L455)
+Defined in: [packages/mermaid/src/mermaid.ts:379](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L379)
 
 Gets the metadata for all registered diagrams.
 Currently only the id is returned.
@@ -103,59 +102,11 @@ An array of objects with the id of the diagram.
 
 ---
 
-### ~~init()~~
-
-> **init**: (`config?`, `nodes?`, `callback?`) => `Promise`<`void`>
-
-Defined in: [packages/mermaid/src/mermaid.ts:446](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L446)
-
-## init
-
-#### Parameters
-
-##### config?
-
-[`MermaidConfig`](MermaidConfig.md)
-
-**Deprecated**, please set configuration in [initialize](#initialize).
-
-##### nodes?
-
-**Default**: `.mermaid`. One of the following:
-
-- A DOM Node
-- An array of DOM nodes (as would come from a jQuery selector)
-- A W3C selector, a la `.mermaid`
-
-`string` | `HTMLElement` | `NodeListOf`<`HTMLElement`>
-
-##### callback?
-
-(`id`) => `unknown`
-
-Called once for each rendered diagram's id.
-
-#### Returns
-
-`Promise`<`void`>
-
-#### Deprecated
-
-Use [initialize](#initialize) and [run](#run) instead.
-
-Renders the mermaid diagrams
-
-#### Deprecated
-
-Use [initialize](#initialize) and [run](#run) instead.
-
----
-
 ### initialize()
 
 > **initialize**: (`config`) => `void`
 
-Defined in: [packages/mermaid/src/mermaid.ts:450](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L450)
+Defined in: [packages/mermaid/src/mermaid.ts:375](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L375)
 
 Used to set configurations for mermaid.
 This function should be called before the run function.
@@ -174,25 +125,11 @@ Configuration object for mermaid.
 
 ---
 
-### ~~mermaidAPI~~
-
-> **mermaidAPI**: `Readonly`<{ `defaultConfig`: [`MermaidConfig`](MermaidConfig.md); `getConfig`: () => [`MermaidConfig`](MermaidConfig.md); `getDiagramFromText`: (`text`, `metadata`) => `Promise`<`Diagram`>; `getSiteConfig`: () => [`MermaidConfig`](MermaidConfig.md); `globalReset`: () => `void`; `initialize`: (`userOptions`) => `void`; `parse`: {(`text`, `parseOptions`): `Promise`<`false` | [`ParseResult`](ParseResult.md)>; (`text`, `parseOptions?`): `Promise`<[`ParseResult`](ParseResult.md)>; }; `render`: (`id`, `text`, `svgContainingElement?`) => `Promise`<[`RenderResult`](RenderResult.md)>; `reset`: () => `void`; `setConfig`: (`conf`) => [`MermaidConfig`](MermaidConfig.md); `updateSiteConfig`: (`conf`) => [`MermaidConfig`](MermaidConfig.md); }>
-
-Defined in: [packages/mermaid/src/mermaid.ts:440](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L440)
-
-**`Internal`**
-
-#### Deprecated
-
-Use [parse](#parse) and [render](#render) instead. Please [open a discussion](https://github.com/mermaid-js/mermaid/discussions) if your use case does not fit the new API.
-
----
-
 ### parse()
 
 > **parse**: {(`text`, `parseOptions`): `Promise`<`false` | [`ParseResult`](ParseResult.md)>; (`text`, `parseOptions?`): `Promise`<[`ParseResult`](ParseResult.md)>; }
 
-Defined in: [packages/mermaid/src/mermaid.ts:441](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L441)
+Defined in: [packages/mermaid/src/mermaid.ts:370](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L370)
 
 #### Call Signature
 
@@ -268,7 +205,7 @@ Error if the diagram is invalid and parseOptions.suppressErrors is false or not 
 
 > `optional` **parseError**: [`ParseErrorFunction`](../type-aliases/ParseErrorFunction.md)
 
-Defined in: [packages/mermaid/src/mermaid.ts:435](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L435)
+Defined in: [packages/mermaid/src/mermaid.ts:369](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L369)
 
 ---
 
@@ -276,7 +213,7 @@ Defined in: [packages/mermaid/src/mermaid.ts:435](https://github.com/mermaid-js/
 
 > **registerExternalDiagrams**: (`diagrams`, `opts`) => `Promise`<`void`>
 
-Defined in: [packages/mermaid/src/mermaid.ts:449](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L449)
+Defined in: [packages/mermaid/src/mermaid.ts:374](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L374)
 
 Used to register external diagram types.
 
@@ -306,7 +243,7 @@ If opts.lazyLoad is false, the diagrams will be loaded immediately.
 
 > **registerIconPacks**: (`iconLoaders`) => `void`
 
-Defined in: [packages/mermaid/src/mermaid.ts:454](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L454)
+Defined in: [packages/mermaid/src/mermaid.ts:378](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L378)
 
 #### Parameters
 
@@ -324,7 +261,7 @@ Defined in: [packages/mermaid/src/mermaid.ts:454](https://github.com/mermaid-js/
 
 > **registerLayoutLoaders**: (`loaders`) => `void`
 
-Defined in: [packages/mermaid/src/mermaid.ts:448](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L448)
+Defined in: [packages/mermaid/src/mermaid.ts:373](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L373)
 
 #### Parameters
 
@@ -342,7 +279,7 @@ Defined in: [packages/mermaid/src/mermaid.ts:448](https://github.com/mermaid-js/
 
 > **render**: (`id`, `text`, `svgContainingElement?`) => `Promise`<[`RenderResult`](RenderResult.md)>
 
-Defined in: [packages/mermaid/src/mermaid.ts:442](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L442)
+Defined in: [packages/mermaid/src/mermaid.ts:371](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L371)
 
 Renders the diagram, holding the diagram config scope for exactly as long as the render.
 Leaving it set would make `getConfig()` report the last diagram's appearance as the
@@ -372,14 +309,14 @@ global answer for every caller between renders.
 
 > **run**: (`options`) => `Promise`<`void`>
 
-Defined in: [packages/mermaid/src/mermaid.ts:447](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L447)
+Defined in: [packages/mermaid/src/mermaid.ts:372](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L372)
 
 ## run
 
 Function that goes through the document to find the chart definitions in there and render them.
 
 The function tags the processed attributes with the attribute data-processed and ignores found
-elements with the attribute already set. This way the init function can be triggered several
+elements with the attribute already set. This way the run function can be triggered several
 times.
 
 ```mermaid-example
@@ -409,42 +346,3 @@ Optional runtime configs
 #### Returns
 
 `Promise`<`void`>
-
----
-
-### setParseErrorHandler()
-
-> **setParseErrorHandler**: (`parseErrorHandler`) => `void`
-
-Defined in: [packages/mermaid/src/mermaid.ts:452](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L452)
-
-## setParseErrorHandler Alternative to directly setting parseError using:
-
-```js
-mermaid.parseError = function (err, hash) {
-  forExampleDisplayErrorInGui(err); // do something with the error
-};
-```
-
-This is provided for environments where the mermaid object can't directly have a new member added
-to it (eg. dart interop wrapper). (Initially there is no parseError member of mermaid).
-
-#### Parameters
-
-##### parseErrorHandler
-
-(`err`, `hash`) => `void`
-
-New parseError() callback.
-
-#### Returns
-
-`void`
-
----
-
-### startOnLoad
-
-> **startOnLoad**: `boolean`
-
-Defined in: [packages/mermaid/src/mermaid.ts:434](https://github.com/mermaid-js/mermaid/blob/master/packages/mermaid/src/mermaid.ts#L434)

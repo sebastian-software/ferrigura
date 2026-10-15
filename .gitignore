@@ -26,8 +26,6 @@ e2e/platform/current.html
 e2e/platform/experimental.html
 local/
 
-_site
-Gemfile.lock
 /.vs
 
 e2e/screenshots/
@@ -44,8 +42,6 @@ tsconfig.tsbuildinfo
 local*.html
 stats/
 
-**/user-avatars/*
-**/contributor-names.json
 .pnpm-store
 .nyc_output
 

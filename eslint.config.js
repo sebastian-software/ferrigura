@@ -25,7 +25,6 @@ export default tseslint.config(
       '**/generated/',
       '**/coverage/',
       'packages/mermaid/src/config.type.ts',
-      'packages/mermaid/src/docs/.vitepress/components.d.ts',
     ],
   },
   {
@@ -35,7 +34,6 @@ export default tseslint.config(
           './tsconfig.eslint.json',
           './packages/*/tsconfig.json',
           './packages/*/tsconfig.eslint.json',
-          './packages/mermaid/src/docs/tsconfig.json',
         ],
         tsconfigRootDir: import.meta.dirname,
       },

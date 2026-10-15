@@ -55,7 +55,7 @@ function generateDefaults(mermaidConfigSchema: JSONSchemaType<MermaidConfig>) {
   });
 
   ajv.addKeyword({
-    keyword: 'meta:enum', // used by jsonschema2md
+    keyword: 'meta:enum', // documents enum values
     errors: false,
   });
   ajv.addKeyword({

@@ -14,8 +14,6 @@ ignorePaths:
   - '*lock.{yaml,json}'
   - dist
   - CHANGELOG.md
-  - packages/mermaid/src/docs/.vitepress/redirect.ts
-  - packages/mermaid/src/docs/.vitepress/contributor-names.json
   - backup
   - '**/*.spec.{js,ts}' # checked by eslint
   - 'tests/webpack/src/index.js' # checked by eslint
