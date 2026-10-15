@@ -74,3 +74,6 @@ mermaid-parser.tar.gz
 .fallow/
 test-results/
 .playwright-mcp/
+
+# Rust build output of spikes
+spikes/*/target/

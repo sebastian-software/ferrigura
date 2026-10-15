@@ -12,6 +12,7 @@
     "./.vite/*.ts",
     "./playwright.config.ts",
     "./scripts",
+    "./spikes",
     "./e2e",
     "./vite.config.ts",
     "./vitest.workspace.js",

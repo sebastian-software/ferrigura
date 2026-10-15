@@ -39,6 +39,12 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 | journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | —      | —                      | —                  | —      | —      | —      |
 | info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | —      | —                      | —                  | —      | —      | —      |
 
+## Spikes
+
+| Spike                                                     | Result                                                                                                                                   |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [Text measurement](./spikes/text-measurement.md) (for M2) | Widths match Chromium within its 1/64 px rounding, text box heights exactly, Mermaid's wrapping in 270 of 270 cases; about 5 µs per text |
+
 ## Open items
 
 - Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release; then create `sebastian-software/ferrigura` and rename the repository.
