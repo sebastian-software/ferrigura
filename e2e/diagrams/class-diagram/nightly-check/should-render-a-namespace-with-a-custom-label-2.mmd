@@ -1,0 +1,20 @@
+---
+description: >-
+  A `namespace` block with a custom quoted display label
+  (`namespace Auth["Authentication Service"]`) grouping two classes with
+  methods and an association between them.
+config:
+  logLevel: 1
+  htmlLabels: true
+---
+classDiagram
+  namespace Auth["Authentication Service"] {
+  class UserService {
+    +login()
+    +logout()
+  }
+  class TokenManager {
+    +generate()
+  }
+  }
+  UserService --> TokenManager : uses

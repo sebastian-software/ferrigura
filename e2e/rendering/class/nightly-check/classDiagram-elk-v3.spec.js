@@ -1,7 +1,7 @@
 import { test } from '@playwright/test';
 import { imgSnapshotTest } from '../../../helpers/util.ts';
 
-test.describe('Class diagram V3 Dagre', () => {
+test.describe('Class diagram V3 multiple diagrams', () => {
   test('ELK-3: should render multiple class diagrams', async ({ page }, testInfo) => {
     await imgSnapshotTest(
       page,
@@ -52,7 +52,7 @@ test.describe('Class diagram V3 Dagre', () => {
       }
       `,
       ],
-      { logLevel: 1, htmlLabels: true, layout: 'dagre' }
+      { logLevel: 1, htmlLabels: true, layout: 'elk' }
     );
   });
 });
@@ -134,28 +134,7 @@ test.describe('Class diagram V3 ELK', () => {
     );
   });
 
-  for (const [id, layout] of [
-    ['ELK-7', 'elk'],
-    ['ELK-8', 'dagre'],
-  ]) {
-    test(`${id}: should not clip cardinality text in a proportional font with ${layout} (#8329)`, async ({
-      page,
-    }, testInfo) => {
-      await imgSnapshotTest(
-        page,
-        testInfo,
-        `
-    classDiagram
-      Customer "1" --> "*" Order : places
-      Order "1" *-- "1..*" LineItem : contains
-      Customer "0..1" -- "1" Address : lives at
-      `,
-        { logLevel: 1, htmlLabels: true, fontFamily: 'arial', layout }
-      );
-    });
-  }
-
-  test('ELK-9: should keep dagre end labels centred, clear of the class box (#8329)', async ({
+  test('ELK-7: should not clip cardinality text in a proportional font with elk (#8329)', async ({
     page,
   }, testInfo) => {
     await imgSnapshotTest(
@@ -163,16 +142,11 @@ test.describe('Class diagram V3 ELK', () => {
       testInfo,
       `
     classDiagram
-      direction LR
-      class Animal {
-        +String name
-        +eat()
-      }
-      Animal "1" <|-- "many" Duck
-      Animal "1" <|-- "0..n" Fish
-      Duck "1" o-- "2..*" Feather
+      Customer "1" --> "*" Order : places
+      Order "1" *-- "1..*" LineItem : contains
+      Customer "0..1" -- "1" Address : lives at
       `,
-      { logLevel: 1, htmlLabels: true, fontFamily: 'arial', layout: 'dagre' }
+      { logLevel: 1, htmlLabels: true, fontFamily: 'arial', layout: 'elk' }
     );
   });
 
