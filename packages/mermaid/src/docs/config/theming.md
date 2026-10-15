@@ -49,20 +49,18 @@ scope a setting to that diagram, which is not always the keyword the diagram sta
 
 Every other diagram type defaults to the `default` theme and the `classic` look.
 
-`layout` works the same way. Only `swimlane` overrides it, to `swimlane`; everything else
-uses the global default, `dagre`.
+`layout` works the same way. `swimlane` overrides it, to `swimlane`, and `mindmap` uses
+`cose-bilkent`; everything else uses the global default, `elk`.
 
 These are only defaults, and the most specific thing you say wins. Highest priority first:
 
 1.  The diagram's own frontmatter or `%%{init}%%` directive.
 2.  What you passed to `mermaid.initialize()`.
 3.  The diagram type's default, above.
-4.  The global default (`theme: default`, `look: classic`, `layout: dagre`).
+4.  The global default (`theme: default`, `look: classic`, `layout: elk`).
 
-A layout that is not registered in the running build falls back to `dagre`, with a warning
-in the console. `elk` ships as a separate package you register yourself, and `cose-bilkent`
-is only bundled into builds that include the large features, so naming either as a default
-does not require every build to carry it.
+A layout that is not registered falls back to `elk`, with a warning in the console. That
+includes `dagre`, which this fork removed.
 
 Within each of the first two you can also scope a value to one diagram type, and the
 scoped value wins over the global one you set alongside it. `theme`, `look` and `layout`

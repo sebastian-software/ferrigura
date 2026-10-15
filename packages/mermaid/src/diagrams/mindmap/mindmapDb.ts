@@ -406,7 +406,7 @@ export class MindmapDB {
       config: finalConfig,
       // Store the root node for mindmap-specific layout algorithms
       rootNode: mindmapRoot,
-      // Properties required by dagre layout algorithm
+      // Properties the shared layout pipeline expects
       markers: ['point'], // Mindmaps don't use markers
       direction: 'TB', // Top-to-bottom direction for mindmaps
       nodeSpacing: 50, // Default spacing between nodes

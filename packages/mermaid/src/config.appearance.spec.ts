@@ -138,8 +138,8 @@ describe('per-diagram appearance defaults', () => {
     });
 
     it('opts a diagram type into a layout', async () => {
-      mermaidAPI.initialize({ er: { layout: 'dagre' } });
-      expect((await configFor(REDESIGNED_DIAGRAMS.er)).layout).toBe('dagre');
+      mermaidAPI.initialize({ er: { layout: 'elk.stress' } });
+      expect((await configFor(REDESIGNED_DIAGRAMS.er)).layout).toBe('elk.stress');
       expect((await configFor(REDESIGNED_DIAGRAMS.class)).layout).toBe('elk');
     });
   });
@@ -249,7 +249,7 @@ describe('per-diagram appearance defaults', () => {
     });
 
     it('leaves an unknown layout alone -- the registry is extensible', async () => {
-      // Resolved at render time by `getRegisteredLayoutAlgorithm`, which falls back to dagre.
+      // Resolved at render time by `getRegisteredLayoutAlgorithm`, which falls back to elk.
       mermaidAPI.initialize({ er: { layout: 'elk' } });
       expect((await configFor(REDESIGNED_DIAGRAMS.er)).layout).toBe('elk');
     });

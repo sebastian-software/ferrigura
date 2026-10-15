@@ -100,7 +100,7 @@ Possible FlowChart orientations are:
 
 ## Default theme, look and layout (v12.0.0+)
 
-Flowcharts use the `redux-color` theme and the `neo` look by default, and are laid out by [ELK](https://www.eclipse.org/elk/) rather than Dagre. Not every diagram type
+Flowcharts use the `redux-color` theme and the `neo` look by default, and are laid out by [ELK](https://www.eclipse.org/elk/). Not every diagram type
 does — see [Per-diagram defaults](../config/theming.md#per-diagram-defaults) for the list and
 for the order in which Mermaid decides.
 
@@ -132,15 +132,14 @@ flowchart LR
 
 ### The previous appearance
 
-Both are only defaults, so anything you set yourself wins. Naming the previous theme and look
-in a diagram's front matter draws it the way Mermaid did before:
+Both are only defaults, so anything you set yourself wins. Naming the previous theme and look in a diagram's front matter brings back the earlier colours
+and styling. The layout stays ELK; the dagre layout is not part of this fork:
 
 ```mermaid-example
 ---
 config:
   theme: default
   look: classic
-  layout: dagre
 ---
 flowchart LR
   subgraph Client
@@ -163,9 +162,9 @@ flowchart LR
   Auth -. token .-> UI
 ```
 
-Passing the same three keys to `mermaid.initialize()` does it for every diagram on the page,
-and scoping the theme and look to one diagram type — `mermaid.initialize({ layout: 'dagre', flowchart: { theme: 'default', look: 'classic' } })` —
-does it for that type alone. `layout` is a top-level option, so it applies to every diagram.
+Passing the same two keys to `mermaid.initialize()` does it for every diagram on the page, and
+scoping them to one diagram type — `mermaid.initialize({ flowchart: { theme: 'default', look: 'classic' } })` —
+does it for that type alone.
 
 ## Node shapes
 
@@ -1458,12 +1457,8 @@ The layout of the diagram is done with the layout algorithm. The default is
 [ELK](https://www.eclipse.org/elk/), which handles larger and more complex
 diagrams well and is bundled with Mermaid.
 
-To use the classic Dagre layout instead:
-
-```
-config:
-  layout: dagre
-```
+The classic Dagre layout has been removed. A flowchart that still sets
+`layout: dagre` is laid out with ELK, and a warning is logged.
 
 The `flowchart-elk` diagram type has been removed. It predates `layout` and
 selected what is now the default; write `flowchart` instead.

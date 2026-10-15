@@ -62,9 +62,9 @@ describe('flowchart default layout', () => {
     expect((await drawFlowchart()).layoutAlgorithm).toBe('elk');
   });
 
-  it('still honours an explicit dagre', async () => {
+  it('renders a pinned dagre layout with elk, since dagre was removed', async () => {
     configApi.addDirective({ layout: 'dagre' });
-    expect((await drawFlowchart()).layoutAlgorithm).toBe('dagre');
+    expect((await drawFlowchart()).layoutAlgorithm).toBe('elk');
   });
 
   it('still honours an explicit elk algorithm variant', async () => {

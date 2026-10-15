@@ -30,7 +30,7 @@ agentflow-beta TB
 
 ## Default theme, look and layout (v12.0.0+)
 
-Agentflow diagrams use the `redux-color` theme and the `neo` look by default, and are laid out by [ELK](https://www.eclipse.org/elk/) rather than Dagre. Not every
+Agentflow diagrams use the `redux-color` theme and the `neo` look by default, and are laid out by [ELK](https://www.eclipse.org/elk/). Not every
 diagram type does — see [Per-diagram defaults](../config/theming.md#per-diagram-defaults) for
 the list and for the order in which Mermaid decides.
 
@@ -61,15 +61,14 @@ agentflow-beta TB
 
 ### The previous appearance
 
-Both are only defaults, so anything you set yourself wins. Naming the previous theme and look
-in a diagram's front matter draws it the way Mermaid did before:
+Both are only defaults, so anything you set yourself wins. Naming the previous theme and look in a diagram's front matter brings back the earlier colours
+and styling. The layout stays ELK; the dagre layout is not part of this fork:
 
 ```mermaid-example
 ---
 config:
   theme: default
   look: classic
-  layout: dagre
 ---
 agentflow-beta TB
   brief["Release brief"]@{ shape: input }
@@ -91,9 +90,9 @@ agentflow-beta TB
   ok --> publish
 ```
 
-Passing the same three keys to `mermaid.initialize()` does it for every diagram on the page,
-and scoping the theme and look to one diagram type — `mermaid.initialize({ layout: 'dagre', agentflow: { theme: 'default', look: 'classic' } })` —
-does it for that type alone. `layout` is a top-level option, so it applies to every diagram.
+Passing the same two keys to `mermaid.initialize()` does it for every diagram on the page, and
+scoping them to one diagram type — `mermaid.initialize({ agentflow: { theme: 'default', look: 'classic' } })` —
+does it for that type alone.
 
 ## Declaring a diagram
 

@@ -526,7 +526,7 @@ const getData = (): UsecaseLayoutData => {
     edges,
     config: globalConfig,
     type: 'usecase',
-    layoutAlgorithm: 'dagre',
+    layoutAlgorithm: 'elk',
     direction: getDirection(),
     nodeSpacing: config.nodeSpacing,
     rankSpacing: config.rankSpacing,

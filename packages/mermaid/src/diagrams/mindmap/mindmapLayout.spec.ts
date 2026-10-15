@@ -30,8 +30,8 @@ describe('mindmap layout selection', () => {
     expect(resolvedLayout()).toBe('elk');
   });
 
-  it('honours an explicit dagre', () => {
-    configApi.addDirective({ layout: 'dagre' });
-    expect(resolvedLayout()).toBe('dagre');
+  it('honours an explicit elk', () => {
+    configApi.addDirective({ layout: 'elk' });
+    expect(resolvedLayout()).toBe('elk');
   });
 });

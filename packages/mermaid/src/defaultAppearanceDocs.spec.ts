@@ -33,22 +33,6 @@ const readPage = (page: string): string => {
   return readFileSync(path, 'utf8');
 };
 
-/**
- * Diagrams whose layout defaults to ELK, so their "previous appearance" example
- * has to pin `layout: dagre` as well. `swimlanes` defaults to the `swimlane`
- * layout and `sequenceDiagram`/`venn` are not laid out by the shared engine, so
- * naming ELK on those pages would be wrong.
- */
-const ELK_BY_DEFAULT = new Set([
-  'agentflow',
-  'flowchart',
-  'classDiagram',
-  'entityRelationshipDiagram',
-  'requirementDiagram',
-  'stateDiagram',
-  'usecase',
-]);
-
 /** The `mermaid-example` fences inside the "Default theme…" section. */
 const appearanceExamples = (page: string): string[] => {
   const section = /## Default theme[^\n]*\n[\S\s]*?(?=\n## )/.exec(readPage(page))?.[0];
@@ -80,16 +64,10 @@ describe('per-diagram appearance documentation', () => {
     expect(pinnedBack).toContain(withDefaults.trim());
     expect(pinnedBack).toContain('theme: default');
     expect(pinnedBack).toContain('look: classic');
-    // An ELK-laid-out diagram is not pinned back to how it used to look unless
-    // the layout is pinned too, so the example would be misleading without it.
-    if (ELK_BY_DEFAULT.has(page)) {
-      expect(pinnedBack, `${page}.md must pin the layout back as well`).toContain('layout: dagre');
-    } else {
-      expect(
-        pinnedBack,
-        `${page}.md is not ELK-laid-out, so it must not pin a layout`
-      ).not.toContain('layout: dagre');
-    }
+    // The dagre layout was removed, so only theme and look can be pinned back.
+    expect(pinnedBack, `${page}.md must not pin the removed dagre layout`).not.toContain(
+      'layout: dagre'
+    );
 
     for (const source of examples) {
       await expect(mermaidAPI.parse(source), `${page}.md:\n${source}`).resolves.toBeTruthy();

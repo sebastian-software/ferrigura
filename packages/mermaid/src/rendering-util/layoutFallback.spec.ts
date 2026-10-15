@@ -12,14 +12,20 @@ describe('layout fallback', () => {
   });
 
   it('returns a registered layout unchanged', () => {
-    expect(getRegisteredLayoutAlgorithm('dagre')).toBe('dagre');
-    expect(getRegisteredLayoutAlgorithm('swimlane')).toBe('swimlane');
     expect(getRegisteredLayoutAlgorithm('elk')).toBe('elk');
+    expect(getRegisteredLayoutAlgorithm('swimlane')).toBe('swimlane');
+    expect(getRegisteredLayoutAlgorithm('cose-bilkent')).toBe('cose-bilkent');
   });
 
-  it('falls back to dagre for a layout nobody registered', () => {
+  it('falls back to elk for the removed dagre layout', () => {
     const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined);
-    expect(getRegisteredLayoutAlgorithm('no-such-layout')).toBe('dagre');
+    expect(getRegisteredLayoutAlgorithm('dagre')).toBe('elk');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('dagre'));
+  });
+
+  it('falls back to elk for a layout nobody registered', () => {
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined);
+    expect(getRegisteredLayoutAlgorithm('no-such-layout')).toBe('elk');
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('no-such-layout'));
   });
 
@@ -30,11 +36,11 @@ describe('layout fallback', () => {
     );
   });
 
-  it('falls through to dagre when the caller-supplied fallback is absent too', () => {
+  it('falls through to elk when the caller-supplied fallback is absent too', () => {
     vi.spyOn(log, 'warn').mockImplementation(() => undefined);
     expect(
       getRegisteredLayoutAlgorithm('no-such-layout', { fallback: 'not-registered-either' })
-    ).toBe('dagre');
+    ).toBe('elk');
   });
 
   it.each(['__proto__', 'constructor', 'toString'])(
@@ -43,7 +49,7 @@ describe('layout fallback', () => {
       // `layout` is settable from front matter, and on a plain registry object these pass a
       // membership test and reach `loader()` as a TypeError.
       vi.spyOn(log, 'warn').mockImplementation(() => undefined);
-      expect(getRegisteredLayoutAlgorithm(inherited)).toBe('dagre');
+      expect(getRegisteredLayoutAlgorithm(inherited)).toBe('elk');
     }
   );
 

@@ -2302,7 +2302,7 @@ export function slideTerminalLabelsOffFrames(edges: Edge[], nodes: LayoutData['n
 /**
  * ELK puts every end label on one fixed side of its edge, but a `…Right` label
  * belongs on the right of the direction of travel and a `…Left` one on the left,
- * which is where dagre puts them. Mirror a label that is on the wrong side
+ * which is where the former dagre layout put them. Mirror a label that is on the wrong side
  * across its end segment, which keeps its distance from the line and the
  * marker — but only onto free space: ELK reserved room on its own side, and the
  * mirrored spot can belong to an edge leaving a neighbouring port.

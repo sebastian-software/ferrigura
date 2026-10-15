@@ -5,16 +5,16 @@ import { ELK_ALGORITHMS } from './layout-algorithms/elk/algorithms.js';
 describe('default layout loaders', () => {
   it('registers elk alongside the built-in layouts', () => {
     expect(getRegisteredLayoutAlgorithm('elk')).toBe('elk');
-    expect(getRegisteredLayoutAlgorithm('dagre')).toBe('dagre');
     expect(getRegisteredLayoutAlgorithm('swimlane')).toBe('swimlane');
+    expect(getRegisteredLayoutAlgorithm('cose-bilkent')).toBe('cose-bilkent');
   });
 
   it.each(ELK_ALGORITHMS)('registers the %s algorithm under its own name', (algorithm) => {
     expect(getRegisteredLayoutAlgorithm(algorithm)).toBe(algorithm);
   });
 
-  it('falls back to dagre for a layout that was never registered', () => {
-    expect(getRegisteredLayoutAlgorithm('does-not-exist')).toBe('dagre');
+  it('falls back to elk for a layout that was never registered', () => {
+    expect(getRegisteredLayoutAlgorithm('does-not-exist')).toBe('elk');
   });
 
   // Registration only records a name; this proves the lazy import behind it

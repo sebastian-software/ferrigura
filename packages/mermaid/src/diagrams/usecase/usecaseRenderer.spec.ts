@@ -21,7 +21,7 @@ import {
 const renderCallStyles: (string | null)[] = [];
 
 vi.mock('../../rendering-util/render.js', () => ({
-  getRegisteredLayoutAlgorithm: () => 'dagre',
+  getRegisteredLayoutAlgorithm: () => 'elk',
   render: (_data: UsecaseLayoutData, svg: SVG) => {
     // Labels are measured inside `render`, so record the fonts that were in force at that moment.
     renderCallStyles.push(svg.node()?.getAttribute('style') ?? null);

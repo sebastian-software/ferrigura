@@ -151,7 +151,7 @@ describe('getUserDefinedConfig', () => {
   });
 
   it('should combine initialize config and directives', () => {
-    const initConfig: MermaidConfig = { theme: 'dark', fontFamily: 'Arial', layout: 'dagre' };
+    const initConfig: MermaidConfig = { theme: 'dark', fontFamily: 'Arial', layout: 'elk.stress' };
     const directive1: MermaidConfig = { layout: 'elk', fontSize: 14 };
     const directive2: MermaidConfig = { theme: 'forest' };
 

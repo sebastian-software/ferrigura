@@ -112,7 +112,7 @@ Look at `graphDb.js` for more details on that object.
 
 ## Layout
 
-If you are using a dagre based layout, please use flowchart-v2 as a template and by doing that you will be using dagre-wrapper instead of dagreD3 which we are migrating away from.
+If your diagram is graph-shaped, use flowchart-v2 as a template, so it renders through the shared layout pipeline (ELK by default).
 
 ### Common parts of a diagram
 

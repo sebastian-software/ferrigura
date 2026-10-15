@@ -13,7 +13,7 @@ vi.mock('../../diagram-api/diagramAPI.js', () => ({
       nodeSpacing: 50,
       rankSpacing: 50,
     },
-    layout: 'dagre',
+    layout: 'elk',
     look: 'classic',
   })),
 }));

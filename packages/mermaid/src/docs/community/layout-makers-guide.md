@@ -4,9 +4,9 @@ A layout algorithm decides where nodes sit and how edges get from one to the nex
 
 Which means you never touch the DOM. You are handed a graph whose nodes already know how big they are, and you hand back numbers: a center point for every node, a list of points for every edge. Drawing the shapes, painting the strokes, placing the arrowheads, fitting the viewBox — all of that is somebody else's code working from your numbers. You are solving a geometry problem, not a rendering one, which is exactly why a layout can be tested without a browser.
 
-This guide covers layouts that live inside the Mermaid package, next to `dagre` and the others. The last section explains how to ship the same code as a standalone npm package instead.
+This guide covers layouts that live inside the Mermaid package, next to `elk` and the others. The last section explains how to ship the same code as a standalone npm package instead.
 
-Two layouts in the tree are worth reading alongside it. `dagre` is the default and the oldest. `swimlanes` is the newest, and it is the one that follows the conventions described here, so most of the examples point at it.
+Two layouts in the tree are worth reading alongside it. `elk` is the default and wraps an external engine. `swimlanes` is the newest, and it is the one that follows the conventions described here, so most of the examples point at it.
 
 ## What a layout receives and what it must produce
 
@@ -34,7 +34,7 @@ One stage is allowed to do more. `prepareLayout` runs before measurement and may
 
 ### Layout space
 
-Positions are centers. `node.x, node.y` is the middle of the node's box, so its left edge is `x - width / 2` and its top edge is `y - height / 2`. Layout libraries disagree about this — some report a node's top-left corner, some measure y upward from a bottom-left origin — so if you are wrapping one, convert its output in `runLayoutCore` rather than leaving the renderer to guess. Dagre and ELK both report centers, which is why the built-in layouts pass them straight through.
+Positions are centers. `node.x, node.y` is the middle of the node's box, so its left edge is `x - width / 2` and its top edge is `y - height / 2`. Layout libraries disagree about this — some report a node's top-left corner, some measure y upward from a bottom-left origin — so if you are wrapping one, convert its output in `runLayoutCore` rather than leaving the renderer to guess. ELK reports top-left corners, so the built-in ELK layout converts them to centers before handing them on.
 
 Beyond that, layout space is a plain plane: x grows to the right, y grows downward. There is no fixed origin and no requirement that coordinates be positive. The renderer takes the bounding box of everything you produced and translates it into the SVG viewBox, so a layout centered on (0, 0) and a layout starting at (0, 0) render identically. Do not spend a pass normalizing coordinates; it is undone immediately.
 
@@ -149,7 +149,6 @@ The layouts that ship with Mermaid are listed in `registerDefaultLayoutLoaders()
 
 ```ts
 registerLayoutLoaders([
-  { name: 'dagre', loader: async () => await import('./layout-algorithms/dagre/index.js') },
   { name: 'swimlane', loader: async () => await import('./layout-algorithms/swimlanes/index.js') },
   // your new layout
   { name: 'grid', loader: async () => await import('./layout-algorithms/grid/index.js') },
@@ -545,9 +544,9 @@ Watch `measure` too. It is not your phase, but it is downstream of `prepareLayou
 
 ### Comparing against the baseline
 
-`baseline.json` is a captured run over the same folder — dagre and elk, ten iterations, `theme=redux`, `look=neo`, with the capture date in the file.
+`baseline.json` is a captured run over the same folder — dagre (since removed from this fork) and elk, ten iterations, `theme=redux`, `look=neo`, with the capture date in the file.
 
-Treat the absolute numbers as a record of one machine on one day, not a threshold. They will not reproduce on your hardware, and a CI runner would not reproduce them either. What does carry over is the shape: the relative cost of the phases, which diagrams are layout-dominated and which are parse-dominated, and the ratio between the layouts. Profile your layout in the same run as dagre and elk and compare within that run.
+Treat the absolute numbers as a record of one machine on one day, not a threshold. They will not reproduce on your hardware, and a CI runner would not reproduce them either. What does carry over is the shape: the relative cost of the phases, which diagrams are layout-dominated and which are parse-dominated, and the ratio between the layouts. Profile your layout in the same run as elk and compare within that run.
 
 ### What actually goes wrong
 

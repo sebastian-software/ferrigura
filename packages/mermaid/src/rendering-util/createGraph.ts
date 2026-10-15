@@ -97,8 +97,7 @@ export interface CreateGraphOptions {
  * ancestor group that declares one (a subgraph or composite state with its own
  * direction), falling back to the diagram-level direction. Direction-sensitive
  * shapes (e.g. fork/join bars, which must run perpendicular to the flow) rely
- * on this — the dagre path gets the same information via each subgraph's
- * `rankdir` during its recursive render.
+ * on this.
  */
 function resolveNodeDir(
   node: NonClusterNode,

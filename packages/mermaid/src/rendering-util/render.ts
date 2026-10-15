@@ -62,13 +62,8 @@ const elkLayoutLoaders = (): LayoutLoaderDefinition[] => {
   ];
 };
 
-// TODO: Should we load dagre without lazy loading?
 const registerDefaultLayoutLoaders = () => {
   registerLayoutLoaders([
-    {
-      name: 'dagre',
-      loader: async () => await import('./layout-algorithms/dagre/index.js'),
-    },
     {
       name: 'swimlane',
       loader: async () => await import('./layout-algorithms/swimlanes/index.js'),
@@ -108,12 +103,12 @@ export const render = async (data4Layout: LayoutData, svg: SVG) => {
 };
 
 /** Always registered, so the fallback chain can always end. */
-const LAST_RESORT_LAYOUT = 'dagre';
+const LAST_RESORT_LAYOUT = 'elk';
 
 /**
  * Get the registered layout algorithm, falling back when it is not available -- `layout` is
- * settable from front matter, so it may name a layout nobody registered. `fallback` may itself
- * be absent, so `dagre` closes the chain.
+ * settable from front matter, so it may name a layout nobody registered (including `dagre`,
+ * which this fork removed). `fallback` may itself be absent, so `elk` closes the chain.
  */
 export const getRegisteredLayoutAlgorithm = (
   algorithm = '',

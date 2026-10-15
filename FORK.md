@@ -43,6 +43,14 @@ The guiding rule: keep the library, drop everything around it that the library d
 
 Diagrams that still use a removed keyword fail with an "unknown diagram" error.
 
+### Layouts
+
+| Removed         | Use instead                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `layout: dagre` | nothing to set; ELK is the default. A diagram that still names `dagre` is laid out with ELK and a warning is logged |
+
+ELK has been the default since 12.0. The dagre layout was the fallback for unregistered layout names and the documented way to get the pre-12 layout back; ELK now closes the fallback chain, and the "previous appearance" examples in the docs restore only `theme` and `look`. `graphlib` from `dagre-d3-es` stays, as the graph data structure behind the shared rendering pipeline and the block diagram.
+
 ### Behaviour changes
 
 - The triangle shape and swimlane lane labels now follow the root `htmlLabels` option (default on) like every other shape. Before, they read `flowchart.htmlLabels`, which defaulted to off.
@@ -62,7 +70,6 @@ Diagrams that still use a removed keyword fail with an "unknown diagram" error.
 
 These are deprecated, legacy or redundant, but removing them changes user-visible behaviour or needs a decision first:
 
-- **dagre layout.** ELK is the default and always available now. dagre is still the fallback layout, is hard-wired for use case diagrams, and is the documented way to keep the pre-12 look. `graphlib` from `dagre-d3-es` is used as a data structure regardless.
 - **`%%{init}%%` and `%%{wrap}%%` directives.** Deprecated in the docs since 10.5 in favour of front matter; about 140 e2e fixtures still use them.
 - **Keyword aliases that upstream never deprecated.** `graph` (alias of `flowchart`), `classDiagram-v2`, `stateDiagram-v2`; `ishikawa-beta` and `treemap-beta`, whose docs still use the beta keyword; `architecture-beta`, whose grammar accepts nothing else.
 - **`securityLevel: 'antiscript'`.** The schema describes it as allowing HTML and clicks, but the code treats it exactly like `strict`.

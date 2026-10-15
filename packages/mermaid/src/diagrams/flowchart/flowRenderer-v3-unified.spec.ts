@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../../rendering-util/render.js', () => ({
-  getRegisteredLayoutAlgorithm: vi.fn().mockReturnValue('dagre'),
+  getRegisteredLayoutAlgorithm: vi.fn().mockReturnValue('elk'),
   render: vi.fn().mockResolvedValue(undefined),
 }));
 

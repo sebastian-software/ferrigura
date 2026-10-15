@@ -21,7 +21,6 @@ import insertMarkers from '../../rendering-elements/markers.js';
 import { clear as clearNodes, positionNode } from '../../rendering-elements/nodes.js';
 import type { LayoutData, Edge, ClusterNode, TerminalLabelKey } from '../../types.js';
 import type { RenderOptions } from '../../render.js';
-import { clear as clearGraphlib } from '../dagre/mermaid-graphlib.js';
 
 export type CommonLayoutMeasure = Awaited<ReturnType<typeof createGraphWithElements>>;
 type RenderedEdge = Edge & {
@@ -208,7 +207,6 @@ export function clearLayoutRenderState(): void {
   clearNodes();
   clearEdges();
   clearClusters();
-  clearGraphlib();
 }
 
 export async function defaultMeasureLayout(

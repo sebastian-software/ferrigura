@@ -8,7 +8,7 @@ The npm package is still called `mermaid` for now, and the diagram syntax is Mer
 
 ```mermaid
 flowchart LR
-  text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, dagre, …] --> svg[SVG]
+  text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, swimlane, cose-bilkent] --> svg[SVG]
 ```
 
 ## Repository layout

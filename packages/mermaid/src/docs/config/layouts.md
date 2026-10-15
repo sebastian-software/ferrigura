@@ -5,7 +5,7 @@ This page lists the available layout algorithms supported in Mermaid diagrams.
 ## ELK is bundled and default from v12.0.0
 
 ELK is part of `mermaid` itself and registered automatically, so `layout: elk`
-works with no setup — and since v12.0.0 it is the **default**, replacing Dagre.
+works with no setup — and since v12.0.0 it is the **default**.
 
 `elk` is the new default layout for these diagrams:
 
@@ -17,12 +17,12 @@ works with no setup — and since v12.0.0 it is the **default**, replacing Dagre
 - Use case
 - Agentflow
 
-To go back to the previous layout, use `layout: dagre`.
+The Dagre layout that these diagrams used before v12.0.0 has been removed from this fork.
+A diagram that still sets `layout: dagre` is laid out with ELK, and a warning is logged.
 
 ## Supported Layouts
 
 - **elk** (default): [ELK (Eclipse Layout Kernel)](https://www.eclipse.org/elk/). Bundled with Mermaid; no setup required. Specific ELK algorithms can be selected as `elk.stress`, `elk.force`, `elk.mrtree`, `elk.sporeOverlap`, `elk.box`, and `elk.rectpacking`.
-- **dagre**: Dagre layout for layered graphs
 - **cose-bilkent**: Cose Bilkent layout for force-directed graphs
 
 Mindmaps are the one diagram type not laid out with ELK by default; they use
@@ -40,7 +40,7 @@ options. For example:
 ```mermaid
 ---
 config:
-  layout: dagre
+  layout: elk.mrtree
 ---
 graph TD;
   A-->B;

@@ -27,7 +27,7 @@ describe('createFlowDiagram init', () => {
   });
 
   it('does not force a layout, whatever the config already says', () => {
-    createFlowDiagram().init?.({ layout: 'dagre' } as never);
+    createFlowDiagram().init?.({ layout: 'elk.stress' } as never);
     expect(layoutSetByInit()).toBeUndefined();
   });
 

@@ -46,7 +46,7 @@ When including attributes on ER diagrams, you must decide whether to include for
 
 ## Default theme, look and layout (v12.0.0+)
 
-Entity relationship diagrams use the `redux-color` theme and the `neo` look by default, and are laid out by [ELK](https://www.eclipse.org/elk/) rather than Dagre. Not every diagram type
+Entity relationship diagrams use the `redux-color` theme and the `neo` look by default, and are laid out by [ELK](https://www.eclipse.org/elk/). Not every diagram type
 does — see [Per-diagram defaults](../config/theming.md#per-diagram-defaults) for the list and
 for the order in which Mermaid decides.
 
@@ -79,15 +79,14 @@ erDiagram
 
 ### The previous appearance
 
-Both are only defaults, so anything you set yourself wins. Naming the previous theme and look
-in a diagram's front matter draws it the way Mermaid did before:
+Both are only defaults, so anything you set yourself wins. Naming the previous theme and look in a diagram's front matter brings back the earlier colours
+and styling. The layout stays ELK; the dagre layout is not part of this fork:
 
 ```mermaid-example
 ---
 config:
   theme: default
   look: classic
-  layout: dagre
 ---
 erDiagram
   CUSTOMER ||--o{ ORDER : places
@@ -111,9 +110,9 @@ erDiagram
   }
 ```
 
-Passing the same three keys to `mermaid.initialize()` does it for every diagram on the page,
-and scoping the theme and look to one diagram type — `mermaid.initialize({ layout: 'dagre', er: { theme: 'default', look: 'classic' } })` —
-does it for that type alone. `layout` is a top-level option, so it applies to every diagram.
+Passing the same two keys to `mermaid.initialize()` does it for every diagram on the page, and
+scoping them to one diagram type — `mermaid.initialize({ er: { theme: 'default', look: 'classic' } })` —
+does it for that type alone.
 
 ## Syntax
 
@@ -618,12 +617,12 @@ erDiagram
 
 The layout of the diagram is handled by [`render()`](../config/setup/mermaid/interfaces/Mermaid.md#render). The default layout is the ELK (Eclipse Layout Kernel) layout, which suits larger and more-complex diagrams. For more information, see [Customizing ELK Layout](../intro/syntax-reference.md#customizing-elk-layout).
 
-To use the classic Dagre layout instead, set it in your YAML frontmatter's `config`:
+To use a different ELK algorithm, set it in your YAML frontmatter's `config`:
 
 ```yaml
 ---
 config:
-  layout: dagre
+  layout: elk.stress
 ---
 ```
 
@@ -633,7 +632,7 @@ Your Mermaid code should be similar to the following:
 ---
 title: Order example
 config:
-    layout: dagre
+    layout: elk.stress
 ---
 erDiagram
     CUSTOMER ||--o{ ORDER : places

@@ -47,17 +47,17 @@ describe('swimlanesDiagram', () => {
   });
 
   it('keeps an explicit global layout override', async () => {
-    mermaidAPI.initialize({ layout: 'dagre' });
-    expect(await layoutFor(SWIMLANE)).toBe('dagre');
+    mermaidAPI.initialize({ layout: 'elk' });
+    expect(await layoutFor(SWIMLANE)).toBe('elk');
   });
 
   it('keeps a diagram-scoped layout override', async () => {
     // `init` used to override this too, so swimlanes could not be moved off the engine.
-    mermaidAPI.initialize({ swimlane: { layout: 'dagre' } });
-    expect(await layoutFor(SWIMLANE)).toBe('dagre');
+    mermaidAPI.initialize({ swimlane: { layout: 'elk' } });
+    expect(await layoutFor(SWIMLANE)).toBe('elk');
   });
 
   it('keeps a layout set in the diagram frontmatter', async () => {
-    expect(await layoutFor(`---\nconfig:\n  layout: dagre\n---\n${SWIMLANE}`)).toBe('dagre');
+    expect(await layoutFor(`---\nconfig:\n  layout: elk\n---\n${SWIMLANE}`)).toBe('elk');
   });
 });

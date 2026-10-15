@@ -23,7 +23,6 @@ const mocks = vi.hoisted(() => {
     calcTerminalLabelPosition: vi.fn(),
     clearClusters: vi.fn(() => callOrder.push('clearClusters')),
     clearEdges: vi.fn(() => callOrder.push('clearEdges')),
-    clearGraphlib: vi.fn(() => callOrder.push('clearGraphlib')),
     clearNodes: vi.fn(() => callOrder.push('clearNodes')),
     createGraphWithElements: vi.fn(),
     getConfig: vi.fn(),
@@ -107,10 +106,6 @@ vi.mock('../../rendering-elements/nodes.js', () => ({
   positionNode: mocks.positionNode,
 }));
 
-vi.mock('../dagre/mermaid-graphlib.js', () => ({
-  clear: mocks.clearGraphlib,
-}));
-
 function node(id: string, extra: Partial<Node> = {}): Node {
   return {
     id,
@@ -174,7 +169,6 @@ beforeEach(() => {
     mocks.calcTerminalLabelPosition,
     mocks.clearClusters,
     mocks.clearEdges,
-    mocks.clearGraphlib,
     mocks.clearNodes,
     mocks.createGraphWithElements,
     mocks.getConfig,
@@ -269,7 +263,6 @@ describe('createCommonLayoutRenderer', () => {
       'clearNodes',
       'clearEdges',
       'clearClusters',
-      'clearGraphlib',
       'prepare',
       'measure',
       'core',

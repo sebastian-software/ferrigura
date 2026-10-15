@@ -653,7 +653,7 @@ export const insertEdge = function (
 
   // Edge endpoint clipping. The swimlanes layout produces orthogonal edges whose
   // axis-aligned entry/exit segments must be preserved, so it uses a dedicated
-  // boundary-clipping path. Every other layout (dagre, ELK, …) keeps the original
+  // boundary-clipping path. Every other layout (ELK, cose-bilkent, …) keeps the original
   // clipping below, so their edge ports are unaffected by swimlanes.
   if (layout === 'swimlane') {
     if (
@@ -697,7 +697,7 @@ export const insertEdge = function (
     }
     points = orthogonalizeToLabelClippedPoints(edge, points);
   } else if (head.intersect && tail.intersect && !skipIntersect) {
-    // Original clipping — unchanged for dagre / ELK / every non-swimlanes layout.
+    // Original clipping — unchanged for ELK and every other non-swimlanes layout.
     points = points.slice(1, edge.points.length - 1);
     points.unshift(tail.intersect(points[0]));
     points.push(head.intersect(points[points.length - 1]));

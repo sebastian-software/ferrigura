@@ -179,7 +179,10 @@ In addition to customizing the look of your diagrams, Mermaid allows you to choo
 #### Supported Layout Algorithms:
 
 - ELK (default): The ELK (Eclipse Layout Kernel) layout offers more sophisticated layout capabilities, especially for large or intricate diagrams, producing a more optimized arrangement with fewer overlaps. It is bundled with Mermaid and needs no setup.
-- Dagre: The classic layout algorithm used by Mermaid for a long time. It provides a good balance of simplicity and visual clarity, and remains available with `layout: dagre`.
+- cose-bilkent: A force-directed layout, the default for mindmaps.
+- ELK algorithm variants: `elk.stress`, `elk.force`, `elk.mrtree`, `elk.sporeOverlap`, `elk.box` and `elk.rectpacking` select other ELK algorithms.
+
+The classic Dagre layout has been removed from this fork; `layout: dagre` falls back to ELK with a warning.
 
 #### How to Select a Layout Algorithm:
 
@@ -250,14 +253,13 @@ flowchart LR
 
 ```
 
-#### Using Dagre Layout with Classic Look:
+#### Using the Classic Look:
 
 Another example:
 
 ```
 ---
 config:
-  layout: dagre
   look: classic
   theme: default
 ---

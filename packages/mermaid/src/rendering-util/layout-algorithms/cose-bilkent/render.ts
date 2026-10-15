@@ -16,7 +16,7 @@ interface NodeWithPosition extends Node {
 /**
  * Render function for cose-bilkent layout algorithm
  *
- * This follows the same pattern as ELK and dagre renderers:
+ * This follows the same pattern as the ELK renderer:
  * 1. Insert nodes into DOM to get their actual dimensions
  * 2. Run the layout algorithm to calculate positions
  * 3. Position the nodes and edges based on layout results
