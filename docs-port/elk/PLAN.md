@@ -305,3 +305,11 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 2. Edge import, then the orthogonal router with edges (`p5edges`), the processors that edges need, and network simplex for connected graphs.
 3. `doLayout` with `ComponentsProcessor`, for containers with `SEPARATE_CHILDREN`.
 4. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
+
+### Edge pipeline: state and order (work in progress)
+
+The simplest corpus case with edges, `requirement__a-simple-requirement-diagram-elk-layout__0` (two nodes, one edge with a centred label), needs the 26 processors that its elkjs trace lists, in order: transformation to the input direction, edge and layer constraint reversal, depth-first cycle removal, label dummy insertions, layer constraint pre-processing, network simplex layering, layer constraint post-processing, edge splitting, port side processing, port order processing, sort by input model (with ports), minimize crossings, layer constraint edge reversal, node and port label placement and node sizing, node margin calculation, label dummy switching, label side selection, Brandes & Koepf, layer size calculation, orthogonal edge routing, edge joining, label dummy removal, sort end labels, restoring reversed edges, the resizer, and the transformation back.
+
+Done on this branch: edges between nodes with their labels are imported (ports created per edge, as `transformEdge` does); depth-first cycle removal with `LEdge.reverse`; label dummy insertion with the split (`dummies.rs`). The configurator still rejects graphs with edges, so the corpus coverage stays at 22 until the pipeline is complete.
+
+Remaining, in dependency order: network simplex and its layerer (a sub-agent was porting `alg.common/networksimplex`); the direction transform for ports and edge label side selection; port side and port order processing; long edge splitting and joining; the layer sweep and the barycenter with ports, the crossing counter and the port distributors; the label dummy switcher, label side selection and removal; node margins and port placement; Brandes & Koepf with edges; orthogonal routing with hyperedge segments; edge sections and label positions in the transfer.
