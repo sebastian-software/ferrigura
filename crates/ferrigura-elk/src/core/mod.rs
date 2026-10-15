@@ -3,4 +3,5 @@
 pub mod alg;
 pub mod data;
 pub mod math;
+pub mod recursive;
 pub mod util;

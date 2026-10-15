@@ -1,0 +1,191 @@
+//! The five phases and their implementations, `LayeredPhases` and the strategy
+//! enums that create them (`CycleBreakingStrategy`, `LayeringStrategy`, and so on).
+//!
+//! Each implementation names its processor configuration: the processors it
+//! adds before or after phases. Those tables are the static
+//! `*_PROCESSING_CONFIGURATION` constants of the Java classes.
+
+use crate::core::alg::LayoutProcessorConfiguration;
+use crate::core::data::JavaEnum;
+use crate::core::data::enums::{
+    CrossingMinimizationStrategy, CycleBreakingStrategy, EdgeRouting, GraphProperties,
+    IntermediateProcessorStrategy as S, LayeringStrategy, NodePlacementStrategy,
+};
+use crate::core::util::progress::{Monitor, ProgressMonitor};
+use crate::layered::LayoutError;
+use crate::layered::lgraph::LGraph;
+
+/// Phase index of `LayeredPhases.P1_CYCLE_BREAKING` and the others, by ordinal.
+pub const P1: usize = 0;
+pub const P2: usize = 1;
+pub const P3: usize = 2;
+pub const P4: usize = 3;
+pub const P5: usize = 4;
+pub const PHASES: usize = 5;
+
+/// The configuration type all phases add to.
+pub type Config = LayoutProcessorConfiguration<S>;
+
+/// One phase implementation, chosen from the strategy options.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhaseStep {
+    CycleBreaking(CycleBreakingStrategy),
+    Layering(LayeringStrategy),
+    CrossingMinimization(CrossingMinimizationStrategy),
+    NodePlacement(NodePlacementStrategy),
+    EdgeRouting(EdgeRouting),
+}
+
+impl PhaseStep {
+    /// The task name the phase logs, where its `begin` call has a fixed string.
+    pub fn task_name(self, _graph: &LGraph) -> Result<String, LayoutError> {
+        let name = match self {
+            PhaseStep::CycleBreaking(CycleBreakingStrategy::DEPTH_FIRST) => {
+                "Depth-first cycle removal"
+            }
+            PhaseStep::CycleBreaking(CycleBreakingStrategy::GREEDY) => "Greedy cycle removal",
+            PhaseStep::CycleBreaking(CycleBreakingStrategy::MODEL_ORDER) => {
+                "Model order cycle breaking"
+            }
+            PhaseStep::CycleBreaking(CycleBreakingStrategy::INTERACTIVE) => {
+                "Interactive cycle breaking"
+            }
+            PhaseStep::Layering(LayeringStrategy::NETWORK_SIMPLEX) => "Network simplex layering",
+            PhaseStep::Layering(LayeringStrategy::LONGEST_PATH) => "Longest path layering",
+            PhaseStep::Layering(LayeringStrategy::LONGEST_PATH_SOURCE) => {
+                "Longest path to source layering"
+            }
+            PhaseStep::Layering(LayeringStrategy::COFFMAN_GRAHAM) => "Coffman-Graham Layering",
+            PhaseStep::Layering(LayeringStrategy::MIN_WIDTH) => "MinWidth layering",
+            PhaseStep::Layering(LayeringStrategy::STRETCH_WIDTH) => "StretchWidth layering",
+            PhaseStep::Layering(LayeringStrategy::INTERACTIVE) => "Interactive node layering",
+            PhaseStep::CrossingMinimization(CrossingMinimizationStrategy::LAYER_SWEEP) => {
+                return Ok(format!("Minimize Crossings {}", CROSS_MIN_TYPE));
+            }
+            PhaseStep::CrossingMinimization(other) => {
+                return Err(LayoutError::Unsupported(format!(
+                    "crossing minimization {} is not ported yet",
+                    other.java_name()
+                )));
+            }
+            PhaseStep::NodePlacement(NodePlacementStrategy::BRANDES_KOEPF) => {
+                "Brandes & Koepf node placement"
+            }
+            PhaseStep::NodePlacement(other) => {
+                return Err(LayoutError::Unsupported(format!(
+                    "node placement {} is not ported yet",
+                    other.java_name()
+                )));
+            }
+            PhaseStep::EdgeRouting(EdgeRouting::ORTHOGONAL | EdgeRouting::UNDEFINED) => {
+                "Orthogonal edge routing"
+            }
+            other => {
+                return Err(LayoutError::Unsupported(format!(
+                    "phase {other:?} is not ported yet"
+                )));
+            }
+        };
+        Ok(name.to_string())
+    }
+
+    /// Runs the phase's task under `monitor`. Only the nodes-only behaviour exists so far.
+    pub fn run(
+        self,
+        graph: &mut LGraph,
+        progress: &mut ProgressMonitor,
+        monitor: Monitor,
+    ) -> Result<(), LayoutError> {
+        let name = self.task_name(graph)?;
+        progress.begin(monitor, &name, 1.0);
+        if self == PhaseStep::Layering(LayeringStrategy::NETWORK_SIMPLEX) {
+            network_simplex_layering(graph, progress, monitor)?;
+        }
+        progress.done(monitor);
+        Ok(())
+    }
+
+    /// The processors this phase adds, `getLayoutProcessorConfiguration(graph)`.
+    pub fn configuration(self, graph: &LGraph) -> Result<Option<Config>, LayoutError> {
+        let mut config = Config::new(PHASES);
+        match self {
+            PhaseStep::CycleBreaking(CycleBreakingStrategy::INTERACTIVE) => {
+                config
+                    .add_before(P1, S::INTERACTIVE_EXTERNAL_PORT_POSITIONER)
+                    .add_after(P5, S::REVERSED_EDGE_RESTORER);
+            }
+            PhaseStep::CycleBreaking(_) => {
+                config.add_after(P5, S::REVERSED_EDGE_RESTORER);
+            }
+            PhaseStep::Layering(LayeringStrategy::INTERACTIVE) => {
+                config
+                    .add_before(P1, S::INTERACTIVE_EXTERNAL_PORT_POSITIONER)
+                    .add_before(P2, S::LAYER_CONSTRAINT_PREPROCESSOR)
+                    .add_before(P3, S::LAYER_CONSTRAINT_POSTPROCESSOR);
+            }
+            PhaseStep::Layering(_) => {
+                config
+                    .add_before(P1, S::EDGE_AND_LAYER_CONSTRAINT_EDGE_REVERSER)
+                    .add_before(P2, S::LAYER_CONSTRAINT_PREPROCESSOR)
+                    .add_before(P3, S::LAYER_CONSTRAINT_POSTPROCESSOR);
+            }
+            PhaseStep::CrossingMinimization(_) => {
+                config
+                    .add_before(P3, S::LONG_EDGE_SPLITTER)
+                    .add_before(P3, S::PORT_LIST_SORTER)
+                    .add_before(P4, S::IN_LAYER_CONSTRAINT_PROCESSOR)
+                    .add_after(P5, S::LONG_EDGE_JOINER);
+            }
+            PhaseStep::NodePlacement(_) => {
+                // Hierarchical ports add one processor, only for graphs with external ports.
+                if graph
+                    .graph_properties
+                    .contains(&GraphProperties::EXTERNAL_PORTS)
+                {
+                    return Err(LayoutError::Unsupported(
+                        "graphs with external ports are not ported yet".to_string(),
+                    ));
+                }
+                return Ok(None);
+            }
+            PhaseStep::EdgeRouting(_) => {
+                // The router adds processors for hyperedges, self loops, labels and ports.
+                // Graphs with any of those are not ported yet; see `GraphConfigurator`.
+                return Ok(None);
+            }
+        }
+        Ok(Some(config))
+    }
+}
+
+/// `crossMinType` of `LayerSweepCrossingMinimizer` for graphs without hierarchical
+/// ports; the other heuristics need options Mermaid never sets.
+const CROSS_MIN_TYPE: &str = "BARYCENTER";
+
+/// `NetworkSimplexLayerer.process` for the nodes-only path: every node is its own
+/// connected component, so each one gets a subtask and sits in layer 0.
+fn network_simplex_layering(
+    graph: &mut LGraph,
+    progress: &mut ProgressMonitor,
+    monitor: Monitor,
+) -> Result<(), LayoutError> {
+    if graph.layerless_nodes.is_empty() {
+        return Ok(());
+    }
+    for &node in &graph.layerless_nodes.clone() {
+        let Some(sub) = progress.sub_task(monitor, 1.0) else {
+            return Err(LayoutError::Unsupported(
+                "subtask of a finished monitor".to_string(),
+            ));
+        };
+        progress.begin(sub, "Network simplex", 1.0);
+        progress.done(sub);
+        graph.nodes[node].layer = Some(0);
+    }
+    if graph.layers.is_empty() {
+        graph.layers.push(Vec::new());
+    }
+    graph.layers[0] = graph.layerless_nodes.clone();
+    graph.layerless_nodes.clear();
+    Ok(())
+}

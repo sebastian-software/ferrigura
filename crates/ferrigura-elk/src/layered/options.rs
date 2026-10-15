@@ -1,0 +1,79 @@
+//! Option ids that the layered algorithm reads, `LayeredOptions` in the Java sources.
+//!
+//! Every id here is checked against the generated registry by a test, so a
+//! misspelt id fails the build instead of reading a default.
+
+pub const CYCLE_BREAKING_STRATEGY: &str = "org.eclipse.elk.layered.cycleBreaking.strategy";
+pub const LAYERING_STRATEGY: &str = "org.eclipse.elk.layered.layering.strategy";
+pub const CROSSING_MINIMIZATION_STRATEGY: &str =
+    "org.eclipse.elk.layered.crossingMinimization.strategy";
+pub const CROSSING_MINIMIZATION_GREEDY_SWITCH_TYPE: &str =
+    "org.eclipse.elk.layered.crossingMinimization.greedySwitch.type";
+pub const CROSSING_MINIMIZATION_GREEDY_SWITCH_ACTIVATION_THRESHOLD: &str =
+    "org.eclipse.elk.layered.crossingMinimization.greedySwitch.activationThreshold";
+pub const CROSSING_MINIMIZATION_GREEDY_SWITCH_HIERARCHICAL_TYPE: &str =
+    "org.eclipse.elk.layered.crossingMinimization.greedySwitchHierarchical.type";
+pub const CROSSING_MINIMIZATION_SEMI_INTERACTIVE: &str =
+    "org.eclipse.elk.layered.crossingMinimization.semiInteractive";
+pub const NODE_PLACEMENT_STRATEGY: &str = "org.eclipse.elk.layered.nodePlacement.strategy";
+pub const NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES: &str =
+    "org.eclipse.elk.layered.nodePlacement.favorStraightEdges";
+pub const EDGE_ROUTING: &str = "org.eclipse.elk.edgeRouting";
+pub const FEEDBACK_EDGES: &str = "org.eclipse.elk.layered.feedbackEdges";
+pub const CONSIDER_MODEL_ORDER_STRATEGY: &str =
+    "org.eclipse.elk.layered.considerModelOrder.strategy";
+pub const NODE_PROMOTION_STRATEGY: &str = "org.eclipse.elk.layered.nodePromotion.strategy";
+pub const POST_COMPACTION_STRATEGY: &str =
+    "org.eclipse.elk.layered.compaction.postCompaction.strategy";
+pub const WRAPPING_STRATEGY: &str = "org.eclipse.elk.layered.wrapping.strategy";
+pub const HIGH_DEGREE_NODES_TREATMENT: &str = "org.eclipse.elk.layered.highDegreeNodes.treatment";
+pub const INTERACTIVE: &str = "org.eclipse.elk.interactive";
+pub const GENERATE_POSITION_AND_LAYER_IDS: &str =
+    "org.eclipse.elk.layered.generatePositionAndLayerIds";
+pub const HIERARCHY_HANDLING: &str = "org.eclipse.elk.hierarchyHandling";
+pub const DIRECTION: &str = "org.eclipse.elk.direction";
+pub const RANDOM_SEED: &str = "org.eclipse.elk.randomSeed";
+pub const THOROUGHNESS: &str = "org.eclipse.elk.layered.thoroughness";
+pub const SEPARATE_CONNECTED_COMPONENTS: &str = "org.eclipse.elk.separateConnectedComponents";
+pub const ALGORITHM: &str = "org.eclipse.elk.algorithm";
+pub const FORCE_NODE_MODEL_ORDER: &str =
+    "org.eclipse.elk.layered.crossingMinimization.forceNodeModelOrder";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::data::option_by_id;
+
+    #[test]
+    fn every_id_is_registered() {
+        for id in [
+            CYCLE_BREAKING_STRATEGY,
+            LAYERING_STRATEGY,
+            CROSSING_MINIMIZATION_STRATEGY,
+            CROSSING_MINIMIZATION_GREEDY_SWITCH_TYPE,
+            CROSSING_MINIMIZATION_GREEDY_SWITCH_ACTIVATION_THRESHOLD,
+            CROSSING_MINIMIZATION_GREEDY_SWITCH_HIERARCHICAL_TYPE,
+            CROSSING_MINIMIZATION_SEMI_INTERACTIVE,
+            NODE_PLACEMENT_STRATEGY,
+            NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES,
+            EDGE_ROUTING,
+            FEEDBACK_EDGES,
+            CONSIDER_MODEL_ORDER_STRATEGY,
+            NODE_PROMOTION_STRATEGY,
+            POST_COMPACTION_STRATEGY,
+            WRAPPING_STRATEGY,
+            HIGH_DEGREE_NODES_TREATMENT,
+            INTERACTIVE,
+            GENERATE_POSITION_AND_LAYER_IDS,
+            HIERARCHY_HANDLING,
+            DIRECTION,
+            RANDOM_SEED,
+            THOROUGHNESS,
+            SEPARATE_CONNECTED_COMPONENTS,
+            ALGORITHM,
+            FORCE_NODE_MODEL_ORDER,
+        ] {
+            assert!(option_by_id(id).is_some(), "{id} is not registered");
+        }
+    }
+}

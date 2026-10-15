@@ -9,39 +9,18 @@
 //! for their type, as `setOption` does. A key whose type is not ported yet is an
 //! error, so an option is never dropped silently.
 
-use std::fmt;
-
 use crate::core::data::property::PropertyHolder;
 use crate::core::data::{option_by_suffix, parse_value};
+use crate::error::LayoutError;
 use crate::graph::{ElkLabel, ElkNode, ElkPort, Shape};
 use crate::json::{JsonLabel, JsonNode, JsonPort, option_pairs_of};
 
-/// Why a graph cannot be imported.
-#[derive(Debug, Clone, PartialEq)]
-pub enum ImportError {
-    /// The JSON is malformed for elkjs too (for example an unsupported value).
-    Format(String),
-    /// The graph uses something this port does not implement yet.
-    Unsupported(String),
-}
-
-impl fmt::Display for ImportError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ImportError::Format(message) => write!(f, "{message}"),
-            ImportError::Unsupported(message) => write!(f, "not supported yet: {message}"),
-        }
-    }
-}
-
-impl std::error::Error for ImportError {}
-
 /// `transformNode` for the root, with no parent.
-pub fn import_graph(root: &JsonNode) -> Result<ElkNode, ImportError> {
+pub fn import_graph(root: &JsonNode) -> Result<ElkNode, LayoutError> {
     transform_node(root)
 }
 
-fn transform_node(json: &JsonNode) -> Result<ElkNode, ImportError> {
+fn transform_node(json: &JsonNode) -> Result<ElkNode, LayoutError> {
     let mut node = ElkNode {
         id: json.id.clone(),
         ..ElkNode::default()
@@ -52,7 +31,7 @@ fn transform_node(json: &JsonNode) -> Result<ElkNode, ImportError> {
         &mut node.properties,
     )?;
     if json.individual_spacings.is_some() {
-        return Err(ImportError::Unsupported(
+        return Err(LayoutError::Unsupported(
             "individualSpacings (no Mermaid graph uses them)".to_string(),
         ));
     }
@@ -65,7 +44,7 @@ fn transform_node(json: &JsonNode) -> Result<ElkNode, ImportError> {
         node.children.push(transform_node(child)?);
     }
     if !json.edges.is_empty() {
-        return Err(ImportError::Unsupported(format!(
+        return Err(LayoutError::Unsupported(format!(
             "edges in graph {} (edge import is the next step)",
             json.id
         )));
@@ -78,9 +57,9 @@ fn transform_properties(
     layout_options: Option<&crate::json::LayoutOptions>,
     properties: Option<&crate::json::LayoutOptions>,
     holder: &mut PropertyHolder,
-) -> Result<(), ImportError> {
+) -> Result<(), LayoutError> {
     let pairs = option_pairs_of(layout_options, properties)
-        .map_err(|error| ImportError::Format(error.message().to_string()))?;
+        .map_err(|error| LayoutError::Format(error.message().to_string()))?;
     for (key, text) in pairs {
         set_option(holder, &key, &text)?;
     }
@@ -88,7 +67,7 @@ fn transform_properties(
 }
 
 /// `setOption`: suffix lookup, then parse; unknown keys and unparsable text are ignored.
-fn set_option(holder: &mut PropertyHolder, key: &str, text: &str) -> Result<(), ImportError> {
+fn set_option(holder: &mut PropertyHolder, key: &str, text: &str) -> Result<(), LayoutError> {
     let Some(spec) = option_by_suffix(key) else {
         return Ok(());
     };
@@ -98,7 +77,7 @@ fn set_option(holder: &mut PropertyHolder, key: &str, text: &str) -> Result<(), 
             Ok(())
         }
         Ok(None) => Ok(()),
-        Err(unsupported) => Err(ImportError::Unsupported(format!(
+        Err(unsupported) => Err(LayoutError::Unsupported(format!(
             "option {} of type {}",
             unsupported.id, unsupported.melk_type
         ))),
@@ -119,7 +98,7 @@ fn shape_layout(x: Option<f64>, y: Option<f64>, width: Option<f64>, height: Opti
     }
 }
 
-fn transform_port(json: &JsonPort) -> Result<ElkPort, ImportError> {
+fn transform_port(json: &JsonPort) -> Result<ElkPort, LayoutError> {
     let mut port = ElkPort {
         id: json.id.clone(),
         shape: shape_layout(json.x, json.y, json.width, json.height),
@@ -135,11 +114,11 @@ fn transform_port(json: &JsonPort) -> Result<ElkPort, ImportError> {
 }
 
 /// `transformLabels`: each label takes its text, options and shape.
-fn transform_labels(labels: &[JsonLabel]) -> Result<Vec<ElkLabel>, ImportError> {
+fn transform_labels(labels: &[JsonLabel]) -> Result<Vec<ElkLabel>, LayoutError> {
     labels.iter().map(transform_label).collect()
 }
 
-fn transform_label(json: &JsonLabel) -> Result<ElkLabel, ImportError> {
+fn transform_label(json: &JsonLabel) -> Result<ElkLabel, LayoutError> {
     let mut label = ElkLabel {
         id: json.id.clone(),
         text: json.text.clone(),
@@ -200,7 +179,7 @@ mod tests {
         }));
         assert!(matches!(
             import_graph(&root),
-            Err(ImportError::Unsupported(_))
+            Err(LayoutError::Unsupported(_))
         ));
     }
 }

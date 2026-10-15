@@ -10,6 +10,38 @@
 //! Public License 2.0 notice of the original sources; see `LICENSE` and `NOTICE.md`.
 
 pub mod core;
+pub mod error;
 pub mod graph;
 pub mod java;
 pub mod json;
+pub mod layered;
+
+pub use error::LayoutError;
+
+/// The output of a layout run: the input graph with coordinates, and the processor trace.
+#[derive(Debug, Clone)]
+pub struct Layout {
+    /// The graph as elkjs returns it: the input with `x`, `y`, `width` and `height` set.
+    pub graph: json::JsonNode,
+    /// The logging tree, present when `logging` was requested.
+    pub trace: core::util::progress::TraceNode,
+}
+
+/// Lays out an elkjs JSON graph the way `elk.layout(graph, { logging })` does.
+pub fn layout(graph: &json::JsonNode, logging: bool) -> Result<Layout, LayoutError> {
+    let mut elk = graph::json_import::import_graph(graph)?;
+    let (mut progress, root) = core::util::progress::ProgressMonitor::new(logging);
+    core::recursive::layout(&elk, &mut progress, root)?;
+    let trace = progress.trace(root);
+    let mut output = graph.clone();
+    for (json, node) in output.children.iter_mut().zip(elk.children.iter_mut()) {
+        json.x = Some(node.shape.x);
+        json.y = Some(node.shape.y);
+        json.width = Some(node.shape.width);
+        json.height = Some(node.shape.height);
+    }
+    Ok(Layout {
+        graph: output,
+        trace,
+    })
+}
