@@ -28,5 +28,6 @@ pub mod p4nodes;
 pub mod p5edges;
 pub mod phases;
 pub mod ports;
+pub mod preserveorder;
 pub mod spacings;
 pub mod transfer;

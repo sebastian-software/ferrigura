@@ -363,8 +363,9 @@ fn transposed(spacing: Spacing) -> Spacing {
     }
 }
 
-/// `SortByInputModelProcessor.process` for graphs without ports: each layer is sorted by
-/// the nodes' model order, and the logs name the port lists and the layer.
+/// `SortByInputModelProcessor.process`: the ports of each node that the input order does not fix
+/// are sorted by their edges, and each layer's nodes by their model order. The logs name the port
+/// lists and the layers.
 fn sort_by_input_model(
     graph: &mut LGraph,
     progress: &mut ProgressMonitor,
@@ -372,13 +373,20 @@ fn sort_by_input_model(
 ) -> Result<(), LayoutError> {
     let strategy = graph
         .properties
-        .enum_of::<OrderingStrategy>(options::CONSIDER_MODEL_ORDER_STRATEGY);
-    if strategy == Some(OrderingStrategy::PREFER_EDGES) {
-        return Err(LayoutError::Unsupported(
-            "considerModelOrder PREFER_EDGES (the edge-based comparator)".to_string(),
-        ));
-    }
+        .enum_of::<OrderingStrategy>(options::CONSIDER_MODEL_ORDER_STRATEGY)
+        .unwrap_or(OrderingStrategy::NONE);
+    let port_model_order = graph
+        .properties
+        .bool_of(options::CONSIDER_MODEL_ORDER_PORT_MODEL_ORDER);
+    let long_edge_strategy = graph
+        .properties
+        .enum_of::<crate::core::data::enums::LongEdgeOrderingStrategy>(
+            options::CONSIDER_MODEL_ORDER_LONG_EDGE_STRATEGY,
+        )
+        .unwrap_or(crate::core::data::enums::LongEdgeOrderingStrategy::DUMMY_NODE_OVER);
     for layer_index in 0..graph.layers.len() {
+        // The first layer is its own previous layer, as in the Java.
+        let previous_layer = graph.layers[layer_index.saturating_sub(1)].clone();
         for node in graph.layers[layer_index].clone() {
             let constraints = graph.nodes[node]
                 .properties
@@ -387,48 +395,46 @@ fn sort_by_input_model(
             if constraints != PortConstraints::FIXED_ORDER
                 && constraints != PortConstraints::FIXED_POS
             {
-                // `Collections.sort` of one port calls no comparison; more need ModelOrderPortComparator.
-                if graph.nodes[node].ports.len() > 1 {
-                    return Err(LayoutError::Unsupported(
-                        "sorting several ports by model order (ModelOrderPortComparator)"
-                            .to_string(),
-                    ));
+                let targets =
+                    crate::layered::preserveorder::long_edge_target_node_preprocessing(graph, node);
+                let mut comparator = crate::layered::preserveorder::ModelOrderPortComparator::new(
+                    previous_layer.clone(),
+                    strategy,
+                    targets,
+                    port_model_order,
+                );
+                let mut ports = graph.nodes[node].ports.clone();
+                {
+                    let view: &LGraph = &*graph;
+                    crate::java::sort::sort_by(&mut ports, |&a, &b| comparator.compare(view, a, b));
                 }
-                let ports: Vec<String> = graph.nodes[node]
+                graph.nodes[node].ports = ports;
+                let names: Vec<String> = graph.nodes[node]
                     .ports
-                    .clone()
-                    .into_iter()
-                    .map(|port| port_name(graph, port))
+                    .iter()
+                    .map(|&port| port_name(graph, port))
                     .collect();
                 progress.log(
                     monitor,
                     format!(
                         "Node {} ports: [{}]",
                         graph.node_name(node),
-                        ports.join(", ")
+                        names.join(", ")
                     ),
                 );
             }
         }
-        let members = graph.layers[layer_index].clone();
-        if members.len() > 1 {
-            // The node comparator is the plain model order when every node has one; otherwise
-            // it works from the edges, which is not ported yet.
-            let mut orders = Vec::with_capacity(members.len());
-            for &node in &members {
-                let Some(order) = graph.nodes[node].model_order else {
-                    return Err(LayoutError::Unsupported(
-                        "sorting nodes without a model order (ModelOrderNodeComparator)"
-                            .to_string(),
-                    ));
-                };
-                orders.push(order);
-            }
-            let mut ranked: Vec<(usize, usize)> = members.into_iter().zip(orders).collect();
-            // Collections.sort: the GWT merge sort, so the comparator is observed in the same order.
-            crate::java::sort::sort_by(&mut ranked, |a, b| a.1.cmp(&b.1));
-            graph.layers[layer_index] = ranked.into_iter().map(|(node, _)| node).collect();
+        let mut comparator = crate::layered::preserveorder::ModelOrderNodeComparator::new(
+            previous_layer,
+            strategy,
+            long_edge_strategy,
+        );
+        let mut members = graph.layers[layer_index].clone();
+        {
+            let view: &LGraph = &*graph;
+            crate::java::sort::sort_by(&mut members, |&a, &b| comparator.compare(view, a, b));
         }
+        graph.layers[layer_index] = members;
         let names: Vec<String> = graph.layers[layer_index]
             .iter()
             .map(|&node| graph.node_name(node))
