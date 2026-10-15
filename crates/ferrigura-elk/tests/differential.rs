@@ -111,6 +111,24 @@ fn edge_routes(value: &Value) -> Vec<Vec<f64>> {
         .collect()
 }
 
+/// Each edge label's box as `[x, y, width, height]`, in the order of the edges and their labels.
+fn label_boxes(value: &Value) -> Vec<[f64; 4]> {
+    value["edges"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .flat_map(|edge| edge["labels"].as_array().into_iter().flatten())
+        .map(|label| {
+            [
+                label["x"].as_f64().unwrap_or(0.0),
+                label["y"].as_f64().unwrap_or(0.0),
+                label["width"].as_f64().unwrap_or(0.0),
+                label["height"].as_f64().unwrap_or(0.0),
+            ]
+        })
+        .collect()
+}
+
 /// The largest difference between the port's node boxes and elkjs's, and between the root sizes.
 /// Errors when the nodes differ in number or order: that is not a difference in coordinates.
 fn largest_difference(ours: &JsonNode, theirs: &Value) -> Result<f64, String> {
@@ -149,6 +167,19 @@ fn largest_difference(ours: &JsonNode, theirs: &Value) -> Result<f64, String> {
         }
         for (a, b) in ours_route.iter().zip(theirs_route) {
             worst = worst.max((a - b).abs());
+        }
+    }
+    let (ours_labels, theirs_labels) = (label_boxes(&ours_value), label_boxes(theirs));
+    if ours_labels.len() != theirs_labels.len() {
+        return Err(format!(
+            "{} labels, elkjs has {}",
+            ours_labels.len(),
+            theirs_labels.len()
+        ));
+    }
+    for (a, b) in ours_labels.iter().zip(&theirs_labels) {
+        for (x, y) in a.iter().zip(b) {
+            worst = worst.max((x - y).abs());
         }
     }
     let size = |value: &Value| {
