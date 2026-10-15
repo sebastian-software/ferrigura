@@ -42,6 +42,24 @@ def strip_comments(text):
     return re.sub(r"//[^\n]*", "", text)
 
 
+def strip_comments_java(text):
+    """Remove Java block and line comments and string literals' contents are kept as-is."""
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    return re.sub(r"(?<!:)//[^\n]*", "", text)
+
+
+def OPTIONS_SOURCE_ENUMS(elk_root):
+    """Enum names referenced by option kinds in the registry the generator builds."""
+    kinds = java_types(elk_root)
+    names = set()
+    for relative in MELK_FILES:
+        for _, type_text, _ in parse_melk(os.path.join(elk_root, relative)):
+            kind, arg = classify(type_text, kinds)
+            if kind in ("Enum", "EnumSet"):
+                names.add(arg)
+    return sorted(names)
+
+
 def parse_melk(path):
     """Yield (id, type_text, default_text, file_name) for each option in one melk file."""
     with open(path, encoding="utf-8") as handle:

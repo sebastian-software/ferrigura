@@ -8,9 +8,21 @@
 
 use crate::core::math::{KVector, Spacing};
 
+pub mod enums;
+pub mod property;
 pub mod registry;
 
+pub use enums::canonical_constant;
+
 pub use registry::OPTIONS;
+
+/// A Java enum as the port uses it: read by constant name or ordinal, and named back.
+pub trait JavaEnum: Copy + Sized {
+    /// `Enum.valueOf`, falling back to an ordinal index as `enumForString` does.
+    fn from_java_text(text: &str) -> Option<Self>;
+    /// The Java constant name.
+    fn java_name(self) -> &'static str;
+}
 
 /// The Java type behind an option, as far as parsing needs it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -130,14 +142,25 @@ pub fn parse_value(spec: &OptionSpec, text: &str) -> Result<Option<OptionValue>,
         OptionKind::Int => text.parse::<i32>().ok().map(OptionValue::Int),
         OptionKind::Double => crate::core::math::parse_java_double(text).map(OptionValue::Double),
         OptionKind::String => Some(OptionValue::String(text.to_string())),
-        OptionKind::Enum(class) => Some(OptionValue::Enum {
-            class,
-            name: text.to_string(),
-        }),
-        OptionKind::EnumSet(class) => Some(OptionValue::EnumSet {
-            class,
-            names: enum_set_names(text),
-        }),
+        OptionKind::Enum(class) => match canonical_constant(class, text) {
+            None => return Err(UnsupportedKind::new(spec)),
+            Some(None) => None,
+            Some(Some(name)) => Some(OptionValue::Enum {
+                class,
+                name: name.to_string(),
+            }),
+        },
+        OptionKind::EnumSet(class) => {
+            let mut names = Vec::new();
+            for name in enum_set_names(text) {
+                match canonical_constant(class, &name) {
+                    None => return Err(UnsupportedKind::new(spec)),
+                    Some(None) => return Ok(None),
+                    Some(Some(canonical)) => names.push(canonical.to_string()),
+                }
+            }
+            Some(OptionValue::EnumSet { class, names })
+        }
         OptionKind::Algorithm => Some(OptionValue::Algorithm(text.to_string())),
         OptionKind::Object("ElkMargin") => match Spacing::parse(text) {
             Ok(spacing) => Some(OptionValue::Margin(spacing)),
@@ -163,6 +186,48 @@ pub fn parse_value(spec: &OptionSpec, text: &str) -> Result<Option<OptionValue>,
 pub struct UnsupportedKind {
     pub id: &'static str,
     pub melk_type: &'static str,
+}
+
+impl UnsupportedKind {
+    fn new(spec: &OptionSpec) -> Self {
+        UnsupportedKind {
+            id: spec.id,
+            melk_type: spec.melk_type,
+        }
+    }
+}
+
+/// The default of an option as the melk file gives it, when it is a literal this
+/// port reads: booleans, numbers, `Integer.MAX_VALUE` and enum constants.
+///
+/// Expressions such as `new ElkPadding(12)` or `EnumSet.of(...)` return `None`:
+/// their defaults are set by the typed reader, not read from the text.
+pub fn melk_default_value(spec: &OptionSpec) -> Option<OptionValue> {
+    let text = spec.melk_default?;
+    match text {
+        "true" => return Some(OptionValue::Boolean(true)),
+        "false" => return Some(OptionValue::Boolean(false)),
+        "Integer.MAX_VALUE" => return Some(OptionValue::Int(i32::MAX)),
+        _ => {}
+    }
+    if let Ok(number) = text.parse::<i32>() {
+        return Some(OptionValue::Int(number));
+    }
+    if text.contains('.')
+        && let Some(number) = crate::core::math::parse_java_double(text)
+    {
+        return Some(OptionValue::Double(number));
+    }
+    if let OptionKind::Enum(class) = spec.kind {
+        let constant = text.rsplit('.').next()?;
+        if let Some(Some(name)) = canonical_constant(class, constant) {
+            return Some(OptionValue::Enum {
+                class,
+                name: name.to_string(),
+            });
+        }
+    }
+    None
 }
 
 /// `EnumSet` text: `[A, B]` or `A, B`, names trimmed, empty names dropped.
