@@ -74,3 +74,4 @@ mermaid-parser.tar.gz
 .fallow/
 test-results/
 .playwright-mcp/
+/.elk-src/
