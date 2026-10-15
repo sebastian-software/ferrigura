@@ -13,7 +13,7 @@ use crate::core::data::JavaEnum;
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{
     Alignment, Direction, DirectionCongruency, EdgeLabelSideSelection,
-    IntermediateProcessorStrategy, NodeType, OrderingStrategy, PortSide,
+    IntermediateProcessorStrategy, NodeType, OrderingStrategy, PortConstraints, PortSide,
 };
 use crate::core::math::{KVector, Spacing};
 use crate::core::util::progress::{Monitor, ProgressMonitor};
@@ -87,7 +87,7 @@ pub fn run(
             transform_direction(graph)?;
         }
         IntermediateProcessorStrategy::SORT_BY_INPUT_ORDER_OF_MODEL => {
-            sort_by_input_model(graph, progress, monitor);
+            sort_by_input_model(graph, progress, monitor)?;
         }
         IntermediateProcessorStrategy::LAYER_SIZE_AND_GRAPH_HEIGHT_CALCULATOR => {
             layer_size_and_graph_height(graph)?;
@@ -320,27 +320,73 @@ fn transposed(spacing: Spacing) -> Spacing {
 
 /// `SortByInputModelProcessor.process` for graphs without ports: each layer is sorted by
 /// the nodes' model order, and the logs name the port lists and the layer.
-fn sort_by_input_model(graph: &mut LGraph, progress: &mut ProgressMonitor, monitor: Monitor) {
+fn sort_by_input_model(
+    graph: &mut LGraph,
+    progress: &mut ProgressMonitor,
+    monitor: Monitor,
+) -> Result<(), LayoutError> {
+    let strategy = graph
+        .properties
+        .enum_of::<OrderingStrategy>(options::CONSIDER_MODEL_ORDER_STRATEGY);
+    if strategy == Some(OrderingStrategy::PREFER_EDGES) {
+        return Err(LayoutError::Unsupported(
+            "considerModelOrder PREFER_EDGES (the edge-based comparator)".to_string(),
+        ));
+    }
     for layer_index in 0..graph.layers.len() {
-        for &node in &graph.layers[layer_index] {
-            // Nodes without ports (the importer rejects ports) keep an empty port list.
-            progress.log(
-                monitor,
-                format!("Node {} ports: []", graph.nodes[node].text_name()),
-            );
+        for node in graph.layers[layer_index].clone() {
+            let constraints = graph.nodes[node]
+                .properties
+                .enum_of::<PortConstraints>(options::PORT_CONSTRAINTS)
+                .unwrap_or(PortConstraints::UNDEFINED);
+            if constraints != PortConstraints::FIXED_ORDER
+                && constraints != PortConstraints::FIXED_POS
+            {
+                // `Collections.sort` of one port calls no comparison; more need ModelOrderPortComparator.
+                if graph.nodes[node].ports.len() > 1 {
+                    return Err(LayoutError::Unsupported(
+                        "sorting several ports by model order (ModelOrderPortComparator)"
+                            .to_string(),
+                    ));
+                }
+                let ports: Vec<String> = graph.nodes[node]
+                    .ports
+                    .clone()
+                    .into_iter()
+                    .map(|port| port_name(graph, port))
+                    .collect();
+                progress.log(
+                    monitor,
+                    format!(
+                        "Node {} ports: [{}]",
+                        node_name(graph, node),
+                        ports.join(", ")
+                    ),
+                );
+            }
         }
-        let mut sorted = graph.layers[layer_index].clone();
-        let orders: Vec<usize> = graph
-            .nodes
-            .iter()
-            .map(|node| node.model_order.unwrap_or(0))
-            .collect();
-        // Collections.sort: the GWT merge sort, so the comparator is observed in the same order.
-        crate::java::sort::sort_by(&mut sorted, |&a, &b| orders[a].cmp(&orders[b]));
-        graph.layers[layer_index] = sorted;
+        let members = graph.layers[layer_index].clone();
+        if members.len() > 1 {
+            // The node comparator is the plain model order when every node has one; otherwise
+            // it works from the edges, which is not ported yet.
+            let mut orders = Vec::with_capacity(members.len());
+            for &node in &members {
+                let Some(order) = graph.nodes[node].model_order else {
+                    return Err(LayoutError::Unsupported(
+                        "sorting nodes without a model order (ModelOrderNodeComparator)"
+                            .to_string(),
+                    ));
+                };
+                orders.push(order);
+            }
+            let mut ranked: Vec<(usize, usize)> = members.into_iter().zip(orders).collect();
+            // Collections.sort: the GWT merge sort, so the comparator is observed in the same order.
+            crate::java::sort::sort_by(&mut ranked, |a, b| a.1.cmp(&b.1));
+            graph.layers[layer_index] = ranked.into_iter().map(|(node, _)| node).collect();
+        }
         let names: Vec<String> = graph.layers[layer_index]
             .iter()
-            .map(|&node| graph.nodes[node].text_name())
+            .map(|&node| node_name(graph, node))
             .collect();
         progress.log(
             monitor,
@@ -352,4 +398,71 @@ fn sort_by_input_model(graph: &mut LGraph, progress: &mut ProgressMonitor, monit
             ),
         );
     }
+    Ok(())
+}
+
+/// `LNode.toString()`: `n_<designation>`, with the type in brackets for other types. A node
+/// without a designation of its own, such as a dummy, is designated by its place in its layer.
+fn node_name(graph: &LGraph, node: usize) -> String {
+    let data = &graph.nodes[node];
+    let designation = if data.designation.is_empty() {
+        data.layer
+            .and_then(|layer| {
+                graph.layers[layer]
+                    .iter()
+                    .position(|&member| member == node)
+            })
+            .map_or(-1, |index| index as i64)
+            .to_string()
+    } else {
+        data.designation.clone()
+    };
+    if data.node_type == NodeType::NORMAL {
+        format!("n_{designation}")
+    } else {
+        format!(
+            "n({})_{designation}",
+            data.node_type.java_name().to_lowercase()
+        )
+    }
+}
+
+/// `LPort.toString()`: `p_<index>[<owner>]`, with the single edge's other end, as ` << ` for an
+/// incoming and ` >> ` for an outgoing edge, when the port has only that one edge.
+fn port_name(graph: &LGraph, port: usize) -> String {
+    let data = &graph.ports[port];
+    let index_on_owner = |port: usize| {
+        let owner = graph.ports[port].node;
+        graph.nodes[owner]
+            .ports
+            .iter()
+            .position(|&member| member == port)
+            .map_or(-1, |index| index as i64)
+    };
+    let mut text = format!(
+        "p_{}[{}]",
+        index_on_owner(port),
+        node_name(graph, data.node)
+    );
+    if data.incoming.len() == 1 && data.outgoing.is_empty() {
+        let source = graph.edges[data.incoming[0]].source;
+        if source != port {
+            text += &format!(
+                " << {}[{}]",
+                index_on_owner(source),
+                node_name(graph, graph.ports[source].node)
+            );
+        }
+    }
+    if data.incoming.is_empty() && data.outgoing.len() == 1 {
+        let target = graph.edges[data.outgoing[0]].target;
+        if target != port {
+            text += &format!(
+                " >> {}[{}]",
+                index_on_owner(target),
+                node_name(graph, graph.ports[target].node)
+            );
+        }
+    }
+    text
 }
