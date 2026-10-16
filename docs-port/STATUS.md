@@ -6,14 +6,14 @@ Each session updates its section when it stops: what changed, what is next, what
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                    |
-| ---------------------------------- | ----------- | ------ | -------------------------------------------------------- |
-| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                    |
-| M2 First slice: pie to SVG         | not started | —      | After M1, in parallel with M3                            |
+| Milestone                          | Status      | Strand                         | Notes                                                                                 |
+| ---------------------------------- | ----------- | ------------------------------ | ------------------------------------------------------------------------------------- |
+| M1 Parser foundation: pie and info | done        | main                           | Merged on 2026-10-16; see M1 handover                                                 |
+| M2 First slice: pie to SVG         | not started | —                              | After M1, in parallel with M3                                                         |
 | M3 Flowchart parser                | Stage A     | sebastian/blissful-cori-9818ff | Plan in [flowchart/PLAN.md](./flowchart/PLAN.md); open questions pending, no code yet |
-| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md` |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                      |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                 |
+| M4 ELK Layered port                | in progress | elk                            | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md`                              |
+| M5 Flowchart rendering             | not started | —                              | Needs M2, M3 and M4                                                                   |
+| M6 Remaining P1 diagrams           | not started | —                              | After M5                                                                              |
 
 ## Strands
 
