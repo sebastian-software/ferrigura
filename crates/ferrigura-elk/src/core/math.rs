@@ -181,3 +181,44 @@ mod tests {
         assert!(Spacing::parse("[top]").is_err());
     }
 }
+
+/// `ElkRectangle`: a rectangle by its corner and its size.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct ElkRectangle {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+impl ElkRectangle {
+    pub fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
+        ElkRectangle {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+
+    /// `ElkRectangle.union`: the smallest rectangle that holds both this one and `other`.
+    pub fn union(&mut self, other: &ElkRectangle) {
+        let mut x1 = self.x.min(other.x);
+        let mut y1 = self.y.min(other.y);
+        let mut x2 = (self.x + self.width).max(other.x + other.width);
+        let mut y2 = (self.y + self.height).max(other.y + other.height);
+        if x2 < x1 {
+            std::mem::swap(&mut x1, &mut x2);
+        }
+        if y2 < y1 {
+            std::mem::swap(&mut y1, &mut y2);
+        }
+        *self = ElkRectangle::new(x1, y1, x2 - x1, y2 - y1);
+    }
+
+    /// `ElkRectangle.move(KVector)`: moves the rectangle by an offset.
+    pub fn move_by(&mut self, offset: KVector) {
+        self.x += offset.x;
+        self.y += offset.y;
+    }
+}
