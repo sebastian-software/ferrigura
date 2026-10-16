@@ -272,7 +272,7 @@ fn definition_xml(id: &str, definition: &Definition, colour: Option<&str>) -> St
     };
     let style = if definition.dash {
         format!(
-            "stroke-width: {}; stroke-dasharray: 1,0;",
+            "stroke-width: {}; stroke-dasharray: 1, 0;",
             definition.stroke_width
         )
     } else {
@@ -400,7 +400,7 @@ mod tests {
         assert!(svg.contains("id=\"svg_flowchart-v2-pointEnd-margin\""));
         assert!(svg.contains("id=\"svg_flowchart-v2-crossStart-margin\""));
         assert!(svg.contains(
-            "<marker id=\"svg_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1,0;\"/></marker>"
+            "<marker id=\"svg_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"/></marker>"
         ));
     }
 
