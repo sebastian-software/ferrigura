@@ -13,6 +13,7 @@ pub mod config;
 pub mod flowchart;
 pub mod info;
 pub mod pie;
+pub mod state;
 pub mod theme;
 pub mod value;
 
