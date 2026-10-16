@@ -603,7 +603,8 @@ const generateShapeMap = () => {
 export const shapes = generateShapeMap();
 
 export function isValidShape(shape: string): shape is ShapeID {
-  return shape in shapes;
+  // Own keys only: `in` would also accept inherited names such as `constructor`.
+  return Object.hasOwn(shapes, shape);
 }
 
 export type ShapeID = keyof typeof shapes;
