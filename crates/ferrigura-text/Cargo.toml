@@ -1,0 +1,19 @@
+[package]
+name = "ferrigura-text"
+description = "Text measurement, Mermaid line wrapping and font embedding for ferrigura labels"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+base64 = "0.23.1"
+harfrust = "0.14.0"
+read-fonts = "0.45.1"
+skera = "0.8.0"
+unicode-segmentation = "1.13.3"
+
+[dev-dependencies]
+serde_json = "1.0.154"

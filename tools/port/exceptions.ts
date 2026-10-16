@@ -12,11 +12,5 @@ export interface PortException {
 }
 
 export const exceptions: Record<string, PortException[]> = {
-  flowchart: [
-    {
-      text: '---\ntitle: |\n  ---\n  still the body\n---\ngraph TD\n',
-      reason:
-        'Front matter title given as a block scalar. The reference reads the YAML; ferrigura-syntax reads a plain or quoted scalar (the known gap of M1). Remove when M2 ships the YAML reader for the front matter.',
-    },
-  ],
+  flowchart: [],
 };

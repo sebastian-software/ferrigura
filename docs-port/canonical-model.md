@@ -75,5 +75,5 @@ The flowchart model is the DB state after parsing (`flowDb.ts`), with the names 
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
 - **Sanitised and escaped text.** See Sanitisation above: it belongs to rendering.
-- **Configuration and directives.** `%%{init: …}%%` and the front matter `config` block become the configuration model in M2. The grammar treats directives and comments as hidden, so they never reach a model.
+- **Configuration and directives.** `%%{init: …}%%` and the front matter `config` block are read by `ferrigura-syntax`'s `config` module and resolved by `ferrigura-model`'s `config` module (the effective configuration, checked by `pnpm port:diff config`). The grammar treats directives and comments as hidden, so they never reach a model.
 - **Source positions.** Errors carry them; models do not.

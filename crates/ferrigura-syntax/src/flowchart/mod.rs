@@ -101,7 +101,7 @@ pub fn parse_with_warnings(
     raw: &str,
     options: Options,
 ) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
-    let prepared = prepare(raw);
+    let prepared = prepare(raw).map_err(FlowchartError::Syntax)?;
     // `Diagram.fromText` encodes the entities and adds a line break before the parser sees the
     // text; the parser's own wrapper then closes the braces.
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));

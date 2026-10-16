@@ -22,8 +22,10 @@ mod preprocess;
 mod scan;
 mod text;
 
+pub mod config;
 pub mod info;
 pub mod pie;
+pub mod yaml;
 
 use ferrigura_model::info::InfoDiagram;
 use ferrigura_model::pie::PieDiagram;
@@ -37,6 +39,17 @@ pub enum DiagramType {
     Pie,
     /// The info diagram.
     Info,
+}
+
+impl DiagramType {
+    /// The configuration section of the diagram type, as `getDiagramConfigKey` names it.
+    #[must_use]
+    pub fn config_key(self) -> &'static str {
+        match self {
+            Self::Pie => "pie",
+            Self::Info => "info",
+        }
+    }
 }
 
 /// A parsed diagram of any type this crate covers.
@@ -54,7 +67,7 @@ pub enum Diagram {
 /// `^\s*info` apply to the first line that is not one of them.
 #[must_use]
 pub fn detect(text: &str) -> Option<DiagramType> {
-    let prepared = preprocess::prepare(text);
+    let prepared = preprocess::prepare(text).ok()?;
     let rest = skip_hidden_prefix(&prepared.text);
     if rest.starts_with("pie") {
         Some(DiagramType::Pie)

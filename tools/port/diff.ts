@@ -15,8 +15,16 @@ import { exceptions } from './exceptions.ts';
 import type { PortInput, PortOutput } from './reference.ts';
 
 const type = process.argv[2];
+if (type === 'config' || type === 'yaml') {
+  const subRun = spawnSync(
+    'pnpm',
+    ['exec', 'tsx', fileURLToPath(new URL(`./diff-${type}.ts`, import.meta.url))],
+    { stdio: 'inherit' }
+  );
+  process.exit(subRun.status ?? 2);
+}
 if (type !== 'pie' && type !== 'info' && type !== 'flowchart') {
-  console.error('usage: pnpm port:diff pie | info | flowchart');
+  console.error('usage: pnpm port:diff pie | info | flowchart | config | yaml');
   process.exit(2);
 }
 
