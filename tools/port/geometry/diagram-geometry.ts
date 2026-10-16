@@ -180,7 +180,15 @@ const measure = (svg) => {
     const seen = new Map();
     for (const child of parent.children) {
       if (SKIPPED.has(child.tagName)) continue;
-      const signature = child.tagName + [...child.classList].sort().map((name) => '.' + name).join('');
+      // The pie's \`pie-slot-<n>\` classes are ferrigura's own: they carry the colour slots of
+      // decision 0007, which the reference has no class for, so they are not part of the key.
+      const signature =
+        child.tagName +
+        [...child.classList]
+          .filter((name) => !/^pie-slot-[0-9]+$/.test(name))
+          .sort()
+          .map((name) => '.' + name)
+          .join('');
       const index = seen.get(signature) ?? 0;
       seen.set(signature, index + 1);
       const key = parentKey + '/' + signature + '[' + index + ']';

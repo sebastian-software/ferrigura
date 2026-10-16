@@ -198,6 +198,8 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
         .map_or_else(|| "sans-serif".to_owned(), |family| family.name.clone());
 
     let mut body = String::new();
+    // `appendDivSvgG` leaves an empty group before the diagram's own elements (`mermaidAPI.ts:418`).
+    body.push_str("<g></g>");
     body.push_str(&format!(
         "<g transform=\"translate({},{})\">",
         number(PIE_WIDTH / 2.0),
