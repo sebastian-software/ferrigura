@@ -11,6 +11,8 @@ publish.workspace = true
 [dependencies]
 ferrigura-model.workspace = true
 logos.workspace = true
+serde_json.workspace = true
+serde_yaml_ng = "0.10"
 
 [dev-dependencies]
 serde_json.workspace = true
