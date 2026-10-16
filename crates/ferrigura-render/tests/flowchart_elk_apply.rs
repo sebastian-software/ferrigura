@@ -27,11 +27,12 @@ use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value as ModelValue;
-use ferrigura_render::flowchart::data::{Edge, LayoutData, Node};
-use ferrigura_render::flowchart::elk_apply::apply;
-use ferrigura_render::flowchart::elk_build::{ElkState, LabelData};
-use ferrigura_render::flowchart::geom::Point;
-use ferrigura_render::flowchart::shapes::{self, Intersect, ShapeInput};
+use ferrigura_render::unified::data::{Edge, LayoutData, Node};
+use ferrigura_render::unified::elk_apply::apply;
+use ferrigura_render::unified::elk_build::{ElkState, LabelData};
+use ferrigura_render::unified::geom::Point;
+use ferrigura_render::unified::label::Anchor;
+use ferrigura_render::unified::shapes::{self, Intersect, ShapeInput};
 use serde_json::Value;
 
 /// The largest difference that counts as equal, in SVG user units.
@@ -134,7 +135,7 @@ fn build_scene(
             );
         } else {
             let drawn_node = leaf_node(node);
-            let label = shapes::node_label(&drawn_node, config, theme, None)
+            let label = shapes::node_label(&drawn_node, config, theme, None, Anchor::Middle)
                 .unwrap_or_else(|error| panic!("{name}: the label of {id}: {error}"));
             let dir = node["drawing"]["dir"].as_str();
             let drawn = shapes::draw(&ShapeInput {

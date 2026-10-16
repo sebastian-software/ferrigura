@@ -9,11 +9,19 @@
 
 #![warn(missing_docs)]
 
+pub mod class;
 pub mod config;
+pub mod er;
 pub mod flowchart;
+pub mod gantt;
+pub mod git_graph;
 pub mod info;
+pub mod journey;
 pub mod pie;
+pub mod sequence;
+pub mod state;
 pub mod theme;
+pub mod timeline;
 pub mod value;
 
 /// Version of the canonical model, written as `"version"` into every model. It is bumped when a

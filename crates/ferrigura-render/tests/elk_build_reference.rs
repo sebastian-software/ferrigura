@@ -23,8 +23,8 @@ use std::collections::{BTreeMap, HashMap};
 use ferrigura_elk::json::{JsonEdge, JsonLabel, JsonNode, LayoutOptions};
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::value::Value;
-use ferrigura_render::flowchart::data::{Edge, LayoutData, Node};
-use ferrigura_render::flowchart::elk_build::{ElkInput, ElkState, build};
+use ferrigura_render::unified::data::{Edge, LayoutData, Node};
+use ferrigura_render::unified::elk_build::{ElkInput, ElkState, build};
 use serde::Deserialize;
 
 /// The captured reference inputs, one per fixture.

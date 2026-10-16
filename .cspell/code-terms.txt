@@ -12,6 +12,7 @@ bary
 Bigdecimal
 birel
 BIREL
+Blorf
 bolditalic
 bqstring
 BQUOTE
@@ -33,6 +34,7 @@ controlx
 controly
 cplusplus
 CSSCLASS
+currentcolor
 curv
 CYLINDEREND
 CYLINDERSTART

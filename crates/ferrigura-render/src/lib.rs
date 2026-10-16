@@ -8,9 +8,21 @@
 #![warn(missing_docs)]
 
 pub mod a11y;
+pub mod class;
+pub mod common;
+pub mod er;
 pub mod flowchart;
+pub mod gantt;
+pub mod git_graph;
+pub mod info;
+pub mod journey;
 pub mod pie;
+pub mod sequence;
+pub mod state;
 pub mod svg;
+pub mod theme;
+pub mod timeline;
+pub mod unified;
 mod variables;
 
 use std::fmt;
@@ -31,6 +43,8 @@ pub enum RenderError {
     Text(TextError),
     /// The layout failed.
     Layout(String),
+    /// The diagram type is not rendered yet.
+    Unsupported(String),
 }
 
 impl fmt::Display for RenderError {
@@ -41,6 +55,7 @@ impl fmt::Display for RenderError {
             Self::Options(message) => write!(f, "invalid option: {message}"),
             Self::Text(error) => write!(f, "text: {error:?}"),
             Self::Layout(message) => write!(f, "layout: {message}"),
+            Self::Unsupported(message) => write!(f, "{message}"),
         }
     }
 }

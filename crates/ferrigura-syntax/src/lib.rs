@@ -4,8 +4,8 @@
 //! and returns the diagram model of `ferrigura-model`. See `docs-port/decisions/0002` for why the
 //! parsers are written by hand on one lexer base.
 //!
-//! The crate covers the pie, info and flowchart diagrams for now; the other types follow in later
-//! milestones.
+//! The crate covers the pie, info, flowchart, timeline, journey, gitGraph, ER, class, sequence,
+//! state and gantt diagrams for now; the other types follow in later milestones.
 
 #![warn(missing_docs)]
 #![cfg_attr(
@@ -15,22 +15,40 @@
 
 mod common;
 mod cursor;
+mod entities;
 mod error;
 pub mod flowchart;
+pub mod gantt;
+pub mod git_graph;
 mod lexer;
 mod preprocess;
 mod scan;
 mod text;
+mod url;
 
+pub mod class;
 pub mod config;
+pub mod er;
 pub mod info;
+pub mod journey;
 pub mod pie;
 pub mod sanitize;
+pub mod sequence;
+pub mod state;
+pub mod timeline;
 pub mod yaml;
 
+use ferrigura_model::class::ClassDiagram;
+use ferrigura_model::er::ErDiagram;
 use ferrigura_model::flowchart::FlowchartDiagram;
+use ferrigura_model::gantt::GanttDiagram;
+use ferrigura_model::git_graph::GitGraphDiagram;
 use ferrigura_model::info::InfoDiagram;
+use ferrigura_model::journey::JourneyDiagram;
 use ferrigura_model::pie::PieDiagram;
+use ferrigura_model::sequence::SequenceDiagram;
+use ferrigura_model::state::StateDiagram;
+use ferrigura_model::timeline::TimelineDiagram;
 
 pub use error::ParseError;
 
@@ -43,6 +61,22 @@ pub enum DiagramType {
     Info,
     /// The flowchart, written `flowchart` or `graph`.
     Flowchart,
+    /// The timeline.
+    Timeline,
+    /// The user journey, written `journey`.
+    Journey,
+    /// The gitGraph diagram.
+    GitGraph,
+    /// The ER diagram, written `erDiagram`.
+    Er,
+    /// The class diagram, written `classDiagram` or `classDiagram-v2`.
+    Class,
+    /// The sequence diagram, written `sequenceDiagram`.
+    Sequence,
+    /// The state diagram, written `stateDiagram` or `stateDiagram-v2`.
+    State,
+    /// The gantt diagram.
+    Gantt,
 }
 
 impl DiagramType {
@@ -53,6 +87,14 @@ impl DiagramType {
             Self::Pie => "pie",
             Self::Info => "info",
             Self::Flowchart => "flowchart",
+            Self::Timeline => "timeline",
+            Self::Journey => "journey",
+            Self::GitGraph => "gitGraph",
+            Self::Er => "er",
+            Self::Class => "class",
+            Self::Sequence => "sequence",
+            Self::State => "state",
+            Self::Gantt => "gantt",
         }
     }
 }
@@ -66,6 +108,22 @@ pub enum Diagram {
     Info(InfoDiagram),
     /// A flowchart.
     Flowchart(FlowchartDiagram),
+    /// A timeline.
+    Timeline(TimelineDiagram),
+    /// A user journey.
+    Journey(JourneyDiagram),
+    /// A gitGraph.
+    GitGraph(GitGraphDiagram),
+    /// An ER diagram.
+    Er(ErDiagram),
+    /// A class diagram.
+    Class(ClassDiagram),
+    /// A sequence diagram.
+    Sequence(SequenceDiagram),
+    /// A state diagram.
+    State(StateDiagram),
+    /// A gantt diagram.
+    Gantt(GanttDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -76,12 +134,29 @@ pub enum Diagram {
 pub fn detect(text: &str) -> Option<DiagramType> {
     let prepared = preprocess::prepare(text).ok()?;
     let rest = skip_hidden_prefix(&prepared.text);
-    if rest.starts_with("pie") {
+    // The order of the reference's detectors (`diagram-orchestration.ts`): ER comes before pie.
+    if rest.starts_with("erDiagram") {
+        Some(DiagramType::Er)
+    } else if rest.starts_with("pie") {
         Some(DiagramType::Pie)
     } else if rest.starts_with("info") {
         Some(DiagramType::Info)
     } else if rest.starts_with("graph") || rest.starts_with("flowchart") {
         Some(DiagramType::Flowchart)
+    } else if rest.starts_with("timeline") {
+        Some(DiagramType::Timeline)
+    } else if rest.starts_with("journey") {
+        Some(DiagramType::Journey)
+    } else if rest.starts_with("gitGraph") {
+        Some(DiagramType::GitGraph)
+    } else if rest.starts_with("classDiagram") {
+        Some(DiagramType::Class)
+    } else if rest.starts_with("sequenceDiagram") {
+        Some(DiagramType::Sequence)
+    } else if rest.starts_with("stateDiagram") {
+        Some(DiagramType::State)
+    } else if rest.starts_with("gantt") {
+        Some(DiagramType::Gantt)
     } else {
         None
     }
@@ -90,11 +165,19 @@ pub fn detect(text: &str) -> Option<DiagramType> {
 /// Parses a diagram of any type this crate covers, detecting its type first.
 pub fn parse(text: &str) -> Result<Diagram, ParseError> {
     match detect(text) {
+        Some(DiagramType::Er) => er::parse(text).map(Diagram::Er),
         Some(DiagramType::Pie) => pie::parse(text).map(Diagram::Pie),
         Some(DiagramType::Info) => info::parse(text).map(Diagram::Info),
         Some(DiagramType::Flowchart) => flowchart::parse(text)
             .map(Diagram::Flowchart)
             .map_err(|flowchart::FlowchartError::Syntax(error)| error),
+        Some(DiagramType::Timeline) => timeline::parse(text).map(Diagram::Timeline),
+        Some(DiagramType::Journey) => journey::parse(text).map(Diagram::Journey),
+        Some(DiagramType::GitGraph) => git_graph::parse(text).map(Diagram::GitGraph),
+        Some(DiagramType::Class) => class::parse(text).map(Diagram::Class),
+        Some(DiagramType::Sequence) => sequence::parse(text).map(Diagram::Sequence),
+        Some(DiagramType::State) => state::parse(text).map(Diagram::State),
+        Some(DiagramType::Gantt) => gantt::parse(text).map(Diagram::Gantt),
         None => Err(ParseError {
             line: 1,
             column: 1,

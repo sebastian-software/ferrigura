@@ -8,7 +8,7 @@ mod db;
 mod grammar;
 mod scanner;
 mod shapes;
-mod unicode;
+pub(crate) mod unicode;
 
 use std::error::Error;
 use std::fmt;
@@ -16,7 +16,7 @@ use std::fmt;
 use ferrigura_model::flowchart::FlowchartDiagram;
 
 use crate::error::ParseError;
-use crate::preprocess::{loose_directive_len, prepare};
+use crate::preprocess::{cleanup_comments, encode_entities, prepare, remove_directives};
 use crate::text::is_js_space;
 
 /// Options of the parser. The defaults are the reference's defaults.
@@ -94,63 +94,6 @@ pub fn parse_with_warnings(
     grammar::parse_text(&text, prepared.line_offset, title, options)
 }
 
-/// Removes the `%%{ … }%%` directives, as `removeDirectives` does.
-fn remove_directives(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut rest = text;
-    while let Some(start) = rest.find("%%{") {
-        out.push_str(&rest[..start]);
-        match loose_directive_len(&rest[start..]) {
-            Some(len) => rest = &rest[start + len..],
-            None => {
-                out.push_str("%%{");
-                rest = &rest[start + 3..];
-            }
-        }
-    }
-    out.push_str(rest);
-    out
-}
-
-/// Removes the comment lines, as `cleanupComments` does: `^\s*%%(?!{)[^\n]+\n?` with the
-/// multi-line flag, then the leading whitespace of the text.
-fn cleanup_comments(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut copied = 0;
-    let mut line_start = 0;
-    while line_start <= text.len() {
-        if let Some(end) = comment_match_end(text, line_start) {
-            out.push_str(&text[copied..line_start]);
-            copied = end;
-            line_start = end;
-            continue;
-        }
-        match text[line_start..].find('\n') {
-            Some(newline) => line_start += newline + 1,
-            None => break,
-        }
-    }
-    out.push_str(&text[copied..]);
-    out.trim_start_matches(is_js_space).to_owned()
-}
-
-/// The end of a comment match that starts at the line start `start`, if there is one.
-fn comment_match_end(text: &str, start: usize) -> Option<usize> {
-    let rest = &text[start..];
-    let spaces = rest.len() - rest.trim_start_matches(is_js_space).len();
-    let after = &rest[spaces..];
-    let body = after.strip_prefix("%%")?;
-    if body.starts_with('{') || body.is_empty() || body.starts_with('\n') {
-        return None;
-    }
-    let line = body.find('\n').unwrap_or(body.len());
-    let mut end = start + spaces + 2 + line;
-    if text[end..].starts_with('\n') {
-        end += 1;
-    }
-    Some(end)
-}
-
 /// `}\s*\n` becomes `}\n`: the blanks after a closing brace are dropped up to the last line
 /// break before the next text, as the parser wrapper of the reference does.
 fn close_braces(text: &str) -> String {
@@ -166,83 +109,6 @@ fn close_braces(text: &str) -> String {
                 rest = &after[newline + 1..];
             }
             None => rest = after,
-        }
-    }
-    out.push_str(rest);
-    out
-}
-
-/// `encodeEntities`: the semicolon that ends a `style` or `classDef` line with a colour is dropped,
-/// and `#name;` or `#123;` become placeholders that the renderer decodes.
-fn encode_entities(text: &str) -> String {
-    let text = drop_colour_semicolons(text, "style");
-    let text = drop_colour_semicolons(&text, "classDef");
-    encode_hash_entities(&text)
-}
-
-/// `<word>.*:\S*#.*;` with the semicolon removed: the last semicolon of the line, when a colon
-/// followed by non-blank text and a `#` come after the word on that line.
-fn drop_colour_semicolons(text: &str, word: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut pos = 0;
-    while let Some(found) = text[pos..].find(word) {
-        let start = pos + found;
-        let after_word = start + word.len();
-        let line_end = text[after_word..]
-            .find('\n')
-            .map_or(text.len(), |newline| after_word + newline);
-        let last_semicolon = text[after_word..line_end]
-            .rfind(';')
-            .map(|i| after_word + i);
-        match last_semicolon {
-            Some(semicolon) if has_colon_hash(&text[after_word..semicolon]) => {
-                out.push_str(&text[pos..semicolon]);
-                pos = semicolon + 1;
-            }
-            _ => {
-                out.push_str(&text[pos..after_word]);
-                pos = after_word;
-            }
-        }
-    }
-    out.push_str(&text[pos..]);
-    out
-}
-
-/// Whether `segment` has a colon followed by blank-free text and a `#`: `.*:\S*#.*`.
-fn has_colon_hash(segment: &str) -> bool {
-    segment.char_indices().any(|(colon, c)| {
-        c == ':'
-            && segment[colon + 1..]
-                .char_indices()
-                .take_while(|&(_, c)| !is_js_space(c))
-                .any(|(_, c)| c == '#')
-    })
-}
-
-/// `#\w+;` becomes `ﬂ°°<digits>¶ß` for a number and `ﬂ°<name>¶ß` for a name.
-fn encode_hash_entities(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut rest = text;
-    while let Some(hash) = rest.find('#') {
-        out.push_str(&rest[..hash]);
-        let after = &rest[hash + 1..];
-        let name_len = after
-            .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
-            .unwrap_or(after.len());
-        if name_len > 0 && after[name_len..].starts_with(';') {
-            let name = &after[..name_len];
-            if name.bytes().all(|b| b.is_ascii_digit()) {
-                out.push_str("ﬂ°°");
-            } else {
-                out.push_str("ﬂ°");
-            }
-            out.push_str(name);
-            out.push_str("¶ß");
-            rest = &after[name_len + 1..];
-        } else {
-            out.push('#');
-            rest = after;
         }
     }
     out.push_str(rest);

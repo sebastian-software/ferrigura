@@ -138,20 +138,167 @@ pub fn load(text: &str) -> Result<Option<Yaml>, YamlError> {
             message: "null byte is not allowed in input".to_owned(),
         });
     }
-    let mut builder = Builder::default();
-    for event in Parser::new_from_str(text) {
-        let (event, span) = event.map_err(|error| YamlError {
-            line: error.marker().line(),
-            column: error.marker().col(),
-            message: error.info().to_owned(),
-        })?;
-        builder.event(event, &span)?;
-    }
-    Ok(match builder.root {
+    let mut source = text.to_owned();
+    let root = loop {
+        match read(&source) {
+            Ok(root) => break root,
+            Err(Unread::Builder(error)) => return Err(error),
+            Err(Unread::Scanner(error)) => match lenient_indentation(&source, &error) {
+                Some(reindented) => source = reindented,
+                None => return Err(error),
+            },
+        }
+    };
+    Ok(match root {
         Some(root) => Some(root),
         None if document_is_read(text) => Some(Yaml::Null),
         None => None,
     })
+}
+
+/// Why `read` stopped: the scanner of `saphyr-parser` rejected the text, or the typing did.
+enum Unread {
+    Scanner(YamlError),
+    Builder(YamlError),
+}
+
+fn read(text: &str) -> Result<Option<Yaml>, Unread> {
+    let mut builder = Builder::default();
+    for event in Parser::new_from_str(text) {
+        let (event, span) = event.map_err(|error| {
+            Unread::Scanner(YamlError {
+                line: error.marker().line(),
+                column: error.marker().col(),
+                message: error.info().to_owned(),
+            })
+        })?;
+        builder.event(event, &span).map_err(Unread::Builder)?;
+    }
+    Ok(builder.root)
+}
+
+/// The text re-indented where `js-yaml` accepts the indentation of a quoted scalar and
+/// `saphyr-parser` does not, or `None`. The lines of a quoted scalar after its first may start at
+/// any column, with tabs too: `readDoubleQuotedScalar` and `readSingleQuotedScalar` only warn about
+/// a deficient indentation, and `load` sets no `onWarning`. Their leading blanks are not part of
+/// the value in either reader, so they can be replaced.
+///
+/// For a tab in the indentation, `error` points at the tab, and the tabs of that line's leading
+/// blanks become spaces. For a deficient indentation, it points at the opening quote, and every
+/// later line of the scalar gets one column more than the quote, which no enclosing block needs to
+/// exceed; a line of blanks only becomes empty. A line that `js-yaml` reads as a document marker
+/// ends the scalar with an error there too, so that text is left as it is.
+fn lenient_indentation(text: &str, error: &YamlError) -> Option<String> {
+    let at = byte_offset(text, error.line, error.column)?;
+    match error.message.as_str() {
+        "tab cannot be used as indentation" => {
+            let line_start = text[..at].rfind(['\n', '\r']).map_or(0, |i| i + 1);
+            let blanks = text[line_start..]
+                .find(|c| c != ' ' && c != '\t')
+                .map_or(text.len(), |i| line_start + i);
+            let spaces = " ".repeat(blanks - line_start);
+            Some(format!(
+                "{}{spaces}{}",
+                &text[..line_start],
+                &text[blanks..]
+            ))
+        }
+        "invalid indentation in quoted scalar" => reindent_quoted(text, at, error.column + 1),
+        _ => None,
+    }
+}
+
+/// The byte offset of a `saphyr-parser` position: `line` counts from 1, with `\r\n`, `\n` and a
+/// lone `\r` each ending a line, and `column` counts characters from 0.
+fn byte_offset(text: &str, line: usize, column: usize) -> Option<usize> {
+    let mut start = 0;
+    for _ in 1..line {
+        let rest = &text[start..];
+        let end = rest.find(['\n', '\r'])?;
+        start += end
+            + if rest[end..].starts_with("\r\n") {
+                2
+            } else {
+                1
+            };
+    }
+    let (offset, _) = text[start..].char_indices().nth(column)?;
+    Some(start + offset)
+}
+
+/// The text with the lines after the first of the quoted scalar that opens at byte `quote`
+/// indented by `indent` spaces, or `None` when nothing changes or `js-yaml` rejects the scalar too.
+fn reindent_quoted(text: &str, quote: usize, indent: usize) -> Option<String> {
+    let single = match text[quote..].chars().next()? {
+        '\'' => true,
+        '"' => false,
+        _ => return None,
+    };
+    let mut out = String::with_capacity(text.len());
+    out.push_str(&text[..=quote]);
+    let mut chars = text[quote + 1..].char_indices().peekable();
+    let base = quote + 1;
+    loop {
+        let (i, c) = chars.next()?;
+        match c {
+            '\\' if !single => {
+                out.push(c);
+                if let Some(&(_, next)) = chars.peek()
+                    && next != '\n'
+                    && next != '\r'
+                {
+                    out.push(next);
+                    chars.next();
+                }
+            }
+            '\'' if single => {
+                out.push(c);
+                if chars.peek().map(|&(_, next)| next) != Some('\'') {
+                    break;
+                }
+                out.push('\'');
+                chars.next();
+            }
+            '"' if !single => {
+                out.push(c);
+                break;
+            }
+            '\n' | '\r' => {
+                out.push(c);
+                let mut line = base + i + 1;
+                if c == '\r' && chars.peek().map(|&(_, next)| next) == Some('\n') {
+                    out.push('\n');
+                    chars.next();
+                    line += 1;
+                }
+                let rest = &text[line..];
+                if is_document_marker(rest) {
+                    return None;
+                }
+                let blanks = rest.len() - rest.trim_start_matches([' ', '\t']).len();
+                let after = &rest[blanks..];
+                if !(after.is_empty() || after.starts_with(['\n', '\r'])) {
+                    out.push_str(&" ".repeat(indent));
+                }
+                while chars.peek().is_some_and(|&(j, _)| base + j < line + blanks) {
+                    chars.next();
+                }
+            }
+            _ => out.push(c),
+        }
+    }
+    out.push_str(&text[base + chars.peek().map_or(text.len() - base, |&(j, _)| j)..]);
+    (out != text).then_some(out)
+}
+
+/// `testDocumentSeparator` of `js-yaml` at the start of a line: `---` or `...`, then a blank, a line
+/// break or the end of the text.
+fn is_document_marker(rest: &str) -> bool {
+    (rest.starts_with("---") || rest.starts_with("..."))
+        && rest[3..]
+            .chars()
+            .next()
+            .is_none_or(|c| matches!(c, ' ' | '\t' | '\n' | '\r'))
 }
 
 /// Whether `js-yaml` reads a document from `text`. Its reader stops before the last character of
@@ -653,6 +800,22 @@ mod tests {
             value("a: >\n  x\n  y\n"),
             Yaml::Mapping(vec![("a".into(), Yaml::String("x y\n".into()))])
         );
+    }
+
+    #[test]
+    fn quoted_lines_may_have_any_indentation() {
+        let inner = |text: &str| match value(text) {
+            Yaml::Mapping(pairs) => pairs[0].1.clone(),
+            other => other,
+        };
+        let pair = |value: &str| Yaml::Mapping(vec![("b".into(), Yaml::String(value.into()))]);
+        assert_eq!(inner("a:\n  b: \"x\ny\""), pair("x y"));
+        assert_eq!(inner("a:\n  b: \"x\n\ty\""), pair("x y"));
+        assert_eq!(inner("a:\n  b: 'x\n y ''z'''"), pair("x y 'z'"));
+        assert_eq!(inner("a:\n  b: \"x\n   \n y\n  \""), pair("x\ny "));
+        assert_eq!(inner("a:\n  b: \"x \\\ny\""), pair("x y"));
+        assert!(load("a:\n  b: \"x\n---\ny\"").is_err());
+        assert!(load("a:\n  b: \"x\ny").is_err());
     }
 
     #[test]

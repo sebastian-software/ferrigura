@@ -38,6 +38,21 @@ export const yamlCases: string[] = [
   'a: >\n  x\n  y\n\n  z\n',
   'a: >-\n  x\n   y\n',
   'a: |\n  x\n    y\n',
+  // The later lines of a quoted scalar at any indentation, which js-yaml only warns about: less
+  // than the key, at column 0, with tabs, with blank lines, in a sequence, and single-quoted.
+  'a:\n  b: "x\n y"\n  c: 1',
+  'a:\n  b: "x\ny\n"',
+  'a:\n  b: "x\n\ty"',
+  'a:\n  b: "x\n   \n y\n  "',
+  "a:\n  b: 'x\ny ''z'''",
+  'a:\n  - b: "x\n  y"',
+  'a:\n  b: "x \\\ny"',
+  'a:\n  b: "x\r\ny"\r\n  c: 1',
+  '    config:\n        k: " one\n            two\n\n            three\n        "\n        g: 1',
+  // A document marker in a quoted scalar ends the document, and an unclosed scalar is an error.
+  'a:\n  b: "x\n---\ny"',
+  'a:\n  b: "x\n...\ny"',
+  'a:\n  b: "x\ny',
   // Plain multi-line scalars.
   'a: x\n  y\n  z',
   'a: x #comment\nb: y',

@@ -9,10 +9,11 @@
 //! `setTerminalWidth` (terminal labels are not in the flowchart model).
 
 use ferrigura_model::config::MermaidConfig;
-use ferrigura_render::flowchart::data::Edge;
-use ferrigura_render::flowchart::edges::paint_paths;
-use ferrigura_render::flowchart::geom::Point;
-use ferrigura_render::flowchart::path::Curve;
+use ferrigura_render::unified::data::Edge;
+use ferrigura_render::unified::edges::paint_paths;
+use ferrigura_render::unified::geom::Point;
+use ferrigura_render::unified::markers::FLOWCHART;
+use ferrigura_render::unified::path::Curve;
 
 /// The `d` attribute of the `<path>` element in an edge's SVG.
 fn d_attribute(svg: &str) -> Option<&str> {
@@ -44,6 +45,7 @@ fn should_return_edge_curve_when_it_is_a_string() {
     let painted = paint_paths(
         std::slice::from_ref(&edge),
         "svg",
+        FLOWCHART,
         &MermaidConfig::default(),
     );
     let d = d_attribute(&painted[0].svg).expect("a d attribute");

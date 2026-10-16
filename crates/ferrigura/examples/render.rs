@@ -1,9 +1,12 @@
 //! Renders the diagram text on standard input to SVG on standard output.
 //!
-//! Usage: `cargo run -p ferrigura --example render -- [--config file.json] [--id ID] [--scheme light|dark|auto]`
+//! Usage: `cargo run -p ferrigura --example render -- [--config file.json] [--id ID] [--scheme light|dark|auto] [--now MS] [--seed N]`
 //!
 //! `--config` is the `initialize` configuration as JSON; `--id` is the id of the SVG element, and
-//! `--scheme` the colour scheme. Without them the defaults apply.
+//! `--scheme` the colour scheme, and `--now` the current time in milliseconds since the epoch (the
+//! harness passes the clock it gives the reference). `--seed` is the seed of the generated gitGraph
+//! ids, which the harness gives the same seed as the reference's random numbers. Without them the
+//! defaults apply.
 
 use std::error::Error;
 use std::io::{Read, Write};
@@ -29,6 +32,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 )?);
             }
             "--id" => options.id = Some(value),
+            "--now" => options.now = Some(value.parse()?),
+            "--seed" => options.git_graph_seed = Some(value.parse()?),
             "--scheme" => {
                 options.color_scheme = Some(match value.as_str() {
                     "light" => ColorScheme::Light,

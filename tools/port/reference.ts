@@ -67,7 +67,19 @@ export type PortOutput =
  * as `mermaidAPI` does when it loads the diagrams.
  */
 export async function registerDetectors(reference: Reference): Promise<void> {
-  const [detectType, pie, info, flowchart] = await Promise.all([
+  const [
+    detectType,
+    pie,
+    info,
+    flowchart,
+    timeline,
+    journey,
+    gitGraph,
+    classPlugin,
+    sequence,
+    state,
+    gantt,
+  ] = await Promise.all([
     reference.load<{ registerLazyLoadedDiagrams(...diagrams: unknown[]): void }>(
       '/packages/mermaid/src/diagram-api/detectType.ts'
     ),
@@ -76,6 +88,46 @@ export async function registerDetectors(reference: Reference): Promise<void> {
     reference.load<{ default: unknown }>(
       '/packages/mermaid/src/diagrams/flowchart/flowDetector-v2.ts'
     ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/timeline/detector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/user-journey/journeyDetector.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/git/gitGraphDetector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/class/classDetector-V2.ts'
+    ),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/sequence/sequenceDetector.ts'
+    ),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/state/stateDetector-V2.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/gantt/ganttDetector.ts'),
   ]);
-  detectType.registerLazyLoadedDiagrams(pie.pie, info.info, flowchart.default);
+  detectType.registerLazyLoadedDiagrams(
+    pie.pie,
+    info.info,
+    flowchart.default,
+    timeline.default,
+    journey.default,
+    gitGraph.default,
+    classPlugin.default,
+    sequence.default,
+    state.default,
+    gantt.default
+  );
+}
+
+/**
+ * Registers the ER detector, which `registerDetectors` leaves out: the exporters of ER and the
+ * configuration run need it, since a directive or a configuration scope detects the diagram type.
+ */
+export async function registerErDetector(reference: Reference): Promise<void> {
+  const [detectType, er] = await Promise.all([
+    reference.load<{ registerLazyLoadedDiagrams(...diagrams: unknown[]): void }>(
+      '/packages/mermaid/src/diagram-api/detectType.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/er/erDetector.ts'),
+  ]);
+  detectType.registerLazyLoadedDiagrams(er.default);
 }

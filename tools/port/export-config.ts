@@ -14,7 +14,12 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 
-import { openReference, registerDetectors, type Reference } from './reference.ts';
+import {
+  openReference,
+  registerDetectors,
+  registerErDetector,
+  type Reference,
+} from './reference.ts';
 
 /** One input: the text, and the `initialize` settings it runs with, if any. */
 interface ConfigInput {
@@ -50,6 +55,7 @@ interface Modules {
 
 async function loadModules(reference: Reference): Promise<Modules> {
   await registerDetectors(reference);
+  await registerErDetector(reference);
   const [config, preprocess, detectType, defaultConfig, diagramConfigKeys] = await Promise.all([
     reference.load<Modules['config']>('/packages/mermaid/src/config.ts'),
     reference.load<Modules['preprocess']>('/packages/mermaid/src/preprocess.ts'),
