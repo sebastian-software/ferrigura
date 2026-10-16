@@ -215,6 +215,21 @@ fn outline_group(outline: &Outline, stroke_width: &str, stroke: bool) -> String 
     )
 }
 
+/// The outline of the icon's shape, moved vertically by `shift` (`iconShape.attr('transform')`):
+/// the shape sits above or below the centre so that the label fits under or over it.
+fn shifted_outline_group(
+    outline: &Outline,
+    stroke_width: &str,
+    stroke: bool,
+    shift: f64,
+) -> String {
+    format!(
+        "<g transform=\"translate(0, {})\">{}</g>",
+        number(shift),
+        rough::paths(outline, None, stroke_width, stroke)
+    )
+}
+
 /// `icon.ts`: a square of the icon size with the label below it (or above it, with `pos: t`). The
 /// square has no stroke, and the icon is the fallback icon.
 pub(super) fn icon(input: &ShapeInput<'_>) -> Part {
@@ -272,7 +287,7 @@ pub(super) fn icon(input: &ShapeInput<'_>) -> Part {
     }
     let intersect = icon_intersect(node, top, (size, size), &label, label_padding, bbox.height);
     Part {
-        svg: outline_group(&shape, &stroke_width, false),
+        svg: shifted_outline_group(&shape, &stroke_width, false, shift),
         after_label,
         bbox,
         intersect,
@@ -354,7 +369,7 @@ fn framed(input: &ShapeInput<'_>, radius: f64) -> Part {
         bbox.height,
     );
     Part {
-        svg: outline_group(&shape, &stroke_width, true),
+        svg: shifted_outline_group(&shape, &stroke_width, true, shift),
         after_label,
         bbox,
         intersect,
@@ -433,7 +448,7 @@ pub(super) fn icon_circle(input: &ShapeInput<'_>) -> Part {
     }
     after_label.push_str(&outline_group(&outer, &stroke_width, false));
     Part {
-        svg: outline_group(&circle, &stroke_width, true),
+        svg: shifted_outline_group(&circle, &stroke_width, true, shift),
         after_label,
         bbox,
         intersect: Intersect::Rect,
@@ -534,7 +549,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
         bbox.height,
     );
     Ok(Part {
-        svg: outline_group(&shape, &stroke_width, true),
+        svg: shifted_outline_group(&shape, &stroke_width, true, shift),
         after_label,
         bbox,
         intersect,
@@ -610,6 +625,24 @@ mod tests {
             shape.after_label.contains("width=\"48\""),
             "{}",
             shape.after_label
+        );
+    }
+
+    #[test]
+    fn the_icon_outline_is_moved_by_the_label_shift_as_the_reference_moves_it() {
+        // A 17 high label under the square: the square moves up by half the label and the
+        // padding, 8.5 + 4 (`iconShape.attr('transform')`).
+        let node = labelled("iconSquare", Some("fa:bell"));
+        let shape = draw_box(
+            &node,
+            &LabelLayout::of_box(BBox::new(-10.0, 0.0, 20.0, 17.0)),
+        );
+        assert!(
+            shape
+                .svg
+                .starts_with("<g transform=\"translate(0, -12.5)\">"),
+            "{}",
+            shape.svg
         );
     }
 
