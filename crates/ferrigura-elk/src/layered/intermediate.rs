@@ -219,7 +219,7 @@ pub fn run(
             crate::layered::hierarchical_ports::route_hierarchical_port_edges(graph)?;
         }
         IntermediateProcessorStrategy::INVERTED_PORT_PROCESSOR => {
-            crate::layered::hierarchical_ports::process_inverted_ports(graph)?;
+            crate::layered::inverted_ports::process(graph);
         }
         IntermediateProcessorStrategy::NORTH_SOUTH_PORT_PREPROCESSOR => {
             crate::layered::northsouth::preprocess(graph)?;

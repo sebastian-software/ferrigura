@@ -64,7 +64,7 @@ fn corpus_summary() {
 }
 
 /// Cases whose coordinates match elkjs. The floor only goes up, as `SUPPORTED_FLOOR` does.
-const MATCHING_FLOOR: usize = 160;
+const MATCHING_FLOOR: usize = 161;
 
 #[test]
 fn coordinates_match_elkjs() {
@@ -99,7 +99,7 @@ fn coordinates_match_elkjs() {
 
 /// Cases that pass the driver today. The floor only goes up: a change that makes a
 /// case unsupported again fails here, and so does CI. Raise it as the port grows.
-const SUPPORTED_FLOOR: usize = 160;
+const SUPPORTED_FLOOR: usize = 161;
 
 #[test]
 fn supported_cases_do_not_regress() {
@@ -138,11 +138,6 @@ const NOT_PORTED: &[(&str, &str)] = &[
         "a port with two edges is laid out with HYPEREDGES, which is not ported; Mermaid's ELK integration \
          never creates an ELK port (render.ts names the nodes as the ends of its edges), so this is outside \
          Mermaid's reach",
-    ),
-    (
-        "synthetic__explicit-port-marked-edge-on-port",
-        "an inverted port (InvertedPortProcessor dummies), which the next port step ports; the case guards \
-         a BK marked edge that leaves an explicit port",
     ),
 ];
 

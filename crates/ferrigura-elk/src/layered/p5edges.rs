@@ -7,9 +7,10 @@
 //! ([`orthogonal`]), and sets the width of the graph. The layers, the node positions and the port
 //! positions are the input.
 //!
-//! Edges must leave the east side of a layer and enter the west side of the next one. Graphs
-//! with other features, which need processors that are not ported, are rejected by
-//! [`check_supported`] instead of being routed wrongly.
+//! Edges must leave the east side of a layer and enter the west side of the next one, or join two
+//! eastern or two western ports of one layer, as the inverted port dummies' edges do. Graphs with
+//! other features, which need processors that are not ported, are rejected by [`check_supported`]
+//! instead of being routed wrongly.
 
 pub(in crate::layered) mod orthogonal;
 
@@ -188,10 +189,15 @@ fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
         else {
             return Err(unsupported("nodes outside the layers"));
         };
-        if source.side != PortSide::EAST
-            || target.side != PortSide::WEST
-            || target_layer != source_layer + 1
-        {
+        // The in-layer edges of the inverted port dummies join two eastern ports, which are routed
+        // with the layer's right neighbour, or two western ports, routed with its left neighbour.
+        let between_layers = source.side == PortSide::EAST
+            && target.side == PortSide::WEST
+            && target_layer == source_layer + 1;
+        let in_layer = source.side == target.side
+            && matches!(source.side, PortSide::EAST | PortSide::WEST)
+            && source_layer == target_layer;
+        if !between_layers && !in_layer {
             return Err(unsupported(
                 "edges that do not join the east side of a layer to the west side of the next",
             ));
@@ -462,6 +468,32 @@ mod tests {
         assert_eq!(graph.nodes[d].position.x, 30.0);
         assert_eq!(graph.nodes[b].position.x, 60.0);
         assert_eq!(graph.size.x, 70.0);
+    }
+
+    #[test]
+    fn in_layer_edges_are_routed_beside_their_layer() {
+        // A dummy D (east port at y 25) joins A's eastern port (y 5) in layer 0, and B's western
+        // port (y 40) joins the western port of a dummy E (y 58) in layer 1. Both in-layer edges are
+        // routed between the two layers, and as they do not overlap, they share the first slot.
+        let mut graph = spaced_graph();
+        let a = node(&mut graph, 0.0);
+        let d = node(&mut graph, 20.0);
+        let b = node(&mut graph, 0.0);
+        let e = node(&mut graph, 50.0);
+        let a_in = port(&mut graph, a, PortSide::EAST, 10.0, 5.0);
+        let d_out = port(&mut graph, d, PortSide::EAST, 10.0, 5.0);
+        let b_out = port(&mut graph, b, PortSide::WEST, 0.0, 40.0);
+        let e_in = port(&mut graph, e, PortSide::WEST, 0.0, 8.0);
+        let east = edge(&mut graph, d_out, a_in);
+        let west = edge(&mut graph, b_out, e_in);
+        layer(&mut graph, &[a, d]);
+        layer(&mut graph, &[b, e]);
+
+        route(&mut graph).unwrap();
+
+        assert_eq!(bends(&graph, east), vec![(20.0, 25.0), (20.0, 5.0)]);
+        assert_eq!(bends(&graph, west), vec![(20.0, 40.0), (20.0, 58.0)]);
+        assert_eq!(graph.nodes[b].position.x, 30.0);
     }
 
     #[test]

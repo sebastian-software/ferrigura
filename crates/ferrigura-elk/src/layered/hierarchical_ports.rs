@@ -4,18 +4,15 @@
 //! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/intermediate/HierarchicalPortDummySizeProcessor.java
 //! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/intermediate/HierarchicalPortPositionProcessor.java
 //! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/intermediate/HierarchicalPortOrthogonalEdgeRouter.java
-//! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/intermediate/InvertedPortProcessor.java
 //!
-//! The processors of a graph with external port dummies, and the inverted port processor of a graph
-//! with non-free ports.
+//! The processors of a graph with external port dummies.
 //!
 //! The external port dummies of the compound graph preprocessor take their sides from the flow when
 //! the parent node's port constraints are free, which leaves them in the first and the last layer
 //! of the graph's internal frame. The parts these processors need for fixed port constraints are not
 //! ported and are reported as `Unsupported`: the in-layer order of eastern and western dummies,
 //! northern and southern dummies (which are replaced by dummies in every layer and routed around the
-//! graph), and port ratios and positions. The inverted port processor reports any port it would
-//! change, as the dummies it makes are not ported.
+//! graph), and port ratios and positions.
 
 use crate::core::data::enums::{NodeType, PortConstraints, PortSide};
 use crate::layered::LayoutError;
@@ -245,43 +242,6 @@ fn correct_slanted_edge_segments(graph: &mut LGraph, layer: usize) {
 fn absolute_anchor_y(graph: &LGraph, port: usize) -> f64 {
     let data = &graph.ports[port];
     graph.nodes[data.node].position.y + data.position.y + data.anchor.y
-}
-
-/// `InvertedPortProcessor.process`: input ports on the east side and output ports on the west side
-/// of side-fixed normal nodes would get dummies that turn their edges around. Those dummies are not
-/// ported; a graph that needs one is reported, and any other graph is left as it is.
-pub fn process_inverted_ports(graph: &mut LGraph) -> Result<(), LayoutError> {
-    for &node in graph.layers.iter().flatten() {
-        let data = &graph.nodes[node];
-        if data.node_type != NodeType::NORMAL
-            || !is_side_fixed(
-                data.properties
-                    .enum_with_default::<PortConstraints>(options::PORT_CONSTRAINTS),
-            )
-        {
-            continue;
-        }
-        for &port in &data.ports {
-            let port_data = &graph.ports[port];
-            let inverted_input = port_data.side == PortSide::EAST
-                && port_data
-                    .incoming
-                    .iter()
-                    .any(|&edge| graph.ports[graph.edges[edge].source].node != node);
-            let inverted_output = port_data.side == PortSide::WEST
-                && port_data
-                    .outgoing
-                    .iter()
-                    .any(|&edge| graph.ports[graph.edges[edge].target].node != node);
-            if inverted_input || inverted_output {
-                return Err(LayoutError::Unsupported(format!(
-                    "an inverted port on {} (InvertedPortProcessor dummies)",
-                    graph.node_name(node)
-                )));
-            }
-        }
-    }
-    Ok(())
 }
 
 #[cfg(test)]
