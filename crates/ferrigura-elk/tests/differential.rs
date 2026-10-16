@@ -64,7 +64,7 @@ fn corpus_summary() {
 }
 
 /// Cases whose coordinates match elkjs. The floor only goes up, as `SUPPORTED_FLOOR` does.
-const MATCHING_FLOOR: usize = 163;
+const MATCHING_FLOOR: usize = 164;
 
 #[test]
 fn coordinates_match_elkjs() {

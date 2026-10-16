@@ -63,8 +63,9 @@ fn apply_cross_hierarchy_edge_layout(
         x: graphs[graph].offset.x + graphs[graph].padding.left,
         y: graphs[graph].offset.y + graphs[graph].padding.top,
     };
-    // `calculateHierarchicalOffset`: from the source's graph up to the coordinate system's graph.
-    let mut edge_offset = offset;
+    // `calculateHierarchicalOffset`: from the source's graph up to the coordinate system's graph,
+    // summed from zero in Java's order, and then added to the offset.
+    let mut hierarchical = KVector::default();
     if let Some(origin) = edge.coordinate_system_origin {
         let mut current = source_graph;
         while current != origin {
@@ -72,11 +73,19 @@ fn apply_cross_hierarchy_edge_layout(
                 break;
             };
             let position = graphs[parent].nodes[node].position;
-            edge_offset.x += position.x + graphs[parent].offset.x + graphs[parent].padding.left;
-            edge_offset.y += position.y + graphs[parent].offset.y + graphs[parent].padding.top;
+            hierarchical.x += position.x;
+            hierarchical.y += position.y;
+            hierarchical.x += graphs[parent].offset.x;
+            hierarchical.y += graphs[parent].offset.y;
+            hierarchical.x += graphs[parent].padding.left;
+            hierarchical.y += graphs[parent].padding.top;
             current = parent;
         }
     }
+    let edge_offset = KVector {
+        x: offset.x + hierarchical.x,
+        y: offset.y + hierarchical.y,
+    };
     let source = if into_source {
         // The external port's anchor, relative to the node's corner, less the offset that is added
         // to every point below.
