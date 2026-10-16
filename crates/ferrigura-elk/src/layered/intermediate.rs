@@ -11,8 +11,8 @@
 
 use crate::core::data::JavaEnum;
 use crate::core::data::enums::{
-    EdgeLabelSideSelection, GraphProperties, IntermediateProcessorStrategy, LayerConstraint,
-    NodeType, OrderingStrategy, PortConstraints,
+    EdgeLabelSideSelection, IntermediateProcessorStrategy, LayerConstraint, NodeType,
+    OrderingStrategy, PortConstraints,
 };
 use crate::core::math::KVector;
 use crate::core::util::progress::{Monitor, ProgressMonitor};
@@ -51,6 +51,8 @@ pub fn task_name(
         S::LAYER_SIZE_AND_GRAPH_HEIGHT_CALCULATOR => "Layer size calculation",
         S::LABEL_DUMMY_INSERTER => "Label dummy insertions",
         S::LONG_EDGE_JOINER => "Edge joining",
+        S::END_LABEL_PREPROCESSOR => "End label pre-processing",
+        S::END_LABEL_POSTPROCESSOR => "End label post-processing",
         S::END_LABEL_SORTER => "Sort end labels",
         S::REVERSED_EDGE_RESTORER => "Restoring reversed edges",
         S::HIERARCHICAL_NODE_RESIZER => "Resize child graph to fit parent.",
@@ -142,15 +144,14 @@ pub fn run(
         IntermediateProcessorStrategy::REVERSED_EDGE_RESTORER => {
             crate::layered::p1cycles::restore_reversed_edges(graph);
         }
+        IntermediateProcessorStrategy::END_LABEL_PREPROCESSOR => {
+            crate::layered::endlabels::preprocess(graph);
+        }
         IntermediateProcessorStrategy::END_LABEL_SORTER => {
-            if graph
-                .graph_properties
-                .contains(&GraphProperties::END_LABELS)
-            {
-                return Err(LayoutError::Unsupported(
-                    "head and tail labels (the end label processors)".to_string(),
-                ));
-            }
+            crate::layered::endlabels::sort(graph);
+        }
+        IntermediateProcessorStrategy::END_LABEL_POSTPROCESSOR => {
+            crate::layered::endlabels::postprocess(graph);
         }
         IntermediateProcessorStrategy::PORT_LIST_SORTER => {
             ports::sort_ports(graph)?;

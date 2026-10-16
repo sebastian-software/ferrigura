@@ -44,6 +44,8 @@ pub struct LNode {
     pub long_edge_source: Option<usize>,
     /// `InternalProperties.LONG_EDGE_TARGET`: the port the long edge enters at its last node.
     pub long_edge_target: Option<usize>,
+    /// `InternalProperties.END_LABELS`: the label cells of the node's ports that have end labels, by port.
+    pub end_labels: Option<Vec<(usize, crate::layered::labelcell::LabelCell)>>,
     /// `InternalProperties.LONG_EDGE_HAS_LABEL_DUMMIES`.
     pub long_edge_has_label_dummies: bool,
     /// `InternalProperties.LABEL_SIDE` of a label dummy: the side its labels go on.

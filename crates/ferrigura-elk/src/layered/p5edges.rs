@@ -141,7 +141,6 @@ fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
         (GraphProperties::HYPEREDGES, "hyperedges"),
         (GraphProperties::HYPERNODES, "hypernodes"),
         (GraphProperties::EXTERNAL_PORTS, "hierarchical ports"),
-        (GraphProperties::END_LABELS, "end labels"),
     ] {
         if graph.graph_properties.contains(&property) {
             return Err(unsupported(feature));

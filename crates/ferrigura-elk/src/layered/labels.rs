@@ -83,6 +83,14 @@ const LABEL_SIDE: &str = "labelSide";
 /// The id under which an edge label holds `LabelDummySwitcher.INCLUDE_LABEL`, in the same way.
 const INCLUDE_LABEL: &str = "edgelabelcenterednessanalysis.includelabel";
 
+/// `label.getProperty(InternalProperties.LABEL_SIDE)` of an edge label, `UNKNOWN` when it was never set.
+pub(crate) fn label_side(label: &LLabel) -> LabelSide {
+    match label.properties.get(LABEL_SIDE) {
+        Some(OptionValue::Enum { name, .. }) => LabelSide::from_java_text(name).unwrap_or_default(),
+        _ => LabelSide::UNKNOWN,
+    }
+}
+
 /// `label.setProperty(InternalProperties.LABEL_SIDE, side)` for an edge label.
 fn set_label_side(label: &mut LLabel, side: LabelSide) {
     label.properties.set(

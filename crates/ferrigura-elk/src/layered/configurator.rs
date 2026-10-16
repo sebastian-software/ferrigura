@@ -27,11 +27,9 @@ use crate::layered::phases::{P1, P2, P3, P4, P5, PHASES, PhaseStep};
 pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
     // Centred labels are handled by their processors; other features (end labels, hyperedges,
     // hierarchical ports, ...) need processors that are not ported yet.
-    if let Some(feature) = graph
-        .graph_properties
-        .iter()
-        .find(|feature| **feature != GraphProperties::CENTER_LABELS)
-    {
+    if let Some(feature) = graph.graph_properties.iter().find(|feature| {
+        **feature != GraphProperties::CENTER_LABELS && **feature != GraphProperties::END_LABELS
+    }) {
         return Err(LayoutError::Unsupported(format!(
             "graph feature {feature:?}"
         )));
@@ -131,6 +129,16 @@ fn phase_independent(graph: &LGraph) -> Result<LayoutProcessorConfiguration<S>, 
             .add_before(P4, S::LABEL_DUMMY_SWITCHER)
             .add_before(P4, S::LABEL_SIDE_SELECTOR)
             .add_after(P5, S::LABEL_DUMMY_REMOVER);
+    }
+    // `OrthogonalEdgeRouter`'s additions for head and tail labels.
+    if graph
+        .graph_properties
+        .contains(&GraphProperties::END_LABELS)
+    {
+        config
+            .add_before(P4, S::LABEL_SIDE_SELECTOR)
+            .add_before(P4, S::END_LABEL_PREPROCESSOR)
+            .add_after(P5, S::END_LABEL_POSTPROCESSOR);
     }
     if props.enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
         == Some(HierarchyHandling::INCLUDE_CHILDREN)
