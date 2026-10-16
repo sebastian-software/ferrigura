@@ -33,9 +33,17 @@ pub fn parse_with(raw: &str, options: Options) -> Result<SequenceDiagram, ParseE
     let prepared = prepare(raw)?;
     // `preprocessDiagram` removes the directives and the comment lines; `Diagram.fromText` encodes
     // the entities and adds the line break that the grammar expects at the end.
-    let cleaned = cleanup_comments(&remove_directives(&prepared.text));
+    let directives_removed = remove_directives(&prepared.text);
+    let cleaned = cleanup_comments(&directives_removed);
+    // `cleanupComments` trims the start of the text, which removes the line breaks before the first
+    // statement. They count towards the line of an error. The comment lines it removes do not, so
+    // a position after a removed comment line is one line too small (a known limit, see PLAN.md).
+    let leading_breaks = directives_removed
+        .len()
+        .saturating_sub(directives_removed.trim_start().len());
+    let leading_line_breaks = directives_removed[..leading_breaks].matches('\n').count();
     let text = encode_entities(&cleaned) + "\n";
-    let source = Source::new(&text, prepared.line_offset);
+    let source = Source::new(&text, prepared.line_offset + leading_line_breaks);
 
     let tokens = lexer::lex(&text).map_err(|error| source.error(error.offset, error.message))?;
     let parsed = grammar::parse(source, tokens)?;
