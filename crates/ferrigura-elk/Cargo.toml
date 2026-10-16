@@ -11,5 +11,4 @@ publish.workspace = true
 [dependencies]
 indexmap.workspace = true
 serde.workspace = true
-# Exact parsing of JSON numbers, as JavaScript reads them; the default parser can be a few ulps off.
-serde_json = { workspace = true, features = ["float_roundtrip"] }
+serde_json.workspace = true

@@ -33,6 +33,12 @@ For the same reason the exporters do not call the setters for the header texts. 
 
 These rules never change a value that the grammar gives, because the value rules already remove that whitespace. They stay so that the model follows the DB as written. [`check-header.ts`](../tools/port/check-header.ts) runs the real setters, with jsdom providing the DOM DOMPurify needs, and compares the two on every accepted input whose header texts contain no `&`, `<`, `>` or no-break space. A drift in these rules fails `pnpm port:check-header`.
 
+## Numbers
+
+A JSON number is read to the exact double that JavaScript reads from the same text. The default parser of `serde_json` is not correctly rounded and can be a few ulps off, which changes the last digit of a layout coordinate or a trace value. The workspace therefore enables its `float_roundtrip` feature in the root `Cargo.toml`, and every crate inherits it. The layout inputs and the reference outputs both go through the same reader, so both are exact.
+
+When a value is written back, it is written with the shortest representation that reads back to the same double, which is what JavaScript prints. Nothing else rounds a number on the way.
+
 ## Title precedence
 
 `Diagram.fromText` sets the front matter's title first, then `populateCommonDb` sets the grammar's title, but only when that is non-empty. So:
