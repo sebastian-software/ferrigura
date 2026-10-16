@@ -7,7 +7,7 @@
 
 use ferrigura_model::flowchart::{FlowchartDiagram, LabelType};
 
-use super::db::{BodyItem, Db, DbError, FlowText, LinkData};
+use super::db::{BodyItem, Db, DbError, FlowText, LinkData, LinkPosition};
 use super::scanner::{Kind, Token};
 use super::{FlowchartError, Options};
 use crate::error::Source;
@@ -44,7 +44,7 @@ pub(crate) fn parse_text(
     line_offset: usize,
     title: String,
     options: Options,
-) -> Result<FlowchartDiagram, FlowchartError> {
+) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
     let source = Source::new(text, line_offset);
     let tokens = super::scanner::tokenize(text)
         .map_err(|error| FlowchartError::Syntax(source.error(error.offset, "unrecognized text")))?;
@@ -266,9 +266,27 @@ impl Parser<'_> {
                 self.db.set_acc_description(&text);
                 Ok(Statement::Str(text))
             }
-            Kind::Style | Kind::LinkStyle | Kind::ClassDef | Kind::Class | Kind::Click => {
-                self.not_yet("styles, classes, linkStyle and interactions")
+            Kind::Style => {
+                self.style_statement()?;
+                self.separator()?;
+                Ok(Statement::Nodes(Vec::new()))
             }
+            Kind::LinkStyle => {
+                self.link_style_statement()?;
+                self.separator()?;
+                Ok(Statement::Nodes(Vec::new()))
+            }
+            Kind::ClassDef => {
+                self.class_def_statement()?;
+                self.separator()?;
+                Ok(Statement::Nodes(Vec::new()))
+            }
+            Kind::Class => {
+                self.class_statement()?;
+                self.separator()?;
+                Ok(Statement::Nodes(Vec::new()))
+            }
+            Kind::Click => self.not_yet("interactions"),
             _ => {
                 let nodes = self.vertex_statement()?;
                 self.separator()?;
@@ -411,9 +429,140 @@ impl Parser<'_> {
     fn styled_vertex(&mut self) -> Result<String, FlowchartError> {
         let id = self.vertex()?;
         if self.kind() == Kind::StyleSeparator {
-            return self.not_yet("classes on vertices");
+            self.take();
+            let class = self.id_string()?;
+            self.db.set_class(&id, &class);
         }
         Ok(id)
+    }
+
+    /// `styleStatement: STYLE SPACE idString SPACE stylesOpt`: the vertex gets the styles, and is
+    /// made if it does not exist.
+    fn style_statement(&mut self) -> Result<(), FlowchartError> {
+        self.take();
+        self.expect(Kind::Space, "a space after 'style'")?;
+        let id = self.id_string()?;
+        self.expect(Kind::Space, "a space after the node id")?;
+        let styles = self.styles_opt()?;
+        let added = self.db.add_vertex(&id, None, None, Some(&styles), None);
+        self.db(added)
+    }
+
+    /// `classDefStatement: CLASSDEF SPACE idString SPACE stylesOpt`.
+    fn class_def_statement(&mut self) -> Result<(), FlowchartError> {
+        self.take();
+        self.expect(Kind::Space, "a space after 'classDef'")?;
+        let id = self.id_string()?;
+        self.expect(Kind::Space, "a space after the class name")?;
+        let styles = self.styles_opt()?;
+        self.db.add_class(&id, &styles);
+        Ok(())
+    }
+
+    /// `classStatement: CLASS SPACE idString SPACE idString`.
+    fn class_statement(&mut self) -> Result<(), FlowchartError> {
+        self.take();
+        self.expect(Kind::Space, "a space after 'class'")?;
+        let vertices = self.id_string()?;
+        self.expect(Kind::Space, "a space after the node ids")?;
+        let class = self.id_string()?;
+        self.db.set_class(&vertices, &class);
+        Ok(())
+    }
+
+    /// `linkStyleStatement`: the styles, or the interpolation, or both, of the default or of the
+    /// edges at the given indices.
+    fn link_style_statement(&mut self) -> Result<(), FlowchartError> {
+        self.take();
+        self.expect(Kind::Space, "a space after 'linkStyle'")?;
+        let positions = if self.kind() == Kind::Default {
+            self.take();
+            vec![LinkPosition::Default]
+        } else {
+            self.num_list()?
+        };
+        self.expect(Kind::Space, "a space after the positions")?;
+        if self.kind() == Kind::Interpolate {
+            self.take();
+            self.expect(Kind::Space, "a space after 'interpolate'")?;
+            let interpolate = self.alpha_num()?;
+            let added = self.db.update_link_interpolate(&positions, &interpolate);
+            self.db(added)?;
+            if self.kind() == Kind::Space {
+                self.take();
+                let styles = self.styles_opt()?;
+                let added = self.db.update_link(&positions, &styles);
+                self.db(added)?;
+            }
+            return Ok(());
+        }
+        let styles = self.styles_opt()?;
+        let added = self.db.update_link(&positions, &styles);
+        self.db(added)
+    }
+
+    /// `numList: NUM (COMMA NUM)*`, as the indices of `linkStyle`.
+    fn num_list(&mut self) -> Result<Vec<LinkPosition>, FlowchartError> {
+        let mut positions = vec![LinkPosition::Index(
+            self.expect(Kind::Num, "a number")?.value,
+        )];
+        while self.kind() == Kind::Comma {
+            self.take();
+            positions.push(LinkPosition::Index(
+                self.expect(Kind::Num, "a number")?.value,
+            ));
+        }
+        Ok(positions)
+    }
+
+    /// `stylesOpt: style (COMMA style)*`.
+    fn styles_opt(&mut self) -> Result<Vec<String>, FlowchartError> {
+        let mut styles = vec![self.style()?];
+        while self.kind() == Kind::Comma {
+            self.take();
+            styles.push(self.style()?);
+        }
+        Ok(styles)
+    }
+
+    /// `style: styleComponent+`, the components joined as written.
+    fn style(&mut self) -> Result<String, FlowchartError> {
+        let mut style = String::new();
+        while matches!(
+            self.kind(),
+            Kind::Num | Kind::NodeString | Kind::Colon | Kind::Space | Kind::Brkt | Kind::Style
+        ) {
+            style.push_str(&self.take().value);
+        }
+        if style.is_empty() {
+            return self.syntax("expected a style");
+        }
+        Ok(style)
+    }
+
+    /// `alphaNum`: one or more of the tokens of an alphanumeric word, joined as written.
+    fn alpha_num(&mut self) -> Result<String, FlowchartError> {
+        let mut text = String::new();
+        while matches!(
+            self.kind(),
+            Kind::Num
+                | Kind::UnicodeText
+                | Kind::NodeString
+                | Kind::Dir
+                | Kind::Down
+                | Kind::Minus
+                | Kind::Comma
+                | Kind::Colon
+                | Kind::Amp
+                | Kind::Brkt
+                | Kind::Mult
+        ) {
+            text.push_str(&self.take().value);
+        }
+        if text.is_empty() {
+            return self.syntax("expected a word");
+        }
+        Ok(text)
     }
 
     /// `vertex`: an id with its shape, or a bare id. The DB's `addVertex` is called once the
@@ -474,7 +623,9 @@ impl Parser<'_> {
                 let text = self.text()?;
                 self.expect(Kind::Sqe, "']'")?;
                 let props = Some((field.value, value.value));
-                let added = self.db.add_vertex(&id, Some(text), Some("rect"), props);
+                let added = self
+                    .db
+                    .add_vertex(&id, Some(text), Some("rect"), None, props);
                 self.db(added)?;
                 return Ok(id);
             }
@@ -536,7 +687,7 @@ impl Parser<'_> {
             }
             _ => (None, None),
         };
-        let added = self.db.add_vertex(&id, text, shape, None);
+        let added = self.db.add_vertex(&id, text, shape, None, None);
         self.db(added)?;
         Ok(id)
     }

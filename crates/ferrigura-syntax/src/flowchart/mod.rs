@@ -75,6 +75,15 @@ pub fn parse(raw: &str) -> Result<FlowchartDiagram, FlowchartError> {
 
 /// Parses a flowchart with the given options.
 pub fn parse_with(raw: &str, options: Options) -> Result<FlowchartDiagram, FlowchartError> {
+    parse_with_warnings(raw, options).map(|(diagram, _)| diagram)
+}
+
+/// Parses a flowchart and returns the warnings the reference would log while parsing, such as a
+/// style given to a node that does not exist yet. The warnings are not part of the model.
+pub fn parse_with_warnings(
+    raw: &str,
+    options: Options,
+) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
     let prepared = prepare(raw);
     // `Diagram.fromText` encodes the entities and adds a line break before the parser sees the
     // text; the parser's own wrapper then closes the braces.

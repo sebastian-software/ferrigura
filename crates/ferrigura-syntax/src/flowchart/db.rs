@@ -32,6 +32,13 @@ pub(crate) struct LinkData {
     pub id: Option<String>,
 }
 
+/// The position a `linkStyle` statement gives: the default, or the index of an edge.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum LinkPosition {
+    Default,
+    Index(String),
+}
+
 /// An item of a subgraph's body, as the document collects it: a node or subgraph id, a line that
 /// the grammar gives a string value (a lone `;`, an accessibility value), or a direction.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -63,9 +70,11 @@ pub(crate) struct Db {
     subgraph_members: HashSet<String>,
     sub_count: usize,
     classes: Vec<FlowClass>,
+    class_index: HashMap<String, usize>,
     tooltips: Vec<FlowTooltip>,
     default_style: Option<Vec<String>>,
     default_interpolate: Option<String>,
+    warnings: Vec<String>,
 }
 
 impl Db {
@@ -85,14 +94,16 @@ impl Db {
             subgraph_members: HashSet::new(),
             sub_count: 0,
             classes: Vec::new(),
+            class_index: HashMap::new(),
             tooltips: Vec::new(),
             default_style: None,
             default_interpolate: None,
+            warnings: Vec::new(),
         }
     }
 
-    /// The model the DB holds: what the canonical JSON writes.
-    pub(crate) fn into_model(self, title: String) -> FlowchartDiagram {
+    /// The model the DB holds, and the warnings it logged while parsing.
+    pub(crate) fn into_model(self, title: String) -> (FlowchartDiagram, Vec<String>) {
         let mut model = FlowchartDiagram::new();
         model.title = title;
         model.acc_title = self.acc_title;
@@ -105,7 +116,7 @@ impl Db {
         model.tooltips = self.tooltips;
         model.default_style = self.default_style;
         model.default_interpolate = self.default_interpolate;
-        model
+        (model, self.warnings)
     }
 
     /// `setAccTitle`: the grammar's trimmed value without leading whitespace. The sanitising step
@@ -147,6 +158,7 @@ impl Db {
         id: &str,
         text: Option<FlowText>,
         shape: Option<&str>,
+        styles: Option<&[String]>,
         props: Option<(String, String)>,
     ) -> Result<(), DbError> {
         if js_trim(id).is_empty() {
@@ -160,6 +172,11 @@ impl Db {
         let index = match self.vertex_index.get(id) {
             Some(&index) => index,
             None => {
+                if text.is_none() && shape.is_none() && styles.is_some() {
+                    self.warnings.push(format!(
+                        "Style applied to unknown node \"{id}\". This may indicate a typo. The node will be created automatically."
+                    ));
+                }
                 self.vertices.push(FlowVertex {
                     id: id.to_owned(),
                     text: id.to_owned(),
@@ -193,6 +210,9 @@ impl Db {
         }
         if let Some(shape) = shape {
             vertex.shape = Some(shape.to_owned());
+        }
+        if let Some(styles) = styles {
+            vertex.styles.extend(styles.iter().cloned());
         }
         if let Some((field, value)) = props {
             vertex.props.insert(field, value);
@@ -282,6 +302,106 @@ impl Db {
             .or_insert(self.edges.len());
         self.edges.push(edge);
         Ok(())
+    }
+
+    /// `addClass`: each class of `ids` gets the styles, split at `;` after `,` is read as a
+    /// separator, as the reference splits them. The class is made the first time it is named.
+    pub(crate) fn add_class(&mut self, ids: &str, styles: &[String]) {
+        let joined = styles.join(",").replace("\\,", "\u{0}").replace(',', ";");
+        let parts: Vec<String> = joined
+            .replace('\u{0}', ",")
+            .split(';')
+            .map(str::to_owned)
+            .collect();
+        for id in ids.split(',') {
+            let index = match self.class_index.get(id) {
+                Some(&index) => index,
+                None => {
+                    self.classes.push(FlowClass {
+                        id: id.to_owned(),
+                        styles: Vec::new(),
+                    });
+                    let index = self.classes.len() - 1;
+                    self.class_index.insert(id.to_owned(), index);
+                    index
+                }
+            };
+            self.classes[index].styles.extend(parts.iter().cloned());
+        }
+    }
+
+    /// `setClass`: adds the class to the vertex, the first edge and the subgraph that have each
+    /// id of the comma-separated `ids`; an id that names none of them is ignored.
+    pub(crate) fn set_class(&mut self, ids: &str, class: &str) {
+        for id in ids.split(',') {
+            if let Some(&index) = self.vertex_index.get(id) {
+                self.vertices[index].classes.push(class.to_owned());
+            }
+            if let Some(&index) = self.edge_index.get(id) {
+                self.edges[index].classes.push(class.to_owned());
+            }
+            if let Some(&index) = self.subgraph_index.get(id) {
+                self.subgraphs[index].classes.push(class.to_owned());
+            }
+        }
+    }
+
+    /// `updateLink` with a style list: the default, or the edges at the given positions. A style
+    /// without a fill gets `fill:none` added, as the reference does.
+    pub(crate) fn update_link(
+        &mut self,
+        positions: &[LinkPosition],
+        styles: &[String],
+    ) -> Result<(), DbError> {
+        for position in positions {
+            match position {
+                LinkPosition::Default => self.default_style = Some(styles.to_vec()),
+                LinkPosition::Index(index) => {
+                    let index = self.edge_at(index)?;
+                    let edge = &mut self.edges[index];
+                    let mut style = styles.to_vec();
+                    if !style.is_empty() && !style.iter().any(|s| s.starts_with("fill")) {
+                        style.push(String::from("fill:none"));
+                    }
+                    edge.style = Some(style);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// `updateLinkInterpolate`: the default, or the edges at the given positions.
+    pub(crate) fn update_link_interpolate(
+        &mut self,
+        positions: &[LinkPosition],
+        interpolate: &str,
+    ) -> Result<(), DbError> {
+        for position in positions {
+            match position {
+                LinkPosition::Default => self.default_interpolate = Some(interpolate.to_owned()),
+                LinkPosition::Index(index) => {
+                    let index = self.edge_at(index)?;
+                    self.edges[index].interpolate = Some(interpolate.to_owned());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// The position of the edge that a `linkStyle` index names. The index must be in range; the
+    /// reference reports an index past the last edge.
+    fn edge_at(&self, index: &str) -> Result<usize, DbError> {
+        let position = index
+            .parse::<usize>()
+            .ok()
+            .filter(|_| !index.starts_with('0') || index == "0");
+        match position {
+            Some(position) if position < self.edges.len() => Ok(position),
+            _ => Err(DbError(format!(
+                "The index {index} for linkStyle is out of bounds. Valid indices for linkStyle are between 0 and {}. (Help: Ensure that the index is within the range of existing edges.)",
+                self.edges.len().saturating_sub(1)
+            ))),
+        }
     }
 
     /// `addSubGraph`. `id` is the text of the id, `None` when the subgraph has none; `title` is the
