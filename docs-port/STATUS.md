@@ -6,20 +6,21 @@ Each session updates its section when it stops: what changed, what is next, what
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                    |
-| ---------------------------------- | ----------- | ------ | -------------------------------------------------------- |
-| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                    |
-| M2 First slice: pie to SVG         | not started | —      | After M1, in parallel with M3                            |
-| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                            |
-| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md` |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                      |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                 |
+| Milestone                          | Status      | Strand | Notes                                                                      |
+| ---------------------------------- | ----------- | ------ | -------------------------------------------------------------------------- |
+| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                      |
+| M2 First slice: pie to SVG         | in progress | m2     | Branch `sebastian/determined-bartik-42e25d`; Stage A done, see M2 handover |
+| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                                              |
+| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md`                   |
+| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                        |
+| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                   |
 
 ## Strands
 
-| Strand | Session | Worktree | Working on         | Next                                      | Blocked by |
-| ------ | ------- | -------- | ------------------ | ----------------------------------------- | ---------- |
-| main   | —       | —        | M1 done and merged | M2 (pie to SVG) and M3 (flowchart parser) | —          |
+| Strand | Session | Worktree                   | Working on                                          | Next                                           | Blocked by |
+| ------ | ------- | -------------------------- | --------------------------------------------------- | ---------------------------------------------- | ---------- |
+| main   | —       | —                          | M1 done and merged                                  | M2 (pie to SVG) and M3 (flowchart parser)      | —          |
+| m2     | —       | `determined-bartik-42e25d` | Stage A: configuration and text, checkpoint pending | Stage B after the coordinating session answers | —          |
 
 ## M1 handover
 
@@ -34,6 +35,20 @@ Canonical-model conventions are confirmed by the coordinating session and writte
 Known gaps: the front matter `title` is read as a plain or quoted scalar, not with the full YAML reader; comment lines inside a multi-line `accDescr` block are not removed before lexing, as the reference does; sanitisation of header and label text is not ported; the CI jobs have not run on GitHub yet.
 
 Merged into `main` on 2026-10-16 after review; the checks above pass on `main`. Next: M2 needs `ferrigura-text` for measurement and the pie layout; the configuration model is the first M2 item because two pie specs wait for it.
+
+## M2 handover
+
+Stage A (configuration and text) is written; Stages B (themes, pie renderer, geometry comparison) and C (CLI, Node addon) wait for the coordinating session's answer.
+
+Configuration, done: `crates/ferrigura-model/build.rs` generates the configuration types, their defaults and `CONFIG_KEYS` from `packages/mermaid/src/schemas/config.schema.yaml`, so the schema stays the single source. `src/config/ts_defaults.json` holds the TypeScript-only defaults (`pie.useWidth`, `treemap`); `src/config/ts_keys.txt` lists the keys the reference accepts that the schema does not name, which are the theme variables of the default theme and the TypeScript-only sections. `ferrigura_model::config::effective` applies the layers in the order of `mermaidAPI` (site config, front matter, directives; `assignWithDepth`, the key gating of `sanitizeDirective`, the removal of secure keys, the resolution of `theme`, `look` and `layout` through the diagram section). `ferrigura_syntax::config::read` reads the front matter `config` block (serde_yaml_ng) and the `init`, `initialize` and `wrap` directives, with the reference's error behaviour: invalid JSON in any directive drops all of them.
+
+Verified: `pnpm port:diff config` runs 120 inputs (the 87 pie inputs and 33 explicit cases in `tools/port/config-cases.ts`) through the reference's steps and through ferrigura: no difference, and the key sets are equal. `pnpm port:diff pie` and `info` still report no difference.
+
+Compared: the top level and the `pie` section. The other diagram sections are compared when their type is ported, for two reasons: the reference fills them with its own generator (`.build/jsonSchema.ts`, which applies a section's own defaults only), and `defaultConfig.ts` replaces some sections whole. Ferrigura takes their defaults from the schema, so for example `class` and `railroad` carry defaults that the reference does not give them. `dompurifyConfig` is not a key in the reference and is left out of `CONFIG_KEYS`; `$ref` is left out of the comparison (a leftover of the generator in `xyChart`).
+
+Specs: the pie `get_config` spec is ported and passes. `set_config` and `reset_config` stay ignored, because they are `it.todo` in the reference with their bodies commented out, and the pie DB has no `setConfig`.
+
+Known gaps in the configuration: `themeVariables` are not computed (the theme port does that in Stage B), and they are left out of the comparison; front matter YAML goes through serde_yaml_ng, so YAML 1.1 corner cases (for example `yes`) may differ from js-yaml's JSON schema; a `config` key in a directive maps to the section of pie and info only; a directive whose arguments are not an object is ignored, where the reference passes the value on; the front matter `config` block is ignored when it is not an object.
 
 ## P1 diagram types
 
