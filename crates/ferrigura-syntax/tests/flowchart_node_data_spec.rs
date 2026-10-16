@@ -3,12 +3,9 @@
 //! source order.
 //!
 //! The spec reads every result through `getData()`. The port asserts the model equivalent, as
-//! `docs-port/flowchart/PLAN.md` section 10.2 decides: the vertex text and the raw shape name. The
-//! `@{ … }` tests are shape data and are ignored until step 7. The tests that use no `@{ … }` run
-//! now: the diamond, and the two edge-id tests, whose ids the DB sets and `getData` passes through.
-//!
-//! The last shape-data error test comes from commit 764814a2d on `main`; this branch's copy of the
-//! spec does not have it yet.
+//! `docs-port/flowchart/PLAN.md` section 10.2 decides: the vertex text and the raw shape name. What
+//! `getData()` returns for the same texts (the nodes in their order, the shapes, the labels and the
+//! edge ids) is ported in `ferrigura-render/tests/flowchart_node_data_get_data_spec.rs`.
 
 use ferrigura_model::flowchart::{FlowVertex, FlowchartDiagram};
 use ferrigura_syntax::ParseError;

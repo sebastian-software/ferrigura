@@ -3,11 +3,8 @@
 //! order.
 //!
 //! The spec's `beforeEach` (`clear`, `setGen`) is DB setup and is not ported. The collapsed-subgraph
-//! test is shape data (`@{ view: collapsed }`) and its drawing is the `getData` part (M5), which is
-//! not ported here.
-//!
-//! The last test comes from commit 764814a2d on `main`; this branch's copy of the spec does not have
-//! it yet.
+//! test is ported here for the model (`metadata`); its `getData` expectations are in
+//! `ferrigura-render/tests/flowchart_subgraph_get_data_spec.rs`.
 
 use ferrigura_model::flowchart::{FlowSubgraph, FlowchartDiagram};
 use ferrigura_model::value::Value;
