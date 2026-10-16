@@ -1,29 +1,26 @@
 //! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
 //! SPDX-License-Identifier: EPL-2.0
 //! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/p3order/BarycenterHeuristic.java
-//!   with ForsterConstraintResolver.java (its `processConstraints` only, see below)
 //!
 //! The barycenter heuristic: a free layer is ordered by the barycenters of its nodes, the mean rank
 //! of the ports they connect to in the fixed layer, plus a little random noise. A node without
 //! connections gets a random place among the others. Random values are drawn in the order of the
 //! Java, since the order of the nodes depends on them.
 //!
-//! `ForsterConstraintResolver.processConstraints` builds one group per node and returns the nodes in
-//! their order when no constraint is violated. The layered model has no in-layer constraints, so the
-//! constraint graph is always empty and the layer passes through unchanged. Its barycenter writes
-//! (`stateOf(node).barycenter = group.getBarycenter()`) read back the node's own value, so they do
-//! nothing either.
+//! A node's barycenter associates (`BARYCENTER_ASSOCIATES`, the dummies of its northern and
+//! southern ports) add their weights to its own. Once a layer is sorted, the constraint resolver
+//! (`forster`) puts the nodes with in-layer constraints in order.
 //!
 //! The model-order barycenter (`ModelOrderBarycenterHeuristic`) is not ported; the sweep rejects it.
-//! The barycenter associates (`BARYCENTER_ASSOCIATES`) are set only for north and south port dummies,
-//! which are not ported, so `calculate_barycenter` has no associates to visit.
 
 use std::cmp::Ordering;
 
+use super::forster::ForsterConstraintResolver;
 use super::port_distributor::PortDistributor;
 use crate::core::data::enums::NodeType;
 use crate::java::random::Random;
 use crate::java::sort;
+use crate::layered::LayoutError;
 use crate::layered::lgraph::PortType;
 use crate::layered::p3order::{Layout, Net, start_index};
 
@@ -33,13 +30,13 @@ const RANDOM_AMOUNT: f32 = 0.07;
 
 /// `BarycenterHeuristic.BarycenterState`, kept per node.
 #[derive(Clone, Default)]
-struct BarycenterState {
+pub(super) struct BarycenterState {
     /// `summedWeight`, a double.
     summed_weight: f64,
     /// `degree`, the number of ports relevant to the barycenter.
     degree: i32,
     /// `barycenter`, `null` until known.
-    barycenter: Option<f64>,
+    pub(super) barycenter: Option<f64>,
     /// `visited`, for the traversal of `calculateBarycenter`.
     visited: bool,
 }
@@ -50,27 +47,32 @@ pub(super) struct BarycenterHeuristic {
     states: Vec<BarycenterState>,
     /// `portDistributor`: it holds the port ranks and distributes the ports during the sweep.
     pub(super) ports: PortDistributor,
+    /// `constraintResolver`.
+    resolver: ForsterConstraintResolver,
 }
 
 impl BarycenterHeuristic {
-    pub(super) fn new(net: &Net, ports: PortDistributor) -> Self {
+    pub(super) fn new(net: &Net, layout: &Layout, ports: PortDistributor) -> Self {
         BarycenterHeuristic {
             states: vec![BarycenterState::default(); net.graph().nodes.len()],
             ports,
+            resolver: ForsterConstraintResolver::new(net, layout),
         }
     }
 
     /// `setFirstLayerOrder`: the first layer of the sweep, in random order.
     pub(super) fn set_first_layer_order(
         &mut self,
+        net: &Net,
         layout: &mut Layout,
         random: &mut Random,
         forward: bool,
-    ) {
+    ) -> Result<(), LayoutError> {
         let start = start_index(forward, layout.order.len());
         let mut nodes = layout.order[start].clone();
-        self.order_randomly(&mut nodes, random);
+        self.order_randomly(net, &mut nodes, random)?;
         layout.order[start] = nodes;
+        Ok(())
     }
 
     /// `minimizeCrossings(order, freeLayerIndex, forwardSweep, isFirstSweep)`: reorders the free layer
@@ -83,7 +85,7 @@ impl BarycenterHeuristic {
         free: usize,
         forward: bool,
         is_first_sweep: bool,
-    ) {
+    ) -> Result<(), LayoutError> {
         if free != start_index(forward, layout.order.len()) {
             let fixed = if forward { free - 1 } else { free + 1 };
             self.ports.calculate_port_ranks(
@@ -106,12 +108,18 @@ impl BarycenterHeuristic {
             &mut nodes,
             pre_ordered,
             forward,
-        );
+        )?;
         layout.order[free] = nodes;
+        Ok(())
     }
 
     /// `minimizeCrossings(List<LNode>, preOrdered, randomize = true, forward)`: random barycenters.
-    fn order_randomly(&mut self, nodes: &mut [usize], random: &mut Random) {
+    fn order_randomly(
+        &mut self,
+        net: &Net,
+        nodes: &mut Vec<usize>,
+        random: &mut Random,
+    ) -> Result<(), LayoutError> {
         // `randomizeBarycenters`: one `nextDouble` per node, in list order.
         for &node in nodes.iter() {
             let value = random.next_double();
@@ -120,9 +128,18 @@ impl BarycenterHeuristic {
             state.summed_weight = value;
             state.degree = 1;
         }
+        self.sort_and_resolve(net, nodes)
+    }
+
+    /// The end of `minimizeCrossings(List<LNode>, ...)`: a layer of more than one node is sorted by
+    /// the barycenters, and the constraint resolver puts it in order.
+    fn sort_and_resolve(&mut self, net: &Net, nodes: &mut Vec<usize>) -> Result<(), LayoutError> {
         if nodes.len() > 1 {
             self.sort(nodes);
+            self.resolver
+                .process_constraints(net, nodes, &mut self.states)?;
         }
+        Ok(())
     }
 
     /// `minimizeCrossings(List<LNode>, preOrdered, randomize = false, forward)`: barycenters from the
@@ -132,15 +149,13 @@ impl BarycenterHeuristic {
         net: &Net,
         node_ports: &[Vec<usize>],
         random: &mut Random,
-        nodes: &mut [usize],
+        nodes: &mut Vec<usize>,
         pre_ordered: bool,
         forward: bool,
-    ) {
+    ) -> Result<(), LayoutError> {
         self.calculate_barycenters(net, node_ports, random, nodes, forward);
         self.fill_unknown_barycenters(nodes, pre_ordered, random);
-        if nodes.len() > 1 {
-            self.sort(nodes);
-        }
+        self.sort_and_resolve(net, nodes)
     }
 
     /// `calculateBarycenters`: clears the visited flags of the layer, then calculates each node.
@@ -161,8 +176,9 @@ impl BarycenterHeuristic {
     }
 
     /// `calculateBarycenter`: the summed port ranks of the node's connected ports in the fixed layer,
-    /// and for connections within the layer, the barycenter state of the other node. A node with
-    /// connections gets its noise and its barycenter.
+    /// and for connections within the layer, the barycenter state of the other node; then the states
+    /// of the node's barycenter associates in its layer. A node with connections gets its noise and
+    /// its barycenter.
     fn calculate_barycenter(
         &mut self,
         net: &Net,
@@ -208,6 +224,18 @@ impl BarycenterHeuristic {
                     let rank = self.ports.port_ranks[fixed_port];
                     self.states[node].summed_weight += f64::from(rank);
                     self.states[node].degree += 1;
+                }
+            }
+        }
+
+        if let Some(associates) = &net.graph().nodes[node].barycenter_associates {
+            for &associate in associates {
+                if net.layer(node) == net.layer(associate) {
+                    self.calculate_barycenter(net, node_ports, random, associate, forward);
+                    let degree = self.states[associate].degree;
+                    let summed = self.states[associate].summed_weight;
+                    self.states[node].degree += degree;
+                    self.states[node].summed_weight += summed;
                 }
             }
         }

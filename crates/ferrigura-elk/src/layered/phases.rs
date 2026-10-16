@@ -169,8 +169,7 @@ impl PhaseStep {
             }
             PhaseStep::EdgeRouting(_) => {
                 // `OrthogonalEdgeRouter.getLayoutProcessorConfiguration`. Its additions for labels
-                // are made by `GraphConfigurator`; hyperedges, hypernodes and north and south ports
-                // are refused there.
+                // are made by `GraphConfigurator`; hyperedges and hypernodes are refused there.
                 if graph
                     .graph_properties
                     .contains(&GraphProperties::NON_FREE_PORTS)
@@ -179,6 +178,15 @@ impl PhaseStep {
                         .bool_of(crate::layered::options::FEEDBACK_EDGES)
                 {
                     config.add_before(P3, S::INVERTED_PORT_PROCESSOR);
+                    // `NORTH_SOUTH_PORT_PROCESSING_ADDITIONS`.
+                    if graph
+                        .graph_properties
+                        .contains(&GraphProperties::NORTH_SOUTH_PORTS)
+                    {
+                        config
+                            .add_before(P3, S::NORTH_SOUTH_PORT_PREPROCESSOR)
+                            .add_after(P5, S::NORTH_SOUTH_PORT_POSTPROCESSOR);
+                    }
                 }
                 if graph
                     .graph_properties

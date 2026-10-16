@@ -28,6 +28,7 @@ pub mod layerconstraints;
 pub mod lgraph;
 pub mod loops;
 pub mod nodespacing;
+pub mod northsouth;
 pub mod options;
 pub mod p1cycles;
 pub mod p2layers;

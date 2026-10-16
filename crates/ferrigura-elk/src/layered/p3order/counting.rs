@@ -5,8 +5,9 @@
 //!
 //! Counts all crossings of a layer order. Between-layer crossings are counted as in-layer crossings
 //! of the folded layers, with a binary indexed tree over the port positions. Where a port has
-//! several edges, the hyperedge counter takes over (see `hyperedge`). The north/south counting of the
-//! Java is not ported: north and south port dummies are rejected before the sweep starts.
+//! several edges, the hyperedge counter takes over (see `hyperedge`). In a layer with north/south
+//! port dummies, the implicit edges between the dummies and their nodes' ports are counted too
+//! (`countNorthSouthPortCrossingsInLayer`).
 //!
 //! The queries of `CrossingsCounter` that only the greedy switch asks (`switchNodes`, `switchPorts`,
 //! `countCrossingsBetweenPortsInBothOrders`, `countInLayerCrossingsBetweenNodesInBothOrders` and the
@@ -17,7 +18,7 @@ mod hyperedge;
 
 use std::collections::BTreeMap;
 
-use crate::core::data::enums::PortSide;
+use crate::core::data::enums::{NodeType, PortSide};
 use crate::java::sort;
 use crate::layered::LayoutError;
 use crate::layered::p3order::{Layout, Net, in_north_south_east_west_order};
@@ -97,6 +98,8 @@ impl BinaryIndexedTree {
 pub(super) struct AllCrossingsCounter {
     /// `hasHyperEdgesEastOfIndex`: a layer whose gap to the next one has a port with several edges.
     has_hyperedges_east_of_index: Vec<bool>,
+    /// `hasNorthSouthPorts`: a layer with a north/south port dummy.
+    has_north_south_ports: Vec<bool>,
     /// `portPositions`, indexed by port. It is shared by the between-layer and the hyperedge counting,
     /// and keeps its values between the calls, as the Java array does.
     port_positions: Vec<usize>,
@@ -110,8 +113,10 @@ impl AllCrossingsCounter {
     /// `initAtPortLevel`: the hyperedge flags of the initial order.
     pub(super) fn new(net: &Net, layout: &Layout) -> Self {
         let mut has_hyperedges_east_of_index = vec![false; layout.order.len()];
+        let mut has_north_south_ports = vec![false; layout.order.len()];
         for (layer, nodes) in layout.order.iter().enumerate() {
             for &node in nodes {
+                has_north_south_ports[layer] |= net.node_type(node) == NodeType::NORTH_SOUTH_PORT;
                 for &port in &layout.node_ports[node] {
                     if net.degree(port) > 1 {
                         if net.side(port) == PortSide::EAST {
@@ -125,6 +130,7 @@ impl AllCrossingsCounter {
         }
         AllCrossingsCounter {
             has_hyperedges_east_of_index,
+            has_north_south_ports,
             port_positions: vec![0; net.graph().ports.len()],
             index_tree: BinaryIndexedTree::new(0),
             ends: Vec::new(),
@@ -146,23 +152,198 @@ impl AllCrossingsCounter {
         crossings
     }
 
-    /// `countCrossingsAt`. The north/south counting is absent: such dummies are rejected earlier.
+    /// `countCrossingsAt`: the crossings between the layer and the next, and the north/south
+    /// crossings in the layer.
     fn count_crossings_at(&mut self, net: &Net, layout: &Layout, index: usize) -> i32 {
         let order = &layout.order;
-        if index + 1 >= order.len() {
-            return 0;
-        }
         let left = &order[index];
-        let right = &order[index + 1];
-        if self.has_hyperedges_east_of_index[index] {
-            let mut total =
-                hyperedge::count_crossings(net, layout, &mut self.port_positions, left, right);
-            total += self.in_layer_on_side(net, layout, left, PortSide::EAST);
-            total += self.in_layer_on_side(net, layout, right, PortSide::WEST);
-            total
-        } else {
-            self.between_layers(net, layout, left, right)
+        let mut total = 0;
+        if index + 1 < order.len() {
+            let right = &order[index + 1];
+            if self.has_hyperedges_east_of_index[index] {
+                total =
+                    hyperedge::count_crossings(net, layout, &mut self.port_positions, left, right);
+                total += self.in_layer_on_side(net, layout, left, PortSide::EAST);
+                total += self.in_layer_on_side(net, layout, right, PortSide::WEST);
+            } else {
+                total = self.between_layers(net, layout, left, right);
+            }
         }
+        if self.has_north_south_ports[index] {
+            total += self.north_south_port_crossings_in_layer(net, layout, left);
+        }
+        total
+    }
+
+    /// `countNorthSouthPortCrossingsInLayer`.
+    fn north_south_port_crossings_in_layer(
+        &mut self,
+        net: &Net,
+        layout: &Layout,
+        layer: &[usize],
+    ) -> i32 {
+        let ports = self.init_positions_for_north_south_counting(net, layout, layer);
+        self.index_tree = BinaryIndexedTree::new(ports.len());
+        self.count_north_south_crossings_on_ports(net, layout, &ports)
+    }
+
+    /// `countNorthSouthCrossingsOnPorts`: the north/south ports have no edges of their own at this
+    /// point, so each port's ends are the ports of its dummy (for a node's port), the other port of a
+    /// long edge dummy, or the port a dummy's port stands for, each weighted by its degree.
+    fn count_north_south_crossings_on_ports(
+        &mut self,
+        net: &Net,
+        layout: &Layout,
+        ports: &[usize],
+    ) -> i32 {
+        let mut crossings = 0;
+        let mut targets_and_degrees: Vec<(usize, usize)> = Vec::new();
+        for &port in ports {
+            let position = self.position(port);
+            self.index_tree.remove_all(position);
+            targets_and_degrees.clear();
+            let node = net.node_of(port);
+            match net.node_type(node) {
+                NodeType::NORMAL => {
+                    // Only ports with a dummy are indexed for a normal node.
+                    if let Some(dummy) = net.graph().ports[port].north_south_dummy {
+                        for &dummy_port in &layout.node_ports[dummy] {
+                            targets_and_degrees.push((dummy_port, net.degree(dummy_port)));
+                        }
+                    }
+                }
+                NodeType::LONG_EDGE => {
+                    if let Some(&other) = layout.node_ports[node]
+                        .iter()
+                        .find(|&&candidate| candidate != port)
+                    {
+                        targets_and_degrees.push((other, net.degree(other)));
+                    }
+                }
+                NodeType::NORTH_SOUTH_PORT => {
+                    if let Some(origin) = net.graph().ports[port].origin_port {
+                        targets_and_degrees.push((origin, net.degree(port)));
+                    }
+                }
+                _ => {}
+            }
+            for &(target, degree) in &targets_and_degrees {
+                let end = self.position(target);
+                if end > position {
+                    crossings += self.index_tree.rank(end) * degree as i32;
+                    self.ends.push(end);
+                }
+            }
+            while let Some(end) = self.ends.pop() {
+                self.index_tree.add(end);
+            }
+        }
+        crossings
+    }
+
+    /// `initPositionsForNorthSouthCounting`: the ports of the layer top to bottom, as the implicit
+    /// edges meet them. A normal node's northern ports come first, then the eastern ports of the
+    /// dummies above it (from a stack, the nearest first), then its southern ports; the eastern ports
+    /// of the dummies below it wait on the stack until the layout unit changes.
+    fn init_positions_for_north_south_counting(
+        &mut self,
+        net: &Net,
+        layout: &Layout,
+        nodes: &[usize],
+    ) -> Vec<usize> {
+        let mut ports = Vec::new();
+        let mut stack: Vec<usize> = Vec::new();
+        let mut last_layout_unit: Option<usize> = None;
+        let mut index = 0;
+        for &current in nodes {
+            if is_layout_unit_changed(net, last_layout_unit, current) {
+                index = self.empty_stack(net, layout, &mut stack, &mut ports, index);
+            }
+            if let Some(unit) = net.graph().nodes[current].in_layer_layout_unit {
+                last_layout_unit = Some(unit);
+            }
+            match net.node_type(current) {
+                NodeType::NORMAL => {
+                    for port in north_south_ports_with_incident_edges(
+                        net,
+                        &layout.node_ports[current],
+                        PortSide::NORTH,
+                    ) {
+                        self.port_positions[port] = index;
+                        index += 1;
+                        ports.push(port);
+                    }
+                    index = self.empty_stack(net, layout, &mut stack, &mut ports, index);
+                    for port in north_south_ports_with_incident_edges(
+                        net,
+                        &layout.node_ports[current],
+                        PortSide::SOUTH,
+                    ) {
+                        self.port_positions[port] = index;
+                        index += 1;
+                        ports.push(port);
+                    }
+                }
+                NodeType::NORTH_SOUTH_PORT => {
+                    let current_ports = &layout.node_ports[current];
+                    if let Some(&port) = current_ports
+                        .iter()
+                        .find(|&&port| net.side(port) == NORTH_SOUTH_INDEXING_SIDE)
+                    {
+                        self.port_positions[port] = index;
+                        index += 1;
+                        ports.push(port);
+                    }
+                    if current_ports
+                        .iter()
+                        .any(|&port| net.side(port) == NORTH_SOUTH_STACK_SIDE)
+                    {
+                        stack.push(current);
+                    }
+                }
+                NodeType::LONG_EDGE => {
+                    for &port in &layout.node_ports[current] {
+                        if net.side(port) == PortSide::WEST {
+                            self.port_positions[port] = index;
+                            index += 1;
+                            ports.push(port);
+                        }
+                    }
+                    for &port in &layout.node_ports[current] {
+                        if net.side(port) == PortSide::EAST {
+                            stack.push(current);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        // The southern dummies left on the stack.
+        self.empty_stack(net, layout, &mut stack, &mut ports, index);
+        ports
+    }
+
+    /// `emptyStack`: the first eastern port of each node on the stack, the last pushed first.
+    fn empty_stack(
+        &mut self,
+        net: &Net,
+        layout: &Layout,
+        stack: &mut Vec<usize>,
+        ports: &mut Vec<usize>,
+        start_index: usize,
+    ) -> usize {
+        let mut index = start_index;
+        while let Some(dummy) = stack.pop() {
+            if let Some(&port) = layout.node_ports[dummy]
+                .iter()
+                .find(|&&port| net.side(port) == NORTH_SOUTH_STACK_SIDE)
+            {
+                self.port_positions[port] = index;
+                index += 1;
+                ports.push(port);
+            }
+        }
+        index
     }
 
     /// `countCrossingsBetweenLayers`: the ports on the east of the left layer and the west of the right
@@ -280,6 +461,37 @@ impl AllCrossingsCounter {
     fn position(&self, port: usize) -> usize {
         self.port_positions[port]
     }
+}
+
+/// `INDEXING_SIDE` of the north/south counting: a dummy's western port is indexed where the dummy is.
+const NORTH_SOUTH_INDEXING_SIDE: PortSide = PortSide::WEST;
+
+/// `STACK_SIDE` of the north/south counting: a dummy's eastern port waits on the stack.
+const NORTH_SOUTH_STACK_SIDE: PortSide = PortSide::EAST;
+
+/// `getNorthSouthPortsWithIncidentEdges`: the ports on `side` that have a north/south port dummy.
+fn north_south_ports_with_incident_edges(net: &Net, ports: &[usize], side: PortSide) -> Vec<usize> {
+    ports
+        .iter()
+        .copied()
+        .filter(|&port| {
+            net.side(port) == side && net.graph().ports[port].north_south_dummy.is_some()
+        })
+        .collect()
+}
+
+/// `isLayoutUnitChanged`: the node belongs to a layout unit other than the last one, and is not the
+/// last unit's node itself.
+fn is_layout_unit_changed(net: &Net, last_unit: Option<usize>, node: usize) -> bool {
+    let Some(last_unit) = last_unit else {
+        return false;
+    };
+    if last_unit == node {
+        return false;
+    }
+    net.graph().nodes[node]
+        .in_layer_layout_unit
+        .is_some_and(|unit| unit != last_unit)
 }
 
 /// A position the tree has no entry for. The Java reads past its arrays there; it can only happen

@@ -357,6 +357,12 @@ fn module_name(step: &Step) -> Result<&'static str, LayoutError> {
             S::INVERTED_PORT_PROCESSOR => {
                 "org.eclipse.elk.alg.layered.intermediate.InvertedPortProcessor"
             }
+            S::NORTH_SOUTH_PORT_PREPROCESSOR => {
+                "org.eclipse.elk.alg.layered.intermediate.NorthSouthPortPreprocessor"
+            }
+            S::NORTH_SOUTH_PORT_POSTPROCESSOR => {
+                "org.eclipse.elk.alg.layered.intermediate.NorthSouthPortPostprocessor"
+            }
             S::SELF_LOOP_PREPROCESSOR => {
                 "org.eclipse.elk.alg.layered.intermediate.SelfLoopPreProcessor"
             }

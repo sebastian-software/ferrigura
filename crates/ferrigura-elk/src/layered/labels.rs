@@ -1126,13 +1126,21 @@ fn smart_for_regular_node_port_end_labels(
 }
 
 /// `EndLabelPreprocessor.gatherLabels(LPort)`: the end labels of a port, or `None` when no edge
-/// meets the port. Also records the port's maximum edge thickness and each label's edge.
-///
-/// The north and south port dummies (`PORT_DUMMY`) are not part of this port: graphs with
-/// north-south ports are not laid out yet, so no port has a dummy to gather from.
+/// meets the port. Also records the port's maximum edge thickness and each label's edge. A port
+/// with a north/south port dummy (`PORT_DUMMY`) gathers the labels of the dummy's ports made for it.
 fn gather_end_labels(graph: &mut LGraph, port: usize) -> Option<Vec<LabelId>> {
     let mut labels = Vec::new();
-    let max_thickness = gather_port_end_labels(graph, port, &mut labels);
+    let mut max_thickness = gather_port_end_labels(graph, port, &mut labels);
+    if let Some(dummy) = graph.ports[port].north_south_dummy {
+        for dummy_port in graph.nodes[dummy].ports.clone() {
+            if graph.ports[dummy_port].origin_port == Some(port) {
+                max_thickness = java_max(
+                    max_thickness,
+                    gather_port_end_labels(graph, dummy_port, &mut labels),
+                );
+            }
+        }
+    }
     if !labels.is_empty() {
         graph.ports[port].max_edge_thickness = Some(max_thickness);
     }

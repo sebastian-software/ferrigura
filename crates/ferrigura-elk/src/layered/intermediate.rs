@@ -67,6 +67,9 @@ pub fn task_name(
             "Orthogonally routing hierarchical port edges"
         }
         S::INVERTED_PORT_PROCESSOR => "Inverted port preprocessing",
+        S::NORTH_SOUTH_PORT_PREPROCESSOR | S::NORTH_SOUTH_PORT_POSTPROCESSOR => {
+            "Odd port side processing"
+        }
         // `LayerSweepCrossingMinimizer` begins with `"Minimize Crossings " + crossMinType`.
         S::ONE_SIDED_GREEDY_SWITCH => "Minimize Crossings ONE_SIDED_GREEDY_SWITCH",
         S::TWO_SIDED_GREEDY_SWITCH => "Minimize Crossings TWO_SIDED_GREEDY_SWITCH",
@@ -217,6 +220,12 @@ pub fn run(
         }
         IntermediateProcessorStrategy::INVERTED_PORT_PROCESSOR => {
             crate::layered::hierarchical_ports::process_inverted_ports(graph)?;
+        }
+        IntermediateProcessorStrategy::NORTH_SOUTH_PORT_PREPROCESSOR => {
+            crate::layered::northsouth::preprocess(graph)?;
+        }
+        IntermediateProcessorStrategy::NORTH_SOUTH_PORT_POSTPROCESSOR => {
+            crate::layered::northsouth::postprocess(graph)?;
         }
         IntermediateProcessorStrategy::ONE_SIDED_GREEDY_SWITCH => {
             crate::layered::p3order::greedy_switch(graph, true)?;

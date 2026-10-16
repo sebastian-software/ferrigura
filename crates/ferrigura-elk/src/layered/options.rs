@@ -100,6 +100,8 @@ pub const PORT_LABELS_PLACEMENT: &str = "org.eclipse.elk.portLabels.placement";
 pub const PORT_BORDER_OFFSET: &str = "org.eclipse.elk.port.borderOffset";
 pub const PORT_SIDE: &str = "org.eclipse.elk.port.side";
 pub const PORT_ANCHOR: &str = "org.eclipse.elk.port.anchor";
+pub const ALLOW_NON_FLOW_PORTS_TO_SWITCH_SIDES: &str =
+    "org.eclipse.elk.layered.allowNonFlowPortsToSwitchSides";
 
 #[cfg(test)]
 mod tests {
@@ -168,6 +170,7 @@ mod tests {
             PORT_BORDER_OFFSET,
             PORT_SIDE,
             PORT_ANCHOR,
+            ALLOW_NON_FLOW_PORTS_TO_SWITCH_SIDES,
         ] {
             assert!(option_by_id(id).is_some(), "{id} is not registered");
         }

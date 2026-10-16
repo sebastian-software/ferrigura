@@ -14,13 +14,19 @@
 //! swept in alternating directions until a sweep improves nothing. The one-sided greedy switch is
 //! reported as `Unsupported`.
 //!
+//! North and south port dummies take part in the barycenter sweep: their layout units and successor
+//! constraints (`forster`), the barycenter associates, the port barycenters of the northern and
+//! southern ports, and the crossings between the dummies and their nodes in a layer. The best order
+//! is written back with the port lists of the dummies' nodes sorted again (`SweepCopy`).
+//!
 //! Not ported, and reported as `Unsupported`: the model-order barycenter (`forceNodeModelOrder`),
-//! the crossing counter with node model-order influence, north and south port dummies (and the
-//! barycenter associates they set), in-layer constraints, and self-loops. Without in-layer
-//! constraints, `ForsterConstraintResolver.processConstraints` passes each layer through unchanged.
+//! the crossing counter with node model-order influence, north and south port dummies in the greedy
+//! switch (`NorthSouthEdgeNeighbouringNodeCrossingsCounter`), the in-layer constraints of external
+//! port dummies (`InLayerConstraint`), and self-loops.
 
 mod barycenter;
 mod counting;
+mod forster;
 mod greedy_port_distributor;
 mod greedy_switch;
 mod hierarchy;
@@ -79,7 +85,7 @@ pub fn greedy_switch(graph: &mut LGraph, one_sided: bool) -> Result<(), LayoutEr
             "the one-sided greedy switch (GreedySwitchType.ONE_SIDED)".to_string(),
         ));
     }
-    check_structure(graph)?;
+    check_structure(graph, false)?;
     let mut random = graph
         .random
         .take()
@@ -169,11 +175,13 @@ pub(super) fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
             "the crossing counter with model order influence".to_string(),
         ));
     }
-    check_structure(graph)
+    check_structure(graph, true)
 }
 
 /// The parts of a graph no layer sweep of this port handles, the barycenter's or the greedy switch's.
-fn check_structure(graph: &LGraph) -> Result<(), LayoutError> {
+/// North and south port dummies are handled by the barycenter sweep (`north_south_dummies`), not by
+/// the greedy switch.
+fn check_structure(graph: &LGraph, north_south_dummies: bool) -> Result<(), LayoutError> {
     // A self loop is detached while the self loop processors hold it, so only attached edges count.
     for (index, edge) in graph.edges.iter().enumerate() {
         if graph.is_attached(index)
@@ -190,9 +198,11 @@ fn check_structure(graph: &LGraph) -> Result<(), LayoutError> {
         .flatten()
         .map(|&node| &graph.nodes[node])
     {
-        if node.node_type == NodeType::NORTH_SOUTH_PORT {
+        if node.node_type == NodeType::NORTH_SOUTH_PORT && !north_south_dummies {
             return Err(LayoutError::Unsupported(
-                "north-south port dummies in crossing minimization".to_string(),
+                "north-south port dummies in the greedy switch \
+                 (NorthSouthEdgeNeighbouringNodeCrossingsCounter)"
+                    .to_string(),
             ));
         }
         // `ForsterConstraintResolver` keeps nodes with in-layer constraints at the top or the
@@ -417,11 +427,19 @@ pub(super) fn in_sweep_range(index: isize, length: usize, forward: bool) -> bool
 }
 
 /// `SweepCopy.transferNodeAndPortOrdersToGraph(lGraph, true)`: the layers and the port lists take the
-/// saved order, and nodes whose port order was free become `FIXED_ORDER`. The north and south dummy
-/// side corrections do not apply, as those dummies are unsupported.
+/// saved order, and nodes whose port order was free become `FIXED_ORDER`. Each north/south port
+/// dummy's port goes to the side of its node that the dummy ended up on
+/// (`assertCorrectPortSides`), and the port lists of the dummies and their nodes are sorted again
+/// (`PortListSorter.CMP_COMBINED`).
 pub(super) fn transfer_node_and_port_orders(graph: &mut LGraph, best: Layout) {
+    // `updatePortOrder`, a set: each node is sorted on its own, so the order does not matter.
+    let mut update_port_order: Vec<usize> = Vec::new();
     for layer in &best.order {
+        let mut north_south_dummies = Vec::new();
         for &node in layer {
+            if graph.nodes[node].node_type == NodeType::NORTH_SOUTH_PORT {
+                north_south_dummies.push(node);
+            }
             graph.nodes[node].ports = best.node_ports[node].clone();
             if !is_order_fixed(port_constraints(graph, node)) {
                 graph.nodes[node].properties.set(
@@ -433,8 +451,52 @@ pub(super) fn transfer_node_and_port_orders(graph: &mut LGraph, best: Layout) {
                 );
             }
         }
+        for dummy in north_south_dummies {
+            if let Some(origin) = assert_correct_port_sides(graph, layer, dummy) {
+                for node in [origin, dummy] {
+                    if !update_port_order.contains(&node) {
+                        update_port_order.push(node);
+                    }
+                }
+            }
+        }
     }
     graph.layers = best.order;
+    for node in update_port_order {
+        let mut ports = graph.nodes[node].ports.clone();
+        {
+            let view: &LGraph = graph;
+            crate::java::sort::sort_by(&mut ports, |&a, &b| {
+                crate::layered::ports::combined_order(view, a, b)
+            });
+        }
+        graph.nodes[node].ports = ports;
+    }
+}
+
+/// `SweepCopy.assertCorrectPortSides`: the port of the dummy's node that the dummy's first port
+/// stands for moves to the south when the dummy is below the node, and to the north when it is
+/// above. Returns the dummy's node (`IN_LAYER_LAYOUT_UNIT`). Ports with explicit anchors are refused
+/// by the importer, so no anchor is mirrored.
+fn assert_correct_port_sides(graph: &mut LGraph, layer: &[usize], dummy: usize) -> Option<usize> {
+    let origin = graph.nodes[dummy].in_layer_layout_unit?;
+    let dummy_port = *graph.nodes[dummy].ports.first()?;
+    let origin_port = graph.ports[dummy_port].origin_port;
+    // `node.id = j`: the place of each node in the layer.
+    let place = |node: usize| layer.iter().position(|&member| member == node);
+    let (dummy_place, origin_place) = (place(dummy), place(origin));
+    for port in graph.nodes[origin].ports.clone() {
+        if Some(port) == origin_port {
+            let side = graph.ports[port].side;
+            if side == PortSide::NORTH && dummy_place > origin_place {
+                graph.ports[port].side = PortSide::SOUTH;
+            } else if side == PortSide::SOUTH && origin_place > dummy_place {
+                graph.ports[port].side = PortSide::NORTH;
+            }
+            break;
+        }
+    }
+    Some(origin)
 }
 
 #[cfg(test)]

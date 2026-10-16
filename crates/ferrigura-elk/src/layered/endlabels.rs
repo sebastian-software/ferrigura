@@ -8,8 +8,9 @@
 //! margins to hold them. The sorter orders the labels of a port by their edges, and the postprocessor
 //! moves the cells to the node's position and lays the labels out in them.
 //!
-//! Not ported: port dummies, which only hierarchical ports have, and the port label management that
-//! ports with labels of their own need. The importer rejects node labels.
+//! A northern or southern port whose edges moved to a north/south port dummy gathers the labels of
+//! the dummy's ports made for it. Not ported: the port label management that ports with labels of
+//! their own need. The importer rejects node labels.
 
 use std::cmp::Ordering;
 
@@ -177,7 +178,16 @@ fn create_configured_label_cell(
 /// sets the largest edge thickness at the port. `None` when the port has no incident edge.
 fn gather_labels(graph: &mut LGraph, port: usize) -> Option<Vec<LabelId>> {
     let mut labels = Vec::new();
-    let max_thickness = gather_incident_labels(graph, port, &mut labels);
+    let mut max_thickness = gather_incident_labels(graph, port, &mut labels);
+    // The ports of the port's north/south port dummy that were made for it hold its edges now.
+    if let Some(dummy) = graph.ports[port].north_south_dummy {
+        for dummy_port in graph.nodes[dummy].ports.clone() {
+            if graph.ports[dummy_port].origin_port == Some(port) {
+                max_thickness =
+                    max_thickness.max(gather_incident_labels(graph, dummy_port, &mut labels));
+            }
+        }
+    }
     if !labels.is_empty() {
         graph.ports[port].max_edge_thickness = Some(max_thickness);
     }

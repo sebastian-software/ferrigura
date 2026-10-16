@@ -108,7 +108,7 @@ pub fn sort_ports(graph: &mut LGraph) -> Result<(), LayoutError> {
 /// `CMP_PORT_SIDE.thenComparing(CMP_FIXED_ORDER_AND_FIXED_POS)`: the side ordinal, then along
 /// the side: x for north and reversed x for south, y for east and reversed y for west. Ports
 /// compare as equal when the comparison is between different sides, as the Java does.
-fn combined_order(graph: &LGraph, a: usize, b: usize) -> std::cmp::Ordering {
+pub fn combined_order(graph: &LGraph, a: usize, b: usize) -> std::cmp::Ordering {
     let (first, second) = (&graph.ports[a], &graph.ports[b]);
     side_ordinal(first.side)
         .cmp(&side_ordinal(second.side))

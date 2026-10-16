@@ -6,8 +6,9 @@
 //! Phase 3 of the self loops, "Self-Loop ordering": the hidden ports of a node get their sides, and
 //! are put back into the node's port list in the order that keeps the self loops from crossing.
 //!
-//! The north-south port connections of `PortRestorer` come from hierarchical ports, which are not
-//! ported, so no port has them and those predicates never hold.
+//! A northern port whose north/south port dummy has edges to the west, and a southern port whose
+//! dummy has edges to the east, stay at the start of their side (`PortRestorer`'s
+//! `isNorthSouthPortWith...` predicates).
 
 use crate::core::data::enums::{
     NodeType, PortConstraints, PortSide, SelfLoopDistributionStrategy, SelfLoopOrderingStrategy,
@@ -452,6 +453,10 @@ fn add_ports_to_node(graph: &mut LGraph, holder: &SelfLoopHolder, areas: &[Vec<u
         Area::START,
         &mut list,
     );
+    next = take_ports_that(&old, next, &mut list, |port| {
+        graph.ports[port].side == PortSide::NORTH
+            && north_south_connection_sides(graph, port).contains(&PortSide::WEST)
+    });
     push_area(
         graph,
         holder,
@@ -483,6 +488,10 @@ fn add_ports_to_node(graph: &mut LGraph, holder: &SelfLoopHolder, areas: &[Vec<u
         Area::START,
         &mut list,
     );
+    next = take_ports_that(&old, next, &mut list, |port| {
+        graph.ports[port].side == PortSide::SOUTH
+            && north_south_connection_sides(graph, port).contains(&PortSide::EAST)
+    });
     push_area(
         graph,
         holder,
@@ -534,12 +543,42 @@ fn take_side_ports(
     side: PortSide,
     list: &mut Vec<usize>,
 ) -> usize {
+    take_ports_that(old, from, list, |port| graph.ports[port].side == side)
+}
+
+/// `addAllThat`: takes the old ports from `from` while `condition` holds, and returns the index of
+/// the first one for which it does not.
+fn take_ports_that(
+    old: &[usize],
+    from: usize,
+    list: &mut Vec<usize>,
+    condition: impl Fn(usize) -> bool,
+) -> usize {
     let mut index = from;
-    while index < old.len() && graph.ports[old[index]].side == side {
+    while index < old.len() && condition(old[index]) {
         list.push(old[index]);
         index += 1;
     }
     index
+}
+
+/// `northSouthPortConnectionSides`: the sides of the port's north/south port dummy whose ports, made
+/// for this port, have edges.
+fn north_south_connection_sides(graph: &LGraph, port: usize) -> Vec<PortSide> {
+    let mut sides = Vec::new();
+    let Some(dummy) = graph.ports[port].north_south_dummy else {
+        return sides;
+    };
+    for &dummy_port in &graph.nodes[dummy].ports {
+        let data = &graph.ports[dummy_port];
+        if data.origin_port == Some(port)
+            && (!data.incoming.is_empty() || !data.outgoing.is_empty())
+            && !sides.contains(&data.side)
+        {
+            sides.push(data.side);
+        }
+    }
+    sides
 }
 
 #[cfg(test)]

@@ -9,7 +9,8 @@
 //!
 //! Java's `float` is kept as `f32` for the ranks, the barycenters of ports and the sums that form
 //! them, since equal barycenters are ordered by the sort and a rounding in the sums would change
-//! the order. Doubles stay doubles. North and south ports are skipped here (see `collect_ports`).
+//! the order. Doubles stay doubles. A northern or southern port takes its barycenter from the place
+//! of its north/south port dummy in the layer (`dealWithNorthSouthPorts`).
 
 use std::cmp::Ordering;
 
@@ -164,18 +165,24 @@ impl PortDistributor {
             return;
         }
         let on_side = net.side_ports(&node_ports[node], side);
-        self.distribute_on_side(net, node, &on_side);
+        self.distribute_on_side(net, node_ports, node, &on_side);
         let south = net.side_ports(&node_ports[node], PortSide::SOUTH);
-        self.distribute_on_side(net, node, &south);
+        self.distribute_on_side(net, node_ports, node, &south);
         let north = net.side_ports(&node_ports[node], PortSide::NORTH);
-        self.distribute_on_side(net, node, &north);
+        self.distribute_on_side(net, node_ports, node, &north);
         self.sort_ports(net, &mut node_ports[node]);
     }
 
     /// `distributePorts(LNode, Iterable<LPort>)`.
-    fn distribute_on_side(&mut self, net: &Net, node: usize, ports: &[usize]) {
+    fn distribute_on_side(
+        &mut self,
+        net: &Net,
+        node_ports: &[Vec<usize>],
+        node: usize,
+        ports: &[usize],
+    ) {
         self.in_layer_ports.clear();
-        self.collect_ports(net, node, ports);
+        self.collect_ports(net, node_ports, node, ports);
         if !self.in_layer_ports.is_empty() {
             self.in_layer_barycenters(net, node);
         }
@@ -183,37 +190,53 @@ impl PortDistributor {
 
     /// `iteratePortsAndCollectInLayerPorts`: the barycenter of each port from the ranks of the ports
     /// it connects to; ports with an edge into their own layer are collected instead.
-    fn collect_ports(&mut self, net: &Net, node: usize, ports: &[usize]) {
+    fn collect_ports(
+        &mut self,
+        net: &Net,
+        node_ports: &[Vec<usize>],
+        node: usize,
+        ports: &[usize],
+    ) {
         self.min_barycenter = 0.0;
         self.max_barycenter = 0.0;
         let node_layer = net.layer(node);
+        // `2 * node.getLayer().getNodes().size() + 1`, an int widened to a float.
+        let absurdly_large_float = (2 * net.layer_size(node) + 1) as f32;
         'ports: for &port in ports {
             let side = net.side(port);
-            // Java gives a north or south port its barycenter from its port dummy. Those are not ported,
-            // and the sweep rejects the graphs whose north and south ports have edges. Without edges
-            // Java leaves the barycenter at 0, which is what this port keeps.
-            if matches!(side, PortSide::NORTH | PortSide::SOUTH) {
-                continue;
-            }
+            let north_south_port = matches!(side, PortSide::NORTH | PortSide::SOUTH);
             // `float sum = 0`.
             let mut sum = 0.0_f32;
-            // Outgoing edges go to the next layer, which is seen clockwise.
-            for &edge in net.outgoing(port) {
-                let connected = net.target(edge);
-                if net.layer_of_port(connected) == node_layer {
-                    self.in_layer_ports.push(port);
-                    continue 'ports;
+            if north_south_port {
+                let Some(port_dummy) = net.graph().ports[port].north_south_dummy else {
+                    continue;
+                };
+                sum += self.deal_with_north_south_ports(
+                    net,
+                    node_ports,
+                    absurdly_large_float,
+                    port,
+                    port_dummy,
+                );
+            } else {
+                // Outgoing edges go to the next layer, which is seen clockwise.
+                for &edge in net.outgoing(port) {
+                    let connected = net.target(edge);
+                    if net.layer_of_port(connected) == node_layer {
+                        self.in_layer_ports.push(port);
+                        continue 'ports;
+                    }
+                    sum += self.port_ranks[connected];
                 }
-                sum += self.port_ranks[connected];
-            }
-            // Incoming edges go to the previous layer, which is seen counter-clockwise.
-            for &edge in net.incoming(port) {
-                let connected = net.source(edge);
-                if net.layer_of_port(connected) == node_layer {
-                    self.in_layer_ports.push(port);
-                    continue 'ports;
+                // Incoming edges go to the previous layer, which is seen counter-clockwise.
+                for &edge in net.incoming(port) {
+                    let connected = net.source(edge);
+                    if net.layer_of_port(connected) == node_layer {
+                        self.in_layer_ports.push(port);
+                        continue 'ports;
+                    }
+                    sum -= self.port_ranks[connected];
                 }
-                sum -= self.port_ranks[connected];
             }
             let degree = net.degree(port);
             if degree > 0 {
@@ -224,7 +247,54 @@ impl PortDistributor {
                 // affect the comparisons made with these values.
                 self.min_barycenter = self.min_barycenter.min(barycenter);
                 self.max_barycenter = self.max_barycenter.max(barycenter);
+            } else if north_south_port {
+                self.port_barycenters[port] = sum;
             }
+        }
+    }
+
+    /// `dealWithNorthSouthPorts`: the barycenter of a northern or southern port from the place of its
+    /// dummy. An input port's edges come from the left, so it goes to the far end of its side; an
+    /// output port's go to the right, and the port takes the dummy's place; a port with both goes to
+    /// the middle.
+    fn deal_with_north_south_ports(
+        &self,
+        net: &Net,
+        node_ports: &[Vec<usize>],
+        absurdly_large_float: f32,
+        port: usize,
+        port_dummy: usize,
+    ) -> f32 {
+        let mut input = false;
+        let mut output = false;
+        for &dummy_port in &node_ports[port_dummy] {
+            if net.graph().ports[dummy_port].origin_port == Some(port) {
+                if !net.outgoing(dummy_port).is_empty() {
+                    output = true;
+                } else if !net.incoming(dummy_port).is_empty() {
+                    input = true;
+                }
+            }
+        }
+        // `positionOf(portDummy)`, an int.
+        let position = self.positions[port_dummy] as f32;
+        let north = net.side(port) == PortSide::NORTH;
+        if input && input ^ output {
+            if north {
+                -position
+            } else {
+                absurdly_large_float - position
+            }
+        } else if output && input ^ output {
+            position + 1.0
+        } else if input && output {
+            if north {
+                0.0
+            } else {
+                absurdly_large_float / 2.0
+            }
+        } else {
+            0.0
         }
     }
 

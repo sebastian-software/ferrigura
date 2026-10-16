@@ -215,7 +215,7 @@ impl<'g> Hierarchy<'g> {
                 None => self.random.next_boolean(),
             };
             let ports = PortDistributor::new(&net, node_relative);
-            let heuristic = BarycenterHeuristic::new(&net, ports);
+            let heuristic = BarycenterHeuristic::new(&net, &layout, ports);
             let counter = AllCrossingsCounter::new(&net, &layout);
             // `initAtNodeLevel`: the nested graphs, in the order of the layers.
             let child_graphs: Vec<usize> = graph
@@ -341,9 +341,8 @@ impl<'g> Hierarchy<'g> {
                         target_info[0] += 1;
                     }
                 }
-                // The north and south ports pass the influence to their dummies. North and south
-                // port dummies are not ported (`check_supported`); a hierarchical port on those
-                // sides would pass it to a dummy of another graph, which is reported.
+                // The north and south ports pass the influence to their dummies. A hierarchical port
+                // on those sides would pass it to a dummy of another graph, which is reported.
                 if ports.iter().any(|&port| {
                     matches!(net.side(port), PortSide::NORTH | PortSide::SOUTH)
                         && graph.ports[port].port_dummy.is_some()
@@ -351,6 +350,22 @@ impl<'g> Hierarchy<'g> {
                     return Err(LayoutError::Unsupported(
                         "north or south hierarchical ports in LayerSweepTypeDecider".to_string(),
                     ));
+                }
+                let north_south_ports = net
+                    .side_ports(ports, PortSide::NORTH)
+                    .into_iter()
+                    .chain(net.side_ports(ports, PortSide::SOUTH));
+                for port in north_south_ports {
+                    if let Some(dummy) = graph.ports[port].north_south_dummy {
+                        paths_to_random += current[2];
+                        paths_to_hierarchical += current[1];
+                        let (dummy_layer, dummy_index) = position_of(dummy);
+                        let dummy_info = &mut info[dummy_layer][dummy_index];
+                        dummy_info[1] += current[1];
+                        dummy_info[2] += current[2];
+                        dummy_info[0] += current[0];
+                        dummy_info[0] += 1;
+                    }
                 }
             }
             for node in north_south_dummies {
@@ -501,8 +516,12 @@ impl<'g> Hierarchy<'g> {
             Some(random) => random,
             None => &mut self.random,
         };
-        data.heuristic
-            .set_first_layer_order(&mut data.layout, random, forward);
+        if let Err(error) =
+            data.heuristic
+                .set_first_layer_order(&data.net, &mut data.layout, random, forward)
+        {
+            self.error.get_or_insert(error);
+        }
     }
 
     /// `sweepReducingCrossings`: the port distribution of the first layer, then each following layer
@@ -536,14 +555,16 @@ impl<'g> Hierarchy<'g> {
                     Some(random) => random,
                     None => &mut self.random,
                 };
-                data.heuristic.minimize_crossings(
+                if let Err(error) = data.heuristic.minimize_crossings(
                     &data.net,
                     &mut data.layout,
                     random,
                     free,
                     forward,
                     is_first_sweep,
-                );
+                ) {
+                    self.error.get_or_insert(error);
+                }
                 data.heuristic.ports.distribute_ports_while_sweeping(
                     &data.net,
                     &mut data.layout,

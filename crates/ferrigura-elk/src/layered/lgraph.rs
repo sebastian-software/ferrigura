@@ -76,6 +76,16 @@ pub struct LNode {
     /// Whether the graph nested in this node has `GraphProperties.EXTERNAL_PORTS`, which the
     /// compound graph preprocessor records here for the processors of the node's own graph.
     pub nested_external_ports: bool,
+    /// `InternalProperties.IN_LAYER_LAYOUT_UNIT`: the node whose layout unit this node belongs to.
+    /// The north/south port preprocessor sets it on a side-fixed node (the node itself) and on the
+    /// dummies it makes for the node's northern and southern ports.
+    pub in_layer_layout_unit: Option<usize>,
+    /// `InternalProperties.IN_LAYER_SUCCESSOR_CONSTRAINTS`: the nodes of the same layer this node
+    /// must come before.
+    pub in_layer_successor_constraints: Vec<usize>,
+    /// `InternalProperties.BARYCENTER_ASSOCIATES`: the nodes whose barycenters count towards this
+    /// node's, the dummies of its northern and southern ports.
+    pub barycenter_associates: Option<Vec<usize>>,
 }
 
 /// The properties of an external port dummy (`NodeType.EXTERNAL_PORT`), which
@@ -153,6 +163,12 @@ pub struct LPort {
     pub inside_connections: bool,
     /// `LayeredOptions.PORT_BORDER_OFFSET`: how far the port sits outside its node's border.
     pub border_offset: f64,
+    /// `InternalProperties.PORT_DUMMY` as the north/south port preprocessor sets it: the dummy, in
+    /// this graph, that holds the edges of this northern or southern port.
+    pub north_south_dummy: Option<usize>,
+    /// `InternalProperties.ORIGIN` of a north/south port dummy's port: the northern or southern
+    /// port it holds the edges of.
+    pub origin_port: Option<usize>,
 }
 
 impl LPort {
@@ -171,6 +187,8 @@ impl LPort {
             port_dummy: None,
             inside_connections: false,
             border_offset: 0.0,
+            north_south_dummy: None,
+            origin_port: None,
         }
     }
 }
@@ -367,6 +385,20 @@ impl LGraph {
         }
         self.edges[edge].target = port;
         self.ports[port].incoming.push(edge);
+    }
+
+    /// `LEdge.setSource(port)`: the edge leaves its old source's outgoing list and joins the new port's.
+    pub fn set_edge_source(&mut self, edge: usize, port: usize) {
+        let old = self.edges[edge].source;
+        if let Some(index) = self.ports[old]
+            .outgoing
+            .iter()
+            .position(|&found| found == edge)
+        {
+            self.ports[old].outgoing.remove(index);
+        }
+        self.edges[edge].source = port;
+        self.ports[port].outgoing.push(edge);
     }
 
     /// Whether the edge is in the outgoing list of its source port, which is Java's

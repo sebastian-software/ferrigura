@@ -678,6 +678,19 @@ fn import_port(graph: &mut LGraph, node: usize, elk_port: &ElkPort) -> Result<us
             elk_port.id
         )));
     }
+    // The north/south port preprocessor leaves the dummies of such a port without successor
+    // constraints, and `SweepCopy.assertCorrectPortSides` moves the port to the side its dummy
+    // ends up on; neither is ported.
+    if elk_port
+        .properties
+        .bool_of(options::ALLOW_NON_FLOW_PORTS_TO_SWITCH_SIDES)
+    {
+        return Err(LayoutError::Unsupported(format!(
+            "allowNonFlowPortsToSwitchSides on port {} \
+             (LayeredOptions.ALLOW_NON_FLOW_PORTS_TO_SWITCH_SIDES)",
+            elk_port.id
+        )));
+    }
     let side = match elk_port.properties.enum_of::<PortSide>(options::PORT_SIDE) {
         Some(side) if side != PortSide::UNDEFINED => side,
         _ => {

@@ -25,9 +25,9 @@ use crate::layered::phases::{P1, P2, P3, P4, P5, PHASES, PhaseStep};
 
 /// `GraphConfigurator.prepareGraphForLayout`: sets `lgraph.processors`.
 pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
-    // Centred labels, self loops, external ports and non-free ports are handled by their
-    // processors; other features (hyperedges, north and south ports, ...) need processors that are
-    // not ported yet.
+    // Centred labels, self loops, external ports, non-free ports and north and south ports are
+    // handled by their processors; other features (hyperedges, hypernodes, comments, ...) need
+    // processors that are not ported yet.
     if let Some(feature) = graph.graph_properties.iter().find(|feature| {
         !matches!(
             feature,
@@ -36,6 +36,7 @@ pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
                 | GraphProperties::SELF_LOOPS
                 | GraphProperties::EXTERNAL_PORTS
                 | GraphProperties::NON_FREE_PORTS
+                | GraphProperties::NORTH_SOUTH_PORTS
         )
     }) {
         return Err(LayoutError::Unsupported(format!(
