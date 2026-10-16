@@ -326,6 +326,9 @@ export function pageHtml(measure: string): string {
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Bold.ttf) format("truetype"); font-weight: 700; font-style: normal; }
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Italic.ttf) format("truetype"); font-weight: 400; font-style: italic; }
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-BoldItalic.ttf) format("truetype"); font-weight: 700; font-style: italic; }
+/* No body margin: a block the reference appends to the body (its diagram container) is then the
+   1200 px viewport wide, which is the width the gantt renderer takes from the container when a
+   diagram sets no useWidth (ganttRenderer.js:98). ferrigura uses the same 1200 px. */
 body { margin: 0; background: #ffffff; }
 #stage { width: 1000px; }
 </style>

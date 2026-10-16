@@ -507,32 +507,16 @@ impl Db {
         Ok((end, render_end))
     }
 
-    /// `isInvalidDate` (lines 183-201): the includes win; the weekend rule, the day name and the
-    /// date or the format's text decide the rest.
+    /// `isInvalidDate` of the DB (see [`invalid_date`]).
     fn is_invalid_date(&self, date: Time, offset: usize) -> Result<bool, DbError> {
-        let formatted = shown(date, self.date_format.trim(), offset)?;
-        let date_only = shown(date, "YYYY-MM-DD", offset)?;
-        if self.includes.contains(&formatted) || self.includes.contains(&date_only) {
-            return Ok(false);
-        }
-        if self.excludes.iter().any(|item| item == "weekends") {
-            let weekend_start = match self.weekend.as_str() {
-                "friday" => Some(5),
-                "saturday" => Some(6),
-                _ => None,
-            };
-            if let Some(start) = weekend_start {
-                let day = date::iso_weekday(date);
-                if day == start || day == start + 1 {
-                    return Ok(true);
-                }
-            }
-        }
-        let day_name = shown(date, "dddd", offset)?.to_lowercase();
-        if self.excludes.contains(&day_name) {
-            return Ok(true);
-        }
-        Ok(self.excludes.contains(&formatted) || self.excludes.contains(&date_only))
+        invalid_date(
+            &self.date_format,
+            &self.includes,
+            &self.excludes,
+            &self.weekend,
+            date,
+            offset,
+        )
     }
 
     /// The model of the DB after `getTasks`. Dates are the epoch milliseconds, and an unresolved
@@ -592,6 +576,42 @@ fn shown(time: Time, format: &str, offset: usize) -> Result<String, DbError> {
         offset,
         message: thrown.0,
     })
+}
+
+/// `isInvalidDate` (`ganttDb.js:183-201`): whether the day that starts at `date` is excluded. The
+/// includes win; then the weekend rule, the day name, and the date or the format's text decide. The
+/// renderer uses it for the excluded ranges (`ganttRenderer.js:575`).
+pub(crate) fn invalid_date(
+    date_format: &str,
+    includes: &[String],
+    excludes: &[String],
+    weekend: &str,
+    date: Time,
+    offset: usize,
+) -> Result<bool, DbError> {
+    let formatted = shown(date, date_format.trim(), offset)?;
+    let date_only = shown(date, "YYYY-MM-DD", offset)?;
+    if includes.contains(&formatted) || includes.contains(&date_only) {
+        return Ok(false);
+    }
+    if excludes.iter().any(|item| item == "weekends") {
+        let weekend_start = match weekend {
+            "friday" => Some(5),
+            "saturday" => Some(6),
+            _ => None,
+        };
+        if let Some(start) = weekend_start {
+            let day = date::iso_weekday(date);
+            if day == start || day == start + 1 {
+                return Ok(true);
+            }
+        }
+    }
+    let day_name = shown(date, "dddd", offset)?.to_lowercase();
+    if excludes.contains(&day_name) {
+        return Ok(true);
+    }
+    Ok(excludes.contains(&formatted) || excludes.contains(&date_only))
 }
 
 /// A date of the DB as a model value: integral milliseconds, or `null` for `undefined` and NaN.
