@@ -40,7 +40,7 @@ const fontDir = join(root, 'crates/ferrigura-text/fonts');
 const createTextPath = join(root, 'packages/mermaid/src/rendering-util/createText.ts');
 
 /** The tolerance of positions and widths, in pixels, when `--check` compares fresh values. */
-const TOLERANCE = 0.05;
+const TOLERANCE = 0.001;
 
 /** One label of the fixture: the arguments of the reference's `createText` in its caller's setup. */
 interface Request {

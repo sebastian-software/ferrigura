@@ -16,7 +16,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::error::TextError;
 use crate::fonts::Face;
-use crate::measure::measure;
+use crate::measure::{layout_width, measure};
 
 /// A word of a line: its text and the face it is set in.
 #[derive(Debug, Clone)]
@@ -42,7 +42,9 @@ pub fn split_line_to_words(text: &str) -> Vec<&str> {
 }
 
 /// The width of a line of words: each word is measured in its face at `size` pixels, every word
-/// after the first with a leading space, as the reference measures its `tspan`s. `shown` gives the
+/// after the first with a leading space, as the reference measures its `tspan`s, and each word's
+/// width is snapped as Chromium lays it out ([`layout_width`]), so the sum is the reference's
+/// `getComputedTextLength`. `shown` gives the
 /// text a word is drawn with, which can differ from its text (the reference decodes entities
 /// before it measures).
 ///
@@ -62,7 +64,7 @@ pub fn measure_words(
         } else {
             format!(" {shown}")
         };
-        total += measure(word.face, &text, size)?;
+        total += layout_width(measure(word.face, &text, size)?);
     }
     Ok(total)
 }

@@ -18,6 +18,20 @@ pub struct Run<'a> {
     pub face: &'static Face,
 }
 
+/// The width of a text run as Chromium lays it out, in pixels: its advance, rounded up to a
+/// multiple of 1/64 px.
+///
+/// Blink keeps positions in layout units of 1/64 px and converts each run's advance with a round up
+/// (`LayoutUnit::FromFloatCeil`), so the run after it starts on the grid, and a line's width, the
+/// `getComputedTextLength` that Mermaid's wrapping compares, is the sum of the snapped runs. A width
+/// within float noise of a grid point is taken to be on it. Verified against Chromium in
+/// `tests/labels_chromium.rs` (`docs-port/flowchart/render-notes/labels.md`).
+#[must_use]
+pub fn layout_width(advance: f64) -> f64 {
+    const UNITS_PER_PIXEL: f64 = 64.0;
+    ((advance * UNITS_PER_PIXEL) - 1e-3).ceil() / UNITS_PER_PIXEL
+}
+
 /// The advance width, in pixels, of `text` set as one run in `face` at `size` pixels.
 ///
 /// # Errors
@@ -71,4 +85,21 @@ fn advance(font: &Font, text: &str, size: f64) -> Result<f64, TextError> {
         .map(|position| i64::from(position.x_advance))
         .sum();
     Ok(units as f64 * size / f64::from(font.units_per_em()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::layout_width;
+
+    #[test]
+    fn a_width_is_rounded_up_to_the_layout_unit() {
+        // 38.1 px is not on the grid of 1/64 px; the next grid point above it is 38.109375.
+        assert_eq!(layout_width(38.1), 38.109375);
+        // 26 px is on the grid and stays where it is, even with float noise.
+        assert_eq!(layout_width(26.0), 26.0);
+        assert_eq!(layout_width(26.000_000_01), 26.0);
+        // Float noise just above a grid point is still on it; a clear excess is rounded up.
+        assert_eq!(layout_width(10.015_625_5), 10.015625);
+        assert_eq!(layout_width(10.02), 10.03125);
+    }
 }
