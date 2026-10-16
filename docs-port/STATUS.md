@@ -6,21 +6,20 @@ Each session updates its section when it stops: what changed, what is next, what
 
 ## Milestones
 
-| Milestone                          | Status          | Strand | Notes                                                                                                                                                                                                                                |
-| ---------------------------------- | --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| M1 Parser foundation: pie and info | done            | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                                                |
-| M2 First slice: pie to SVG         | done            | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
-| M3 Flowchart parser                | done            | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
-| M4 ELK Layered port                | done            | main   | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
-| M5 Flowchart rendering             | done            | main   | Merged on 2026-10-16; 298 of 298 comparable fixtures within tolerance, 54 excluded with reasons; see M5 handover and [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md)                                                          |
-| M6 Remaining P1 diagrams           | done, in review | m6     | Every P1 type parses without a difference and renders with all comparable fixtures within tolerance; see M6 handover and [M6-PLAN.md](./M6-PLAN.md)                                                                                  |
+| Milestone                          | Status | Strand | Notes                                                                                                                                                                                                                                |
+| ---------------------------------- | ------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M1 Parser foundation: pie and info | done   | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                                                |
+| M2 First slice: pie to SVG         | done   | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
+| M3 Flowchart parser                | done   | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
+| M4 ELK Layered port                | done   | main   | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
+| M5 Flowchart rendering             | done   | main   | Merged on 2026-10-16; 298 of 298 comparable fixtures within tolerance, 54 excluded with reasons; see M5 handover and [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md)                                                          |
+| M6 Remaining P1 diagrams           | done   | main   | Merged on 2026-10-16; see M6 handover                                                                                                                                                                                                |
 
 ## Strands
 
-| Strand | Session     | Worktree  | Working on               | Next                                    | Blocked by |
-| ------ | ----------- | --------- | ------------------------ | --------------------------------------- | ---------- |
-| main   | —           | —         | M1 to M5 done and merged | —                                       | —          |
-| m6     | coordinator | `port-m6` | M6 done, in review       | Merge into `main` after review; then P2 | —          |
+| Strand | Session | Worktree | Working on               | Next | Blocked by |
+| ------ | ------- | -------- | ------------------------ | ---- | ---------- |
+| main   | —       | —        | M1 to M6 done and merged | —    | —          |
 
 ## M1 handover
 
@@ -158,4 +157,3 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 - Replace the inherited changesets setup with release-please when the first crate is published.
 - Sequence: the menu links of an actor are kept in a sorted map in the model; the reference keeps their insertion order. An ordered map in the canonical model fixes it (no fixture has links).
 - The text measurement of the custom renderers takes the configured font, which the reference keeps over `sans-serif` on macOS for every probed text; probe Linux and Windows, where the system `sans-serif` may be larger.
-- Shared helpers in more than one place: `sanitizeUrl` (class, gantt, `ferrigura-render/common`), the entity decoding (`unified/label.rs`, timeline) and a text-width helper (gitGraph, journey).
