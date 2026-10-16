@@ -5,9 +5,10 @@ Status: research notes for the Rust port. Read-only: no reference file or repo f
 Reference: `packages/mermaid/src` at commit `e8af08065` (branch `sebastian/port-m5-flowchart-render`). The four core files (`edges.js`, `edgeMarker.ts`, `markers.js`, `lineJump.ts`) are byte-identical in the main checkout.
 
 Scope: flowchart edges and edge labels, ELK layout, `htmlLabels: false`. Two looks are covered:
+
 - `neo`: the effective default for flowcharts (section 0.1). Primary.
 - `classic`: second. Shown where it differs.
-`handDrawn` is out of scope. Edge points, label centres and `curve` values come from the ELK post-processing, which another note covers; this note cites only the parts of `elk/render.ts` that affect drawing.
+  `handDrawn` is out of scope. Edge points, label centres and `curve` values come from the ELK post-processing, which another note covers; this note cites only the parts of `elk/render.ts` that affect drawing.
 
 Tags: `[R]` read from source. `[V]` confirmed by running the code in Node 24 with inline `-e`/stdin scripts (nothing written to disk). `[U]` unverified. `[D]` derived by hand from source, not executed.
 
@@ -19,27 +20,27 @@ Notation: `file:line`. Paths are relative to `packages/mermaid/src/` unless show
 
 ### 0.1 Which look is used
 
-| Layer | Value | Source |
-|---|---|---|
-| Global default `look` | `classic` | `schemas/config.schema.yaml:68-70` |
-| Flowchart section default `look` | `neo` | `schemas/config.schema.yaml:2458-2460` (flowchart block starts `2440`) |
-| Resolution | highest first: frontmatter or directive, then `initialize()` (`siteConfigDelta`), then diagram default (`defaultConfig`); within a layer the diagram section key beats the top-level key | `config.ts:79-107`, `readAppearance` `42-53` |
-| Edge look | `edge.look = config.look` (resolved) | `diagrams/flowchart/flowDb.ts:1337`, `getData` config `flowDb.ts:1120` |
+| Layer                            | Value                                                                                                                                                                                    | Source                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Global default `look`            | `classic`                                                                                                                                                                                | `schemas/config.schema.yaml:68-70`                                     |
+| Flowchart section default `look` | `neo`                                                                                                                                                                                    | `schemas/config.schema.yaml:2458-2460` (flowchart block starts `2440`) |
+| Resolution                       | highest first: frontmatter or directive, then `initialize()` (`siteConfigDelta`), then diagram default (`defaultConfig`); within a layer the diagram section key beats the top-level key | `config.ts:79-107`, `readAppearance` `42-53`                           |
+| Edge look                        | `edge.look = config.look` (resolved)                                                                                                                                                     | `diagrams/flowchart/flowDb.ts:1337`, `getData` config `flowDb.ts:1120` |
 
 Consequence: a flowchart with no user setting renders with `look = neo`. A top-level `look: classic` in `initialize()` beats the flowchart default, because `siteConfigDelta` is checked before `defaultConfig` `[R]`.
 
 ### 0.2 Look-dependent code on the edge path
 
-| Where | What depends on look |
-|---|---|
-| `edges.js:883-892` | neo only (non-animated): dash-array prefix on `style` |
-| `edges.js:946` | `useMargin = !animatedEdge && look == 'neo'`: margin marker variants |
-| `edgeMarker.ts:96-100` | `-margin` suffix in marker id, from `useMargin` |
-| `edges.js:901` | `data-look` attribute value |
-| `lineJump.ts:725-757` | neo dash rewrite (only when the style contains a dash array) |
-| `edges.js:824-848` | `handDrawn` only (out of scope) |
-| `common/index.ts`, `elk/render.ts`, `createText.ts`, `createLabel.js` | no look check (grep `[R]`) |
-| `styles.ts:116-157` | `[data-look="neo"]` rules target nodes, clusters and icons. None targets edge paths `[R]` |
+| Where                                                                 | What depends on look                                                                      |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `edges.js:883-892`                                                    | neo only (non-animated): dash-array prefix on `style`                                     |
+| `edges.js:946`                                                        | `useMargin = !animatedEdge && look == 'neo'`: margin marker variants                      |
+| `edgeMarker.ts:96-100`                                                | `-margin` suffix in marker id, from `useMargin`                                           |
+| `edges.js:901`                                                        | `data-look` attribute value                                                               |
+| `lineJump.ts:725-757`                                                 | neo dash rewrite (only when the style contains a dash array)                              |
+| `edges.js:824-848`                                                    | `handDrawn` only (out of scope)                                                           |
+| `common/index.ts`, `elk/render.ts`, `createText.ts`, `createLabel.js` | no look check (grep `[R]`)                                                                |
+| `styles.ts:116-157`                                                   | `[data-look="neo"]` rules target nodes, clusters and icons. None targets edge paths `[R]` |
 
 The path `d` has no look branch: `insertEdge` builds `d` the same way for both looks (`edges.js:777-811`). Only `style`, marker ids and `data-look` differ between neo and classic.
 
@@ -87,12 +88,12 @@ Skeleton (attribute insertion order is the order below `[R]`, from `edges.js:857
 
 Class string, by `flowDb` stroke value. `flowDb.ts:1320-1325`, `1336`; `insertEdge` class logic `edges.js:780-806`, `861-867`. Identical for both looks:
 
-| `rawEdge.stroke` (flowDb) | `strokeClasses` (insertEdge) | `edge.classes` (flowDb `1322-1325`) | Final `class` attribute |
-|---|---|---|---|
-| `normal` | `edge-thickness-normal edge-pattern-solid` | `edge-thickness-normal edge-pattern-solid flowchart-link` | ` edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link` |
-| `thick` | `edge-thickness-thick edge-pattern-solid` | same | ` edge-thickness-thick edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link` |
-| `dotted` | `edge-thickness-normal edge-pattern-dotted` | same | ` edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link` |
-| `invisible` | `edge-thickness-invisible edge-pattern-solid` | `''` | ` edge-thickness-invisible edge-pattern-solid` |
+| `rawEdge.stroke` (flowDb) | `strokeClasses` (insertEdge)                  | `edge.classes` (flowDb `1322-1325`)                       | Final `class` attribute                                                                              |
+| ------------------------- | --------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `normal`                  | `edge-thickness-normal edge-pattern-solid`    | `edge-thickness-normal edge-pattern-solid flowchart-link` | ` edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link`  |
+| `thick`                   | `edge-thickness-thick edge-pattern-solid`     | same                                                      | ` edge-thickness-thick edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link`   |
+| `dotted`                  | `edge-thickness-normal edge-pattern-dotted`   | same                                                      | ` edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link` |
+| `invisible`               | `edge-thickness-invisible edge-pattern-solid` | `''`                                                      | ` edge-thickness-invisible edge-pattern-solid`                                                       |
 
 Mapping (`edges.js:780-806`): thickness `normal|thick|invisible` maps to `edge-thickness-*`, anything else to `edge-thickness-normal`. Pattern `solid|dotted|dashed` maps to `edge-pattern-*`, anything else to `edge-pattern-solid`. `flowDb` sets `pattern = rawEdge.stroke`, so `thick` and `invisible` patterns fall to solid, and `dotted` thickness falls to normal. `flowDb` only produces `normal`, `thick`, `dotted` and `invisible` (`flowDb.ts:863-934`), so `dashed` is never produced for flowcharts `[R]`.
 
@@ -133,18 +134,18 @@ The dash array hides the first `oS` px and the last `oE` px of the stroke. It ru
 
 Verified `[V]` (path length `L` passed in as a mock, `edges.js:601-622` and `880-892`):
 
-| Input | `style` attribute |
-|---|---|
-| classic, any edge | `;` (unstyled) |
-| neo, unstyled, `arrow_point` end, `L = 100` | `stroke-dasharray: 0 0 96 4; stroke-dashoffset: 0;;` |
-| neo, unstyled, `arrow_circle` at both ends, `L = 50` | `stroke-dasharray: 0 12.5 25 12.5; stroke-dashoffset: 0;;` |
-| neo, `invisible`, no arrows, `L = 40` | `stroke-dasharray: 0 0 40 0; stroke-dashoffset: 0;;` |
-| neo, `dotted`, `arrow_point` end, `L = 100` | `stroke-dasharray: 0 0 2 2 … 2 2 4; stroke-dashoffset: 0;;` (24 pairs of `2 2`) |
-| neo, `dotted`, `L = 5`, no arrows | dash `0 0 2 2 0` |
-| neo, `dotted`, `L = 3`, `arrow_point` end | dash `0 0  4` (room below zero: no pairs, double space) |
-| classic, `linkStyle` `stroke:#f00` | `stroke:#f00;;;stroke:#f00` |
-| classic, `S = ['fill:red']`, `A = ['stroke:#f00','stroke-width:4px']` | `fill:red;stroke:#f00;stroke-width:4px;;;;stroke:#f00;stroke-width:4px` |
-| `A = undefined` (not reachable from flowDb) | `undefined;;;undefined` |
+| Input                                                                 | `style` attribute                                                               |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| classic, any edge                                                     | `;` (unstyled)                                                                  |
+| neo, unstyled, `arrow_point` end, `L = 100`                           | `stroke-dasharray: 0 0 96 4; stroke-dashoffset: 0;;`                            |
+| neo, unstyled, `arrow_circle` at both ends, `L = 50`                  | `stroke-dasharray: 0 12.5 25 12.5; stroke-dashoffset: 0;;`                      |
+| neo, `invisible`, no arrows, `L = 40`                                 | `stroke-dasharray: 0 0 40 0; stroke-dashoffset: 0;;`                            |
+| neo, `dotted`, `arrow_point` end, `L = 100`                           | `stroke-dasharray: 0 0 2 2 … 2 2 4; stroke-dashoffset: 0;;` (24 pairs of `2 2`) |
+| neo, `dotted`, `L = 5`, no arrows                                     | dash `0 0 2 2 0`                                                                |
+| neo, `dotted`, `L = 3`, `arrow_point` end                             | dash `0 0  4` (room below zero: no pairs, double space)                         |
+| classic, `linkStyle` `stroke:#f00`                                    | `stroke:#f00;;;stroke:#f00`                                                     |
+| classic, `S = ['fill:red']`, `A = ['stroke:#f00','stroke-width:4px']` | `fill:red;stroke:#f00;stroke-width:4px;;;;stroke:#f00;stroke-width:4px`         |
+| `A = undefined` (not reachable from flowDb)                           | `undefined;;;undefined`                                                         |
 
 Neo `style` for a `linkStyle` edge is the dash prefix followed by the same `pathStyle` text, for example `stroke-dasharray: 0 0 96 4; stroke-dashoffset: 0;stroke:#f00;;;stroke:#f00` `[D]`.
 
@@ -176,6 +177,7 @@ Built by `insertEdgeLabel` (`edges.js:74-253`). Look-independent. Final DOM (pla
 ```
 
 Details:
+
 - `(tx, ty, tw, th)` = `getBBox()` of the `<text>` element, not of the group (`edges.js:121-127`). `[R]`; the value depends on browser text metrics `[U]`.
 - `(bx, by, bw, bh)` = text bbox; rect = text bbox expanded by 2 on each side (`createText.ts:191-196`).
 - `edge.width = bbox.width`, `edge.height = bbox.height` use the group bbox including the rect (`edges.js:122,136-137`). `[R]`
@@ -247,6 +249,7 @@ insertEdge(elem, edge, clusterDb, diagramType, startNode, endNode, diagramId, sk
 ```
 
 Notes on `paths`:
+
 - With no clipping and no cluster cut (ELK), `points` is `edge.points` itself. When `pointsHasChanged` is true, `updatedPath` is that same array. Otherwise `updatedPath` is undefined. Either way the label delta is exactly 0 (see 6.1).
 - For `rounded`, `d` comes only from `generateRoundedPath`. The d3 `lineFunction` is built (`edges.js:777-778`) but not called in that branch (`edges.js:809-811`) `[R]`.
 
@@ -258,6 +261,7 @@ Generic clip (runs only if `!skipIntersect`, `edges.js:699-704`):
 inner = points.slice(1, edge.points.length - 1)
 points = [tail.intersect(inner[0])] + inner + [head.intersect(inner[last])]
 ```
+
 The original first and last points are discarded. The boundary is found along the line from the node toward the first and last inner points. For a two-point edge the slice is empty, so `intersect(undefined)` is called `[U: not executed; intersect implementation not traced]`.
 
 Cluster cut (`edges.js:706-722`): `cutPathAtIntersect(edge.points, clusterNode)` (`478-512`) keeps points outside the cluster, replaces the first inside point by `intersection(...)` (`413-476`). The `intersection` rectangle formula is kept in the source and is not part of the ELK path `[R]`.
@@ -301,15 +305,15 @@ Used for the d3 `line()` in the non-rounded branch (`edges.js:777-778`). Both lo
 
 Marker offset table (`lineWithOffset.ts:6-16`, `markerOffsets`):
 
-| arrow | offset (px) |
-|---|---|
-| `aggregation`, `extension`, `composition` | 17.25 |
-| `dependency` | 6 |
-| `lollipop` | 13.5 |
-| `arrow_point` | 4 |
-| `arrow_barb` | 0 |
-| `arrow_barb_neo` | 5.5 |
-| `arrow_cross`, `arrow_circle`, `none` | absent (0). `arrow_cross: 24` is commented out at line 15 |
+| arrow                                     | offset (px)                                               |
+| ----------------------------------------- | --------------------------------------------------------- |
+| `aggregation`, `extension`, `composition` | 17.25                                                     |
+| `dependency`                              | 6                                                         |
+| `lollipop`                                | 13.5                                                      |
+| `arrow_point`                             | 4                                                         |
+| `arrow_barb`                              | 0                                                         |
+| `arrow_barb_neo`                          | 5.5                                                       |
+| `arrow_cross`, `arrow_circle`, `none`     | absent (0). `arrow_cross: 24` is commented out at line 15 |
 
 `markerOffsets2` (`lineWithOffset.ts:21-25`) is `arrow_point: 4, arrow_cross: 12.5, arrow_circle: 12.5`. It is used only by the neo dash array (`edges.js:880-881`). It is not used for geometry in either look `[R]`.
 
@@ -346,6 +350,7 @@ x_out = d.x + offset_x_total
 Effect: an endpoint with `arrow_point` moves back along the first or last segment by 4 px. An interior point whose x distance to that endpoint is below 4 px, and whose y distance is below 4 px, is moved so its x distance becomes 5 px. The y coordinate is not changed by the x rule. Only the endpoints get the base offset.
 
 Verified `[V]`:
+
 - `[(0,0),(50,0),(50,60)]`, end `arrow_point`: last point becomes `(50, 56)`.
 - `[(0,0),(0,100)]`, both ends `arrow_point`: `(0,4)` and `(0,96)`.
 
@@ -377,6 +382,7 @@ generateRoundedPath(points', r = 5)                                 edges.js:968
 Output number text is JS `Number.prototype.toString` on full-precision doubles (no rounding), and no space between the two numbers of a coordinate. `[V]`
 
 Verified `[V]`:
+
 - `generateRoundedPath([(0,0),(0,40),(60,40)], 5)` gives `M0,0L0,32.928932188134524Q0,40 7.0710678118654755,40L60,40`.
 - With `arrow_point` at the end: `…L56,40` (last point moved back 4 px).
 - A near-zero segment (`0.1` long) between collinear points gives `M0,0L0,0.1L0,30`.
@@ -385,25 +391,27 @@ The cut length for a right angle is `5 / sin(π/4) = 7.0710678…`, as in the ou
 
 ### 3.6 Curve name → d3 factory (`insertEdge` `733-775`)
 
-| `edge.curve` string | d3 factory | Reached in ELK output? |
-|---|---|---|
-| `rounded` | none: `generateRoundedPath` (`809-810`); `curveLinear` assigned but unused (`771`) | yes, all routed edges (`elk/render.ts:2078`) |
-| `linear` | `curveLinear` (`733-734`) | only edges with no ELK sections, i.e. the straight fallback (`elk/render.ts:2027`) |
-| `basis` | `curveBasis` (`737-738`) | no for routed edges `[U: fallback edge cases]` |
-| `cardinal` | `curveCardinal` (`740-741`) | no |
-| `bumpX` / `bumpY` | `curveBumpX/Y` (`743-748`) | no |
-| `catmullRom` | `curveCatmullRom` (`749-751`) | no |
-| `monotoneX` / `monotoneY` | `curveMonotoneX/Y` (`752-757`) | no |
-| `natural` | `curveNatural` (`758-760`) | no |
-| `step` / `stepAfter` / `stepBefore` | `curveStep` / `curveStepAfter` / `curveStepBefore` (`761-769`) | no |
-| anything else, or non-string | `curveBasis` (`773-774`), after `resolveEdgeCurveType` falls back to `config.flowchart.curve` (`edges.js:43-45`) | no |
+| `edge.curve` string                 | d3 factory                                                                                                       | Reached in ELK output?                                                             |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `rounded`                           | none: `generateRoundedPath` (`809-810`); `curveLinear` assigned but unused (`771`)                               | yes, all routed edges (`elk/render.ts:2078`)                                       |
+| `linear`                            | `curveLinear` (`733-734`)                                                                                        | only edges with no ELK sections, i.e. the straight fallback (`elk/render.ts:2027`) |
+| `basis`                             | `curveBasis` (`737-738`)                                                                                         | no for routed edges `[U: fallback edge cases]`                                     |
+| `cardinal`                          | `curveCardinal` (`740-741`)                                                                                      | no                                                                                 |
+| `bumpX` / `bumpY`                   | `curveBumpX/Y` (`743-748`)                                                                                       | no                                                                                 |
+| `catmullRom`                        | `curveCatmullRom` (`749-751`)                                                                                    | no                                                                                 |
+| `monotoneX` / `monotoneY`           | `curveMonotoneX/Y` (`752-757`)                                                                                   | no                                                                                 |
+| `natural`                           | `curveNatural` (`758-760`)                                                                                       | no                                                                                 |
+| `step` / `stepAfter` / `stepBefore` | `curveStep` / `curveStepAfter` / `curveStepBefore` (`761-769`)                                                   | no                                                                                 |
+| anything else, or non-string        | `curveBasis` (`773-774`), after `resolveEdgeCurveType` falls back to `config.flowchart.curve` (`edges.js:43-45`) | no                                                                                 |
 
 Where the string comes from:
+
 - `flowDb.ts:1340`: `curve = rawEdge.interpolate || this.edges.defaultInterpolate || config.flowchart?.curve`.
 - `config.schema.yaml:2501-2521`: `flowchart.curve`, enum of the 13 names above (`2506-2520`), default `'basis'` (`2521`). The runtime default object is generated from the schema (`defaultConfig.ts:6-9`).
 - `interpolate` comes from `linkStyle … interpolate` (`flowDb.ts:377-383`) or from edge metadata `curve` (`flowDb.ts:173-175`).
 
 ELK side (`elk/render.ts`):
+
 - `getCurve(edge.curve ?? edge.interpolate, defaultInterpolate, confCurve)` (`2705-2713`), where `confCurve = conf.curve` (`2662`; top-level config key, `config.type.ts:430`, not in the schema `[U]`).
 - `buildEdgeData` stores `edgeData.curve = interpolateToCurve(...)` (`2745-2750`). This is a d3 factory function, not a string.
 - `Object.assign(edge, edgeData)` (`2666`) puts that function onto the layout edge. It is overwritten for every laid-out edge by `'rounded'` (`2078`) or `'linear'` (`2027`).
@@ -414,16 +422,19 @@ ELK side (`elk/render.ts`):
 ### 3.7 d3 curve text output (for `linear`, and `basis`/`step` if they become reachable)
 
 d3-shape line serialisation (installed `d3-shape@3.2.0`, `d3-path@3.1.0`, via `d3@7.9.0`):
+
 - `d3-shape/src/path.js:3-19`: `withPath` sets `digits = 3`, so every path is created with `new Path(3)`.
 - `d3-path/src/path.js:13-24`: `appendRound(3)` writes `Math.round(v * 1000) / 1000` for every numeric argument.
 - `d3-path/src/path.js:33-50`: `moveTo` → `M{x},{y}`, `lineTo` → `L{x},{y}`, `bezierCurveTo` → `C{x1},{y1},{x2},{y2},{x},{y}`. No spaces between commands `[R]`.
 - `d3-shape/src/line.js:26-32`: for each point, `curve.point(+x(d,i,data), +y(d,i,data))`, with `lineStart`/`lineEnd` around the run.
 
 Rounding details `[V]`:
+
 - JS `Math.round` rounds ties towards +∞ (`Math.round(-2.5) = -2`). Rust `f64::round` rounds away from zero. Port with `js_round(x) = let f = x.floor(); if x - f >= 0.5 { f + 1 } else { f }`.
 - `-0` prints as `0` (`30,0` from `-0.0004`).
 
 **linear** (`d3-shape/src/curve/linear.js:19-26`): `M P0`, then `L Pi` for `i >= 1`.
+
 - Example `[(0,0),(10.12345,0),(20,20.5555),(30,-0.0004)]` → `M0,0L10.123,0L20,20.556L30,0` `[V]`.
 
 **basis** (`d3-shape/src/curve/basis.js:1-51`). Points `P0..P(n-1)`, `n >= 2`. Output:
@@ -437,6 +448,7 @@ else:
   C  (2*P[n-2] + P[n-1])/3,  (P[n-2] + 2*P[n-1])/3,  (P[n-2] + 5*P[n-1])/6        basis.js:30 (lineEnd, case 3)
   L P[n-1]                                                        basis.js:31
 ```
+
 (Each point is an (x, y) pair; the formulas apply to x and y separately. `[V]`: the example output below matches these formulas.)
 
 - Example `[(0,0),(10.12345,0),(20,20.5555),(30,-0.0004)]` → `M0,0L1.687,0C3.374,0,6.749,0,10.082,3.426C13.416,6.852,16.708,13.704,20.021,13.704C23.333,13.704,26.667,6.852,28.333,3.426L30,0` `[V]`.
@@ -450,6 +462,7 @@ else:       x1 = x_prev*(1-t) + x*t;  L (x1, y_prev);  L (x1, y)                
 at lineEnd: if 0 < t < 1 and _point === 2 (true once >= 2 points): L (x_last, y_last)  step.js:18
             (_point is set to 2 at the second point and never changes, so this holds for every n >= 2)
 ```
+
 - Example `[V]` (`t = 0.5`, three points) → `M0,0L5.062,0L5.062,0L15.062,0L15.062,20.556L20,20.556`.
 - Example `[V]` (`t = 0`, `stepBefore`, three points) → `M0,0L0,5L10,5L10,20L20,20`. Example `[V]` (`t = 1`, `stepAfter`) → `M0,0L10,0L10,5L20,5L20,20`.
 
@@ -457,14 +470,14 @@ at lineEnd: if 0 < t < 1 and _point === 2 (true once >= 2 points): L (x_last, y_
 
 ### 3.8 Number text in other code paths
 
-| Writer | Format | Source |
-|---|---|---|
-| d3 `line` (linear, basis, step) | round to 3 dp via `Math.round(v*1000)/1000`, then JS `toString` | `d3-path` `path.js:13-24` |
-| `generateRoundedPath` | full precision JS `toString` | `edges.js:984-1035` |
-| neo dash array | JS `toString` of `L - oS - oE` (`L` from `getTotalLength`) | `edges.js:887` |
-| `lineJump` `fmt()` | `Math.round(n*1000)/1000` then template text (3 dp) | `lineJump.ts:266-274` |
-| `data-points` | `JSON.stringify` of the point list (full precision) | `edges.js:705` |
-| `translate(...)` attributes | template text of numbers (full precision) | `edges.js:319,335…`, `common/index.ts:337,348` |
+| Writer                          | Format                                                          | Source                                         |
+| ------------------------------- | --------------------------------------------------------------- | ---------------------------------------------- |
+| d3 `line` (linear, basis, step) | round to 3 dp via `Math.round(v*1000)/1000`, then JS `toString` | `d3-path` `path.js:13-24`                      |
+| `generateRoundedPath`           | full precision JS `toString`                                    | `edges.js:984-1035`                            |
+| neo dash array                  | JS `toString` of `L - oS - oE` (`L` from `getTotalLength`)      | `edges.js:887`                                 |
+| `lineJump` `fmt()`              | `Math.round(n*1000)/1000` then template text (3 dp)             | `lineJump.ts:266-274`                          |
+| `data-points`                   | `JSON.stringify` of the point list (full precision)             | `edges.js:705`                                 |
+| `translate(...)` attributes     | template text of numbers (full precision)                       | `edges.js:319,335…`, `common/index.ts:337,348` |
 
 JS number text (for the port): shortest round-trip digits; exponent form for `|x| < 1e-6` or `|x| >= 1e21` (for example `1e-7`); `-0` prints `0`; `NaN` prints `NaN` in path text and `null` in JSON `[U: spec, not executed]`.
 
@@ -474,10 +487,10 @@ JS number text (for the port): shortest round-trip digits; exponent form for `|x
 
 ### 4.1 Where each offset table is used
 
-| Offset table | Used by | Effect |
-|---|---|---|
-| `markerOffsets` (`lineWithOffset.ts:6-16`) | linear accessors (3.4), rounded path (3.5), lineJump rewrite (7.4) | endpoint pulled back along the segment (only `arrow_point` = 4 for flowchart); same in neo and classic |
-| `markerOffsets2` (`lineWithOffset.ts:21-25`) | neo dash array only (`edges.js:880-892`) | dash hidden at each end: `arrow_point` 4, `arrow_cross` 12.5, `arrow_circle` 12.5 |
+| Offset table                                 | Used by                                                            | Effect                                                                                                 |
+| -------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `markerOffsets` (`lineWithOffset.ts:6-16`)   | linear accessors (3.4), rounded path (3.5), lineJump rewrite (7.4) | endpoint pulled back along the segment (only `arrow_point` = 4 for flowchart); same in neo and classic |
+| `markerOffsets2` (`lineWithOffset.ts:21-25`) | neo dash array only (`edges.js:880-892`)                           | dash hidden at each end: `arrow_point` 4, `arrow_cross` 12.5, `arrow_circle` 12.5                      |
 
 Note the mismatch in neo: a circle or cross arrow hides 12.5 px of stroke, but the geometry is not shortened (`markerOffsets` has no entry for them).
 
@@ -493,20 +506,20 @@ Note the mismatch in neo: a circle or cross arrow hides 12.5 px of stroke, but t
 
 `V` is the path endpoint after the offset in 4.1 (`endpoint - 4` for `arrow_point`, `endpoint` for circle and cross). Offsets are in px along the tangent; positive is further into the edge.
 
-| Marker | `s` | Extent `[x_min, x_max]` relative to `V` | Tip or edge relative to the true endpoint `Q` |
-|---|---|---|---|
-| classic `pointEnd` | 0.8 | `[-4, +4]` | tip at `Q`; path ends mid-arrow |
-| classic `pointStart` | 0.8 | `[-3.6, +4.4]` | tip about 0.4 px inside the boundary |
-| classic `circleEnd` | 1.1 | `[-12.1, -1.1]` | circle ends 1.1 px before `Q` |
-| classic `circleStart` | 1.1 | `[1.1, 12.1]` | circle starts 1.1 px after `Q` |
-| classic `crossEnd` | 1 | `[-11, -2]` | cross ends 2 px before `Q` |
-| classic `crossStart` | 1 | `[2, 11]` | cross starts 2 px after `Q` |
-| neo `pointEnd-margin` | 0.913 | `[-10.5, 0]` | tip at `Q - 4`; arrow spans `[Q-14.5, Q-4]` |
-| neo `pointStart-margin` | 1 | `[-1, +10.5]` | tip about 3 px after `Q`; arrow spans `[Q+3, Q+14.5]` |
-| neo `circleEnd-margin` | 1.4 | `[-17.15, -3.15]` | circle ends 3.15 px before `Q` |
-| neo `circleStart-margin` | 1.4 | `[2.8, 16.8]` | circle starts 2.8 px after `Q` |
-| neo `crossEnd-margin` | 0.8 | `[-13.36, -2.96]` | cross ends 2.96 px before `Q` |
-| neo `crossStart-margin` | 0.8 | `[3.6, 14]` | cross starts 3.6 px after `Q` |
+| Marker                   | `s`   | Extent `[x_min, x_max]` relative to `V` | Tip or edge relative to the true endpoint `Q`         |
+| ------------------------ | ----- | --------------------------------------- | ----------------------------------------------------- |
+| classic `pointEnd`       | 0.8   | `[-4, +4]`                              | tip at `Q`; path ends mid-arrow                       |
+| classic `pointStart`     | 0.8   | `[-3.6, +4.4]`                          | tip about 0.4 px inside the boundary                  |
+| classic `circleEnd`      | 1.1   | `[-12.1, -1.1]`                         | circle ends 1.1 px before `Q`                         |
+| classic `circleStart`    | 1.1   | `[1.1, 12.1]`                           | circle starts 1.1 px after `Q`                        |
+| classic `crossEnd`       | 1     | `[-11, -2]`                             | cross ends 2 px before `Q`                            |
+| classic `crossStart`     | 1     | `[2, 11]`                               | cross starts 2 px after `Q`                           |
+| neo `pointEnd-margin`    | 0.913 | `[-10.5, 0]`                            | tip at `Q - 4`; arrow spans `[Q-14.5, Q-4]`           |
+| neo `pointStart-margin`  | 1     | `[-1, +10.5]`                           | tip about 3 px after `Q`; arrow spans `[Q+3, Q+14.5]` |
+| neo `circleEnd-margin`   | 1.4   | `[-17.15, -3.15]`                       | circle ends 3.15 px before `Q`                        |
+| neo `circleStart-margin` | 1.4   | `[2.8, 16.8]`                           | circle starts 2.8 px after `Q`                        |
+| neo `crossEnd-margin`    | 0.8   | `[-13.36, -2.96]`                       | cross ends 2.96 px before `Q`                         |
+| neo `crossStart-margin`  | 0.8   | `[3.6, 14]`                             | cross starts 3.6 px after `Q`                         |
 
 For `pointStart`, `V` is `Q + 4` (the start offset), so classic tip = `Q + 4 - 3.6 = Q + 0.4`. For neo `pointStart-margin`, tip = `Q + 4 - 1 = Q + 3`.
 
@@ -520,25 +533,25 @@ For `pointStart`, `V` is `Q + 4` (the start offset), so classic tip = `Q + 4 - 3
 
 Referenced when `useMargin` is true (`edges.js:946`), i.e. neo and not animated. Marker id gets `-margin` only for `point`, `circle` and `cross` (`edgeMarker.ts:59-69`, `99`), which is every flowchart arrow type.
 
-| Marker id suffix | Lines | viewBox | refX | refY | markerWidth × markerHeight | Child | stroke-width | dasharray |
-|---|---|---|---|---|---|---|---|---|
-| `pointEnd-margin` | `356-371` | `0 0 11.5 14` | 11.5 | 7 | 10.5 × 14 | `path d="M 0 0 L 11.5 7 L 0 14 z"` | 0 | `1,0` |
-| `pointStart-margin` | `372-387` | `0 0 11.5 14` | 1 | 7 | 11.5 × 14 | `polygon points="0,7 11.5,14 11.5,0"` | 0 | `1,0` |
-| `circleEnd-margin` | `427-444` | `0 0 10 10` | 12.25 | 5 | 14 × 14 | `circle cx=5 cy=5 r=5` | 0 | `1,0` |
-| `circleStart-margin` | `446-463` | `0 0 10 10` | -2 | 5 | 14 × 14 | `circle cx=5 cy=5 r=5` | 0 | `1,0` |
-| `crossEnd-margin` | `501-515` | `0 0 15 15` | 17.7 | 7.5 | 12 × 12 | `path d="M 1,1 L 14,14 M 1,14 L 14,1"` | 2.5 | (not set) |
-| `crossStart-margin` | `517-532` | `0 0 15 15` | -3.5 | 7.5 | 12 × 12 | `path d="M 1,1 L 14,14 M 1,14 L 14,1"` | 2.5 | `1,0` |
+| Marker id suffix     | Lines     | viewBox       | refX  | refY | markerWidth × markerHeight | Child                                  | stroke-width | dasharray |
+| -------------------- | --------- | ------------- | ----- | ---- | -------------------------- | -------------------------------------- | ------------ | --------- |
+| `pointEnd-margin`    | `356-371` | `0 0 11.5 14` | 11.5  | 7    | 10.5 × 14                  | `path d="M 0 0 L 11.5 7 L 0 14 z"`     | 0            | `1,0`     |
+| `pointStart-margin`  | `372-387` | `0 0 11.5 14` | 1     | 7    | 11.5 × 14                  | `polygon points="0,7 11.5,14 11.5,0"`  | 0            | `1,0`     |
+| `circleEnd-margin`   | `427-444` | `0 0 10 10`   | 12.25 | 5    | 14 × 14                    | `circle cx=5 cy=5 r=5`                 | 0            | `1,0`     |
+| `circleStart-margin` | `446-463` | `0 0 10 10`   | -2    | 5    | 14 × 14                    | `circle cx=5 cy=5 r=5`                 | 0            | `1,0`     |
+| `crossEnd-margin`    | `501-515` | `0 0 15 15`   | 17.7  | 7.5  | 12 × 12                    | `path d="M 1,1 L 14,14 M 1,14 L 14,1"` | 2.5          | (not set) |
+| `crossStart-margin`  | `517-532` | `0 0 15 15`   | -3.5  | 7.5  | 12 × 12                    | `path d="M 1,1 L 14,14 M 1,14 L 14,1"` | 2.5          | `1,0`     |
 
 ### 5.2 Non-margin variants (classic)
 
-| Marker id suffix | Lines | viewBox | refX | refY | markerWidth × markerHeight | Child | stroke-width | dasharray |
-|---|---|---|---|---|---|---|---|---|
-| `pointEnd` | `324-339` | `0 0 10 10` | 5 | 5 | 8 × 8 | `path d="M 0 0 L 10 5 L 0 10 z"` | 1 | `1,0` |
-| `pointStart` | `340-355` | `0 0 10 10` | 4.5 | 5 | 8 × 8 | `path d="M 0 5 L 10 10 L 10 0 z"` | 1 | `1,0` |
-| `circleEnd` | `390-407` | `0 0 10 10` | 11 | 5 | 11 × 11 | `circle cx=5 cy=5 r=5` | 1 | `1,0` |
-| `circleStart` | `409-426` | `0 0 10 10` | -1 | 5 | 11 × 11 | `circle cx=5 cy=5 r=5` | 1 | `1,0` |
-| `crossEnd` | `466-482` | `0 0 11 11` | 12 | 5.2 | 11 × 11 | `path d="M 1,1 l 9,9 M 10,1 l -9,9"` | 2 | `1,0` |
-| `crossStart` | `484-500` | `0 0 11 11` | -1 | 5.2 | 11 × 11 | `path d="M 1,1 l 9,9 M 10,1 l -9,9"` | 2 | `1,0` |
+| Marker id suffix | Lines     | viewBox     | refX | refY | markerWidth × markerHeight | Child                                | stroke-width | dasharray |
+| ---------------- | --------- | ----------- | ---- | ---- | -------------------------- | ------------------------------------ | ------------ | --------- |
+| `pointEnd`       | `324-339` | `0 0 10 10` | 5    | 5    | 8 × 8                      | `path d="M 0 0 L 10 5 L 0 10 z"`     | 1            | `1,0`     |
+| `pointStart`     | `340-355` | `0 0 10 10` | 4.5  | 5    | 8 × 8                      | `path d="M 0 5 L 10 10 L 10 0 z"`    | 1            | `1,0`     |
+| `circleEnd`      | `390-407` | `0 0 10 10` | 11   | 5    | 11 × 11                    | `circle cx=5 cy=5 r=5`               | 1            | `1,0`     |
+| `circleStart`    | `409-426` | `0 0 10 10` | -1   | 5    | 11 × 11                    | `circle cx=5 cy=5 r=5`               | 1            | `1,0`     |
+| `crossEnd`       | `466-482` | `0 0 11 11` | 12   | 5.2  | 11 × 11                    | `path d="M 1,1 l 9,9 M 10,1 l -9,9"` | 2            | `1,0`     |
+| `crossStart`     | `484-500` | `0 0 11 11` | -1   | 5.2  | 11 × 11                    | `path d="M 1,1 l 9,9 M 10,1 l -9,9"` | 2            | `1,0`     |
 
 ### 5.3 Marker id and selection
 
@@ -565,11 +578,13 @@ else: use url(${url}#${id})
 ```
 
 Arrow type to edge end (flowchart):
+
 - `destructEdgeType` (`flowDb.ts:1028-1046`): default end `arrow_point`, start `none`. Double forms set both ends to the base type.
 - `flowDb.ts:1326-1331`: start and end become `none` when the stroke is `invisible` or the type is `arrow_open`.
 - So flowchart uses only `arrow_point`, `arrow_circle`, `arrow_cross`, `none`. Markers such as `extension`, `aggregation`, `composition`, `dependency`, `lollipop`, `barb` and the ER/requirement markers are not reached from the flowchart `[R]`.
 
 Colour effects (CSS, `[D]`, not browser-checked):
+
 - `styles.ts:99-105`: `.marker { fill: lineColor; stroke: lineColor }`, `.marker.cross { stroke: lineColor }`.
 - Uncoloured circle: fill inherited from `.marker` (filled dot). Coloured circle: stroke = strokeColor, fill inherited (line colour).
 - Coloured point: path `fill` and `stroke` attributes set to strokeColor.
@@ -666,6 +681,7 @@ ELK provides a centre per terminal (`elk/render.ts:2085-2096`):
 ```
 terminalLabelCenters[key] = (terminal.x + offset.x + terminal.width/2,  terminal.y + offset.y + terminal.height/2)
 ```
+
 Set only for routed edges, and only when `terminal.terminal` is set and `x` or `y` is non-zero (`2088`).
 
 `terminalLabelTranslate` (`common/index.ts:363-378`):
@@ -769,12 +785,14 @@ Important: for `rounded` edges the rewrite keeps the `Q` corners (`523-527`). Th
 ### 7.5 Dash-array update (neo only, and the dotted bug)
 
 `applyLineJumpsToSvg` (`646-759`):
+
 - Writes the new `d` (`742-743`).
 - Reads the original style (`735`). Matches `/stroke-dasharray\s*:\s*0\s+([\d.]+)\s+[\d.]+\s+([\d.]+)/` (`736-738`), which only fits the solid neo form `0 S L E`. Captures `S` and `E` (`739-740`).
 - If there is a match, it recomputes `onLen = max(0, getTotalLength() − S − E)` (`750-752`), writes `0 S onLen E` (`752`), and replaces the dash array in the style (`753-755`). The `;\s*;+` → `;` collapse at `755` also shortens the neo style's `;;` tail to `;`.
 - Classic has no dash array, so the match fails and this step is skipped `[R]`.
 
 Verified `[V]` (regex run on the neo strings from 2.2):
+
 - Solid, `0 0 96 4`: captures `S = 0`, `E = 4`. Correct.
 - Dotted, `0 0 2 2 2 2 … 2 2 4`: captures `S = 0`, `E = 2`. Wrong: `E` is the first `2` of the pattern, not the real end gap `4`. The rewrite then writes `0 0 onLen 2`, which drops the dotted pattern and leaves a solid-type line `[D]`.
 - The same mis-capture happens for any dotted neo edge with `oS` non-zero: the captured `S` is correct, but `E` still picks up a pattern value.
@@ -784,12 +802,14 @@ Impact: dotted neo edges that receive a line hop are drawn with a solid dash, no
 ### 7.6 Verified examples `[V]`
 
 Horizontal `A = [(0,50),(100,50)]`, vertical `B = [(50,0),(50,100)]`, both `linear`, `A` end `arrow_point`:
+
 - crossing `[{jumpEdgeId: A, segIndex: 0, t: 0.5, point: (50,50)}]`
 - arc on A: `M0,50 L44,50 A6,6 0 0 1 56,50 L96,50`
 - gap on A: `M0,50 L44,50 M56,50 L96,50`
 - B is unchanged (`processEdgesWithJumps` writes plain paths for non-jumping edges, but the pipeline only rewrites jumping edges)
 
 Rounded A `[(0,50),(100,50),(100,90)]`, arrow end `arrow_point`:
+
 - `M0,50 L44,50 A6,6 0 0 1 56,50 L92.929,50 Q100,50 100,57.071 L100,86`
 
 Crossing 4 px from start (`x = 4`): room = 2 < 3.6, so the hop is dropped and the path is unchanged `M0,50 L100,50`.
@@ -798,37 +818,37 @@ Crossing 4 px from start (`x = 4`): room = 2 < 3.6, so the hop is dropped and th
 
 ## 8. Edge ids and attributes (cross-reference)
 
-| Item | Value | Source |
-|---|---|---|
-| Edge id (no user id) | `L_{start}_{end}_{index}`, `index` is the position in the parsed edge list | `flowDb.ts:1291,1312`, `utils.ts:908-931` |
-| User-given id | used as is | `utils.ts:908-931` |
-| Path element id | `{diagramId}-{edge.id}` | `edges.js:860` |
-| Label `data-id` | `edge.id` | `edges.js:84` |
-| Path `data-id` | `edge.id` | `edges.js:898` |
-| Marker id | `{diagramId}_{diagramType}-{type}{End|Start}[-margin]` (`-margin` for neo) | `edgeMarker.ts:96-100` |
-| `diagramId` | the `id` passed to `draw` | `flowRenderer-v3-unified.ts:23,41` |
-| `diagramType` | `diag.type`, expected `'flowchart-v2'` | `flowRenderer-v3-unified.ts:34`, `flowDetector-v2.ts:7` `[U: runtime value not traced]` |
-| Coloured marker id | `{markerId}_{colour with non-alnum → '_'}` | `edgeMarker.ts:102-106` |
-| `data-look` | `neo` (default) or `classic` | `edges.js:901` |
-| Label `class` | `edgeLabel`; `label` | `edges.js:81,84` |
-| Terminals `class` | `edgeTerminals`; `inner` | `edges.js:142-143` |
+| Item                 | Value                                                                      | Source                                                                                  |
+| -------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------- |
+| Edge id (no user id) | `L_{start}_{end}_{index}`, `index` is the position in the parsed edge list | `flowDb.ts:1291,1312`, `utils.ts:908-931`                                               |
+| User-given id        | used as is                                                                 | `utils.ts:908-931`                                                                      |
+| Path element id      | `{diagramId}-{edge.id}`                                                    | `edges.js:860`                                                                          |
+| Label `data-id`      | `edge.id`                                                                  | `edges.js:84`                                                                           |
+| Path `data-id`       | `edge.id`                                                                  | `edges.js:898`                                                                          |
+| Marker id            | `{diagramId}\_{diagramType}-{type}{End                                     | Start}[-margin]` (`-margin` for neo)                                                    | `edgeMarker.ts:96-100` |
+| `diagramId`          | the `id` passed to `draw`                                                  | `flowRenderer-v3-unified.ts:23,41`                                                      |
+| `diagramType`        | `diag.type`, expected `'flowchart-v2'`                                     | `flowRenderer-v3-unified.ts:34`, `flowDetector-v2.ts:7` `[U: runtime value not traced]` |
+| Coloured marker id   | `{markerId}_{colour with non-alnum → '_'}`                                 | `edgeMarker.ts:102-106`                                                                 |
+| `data-look`          | `neo` (default) or `classic`                                               | `edges.js:901`                                                                          |
+| Label `class`        | `edgeLabel`; `label`                                                       | `edges.js:81,84`                                                                        |
+| Terminals `class`    | `edgeTerminals`; `inner`                                                   | `edges.js:142-143`                                                                      |
 
 ---
 
 ## 9. Dead, inert or unused code (for the port: skip, or keep for non-ELK)
 
-| Item | Status | Evidence |
-|---|---|---|
-| `toCluster` / `fromCluster` branches (`edges.js:706-722`), `cutPathAtIntersect` (`478-512`), `intersection` (`413-476`) | Dead. No code in `src/` sets `toCluster` or `fromCluster`; `intersection` has no importer | grep `[R]` |
-| Node clipping in `insertEdge` (`699-704`) | Not run for ELK (`skipIntersect: true`, `elk/render.ts:761`). Used by other callers | `[R]` |
-| Swimlane clip branch (`658-698`) and `orthogonalizeToLabelClippedPoints` (`379-401`) | Swimlanes only | `[R]` |
-| `edges.js` `positionEdgeLabel` (`301-374`) | Not on the ELK path | section 0 |
-| `processEdgesWithJumps` (`547-578`) | Exported, not used in the pipeline (only `applyLineJumpsToSvg` is) | grep `[R]` |
-| `calcLabelPosition` midpoint for the main label | Zero delta on ELK path | 6.1 `[V]`/`[D]` |
-| `handDrawn` branch (`824-848`) | Out of scope | `[R]` |
-| `showPoints` debug circles (`912-922`) | Off by default | `[R]` |
-| `pattern === 'dashed'` branch (`edges.js:886`) | Not produced by flowDb for flowcharts (section 2.1) | `flowDb.ts:863-934` `[R]` |
-| `.edgePaths .path` CSS rule (`flowchart/styles.ts:199-202`) | No emitted element has a `path` class token; rule matches nothing for insertEdge output `[D]` | `edges.js:861-867` |
+| Item                                                                                                                    | Status                                                                                        | Evidence                  |
+| ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------- |
+| `toCluster` / `fromCluster` branches (`edges.js:706-722`), `cutPathAtIntersect` (`478-512`), `intersection` (`413-476`) | Dead. No code in `src/` sets `toCluster` or `fromCluster`; `intersection` has no importer     | grep `[R]`                |
+| Node clipping in `insertEdge` (`699-704`)                                                                               | Not run for ELK (`skipIntersect: true`, `elk/render.ts:761`). Used by other callers           | `[R]`                     |
+| Swimlane clip branch (`658-698`) and `orthogonalizeToLabelClippedPoints` (`379-401`)                                    | Swimlanes only                                                                                | `[R]`                     |
+| `edges.js` `positionEdgeLabel` (`301-374`)                                                                              | Not on the ELK path                                                                           | section 0                 |
+| `processEdgesWithJumps` (`547-578`)                                                                                     | Exported, not used in the pipeline (only `applyLineJumpsToSvg` is)                            | grep `[R]`                |
+| `calcLabelPosition` midpoint for the main label                                                                         | Zero delta on ELK path                                                                        | 6.1 `[V]`/`[D]`           |
+| `handDrawn` branch (`824-848`)                                                                                          | Out of scope                                                                                  | `[R]`                     |
+| `showPoints` debug circles (`912-922`)                                                                                  | Off by default                                                                                | `[R]`                     |
+| `pattern === 'dashed'` branch (`edges.js:886`)                                                                          | Not produced by flowDb for flowcharts (section 2.1)                                           | `flowDb.ts:863-934` `[R]` |
+| `.edgePaths .path` CSS rule (`flowchart/styles.ts:199-202`)                                                             | No emitted element has a `path` class token; rule matches nothing for insertEdge output `[D]` | `edges.js:861-867`        |
 
 ---
 

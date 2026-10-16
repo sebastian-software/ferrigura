@@ -25,12 +25,12 @@ Scripts and raw output (throwaway, outside the repository): `/private/tmp/claude
 
 Flowchart defaults in this fork: `theme: redux-color` and `look: neo`, from the `FlowchartDiagramConfig` section of `packages/mermaid/src/schemas/config.schema.yaml` (line 2438 on), resolved by `resolveAppearance` in `packages/mermaid/src/config.ts` (line 79). A fixture that sets neither runs on the default appearance.
 
-| Appearance | Files |
-|---|---:|
-| Default: look neo (unset or set), theme redux-color (unset or set) | 231 |
-| Look handDrawn (theme unset in 49, base in 1) | 50 |
-| Look classic set explicitly | 0 |
-| Look not handDrawn, theme set to another name | 71 |
+| Appearance                                                         | Files |
+| ------------------------------------------------------------------ | ----: |
+| Default: look neo (unset or set), theme redux-color (unset or set) |   231 |
+| Look handDrawn (theme unset in 49, base in 1)                      |    50 |
+| Look classic set explicitly                                        |     0 |
+| Look not handDrawn, theme set to another name                      |    71 |
 
 Other themes set explicitly (look not handDrawn), by name: `redux` 14, `redux-dark` 14, `neo` 10, `neo-dark` 10, `default` 4, `dark` 4, `forest` 4, `neutral` 4, `redux-dark-color` 4, `base` 3. Explicit `theme: default` (Mermaid's default colours, not the flowchart default) is 4 files.
 
@@ -42,49 +42,49 @@ Non-default appearance, full list: look handDrawn (50), then the other themes (7
 
 **Other theme (71):**
 
-*Theme `redux` (14)*
+_Theme `redux` (14)_
 
 - `nightly-check/redux-color-subgraphs/` (4): 01-should-render-subgraphs-subgraph-containers, 02-should-render-nested-subgraph-containers, 03-should-render-collapsed-subgraph-containers, 04-should-render-user-styled-subgraph-containers
 - `nightly-check/shape-themes/` (10): 21-connect-all-shapes-with-each-other, 22-connect-all-shapes-with-each-other, 23-connect-all-shapes-with-each-other, 24-connect-all-shapes-with-each-other, 25-connect-all-shapes-with-each-other, 26-connect-all-shapes-with-each-other, 27-connect-all-shapes-with-each-other, 28-connect-all-shapes-with-each-other, 29-connect-all-shapes-with-each-other, 30-connect-all-shapes-with-each-other
 
-*Theme `redux-dark` (14)*
+_Theme `redux-dark` (14)_
 
 - `nightly-check/redux-color-subgraphs/` (4): 10-should-render-nested-subgraph-containers, 12-should-render-user-styled-subgraph-containers, 13-should-render-subgraphs-subgraph-containers, 15-should-render-collapsed-subgraph-containers
 - `nightly-check/shape-themes/` (10): 31-connect-all-shapes-with-each-other, 32-connect-all-shapes-with-each-other, 33-connect-all-shapes-with-each-other, 34-connect-all-shapes-with-each-other, 35-connect-all-shapes-with-each-other, 36-connect-all-shapes-with-each-other, 37-connect-all-shapes-with-each-other, 38-connect-all-shapes-with-each-other, 39-connect-all-shapes-with-each-other, 40-connect-all-shapes-with-each-other
 
-*Theme `neo` (10)*
+_Theme `neo` (10)_
 
 - `nightly-check/shape-themes/` (10): 01-connect-all-shapes-with-each-other, 02-connect-all-shapes-with-each-other, 03-connect-all-shapes-with-each-other, 04-connect-all-shapes-with-each-other, 05-connect-all-shapes-with-each-other, 06-connect-all-shapes-with-each-other, 07-connect-all-shapes-with-each-other, 08-connect-all-shapes-with-each-other, 09-connect-all-shapes-with-each-other, 10-connect-all-shapes-with-each-other
 
-*Theme `neo-dark` (10)*
+_Theme `neo-dark` (10)_
 
 - `nightly-check/shape-themes/` (10): 11-connect-all-shapes-with-each-other, 12-connect-all-shapes-with-each-other, 13-connect-all-shapes-with-each-other, 14-connect-all-shapes-with-each-other, 15-connect-all-shapes-with-each-other, 16-connect-all-shapes-with-each-other, 17-connect-all-shapes-with-each-other, 18-connect-all-shapes-with-each-other, 19-connect-all-shapes-with-each-other, 20-connect-all-shapes-with-each-other
 
-*Theme `default` (4)*
+_Theme `default` (4)_
 
 - `nightly-check/icon/` (2): 01-should-render-registered-icons-on-theme-default, 02-should-render-icons-from-fontawesome-library-on-theme-default
 - `visual-check/` (2): default-theme-legacy-graph, default-theme-new-syntax
 
-*Theme `dark` (4)*
+_Theme `dark` (4)_
 
 - `nightly-check/icon/` (2): 03-should-render-icons-from-fontawesome-library-on-theme-dark, 05-should-render-registered-icons-on-theme-dark
 - `visual-check/` (2): dark-theme-legacy-graph, dark-theme-new-syntax
 
-*Theme `forest` (4)*
+_Theme `forest` (4)_
 
 - `nightly-check/icon/` (2): 04-should-render-registered-icons-on-theme-forest, 08-should-render-icons-from-fontawesome-library-on-theme-forest
 - `visual-check/` (2): forest-theme-legacy-graph, forest-theme-new-syntax
 
-*Theme `neutral` (4)*
+_Theme `neutral` (4)_
 
 - `nightly-check/icon/` (2): 09-should-render-icons-from-fontawesome-library-on-theme-neutral, 10-should-render-registered-icons-on-theme-neutral
 - `visual-check/` (2): neutral-theme-legacy-graph, neutral-theme-new-syntax
 
-*Theme `redux-dark-color` (4)*
+_Theme `redux-dark-color` (4)_
 
 - `nightly-check/redux-color-subgraphs/` (4): 09-should-render-subgraphs-subgraph-containers, 11-should-render-collapsed-subgraph-containers, 14-should-render-nested-subgraph-containers, 16-should-render-user-styled-subgraph-containers
 
-*Theme `base` (3)*
+_Theme `base` (3)_
 
 - `nightly-check/icon/` (2): 06-should-render-icons-from-fontawesome-library-on-theme-base, 07-should-render-registered-icons-on-theme-base
 - `visual-check/` (1): 63-title-on-subgraphs-should-be-themeable
@@ -93,14 +93,14 @@ Non-default appearance, full list: look handDrawn (50), then the other themes (7
 
 ### 1.1 Files
 
-| File | Role |
-|---|---|
-| `tools/port/geometry/pie-geometry.ts` | The geometry comparison (`pnpm port:geometry-pie`). |
-| `tools/port/geometry/pie-scope.ts` | Colour cascade check, three pies in one page (`pnpm port:scope-pie`). Not geometry. |
-| `tools/port/reference.ts` | Loads reference modules through Vite SSR for the **exporters** (`port:diff`). The geometry harness does not use it. |
-| `tools/port/inputs.ts` | Collects inputs for `port:diff`: e2e fixtures, spec string literals, docs mermaid blocks, `cases.ts`. It has a `flowchart` detector (`^\s*(graph\|flowchart)`). The geometry harness does not use it. |
-| `tools/port/README.md` | Lists the `port:*` commands. Says `port:geometry-pie` renders the pie fixtures with both sides and compares them in Chromium. |
-| `package.json` | `port:geometry-pie` = `tsx tools/port/geometry/pie-geometry.ts`; `port:scope-pie` = `tsx tools/port/geometry/pie-scope.ts`; also `port:diff`, `port:status`, `port:check-header`, `port:text-fixture`. |
+| File                                  | Role                                                                                                                                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tools/port/geometry/pie-geometry.ts` | The geometry comparison (`pnpm port:geometry-pie`).                                                                                                                                                    |
+| `tools/port/geometry/pie-scope.ts`    | Colour cascade check, three pies in one page (`pnpm port:scope-pie`). Not geometry.                                                                                                                    |
+| `tools/port/reference.ts`             | Loads reference modules through Vite SSR for the **exporters** (`port:diff`). The geometry harness does not use it.                                                                                    |
+| `tools/port/inputs.ts`                | Collects inputs for `port:diff`: e2e fixtures, spec string literals, docs mermaid blocks, `cases.ts`. It has a `flowchart` detector (`^\s*(graph\|flowchart)`). The geometry harness does not use it.  |
+| `tools/port/README.md`                | Lists the `port:*` commands. Says `port:geometry-pie` renders the pie fixtures with both sides and compares them in Chromium.                                                                          |
+| `package.json`                        | `port:geometry-pie` = `tsx tools/port/geometry/pie-geometry.ts`; `port:scope-pie` = `tsx tools/port/geometry/pie-scope.ts`; also `port:diff`, `port:status`, `port:check-header`, `port:text-fixture`. |
 
 ### 1.2 The reference, in Chromium
 
@@ -122,15 +122,15 @@ Non-default appearance, full list: look handDrawn (50), then the other themes (7
 
 ### 1.5 Geometry extracted (pie)
 
-| Quantity | Selector and method | Compared |
-|---|---|---|
-| viewBox | `svg` attribute `viewBox` | 4 numbers, 0.05 px |
-| Outer circle | `.pieOuterCircle`: centre `cx, cy` mapped through the CTM; radius = bbox width / 2 | 3 numbers, 0.05 px |
-| Slice angles | `path.pieCircle`: `d` parsed with `M x,y A ... x,y`; both endpoints mapped by the CTM and turned into angles about the centre with `atan2` | start, end: 1e-5 rad |
-| Slice label box | `text.slice`: `getBBox()` corners mapped by the CTM, then min/max | x, y, width, height, 0.05 px |
-| Title box | `text.pieTitleText` (same method) | 4 numbers, 0.05 px |
-| Legend | `g.legend` `transform` translate; `rect` and `text` boxes | 2 + 4 + 4 numbers, 0.05 px |
-| Max width, width, height | extracted (`maxWidth`, `width`, `height`) | **not compared** |
+| Quantity                 | Selector and method                                                                                                                        | Compared                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| viewBox                  | `svg` attribute `viewBox`                                                                                                                  | 4 numbers, 0.05 px           |
+| Outer circle             | `.pieOuterCircle`: centre `cx, cy` mapped through the CTM; radius = bbox width / 2                                                         | 3 numbers, 0.05 px           |
+| Slice angles             | `path.pieCircle`: `d` parsed with `M x,y A ... x,y`; both endpoints mapped by the CTM and turned into angles about the centre with `atan2` | start, end: 1e-5 rad         |
+| Slice label box          | `text.slice`: `getBBox()` corners mapped by the CTM, then min/max                                                                          | x, y, width, height, 0.05 px |
+| Title box                | `text.pieTitleText` (same method)                                                                                                          | 4 numbers, 0.05 px           |
+| Legend                   | `g.legend` `transform` translate; `rect` and `text` boxes                                                                                  | 2 + 4 + 4 numbers, 0.05 px   |
+| Max width, width, height | extracted (`maxWidth`, `width`, `height`)                                                                                                  | **not compared**             |
 
 Colours are not part of the geometry comparison; they are checked by `port:scope-pie`.
 
@@ -162,18 +162,18 @@ Three ferrigura pies with their own ids in one page, under a page stylesheet tha
 
 Verified at runtime for three fixtures (`05-should-include-classes-on-the-edges`, `5a-…-htmllabels-is-false`, `9-should-render-subgraphs`) and from source.
 
-| Element | Selector | Id or class convention | Check |
-|---|---|---|---|
-| Root svg | `svg` | `id` = diagramId; `class="flowchart"`; `aria-roledescription="flowchart-v2"`; `viewBox`; `style="max-width: Npx"`; `width="100%"` | runtime |
-| Node group | `g.nodes > g` | `id` = `<diagramId>-flowchart-<vertexId>-<counter>`; `class="node default"`; `transform="translate(x, y)"` (centre) | runtime; source `flowDb.ts` 191, `render.ts` 86-92 |
-| Node shape | `.label-container` inside the node group | e.g. `rect class="basic label-container"` with `x, y, width, height` | runtime for rect; other shapes **unverified** |
-| Node label | `g.label` > `g` > `text` > `tspan.text-outer-tspan` > `tspan.text-inner-tspan` | `htmlLabels: false` gives SVG text | runtime; source `createText.ts` |
-| Edge path | `g.edgePaths > path` | `id` = `<diagramId>-<edgeId>`, edge id `L_<start>_<end>_<n>` or the user's `e1@` id; `class` contains `flowchart-link`; `d`; `data-points` (base64 JSON of the layout points); `data-id`; `marker-end="url(#<diagramId>_flowchart-v2-pointEnd-margin)"` | runtime; source `edges.js` 837 and 860, `flowDb.ts` 316-324 and 1325 |
-| Edge label | `g.edgeLabels > g.edgeLabel > g.label[data-id=<edgeId>]` | `g.label` carries `transform`; inner `g > rect.background` and `text` | runtime |
-| Cluster | `g.clusters > g.cluster` | `id` = `<diagramId>-<subgraphId>` (`One` gave `<diagramId>-One`); anonymous subgraphs are `subGraph<n>` (`flowDb.ts` 734) | runtime for `One`; source `clusters.js` 320 |
-| Cluster rect and label | `g.cluster > rect`, `g.cluster-label` | rect `x, y, width, height` in absolute coordinates; label `transform` | runtime |
-| Terminal labels | `g.edgeTerminals` | source `edges.js` 142-226 | **unverified** (no fixture run) |
-| Markers | `defs` children | ids `<diagramId>_flowchart-v2-<kind>[-margin]` | runtime |
+| Element                | Selector                                                                       | Id or class convention                                                                                                                                                                                                                                  | Check                                                                |
+| ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Root svg               | `svg`                                                                          | `id` = diagramId; `class="flowchart"`; `aria-roledescription="flowchart-v2"`; `viewBox`; `style="max-width: Npx"`; `width="100%"`                                                                                                                       | runtime                                                              |
+| Node group             | `g.nodes > g`                                                                  | `id` = `<diagramId>-flowchart-<vertexId>-<counter>`; `class="node default"`; `transform="translate(x, y)"` (centre)                                                                                                                                     | runtime; source `flowDb.ts` 191, `render.ts` 86-92                   |
+| Node shape             | `.label-container` inside the node group                                       | e.g. `rect class="basic label-container"` with `x, y, width, height`                                                                                                                                                                                    | runtime for rect; other shapes **unverified**                        |
+| Node label             | `g.label` > `g` > `text` > `tspan.text-outer-tspan` > `tspan.text-inner-tspan` | `htmlLabels: false` gives SVG text                                                                                                                                                                                                                      | runtime; source `createText.ts`                                      |
+| Edge path              | `g.edgePaths > path`                                                           | `id` = `<diagramId>-<edgeId>`, edge id `L_<start>_<end>_<n>` or the user's `e1@` id; `class` contains `flowchart-link`; `d`; `data-points` (base64 JSON of the layout points); `data-id`; `marker-end="url(#<diagramId>_flowchart-v2-pointEnd-margin)"` | runtime; source `edges.js` 837 and 860, `flowDb.ts` 316-324 and 1325 |
+| Edge label             | `g.edgeLabels > g.edgeLabel > g.label[data-id=<edgeId>]`                       | `g.label` carries `transform`; inner `g > rect.background` and `text`                                                                                                                                                                                   | runtime                                                              |
+| Cluster                | `g.clusters > g.cluster`                                                       | `id` = `<diagramId>-<subgraphId>` (`One` gave `<diagramId>-One`); anonymous subgraphs are `subGraph<n>` (`flowDb.ts` 734)                                                                                                                               | runtime for `One`; source `clusters.js` 320                          |
+| Cluster rect and label | `g.cluster > rect`, `g.cluster-label`                                          | rect `x, y, width, height` in absolute coordinates; label `transform`                                                                                                                                                                                   | runtime                                                              |
+| Terminal labels        | `g.edgeTerminals`                                                              | source `edges.js` 142-226                                                                                                                                                                                                                               | **unverified** (no fixture run)                                      |
+| Markers                | `defs` children                                                                | ids `<diagramId>_flowchart-v2-<kind>[-margin]`                                                                                                                                                                                                          | runtime                                                              |
 
 Two facts that matter for pairing:
 
@@ -194,12 +194,12 @@ Each edge path has `data-points`, a base64 JSON array of `{x, y}` (runtime: `[{"
 
 Same fixture, same config, only `look` changed (`lookcmp.mjs`):
 
-| Fixture | Node box neo | Node box classic | viewBox neo | viewBox classic | Edge label boxes |
-|---|---|---|---|---|---|
-| `nightly-check/05-should-include-classes-on-the-edges` | rect 152 x 41 | rect 180 x 47 | 4 4 168 300 | 4 4 196 324 | same |
-| `visual-check/9-should-render-subgraphs` | rect 152 x 40 | rect 180 x 46 | 4 4 216 187 | 4 4 244 199 | same (no labels); cluster rect differs |
-| `visual-check/5a-…` | rect 152 x 41 | rect 180 x 47 | 4 4 168 341 | 4 4 196 359 | same |
-| `pr-check/1-shapes-layout-default` | first node rect 152 x 41 (the rect of B is 150 x 47 in both looks) | first node rect 180 x 47 | 4 4 243 1417 | 4 4 213 1310 | same |
+| Fixture                                                | Node box neo                                                       | Node box classic         | viewBox neo  | viewBox classic | Edge label boxes                       |
+| ------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------ | ------------ | --------------- | -------------------------------------- |
+| `nightly-check/05-should-include-classes-on-the-edges` | rect 152 x 41                                                      | rect 180 x 47            | 4 4 168 300  | 4 4 196 324     | same                                   |
+| `visual-check/9-should-render-subgraphs`               | rect 152 x 40                                                      | rect 180 x 46            | 4 4 216 187  | 4 4 244 199     | same (no labels); cluster rect differs |
+| `visual-check/5a-…`                                    | rect 152 x 41                                                      | rect 180 x 47            | 4 4 168 341  | 4 4 196 359     | same                                   |
+| `pr-check/1-shapes-layout-default`                     | first node rect 152 x 41 (the rect of B is 150 x 47 in both looks) | first node rect 180 x 47 | 4 4 243 1417 | 4 4 213 1310    | same                                   |
 
 The source of the difference: per-shape label padding under `look === 'neo'`, for example `squareRect.ts` lines 9-10 (`16` and `12` under neo; `nodePadding * 2` and `nodePadding` otherwise), and `subroutine.ts` 18-19, `linedCylinder.ts` 70-71, plus edge margin markers under neo (`edges.js` 883, 946) and cluster drawing (`clusters.js` 478). Ferrigura must implement the neo sizes for every shape it draws, because neo is the default for flowcharts.
 
@@ -222,15 +222,15 @@ The source of the difference: per-shape label padding under `look === 'neo'`, fo
 
 ### 3.4 What to extract, per element
 
-| Element | Key (pairs the two sides) | Quantities | Tolerance |
-|---|---|---|---|
-| Root | one per fixture | viewBox (4); `max-width` in px from `style` | 0.05 px |
-| Node | vertex id (strip prefix, `flowchart-`, trailing `-<n>`) | centre from `transform` (CTM-mapped); `.label-container` box (CTM-mapped bbox: x, y, w, h); `g.label` box | 0.05 px |
-| Edge | edge id (strip `<diagramId>-`) | `data-points` decoded, compared point by point (count must match); `d` sampled with `getPointAtLength` at N evenly spaced fractions, in viewBox coordinates | 0.05 px per point |
-| Edge arrow | edge id | the marker kind from `marker-start` / `marker-end` (name only, ids stripped) | exact string |
-| Edge label | `data-id` | `g.edgeLabel` transform; `rect.background` box; text box | 0.05 px |
-| Cluster | subgraph id (strip `<diagramId>-`) | `rect` box (x, y, w, h); `g.cluster-label` transform | 0.05 px |
-| Counts | per class | nodes, edges, labels, clusters: the two counts must match | exact |
+| Element    | Key (pairs the two sides)                               | Quantities                                                                                                                                                  | Tolerance         |
+| ---------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Root       | one per fixture                                         | viewBox (4); `max-width` in px from `style`                                                                                                                 | 0.05 px           |
+| Node       | vertex id (strip prefix, `flowchart-`, trailing `-<n>`) | centre from `transform` (CTM-mapped); `.label-container` box (CTM-mapped bbox: x, y, w, h); `g.label` box                                                   | 0.05 px           |
+| Edge       | edge id (strip `<diagramId>-`)                          | `data-points` decoded, compared point by point (count must match); `d` sampled with `getPointAtLength` at N evenly spaced fractions, in viewBox coordinates | 0.05 px per point |
+| Edge arrow | edge id                                                 | the marker kind from `marker-start` / `marker-end` (name only, ids stripped)                                                                                | exact string      |
+| Edge label | `data-id`                                               | `g.edgeLabel` transform; `rect.background` box; text box                                                                                                    | 0.05 px           |
+| Cluster    | subgraph id (strip `<diagramId>-`)                      | `rect` box (x, y, w, h); `g.cluster-label` transform                                                                                                        | 0.05 px           |
+| Counts     | per class                                               | nodes, edges, labels, clusters: the two counts must match                                                                                                   | exact             |
 
 - Angles do not apply. The pie tolerances carry over. The M4 bit-exact claim for ELK coordinates suggests the failures will come from text measurement (label sizes feed the layout), so keep a separate "label size" class in the output to see it.
 - `data-points` requires ferrigura to write that attribute too. That is a contract to decide in M5 (**open question 4**). Without it, compare the sampled `d` only.
@@ -261,16 +261,16 @@ Folders (classifier): `nightly-check` 195, `visual-check` 146, `pr-check` 11.
 
 Subfolders:
 
-| Folder | Files |
-|---|---:|
-| `nightly-check/handdrawn` | 50 |
-| `nightly-check/shape-alias` | 42 |
-| `nightly-check/shape-themes` | 40 |
-| `nightly-check/redux-color-subgraphs` | 16 |
-| `nightly-check/icon` | 10 |
-| `nightly-check/v2` | 7 |
-| `nightly-check/classic` | 3 |
-| `nightly-check/elk-container-algorithms` | 3 |
+| Folder                                   | Files |
+| ---------------------------------------- | ----: |
+| `nightly-check/handdrawn`                |    50 |
+| `nightly-check/shape-alias`              |    42 |
+| `nightly-check/shape-themes`             |    40 |
+| `nightly-check/redux-color-subgraphs`    |    16 |
+| `nightly-check/icon`                     |    10 |
+| `nightly-check/v2`                       |     7 |
+| `nightly-check/classic`                  |     3 |
+| `nightly-check/elk-container-algorithms` |     3 |
 
 - Keyword: flowchart 259, graph 93 (no `swimlane`, `sequenceDiagram` or other type). `flowchart-elk` does not exist in this fork (source: no matches for it in `packages/mermaid/src`).
 - Direction: TD 129, TB 87, LR 83, (none) 46, BT 4, RL 3.
@@ -280,78 +280,78 @@ Subfolders:
 
 ### 4.2 Config keys used (front matter and directives, count of files)
 
-| Key path | Files |
-|---|---:|
-| `htmlLabels` | 113 |
-| `look` | 90 |
-| `theme` | 76 |
-| `fontFamily` | 70 |
-| `securityLevel` | 54 |
-| `flowchart.titleTopMargin` | 20 |
-| `logLevel` | 14 |
-| `layout` | 7 |
-| `flowchart.useMaxWidth` | 6 |
-| `flowchart.subGraphTitleMargin.bottom` | 5 |
-| `flowchart.subGraphTitleMargin.top` | 5 |
-| `flowchart.nodeSpacing` | 4 |
-| `flowchart.rankSpacing` | 4 |
-| `markdownAutoWrap` | 4 |
-| `flowchart.diagramPadding` | 3 |
-| `flowchart.minNodeWidth` | 3 |
-| `flowchart.inheritDir` | 2 |
-| `flowchart.wrappingWidth` | 2 |
-| `handDrawnSeed` | 2 |
-| `themeVariables.darkMode` | 2 |
-| `themeVariables.primaryColor` | 2 |
-| `themeVariables.titleColor` | 2 |
-| `elk.keepEntryNodeOnTop` | 1 |
-| `flowchart.curve` | 1 |
+| Key path                               | Files |
+| -------------------------------------- | ----: |
+| `htmlLabels`                           |   113 |
+| `look`                                 |    90 |
+| `theme`                                |    76 |
+| `fontFamily`                           |    70 |
+| `securityLevel`                        |    54 |
+| `flowchart.titleTopMargin`             |    20 |
+| `logLevel`                             |    14 |
+| `layout`                               |     7 |
+| `flowchart.useMaxWidth`                |     6 |
+| `flowchart.subGraphTitleMargin.bottom` |     5 |
+| `flowchart.subGraphTitleMargin.top`    |     5 |
+| `flowchart.nodeSpacing`                |     4 |
+| `flowchart.rankSpacing`                |     4 |
+| `markdownAutoWrap`                     |     4 |
+| `flowchart.diagramPadding`             |     3 |
+| `flowchart.minNodeWidth`               |     3 |
+| `flowchart.inheritDir`                 |     2 |
+| `flowchart.wrappingWidth`              |     2 |
+| `handDrawnSeed`                        |     2 |
+| `themeVariables.darkMode`              |     2 |
+| `themeVariables.primaryColor`          |     2 |
+| `themeVariables.titleColor`            |     2 |
+| `elk.keepEntryNodeOnTop`               |     1 |
+| `flowchart.curve`                      |     1 |
 
 ### 4.3 Values the reference reads (effective)
 
 Layout (the raw value is what the fixture writes; the effective value is what the fork uses):
 
-| Layout (raw) | Files |
-|---|---:|
-| `elk (unset, schema default)` | 345 |
-| `elk (explicit)` | 5 |
-| `elk.box` | 1 |
-| `elk.rectpacking` | 1 |
+| Layout (raw)                  | Files |
+| ----------------------------- | ----: |
+| `elk (unset, schema default)` |   345 |
+| `elk (explicit)`              |     5 |
+| `elk.box`                     |     1 |
+| `elk.rectpacking`             |     1 |
 
 - Explicit `elk.box` and `elk.rectpacking` appear once each; no fixture uses `elk.stress`, `elk.mrtree`, `elk.force`, `elk.sporeOverlap`, `swimlane`, `cose-bilkent` or `dagre`. The ELK plan (`docs-port/elk/PLAN.md` line 242) counts seven fixtures with these layouts; the discrepancy is **unverified** (its input set may include other folders).
 
 Look (effective in the reference: unset means `neo` for flowcharts; the default appearance is 231 files):
 
-| Look (raw) | Files |
-|---|---:|
-| `classic (unset)` | 262 |
-| `handDrawn` | 50 |
-| `neo` | 40 |
+| Look (raw)        | Files |
+| ----------------- | ----: |
+| `classic (unset)` |   262 |
+| `handDrawn`       |    50 |
+| `neo`             |    40 |
 
 Theme (effective: unset means `redux-color` for flowcharts):
 
-| Theme (raw) | Files |
-|---|---:|
-| `default (unset)` | 276 |
-| `redux` | 14 |
-| `redux-dark` | 14 |
-| `neo` | 10 |
-| `neo-dark` | 10 |
-| `base` | 4 |
-| `default` | 4 |
-| `dark` | 4 |
-| `forest` | 4 |
-| `neutral` | 4 |
-| `redux-color` | 4 |
-| `redux-dark-color` | 4 |
+| Theme (raw)        | Files |
+| ------------------ | ----: |
+| `default (unset)`  |   276 |
+| `redux`            |    14 |
+| `redux-dark`       |    14 |
+| `neo`              |    10 |
+| `neo-dark`         |    10 |
+| `base`             |     4 |
+| `default`          |     4 |
+| `dark`             |     4 |
+| `forest`           |     4 |
+| `neutral`          |     4 |
+| `redux-color`      |     4 |
+| `redux-dark-color` |     4 |
 
 Root `htmlLabels` (unset means `true` in the reference unless the harness sets `false`):
 
-| Value | Files |
-|---|---:|
-| `unset` | 239 |
-| `true` | 66 |
-| `false` | 47 |
+| Value   | Files |
+| ------- | ----: |
+| `unset` |   239 |
+| `true`  |    66 |
+| `false` |    47 |
 
 - `flowchart.htmlLabels`: no fixture. `curve` at root: no fixture (the reference reads `flowchart.curve`, `flowDb.ts` 1340). `flowchart.defaultRenderer`: no fixture (not read in this fork).
 - `flowchart.curve`: 1 (`rounded`). `flowchart.useMaxWidth`: 6 files (the reference reads `conf.useMaxWidth`, `flowRenderer-v3-unified.ts` 51).
@@ -364,30 +364,30 @@ Root `htmlLabels` (unset means `true` in the reference unless the harness sets `
 
 Classic delimiters, per file (the regex is a heuristic: text with a parenthesis directly after a word, outside quotes, can match):
 
-| Shape | Files |
-|---|---:|
-| rect | 129 |
-| round | 80 |
-| stadium | 17 |
-| subroutine | 6 |
-| cylinder | 11 |
-| circle | 12 |
-| doublecircle | 4 |
-| rhombus | 63 |
-| hexagon | 13 |
-| asymmetric | 11 |
-| lean-trap | 14 |
+| Shape        | Files |
+| ------------ | ----: |
+| rect         |   129 |
+| round        |    80 |
+| stadium      |    17 |
+| subroutine   |     6 |
+| cylinder     |    11 |
+| circle       |    12 |
+| doublecircle |     4 |
+| rhombus      |    63 |
+| hexagon      |    13 |
+| asymmetric   |    11 |
+| lean-trap    |    14 |
 
 - Files that use only classic syntax (no `@{ }`): 243. Files that use `@{ }` nodes: 109 (133 distinct names over 109 files).
 - The alias folder `nightly-check/shape-alias` (42 files) is `@{ shape: … }` with aliases of one shape per file.
 
 ### 4.5 Subgraphs
 
-| Subgraphs | Files |
-|---|---:|
-| no subgraphs | 251 |
-| flat (depth 1) | 80 |
-| nested (depth 2 or more) | 21 |
+| Subgraphs                | Files |
+| ------------------------ | ----: |
+| no subgraphs             |   251 |
+| flat (depth 1)           |    80 |
+| nested (depth 2 or more) |    21 |
 
 - Subgraph-level `direction` lines in 14 files.
 
@@ -416,13 +416,13 @@ Classic delimiters, per file (the regex is a heuristic: text with a parenthesis 
 
 ### 5.1 Blockers that apply to every stage
 
-| Blocker | Files | Why |
-|---|---:|---|
-| `htmlLabels: true` set explicitly | 66 | HTML labels (foreignObject) in the reference; ferrigura has no HTML label mode. |
-| `fontFamily: courier` | 70 | Courier metrics are not available in ferrigura-text (section 4.3). Needs a decision. |
-| `look: handDrawn` | 50 | rough.js sketching; not in the port. |
-| `elk.box`, `elk.rectpacking` | 2 | Not ported; the port falls back to layered. |
-| **Union** | 143 | |
+| Blocker                           | Files | Why                                                                                  |
+| --------------------------------- | ----: | ------------------------------------------------------------------------------------ |
+| `htmlLabels: true` set explicitly |    66 | HTML labels (foreignObject) in the reference; ferrigura has no HTML label mode.      |
+| `fontFamily: courier`             |    70 | Courier metrics are not available in ferrigura-text (section 4.3). Needs a decision. |
+| `look: handDrawn`                 |    50 | rough.js sketching; not in the port.                                                 |
+| `elk.box`, `elk.rectpacking`      |     2 | Not ported; the port falls back to layered.                                          |
+| **Union**                         |   143 |                                                                                      |
 
 Not hard blockers, but outside the default appearance: a theme other than redux-color or unset (71 files, section 0), `@{ }` shape names outside the classic set, markdown strings, icons and images, subgraph directions and depth above 2.
 
