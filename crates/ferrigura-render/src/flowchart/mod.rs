@@ -14,6 +14,9 @@ pub mod elk_apply;
 pub mod elk_build;
 pub mod geom;
 pub mod label;
+pub mod line_jumps;
+pub mod markers;
+pub mod path;
 pub mod shapes;
 pub mod style;
 
