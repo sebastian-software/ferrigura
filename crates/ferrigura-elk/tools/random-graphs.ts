@@ -6,8 +6,8 @@
  * repository's tracked files.
  *
  * The graphs vary the edge direction (DOWN, RIGHT, LEFT, UP), the model order strategy, the cycle
- * breaker (DEPTH_FIRST or GREEDY), the random seed, and edge labels. Parallel edges, cycles and
- * self-loops are possible; the node count is between 4 and 18.
+ * breaker (DEPTH_FIRST or GREEDY), the random seed, edge labels, and inside node labels in six
+ * placements. Parallel edges, cycles and self-loops are possible; the node count is between 4 and 18.
  *
  * Usage, from the repository root: run the tool with the count, seed and output directory options
  * (defaults: 1200 graphs, seed 20261016, target/ferrigura-random-graphs). Then run the ignored test
@@ -31,6 +31,15 @@ const ELK = mermaidRequire('elkjs/lib/elk.bundled.js') as new () => {
 const DIRECTIONS = ['DOWN', 'RIGHT', 'LEFT', 'UP'];
 const MODEL_ORDERS = ['NONE', 'NODES_AND_EDGES', 'PREFER_EDGES', 'PREFER_NODES'];
 const CYCLE_BREAKERS = ['DEPTH_FIRST', 'GREEDY'];
+// Inside node label placements, one per corner or side, so that every direction moves them.
+const NODE_LABEL_PLACEMENTS = [
+  '[H_CENTER V_TOP, INSIDE]',
+  '[H_LEFT V_TOP, INSIDE]',
+  '[H_RIGHT V_BOTTOM, INSIDE]',
+  '[H_CENTER V_CENTER, INSIDE]',
+  '[H_LEFT V_BOTTOM, INSIDE]',
+  '[H_RIGHT V_TOP, INSIDE]',
+];
 
 /** A small deterministic generator (mulberry32), so one seed gives one set of graphs. */
 function seededRandom(seed: number): () => number {
@@ -50,6 +59,7 @@ function makeGraph(random: () => number): Json {
   const edgeCount = nodeCount + Math.floor(random() * nodeCount * 2);
   const pick = (values: string[]): string => values[Math.floor(random() * values.length)];
   const withLabels = random() < 0.5;
+  const withNodeLabels = random() < 0.5;
   const pairs: [string, string][] = [];
   for (let index = 0; index < edgeCount; index++) {
     const from = Math.floor(random() * nodeCount);
@@ -81,11 +91,21 @@ function makeGraph(random: () => number): Json {
       'elk.randomSeed': between(1, 1000),
       'elk.layered.considerModelOrder.strategy': pick(MODEL_ORDERS),
     },
-    children: Array.from({ length: nodeCount }, (_, index) => ({
-      id: `n${index}`,
-      width: between(20, 80),
-      height: between(20, 60),
-    })),
+    children: Array.from({ length: nodeCount }, (_, index) => {
+      const node: Record<string, unknown> = {
+        id: `n${index}`,
+        width: between(20, 80),
+        height: between(20, 60),
+      };
+      if (withNodeLabels && random() < 0.6) {
+        node.labels = [{ text: `N${index}`, width: between(10, 50), height: between(10, 20) }];
+        node.layoutOptions = {
+          'elk.nodeLabels.placement': pick(NODE_LABEL_PLACEMENTS),
+          ...(random() < 0.5 ? { 'elk.nodeSize.constraints': '[MINIMUM_SIZE, NODE_LABELS]' } : {}),
+        };
+      }
+      return node;
+    }),
     edges: pairs.map(([source, target], index) => ({
       id: `e${index}`,
       sources: [source],
