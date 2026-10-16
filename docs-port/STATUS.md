@@ -38,7 +38,13 @@ Merged into `main` on 2026-10-16 after review; the checks above pass on `main`. 
 
 ## M2 handover
 
-Stage A (configuration and text) is written; Stages B (themes, pie renderer, geometry comparison) and C (CLI, Node addon) wait for the coordinating session's answer.
+Stage A (configuration, text, YAML) is accepted. Stage B is under way: the theme interface and the pie renderer are on the branch; the theme port (khroma subset and the two redux themes) runs in its own worktree; the geometry comparison is written and waits for the theme colours and font sizes, because the placeholder theme gives the SVG no font sizes. Stage C (CLI, Node addon) follows.
+
+Stage B, so far: `crates/ferrigura-render` lays out and writes a pie as `pieRenderer.ts` does (slices with d3's angles, the legend positions, the title, the viewBox), with label widths from `ferrigura-text`. `crates/ferrigura` offers `render(text, config) → svg`. Eight integration tests cover order, hidden slices, legends, escaping, `showData` and the embedded font. `tools/port/geometry/pie-geometry.ts` runs the reference in Chromium (`htmlLabels: false`, Lexica as a web font) and ferrigura over the 24 pie fixtures and compares the geometry in one Chromium page; the tolerances are justified in the script (1e-5 rad for angles, because d3-path writes three decimals; 0.05 px for positions and sizes).
+
+Pie config values: `theme` falls back by darkness (names ending in `dark` take `redux-dark-color`, the rest `redux-color`); the reference's `default` and `forest` themes are not shipped.
+
+Known gaps for M2 (Stage B): the empty pie (no sections) gives the reference a `-Infinity` legend width and a broken viewBox, ferrigura uses zero; fallback fonts for scripts Lexica does not cover; the accessibility title and description of the SVG; `info` is not rendered.
 
 Configuration, done: `crates/ferrigura-model/build.rs` generates the configuration types, their defaults and `CONFIG_KEYS` from `packages/mermaid/src/schemas/config.schema.yaml`, so the schema stays the single source. `src/config/ts_defaults.json` holds the TypeScript-only defaults (`pie.useWidth`, `treemap`); `src/config/ts_keys.txt` lists the keys the reference accepts that the schema does not name, which are the theme variables of the default theme and the TypeScript-only sections. `ferrigura_model::config::effective` applies the layers in the order of `mermaidAPI` (site config, front matter, directives; `assignWithDepth`, the key gating of `sanitizeDirective`, the removal of secure keys, the resolution of `theme`, `look` and `layout` through the diagram section). `ferrigura_syntax::config::read` reads the front matter `config` block (serde_yaml_ng) and the `init`, `initialize` and `wrap` directives, with the reference's error behaviour: invalid JSON in any directive drops all of them.
 
@@ -52,7 +58,7 @@ YAML, done: `crates/ferrigura-syntax/src/yaml.rs` reads YAML as js-yaml 4 does w
 
 Text, done: `crates/ferrigura-text` (fonts, measurement with harfrust, line metrics, Mermaid's wrapping, styled runs, subsetting with per-subset family names) is merged from its own worktree. Verified against Chromium in a fixture (180 widths, 24 boxes, 27 wraps, 7 styled-run lines) and against the spike's Rust binary. Deviations from the spike: the subset family name is a 16-hex-digit FNV-1a hash, not six digits; `wrap_line` takes one face, although Mermaid wraps styled words per word (styled runs are measured per run); no fallback fonts, WOFF2 or caching yet. The spike's generator for the Chromium fixture is not committed.
 
-Known gaps in the configuration: `themeVariables` are not computed (the theme port does that in Stage B), and they are left out of the comparison; non-finite numbers (`.inf`, `.nan`) are carried as the strings `"Infinity"`, `"-Infinity"` and `"NaN"`, because a serde_json value cannot hold them (a theme reads `THEME_COLOR_LIMIT` from there); a `config` key in a directive maps to the section of pie and info only; a directive whose arguments are not an object is ignored, where the reference passes the value on; the front matter `config` block is ignored when it is not an object.
+Known gaps in the configuration: `themeVariables` are not computed (the theme port does that in Stage B), and they are left out of the comparison; non-finite numbers (`.inf`, `.nan`) are carried as the strings `"Infinity"`, `"-Infinity"` and `"NaN"`, because a serde_json value cannot hold them (a theme reads `THEME_COLOR_LIMIT` from there); a `config` key in a directive maps to the section of pie and info only; a directive whose arguments are not an object (a word, a number, an array, a string) contributes nothing, as the reference's merge ignores such values, and 13 explicit cases in `config-cases.ts` show it; the front matter `config` block is ignored when it is not an object, which the same cases check.
 
 ## P1 diagram types
 
@@ -83,4 +89,5 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 - Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release; then create `sebastian-software/ferrigura` and rename the repository.
 - Open `help wanted` issues for every P3 diagram type and for math in labels once the GitHub repository exists.
 - Decide the mindmap layout when P2 starts.
+- M5 (flowchart labels with Markdown): `ferrigura-text`'s `wrap_line` takes one face, but Mermaid wraps styled words one by one, each in its own face (`createText.ts` gives each word after the first a leading space in its own tspan). The runs of a line are measured per run already; the wrapping must take runs too.
 - Replace the inherited changesets setup with release-please when the first crate is published.
