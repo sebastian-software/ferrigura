@@ -15,7 +15,7 @@ use ferrigura_model::config::PieDiagramConfig;
 use ferrigura_model::pie::{PieDiagram, PieSection};
 use ferrigura_model::value::Value;
 use ferrigura_text::{
-    EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure,
+    EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, layout_width, measure,
 };
 
 use crate::RenderError;
@@ -133,7 +133,8 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
         .collect();
     let mut longest_text_width: f64 = 0.0;
     for label in &legend_labels {
-        longest_text_width = longest_text_width.max(measure(sans, label, legend_size)?);
+        longest_text_width =
+            longest_text_width.max(layout_width(measure(sans, label, legend_size)?));
     }
 
     let legend_height = LEGEND_RECT_SIZE + LEGEND_SPACING;
@@ -189,7 +190,7 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
     let title_width = if title.is_empty() {
         0.0
     } else {
-        measure(sans, title, title_size)?
+        layout_width(measure(sans, title, title_size)?)
     };
     let title_left = PIE_WIDTH / 2.0 - title_width / 2.0;
     let title_right = PIE_WIDTH / 2.0 + title_width / 2.0;
@@ -252,7 +253,7 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
     for (arc, text) in visible.iter().zip(&slice_labels) {
         let middle = (arc.start + arc.end) / 2.0 - PI / 2.0;
         let (cx, cy) = (label_radius * middle.cos(), label_radius * middle.sin());
-        let width = measure(sans, text, section_size)?;
+        let width = layout_width(measure(sans, text, section_size)?);
         body.push_str(&format!(
             "<text class=\"slice\"{} x=\"{}\" y=\"{}\">{}</text>",
             attribute(variables, "fill", "pieSectionTextColor"),
