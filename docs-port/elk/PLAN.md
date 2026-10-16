@@ -301,8 +301,8 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 
 ### Coverage
 
-- Corpus: 151 of 155 cases pass the driver. The other 4 report `Unsupported`: 3 are non-layered algorithms (`elk.box` twice, `elk.rectpacking`), and 1 needs explicit ELK ports (`synthetic__self-loops-fixed-side-opposing`).
-- All 151 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 151). All 151 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 151).
+- Corpus: 160 of 164 cases pass the driver. The other 4 report `Unsupported`: 3 are non-layered algorithms (`elk.box` twice, `elk.rectpacking`), and 1 is `synthetic__explicit-port-shared`, a port with two edges, which Java lays out with HYPEREDGES; that feature is not ported.
+- All 160 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 160). All 160 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 160).
 - Random flat graphs: 1200 of 1200 match elkjs in coordinates and in the trace with logs. They come from `tools/random-graphs.ts` (seeded, all four directions, the model order strategies, both cycle breakers, labels, self-loops); the ignored test `random_graphs_match_elkjs` runs them.
 - Crate tests: 168 unit tests and the integration tests pass; the differential and trace diagnostics stay ignored; `clippy -D warnings` is clean.
 - Mermaid never sets the option that turns off the component split, so the synthetic case `synthetic__components-not-separated` covers it on its own.
@@ -324,8 +324,8 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 
 ### Next, in order
 
-1. Explicit ELK ports (1): the importer does not read them, so the opposing self loops of `synthetic__self-loops-fixed-side-opposing` are not checked yet.
-2. Mirror node labels for LEFT and UP, with a synthetic case per direction through Node elkjs.
+1. Random graphs with node labels in every direction, so the LEFT and UP mirror is covered beyond the synthetic cases; and explicit ports in the random generator.
+2. Hyperedges (`synthetic__explicit-port-shared`), and the explicit-port refusals listed in the commit history: north and south self loops at north and south ports, hierarchical north and south ports, `allowNonFlowPortsToSwitchSides`, spline routing with north and south ports.
 3. Inverted ports and the other compound gaps above, each as a synthetic case first.
 4. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
 
