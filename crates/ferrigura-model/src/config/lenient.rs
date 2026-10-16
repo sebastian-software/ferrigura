@@ -7,12 +7,13 @@
 //!
 //! - A string that JavaScript's `Number()` reads as a finite number is read as that number, where
 //!   the schema asks for a number or an integer. An integer must be whole, so `'100.5'` is not one.
-//! - Any other value of the wrong type is replaced by the option's default, as it is in the
-//!   reference's configuration. An option without a default is left unset.
+//! - Any other value of the wrong type is replaced by the option's default, the value that
+//!   [`defaults`](super::defaults) gives it. An option without a default is left unset.
 //! - An item of an array that has the wrong type is dropped.
 //!
-//! A value that is kept or read is not reported; every other change is. The effective
-//! configuration, which the differential run compares, is not changed by any of this.
+//! A value that is kept is not reported. Each read value is reported with its number, and each
+//! replacement and dropped item with what was used instead. The effective configuration, which the
+//! differential run compares, is not changed by any of this.
 
 use crate::value::Value;
 
@@ -89,7 +90,7 @@ pub struct ConfigWarning {
     /// The option, by its keys from the top of the configuration: `flowchart.rankSpacing`. An item
     /// of an array is written as its index in brackets after the array's path.
     pub path: String,
-    /// The type the option needs, as [`FieldType::expected`] names it.
+    /// The type the option needs, as `FieldType::expected` names it.
     pub expected: String,
     /// The value that was found.
     pub found: Value,
@@ -111,8 +112,8 @@ pub enum Outcome {
 
 /// Makes every option of `value` have the type `field_types` gives it, parents before children, and
 /// returns each change. `defaults` is the configuration's defaults, which replace a value that
-/// cannot be read. An option whose parent is not an object is not visited: the parent is replaced
-/// first, when it is visited, and its defaults have the right types.
+/// cannot be read. An option below an absent parent is not visited. A parent of the wrong type is
+/// replaced when it is visited, before its options, so the options are read from the defaults.
 pub(super) fn read_types(
     value: &mut Value,
     defaults: &Value,

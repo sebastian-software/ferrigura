@@ -17,9 +17,9 @@
 //!   `defaultConfig.ts` builds them. Array-valued keys are left out, with their children.
 //! - `FIELD_TYPES` lists the type of every option that the schema types, by its path, parents
 //!   first. `typed` checks each value against its type (see `config/lenient.rs`). A union such as
-//!   `[string, number]` takes both. A schema node without a type is not listed, and neither is an
-//!   item of an array that has no type; an array of objects is refused, as `typed` has no check
-//!   for it.
+//!   `[string, number]` takes both. A node with no type, or with `null` among its types, is not
+//!   listed. An array whose items have no scalar type is checked as an array only; an array of
+//!   objects is refused at build time, as `typed` has no check for its items.
 //!
 //! The reference's TypeScript-only defaults are not in the schema. They live in
 //! `src/config/ts_defaults.json`, and the differential run (`pnpm port:diff config`) checks them.
