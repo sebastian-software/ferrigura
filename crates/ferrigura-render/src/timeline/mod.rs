@@ -203,7 +203,8 @@ pub(super) struct Colours {
     pub stroke: String,
 }
 
-/// The colours of one scheme: one slot per section colour, and the two colours every slot uses.
+/// The colours of one scheme: the two colours every slot uses, and the colours of the slots, which
+/// are computed when they are read.
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct Palette {
     /// `nodeBorder`.
@@ -212,46 +213,33 @@ pub(super) struct Palette {
     pub main_bkg: String,
     /// Whether the scheme is dark. A dark scheme fills every node with `mainBkg`.
     pub dark: bool,
-    /// The colour of slot `i`, for `i` below `THEME_COLOR_LIMIT`.
-    colours: Vec<Colours>,
+    /// `borderColorArray`.
+    border: Vec<String>,
 }
 
 impl Palette {
     /// The palette of a set of theme variables (`styles.js` `genReduxSections`, `colorThemeGate.ts`).
-    /// `borderColorArray[i % length]` is slot `i`; with no array, the slot takes `mainBkg` and
-    /// `nodeBorder`, as the reference does for an undefined colour.
-    fn new(variables: &ferrigura_model::value::Value, dark: bool, limit: usize) -> Self {
-        let border = texts_of(variables, "borderColorArray");
-        let node_border = text_of(variables, "nodeBorder").unwrap_or_default();
-        let main_bkg = text_of(variables, "mainBkg").unwrap_or_default();
-        let colours = (0..limit)
-            .map(|index| {
-                let slot = (!border.is_empty()).then(|| border[index % border.len()].clone());
-                let fill = match (&slot, dark) {
-                    (_, true) => main_bkg.clone(),
-                    (Some(colour), false) => colour.clone(),
-                    (None, false) => main_bkg.clone(),
-                };
-                let stroke = slot.unwrap_or_else(|| node_border.clone());
-                Colours { fill, stroke }
-            })
-            .collect();
+    fn new(variables: &ferrigura_model::value::Value, dark: bool) -> Self {
         Self {
-            node_border,
-            main_bkg,
+            node_border: text_of(variables, "nodeBorder").unwrap_or_default(),
+            main_bkg: text_of(variables, "mainBkg").unwrap_or_default(),
             dark,
-            colours,
+            border: texts_of(variables, "borderColorArray"),
         }
     }
 
-    /// The colours of slot `index`, which is below [`Palette::slots`].
-    pub fn colours(&self, index: usize) -> &Colours {
-        &self.colours[index]
-    }
-
-    /// The number of slots: `THEME_COLOR_LIMIT`.
-    pub fn slots(&self) -> usize {
-        self.colours.len()
+    /// The colours of slot `index`: `borderColorArray[index % length]` is the stroke, and the fill is
+    /// that colour too, or `mainBkg` in a dark scheme. With no array, the stroke is `nodeBorder` and
+    /// the fill `mainBkg`, as the reference takes the undefined colour (`genReduxSections`).
+    pub fn colours(&self, index: usize) -> Colours {
+        let slot =
+            (!self.border.is_empty()).then(|| self.border[index % self.border.len()].clone());
+        let fill = match (&slot, self.dark) {
+            (Some(colour), false) => colour.clone(),
+            _ => self.main_bkg.clone(),
+        };
+        let stroke = slot.unwrap_or_else(|| self.node_border.clone());
+        Colours { fill, stroke }
     }
 }
 
@@ -283,9 +271,9 @@ impl<'a> Context<'a> {
         // A theme name that contains `dark` is the dark variant (`drawNode`'s `isDark`). With two
         // schemes the primary one is the light set, and the dark set is dark.
         let primary_dark = matches!(themes, Themes::Single(_)) && theme.contains("dark");
-        let primary = Palette::new(variables, primary_dark, limit);
+        let primary = Palette::new(variables, primary_dark);
         let secondary = match themes {
-            Themes::Schemes { dark, .. } => Some(Palette::new(dark, true, limit)),
+            Themes::Schemes { dark, .. } => Some(Palette::new(dark, true)),
             Themes::Single(_) => None,
         };
 
@@ -348,6 +336,13 @@ impl Canvas {
             Some(so_far) => union(so_far, bounds),
         });
     }
+
+    /// Adds a box, if there is one.
+    pub fn include_some(&mut self, bounds: Option<BBox>) {
+        if let Some(bounds) = bounds {
+            self.include(bounds);
+        }
+    }
 }
 
 /// The union of two boxes. A box with no width or height still counts, as the reference's
@@ -408,11 +403,57 @@ pub(super) fn markup(text: &str) -> String {
     decode(&escape(text))
 }
 
+/// The text a reader sees for an encoded text: its markup with the entities read, as the browser
+/// shows it. The boxes of `getBBox` are those of the glyphs drawn, so they are measured on this text,
+/// while the wrapping measures the encoded text, as the reference does while it lays out (NOTES 5.12,
+/// R11). An entity the markup does not name, such as `&foo;`, stays as it is.
+pub(super) fn shown(text: &str) -> String {
+    let markup = markup(text);
+    let mut out = String::with_capacity(markup.len());
+    let mut rest = markup.as_str();
+    while let Some(start) = rest.find('&') {
+        out.push_str(&rest[..start]);
+        rest = &rest[start..];
+        let Some(end) = rest.find(';').filter(|end| *end <= 12) else {
+            break;
+        };
+        let entity = &rest[1..end];
+        let read = match entity {
+            "amp" => Some('&'),
+            "lt" => Some('<'),
+            "gt" => Some('>'),
+            "quot" => Some('"'),
+            "#39" => Some('\''),
+            numeric if numeric.starts_with('#') => {
+                numeric[1..].parse::<u32>().ok().and_then(char::from_u32)
+            }
+            _ => None,
+        };
+        match read {
+            Some(character) => {
+                out.push(character);
+                rest = &rest[end + 1..];
+            }
+            None => {
+                out.push('&');
+                rest = &rest[1..];
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 /// The title: the text the timeline writes with `x` as given, the baseline at `y = 20`, in `4ex`
 /// (the x-height of the regular face at the CSS size, `timelineRenderer.ts` 209-216). It is set in
 /// the bold face. Returns the element and the box `getBBox` gives it.
-pub(super) fn title(cx: &Context<'_>, x: f64, text: &str) -> Result<(Element, BBox), RenderError> {
-    let width = text::width_of(cx.bold, cx.title_size, text)?;
+pub(super) fn title(
+    cx: &Context<'_>,
+    x: f64,
+    text: &str,
+) -> Result<(Element, Option<BBox>), RenderError> {
+    let shown_text = shown(text);
+    let width = text::width_of(cx.bold, cx.title_size, &shown_text)?;
     let TextBox {
         ascent, descent, ..
     } = text_box(cx.bold, cx.title_size)?;
@@ -422,22 +463,24 @@ pub(super) fn title(cx: &Context<'_>, x: f64, text: &str) -> Result<(Element, BB
         .with("font-weight", "bold")
         .with("y", "20")
         .raw_text(markup(text));
-    let bounds = BBox {
+    // A title with no glyph, such as one blank, has no box (as a node text with no glyph has none).
+    let bounds = (!text::collapse(&shown_text).is_empty()).then_some(BBox {
         x,
         y: 20.0 - ascent,
         width,
         height: ascent + descent,
-    };
+    });
     Ok((element, bounds))
 }
 
-/// Every text the diagram draws, decoded: the glyphs the embedded subsets hold.
+/// Every text the diagram shows, as a reader sees it: the glyphs the embedded subsets must hold. A
+/// character written as an entity is a character of its own here, not the entity's letters.
 fn drawn_texts(diagram: &TimelineDiagram) -> String {
-    let mut texts = vec![decode(&diagram.title)];
-    texts.extend(diagram.sections.iter().map(|text| decode(text)));
+    let mut texts = vec![shown(&diagram.title)];
+    texts.extend(diagram.sections.iter().map(|text| shown(text)));
     for period in &diagram.periods {
-        texts.push(decode(&period.period));
-        texts.extend(period.events.iter().map(|text| decode(text)));
+        texts.push(shown(&period.period));
+        texts.extend(period.events.iter().map(|text| shown(text)));
     }
     texts.join(" ")
 }

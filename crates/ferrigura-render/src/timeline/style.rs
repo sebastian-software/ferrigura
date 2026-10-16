@@ -18,21 +18,22 @@ const MAX_RULE_SLOTS: usize = 64;
 /// schemes, then the section and line rules. The caller escapes the whole sheet once.
 pub(super) fn own_rules(cx: &Context<'_>) -> String {
     let id = cx.svg_id;
+    let slots = rule_slots(cx.limit);
     let mut css = String::new();
 
     // The colours: one custom property per slot and per colour, on the diagram's id, and the dark
     // scheme's values under `prefers-color-scheme: dark` when both schemes are written.
     match &cx.secondary {
-        None => css.push_str(&format!("#{id}{{{}}}", tokens(&cx.primary))),
+        None => css.push_str(&format!("#{id}{{{}}}", tokens(&cx.primary, slots))),
         Some(dark) => css.push_str(&format!(
             "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            tokens(&cx.primary),
-            tokens(dark)
+            tokens(&cx.primary, slots),
+            tokens(dark, slots)
         )),
     }
 
     let weight = cx.font_weight.as_str();
-    for slot in 0..rule_slots(&cx.primary) {
+    for slot in 0..slots {
         // `.section-(i-1)` is the class of colour `i`: the header and the tasks of section `i-1` take it.
         let class = slot as i64 - 1;
         css.push_str(&format!(
@@ -47,7 +48,7 @@ pub(super) fn own_rules(cx: &Context<'_>) -> String {
 
     // The gradient of the neo look: the nodes are filled with `mainBkg` and stroked with the gradient.
     if cx.gradient {
-        for slot in 0..rule_slots(&cx.primary) {
+        for slot in 0..slots {
             let class = slot as i64 - 1;
             css.push_str(&format!(
                 "#{id} .section-{class}[data-look=\"neo\"] rect,#{id} .section-{class}[data-look=\"neo\"] path,#{id} .section-{class}[data-look=\"neo\"] circle{{fill:var(--mainBkg);stroke:url(#{id}-gradient);stroke-width:2;}}\
@@ -59,9 +60,9 @@ pub(super) fn own_rules(cx: &Context<'_>) -> String {
 }
 
 /// The custom properties of one scheme: its main background, and the fill and the stroke of each slot.
-fn tokens(palette: &Palette) -> String {
+fn tokens(palette: &Palette, slots: usize) -> String {
     let mut out = format!("--mainBkg:{};", palette.main_bkg);
-    for slot in 0..palette.slots() {
+    for slot in 0..slots {
         let colours = palette.colours(slot);
         out.push_str(&format!(
             "--sectionFill{slot}:{};--sectionStroke{slot}:{};",
@@ -71,7 +72,7 @@ fn tokens(palette: &Palette) -> String {
     out
 }
 
-/// The number of slots the rules are written for.
-fn rule_slots(palette: &Palette) -> usize {
-    palette.slots().min(MAX_RULE_SLOTS)
+/// The number of slots the rules are written for: `THEME_COLOR_LIMIT`, at most [`MAX_RULE_SLOTS`].
+fn rule_slots(limit: usize) -> usize {
+    limit.min(MAX_RULE_SLOTS)
 }

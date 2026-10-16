@@ -137,7 +137,7 @@ pub(super) fn draw(
         };
         let (element, bounds) = title(cx, x, &diagram.title)?;
         canvas.body.push(element);
-        canvas.include(bounds);
+        canvas.include_some(bounds);
     }
     let depth_y = if has_sections {
         max_section_height + max_task_height + 150.0

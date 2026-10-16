@@ -173,7 +173,7 @@ pub(super) fn draw(
     if !diagram.title.is_empty() {
         let (element, bounds) = title(cx, before.width / 2.0 - left, &diagram.title)?;
         canvas.body.push(element);
-        canvas.include(bounds);
+        canvas.include_some(bounds);
     }
     let box_ = canvas.bounds.unwrap_or_else(super::zero_box);
 

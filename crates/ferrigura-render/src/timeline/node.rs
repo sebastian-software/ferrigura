@@ -14,8 +14,8 @@ use crate::common::Element;
 use crate::common::viewbox::BBox;
 use crate::svg::number;
 
-/// The radius of the corners of a node: `r = 0` in the redux themes (`svgDraw.js` 588), so the path
-/// has straight sides. The bottom-left corner is cut by `rd`, which is only used with the path.
+/// The inset `rd` of the path (`svgDraw.js` 589). The redux themes have no corner radius (`r = 0`, line
+/// 588), so the path is straight, and the inset only sets where its first and last points lie.
 const RD: f64 = 5.0;
 
 /// What `drawNode` is given: the text, the width of the text, the padding and the least height.
@@ -134,7 +134,7 @@ pub(super) fn draw(
         height,
     };
     if let Some(extent) = laid.extent {
-        bounds = super::union(bounds, text_box(extent, text_x, text_y));
+        bounds = super::union(bounds, text_extent_box(extent, text_x, text_y));
     }
     Ok(Node {
         element,
@@ -145,7 +145,7 @@ pub(super) fn draw(
 }
 
 /// The box of the text of a node, given the translation of its text group.
-fn text_box(extent: Extent, x: f64, y: f64) -> BBox {
+fn text_extent_box(extent: Extent, x: f64, y: f64) -> BBox {
     BBox {
         x: x - extent.half_width,
         y: y + extent.top,

@@ -68,13 +68,18 @@ pub(super) fn layout(
     Ok(Laid { tspans, extent })
 }
 
+/// The text as the browser lays it out: the blanks collapsed, and the ones at the ends dropped.
+pub(super) fn collapse(text: &str) -> String {
+    collapse_white_space(text)
+}
+
 /// `getComputedTextLength` of a line: the advance of its collapsed text, in layout units.
 ///
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
 pub(super) fn width_of(face: &'static Face, size: f64, text: &str) -> Result<f64, RenderError> {
-    let collapsed = collapse_white_space(text);
+    let collapsed = collapse(text);
     if collapsed.is_empty() {
         return Ok(0.0);
     }
@@ -157,14 +162,15 @@ fn extent(
     let mut y = 0.0;
     let mut extent: Option<Extent> = None;
     for tspan in tspans {
-        if tspan.text.is_empty() {
+        let shown = super::shown(&tspan.text);
+        if collapse(&shown).is_empty() {
             // No glyph: the `tspan` takes no position, and the next one moves from the last glyph.
             continue;
         }
         let em = if tspan.first { 1.0 } else { LINE_HEIGHT_EM };
         y += em * cx.text_size;
         let baseline = y + cx.middle;
-        let half_width = width_of(face, cx.text_size, &tspan.text)? / 2.0;
+        let half_width = width_of(face, cx.text_size, &shown)? / 2.0;
         let top = baseline - cx.ascent;
         let bottom = baseline + cx.descent;
         extent = Some(match extent {

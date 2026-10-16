@@ -136,9 +136,43 @@ Known limit, the same as the flowchart's: the header texts are sanitised with th
 
 No named exception is planned for the parser. The renderer's defects (R1-R22, NOTES 5.12) are for the render port.
 
-## 9. Not in this plan
+## 9. Renderer
 
-The layout, the wrapping, the two renderers, the classic theme (which 22 of the 30 fixtures need, NOTES 7.3 (1)), the accessibility output (R7) and the render defects. These are the M6 renderer work and need their own plan.
+Ported in `crates/ferrigura-render/src/timeline/`: the horizontal layout (`horizontal.rs`), the vertical one for `TD` (`vertical.rs`), the nodes and their wrapping (`node.rs`, `text.rs`), the style (`style.rs`). The classic theme is not ported (only the redux themes ship, M6-PLAN): a theme name that is not shipped is drawn with a redux one, as the harness does for the reference, so the redux branch is the one drawn. Checks: `pnpm port:geometry timeline` gives 30 of 30 within tolerance (`pr-check` and `nightly-check`), and `crates/ferrigura-render/tests/timeline_render.rs` pins the Chromium numbers and the reference markup. The reference has no render spec for the timeline; `multi-diagram-id-uniqueness.spec.ts` checks `.task-line` ids, which the timeline never draws.
+
+### 9.1 Quirks reproduced
+
+| Id  | Quirk                                                                                                                                                              | Reference                                       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| R1  | The vertical arrows refer to `url(#arrowhead)`; its marker is `undefined-arrowhead`. No arrow is drawn                                                             | `timelineRendererVertical.ts` 60, 236, 338      |
+| R2  | Nodes of the vertical layout are `undefined-node-N`                                                                                                                | vertical 154, 274, 324; `svgDraw.js` 598        |
+| R3  | Every horizontal task has its dashed line, with or without events                                                                                                  | `timelineRenderer.ts` 310                       |
+| R4  | Tasks before the first section are not drawn, in both layouts                                                                                                      | horizontal 144, vertical 142                    |
+| R5  | A repeated section name draws its tasks under each occurrence                                                                                                      | `timelineRenderer.ts` 142-145                   |
+| R6  | The front matter title is ignored                                                                                                                                  | `Diagram.ts` 52-54                              |
+| R7  | `accTitle` and `accDescr` are not drawn (no `<title>`, `<desc>` or labelled-by attributes)                                                                         | `mermaidAPI.ts` 621-622; horizontal 267         |
+| R8  | Only a lowercase `<br>` breaks a line                                                                                                                              | `svgDraw.js` 461                                |
+| R9  | A leading or trailing `<br>` leaves an empty line; an empty `tspan` takes no height and moves no line                                                              | `svgDraw.js` 456-496                            |
+| R10 | An overlong word is not split: it takes a line of its own, and the line before it is empty                                                                         | `svgDraw.js` 474-493                            |
+| R11 | Wrapping measures the encoded text (`ﬂ°quot¶ß`); the glyph boxes are those of the decoded text                                                                     | `svgDraw.js` 515-516; `mermaidAPI.ts` 359       |
+| R12 | The vertical layout draws no gradient, though the stylesheet refers to `url(#id-gradient)`                                                                         | `timelineRendererVertical.ts` (no `defs`)       |
+| R13 | A title with markup is escaped twice: the sanitised `&` becomes `&amp;amp;`                                                                                        | `commonDb.ts` 28-30; `.text()`                  |
+| R14 | `Timeline` is not detected                                                                                                                                         | `detector.ts` 9-11                              |
+| R15 | The pre-pass of tasks measures the text `[object Object]` (the task object, not `task.task`), in both layouts. The axis and the smallest node heights come from it | `timelineRenderer.ts` 103-114; vertical 100-111 |
+| R16 | The pre-pass measures with the regular face: the text of a virtual node is outside the `section-N` groups, so its weight is 400, not the 600 of the drawn node     | `svgDraw.js` 570-584 against 498-568            |
+
+### 9.2 Corrections to the research
+
+- The text is set at the theme's `fontSize`, 14 px in the redux themes (`themeVariables.fontSize`, which the stylesheet writes at the root). NOTES 5.4 and 5.9 give 16 px: that is the classic theme. Node heights still use the top-level `fontSize` (16), as `drawNode` reads `conf.fontSize`.
+- The title's `4ex` is four times the x-height of the regular face at the CSS size: the bundled faces declare 496 units in 1000 (`OS/2` `sxHeight`), so 27.776 px. `ferrigura_text::x_height` reads it.
+- `dominant-baseline: middle` places the middle of the x-height on the baseline position, and the first line's `dy` is the tspan's own `1em` (the text element's `dy` does not add to it). A later line is one `1.1em` below the last line with text. Both are measured in the harness, not from the code alone.
+- The node text is `font-weight` 600 from `.section-N text`, which Chromium sets in the bold face: every node is measured in the bold face except the pre-pass (R16).
+
+### 9.3 Decisions and limits
+
+- Text the bundled faces do not cover is measured with the bundled glyph, where Chromium uses a fallback font (`♥` from `#9829;`). The fixtures have no such text; M6-PLAN excludes such fixtures until fallback fonts exist.
+- The axis's `stroke` is the colour of the node border, not `black`: the reference's stylesheet overrides `black` with the same colour, and decision 0007 writes the colour as the presentation attribute.
+- Rules that no element of a timeline can match are not written, each for its reason (`style.rs`). The `.lineWrapper line` rule is written once; the reference writes it once per colour, with the same value.
 
 ## 10. Open questions
 
