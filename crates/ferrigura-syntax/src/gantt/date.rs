@@ -1434,3 +1434,34 @@ mod tests {
         }
     }
 }
+
+/// The `parseDuration` rows of `ganttDb.spec.ts` (`when using duration`).
+#[cfg(test)]
+mod spec_durations {
+    use super::*;
+
+    #[test]
+    fn should_1d_resulting_in_duration() {
+        assert_eq!(parse_duration("1d"), Some((1.0, Unit::Day)));
+    }
+
+    #[test]
+    fn should_2w_resulting_in_duration() {
+        assert_eq!(parse_duration("2w"), Some((2.0, Unit::Week)));
+    }
+
+    #[test]
+    fn should_1ms_resulting_in_duration() {
+        assert_eq!(parse_duration("1ms"), Some((1.0, Unit::Millisecond)));
+    }
+
+    #[test]
+    fn should_0_1s_resulting_in_duration() {
+        assert_eq!(parse_duration("0.1s"), Some((0.1, Unit::Second)));
+    }
+
+    #[test]
+    fn should_1f_resulting_in_duration() {
+        assert_eq!(parse_duration("1f"), None);
+    }
+}
