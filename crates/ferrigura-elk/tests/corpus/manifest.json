@@ -1066,6 +1066,14 @@
    "edgeLabels": true
   },
   {
+   "name": "synthetic__compound-unswept-parent-port-order",
+   "fixture": null,
+   "nodes": 7,
+   "edges": 5,
+   "compound": true,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__edges-chain-3",
    "fixture": null,
    "nodes": 3,

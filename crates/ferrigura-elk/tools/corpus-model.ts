@@ -851,11 +851,13 @@ export function syntheticMarkedExplicitPortGraphs(): {
 
 /**
  * Compound graphs whose cross-hierarchy edges meet inverted ports, from the random compound graphs of
- * `random-compound-graphs.ts` (seed 20261017: graphs 43, 579 and 880), which the inverted port dummies
- * let the port lay out. Each one diverged from elkjs in one place: an edge from a node to its ancestor
- * (whose coordinates are relative to the ancestor), a cross-hierarchy edge segment among the marked
- * edges of the Brandes & Koepf log (which names it by its ELK edge's containers), and an edge whose
- * hierarchical offset is summed over two levels (in Java's order).
+ * `random-compound-graphs.ts` (seed 20261017: graphs 43, 579 and 880; seed 777: graph 827), which the
+ * inverted port dummies let the port lay out. Each one diverged from elkjs in one place: an edge from a
+ * node to its ancestor (whose coordinates are relative to the ancestor), a cross-hierarchy edge segment
+ * among the marked edges of the Brandes & Koepf log (which names it by its ELK edge's containers), an
+ * edge whose hierarchical offset is summed over two levels (in Java's order), and a top graph the layer
+ * sweep leaves unswept (its model order has no crossings), whose compound node keeps the port order its
+ * nested graph gave it.
  */
 export function syntheticCompoundInvertedPortGraphs(): {
   name: string;
@@ -1448,6 +1450,122 @@ export function syntheticCompoundInvertedPortGraphs(): {
             id: 'e11',
             sources: ['g0'],
             targets: ['g8'],
+          },
+        ],
+      },
+    },
+    {
+      name: 'synthetic__compound-unswept-parent-port-order',
+      graph: {
+        id: 'root',
+        layoutOptions: {
+          'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+          'elk.algorithm': 'elk.layered',
+          'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+          'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+          'elk.direction': 'DOWN',
+          'spacing.baseValue': 40,
+          'elk.layered.unnecessaryBendpoints': true,
+          'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
+          'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+          'elk.layered.mergeEdges': false,
+          'elk.layered.mergeHierarchyEdges': false,
+          'elk.randomSeed': 261,
+          'elk.layered.considerModelOrder.strategy': 'PREFER_EDGES',
+          'elk.spacing.portsSurrounding': '[top=12,left=12,bottom=12,right=12]',
+        },
+        children: [
+          {
+            id: 'g0',
+            width: 75,
+            height: 23,
+            labels: [
+              {
+                text: 'Leaf g0',
+                width: 33,
+                height: 11,
+              },
+            ],
+            layoutOptions: {
+              'elk.nodeLabels.placement': '[H_RIGHT V_BOTTOM, INSIDE]',
+            },
+          },
+          {
+            id: 'g1',
+            children: [
+              {
+                id: 'g2',
+                children: [
+                  {
+                    id: 'g3',
+                    width: 45,
+                    height: 33,
+                  },
+                ],
+                labels: [
+                  {
+                    text: 'Group g2',
+                    width: 41,
+                    height: 18,
+                  },
+                ],
+                layoutOptions: {
+                  'elk.nodeLabels.placement': '[H_LEFT V_TOP, INSIDE]',
+                },
+              },
+              {
+                id: 'g4',
+                width: 69,
+                height: 31,
+              },
+              {
+                id: 'g5',
+                width: 39,
+                height: 54,
+              },
+              {
+                id: 'g6',
+                width: 52,
+                height: 21,
+              },
+            ],
+            labels: [
+              {
+                text: 'Group g1',
+                width: 28,
+                height: 14,
+              },
+            ],
+            layoutOptions: {
+              'elk.nodeLabels.placement': '[H_CENTER V_CENTER, INSIDE]',
+            },
+          },
+        ],
+        edges: [
+          {
+            id: 'e0',
+            sources: ['g2'],
+            targets: ['g6'],
+          },
+          {
+            id: 'e1',
+            sources: ['g0'],
+            targets: ['g1'],
+          },
+          {
+            id: 'e2',
+            sources: ['g6'],
+            targets: ['g3'],
+          },
+          {
+            id: 'e3',
+            sources: ['g0'],
+            targets: ['g2'],
+          },
+          {
+            id: 'e4',
+            sources: ['g5'],
+            targets: ['g6'],
           },
         ],
       },
