@@ -113,12 +113,12 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 | class     | `diagrams/class/parser/classDiagram.jison`       |          5 |     255 |      247 | —                | —                      | —                         | —                             | —            | —                           |
 | state     | `diagrams/state/parser/stateDiagram.jison`       |          9 |     121 |      145 | ferrigura-syntax | 103 / 124 (21 ignored) | 389 inputs, no difference | —                             | —            | —                           |
 | ER        | `diagrams/er/parser/erDiagram.jison`             |          3 |     142 |      206 | ferrigura-syntax | 655 / 660 (5 ignored)  | 751 inputs, no difference | —                             | —            | —                           |
-| gantt     | `diagrams/gantt/parser/gantt.jison`              |          2 |      40 |       52 | —                | —                      | —                         | —                             | —            | —                           |
+| gantt     | `diagrams/gantt/parser/gantt.jison`              |          2 |      40 |       52 | ferrigura-syntax | 74 / 76 (2 ignored)    | 114 inputs, no difference | —                             | —            | —                           |
 | pie       | `packages/parser/…/pie/pie.langium`              |          2 |      16 |       24 | ferrigura-syntax | 27 / 29 (2 ignored)    | 87 inputs, no difference  | —                             | —            | —                           |
 | timeline  | `diagrams/timeline/parser/timeline.jison`        |          1 |      11 |       30 | —                | —                      | —                         | —                             | —            | —                           |
 | gitGraph  | `packages/parser/…/gitGraph/gitGraph.langium`    |          1 |      69 |      135 | —                | —                      | —                         | —                             | —            | —                           |
 | journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | —                | —                      | —                         | —                             | —            | —                           |
-| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                  | 17 inputs, no difference  | —                             | —            | —                           |
+| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                  | —                         | —                             | —            | —                           |
 
 ## Spikes
 

@@ -4,8 +4,8 @@
 //! and returns the diagram model of `ferrigura-model`. See `docs-port/decisions/0002` for why the
 //! parsers are written by hand on one lexer base.
 //!
-//! The crate covers the pie, info, flowchart, timeline, journey, gitGraph, ER, class, sequence and
-//! state diagrams for now; the other types follow in later milestones.
+//! The crate covers the pie, info, flowchart, timeline, journey, gitGraph, ER, class, sequence,
+//! state and gantt diagrams for now; the other types follow in later milestones.
 
 #![warn(missing_docs)]
 #![cfg_attr(
@@ -18,6 +18,7 @@ mod cursor;
 mod entities;
 mod error;
 pub mod flowchart;
+pub mod gantt;
 pub mod git_graph;
 mod lexer;
 mod preprocess;
@@ -40,6 +41,7 @@ pub mod yaml;
 use ferrigura_model::class::ClassDiagram;
 use ferrigura_model::er::ErDiagram;
 use ferrigura_model::flowchart::FlowchartDiagram;
+use ferrigura_model::gantt::GanttDiagram;
 use ferrigura_model::git_graph::GitGraphDiagram;
 use ferrigura_model::info::InfoDiagram;
 use ferrigura_model::journey::JourneyDiagram;
@@ -73,6 +75,8 @@ pub enum DiagramType {
     Sequence,
     /// The state diagram, written `stateDiagram` or `stateDiagram-v2`.
     State,
+    /// The gantt diagram.
+    Gantt,
 }
 
 impl DiagramType {
@@ -90,6 +94,7 @@ impl DiagramType {
             Self::Class => "class",
             Self::Sequence => "sequence",
             Self::State => "state",
+            Self::Gantt => "gantt",
         }
     }
 }
@@ -117,6 +122,8 @@ pub enum Diagram {
     Sequence(SequenceDiagram),
     /// A state diagram.
     State(StateDiagram),
+    /// A gantt diagram.
+    Gantt(GanttDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -148,6 +155,8 @@ pub fn detect(text: &str) -> Option<DiagramType> {
         Some(DiagramType::Sequence)
     } else if rest.starts_with("stateDiagram") {
         Some(DiagramType::State)
+    } else if rest.starts_with("gantt") {
+        Some(DiagramType::Gantt)
     } else {
         None
     }
@@ -168,6 +177,7 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         Some(DiagramType::Class) => class::parse(text).map(Diagram::Class),
         Some(DiagramType::Sequence) => sequence::parse(text).map(Diagram::Sequence),
         Some(DiagramType::State) => state::parse(text).map(Diagram::State),
+        Some(DiagramType::Gantt) => gantt::parse(text).map(Diagram::Gantt),
         None => Err(ParseError {
             line: 1,
             column: 1,

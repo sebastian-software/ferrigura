@@ -42,6 +42,7 @@ const detectors: Record<string, RegExp> = {
   class: /^\s*classDiagram/,
   sequence: /^\s*sequenceDiagram/,
   state: /^\s*stateDiagram/,
+  gantt: /^\s*gantt/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */

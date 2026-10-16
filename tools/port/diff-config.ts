@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 import { configCases } from './config-cases.ts';
 import { undetectedCases } from './cases.ts';
+import { exceptions } from './exceptions.ts';
 import { collectInputs, looksLikeType } from './inputs.ts';
 
 interface ConfigInput {
@@ -88,6 +89,7 @@ const sequenceInputs = await collectInputs('sequence');
 const stateInputs = (await collectInputs('state')).filter((input) =>
   looksLikeType('state', input.text)
 );
+const ganttInputs = await collectInputs('gantt');
 const inputs: ConfigInput[] = [
   ...pieInputs.map((input) => ({
     id: 0,
@@ -152,6 +154,13 @@ const inputs: ConfigInput[] = [
     group: 'state',
     expectedScope: 'state',
   })),
+  ...ganttInputs.map((input) => ({
+    id: 0,
+    source: input.source,
+    text: input.text,
+    group: 'gantt',
+    expectedScope: 'gantt',
+  })),
   ...configCases.map((testCase) => ({
     id: 0,
     source: testCase.source,
@@ -204,7 +213,6 @@ const UNPORTED_SECTIONS = [
   'flowchart',
   'swimlane',
   'agentflow',
-  'gantt',
   'class',
   'state',
   'quadrantChart',
@@ -257,12 +265,19 @@ const SHIPPED_THEMES = ['redux-color', 'redux-dark-color'];
 let accepted = 0;
 let differences = 0;
 let unshippedThemes = 0;
+// The named exceptions of the gantt collection (exceptions.ts) apply to the same inputs here.
+const namedExceptions = new Set((exceptions.gantt ?? []).map((entry) => entry.text));
+let namedExcepted = 0;
 const groupCounts = new Map<string, number>();
 for (const input of inputs) {
   groupCounts.set(input.group, (groupCounts.get(input.group) ?? 0) + 1);
 }
 const acceptedByGroup = new Map<string, number>();
 for (const input of inputs) {
+  if (namedExceptions.has(input.text)) {
+    namedExcepted += 1;
+    continue;
+  }
   const jsOutput = jsById.get(input.id);
   const rsOutput = rsById.get(input.id);
   if (jsOutput?.ok) {
@@ -308,7 +323,7 @@ const groups = [...groupCounts]
   .join(', ');
 console.log(
   `\nconfig: ${inputs.length} inputs (accepted by the reference per group: ${groups}), ` +
-    `${accepted} accepted, ${differences} differences; ` +
+    `${accepted} accepted, ${differences} differences, ${namedExcepted} named exceptions; ` +
     `configKeys: ${missingInRust.length + extraInRust.length} differences; ` +
     `${unshippedThemes} inputs with a theme ferrigura does not ship compared without theme variables`
 );

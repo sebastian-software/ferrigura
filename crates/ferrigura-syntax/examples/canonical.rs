@@ -1,7 +1,7 @@
 //! Parses inputs with a ferrigura parser and writes the canonical JSON of each result. The
 //! differential harness (`pnpm port:diff`) runs this against the JS exporters of `tools/port/`.
 //!
-//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state> <inputs.json> <outputs.json>`
+//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
 //! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
@@ -16,6 +16,7 @@ use std::fs;
 use ferrigura_model::config::effective;
 use ferrigura_model::value::Value as Config;
 use ferrigura_syntax::flowchart::{self, FlowchartError};
+use ferrigura_syntax::gantt;
 use ferrigura_syntax::sequence::{self, Options};
 use ferrigura_syntax::{
     DiagramType, ParseError, class, config, detect, er, git_graph, info, journey, pie, state,
@@ -52,6 +53,17 @@ fn timeline_outcome(text: &str) -> Outcome {
         });
     }
     match timeline::parse(text) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
+/// The clock of the gantt differential run: 1010-10-10T00:00Z, the instant the reference runs with
+/// (`tools/port/export-gantt.ts`).
+const GANTT_NOW_MS: i64 = -30_270_326_400_000;
+
+fn gantt_outcome(text: &str) -> Outcome {
+    match gantt::parse_with(text, gantt::Options { now: GANTT_NOW_MS }) {
         Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
         Err(error) => Outcome::Rejected(error),
     }
@@ -133,7 +145,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
         return Err(
-            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state> <inputs.json> <outputs.json>".into(),
+            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt> <inputs.json> <outputs.json>".into(),
         );
     };
 
@@ -183,6 +195,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
+            "gantt" => gantt_outcome(text),
             other => return Err(format!("unknown diagram type {other}").into()),
         };
         results.push(match outcome {

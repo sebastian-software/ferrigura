@@ -78,6 +78,7 @@ export async function registerDetectors(reference: Reference): Promise<void> {
     classPlugin,
     sequence,
     state,
+    gantt,
   ] = await Promise.all([
     reference.load<{ registerLazyLoadedDiagrams(...diagrams: unknown[]): void }>(
       '/packages/mermaid/src/diagram-api/detectType.ts'
@@ -101,6 +102,7 @@ export async function registerDetectors(reference: Reference): Promise<void> {
     reference.load<{ default: unknown }>(
       '/packages/mermaid/src/diagrams/state/stateDetector-V2.ts'
     ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/gantt/ganttDetector.ts'),
   ]);
   detectType.registerLazyLoadedDiagrams(
     pie.pie,
@@ -111,7 +113,8 @@ export async function registerDetectors(reference: Reference): Promise<void> {
     gitGraph.default,
     classPlugin.default,
     sequence.default,
-    state.default
+    state.default,
+    gantt.default
   );
 }
 

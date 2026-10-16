@@ -4,7 +4,7 @@
  * canonical models are compared. A rejection on both sides counts as agreement; any other
  * difference is reported with both results.
  *
- * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | flowchart-data | config | yaml | theme>`
+ * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | flowchart-data | config | yaml | theme>`
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
@@ -33,10 +33,11 @@ if (
   type !== 'er' &&
   type !== 'class' &&
   type !== 'sequence' &&
-  type !== 'state'
+  type !== 'state' &&
+  type !== 'gantt'
 ) {
   console.error(
-    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | flowchart-data | config | yaml | theme'
+    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | flowchart-data | config | yaml | theme'
   );
   process.exit(2);
 }
@@ -47,8 +48,12 @@ const inputPath = `${workDir}/${type}-inputs.json`;
 const jsPath = `${workDir}/${type}-js.json`;
 const rsPath = `${workDir}/${type}-rs.json`;
 
-function run(command: string, args: string[]): void {
-  const result = spawnSync(command, args, { cwd: root, stdio: 'inherit' });
+function run(command: string, args: string[], env: Record<string, string> = {}): void {
+  const result = spawnSync(command, args, {
+    cwd: root,
+    stdio: 'inherit',
+    env: { ...process.env, ...env },
+  });
   if (result.status !== 0) {
     console.error(`${command} ${args.join(' ')} failed`);
     process.exit(2);
@@ -74,7 +79,12 @@ const inputs = await collectInputs(type);
 await mkdir(workDir, { recursive: true });
 await writeFile(inputPath, JSON.stringify(inputs, null, 2));
 
-run('pnpm', ['exec', 'tsx', `tools/port/export-${type}.ts`, inputPath, jsPath]);
+// The gantt model depends on the time zone (the reference's local dates); the others do not.
+run(
+  'pnpm',
+  ['exec', 'tsx', `tools/port/export-${type}.ts`, inputPath, jsPath],
+  type === 'gantt' ? { TZ: 'UTC' } : {}
+);
 run('cargo', [
   'run',
   '--quiet',
