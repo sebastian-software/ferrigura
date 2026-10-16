@@ -1,12 +1,18 @@
 //! Ported from ELK (Eclipse Layout Kernel), commit 9bc93474e, Copyright (c) Kiel University and others.
 //! SPDX-License-Identifier: EPL-2.0
 //! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/p3order/LayerSweepCrossingMinimizer.java
-//!   with GraphInfoHolder.java, SweepCopy.java, ISweepPortDistributor.java and LayerSweepTypeDecider.java
+//!   with GraphInfoHolder.java, SweepCopy.java, ISweepPortDistributor.java, LayerSweepTypeDecider.java
+//!   and CrossMinUtil.java
 //!
 //! The layer sweep crossing minimizer of the root graph with the barycenter heuristic, the default.
 //! Each attempt starts from a random order of one layer, sweeps back and forth over the layers and
 //! keeps the order with the fewest crossings. The best attempt's node order and port order are
 //! written back to the graph.
+//!
+//! The same minimizer runs as the two-sided greedy switch processor before node placement
+//! (`greedy_switch`): the deterministic greedy switch heuristic with the greedy port distributor,
+//! swept in alternating directions until a sweep improves nothing. The one-sided greedy switch is
+//! reported as `Unsupported`.
 //!
 //! The root graph has no parent, so it is always swept bottom-up (`LayerSweepTypeDecider.useBottomUp`)
 //! and the hierarchical branches are not ported. Not ported, and reported as `Unsupported`: the
@@ -17,6 +23,8 @@
 
 mod barycenter;
 mod counting;
+mod greedy_port_distributor;
+mod greedy_switch;
 mod port_distributor;
 
 use crate::core::data::OptionValue;
@@ -31,6 +39,8 @@ use crate::layered::ports::is_order_fixed;
 
 use barycenter::BarycenterHeuristic;
 use counting::AllCrossingsCounter;
+use greedy_port_distributor::GreedyPortDistributor;
+use greedy_switch::GreedySwitchHeuristic;
 use port_distributor::PortDistributor;
 
 /// `LayerSweepCrossingMinimizer.process` for `CrossMinType.BARYCENTER`, the layer sweep of the
@@ -75,6 +85,103 @@ pub fn sweep(graph: &mut LGraph) -> Result<(), LayoutError> {
     Ok(())
 }
 
+/// `LayerSweepCrossingMinimizer.process` for the greedy switch types, the processor that runs before
+/// node placement: `ONE_SIDED_GREEDY_SWITCH` when `one_sided`, `TWO_SIDED_GREEDY_SWITCH` otherwise.
+/// The task's `begin` and `done` are the processor's.
+///
+/// The greedy switch heuristic is deterministic and the two-sided one always improves, so
+/// `chooseMinimizingMethod` picks `minimizeCrossingsNoCounter` and the best sweep is the last one.
+/// The one-sided type takes `minimizeCrossingsWithCounter` with a barycenter port distributor and the
+/// first and second try flags the barycenter phase leaves on the graph; it is not ported.
+pub fn greedy_switch(graph: &mut LGraph, one_sided: bool) -> Result<(), LayoutError> {
+    // The short-circuits of `process`, before anything is drawn from the random generator.
+    if graph.layers.iter().all(Vec::is_empty) {
+        return Ok(());
+    }
+    let hierarchical = graph
+        .properties
+        .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
+        == Some(HierarchyHandling::INCLUDE_CHILDREN);
+    if graph.layers.len() == 1 && graph.layers[0].len() == 1 && !hierarchical {
+        return Ok(());
+    }
+    if one_sided {
+        return Err(LayoutError::Unsupported(
+            "the one-sided greedy switch (GreedySwitchType.ONE_SIDED)".to_string(),
+        ));
+    }
+    check_structure(graph)?;
+    let mut random = graph
+        .random
+        .take()
+        .ok_or_else(|| LayoutError::Unsupported("a graph without a random source".to_string()))?;
+    // `initialize`: the seed the randomized attempts would restart from, drawn though the greedy
+    // switch never uses it. `ISweepPortDistributor.create` draws nothing for the two-sided type.
+    random.next_long();
+    let best = {
+        let net = Net::new(graph);
+        let mut layout = Layout::initial(graph);
+        minimize_crossings_no_counter(&net, &mut layout, &mut random).map(|()| layout)
+    };
+    graph.random = Some(random);
+    // `transferNodeAndPortOrdersToGraph`: the deterministic heuristic's best sweep is
+    // `currentlyBestNodeAndPortOrder`, the order after the last sweep.
+    transfer_node_and_port_orders(graph, best?);
+    Ok(())
+}
+
+/// `minimizeCrossingsNoCounter`: sweeps in alternating directions, each starting with one pass of
+/// switches over its first layer, until a sweep changes nothing. The root graph is swept, so
+/// `setCurrentlyBestNodeOrders` saves the layout as it ends.
+fn minimize_crossings_no_counter(
+    net: &Net,
+    layout: &mut Layout,
+    random: &mut Random,
+) -> Result<(), LayoutError> {
+    let mut heuristic = GreedySwitchHeuristic::new(net, layout);
+    let mut ports = GreedyPortDistributor::new(net);
+    let mut forward = random.next_boolean();
+    let mut improved = true;
+    while improved {
+        improved = heuristic.set_first_layer_order(net, layout, forward)?;
+        improved |=
+            greedy_sweep_reducing_crossings(net, layout, &mut heuristic, &mut ports, forward)?;
+        forward = !forward;
+    }
+    Ok(())
+}
+
+/// `sweepReducingCrossings` with the greedy switch: the port distribution of the first layer, then
+/// each following layer is switched until it improves no more and its ports are distributed. The
+/// root graph's layers hold no nested graphs, so `sweepInHierarchicalNodes` changes nothing.
+fn greedy_sweep_reducing_crossings(
+    net: &Net,
+    layout: &mut Layout,
+    heuristic: &mut GreedySwitchHeuristic,
+    ports: &mut GreedyPortDistributor,
+    forward: bool,
+) -> Result<bool, LayoutError> {
+    let length = layout.order.len();
+    let mut improved = ports.distribute_ports_while_sweeping(
+        net,
+        layout,
+        start_index(forward, length),
+        forward,
+    )?;
+    let (step, mut index) = if forward {
+        (1_isize, 1_isize)
+    } else {
+        (-1_isize, length as isize - 2)
+    };
+    while in_sweep_range(index, length, forward) {
+        let free = index as usize;
+        improved |= heuristic.minimize_crossings(net, layout, free)?;
+        improved |= ports.distribute_ports_while_sweeping(net, layout, free, forward)?;
+        index += step;
+    }
+    Ok(improved)
+}
+
 /// The cases this port does not cover, reported before the sweep changes anything.
 fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
     if graph.properties.bool_of(options::FORCE_NODE_MODEL_ORDER) {
@@ -93,6 +200,11 @@ fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
             "the crossing counter with model order influence".to_string(),
         ));
     }
+    check_structure(graph)
+}
+
+/// The parts of a graph no layer sweep of this port handles, the barycenter's or the greedy switch's.
+fn check_structure(graph: &LGraph) -> Result<(), LayoutError> {
     // A self loop is detached while the self loop processors hold it, so only attached edges count.
     for (index, edge) in graph.edges.iter().enumerate() {
         if graph.is_attached(index)
@@ -255,6 +367,30 @@ impl<'a> Net<'a> {
             .copied()
             .filter(|&port| self.side(port) == side)
             .collect()
+    }
+
+    /// `LEdge.isSelfLoop()`: both ends on one node.
+    pub(super) fn is_self_loop(&self, edge: usize) -> bool {
+        self.node_of(self.source(edge)) == self.node_of(self.target(edge))
+    }
+}
+
+/// `CrossMinUtil.inNorthSouthEastWestOrder`: the ports of a port list on `side`, north to south and
+/// east to west. North and east ports keep the list order; south and west ports, which the list
+/// holds clockwise, are reversed.
+pub(super) fn in_north_south_east_west_order(
+    net: &Net,
+    ports: &[usize],
+    side: PortSide,
+) -> Vec<usize> {
+    match side {
+        PortSide::EAST | PortSide::NORTH => net.side_ports(ports, side),
+        PortSide::SOUTH | PortSide::WEST => {
+            let mut ports = net.side_ports(ports, side);
+            ports.reverse();
+            ports
+        }
+        _ => Vec::new(),
     }
 }
 
@@ -638,6 +774,59 @@ mod tests {
             expected.sort_unstable();
             assert_eq!(ports, expected);
         }
+    }
+
+    /// Two layers [n0, n1] and [n2, n3] with n0 -> n3 and n1 -> n2: the two edges cross.
+    fn crossed_pair() -> LGraph {
+        let mut graph = LGraph {
+            nodes: vec![LNode::default(); 4],
+            layers: vec![vec![0, 1], vec![2, 3]],
+            random: Some(Random::new(1)),
+            ..LGraph::default()
+        };
+        let p0 = add_port(&mut graph, 0, PortSide::EAST);
+        let p1 = add_port(&mut graph, 1, PortSide::EAST);
+        let w2 = add_port(&mut graph, 2, PortSide::WEST);
+        let w3 = add_port(&mut graph, 3, PortSide::WEST);
+        connect(&mut graph, p0, w3);
+        connect(&mut graph, p1, w2);
+        graph
+    }
+
+    #[test]
+    fn the_two_sided_greedy_switch_removes_a_crossing() {
+        let mut graph = crossed_pair();
+        greedy_switch(&mut graph, false).unwrap();
+        // One of the two layers is switched, whichever the random direction starts with.
+        let switched = graph.layers == vec![vec![1, 0], vec![2, 3]]
+            || graph.layers == vec![vec![0, 1], vec![3, 2]];
+        assert!(switched, "{:?}", graph.layers);
+        for node in 0..4 {
+            assert_eq!(port_constraints(&graph, node), PortConstraints::FIXED_ORDER);
+        }
+    }
+
+    #[test]
+    fn the_greedy_switch_draws_the_seed_and_the_direction() {
+        // Layers of one node each switch nothing, but `initialize` draws the seed and
+        // `minimizeCrossingsNoCounter` the first direction, as in the Java.
+        let mut graph = crossed_pair();
+        graph.layers = vec![vec![0], vec![2]];
+        greedy_switch(&mut graph, false).unwrap();
+        let mut expected = Random::new(1);
+        expected.next_long();
+        expected.next_boolean();
+        let mut random = graph.random.take().unwrap();
+        assert_eq!(random.next_long(), expected.next_long());
+    }
+
+    #[test]
+    fn the_one_sided_greedy_switch_is_unsupported() {
+        let mut graph = crossed_pair();
+        assert!(matches!(
+            greedy_switch(&mut graph, true),
+            Err(LayoutError::Unsupported(_))
+        ));
     }
 
     #[test]

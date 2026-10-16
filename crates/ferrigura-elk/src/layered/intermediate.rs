@@ -11,8 +11,8 @@
 
 use crate::core::data::JavaEnum;
 use crate::core::data::enums::{
-    EdgeLabelSideSelection, HierarchyHandling, IntermediateProcessorStrategy, NodeType,
-    OrderingStrategy, PortConstraints,
+    EdgeLabelSideSelection, IntermediateProcessorStrategy, NodeType, OrderingStrategy,
+    PortConstraints,
 };
 use crate::core::math::KVector;
 use crate::core::util::progress::{Monitor, ProgressMonitor};
@@ -187,34 +187,16 @@ pub fn run(
         IntermediateProcessorStrategy::LABEL_DUMMY_REMOVER => {
             crate::layered::labels::label_dummy_removal(graph)?;
         }
-        IntermediateProcessorStrategy::ONE_SIDED_GREEDY_SWITCH
-        | IntermediateProcessorStrategy::TWO_SIDED_GREEDY_SWITCH => {
-            greedy_switch(graph)?;
+        IntermediateProcessorStrategy::ONE_SIDED_GREEDY_SWITCH => {
+            crate::layered::p3order::greedy_switch(graph, true)?;
+        }
+        IntermediateProcessorStrategy::TWO_SIDED_GREEDY_SWITCH => {
+            crate::layered::p3order::greedy_switch(graph, false)?;
         }
         _ => {}
     }
     progress.done(monitor);
     Ok(())
-}
-
-/// `LayerSweepCrossingMinimizer` run as a greedy switch. It returns at once for an empty graph and
-/// for a single node outside a hierarchical layout, as its `process` does before it sorts anything.
-/// A graph whose layers hold at most one node each has no pair to switch, so the heuristic changes
-/// nothing there either. Other graphs need the greedy switch heuristic, which is not ported.
-fn greedy_switch(graph: &LGraph) -> Result<(), LayoutError> {
-    let empty = graph.layers.iter().all(Vec::is_empty);
-    let single = graph.layers.len() == 1 && graph.layers[0].len() == 1;
-    let hierarchical = graph
-        .properties
-        .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
-        == Some(HierarchyHandling::INCLUDE_CHILDREN);
-    let no_pairs = graph.layers.iter().all(|layer| layer.len() <= 1);
-    if empty || (single && !hierarchical) || no_pairs {
-        return Ok(());
-    }
-    Err(LayoutError::Unsupported(
-        "greedy switch crossing minimization on several nodes".to_string(),
-    ))
 }
 
 /// `HierarchicalNodeResizingProcessor.process` for the root graph: the nodes leave their

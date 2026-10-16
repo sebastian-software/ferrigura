@@ -201,6 +201,14 @@ fn module_name(step: &Step) -> Result<&'static str, LayoutError> {
                 "org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator"
             }
             S::END_LABEL_SORTER => "org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+            S::LABEL_DUMMY_INSERTER => {
+                "org.eclipse.elk.alg.layered.intermediate.LabelDummyInserter"
+            }
+            S::LABEL_DUMMY_SWITCHER => {
+                "org.eclipse.elk.alg.layered.intermediate.LabelDummySwitcher"
+            }
+            S::LABEL_SIDE_SELECTOR => "org.eclipse.elk.alg.layered.intermediate.LabelSideSelector",
+            S::LABEL_DUMMY_REMOVER => "org.eclipse.elk.alg.layered.intermediate.LabelDummyRemover",
             S::REVERSED_EDGE_RESTORER => {
                 "org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer"
             }
