@@ -35,6 +35,18 @@ const SCHEMA: &str = "../../packages/mermaid/src/schemas/config.schema.yaml";
 /// Schema keys that the reference does not accept in a directive.
 const NOT_CONFIG_KEYS: &[&str] = &["dompurifyConfig"];
 
+/// Keys of the class section that the reference's `defaultConfig.ts` leaves undefined. It builds the
+/// `class` object from scratch, so the schema's defaults for these keys are not in the runtime
+/// object (`docs-port/class/PLAN.md`, section 6.1). They are fields without a default here.
+const CLASS_KEYS_WITHOUT_DEFAULT: &[&str] = &[
+    "arrowMarkerAbsolute",
+    "diagramPadding",
+    "padding",
+    "textHeight",
+    "titleTopMargin",
+    "useMaxWidth",
+];
+
 /// Rust keywords and reserved words; a field with one of these names gets a trailing `_`.
 const KEYWORDS: &[&str] = &[
     "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "crate",
@@ -241,7 +253,12 @@ impl Generator<'_> {
             None => format!("{parent}{}", pascal(key)),
         };
         let kind = self.kind(&flat, &hint, def);
-        let default = flat.get("default");
+        let default: Option<&Value> =
+            if parent == "ClassDiagramConfig" && CLASS_KEYS_WITHOUT_DEFAULT.contains(&key) {
+                None
+            } else {
+                flat.get("default")
+            };
         let (ty, option, expr, carries) = match &kind {
             Kind::Object { name, has_defaults } => {
                 let literal = default
