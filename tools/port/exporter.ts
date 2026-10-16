@@ -10,7 +10,7 @@ import { openReference, type Reference } from './reference.ts';
 /** Reads `<inputs.json> <outputs.json>` from the arguments and runs `convert` on every input. */
 export async function runExporter<Modules>(
   loadModules: (reference: Reference) => Promise<Modules>,
-  convert: (input: PortInput, modules: Modules) => Promise<unknown>
+  convert: (input: PortInput, modules: Modules) => unknown
 ): Promise<void> {
   const [inputPath, outputPath] = process.argv.slice(2);
   if (!inputPath || !outputPath) {

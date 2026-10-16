@@ -14,12 +14,13 @@
 //! - a document that is not the only one in the stream is an error; so is a tag other than the
 //!   core ones, and a core tag on a node of the wrong kind or with a value it cannot resolve.
 //!
-//! Numbers are `f64`, as in JavaScript, so `.inf` and `.nan` are numbers too. [`Yaml::to_json`]
-//! says how a configuration holds them.
+//! Numbers are `f64`, as in JavaScript, so `.inf` and `.nan` are numbers too; the configuration
+//! value of [`Yaml`] (`crate::value::Value`) keeps them as numbers as well.
 
 use std::collections::HashMap;
 use std::fmt;
 
+use ferrigura_model::value::Value;
 use regex::Regex;
 use saphyr_parser::{Event, Parser, ScalarStyle, Span, Tag};
 
@@ -63,24 +64,26 @@ impl fmt::Display for YamlError {
 
 impl std::error::Error for YamlError {}
 
-impl Yaml {
-    /// The value as `serde_json` holds it. JSON has no `NaN` and no infinity, so `.nan`, `.inf` and
-    /// `-.inf` become the strings `"NaN"`, `"Infinity"` and `"-Infinity"`. A configuration reads
-    /// them the same way, so a `THEME_COLOR_LIMIT: .inf` stays visible in the configuration.
-    #[must_use]
-    pub fn to_json(&self) -> serde_json::Value {
-        use serde_json::Value;
-        match self {
-            Self::Null => Value::Null,
-            Self::Bool(flag) => Value::Bool(*flag),
-            Self::Number(number) => serde_json::Number::from_f64(*number)
-                .map_or_else(|| Value::String(js_number_string(*number)), Value::Number),
-            Self::String(text) => Value::String(text.clone()),
-            Self::Sequence(items) => Value::Array(items.iter().map(Self::to_json).collect()),
-            Self::Mapping(pairs) => Value::Object(mapping_to_json(pairs)),
+/// The configuration value of a YAML value. Numbers stay numbers, `.inf` and `.nan` included.
+impl From<&Yaml> for Value {
+    fn from(value: &Yaml) -> Self {
+        match value {
+            Yaml::Null => Value::Null,
+            Yaml::Bool(flag) => Value::Bool(*flag),
+            Yaml::Number(number) => Value::Number(*number),
+            Yaml::String(text) => Value::String(text.clone()),
+            Yaml::Sequence(items) => Value::Array(items.iter().map(Value::from).collect()),
+            Yaml::Mapping(pairs) => Value::Object(
+                pairs
+                    .iter()
+                    .map(|(key, value)| (key.clone(), Value::from(value)))
+                    .collect(),
+            ),
         }
     }
+}
 
+impl Yaml {
     /// `String(value)` as JavaScript gives it: arrays join their items with commas (an empty item
     /// is the empty string), and a mapping is `[object Object]`.
     #[must_use]
@@ -118,15 +121,6 @@ impl Yaml {
         };
         truthy.then(|| self.js_string())
     }
-}
-
-/// The object of a mapping, with the same conversion of its values as [`Yaml::to_json`].
-#[must_use]
-pub fn mapping_to_json(pairs: &[(String, Yaml)]) -> serde_json::Map<String, serde_json::Value> {
-    pairs
-        .iter()
-        .map(|(key, value)| (key.clone(), value.to_json()))
-        .collect()
 }
 
 /// Loads the single document of `text`, as `js-yaml`'s `load` does. `None` is a stream with no
@@ -642,7 +636,7 @@ mod tests {
         assert_eq!(pairs[0].1, Yaml::Number(f64::INFINITY));
         assert_eq!(pairs[1].1, Yaml::Number(f64::NEG_INFINITY));
         assert!(matches!(pairs[2].1, Yaml::Number(number) if number.is_nan()));
-        assert_eq!(pairs[0].1.to_json(), serde_json::json!("Infinity"));
+        assert_eq!(Value::from(&pairs[0].1), Value::Number(f64::INFINITY));
     }
 
     #[test]

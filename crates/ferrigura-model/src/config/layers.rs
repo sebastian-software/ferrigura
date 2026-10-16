@@ -3,10 +3,13 @@
 //! `packages/mermaid/src/config.ts`, `utils/sanitizeDirective.ts`, `assignWithDepth.ts` and
 //! `utils.ts`; the order of the layers is the one `mermaidAPI` applies.
 
+use std::collections::BTreeMap as Map;
+
 use regex::Regex;
-use serde_json::{Map, Value};
 
 use super::{CONFIG_KEYS, defaults};
+use crate::theme::Theme;
+use crate::value::Value;
 
 /// The settings a diagram section may set for its own diagram type.
 const APPEARANCE_KEYS: [&str; 3] = ["theme", "look", "layout"];
@@ -36,8 +39,8 @@ const LOOKS: [&str; 3] = ["classic", "handDrawn", "neo"];
 /// the merged front matter and directive configuration of the text, as `preprocessDiagram` returns
 /// it; it is sanitised here, as `addDirective` does.
 ///
-/// The result is the reference's `getConfig()` without `themeVariables`, which the theme port
-/// computes later.
+/// The result is the reference's `getConfig()`, `themeVariables` included: the theme's variables with
+/// the overrides applied, as `updateCurrentConfig` computes them.
 #[must_use]
 pub fn effective(site: Option<&Value>, diagram_key: Option<&str>, directive: &Value) -> Value {
     let defaults = defaults();
@@ -50,6 +53,7 @@ pub fn effective(site: Option<&Value>, diagram_key: Option<&str>, directive: &Va
     let mut directives = vec![directive.clone()];
     for item in &mut directives {
         sanitize_directive(item);
+        add_font_family_variable(item);
     }
 
     let secure = secure_keys(&site_config);
@@ -70,10 +74,107 @@ pub fn effective(site: Option<&Value>, diagram_key: Option<&str>, directive: &Va
         &defaults,
         diagram_key,
     );
+    let variables = theme_variables(&site_config, &site_delta, &sum, &config);
     if let Value::Object(map) = &mut config {
-        map.remove("themeVariables");
+        map.insert("themeVariables".to_owned(), variables);
     }
     config
+}
+
+/// The `themeVariables` of the configuration, as `updateCurrentConfig` computes them. When the theme
+/// is set or changed by a directive, the theme's variables are computed again from the user's
+/// overrides and the directive's overrides. Otherwise the site's variables stay, with the
+/// directive's overrides merged on top, as `assignWithDepth` merges them.
+fn theme_variables(site_config: &Value, site_delta: &Value, sum: &Value, config: &Value) -> Value {
+    let site_overrides = site_delta
+        .get("themeVariables")
+        .cloned()
+        .unwrap_or_else(Value::empty_object);
+    let directive_overrides = sum.get("themeVariables");
+    let site_theme = theme_name(site_config, "default");
+    let resolved_theme = theme_name(config, &site_theme);
+    let theme_set_by_directive = sum
+        .get("theme")
+        .and_then(Value::as_str)
+        .is_some_and(|name| !name.is_empty());
+    if theme_set_by_directive || resolved_theme != site_theme {
+        let mut overrides = site_overrides;
+        if let Some(directive) = directive_overrides {
+            assign_with_depth(&mut overrides, directive, 2);
+        }
+        Theme::from_name(&resolved_theme).variables(Some(&overrides))
+    } else {
+        let mut variables = Theme::from_name(&site_theme).variables(Some(&site_overrides));
+        if let Some(directive) = directive_overrides {
+            assign_with_depth(&mut variables, directive, 2);
+        }
+        variables
+    }
+}
+
+fn theme_name(config: &Value, fallback: &str) -> String {
+    config
+        .get("theme")
+        .and_then(Value::as_str)
+        .unwrap_or(fallback)
+        .to_owned()
+}
+
+/// The user's theme overrides, as `updateCurrentConfig` merges them before a theme computes its
+/// variables: the `initialize` overrides, with the directive's overrides on top and the directive's
+/// `fontFamily` included. A theme that is not the configured one takes these, so that a colour
+/// scheme can be rendered with another shipped theme and the same overrides.
+#[must_use]
+pub fn user_theme_variables(site: Option<&Value>, directive: &Value) -> Value {
+    let mut overrides = site
+        .and_then(|site| site.get("themeVariables"))
+        .cloned()
+        .unwrap_or_else(Value::empty_object);
+    let mut directive = directive.clone();
+    sanitize_directive(&mut directive);
+    add_font_family_variable(&mut directive);
+    if let Some(directive_overrides) = directive.get("themeVariables") {
+        assign_with_depth(&mut overrides, directive_overrides, 2);
+    }
+    overrides
+}
+
+/// JavaScript's truthiness of a configuration value.
+fn is_truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(flag) => *flag,
+        Value::Number(number) => *number != 0.0 && !number.is_nan(),
+        Value::String(text) => !text.is_empty(),
+        Value::Array(_) | Value::Object(_) => true,
+    }
+}
+
+/// `addDirective` gives a directive's `fontFamily` to the theme variables, unless they set their own.
+fn add_font_family_variable(directive: &mut Value) {
+    let Some(font_family) = directive.get("fontFamily").cloned() else {
+        return;
+    };
+    if !is_truthy(&font_family) {
+        return;
+    }
+    let has_own = directive
+        .get("themeVariables")
+        .and_then(|variables| variables.get("fontFamily"))
+        .is_some_and(is_truthy);
+    if has_own {
+        return;
+    }
+    let mut variables = directive
+        .get("themeVariables")
+        .cloned()
+        .unwrap_or_else(Value::empty_object);
+    if let Value::Object(map) = &mut variables {
+        map.insert("fontFamily".to_owned(), font_family);
+    }
+    if let Value::Object(map) = directive {
+        map.insert("themeVariables".to_owned(), variables);
+    }
 }
 
 /// Merges `source` into `dst` as `assignWithDepth` does, down to `depth` levels. Objects merge,
@@ -383,9 +484,14 @@ fn sanitize_css(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
     use super::*;
+
+    /// `serde_json::json!`, as a configuration value.
+    macro_rules! json {
+        ($($tokens:tt)*) => {
+            Value::from(serde_json::json!($($tokens)*))
+        };
+    }
 
     #[test]
     fn assign_merges_objects_two_levels_deep() {

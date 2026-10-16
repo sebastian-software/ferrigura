@@ -10,8 +10,11 @@
 #![warn(missing_docs)]
 
 pub mod config;
+pub mod flowchart;
 pub mod info;
 pub mod pie;
+pub mod theme;
+pub mod value;
 
 /// Version of the canonical model, written as `"version"` into every model. It is bumped when a
 /// field is added, removed or changes meaning; see `docs-port/canonical-model.md`.
