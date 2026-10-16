@@ -324,6 +324,33 @@ pub(super) fn generate_circle_points(
         .collect()
 }
 
+/// `generateFullSineWavePoints` (`shapes/util.ts:258-285`): 51 points from `(x1, y1)` to
+/// `(x2, y2)`, on a sine wave of `amplitude` around the midline with `cycles` cycles. A negative
+/// `cycles` runs the wave backwards, as the reference's second wave does.
+#[must_use]
+pub(super) fn generate_full_sine_wave_points(
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+    amplitude: f64,
+    cycles: f64,
+) -> Vec<Point> {
+    const STEPS: usize = 50;
+    let delta_x = x2 - x1;
+    let delta_y = y2 - y1;
+    let cycle_length = delta_x / cycles;
+    let frequency = 2.0 * std::f64::consts::PI / cycle_length;
+    let mid_y = y1 + delta_y / 2.0;
+    (0..=STEPS)
+        .map(|step| {
+            let t = step as f64 / STEPS as f64;
+            let x = x1 + t * delta_x;
+            Point::new(x, mid_y + amplitude * (frequency * (x - x1)).sin())
+        })
+        .collect()
+}
+
 /// `insertPolygonShape` (`shapes/insertPolygonShape.ts`): a `polygon.label-container` with the
 /// points, translated to `(-w/2, h/2)`. The style is written when there is one. Returns the
 /// element and its box in the node's coordinates.

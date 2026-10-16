@@ -24,7 +24,10 @@ import { chromium, type Page } from 'playwright';
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const distDir = join(root, 'packages/mermaid/dist');
 const fontDir = join(root, 'crates/ferrigura-text/fonts');
-const fixturePath = join(root, 'crates/ferrigura-render/tests/fixtures/flowchart-shapes.json');
+const fixtureDir = join(root, 'crates/ferrigura-render/tests/fixtures');
+/** The fixture of the stage A shapes, and of the stage C shapes of T3c (`--t3c`). */
+const STAGE_A_FIXTURE = join(fixtureDir, 'flowchart-shapes.json');
+const T3C_FIXTURE = join(fixtureDir, 'flowchart-shapes-t3c.json');
 
 /**
  * The shapes of stages A and C, by the name the flowchart's `@{ shape: … }` directive takes. The
@@ -73,6 +76,68 @@ const SHAPES: [directive: string, internal: string][] = [
   ['hourglass', 'hourglass'],
   ['choice', 'choice'],
   ['note', 'note'],
+];
+
+/**
+ * The stage C shapes of this port (T3c): the shapes a flowchart reaches that stage A does not
+ * have, the icon and image shapes included. A case records the node's `shape` as the flowchart's
+ * data gives it, and the directive that is written for it. `props` are the directive's other
+ * properties. `expectError` marks a case the reference cannot render: its error is recorded.
+ */
+interface Variant {
+  shape: string;
+  directive: string;
+  internal?: string;
+  props?: Record<string, string | number>;
+  expectError?: boolean;
+}
+
+/** A 1 by 1 PNG, so the reference can decode the image of an image shape without a network. */
+const PNG_DATA_URL =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+const T3C_SHAPES: Variant[] = [
+  { shape: 'person', directive: 'person' },
+  { shape: 'bolt', directive: 'bolt' },
+  { shape: 'lin-cyl', directive: 'lin-cyl' },
+  { shape: 'lin-doc', directive: 'lin-doc' },
+  { shape: 'st-rect', directive: 'st-rect' },
+  { shape: 'docs', directive: 'docs' },
+  { shape: 'lin-rect', directive: 'lin-rect' },
+  { shape: 'sl-rect', directive: 'sl-rect' },
+  { shape: 'tag-rect', directive: 'tag-rect' },
+  { shape: 'tag-doc', directive: 'tag-doc' },
+  { shape: 'h-cyl', directive: 'h-cyl' },
+  { shape: 'notch-pent', directive: 'notch-pent' },
+  { shape: 'tri', directive: 'tri' },
+  { shape: 'doc', directive: 'doc' },
+  { shape: 'flag', directive: 'flag' },
+  { shape: 'win-pane', directive: 'win-pane' },
+  // Icons: flowDb picks the shape from the icon and the form (`getTypeFromVertex`).
+  { shape: 'icon', directive: 'icon' },
+  { shape: 'icon', directive: 'icon', props: { icon: 'fa:bell' } },
+  { shape: 'icon', directive: 'icon', props: { icon: 'fa:bell', pos: 't' } },
+  { shape: 'iconSquare', directive: 'icon', props: { icon: 'fa:bell', form: 'square' } },
+  {
+    shape: 'iconSquare',
+    directive: 'icon',
+    props: { icon: 'fa:bell', form: 'square', pos: 't' },
+  },
+  { shape: 'iconRounded', directive: 'icon', props: { icon: 'fa:bell', form: 'rounded' } },
+  { shape: 'iconCircle', directive: 'icon', props: { icon: 'fa:bell', form: 'circle' } },
+  {
+    shape: 'iconCircle',
+    directive: 'icon',
+    props: { icon: 'fa:bell', form: 'circle', pos: 't' },
+  },
+  { shape: 'imageSquare', directive: 'icon', props: { img: PNG_DATA_URL, w: 48, h: 48 } },
+  { shape: 'imageSquare', directive: 'icon', props: { img: PNG_DATA_URL, w: 40, h: 60, pos: 't' } },
+  {
+    shape: 'imageSquare',
+    directive: 'icon',
+    props: { img: 'https://example.invalid/missing.png', w: 48, h: 48 },
+    expectError: true,
+  },
 ];
 
 /** The labels: empty, short, a phrase, a long label that wraps, and two lines. */
@@ -124,7 +189,8 @@ window.measureNode = async (svgText, collapsed) => {
     ? [...svg.querySelectorAll('g.node')].find((element) =>
         element.querySelector(':scope > rect.collapsed-group')
       )
-    : [...svg.querySelectorAll('g.node')].find((element) =>
+    : // An icon or an image has the class of its labelHelper (icon-shape default), not node.
+      [...svg.querySelectorAll('g.node'), ...svg.querySelectorAll('g')].find((element) =>
         /(^|-)flowchart-A-\\d+$/.test(element.id)
       );
   if (!node) throw new Error('no node A in the reference SVG');
@@ -143,6 +209,9 @@ window.measureNode = async (svgText, collapsed) => {
   const outline = node.firstElementChild;
   const label = [...node.children].find((child) => child.tagName === 'g' && child.classList.contains('label'));
   const labelText = label ? label.querySelector('text') : null;
+  // The group that holds the label's background, when the label has one (icons and images): the
+  // reference measures this group, not the text, for the node's label.
+  const labelGroup = label ? label.querySelector(':scope > g') : null;
   return {
     id: node.id,
     className: node.getAttribute('class'),
@@ -152,6 +221,7 @@ window.measureNode = async (svgText, collapsed) => {
     outline: outline
       ? { tag: outline.tagName, attributes: attributes(outline), bbox: box(outline.getBBox()) }
       : null,
+    labelGroup: labelGroup ? box(labelGroup.getBBox()) : null,
     label: label
       ? {
           transform: label.getAttribute('transform'),
@@ -208,18 +278,22 @@ function serve(): Promise<{ server: Server; port: number }> {
 }
 
 /**
- * The flowchart text of one case: a single node with the label. A collapsed subgraph is the
- * `collapsedGroup` node: its title is the label, and it holds one vertex.
+ * The flowchart text of one case: a single node with the label and the variant's properties. A
+ * collapsed subgraph is the `collapsedGroup` node: its title is the label, and it holds one vertex.
  */
-function diagram(directive: string, label: string): string {
-  if (directive === 'collapsed') {
+function diagram(variant: Variant, label: string): string {
+  if (variant.directive === 'collapsed') {
     return `flowchart TD\n    subgraph S["${label}"]\n      A\n    end\n    S@{ view: collapsed }\n`;
   }
-  return `flowchart TD\n    A@{ shape: ${directive}, label: "${label}" }\n`;
+  const props = Object.entries(variant.props ?? {})
+    .map(([key, value]) => `, ${key}: ${typeof value === 'number' ? value : JSON.stringify(value)}`)
+    .join('');
+  return `flowchart TD\n    A@{ shape: ${variant.directive}, label: "${label}"${props} }\n`;
 }
 
 interface Measurement {
   id: string;
+  labelGroup: { x: number; y: number; width: number; height: number } | null;
   className: string | null;
   node: { x: number; y: number; width: number; height: number };
   childTags: string[];
@@ -237,6 +311,11 @@ interface Measurement {
 }
 
 async function main(): Promise<void> {
+  const t3c = process.argv.includes('--t3c');
+  const variants: Variant[] = t3c
+    ? T3C_SHAPES
+    : SHAPES.map(([directive, internal]) => ({ shape: directive, directive, internal, props: {} }));
+  const fixturePath = t3c ? T3C_FIXTURE : STAGE_A_FIXTURE;
   const { server, port } = await serve();
   const browser = await chromium.launch({
     // As in the pie geometry harness: fractional glyph advances, as on macOS.
@@ -244,6 +323,7 @@ async function main(): Promise<void> {
   });
   const cases: unknown[] = [];
   const failures: string[] = [];
+  const referenceErrors: string[] = [];
   try {
     const page: Page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
     page.on('pageerror', (error) => console.error('page error:', error.message));
@@ -256,13 +336,14 @@ async function main(): Promise<void> {
 
     let counter = 0;
     for (const look of LOOKS) {
-      for (const [directive, internal] of SHAPES) {
+      for (const variant of variants) {
         for (const label of LABELS) {
           // The parser rejects an empty subgraph title, so a collapsed group is never empty.
-          if (directive === 'collapsed' && label === '') continue;
+          if (variant.directive === 'collapsed' && label === '') continue;
           counter += 1;
-          const text = diagram(directive, label);
+          const text = diagram(variant, label);
           const id = `probe-${counter}`;
+          const name = `${variant.shape} ${look} "${label}"`;
           try {
             const svg = await page.evaluate(
               ([svgId, source, config]) =>
@@ -278,12 +359,23 @@ async function main(): Promise<void> {
                     measureNode: (s: string, c: boolean) => Promise<unknown>;
                   }
                 ).measureNode(markup, collapsed),
-              [svg, directive === 'collapsed'] as const
+              [svg, variant.directive === 'collapsed'] as const
             )) as Measurement;
-            cases.push({ shape: directive, internal, look, labelSource: label, ...measurement });
+            cases.push({
+              shape: variant.shape,
+              ...(variant.internal ? { internal: variant.internal } : {}),
+              props: variant.props ?? {},
+              look,
+              labelSource: label,
+              ...measurement,
+            });
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            failures.push(`${directive} ${look} "${label}": ${message}`);
+            if (variant.expectError) {
+              referenceErrors.push(`${name}: ${message}`);
+            } else {
+              failures.push(`${name}: ${message}`);
+            }
           }
         }
       }
@@ -293,15 +385,18 @@ async function main(): Promise<void> {
     server.close();
   }
 
-  await mkdir(join(root, 'crates/ferrigura-render/tests/fixtures'), { recursive: true });
+  await mkdir(fixtureDir, { recursive: true });
   const fixture = {
-    description:
-      'Flowchart shapes of stage A, measured in Chromium on the JavaScript reference (htmlLabels false, redux-color, Lexica Ultralegible). Written by tools/port/geometry/shape-probe.ts; read by crates/ferrigura-render/tests/flowchart_shapes.rs.',
+    description: t3c
+      ? 'Stage C flowchart shapes (T3c): the shapes, icons and images that stage A does not have, measured in Chromium on the JavaScript reference (htmlLabels false, redux-color, Lexica Ultralegible). Written by tools/port/geometry/shape-probe.ts --t3c; read by crates/ferrigura-render/tests/flowchart_shapes.rs.'
+      : 'Flowchart shapes of stage A, measured in Chromium on the JavaScript reference (htmlLabels false, redux-color, Lexica Ultralegible). Written by tools/port/geometry/shape-probe.ts; read by crates/ferrigura-render/tests/flowchart_shapes.rs.',
     config: referenceConfig,
+    referenceErrors,
     cases,
   };
   await writeFile(fixturePath, `${JSON.stringify(fixture, null, 2)}\n`);
   console.log(`shape probe: ${cases.length} cases written to ${fixturePath}`);
+  for (const error of referenceErrors) console.log(`  reference error (expected): ${error}`);
   for (const failure of failures) console.log(`  not measured: ${failure}`);
   if (failures.length > 0) process.exit(1);
 }

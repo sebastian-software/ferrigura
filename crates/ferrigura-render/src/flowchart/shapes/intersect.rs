@@ -119,6 +119,30 @@ pub(super) fn cylinder(node: CenterBox, rx: f64, ry: f64, point: Point) -> Point
     position
 }
 
+/// `tiltedCylinder.ts`'s intersect: the box, then the cap on its left or right side, which bulges
+/// by `rx` as the cylinder's ellipse does.
+#[must_use]
+pub(super) fn tilted_cylinder(node: CenterBox, rx: f64, ry: f64, point: Point) -> Point {
+    let mut position = rect(node, point);
+    let y = position.y - node.y;
+    if ry != 0.0
+        && (y.abs() < node.height / 2.0
+            || (y.abs() == node.height / 2.0
+                && (position.x - node.x).abs() > node.width / 2.0 - rx))
+    {
+        let mut x = rx * rx * (1.0 - (y * y) / (ry * ry));
+        if x != 0.0 {
+            x = x.abs().sqrt();
+        }
+        x = rx - x;
+        if point.x - node.x > 0.0 {
+            x = -x;
+        }
+        position.x += x;
+    }
+    position
+}
+
 /// `intersectLine` (`intersect-line.js`): where the segment `q1`-`q2` crosses the line `p1`-`p2`,
 /// by the Graphics Gems formula. Returns `None` when the segments do not meet or are collinear.
 ///

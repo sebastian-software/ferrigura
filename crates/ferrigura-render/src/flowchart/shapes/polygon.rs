@@ -239,6 +239,134 @@ pub(super) fn rect_left_inv_arrow(input: &ShapeInput<'_>) -> Part {
     }
 }
 
+/// `lightningBolt.ts` (`bolt`): a zigzag bolt of 35 by 35 with a gap of 7 between its strokes. It
+/// has no label. Its outline is moved up and to the left of its centre.
+pub(super) fn lightning_bolt(input: &ShapeInput<'_>) -> Part {
+    const GAP: f64 = 7.0;
+    let node = input.node;
+    let styles = styles2string(node);
+    let width = 35.0_f64.max(node.width.unwrap_or(0.0));
+    let height = 35.0_f64.max(node.height.unwrap_or(0.0));
+    let points = [
+        Point::new(width, 0.0),
+        Point::new(0.0, height + GAP / 2.0),
+        Point::new(width - 2.0 * GAP, height + GAP / 2.0),
+        Point::new(0.0, 2.0 * height),
+        Point::new(width, height - GAP / 2.0),
+        Point::new(2.0 * GAP, height - GAP / 2.0),
+    ];
+    let outline = rough::polygon(&points);
+    let style = util::path_style(node, &styles);
+    let translate_x = -width / 2.0;
+    let translate_y = -height;
+    let svg = format!(
+        "<g class=\"outer-path\" transform=\"translate({}, {})\">{}</g>",
+        number(translate_x),
+        number(translate_y),
+        rough::paths(
+            &outline,
+            Some(style.as_str()),
+            &util::stroke_width(&styles),
+            true
+        ),
+    );
+    Part::without_label(
+        svg,
+        outline.bbox.translate(translate_x, translate_y),
+        Intersect::Polygon {
+            points: points.to_vec(),
+        },
+    )
+}
+
+/// `trapezoidalPentagon.ts` (`notch-pent`): a rectangle whose top corners are cut in. The neo look
+/// pads the label by 16 and 12; the classic look by the padding. The label sits at the default
+/// centred offset.
+pub(super) fn trapezoidal_pentagon(input: &ShapeInput<'_>) -> Part {
+    let node = input.node;
+    let styles = styles2string(node);
+    let (pad_x, pad_y) = if node.is_neo() {
+        (16.0, 12.0)
+    } else {
+        (node.padding, node.padding)
+    };
+    let label = label_helper(input, false);
+    let w = label.bbox.width + pad_x * 2.0;
+    let h = label.bbox.height + pad_y * 2.0;
+    let points = vec![
+        Point::new((-w / 2.0) * 0.8, -h / 2.0),
+        Point::new((w / 2.0) * 0.8, -h / 2.0),
+        Point::new(w / 2.0, (-h / 2.0) * 0.6),
+        Point::new(w / 2.0, h / 2.0),
+        Point::new(-w / 2.0, h / 2.0),
+        Point::new(-w / 2.0, (-h / 2.0) * 0.6),
+    ];
+    let outline = rough::polygon(&points);
+    let style = util::path_style(node, &styles);
+    let svg = format!(
+        "<g class=\"basic label-container outer-path\">{}</g>",
+        rough::paths(
+            &outline,
+            Some(style.as_str()),
+            &util::stroke_width(&styles),
+            true
+        ),
+    );
+    Part::with_centred_label(svg, outline.bbox, Intersect::Polygon { points }, label)
+}
+
+/// `triangle.ts` (`tri`): an isosceles triangle on a base as wide as its height, with the label
+/// in the lower part. The neo look pads the width by twice the padding, the classic look by
+/// the padding. Its outline is moved to sit centred on the node.
+pub(super) fn triangle(input: &ShapeInput<'_>) -> Part {
+    let node = input.node;
+    let styles = styles2string(node);
+    let padding_x = if node.is_neo() {
+        2.0 * node.padding
+    } else {
+        node.padding
+    };
+    let label = label_helper(input, false);
+    let width = label.bbox.width + padding_x;
+    let height = width + label.bbox.height;
+    let points = [
+        Point::new(0.0, 0.0),
+        Point::new(height, 0.0),
+        Point::new(height / 2.0, -height),
+    ];
+    let outline = rough::polygon(&points);
+    let style = util::path_style(node, &styles);
+    let translate_x = -height / 2.0;
+    let translate_y = height / 2.0;
+    let svg = format!(
+        "<g class=\"outer-path\" transform=\"translate({}, {})\">{}</g>",
+        number(translate_x),
+        number(translate_y),
+        rough::paths(
+            &outline,
+            Some(style.as_str()),
+            &util::stroke_width(&styles),
+            true
+        ),
+    );
+    // The label sits under the apex: its bottom is `padding` above the base's line, measured in
+    // the SVG text box (`htmlLabels` off: the padding is not halved).
+    let label_offset = Point::new(
+        -(label.bbox.width / 2.0) - label.bbox.x,
+        height / 2.0 - (label.bbox.height + node.padding - label.bbox.y),
+    );
+    Part {
+        svg,
+        after_label: String::new(),
+        bbox: outline.bbox.translate(translate_x, translate_y),
+        intersect: Intersect::Polygon {
+            points: points.to_vec(),
+        },
+        label_offset: Some(label_offset),
+        label: Some(label),
+    }
+}
+
 /// The part of a polygon shape with its label at the centred offset: the polygon as
 /// `insertPolygonShape` writes it, with the node's style when there is one.
 fn polygon_part(

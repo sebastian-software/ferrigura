@@ -37,6 +37,46 @@ pub(super) fn polygon(points: &[Point]) -> Outline {
     }
 }
 
+/// The outline of a rectangle, as `rc.rectangle` draws it at roughness 0: its four corners.
+#[must_use]
+pub(super) fn rectangle(x: f64, y: f64, width: f64, height: f64) -> Outline {
+    polygon(&[
+        Point::new(x, y),
+        Point::new(x + width, y),
+        Point::new(x + width, y + height),
+        Point::new(x, y + height),
+    ])
+}
+
+/// The outline of a rectangle with rounded corners, from `createRoundedRectPathD`
+/// (`shapes/roundedRectPath.ts`). Its arcs are quarter circles that end on the sides of the
+/// rectangle, so its box is the rectangle's.
+#[must_use]
+pub(super) fn rounded_rectangle(x: f64, y: f64, width: f64, height: f64, radius: f64) -> Outline {
+    let r = number(radius);
+    let d = format!(
+        "M{},{} H{} A{r},{r} 0 0 1 {},{} V{} A{r},{r} 0 0 1 {},{} H{} A{r},{r} 0 0 1 {},{} V{} A{r},{r} 0 0 1 {},{} Z",
+        number(x + radius),
+        number(y),
+        number(x + width - radius),
+        number(x + width),
+        number(y + radius),
+        number(y + height - radius),
+        number(x + width - radius),
+        number(y + height),
+        number(x + radius),
+        number(x),
+        number(y + height - radius),
+        number(y + radius),
+        number(x + radius),
+        number(y),
+    );
+    Outline {
+        d,
+        bbox: BBox::new(x, y, width, height),
+    }
+}
+
 /// The outline of an ellipse with the given diameters, centred on `(cx, cy)`, as
 /// `rc.ellipse(cx, cy, width, height)` draws it at roughness 0.
 #[must_use]

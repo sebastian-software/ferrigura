@@ -53,6 +53,27 @@ pub(super) enum Kind {
     HalfRoundedRectangle,
     Hourglass,
     Note,
+    Person,
+    LightningBolt,
+    LinedCylinder,
+    LinedWaveEdgedRect,
+    MultiRect,
+    MultiWaveEdgedRectangle,
+    ShadedProcess,
+    SlopedRect,
+    TaggedRect,
+    TaggedWaveEdgedRectangle,
+    TiltedCylinder,
+    TrapezoidalPentagon,
+    Triangle,
+    WaveEdgedRectangle,
+    WaveRectangle,
+    WindowPane,
+    Icon,
+    IconCircle,
+    IconRounded,
+    IconSquare,
+    ImageSquare,
 }
 
 /// The shape a name stands for, with `rect` taken as `roundedRect` when it has both radii
@@ -112,6 +133,29 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "delay" | "half-rounded-rectangle" => Kind::HalfRoundedRectangle,
         "hourglass" | "collate" => Kind::Hourglass,
         "note" => Kind::Note,
+        "person" => Kind::Person,
+        "bolt" | "com-link" | "lightning-bolt" => Kind::LightningBolt,
+        "lin-cyl" | "disk" | "lined-cylinder" => Kind::LinedCylinder,
+        "lin-doc" | "lined-document" => Kind::LinedWaveEdgedRect,
+        "st-rect" | "procs" | "processes" | "stacked-rectangle" => Kind::MultiRect,
+        "docs" | "documents" | "st-doc" | "stacked-document" => Kind::MultiWaveEdgedRectangle,
+        "lin-rect" | "lined-rectangle" | "lined-process" | "lin-proc" | "shaded-process" => {
+            Kind::ShadedProcess
+        }
+        "sl-rect" | "manual-input" | "sloped-rectangle" => Kind::SlopedRect,
+        "tag-rect" | "tagged-rectangle" | "tag-proc" | "tagged-process" => Kind::TaggedRect,
+        "tag-doc" | "tagged-document" => Kind::TaggedWaveEdgedRectangle,
+        "h-cyl" | "das" | "horizontal-cylinder" => Kind::TiltedCylinder,
+        "notch-pent" | "loop-limit" | "notched-pentagon" => Kind::TrapezoidalPentagon,
+        "tri" | "extract" | "triangle" => Kind::Triangle,
+        "doc" | "document" => Kind::WaveEdgedRectangle,
+        "flag" | "paper-tape" => Kind::WaveRectangle,
+        "win-pane" | "internal-storage" | "window-pane" => Kind::WindowPane,
+        "icon" => Kind::Icon,
+        "iconCircle" => Kind::IconCircle,
+        "iconRounded" => Kind::IconRounded,
+        "iconSquare" => Kind::IconSquare,
+        "imageSquare" => Kind::ImageSquare,
         _ => return None,
     })
 }
@@ -124,8 +168,8 @@ pub(super) fn resolve(name: &str) -> Option<Kind> {
 
 impl Kind {
     /// Whether the shape draws a label. The shapes without one set the node's label to nothing
-    /// or ignore it (`filledCircle`, `forkJoin`, `anchor`, `stateStart`, `stateEnd`), or do not
-    /// call `labelHelper` (`choice`, `crossedCircle`).
+    /// or ignore it (`filledCircle`, `forkJoin`, `anchor`, `stateStart`, `stateEnd`, `bolt`), or
+    /// do not call `labelHelper` (`choice`, `crossedCircle`).
     pub(super) fn draws_label(self) -> bool {
         !matches!(
             self,
@@ -136,6 +180,7 @@ impl Kind {
                 | Self::StateEnd
                 | Self::Choice
                 | Self::CrossedCircle
+                | Self::LightningBolt
         )
     }
 
@@ -156,6 +201,11 @@ impl Kind {
         match self {
             Self::StateStart | Self::StateEnd => "node default".to_owned(),
             Self::LabelRect => "label edgeLabel".to_owned(),
+            // The icon and image handlers pass their own class to `labelHelper`.
+            Self::Icon | Self::IconCircle | Self::IconRounded | Self::IconSquare => {
+                "icon-shape default".to_owned()
+            }
+            Self::ImageSquare => "image-shape default".to_owned(),
             _ => util::node_classes(node),
         }
     }

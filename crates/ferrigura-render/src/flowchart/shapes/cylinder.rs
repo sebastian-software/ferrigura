@@ -64,6 +64,126 @@ pub(super) fn cylinder(input: &ShapeInput<'_>) -> Part {
     }
 }
 
+/// The outline of `linedCylinder.ts`: the cylinder of `path_data`, with a second cap line
+/// drawn a tenth of the height below the first (`createCylinderPathD` in that file).
+fn lined_path_data(width: f64, height: f64, rx: f64, ry: f64, outer_offset: f64) -> String {
+    [
+        format!("M0,{}", number(ry)),
+        format!("a{},{} 0,0,0 {},0", number(rx), number(ry), number(width)),
+        format!("a{},{} 0,0,0 {},0", number(rx), number(ry), number(-width)),
+        format!("l0,{}", number(height)),
+        format!("a{},{} 0,0,0 {},0", number(rx), number(ry), number(width)),
+        format!("l0,{}", number(-height)),
+        format!("M0,{}", number(ry + outer_offset)),
+        format!("a{},{} 0,0,0 {},0", number(rx), number(ry), number(width)),
+    ]
+    .join(" ")
+}
+
+/// `linedCylinder.ts` (`lin-cyl`): a cylinder with a second cap line. Its label is set under the
+/// cap. The neo look pads the label by 16 and 24; the classic look by the padding. The node has no
+/// explicit size, so the reference's sized branch does not run.
+pub(super) fn lined_cylinder(input: &ShapeInput<'_>) -> Part {
+    let node = input.node;
+    let styles = styles2string(node);
+    let (pad_x, pad_y) = if node.is_neo() {
+        (16.0, 24.0)
+    } else {
+        (node.padding, node.padding)
+    };
+    let label = label_helper(input, false);
+    let width = label.bbox.width + pad_x * 2.0;
+    let rx = width / 2.0;
+    let ry = rx / (2.5 + width / 50.0);
+    let height = label.bbox.height + ry + pad_y * 2.0;
+    let outer_offset = height * 0.1;
+
+    let svg = format!(
+        "<path{} d=\"{}\"{} label-offset-y=\"{}\" transform=\"translate({}, {})\"/>",
+        attribute("class", "basic label-container outer-path"),
+        lined_path_data(width, height, rx, ry, outer_offset),
+        attribute("style", &styles.node),
+        number(ry),
+        number(-width / 2.0),
+        number(-(height / 2.0 + ry)),
+    );
+    // The path reaches from the top of the upper cap to the bottom of the lower one.
+    let bbox = BBox::new(-width / 2.0, -(height / 2.0 + ry), width, height + 2.0 * ry);
+    let label_offset = Point::new(
+        -(label.bbox.width / 2.0) - label.bbox.x,
+        -(label.bbox.height / 2.0) + ry - label.bbox.y,
+    );
+    Part {
+        svg,
+        after_label: String::new(),
+        bbox,
+        intersect: Intersect::Cylinder { rx, ry },
+        label_offset: Some(label_offset),
+        label: Some(label),
+    }
+}
+
+/// The outline of `tiltedCylinder.ts`: a cylinder on its side, its caps at the left and right
+/// ends (`createCylinderPathD` in that file).
+fn tilted_path_data(width: f64, height: f64, rx: f64, ry: f64) -> String {
+    [
+        format!(
+            "M0,0 a{},{} 0,0,1 0,{}",
+            number(rx),
+            number(ry),
+            number(-height)
+        ),
+        format!("l{},0", number(width)),
+        format!("a{},{} 0,0,1 0,{}", number(rx), number(ry), number(height)),
+        format!("M{},{}", number(width), number(-height)),
+        format!("a{},{} 0,0,0 0,{}", number(rx), number(ry), number(height)),
+        format!("l{},0", number(-width)),
+    ]
+    .join(" ")
+}
+
+/// `tiltedCylinder.ts` (`h-cyl`): a cylinder lying on its side, with the label centred in it. The
+/// neo look pads its height by 12; the classic look by half the padding. The node has no explicit
+/// size, so the reference's sized branch does not run.
+pub(super) fn tilted_cylinder(input: &ShapeInput<'_>) -> Part {
+    let node = input.node;
+    let styles = styles2string(node);
+    let label_padding = if node.is_neo() {
+        12.0
+    } else {
+        node.padding / 2.0
+    };
+    let label = label_helper(input, false);
+    let height = label.bbox.height.max(0.0) + label_padding;
+    let ry = height / 2.0;
+    let rx = ry / (2.5 + height / 50.0);
+    let width = label.bbox.width.max(0.0) + rx + label_padding;
+
+    let svg = format!(
+        "<path{} d=\"{}\"{} label-offset-x=\"{}\" transform=\"translate({}, {})\"/>",
+        attribute("class", "basic label-container outer-path"),
+        tilted_path_data(width, height, rx, ry),
+        attribute("style", &styles.node),
+        number(rx),
+        number(-width / 2.0),
+        number(height / 2.0),
+    );
+    // The cap bulges by `rx` past each end of the body.
+    let bbox = BBox::new(-width / 2.0 - rx, -height / 2.0, width + 2.0 * rx, height);
+    let label_offset = Point::new(
+        -(label.bbox.width / 2.0) - rx - label.bbox.x,
+        -(label.bbox.height / 2.0) - label.bbox.y,
+    );
+    Part {
+        svg,
+        after_label: String::new(),
+        bbox,
+        intersect: Intersect::TiltedCylinder { rx, ry },
+        label_offset: Some(label_offset),
+        label: Some(label),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::test_support::{draw_box, node};
