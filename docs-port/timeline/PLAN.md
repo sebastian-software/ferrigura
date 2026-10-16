@@ -115,12 +115,12 @@ Each quirk is kept on purpose, because the reference defines the behaviour. The 
 | Q13 | The `accDescr { … }` block has no comment rules: `#` and `%%` inside it are text, and the block ends at the first `}`                               | rules 13-15 (28-30)                        | `timeline_grammar`                          |
 | Q14 | An unclosed `accDescr {` is a parse error; `accDescr {}` gives nothing                                                                              | rules 13-15, notes 2.5                     | `timeline_grammar`                          |
 | Q15 | The block text is trimmed as a whole, then each line break followed by blanks becomes one line break (the setter), so no line keeps its indentation | grammar 75, `commonDb` 22-24               | `timeline_grammar`: block indentation       |
-| Q16 | Section names are kept with duplicates; tasks of a repeated name are drawn under each occurrence (drawing: R5, not in this plan)                    | `timelineDb` 29-32                         | `timeline_spec`: two sections               |
+| Q16 | Section names are kept with duplicates; tasks of a repeated name are drawn under each occurrence (drawing: R5, not in this plan)                    | `timelineDb` 29-32                         | `timeline_grammar`: repeated section        |
 | Q17 | An event with no period before it is an error: the reference throws a `TypeError` in `addEvent`                                                     | `timelineDb` 65-70, verified in Chromium   | `timeline_grammar`                          |
 | Q18 | Statements need no line break between them: `timeline section A` is a header and a section                                                          | grammar `document` 43-86                   | `timeline_grammar`                          |
 | Q19 | A plain `timeline` keeps the direction of `clear`, `LR`; a second header is a parse error                                                           | grammar 53-57, `timelineDb` 4, 17          | `timeline_spec`: default LR                 |
 | Q20 | Entities are encoded before parsing and the model keeps the encoded text (`#quot;` is `ﬂ°quot¶ß`). Only the header texts are sanitised              | `Diagram.ts` 77, `utils.ts` 874-895        | `timeline_grammar`: entities                |
-| Q21 | Blank lines and blanks between statements have no effect                                                                                            | rules 2-3 (16-17)                          | `timeline_spec`                             |
+| Q21 | Blank lines and blanks between statements have no effect                                                                                            | rules 2-3 (16-17)                          | `timeline_grammar`: blank lines             |
 
 ## 7. Specs
 

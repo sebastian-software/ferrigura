@@ -1,5 +1,5 @@
 //! The quirks of the timeline that the port keeps, one test per row of the table in
-//! `docs-port/timeline/PLAN.md`, section 6 (Q1 to Q20). Each expected value is the reference's:
+//! `docs-port/timeline/PLAN.md`, section 6 (Q1 to Q21). Each expected value is the reference's:
 //! the notes record the Jison and Chromium runs that verified it. The differential run checks the
 //! same inputs against the reference.
 
@@ -134,6 +134,23 @@ fn should_reject_an_unclosed_acc_descr_block_and_accept_an_empty_one() {
 fn should_remove_the_indentation_of_every_line_of_an_acc_descr_block() {
     let diagram = parsed("timeline\naccDescr {\n    one\n        two\n}");
     assert_eq!(diagram.acc_descr, "one\ntwo");
+}
+
+#[test]
+fn should_keep_a_repeated_section_name_with_the_periods_of_each_occurrence() {
+    let diagram = parsed("timeline\nsection A\n  t1\nsection A\n  t2");
+    assert_eq!(diagram.sections, ["A", "A"]);
+    assert_eq!(
+        diagram.periods,
+        [period("A", "t1", &[]), period("A", "t2", &[])]
+    );
+}
+
+#[test]
+fn should_ignore_blank_lines_and_blanks_between_statements() {
+    let diagram = parsed("timeline\n\n   section A  \n\n\n  t1 \n\n  : e\n\n");
+    assert_eq!(diagram.sections, ["A  "]);
+    assert_eq!(diagram.periods, [period("A  ", "t1 ", &["e"])]);
 }
 
 #[test]
