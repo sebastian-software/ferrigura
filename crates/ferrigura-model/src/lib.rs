@@ -11,6 +11,7 @@
 
 pub mod config;
 pub mod flowchart;
+pub mod gantt;
 pub mod info;
 pub mod pie;
 pub mod theme;
