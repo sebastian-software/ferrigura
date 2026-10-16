@@ -6,7 +6,7 @@ resolver = "3"
 edition = "2024"
 rust-version = "1.95"
 license = "MIT"
-repository = "https://github.com/sebastian-software/ferraid"
+repository = "https://github.com/sebastian-software/ferrigura"
 publish = false
 
 [workspace.dependencies]
