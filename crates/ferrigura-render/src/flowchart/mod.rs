@@ -12,6 +12,8 @@ pub mod data;
 pub mod edges;
 pub mod elk_apply;
 pub mod elk_build;
+pub mod elk_geometry;
+pub mod elk_straighten;
 pub mod geom;
 pub mod label;
 pub mod shapes;
