@@ -16,11 +16,11 @@ pub(crate) enum State {
     /// `struct`: the body of a composite state.
     Struct,
     /// `STATE`: the rest of a `state` line.
-    StateName,
+    Line,
     /// `STATE_STRING`: the quoted description after `state`.
-    StateString,
+    Quoted,
     /// `STATE_ID`: the id after `as`.
-    StateId,
+    Alias,
     /// `SCALE`: the width of a `scale` line.
     Scale,
     /// `acc_title`: the value of `accTitle:`.
@@ -318,11 +318,11 @@ fn direction_len(rest: &str, word: &str) -> Option<usize> {
 fn marker_len(rest: &str, marker: &str) -> Option<usize> {
     let line = rest.find(is_line_term).unwrap_or(rest.len());
     (0..line)
-        .filter(|&start| {
+        .rev()
+        .find(|&start| {
             rest.get(start..start + marker.len())
                 .is_some_and(|text| text.eq_ignore_ascii_case(marker))
         })
-        .last()
         .map(|start| start + marker.len())
 }
 
@@ -452,9 +452,9 @@ impl Lexer {
     /// comment on each arm gives the grammar's line.
     fn rule(&self, rest: &str, state: State) -> Result<Option<Hit>, ScanError> {
         use State::{
-            AccDescr, AccDescrMultiline, AccTitle, Class, ClassDef, ClassDefId, ClassStyle,
-            FloatingNote, FloatingNoteId, Initial, Note, NoteId, NoteText, Scale, StateId,
-            StateName, StateString, Struct, Style, StyleDefStyles,
+            AccDescr, AccDescrMultiline, AccTitle, Alias, Class, ClassDef, ClassDefId, ClassStyle,
+            FloatingNote, FloatingNoteId, Initial, Line, Note, NoteId, NoteText, Quoted, Scale,
+            Struct, Style, StyleDefStyles,
         };
         // 69-73: the keywords of INITIAL
         if when(state, &[Initial]) {
@@ -465,11 +465,11 @@ impl Lexer {
                 return found(Hit::token(len, Kind::Href, &rest[..len]));
             }
             // 71: \"[^"]*\"
-            if rest.starts_with('"') {
-                if let Some(close) = rest[1..].find('"') {
-                    let len = close + 2;
-                    return found(Hit::token(len, Kind::Str, &rest[..len]));
-                }
+            if rest.starts_with('"')
+                && let Some(close) = rest[1..].find('"')
+            {
+                let len = close + 2;
+                return found(Hit::token(len, Kind::Str, &rest[..len]));
             }
             if let Some(len) = ci_word(rest, "default") {
                 return found(Hit::token(len, Kind::Default, &rest[..len]));
@@ -491,11 +491,11 @@ impl Lexer {
             }
         }
         // 82: ((?!\n)\s)+ (skipped, same-line blanks)
-        if when(state, &[StateName, Struct]) && rest.starts_with(|c| is_js_space(c) && c != '\n') {
+        if when(state, &[Line, Struct]) && rest.starts_with(|c| is_js_space(c) && c != '\n') {
             return found(Hit::skip(run_len(rest, |c| is_js_space(c) && c != '\n')));
         }
         // 83-84: #… and %%… (not %%{) are comments, skipped
-        if when(state, &[Initial, StateName, Struct]) {
+        if when(state, &[Initial, Line, Struct]) {
             if rest.starts_with('#') {
                 return found(Hit::skip(line_len(rest)));
             }
@@ -504,12 +504,10 @@ impl Lexer {
             }
         }
         // 85: "scale"\s+
-        if when(state, &[Initial]) {
-            if let Some(len) = word_then_space(rest, "scale") {
-                return found(
-                    Hit::token(len, Kind::Scale, &rest[..len]).and_then(|h| h.enter(Scale)),
-                );
-            }
+        if when(state, &[Initial])
+            && let Some(len) = word_then_space(rest, "scale")
+        {
+            return found(Hit::token(len, Kind::Scale, &rest[..len]).and_then(|h| h.enter(Scale)));
         }
         // 86: <SCALE>\d+
         if when(state, &[Scale]) {
@@ -526,12 +524,12 @@ impl Lexer {
             }
         }
         // 89-90: accTitle\s*":"\s* and the rest of the line
-        if when(state, &[Initial]) {
-            if let Some(len) = keyword_colon_len(rest, "accTitle") {
-                return found(
-                    Hit::token(len, Kind::AccTitle, &rest[..len]).and_then(|h| h.enter(AccTitle)),
-                );
-            }
+        if when(state, &[Initial])
+            && let Some(len) = keyword_colon_len(rest, "accTitle")
+        {
+            return found(
+                Hit::token(len, Kind::AccTitle, &rest[..len]).and_then(|h| h.enter(AccTitle)),
+            );
         }
         if when(state, &[AccTitle]) {
             let len = line_len(rest);
@@ -540,12 +538,12 @@ impl Lexer {
             );
         }
         // 91-92: accDescr\s*":"\s* and the rest of the line
-        if when(state, &[Initial]) {
-            if let Some(len) = keyword_colon_len(rest, "accDescr") {
-                return found(
-                    Hit::token(len, Kind::AccDescr, &rest[..len]).and_then(|h| h.enter(AccDescr)),
-                );
-            }
+        if when(state, &[Initial])
+            && let Some(len) = keyword_colon_len(rest, "accDescr")
+        {
+            return found(
+                Hit::token(len, Kind::AccDescr, &rest[..len]).and_then(|h| h.enter(AccDescr)),
+            );
         }
         if when(state, &[AccDescr]) {
             let len = line_len(rest);
@@ -554,10 +552,10 @@ impl Lexer {
             );
         }
         // 93: accDescr\s*"{"\s* (no token)
-        if when(state, &[Initial]) {
-            if let Some(len) = keyword_brace_len(rest, "accDescr") {
-                return found(Hit::skip(len).and_then(|h| h.enter(AccDescrMultiline)));
-            }
+        if when(state, &[Initial])
+            && let Some(len) = keyword_brace_len(rest, "accDescr")
+        {
+            return found(Hit::skip(len).and_then(|h| h.enter(AccDescrMultiline)));
         }
         // 94-95: the body of accDescr { … }
         if when(state, &[AccDescrMultiline]) {
@@ -568,12 +566,12 @@ impl Lexer {
             return found(Hit::token(len, Kind::AccDescrMultiValue, &rest[..len]));
         }
         // 97: classDef\s+
-        if when(state, &[Initial, Struct]) {
-            if let Some(len) = word_then_space(rest, "classDef") {
-                return found(
-                    Hit::token(len, Kind::ClassDef, &rest[..len]).and_then(|h| h.enter(ClassDef)),
-                );
-            }
+        if when(state, &[Initial, Struct])
+            && let Some(len) = word_then_space(rest, "classDef")
+        {
+            return found(
+                Hit::token(len, Kind::ClassDef, &rest[..len]).and_then(|h| h.enter(ClassDef)),
+            );
         }
         // 98-99: the name of a classDef line
         if when(state, &[ClassDef]) {
@@ -601,12 +599,10 @@ impl Lexer {
             );
         }
         // 102: class\s+
-        if when(state, &[Initial, Struct]) {
-            if let Some(len) = word_then_space(rest, "class") {
-                return found(
-                    Hit::token(len, Kind::Class, &rest[..len]).and_then(|h| h.enter(Class)),
-                );
-            }
+        if when(state, &[Initial, Struct])
+            && let Some(len) = word_then_space(rest, "class")
+        {
+            return found(Hit::token(len, Kind::Class, &rest[..len]).and_then(|h| h.enter(Class)));
         }
         // 103: the ids of a class line
         if when(state, &[Class]) {
@@ -625,12 +621,10 @@ impl Lexer {
             return found(Hit::token(len, Kind::StyleClass, &rest[..len]).and_then(|h| h.leave()));
         }
         // 106: style\s+
-        if when(state, &[Initial, Struct]) {
-            if let Some(len) = word_then_space(rest, "style") {
-                return found(
-                    Hit::token(len, Kind::Style, &rest[..len]).and_then(|h| h.enter(Style)),
-                );
-            }
+        if when(state, &[Initial, Struct])
+            && let Some(len) = word_then_space(rest, "style")
+        {
+            return found(Hit::token(len, Kind::Style, &rest[..len]).and_then(|h| h.enter(Style)));
         }
         // 107: [\w,]+\s+ (the ids of a style line)
         if when(state, &[Style]) {
@@ -652,13 +646,13 @@ impl Lexer {
             );
         }
         // 114: state\s+ (no token)
-        if when(state, &[Initial, Struct]) {
-            if let Some(len) = word_then_space(rest, "state") {
-                return found(Hit::skip(len).and_then(|h| h.enter(StateName)));
-            }
+        if when(state, &[Initial, Struct])
+            && let Some(len) = word_then_space(rest, "state")
+        {
+            return found(Hit::skip(len).and_then(|h| h.enter(Line)));
         }
         // 116-121: .*MARKER, the text before the last marker on the line
-        if when(state, &[StateName]) {
+        if when(state, &[Line]) {
             for (marker, kind) in MARKERS {
                 if let Some(len) = marker_len(rest, marker) {
                     let value = js_trim(&rest[..len - marker.len()]);
@@ -675,26 +669,24 @@ impl Lexer {
             }
         }
         // 128: "
-        if when(state, &[StateName]) && rest.starts_with('"') {
-            return found(Hit::skip(1).and_then(|h| h.enter(StateString)));
+        if when(state, &[Line]) && rest.starts_with('"') {
+            return found(Hit::skip(1).and_then(|h| h.enter(Quoted)));
         }
         // 129: \s*"as"\s+
-        if when(state, &[StateName]) {
+        if when(state, &[Line]) {
             let spaces = ws_len(rest);
             if let Some(len) = word_then_space(&rest[spaces..], "as") {
                 let len = spaces + len;
-                return found(
-                    Hit::token(len, Kind::As, &rest[..len]).and_then(|h| h.enter(StateId)),
-                );
+                return found(Hit::token(len, Kind::As, &rest[..len]).and_then(|h| h.enter(Alias)));
             }
         }
         // 130: [^\n\{]* (the id after as)
-        if when(state, &[StateId]) {
+        if when(state, &[Alias]) {
             let len = run_len(rest, |c| c != '\n' && c != '{');
             return found(id_hit(&rest[..len], true, None));
         }
         // 131-132: the quoted description
-        if when(state, &[StateString]) {
+        if when(state, &[Quoted]) {
             if rest.starts_with('"') {
                 return found(Hit::skip(1).and_then(|h| h.leave()));
             }
@@ -702,27 +694,27 @@ impl Lexer {
             return found(Hit::token(len, Kind::StateDescr, &rest[..len]));
         }
         // 133: \w+\s+\w+.*?\{ is an error
-        if when(state, &[StateName]) {
-            if let Some(len) = two_word_name_len(rest) {
-                return Err(ScanError::TwoWordName {
-                    offset: self.pos,
-                    text: rest[..len].to_owned(),
-                });
-            }
+        if when(state, &[Line])
+            && let Some(len) = two_word_name_len(rest)
+        {
+            return Err(ScanError::TwoWordName {
+                offset: self.pos,
+                text: rest[..len].to_owned(),
+            });
         }
         // 134: [^\n\s\{]+
-        if when(state, &[StateName]) {
+        if when(state, &[Line]) {
             let len = run_len(rest, |c| c != '\n' && !is_js_space(c) && c != '{');
             if len > 0 {
                 return found(Hit::token(len, Kind::CompositState, &rest[..len]));
             }
         }
         // 135: \n leaves the state
-        if when(state, &[StateName]) && rest.starts_with('\n') {
+        if when(state, &[Line]) && rest.starts_with('\n') {
             return found(Hit::skip(1).and_then(|h| h.leave()));
         }
         // 136: { opens a composite body
-        if when(state, &[Initial, StateName]) && rest.starts_with('{') {
+        if when(state, &[Initial, Line]) && rest.starts_with('{') {
             return found(Hit::token(1, Kind::StructStart, "{").and_then(|h| h.swap(Struct)));
         }
         // 137-138: } closes it; newlines inside it are skipped
@@ -735,12 +727,10 @@ impl Lexer {
             }
         }
         // 140: note\s+
-        if when(state, &[Initial, Struct]) {
-            if let Some(len) = word_then_space(rest, "note") {
-                return found(
-                    Hit::token(len, Kind::Note, &rest[..len]).and_then(|h| h.enter(Note)),
-                );
-            }
+        if when(state, &[Initial, Struct])
+            && let Some(len) = word_then_space(rest, "note")
+        {
+            return found(Hit::token(len, Kind::Note, &rest[..len]).and_then(|h| h.enter(Note)));
         }
         // 141-142: left of, right of
         if when(state, &[Note]) {
@@ -809,11 +799,11 @@ impl Lexer {
             }
         }
         // 150: [\s\S]*?\n\s*"end note" (the text of a block note)
-        if when(state, &[NoteText]) {
-            if let Some(len) = end_note_len(rest) {
-                let value = js_trim(&rest[..len - 8]);
-                return found(Hit::token(len, Kind::NoteText, value).and_then(|h| h.leave()));
-            }
+        if when(state, &[NoteText])
+            && let Some(len) = end_note_len(rest)
+        {
+            let value = js_trim(&rest[..len - 8]);
+            return found(Hit::token(len, Kind::NoteText, value).and_then(|h| h.leave()));
         }
         // 152-153: stateDiagram\s+ and stateDiagram-v2\s+
         if when(state, &[Initial]) {
@@ -825,10 +815,10 @@ impl Lexer {
             }
         }
         // 155: hide empty description
-        if when(state, &[Initial]) {
-            if let Some(len) = ci_word(rest, "hide empty description") {
-                return found(Hit::token(len, Kind::HideEmpty, &rest[..len]));
-            }
+        if when(state, &[Initial])
+            && let Some(len) = ci_word(rest, "hide empty description")
+        {
+            return found(Hit::token(len, Kind::HideEmpty, &rest[..len]));
         }
         // 157: [*]
         if when(state, &[Initial, Struct]) && rest.starts_with("[*]") {
@@ -844,10 +834,10 @@ impl Lexer {
             }
         }
         // 160: \s*":"(?:[^:\n;]|":"[^:\n;])+ (a description)
-        if when(state, &[Initial, Struct]) {
-            if let Some(len) = descr_len(rest) {
-                return found(Hit::token(len, Kind::Descr, js_trim(&rest[..len])));
-            }
+        if when(state, &[Initial, Struct])
+            && let Some(len) = descr_len(rest)
+        {
+            return found(Hit::token(len, Kind::Descr, js_trim(&rest[..len])));
         }
         // 162-164: -->, --, :::
         if when(state, &[Initial, Struct]) && rest.starts_with("-->") {
@@ -864,16 +854,15 @@ impl Lexer {
             return found(Hit::token(0, Kind::Nl, ""));
         }
         // 166: . (INITIAL only): a character no rule takes
-        if when(state, &[Initial]) {
-            if let Some(c) = rest.chars().next() {
-                if !is_line_term(c) {
-                    return found(Hit::token(
-                        c.len_utf8(),
-                        Kind::Invalid,
-                        &rest[..c.len_utf8()],
-                    ));
-                }
-            }
+        if when(state, &[Initial])
+            && let Some(c) = rest.chars().next()
+            && !is_line_term(c)
+        {
+            return found(Hit::token(
+                c.len_utf8(),
+                Kind::Invalid,
+                &rest[..c.len_utf8()],
+            ));
         }
         Ok(None)
     }
