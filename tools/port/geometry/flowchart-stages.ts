@@ -1,5 +1,6 @@
 /**
- * The flowchart fixtures in each stage of M5, and the layouts and looks that are out of scope.
+ * The flowchart fixtures in each stage of M5. The exclusions that apply to every diagram type (the
+ * non-layered layouts, the look that is out of scope) are in `common.ts`.
  *
  * The lists come from `docs-port/flowchart/render-notes/fixtures-and-harness.md`, section 5. Paths
  * are relative to `e2e/diagrams/flowchart`. Each stage lists only its own files: `stage2` is the
@@ -80,21 +81,3 @@ export const STAGES: Readonly<Record<string, readonly string[]>> = {
     'visual-check/subgraph-titles-wider-than-children.mmd',
   ],
 };
-
-/**
- * Layouts that are not layered. ferrigura implements `elk.layered` only and falls back to it for
- * the others, so a fixture that names one of these is excluded from the comparison.
- */
-export const NON_LAYERED_LAYOUTS: readonly string[] = [
-  'elk.box',
-  'elk.rectpacking',
-  'elk.stress',
-  'elk.force',
-  'elk.mrtree',
-  'elk.sporeOverlap',
-  'cose-bilkent',
-  'swimlane',
-];
-
-/** The look that is out of scope: rough.js sketching is not part of the port. */
-export const EXCLUDED_LOOK = 'handDrawn';

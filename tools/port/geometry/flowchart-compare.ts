@@ -4,8 +4,7 @@
  * so that the rules can be checked without a browser (`flowchart-geometry.ts` holds the page and
  * the run).
  */
-
-export const PIXEL_TOLERANCE = 0.05;
+import { PIXEL_TOLERANCE } from './common.js';
 
 export interface Box {
   x: number;
