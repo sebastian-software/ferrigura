@@ -12,8 +12,9 @@
  * the same whole pixels, and the run fails if it does not. Chromium sets SVG text at the size floored
  * to 1/100 px, so the fixture's fractional sizes check that as well. Wrapped lines run Mermaid's
  * `splitLineToFitWidth` (`packages/mermaid/src/rendering-util/splitText.ts`) in the page, with the
- * width of a candidate line measured in SVG. `getComputedTextLength` is used only here, in Chromium;
- * WebKit reports widths without kerning through it, so no check in WebKit uses it.
+ * width of a candidate line measured in SVG. `getComputedTextLength` and `getBBox` are used only
+ * here, in Chromium: WebKit reports widths without kerning through them, and its box heights differ
+ * by up to 0.38 px (`docs-port/spikes/text-measurement.md`).
  *
  * Usage: `pnpm exec tsx tools/port/text/chromium-fixture.ts [--check]`
  */
