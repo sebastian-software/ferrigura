@@ -1,7 +1,7 @@
 //! Parses inputs with a ferrigura parser and writes the canonical JSON of each result. The
 //! differential harness (`pnpm port:diff`) runs this against the JS exporters of `tools/port/`.
 //!
-//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart> <inputs.json> <outputs.json>`
+//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|sequence> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
 //! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
@@ -9,8 +9,11 @@
 use std::error::Error;
 use std::fs;
 
+use ferrigura_model::config::effective;
+use ferrigura_model::value::Value as Config;
 use ferrigura_syntax::flowchart::{self, FlowchartError};
-use ferrigura_syntax::{ParseError, info, pie};
+use ferrigura_syntax::sequence::{self, Options};
+use ferrigura_syntax::{ParseError, config, info, pie};
 use serde_json::{Value, json};
 
 /// What a parser made of one input.
@@ -30,10 +33,42 @@ fn flowchart_outcome(text: &str) -> Outcome {
     }
 }
 
+/// `autoWrap()` of the reference: the top-level `wrap` when a directive gives it, else the
+/// `sequence` section's `wrap`, else `false`.
+fn sequence_wrap(text: &str) -> bool {
+    let Ok(directive) = config::read(text) else {
+        return false;
+    };
+    let resolved = effective(None, Some("sequence"), &directive);
+    match resolved.get("wrap") {
+        Some(Config::Bool(flag)) => *flag,
+        _ => matches!(
+            resolved
+                .get("sequence")
+                .and_then(|section| section.get("wrap")),
+            Some(Config::Bool(true))
+        ),
+    }
+}
+
+fn sequence_outcome(text: &str) -> Outcome {
+    match sequence::parse_with(
+        text,
+        Options {
+            wrap: sequence_wrap(text),
+        },
+    ) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
-        return Err("usage: canonical <pie|info|flowchart> <inputs.json> <outputs.json>".into());
+        return Err(
+            "usage: canonical <pie|info|flowchart|sequence> <inputs.json> <outputs.json>".into(),
+        );
     };
 
     let inputs: Value = serde_json::from_str(&fs::read_to_string(input)?)?;
@@ -53,6 +88,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => Outcome::Rejected(error),
             },
             "flowchart" => flowchart_outcome(text),
+            "sequence" => sequence_outcome(text),
             other => return Err(format!("unknown diagram type {other}").into()),
         };
         results.push(match outcome {

@@ -253,33 +253,6 @@ pub(crate) fn loose_directive_len(text: &str) -> Option<usize> {
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn removes_front_matter_and_reads_its_title() {
-        let prepared = prepare("---\ntitle: Pets\nconfig:\n  theme: dark\n---\npie\n\"a\": 1")
-            .expect("prepares");
-        assert_eq!(prepared.text, "pie\n\"a\": 1");
-        assert_eq!(prepared.title.as_deref(), Some("Pets"));
-        assert_eq!(prepared.line_offset, 5);
-    }
-
-    #[test]
-    fn normalises_line_breaks_and_quotes_attributes() {
-        let prepared = prepare("pie\r\n\"<b class=\"x\">a</b>\": 1\r").expect("prepares");
-        assert_eq!(prepared.text, "pie\n\"<b class='x'>a</b>\": 1\n");
-    }
-
-    #[test]
-    fn loose_directive_ends_at_its_closing_fence() {
-        assert_eq!(loose_directive_len("%%{init: {}}%%\npie"), Some(14));
-        assert_eq!(loose_directive_len("%%{init: a b}%%"), Some(11));
-        assert_eq!(loose_directive_len("%%{ }%%"), None);
-    }
-}
-
 /// Removes the `%%{ … }%%` directives, as `removeDirectives` does.
 pub(crate) fn remove_directives(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
@@ -412,4 +385,31 @@ fn encode_hash_entities(text: &str) -> String {
     }
     out.push_str(rest);
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn removes_front_matter_and_reads_its_title() {
+        let prepared = prepare("---\ntitle: Pets\nconfig:\n  theme: dark\n---\npie\n\"a\": 1")
+            .expect("prepares");
+        assert_eq!(prepared.text, "pie\n\"a\": 1");
+        assert_eq!(prepared.title.as_deref(), Some("Pets"));
+        assert_eq!(prepared.line_offset, 5);
+    }
+
+    #[test]
+    fn normalises_line_breaks_and_quotes_attributes() {
+        let prepared = prepare("pie\r\n\"<b class=\"x\">a</b>\": 1\r").expect("prepares");
+        assert_eq!(prepared.text, "pie\n\"<b class='x'>a</b>\": 1\n");
+    }
+
+    #[test]
+    fn loose_directive_ends_at_its_closing_fence() {
+        assert_eq!(loose_directive_len("%%{init: {}}%%\npie"), Some(14));
+        assert_eq!(loose_directive_len("%%{init: a b}%%"), Some(11));
+        assert_eq!(loose_directive_len("%%{ }%%"), None);
+    }
 }

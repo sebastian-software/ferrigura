@@ -26,11 +26,13 @@ pub mod config;
 pub mod info;
 pub mod pie;
 pub mod sanitize;
+pub mod sequence;
 pub mod yaml;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::info::InfoDiagram;
 use ferrigura_model::pie::PieDiagram;
+use ferrigura_model::sequence::SequenceDiagram;
 
 pub use error::ParseError;
 
@@ -43,6 +45,8 @@ pub enum DiagramType {
     Info,
     /// The flowchart, written `flowchart` or `graph`.
     Flowchart,
+    /// The sequence diagram, written `sequenceDiagram`.
+    Sequence,
 }
 
 impl DiagramType {
@@ -53,6 +57,7 @@ impl DiagramType {
             Self::Pie => "pie",
             Self::Info => "info",
             Self::Flowchart => "flowchart",
+            Self::Sequence => "sequence",
         }
     }
 }
@@ -66,6 +71,8 @@ pub enum Diagram {
     Info(InfoDiagram),
     /// A flowchart.
     Flowchart(FlowchartDiagram),
+    /// A sequence diagram.
+    Sequence(SequenceDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -82,6 +89,8 @@ pub fn detect(text: &str) -> Option<DiagramType> {
         Some(DiagramType::Info)
     } else if rest.starts_with("graph") || rest.starts_with("flowchart") {
         Some(DiagramType::Flowchart)
+    } else if rest.starts_with("sequenceDiagram") {
+        Some(DiagramType::Sequence)
     } else {
         None
     }
@@ -95,6 +104,7 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         Some(DiagramType::Flowchart) => flowchart::parse(text)
             .map(Diagram::Flowchart)
             .map_err(|flowchart::FlowchartError::Syntax(error)| error),
+        Some(DiagramType::Sequence) => sequence::parse(text).map(Diagram::Sequence),
         None => Err(ParseError {
             line: 1,
             column: 1,
