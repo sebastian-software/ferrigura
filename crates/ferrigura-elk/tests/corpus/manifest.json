@@ -1090,6 +1090,14 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__explicit-ports-east-west",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__explicit-ports-fixed-side",
    "fixture": null,
    "nodes": 3,

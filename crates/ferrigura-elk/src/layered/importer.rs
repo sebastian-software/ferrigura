@@ -14,14 +14,16 @@ use std::collections::{BTreeSet, HashMap, VecDeque};
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{
     ComponentOrderingStrategy, EdgeLabelPlacement, GraphProperties, HierarchyHandling,
-    OrderingStrategy, PortConstraints,
+    OrderingStrategy, PortConstraints, PortSide,
 };
 use crate::core::data::property::PropertyHolder;
 use crate::core::math::KVector;
 use crate::error::LayoutError;
-use crate::graph::{ElkEdge, ElkNode};
-use crate::layered::graph_util::create_port;
-use crate::layered::lgraph::{CrossHierarchyEdge, LEdge, LGraph, LLabel, LNode, LabelId, PortType};
+use crate::graph::{ElkEdge, ElkNode, ElkPort};
+use crate::layered::graph_util::{create_port, note_port_side};
+use crate::layered::lgraph::{
+    CrossHierarchyEdge, LEdge, LGraph, LLabel, LNode, LPort, LabelId, PortType,
+};
 use crate::layered::nodespacing;
 use crate::layered::options;
 use crate::layered::spacings::{SPACING_BASE_VALUE, apply_base_value};
@@ -43,6 +45,8 @@ pub fn import_level(
     let mut graph = create_graph(root, parent, chain)?;
     let needs_model_order = needs_model_order_based_on_parent(root);
     let mut model_order = 0;
+    // The layered ports of this level's nodes, by their ELK ids.
+    let mut ports: HashMap<String, usize> = HashMap::new();
     for child in &root.children {
         // A child with children is a leaf of this level once it was laid out on its own, which its
         // hierarchy handling says. Any other child with children is a nested graph of this level.
@@ -66,15 +70,16 @@ pub fn import_level(
             model_order += 1;
             model_order - 1
         });
-        transform_node(
+        let node = transform_node(
             child,
             child.properties.clone(),
             &mut graph,
             node_model_order,
         )?;
+        import_ports(child, node, &mut graph, &mut ports)?;
     }
     graph.layerless_nodes = (0..graph.nodes.len()).collect();
-    import_edges(root, &mut graph, needs_model_order)?;
+    import_edges(root, &mut graph, needs_model_order, &ports)?;
     Ok(graph)
 }
 
@@ -167,9 +172,6 @@ fn transform_node(
     graph: &mut LGraph,
     model_order: Option<usize>,
 ) -> Result<usize, LayoutError> {
-    if !child.ports.is_empty() {
-        return Err(LayoutError::Unsupported(format!("ports on {}", child.id)));
-    }
     // A node without port constraints is free; any other constraint is not supported by the port
     // sides yet.
     match properties.enum_of::<PortConstraints>(options::PORT_CONSTRAINTS) {
@@ -235,6 +237,8 @@ pub fn import_compound(
         .collect();
     // The model order counts the nodes of all graphs, in the order they are read.
     let mut model_order = 0;
+    // The layered ports by their ELK ids: the path of their node, their graph and their index.
+    let mut port_map: HashMap<String, (Vec<usize>, usize, usize)> = HashMap::new();
     while let Some((path, graph_index)) = queue.pop_front() {
         let (elk_parent, elk_node) = parent_and_node(root, &path)?;
         // `needsModelOrder(elknode)`: the node's parent asks for the input order, and the node
@@ -293,6 +297,11 @@ pub fn import_compound(
         let index = transform_node(elk_node, properties, graph, node_model_order)?;
         graph.layerless_nodes.push(index);
         node_map.insert(path.clone(), (graph_index, index));
+        let mut ports = HashMap::new();
+        import_ports(elk_node, index, &mut graphs[graph_index], &mut ports)?;
+        for (id, port) in ports {
+            port_map.insert(id, (path.clone(), graph_index, port));
+        }
         if let Some(mut nested) = nested {
             let nested_index = graphs.len();
             nested.parent_node = Some((graph_index, index));
@@ -305,7 +314,7 @@ pub fn import_compound(
             }
         }
     }
-    import_compound_edges(root, &mut graphs, &node_map)?;
+    import_compound_edges(root, &mut graphs, &node_map, &port_map)?;
     Ok(graphs)
 }
 
@@ -382,6 +391,7 @@ fn import_compound_edges(
     root: &ElkNode,
     graphs: &mut [LGraph],
     node_map: &HashMap<Vec<usize>, (usize, usize)>,
+    port_map: &HashMap<String, (Vec<usize>, usize, usize)>,
 ) -> Result<(), LayoutError> {
     let mut paths = HashMap::new();
     collect_paths(root, &mut Vec::new(), &mut paths);
@@ -408,9 +418,10 @@ fn import_compound_edges(
                 model_order += 1;
                 model_order - 1
             });
-            let (Some(source_path), Some(target_path)) =
-                (paths.get(source.as_str()), paths.get(target.as_str()))
-            else {
+            let (Some((source_path, source_explicit)), Some((target_path, target_explicit))) = (
+                end_of_edge(source, &paths, port_map),
+                end_of_edge(target, &paths, port_map),
+            ) else {
                 return Err(LayoutError::Unsupported(format!(
                     "edge {} to a node outside the layout",
                     edge.id
@@ -455,6 +466,12 @@ fn import_compound_edges(
                 )));
             };
             if source_graph != parent_graph || target_graph != parent_graph {
+                if source_explicit.is_some() || target_explicit.is_some() {
+                    return Err(LayoutError::Unsupported(format!(
+                        "edge {} across levels from an explicit port",
+                        edge.id
+                    )));
+                }
                 // `transformEdge` for ends in different graphs: each end gets a port in its own
                 // graph, and the edge joins them across the hierarchy. The labels set their graph
                 // properties on the graph the edge is placed in.
@@ -484,8 +501,8 @@ fn import_compound_edges(
             add_edge(
                 &mut graphs[parent_graph],
                 edge,
-                source_index,
-                target_index,
+                (source_index, source_explicit.map(|(_, port)| port)),
+                (target_index, target_explicit.map(|(_, port)| port)),
                 edge_model_order,
             );
         }
@@ -589,6 +606,7 @@ fn import_edges(
     root: &ElkNode,
     graph: &mut LGraph,
     needs_model_order: bool,
+    ports: &HashMap<String, usize>,
 ) -> Result<(), LayoutError> {
     let index_of: HashMap<String, usize> = graph
         .nodes
@@ -612,17 +630,142 @@ fn import_edges(
                 edge.id
             )));
         };
-        let (Some(&source_node), Some(&target_node)) =
-            (index_of.get(source.as_str()), index_of.get(target.as_str()))
-        else {
+        let (Some(source), Some(target)) = (
+            end_in_level(source, &index_of, ports, graph),
+            end_in_level(target, &index_of, ports, graph),
+        ) else {
             return Err(LayoutError::Unsupported(format!(
                 "edge {} to a node outside the root",
                 edge.id
             )));
         };
-        add_edge(graph, edge, source_node, target_node, edge_model_order);
+        add_edge(graph, edge, source, target, edge_model_order);
     }
     Ok(())
+}
+
+/// `ElkGraphImporter.transformNode`'s ports: each laid out ELK port of `elk_node` becomes a port of the
+/// layered node `node`, recorded by its ELK id.
+fn import_ports(
+    elk_node: &ElkNode,
+    node: usize,
+    graph: &mut LGraph,
+    ports: &mut HashMap<String, usize>,
+) -> Result<(), LayoutError> {
+    for elk_port in &elk_node.ports {
+        if elk_port.properties.bool_of(options::NO_LAYOUT) {
+            continue;
+        }
+        let index = import_port(graph, node, elk_port)?;
+        ports.insert(elk_port.id.clone(), index);
+    }
+    Ok(())
+}
+
+/// `ElkGraphImporter.transformPort` with `LGraphUtil.initializePort`, for a port whose side is set:
+/// the side, size and position of the ELK port, the anchor its side gives, and its border offset.
+/// Port labels, an explicit anchor, and a port without a side are not ported yet.
+fn import_port(graph: &mut LGraph, node: usize, elk_port: &ElkPort) -> Result<usize, LayoutError> {
+    if !elk_port.labels.is_empty() {
+        return Err(LayoutError::Unsupported(format!(
+            "labels on port {}",
+            elk_port.id
+        )));
+    }
+    if elk_port.properties.has(options::PORT_ANCHOR) {
+        return Err(LayoutError::Unsupported(format!(
+            "an explicit anchor on port {}",
+            elk_port.id
+        )));
+    }
+    let side = match elk_port.properties.enum_of::<PortSide>(options::PORT_SIDE) {
+        Some(side) if side != PortSide::UNDEFINED => side,
+        _ => {
+            return Err(LayoutError::Unsupported(format!(
+                "port {} without a side",
+                elk_port.id
+            )));
+        }
+    };
+    let size = KVector {
+        x: elk_port.shape.width,
+        y: elk_port.shape.height,
+    };
+    let mut port = LPort::new(node, side);
+    port.size = size;
+    port.position = KVector {
+        x: elk_port.shape.x,
+        y: elk_port.shape.y,
+    };
+    port.anchor = side_anchor(side, size);
+    port.border_offset = elk_port
+        .properties
+        .double_of(options::PORT_BORDER_OFFSET)
+        .unwrap_or(0.0);
+    note_port_side(graph, side);
+    graph.ports.push(port);
+    let index = graph.ports.len() - 1;
+    graph.nodes[node].ports.push(index);
+    Ok(index)
+}
+
+/// `LGraphUtil.initializePort`'s anchor for a fixed side: the point of the port that the edges meet,
+/// on the border of the side.
+fn side_anchor(side: PortSide, size: KVector) -> KVector {
+    match side {
+        PortSide::NORTH => KVector {
+            x: size.x / 2.0,
+            y: 0.0,
+        },
+        PortSide::EAST => KVector {
+            x: size.x,
+            y: size.y / 2.0,
+        },
+        PortSide::SOUTH => KVector {
+            x: size.x / 2.0,
+            y: size.y,
+        },
+        PortSide::WEST => KVector {
+            x: 0.0,
+            y: size.y / 2.0,
+        },
+        PortSide::UNDEFINED => KVector {
+            x: size.x / 2.0,
+            y: size.y / 2.0,
+        },
+    }
+}
+
+/// The node an edge end of this level is at, and the port it names when it names one.
+fn end_in_level(
+    id: &str,
+    index_of: &HashMap<String, usize>,
+    ports: &HashMap<String, usize>,
+    graph: &LGraph,
+) -> Option<(usize, Option<usize>)> {
+    if let Some(&port) = ports.get(id) {
+        return Some((graph.ports[port].node, Some(port)));
+    }
+    index_of.get(id).map(|&node| (node, None))
+}
+
+/// An edge end of a compound level: the path of its node, and the graph and index of the port it
+/// names, when it names one.
+type EdgeEnd<'a> = (&'a Vec<usize>, Option<(usize, usize)>);
+
+/// The path of the node an edge end is at, and the graph and index of the port it names when it
+/// names one.
+fn end_of_edge<'a>(
+    id: &str,
+    paths: &'a HashMap<&str, Vec<usize>>,
+    ports: &'a HashMap<String, (Vec<usize>, usize, usize)>,
+) -> Option<EdgeEnd<'a>> {
+    if let Some(path) = paths.get(id) {
+        return Some((path, None));
+    }
+    ports
+        .get(id)
+        .map(|(path, graph, port)| (path, Some((*graph, *port))))
 }
 
 /// `transformEdge` for an edge between two nodes of `graph`: the edge gets a port of its own on its
@@ -630,16 +773,19 @@ fn import_edges(
 fn add_edge(
     graph: &mut LGraph,
     edge: &ElkEdge,
-    source_node: usize,
-    target_node: usize,
+    (source_node, explicit_source): (usize, Option<usize>),
+    (target_node, explicit_target): (usize, Option<usize>),
     model_order: Option<usize>,
 ) {
     // `LGraphUtil.computeGraphProperties`: an edge from a node to itself is a self loop.
     if source_node == target_node {
         graph.graph_properties.insert(GraphProperties::SELF_LOOPS);
     }
-    let source_port = create_port(graph, source_node, PortType::OUTPUT);
-    let target_port = create_port(graph, target_node, PortType::INPUT);
+    // An edge that names a port leaves or enters that port; otherwise it gets a port of its own.
+    let source_port =
+        explicit_source.unwrap_or_else(|| create_port(graph, source_node, PortType::OUTPUT));
+    let target_port =
+        explicit_target.unwrap_or_else(|| create_port(graph, target_node, PortType::INPUT));
     let index = graph.edges.len();
     graph.ports[source_port].outgoing.push(index);
     graph.ports[target_port].incoming.push(index);

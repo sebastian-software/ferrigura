@@ -392,6 +392,36 @@ export function syntheticExplicitPortGraphs(): { name: string; graph: Record<str
         ],
       },
     },
+    {
+      // Right to left: the ports are on the flow sides (east and west), so no port crosses the flow.
+      name: 'synthetic__explicit-ports-east-west',
+      graph: {
+        id: 'root',
+        layoutOptions: { ...rootLayoutOptionsDefault(), 'elk.direction': 'RIGHT' },
+        children: [
+          {
+            id: 'n0',
+            width: 50,
+            height: 40,
+            layoutOptions: { 'elk.portConstraints': 'FIXED_SIDE' },
+            ports: [port('p0', 'EAST'), port('p1', 'EAST')],
+          },
+          {
+            id: 'n1',
+            width: 60,
+            height: 30,
+            layoutOptions: { 'elk.portConstraints': 'FIXED_SIDE' },
+            ports: [port('p2', 'WEST')],
+          },
+          { id: 'n2', width: 40, height: 40 },
+        ],
+        edges: [
+          { id: 'e0', sources: ['p0'], targets: ['p2'] },
+          { id: 'e1', sources: ['p1'], targets: ['n2'] },
+          { id: 'e2', sources: ['n1'], targets: ['n2'] },
+        ],
+      },
+    },
   ];
 }
 

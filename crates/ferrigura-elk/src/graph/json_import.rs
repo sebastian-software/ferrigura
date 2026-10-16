@@ -33,8 +33,13 @@ pub fn import_graph(root: &JsonNode) -> Result<ElkNode, LayoutError> {
 }
 
 /// The path of child indices from the root to each node, by id. A repeated id keeps the first node.
+/// A port is indexed by the path of its node: `ElkGraphUtil.connectableShapeToNode` gives an edge end
+/// at a port the port's node.
 fn index_nodes(node: &ElkNode, path: &mut Vec<usize>, paths: &mut HashMap<String, Vec<usize>>) {
     paths.entry(node.id.clone()).or_insert_with(|| path.clone());
+    for port in &node.ports {
+        paths.entry(port.id.clone()).or_insert_with(|| path.clone());
+    }
     for (index, child) in node.children.iter().enumerate() {
         path.push(index);
         index_nodes(child, path, paths);

@@ -20,6 +20,19 @@ pub fn create_port(graph: &mut LGraph, node: usize, port_type: PortType) -> usiz
         PortType::OUTPUT => default_side,
         PortType::INPUT => opposed(default_side),
     };
+    note_port_side(graph, side);
+    graph.ports.push(LPort::new(node, side));
+    let index = graph.ports.len() - 1;
+    graph.nodes[node].ports.push(index);
+    index
+}
+
+/// `ElkGraphImporter.transformPort`: a port across the flow of the graph's direction marks the graph
+/// with NORTH_SOUTH_PORTS.
+pub fn note_port_side(graph: &mut LGraph, side: PortSide) {
+    let direction = graph
+        .properties
+        .enum_with_default::<Direction>(options::DIRECTION);
     let across_flow = match direction {
         Direction::LEFT | Direction::RIGHT => matches!(side, PortSide::NORTH | PortSide::SOUTH),
         Direction::UP | Direction::DOWN => matches!(side, PortSide::EAST | PortSide::WEST),
@@ -30,10 +43,6 @@ pub fn create_port(graph: &mut LGraph, node: usize, port_type: PortType) -> usiz
             .graph_properties
             .insert(GraphProperties::NORTH_SOUTH_PORTS);
     }
-    graph.ports.push(LPort::new(node, side));
-    let index = graph.ports.len() - 1;
-    graph.nodes[node].ports.push(index);
-    index
 }
 
 /// `PortSide.fromDirection`: the side that a flow in `direction` leaves a node by.

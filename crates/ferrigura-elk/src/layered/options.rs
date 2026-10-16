@@ -98,6 +98,8 @@ pub const CROSSING_MINIMIZATION_HIERARCHICAL_SWEEPINESS: &str =
 pub const MERGE_HIERARCHY_EDGES: &str = "org.eclipse.elk.layered.mergeHierarchyEdges";
 pub const PORT_LABELS_PLACEMENT: &str = "org.eclipse.elk.portLabels.placement";
 pub const PORT_BORDER_OFFSET: &str = "org.eclipse.elk.port.borderOffset";
+pub const PORT_SIDE: &str = "org.eclipse.elk.port.side";
+pub const PORT_ANCHOR: &str = "org.eclipse.elk.port.anchor";
 
 #[cfg(test)]
 mod tests {
@@ -164,6 +166,8 @@ mod tests {
             MERGE_HIERARCHY_EDGES,
             PORT_LABELS_PLACEMENT,
             PORT_BORDER_OFFSET,
+            PORT_SIDE,
+            PORT_ANCHOR,
         ] {
             assert!(option_by_id(id).is_some(), "{id} is not registered");
         }
