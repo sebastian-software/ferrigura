@@ -72,6 +72,7 @@ pub(crate) struct Db {
     classes: Vec<FlowClass>,
     class_index: HashMap<String, usize>,
     tooltips: Vec<FlowTooltip>,
+    tooltip_index: HashMap<String, usize>,
     default_style: Option<Vec<String>>,
     default_interpolate: Option<String>,
     warnings: Vec<String>,
@@ -96,6 +97,7 @@ impl Db {
             classes: Vec::new(),
             class_index: HashMap::new(),
             tooltips: Vec::new(),
+            tooltip_index: HashMap::new(),
             default_style: None,
             default_interpolate: None,
             warnings: Vec::new(),
@@ -401,6 +403,43 @@ impl Db {
                 "The index {index} for linkStyle is out of bounds. Valid indices for linkStyle are between 0 and {}. (Help: Ensure that the index is within the range of existing edges.)",
                 self.edges.len().saturating_sub(1)
             ))),
+        }
+    }
+
+    /// `setClickEvent`: the callback itself is not in the model (it runs in a browser, and only
+    /// under `securityLevel: loose`); the classes the reference adds are.
+    pub(crate) fn set_click_event(&mut self, ids: &str) {
+        self.set_class(ids, "clickable");
+    }
+
+    /// `setLink`: the link and its target, for the vertices that exist now, then the `clickable`
+    /// class. A link that is empty after trimming is no link.
+    pub(crate) fn set_link(&mut self, ids: &str, link: &str, target: Option<&str>) {
+        let trimmed = js_trim(link);
+        let url = (!trimmed.is_empty()).then(|| trimmed.to_owned());
+        for id in ids.split(',') {
+            if let Some(&index) = self.vertex_index.get(id) {
+                self.vertices[index].link = url.clone();
+                self.vertices[index].link_target = target.map(str::to_owned);
+            }
+        }
+        self.set_class(ids, "clickable");
+    }
+
+    /// `setTooltip`: the tooltip of each id, kept by id whether or not a vertex has it yet.
+    pub(crate) fn set_tooltip(&mut self, ids: &str, tooltip: &str) {
+        for id in ids.split(',') {
+            match self.tooltip_index.get(id) {
+                Some(&index) => self.tooltips[index].tooltip = tooltip.to_owned(),
+                None => {
+                    self.tooltips.push(FlowTooltip {
+                        id: id.to_owned(),
+                        tooltip: tooltip.to_owned(),
+                    });
+                    self.tooltip_index
+                        .insert(id.to_owned(), self.tooltips.len() - 1);
+                }
+            }
         }
     }
 

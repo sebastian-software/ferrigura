@@ -77,6 +77,24 @@ fn is_id_token(kind: Kind) -> bool {
     )
 }
 
+/// The kinds that make up an alphanumeric word: `alphaNumToken`.
+fn is_alpha_num_token(kind: Kind) -> bool {
+    matches!(
+        kind,
+        Kind::Num
+            | Kind::UnicodeText
+            | Kind::NodeString
+            | Kind::Dir
+            | Kind::Down
+            | Kind::Minus
+            | Kind::Comma
+            | Kind::Colon
+            | Kind::Amp
+            | Kind::Brkt
+            | Kind::Mult
+    )
+}
+
 /// The kinds that make up a label without tags: `textNoTagsToken`.
 fn is_text_no_tags_token(kind: Kind) -> bool {
     matches!(
@@ -286,7 +304,11 @@ impl Parser<'_> {
                 self.separator()?;
                 Ok(Statement::Nodes(Vec::new()))
             }
-            Kind::Click => self.not_yet("interactions"),
+            Kind::Click => {
+                self.click_statement()?;
+                self.separator()?;
+                Ok(Statement::Nodes(Vec::new()))
+            }
             _ => {
                 let nodes = self.vertex_statement()?;
                 self.separator()?;
@@ -436,6 +458,66 @@ impl Parser<'_> {
         Ok(id)
     }
 
+    /// `clickStatement`: the id the `click` state gave, then a callback, a link, or an alphanumeric
+    /// id as a callback, with an optional tooltip and an optional link target. The DB calls keep the
+    /// order of the grammar's actions: the link (or the callback's classes) first, then the tooltip.
+    fn click_statement(&mut self) -> Result<(), FlowchartError> {
+        let ids = self.take().value;
+        match self.kind() {
+            Kind::CallbackName => {
+                self.take();
+                if self.kind() == Kind::CallbackArgs {
+                    self.take();
+                }
+                self.db.set_click_event(&ids);
+                self.optional_tooltip(&ids);
+            }
+            Kind::Href | Kind::Str => {
+                if self.kind() == Kind::Href {
+                    self.take();
+                }
+                let link = self.expect(Kind::Str, "a link in quotes")?.value;
+                let mut tooltip = None;
+                let mut target = None;
+                if self.kind() == Kind::Space && self.kind_at(1) == Kind::Str {
+                    self.take();
+                    tooltip = Some(self.take().value);
+                }
+                if self.kind() == Kind::Space && self.kind_at(1) == Kind::LinkTarget {
+                    self.take();
+                    target = Some(self.take().value);
+                }
+                self.db.set_link(&ids, &link, target.as_deref());
+                if let Some(tooltip) = tooltip {
+                    self.db.set_tooltip(&ids, &tooltip);
+                }
+            }
+            kind if is_alpha_num_token(kind) => {
+                self.alpha_num()?;
+                self.db.set_click_event(&ids);
+                self.optional_tooltip(&ids);
+            }
+            _ => return self.syntax("expected a callback or a link after 'click'"),
+        }
+        Ok(())
+    }
+
+    /// `SPACE STR` after a callback: the tooltip.
+    fn optional_tooltip(&mut self, ids: &str) {
+        if self.kind() == Kind::Space && self.kind_at(1) == Kind::Str {
+            self.take();
+            let tooltip = self.take().value;
+            self.db.set_tooltip(ids, &tooltip);
+        }
+    }
+
+    /// The token at `offset` past the next one; the end of the input yields `Eof`.
+    fn kind_at(&self, offset: usize) -> Kind {
+        self.tokens
+            .get(self.pos + offset)
+            .map_or(Kind::Eof, |token| token.kind)
+    }
+
     /// `styleStatement: STYLE SPACE idString SPACE stylesOpt`: the vertex gets the styles, and is
     /// made if it does not exist.
     fn style_statement(&mut self) -> Result<(), FlowchartError> {
@@ -543,20 +625,7 @@ impl Parser<'_> {
     /// `alphaNum`: one or more of the tokens of an alphanumeric word, joined as written.
     fn alpha_num(&mut self) -> Result<String, FlowchartError> {
         let mut text = String::new();
-        while matches!(
-            self.kind(),
-            Kind::Num
-                | Kind::UnicodeText
-                | Kind::NodeString
-                | Kind::Dir
-                | Kind::Down
-                | Kind::Minus
-                | Kind::Comma
-                | Kind::Colon
-                | Kind::Amp
-                | Kind::Brkt
-                | Kind::Mult
-        ) {
+        while is_alpha_num_token(self.kind()) {
             text.push_str(&self.take().value);
         }
         if text.is_empty() {
