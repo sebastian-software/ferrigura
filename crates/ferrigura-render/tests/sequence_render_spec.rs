@@ -1922,3 +1922,58 @@ mod palette_picking {
         assert!(!strokes.is_empty());
     }
 }
+
+/// The port's own check of the actor menu, which no reference spec reads: `drawPopup` lists the
+/// links with `for…in` (`svgDraw.js:113-128`), in the key order of the actor's links object. The
+/// array indices come first, ascending, then the other keys in insertion order; a repeated key
+/// keeps its place and takes the new value.
+mod actor_menu {
+    use super::*;
+
+    /// The label, the target and the text's `y` of each item of the only menu, in document order.
+    fn menu_items(svg: &Node) -> Vec<(String, String, f64)> {
+        let menus = all(svg, &|node| node.has_class("actorPopupMenu"));
+        assert_eq!(menus.len(), 1, "one actor has links");
+        menus[0]
+            .children
+            .iter()
+            .filter(|child| child.name == "a")
+            .map(|item| {
+                let text = all(item, &|node| node.name == "text")[0];
+                (
+                    item.text_content(),
+                    item.attr("xlink:href").unwrap_or_default().to_owned(),
+                    text.num("y"),
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn lists_the_links_in_the_key_order_of_a_javascript_object() {
+        let svg = render(
+            "sequenceDiagram\nparticipant A\n\
+             links A: {\"Zulu\": \"https://menu.test/z\", \"10\": \"https://menu.test/10\", \"Alpha\": \"https://menu.test/a\", \"2\": \"https://menu.test/2\"}\n\
+             link A: Zulu @ https://menu.test/z2\nlink A: Mike @ https://menu.test/m\nA->>B: x",
+            &render_config(),
+        );
+        let items = menu_items(&svg);
+        let entries: Vec<(&str, &str)> = items
+            .iter()
+            .map(|(label, target, _)| (label.as_str(), target.as_str()))
+            .collect();
+        assert_eq!(
+            entries,
+            [
+                ("2", "https://menu.test/2"),
+                ("10", "https://menu.test/10"),
+                ("Zulu", "https://menu.test/z2"),
+                ("Alpha", "https://menu.test/a"),
+                ("Mike", "https://menu.test/m"),
+            ]
+        );
+        // Each item is drawn 30 px below the one before, so the document order is the menu's order.
+        let steps: Vec<f64> = items.windows(2).map(|pair| pair[1].2 - pair[0].2).collect();
+        assert_eq!(steps, [30.0; 4]);
+    }
+}

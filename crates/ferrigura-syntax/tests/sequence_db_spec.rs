@@ -48,7 +48,7 @@ fn map_text<'a>(map: &'a BTreeMap<String, Value>, key: &str) -> Option<&'a str> 
 }
 
 fn link<'a>(diagram: &'a SequenceDiagram, id: &str, key: &str) -> Option<&'a str> {
-    map_text(&actor(diagram, id).links, key)
+    actor(diagram, id).links.get(key).and_then(Value::as_str)
 }
 
 fn property<'a>(diagram: &'a SequenceDiagram, id: &str, key: &str) -> Option<&'a str> {

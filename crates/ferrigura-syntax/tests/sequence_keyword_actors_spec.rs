@@ -32,8 +32,11 @@ fn text(message: &SequenceMessage) -> &str {
     }
 }
 
-fn strings(map: &BTreeMap<String, Value>) -> BTreeMap<String, String> {
-    map.iter()
+fn strings<'a>(
+    entries: impl IntoIterator<Item = (&'a String, &'a Value)>,
+) -> BTreeMap<String, String> {
+    entries
+        .into_iter()
         .map(|(key, value)| {
             (
                 key.clone(),

@@ -7,6 +7,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+use ferrigura_model::js_object::JsObject;
 use ferrigura_model::sequence::{
     Autonumber, CentralConnection, LineType, MessageText, Placement, SequenceActor, SequenceBox,
     SequenceDiagram, SequenceMessage,
@@ -302,7 +303,7 @@ impl Db {
             box_index: assigned_box,
             prev_actor: self.prev_actor.clone(),
             next_actor: None,
-            links: BTreeMap::new(),
+            links: JsObject::new(),
             properties: BTreeMap::new(),
         };
         match old_index {
@@ -404,10 +405,10 @@ impl Db {
         };
         match action {
             ActorAction::Links => {
-                let sanitised = sanitise_link_text(&text.text);
-                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&sanitised) {
-                    insert_all(&mut self.actors[index].links, Value::from(json));
-                }
+                let links = &mut self.actors[index].links;
+                insert_parsed(&sanitise_link_text(&text.text), |key, value| {
+                    links.insert(key, value);
+                });
             }
             ActorAction::ALink => {
                 // `sep` is taken before the entities are replaced, and the slices use it as it is.
@@ -423,17 +424,17 @@ impl Db {
                     separator.map_or(0, |sep| sep as i64 + 1),
                     i64::MAX,
                 );
-                // `insertLinks` of `{label: link}`: one key, overwritten if it is there.
+                // `insertLinks` of `{label: link}`: one key, replaced in its place if it is there.
                 self.actors[index].links.insert(
                     js_trim(&label).to_owned(),
                     Value::String(js_trim(&link).to_owned()),
                 );
             }
             ActorAction::Properties => {
-                let sanitised = sanitize_text(&text.text);
-                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&sanitised) {
-                    insert_all(&mut self.actors[index].properties, Value::from(json));
-                }
+                let properties = &mut self.actors[index].properties;
+                insert_parsed(&sanitize_text(&text.text), |key, value| {
+                    properties.insert(key, value);
+                });
             }
             // `document.getElementById` reads an element of the page, which the port does not have.
             // The reference's lookup finds nothing in the text of a diagram, so nothing is stored.
@@ -490,19 +491,28 @@ fn replace_entities(text: &str) -> String {
     text.replace("&equals;", "=").replace("&amp;", "&")
 }
 
-/// `insertLinks` and `insertProperties`: `actor.x[key] = value` for each key of a JSON value. A
-/// non-object value has the keys `for…in` gives it (an array's indices, a string's characters).
-fn insert_all(target: &mut BTreeMap<String, Value>, value: Value) {
-    match value {
-        Value::Object(map) => target.extend(map),
-        Value::Array(items) => {
+/// `insertLinks` and `insertProperties` (`:488-520`) of `JSON.parse(text)`: `actor.x[key] = value`
+/// for each key `for…in` gives the parsed value, in its order. An object gives its members in the
+/// key order of a JavaScript object, an array its indices, a string its characters; text that is
+/// not JSON adds nothing, as `JSON.parse` throws and the reference catches it.
+fn insert_parsed(text: &str, mut insert: impl FnMut(String, Value)) {
+    // An object is read into a `JsObject`, which keeps the order of the text; `serde_json::Value`
+    // would sort the keys.
+    if let Ok(object) = serde_json::from_str::<JsObject>(text) {
+        for (key, value) in object {
+            insert(key, value);
+        }
+        return;
+    }
+    match serde_json::from_str::<serde_json::Value>(text) {
+        Ok(serde_json::Value::Array(items)) => {
             for (index, item) in items.into_iter().enumerate() {
-                target.insert(index.to_string(), item);
+                insert(index.to_string(), Value::from(item));
             }
         }
-        Value::String(text) => {
+        Ok(serde_json::Value::String(text)) => {
             for (index, character) in text.chars().enumerate() {
-                target.insert(index.to_string(), Value::String(character.to_string()));
+                insert(index.to_string(), Value::String(character.to_string()));
             }
         }
         _ => {}
@@ -563,5 +573,45 @@ fn is_truthy(value: &Yaml) -> bool {
         Yaml::Number(number) => *number != 0.0 && !number.is_nan(),
         Yaml::String(text) => !text.is_empty(),
         Yaml::Sequence(_) | Yaml::Mapping(_) => true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::sequence::parse;
+
+    /// The link keys of the first actor, in the model's order.
+    fn link_keys(text: &str) -> Vec<String> {
+        let diagram = parse(text).expect("the diagram parses");
+        diagram.actors[0].links.keys().cloned().collect()
+    }
+
+    #[test]
+    fn links_keep_the_key_order_of_a_javascript_object() {
+        // The order of a JavaScript object, as for the link cases of `tools/port/cases.ts`.
+        let keys = link_keys(
+            "sequenceDiagram\nparticipant A\n\
+             links A: {\"Zulu\": \"https://z.test\", \"10\": \"https://10.test\", \"Alpha\": \"https://a.test\", \"Zulu\": \"https://z2.test\"}\n\
+             link A: 2 @ https://2.test\nlinks A: {\"Alpha\": \"https://a2.test\", \"01\": \"https://01.test\"}\nA->>B: x",
+        );
+        assert_eq!(keys, ["2", "10", "Zulu", "Alpha", "01"]);
+    }
+
+    #[test]
+    fn properties_take_the_keys_of_an_array_or_a_string() {
+        let diagram = parse(
+            "sequenceDiagram\nparticipant A\nparticipant B\n\
+             properties A: [\"x\", \"y\"]\nproperties B: \"ab\"\nA->>B: x",
+        )
+        .expect("the diagram parses");
+        let keys = |index: usize| -> Vec<&str> {
+            diagram.actors[index]
+                .properties
+                .keys()
+                .map(String::as_str)
+                .collect()
+        };
+        assert_eq!(keys(0), ["0", "1"]);
+        assert_eq!(keys(1), ["0", "1"]);
     }
 }
