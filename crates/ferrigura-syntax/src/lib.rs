@@ -4,8 +4,8 @@
 //! and returns the diagram model of `ferrigura-model`. See `docs-port/decisions/0002` for why the
 //! parsers are written by hand on one lexer base.
 //!
-//! The crate covers the pie, info and flowchart diagrams for now; the other types follow in later
-//! milestones.
+//! The crate covers the pie, info, flowchart and journey diagrams for now; the other types follow in
+//! later milestones.
 
 #![warn(missing_docs)]
 #![cfg_attr(
@@ -25,12 +25,14 @@ mod text;
 
 pub mod config;
 pub mod info;
+pub mod journey;
 pub mod pie;
 pub mod sanitize;
 pub mod yaml;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::info::InfoDiagram;
+use ferrigura_model::journey::JourneyDiagram;
 use ferrigura_model::pie::PieDiagram;
 
 pub use error::ParseError;
@@ -44,6 +46,8 @@ pub enum DiagramType {
     Info,
     /// The flowchart, written `flowchart` or `graph`.
     Flowchart,
+    /// The user journey, written `journey`.
+    Journey,
 }
 
 impl DiagramType {
@@ -54,6 +58,7 @@ impl DiagramType {
             Self::Pie => "pie",
             Self::Info => "info",
             Self::Flowchart => "flowchart",
+            Self::Journey => "journey",
         }
     }
 }
@@ -67,6 +72,8 @@ pub enum Diagram {
     Info(InfoDiagram),
     /// A flowchart.
     Flowchart(FlowchartDiagram),
+    /// A user journey.
+    Journey(JourneyDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -83,6 +90,8 @@ pub fn detect(text: &str) -> Option<DiagramType> {
         Some(DiagramType::Info)
     } else if rest.starts_with("graph") || rest.starts_with("flowchart") {
         Some(DiagramType::Flowchart)
+    } else if rest.starts_with("journey") {
+        Some(DiagramType::Journey)
     } else {
         None
     }
@@ -96,6 +105,7 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         Some(DiagramType::Flowchart) => flowchart::parse(text)
             .map(Diagram::Flowchart)
             .map_err(|flowchart::FlowchartError::Syntax(error)| error),
+        Some(DiagramType::Journey) => journey::parse(text).map(Diagram::Journey),
         None => Err(ParseError {
             line: 1,
             column: 1,

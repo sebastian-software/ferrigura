@@ -76,6 +76,11 @@ pub fn render_with(
             column: 1,
             message: "the info diagram is not rendered yet".to_owned(),
         })),
+        Some(DiagramType::Journey) => Err(RenderError::Parse(ParseError {
+            line: 1,
+            column: 1,
+            message: "the journey diagram is not rendered yet".to_owned(),
+        })),
         None => Err(RenderError::Parse(ParseError {
             line: 1,
             column: 1,
