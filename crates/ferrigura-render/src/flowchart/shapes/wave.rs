@@ -301,10 +301,7 @@ pub(super) fn tagged_wave_edged_rectangle(input: &ShapeInput<'_>) -> Part {
         -w / 2.0 + node.padding - label.bbox.x,
         -h / 2.0 + node.padding - wave / 2.0 - label.bbox.y,
     );
-    let bbox = outline
-        .bbox
-        .union(tag.bbox)
-        .translate(0.0, -wave / 2.0);
+    let bbox = outline.bbox.union(tag.bbox).translate(0.0, -wave / 2.0);
     Part {
         svg,
         after_label: String::new(),
@@ -363,12 +360,7 @@ pub(super) fn wave_rectangle(input: &ShapeInput<'_>) -> Part {
             true,
         ),
     );
-    Part::with_centred_label(
-        svg,
-        outline.bbox,
-        Intersect::Polygon { points },
-        label,
-    )
+    Part::with_centred_label(svg, outline.bbox, Intersect::Polygon { points }, label)
 }
 
 #[cfg(test)]

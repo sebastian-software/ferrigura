@@ -127,7 +127,12 @@ pub(super) fn lined_cylinder(input: &ShapeInput<'_>) -> Part {
 /// ends (`createCylinderPathD` in that file).
 fn tilted_path_data(width: f64, height: f64, rx: f64, ry: f64) -> String {
     [
-        format!("M0,0 a{},{} 0,0,1 0,{}", number(rx), number(ry), number(-height)),
+        format!(
+            "M0,0 a{},{} 0,0,1 0,{}",
+            number(rx),
+            number(ry),
+            number(-height)
+        ),
         format!("l{},0", number(width)),
         format!("a{},{} 0,0,1 0,{}", number(rx), number(ry), number(height)),
         format!("M{},{}", number(width), number(-height)),

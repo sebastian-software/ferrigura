@@ -312,12 +312,7 @@ pub(super) fn trapezoidal_pentagon(input: &ShapeInput<'_>) -> Part {
             true
         ),
     );
-    Part::with_centred_label(
-        svg,
-        outline.bbox,
-        Intersect::Polygon { points },
-        label,
-    )
+    Part::with_centred_label(svg, outline.bbox, Intersect::Polygon { points }, label)
 }
 
 /// `triangle.ts` (`tri`): an isosceles triangle on a base as wide as its height, with the label
