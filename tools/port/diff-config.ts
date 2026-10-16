@@ -26,7 +26,7 @@ interface ConfigInput {
   source: string;
   text: string;
   site?: Record<string, unknown>;
-  /** The collection the input came from: `pie`, `flowchart`, `gitgraph` or `case`. */
+  /** The collection the input came from: `pie`, `flowchart`, `timeline`, `journey`, `gitgraph`, `er`, `class`, `sequence` or `case`. */
   group: string;
   /** The scope the input must be run in, or `null` for an input that no detector takes. */
   expectedScope: string | null;
@@ -82,6 +82,7 @@ const journeyInputs = await collectInputs('journey');
 const gitGraphInputs = await collectInputs('gitgraph');
 const erInputs = await collectInputs('er');
 const classInputs = await collectInputs('class');
+const sequenceInputs = await collectInputs('sequence');
 const inputs: ConfigInput[] = [
   ...pieInputs.map((input) => ({
     id: 0,
@@ -132,6 +133,13 @@ const inputs: ConfigInput[] = [
     group: 'class',
     expectedScope: 'class',
   })),
+  ...sequenceInputs.map((input) => ({
+    id: 0,
+    source: input.source,
+    text: input.text,
+    group: 'sequence',
+    expectedScope: 'sequence',
+  })),
   ...configCases.map((testCase) => ({
     id: 0,
     source: testCase.source,
@@ -177,14 +185,13 @@ if (missingInRust.length > 0 || extraInRust.length > 0) {
  * The diagram sections whose defaults the port does not own yet. The reference fills them with its
  * own generator (`.build/jsonSchema.ts`), which applies a section's own defaults only, and the
  * TypeScript defaults replace some sections whole; ferrigura takes them from the schema. A section
- * is compared only for an input of its own diagram type: `pie`, `flowchart`, `timeline`, `journey`, `gitGraph`, `er` and `class` are ported,
+ * is compared only for an input of its own diagram type: `pie`, `flowchart`, `timeline`, `journey`, `gitGraph`, `er`, `class` and `sequence` are ported,
  * and `info` has no section. Every other section is left out.
  */
 const UNPORTED_SECTIONS = [
   'flowchart',
   'swimlane',
   'agentflow',
-  'sequence',
   'gantt',
   'class',
   'state',

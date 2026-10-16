@@ -328,6 +328,68 @@ export const explicitCases: Record<string, string[]> = {
     'erDiagram\nsubgraph G [a [b]]\nA\nend',
     ...erCharacterCases(),
   ],
+  sequence: [
+    // Header texts: the last title wins; a blank title is kept; the body title beats the front matter.
+    'sequenceDiagram\ntitle First\ntitle Second\nA->>B: x',
+    'sequenceDiagram\ntitle   \nA->>B: x',
+    '---\ntitle: Front\n---\nsequenceDiagram\ntitle  \nA->>B: x',
+    '---\ntitle: Front\n---\nsequenceDiagram\ntitle Body\nA->>B: x',
+    'sequenceDiagram\ntitle  Two spaces\nA->>B: x',
+    // A line break after `accTitle:` takes the next line as the value; `;` and `#` are kept.
+    'sequenceDiagram\naccTitle:\nOrder\nA->>B: x',
+    'sequenceDiagram\naccTitle: Order; #1\nA->>B: x',
+    'sequenceDiagram\naccDescr {\n   first line\n\n     second line\n}\nA->>B: x',
+    // A repeated declaration with an alias overwrites the actor; an implicit re-reference keeps it.
+    'sequenceDiagram\nparticipant A as Alice\nparticipant A as Bob\nA->>A: self',
+    'sequenceDiagram\nparticipant A as Alice\nB->>A: hi\nA->>B: back',
+    // `create` of an existing id, a message that skips the created actor, a message after `destroy`.
+    'sequenceDiagram\nA->>B: hi\ncreate participant B\nB->>A: back',
+    'sequenceDiagram\ncreate participant B\nA->>C: hi',
+    'sequenceDiagram\nA->>B: hi\ndestroy B\nA->>C: x',
+    'sequenceDiagram\ncreate participant B\nA->>B: hi\ndestroy B\nB->>A: bye',
+    // Boxes: `#` starts a comment, so the box has no name; a colour name is case-insensitive;
+    // CSS-wide keywords are colours; an actor in two boxes is an error.
+    'sequenceDiagram\nbox #Purple Alice\nparticipant A\nend\nA->>A: x',
+    'sequenceDiagram\nbox Purple Alice\nparticipant A\nend\nparticipant B\nA->>B: x',
+    'sequenceDiagram\nbox inherit Team\nparticipant A\nend\nA->>A: x',
+    'sequenceDiagram\nbox rgb(10, 20, 30) Team\nparticipant A\nend\nA->>A: x',
+    'sequenceDiagram\nbox rgb(1 2 3) Team\nparticipant A\nend\nA->>A: x',
+    'sequenceDiagram\nbox hsl(120deg, 100%, 50%) Team\nparticipant A\nend\nA->>A: x',
+    'sequenceDiagram\nbox RGB(1,2,3) Team\nparticipant A\nend\nA->>A: x',
+    'sequenceDiagram\nbox Red X\nparticipant A\nend\nbox Blue Y\nparticipant A\nend',
+    // Actor metadata: JSON links, an `@`-link with a space, one without (its label loses two
+    // characters), properties, and details with no element to read.
+    'sequenceDiagram\nparticipant A\nlinks A: {"Dash": "https://dash.test"}\nA->>B: x',
+    'sequenceDiagram\nparticipant A\nlink A: Dashboard @ https://dash.test\nA->>B: x',
+    'sequenceDiagram\nparticipant A\nlink A: Dash@https://dash.test\nA->>B: x',
+    'sequenceDiagram\nparticipant A\nproperties A: {"role": "api", "rank": 2}\nA->>B: x',
+    'sequenceDiagram\nparticipant A\ndetails A: missing\nA->>B: x',
+    // Autonumber: the bare form, the start and step, and `off`.
+    'sequenceDiagram\nautonumber\nA->>B: one',
+    'sequenceDiagram\nautonumber 10 2\nA->>B: one\nautonumber off\nA->>B: two',
+    // Blocks and notes: `break` drops its end text; a note over two actors; a rect with a colour;
+    // an alt with an else.
+    'sequenceDiagram\nA->>B: one\nbreak when it fails\nA->>B: retry\nend',
+    'sequenceDiagram\nNote over A,B: both',
+    'sequenceDiagram\nrect rgb(191, 223, 255)\nA->>B: x\nend',
+    'sequenceDiagram\nalt yes\nA->>B: one\nelse no\nA->>B: two\nend',
+    // The four central connections, and the activation markers that go with them.
+    'sequenceDiagram\nA->>() B: connect',
+    'sequenceDiagram\nA () ->> B: reply',
+    'sequenceDiagram\nA ()->>() B: both',
+    'sequenceDiagram\nactivate A\nA->>B: x\ndeactivate A',
+    'sequenceDiagram\nA->>B: x\ndeactivate B',
+    // `wrap:` and `nowrap:` after the colon of a message and of a note.
+    'sequenceDiagram\nA->>B: wrap: a long text',
+    'sequenceDiagram\nparticipant A\nNote over A: wrap: text',
+    // Metadata of an actor: an unknown type is kept, `alias` sets the description, a number is kept.
+    'sequenceDiagram\nparticipant A@{ type: "bogus" }\nA->>B: x',
+    'sequenceDiagram\nparticipant A@{ alias: "Alice" }\nA->>B: x',
+    'sequenceDiagram\nparticipant A@{ type: 5 }\nA->>B: x',
+    // An actor name with a dash is one actor; `participant A:B` is a parse error, not a dropped line.
+    'sequenceDiagram\nA-B->>C: x',
+    'sequenceDiagram\nparticipant A:B\nA->>B: x',
+  ],
 };
 
 /**

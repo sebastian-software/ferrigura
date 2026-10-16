@@ -25,6 +25,7 @@ const detectors: Record<string, RegExp> = {
   gitgraph: /^\s*gitGraph/,
   er: /^\s*erDiagram/,
   class: /^\s*classDiagram/,
+  sequence: /^\s*sequenceDiagram/,
 };
 
 /** The e2e folder of a diagram type, where it is not the type itself. */

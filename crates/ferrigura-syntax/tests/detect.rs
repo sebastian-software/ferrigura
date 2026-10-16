@@ -12,7 +12,11 @@ fn detects_pie_info_and_flowchart_at_the_first_content_line() {
         Some(DiagramType::Flowchart)
     );
     assert_eq!(detect("graph TD\n  a-->b"), Some(DiagramType::Flowchart));
-    assert_eq!(detect("sequenceDiagram\n  A->>B: hi"), None);
+    assert_eq!(
+        detect("sequenceDiagram\n  A->>B: hi"),
+        Some(DiagramType::Sequence)
+    );
+    assert_eq!(detect("mindmap\n  root"), None);
 }
 
 #[test]
@@ -40,6 +44,10 @@ fn parse_dispatches_on_the_detected_type() {
         parse("flowchart LR\n  a-->b"),
         Ok(Diagram::Flowchart(_))
     ));
-    let error = parse("sequenceDiagram").expect_err("no diagram type matches");
+    assert!(matches!(
+        parse("sequenceDiagram\n  A->>B: hi"),
+        Ok(Diagram::Sequence(_))
+    ));
+    let error = parse("mindmap").expect_err("no diagram type matches");
     assert_eq!((error.line, error.column), (1, 1));
 }
