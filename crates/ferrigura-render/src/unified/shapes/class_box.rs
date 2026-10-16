@@ -154,6 +154,27 @@ fn add_text(
     })
 }
 
+/// The fill the tspans of the box take from a `color` declaration of its styles
+/// (`classBox.ts` 264-276): `color: x` becomes `fill: x`, as the regex match is rewritten. The
+/// regex is `color\s*:\s*([^;]*)`, the first match in the joined styles.
+fn tspan_style(styles: &str) -> Option<String> {
+    let mut from = 0;
+    while let Some(found) = styles[from..].find("color") {
+        let start = from + found;
+        let rest = &styles[start + "color".len()..];
+        let after_space = rest.trim_start();
+        if let Some(after_colon) = after_space.strip_prefix(':') {
+            let value_start = after_colon.len() - after_colon.trim_start().len();
+            let value = &after_colon[value_start..];
+            let value_end = value.find(';').unwrap_or(value.len());
+            let consumed = rest.len() - after_colon.len() + value_start + value_end;
+            return Some(format!("fill{}", &rest[..consumed]));
+        }
+        from = start + "color".len();
+    }
+    None
+}
+
 /// The divider between two groups: `rc.line` at roughness 0, a stroke path only.
 fn divider(x1: f64, y1: f64, x2: f64, y2: f64, styles: &str, stroke_width: &str) -> String {
     rough::line(
@@ -377,10 +398,16 @@ pub(super) fn class_box(input: &ShapeInput<'_>) -> Result<ClassBox, RenderError>
             &stroke_width,
         ),
     );
-    let annotation_svg = annotation.svg(annotation_at.0, annotation_at.1);
-    let label_svg = name.svg(label_at.0, label_at.1);
-    let members_svg = members.svg(members_at.0, members_at.1);
-    let methods_svg = methods.svg(methods_at.0, methods_at.1);
+    // `shapeSvg.selectAll('tspan').attr('style', colorStyle)`: every tspan of the box takes the fill.
+    let tspans = tspan_style(&styles);
+    let paint = |svg: String| match &tspans {
+        Some(fill) => svg.replace("<tspan ", &format!("<tspan style=\"{}\" ", escape(fill))),
+        None => svg,
+    };
+    let annotation_svg = paint(annotation.svg(annotation_at.0, annotation_at.1));
+    let label_svg = paint(name.svg(label_at.0, label_at.1));
+    let members_svg = paint(members.svg(members_at.0, members_at.1));
+    let methods_svg = paint(methods.svg(methods_at.0, methods_at.1));
 
     // The drawing's box: every part, moved to its place (the viewBox covers it).
     let mut parts = vec![rect_box];
@@ -441,4 +468,27 @@ fn member_group(
         rows.push(row);
     }
     Ok(Group { class, rows })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::tspan_style;
+
+    #[test]
+    fn a_colour_declaration_becomes_the_fill_of_the_tspans() {
+        assert_eq!(
+            tspan_style("color: red;fill:blue").as_deref(),
+            Some("fill: red")
+        );
+        assert_eq!(tspan_style("color : red; x").as_deref(), Some("fill : red"));
+        assert_eq!(tspan_style("fill:blue"), None);
+    }
+
+    #[test]
+    fn a_colour_without_a_value_stops_at_the_end_of_the_styles() {
+        assert_eq!(
+            tspan_style("background-color:#fff").as_deref(),
+            Some("fill:#fff")
+        );
+    }
 }
