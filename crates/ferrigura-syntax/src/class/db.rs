@@ -671,6 +671,14 @@ fn break_len(text: &str) -> Option<usize> {
     (bytes.get(index) == Some(&b'>')).then_some(index + 1)
 }
 
+/// `new ClassMember(input, type)` of the reference: the text is sanitised, then parsed as the
+/// given member type. `None` where the reference throws.
+pub(crate) fn member_model(options: Options, input: &str, is_method: bool) -> Option<ClassMember> {
+    let db = ClassDb::new(options);
+    let parsed = parse_member(&db.sanitize(input), is_method)?;
+    Some(model_member(parsed))
+}
+
 /// The model's member for a parsed member.
 fn model_member(member: Member) -> ClassMember {
     ClassMember {

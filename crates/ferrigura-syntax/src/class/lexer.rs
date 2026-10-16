@@ -385,15 +385,14 @@ fn rule(state: State, rest: &str) -> Option<Hit<'_>> {
     if matches!(
         state,
         State::Initial | State::Namespace | State::NamespaceBody
-    ) {
-        if let Some(len) = word_len(rest, "namespace") {
-            return token(
-                len,
-                Kind::Namespace,
-                &rest[..len],
-                Action::Push(State::Namespace),
-            );
-        }
+    ) && let Some(len) = word_len(rest, "namespace")
+    {
+        return token(
+            len,
+            Kind::Namespace,
+            &rest[..len],
+            Action::Push(State::Namespace),
+        );
     }
     match state {
         State::Namespace => {
@@ -470,10 +469,10 @@ fn rule(state: State, rest: &str) -> Option<Hit<'_>> {
         }
         _ => {}
     }
-    if matches!(state, State::Initial | State::NamespaceBody) {
-        if let Some(len) = word_len(rest, "class") {
-            return token(len, Kind::Class, &rest[..len], Action::Push(State::Class));
-        }
+    if matches!(state, State::Initial | State::NamespaceBody)
+        && let Some(len) = word_len(rest, "class")
+    {
+        return token(len, Kind::Class, &rest[..len], Action::Push(State::Class));
     }
     general(initial, rest)
 }

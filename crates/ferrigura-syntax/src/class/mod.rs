@@ -11,7 +11,7 @@ mod grammar;
 mod lexer;
 mod member;
 
-use ferrigura_model::class::ClassDiagram;
+use ferrigura_model::class::{ClassDiagram, ClassMember};
 
 use crate::error::ParseError;
 use crate::flowchart::{clean_comments, remove_directives};
@@ -68,6 +68,13 @@ pub fn parse_with(raw: &str, options: Options) -> Result<ClassDiagram, ParseErro
         db.set_diagram_title(title);
     }
     grammar::parse(&cleaned, prepared.line_offset, db)
+}
+
+/// `new ClassMember(input, type)` of the reference, with the default options: the text is
+/// sanitised, then parsed as an attribute or a method. `None` where the reference throws (a
+/// method whose text has a `)` but no `(` before it).
+pub fn class_member(input: &str, is_method: bool) -> Option<ClassMember> {
+    db::member_model(Options::default(), input, is_method)
 }
 
 /// Parses the grammar and the DB alone, with the default options: the text is not preprocessed

@@ -253,7 +253,7 @@ fn process_set(input: &str) -> String {
     }
     let mut text = input;
     let mut has_starting_tilde = false;
-    if tildes % 2 != 0 && text.starts_with('~') {
+    if !tildes.is_multiple_of(2) && text.starts_with('~') {
         text = &text[1..];
         has_starting_tilde = true;
     }
