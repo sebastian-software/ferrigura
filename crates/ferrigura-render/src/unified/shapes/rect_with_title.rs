@@ -18,12 +18,16 @@ use ferrigura_model::flowchart::LabelType;
 use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, text_box};
 
 /// `rectWithTitle.ts`: the outer box, the divider under the title, and the label group with the
-/// title and the rows. The box is the node's size; the label is inside it.
+/// title and the rows. The box is the node's size; the label is inside it. The title and the rows
+/// are returned as well, as the texts of the shape: the font subsets of the diagram cover them, so
+/// their glyphs are embedded (`ShapeOutput::texts`).
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read.
-pub(super) fn rect_with_title(input: &ShapeInput<'_>) -> Result<Part, RenderError> {
+pub(super) fn rect_with_title(
+    input: &ShapeInput<'_>,
+) -> Result<(Part, Vec<LabelLayout>), RenderError> {
     let node = input.node;
     let styles = styles2string(node);
     let text_style = util::node_text_style(&styles.label);
@@ -128,12 +132,50 @@ pub(super) fn rect_with_title(input: &ShapeInput<'_>) -> Result<Part, RenderErro
         ),
     );
 
-    Ok(Part {
+    let part = Part {
         svg: format!("{frame}{label_group}"),
         after_label: String::new(),
         bbox: outer,
         intersect: Intersect::Rect,
         label_offset: None,
         label: None,
-    })
+    };
+    Ok((part, vec![title, rows_layout]))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::test_support::{node, theme};
+    use super::super::{ShapeInput, draw};
+    use ferrigura_model::config::MermaidConfig;
+
+    #[test]
+    fn the_title_and_the_rows_are_texts_of_the_shape() {
+        // The font subsets of a diagram cover the texts of its shapes (`ShapeOutput::texts`). The
+        // title and the rows are drawn here, so their glyphs must be in the subset: without them
+        // Chromium sets N, w and l of "New line" in a fallback face, 0.8 px wider
+        // (state-diagram/pr-check).
+        let mut node = node("rectWithTitle", "classic");
+        node.label = "Another Long state description".to_owned();
+        node.description = Some(vec!["New line".to_owned()]);
+        let config = MermaidConfig::default();
+        let theme = theme();
+        let shape = draw(&ShapeInput {
+            node: &node,
+            label: None,
+            config: &config,
+            theme: &theme,
+            dir: Some("TB"),
+        })
+        .expect("the shape is known");
+        let text: String = shape
+            .texts
+            .iter()
+            .flat_map(|text| text.text_runs())
+            .map(|run| run.text)
+            .collect();
+        assert!(text.contains("Another"), "{text:?}");
+        assert!(text.contains("New"), "{text:?}");
+        assert!(text.contains(" line"), "{text:?}");
+    }
 }

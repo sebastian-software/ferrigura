@@ -86,7 +86,8 @@ pub struct ShapeOutput {
     /// shape applies one.
     pub label: Option<LabelLayout>,
     /// Further labels the shape draws in its own elements (the cells of an ER entity, the rows of a
-    /// class box), which the font subsets of the diagram cover as they cover `label`.
+    /// class box, the title and the rows of a `rectWithTitle`), which the font subsets of the
+    /// diagram cover as they cover `label`.
     pub texts: Vec<LabelLayout>,
     /// Attributes the shape writes on the node's `<g>`, after its `data-look`, each with its
     /// leading space (the colour slot of an ER entity). Empty for the other shapes.
@@ -360,7 +361,12 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::StateEnd => state::state_end(input),
         Kind::Anchor => state::anchor(input),
         Kind::CollapsedGroup => collapsed_group::collapsed_group(input),
-        Kind::RectWithTitle => rect_with_title::rect_with_title(input)?,
+        Kind::RectWithTitle => {
+            // The title and the rows are labels of the shape, so the font subsets cover them.
+            let (part, title_and_rows) = rect_with_title::rect_with_title(input)?;
+            texts = title_and_rows;
+            part
+        }
         Kind::Bang => arcs::bang(input),
         Kind::Cloud => arcs::cloud(input),
         Kind::BowTieRect => arcs::bow_tie_rect(input),
