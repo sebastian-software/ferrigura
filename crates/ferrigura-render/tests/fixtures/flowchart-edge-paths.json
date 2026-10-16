@@ -1,0 +1,2374 @@
+{
+  "generator": "tools/port/export-flowchart-edges.ts",
+  "reference": "packages/mermaid/src/rendering-util/rendering-elements/edges.js insertEdge (jsdom), lineJump.ts processEdgesWithJumps",
+  "paths": [
+    {
+      "id": "p01",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 60,
+          "y": 0
+        }
+      ],
+      "d": "M0,0L56,0"
+    },
+    {
+      "id": "p02",
+      "curve": "linear",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 10,
+          "y": 80
+        },
+        {
+          "x": 10,
+          "y": 20
+        }
+      ],
+      "d": "M10,80L10,24"
+    },
+    {
+      "id": "p03",
+      "curve": "basis",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_cross",
+      "points": [
+        {
+          "x": 100,
+          "y": 10
+        },
+        {
+          "x": 20,
+          "y": 10
+        }
+      ],
+      "d": "M100,10L20,10"
+    },
+    {
+      "id": "p04",
+      "curve": "cardinal",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_circle",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 40
+        }
+      ],
+      "d": "M0,0L30,40"
+    },
+    {
+      "id": "p05",
+      "curve": "natural",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0.3333333
+        },
+        {
+          "x": 0,
+          "y": 100.123456
+        }
+      ],
+      "d": "M0,0.333L0,96.123"
+    },
+    {
+      "id": "p06",
+      "curve": "linear",
+      "arrowTypeStart": "arrow_cross",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 120,
+          "y": 80
+        },
+        {
+          "x": 20,
+          "y": 10
+        }
+      ],
+      "d": "M120,80L23.277,12.294"
+    },
+    {
+      "id": "p07",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 40
+        },
+        {
+          "x": 60,
+          "y": 40
+        }
+      ],
+      "d": "M0,0L0,32.928932188134524Q0,40 7.0710678118654755,40L56,40"
+    },
+    {
+      "id": "p08",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 60,
+          "y": 40
+        },
+        {
+          "x": 0,
+          "y": 40
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "d": "M60,40L7.0710678118654755,40Q0,40 -4.810866979086074e-17,32.928932188134524L-2.4492935982947064e-16,4"
+    },
+    {
+      "id": "p09",
+      "curve": "linear",
+      "arrowTypeStart": "arrow_point",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 40
+        },
+        {
+          "x": 60,
+          "y": 40
+        }
+      ],
+      "d": "M0,4L0,35L2.172,37.828L5,40L56,40"
+    },
+    {
+      "id": "p10",
+      "curve": "step",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_cross",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 60
+        }
+      ],
+      "d": "M0,0L17.5,0L17.5,0L36.414,0L36.414,2.172L38.914,2.172L38.914,5L40,5L40,60L40,60"
+    },
+    {
+      "id": "p11",
+      "curve": "monotoneX",
+      "arrowTypeStart": "arrow_circle",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 30
+        },
+        {
+          "x": 30,
+          "y": 30
+        },
+        {
+          "x": 30,
+          "y": 0
+        }
+      ],
+      "d": "M0,30C8.333,30,16.667,30,25,30C25.943,30,26.886,28.837,27.828,27.828C28.552,27.054,29.276,26.886,30,25C30,25,30,4,30,4"
+    },
+    {
+      "id": "p12",
+      "curve": "bumpX",
+      "arrowTypeStart": "arrow_cross",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 50
+        },
+        {
+          "x": 50,
+          "y": 50
+        }
+      ],
+      "d": "M0,0C0,0,0,45,0,45C1.086,45,1.086,47.828,2.172,47.828C3.586,47.828,3.586,50,5,50C25.5,50,25.5,50,46,50"
+    },
+    {
+      "id": "p13",
+      "curve": "catmullRom",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "none",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 40
+        }
+      ],
+      "d": "M0,0C0,0,29.938,-1.719,35,0C36.616,0.549,36.995,1.338,37.828,2.172C38.662,3.005,39.451,3.384,40,5C41.719,10.062,40,40,40,40"
+    },
+    {
+      "id": "p14",
+      "curve": "stepBefore",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 30
+        }
+      ],
+      "d": "M0,0L0,0L25,0L25,2.172L27.828,2.172L27.828,5L30,5L30,26L30,26"
+    },
+    {
+      "id": "p15",
+      "curve": "stepAfter",
+      "arrowTypeStart": "arrow_point",
+      "arrowTypeEnd": "none",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 30
+        },
+        {
+          "x": 30,
+          "y": 30
+        }
+      ],
+      "d": "M0,4L0,4L0,25L2.172,25L2.172,27.828L5,27.828L5,30L30,30L30,30"
+    },
+    {
+      "id": "p16",
+      "curve": "linear",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 200,
+          "y": 0
+        }
+      ],
+      "d": "M0,0L196,0"
+    },
+    {
+      "id": "p17",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "none",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 50
+        }
+      ],
+      "d": "M0,0L0,50"
+    },
+    {
+      "id": "p18",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 40
+        },
+        {
+          "x": 80,
+          "y": 40
+        }
+      ],
+      "d": "M0,0L32.928932188134524,0Q40,0 40,7.0710678118654755L40,32.928932188134524Q40,40 47.071067811865476,40L76,40"
+    },
+    {
+      "id": "p19",
+      "curve": "rounded",
+      "arrowTypeStart": "arrow_point",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 60
+        },
+        {
+          "x": 0,
+          "y": 20
+        },
+        {
+          "x": 50,
+          "y": 20
+        },
+        {
+          "x": 50,
+          "y": 80
+        }
+      ],
+      "d": "M2.4492935982947064e-16,56L4.810866979086074e-17,27.071067811865476Q0,20 7.0710678118654755,20L42.928932188134524,20Q50,20 50,27.071067811865476L50,76"
+    },
+    {
+      "id": "p20",
+      "curve": "linear",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 90,
+          "y": 0
+        },
+        {
+          "x": 90,
+          "y": 30
+        },
+        {
+          "x": 20,
+          "y": 30
+        },
+        {
+          "x": 20,
+          "y": 60
+        }
+      ],
+      "d": "M90,0L90,25L87.828,27.828L85,30L25,30L22.172,32.172L20,35L20,56"
+    },
+    {
+      "id": "p21",
+      "curve": "cardinal",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 50,
+          "y": 0
+        },
+        {
+          "x": 50,
+          "y": 50
+        },
+        {
+          "x": 100,
+          "y": 50
+        }
+      ],
+      "d": "M0,0C0,0,37.029,-0.362,45,0C52.971,0.362,46.995,1.338,47.828,2.172C48.662,3.005,49.638,-2.138,50,5C50.362,12.138,49.638,37.862,50,45C50.362,52.138,51.338,46.995,52.172,47.828C53.005,48.662,47.695,49.638,55,50C62.305,50.362,96,50,96,50"
+    },
+    {
+      "id": "p22",
+      "curve": "bumpX",
+      "arrowTypeStart": "arrow_point",
+      "arrowTypeEnd": "none",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 30
+        },
+        {
+          "x": 60,
+          "y": 30
+        }
+      ],
+      "d": "M4,0C14.5,0,14.5,0,25,0C26.414,0,26.414,2.172,27.828,2.172C28.914,2.172,28.914,5,30,5C30,5,30,25,30,25C31.086,25,31.086,27.828,32.172,27.828C33.586,27.828,33.586,30,35,30C47.5,30,47.5,30,60,30"
+    },
+    {
+      "id": "p23",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 20,
+          "y": 0
+        },
+        {
+          "x": 20,
+          "y": 30
+        },
+        {
+          "x": 60,
+          "y": 30
+        },
+        {
+          "x": 60,
+          "y": 60
+        }
+      ],
+      "d": "M0,0L12.928932188134524,0Q20,0 20,7.0710678118654755L20,22.928932188134524Q20,30 27.071067811865476,30L52.928932188134524,30Q60,30 60,37.071067811865476L60,56"
+    },
+    {
+      "id": "p24",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 20
+        },
+        {
+          "x": 30,
+          "y": 20
+        },
+        {
+          "x": 30,
+          "y": 40
+        },
+        {
+          "x": 60,
+          "y": 40
+        },
+        {
+          "x": 60,
+          "y": 80
+        }
+      ],
+      "d": "M0,0L0,12.928932188134524Q0,20 7.0710678118654755,20L22.928932188134524,20Q30,20 30,27.071067811865476L30,32.928932188134524Q30,40 37.071067811865476,40L52.928932188134524,40Q60,40 60,47.071067811865476L60,76"
+    },
+    {
+      "id": "p25",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 10,
+          "y": 20
+        },
+        {
+          "x": 30,
+          "y": 20
+        },
+        {
+          "x": 30,
+          "y": 0
+        },
+        {
+          "x": 50,
+          "y": 0
+        },
+        {
+          "x": 50,
+          "y": 40
+        }
+      ],
+      "d": "M0,0L5,0Q10,0 10,5L10,12.928932188134524Q10,20 17.071067811865476,20L22.928932188134524,20Q30,20 30,12.928932188134524L30,7.0710678118654755Q30,0 37.071067811865476,0L42.928932188134524,0Q50,0 50,7.0710678118654755L50,36"
+    },
+    {
+      "id": "p26",
+      "curve": "basis",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 60,
+          "y": 60
+        },
+        {
+          "x": 60,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "d": "M60,60L60,50.833C60,41.667,60,23.333,59.638,13.695C59.276,4.057,58.552,3.114,57.719,2.281C56.886,1.448,55.943,0.724,46.971,0.362C38,0,21,0,12.5,0L4,0"
+    },
+    {
+      "id": "p27",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 20,
+          "y": 0
+        },
+        {
+          "x": 50,
+          "y": 0
+        },
+        {
+          "x": 50,
+          "y": 40
+        }
+      ],
+      "d": "M0,0L20,0L42.928932188134524,0Q50,0 50,7.0710678118654755L50,36"
+    },
+    {
+      "id": "p28",
+      "curve": "linear",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 0
+        }
+      ],
+      "d": "M0,0L0,0L36,0"
+    },
+    {
+      "id": "p29",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 40
+        }
+      ],
+      "d": "M0,0L40,0L40,0L40,36"
+    },
+    {
+      "id": "p30",
+      "curve": "linear",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.1,
+          "y": 0
+        }
+      ],
+      "d": "M-4.9,0L-3.9,0"
+    },
+    {
+      "id": "p31",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "d": "M0,0L-2.4492935982947064e-16,-3"
+    },
+    {
+      "id": "p32",
+      "curve": "linear",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "d": "M0,0L0,0"
+    },
+    {
+      "id": "p33",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_cross",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "d": "M0,0L5,0"
+    },
+    {
+      "id": "p34",
+      "curve": "basis",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_circle",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        }
+      ],
+      "d": "M0,0L6,0"
+    },
+    {
+      "id": "p35",
+      "curve": "step",
+      "arrowTypeStart": "arrow_point",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 8
+        }
+      ],
+      "d": "M0,4L0,4L0,4L0,4"
+    },
+    {
+      "id": "p36",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.1,
+          "y": 0
+        },
+        {
+          "x": 0.1,
+          "y": 1
+        }
+      ],
+      "d": "M0,0L0.05,0Q0.1,0 0.1,-0.05L0.09999999999999976,-3"
+    },
+    {
+      "id": "p37",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 4
+        }
+      ],
+      "d": "M0,0L4,0L3.9999999999999996,0"
+    },
+    {
+      "id": "p38",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 6
+        }
+      ],
+      "d": "M0,0L4,0Q5,0 5,1L5,2"
+    },
+    {
+      "id": "p39",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 1
+        }
+      ],
+      "d": "M0,0L6.5,0Q8,0 8,-1.5L8,-3"
+    },
+    {
+      "id": "p40",
+      "curve": "linear",
+      "arrowTypeStart": "arrow_cross",
+      "arrowTypeEnd": "arrow_cross",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 30
+        }
+      ],
+      "d": "M0,0L4,0L4,30"
+    },
+    {
+      "id": "p41",
+      "curve": "linear",
+      "arrowTypeStart": "arrow_circle",
+      "arrowTypeEnd": "arrow_circle",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "d": "M0,0L5,0"
+    },
+    {
+      "id": "p42",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_cross",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 8
+        },
+        {
+          "x": 4,
+          "y": 8
+        }
+      ],
+      "d": "M0,0L0,6Q0,8 2,8L4,8"
+    },
+    {
+      "id": "p43",
+      "curve": "rounded",
+      "arrowTypeStart": "arrow_point",
+      "arrowTypeEnd": "none",
+      "points": [
+        {
+          "x": 40,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 40
+        },
+        {
+          "x": 0,
+          "y": 40
+        }
+      ],
+      "d": "M40,4L40,32.928932188134524Q40,40 32.928932188134524,40L0,40"
+    },
+    {
+      "id": "p44",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 40,
+          "y": 10
+        },
+        {
+          "x": 40,
+          "y": 50
+        }
+      ],
+      "d": "M0,0L32.117945619838906,8.029486404959727Q40,10 40,18.12463568906663L40,46"
+    },
+    {
+      "id": "p45",
+      "curve": "linear",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 30
+        },
+        {
+          "x": 60,
+          "y": 0
+        }
+      ],
+      "d": "M0,0L30,30L57.172,2.828"
+    },
+    {
+      "id": "p46",
+      "curve": "rounded",
+      "arrowTypeStart": "arrow_cross",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 20,
+          "y": -20
+        },
+        {
+          "x": 40,
+          "y": 0
+        }
+      ],
+      "d": "M0,0L15,-15Q20,-20 25,-15L37.17157287525381,-2.82842712474619"
+    },
+    {
+      "id": "p47",
+      "curve": "rounded",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 10.12345,
+          "y": 20.5
+        },
+        {
+          "x": 10.12345,
+          "y": 60.75
+        },
+        {
+          "x": 70.5,
+          "y": 60.75
+        }
+      ],
+      "d": "M10.12345,20.5L10.12345,53.678932188134524Q10.12345,60.75 17.194517811865474,60.75L66.5,60.75"
+    },
+    {
+      "id": "p48",
+      "curve": "linear",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": -0.0004,
+          "y": 0
+        },
+        {
+          "x": -0.0004,
+          "y": 30
+        },
+        {
+          "x": 40,
+          "y": 30
+        }
+      ],
+      "d": "M0,0L0,25L2.171,27.828L5,30L36,30"
+    },
+    {
+      "id": "p49",
+      "curve": "catmullRom",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_circle",
+      "points": [
+        {
+          "x": 19.5,
+          "y": 4.5
+        },
+        {
+          "x": 19.5,
+          "y": 9.5
+        },
+        {
+          "x": 29.5,
+          "y": 9.5
+        }
+      ],
+      "d": "M19.5,4.5C19.5,4.5,18.524,8.524,19.5,9.5C20.881,10.881,29.5,9.5,29.5,9.5"
+    },
+    {
+      "id": "p50",
+      "curve": "rounded",
+      "arrowTypeStart": "arrow_point",
+      "arrowTypeEnd": "arrow_circle",
+      "points": [
+        {
+          "x": 40,
+          "y": 3
+        },
+        {
+          "x": 32,
+          "y": 3
+        },
+        {
+          "x": 32,
+          "y": -2
+        },
+        {
+          "x": 32,
+          "y": 0
+        }
+      ],
+      "d": "M36,3.0000000000000004L34,3Q32,3 32,1L32,-2L32,0"
+    },
+    {
+      "id": "p51",
+      "curve": "natural",
+      "arrowTypeStart": "arrow_cross",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 15,
+          "y": 17
+        },
+        {
+          "x": 15,
+          "y": -3
+        }
+      ],
+      "d": "M15,17L15,1"
+    },
+    {
+      "id": "p52",
+      "curve": "step",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 5,
+          "y": 18
+        },
+        {
+          "x": 10,
+          "y": 18
+        },
+        {
+          "x": 6,
+          "y": 18
+        }
+      ],
+      "d": "M1,18L5.5,18L5.5,18L10,18L10,18L10,18"
+    },
+    {
+      "id": "p53",
+      "curve": "stepBefore",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 26,
+          "y": 27
+        },
+        {
+          "x": 28,
+          "y": 27
+        }
+      ],
+      "d": "M23,27L23,27L24,27"
+    },
+    {
+      "id": "p54",
+      "curve": "step",
+      "arrowTypeStart": "arrow_cross",
+      "arrowTypeEnd": "arrow_point",
+      "points": [
+        {
+          "x": 34,
+          "y": 2
+        },
+        {
+          "x": 26,
+          "y": 2
+        },
+        {
+          "x": 26,
+          "y": 7
+        },
+        {
+          "x": 26,
+          "y": 37
+        },
+        {
+          "x": 26,
+          "y": 47
+        },
+        {
+          "x": 28,
+          "y": 47
+        },
+        {
+          "x": 23,
+          "y": 47
+        }
+      ],
+      "d": "M34,2L30,2L30,2L26,2L26,7L26,7L26,37L27,37L27,47L28,47L28,47L27.5,47L27.5,47L27,47"
+    }
+  ],
+  "lineHops": [
+    {
+      "id": "h01",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 100,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 40,
+              "y": 0
+            },
+            {
+              "x": 40,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L34,50 A6,6 0 0 1 46,50 L96,50"
+      }
+    },
+    {
+      "id": "h01",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 100,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 40,
+              "y": 0
+            },
+            {
+              "x": 40,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L34,50 M46,50 L96,50"
+      }
+    },
+    {
+      "id": "h02",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 120,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 30,
+              "y": 0
+            },
+            {
+              "x": 30,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "c",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 90,
+              "y": 0
+            },
+            {
+              "x": 90,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L24,50 A6,6 0 0 1 36,50 L84,50 A6,6 0 0 1 96,50 L116,50"
+      }
+    },
+    {
+      "id": "h02",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 120,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 30,
+              "y": 0
+            },
+            {
+              "x": 30,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "c",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 90,
+              "y": 0
+            },
+            {
+              "x": 90,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L24,50 M36,50 L84,50 M96,50 L116,50"
+      }
+    },
+    {
+      "id": "h03",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 46,
+              "y": 0
+            },
+            {
+              "x": 46,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,40 L50,40 L50,96"
+      }
+    },
+    {
+      "id": "h03",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 46,
+              "y": 0
+            },
+            {
+              "x": 46,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,40 L50,40 L50,96"
+      }
+    },
+    {
+      "id": "h04",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 38,
+              "y": 0
+            },
+            {
+              "x": 38,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,40 L32,40 A6,6 0 0 1 44,40 L50,40 L50,96"
+      }
+    },
+    {
+      "id": "h04",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 38,
+              "y": 0
+            },
+            {
+              "x": 38,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,40 L32,40 M44,40 L50,40 L50,96"
+      }
+    },
+    {
+      "id": "h05",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "rounded",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 48,
+              "y": 0
+            },
+            {
+              "x": 48,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {}
+    },
+    {
+      "id": "h05",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "rounded",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 40
+            },
+            {
+              "x": 50,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 48,
+              "y": 0
+            },
+            {
+              "x": 48,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {}
+    },
+    {
+      "id": "h06",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 100,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "arrow_point",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 0,
+              "y": 100
+            },
+            {
+              "x": 100,
+              "y": 0
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "b": "M2.828,97.172 L45.757,54.243 A6,6 0 0 1 54.243,45.757 L100,0"
+      }
+    },
+    {
+      "id": "h06",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 100,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "arrow_point",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 0,
+              "y": 100
+            },
+            {
+              "x": 100,
+              "y": 0
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "b": "M2.828,97.172 L45.757,54.243 M54.243,45.757 L100,0"
+      }
+    },
+    {
+      "id": "h07",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 100,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 20,
+              "y": 0
+            },
+            {
+              "x": 80,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L44,50 A6,6 0 0 1 56,50 L96,50"
+      }
+    },
+    {
+      "id": "h07",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 100,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 20,
+              "y": 0
+            },
+            {
+              "x": 80,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L44,50 M56,50 L96,50"
+      }
+    },
+    {
+      "id": "h08",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "rounded",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 20
+            },
+            {
+              "x": 100,
+              "y": 20
+            },
+            {
+              "x": 100,
+              "y": 120
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 50,
+              "y": 0
+            },
+            {
+              "x": 50,
+              "y": 60
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,20 L44,20 A6,6 0 0 1 56,20 L92.929,20 Q100,20 100,27.071 L100,116"
+      }
+    },
+    {
+      "id": "h08",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "rounded",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 20
+            },
+            {
+              "x": 100,
+              "y": 20
+            },
+            {
+              "x": 100,
+              "y": 120
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 50,
+              "y": 0
+            },
+            {
+              "x": 50,
+              "y": 60
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,20 L44,20 M56,20 L92.929,20 Q100,20 100,27.071 L100,116"
+      }
+    },
+    {
+      "id": "h09",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "rounded",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 20
+            },
+            {
+              "x": 100,
+              "y": 20
+            },
+            {
+              "x": 100,
+              "y": 120
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "rounded",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 60,
+              "y": 0
+            },
+            {
+              "x": 60,
+              "y": 80
+            },
+            {
+              "x": 120,
+              "y": 80
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,20 L54,20 A6,6 0 0 1 66,20 L92.929,20 Q100,20 100,27.071 L100,116",
+        "b": "M60,0 L60,72.929 Q60,80 67.071,80 L94,80 A6,6 0 0 1 106,80 L116,80"
+      }
+    },
+    {
+      "id": "h09",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "rounded",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 20
+            },
+            {
+              "x": 100,
+              "y": 20
+            },
+            {
+              "x": 100,
+              "y": 120
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "rounded",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 60,
+              "y": 0
+            },
+            {
+              "x": 60,
+              "y": 80
+            },
+            {
+              "x": 120,
+              "y": 80
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,20 L54,20 M66,20 L92.929,20 Q100,20 100,27.071 L100,116",
+        "b": "M60,0 L60,72.929 Q60,80 67.071,80 L94,80 M106,80 L116,80"
+      }
+    },
+    {
+      "id": "h10",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 200,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 30,
+              "y": 0
+            },
+            {
+              "x": 30,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "c",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 40,
+              "y": 0
+            },
+            {
+              "x": 40,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "d",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 150,
+              "y": 100
+            },
+            {
+              "x": 150,
+              "y": 0
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L25.1,50 A4.9,4.9 0 0 1 34.9,50 L35.1,50 A4.9,4.9 0 0 1 44.9,50 L144,50 A6,6 0 0 1 156,50 L196,50"
+      }
+    },
+    {
+      "id": "h10",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 200,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 30,
+              "y": 0
+            },
+            {
+              "x": 30,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "c",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 40,
+              "y": 0
+            },
+            {
+              "x": 40,
+              "y": 100
+            }
+          ]
+        },
+        {
+          "id": "d",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 150,
+              "y": 100
+            },
+            {
+              "x": 150,
+              "y": 0
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L25.1,50 M34.9,50 L35.1,50 M44.9,50 L144,50 M156,50 L196,50"
+      }
+    },
+    {
+      "id": "h11",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "rounded",
+          "arrowTypeStart": "arrow_cross",
+          "arrowTypeEnd": "arrow_circle",
+          "points": [
+            {
+              "x": 0,
+              "y": 30
+            },
+            {
+              "x": 90,
+              "y": 30
+            },
+            {
+              "x": 90,
+              "y": 90
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 45,
+              "y": 0
+            },
+            {
+              "x": 45,
+              "y": 60
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,30 L39,30 A6,6 0 0 1 51,30 L82.929,30 Q90,30 90,37.071 L90,90"
+      }
+    },
+    {
+      "id": "h11",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "rounded",
+          "arrowTypeStart": "arrow_cross",
+          "arrowTypeEnd": "arrow_circle",
+          "points": [
+            {
+              "x": 0,
+              "y": 30
+            },
+            {
+              "x": 90,
+              "y": 30
+            },
+            {
+              "x": 90,
+              "y": 90
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 45,
+              "y": 0
+            },
+            {
+              "x": 45,
+              "y": 60
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,30 L39,30 M51,30 L82.929,30 Q90,30 90,37.071 L90,90"
+      }
+    },
+    {
+      "id": "h12",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "arrow_cross",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 60,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 12,
+              "y": 0
+            },
+            {
+              "x": 12,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L6,50 A6,6 0 0 1 18,50 L56,50"
+      }
+    },
+    {
+      "id": "h12",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "linear",
+          "arrowTypeStart": "arrow_cross",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 50
+            },
+            {
+              "x": 60,
+              "y": 50
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 12,
+              "y": 0
+            },
+            {
+              "x": 12,
+              "y": 100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,50 L6,50 M18,50 L56,50"
+      }
+    },
+    {
+      "id": "h13",
+      "jumpStyle": "arc",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "basis",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 40
+            },
+            {
+              "x": 100,
+              "y": 40
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 50,
+              "y": 0
+            },
+            {
+              "x": 50,
+              "y": 80
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,40 L44,40 A6,6 0 0 1 56,40 L96,40"
+      }
+    },
+    {
+      "id": "h13",
+      "jumpStyle": "gap",
+      "edges": [
+        {
+          "id": "a",
+          "curve": "basis",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "arrow_point",
+          "points": [
+            {
+              "x": 0,
+              "y": 40
+            },
+            {
+              "x": 100,
+              "y": 40
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "curve": "linear",
+          "arrowTypeStart": "none",
+          "arrowTypeEnd": "none",
+          "points": [
+            {
+              "x": 50,
+              "y": 0
+            },
+            {
+              "x": 50,
+              "y": 80
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "a": "M0,40 L44,40 M56,40 L96,40"
+      }
+    }
+  ]
+}

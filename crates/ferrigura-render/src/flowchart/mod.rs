@@ -17,7 +17,10 @@ pub mod elk_straighten;
 pub mod elk_tree;
 pub mod geom;
 pub mod label;
+pub mod line_jumps;
 pub mod markdown;
+pub mod markers;
+pub mod path;
 pub mod shapes;
 pub mod style;
 
@@ -39,6 +42,7 @@ use crate::RenderError;
 use crate::a11y;
 use crate::pie::Themes;
 use crate::svg::{escape, number};
+use crate::variables::px;
 
 /// What the flowchart renderer draws.
 #[derive(Debug, Clone, Copy)]
@@ -137,8 +141,9 @@ fn measure(input: &FlowchartInput<'_>) -> Result<Measured, RenderError> {
     }
 
     let mut edge_labels = HashMap::new();
+    let font_size = px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE);
     for edge in &mut data.edges {
-        if let Some(label) = edges::label(edge, input.config)? {
+        if let Some(label) = edges::label_with_font_size(edge, font_size)? {
             let (width, height) = edges::label_size(&label);
             edge.width = Some(width);
             edge.height = Some(height);
@@ -320,6 +325,9 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
 fn cover(bounds: &mut Option<BBox>, bbox: BBox) {
     *bounds = Some(bounds.map_or(bbox, |all| all.union(bbox)));
 }
+
+/// The font size of labels when the theme has none.
+const DEFAULT_FONT_SIZE: f64 = 16.0;
 
 /// The font size of the title: `.flowchartTitleText` in the flowchart styles.
 const TITLE_FONT_SIZE: f64 = 18.0;
