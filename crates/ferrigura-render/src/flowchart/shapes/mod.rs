@@ -31,7 +31,7 @@ use ferrigura_model::value::Value;
 
 use super::data::Node;
 use super::geom::{BBox, CenterBox, Point};
-use super::label::{self, LabelLayout, LabelSpec};
+use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::RenderError;
 use crate::svg::{escape, number};
 use registry::Kind;
@@ -159,6 +159,8 @@ pub fn node_label(
         width: wrapping_width,
         is_node: true,
         add_background: node.icon.is_some() || node.img.is_some(),
+        // The stylesheet centres node labels (`.node .label text`).
+        anchor: Anchor::Middle,
         styles: &declarations,
         font_size: util::theme_number(theme, "fontSize").unwrap_or(config.font_size),
     };

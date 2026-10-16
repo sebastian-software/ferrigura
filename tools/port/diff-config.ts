@@ -1,8 +1,15 @@
 /**
- * Differential run for the configuration: every pie input and every explicit case of
- * `config-cases.ts` goes through the TypeScript reference (`export-config.ts`) and through
- * ferrigura (`cargo run --example config`). The key set that directives may use is compared first,
- * then the effective configuration of each input. A rejection on both sides counts as agreement.
+ * Differential run for the configuration. The pie and flowchart inputs of `inputs.ts` and every
+ * explicit case of `config-cases.ts` go through the TypeScript reference (`export-config.ts`) and
+ * through ferrigura (`cargo run --example config`). Each side detects the diagram type from the
+ * text, as a render does, so each input gets its own diagram scope: the reference through
+ * `processAndSetConfigs`, ferrigura through `detect`. A flowchart input must come out in the
+ * `flowchart` scope on both sides, and a pie input or case in `pie`.
+ *
+ * The key set that directives may use is compared first. Then, per input, the scope and the
+ * effective configuration: the top level (with `theme`, `look` and `layout` resolved), `elk`, the
+ * `pie` section and the section of the input's own scope. A rejection on both sides counts as
+ * agreement.
  *
  * Usage: `pnpm port:diff config`
  */
@@ -18,11 +25,16 @@ interface ConfigInput {
   source: string;
   text: string;
   site?: Record<string, unknown>;
+  /** The collection the input came from: `pie`, `flowchart` or `case`. */
+  group: string;
+  /** The scope the input must be run in. */
+  expectedScope: string;
 }
 
 interface ConfigOutput {
   id: number;
   ok: boolean;
+  scope?: string | null;
   config?: unknown;
   error?: string;
 }
@@ -62,13 +74,29 @@ function same(a: unknown, b: unknown): boolean {
 }
 
 const pieInputs = await collectInputs('pie');
+const flowchartInputs = await collectInputs('flowchart');
 const inputs: ConfigInput[] = [
-  ...pieInputs.map((input) => ({ id: 0, source: input.source, text: input.text })),
+  ...pieInputs.map((input) => ({
+    id: 0,
+    source: input.source,
+    text: input.text,
+    group: 'pie',
+    expectedScope: 'pie',
+  })),
+  ...flowchartInputs.map((input) => ({
+    id: 0,
+    source: input.source,
+    text: input.text,
+    group: 'flowchart',
+    expectedScope: 'flowchart',
+  })),
   ...configCases.map((testCase) => ({
     id: 0,
     source: testCase.source,
     text: testCase.text,
     site: testCase.site,
+    group: 'case',
+    expectedScope: 'pie',
   })),
 ].map((input, id) => ({ ...input, id }));
 
@@ -106,8 +134,9 @@ if (missingInRust.length > 0 || extraInRust.length > 0) {
 /**
  * The diagram sections whose defaults the port does not own yet. The reference fills them with its
  * own generator (`.build/jsonSchema.ts`), which applies a section's own defaults only, and the
- * TypeScript defaults replace some sections whole; ferrigura takes them from the schema. They are
- * compared when their diagram type is ported (`pie` is, and `info` has no section).
+ * TypeScript defaults replace some sections whole; ferrigura takes them from the schema. A section
+ * is compared only for an input of its own diagram type: `pie` and `flowchart` are ported, and
+ * `info` has no section. Every other section is left out.
  */
 const UNPORTED_SECTIONS = [
   'flowchart',
@@ -143,11 +172,16 @@ const UNPORTED_SECTIONS = [
   'treemap',
 ];
 
-/** The output with the sections of diagram types that are not ported removed. */
-function ported(config: unknown): unknown {
+/**
+ * The output with the sections that are not compared removed: the sections of diagram types that
+ * are not ported, and the sections of the other ported types. `scope` is the section of the input.
+ */
+function ported(config: unknown, scope: string | null): unknown {
   if (typeof config !== 'object' || config === null) return config;
   const copy = { ...(config as Record<string, unknown>) };
-  for (const section of UNPORTED_SECTIONS) delete copy[section];
+  for (const section of UNPORTED_SECTIONS) {
+    if (section !== scope) delete copy[section];
+  }
   return copy;
 }
 
@@ -164,34 +198,59 @@ const SHIPPED_THEMES = ['redux-color', 'redux-dark-color'];
 let accepted = 0;
 let differences = 0;
 let unshippedThemes = 0;
+const groupCounts = new Map<string, number>();
+for (const input of inputs) {
+  groupCounts.set(input.group, (groupCounts.get(input.group) ?? 0) + 1);
+}
+const acceptedByGroup = new Map<string, number>();
 for (const input of inputs) {
   const jsOutput = jsById.get(input.id);
   const rsOutput = rsById.get(input.id);
-  if (jsOutput?.ok) accepted += 1;
-  const jsConfig = jsOutput?.ok ? (ported(jsOutput.config) as Record<string, unknown>) : undefined;
-  const rsConfig = rsOutput?.ok ? (ported(rsOutput.config) as Record<string, unknown>) : undefined;
+  if (jsOutput?.ok) {
+    accepted += 1;
+    acceptedByGroup.set(input.group, (acceptedByGroup.get(input.group) ?? 0) + 1);
+  }
+  const scope = jsOutput?.ok ? (jsOutput.scope ?? null) : null;
+  const jsConfig = jsOutput?.ok
+    ? (ported(jsOutput.config, scope) as Record<string, unknown>)
+    : undefined;
+  const rsConfig = rsOutput?.ok
+    ? (ported(rsOutput.config, scope) as Record<string, unknown>)
+    : undefined;
   if (jsConfig && rsConfig && !SHIPPED_THEMES.includes(String(jsConfig.theme))) {
     unshippedThemes += 1;
     delete jsConfig.themeVariables;
     delete rsConfig.themeVariables;
   }
+  const scopeAgrees = (jsOutput?.scope ?? null) === (rsOutput?.scope ?? null);
+  const scopeIsExpected = !jsOutput?.ok || jsOutput.scope === input.expectedScope;
   const agree =
     jsOutput !== undefined &&
     rsOutput !== undefined &&
     jsOutput.ok === rsOutput.ok &&
-    (!jsOutput.ok || same(jsConfig, rsConfig));
-  if (agree) continue;
+    (!jsOutput.ok || (scopeAgrees && same(jsConfig, rsConfig)));
+  if (agree && scopeIsExpected) continue;
   differences += 1;
   console.log(`\n✗ ${input.source}`);
   console.log(`  input: ${JSON.stringify(input.text.slice(0, 300))}`);
   if (input.site) console.log(`  site: ${JSON.stringify(input.site)}`);
+  if (!scopeIsExpected) {
+    console.log(
+      `  scope: the reference gives ${JSON.stringify(jsOutput?.scope)}, ` +
+        `the input is collected as ${input.expectedScope}`
+    );
+  }
   console.log(`  js: ${JSON.stringify(jsOutput).slice(0, 1200)}`);
   console.log(`  rs: ${JSON.stringify(rsOutput).slice(0, 1200)}`);
 }
 
+const groups = [...groupCounts]
+  .map(([group, count]) => `${group} ${acceptedByGroup.get(group) ?? 0}/${count}`)
+  .join(', ');
 console.log(
-  `\nconfig: ${inputs.length} inputs, ${accepted} accepted by the reference, ` +
-    `${differences} differences; configKeys: ${missingInRust.length + extraInRust.length} differences; ` +
+  `\nconfig: ${inputs.length} inputs (accepted by the reference per group: ${groups}), ` +
+    `${accepted} accepted, ${differences} differences; ` +
+    `configKeys: ${missingInRust.length + extraInRust.length} differences; ` +
     `${unshippedThemes} inputs with a theme ferrigura does not ship compared without theme variables`
 );
 
