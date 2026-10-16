@@ -63,31 +63,58 @@ Consequences for M2:
 - **`white-space: pre` on `text`, not on the root.** Chromium computes `white-space: nowrap` for `text` even when the root says `pre`, and drops a label's leading and trailing spaces. The rule must target `text` (or `xml:space="preserve"` on the element).
 - **Keep legacy `kern` tables.** `skera`, like `hb-subset`, drops `kern` by default; Lexica keeps its kerning in `GPOS`, but a registered font may not, so ferrigura's subset call does not drop it.
 
-## Part 3: WebKit, and kerning
+## Part 3: other engines, and kerning
 
-**Question.** Do other engines draw the embedded labels at the Rust width too?
+**Question.** Do Safari and Firefox draw the embedded, kerned labels at the Rust width too?
 
-**Answer.** WebKit does not, as long as the text is kerned: it lays out SVG `text` without kerning and without ligatures, while its HTML and canvas text keep both. Two ways make WebKit match exactly. Firefox could not be tested.
+**Answer.** Yes. Safari 27, WebKit 26.5 and Firefox 155 draw kerned and ligated SVG text at the Rust width, as Chromium does. Only WebKit's SVG DOM API reports a different width: `getComputedTextLength` and `getBBox` return the sum of unkerned, unligated advances. A first reading of that API value suggested that WebKit does not kern SVG text; the drawn pixels show that it does. Kerning stays on, and `textLength` is not needed.
 
-Setup: `embed.rs` also writes `all-plain.svg`, with `font-kerning: none` and `font-variant-ligatures: none` on `text` and the Rust widths measured with `kern`, `liga`, `clig` and `calt` off, and `all-length.svg`, which is `all.svg` with every label's Rust width set as `textLength` (`lengthAdjust="spacing"`). `embed-check.ts <dir> webkit` runs the checks in WebKit 26.5 (Playwright). Run on 2026-10-16.
+Setup, run on 2026-10-16:
 
-| Check, 1,690 labels                                                  | Chromium                             | WebKit                                                  |
-| -------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------- |
-| `all.svg`, kerned: width vs Rust                                     | max 0.0155 px                        | 956 labels off, up to 16 px (3.2 px on ordinary labels) |
-| Same labels as HTML text or canvas, kerned                           | (Part 1)                             | HTML max 0.74 px (spaces case), canvas max 0.0003 px    |
-| `all-plain.svg`, kerning and ligatures off on both sides             | max 0.0155 px                        | max 0.0003 px                                           |
-| `all-length.svg`, kerned with `textLength`: character extent vs Rust | max 0.0155 px; pixels shift subpixel | max 0.0155 px                                           |
-| Text box height vs Rust (ascent and descent rounded to whole pixels) | exact                                | off by 0.16–0.38 px, depending on size                  |
-| `<img>` vs document                                                  | pixel-identical                      | pixel-identical                                         |
+- `embed-check.ts <dir> <engine>` checks every label's drawn extent, from the start of the first character to the end of the last (`getStartPositionOfChar`, `getEndPositionOfChar`), in Chromium 151 and WebKit 26.5 (Playwright). `getComputedTextLength` is reported next to it.
+- `lab/lab.html`, served by `lab/server.mjs`, draws a kerning line (`AVATAR Type WAVE Yo Te LT`), a ligature line (`office fluffy fjord affinity`) and an ordinary label at 12, 16, 24 and 48 px, in fourteen variants of CSS and markup. It posts the results back, so it runs in the installed browsers as well: Safari 27.0.1 and Firefox 155, plus Chromium 152 in the Claude app's browser.
+- Pixels: the kerning and ligature lines at 48 px as SVG and as HTML (kerned, unkerned, without ligatures), with the ink measured in screenshots; and the right and top ink edges of all 549 labels of `half-a.svg`, WebKit against Chromium.
 
-The largest WebKit differences are the kerning test line (`AVATAR Type WAVE Yo Te LT`, 16 px wider at 24 px) and the ligature test line (`office fluffy fjord affinity`). WebKit does not round ascent and descent to whole pixels the way Chromium does, so the text box sits up to 0.4 px differently. In Chromium, `getBBox` includes ink that overhangs the advance (a leading `j`, italics), so the checks compare character positions and `getComputedTextLength`, not the box width.
+| Check                                                                 | Chromium      | WebKit / Safari                             | Firefox 155          |
+| --------------------------------------------------------------------- | ------------- | ------------------------------------------- | -------------------- |
+| Drawn extent vs Rust, `all.svg` (1,690 labels, kerned)                | max 0.0155 px | WebKit 26.5: max 0.0003 px                  | (not run, see below) |
+| Drawn extent vs Chromium, lab lines, 12–48 px                         | —             | Safari 27: max 0.014 px                     | max 0.08 px          |
+| `getComputedTextLength` vs drawn extent, lab lines                    | equal         | larger: up to 32 px (kerning line at 48 px) | equal                |
+| Ink of the kerning line at 48 px (unkerned HTML: 629 px, kerned: 597) | 597 px        | WebKit 26.5: 596 px                         | —                    |
+| Right and top ink edges of 549 labels vs Chromium                     | —             | WebKit 26.5: all within 1 px (antialiasing) | —                    |
+| `getBBox` height vs Rust                                              | exact         | 0.16–0.38 px off; the ink is within 1 px    | —                    |
+| `<img>` vs document; shared family name breaks 33 of 549 labels       | yes; yes      | yes; yes                                    | —                    |
 
-Two options for M2:
+None of the lab's CSS switches changes how WebKit draws: `font-kerning`, `font-variant-ligatures`, `font-feature-settings`, `text-rendering` (as property or attribute), `white-space`, `letter-spacing`, `word-spacing`, `text-anchor` and a `tspan` all leave the text kerned; only `text-rendering: optimizeSpeed` drops ligatures, in Chromium and WebKit alike. Firefox reports and draws the same width.
 
-- **Plain text: kerning and ligatures off**, in the measurement and in the SVG's CSS. Exact in both engines, nothing per label, and every browser draws the same glyphs. The cost is typography: Lexica's kerning and its `fi`/`fl` ligatures are gone.
-- **Kerned text with `textLength`** on every text line. Chromium draws kerned text; WebKit draws unkerned glyphs, spread to the measured width. Exact in both, but the two engines show different spacing, and `textLength` has to be set per line, which mixed styles inside a line make harder.
+**Why WebKit reports a different width.** WebKit lays SVG text out from advances it measures one character at a time, and paints each text fragment as one shaped run. References are to WebKit `main` at `609e7d3870` (2026-10-15):
 
-The geometry comparison with the JS reference (M5) is unaffected either way, as long as the reference run uses the same font settings.
+- Layout: [`SVGTextMetricsBuilder.cpp`](https://github.com/WebKit/WebKit/blob/609e7d3870021938ba5cd4a30a9c5a0afaf025aa/Source/WebCore/rendering/svg/SVGTextMetricsBuilder.cpp#L170-L212) measures every character on its own (`widthForTextUsingSimplifiedMeasuring(view.substring(i, 1), …)`, line 205), so there is no pair to kern and nothing to ligate. [`SVGTextLayoutEngine.cpp`](https://github.com/WebKit/WebKit/blob/609e7d3870021938ba5cd4a30a9c5a0afaf025aa/Source/WebCore/rendering/svg/SVGTextLayoutEngine.cpp#L124-L135) adds these up as the fragment width. On macOS, CSS does not move Latin text off this path: the kerning check that would force the shaped path is compiled out there.
+- What uses the layout width: `getComputedTextLength` ([`SVGTextQuery.cpp`](https://github.com/WebKit/WebKit/blob/609e7d3870021938ba5cd4a30a9c5a0afaf025aa/Source/WebCore/rendering/svg/SVGTextQuery.cpp#L247-L253)), `getBBox` (through `InlineIteratorSVGTextBox.cpp`), and the text chunk length behind `text-anchor` and `textLength` ([`SVGTextChunk.cpp`](https://github.com/WebKit/WebKit/blob/609e7d3870021938ba5cd4a30a9c5a0afaf025aa/Source/WebCore/rendering/svg/SVGTextChunk.cpp#L95-L107)).
+- What is shaped: painting ([`SVGTextBoxPainter.cpp`](https://github.com/WebKit/WebKit/blob/609e7d3870021938ba5cd4a30a9c5a0afaf025aa/Source/WebCore/rendering/svg/SVGTextBoxPainter.cpp#L587), one run per fragment) and `getStartPositionOfChar`, `getEndPositionOfChar` and `getSubStringLength`, which measure the prefix as one run ([`SVGTextMetrics.cpp`](https://github.com/WebKit/WebKit/blob/609e7d3870021938ba5cd4a30a9c5a0afaf025aa/Source/WebCore/rendering/svg/SVGTextMetrics.cpp#L39)).
+- Letter-spacing, word-spacing, per-character `x`/`y`/`dx`/`dy`/`rotate` lists and `textLength` split the text into one fragment per character, so the ink becomes unkerned as well. That is what `all-length.svg` showed: WebKit met the width with unkerned glyphs.
+- Related WebKit bugs: [215321](https://bugs.webkit.org/show_bug.cgi?id=215321) (`text-anchor: middle` misaligned, open; an unmerged pull request measures whole fragments), [138596](https://bugs.webkit.org/show_bug.cgi?id=138596), [100050](https://bugs.webkit.org/show_bug.cgi?id=100050). No report covers kerning missing from `getComputedTextLength` and `getBBox` directly.
+- Gecko takes each character's advance from the shaped run (`SVGTextFrame.cpp`), so Firefox's metrics and ink agree.
+
+**Placement.** Because `text-anchor` and the start of a following `tspan` come from the layout width, WebKit misplaces kerned text that the browser aligns itself. `anchor-check.ts` draws the kerning line at 48 px five ways:
+
+| Placement                                                 | WebKit vs Chromium, ink edges   |
+| --------------------------------------------------------- | ------------------------------- |
+| `text-anchor` start, explicit `x`                         | 0 / −1 px                       |
+| `text-anchor="middle"`                                    | −17 / −16 px                    |
+| `text-anchor="end"`                                       | −33 / −32 px                    |
+| Two `tspan`s, the second without `x`                      | second part 13 px too far right |
+| Two `tspan`s, the second with `x` from the measured width | 0 / −1 px                       |
+
+Consequences:
+
+- **Kerning and ligatures stay on.** The Rust measurement with the font's default features is what all three engines draw. `all-plain.svg` (kerning and ligatures off on both sides) and `all-length.svg` (`textLength`) remain in the spike as the experiments that were tried; neither is needed.
+- **Never measure with WebKit's SVG text API.** Any check, test or tool that compares widths in WebKit has to use character positions or pixels, not `getComputedTextLength` or `getBBox`. The JS reference uses exactly these calls wherever it measures SVG text: labels with `htmlLabels: false` (`createText.ts`, `rendering-elements/shapes/util.ts`) and diagrams that draw SVG text directly, such as sequence. In Safari it therefore sizes those boxes and wraps those lines for unkerned text, while Safari draws kerned text. HTML labels are measured with `getBoundingClientRect` and are not affected. ferrigura measures without a browser, so its layouts are the same in every engine.
+- **Every text run is placed explicitly.** ferrigura writes `text-anchor` start and an `x` computed from its own measurement for every line, and an explicit `x` for every `tspan` that follows another (a style change, a second word run). A centred label gets `x = centre − width / 2`. The browser then never derives a position from its own text width, so WebKit draws where Chromium and Firefox do. Mermaid centres labels with `text-anchor: middle`, so in Safari its SVG labels with noticeable kerning sit off centre.
+- **No per-character positions and no `textLength`.** Both split WebKit's text into single characters and drop kerning from the ink.
+- **The lab stays** in `spikes/text-measure/lab/` for checking further engines and font settings without Playwright.
+
+One more observation, not investigated: in WebKit, the lab's HTML reference spans changed width after SVG text with other feature settings had been laid out, as if a cache kept features across font descriptions. ferrigura sets no feature switches, so this does not touch it.
 
 ## Not covered yet
 
@@ -95,5 +122,5 @@ The geometry comparison with the JS reference (M5) is unaffected either way, as 
 - Fallback fonts for scripts Lexica does not cover (CJK, Arabic, emoji).
 - Caching of shaper data and per-word widths; not needed at 5 µs per measurement.
 - Whether `Intl.Segmenter` and `unicode-segmentation` agree on graphemes for the newest emoji sequences.
-- Firefox: Playwright's Firefox 153 build (1538) hangs at launch on macOS 27.0.1, also outside the shell sandbox and with software rendering; to be run on Linux, for example in CI.
+- Firefox through Playwright: its Firefox 153 build (1538) hangs at launch on macOS 27.0.1, also outside the shell sandbox and with software rendering, so `all.svg` was not run in Firefox; the installed Firefox 155 ran the lab. To be run on Linux, for example in CI.
 - WOFF2: the subsets are embedded as TTF; WOFF2 would roughly halve them, but needs a Rust encoder that has not been evaluated.
