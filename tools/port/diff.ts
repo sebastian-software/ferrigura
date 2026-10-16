@@ -4,7 +4,7 @@
  * canonical models are compared. A rejection on both sides counts as agreement; any other
  * difference is reported with both results.
  *
- * Usage: `pnpm port:diff <pie | info | flowchart | config | yaml | theme>`
+ * Usage: `pnpm port:diff <pie | info | flowchart | flowchart-data | config | yaml | theme>`
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
@@ -15,7 +15,7 @@ import { exceptions } from './exceptions.ts';
 import type { PortInput, PortOutput } from './reference.ts';
 
 const type = process.argv[2];
-if (type === 'config' || type === 'yaml' || type === 'theme') {
+if (type === 'config' || type === 'yaml' || type === 'theme' || type === 'flowchart-data') {
   const subRun = spawnSync(
     'pnpm',
     ['exec', 'tsx', fileURLToPath(new URL(`./diff-${type}.ts`, import.meta.url))],
@@ -24,7 +24,9 @@ if (type === 'config' || type === 'yaml' || type === 'theme') {
   process.exit(subRun.status ?? 2);
 }
 if (type !== 'pie' && type !== 'info' && type !== 'flowchart') {
-  console.error('usage: pnpm port:diff pie | info | flowchart | config | yaml | theme');
+  console.error(
+    'usage: pnpm port:diff pie | info | flowchart | flowchart-data | config | yaml | theme'
+  );
   process.exit(2);
 }
 

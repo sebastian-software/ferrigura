@@ -93,6 +93,11 @@ pub struct FlowVertex {
     pub asset_width: Option<f64>,
     /// Asset height from the shape data (`h`).
     pub asset_height: Option<f64>,
+    /// The DB's `vertexCounter` when the vertex was created: the `<n>` of its DOM id
+    /// `flowchart-<id>-<n>` (`flowDb.ts` `addVertex`, see `docs-port/flowchart/render-notes/getdata.md`
+    /// section 2.6). It is rendering state, not input, so it is left out of the canonical JSON.
+    #[serde(skip)]
+    pub dom_counter: u32,
 }
 
 /// An edge between two vertices.

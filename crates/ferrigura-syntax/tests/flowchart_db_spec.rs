@@ -5,9 +5,9 @@
 //! - `exist` and `makeUniq` are DB internals. Their behaviour is checked on the subgraphs' nodes of a
 //!   parsed diagram, as the brief asks.
 //! - `addClass` is `classDef` (styles and classes, step 5).
-//! - The `getData()` tests, the collapsible-subgraph tests and the colour-slot tests are rendering
-//!   (M5). Where a test also checks the model (the interpolate, the subgraph nodes, the metadata), the
-//!   model part is the body; the `getData` lines are not ported.
+//! - The `getData()` lines of the interpolate, collapsible-subgraph, colour-slot and repeated-id
+//!   tests are ported in `ferrigura-render/tests/flowchart_db_get_data_spec.rs`. Here the model part
+//!   is the body.
 //! - The own-property test of `class` checks the JavaScript object and is not ported.
 
 use std::collections::BTreeMap;
@@ -339,8 +339,8 @@ mod flow_db_repeated_subgraph_ids_issue_8326 {
 
     #[test]
     fn produces_a_single_group_node_in_getdata_with_both_members_parented_to_it() {
-        // The spec checks the `getData` nodes and their `parentId`. The model keeps one subgraph
-        // with both members.
+        // The spec checks the `getData` nodes and their `parentId`; those are in
+        // `flowchart_db_get_data_spec.rs`. The model keeps one subgraph with both members.
         let diagram =
             parse("flowchart LR\nsubgraph S\n  x\nend\nsubgraph S\n  y\nend").expect("parses");
 
@@ -393,8 +393,8 @@ mod flow_db_repeated_subgraph_ids_issue_8326 {
 
     #[test]
     fn flattens_a_subgraph_redeclared_inside_its_own_body_instead_of_creating_a_cycle() {
-        // The spec's `getData` lines (one `S` node, no self-parenting) are rendering and are not
-        // ported here.
+        // The spec's `getData` lines (one `S` node, no self-parenting) are in
+        // `flowchart_db_get_data_spec.rs`.
         let diagram = parse("flowchart LR\nsubgraph S\n  subgraph S\n    x\n  end\n  y\nend")
             .expect("parses");
 
@@ -407,8 +407,8 @@ mod flow_db_repeated_subgraph_ids_issue_8326 {
 
     #[test]
     fn merges_an_empty_first_declaration_with_a_later_one_containing_a_nested_subgraph() {
-        // The spec's `getData` lines (the single `S` node and the `parentId`s) are rendering and are
-        // not ported here.
+        // The spec's `getData` lines (the single `S` node and the `parentId`s) are in
+        // `flowchart_db_get_data_spec.rs`.
         let diagram =
             parse("flowchart LR\nsubgraph S\nend\nsubgraph S\n  subgraph T\n    y\n  end\nend")
                 .expect("parses");
