@@ -13,10 +13,14 @@ import type { PortInput } from './reference.ts';
 
 const root = new URL('../../', import.meta.url);
 
+/** The e2e folder of a type, where it is not named after the type. */
+const fixtureFolders: Record<string, string> = { class: 'class-diagram' };
+
 const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
   flowchart: /^\s*(graph|flowchart)/,
+  class: /^\s*classDiagram/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */
@@ -64,7 +68,9 @@ function mermaidBlocks(source: string): string[] {
 export async function collectInputs(type: string): Promise<PortInput[]> {
   const candidates: { source: string; text: string }[] = [];
 
-  const fixtures = await walk(`e2e/diagrams/${type}/`, (path) => path.endsWith('.mmd'));
+  const fixtures = await walk(`e2e/diagrams/${fixtureFolders[type] ?? type}/`, (path) =>
+    path.endsWith('.mmd')
+  );
   for (const fixture of fixtures) {
     candidates.push({ source: fixture, text: await readFile(new URL(fixture, root), 'utf8') });
   }
