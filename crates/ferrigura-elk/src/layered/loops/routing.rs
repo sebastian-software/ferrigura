@@ -212,18 +212,15 @@ fn assign_leftmost_rightmost(
     Ok(())
 }
 
-/// `RoutingDirector.determineTwoSideOpposingLoopRoutes`: the cheaper of the two ways around.
+/// `RoutingDirector.determineTwoSideOpposingLoopRoutes`: the cheaper of the two ways around. The
+/// sides come in the multimap's key order, which decides a tie.
 fn determine_two_side_opposing(
     graph: &LGraph,
     holder: &mut SelfLoopHolder,
     hyper: usize,
     penalties: &[i64],
 ) -> Result<(), LayoutError> {
-    let sides: Vec<PortSide> = holder.hyper_loops[hyper]
-        .ports_by_side
-        .keys()
-        .copied()
-        .collect();
+    let sides: Vec<PortSide> = holder.hyper_loops[hyper].side_order.clone();
     let [first, second] = match sides.as_slice() {
         [first, second] => [*first, *second],
         _ => {

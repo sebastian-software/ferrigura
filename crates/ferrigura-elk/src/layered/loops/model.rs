@@ -79,6 +79,10 @@ pub struct SelfHyperLoop {
     pub loop_type: Option<SelfLoopType>,
     /// `getSLPortsBySide()`: its ports on each side, in port order, keyed by side.
     pub ports_by_side: BTreeMap<PortSide, Vec<usize>>,
+    /// `getSLPortsBySide().keySet()` in its iteration order: the sides in the order their first
+    /// port comes in the loop's port list. The multimap is a GWT `HashMap`, which elkjs iterates in
+    /// the order the keys were first put (a native JS `Map` keyed by identity hash codes).
+    pub side_order: Vec<PortSide>,
     /// `getLeftmostPort()`: the index of the port in `SelfLoopHolder::sl_ports`.
     pub leftmost: Option<usize>,
     /// `getRightmostPort()`: the index of the port in `SelfLoopHolder::sl_ports`.
@@ -333,6 +337,7 @@ impl SelfLoopHolder {
         hyper_index: usize,
     ) -> Result<(), LayoutError> {
         let mut by_side: BTreeMap<PortSide, Vec<usize>> = BTreeMap::new();
+        let mut side_order = Vec::new();
         for &port in &self.hyper_loops[hyper_index].sl_ports {
             let side = graph.ports[self.sl_ports[port].lport].side;
             if side == PortSide::UNDEFINED {
@@ -340,12 +345,16 @@ impl SelfLoopHolder {
                     "a self loop port without a side".to_string(),
                 ));
             }
+            if !side_order.contains(&side) {
+                side_order.push(side);
+            }
             by_side.entry(side).or_default().push(port);
         }
         let sides: BTreeSet<PortSide> = by_side.keys().copied().collect();
         let hyper = &mut self.hyper_loops[hyper_index];
         hyper.loop_type = SelfLoopType::from_port_sides(&sides)?;
         hyper.ports_by_side = by_side;
+        hyper.side_order = side_order;
         Ok(())
     }
 
