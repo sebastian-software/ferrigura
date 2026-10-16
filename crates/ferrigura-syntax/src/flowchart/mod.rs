@@ -8,7 +8,7 @@ mod db;
 mod grammar;
 mod scanner;
 mod shapes;
-mod unicode;
+pub(crate) mod unicode;
 
 use std::error::Error;
 use std::fmt;
@@ -95,7 +95,7 @@ pub fn parse_with_warnings(
 }
 
 /// Removes the `%%{ … }%%` directives, as `removeDirectives` does.
-fn remove_directives(text: &str) -> String {
+pub(crate) fn remove_directives(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while let Some(start) = rest.find("%%{") {
