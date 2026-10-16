@@ -7,11 +7,13 @@
 //! configuration merged with the directives, not yet sanitised. The sanitising and the layers of
 //! the configuration are in `ferrigura_model::config::effective`.
 
+use std::collections::BTreeMap as Map;
+
 use ferrigura_model::config::{assign_with_depth, deep_merge, sanitize_directive};
-use serde_json::{Map, Value};
+use ferrigura_model::value::Value;
 
 use crate::text::{is_js_space, is_line_term, is_word};
-use crate::yaml::{self, Yaml};
+use crate::yaml::Yaml;
 use crate::{DiagramType, ParseError, detect, preprocess};
 
 /// Reads the configuration that the text carries; see the module documentation.
@@ -42,12 +44,15 @@ fn front_matter_config(fields: &[(String, Yaml)]) -> Value {
             .map(|(_, value)| value)
     };
     let mut config = match field("config") {
-        Some(Yaml::Mapping(pairs)) => yaml::mapping_to_json(pairs),
+        Some(Yaml::Mapping(pairs)) => pairs
+            .iter()
+            .map(|(key, value)| (key.clone(), Value::from(value)))
+            .collect(),
         _ => Map::new(),
     };
     if let Some(mode) = field("displayMode").and_then(Yaml::truthy_string) {
         let gantt = config
-            .entry("gantt")
+            .entry("gantt".to_owned())
             .or_insert_with(|| Value::Object(Map::new()));
         if let Value::Object(gantt) = gantt {
             gantt.insert("displayMode".to_owned(), Value::String(mode));
@@ -136,7 +141,9 @@ fn directives(text: &str) -> Result<Vec<Directive>, ()> {
         let args = match next.args {
             Args::None => Value::Null,
             Args::Word(word) => Value::String(word),
-            Args::Json(json) => serde_json::from_str(json.trim()).map_err(|_| ())?,
+            Args::Json(json) => serde_json::from_str::<serde_json::Value>(json.trim())
+                .map(Value::from)
+                .map_err(|_| ())?,
         };
         found.push(Directive {
             kind: next.kind,
@@ -262,9 +269,14 @@ fn starts_with(chars: &[char], at: usize, pattern: &[char]) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
     use super::*;
+
+    /// `serde_json::json!`, as a configuration value.
+    macro_rules! json {
+        ($($tokens:tt)*) => {
+            Value::from(serde_json::json!($($tokens)*))
+        };
+    }
 
     #[test]
     fn reads_an_init_directive() {

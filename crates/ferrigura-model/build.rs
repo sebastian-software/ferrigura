@@ -12,7 +12,7 @@
 //!   any defaulted field is a field holding the struct's defaults. Every other field is an
 //!   `Option` that is left out of the defaults.
 //! - `string` and enums are `String`, `number` is `f64`, `integer` is `i64`, `boolean` is `bool`,
-//!   `array` is `Vec`. Anything else (`tsType: any`, free-form objects) is `serde_json::Value`.
+//!   `array` is `Vec`. Anything else (`tsType: any`, free-form objects) is `crate::value::Value`.
 //! - `CONFIG_KEYS` lists the keys a directive or front matter may set, as `keyify` in
 //!   `defaultConfig.ts` builds them. Array-valued keys are left out, with their children.
 //!
@@ -226,13 +226,13 @@ impl Generator<'_> {
             }
             Kind::Json => match default.and_then(|value| literal(&kind, value)) {
                 Some(lit) => (
-                    "Option<serde_json::Value>".to_owned(),
+                    "Option<crate::value::Value>".to_owned(),
                     true,
                     format!("Some({lit})"),
                     true,
                 ),
                 None => (
-                    "Option<serde_json::Value>".to_owned(),
+                    "Option<crate::value::Value>".to_owned(),
                     true,
                     "None".to_owned(),
                     false,
@@ -314,7 +314,7 @@ fn rust_type(kind: &Kind) -> String {
         Kind::Object { name, .. } => name.clone(),
         Kind::Scalar(ty) => (*ty).to_owned(),
         Kind::Array(inner) => format!("Vec<{}>", rust_type(inner)),
-        Kind::Json => "serde_json::Value".to_owned(),
+        Kind::Json => "crate::value::Value".to_owned(),
     }
 }
 
@@ -332,7 +332,9 @@ fn literal(kind: &Kind, value: &Value) -> Option<String> {
             .map(|item| literal(inner, item))
             .collect::<Option<Vec<_>>>()
             .map(|parts| format!("vec![{}]", parts.join(", "))),
-        (Kind::Json, value) => Some(format!("serde_json::json!({value})")),
+        (Kind::Json, value) => Some(format!(
+            "crate::value::Value::from(serde_json::json!({value}))"
+        )),
         _ => None,
     }
 }

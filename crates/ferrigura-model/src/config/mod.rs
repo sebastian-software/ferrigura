@@ -14,32 +14,42 @@ mod generated {
 mod layers;
 
 pub use generated::*;
-pub use layers::{assign_with_depth, deep_merge, effective, sanitize_directive};
+pub use layers::{
+    assign_with_depth, deep_merge, effective, sanitize_directive, user_theme_variables,
+};
+
+use crate::value::Value;
 
 /// The reference's defaults that its schema does not hold, as a JSON object. See `ts_defaults.json`.
 const TS_DEFAULTS: &str = include_str!("ts_defaults.json");
 
-/// The defaults of every key as JSON: the schema's defaults, with the reference's TypeScript-only
-/// defaults on top.
+/// The defaults of every key: the schema's defaults, with the reference's TypeScript-only defaults
+/// on top.
 #[must_use]
-pub fn defaults() -> serde_json::Value {
-    let mut value = serde_json::to_value(MermaidConfig::default()).unwrap_or_default();
-    let overrides: serde_json::Value = serde_json::from_str(TS_DEFAULTS).unwrap_or_default();
+pub fn defaults() -> Value {
+    let mut value = Value::from(serde_json::to_value(MermaidConfig::default()).unwrap_or_default());
+    let overrides =
+        Value::from(serde_json::from_str::<serde_json::Value>(TS_DEFAULTS).unwrap_or_default());
     layers::assign_with_depth(&mut value, &overrides, 2);
     value
 }
 
 /// The typed view of a configuration value. Keys that the types do not name are ignored; a value of
-/// the wrong type is an error.
-pub fn typed(value: &serde_json::Value) -> Result<MermaidConfig, serde_json::Error> {
-    serde_json::from_value(value.clone())
+/// the wrong type is an error. A non-finite number reads into an `f64` field as it is.
+pub fn typed(value: &Value) -> Result<MermaidConfig, serde_json::Error> {
+    serde::Deserialize::deserialize(value.clone())
 }
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
     use super::*;
+
+    /// `serde_json::json!`, as a configuration value.
+    macro_rules! json {
+        ($($tokens:tt)*) => {
+            Value::from(serde_json::json!($($tokens)*))
+        };
+    }
 
     #[test]
     fn the_defaults_are_valid_json_for_the_typed_view() {

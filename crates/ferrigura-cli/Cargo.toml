@@ -1,0 +1,20 @@
+[package]
+name = "ferrigura-cli"
+description = "Render a Mermaid diagram file to SVG from the command line"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "ferrigura"
+path = "src/main.rs"
+# The library `ferrigura` has the same name and its documentation is the one that matters.
+doc = false
+
+[dependencies]
+ferrigura = { path = "../ferrigura" }
+ferrigura-model.workspace = true
+serde_json.workspace = true

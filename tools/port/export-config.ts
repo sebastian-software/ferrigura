@@ -5,8 +5,8 @@
  * For each input this runs the steps `mermaidAPI` runs: the `initialize` settings become the site
  * config, the configuration is reset, the text goes through `preprocessDiagram`, its diagram type
  * is detected, and the merged front matter and directive configuration is added. The output is the
- * configuration the reference then returns from `getConfig()`, as JSON, without `themeVariables`,
- * which the theme port computes later. The key set the directives may use is written too.
+ * configuration the reference then returns from `getConfig()`, as JSON, `themeVariables` included.
+ * The key set the directives may use is written too.
  *
  * Usage: `tsx tools/port/export-config.ts inputs.json outputs.json`
  */
@@ -70,10 +70,37 @@ function effectiveConfig(input: ConfigInput, modules: Modules): Record<string, u
   config.setDiagramConfigScope(diagramType);
   config.addDirective(processed.config ?? {});
 
-  const effective = JSON.parse(JSON.stringify(config.getConfig())) as Record<string, unknown>;
-  delete effective.themeVariables;
+  const effective = jsonValue(config.getConfig()) as Record<string, unknown>;
   config.setDiagramConfigScope(undefined);
   return effective;
+}
+
+/**
+ * The configuration as JSON, with the non-finite numbers written as the strings `"NaN"`,
+ * `"Infinity"` and `"-Infinity"`, as `crates/ferrigura-syntax/examples/config.rs` writes them.
+ * `JSON.stringify` would turn them into `null`, and the functions of the defaults away.
+ */
+function jsonValue(value: unknown): unknown {
+  if (typeof value === 'number') {
+    if (Number.isFinite(value)) return value;
+    return Number.isNaN(value) ? 'NaN' : value > 0 ? 'Infinity' : '-Infinity';
+  }
+  if (typeof value === 'function' || value === undefined) return undefined;
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map((item) => jsonValue(item) ?? null);
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(value)) {
+    const item = jsonValue((value as Record<string, unknown>)[key]);
+    if (item !== undefined) {
+      Object.defineProperty(out, key, {
+        value: item,
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
+  }
+  return out;
 }
 
 const [inputPath, outputPath] = process.argv.slice(2);

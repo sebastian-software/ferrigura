@@ -146,4 +146,111 @@ export const configCases: ConfigCase[] = [
     source: 'config case: apostrophes in labels',
     text: 'pie\n"it\'s": 1',
   },
+  {
+    source: 'config case: infinity in a numeric option, front matter',
+    text: '---\nconfig:\n  pie:\n    donutHole: .inf\n---\npie',
+  },
+  {
+    source: 'config case: negative infinity and NaN in numeric options',
+    text: '---\nconfig:\n  pie:\n    textPosition: -.inf\n    donutHole: .nan\n---\npie',
+  },
+  {
+    source: 'config case: infinity in a directive is not JSON',
+    text: '%%{init: {"pie": {"textPosition": .inf}}}%%\npie',
+  },
+  {
+    source: 'config case: directive word argument',
+    text: '%%{init: dark}%%\npie',
+  },
+  {
+    source: 'config case: directive number argument',
+    text: '%%{init: 5}%%\npie',
+  },
+  {
+    source: 'config case: directive array argument',
+    text: '%%{init: [1, 2]}%%\npie',
+  },
+  {
+    source: 'config case: directive string argument',
+    text: '%%{init: "x"}%%\npie',
+  },
+  {
+    source: 'config case: directive null argument',
+    text: '%%{init: null}%%\npie',
+  },
+  {
+    source: 'config case: directive word and object arguments',
+    text: '%%{init: dark}%%\n%%{init: {"theme": "forest"}}%%\npie',
+  },
+  {
+    source: 'config case: directive array of objects',
+    text: '%%{init: [1, {"theme": "forest"}]}%%\npie',
+  },
+  {
+    source: 'config case: config key that is a string',
+    text: '%%{init: {"config": "x"}}%%\npie',
+  },
+  {
+    source: 'config case: front matter config that is a string',
+    text: '---\nconfig: abc\n---\npie',
+  },
+  {
+    source: 'config case: front matter config that is an array',
+    text: '---\nconfig: [1, 2]\n---\npie',
+  },
+  {
+    source: 'config case: shipped light theme from initialize',
+    text: 'pie',
+    site: { theme: 'redux-color' },
+  },
+  {
+    source: 'config case: shipped dark theme from initialize',
+    text: 'pie',
+    site: { theme: 'redux-dark-color' },
+  },
+  {
+    source: 'config case: light theme with an initialize override',
+    text: 'pie',
+    site: { theme: 'redux-color', themeVariables: { primaryColor: '#123456' } },
+  },
+  {
+    source: 'config case: theme switched to dark by a directive',
+    text: '%%{init: {"theme": "redux-dark-color"}}%%\npie',
+    site: { theme: 'redux-color' },
+  },
+  {
+    source: 'config case: theme switched to light by a directive',
+    text: '%%{init: {"theme": "redux-color"}}%%\npie',
+    site: { theme: 'redux-dark-color' },
+  },
+  {
+    source: 'config case: directive theme variable on the shipped theme',
+    text: '%%{init: {"themeVariables": {"pieTitleTextColor": "#ff0000"}}}%%\npie',
+    site: { theme: 'redux-color' },
+  },
+  {
+    source: 'config case: directive and initialize theme variables merge',
+    text: '%%{init: {"themeVariables": {"pie2": "rgb(1, 2, 3)"}}}%%\npie',
+    site: { theme: 'redux-color', themeVariables: { pie1: '#abcdef' } },
+  },
+  {
+    source: 'config case: font family in front matter outside config is ignored',
+    text: '---\nfontFamily: Georgia\n---\npie',
+    site: { theme: 'redux-color' },
+  },
+  {
+    source: 'config case: font family from a directive reaches the theme',
+    text: '%%{init: {"fontFamily": "Georgia"}}%%\npie',
+    site: { theme: 'redux-dark-color' },
+  },
+  {
+    source: 'config case: a theme variable that is a number',
+    text: '%%{init: {"themeVariables": {"THEME_COLOR_LIMIT": 3}}}%%\npie',
+    site: { theme: 'redux-color' },
+  },
+  {
+    source: 'config case: theme name that ferrigura does not ship',
+    text: 'pie',
+    site: { theme: 'forest' },
+  },
 ];

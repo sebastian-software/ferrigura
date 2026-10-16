@@ -6,21 +6,21 @@ Each session updates its section when it stops: what changed, what is next, what
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                                      |
-| ---------------------------------- | ----------- | ------ | -------------------------------------------------------------------------- |
-| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                      |
-| M2 First slice: pie to SVG         | in progress | m2     | Branch `sebastian/determined-bartik-42e25d`; Stage A done, see M2 handover |
-| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                                              |
-| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md`                   |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                        |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                   |
+| Milestone                          | Status      | Strand | Notes                                                    |
+| ---------------------------------- | ----------- | ------ | -------------------------------------------------------- |
+| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                    |
+| M2 First slice: pie to SVG         | in progress | m2     | Stage C done: CLI and Node addon; info still open        |
+| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                            |
+| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md` |
+| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                      |
+| M6 Remaining P1 diagrams           | not started | —      | After M5                                                 |
 
 ## Strands
 
-| Strand | Session | Worktree                   | Working on                                          | Next                                           | Blocked by |
-| ------ | ------- | -------------------------- | --------------------------------------------------- | ---------------------------------------------- | ---------- |
-| main   | —       | —                          | M1 done and merged                                  | M2 (pie to SVG) and M3 (flowchart parser)      | —          |
-| m2     | —       | `determined-bartik-42e25d` | Stage A: configuration and text, checkpoint pending | Stage B after the coordinating session answers | —          |
+| Strand | Session | Worktree                   | Working on                             | Next                                      | Blocked by |
+| ------ | ------- | -------------------------- | -------------------------------------- | ----------------------------------------- | ---------- |
+| main   | —       | —                          | M1 done and merged                     | M2 (pie to SVG) and M3 (flowchart parser) | —          |
+| m2     | —       | `determined-bartik-42e25d` | Stage C done; end-of-stage report sent | —                                         | —          |
 
 ## M1 handover
 
@@ -38,7 +38,17 @@ Merged into `main` on 2026-10-16 after review; the checks above pass on `main`. 
 
 ## M2 handover
 
-Stage A (configuration and text) is written; Stages B (themes, pie renderer, geometry comparison) and C (CLI, Node addon) wait for the coordinating session's answer.
+Stage A (configuration, text, YAML) is accepted and on main. Stage B (themes, pie renderer, geometry comparison) is done for pie: the two shipped themes are ported and match the reference exactly; the pie renderer and the `render(text, config)` facade are on the branch; the geometry comparison passes for all 24 pie fixtures. Stage C (CLI, Node addon) is done; see below.
+
+Stage B, done: `crates/ferrigura-model/src/theme/` ports the khroma functions the themes use and the two shipped themes, `redux-color` and `redux-dark-color`, in the order of the reference. `pnpm port:diff theme` runs 110 cases (55 override sets for each theme) against the reference: no difference. The configuration takes its `themeVariables` from the theme, computed as `updateCurrentConfig` does, and `pnpm port:diff config` covers them for the two shipped themes. `crates/ferrigura-render` lays out and writes a pie as `pieRenderer.ts` does (slices with d3 angles, the legend in its four positions, the title, the viewBox), with label widths from `ferrigura-text`; `crates/ferrigura` offers `render(text, config) → svg`. `tools/port/geometry/pie-geometry.ts` runs the reference in Chromium (`htmlLabels: false`, Lexica as a web font, redux-color) and ferrigura over the 24 pie fixtures and compares the geometry in one Chromium page. All 24 are within tolerance; the largest deviation is 0.016 px, one layout unit of 1/64 px, against the 0.05 px tolerance, and the angles agree within 1e-5 rad (d3-path writes three decimals). Side-by-side images for review: the notes folder, `stage-b/pie-geometry/`. Two things found on the way: a width that is off the 1/64 px grid makes Chromium scale the SVG and lay out its text at the scaled size, so the pie width is snapped to the grid; and the comparison must wait for the embedded faces to load.
+
+Colours, scope and accessibility (decision 0007), done. Every colour of the pie SVG is a custom property declared on the diagram's own id (`#id{--pie1: …}`), and the rules refer to it with `var()`. Each element also carries its concrete colour as a presentation attribute, which is what a viewer without custom properties draws. No element sets a colour inline. `ColorScheme::Auto` writes the light set and the dark set, the dark one under `@media (prefers-color-scheme: dark)`; `Light` and `Dark` write one set. The user's `themeVariables` apply to both sets. Every diagram has an id: by default a 64-bit FNV-1a hash of the text and the configuration, so the same input gives the same id; `RenderOptions::id` overrides it and must be a CSS identifier. Every selector starts with `#id`. `pnpm port:scope-pie` inlines three pies with different ids in one Chromium page, under a host stylesheet that paints every path, text and rectangle, and checks the computed colours of each against its declared ones under light, under dark and with the style sheets off: nine checks, all match. `accTitle` and `accDescr` are written as `<title>` and `<desc>`, the first children of the root, and the root refers to them with `aria-labelledby` and `aria-describedby`, as `addSVGa11yTitleDescription` does; `crates/ferrigura-render/src/a11y.rs` carries the cases of `accessibility.spec.ts`. Renderer rule: the pie's viewBox width is snapped to the 1/64 px grid (see Stage B). After these changes `pnpm port:geometry-pie` still passes for all 24 fixtures, and `pnpm port:diff` for pie, info, config, yaml and theme reports no difference.
+
+Theme names: `redux-color` and `redux-dark-color` ship. Any other name falls back by darkness (names ending in `dark` take `redux-dark-color`, the rest `redux-color`), so the reference's `default`, `forest`, `neutral` and `dark` themes are drawn with one of the two. The configuration differential therefore compares theme variables only for the two shipped themes.
+
+Known gaps for M2: the empty pie (no sections) gives the reference a `-Infinity` legend width and a broken viewBox, and ferrigura keeps zero. This is a named exception: the reference has no meaningful geometry for it to compare with. Fallback fonts for scripts Lexica does not cover; `info` is not rendered; the `default` theme of the reference is not drawn with its own variables.
+
+Stage C, done. `crates/ferrigura-cli` builds the binary `ferrigura`: it reads the diagram from a file or from standard input and writes the SVG to standard output or to `--output`; `--config` takes the configuration as a JSON object, and `--id` and `--scheme` (light, dark, auto) are the options of `render_with`. Exit code 1 for a diagram or configuration that does not render, 2 for a command line that does not parse; 9 unit and 11 integration tests. `crates/ferrigura-node` is the napi-rs addon, Node only, with no WebAssembly build: `render(text, config?, options?)` takes the same options, and errors are thrown with the crate's message. `node --test crates/ferrigura-node/test/render.test.mjs` builds the library and loads it with `process.dlopen`: seven tests. Still open for publishing: the package layout (`index.js`, the npm name `ferrigura`, prebuilt binaries per platform), which the addon does not need to work.
 
 Configuration, done: `crates/ferrigura-model/build.rs` generates the configuration types, their defaults and `CONFIG_KEYS` from `packages/mermaid/src/schemas/config.schema.yaml`, so the schema stays the single source. `src/config/ts_defaults.json` holds the TypeScript-only defaults (`pie.useWidth`, `treemap`); `src/config/ts_keys.txt` lists the keys the reference accepts that the schema does not name, which are the theme variables of the default theme and the TypeScript-only sections. `ferrigura_model::config::effective` applies the layers in the order of `mermaidAPI` (site config, front matter, directives; `assignWithDepth`, the key gating of `sanitizeDirective`, the removal of secure keys, the resolution of `theme`, `look` and `layout` through the diagram section). `ferrigura_syntax::config::read` reads the front matter `config` block (serde_yaml_ng) and the `init`, `initialize` and `wrap` directives, with the reference's error behaviour: invalid JSON in any directive drops all of them.
 
@@ -52,7 +62,7 @@ YAML, done: `crates/ferrigura-syntax/src/yaml.rs` reads YAML as js-yaml 4 does w
 
 Text, done: `crates/ferrigura-text` (fonts, measurement with harfrust, line metrics, Mermaid's wrapping, styled runs, subsetting with per-subset family names) is merged from its own worktree. Verified against Chromium in a fixture (180 widths, 24 boxes, 27 wraps, 7 styled-run lines) and against the spike's Rust binary. Deviations from the spike: the subset family name is a 16-hex-digit FNV-1a hash, not six digits; `wrap_line` takes one face, although Mermaid wraps styled words per word (styled runs are measured per run); no fallback fonts, WOFF2 or caching yet. The spike's generator for the Chromium fixture is not committed.
 
-Known gaps in the configuration: `themeVariables` are not computed (the theme port does that in Stage B), and they are left out of the comparison; non-finite numbers (`.inf`, `.nan`) are carried as the strings `"Infinity"`, `"-Infinity"` and `"NaN"`, because a serde_json value cannot hold them (a theme reads `THEME_COLOR_LIMIT` from there); a `config` key in a directive maps to the section of pie and info only; a directive whose arguments are not an object is ignored, where the reference passes the value on; the front matter `config` block is ignored when it is not an object.
+Known gaps in the configuration: `themeVariables` are not computed (the theme port does that in Stage B), and they are left out of the comparison; non-finite numbers (`.inf`, `.nan`) are carried as the strings `"Infinity"`, `"-Infinity"` and `"NaN"`, because a serde_json value cannot hold them (a theme reads `THEME_COLOR_LIMIT` from there); a `config` key in a directive maps to the section of pie and info only; a directive whose arguments are not an object (a word, a number, an array, a string) contributes nothing, as the reference's merge ignores such values, and 13 explicit cases in `config-cases.ts` show it; the front matter `config` block is ignored when it is not an object, which the same cases check.
 
 ## P1 diagram types
 
@@ -83,4 +93,5 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 - Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release. The repository is public as `sebastian-software/ferrigura` since 2026-10-16; the local folder is still called `ferraid`.
 - Open `help wanted` issues for every P3 diagram type and for math in labels once the GitHub repository exists.
 - Decide the mindmap layout when P2 starts.
+- M5 (flowchart labels with Markdown): `ferrigura-text`'s `wrap_line` takes one face, but Mermaid wraps styled words one by one, each in its own face (`createText.ts` gives each word after the first a leading space in its own tspan). The runs of a line are measured per run already; the wrapping must take runs too.
 - Replace the inherited changesets setup with release-please when the first crate is published.

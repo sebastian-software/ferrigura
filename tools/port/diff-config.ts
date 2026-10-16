@@ -154,17 +154,32 @@ function ported(config: unknown): unknown {
 const jsById = new Map(js.results.map((output) => [output.id, output]));
 const rsById = new Map(rs.results.map((output) => [output.id, output]));
 
+/**
+ * The themes ferrigura ships. Its theme variables are compared only for these: any other theme name
+ * is drawn with one of the two by darkness (`ferrigura_model::theme::Theme::from_name`), so the
+ * variables of the reference's other themes are not what ferrigura writes.
+ */
+const SHIPPED_THEMES = ['redux-color', 'redux-dark-color'];
+
 let accepted = 0;
 let differences = 0;
+let unshippedThemes = 0;
 for (const input of inputs) {
   const jsOutput = jsById.get(input.id);
   const rsOutput = rsById.get(input.id);
   if (jsOutput?.ok) accepted += 1;
+  const jsConfig = jsOutput?.ok ? (ported(jsOutput.config) as Record<string, unknown>) : undefined;
+  const rsConfig = rsOutput?.ok ? (ported(rsOutput.config) as Record<string, unknown>) : undefined;
+  if (jsConfig && rsConfig && !SHIPPED_THEMES.includes(String(jsConfig.theme))) {
+    unshippedThemes += 1;
+    delete jsConfig.themeVariables;
+    delete rsConfig.themeVariables;
+  }
   const agree =
     jsOutput !== undefined &&
     rsOutput !== undefined &&
     jsOutput.ok === rsOutput.ok &&
-    (!jsOutput.ok || same(ported(jsOutput.config), ported(rsOutput.config)));
+    (!jsOutput.ok || same(jsConfig, rsConfig));
   if (agree) continue;
   differences += 1;
   console.log(`\n✗ ${input.source}`);
@@ -176,7 +191,8 @@ for (const input of inputs) {
 
 console.log(
   `\nconfig: ${inputs.length} inputs, ${accepted} accepted by the reference, ` +
-    `${differences} differences; configKeys: ${missingInRust.length + extraInRust.length} differences`
+    `${differences} differences; configKeys: ${missingInRust.length + extraInRust.length} differences; ` +
+    `${unshippedThemes} inputs with a theme ferrigura does not ship compared without theme variables`
 );
 
 await writeFile(
