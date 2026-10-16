@@ -6,21 +6,21 @@ Each session updates its section when it stops: what changed, what is next, what
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                                      |
-| ---------------------------------- | ----------- | ------ | -------------------------------------------------------------------------- |
-| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                      |
-| M2 First slice: pie to SVG         | in progress | m2     | Branch `sebastian/determined-bartik-42e25d`; Stage A done, see M2 handover |
-| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                                              |
-| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md`                   |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                        |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                   |
+| Milestone                          | Status      | Strand | Notes                                                    |
+| ---------------------------------- | ----------- | ------ | -------------------------------------------------------- |
+| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                    |
+| M2 First slice: pie to SVG         | in progress | m2     | Stage B done for pie; Stage C (CLI, Node addon) next     |
+| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                            |
+| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md` |
+| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                      |
+| M6 Remaining P1 diagrams           | not started | —      | After M5                                                 |
 
 ## Strands
 
-| Strand | Session | Worktree                   | Working on                                          | Next                                           | Blocked by |
-| ------ | ------- | -------------------------- | --------------------------------------------------- | ---------------------------------------------- | ---------- |
-| main   | —       | —                          | M1 done and merged                                  | M2 (pie to SVG) and M3 (flowchart parser)      | —          |
-| m2     | —       | `determined-bartik-42e25d` | Stage A: configuration and text, checkpoint pending | Stage B after the coordinating session answers | —          |
+| Strand | Session | Worktree                   | Working on                                   | Next                                      | Blocked by |
+| ------ | ------- | -------------------------- | -------------------------------------------- | ----------------------------------------- | ---------- |
+| main   | —       | —                          | M1 done and merged                           | M2 (pie to SVG) and M3 (flowchart parser) | —          |
+| m2     | —       | `determined-bartik-42e25d` | Stage C: CLI and Node addon, then the report | —                                         | —          |
 
 ## M1 handover
 
@@ -38,13 +38,13 @@ Merged into `main` on 2026-10-16 after review; the checks above pass on `main`. 
 
 ## M2 handover
 
-Stage A (configuration, text, YAML) is accepted. Stage B is under way: the theme interface and the pie renderer are on the branch; the theme port (khroma subset and the two redux themes) runs in its own worktree; the geometry comparison is written and waits for the theme colours and font sizes, because the placeholder theme gives the SVG no font sizes. Stage C (CLI, Node addon) follows.
+Stage A (configuration, text, YAML) is accepted and on main. Stage B (themes, pie renderer, geometry comparison) is done for pie: the two shipped themes are ported and match the reference exactly; the pie renderer and the `render(text, config)` facade are on the branch; the geometry comparison passes for all 24 pie fixtures. Stage C (CLI, Node addon) is next.
 
-Stage B, so far: `crates/ferrigura-render` lays out and writes a pie as `pieRenderer.ts` does (slices with d3's angles, the legend positions, the title, the viewBox), with label widths from `ferrigura-text`. `crates/ferrigura` offers `render(text, config) → svg`. Eight integration tests cover order, hidden slices, legends, escaping, `showData` and the embedded font. `tools/port/geometry/pie-geometry.ts` runs the reference in Chromium (`htmlLabels: false`, Lexica as a web font) and ferrigura over the 24 pie fixtures and compares the geometry in one Chromium page; the tolerances are justified in the script (1e-5 rad for angles, because d3-path writes three decimals; 0.05 px for positions and sizes).
+Stage B, done: `crates/ferrigura-model/src/theme/` ports the khroma functions the themes use and the two shipped themes, `redux-color` and `redux-dark-color`, in the order of the reference. `pnpm port:diff theme` runs 110 cases (55 override sets for each theme) against the reference: no difference. The configuration takes its `themeVariables` from the theme, computed as `updateCurrentConfig` does, and `pnpm port:diff config` covers them for the two shipped themes. `crates/ferrigura-render` lays out and writes a pie as `pieRenderer.ts` does (slices with d3 angles, the legend in its four positions, the title, the viewBox), with label widths from `ferrigura-text`; `crates/ferrigura` offers `render(text, config) → svg`. `tools/port/geometry/pie-geometry.ts` runs the reference in Chromium (`htmlLabels: false`, Lexica as a web font, redux-color) and ferrigura over the 24 pie fixtures and compares the geometry in one Chromium page. All 24 are within tolerance; the largest deviation is 0.016 px, one layout unit of 1/64 px, against the 0.05 px tolerance, and the angles agree within 1e-5 rad (d3-path writes three decimals). Side-by-side images for review: the notes folder, `stage-b/pie-geometry/`. Two things found on the way: a width that is off the 1/64 px grid makes Chromium scale the SVG and lay out its text at the scaled size, so the pie width is snapped to the grid; and the comparison must wait for the embedded faces to load.
 
-Pie config values: `theme` falls back by darkness (names ending in `dark` take `redux-dark-color`, the rest `redux-color`); the reference's `default` and `forest` themes are not shipped.
+Theme names: `redux-color` and `redux-dark-color` ship. Any other name falls back by darkness (names ending in `dark` take `redux-dark-color`, the rest `redux-color`), so the reference's `default`, `forest`, `neutral` and `dark` themes are drawn with one of the two. The configuration differential therefore compares theme variables only for the two shipped themes.
 
-Known gaps for M2 (Stage B): the empty pie (no sections) gives the reference a `-Infinity` legend width and a broken viewBox, ferrigura uses zero; fallback fonts for scripts Lexica does not cover; the accessibility title and description of the SVG; `info` is not rendered.
+Known gaps for M2 (Stage B): the empty pie (no sections) gives the reference a `-Infinity` legend width and a broken viewBox, ferrigura uses zero; fallback fonts for scripts Lexica does not cover; the accessibility title and description of the SVG are not written yet; `info` is not rendered; the `default` theme of the reference is not drawn with its own variables.
 
 Configuration, done: `crates/ferrigura-model/build.rs` generates the configuration types, their defaults and `CONFIG_KEYS` from `packages/mermaid/src/schemas/config.schema.yaml`, so the schema stays the single source. `src/config/ts_defaults.json` holds the TypeScript-only defaults (`pie.useWidth`, `treemap`); `src/config/ts_keys.txt` lists the keys the reference accepts that the schema does not name, which are the theme variables of the default theme and the TypeScript-only sections. `ferrigura_model::config::effective` applies the layers in the order of `mermaidAPI` (site config, front matter, directives; `assignWithDepth`, the key gating of `sanitizeDirective`, the removal of secure keys, the resolution of `theme`, `look` and `layout` through the diagram section). `ferrigura_syntax::config::read` reads the front matter `config` block (serde_yaml_ng) and the `init`, `initialize` and `wrap` directives, with the reference's error behaviour: invalid JSON in any directive drops all of them.
 
