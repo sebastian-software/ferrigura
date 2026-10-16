@@ -3,6 +3,13 @@
 //! Each (family, weight, style) choice names one face. The font files are compiled into the
 //! crate, so measurement and embedding never depend on fonts installed on the viewer's system.
 
+use std::fmt;
+use std::sync::OnceLock;
+
+use harfrust::font::Font;
+
+use crate::error::TextError;
+
 /// A bundled font family.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FontFamily {
@@ -64,16 +71,36 @@ impl FontStyle {
 }
 
 /// One bundled font file and the choice it answers to.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Face {
     family: FontFamily,
     weight: FontWeight,
     style: FontStyle,
     file_name: &'static str,
+    /// Parsed on first use, then shared by every measurement of this face.
+    font: OnceLock<Option<Font>>,
     data: &'static [u8],
 }
 
+impl fmt::Debug for Face {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Face")
+            .field("family", &self.family)
+            .field("weight", &self.weight)
+            .field("style", &self.style)
+            .field("file_name", &self.file_name)
+            .finish_non_exhaustive()
+    }
+}
+
 impl Face {
+    /// The parsed font, read from the bundled data on first use.
+    pub(crate) fn font(&self) -> Result<&Font, TextError> {
+        self.font
+            .get_or_init(|| Font::new(self.data, 0))
+            .as_ref()
+            .ok_or(TextError::InvalidFont)
+    }
+
     /// The family this face belongs to.
     #[must_use]
     pub fn family(&self) -> FontFamily {
@@ -110,6 +137,7 @@ static LEXICA_REGULAR: Face = Face {
     weight: FontWeight::Normal,
     style: FontStyle::Normal,
     file_name: "LexicaUltralegible-Regular.ttf",
+    font: OnceLock::new(),
     data: include_bytes!("../fonts/LexicaUltralegible-Regular.ttf"),
 };
 
@@ -118,6 +146,7 @@ static LEXICA_ITALIC: Face = Face {
     weight: FontWeight::Normal,
     style: FontStyle::Italic,
     file_name: "LexicaUltralegible-Italic.ttf",
+    font: OnceLock::new(),
     data: include_bytes!("../fonts/LexicaUltralegible-Italic.ttf"),
 };
 
@@ -126,6 +155,7 @@ static LEXICA_BOLD: Face = Face {
     weight: FontWeight::Bold,
     style: FontStyle::Normal,
     file_name: "LexicaUltralegible-Bold.ttf",
+    font: OnceLock::new(),
     data: include_bytes!("../fonts/LexicaUltralegible-Bold.ttf"),
 };
 
@@ -134,6 +164,7 @@ static LEXICA_BOLD_ITALIC: Face = Face {
     weight: FontWeight::Bold,
     style: FontStyle::Italic,
     file_name: "LexicaUltralegible-BoldItalic.ttf",
+    font: OnceLock::new(),
     data: include_bytes!("../fonts/LexicaUltralegible-BoldItalic.ttf"),
 };
 
@@ -142,6 +173,7 @@ static ATKINSON_MONO_REGULAR: Face = Face {
     weight: FontWeight::Normal,
     style: FontStyle::Normal,
     file_name: "AtkinsonHyperlegibleMono-Regular.ttf",
+    font: OnceLock::new(),
     data: include_bytes!("../fonts/AtkinsonHyperlegibleMono-Regular.ttf"),
 };
 
@@ -150,6 +182,7 @@ static ATKINSON_MONO_ITALIC: Face = Face {
     weight: FontWeight::Normal,
     style: FontStyle::Italic,
     file_name: "AtkinsonHyperlegibleMono-Italic.ttf",
+    font: OnceLock::new(),
     data: include_bytes!("../fonts/AtkinsonHyperlegibleMono-Italic.ttf"),
 };
 
@@ -158,6 +191,7 @@ static ATKINSON_MONO_BOLD: Face = Face {
     weight: FontWeight::Bold,
     style: FontStyle::Normal,
     file_name: "AtkinsonHyperlegibleMono-Bold.ttf",
+    font: OnceLock::new(),
     data: include_bytes!("../fonts/AtkinsonHyperlegibleMono-Bold.ttf"),
 };
 
@@ -166,6 +200,7 @@ static ATKINSON_MONO_BOLD_ITALIC: Face = Face {
     weight: FontWeight::Bold,
     style: FontStyle::Italic,
     file_name: "AtkinsonHyperlegibleMono-BoldItalic.ttf",
+    font: OnceLock::new(),
     data: include_bytes!("../fonts/AtkinsonHyperlegibleMono-BoldItalic.ttf"),
 };
 

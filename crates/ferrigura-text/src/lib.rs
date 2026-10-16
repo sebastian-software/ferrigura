@@ -15,6 +15,12 @@
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
 
+mod error;
 pub mod fonts;
+pub mod measure;
+pub mod metrics;
 
+pub use error::TextError;
 pub use fonts::{Face, FontFamily, FontStyle, FontWeight, face};
+pub use measure::{Run, measure, measure_data, measure_line};
+pub use metrics::{FontMetrics, TextBox, font_metrics, text_box};
