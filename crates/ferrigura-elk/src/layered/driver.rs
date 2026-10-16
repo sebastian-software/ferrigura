@@ -336,7 +336,13 @@ fn module_name(step: &Step) -> Result<&'static str, LayoutError> {
             S::LAYER_SIZE_AND_GRAPH_HEIGHT_CALCULATOR => {
                 "org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator"
             }
+            S::END_LABEL_PREPROCESSOR => {
+                "org.eclipse.elk.alg.layered.intermediate.EndLabelPreprocessor"
+            }
             S::END_LABEL_SORTER => "org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+            S::END_LABEL_POSTPROCESSOR => {
+                "org.eclipse.elk.alg.layered.intermediate.EndLabelPostprocessor"
+            }
             S::LABEL_DUMMY_INSERTER => {
                 "org.eclipse.elk.alg.layered.intermediate.LabelDummyInserter"
             }
