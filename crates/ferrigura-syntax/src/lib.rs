@@ -23,11 +23,13 @@ mod scan;
 mod text;
 
 pub mod config;
+pub mod er;
 pub mod info;
 pub mod pie;
 pub mod sanitize;
 pub mod yaml;
 
+use ferrigura_model::er::ErDiagram;
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::info::InfoDiagram;
 use ferrigura_model::pie::PieDiagram;
@@ -43,6 +45,8 @@ pub enum DiagramType {
     Info,
     /// The flowchart, written `flowchart` or `graph`.
     Flowchart,
+    /// The ER diagram, written `erDiagram`.
+    Er,
 }
 
 impl DiagramType {
@@ -53,6 +57,7 @@ impl DiagramType {
             Self::Pie => "pie",
             Self::Info => "info",
             Self::Flowchart => "flowchart",
+            Self::Er => "er",
         }
     }
 }
@@ -66,6 +71,8 @@ pub enum Diagram {
     Info(InfoDiagram),
     /// A flowchart.
     Flowchart(FlowchartDiagram),
+    /// An ER diagram.
+    Er(ErDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -76,7 +83,10 @@ pub enum Diagram {
 pub fn detect(text: &str) -> Option<DiagramType> {
     let prepared = preprocess::prepare(text).ok()?;
     let rest = skip_hidden_prefix(&prepared.text);
-    if rest.starts_with("pie") {
+    // The order of the reference's detectors (`diagram-orchestration.ts`): ER comes before pie.
+    if rest.starts_with("erDiagram") {
+        Some(DiagramType::Er)
+    } else if rest.starts_with("pie") {
         Some(DiagramType::Pie)
     } else if rest.starts_with("info") {
         Some(DiagramType::Info)
@@ -90,6 +100,7 @@ pub fn detect(text: &str) -> Option<DiagramType> {
 /// Parses a diagram of any type this crate covers, detecting its type first.
 pub fn parse(text: &str) -> Result<Diagram, ParseError> {
     match detect(text) {
+        Some(DiagramType::Er) => er::parse(text).map(Diagram::Er),
         Some(DiagramType::Pie) => pie::parse(text).map(Diagram::Pie),
         Some(DiagramType::Info) => info::parse(text).map(Diagram::Info),
         Some(DiagramType::Flowchart) => flowchart::parse(text)
