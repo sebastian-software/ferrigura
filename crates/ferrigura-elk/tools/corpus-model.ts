@@ -174,9 +174,9 @@ export function nodesOnlyGraph(count: number): Record<string, unknown> {
 }
 
 /**
- * Hand-built graphs with edges and no labels, for the steps before label dummies: a chain, a
- * diamond (fan-out, then fan-in), a cycle, and a long edge that skips a layer. Nodes are 50 by
- * 40, and the root has Mermaid's options.
+ * Hand-built graphs with edges, for the steps before label dummies: a chain, a diamond (fan-out,
+ * then fan-in), a cycle, and a long edge that skips a layer. Nodes are 50 by 40, and the root has
+ * Mermaid's options. The self loop graphs of `syntheticSelfLoopGraphs` come last, with labels.
  */
 export function syntheticEdgeGraphs(): { name: string; graph: Record<string, unknown> }[] {
   const graph = (ids: string[], pairs: [string, string][]): Record<string, unknown> => ({
@@ -256,6 +256,147 @@ export function syntheticEdgeGraphs(): { name: string; graph: Record<string, unk
           ['n1', 'n2'],
           ['n0', 'n2'],
         ]
+      ),
+    },
+    ...syntheticSelfLoopGraphs(),
+  ];
+}
+
+/**
+ * Hand-built graphs with self loops, one per branch of the self loop processors: both orderings,
+ * the distributions that put loops on one side and on two sides, the corner loops, stacked labels,
+ * and opposing loops, which need fixed ports. Each self loop has two ports of its own, as the
+ * importer makes them for an edge from a node to itself.
+ *
+ * Three- and four-side loops are left out. A loop on three or four sides takes several edges
+ * through one shared port, which is a hyper loop, and hyper loops are not ported.
+ */
+function syntheticSelfLoopGraphs(): { name: string; graph: Record<string, unknown> }[] {
+  const plainNode = (id: string): Record<string, unknown> => ({ id, width: 50, height: 40 });
+  const loopNode = (
+    id: string,
+    options: Record<string, string>,
+    extra: Record<string, unknown> = {}
+  ): Record<string, unknown> => ({ id, width: 50, height: 40, layoutOptions: options, ...extra });
+  const port = (id: string, side: string): Record<string, unknown> => ({
+    id,
+    width: 0,
+    height: 0,
+    layoutOptions: { 'elk.port.side': side },
+  });
+  // An edge between two ends (nodes or ports), with a centred label for each text.
+  const edge = (
+    id: string,
+    source: string,
+    target: string,
+    labels: string[] = []
+  ): Record<string, unknown> => ({
+    id,
+    sources: [source],
+    targets: [target],
+    ...(labels.length > 0
+      ? {
+          labels: labels.map((text) => ({
+            text,
+            width: 7 * text.length,
+            height: 12,
+            layoutOptions: { 'edgeLabels.placement': 'CENTER' },
+          })),
+        }
+      : {}),
+  });
+  const root = (
+    children: Record<string, unknown>[],
+    edges: Record<string, unknown>[]
+  ): Record<string, unknown> => ({
+    id: 'root',
+    layoutOptions: rootLayoutOptionsDefault(),
+    children,
+    edges,
+  });
+  const north = 'elk.layered.edgeRouting.selfLoopDistribution';
+  const ordering = 'elk.layered.edgeRouting.selfLoopOrdering';
+  // Eight loops on one node, the first four labelled, and a plain edge out of it.
+  const eightLoops = Array.from({ length: 8 }, (_, index) =>
+    edge(`e${index}`, 'n0', 'n0', index % 2 === 0 ? [`l${index}`] : [])
+  );
+
+  return [
+    {
+      name: 'synthetic__self-loops-north-sequenced',
+      graph: root(
+        [loopNode('n0', { [north]: 'NORTH', [ordering]: 'SEQUENCED' }), plainNode('n1')],
+        [
+          edge('e0', 'n0', 'n0', ['a']),
+          edge('e1', 'n0', 'n0', ['bb']),
+          edge('e2', 'n0', 'n0', ['ccc']),
+          edge('e3', 'n0', 'n1'),
+        ]
+      ),
+    },
+    {
+      name: 'synthetic__self-loops-north-south-sequenced',
+      graph: root(
+        [loopNode('n0', { [north]: 'NORTH_SOUTH', [ordering]: 'SEQUENCED' }), plainNode('n1')],
+        [
+          edge('e0', 'n0', 'n0', ['p']),
+          edge('e1', 'n0', 'n0', ['qq']),
+          edge('e2', 'n0', 'n0', ['rrr']),
+          edge('e3', 'n0', 'n0', ['ssss']),
+          edge('e4', 'n0', 'n1'),
+        ]
+      ),
+    },
+    {
+      name: 'synthetic__self-loops-north-reverse-stacked',
+      graph: root(
+        [loopNode('n0', { [north]: 'NORTH', [ordering]: 'REVERSE_STACKED' }), plainNode('n1')],
+        [
+          edge('e0', 'n0', 'n0', ['top', 'bottom']),
+          edge('e1', 'n0', 'n0'),
+          edge('e2', 'n0', 'n0', ['mid']),
+          edge('e3', 'n0', 'n1'),
+        ]
+      ),
+    },
+    {
+      name: 'synthetic__self-loops-equally-sides',
+      graph: root(
+        [loopNode('n0', { [north]: 'EQUALLY' }), plainNode('n1')],
+        [
+          edge('e0', 'n0', 'n0', ['north']),
+          edge('e1', 'n0', 'n0', ['south']),
+          edge('e2', 'n0', 'n0', ['east']),
+          edge('e3', 'n0', 'n0', ['west']),
+          edge('e4', 'n0', 'n1'),
+        ]
+      ),
+    },
+    {
+      name: 'synthetic__self-loops-equally-corners',
+      graph: root(
+        [loopNode('n0', { [north]: 'EQUALLY' }), plainNode('n1')],
+        [...eightLoops, edge('e8', 'n0', 'n1')]
+      ),
+    },
+    {
+      name: 'synthetic__self-loops-fixed-side-opposing',
+      graph: root(
+        [
+          loopNode(
+            'n0',
+            { 'elk.portConstraints': 'FIXED_SIDE' },
+            {
+              ports: [
+                port('p0', 'EAST'),
+                port('p1', 'WEST'),
+                port('p2', 'NORTH'),
+                port('p3', 'SOUTH'),
+              ],
+            }
+          ),
+        ],
+        [edge('e0', 'p0', 'p1', ['east west']), edge('e1', 'p2', 'p3', ['north south'])]
       ),
     },
   ];

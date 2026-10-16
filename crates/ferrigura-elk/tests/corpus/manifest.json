@@ -1104,6 +1104,54 @@
    "edges": 0,
    "compound": false,
    "edgeLabels": false
+  },
+  {
+   "name": "synthetic__self-loops-equally-corners",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 9,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-equally-sides",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 5,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-fixed-side-opposing",
+   "fixture": null,
+   "nodes": 1,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-north-reverse-stacked",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-north-sequenced",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-north-south-sequenced",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 5,
+   "compound": false,
+   "edgeLabels": true
   }
  ]
 }
