@@ -34,6 +34,22 @@ pub fn base_style_sheet(
     font_size: &str,
     families: &[EmbeddedFamily],
 ) -> String {
+    base_style_sheet_with(svg_id, themes, font_family, font_size, families, "")
+}
+
+/// [`base_style_sheet`] with the diagram's own raw CSS, `own_rules`, placed after the base rules of
+/// `p` and before the `neo` look rules, as the reference's `getStyles` places a diagram's `styles.js`
+/// (`styles.ts` 40-45 and the rule order of `mermaidAPI`). The own rules are not escaped here: the
+/// caller writes them as CSS text, and the whole sheet is escaped once.
+#[must_use]
+pub fn base_style_sheet_with(
+    svg_id: &str,
+    themes: Themes<'_>,
+    font_family: &str,
+    font_size: &str,
+    families: &[EmbeddedFamily],
+    own_rules: &str,
+) -> String {
     let variables = themes.primary();
     let id = format!("#{svg_id}");
     let stroke_width = text_of(variables, "strokeWidth").unwrap_or_else(|| "1".to_owned());
@@ -80,6 +96,7 @@ pub fn base_style_sheet(
 {id} .marker.cross{{stroke:var(--lineColor);}}\
 {id} svg{{font-family:{font_family};font-size:{font_size};}}\
 {id} p{{margin:0;}}\
+{own_rules}\
 {id} .node .neo-node{{stroke:var(--nodeBorder);}}\
 {id} [data-look=\"neo\"].node rect,{id} [data-look=\"neo\"].cluster rect,{id} [data-look=\"neo\"].node polygon{{stroke:var(--nodeBorder);filter:{shadow};}}\
 {id} [data-look=\"neo\"].swimlane.cluster rect{{filter:none;}}\
