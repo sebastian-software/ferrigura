@@ -8,7 +8,7 @@ import { join, relative } from 'node:path';
 
 import ts from 'typescript';
 
-import { explicitCases } from './cases.ts';
+import { explicitCases, undetectedCases } from './cases.ts';
 import type { PortInput } from './reference.ts';
 
 const root = new URL('../../', import.meta.url);
@@ -17,6 +17,7 @@ const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
   flowchart: /^\s*(graph|flowchart)/,
+  timeline: /^\s*timeline/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */
@@ -69,7 +70,7 @@ export async function collectInputs(type: string): Promise<PortInput[]> {
     candidates.push({ source: fixture, text: await readFile(new URL(fixture, root), 'utf8') });
   }
 
-  const specs = await walk('packages/', (path) => /\.(spec|test)\.ts$/.test(path));
+  const specs = await walk('packages/', (path) => /\.(spec|test)\.(ts|js)$/.test(path));
   for (const spec of specs) {
     const source = await readFile(new URL(spec, root), 'utf8');
     for (const literal of stringLiterals(spec, source)) {
@@ -89,7 +90,7 @@ export async function collectInputs(type: string): Promise<PortInput[]> {
     }
   }
 
-  for (const text of explicitCases[type] ?? []) {
+  for (const text of [...(explicitCases[type] ?? []), ...(undetectedCases[type] ?? [])]) {
     candidates.push({ source: 'tools/port/cases.ts', text });
   }
 

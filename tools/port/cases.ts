@@ -6,6 +6,15 @@
  * the front matter title does not reach the info model. The accessibility cases pin the blank
  * handling of block and single-line values, which the DB whitespace rules must leave alone.
  */
+/**
+ * Explicit inputs that the detector of their type must not take: the reference and ferrigura both
+ * leave them undetected, so the configuration run expects no diagram scope for them.
+ */
+export const undetectedCases: Record<string, string[]> = {
+  // Detection is case-sensitive: a capitalised keyword is not a timeline.
+  timeline: ['Timeline\nsection A\n  t: e'],
+};
+
 export const explicitCases: Record<string, string[]> = {
   pie: [
     '---\ntitle: From front matter\n---\npie title From grammar\n"a": 1',
@@ -48,5 +57,43 @@ export const explicitCases: Record<string, string[]> = {
     'flowchart TB\nA-->A\nA-->B\nsubgraph s [S]\nA\nB\nend\ns@{ view: collapsed }\nB-->C',
     // Invisible links and an open arrow have no markers; the edge classes depend on the stroke.
     'flowchart TB\nA ~~~ B\nA --- C\nA --o D\nA -- text --> E',
+  ],
+  timeline: [
+    // The front matter title is dropped; the grammar's title counts even when it is blank.
+    '---\ntitle: From front matter\n---\ntimeline\ntitle From grammar\ntitle  ',
+    '---\ntitle: Only front matter\n---\ntimeline\nsection A',
+    // The keyword `timeline` needs a word boundary; `TD` and `LR` need one too.
+    'timeline TDx\n  t1',
+    'timelineX\n  t1',
+    // An event needs a blank after its colon; a colon followed by a blank starts a new event.
+    'timeline\n2004 : a:b\n2004:x',
+    'timeline\n2004 : a: b',
+    // An event before any period is an error.
+    'timeline\n  : orphan',
+    // The value of accTitle may be on the next line; at the end of the input it is an error.
+    'timeline\naccTitle:\n  2004',
+    'timeline\naccTitle:',
+    'timeline\naccDescr: ',
+    // An accessibility block: comment marks are text, the indentation goes, and the block must close.
+    'timeline\naccDescr {\n  a # b\n  c %% d\n}',
+    'timeline\naccDescr {\n  never closed',
+    'timeline\naccDescr {}',
+    // Comments: one character before `%%`, a whole line starting with `%`, and a `#` that ends a period.
+    'timeline\nx%%c\nabc%%c\n%abc\n2004 # hidden',
+    // Blank lines and blanks have no effect on the names.
+    'timeline\n\n  section A \n\n  t1 \n',
+    // A section name that repeats keeps both occurrences; each occurrence has its own periods.
+    'timeline\nsection A\n  t1\nsection A\n  t2',
+    // Entities are encoded; the header texts are sanitised, and the entity in a section is kept encoded.
+    'timeline\ntitle AT&T <b>bold</b>\naccTitle: AT&T\nsection #quot;A#quot;\n  t: #9829;',
+    'timeline\ntitle AT&T\n  accTitle:   spaced   out  ',
+    // A second header is an error, and so is a header that is not the first token.
+    'timeline\ntimeline TD',
+    'timeline LR\nsection A\n  t: e',
+    'timeline TD\ntitle x\n  t: e',
+    // Statements need no line break between them.
+    'timeline section A',
+    // A directive is removed before the parse and does not change the grammar.
+    '%%{init: {"theme": "forest"}}%%\ntimeline\nsection A\n  t: e',
   ],
 };
