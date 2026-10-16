@@ -3,14 +3,15 @@
  *
  * The text goes through `preprocessDiagram`, then `encodeEntities` and a line break, as
  * `Diagram.fromText` gives it to the parser; the Jison parser then fills the flowchart DB, and the
- * DB's state is read out as the canonical model. The DB sanitises its texts with DOMPurify, which
- * needs a DOM, and the canonical model keeps the source text: for the run the sanitising functions
- * are the identity, and the two header setters record the value with the whitespace rules the DB
- * applies. See `docs-port/canonical-model.md` and `docs-port/flowchart/PLAN.md`, section 7.
+ * DB's state is read out as the canonical model. The DB sanitises the node, edge and title texts
+ * with DOMPurify, as the reference's `sanitizeText` does, and the port does the same
+ * (`ferrigura-syntax`'s `sanitize`), so the reference runs with a window (`provideDomForSanitising`).
+ * The two header setters record the value with the whitespace rules the DB applies, and are
+ * replaced. See `docs-port/canonical-model.md` and `docs-port/flowchart/PLAN.md`, section 7.
  *
  * Usage: `tsx tools/port/export-flowchart.ts inputs.json outputs.json`
  */
-import { registerDetectors, type Reference } from './reference.ts';
+import { provideDomForSanitising, registerDetectors, type Reference } from './reference.ts';
 import { runExporter } from './exporter.ts';
 
 interface FlowDb {
@@ -36,6 +37,7 @@ interface Modules {
 }
 
 async function loadModules(reference: Reference): Promise<Modules> {
+  provideDomForSanitising();
   await registerDetectors(reference);
   const [preprocess, encode, flowParser, flowDb, common, utils] = await Promise.all([
     reference.load<Modules['preprocess']>('/packages/mermaid/src/preprocess.ts'),
@@ -47,8 +49,7 @@ async function loadModules(reference: Reference): Promise<Modules> {
     reference.load<Modules['common']>('/packages/mermaid/src/diagrams/common/common.ts'),
     reference.load<Modules['utils']>('/packages/mermaid/src/utils.ts'),
   ]);
-  // The DOM-dependent steps are the identity; the canonical model keeps the source text.
-  common.default.sanitizeText = (text: string) => text;
+  // The header setters are replaced below; the flowchart texts keep the reference's sanitising.
   utils.default.formatUrl = (link: string) => link.trim() || undefined;
   return { preprocess, encode, flowParser, flowDb, common, utils };
 }

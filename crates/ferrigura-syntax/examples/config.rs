@@ -6,7 +6,8 @@
 //!
 //! Inputs are `[{"id": 0, "text": "…", "site": {…}}]`; `site` is optional and stands for the
 //! `initialize` settings. The output is `{"configKeys": […], "results": [...]}` where each result is
-//! `{"id": 0, "ok": true, "config": {…}}` or `{"id": 0, "ok": false, "error": "…"}`.
+//! `{"id": 0, "ok": true, "scope": "pie", "config": {…}}` or `{"id": 0, "ok": false, "error": "…"}`.
+//! `scope` is the configuration section of the text's diagram type, or `null` when none is detected.
 //!
 //! The configuration keeps `NaN` and infinite numbers as numbers; JSON cannot hold them, so this
 //! writes them as the strings `"NaN"`, `"Infinity"` and `"-Infinity"`, the same as the exporter.
@@ -19,11 +20,15 @@ use ferrigura_model::value::Value;
 use ferrigura_syntax::{DiagramType, ParseError, config, detect};
 use serde_json::json;
 
+/// The configuration section of a text's diagram type, as the reference names it.
+fn scope_of(text: &str) -> Option<&'static str> {
+    detect(text).map(DiagramType::config_key)
+}
+
 /// The effective configuration of one text, with the site settings it was given.
 fn effective_config(text: &str, site: Option<&Value>) -> Result<Value, ParseError> {
     let directive = config::read(text)?;
-    let scope = detect(text).map(DiagramType::config_key);
-    Ok(effective(site, scope, &directive))
+    Ok(effective(site, scope_of(text), &directive))
 }
 
 /// The configuration as JSON, with the non-finite numbers written as strings.
@@ -73,8 +78,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             .get("site")
             .filter(|site| !site.is_null())
             .map(|site| Value::from(site.clone()));
+        let scope = scope_of(text);
         results.push(match effective_config(text, site.as_ref()) {
-            Ok(config) => json!({ "id": id, "ok": true, "config": differential_json(&config) }),
+            Ok(config) => json!({
+                "id": id,
+                "ok": true,
+                "scope": scope,
+                "config": differential_json(&config),
+            }),
             Err(error) => json!({ "id": id, "ok": false, "error": error.message }),
         });
     }

@@ -1,8 +1,9 @@
 //! Vertical metrics of a line: the text box browsers draw around it.
 //!
-//! The font's ascent and descent are rounded to whole pixels, each on its own, and the text box
-//! is built from the rounded values. That is how Chromium lays out SVG text, and with the same
-//! rounding the box matches the browser exactly.
+//! The font's ascent and descent are rounded to whole pixels, each on its own, a tie going down
+//! (28.5 becomes 28), and the text box is built from the rounded values. The size is floored to
+//! 1/100 px first. That is how Chromium lays out SVG text, and with the same rounding the box
+//! matches the browser exactly. The fixture in `tests/fixtures/chromium.json` holds the evidence.
 
 use crate::error::TextError;
 use crate::fonts::Face;
@@ -58,23 +59,49 @@ pub fn font_metrics(face: &Face, size: f64) -> Result<FontMetrics, TextError> {
 
 /// The text box of `face` at `size` pixels, with ascent and descent rounded to whole pixels.
 ///
+/// The size is first floored to 1/100 px, as Chromium sets SVG text (see [`laid_out_size`]).
+///
 /// # Errors
 ///
 /// Returns an error if the font cannot be parsed or has no line metrics.
 pub fn text_box(face: &Face, size: f64) -> Result<TextBox, TextError> {
-    let metrics = font_metrics(face, size)?;
+    let metrics = font_metrics(face, laid_out_size(size))?;
     Ok(text_box_from(metrics))
 }
 
-/// Builds the text box from unrounded metrics: each of ascent and descent is rounded on its own.
+/// Builds the text box from unrounded metrics: each of ascent and descent is rounded on its own,
+/// a tie going down.
 #[must_use]
 pub fn text_box_from(metrics: FontMetrics) -> TextBox {
-    let ascent = metrics.ascent.round();
-    let descent = metrics.descent.round();
+    let ascent = round_half_down(metrics.ascent);
+    let descent = round_half_down(metrics.descent);
     TextBox {
         ascent,
         descent,
         top: ascent,
         height: ascent + descent,
+    }
+}
+
+/// The size Chromium lays SVG text out at: `size` floored to 1/100 px. At 10.005 px the box is the
+/// one of 10.00 px (9 and 3), not of 10.005 px (10 and 3).
+///
+/// The epsilon keeps a size whose product with 100 falls just short of a whole number, such as
+/// 0.29 (28.999999999999996), from flooring one hundredth too low.
+fn laid_out_size(size: f64) -> f64 {
+    ((size * 100.0) + 1e-6).floor() / 100.0
+}
+
+/// Rounds a positive metric to a whole pixel, a tie going down: 28.5 becomes 28, 28.6 becomes 29.
+///
+/// Chromium does this for both ascent and descent at every whole size tested, and no other rule
+/// fits them all (`tests/fixtures/chromium.json`): round half up misses every tie (10, 30 and 50 px
+/// among them), round half to even misses the ties at 10 and 50 px, and rounding ascent plus
+/// descent together gives a height one pixel too large at 50 px.
+fn round_half_down(value: f64) -> f64 {
+    if value.fract() == 0.5 {
+        value.floor()
+    } else {
+        value.round()
     }
 }

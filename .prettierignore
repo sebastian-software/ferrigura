@@ -17,3 +17,6 @@ generated/
 packages/mermaid/src/docs/config/setup
 # Generated from elkjs output by crates/ferrigura-elk/tools/capture-corpus.ts
 crates/ferrigura-elk/tests/corpus/
+# Generated from reference captures by the M5 port tools (tools/port/)
+crates/ferrigura-render/tests/data/
+crates/ferrigura-render/tests/fixtures/

@@ -15,12 +15,13 @@ use ferrigura_model::config::PieDiagramConfig;
 use ferrigura_model::pie::{PieDiagram, PieSection};
 use ferrigura_model::value::Value;
 use ferrigura_text::{
-    EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure,
+    EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, layout_width, measure,
 };
 
 use crate::RenderError;
 use crate::a11y;
 use crate::svg::{arc_path, escape, font_faces, number};
+use crate::variables::{css_text, px, text_of};
 
 const MARGIN: f64 = 40.0;
 const LEGEND_RECT_SIZE: f64 = 18.0;
@@ -58,7 +59,7 @@ pub enum Themes<'a> {
 
 impl Themes<'_> {
     /// The set that gives the presentation attributes and the sizes: the single set, or the light one.
-    fn primary(&self) -> &Value {
+    pub(crate) fn primary(&self) -> &Value {
         match self {
             Self::Single(variables) => variables,
             Self::Schemes { light, .. } => light,
@@ -132,7 +133,8 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
         .collect();
     let mut longest_text_width: f64 = 0.0;
     for label in &legend_labels {
-        longest_text_width = longest_text_width.max(measure(sans, label, legend_size)?);
+        longest_text_width =
+            longest_text_width.max(layout_width(measure(sans, label, legend_size)?));
     }
 
     let legend_height = LEGEND_RECT_SIZE + LEGEND_SPACING;
@@ -188,7 +190,7 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
     let title_width = if title.is_empty() {
         0.0
     } else {
-        measure(sans, title, title_size)?
+        layout_width(measure(sans, title, title_size)?)
     };
     let title_left = PIE_WIDTH / 2.0 - title_width / 2.0;
     let title_right = PIE_WIDTH / 2.0 + title_width / 2.0;
@@ -251,7 +253,7 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
     for (arc, text) in visible.iter().zip(&slice_labels) {
         let middle = (arc.start + arc.end) / 2.0 - PI / 2.0;
         let (cx, cy) = (label_radius * middle.cos(), label_radius * middle.sin());
-        let width = measure(sans, text, section_size)?;
+        let width = layout_width(measure(sans, text, section_size)?);
         body.push_str(&format!(
             "<text class=\"slice\"{} x=\"{}\" y=\"{}\">{}</text>",
             attribute(variables, "fill", "pieSectionTextColor"),
@@ -442,14 +444,6 @@ fn style_element(
     format!("<style>{}{tokens}{rules}{slots}</style>", css_text(&faces))
 }
 
-/// Text for a `<style>` element: the characters that would end the element or start a reference
-/// are escaped, and the quotes of CSS are kept as they are.
-fn css_text(css: &str) -> String {
-    css.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-}
-
 /// A length rounded to the browser's layout unit of 1/64 px. A width that is not on that grid makes
 /// the browser scale the drawing by a fraction, and it then lays the text out at the scaled size,
 /// which moves the text's width by a few hundredths of a pixel. The reference's widths are on the
@@ -469,29 +463,4 @@ fn to_fixed0(percent: f64) -> String {
 /// The text of a slice's label: its share of the total in whole per cent.
 fn slice_text(section: &PieSection, total: f64) -> String {
     format!("{}%", to_fixed0(section.value / total * 100.0))
-}
-
-/// A variable as text: a string as it is, a number as JavaScript prints it.
-fn text_of(variables: &Value, name: &str) -> Option<String> {
-    match variables.get(name)? {
-        Value::String(text) => Some(text.clone()),
-        Value::Number(number_value) => Some(number(*number_value)),
-        _ => None,
-    }
-}
-
-/// The leading pixel count of a font size or stroke width, as `parseFontSize` reads it.
-fn px(variables: &Value, name: &str) -> Option<f64> {
-    leading_integer(&text_of(variables, name)?)
-}
-
-/// `parseInt(text, 10)` for the leading digits of a size such as `25px`.
-fn leading_integer(text: &str) -> Option<f64> {
-    let trimmed = text.trim_start();
-    let digits: String = trimmed
-        .char_indices()
-        .take_while(|(index, c)| c.is_ascii_digit() || (*index == 0 && (*c == '-' || *c == '+')))
-        .map(|(_, c)| c)
-        .collect();
-    digits.parse::<f64>().ok().filter(|value| value.is_finite())
 }

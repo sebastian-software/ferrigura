@@ -3,8 +3,10 @@
 //! positions, the member set of the subgraphs, the count of edges per pair). Every lookup the
 //! reference does by scanning an array is a map here, so the parse stays linear.
 //!
-//! Each method follows the reference method of the same name; the comments name the rule that
-//! the reference applies in place of the sanitising step, which the model leaves out.
+//! Each method follows the reference method of the same name. The texts that the reference
+//! sanitises at parse time (node text, edge text and subgraph titles) go through
+//! [`sanitize_text`], the DOMPurify subset of `sanitize.rs`; the `@{ label }` text does not, as in the
+//! reference.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -14,6 +16,7 @@ use ferrigura_model::flowchart::{
 
 use ferrigura_model::value::Value;
 
+use crate::sanitize::sanitize_text;
 use crate::text::{is_js_space, js_trim};
 use crate::yaml::Yaml;
 
@@ -67,6 +70,9 @@ pub(crate) struct Db {
     acc_descr: String,
     vertices: Vec<FlowVertex>,
     vertex_index: HashMap<String, usize>,
+    /// The reference's `vertexCounter`: the number of `addVertex` calls that reach the vertex
+    /// creation, which the DOM id of a new vertex takes.
+    vertex_counter: u32,
     edges: Vec<FlowEdge>,
     edge_index: HashMap<String, usize>,
     pair_counts: HashMap<(String, String), usize>,
@@ -92,6 +98,7 @@ impl Db {
             acc_descr: String::new(),
             vertices: Vec::new(),
             vertex_index: HashMap::new(),
+            vertex_counter: 0,
             edges: Vec::new(),
             edge_index: HashMap::new(),
             pair_counts: HashMap::new(),
@@ -162,6 +169,10 @@ impl Db {
     /// subgraph id takes it as its metadata, an edge id as its edge data, and a vertex takes its
     /// fields. Each check comes in the order of the reference, and an id that is already an edge's
     /// id returns before a vertex is made, with or without shape data.
+    ///
+    /// The vertex counter moves on for every call that reaches the vertex creation, a new vertex or
+    /// not, as the reference's `vertexCounter` does (`flowDb.ts` 191 and 197). A new vertex takes the
+    /// counter's value as its `dom_counter`.
     pub(crate) fn add_vertex(
         &mut self,
         id: &str,
@@ -219,18 +230,19 @@ impl Db {
                     constraint: None,
                     asset_width: None,
                     asset_height: None,
+                    dom_counter: self.vertex_counter,
                 });
                 let index = self.vertices.len() - 1;
                 self.vertex_index.insert(id.to_owned(), index);
                 index
             }
         };
+        self.vertex_counter += 1;
         let vertex = &mut self.vertices[index];
         if let Some(text) = text {
-            // The text is trimmed; one pair of surrounding quotes is removed.
-            let trimmed = js_trim(&text.text);
-            let stripped = strip_quotes(trimmed);
-            vertex.text = stripped.to_owned();
+            // `sanitizeText(textObj.text.trim())`, then one pair of surrounding quotes is removed.
+            let sanitized = sanitize_text(js_trim(&text.text));
+            vertex.text = strip_quotes(&sanitized).to_owned();
             vertex.label_type = text.label_type;
         }
         if let Some(shape) = shape {
@@ -299,7 +311,8 @@ impl Db {
             animation: None,
         };
         if let Some(text) = &link.text {
-            edge.text = strip_quotes(js_trim(&text.text)).to_owned();
+            // `sanitizeText(linkTextObj.text.trim())`, then one pair of surrounding quotes is removed.
+            edge.text = strip_quotes(&sanitize_text(js_trim(&text.text))).to_owned();
             edge.label_type = text.label_type;
         }
         match id {
@@ -517,7 +530,8 @@ impl Db {
                 }
                 let subgraph = FlowSubgraph {
                     id: id.clone(),
-                    title: js_trim(&title.text).to_owned(),
+                    // `sanitizeText(title)`, then the trim.
+                    title: js_trim(&sanitize_text(&title.text)).to_owned(),
                     label_type: title.label_type,
                     nodes,
                     dir,

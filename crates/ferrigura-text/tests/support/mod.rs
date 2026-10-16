@@ -16,11 +16,13 @@ pub const CHROMIUM_TOLERANCE: f64 = 0.02;
 /// Playwright's Chromium drew every request with the spike's font files embedded as data URLs.
 /// Widths are the drawn extent of a text element, from the start of its first character to the end
 /// of its last one, read with `getStartPositionOfChar` and `getEndPositionOfChar`. Box ascent and
-/// descent are the canvas font bounding box, which Chromium rounds to whole pixels. Wrapped lines
-/// are Mermaid's `splitLineToFitWidth` (`rendering-util/splitText.ts`), ported line for line and run
-/// in the browser. `getComputedTextLength` and `getBBox` are not used: WebKit reports unkerned
-/// widths through them. The extents agree with the spike's `getComputedTextLength` to 0.0 px on
-/// the same labels, and the box heights with its `getBBox` exactly.
+/// descent are read from `getBBox` of a `<text>` at a known baseline, and the canvas font bounding
+/// box gives the same whole pixels. Wrapped lines are Mermaid's `splitLineToFitWidth`
+/// (`rendering-util/splitText.ts`), ported line for line and run in the browser. The fixture is
+/// Chromium only: WebKit reports unkerned widths through `getComputedTextLength` and `getBBox`, and
+/// its box heights differ by up to 0.38 px. The extents agree with the spike's
+/// `getComputedTextLength` to 0.0 px on the same labels, and the box heights with its `getBBox`
+/// exactly.
 pub fn chromium() -> Value {
     serde_json::from_str(include_str!("../fixtures/chromium.json"))
         .expect("chromium.json is valid JSON")

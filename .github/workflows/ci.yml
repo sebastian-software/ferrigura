@@ -66,7 +66,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        diagram: [pie, info, flowchart, config, yaml, theme]
+        diagram: [pie, info, flowchart, flowchart-data, config, yaml, theme]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
@@ -99,3 +99,5 @@ jobs:
         run: pnpm port:geometry-pie
       - name: Scoped styles of several pies in one page
         run: pnpm port:scope-pie
+      - name: Flowchart geometry against the JS reference in Chromium
+        run: pnpm port:geometry-flowchart
