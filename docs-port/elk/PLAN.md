@@ -273,7 +273,7 @@ Not yet ported, with the checkpoint in mind: `alg.common/networksimplex` (`Netwo
 
 ## 10. Stage C status
 
-The checkpoint from the coordinator: a corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for all 100 supported corpus cases**: node boxes, edge sections and label boxes match elkjs exactly (tolerance 0, `tests/differential.rs`), and the full trace matches with its logs (`tests/trace.rs`).
+The checkpoint from the coordinator: a corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for all 106 supported corpus cases**: node boxes, edge sections and label boxes match elkjs exactly (tolerance 0, `tests/differential.rs`), and the full trace matches with its logs (`tests/trace.rs`).
 
 Corrections to §3, which lists the configurations as if they were unconditional:
 
@@ -296,21 +296,20 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 
 ### Coverage
 
-- Corpus: 100 of 136 cases pass the driver. The other 36 report `Unsupported`: 24 are nested graphs, 6 need end labels, 3 have self loops, 1 has layer constraints, and 2 are non-layered algorithms (`elk.box`, `elk.rectpacking`).
-- All 100 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 100). All 100 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 100).
+- Corpus: 106 of 136 cases pass the driver. The other 30 report `Unsupported`: 24 are nested graphs, 3 have self loops, 1 has layer constraints, and 2 are non-layered algorithms (`elk.box`, `elk.rectpacking`).
+- All 106 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 106). All 106 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 106).
 - Crate tests: 137 unit tests; the differential and trace tests pass, with their diagnostics still ignored; `clippy -D warnings` is clean.
 
 ### Next, in order
 
-1. End labels, head and tail, which the class diagrams use: 6 cases. The port is `EndLabelPreprocessor`, `EndLabelSorter` and `EndLabelPostprocessor`, with `LabelCell` and `RectangleStripOverlapRemover`.
-2. Self loops (3) and layer constraints (1).
-3. Nested graphs (24): `CompoundGraphPreprocessor` and `Postprocessor`, the hierarchical port processors, and `RecursiveGraphLayoutEngine` for `SEPARATE_CHILDREN`. The two non-layered algorithms stay excluded.
-4. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
+1. Self loops (3) and layer constraints (1).
+2. Nested graphs (24): `CompoundGraphPreprocessor` and `Postprocessor`, the hierarchical port processors, and `RecursiveGraphLayoutEngine` for `SEPARATE_CHILDREN`. The two non-layered algorithms stay excluded.
+3. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
 
 ### Edge pipeline: state and order
 
 The simplest corpus case with edges, `requirement__a-simple-requirement-diagram-elk-layout__0` (two nodes, one edge with a centred label), needs the 26 processors that its elkjs trace lists, in order: transformation to the input direction, edge and layer constraint reversal, depth-first cycle removal, label dummy insertions, layer constraint pre-processing, network simplex layering, layer constraint post-processing, edge splitting, port side processing, port order processing, sort by input model (with ports), minimize crossings, layer constraint edge reversal, node and port label placement and node sizing, node margin calculation, label dummy switching, label side selection, Brandes & Koepf, layer size calculation, orthogonal edge routing, edge joining, label dummy removal, sort end labels, restoring reversed edges, the resizer, and the transformation back.
 
-Done on this branch, in order: edge import with a port per end; the depth-first cycle breaker and the reversed edge restorer; label dummy insertion, the long edge split and join; port sides and port order; the DOWN transform, and the mirror transforms for LEFT and UP (`graph_transformer.rs`); network simplex and the layerer; the sort by input model, with the model order comparators (`preserveorder.rs`); the layer sweep with edges; the transfer of edge sections and label boxes; the orthogonal router; Brandes & Koepf with edges; the label dummy switcher, side selector and remover; node margins and the label and node sizes; the port-based alignment of `placeNodesHorizontally`; and the configurator, which now accepts edges and centred labels.
+Done on this branch, in order: edge import with a port per end; the depth-first cycle breaker and the reversed edge restorer; label dummy insertion, the long edge split and join; port sides and port order; the DOWN transform, and the mirror transforms for LEFT and UP (`graph_transformer.rs`); network simplex and the layerer; the sort by input model, with the model order comparators (`preserveorder.rs`); the layer sweep with edges; the transfer of edge sections and label boxes; the orthogonal router; Brandes & Koepf with edges; the label dummy switcher, side selector and remover; node margins and the label and node sizes; the port-based alignment of `placeNodesHorizontally`; the head and tail labels, with `LabelCell` and the strip overlap remover (`endlabels.rs`, `labelcell.rs`, `common/overlaps.rs`); and the configurator, which now accepts edges, centred labels and end labels.
 
 Still open: the features in the coverage list above.
