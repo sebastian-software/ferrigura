@@ -204,6 +204,13 @@ describe('when parsing directions', function () {
       `);
     }).toThrow('No such shape: this-shape-does-not-exist.');
   });
+  it('should error on a shape name that is only an object property', function () {
+    expect(() => {
+      flow.parser.parse(`flowchart TB
+      A@{ shape: constructor }
+      `);
+    }).toThrow('No such shape: constructor.');
+  });
   it('should error on internal-only shape', function () {
     expect(() => {
       // this shape does exist, but it's only supposed to be for internal/backwards compatibility use
