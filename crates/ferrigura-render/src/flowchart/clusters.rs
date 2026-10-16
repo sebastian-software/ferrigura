@@ -13,7 +13,7 @@ use ferrigura_model::value::Value;
 
 use super::data::Node;
 use super::geom::{BBox, Point};
-use super::label::{self, LabelLayout, LabelSpec};
+use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use super::style::{self, Palette};
 use crate::RenderError;
 use crate::svg::{escape, number};
@@ -59,6 +59,8 @@ pub fn paint(node: &Node, config: &MermaidConfig, theme: &Value) -> Result<Clust
         width,
         is_node: true,
         add_background: false,
+        // No rule centres a cluster title: its lines start at the label's origin.
+        anchor: Anchor::Start,
         styles: &styles,
         font_size: px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE),
     })?;

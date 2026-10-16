@@ -27,4 +27,7 @@ pub use error::TextError;
 pub use fonts::{Face, FontFamily, FontStyle, FontWeight, face};
 pub use measure::{Run, measure, measure_data, measure_line};
 pub use metrics::{FontMetrics, TextBox, font_metrics, text_box};
-pub use wrap::wrap_line;
+pub use wrap::{
+    Word, fit_line, measure_words, split_line_to_fit_width, split_line_to_words,
+    split_text_to_chars, split_word_to_fit_width, wrap_line,
+};

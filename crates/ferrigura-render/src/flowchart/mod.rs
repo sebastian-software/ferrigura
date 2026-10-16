@@ -17,6 +17,7 @@ pub mod elk_straighten;
 pub mod elk_tree;
 pub mod geom;
 pub mod label;
+pub mod markdown;
 pub mod shapes;
 pub mod style;
 

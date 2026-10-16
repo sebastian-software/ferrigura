@@ -65,6 +65,7 @@
     "port:status": "tsx tools/port/status.ts",
     "port:check-header": "tsx tools/port/check-header.ts",
     "port:text-fixture": "tsx tools/port/text/chromium-fixture.ts",
+    "port:text-label-fixture": "tsx tools/port/text/label-fixture.ts",
     "port:geometry-pie": "tsx tools/port/geometry/pie-geometry.ts",
     "port:geometry-flowchart": "tsx tools/port/geometry/flowchart-geometry.ts",
     "port:scope-pie": "tsx tools/port/geometry/pie-scope.ts",
