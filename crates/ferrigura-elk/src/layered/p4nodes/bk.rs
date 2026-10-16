@@ -468,7 +468,7 @@ fn map_text(
 /// keeps neither for edges or ports, so the text can differ from Java where those are set.
 fn edge_text(graph: &LGraph, edge: &LEdge) -> String {
     let mut text = String::from("e_");
-    match edge.labels.first() {
+    match edge.labels.first().map(|&id| &graph.labels[id]) {
         Some(label) if !label.text.is_empty() => text.push_str(&label.text),
         _ if !edge.id.is_empty() => text.push_str(&edge.id),
         _ => {}

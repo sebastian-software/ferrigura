@@ -54,7 +54,8 @@ pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutErro
             if let Some(&index) = index_of.get(graph.edges[edge].id.as_str()) {
                 sections.push((index, edge_section(graph, edge, offset)));
                 // `applyEdgeLayout`'s labels: each one's place, offset like the edge.
-                for label in &graph.edges[edge].labels {
+                for &id in &graph.edges[edge].labels {
+                    let label = &graph.labels[id];
                     if let Some(origin) = label.origin {
                         label_shapes.push((
                             index,
@@ -211,16 +212,17 @@ mod tests {
         graph.nodes[1].ports = vec![1];
         graph.ports[0].outgoing.push(0);
         graph.ports[1].incoming.push(0);
+        let label = graph.add_label(LLabel {
+            size: KVector { x: 20.0, y: 10.0 },
+            position: KVector { x: 3.0, y: 4.0 },
+            origin: Some(0),
+            ..LLabel::default()
+        });
         graph.edges.push(LEdge {
             id: "e".to_string(),
             source: 0,
             target: 1,
-            labels: vec![LLabel {
-                size: KVector { x: 20.0, y: 10.0 },
-                position: KVector { x: 3.0, y: 4.0 },
-                origin: Some(0),
-                ..LLabel::default()
-            }],
+            labels: vec![label],
             ..LEdge::default()
         });
         let mut root = ElkNode {

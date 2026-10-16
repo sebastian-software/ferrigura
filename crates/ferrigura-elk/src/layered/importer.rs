@@ -18,7 +18,7 @@ use crate::core::math::KVector;
 use crate::error::LayoutError;
 use crate::graph::{ElkEdge, ElkNode};
 use crate::layered::graph_util::create_port;
-use crate::layered::lgraph::{LEdge, LGraph, LLabel, LNode, PortType};
+use crate::layered::lgraph::{LEdge, LGraph, LLabel, LNode, LabelId, PortType};
 use crate::layered::options;
 use crate::layered::spacings::{SPACING_BASE_VALUE, apply_base_value};
 
@@ -166,7 +166,7 @@ fn import_edges(
 
 /// `transformEdge`'s labels: those with text and laid out, with their placement recorded. A
 /// centred label makes the graph need label dummies, a head or tail one end labels.
-fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LLabel> {
+fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LabelId> {
     let mut labels = Vec::new();
     for (index, label) in edge.labels.iter().enumerate() {
         let text = label.text.clone().unwrap_or_default();
@@ -195,7 +195,7 @@ fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LLabel> {
                 );
             }
         }
-        labels.push(LLabel {
+        let id = graph.add_label(LLabel {
             text,
             size: KVector {
                 x: label.shape.width,
@@ -206,6 +206,7 @@ fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LLabel> {
             end_label_edge: None,
             origin: Some(index),
         });
+        labels.push(id);
     }
     labels
 }

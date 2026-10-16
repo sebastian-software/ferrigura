@@ -38,8 +38,9 @@ pub struct LNode {
     pub ports: Vec<usize>,
     /// `InternalProperties.ORIGIN` of a dummy: the index of the edge it was made for.
     pub origin_edge: Option<usize>,
-    /// `InternalProperties.REPRESENTED_LABELS` of a label dummy: the labels it holds.
-    pub represented_labels: Vec<LLabel>,
+    /// `InternalProperties.REPRESENTED_LABELS` of a label dummy: the labels it holds, as ids in
+    /// `LGraph::labels`.
+    pub represented_labels: Vec<LabelId>,
     /// `InternalProperties.LONG_EDGE_SOURCE`: the port the long edge leaves at its first node.
     pub long_edge_source: Option<usize>,
     /// `InternalProperties.LONG_EDGE_TARGET`: the port the long edge enters at its last node.
@@ -108,8 +109,9 @@ pub struct LEdge {
     pub source: usize,
     /// The index in `LGraph::ports` of the port the edge enters.
     pub target: usize,
-    /// `LEdge.getLabels()`: the labels with text, in the order of the ELK edge.
-    pub labels: Vec<LLabel>,
+    /// `LEdge.getLabels()`: the labels with text, in the order of the ELK edge, as ids in
+    /// `LGraph::labels`. A label shared by two edges after a join is the same entry in the arena.
+    pub labels: Vec<LabelId>,
     /// `InternalProperties.MODEL_ORDER`, when the input order matters.
     pub model_order: Option<usize>,
     /// The options of the ELK edge.
@@ -176,9 +178,22 @@ pub struct LGraph {
     /// They are kept here rather than on `LEdge`: the `LEdge` literals in `importer.rs` and
     /// `dummies.rs` do not use `..Default`, so a new `LEdge` field would not compile.
     pub junction_points: BTreeMap<usize, Vec<KVector>>,
+    /// The labels of the graph, `LLabel` objects in an arena. The edges and label dummies hold their
+    /// ids, so a label moved from one holder to another, or copied by a join where Java shares the
+    /// object, stays one label: a write through one id is seen through all of them.
+    pub labels: Vec<LLabel>,
 }
 
+/// The id of an `LLabel` in `LGraph::labels`.
+pub type LabelId = usize;
+
 impl LGraph {
+    /// Adds a label to the arena and returns its id.
+    pub fn add_label(&mut self, label: LLabel) -> LabelId {
+        self.labels.push(label);
+        self.labels.len() - 1
+    }
+
     /// `LNode.toString()` of the node at `node`: `n_<designation>`, with the type in brackets for
     /// non-normal nodes. A node without a designation of its own, such as a dummy, takes its
     /// index in its layer, as `LNode.getDesignation` does, or -1 when it is in no layer.

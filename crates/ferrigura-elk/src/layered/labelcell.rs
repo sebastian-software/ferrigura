@@ -3,11 +3,11 @@
 //! Source: plugins/org.eclipse.elk.alg.common/src/org/eclipse/elk/alg/common/nodespacing/cellsystem/LabelCell.java
 //!
 //! A `LabelCell` stacks labels in one rectangle, in a column or a row, and lays them out inside it.
-//! The end label processor keeps one per port, beside the port. The labels are named by their edge
-//! and their index in that edge's labels, since the graph keeps them there.
+//! The end label processor keeps one per port, beside the port. The labels are ids in the graph's
+//! label arena, so a label that a join shares between edges is laid out once, for all of them.
 
 use crate::core::math::{ElkRectangle, KVector};
-use crate::layered::lgraph::LGraph;
+use crate::layered::lgraph::{LGraph, LabelId};
 
 /// `HorizontalLabelAlignment`: where the labels sit across the cell.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -27,13 +27,6 @@ pub enum VerticalLabelAlignment {
     Bottom,
 }
 
-/// A label of the graph: the index of its edge and its index in the edge's labels.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LabelRef {
-    pub edge: usize,
-    pub label: usize,
-}
-
 /// `LabelCell`. Its padding is always zero here, so the padding terms of the Java are left out.
 #[derive(Debug, Clone, Default)]
 pub struct LabelCell {
@@ -44,7 +37,7 @@ pub struct LabelCell {
     vertical_alignment: VerticalLabelAlignment,
     gap: f64,
     /// The labels, in the order they are laid out.
-    pub labels: Vec<LabelRef>,
+    pub labels: Vec<LabelId>,
     minimum_content_area_size: KVector,
 }
 
@@ -83,9 +76,9 @@ impl LabelCell {
     }
 
     /// `addLabel`: appends a label, and grows the minimum content area by its size and the gap.
-    pub fn add_label(&mut self, graph: &LGraph, label: LabelRef) {
+    pub fn add_label(&mut self, graph: &LGraph, label: LabelId) {
         self.labels.push(label);
-        let size = label_size(graph, label);
+        let size = graph.labels[label].size;
         if self.horizontal_layout_mode {
             self.minimum_content_area_size.x = self.minimum_content_area_size.x.max(size.x);
             self.minimum_content_area_size.y += size.y;
@@ -101,8 +94,9 @@ impl LabelCell {
         }
     }
 
-    /// `applyLabelLayout`, as the positions each label takes inside the cell rectangle.
-    pub fn label_layout(&self, graph: &LGraph) -> Vec<(LabelRef, KVector)> {
+    /// `applyLabelLayout`, as the positions each label takes inside the cell rectangle. The caller
+    /// writes them, so that the cell can be laid out without borrowing the graph mutably.
+    pub fn label_layout(&self, graph: &LGraph) -> Vec<(LabelId, KVector)> {
         if self.horizontal_layout_mode {
             self.horizontal_mode_layout(graph)
         } else {
@@ -110,7 +104,7 @@ impl LabelCell {
         }
     }
 
-    fn horizontal_mode_layout(&self, graph: &LGraph) -> Vec<(LabelRef, KVector)> {
+    fn horizontal_mode_layout(&self, graph: &LGraph) -> Vec<(LabelId, KVector)> {
         let rect = self.rect;
         let mut y = rect.y;
         match self.vertical_alignment {
@@ -124,7 +118,7 @@ impl LabelCell {
         }
         let mut layout = Vec::with_capacity(self.labels.len());
         for &label in &self.labels {
-            let size = label_size(graph, label);
+            let size = graph.labels[label].size;
             let x = match self.horizontal_alignment {
                 HorizontalLabelAlignment::Left => rect.x,
                 HorizontalLabelAlignment::Center => rect.x + (rect.width - size.x) / 2.0,
@@ -136,7 +130,7 @@ impl LabelCell {
         layout
     }
 
-    fn vertical_mode_layout(&self, graph: &LGraph) -> Vec<(LabelRef, KVector)> {
+    fn vertical_mode_layout(&self, graph: &LGraph) -> Vec<(LabelId, KVector)> {
         let rect = self.rect;
         let mut x = rect.x;
         match self.horizontal_alignment {
@@ -150,7 +144,7 @@ impl LabelCell {
         }
         let mut layout = Vec::with_capacity(self.labels.len());
         for &label in &self.labels {
-            let size = label_size(graph, label);
+            let size = graph.labels[label].size;
             let y = match self.vertical_alignment {
                 VerticalLabelAlignment::Top => rect.y,
                 VerticalLabelAlignment::Center => rect.y + (rect.height - size.y) / 2.0,
@@ -161,9 +155,4 @@ impl LabelCell {
         }
         layout
     }
-}
-
-/// `LabelAdapter.getSize` of an edge label.
-pub fn label_size(graph: &LGraph, label: LabelRef) -> KVector {
-    graph.edges[label.edge].labels[label.label].size
 }

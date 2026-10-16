@@ -115,10 +115,12 @@ pub fn reverse_edge(graph: &mut LGraph, edge: usize) {
     remove_edge(&mut graph.ports[old_target].incoming, edge);
     graph.ports[old_target].outgoing.push(edge);
     graph.ports[old_source].incoming.push(edge);
+    let label_ids = graph.edges[edge].labels.clone();
     let edge = &mut graph.edges[edge];
     edge.source = old_target;
     edge.target = old_source;
-    for label in &mut edge.labels {
+    for id in label_ids {
+        let label = &mut graph.labels[id];
         let placement = label
             .properties
             .enum_of::<EdgeLabelPlacement>(options::EDGE_LABELS_PLACEMENT);

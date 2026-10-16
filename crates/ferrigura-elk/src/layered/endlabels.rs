@@ -11,17 +11,16 @@
 //! Not ported: port dummies, which only hierarchical ports have, and the port label management that
 //! ports with labels of their own need. The importer rejects node labels.
 
+use std::cmp::Ordering;
+
 use crate::common::overlaps::{OverlapRemovalDirection, RectangleStripOverlapRemover};
 use crate::core::data::enums::{Direction, EdgeLabelPlacement, NodeType, PortSide};
 use crate::core::math::{ElkRectangle, KVector};
 use crate::java::sort;
-use crate::layered::labelcell::{
-    HorizontalLabelAlignment, LabelCell, LabelRef, VerticalLabelAlignment,
-};
+use crate::layered::labelcell::{HorizontalLabelAlignment, LabelCell, VerticalLabelAlignment};
 use crate::layered::labels::{LabelSide, label_side};
-use crate::layered::lgraph::{LGraph, LLabel};
+use crate::layered::lgraph::{LGraph, LLabel, LabelId};
 use crate::layered::options;
-use std::cmp::Ordering;
 
 /// The thickness of a port without incident edges, `NO_INCIDENT_EDGE_THICKNESS`.
 const NO_INCIDENT_EDGE_THICKNESS: f64 = -1.0;
@@ -84,7 +83,7 @@ pub fn sort(graph: &mut LGraph) {
 }
 
 /// `EndLabelPostprocessor.process`: the cells move to their node's position, and the labels are
-/// laid out in them.
+/// laid out in them. The labels are shared with the edges that hold them, so one write is seen by all.
 pub fn postprocess(graph: &mut LGraph) {
     let nodes: Vec<usize> = graph.layers.iter().flatten().copied().collect();
     for node in nodes {
@@ -99,31 +98,8 @@ pub fn postprocess(graph: &mut LGraph) {
         for (_, mut cell) in cells {
             cell.rect.move_by(position);
             for (label, label_position) in cell.label_layout(graph) {
-                set_label_position_everywhere(graph, label, label_position);
+                graph.labels[label].position = label_position;
             }
-        }
-    }
-}
-
-/// Sets the position of a label on every copy of it. A join copies the labels it moves to the
-/// surviving edge, where the Java shares them, so the copies are the labels of the same ELK edge
-/// with the same origin.
-fn set_label_position_everywhere(graph: &mut LGraph, label: LabelRef, position: KVector) {
-    let (id, origin) = {
-        let data = &graph.edges[label.edge];
-        (data.id.clone(), data.labels[label.label].origin)
-    };
-    let Some(origin) = origin else {
-        graph.edges[label.edge].labels[label.label].position = position;
-        return;
-    };
-    for edge in graph.edges.iter_mut().filter(|edge| edge.id == id) {
-        for copy in edge
-            .labels
-            .iter_mut()
-            .filter(|copy| copy.origin == Some(origin))
-        {
-            copy.position = position;
         }
     }
 }
@@ -183,7 +159,7 @@ fn process_node(
 /// `EndLabelPreprocessor.createConfiguredLabelCell`: a cell holding the labels, sized to them.
 fn create_configured_label_cell(
     graph: &LGraph,
-    labels: &[LabelRef],
+    labels: &[LabelId],
     label_label_spacing: f64,
     vertical: bool,
 ) -> Option<LabelCell> {
@@ -202,7 +178,7 @@ fn create_configured_label_cell(
 /// `EndLabelPreprocessor.gatherLabels(LPort)`: the labels of the port's edges that end at it, the
 /// tail labels of the edges that leave it and the head labels of the edges that enter it. Also
 /// sets the largest edge thickness at the port. `None` when the port has no incident edge.
-fn gather_labels(graph: &mut LGraph, port: usize) -> Option<Vec<LabelRef>> {
+fn gather_labels(graph: &mut LGraph, port: usize) -> Option<Vec<LabelId>> {
     let mut labels = Vec::new();
     let max_thickness = gather_incident_labels(graph, port, &mut labels);
     if !labels.is_empty() {
@@ -214,7 +190,7 @@ fn gather_labels(graph: &mut LGraph, port: usize) -> Option<Vec<LabelRef>> {
 /// `EndLabelPreprocessor.gatherLabels(LPort, List)`: appends the labels of the port's incident
 /// edges (incoming first, as `LPort.getConnectedEdges` lists them) and returns the largest
 /// thickness of those edges.
-fn gather_incident_labels(graph: &mut LGraph, port: usize, target: &mut Vec<LabelRef>) -> f64 {
+fn gather_incident_labels(graph: &mut LGraph, port: usize, target: &mut Vec<LabelId>) -> f64 {
     let mut max_thickness = NO_INCIDENT_EDGE_THICKNESS;
     let incident: Vec<usize> = graph.ports[port]
         .incoming
@@ -229,15 +205,14 @@ fn gather_incident_labels(graph: &mut LGraph, port: usize, target: &mut Vec<Labe
         } else {
             EdgeLabelPlacement::HEAD
         };
-        let labels: Vec<LabelRef> = graph.edges[edge]
+        let labels: Vec<LabelId> = graph.edges[edge]
             .labels
             .iter()
-            .enumerate()
-            .filter(|(_, label)| placement(label) == wanted)
-            .map(|(index, _)| LabelRef { edge, label: index })
+            .copied()
+            .filter(|&label| placement(&graph.labels[label]) == wanted)
             .collect();
         for &label in &labels {
-            let end_label_edge = &mut graph.edges[label.edge].labels[label.label].end_label_edge;
+            let end_label_edge = &mut graph.labels[label].end_label_edge;
             if end_label_edge.is_none() {
                 *end_label_edge = Some(edge);
             }
@@ -294,8 +269,7 @@ fn place_port_labels(graph: &LGraph, port: usize, cell: &mut LabelCell, edge_lab
     };
     let thickness = port_data.max_edge_thickness.unwrap_or(0.0);
     let mut rect = cell.rect;
-    let above = label_side(&graph.edges[cell.labels[0].edge].labels[cell.labels[0].label])
-        == LabelSide::ABOVE;
+    let above = label_side(&graph.labels[cell.labels[0]]) == LabelSide::ABOVE;
     match port_data.side {
         PortSide::NORTH => {
             cell.set_vertical_alignment(VerticalLabelAlignment::Bottom);
@@ -420,25 +394,21 @@ fn update_node_margins(graph: &mut LGraph, node: usize, cells: &[Option<LabelCel
 
 /// `EndLabelSorter.needsSorting`: at least two of the port's edges have end labels here.
 fn needs_sorting(graph: &LGraph, port: usize) -> bool {
+    let has_label = |edge: usize, wanted: EdgeLabelPlacement| {
+        graph.edges[edge]
+            .labels
+            .iter()
+            .any(|&label| placement(&graph.labels[label]) == wanted)
+    };
     let head_edges = graph.ports[port]
         .incoming
         .iter()
-        .filter(|&&edge| {
-            graph.edges[edge]
-                .labels
-                .iter()
-                .any(|label| placement(label) == EdgeLabelPlacement::HEAD)
-        })
+        .filter(|&&edge| has_label(edge, EdgeLabelPlacement::HEAD))
         .count();
     let tail_edges = graph.ports[port]
         .outgoing
         .iter()
-        .filter(|&&edge| {
-            graph.edges[edge]
-                .labels
-                .iter()
-                .any(|label| placement(label) == EdgeLabelPlacement::TAIL)
-        })
+        .filter(|&&edge| has_label(edge, EdgeLabelPlacement::TAIL))
         .count();
     head_edges + tail_edges >= 2
 }
@@ -465,19 +435,20 @@ fn sort_port_labels(graph: &mut LGraph, port: usize, node_ids: &[usize], port_id
             compare_groups(view, node_ids, port_ids, a, b)
         });
     }
-    let ordered: Vec<LabelRef> = groups.into_iter().flat_map(|(_, group)| group).collect();
+    let ordered: Vec<LabelId> = groups.into_iter().flat_map(|(_, group)| group).collect();
     if let Some(cells) = graph.nodes[node].end_labels.as_mut() {
         cells[index].1.labels = ordered;
     }
 }
 
-/// `EndLabelSorter.createLabelGroups`: the labels by the edge they came from, in order of first
-/// appearance.
-fn label_groups(graph: &LGraph, labels: &[LabelRef]) -> Vec<(usize, Vec<LabelRef>)> {
-    let mut groups: Vec<(usize, Vec<LabelRef>)> = Vec::new();
+/// `EndLabelSorter.createLabelGroups`: the labels by the edge they were gathered from, in order of
+/// first appearance. A label that was never gathered has no edge, and is left out.
+fn label_groups(graph: &LGraph, labels: &[LabelId]) -> Vec<(usize, Vec<LabelId>)> {
+    let mut groups: Vec<(usize, Vec<LabelId>)> = Vec::new();
     for &label in labels {
-        let data = &graph.edges[label.edge].labels[label.label];
-        let edge = data.end_label_edge.unwrap_or(label.edge);
+        let Some(edge) = graph.labels[label].end_label_edge else {
+            continue;
+        };
         match groups
             .iter_mut()
             .find(|(group_edge, _)| *group_edge == edge)
@@ -495,8 +466,8 @@ fn compare_groups(
     graph: &LGraph,
     node_ids: &[usize],
     port_ids: &[usize],
-    first: &(usize, Vec<LabelRef>),
-    second: &(usize, Vec<LabelRef>),
+    first: &(usize, Vec<LabelId>),
+    second: &(usize, Vec<LabelId>),
 ) -> Ordering {
     let (edge1, edge2) = (&graph.edges[first.0], &graph.edges[second.0]);
     port_ids[edge1.source]

@@ -41,18 +41,20 @@ pub fn insert_label_dummies(graph: &mut LGraph) {
             let mut size = graph.nodes[dummy].size;
             let mut represented = Vec::new();
             let mut kept = Vec::new();
-            for label in std::mem::take(&mut graph.edges[edge].labels) {
-                if is_centred(&label) {
+            for id in std::mem::take(&mut graph.edges[edge].labels) {
+                let label = &graph.labels[id];
+                if is_centred(label) {
+                    let label_size = label.size;
                     if vertical {
-                        size.x += label.size.x + label_label_spacing;
-                        size.y = size.y.max(label.size.y);
+                        size.x += label_size.x + label_label_spacing;
+                        size.y = size.y.max(label_size.y);
                     } else {
-                        size.x = size.x.max(label.size.x);
-                        size.y += label.size.y + label_label_spacing;
+                        size.x = size.x.max(label_size.x);
+                        size.y += label_size.y + label_label_spacing;
                     }
-                    represented.push(label);
+                    represented.push(id);
                 } else {
-                    kept.push(label);
+                    kept.push(id);
                 }
             }
             graph.edges[edge].labels = kept;
@@ -125,7 +127,9 @@ pub fn join_at(graph: &mut LGraph, dummy: usize, add_unnecessary_bendpoints: boo
         }
         let dropped_bends = graph.edges[dropped].bend_points.clone();
         graph.edges[surviving].bend_points.extend(dropped_bends);
-        let dropped_labels = graph.edges[dropped].labels.clone();
+        // The labels are shared, as in Java: the surviving edge takes them, and the dropped edge
+        // lets go of them.
+        let dropped_labels = std::mem::take(&mut graph.edges[dropped].labels);
         graph.edges[surviving].labels.extend(dropped_labels);
     }
 }
@@ -186,7 +190,7 @@ pub fn split_long_edges(graph: &mut LGraph) {
 fn needs_label_dummy(graph: &LGraph, edge: usize) -> bool {
     let edge = &graph.edges[edge];
     graph.ports[edge.source].node != graph.ports[edge.target].node
-        && edge.labels.iter().any(is_centred)
+        && edge.labels.iter().any(|&id| is_centred(&graph.labels[id]))
 }
 
 fn is_centred(label: &LLabel) -> bool {
@@ -292,18 +296,19 @@ fn set_long_edge(
 /// head is now, and remember the edge they came from.
 fn move_head_labels(graph: &mut LGraph, old: usize, new: usize) {
     let labels = std::mem::take(&mut graph.edges[old].labels);
-    let (heads, kept): (Vec<LLabel>, Vec<LLabel>) = labels.into_iter().partition(|label| {
-        label
+    let (heads, kept): (Vec<usize>, Vec<usize>) = labels.into_iter().partition(|&id| {
+        graph.labels[id]
             .properties
             .enum_of::<EdgeLabelPlacement>(options::EDGE_LABELS_PLACEMENT)
             == Some(EdgeLabelPlacement::HEAD)
     });
     graph.edges[old].labels = kept;
-    for mut label in heads {
+    for id in heads {
+        let label = &mut graph.labels[id];
         if label.end_label_edge.is_none() {
             label.end_label_edge = Some(old);
         }
-        graph.edges[new].labels.push(label);
+        graph.edges[new].labels.push(id);
     }
 }
 
@@ -388,6 +393,7 @@ mod tests {
         );
         graph.ports[source].outgoing.push(0);
         graph.ports[target].incoming.push(0);
+        let label = graph.add_label(label);
         graph.edges.push(LEdge {
             source,
             target,

@@ -28,7 +28,7 @@ use crate::core::math::KVector;
 use crate::java::sort;
 use crate::layered::LayoutError;
 use crate::layered::dummies;
-use crate::layered::lgraph::{LGraph, LLabel, PortType};
+use crate::layered::lgraph::{LGraph, LLabel, LabelId, PortType};
 use crate::layered::options;
 
 /// `org.eclipse.elk.core.options.LabelSide`. Written here because the generated enums do not
@@ -221,10 +221,11 @@ fn port_with_edges(graph: &LGraph, node: usize, port_type: PortType) -> Result<u
 /// list counts as inline, as `allMatch` does.
 fn is_inline_edge_label(graph: &LGraph, node: usize) -> bool {
     graph.nodes[node].node_type == NodeType::LABEL
-        && graph.nodes[node]
-            .represented_labels
-            .iter()
-            .all(|label| label.properties.bool_of(options::EDGE_LABELS_INLINE))
+        && graph.nodes[node].represented_labels.iter().all(|&label| {
+            graph.labels[label]
+                .properties
+                .bool_of(options::EDGE_LABELS_INLINE)
+        })
 }
 
 /// `LEdge.setSource(port)`: the edge leaves its old source's list and joins the end of the new one's.
@@ -274,14 +275,6 @@ fn assign_ids_to_layers(graph: &mut LGraph) {
     for (node, id) in members {
         graph.nodes[node].layer = Some(id);
     }
-}
-
-/// A label held by an edge: `LGraph::edges[edge].labels[index]`, the element of a Java list that
-/// refers to an `LLabel` the edge owns.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct LabelRef {
-    edge: usize,
-    index: usize,
 }
 
 /// `LabelDummySwitcher.process`. Each label dummy is moved into the layer its placement
@@ -372,7 +365,8 @@ impl LabelDummyInfo {
             None => layer_id(graph, label_dummy)?,
         };
         let mut placement_strategy = default_placement;
-        for label in &graph.nodes[label_dummy].represented_labels {
+        for &id in &graph.nodes[label_dummy].represented_labels {
+            let label = &graph.labels[id];
             if label
                 .properties
                 .has(options::EDGE_LABELS_CENTER_LABEL_PLACEMENT_STRATEGY)
@@ -605,8 +599,8 @@ impl LabelDummySwitcher {
             self.layer_widths[new_layer],
             graph.nodes[info.label_dummy].size.x,
         );
-        for label in &mut graph.nodes[info.label_dummy].represented_labels {
-            label
+        for id in graph.nodes[info.label_dummy].represented_labels.clone() {
+            graph.labels[id]
                 .properties
                 .set(INCLUDE_LABEL, Some(OptionValue::Boolean(true)));
         }
@@ -1072,7 +1066,7 @@ fn smart_for_regular_node(
     node: usize,
     default_side: LabelSide,
 ) -> Result<(), LayoutError> {
-    let mut end_label_queue: VecDeque<Vec<LabelRef>> =
+    let mut end_label_queue: VecDeque<Vec<LabelId>> =
         VecDeque::with_capacity(graph.nodes[node].ports.len());
     let mut current_port_side: Option<PortSide> = None;
     for port in graph.nodes[node].ports.clone() {
@@ -1108,7 +1102,7 @@ fn smart_for_regular_node(
 /// default.
 fn smart_for_regular_node_port_end_labels(
     graph: &mut LGraph,
-    end_label_queue: &mut VecDeque<Vec<LabelRef>>,
+    end_label_queue: &mut VecDeque<Vec<LabelId>>,
     port_side: Option<PortSide>,
     default_side: LabelSide,
 ) -> Result<(), LayoutError> {
@@ -1136,7 +1130,7 @@ fn smart_for_regular_node_port_end_labels(
 ///
 /// The north and south port dummies (`PORT_DUMMY`) are not part of this port: graphs with
 /// north-south ports are not laid out yet, so no port has a dummy to gather from.
-fn gather_end_labels(graph: &mut LGraph, port: usize) -> Option<Vec<LabelRef>> {
+fn gather_end_labels(graph: &mut LGraph, port: usize) -> Option<Vec<LabelId>> {
     let mut labels = Vec::new();
     let max_thickness = gather_port_end_labels(graph, port, &mut labels);
     if !labels.is_empty() {
@@ -1151,7 +1145,7 @@ fn gather_end_labels(graph: &mut LGraph, port: usize) -> Option<Vec<LabelRef>> {
 
 /// The private `gatherLabels(LPort, List)`: the tail labels of the port's outgoing edges and the
 /// head labels of its incoming edges. Returns the largest incident edge thickness, or the sentinel.
-fn gather_port_end_labels(graph: &mut LGraph, port: usize, target: &mut Vec<LabelRef>) -> f64 {
+fn gather_port_end_labels(graph: &mut LGraph, port: usize, target: &mut Vec<LabelId>) -> f64 {
     let mut max_thickness = NO_INCIDENT_EDGE_THICKNESS;
     // `getConnectedEdges()`: the incoming edges, then the outgoing ones.
     let connected: Vec<usize> = graph.ports[port]
@@ -1168,24 +1162,23 @@ fn gather_port_end_labels(graph: &mut LGraph, port: usize, target: &mut Vec<Labe
         } else {
             EdgeLabelPlacement::HEAD
         };
-        let found: Vec<usize> = graph.edges[edge]
+        let found: Vec<LabelId> = graph.edges[edge]
             .labels
             .iter()
-            .enumerate()
-            .filter(|(_, label)| {
-                label
+            .copied()
+            .filter(|&id| {
+                graph.labels[id]
                     .properties
                     .enum_of::<EdgeLabelPlacement>(options::EDGE_LABELS_PLACEMENT)
                     == Some(wanted)
             })
-            .map(|(index, _)| index)
             .collect();
-        for &index in &found {
-            let label = &mut graph.edges[edge].labels[index];
+        for &id in &found {
+            let label = &mut graph.labels[id];
             if label.end_label_edge.is_none() {
                 label.end_label_edge = Some(edge);
             }
-            target.push(LabelRef { edge, index });
+            target.push(id);
         }
     }
     max_thickness
@@ -1235,15 +1228,15 @@ fn apply_label_side_to_node(
 
 /// `applyLabelSide(LEdge, side)`: every label of the edge gets `side`.
 fn apply_label_side_to_edge(graph: &mut LGraph, edge: usize, side: LabelSide) {
-    for label in &mut graph.edges[edge].labels {
-        set_label_side(label, side);
+    for label in graph.edges[edge].labels.clone() {
+        set_label_side(&mut graph.labels[label], side);
     }
 }
 
 /// `applyLabelSide(List<LLabel>, side)`: every label in the list gets `side`.
-fn apply_label_side_to_refs(graph: &mut LGraph, labels: &[LabelRef], side: LabelSide) {
-    for label in labels {
-        set_label_side(&mut graph.edges[label.edge].labels[label.index], side);
+fn apply_label_side_to_refs(graph: &mut LGraph, labels: &[LabelId], side: LabelSide) {
+    for &label in labels {
+        set_label_side(&mut graph.labels[label], side);
     }
 }
 
@@ -1318,7 +1311,9 @@ fn place_represented_labels(
             },
     };
 
-    let mut labels = std::mem::take(&mut graph.nodes[node].represented_labels);
+    // The labels are placed as copies, which go back under their ids, so they stay one label.
+    let ids = std::mem::take(&mut graph.nodes[node].represented_labels);
+    let mut labels: Vec<LLabel> = ids.iter().map(|&id| graph.labels[id].clone()).collect();
     if matches!(direction, Direction::UP | Direction::DOWN) {
         place_labels_for_vertical_layout(
             &mut labels,
@@ -1337,8 +1332,11 @@ fn place_represented_labels(
         );
     }
 
+    for (&id, label) in ids.iter().zip(labels) {
+        graph.labels[id] = label;
+    }
     // The labels return to the edge they came from.
-    graph.edges[origin].labels.extend(labels);
+    graph.edges[origin].labels.extend(ids);
     Ok(())
 }
 
@@ -1473,10 +1471,11 @@ mod tests {
     fn add_label_dummy(graph: &mut LGraph, layer: usize, size: KVector) -> usize {
         let node = add_node(graph, NodeType::LABEL, layer);
         graph.nodes[node].size = size;
-        graph.nodes[node].represented_labels.push(LLabel {
+        let label = graph.add_label(LLabel {
             size: KVector { x: 40.0, y: 21.0 },
             ..LLabel::default()
         });
+        graph.nodes[node].represented_labels.push(label);
         node
     }
 
@@ -1565,10 +1564,12 @@ mod tests {
             connect(&mut graph, label, long2);
             connect(&mut graph, long2, n1);
             graph.nodes[label].origin_edge = Some(first);
-            graph.nodes[label].represented_labels[0].properties.set(
-                options::EDGE_LABELS_CENTER_LABEL_PLACEMENT_STRATEGY,
-                enum_value("CenterEdgeLabelPlacementStrategy", name),
-            );
+            graph.labels[graph.nodes[label].represented_labels[0]]
+                .properties
+                .set(
+                    options::EDGE_LABELS_CENTER_LABEL_PLACEMENT_STRATEGY,
+                    enum_value("CenterEdgeLabelPlacementStrategy", name),
+                );
             label_dummy_switching(&mut graph).unwrap();
             let alignment = graph.nodes[label]
                 .properties
@@ -1624,7 +1625,9 @@ mod tests {
         ];
         label_dummy_switching(&mut graph).unwrap();
         assert_eq!(graph.nodes[label].layer, Some(2));
-        assert!(is_included(&graph.nodes[label].represented_labels[0]));
+        assert!(is_included(
+            &graph.labels[graph.nodes[label].represented_labels[0]]
+        ));
     }
 
     #[test]
@@ -1654,7 +1657,8 @@ mod tests {
     fn always_up_puts_the_label_above_and_moves_the_ports_to_make_room() {
         let mut graph = graph_in("RIGHT");
         let (_, label, _) = chain_of_three(&mut graph);
-        graph.edges[0].labels.push(LLabel::default());
+        let tail = graph.add_label(LLabel::default());
+        graph.edges[0].labels.push(tail);
         set_side_selection(&mut graph, "ALWAYS_UP");
         label_side_selection(&mut graph).unwrap();
 
@@ -1663,7 +1667,10 @@ mod tests {
         for &port in &graph.nodes[label].ports {
             assert_eq!(graph.ports[port].position.y, 23.0);
         }
-        assert_eq!(label_side_of(&graph.edges[0].labels[0]), LabelSide::ABOVE);
+        assert_eq!(
+            label_side_of(&graph.labels[graph.edges[0].labels[0]]),
+            LabelSide::ABOVE
+        );
     }
 
     #[test]
@@ -1711,7 +1718,7 @@ mod tests {
             .set(options::SPACING_LABEL_LABEL, Some(OptionValue::Double(1.0)));
         let (_, label, _) = chain_of_three(&mut graph);
         graph.nodes[label].position = KVector { x: 100.0, y: 50.0 };
-        graph.nodes[label].represented_labels[0].size = KVector { x: 40.0, y: 21.0 };
+        graph.labels[graph.nodes[label].represented_labels[0]].size = KVector { x: 40.0, y: 21.0 };
 
         label_dummy_removal(&mut graph).unwrap();
 
@@ -1720,7 +1727,7 @@ mod tests {
         // 24 - (1 + 2) = 21. The label is centred in it: 100 + (83 - 40) / 2.
         assert_eq!(graph.edges[0].labels.len(), 1);
         assert_eq!(
-            graph.edges[0].labels[0].position,
+            graph.labels[graph.edges[0].labels[0]].position,
             KVector { x: 121.5, y: 50.0 }
         );
         // The edge runs on to the dummy's old target.
@@ -1738,22 +1745,25 @@ mod tests {
             .set(options::SPACING_LABEL_LABEL, Some(OptionValue::Double(1.0)));
         let (_, label, _) = chain_of_three(&mut graph);
         graph.nodes[label].size = KVector { x: 30.0, y: 20.0 };
-        graph.nodes[label].represented_labels = vec![
-            LLabel {
-                size: KVector { x: 10.0, y: 5.0 },
-                ..LLabel::default()
-            },
-            LLabel {
-                size: KVector { x: 20.0, y: 5.0 },
-                ..LLabel::default()
-            },
-        ];
+        let first = graph.add_label(LLabel {
+            size: KVector { x: 10.0, y: 5.0 },
+            ..LLabel::default()
+        });
+        let second = graph.add_label(LLabel {
+            size: KVector { x: 20.0, y: 5.0 },
+            ..LLabel::default()
+        });
+        graph.nodes[label].represented_labels = vec![first, second];
 
         label_dummy_removal(&mut graph).unwrap();
 
         // The label space is 30 by 20 - (1 + 2) = 17. For UP the labels are placed last first, so
         // the 20 wide label takes the left place, and the 10 wide one follows it at x = 21.
-        let labels = &graph.edges[0].labels;
+        let labels: Vec<&LLabel> = graph.edges[0]
+            .labels
+            .iter()
+            .map(|&label| &graph.labels[label])
+            .collect();
         assert_eq!(labels.len(), 2);
         assert_eq!(labels[0].position, KVector { x: 21.0, y: 12.0 });
         assert_eq!(labels[1].position, KVector { x: 0.0, y: 12.0 });
@@ -1763,10 +1773,12 @@ mod tests {
     fn inline_labels_take_the_spacing_off_the_dummy_and_centre_its_ports() {
         let mut graph = graph_in("RIGHT");
         let (_, label, _) = chain_of_three(&mut graph);
-        graph.nodes[label].represented_labels[0].properties.set(
-            options::EDGE_LABELS_INLINE,
-            Some(OptionValue::Boolean(true)),
-        );
+        graph.labels[graph.nodes[label].represented_labels[0]]
+            .properties
+            .set(
+                options::EDGE_LABELS_INLINE,
+                Some(OptionValue::Boolean(true)),
+            );
         set_side_selection(&mut graph, "ALWAYS_UP");
         label_side_selection(&mut graph).unwrap();
 
@@ -1856,6 +1868,7 @@ mod tests {
                 options::EDGE_LABELS_PLACEMENT,
                 enum_value("EdgeLabelPlacement", "TAIL"),
             );
+            let label = graph.add_label(label);
             graph.edges[edge].labels.push(label);
         }
         set_side_selection(&mut graph, "SMART_UP");
@@ -1863,16 +1876,16 @@ mod tests {
 
         // On the east side, the first port's label goes above and the second port's below.
         assert_eq!(
-            label_side_of(&graph.edges[first_edge].labels[0]),
+            label_side_of(&graph.labels[graph.edges[first_edge].labels[0]]),
             LabelSide::ABOVE
         );
         assert_eq!(
-            label_side_of(&graph.edges[second_edge].labels[0]),
+            label_side_of(&graph.labels[graph.edges[second_edge].labels[0]]),
             LabelSide::BELOW
         );
         // The end label remembers the edge it came from.
         assert_eq!(
-            graph.edges[first_edge].labels[0].end_label_edge,
+            graph.labels[graph.edges[first_edge].labels[0]].end_label_edge,
             Some(first_edge)
         );
     }

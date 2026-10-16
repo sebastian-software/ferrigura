@@ -133,13 +133,21 @@ fn mirror_all(graph: &mut LGraph, axis: Axis) {
         .copied()
         .chain(graph.layers.iter().flatten().copied())
         .collect();
-    mirror_nodes(graph, &nodes, axis);
+    let offset = mirror_offset(graph, &nodes, axis);
+    mirror_nodes(graph, &nodes, axis, offset);
+    // Each label is mirrored once, however many lists hold it.
+    for id in edge_label_ids(graph) {
+        let label = &mut graph.labels[id];
+        let label_size = axis.coordinate(&label.size);
+        let position = axis.coordinate_mut(&mut label.position);
+        *position = (offset - label_size) - *position;
+    }
     axis.mirror_spacing(&mut graph.padding);
 }
 
-/// `GraphTransformer.mirrorX(List<LNode>, LGraph)` and `mirrorY`.
-fn mirror_nodes(graph: &mut LGraph, nodes: &[usize], axis: Axis) {
-    // Before the layout has a size, the mirror line is the far edge of the nodes.
+/// The line that the mirror runs across, `offset` in `GraphTransformer.mirrorX`. Before the layout
+/// has a size it is the far edge of the nodes; afterwards it is the graph's extent.
+fn mirror_offset(graph: &LGraph, nodes: &[usize], axis: Axis) -> f64 {
     let length = axis.coordinate(&graph.size);
     let graph_offset = axis.coordinate(&graph.offset);
     let mut offset = if length == 0.0 {
@@ -155,7 +163,20 @@ fn mirror_nodes(graph: &mut LGraph, nodes: &[usize], axis: Axis) {
         length - graph_offset
     };
     offset -= graph_offset;
+    offset
+}
 
+/// The ids of the labels that the edges hold, each once.
+fn edge_label_ids(graph: &LGraph) -> std::collections::BTreeSet<usize> {
+    graph
+        .edges
+        .iter()
+        .flat_map(|edge| edge.labels.iter().copied())
+        .collect()
+}
+
+/// `GraphTransformer.mirrorX(List<LNode>, LGraph)` and `mirrorY`, without the labels.
+fn mirror_nodes(graph: &mut LGraph, nodes: &[usize], axis: Axis, offset: f64) {
     for &node in nodes {
         let node_size = axis.coordinate(&graph.nodes[node].size);
         {
@@ -197,11 +218,6 @@ fn mirror_nodes(graph: &mut LGraph, nodes: &[usize], axis: Axis) {
                         *coordinate = offset - *coordinate;
                     }
                 }
-                for label in &mut graph.edges[edge].labels {
-                    let label_size = axis.coordinate(&label.size);
-                    let position = axis.coordinate_mut(&mut label.position);
-                    *position = (offset - label_size) - *position;
-                }
             }
         }
     }
@@ -237,10 +253,12 @@ fn transpose_all(graph: &mut LGraph) {
         for point in &mut edge.bend_points {
             std::mem::swap(&mut point.x, &mut point.y);
         }
-        for label in &mut edge.labels {
-            std::mem::swap(&mut label.position.x, &mut label.position.y);
-            std::mem::swap(&mut label.size.x, &mut label.size.y);
-        }
+    }
+    // Each label is transposed once, however many lists hold it.
+    for id in edge_label_ids(graph) {
+        let label = &mut graph.labels[id];
+        std::mem::swap(&mut label.position.x, &mut label.position.y);
+        std::mem::swap(&mut label.size.x, &mut label.size.y);
     }
     for points in graph.junction_points.values_mut() {
         for point in points {
