@@ -102,8 +102,9 @@ fn lport_of(holder: &SelfLoopHolder, sl_port: usize) -> usize {
 fn assign_port_sides(graph: &mut LGraph, holder: &mut SelfLoopHolder) -> Result<(), LayoutError> {
     let strategy = graph.nodes[holder.node]
         .properties
-        .enum_of::<SelfLoopDistributionStrategy>(options::EDGE_ROUTING_SELF_LOOP_DISTRIBUTION)
-        .unwrap_or(SelfLoopDistributionStrategy::NORTH);
+        .enum_with_default::<SelfLoopDistributionStrategy>(
+            options::EDGE_ROUTING_SELF_LOOP_DISTRIBUTION,
+        );
     match strategy {
         SelfLoopDistributionStrategy::NORTH => {
             for hyper in 0..holder.hyper_loops.len() {
@@ -192,8 +193,7 @@ fn restore_node_ports(graph: &mut LGraph, holder: &mut SelfLoopHolder) -> Result
     let mut areas: Vec<Vec<usize>> = vec![Vec::new(); SIDE_COUNT * AREA_COUNT];
     let ordering = graph.nodes[holder.node]
         .properties
-        .enum_of::<SelfLoopOrderingStrategy>(options::EDGE_ROUTING_SELF_LOOP_ORDERING)
-        .unwrap_or(SelfLoopOrderingStrategy::STACKED);
+        .enum_with_default::<SelfLoopOrderingStrategy>(options::EDGE_ROUTING_SELF_LOOP_ORDERING);
     process_one_side_loops(graph, holder, &mut areas, ordering)?;
     process_two_side_corner_loops(holder, &mut areas)?;
     process_three_side_loops(holder, &mut areas)?;

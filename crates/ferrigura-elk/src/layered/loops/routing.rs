@@ -366,8 +366,7 @@ fn assign_side_and_alignment(
 ) -> Result<(), LayoutError> {
     let ordering = graph.nodes[holder.node]
         .properties
-        .enum_of::<SelfLoopOrderingStrategy>(options::EDGE_ROUTING_SELF_LOOP_ORDERING)
-        .unwrap_or(SelfLoopOrderingStrategy::STACKED);
+        .enum_with_default::<SelfLoopOrderingStrategy>(options::EDGE_ROUTING_SELF_LOOP_ORDERING);
     let sequenced = ordering == SelfLoopOrderingStrategy::SEQUENCED;
     let mut northern: Vec<usize> = Vec::new();
     let mut southern: Vec<usize> = Vec::new();

@@ -45,8 +45,7 @@ pub fn horizontal_compaction(
 
     let spacing_node_node = graph
         .properties
-        .double_of(spacings::SPACING_NODE_NODE)
-        .unwrap_or(0.0);
+        .double_with_default(spacings::SPACING_NODE_NODE);
     let mut classes = ClassGraph::default();
 
     let mut layers: Vec<&Vec<usize>> = graph.layers.iter().collect();

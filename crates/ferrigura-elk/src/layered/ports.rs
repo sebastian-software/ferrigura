@@ -33,8 +33,7 @@ pub fn is_order_fixed(constraints: PortConstraints) -> bool {
 fn constraints_of(graph: &LGraph, node: usize) -> PortConstraints {
     graph.nodes[node]
         .properties
-        .enum_of::<PortConstraints>(options::PORT_CONSTRAINTS)
-        .unwrap_or(PortConstraints::UNDEFINED)
+        .enum_with_default::<PortConstraints>(options::PORT_CONSTRAINTS)
 }
 
 /// `PortSideProcessor.process`: the nodes whose sides are free get every port's side from its

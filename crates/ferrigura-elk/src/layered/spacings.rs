@@ -7,8 +7,8 @@
 //! does not set them already (`NO_OVERWRITE_HOLDER`).
 
 use crate::core::data::OptionValue;
+use crate::core::data::default_value;
 use crate::core::data::enums::NodeType;
-use crate::core::data::melk_default_value;
 use crate::core::data::option_by_id;
 use crate::layered::lgraph::{LGraph, LNode};
 
@@ -49,7 +49,7 @@ const DEPENDENT: &[&str] = &[
 /// bug in the port (the ids are constants checked by a test).
 fn default_of(id: &str) -> f64 {
     let spec = option_by_id(id).unwrap_or_else(|| panic!("option {id} is not registered"));
-    match melk_default_value(spec) {
+    match default_value(spec) {
         Some(OptionValue::Double(value)) => value,
         Some(OptionValue::Int(value)) => f64::from(value),
         _ => panic!("option {id} has no numeric default"),

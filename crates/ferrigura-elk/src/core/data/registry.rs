@@ -662,6 +662,14 @@ pub static OPTIONS: &[OptionSpec] = &[
         legacy_ids: &[],
     },
     OptionSpec {
+        id: "org.eclipse.elk.layered.nodePlacement.networkSimplex.nodeFlexibility.default",
+        kind: OptionKind::Enum("NodeFlexibility"),
+        melk_type: "NodeFlexibility",
+        melk_default: Some("NodeFlexibility.NONE"),
+        source: "Layered.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
         id: "org.eclipse.elk.layered.nodePlacement.strategy",
         kind: OptionKind::Enum("NodePlacementStrategy"),
         melk_type: "NodePlacementStrategy",
@@ -1092,6 +1100,14 @@ pub static OPTIONS: &[OptionSpec] = &[
         kind: OptionKind::Enum("PortSide"),
         melk_type: "PortSide",
         melk_default: Some("PortSide.UNDEFINED"),
+        source: "Core.melk",
+        legacy_ids: &[],
+    },
+    OptionSpec {
+        id: "org.eclipse.elk.portAlignment.default",
+        kind: OptionKind::Enum("PortAlignment"),
+        melk_type: "PortAlignment",
+        melk_default: Some("PortAlignment.DISTRIBUTED"),
         source: "Core.melk",
         legacy_ids: &[],
     },
@@ -1671,4 +1687,15 @@ pub static OPTIONS: &[OptionSpec] = &[
         source: "Core.melk",
         legacy_ids: &[],
     },
+];
+
+/// Layered.melk `supports <option> = <value>` for the options that target parents: the value an
+/// unset option reads as, in place of the melk default. See `default_value`.
+pub static LAYERED_PARENT_DEFAULTS: &[(&str, &str)] = &[
+    ("org.eclipse.elk.padding", "new ElkPadding(12)"),
+    ("org.eclipse.elk.edgeRouting", "EdgeRouting.ORTHOGONAL"),
+    ("org.eclipse.elk.randomSeed", "1"),
+    ("org.eclipse.elk.aspectRatio", "1.6f"),
+    ("org.eclipse.elk.separateConnectedComponents", "true"),
+    ("org.eclipse.elk.direction", "Direction.UNDEFINED"),
 ];

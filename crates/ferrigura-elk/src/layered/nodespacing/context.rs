@@ -11,8 +11,7 @@
 //! the reduced path does not port, before anything is built.
 //!
 //! The option ids that are not in `layered::options` are declared here, because that module has
-//! one writer. The test module checks them against the registry. `portAlignment.default` is not
-//! in the registry at all, so its default is written out (see [`DEFAULT_PORT_ALIGNMENT`]).
+//! one writer. The test module checks them against the registry.
 
 use crate::core::data::enums::{
     NodeLabelPlacement, PortAlignment, PortConstraints, PortLabelPlacement, PortSide,
@@ -43,13 +42,9 @@ pub(super) const PORT_ALIGNMENT_EAST: &str = "org.eclipse.elk.portAlignment.east
 pub(super) const PORT_ALIGNMENT_SOUTH: &str = "org.eclipse.elk.portAlignment.south";
 pub(super) const PORT_ALIGNMENT_WEST: &str = "org.eclipse.elk.portAlignment.west";
 
-/// `org.eclipse.elk.portAlignment.default`. The registry lacks it, although `Core.melk` declares it
-/// (group `portAlignment`, `option ^default`, line 518). Its value is read with
-/// `PropertyHolder::get`, which does not look the registry up.
+/// `org.eclipse.elk.portAlignment.default` (`Core.melk`, `option ^default`). Its unset value is the
+/// melk default, DISTRIBUTED: the layered JUSTIFIED does not apply to it, as it targets nodes.
 const PORT_ALIGNMENT_DEFAULT: &str = "org.eclipse.elk.portAlignment.default";
-
-/// The melk default of `portAlignment.default` (`Core.melk` line 522): `PortAlignment.DISTRIBUTED`.
-const DEFAULT_PORT_ALIGNMENT: PortAlignment = PortAlignment::DISTRIBUTED;
 
 /// `PortContext`: a port of the node, with the position that the placement computes for it.
 #[derive(Debug, Clone)]
@@ -239,9 +234,8 @@ impl NodeContext {
 
         // FIXED_ORDER takes the free branch of every Java switch on the constraints, so it is
         // handled like FREE. FIXED_POS has its own branches, which are ported. FIXED_RATIO is not.
-        let port_constraints = props
-            .enum_of::<PortConstraints>(options::PORT_CONSTRAINTS)
-            .unwrap_or(PortConstraints::UNDEFINED);
+        let port_constraints =
+            props.enum_with_default::<PortConstraints>(options::PORT_CONSTRAINTS);
         if port_constraints == PortConstraints::FIXED_RATIO {
             return Err(unsupported(format!(
                 "port constraints {} on {who}",
@@ -323,8 +317,8 @@ impl NodeContext {
         let fixed_graph_size = graph_props.bool_of(options::NODE_SIZE_FIXED_GRAPH_SIZE);
 
         // `getPortAlignment(side)`: the side's own alignment, else the node's default.
-        let default_alignment =
-            alignment_option(props, PORT_ALIGNMENT_DEFAULT)?.unwrap_or(DEFAULT_PORT_ALIGNMENT);
+        let default_alignment = alignment_option(props, PORT_ALIGNMENT_DEFAULT)?
+            .unwrap_or_else(|| props.enum_with_default(PORT_ALIGNMENT_DEFAULT));
         let mut alignments = [default_alignment; 5];
         for (side, id) in [
             (PortSide::NORTH, PORT_ALIGNMENT_NORTH),

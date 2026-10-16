@@ -24,8 +24,7 @@ pub fn network_simplex_layering(
     progress: &mut ProgressMonitor,
     monitor: Monitor,
 ) -> Result<(), LayoutError> {
-    let thoroughness =
-        graph.properties.int_of(options::THOROUGHNESS).unwrap_or(7) * ITER_LIMIT_FACTOR;
+    let thoroughness = graph.properties.int_with_default(options::THOROUGHNESS) * ITER_LIMIT_FACTOR;
     let nodes = graph.layerless_nodes.clone();
     if nodes.is_empty() {
         return Ok(());
@@ -148,8 +147,7 @@ fn initialize(graph: &LGraph, component: &[usize]) -> NGraph {
             }
             let shortness = edge_data
                 .properties
-                .int_of(options::PRIORITY_SHORTNESS)
-                .unwrap_or(0);
+                .int_with_default(options::PRIORITY_SHORTNESS);
             let source = solver_node[graph.ports[edge_data.source].node];
             let target = solver_node[graph.ports[edge_data.target].node];
             let mut solver_edge = NEdge::new(source, target);

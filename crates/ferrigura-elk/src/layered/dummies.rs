@@ -19,12 +19,10 @@ use crate::layered::options;
 pub fn insert_label_dummies(graph: &mut LGraph) {
     let edge_label_spacing = graph
         .properties
-        .double_of(options::SPACING_EDGE_LABEL)
-        .unwrap_or(0.0);
+        .double_with_default(options::SPACING_EDGE_LABEL);
     let label_label_spacing = graph
         .properties
-        .double_of(options::SPACING_LABEL_LABEL)
-        .unwrap_or(0.0);
+        .double_with_default(options::SPACING_LABEL_LABEL);
     let vertical = matches!(
         graph.properties.enum_of::<Direction>(options::DIRECTION),
         Some(Direction::UP | Direction::DOWN)

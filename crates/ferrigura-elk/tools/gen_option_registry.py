@@ -30,8 +30,12 @@ MELK_FILES = [
 ]
 
 OPTION_RE = re.compile(
-    r"^\s*(?:advanced\s+|hidden\s+)*option\s+(\w+)\s*:\s*([\w.<>\[\], ]+?)\s*\{"
+    r"^\s*(?:advanced\s+|hidden\s+)*option\s+(\^?\w+)\s*:\s*([\w.<>\[\], ]+?)\s*\{"
 )
+# `supports <option> = <value>` in an algorithm block: the algorithm's own default for an option.
+SUPPORTS_RE = re.compile(r"(?m)^\s*supports\s+([\w.^]+)\s*=\s*(.+?)\s*$")
+# The algorithm whose `supports` defaults the crate applies (the only one it runs).
+LAYERED_MELK = "plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/Layered.melk"
 GROUP_RE = re.compile(r"^\s*group\s+(\w+)\s*\{")
 PREFIX_RE = re.compile(r"^\s*idPrefix\s+([\w.]+)")
 DEFAULT_RE = re.compile(r"^\s*default\s*=\s*(.+?)\s*$")
@@ -53,7 +57,7 @@ def OPTIONS_SOURCE_ENUMS(elk_root):
     kinds = java_types(elk_root)
     names = set()
     for relative in MELK_FILES:
-        for _, type_text, _, _ in parse_melk(os.path.join(elk_root, relative)):
+        for _, type_text, _, _, _ in parse_melk(os.path.join(elk_root, relative)):
             kind, arg = classify(type_text, kinds)
             if kind in ("Enum", "EnumSet"):
                 names.add(arg)
@@ -61,7 +65,9 @@ def OPTIONS_SOURCE_ENUMS(elk_root):
 
 
 def parse_melk(path):
-    """Yield (id, type_text, default_text) for each option, from brace-matched blocks.
+    """Yield (id, type_text, default_text, legacy_ids, targets) for each option.
+
+    Blocks are brace-matched.
 
     The melk grammar nests groups and options in braces; a line-based reader loses
     track of the nesting when a block closes on an unexpected line, so the reader
@@ -83,7 +89,7 @@ def parse_melk(path):
             statement_start = index + 1
             group_match = re.search(r"(?:^|\s)group\s+(\w+)\s*$", header)
             option_match = re.search(
-                r"(?:^|\s)option\s+(\w+)\s*:\s*([\w.<>\[\], ]+?)\s*$", header
+                r"(?:^|\s)option\s+(\^?\w+)\s*:\s*([\w.<>\[\], ]+?)\s*$", header
             )
             if group_match:
                 stack.append({"kind": "group", "name": group_match.group(1), "start": index})
@@ -118,8 +124,14 @@ def parse_melk(path):
                     if legacy_match
                     else []
                 )
+                targets_match = re.search(r"(?m)^\s*targets\s+(.+?)\s*$", body)
+                targets = (
+                    [item for item in re.split(r"[\s,]+", targets_match.group(1)) if item]
+                    if targets_match
+                    else []
+                )
                 option_id = ".".join([prefix] + block["groups"] + [block["name"]])
-                results.append((option_id, block["type"], default, legacy))
+                results.append((option_id, block["type"], default, legacy, targets))
         elif char == ";":
             statement_start = index + 1
     if prefix is None:
@@ -175,19 +187,44 @@ def rust_str(text):
     return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+def layered_parent_defaults(elk_root, targets_by_id):
+    """The `supports <option> = <value>` lines of Layered.melk for options that target parents.
+
+    elkjs 0.9.3 reads these values for unset options that target parents: an unset edgeRouting
+    behaves as ORTHOGONAL. Options that target nodes keep their own default: an unset
+    portAlignment.default behaves as DISTRIBUTED, not the layered JUSTIFIED.
+    """
+    with open(os.path.join(elk_root, LAYERED_MELK), encoding="utf-8") as handle:
+        text = strip_comments(handle.read())
+    defaults = []
+    for name, value in SUPPORTS_RE.findall(text):
+        option_id = name.replace("^", "")
+        if option_id not in targets_by_id:
+            raise SystemExit(f"Layered.melk supports unknown option {option_id}")
+        if "parents" in targets_by_id[option_id]:
+            defaults.append((option_id, value))
+    return defaults
+
+
 def main():
     elk_root, out_path = sys.argv[1], sys.argv[2]
     kinds = java_types(elk_root)
     rows = []
     seen = set()
+    targets_by_id = {}
     for relative in MELK_FILES:
         path = os.path.join(elk_root, relative)
-        for option_id, type_text, default_text, legacy_ids in parse_melk(path):
+        for option_id, type_text, default_text, legacy_ids, targets in parse_melk(path):
+            if option_id == "org.eclipse.elk.algorithm":
+                # Declared as `^algorithm` in Core.melk; the Algorithm row below replaces it.
+                continue
             if option_id in seen:
                 raise SystemExit(f"duplicate option id {option_id}")
             seen.add(option_id)
+            targets_by_id[option_id] = targets
             kind, arg = classify(type_text, kinds)
             rows.append((option_id, kind, arg, type_text, default_text, os.path.basename(relative), legacy_ids))
+    layered_defaults = layered_parent_defaults(elk_root, targets_by_id)
     # `org.eclipse.elk.algorithm` is not declared in any melk file: the metacompiler
     # generates it from the `algorithm` blocks. Its value is a layout algorithm id.
     rows.append(("org.eclipse.elk.algorithm", "Algorithm", "LayoutAlgorithmData", "LayoutAlgorithmData", None, "generated", []))
@@ -224,9 +261,16 @@ def main():
         )
     lines.append("];")
     lines.append("")
+    lines.append("/// Layered.melk `supports <option> = <value>` for the options that target parents: the value an")
+    lines.append("/// unset option reads as, in place of the melk default. See `default_value`.")
+    lines.append("pub static LAYERED_PARENT_DEFAULTS: &[(&str, &str)] = &[")
+    for option_id, value in layered_defaults:
+        lines.append(f"    ({rust_str(option_id)}, {rust_str(value)}),")
+    lines.append("];")
+    lines.append("")
     with open(out_path, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
-    print(f"wrote {len(rows)} options to {out_path}")
+    print(f"wrote {len(rows)} options and {len(layered_defaults)} layered defaults to {out_path}")
 
 
 if __name__ == "__main__":

@@ -52,8 +52,7 @@ pub fn restore_ports(graph: &mut LGraph) -> Result<(), LayoutError> {
 pub fn route(graph: &mut LGraph) -> Result<(), LayoutError> {
     let router = graph
         .properties
-        .enum_of::<EdgeRouting>(options::EDGE_ROUTING)
-        .unwrap_or(EdgeRouting::ORTHOGONAL);
+        .enum_with_default::<EdgeRouting>(options::EDGE_ROUTING);
     if !matches!(router, EdgeRouting::ORTHOGONAL | EdgeRouting::UNDEFINED) {
         return Err(LayoutError::Unsupported(
             "self loops with a polyline or spline router".to_string(),

@@ -33,9 +33,6 @@ use barycenter::BarycenterHeuristic;
 use counting::AllCrossingsCounter;
 use port_distributor::PortDistributor;
 
-/// The thoroughness `LayeredOptions.THOROUGHNESS` has by default.
-const DEFAULT_THOROUGHNESS: i32 = 7;
-
 /// `LayerSweepCrossingMinimizer.process` for `CrossMinType.BARYCENTER`, the layer sweep of the
 /// default crossing minimization. The task's `begin` and `done` are the phase's.
 pub fn sweep(graph: &mut LGraph) -> Result<(), LayoutError> {
@@ -50,10 +47,7 @@ pub fn sweep(graph: &mut LGraph) -> Result<(), LayoutError> {
         return Ok(());
     }
     check_supported(graph)?;
-    let thoroughness = graph
-        .properties
-        .int_of(options::THOROUGHNESS)
-        .unwrap_or(DEFAULT_THOROUGHNESS);
+    let thoroughness = graph.properties.int_with_default(options::THOROUGHNESS);
     let consider_model_order = graph
         .properties
         .enum_of::<OrderingStrategy>(options::CONSIDER_MODEL_ORDER_STRATEGY)
@@ -92,8 +86,7 @@ fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
     // as the Java does; with a non-zero node influence the model-order counter runs, which is not ported.
     if graph
         .properties
-        .double_of(options::CONSIDER_MODEL_ORDER_CROSSING_COUNTER_NODE_INFLUENCE)
-        .unwrap_or(0.0)
+        .double_with_default(options::CONSIDER_MODEL_ORDER_CROSSING_COUNTER_NODE_INFLUENCE)
         != 0.0
     {
         return Err(LayoutError::Unsupported(
@@ -269,8 +262,7 @@ impl<'a> Net<'a> {
 fn port_constraints(graph: &LGraph, node: usize) -> PortConstraints {
     graph.nodes[node]
         .properties
-        .enum_of::<PortConstraints>(options::PORT_CONSTRAINTS)
-        .unwrap_or(PortConstraints::UNDEFINED)
+        .enum_with_default::<PortConstraints>(options::PORT_CONSTRAINTS)
 }
 
 /// The order the sweep works on: the nodes of each layer (`currentNodeOrder`) and the port list of
@@ -504,6 +496,7 @@ fn transfer_node_and_port_orders(graph: &mut LGraph, best: Layout) {
 mod tests {
     use super::*;
     use crate::core::data::OptionValue;
+    use crate::core::data::property::PropertyHolder;
     use crate::layered::lgraph::{LEdge, LNode, LPort};
 
     /// A graph with one layer of `count` nodes, in model order `0..count`.
@@ -619,7 +612,8 @@ mod tests {
                 let graph = diamond();
                 let net = Net::new(&graph);
                 let mut sweep = Sweep::new(&net, node_relative, false, Random::new(seed));
-                sweep.compare_randomized_layouts(seed, DEFAULT_THOROUGHNESS);
+                let thoroughness = PropertyHolder::new().int_with_default(options::THOROUGHNESS);
+                sweep.compare_randomized_layouts(seed, thoroughness);
                 let best = sweep.best.take().expect("an attempt saves an order");
                 let crossings = AllCrossingsCounter::new(&net, &best).count_all(&net, &best);
                 assert_eq!(crossings, 0, "node_relative={node_relative}, seed={seed}");

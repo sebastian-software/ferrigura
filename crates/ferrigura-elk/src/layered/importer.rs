@@ -318,8 +318,7 @@ fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LabelId> {
         }
         let placement = label
             .properties
-            .enum_of::<EdgeLabelPlacement>(options::EDGE_LABELS_PLACEMENT)
-            .unwrap_or(EdgeLabelPlacement::CENTER);
+            .enum_with_default::<EdgeLabelPlacement>(options::EDGE_LABELS_PLACEMENT);
         let mut properties = label.properties.clone();
         match placement {
             EdgeLabelPlacement::HEAD | EdgeLabelPlacement::TAIL => {

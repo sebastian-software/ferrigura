@@ -298,8 +298,7 @@ fn sort_by_input_model(
 ) -> Result<(), LayoutError> {
     let strategy = graph
         .properties
-        .enum_of::<OrderingStrategy>(options::CONSIDER_MODEL_ORDER_STRATEGY)
-        .unwrap_or(OrderingStrategy::NONE);
+        .enum_with_default::<OrderingStrategy>(options::CONSIDER_MODEL_ORDER_STRATEGY);
     let port_model_order = graph
         .properties
         .bool_of(options::CONSIDER_MODEL_ORDER_PORT_MODEL_ORDER);
@@ -315,8 +314,7 @@ fn sort_by_input_model(
         for node in graph.layers[layer_index].clone() {
             let constraints = graph.nodes[node]
                 .properties
-                .enum_of::<PortConstraints>(options::PORT_CONSTRAINTS)
-                .unwrap_or(PortConstraints::UNDEFINED);
+                .enum_with_default::<PortConstraints>(options::PORT_CONSTRAINTS);
             if constraints != PortConstraints::FIXED_ORDER
                 && constraints != PortConstraints::FIXED_POS
             {

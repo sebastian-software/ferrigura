@@ -371,8 +371,7 @@ pub fn hide(graph: &mut LGraph, holder: &mut SelfLoopHolder) -> Result<(), Layou
 
     let constraints = graph.nodes[holder.node]
         .properties
-        .enum_of::<PortConstraints>(options::PORT_CONSTRAINTS)
-        .unwrap_or(PortConstraints::UNDEFINED);
+        .enum_with_default::<PortConstraints>(options::PORT_CONSTRAINTS);
     if ports::is_order_fixed(constraints) {
         return Ok(());
     }
@@ -395,8 +394,7 @@ pub fn hide(graph: &mut LGraph, holder: &mut SelfLoopHolder) -> Result<(), Layou
 pub fn graph_direction(graph: &LGraph) -> Direction {
     graph
         .properties
-        .enum_of::<Direction>(options::DIRECTION)
-        .unwrap_or(Direction::UNDEFINED)
+        .enum_with_default::<Direction>(options::DIRECTION)
 }
 
 #[cfg(test)]

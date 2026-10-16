@@ -84,8 +84,7 @@ fn node_positions(
     // or if a balanced alignment is enforced.
     let align = graph
         .properties
-        .enum_of::<FixedAlignment>(options::NODE_PLACEMENT_BK_FIXED_ALIGNMENT)
-        .unwrap_or(FixedAlignment::NONE);
+        .enum_with_default::<FixedAlignment>(options::NODE_PLACEMENT_BK_FIXED_ALIGNMENT);
     let favor_straight_edges = graph
         .properties
         .bool_of(options::NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES);

@@ -20,8 +20,7 @@ use crate::layered::ports::is_side_fixed;
 fn constraint(graph: &LGraph, node: usize) -> LayerConstraint {
     graph.nodes[node]
         .properties
-        .enum_of::<LayerConstraint>(options::LAYER_CONSTRAINT)
-        .unwrap_or(LayerConstraint::NONE)
+        .enum_with_default::<LayerConstraint>(options::LAYER_CONSTRAINT)
 }
 
 fn is_label(graph: &LGraph, node: usize) -> bool {
@@ -86,8 +85,9 @@ fn handle_inner_nodes(graph: &mut LGraph, remaining: &[usize]) {
     for &node in remaining {
         let constraints = graph.nodes[node]
             .properties
-            .enum_of::<crate::core::data::enums::PortConstraints>(options::PORT_CONSTRAINTS)
-            .unwrap_or(crate::core::data::enums::PortConstraints::UNDEFINED);
+            .enum_with_default::<crate::core::data::enums::PortConstraints>(
+                options::PORT_CONSTRAINTS,
+            );
         if !is_side_fixed(constraints) || graph.nodes[node].ports.is_empty() {
             continue;
         }

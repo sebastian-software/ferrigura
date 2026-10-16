@@ -54,7 +54,7 @@ pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
 /// (`supports` in Layered.melk, which the registry does not read). Seed 0 asks for a
 /// system seed, which cannot be reproduced.
 fn random_source(graph: &LGraph) -> Result<Random, LayoutError> {
-    let seed = graph.properties.int_of(options::RANDOM_SEED).unwrap_or(1);
+    let seed = graph.properties.int_with_default(options::RANDOM_SEED);
     if seed == 0 {
         return Err(LayoutError::Unsupported(
             "randomSeed 0 asks for a system seed".to_string(),
@@ -69,13 +69,11 @@ fn configure_graph_properties(graph: &mut LGraph) {
         .properties
         .has(options::NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES)
     {
-        // Unset, the edge routing is the layered algorithm's own default, which is orthogonal
-        // (`supports org.eclipse.elk.edgeRouting = EdgeRouting.ORTHOGONAL` in Layered.melk).
-        let orthogonal = !graph.properties.has(options::EDGE_ROUTING)
-            || graph
-                .properties
-                .enum_of::<EdgeRouting>(options::EDGE_ROUTING)
-                == Some(EdgeRouting::ORTHOGONAL);
+        // An unset edge routing reads as the layered ORTHOGONAL (`supports` in Layered.melk).
+        let orthogonal = graph
+            .properties
+            .enum_with_default::<EdgeRouting>(options::EDGE_ROUTING)
+            == EdgeRouting::ORTHOGONAL;
         graph.properties.set(
             options::NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES,
             Some(crate::core::data::OptionValue::Boolean(orthogonal)),
@@ -89,8 +87,7 @@ fn copy_original_port_constraints(graph: &mut LGraph) {
     for node in &mut graph.nodes {
         node.original_port_constraints = Some(
             node.properties
-                .enum_of::<PortConstraints>(options::PORT_CONSTRAINTS)
-                .unwrap_or(PortConstraints::UNDEFINED),
+                .enum_with_default::<PortConstraints>(options::PORT_CONSTRAINTS),
         );
     }
 }
@@ -100,30 +97,18 @@ fn phases(graph: &LGraph) -> [PhaseStep; PHASES] {
     let props = &graph.properties;
     [
         PhaseStep::CycleBreaking(
-            props
-                .enum_of::<CycleBreakingStrategy>(options::CYCLE_BREAKING_STRATEGY)
-                .unwrap_or(CycleBreakingStrategy::GREEDY),
+            props.enum_with_default::<CycleBreakingStrategy>(options::CYCLE_BREAKING_STRATEGY),
         ),
         PhaseStep::Layering(
-            props
-                .enum_of::<LayeringStrategy>(options::LAYERING_STRATEGY)
-                .unwrap_or(LayeringStrategy::NETWORK_SIMPLEX),
+            props.enum_with_default::<LayeringStrategy>(options::LAYERING_STRATEGY),
         ),
-        PhaseStep::CrossingMinimization(
-            props
-                .enum_of::<CrossingMinimizationStrategy>(options::CROSSING_MINIMIZATION_STRATEGY)
-                .unwrap_or(CrossingMinimizationStrategy::LAYER_SWEEP),
-        ),
+        PhaseStep::CrossingMinimization(props.enum_with_default::<CrossingMinimizationStrategy>(
+            options::CROSSING_MINIMIZATION_STRATEGY,
+        )),
         PhaseStep::NodePlacement(
-            props
-                .enum_of::<NodePlacementStrategy>(options::NODE_PLACEMENT_STRATEGY)
-                .unwrap_or(NodePlacementStrategy::BRANDES_KOEPF),
+            props.enum_with_default::<NodePlacementStrategy>(options::NODE_PLACEMENT_STRATEGY),
         ),
-        PhaseStep::EdgeRouting(
-            props
-                .enum_of::<EdgeRouting>(options::EDGE_ROUTING)
-                .unwrap_or(EdgeRouting::ORTHOGONAL),
-        ),
+        PhaseStep::EdgeRouting(props.enum_with_default::<EdgeRouting>(options::EDGE_ROUTING)),
     ]
 }
 
@@ -233,9 +218,8 @@ fn greedy_switch_active(graph: &LGraph) -> bool {
     let interactive = props.bool_of(options::CROSSING_MINIMIZATION_SEMI_INTERACTIVE)
         || props.enum_of::<CrossingMinimizationStrategy>(options::CROSSING_MINIMIZATION_STRATEGY)
             == Some(CrossingMinimizationStrategy::INTERACTIVE);
-    let threshold = props
-        .int_of(options::CROSSING_MINIMIZATION_GREEDY_SWITCH_ACTIVATION_THRESHOLD)
-        .unwrap_or(0);
+    let threshold =
+        props.int_with_default(options::CROSSING_MINIMIZATION_GREEDY_SWITCH_ACTIVATION_THRESHOLD);
     let graph_size = i32::try_from(graph.layerless_nodes.len()).unwrap_or(i32::MAX);
     !interactive
         && switch_type != Some(GreedySwitchType::OFF)

@@ -14,8 +14,7 @@ use crate::layered::options;
 pub fn create_port(graph: &mut LGraph, node: usize, port_type: PortType) -> usize {
     let direction = graph
         .properties
-        .enum_of::<Direction>(options::DIRECTION)
-        .unwrap_or(Direction::UNDEFINED);
+        .enum_with_default::<Direction>(options::DIRECTION);
     let default_side = side_from_direction(direction);
     let side = match port_type {
         PortType::OUTPUT => default_side,

@@ -27,12 +27,10 @@ use crate::layered::options;
 
 /// `LayeredOptions.SEPARATE_CONNECTED_COMPONENTS`'s id, read through the options module.
 const SEPARATE_CONNECTED_COMPONENTS: &str = options::SEPARATE_CONNECTED_COMPONENTS;
-/// `CoreOptions.ASPECT_RATIO` (`org.eclipse.elk.aspectRatio`), with the layered default of 1.6.
+/// `CoreOptions.ASPECT_RATIO` (`org.eclipse.elk.aspectRatio`); its layered default is 1.6.
 const ASPECT_RATIO: &str = "org.eclipse.elk.aspectRatio";
-const DEFAULT_ASPECT_RATIO: f64 = 1.6;
 /// `CoreOptions.SPACING_COMPONENT_COMPONENT`, with its default of 20.
 const SPACING_COMPONENT_COMPONENT: &str = "org.eclipse.elk.spacing.componentComponent";
-const DEFAULT_SPACING_COMPONENT_COMPONENT: f64 = 20.0;
 /// `LayeredOptions.COMPACTION_CONNECTED_COMPONENTS`, which is off by default.
 const COMPACTION_CONNECTED_COMPONENTS: &str =
     "org.eclipse.elk.layered.compaction.connectedComponents";
@@ -308,15 +306,11 @@ fn combine_rows(components: Vec<LGraph>, target: &mut LGraph) -> Result<(), Layo
         total_area += graph.size.x * graph.size.y;
     }
     // `(float) Math.sqrt(totalArea) * ASPECT_RATIO`: the square root is a float before the product.
-    let aspect_ratio = target
-        .properties
-        .double_of(ASPECT_RATIO)
-        .unwrap_or(DEFAULT_ASPECT_RATIO);
+    let aspect_ratio = target.properties.double_with_default(ASPECT_RATIO);
     max_row_width = max_row_width.max(f64::from(total_area.sqrt() as f32) * aspect_ratio);
     let component_spacing = target
         .properties
-        .double_of(SPACING_COMPONENT_COMPONENT)
-        .unwrap_or(DEFAULT_SPACING_COMPONENT_COMPONENT);
+        .double_with_default(SPACING_COMPONENT_COMPONENT);
     place_components(&mut components, target, max_row_width, component_spacing);
 
     for graph in &mut components {

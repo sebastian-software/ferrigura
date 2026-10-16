@@ -19,6 +19,7 @@ pub mod registry;
 
 pub use enums::canonical_constant;
 
+use registry::LAYERED_PARENT_DEFAULTS;
 pub use registry::OPTIONS;
 
 /// A Java enum as the port uses it: read by constant name or ordinal, and named back.
@@ -235,6 +236,21 @@ fn constructor_default(kind: &OptionKind, text: &str) -> Option<OptionValue> {
     }
 }
 
+/// The value an unset option reads as. An option that targets parents takes the
+/// layered algorithm's `supports` value from Layered.melk, which elkjs reads in
+/// place of the melk default; every other option takes its melk default. This
+/// crate runs only the layered algorithm, so no other algorithm's `supports` is
+/// consulted.
+pub fn default_value(spec: &OptionSpec) -> Option<OptionValue> {
+    match LAYERED_PARENT_DEFAULTS
+        .iter()
+        .find(|(id, _)| *id == spec.id)
+    {
+        Some((_, text)) => parse_default(spec, text),
+        None => melk_default_value(spec),
+    }
+}
+
 /// The default of an option as the melk file gives it, when it is a literal this
 /// port reads: booleans, numbers, `Integer.MAX_VALUE`, enum constants, and the
 /// all-sides `ElkPadding` and `ElkMargin` constructors.
@@ -242,7 +258,11 @@ fn constructor_default(kind: &OptionKind, text: &str) -> Option<OptionValue> {
 /// Other expressions such as `EnumSet.of(...)` return `None`: their defaults are
 /// set by the typed reader, not read from the text.
 pub fn melk_default_value(spec: &OptionSpec) -> Option<OptionValue> {
-    let text = spec.melk_default?;
+    parse_default(spec, spec.melk_default?)
+}
+
+/// One default expression of the option's kind, as [`melk_default_value`] reads it.
+fn parse_default(spec: &OptionSpec, text: &str) -> Option<OptionValue> {
     if let Some(value) = constructor_default(&spec.kind, text) {
         return Some(value);
     }

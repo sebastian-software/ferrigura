@@ -5,13 +5,14 @@
 //! Property holders, `org.eclipse.elk.graph.properties.MapPropertyHolder`.
 //!
 //! A holder stores only values that were set. Reading an unset property gives
-//! the option's default, which is the melk default where the port can read it.
+//! the option's default: the layered `supports` value for options that target
+//! parents, else the melk default, where the port can read it.
 //! Setting `None` removes the value, as `setProperty(property, null)` does.
 
 use std::collections::BTreeMap;
 
 use crate::core::data::{
-    JavaEnum, OptionKind, OptionSpec, OptionValue, melk_default_value, option_by_id,
+    JavaEnum, OptionKind, OptionSpec, OptionValue, default_value, option_by_id,
 };
 
 /// The values set on one element, keyed by full option id.
@@ -58,7 +59,7 @@ impl PropertyHolder {
     pub fn value_or_default(&self, id: &str) -> Option<OptionValue> {
         match self.values.get(id) {
             Some(value) => Some(value.clone()),
-            None => melk_default_value(spec_of(id)),
+            None => default_value(spec_of(id)),
         }
     }
 
@@ -90,6 +91,27 @@ impl PropertyHolder {
             Some(OptionValue::Enum { name, .. }) => E::from_java_text(&name),
             _ => None,
         }
+    }
+
+    /// `getProperty` for an int option that always has a default. Panics for an
+    /// option without one: that is a gap in the registry, not in the input.
+    pub fn int_with_default(&self, id: &str) -> i32 {
+        self.int_of(id)
+            .unwrap_or_else(|| panic!("option {id} has no default"))
+    }
+
+    /// `getProperty` for a double option that always has a default; see
+    /// [`Self::int_with_default`].
+    pub fn double_with_default(&self, id: &str) -> f64 {
+        self.double_of(id)
+            .unwrap_or_else(|| panic!("option {id} has no default"))
+    }
+
+    /// `getProperty` for an enum option that always has a default; see
+    /// [`Self::int_with_default`].
+    pub fn enum_with_default<E: JavaEnum>(&self, id: &str) -> E {
+        self.enum_of::<E>(id)
+            .unwrap_or_else(|| panic!("option {id} has no default"))
     }
 
     /// `EnumSet.contains` for an `EnumSet` option; false when there is no value.
@@ -135,6 +157,40 @@ mod tests {
             holder.enum_of::<Direction>("org.eclipse.elk.direction"),
             Some(Direction::UNDEFINED)
         );
+    }
+
+    #[test]
+    fn unset_parent_options_take_the_layered_value() {
+        use crate::core::data::enums::{EdgeRouting, PortAlignment};
+        let holder = PropertyHolder::new();
+        // `edgeRouting` targets parents: Layered.melk's ORTHOGONAL replaces the melk UNDEFINED.
+        assert_eq!(
+            holder.enum_of::<EdgeRouting>("org.eclipse.elk.edgeRouting"),
+            Some(EdgeRouting::ORTHOGONAL)
+        );
+        assert_eq!(holder.int_with_default("org.eclipse.elk.randomSeed"), 1);
+        assert_eq!(
+            holder.double_with_default("org.eclipse.elk.aspectRatio"),
+            1.6
+        );
+        // `portAlignment.default` targets nodes: the layered JUSTIFIED does not apply to
+        // unset values (elkjs 0.9.3 reads DISTRIBUTED), so the melk default stays.
+        assert_eq!(
+            holder.enum_with_default::<PortAlignment>("org.eclipse.elk.portAlignment.default"),
+            PortAlignment::DISTRIBUTED
+        );
+    }
+
+    #[test]
+    fn every_layered_parent_default_parses() {
+        use crate::core::data::registry::LAYERED_PARENT_DEFAULTS;
+        for (id, _) in LAYERED_PARENT_DEFAULTS {
+            let spec = option_by_id(id).expect("registered option");
+            assert!(
+                default_value(spec).is_some(),
+                "layered default of {id} does not parse"
+            );
+        }
     }
 
     #[test]

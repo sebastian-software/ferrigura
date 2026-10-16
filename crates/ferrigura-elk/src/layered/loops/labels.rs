@@ -52,8 +52,7 @@ impl SelfHyperLoopLabels {
         let horizontal = matches!(graph_direction(graph), Direction::LEFT | Direction::RIGHT);
         let label_spacing = graph
             .properties
-            .double_of(options::SPACING_LABEL_LABEL)
-            .unwrap_or(0.0);
+            .double_with_default(options::SPACING_LABEL_LABEL);
         SelfHyperLoopLabels {
             horizontal,
             label_spacing,

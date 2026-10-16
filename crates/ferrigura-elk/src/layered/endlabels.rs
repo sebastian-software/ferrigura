@@ -30,12 +30,10 @@ const NO_INCIDENT_EDGE_THICKNESS: f64 = -1.0;
 pub fn preprocess(graph: &mut LGraph) {
     let edge_label_spacing = graph
         .properties
-        .double_of(options::SPACING_EDGE_LABEL)
-        .unwrap_or(0.0);
+        .double_with_default(options::SPACING_EDGE_LABEL);
     let label_label_spacing = graph
         .properties
-        .double_of(options::SPACING_LABEL_LABEL)
-        .unwrap_or(0.0);
+        .double_with_default(options::SPACING_LABEL_LABEL);
     let vertical = is_vertical(graph);
     let nodes: Vec<usize> = graph.layers.iter().flatten().copied().collect();
     for node in nodes {
@@ -115,8 +113,7 @@ fn is_vertical(graph: &LGraph) -> bool {
 fn placement(label: &LLabel) -> EdgeLabelPlacement {
     label
         .properties
-        .enum_of::<EdgeLabelPlacement>(options::EDGE_LABELS_PLACEMENT)
-        .unwrap_or(EdgeLabelPlacement::CENTER)
+        .enum_with_default::<EdgeLabelPlacement>(options::EDGE_LABELS_PLACEMENT)
 }
 
 /// `EndLabelPreprocessor.processNode`.

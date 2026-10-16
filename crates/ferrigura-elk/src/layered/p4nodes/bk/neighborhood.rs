@@ -132,6 +132,5 @@ fn neighbors(
 fn priority_straightness(graph: &LGraph, edge: usize) -> i32 {
     graph.edges[edge]
         .properties
-        .int_of(PRIORITY_STRAIGHTNESS)
-        .unwrap_or(0)
+        .int_with_default(PRIORITY_STRAIGHTNESS)
 }
