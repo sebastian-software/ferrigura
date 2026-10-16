@@ -72,7 +72,7 @@ pub fn sweep(graph: &mut LGraph) -> Result<(), LayoutError> {
     let node_relative = random.next_boolean();
     let (best, random) = {
         let net = Net::new(graph);
-        let mut sweep = Sweep::new(&net, node_relative, consider_model_order, random);
+        let mut sweep = Sweep::new(&net, node_relative, consider_model_order, random, None);
         sweep.compare_randomized_layouts(seed, thoroughness);
         let best = sweep.best.take();
         (best, sweep.random)
@@ -83,6 +83,147 @@ pub fn sweep(graph: &mut LGraph) -> Result<(), LayoutError> {
     }
     graph.random = Some(random);
     Ok(())
+}
+
+/// `LayerSweepCrossingMinimizer.process` for `CrossMinType.BARYCENTER` in a compound layout: the
+/// top graph runs the minimizer for the graphs of the whole hierarchy (see
+/// `driver::hierarchical_layout`). `graphs[0]` is the top graph.
+///
+/// Each graph gets a `GraphInfoHolder`, breadth first through the nested graphs in the order of
+/// the nodes in the layers. A graph is swept on its own, bottom-up, when it is the top graph or its
+/// node has fewer than two ports on the east and on the west side, or a fixed port order
+/// (`LayerSweepTypeDecider.useBottomUp`). A sweep that enters a nested graph from the graph around
+/// it (`sweepInHierarchicalNode`) is not ported, nor is the decision by paths that allows it.
+///
+/// The graphs swept bottom-up are swept one after another, the innermost first: each restarts the
+/// top graph's generator from the seed, and each graph's heuristic draws from its own graph's
+/// generator, which the top graph's heuristic shares with the minimizer.
+pub fn sweep_compound(graphs: &mut [LGraph]) -> Result<(), LayoutError> {
+    if graphs[0].layers.iter().all(Vec::is_empty) {
+        return Ok(());
+    }
+    // A single node is swept too, since the layout is hierarchical.
+    let mut random = graphs[0]
+        .random
+        .take()
+        .ok_or_else(|| LayoutError::Unsupported("a graph without a random source".to_string()))?;
+    let result = sweep_hierarchy(graphs, &mut random);
+    graphs[0].random = Some(random);
+    result
+}
+
+/// `initialize`, `minimizeCrossings` and `transferNodeAndPortOrdersToGraph` of a compound layout,
+/// with the top graph's generator taken out of it.
+fn sweep_hierarchy(graphs: &mut [LGraph], random: &mut Random) -> Result<(), LayoutError> {
+    // `initialize`: the seed the attempts restart from, drawn first.
+    let seed = random.next_long();
+    // The graphs breadth first, as `graph.id` numbers them, with the port rule each one drew.
+    let mut holders: Vec<(usize, bool)> = Vec::new();
+    let mut queue = vec![0];
+    let mut next = 0;
+    while next < queue.len() {
+        let index = queue[next];
+        next += 1;
+        check_supported(&graphs[index])?;
+        // `ISweepPortDistributor.create` draws from the graph's own generator.
+        let node_relative = if index == 0 {
+            random.next_boolean()
+        } else {
+            graphs[index]
+                .random
+                .as_mut()
+                .ok_or_else(|| {
+                    LayoutError::Unsupported("a graph without a random source".to_string())
+                })?
+                .next_boolean()
+        };
+        // `GraphInfoHolder.initAtNodeLevel`: the nested graphs, in the order of the layers.
+        for &node in graphs[index].layers.iter().flatten() {
+            if let Some(nested) = graphs[index].nodes[node].nested_graph {
+                queue.push(nested);
+            }
+        }
+        if !use_bottom_up(graphs, index) {
+            return Err(LayoutError::Unsupported(
+                "a hierarchical sweep into a nested graph \
+                 (LayerSweepCrossingMinimizer.sweepInHierarchicalNode)"
+                    .to_string(),
+            ));
+        }
+        holders.push((index, node_relative));
+    }
+    // `graphsToSweepOn`: each graph swept bottom-up goes to the front, so the last one comes first.
+    let mut best_orders: Vec<(usize, Layout)> = Vec::new();
+    for &(index, node_relative) in holders.iter().rev() {
+        if graphs[index].layers.is_empty() {
+            continue;
+        }
+        let thoroughness = graphs[index]
+            .properties
+            .int_with_default(options::THOROUGHNESS);
+        let consider_model_order = graphs[index]
+            .properties
+            .enum_of::<OrderingStrategy>(options::CONSIDER_MODEL_ORDER_STRATEGY)
+            .is_some_and(|strategy| strategy != OrderingStrategy::NONE);
+        let heuristic_random = if index == 0 {
+            None
+        } else {
+            graphs[index].random.take()
+        };
+        let minimizer_random = std::mem::replace(random, Random::new(0));
+        let (best, minimizer_random, heuristic_random) = {
+            let net = Net::new(&graphs[index]);
+            let mut sweep = Sweep::new(
+                &net,
+                node_relative,
+                consider_model_order,
+                minimizer_random,
+                heuristic_random,
+            );
+            sweep.compare_randomized_layouts(seed, thoroughness);
+            (sweep.best.take(), sweep.random, sweep.heuristic_random)
+        };
+        *random = minimizer_random;
+        if index != 0 {
+            graphs[index].random = heuristic_random;
+        }
+        if let Some(best) = best {
+            best_orders.push((index, best));
+        }
+    }
+    // `transferNodeAndPortOrdersToGraph`, in the order of the graph ids.
+    for &(index, _) in &holders {
+        if let Some(position) = best_orders.iter().position(|(found, _)| *found == index) {
+            let (_, best) = best_orders.swap_remove(position);
+            transfer_node_and_port_orders(&mut graphs[index], best);
+        }
+    }
+    Ok(())
+}
+
+/// `LayerSweepTypeDecider.useBottomUp` for the cases that decide without counting paths: the top
+/// graph, a forced bottom-up sweep, a node whose port order is fixed, or a node with fewer than two
+/// ports on its east and on its west side. Otherwise the barycenter heuristic, which is not
+/// deterministic, would count the paths to random and to hierarchical influences; that count is
+/// not ported, and such a graph is reported as swept into.
+fn use_bottom_up(graphs: &[LGraph], index: usize) -> bool {
+    let boundary = graphs[index]
+        .properties
+        .double_with_default(options::CROSSING_MINIMIZATION_HIERARCHICAL_SWEEPINESS);
+    let Some((parent_graph, parent_node)) = graphs[index].parent_node else {
+        return true;
+    };
+    let parent = &graphs[parent_graph];
+    let fixed_port_order = is_order_fixed(port_constraints(parent, parent_node));
+    let side_count = |side: PortSide| {
+        parent.nodes[parent_node]
+            .ports
+            .iter()
+            .filter(|&&port| parent.ports[port].side == side)
+            .count()
+    };
+    let fewer_than_two = side_count(PortSide::EAST) < 2 && side_count(PortSide::WEST) < 2;
+    boundary < -1.0 || fixed_port_order || fewer_than_two
 }
 
 /// `LayerSweepCrossingMinimizer.process` for the greedy switch types, the processor that runs before
@@ -434,7 +575,12 @@ struct Sweep<'n, 'g> {
     heuristic: BarycenterHeuristic,
     /// `crossingsCounter`.
     counter: AllCrossingsCounter,
+    /// The minimizer's `random`: the top graph's generator, which draws the sweep directions and
+    /// is reset to the seed for every graph.
     random: Random,
+    /// The generator the graph's heuristic was given, its own graph's, when that is not the top
+    /// graph; `None` when the heuristic shares the minimizer's.
+    heuristic_random: Option<Random>,
     /// `InternalProperties.FIRST_TRY_WITH_INITIAL_ORDER`, kept here: the root graph is the only one swept.
     /// Java's `SECOND_TRY_WITH_INITIAL_ORDER` has the same id (`firstTryWithInitialOrder`), and graph
     /// properties are keyed by id, so both are this one flag.
@@ -455,6 +601,7 @@ impl<'n, 'g> Sweep<'n, 'g> {
         node_relative: bool,
         consider_model_order: bool,
         random: Random,
+        heuristic_random: Option<Random>,
     ) -> Self {
         let layout = Layout::initial(net.graph);
         let counter = AllCrossingsCounter::new(net, &layout);
@@ -465,6 +612,7 @@ impl<'n, 'g> Sweep<'n, 'g> {
             heuristic: BarycenterHeuristic::new(net, ports),
             counter,
             random,
+            heuristic_random,
             first_try: false,
             consider_model_order,
             changed: false,
@@ -535,8 +683,12 @@ impl<'n, 'g> Sweep<'n, 'g> {
 
     /// `ICrossingMinimizationHeuristic.setFirstLayerOrder`: the first layer of the sweep, in random order.
     fn set_first_layer_order(&mut self, forward: bool) {
+        let random = match &mut self.heuristic_random {
+            Some(random) => random,
+            None => &mut self.random,
+        };
         self.heuristic
-            .set_first_layer_order(&mut self.layout, &mut self.random, forward);
+            .set_first_layer_order(&mut self.layout, random, forward);
     }
 
     /// `sweepReducingCrossings`: the port distribution of the first layer, then each following layer
@@ -558,10 +710,14 @@ impl<'n, 'g> Sweep<'n, 'g> {
         };
         while in_sweep_range(index, length, forward) {
             let free = index as usize;
+            let random = match &mut self.heuristic_random {
+                Some(random) => random,
+                None => &mut self.random,
+            };
             self.heuristic.minimize_crossings(
                 self.net,
                 &mut self.layout,
-                &mut self.random,
+                random,
                 free,
                 forward,
                 is_first_sweep,
@@ -742,7 +898,7 @@ mod tests {
             for seed in 0..20 {
                 let graph = diamond();
                 let net = Net::new(&graph);
-                let mut sweep = Sweep::new(&net, node_relative, false, Random::new(seed));
+                let mut sweep = Sweep::new(&net, node_relative, false, Random::new(seed), None);
                 let thoroughness = PropertyHolder::new().int_with_default(options::THOROUGHNESS);
                 sweep.compare_randomized_layouts(seed, thoroughness);
                 let best = sweep.best.take().expect("an attempt saves an order");

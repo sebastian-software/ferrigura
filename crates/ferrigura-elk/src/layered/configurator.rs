@@ -208,10 +208,11 @@ fn greedy_switch_active(graph: &LGraph) -> bool {
     let hierarchical = props.enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
         == Some(HierarchyHandling::INCLUDE_CHILDREN);
     if hierarchical {
+        // Only the top graph; `reviewAndCorrectHierarchicalProcessors` gave every graph its type.
         let hierarchical_type = props.enum_of::<GreedySwitchType>(
             options::CROSSING_MINIMIZATION_GREEDY_SWITCH_HIERARCHICAL_TYPE,
         );
-        return hierarchical_type != Some(GreedySwitchType::OFF);
+        return graph.parent_node.is_none() && hierarchical_type != Some(GreedySwitchType::OFF);
     }
     let switch_type =
         props.enum_of::<GreedySwitchType>(options::CROSSING_MINIMIZATION_GREEDY_SWITCH_TYPE);

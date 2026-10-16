@@ -63,6 +63,9 @@ pub struct LNode {
     /// `InternalProperties.ORIGINAL_PORT_CONSTRAINTS`: the port constraints the node had before the
     /// port side processor changed them. Set by the configurator.
     pub original_port_constraints: Option<PortConstraints>,
+    /// `LNode.getNestedGraph()`: in a compound layout, the index of the graph inside this node in
+    /// the layout's list of graphs (see `driver::Compound`).
+    pub nested_graph: Option<usize>,
 }
 
 /// Whether a port is where an edge leaves or enters its node, `PortType`.
@@ -196,6 +199,9 @@ pub struct LGraph {
     /// ids, so a label moved from one holder to another, or copied by a join where Java shares the
     /// object, stays one label: a write through one id is seen through all of them.
     pub labels: Vec<LLabel>,
+    /// `LGraph.getParentNode()`: in a compound layout, the graph that holds the node this graph is
+    /// nested in, and the node's index there. `None` for the top graph of a layout.
+    pub parent_node: Option<(usize, usize)>,
 }
 
 /// The id of an `LLabel` in `LGraph::labels`.

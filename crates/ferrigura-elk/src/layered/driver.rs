@@ -7,7 +7,7 @@
 //! the graph. A level whose hierarchy handling is INCLUDE_CHILDREN is laid out as a compound graph
 //! (`doCompoundLayout`); any other level as a flat graph (`doLayout`).
 
-use crate::core::data::enums::HierarchyHandling;
+use crate::core::data::enums::{CrossingMinimizationStrategy, HierarchyHandling};
 use crate::core::data::property::PropertyHolder;
 use crate::core::data::{JavaEnum, OptionValue};
 use crate::core::math::KVector;
@@ -33,16 +33,18 @@ pub fn layout(
     progress: &mut ProgressMonitor,
     monitor: Monitor,
 ) -> Result<(), LayoutError> {
-    let mut graph = importer::import_level(node, parent, chain)?;
     let hierarchy = node
         .properties
         .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING);
     if hierarchy == Some(HierarchyHandling::INCLUDE_CHILDREN) {
-        do_compound_layout(&mut graph, progress, monitor)?;
+        let mut graphs = importer::import_compound(node, parent, chain)?;
+        do_compound_layout(&mut graphs, progress, monitor)?;
+        transfer::apply_compound_layout(&graphs, node)
     } else {
+        let mut graph = importer::import_level(node, parent, chain)?;
         do_layout(&mut graph, progress, monitor)?;
+        transfer::apply_layout(&graph, node)
     }
-    transfer::apply_layout(&graph, node)
 }
 
 /// `ElkLayered.doLayout`: the connected components of the graph are laid out one after another,
@@ -113,9 +115,12 @@ fn layout_component(
     Ok(())
 }
 
-/// `ElkLayered.doCompoundLayout`.
+/// `ElkLayered.doCompoundLayout`: the graphs of a compound layout, the top graph first and the
+/// nested graphs after it (see `importer::import_compound`). The cross-hierarchy edges that the
+/// compound graph pre- and postprocessor split and join are refused by the importer, so the two
+/// processors have nothing to do here.
 fn do_compound_layout(
-    graph: &mut LGraph,
+    graphs: &mut [LGraph],
     progress: &mut ProgressMonitor,
     monitor: Monitor,
 ) -> Result<(), LayoutError> {
@@ -124,7 +129,7 @@ fn do_compound_layout(
     progress.begin(pre, "Compound graph preprocessor", 1.0);
     progress.done(pre);
     let hierarchical = sub_task(progress, monitor)?;
-    hierarchical_layout(graph, progress, hierarchical)?;
+    hierarchical_layout(graphs, progress, hierarchical)?;
     let post = sub_task(progress, monitor)?;
     progress.begin(post, "Compound graph postprocessor", 1.0);
     progress.done(post);
@@ -132,21 +137,150 @@ fn do_compound_layout(
     Ok(())
 }
 
-/// `ElkLayered.hierarchicalLayout` for a graph without nested graphs.
+/// `ElkLayered.hierarchicalLayout`: every graph has its own processors, and the graphs run them
+/// from the bottom of the hierarchy up. A processor that works on the whole hierarchy (the layer
+/// sweep crossing minimizer) pauses each graph until the top graph has run it for all of them.
 fn hierarchical_layout(
-    graph: &mut LGraph,
+    graphs: &mut [LGraph],
     progress: &mut ProgressMonitor,
     monitor: Monitor,
 ) -> Result<(), LayoutError> {
-    configurator::prepare(graph)?;
-    let steps: Vec<Step> = graph.processors.clone();
-    progress.begin(monitor, "Recursive hierarchical layout", steps.len() as f64);
-    for step in steps {
-        let sub = sub_task(progress, monitor)?;
-        run_step(step, graph, progress, sub)?;
+    let order = collect_all_graphs_bottom_up(graphs);
+    review_and_correct_hierarchical_processors(graphs)?;
+    let mut work = 0;
+    for &index in &order {
+        configurator::prepare(&mut graphs[index])?;
+        work += graphs[index].processors.len();
+    }
+    progress.begin(monitor, "Recursive hierarchical layout", work as f64);
+    // The next processor of each graph, as the Java's iterators keep it.
+    let mut next = vec![0; graphs.len()];
+    let root = 0;
+    while next[root] < graphs[root].processors.len() {
+        for &index in &order {
+            while next[index] < graphs[index].processors.len() {
+                let step = graphs[index].processors[next[index]];
+                next[index] += 1;
+                if !is_hierarchy_aware(step) {
+                    let sub = sub_task(progress, monitor)?;
+                    run_compound_step(step, graphs, index, progress, sub)?;
+                } else if index == root {
+                    // The processor runs on the top graph, for the whole hierarchy; then the
+                    // graphs continue from the bottom.
+                    let sub = sub_task(progress, monitor)?;
+                    run_hierarchical_step(step, graphs, progress, sub)?;
+                    break;
+                } else {
+                    // Skipped here; the top graph runs it for this graph.
+                    break;
+                }
+            }
+        }
     }
     progress.done(monitor);
     Ok(())
+}
+
+/// `collectAllGraphsBottomUp`: a search from the top graph, whose list is reversed so that every
+/// graph comes before the graph it is nested in. The search takes the graphs from a stack.
+fn collect_all_graphs_bottom_up(graphs: &[LGraph]) -> Vec<usize> {
+    let mut collected = vec![0];
+    let mut continue_with = vec![0];
+    while let Some(next) = continue_with.pop() {
+        for &node in &graphs[next].layerless_nodes {
+            if let Some(nested) = graphs[next].nodes[node].nested_graph {
+                collected.push(nested);
+                continue_with.push(nested);
+            }
+        }
+    }
+    collected.reverse();
+    collected
+}
+
+/// `reviewAndCorrectHierarchicalProcessors`: every graph must minimize crossings with the top
+/// graph's strategy, and takes the top graph's hierarchical greedy switch type.
+fn review_and_correct_hierarchical_processors(graphs: &mut [LGraph]) -> Result<(), LayoutError> {
+    let root_strategy = graphs[0]
+        .properties
+        .enum_with_default::<CrossingMinimizationStrategy>(options::CROSSING_MINIMIZATION_STRATEGY);
+    let root_type = graphs[0]
+        .properties
+        .value_or_default(options::CROSSING_MINIMIZATION_GREEDY_SWITCH_HIERARCHICAL_TYPE);
+    for graph in graphs.iter_mut() {
+        let strategy = graph
+            .properties
+            .enum_with_default::<CrossingMinimizationStrategy>(
+                options::CROSSING_MINIMIZATION_STRATEGY,
+            );
+        if strategy != root_strategy {
+            return Err(LayoutError::Unsupported(format!(
+                "the hierarchy aware processor {} in child node {} is only allowed if the root \
+                 node specifies the same hierarchical processor",
+                strategy.java_name(),
+                graph.root_id
+            )));
+        }
+        graph.properties.set(
+            options::CROSSING_MINIMIZATION_GREEDY_SWITCH_HIERARCHICAL_TYPE,
+            root_type.clone(),
+        );
+    }
+    Ok(())
+}
+
+/// Whether the step's processor is an `IHierarchyAwareLayoutProcessor`: the layer sweep crossing
+/// minimizer, as the crossing minimization phase or as a greedy switch processor.
+fn is_hierarchy_aware(step: Step) -> bool {
+    use crate::core::data::enums::IntermediateProcessorStrategy as S;
+    matches!(
+        step,
+        Step::Phase(PhaseStep::CrossingMinimization(
+            CrossingMinimizationStrategy::LAYER_SWEEP
+        )) | Step::Intermediate(S::ONE_SIDED_GREEDY_SWITCH | S::TWO_SIDED_GREEDY_SWITCH)
+    )
+}
+
+/// A step of one graph of a compound layout. The hierarchical node resizer also sizes the node the
+/// graph is nested in, which is in another graph.
+fn run_compound_step(
+    step: Step,
+    graphs: &mut [LGraph],
+    index: usize,
+    progress: &mut ProgressMonitor,
+    monitor: Monitor,
+) -> Result<(), LayoutError> {
+    use crate::core::data::enums::IntermediateProcessorStrategy as S;
+    if step == Step::Intermediate(S::HIERARCHICAL_NODE_RESIZER) {
+        let name = intermediate::task_name(S::HIERARCHICAL_NODE_RESIZER, &graphs[index])?;
+        progress.begin(monitor, &name, 1.0);
+        intermediate::resize_hierarchical_graph(graphs, index)?;
+        progress.done(monitor);
+        return Ok(());
+    }
+    run_step(step, &mut graphs[index], progress, monitor)
+}
+
+/// A hierarchy aware step, run by the top graph for all graphs.
+fn run_hierarchical_step(
+    step: Step,
+    graphs: &mut [LGraph],
+    progress: &mut ProgressMonitor,
+    monitor: Monitor,
+) -> Result<(), LayoutError> {
+    match step {
+        Step::Phase(phase @ PhaseStep::CrossingMinimization(_)) => {
+            let name = phase.task_name(&graphs[0])?;
+            progress.begin(monitor, &name, 1.0);
+            crate::layered::p3order::sweep_compound(graphs)?;
+            progress.done(monitor);
+            Ok(())
+        }
+        _ => Err(LayoutError::Unsupported(
+            "the greedy switch in a compound layout (a hierarchical LayerSweepCrossingMinimizer)"
+                .to_string(),
+        )),
+    }
 }
 
 fn run_step(
@@ -332,4 +466,32 @@ fn sub_task(progress: &mut ProgressMonitor, monitor: Monitor) -> Result<Monitor,
     progress
         .sub_task(monitor, 1.0)
         .ok_or_else(|| LayoutError::Unsupported("subtask of a finished monitor".to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::layered::lgraph::LNode;
+
+    /// A top graph with nodes `a` and `b` holding graphs 1 and 2, and graph 1 with a node holding
+    /// graph 3.
+    fn hierarchy() -> Vec<LGraph> {
+        let compound = |nested| LNode {
+            nested_graph: Some(nested),
+            ..LNode::default()
+        };
+        let mut graphs = vec![LGraph::default(); 4];
+        graphs[0].nodes = vec![compound(1), compound(2)];
+        graphs[0].layerless_nodes = vec![0, 1];
+        graphs[1].nodes = vec![LNode::default(), compound(3)];
+        graphs[1].layerless_nodes = vec![0, 1];
+        graphs
+    }
+
+    /// The search takes graphs from a stack: graph 2 is searched before graph 1, so graph 3 is
+    /// found last and comes first in the reversed list, before graph 2.
+    #[test]
+    fn graphs_are_collected_bottom_up_from_a_stack() {
+        assert_eq!(collect_all_graphs_bottom_up(&hierarchy()), vec![3, 2, 1, 0]);
+    }
 }

@@ -5,9 +5,11 @@
 //! The layered graph from the ELK graph: `ElkGraphImporter` and `ElkGraphTransformer.importGraph`.
 //!
 //! Graphs of plain nodes, with their inside labels, and edges between them, self loops included.
-//! Ports on nodes and nested graphs are reported as unsupported.
+//! A level whose hierarchy handling is INCLUDE_CHILDREN becomes a top graph with nested graphs
+//! (`importHierarchicalGraph`). Ports on nodes, inside self loops, and edges between nodes of
+//! different graphs are reported as unsupported.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{
@@ -38,6 +40,53 @@ pub fn import_level(
     parent: Option<&PropertyHolder>,
     chain: &str,
 ) -> Result<LGraph, LayoutError> {
+    let mut graph = create_graph(root, parent, chain)?;
+    let needs_model_order = needs_model_order_based_on_parent(root);
+    let mut model_order = 0;
+    for child in &root.children {
+        // A child with children is a leaf of this level once it was laid out on its own, which its
+        // hierarchy handling says. Any other child with children is a nested graph of this level.
+        if !child.children.is_empty()
+            && child
+                .properties
+                .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
+                != Some(HierarchyHandling::SEPARATE_CHILDREN)
+        {
+            return Err(LayoutError::Unsupported(format!(
+                "nested graph in {}",
+                child.id
+            )));
+        }
+        // `needsModelOrder(child)`: the parent asks for the input order, and the child does not opt out.
+        let ordered = needs_model_order
+            && !child
+                .properties
+                .bool_of(options::CONSIDER_MODEL_ORDER_NO_MODEL_ORDER);
+        let node_model_order = ordered.then(|| {
+            model_order += 1;
+            model_order - 1
+        });
+        transform_node(
+            child,
+            child.properties.clone(),
+            &mut graph,
+            node_model_order,
+        )?;
+    }
+    graph.layerless_nodes = (0..graph.nodes.len()).collect();
+    import_edges(root, &mut graph, needs_model_order)?;
+    Ok(graph)
+}
+
+/// `ElkGraphImporter.createLGraph` for the graph of `root`, with what `importGraph` (or, for a
+/// nested graph, `importHierarchicalGraph`) does before the children are imported: the minimum
+/// size and the spacings of the base value. `parent` holds the options of `root`'s parent ELK node,
+/// `None` for the root of the whole graph; `chain` is `root`'s designation prefix.
+fn create_graph(
+    root: &ElkNode,
+    parent: Option<&PropertyHolder>,
+    chain: &str,
+) -> Result<LGraph, LayoutError> {
     let mut graph = LGraph {
         properties: root.properties.clone(),
         root_id: chain.to_string(),
@@ -63,9 +112,8 @@ pub fn import_level(
     }
     // `calculateMinimumGraphSize`: a nested graph's node with size constraints takes a minimum size
     // from its labels, and the configured minimum, and the graph gets the MINIMUM_SIZE constraint.
-    // The Java also writes the result into the node's own minimum, through a shared object. That is
-    // not reproduced: the layout's size is already at least that minimum, so the node's size does
-    // not change either way.
+    // The Java also writes the result into the node's own options, through shared objects; see
+    // `shared_minimum_size` for the node of a nested graph.
     if let Some(parent) = parent
         && !root
             .properties
@@ -102,81 +150,351 @@ pub fn import_level(
             })),
         );
     }
-    let needs_model_order = needs_model_order_based_on_parent(root);
+    // `importGraph`: the base value derives the spacings before the graph is laid out.
+    if root.properties.has(SPACING_BASE_VALUE)
+        && let Some(base) = root.properties.double_of(SPACING_BASE_VALUE)
+    {
+        apply_base_value(&mut graph, base);
+    }
+    Ok(graph)
+}
+
+/// `transformNode`: the ELK node `child` becomes a node of `graph`, with `properties` as its
+/// options. Returns its index in `graph.nodes`; the caller puts it in the layerless list.
+fn transform_node(
+    child: &ElkNode,
+    mut properties: PropertyHolder,
+    graph: &mut LGraph,
+    model_order: Option<usize>,
+) -> Result<usize, LayoutError> {
+    if !child.ports.is_empty() {
+        return Err(LayoutError::Unsupported(format!("ports on {}", child.id)));
+    }
+    // A node without port constraints is free; any other constraint is not supported by the port
+    // sides yet.
+    match properties.enum_of::<PortConstraints>(options::PORT_CONSTRAINTS) {
+        None | Some(PortConstraints::UNDEFINED) => properties.set(
+            options::PORT_CONSTRAINTS,
+            Some(OptionValue::Enum {
+                class: "PortConstraints",
+                name: "FREE".to_string(),
+            }),
+        ),
+        Some(PortConstraints::FREE) => {}
+        Some(_) => {
+            graph
+                .graph_properties
+                .insert(GraphProperties::NON_FREE_PORTS);
+        }
+    }
+    let labels = import_node_labels(child, graph);
+    // `LNode.getDesignation()`: the first label's text when there is one, else the ids of the
+    // ELK node and its ancestors up to the root of the graph.
+    let designation = match labels.first() {
+        Some(&first) => graph.labels[first].text.clone(),
+        None => format!("{}.{}", graph.root_id, child.id),
+    };
+    graph.nodes.push(LNode {
+        id: child.id.clone(),
+        designation,
+        properties,
+        size: KVector {
+            x: child.shape.width,
+            y: child.shape.height,
+        },
+        model_order,
+        labels,
+        ..LNode::default()
+    });
+    Ok(graph.nodes.len() - 1)
+}
+
+/// `ElkGraphImporter.importGraph` for a level whose hierarchy handling is INCLUDE_CHILDREN, with
+/// `importHierarchicalGraph`: the children of `root` and of every descendant that is laid out in
+/// the same run become nodes of nested graphs. Returns the graphs of the layout: the graph of
+/// `root` first, then the nested graphs in the order they were created. A node holds the index of
+/// the graph nested in it, and the graph the index of its node.
+///
+/// The edges between the nodes of one graph are imported; an edge whose ends are in different
+/// graphs needs the compound graph preprocessor, which is not ported, and is reported as
+/// unsupported.
+pub fn import_compound(
+    root: &ElkNode,
+    parent: Option<&PropertyHolder>,
+    chain: &str,
+) -> Result<Vec<LGraph>, LayoutError> {
+    let top = create_graph(root, parent, chain)?;
+    // `parentGraphDirection`: every nested graph takes the direction of the top graph, whatever its
+    // own node asks for.
+    let direction = top.properties.value_or_default(options::DIRECTION);
+    let mut graphs = vec![top];
+    // Where each ELK node went, by its path of child indices from `root`: its graph and its index.
+    let mut node_map: HashMap<Vec<usize>, (usize, usize)> = HashMap::new();
+    // `elkGraphQueue`: the ELK nodes, breadth first, with the graph each one becomes a node of.
+    let mut queue: VecDeque<(Vec<usize>, usize)> = (0..root.children.len())
+        .map(|index| (vec![index], 0))
+        .collect();
+    // The model order counts the nodes of all graphs, in the order they are read.
     let mut model_order = 0;
-    for child in &root.children {
-        // A child with children is a leaf of this level once it was laid out on its own, which its
-        // hierarchy handling says. Any other child with children is a nested graph of this level.
-        if !child.children.is_empty()
-            && child
-                .properties
-                .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
-                != Some(HierarchyHandling::SEPARATE_CHILDREN)
-        {
-            return Err(LayoutError::Unsupported(format!(
-                "nested graph in {}",
-                child.id
-            )));
-        }
-        if !child.ports.is_empty() {
-            return Err(LayoutError::Unsupported(format!("ports on {}", child.id)));
-        }
-        // `needsModelOrder(child)`: the parent asks for the input order, and the child does not opt out.
-        let ordered = needs_model_order
-            && !child
+    while let Some((path, graph_index)) = queue.pop_front() {
+        let (elk_parent, elk_node) = parent_and_node(root, &path)?;
+        // `needsModelOrder(elknode)`: the node's parent asks for the input order, and the node
+        // does not opt out.
+        let ordered = needs_model_order_based_on_parent(elk_parent)
+            && !elk_node
                 .properties
                 .bool_of(options::CONSIDER_MODEL_ORDER_NO_MODEL_ORDER);
         let node_model_order = ordered.then(|| {
             model_order += 1;
             model_order - 1
         });
-        // `transformNode`: a node without port constraints is free; any other constraint is
-        // not supported by the port sides yet.
-        let mut properties = child.properties.clone();
-        match properties.enum_of::<PortConstraints>(options::PORT_CONSTRAINTS) {
-            None | Some(PortConstraints::UNDEFINED) => properties.set(
-                options::PORT_CONSTRAINTS,
-                Some(OptionValue::Enum {
-                    class: "PortConstraints",
-                    name: "FREE".to_string(),
-                }),
-            ),
-            Some(PortConstraints::FREE) => {}
-            Some(_) => {
-                graph
-                    .graph_properties
-                    .insert(GraphProperties::NON_FREE_PORTS);
+        if elk_node.properties.bool_of(options::NO_LAYOUT) {
+            continue;
+        }
+        if elk_node
+            .properties
+            .bool_of(options::INSIDE_SELF_LOOPS_ACTIVATE)
+        {
+            return Err(LayoutError::Unsupported(format!(
+                "insideSelfLoops.activate on {} (inside self loops)",
+                elk_node.id
+            )));
+        }
+        // The node needs a graph of its own if it has children laid out in this run.
+        let nested = if uses_elk_layered(&elk_node.properties)
+            && elk_node
+                .properties
+                .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
+                == Some(HierarchyHandling::INCLUDE_CHILDREN)
+            && !elk_node.children.is_empty()
+        {
+            let nested_chain = format!("{}.{}", graphs[graph_index].root_id, elk_node.id);
+            let mut nested = create_graph(elk_node, Some(&elk_parent.properties), &nested_chain)?;
+            nested.properties.set(options::DIRECTION, direction.clone());
+            Some(nested)
+        } else {
+            if !elk_node.children.is_empty()
+                && elk_node
+                    .properties
+                    .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
+                    != Some(HierarchyHandling::SEPARATE_CHILDREN)
+            {
+                return Err(LayoutError::Unsupported(format!(
+                    "nested graph in {}",
+                    elk_node.id
+                )));
+            }
+            None
+        };
+        let properties = match &nested {
+            Some(nested) => shared_minimum_size(elk_node, nested),
+            None => elk_node.properties.clone(),
+        };
+        let graph = &mut graphs[graph_index];
+        let index = transform_node(elk_node, properties, graph, node_model_order)?;
+        graph.layerless_nodes.push(index);
+        node_map.insert(path.clone(), (graph_index, index));
+        if let Some(mut nested) = nested {
+            let nested_index = graphs.len();
+            nested.parent_node = Some((graph_index, index));
+            graphs[graph_index].nodes[index].nested_graph = Some(nested_index);
+            graphs.push(nested);
+            for child in 0..elk_node.children.len() {
+                let mut child_path = path.clone();
+                child_path.push(child);
+                queue.push_back((child_path, nested_index));
             }
         }
-        let labels = import_node_labels(child, &mut graph);
-        // `LNode.getDesignation()`: the first label's text when there is one, else the ids of the
-        // ELK node and its parent.
-        let designation = match labels.first() {
-            Some(&first) => graph.labels[first].text.clone(),
-            None => format!("{chain}.{}", child.id),
-        };
-        graph.nodes.push(LNode {
-            id: child.id.clone(),
-            designation,
-            properties,
-            size: KVector {
-                x: child.shape.width,
-                y: child.shape.height,
-            },
-            model_order: node_model_order,
-            labels,
-            ..LNode::default()
-        });
     }
-    graph.layerless_nodes = (0..graph.nodes.len()).collect();
-    // `ElkGraphImporter.importGraph`: the base value derives the spacings before the graph is laid out.
-    if root.properties.has(SPACING_BASE_VALUE)
-        && let Some(base) = root.properties.double_of(SPACING_BASE_VALUE)
-    {
-        apply_base_value(&mut graph, base);
+    import_compound_edges(root, &mut graphs, &node_map)?;
+    Ok(graphs)
+}
+
+/// The options the node of a nested graph is created with. `calculateMinimumGraphSize` changes
+/// the graph's size constraints and minimum size in place, and the Java graph shares those objects
+/// with the ELK node, whose options `transformNode` copies afterwards: the node sees the changes
+/// where the ELK node set the option itself. (An unset minimum is a default the graph alone holds.)
+fn shared_minimum_size(elk_node: &ElkNode, nested: &LGraph) -> PropertyHolder {
+    let mut properties = elk_node.properties.clone();
+    for id in [options::NODE_SIZE_CONSTRAINTS, options::NODE_SIZE_MINIMUM] {
+        if properties.has(id) {
+            properties.set(id, nested.properties.get(id).cloned());
+        }
     }
-    import_edges(root, &mut graph, needs_model_order)?;
-    Ok(graph)
+    properties
+}
+
+/// `LayeredOptions.ALGORITHM_ID.endsWith(algorithm)`: the node has no algorithm, or names the
+/// layered one.
+fn uses_elk_layered(properties: &PropertyHolder) -> bool {
+    match properties.get(options::ALGORITHM) {
+        None => true,
+        Some(OptionValue::Algorithm(name)) => "org.eclipse.elk.layered".ends_with(name.as_str()),
+        Some(_) => false,
+    }
+}
+
+/// The ELK node at `path` below `root`, with its parent.
+fn parent_and_node<'a>(
+    root: &'a ElkNode,
+    path: &[usize],
+) -> Result<(&'a ElkNode, &'a ElkNode), LayoutError> {
+    let Some((&last, ancestors)) = path.split_last() else {
+        return Err(LayoutError::Format("an empty node path".to_string()));
+    };
+    let parent = node_at(root, ancestors)?;
+    let node = parent
+        .children
+        .get(last)
+        .ok_or_else(|| LayoutError::Format("a node path outside the graph".to_string()))?;
+    Ok((parent, node))
+}
+
+/// The ELK node at `path` below `root`; `root` itself for the empty path.
+fn node_at<'a>(root: &'a ElkNode, path: &[usize]) -> Result<&'a ElkNode, LayoutError> {
+    let mut node = root;
+    for &index in path {
+        node = node
+            .children
+            .get(index)
+            .ok_or_else(|| LayoutError::Format("a node path outside the graph".to_string()))?;
+    }
+    Ok(node)
+}
+
+/// The paths of `node` and its descendants by id, below `prefix`.
+fn collect_paths<'a>(
+    node: &'a ElkNode,
+    prefix: &mut Vec<usize>,
+    paths: &mut HashMap<&'a str, Vec<usize>>,
+) {
+    paths.insert(node.id.as_str(), prefix.clone());
+    for (index, child) in node.children.iter().enumerate() {
+        prefix.push(index);
+        collect_paths(child, prefix, paths);
+        prefix.pop();
+    }
+}
+
+/// `importHierarchicalGraph`'s edges: the ELK nodes laid out in this run are read breadth first,
+/// starting with `root`, and the edges each one contains go into the graph of the node the edge
+/// belongs to. The model order counts the edges of all graphs, by the top graph's options.
+fn import_compound_edges(
+    root: &ElkNode,
+    graphs: &mut [LGraph],
+    node_map: &HashMap<Vec<usize>, (usize, usize)>,
+) -> Result<(), LayoutError> {
+    let mut paths = HashMap::new();
+    collect_paths(root, &mut Vec::new(), &mut paths);
+    let needs_model_order = needs_model_order_based_on_parent(root);
+    let mut model_order = 0;
+    let mut queue: VecDeque<Vec<usize>> = VecDeque::from([Vec::new()]);
+    while let Some(path) = queue.pop_front() {
+        let container = node_at(root, &path)?;
+        for edge in &container.edges {
+            // `checkEdgeValidity`: one source and one target.
+            let (Some(source), Some(target)) = (edge.sources.first(), edge.targets.first()) else {
+                return Err(LayoutError::Unsupported(format!(
+                    "edge {} without a source or a target",
+                    edge.id
+                )));
+            };
+            if edge.sources.len() > 1 || edge.targets.len() > 1 {
+                return Err(LayoutError::Unsupported(format!(
+                    "hyperedge {} (several sources or targets)",
+                    edge.id
+                )));
+            }
+            let edge_model_order = needs_model_order.then(|| {
+                model_order += 1;
+                model_order - 1
+            });
+            let (Some(source_path), Some(target_path)) =
+                (paths.get(source.as_str()), paths.get(target.as_str()))
+            else {
+                return Err(LayoutError::Unsupported(format!(
+                    "edge {} to a node outside the layout",
+                    edge.id
+                )));
+            };
+            let source_node = node_at(root, source_path)?;
+            let target_node = node_at(root, target_path)?;
+            if edge.properties.bool_of(options::NO_LAYOUT)
+                || source_node.properties.bool_of(options::NO_LAYOUT)
+                || target_node.properties.bool_of(options::NO_LAYOUT)
+            {
+                continue;
+            }
+            // The graph the edge goes into: the inside of its source or its target when the other
+            // end is a descendant, else the graph of the ELK node that contains it.
+            let parent_path = if is_descendant(target_path, source_path) {
+                source_path
+            } else if is_descendant(source_path, target_path) {
+                target_path
+            } else {
+                &path
+            };
+            let parent_graph = if parent_path.is_empty() {
+                0
+            } else {
+                node_map
+                    .get(parent_path)
+                    .and_then(|&(graph, node)| graphs[graph].nodes[node].nested_graph)
+                    .ok_or_else(|| {
+                        LayoutError::Unsupported(format!(
+                            "edge {} inside a node without a nested graph",
+                            edge.id
+                        ))
+                    })?
+            };
+            let (Some(&(source_graph, source_index)), Some(&(target_graph, target_index))) =
+                (node_map.get(source_path), node_map.get(target_path))
+            else {
+                return Err(LayoutError::Unsupported(format!(
+                    "the source or the target of edge {} could not be found",
+                    edge.id
+                )));
+            };
+            if source_graph != parent_graph || target_graph != parent_graph {
+                return Err(LayoutError::Unsupported(format!(
+                    "the cross-hierarchy edge {} (CompoundGraphPreprocessor)",
+                    edge.id
+                )));
+            }
+            add_edge(
+                &mut graphs[parent_graph],
+                edge,
+                source_index,
+                target_index,
+                edge_model_order,
+            );
+        }
+        // The children laid out in this run contain edges of their own.
+        if container
+            .properties
+            .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
+            == Some(HierarchyHandling::INCLUDE_CHILDREN)
+        {
+            for (index, child) in container.children.iter().enumerate() {
+                if uses_elk_layered(&child.properties)
+                    && child
+                        .properties
+                        .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
+                        == Some(HierarchyHandling::INCLUDE_CHILDREN)
+                {
+                    let mut child_path = path.clone();
+                    child_path.push(index);
+                    queue.push_back(child_path);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// `ElkGraphUtil.isDescendant(child, ancestor)` by paths: `child` is below `ancestor`.
+fn is_descendant(child: &[usize], ancestor: &[usize]) -> bool {
+    child.len() > ancestor.len() && child.starts_with(ancestor)
 }
 
 /// `transformNode`'s labels: those with text and laid out, each with its origin, the index among the
@@ -282,29 +600,41 @@ fn import_edges(
                 edge.id
             )));
         };
-        // `LGraphUtil.computeGraphProperties`: an edge from a node to itself is a self loop.
-        if source_node == target_node {
-            graph.graph_properties.insert(GraphProperties::SELF_LOOPS);
-        }
-        let source_port = create_port(graph, source_node, PortType::OUTPUT);
-        let target_port = create_port(graph, target_node, PortType::INPUT);
-        let index = graph.edges.len();
-        graph.ports[source_port].outgoing.push(index);
-        graph.ports[target_port].incoming.push(index);
-        let labels = import_edge_labels(edge, graph);
-        graph.edges.push(LEdge {
-            id: edge.id.clone(),
-            source: source_port,
-            target: target_port,
-            labels,
-            model_order: edge_model_order,
-            properties: edge.properties.clone(),
-            reversed: false,
-            bend_points: Vec::new(),
-            thickness: 1.0,
-        });
+        add_edge(graph, edge, source_node, target_node, edge_model_order);
     }
     Ok(())
+}
+
+/// `transformEdge` for an edge between two nodes of `graph`: the edge gets a port of its own on its
+/// source and on its target node, and its labels.
+fn add_edge(
+    graph: &mut LGraph,
+    edge: &ElkEdge,
+    source_node: usize,
+    target_node: usize,
+    model_order: Option<usize>,
+) {
+    // `LGraphUtil.computeGraphProperties`: an edge from a node to itself is a self loop.
+    if source_node == target_node {
+        graph.graph_properties.insert(GraphProperties::SELF_LOOPS);
+    }
+    let source_port = create_port(graph, source_node, PortType::OUTPUT);
+    let target_port = create_port(graph, target_node, PortType::INPUT);
+    let index = graph.edges.len();
+    graph.ports[source_port].outgoing.push(index);
+    graph.ports[target_port].incoming.push(index);
+    let labels = import_edge_labels(edge, graph);
+    graph.edges.push(LEdge {
+        id: edge.id.clone(),
+        source: source_port,
+        target: target_port,
+        labels,
+        model_order,
+        properties: edge.properties.clone(),
+        reversed: false,
+        bend_points: Vec::new(),
+        thickness: 1.0,
+    });
 }
 
 /// `transformEdge`'s labels: those with text and laid out, with their placement recorded. A

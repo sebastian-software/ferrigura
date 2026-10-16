@@ -91,6 +91,10 @@ pub const EDGE_ROUTING_SELF_LOOP_DISTRIBUTION: &str =
 pub const EDGE_ROUTING_SELF_LOOP_ORDERING: &str =
     "org.eclipse.elk.layered.edgeRouting.selfLoopOrdering";
 pub const SPACING_NODE_SELF_LOOP: &str = "org.eclipse.elk.spacing.nodeSelfLoop";
+pub const INSIDE_SELF_LOOPS_ACTIVATE: &str = "org.eclipse.elk.insideSelfLoops.activate";
+pub const INSIDE_SELF_LOOPS_YO: &str = "org.eclipse.elk.insideSelfLoops.yo";
+pub const CROSSING_MINIMIZATION_HIERARCHICAL_SWEEPINESS: &str =
+    "org.eclipse.elk.layered.crossingMinimization.hierarchicalSweepiness";
 
 #[cfg(test)]
 mod tests {
@@ -151,6 +155,9 @@ mod tests {
             PRIORITY_SHORTNESS,
             PRIORITY_STRAIGHTNESS,
             PRIORITY_DIRECTION,
+            INSIDE_SELF_LOOPS_ACTIVATE,
+            INSIDE_SELF_LOOPS_YO,
+            CROSSING_MINIMIZATION_HIERARCHICAL_SWEEPINESS,
         ] {
             assert!(option_by_id(id).is_some(), "{id} is not registered");
         }

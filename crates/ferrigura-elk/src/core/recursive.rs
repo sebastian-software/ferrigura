@@ -6,12 +6,15 @@
 //! level are laid out before the level, so that each child's size is known to the level above.
 //!
 //! A level is laid out by the layered algorithm. A child whose hierarchy handling is
-//! `SEPARATE_CHILDREN` is a level of its own; a child whose children would join the level above
-//! (a nested graph inside a compound layout) is not ported yet. The hierarchy handling `INHERIT`
-//! takes the value of the parent, and the root's value is `SEPARATE_CHILDREN`.
+//! `SEPARATE_CHILDREN` is a level of its own. Under a level whose hierarchy handling is
+//! `INCLUDE_CHILDREN`, the other descendants join the level's compound layout, with their children.
+//! The hierarchy handling `INHERIT` takes the value of the parent, and the root's value is
+//! `SEPARATE_CHILDREN`.
 //!
 //! Not ported: the layout algorithm resolver (each level must name `elk.layered`), inside self
 //! loops, topdown layout and the scaling factors.
+
+use std::collections::VecDeque;
 
 use crate::core::data::enums::HierarchyHandling;
 use crate::core::data::property::PropertyHolder;
@@ -52,16 +55,31 @@ fn layout_recursively(
     let hierarchy = resolve_hierarchy(&mut node.properties, parent_hierarchy);
     require_layered(&node.properties)?;
     if hierarchy == HierarchyHandling::INCLUDE_CHILDREN {
-        // The children of a compound level: those that stop the hierarchy are laid out on their
-        // own, first, and the others would join this level.
-        for child in node.children.iter_mut() {
-            let child_hierarchy = resolve_hierarchy(&mut child.properties, Some(hierarchy));
-            if child_hierarchy == HierarchyHandling::SEPARATE_CHILDREN {
-                let child_chain = format!("{chain}.{}", child.id);
+        // The descendants of a compound level, breadth first: those that stop the hierarchy are
+        // laid out on their own, first, and the children of the others join this level.
+        let mut queue: VecDeque<Vec<usize>> = (0..node.children.len()).map(|i| vec![i]).collect();
+        while let Some(path) = queue.pop_front() {
+            let (parent_properties, parent_hierarchy, child_chain) = {
+                let (parent, child) = parent_and_child(node, &path)?;
+                let parent_hierarchy = parent
+                    .properties
+                    .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING);
+                (
+                    parent.properties.clone(),
+                    parent_hierarchy,
+                    chain_of(chain, node, &path, child),
+                )
+            };
+            let child = child_at_mut(node, &path)?;
+            let child_hierarchy = resolve_hierarchy(&mut child.properties, parent_hierarchy);
+            // A child that names another algorithm is laid out on its own as well, and refused there.
+            let other_algorithm = child.properties.has(options::ALGORITHM)
+                && require_layered(&child.properties).is_err();
+            if child_hierarchy == HierarchyHandling::SEPARATE_CHILDREN || other_algorithm {
                 layout_recursively(
                     child,
-                    Some(&node.properties),
-                    Some(hierarchy),
+                    Some(&parent_properties),
+                    parent_hierarchy,
                     &child_chain,
                     progress,
                     monitor,
@@ -74,11 +92,12 @@ fn layout_recursively(
                         name: HierarchyHandling::SEPARATE_CHILDREN.java_name().to_string(),
                     }),
                 );
-            } else if !child.children.is_empty() {
-                return Err(LayoutError::Unsupported(format!(
-                    "nested graph in {} inside a compound layout",
-                    child.id
-                )));
+            } else {
+                for index in 0..child.children.len() {
+                    let mut child_path = path.clone();
+                    child_path.push(index);
+                    queue.push_back(child_path);
+                }
             }
         }
     } else {
@@ -99,6 +118,52 @@ fn layout_recursively(
         .sub_task(monitor, 1.0)
         .ok_or_else(|| LayoutError::Unsupported("subtask of a finished monitor".to_string()))?;
     driver::layout(node, parent, chain, progress, sub)
+}
+
+/// The node at `path` below `node`, with its parent.
+fn parent_and_child<'a>(
+    node: &'a ElkNode,
+    path: &[usize],
+) -> Result<(&'a ElkNode, &'a ElkNode), LayoutError> {
+    let mut parent = node;
+    let Some((&last, ancestors)) = path.split_last() else {
+        return Err(LayoutError::Format("an empty node path".to_string()));
+    };
+    for &index in ancestors {
+        parent = parent.children.get(index).ok_or_else(outside)?;
+    }
+    let child = parent.children.get(last).ok_or_else(outside)?;
+    Ok((parent, child))
+}
+
+/// The node at `path` below `node`, to change.
+fn child_at_mut<'a>(node: &'a mut ElkNode, path: &[usize]) -> Result<&'a mut ElkNode, LayoutError> {
+    let mut current = node;
+    for &index in path {
+        current = current.children.get_mut(index).ok_or_else(outside)?;
+    }
+    Ok(current)
+}
+
+fn outside() -> LayoutError {
+    LayoutError::Format("a node path outside the graph".to_string())
+}
+
+/// The designation prefix of the node `child` at `path` below `node`: `chain`, then the ids of the
+/// nodes on the path.
+fn chain_of(chain: &str, node: &ElkNode, path: &[usize], child: &ElkNode) -> String {
+    let mut result = chain.to_string();
+    let mut current = node;
+    for &index in &path[..path.len().saturating_sub(1)] {
+        if let Some(next) = current.children.get(index) {
+            result.push('.');
+            result.push_str(&next.id);
+            current = next;
+        }
+    }
+    result.push('.');
+    result.push_str(&child.id);
+    result
 }
 
 /// `evaluateHierarchyHandlingInheritance`: the node's hierarchy handling, with INHERIT replaced by

@@ -11,8 +11,8 @@
 
 use crate::core::data::JavaEnum;
 use crate::core::data::enums::{
-    EdgeLabelSideSelection, IntermediateProcessorStrategy, NodeType, OrderingStrategy,
-    PortConstraints,
+    EdgeLabelSideSelection, GraphProperties, IntermediateProcessorStrategy, NodeType,
+    OrderingStrategy, PortConstraints, PortSide,
 };
 use crate::core::math::KVector;
 use crate::core::util::progress::{Monitor, ProgressMonitor};
@@ -176,7 +176,7 @@ pub fn run(
             crate::layered::nodespacing::node_margins(graph)?;
         }
         IntermediateProcessorStrategy::HIERARCHICAL_NODE_RESIZER => {
-            resize_root(graph)?;
+            resize_hierarchical_graph(std::slice::from_mut(graph), 0)?;
         }
         IntermediateProcessorStrategy::LABEL_DUMMY_SWITCHER => {
             crate::layered::labels::label_dummy_switching(graph)?;
@@ -199,17 +199,11 @@ pub fn run(
     Ok(())
 }
 
-/// `HierarchicalNodeResizingProcessor.process` for the root graph: the nodes leave their
-/// layers for the layerless list, and the graph's size becomes its actual size less the padding.
-fn resize_root(graph: &mut LGraph) -> Result<(), LayoutError> {
-    if graph
-        .properties
-        .enum_set_contains(options::NODE_SIZE_CONSTRAINTS, "MINIMUM_SIZE")
-    {
-        return Err(LayoutError::Unsupported(
-            "a minimum node size on the root".to_string(),
-        ));
-    }
+/// `HierarchicalNodeResizingProcessor.process` for the graph at `index` of a compound layout's
+/// graphs: the nodes leave their layers for the layerless list, the graph takes its size, and the
+/// node the graph is nested in, in another graph, takes the graph's size.
+pub fn resize_hierarchical_graph(graphs: &mut [LGraph], index: usize) -> Result<(), LayoutError> {
+    let graph = &mut graphs[index];
     for layer in std::mem::take(&mut graph.layers) {
         graph.layerless_nodes.extend(layer);
     }
@@ -217,12 +211,174 @@ fn resize_root(graph: &mut LGraph) -> Result<(), LayoutError> {
     for &node in &graph.layerless_nodes {
         graph.nodes[node].layer = None;
     }
-    // `resizeGraph` without a minimum size: the adjusted size is the actual size, so the
-    // offset does not change and the size is the actual size less the padding.
-    let actual = graph.actual_size();
-    graph.size.x = actual.x - graph.padding.left - graph.padding.right;
-    graph.size.y = actual.y - graph.padding.top - graph.padding.bottom;
+    resize_graph(graph)?;
+    if let Some((parent_graph, parent_node)) = graph.parent_node {
+        graph_layout_to_node(graphs, index, parent_graph, parent_node)?;
+    }
     Ok(())
+}
+
+/// `HierarchicalNodeResizingProcessor.resizeGraph`: the graph is at least its minimum size under
+/// MINIMUM_SIZE (with the defaults of DEFAULT_MINIMUM_SIZE), and the content moves with the extra
+/// room that the content alignment asks for.
+fn resize_graph(graph: &mut LGraph) -> Result<(), LayoutError> {
+    let calculated = graph.actual_size();
+    let mut adjusted = calculated;
+    if graph
+        .properties
+        .enum_set_contains(options::NODE_SIZE_CONSTRAINTS, "MINIMUM_SIZE")
+    {
+        let minimum = crate::layered::transfer::effective_minimum_size(&graph.properties);
+        adjusted.x = calculated.x.max(minimum.x);
+        adjusted.y = calculated.y.max(minimum.y);
+    }
+    resize_graph_no_really_i_mean_it(graph, calculated, adjusted)
+}
+
+/// `HierarchicalNodeResizingProcessor.resizeGraphNoReallyIMeanIt`: the offset follows the content
+/// alignment, and the size becomes the new size less the padding. Eastern and southern external
+/// ports would move with a larger size; they are not ported.
+fn resize_graph_no_really_i_mean_it(
+    graph: &mut LGraph,
+    old: KVector,
+    new: KVector,
+) -> Result<(), LayoutError> {
+    let alignment = match graph.properties.get(options::CONTENT_ALIGNMENT) {
+        Some(crate::core::data::OptionValue::EnumSet { names, .. }) => names.clone(),
+        _ => Vec::new(),
+    };
+    let aligned = |name: &str| alignment.iter().any(|found| found == name);
+    if new.x > old.x {
+        if aligned("H_CENTER") {
+            graph.offset.x += (new.x - old.x) / 2.0;
+        } else if aligned("H_RIGHT") {
+            graph.offset.x += new.x - old.x;
+        }
+    }
+    if new.y > old.y {
+        if aligned("V_CENTER") {
+            graph.offset.y += (new.y - old.y) / 2.0;
+        } else if aligned("V_BOTTOM") {
+            graph.offset.y += new.y - old.y;
+        }
+    }
+    if graph
+        .graph_properties
+        .contains(&GraphProperties::EXTERNAL_PORTS)
+    {
+        return Err(LayoutError::Unsupported(
+            "external ports in HierarchicalNodeResizingProcessor".to_string(),
+        ));
+    }
+    let padding = graph.padding;
+    graph.size.x = new.x - padding.left - padding.right;
+    graph.size.y = new.y - padding.top - padding.bottom;
+    Ok(())
+}
+
+/// `HierarchicalNodeResizingProcessor.graphLayoutToNode`: the node the graph at `index` is nested
+/// in takes the graph's actual size, and its ports and labels move with it. External ports, which
+/// would fix the node's port positions, are not ported.
+fn graph_layout_to_node(
+    graphs: &mut [LGraph],
+    index: usize,
+    parent_graph: usize,
+    parent_node: usize,
+) -> Result<(), LayoutError> {
+    if graphs[index]
+        .graph_properties
+        .contains(&GraphProperties::EXTERNAL_PORTS)
+    {
+        return Err(LayoutError::Unsupported(
+            "external ports in HierarchicalNodeResizingProcessor".to_string(),
+        ));
+    }
+    let actual = graphs[index].actual_size();
+    resize_node(&mut graphs[parent_graph], parent_node, actual, true, true);
+    Ok(())
+}
+
+/// `LGraphUtil.resizeNode(node, newSize, movePorts, moveLabels)`: the node takes the new size, its
+/// ports keep their places on its sides, its labels on the right and at the bottom move with the
+/// sides, and its size is fixed from now on.
+///
+/// The Java computes the ratios and differences as floats; elkjs keeps them as doubles, since GWT
+/// emulates `float` as `double`.
+pub fn resize_node(
+    graph: &mut LGraph,
+    node: usize,
+    new_size: KVector,
+    move_ports: bool,
+    move_labels: bool,
+) {
+    let old = graph.nodes[node].size;
+    let width_ratio = new_size.x / old.x;
+    let height_ratio = new_size.y / old.y;
+    let width_diff = new_size.x - old.x;
+    let height_diff = new_size.y - old.y;
+    if move_ports {
+        let fixed_ports = graph.nodes[node]
+            .properties
+            .enum_with_default::<PortConstraints>(options::PORT_CONSTRAINTS)
+            == PortConstraints::FIXED_POS;
+        for &port in &graph.nodes[node].ports {
+            let port = &mut graph.ports[port];
+            match port.side {
+                PortSide::NORTH => {
+                    if !fixed_ports {
+                        port.position.x *= width_ratio;
+                    }
+                }
+                PortSide::EAST => {
+                    port.position.x += width_diff;
+                    if !fixed_ports {
+                        port.position.y *= height_ratio;
+                    }
+                }
+                PortSide::SOUTH => {
+                    if !fixed_ports {
+                        port.position.x *= width_ratio;
+                    }
+                    port.position.y += height_diff;
+                }
+                PortSide::WEST => {
+                    if !fixed_ports {
+                        port.position.y *= height_ratio;
+                    }
+                }
+                PortSide::UNDEFINED => {}
+            }
+        }
+    }
+    if move_labels {
+        for &label in &graph.nodes[node].labels {
+            let label = &mut graph.labels[label];
+            let mid_x = label.position.x + label.size.x / 2.0;
+            let mid_y = label.position.y + label.size.y / 2.0;
+            let width_percent = mid_x / old.x;
+            let height_percent = mid_y / old.y;
+            if width_percent + height_percent >= 1.0 {
+                if width_percent - height_percent > 0.0 && mid_y >= 0.0 {
+                    // The label is on the right.
+                    label.position.x += width_diff;
+                    label.position.y += height_diff * height_percent;
+                } else if width_percent - height_percent < 0.0 && mid_x >= 0.0 {
+                    // The label is at the bottom.
+                    label.position.x += width_diff * width_percent;
+                    label.position.y += height_diff;
+                }
+            }
+        }
+    }
+    graph.nodes[node].size = new_size;
+    // `SizeConstraint.fixed()`: the size is assumed to stay as determined here.
+    graph.nodes[node].properties.set(
+        options::NODE_SIZE_CONSTRAINTS,
+        Some(crate::core::data::OptionValue::EnumSet {
+            class: "SizeConstraint",
+            names: Vec::new(),
+        }),
+    );
 }
 
 /// `LayerSizeAndGraphHeightCalculator.process`: the size of each layer, the graph's height,
@@ -391,4 +547,41 @@ fn port_name(graph: &LGraph, port: usize) -> String {
         }
     }
     text
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::layered::lgraph::{LLabel, LNode};
+
+    /// A label whose middle is right of the diagonal moves with the right side, and down by its
+    /// share of the height; the node's size becomes fixed.
+    #[test]
+    fn resizing_a_node_moves_a_label_on_the_right() {
+        let mut graph = LGraph::default();
+        let label = graph.add_label(LLabel {
+            size: KVector { x: 10.0, y: 10.0 },
+            position: KVector { x: 80.0, y: 20.0 },
+            ..LLabel::default()
+        });
+        graph.nodes.push(LNode {
+            size: KVector { x: 100.0, y: 50.0 },
+            labels: vec![label],
+            ..LNode::default()
+        });
+        resize_node(&mut graph, 0, KVector { x: 150.0, y: 100.0 }, true, true);
+        // The middle is at (85, 25): 0.85 of the width and 0.5 of the height.
+        assert_eq!(graph.labels[label].position, KVector { x: 130.0, y: 45.0 });
+        assert_eq!(graph.nodes[0].size, KVector { x: 150.0, y: 100.0 });
+        assert!(
+            graph.nodes[0]
+                .properties
+                .enum_set_is_empty(options::NODE_SIZE_CONSTRAINTS)
+        );
+        assert!(
+            graph.nodes[0]
+                .properties
+                .has(options::NODE_SIZE_CONSTRAINTS)
+        );
+    }
 }

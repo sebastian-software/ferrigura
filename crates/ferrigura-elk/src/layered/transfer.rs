@@ -2,9 +2,10 @@
 //! SPDX-License-Identifier: EPL-2.0
 //! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/graph/transform/ElkGraphLayoutTransferrer.java
 //!
-//! `ElkGraphLayoutTransferrer.applyLayout` for the root graph: the node positions, the sizes of
-//! nodes with size constraints, the inside node labels, the edges' routes and the root's size go
-//! back into the ELK graph. Edge labels and junction points are not transferred yet.
+//! `ElkGraphLayoutTransferrer.applyLayout`: the node positions, the sizes of nodes with size
+//! constraints or nested graphs, the inside node labels, the edges' routes and the root's size go
+//! back into the ELK graph, for the top graph and then for each nested graph. Junction points are
+//! not transferred yet.
 
 use std::collections::HashMap;
 
@@ -18,6 +19,41 @@ use crate::layered::options;
 
 /// `applyLayout(lgraph)` for a root without nested graphs.
 pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutError> {
+    apply_graph_layout(graph, root)?;
+    apply_parent_node_layout(graph, root);
+    Ok(())
+}
+
+/// `applyLayout(lgraph)` for the graphs of a compound layout, the top graph first (see
+/// `importer::import_compound`): each graph's layout goes into its ELK node, then the layouts of
+/// the graphs nested in its nodes go into theirs.
+pub fn apply_compound_layout(graphs: &[LGraph], root: &mut ElkNode) -> Result<(), LayoutError> {
+    apply_nested_layout(graphs, 0, root)
+}
+
+/// `applyLayout` for the graph at `index`, whose ELK node is `elk`, and then for its nested graphs.
+fn apply_nested_layout(
+    graphs: &[LGraph],
+    index: usize,
+    elk: &mut ElkNode,
+) -> Result<(), LayoutError> {
+    let graph = &graphs[index];
+    apply_graph_layout(graph, elk)?;
+    apply_parent_node_layout(graph, elk);
+    for &node in &graph.layerless_nodes {
+        let Some(nested) = graph.nodes[node].nested_graph else {
+            continue;
+        };
+        let id = graph.nodes[node].id.as_str();
+        if let Some(child) = elk.children.iter_mut().find(|child| child.id == id) {
+            apply_nested_layout(graphs, nested, child)?;
+        }
+    }
+    Ok(())
+}
+
+/// `applyLayout`'s nodes and edges for one graph, whose ELK node is `root`.
+fn apply_graph_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutError> {
     if root
         .properties
         .enum_set_contains(options::NODE_SIZE_OPTIONS, "COMPUTE_PADDING")
@@ -45,10 +81,12 @@ pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutErro
         let node = &graph.nodes[index];
         child.shape.x = node.position.x + offset.x;
         child.shape.y = node.position.y + offset.y;
-        // `applyNodeLayout`: a node with size constraints takes the size the layout gave it.
+        // `applyNodeLayout`: a node with size constraints, or with a nested graph, takes the size
+        // the layout gave it.
         if !child
             .properties
             .enum_set_is_empty(options::NODE_SIZE_CONSTRAINTS)
+            || node.nested_graph.is_some()
         {
             child.shape.width = node.size.x;
             child.shape.height = node.size.y;
@@ -124,21 +162,35 @@ pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutErro
             label.shape = shape;
         }
     }
-    // `applyParentNodeLayout`: the node takes the actual size of its graph, unless its size is fixed.
-    if !root.properties.bool_of(options::NODE_SIZE_FIXED_GRAPH_SIZE) {
+    Ok(())
+}
+
+/// `applyParentNodeLayout`: the top graph's node takes the actual size of its graph, unless its size
+/// is fixed. A nested graph's node took its size with the nodes of the graph above.
+fn apply_parent_node_layout(graph: &LGraph, root: &mut ElkNode) {
+    let port_labels = root
+        .properties
+        .enum_set_contains(options::NODE_SIZE_CONSTRAINTS, "PORT_LABELS");
+    if graph.parent_node.is_none() && !root.properties.bool_of(options::NODE_SIZE_FIXED_GRAPH_SIZE)
+    {
         let actual = graph.actual_size();
         resize_node(root, actual.x, actual.y);
     }
-    // Then the node's size is fixed (`SizeConstraint.fixed()`), whatever it was. The level above
-    // reads this: a node laid out on its own is sized as it is, not by its labels again.
+    // Then the node's size is fixed (`SizeConstraint.fixed()`), but for a PORT_LABELS constraint,
+    // which stays. The level above reads this: a node laid out on its own is sized as it is, not by
+    // its labels again.
+    let names = if port_labels {
+        vec!["PORT_LABELS".to_string()]
+    } else {
+        Vec::new()
+    };
     root.properties.set(
         options::NODE_SIZE_CONSTRAINTS,
         Some(OptionValue::EnumSet {
             class: "SizeConstraint",
-            names: Vec::new(),
+            names,
         }),
     );
-    Ok(())
 }
 
 /// `ElkUtil.resizeNode(node, width, height, movePorts, moveLabels)` without ports: the node becomes
