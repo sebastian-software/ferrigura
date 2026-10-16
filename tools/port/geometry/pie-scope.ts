@@ -201,7 +201,11 @@ async function main(): Promise<void> {
 
   const ids = diagrams.map((diagram) => diagram.id);
   const failures: string[] = [];
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({
+    // Without hinting, Chromium on Linux keeps fractional glyph advances, as it does on macOS;
+    // with the default, it rounds them to whole pixels and text measures differently.
+    args: ['--font-render-hinting=none'],
+  });
   try {
     const page = await browser.newPage();
     page.on('pageerror', (error) => failures.push(`page error: ${error.message}`));

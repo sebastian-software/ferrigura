@@ -19,6 +19,9 @@ export default defineConfig({
       ...defaultExclude,
       // Worktrees the Claude desktop app creates inside the repository.
       '.claude/**',
+      // The Rust port: crates/ferrigura-node/test runs under `node --test`, not vitest.
+      'crates/**',
+      'target/**',
       'e2e/rendering/**',
       'e2e/other/**',
       './tests/**',

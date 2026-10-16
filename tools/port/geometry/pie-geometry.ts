@@ -312,7 +312,11 @@ async function main(): Promise<void> {
     .map((path) => path.slice(fixtureDir.length + 1))
     .sort();
   const { server, port } = await serve();
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({
+    // Without hinting, Chromium on Linux keeps fractional glyph advances, as it does on macOS;
+    // with the default, it rounds them to whole pixels and text measures differently.
+    args: ['--font-render-hinting=none'],
+  });
   const results: { fixture: string; ok: boolean; worst: number; problems: string[] }[] = [];
   try {
     const page: Page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
