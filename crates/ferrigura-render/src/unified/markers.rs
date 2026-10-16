@@ -1,6 +1,8 @@
-//! The arrow markers of flowcharts: `point`, `circle` and `cross` of `rendering-elements/markers.js`,
+//! The arrow markers: the flowchart's `point`, `circle` and `cross` of `rendering-elements/markers.js`,
 //! with their end and start variants and the neo `-margin` variants, and the coloured copies that
-//! `edgeMarker.ts` makes for an edge with a stroke colour.
+//! `edgeMarker.ts` makes for an edge with a stroke colour; and the cardinality markers of ER
+//! diagrams (`only_one`, `zero_or_one`, `one_or_more`, `zero_or_more`, and their `_neo` sets,
+//! `markers.js` 580-867).
 //!
 //! The colours of the default markers are left to the stylesheet (`.marker` and `.marker.cross`,
 //! decision 0007), so the definitions carry no fill or stroke. A coloured copy carries its colour
@@ -9,12 +11,16 @@
 
 use ferrigura_model::config::MermaidConfig;
 
-use crate::svg::escape;
+use crate::svg::{escape, number};
 
 /// The diagram type that the reference puts in every marker id and class.
 pub const FLOWCHART: &str = "flowchart-v2";
 
-/// The three marker kinds an edge end can use, in the order `markers.js` writes them.
+/// The diagram type of an ER diagram, in its marker ids and classes (`erDetector.ts`).
+pub const ER: &str = "er";
+
+/// The marker kinds an edge end can use: the flowchart's three in the order `markers.js` writes
+/// them, and the four cardinalities of ER diagrams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
     /// `arrow_point`: a filled triangle.
@@ -23,17 +29,29 @@ pub enum Kind {
     Circle,
     /// `arrow_cross`: a cross.
     Cross,
+    /// `only_one`: two bars (ER).
+    OnlyOne,
+    /// `zero_or_one`: a bar and a circle (ER).
+    ZeroOrOne,
+    /// `one_or_more`: a crow's foot and a bar (ER).
+    OneOrMore,
+    /// `zero_or_more`: a crow's foot and a circle (ER).
+    ZeroOrMore,
 }
 
 impl Kind {
-    /// The kind of an arrow type of flowcharts; `None` for `none` and for the types that
-    /// flowcharts do not draw with a marker.
+    /// The kind of an arrow type; `None` for `none` and for the types that have no marker.
     #[must_use]
     pub fn from_arrow(arrow: &str) -> Option<Self> {
         match arrow {
             "arrow_point" => Some(Self::Point),
             "arrow_circle" => Some(Self::Circle),
             "arrow_cross" => Some(Self::Cross),
+            // `edgeMarker.ts` 51-54: the ER arrow types and their marker names.
+            "only_one" => Some(Self::OnlyOne),
+            "zero_or_one" => Some(Self::ZeroOrOne),
+            "one_or_more" => Some(Self::OneOrMore),
+            "zero_or_more" => Some(Self::ZeroOrMore),
             _ => None,
         }
     }
@@ -45,6 +63,10 @@ impl Kind {
             Self::Point => "point",
             Self::Circle => "circle",
             Self::Cross => "cross",
+            Self::OnlyOne => "onlyOne",
+            Self::ZeroOrOne => "zeroOrOne",
+            Self::OneOrMore => "oneOrMore",
+            Self::ZeroOrMore => "zeroOrMore",
         }
     }
 
@@ -54,11 +76,11 @@ impl Kind {
         matches!(self, Self::Point)
     }
 
-    /// Whether the reference's `arrowTypesWithMarginSupport` lists the kind, which every flowchart
-    /// kind does.
+    /// Whether the reference's `arrowTypesWithMarginSupport` lists the kind: every flowchart kind
+    /// does, and no ER kind does (`edgeMarker.ts` 59-69).
     #[must_use]
     pub const fn has_margin(self) -> bool {
-        true
+        matches!(self, Self::Point | Self::Circle | Self::Cross)
     }
 }
 
@@ -374,6 +396,199 @@ pub fn coloured_marker(
         .find(|definition| definition.name == name)
         .unwrap_or(&DEFINITIONS[0]);
     definition_xml(&id, diagram_type, definition, Some(colour))
+}
+
+/// One child of an ER marker: a path, or a circle with its centre and radius.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum ErChild {
+    /// A path with its data.
+    Path(&'static str),
+    /// A circle with radius `r`, centred on `y`, at `x` in the classic set and at `neo_x` in the neo
+    /// set. Its fill is the background colour in the neo set and white in the classic one.
+    Circle { x: f64, neo_x: f64, y: f64, r: f64 },
+}
+
+/// One ER marker of `markers.js`: its kind, its end or start, the reference point, its size, and
+/// its children.
+struct ErDefinition {
+    kind: Kind,
+    start: bool,
+    ref_x: f64,
+    ref_y: f64,
+    width: f64,
+    height: f64,
+    children: &'static [ErChild],
+}
+
+/// The ER markers, in the order `insertMarkers` writes them: `only_one`, `zero_or_one`,
+/// `one_or_more`, `zero_or_more`, each with its start and its end (`markers.js` 580-700). The
+/// `zero_or_more` circles move to `45.5` and `11` in the neo set and `48` and `9` in the classic one
+/// (`markers.js` 685, 698, 836, 859). The neo set differs in the other way too: its markers set
+/// `markerUnits="userSpaceOnUse"`, and their stroke width is the theme's (`markers.js` 702-867).
+const ER_DEFINITIONS: [ErDefinition; 8] = [
+    ErDefinition {
+        kind: Kind::OnlyOne,
+        start: true,
+        ref_x: 0.0,
+        ref_y: 9.0,
+        width: 18.0,
+        height: 18.0,
+        children: &[ErChild::Path("M9,0 L9,18 M15,0 L15,18")],
+    },
+    ErDefinition {
+        kind: Kind::OnlyOne,
+        start: false,
+        ref_x: 18.0,
+        ref_y: 9.0,
+        width: 18.0,
+        height: 18.0,
+        children: &[ErChild::Path("M3,0 L3,18 M9,0 L9,18")],
+    },
+    ErDefinition {
+        kind: Kind::ZeroOrOne,
+        start: true,
+        ref_x: 0.0,
+        ref_y: 9.0,
+        width: 30.0,
+        height: 18.0,
+        children: &[
+            ErChild::Circle {
+                x: 21.0,
+                neo_x: 21.0,
+                y: 9.0,
+                r: 6.0,
+            },
+            ErChild::Path("M9,0 L9,18"),
+        ],
+    },
+    ErDefinition {
+        kind: Kind::ZeroOrOne,
+        start: false,
+        ref_x: 30.0,
+        ref_y: 9.0,
+        width: 30.0,
+        height: 18.0,
+        children: &[
+            ErChild::Circle {
+                x: 9.0,
+                neo_x: 9.0,
+                y: 9.0,
+                r: 6.0,
+            },
+            ErChild::Path("M21,0 L21,18"),
+        ],
+    },
+    ErDefinition {
+        kind: Kind::OneOrMore,
+        start: true,
+        ref_x: 18.0,
+        ref_y: 18.0,
+        width: 45.0,
+        height: 36.0,
+        children: &[ErChild::Path(
+            "M0,18 Q 18,0 36,18 Q 18,36 0,18 M42,9 L42,27",
+        )],
+    },
+    ErDefinition {
+        kind: Kind::OneOrMore,
+        start: false,
+        ref_x: 27.0,
+        ref_y: 18.0,
+        width: 45.0,
+        height: 36.0,
+        children: &[ErChild::Path("M3,9 L3,27 M9,18 Q27,0 45,18 Q27,36 9,18")],
+    },
+    ErDefinition {
+        kind: Kind::ZeroOrMore,
+        start: true,
+        ref_x: 18.0,
+        ref_y: 18.0,
+        width: 57.0,
+        height: 36.0,
+        children: &[
+            ErChild::Circle {
+                x: 48.0,
+                neo_x: 45.5,
+                y: 18.0,
+                r: 6.0,
+            },
+            ErChild::Path("M0,18 Q18,0 36,18 Q18,36 0,18"),
+        ],
+    },
+    ErDefinition {
+        kind: Kind::ZeroOrMore,
+        start: false,
+        ref_x: 39.0,
+        ref_y: 18.0,
+        width: 57.0,
+        height: 36.0,
+        children: &[
+            ErChild::Circle {
+                x: 9.0,
+                neo_x: 11.0,
+                y: 18.0,
+                r: 6.0,
+            },
+            ErChild::Path("M21,18 Q39,0 57,18 Q39,36 21,18"),
+        ],
+    },
+];
+
+/// The ER markers of a diagram on the `neo` look or the `classic` one, as `insertMarkers` writes
+/// them for `data4Layout.markers` (`erRenderer-unified.ts` 32-41): eight markers, each in its own
+/// `<defs>`, under the diagram's id.
+///
+/// `stroke_width` is the theme's `strokeWidth` and `background` its `mainBkg`: the neo circles are
+/// filled with the background, the classic ones with white (`markers.js` 754, 774, 835, 858). The
+/// neo set takes its stroke width from the theme; the classic set has none.
+#[must_use]
+pub fn er_markers(svg_id: &str, neo: bool, stroke_width: &str, background: &str) -> String {
+    let mut out = String::new();
+    for definition in &ER_DEFINITIONS {
+        let position = if definition.start { "Start" } else { "End" };
+        let id = format!("{svg_id}_{ER}-{}{position}", definition.kind.name());
+        let class = format!("marker {} {ER}", definition.kind.name());
+        let units = if neo {
+            " markerUnits=\"userSpaceOnUse\""
+        } else {
+            ""
+        };
+        let stroke = if neo {
+            format!(" stroke-width=\"{}\"", escape(stroke_width))
+        } else {
+            String::new()
+        };
+        let children: String = definition
+            .children
+            .iter()
+            .map(|child| match *child {
+                ErChild::Path(d) => format!("<path d=\"{d}\"{stroke}/>"),
+                ErChild::Circle { x, neo_x, y, r } => {
+                    let (fill, cx) = if neo {
+                        (background, neo_x)
+                    } else {
+                        ("white", x)
+                    };
+                    format!(
+                        "<circle fill=\"{}\" cx=\"{}\" cy=\"{}\"{stroke} r=\"{}\"/>",
+                        escape(fill),
+                        number(cx),
+                        number(y),
+                        number(r),
+                    )
+                }
+            })
+            .collect();
+        out.push_str(&format!(
+            "<defs><marker id=\"{}\" class=\"{class}\" refX=\"{}\" refY=\"{}\" markerWidth=\"{}\" markerHeight=\"{}\" orient=\"auto\"{units}>{children}</marker></defs>",
+            escape(&id),
+            number(definition.ref_x),
+            number(definition.ref_y),
+            number(definition.width),
+            number(definition.height),
+        ));
+    }
+    out
 }
 
 #[cfg(test)]
