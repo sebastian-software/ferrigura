@@ -79,6 +79,16 @@ The flowchart model is the DB state after parsing (`flowDb.ts`), with the names 
 - **Edge ids.** The `id` is always present: the user's `e1@` id, or the generated `L_<start>_<end>_<n>`, where `n` counts the edges already drawn between the same pair. Tooltips are kept by id even when no vertex has that id.
 - **Config is not in the model.** `maxEdges` is a parser option (default 500). `securityLevel`, `htmlLabels`, `inheritDir` and `curve` act at render time and are not in the model.
 
+## ER
+
+The ER model is the DB state after parsing (`erDb.ts`), with the DB's names in camelCase, as the flowchart's model is. The full field list and the exclusions are in [er/PLAN.md](./er/PLAN.md), sections 4 and 5; the rules here are the ones the other diagrams do not share.
+
+- **Sanitised texts.** The header texts (`accTitle`, `accDescr`), the subgraph titles and the front-matter title are the DB's values after DOMPurify ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), with the DB's whitespace rules applied after it. Entity names, aliases, attributes, roles, styles and class names are raw.
+- **Ids.** An entity id is `entity-<name>-<n>`, where `n` is the number of entities before it. A relationship end is an entity id, or the id of a subgraph of that id when one exists at the point of the statement.
+- **Members.** A subgraph's `nodes` are the values the grammar gives inside it, in order: entity names, nested subgraph ids, and the strings of the `classDef`, `class`, `style`, `accTitle` and `accDescr` statements. Empty and repeated strings are dropped. These are the DB's members, not what the renderer draws.
+- **Cardinalities** are the DB's strings (`ZERO_OR_ONE`, `ONLY_ONE`, `MD_PARENT`, and the rest); `cardA` is the end on the right of the line, `cardB` the end on the left.
+- **Classes.** An entity's `classes` are the names given by `:::` and `class`, without the `default` that the DB starts with. A class keeps its `textStyles`, which the DB derives from its styles.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
