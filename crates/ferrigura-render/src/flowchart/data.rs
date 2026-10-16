@@ -297,8 +297,9 @@ impl<'a> Structure<'a> {
             }
         }
 
-        // The members of the visible subgraphs, the last subgraph of the reverse order winning, so
-        // that a member gets the innermost subgraph that contains it.
+        // The members of the visible subgraphs. The walk runs backwards and each write overwrites, so
+        // a member gets the subgraph with the lowest closing index: the innermost one, since nested
+        // subgraphs close first (`flowDb.ts` 1218-1229).
         let mut member_parent = HashMap::new();
         let mut has_members = HashSet::new();
         for subgraph in subgraphs.iter().rev() {
