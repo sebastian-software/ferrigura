@@ -432,3 +432,324 @@ mod tests {
         assert!(!marker.contains("stroke=\"red\""), "{marker}");
     }
 }
+
+/// The relation markers of a class diagram: the five kinds of `markers.js` (aggregation, extension,
+/// composition, dependency, lollipop), each at both ends and in the neo variant with the margin.
+/// The names are the arrow types of the layout data (`classDb.ts` `getArrowMarker`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ClassKind {
+    /// `aggregation`: a hollow diamond.
+    Aggregation,
+    /// `extension`: a hollow triangle.
+    Extension,
+    /// `composition`: a filled diamond.
+    Composition,
+    /// `dependency`: an open arrow head.
+    Dependency,
+    /// `lollipop`: a circle.
+    Lollipop,
+}
+
+impl ClassKind {
+    /// The kind of an arrow type of a class relation; `None` for `none` and the flowchart arrows.
+    #[must_use]
+    pub fn from_arrow(arrow: &str) -> Option<Self> {
+        match arrow {
+            "aggregation" => Some(Self::Aggregation),
+            "extension" => Some(Self::Extension),
+            "composition" => Some(Self::Composition),
+            "dependency" => Some(Self::Dependency),
+            "lollipop" => Some(Self::Lollipop),
+            _ => None,
+        }
+    }
+
+    /// The name of the kind in the marker's id and class.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Aggregation => "aggregation",
+            Self::Extension => "extension",
+            Self::Composition => "composition",
+            Self::Dependency => "dependency",
+            Self::Lollipop => "lollipop",
+        }
+    }
+}
+
+/// The diagram type the class markers are named with (`edgeMarker.ts` 99-100).
+pub const CLASS: &str = "classDiagram";
+
+/// The id of a class relation's marker: `<svgId>_classDiagram-<kind>Start|End`, with `-margin` for
+/// the neo variant (`edgeMarker.ts` 59-69, 99-100).
+#[must_use]
+pub fn class_marker_id(svg_id: &str, kind: ClassKind, start: bool, margin: bool) -> String {
+    let position = if start { "Start" } else { "End" };
+    let suffix = if margin { "-margin" } else { "" };
+    format!("{svg_id}_{CLASS}-{}{position}{suffix}", kind.name())
+}
+
+/// One class marker: its `<marker>` with the attributes `markers.js` sets, and its child. `view_box`
+/// is the marker's own (the margin polygons of extension have one); `in_defs` wraps the marker in
+/// its own `<defs>`, as `markers.js` does for all but one marker.
+struct ClassMarker {
+    id: String,
+    class: &'static str,
+    ref_x: &'static str,
+    ref_y: &'static str,
+    width: &'static str,
+    height: &'static str,
+    view_box: Option<&'static str>,
+    child: String,
+    in_defs: bool,
+}
+
+impl ClassMarker {
+    fn xml(&self) -> String {
+        let view_box = self
+            .view_box
+            .map_or_else(String::new, |view_box| format!(" viewBox=\"{view_box}\""));
+        let marker = format!(
+            "<marker id=\"{}\" class=\"{}\" refX=\"{}\" refY=\"{}\" markerWidth=\"{}\" markerHeight=\"{}\" orient=\"auto\" markerUnits=\"userSpaceOnUse\"{view_box}>{}</marker>",
+            escape(&self.id),
+            self.class,
+            self.ref_x,
+            self.ref_y,
+            self.width,
+            self.height,
+            self.child,
+        );
+        if self.in_defs {
+            format!("<defs>{marker}</defs>")
+        } else {
+            marker
+        }
+    }
+}
+
+/// A path child of a class marker: its path data, its `stroke-width` as a style, and the marker's
+/// own viewBox when the path has one (`composition` margin, `markers.js` 105-119).
+fn class_path(d: &str, stroke_width: Option<&str>, view_box: Option<&str>) -> String {
+    let style = stroke_width.map_or_else(String::new, |width| {
+        format!(" style=\"stroke-width: {width};\"")
+    });
+    let view_box = view_box.map_or_else(String::new, |view_box| format!(" viewBox=\"{view_box}\""));
+    format!("<path{style}{view_box} d=\"{d}\"/>")
+}
+
+/// The diamond of `aggregation` and `composition`, and the arrow head of `dependency`, as
+/// `markers.js` draws them.
+const DIAMOND: &str = "M 18,7 L9,13 L1,7 L9,1 Z";
+
+/// The markers of a class diagram, in the order `insertMarkers` writes them for the five kinds
+/// (`classRenderer-v3-unified.ts` 64: aggregation, extension, composition, dependency, lollipop).
+/// Every kind has its start and end, each with the neo margin variant. `elem` receives them: all
+/// but the extension's start-margin marker sit in a `<defs>` of their own.
+#[must_use]
+pub fn class_markers(svg_id: &str) -> String {
+    let id =
+        |kind: ClassKind, start: bool, margin: bool| class_marker_id(svg_id, kind, start, margin);
+    let class = |kind: ClassKind| -> &'static str {
+        match kind {
+            ClassKind::Aggregation => "marker aggregation classDiagram",
+            ClassKind::Extension => "marker extension classDiagram",
+            ClassKind::Composition => "marker composition classDiagram",
+            ClassKind::Dependency => "marker dependency classDiagram",
+            ClassKind::Lollipop => "marker lollipop classDiagram",
+        }
+    };
+    let mut out = String::new();
+    let mut push = |marker: ClassMarker| out.push_str(&marker.xml());
+
+    // aggregation (markers.js 136-194)
+    let kind = ClassKind::Aggregation;
+    for (start, margin, ref_x, width, height, stroke) in [
+        (true, false, "18", "190", "240", None),
+        (false, false, "1", "20", "28", None),
+        (true, true, "15", "190", "240", Some("2")),
+        (false, true, "1", "20", "28", Some("2")),
+    ] {
+        push(ClassMarker {
+            id: id(kind, start, margin),
+            class: class(kind),
+            ref_x,
+            ref_y: "7",
+            width,
+            height,
+            view_box: None,
+            child: class_path(DIAMOND, stroke, None),
+            in_defs: true,
+        });
+    }
+
+    // extension (markers.js 12-75): the start-margin marker is appended to `elem` itself.
+    let kind = ClassKind::Extension;
+    push(ClassMarker {
+        id: id(kind, true, false),
+        class: class(kind),
+        ref_x: "18",
+        ref_y: "7",
+        width: "20",
+        height: "28",
+        view_box: None,
+        child: class_path("M 1,7 L18,13 V 1 Z", None, None),
+        in_defs: true,
+    });
+    push(ClassMarker {
+        id: id(kind, false, false),
+        class: class(kind),
+        ref_x: "1",
+        ref_y: "7",
+        width: "20",
+        height: "28",
+        view_box: None,
+        child: class_path("M 1,1 V 13 L18,7 Z", None, None),
+        in_defs: true,
+    });
+    push(ClassMarker {
+        id: id(kind, true, true),
+        class: class(kind),
+        ref_x: "18",
+        ref_y: "7",
+        width: "20",
+        height: "28",
+        view_box: Some("0 0 20 14"),
+        child:
+            "<polygon style=\"stroke-width: 2; stroke-dasharray: 0;\" points=\"10,7 18,13 18,1\"/>"
+                .to_owned(),
+        in_defs: false,
+    });
+    push(ClassMarker {
+        id: id(kind, false, true),
+        class: class(kind),
+        ref_x: "9",
+        ref_y: "7",
+        width: "20",
+        height: "28",
+        view_box: Some("0 0 20 14"),
+        child:
+            "<polygon style=\"stroke-width: 2; stroke-dasharray: 0;\" points=\"10,1 10,13 18,7\"/>"
+                .to_owned(),
+        in_defs: true,
+    });
+
+    // composition (markers.js 76-135)
+    let kind = ClassKind::Composition;
+    push(ClassMarker {
+        id: id(kind, true, false),
+        class: class(kind),
+        ref_x: "18",
+        ref_y: "7",
+        width: "190",
+        height: "240",
+        view_box: None,
+        child: class_path(DIAMOND, None, None),
+        in_defs: true,
+    });
+    push(ClassMarker {
+        id: id(kind, false, false),
+        class: class(kind),
+        ref_x: "1",
+        ref_y: "7",
+        width: "20",
+        height: "28",
+        view_box: None,
+        child: class_path(DIAMOND, None, None),
+        in_defs: true,
+    });
+    push(ClassMarker {
+        id: id(kind, true, true),
+        class: class(kind),
+        ref_x: "15",
+        ref_y: "7",
+        width: "190",
+        height: "240",
+        view_box: None,
+        child: class_path(DIAMOND, Some("0"), Some("0 0 15 15")),
+        in_defs: true,
+    });
+    push(ClassMarker {
+        id: id(kind, false, true),
+        class: class(kind),
+        ref_x: "3.5",
+        ref_y: "7",
+        width: "20",
+        height: "28",
+        view_box: None,
+        child: class_path(DIAMOND, Some("0"), None),
+        in_defs: true,
+    });
+
+    // dependency (markers.js 195-252)
+    let kind = ClassKind::Dependency;
+    push(ClassMarker {
+        id: id(kind, true, false),
+        class: class(kind),
+        ref_x: "6",
+        ref_y: "7",
+        width: "190",
+        height: "240",
+        view_box: None,
+        child: class_path("M 5,7 L9,13 L1,7 L9,1 Z", None, None),
+        in_defs: true,
+    });
+    push(ClassMarker {
+        id: id(kind, false, false),
+        class: class(kind),
+        ref_x: "13",
+        ref_y: "7",
+        width: "20",
+        height: "28",
+        view_box: None,
+        child: class_path("M 18,7 L9,13 L14,7 L9,1 Z", None, None),
+        in_defs: true,
+    });
+    push(ClassMarker {
+        id: id(kind, true, true),
+        class: class(kind),
+        ref_x: "4",
+        ref_y: "7",
+        width: "190",
+        height: "240",
+        view_box: None,
+        child: class_path("M 5,7 L9,13 L1,7 L9,1 Z", Some("0"), None),
+        in_defs: true,
+    });
+    push(ClassMarker {
+        id: id(kind, false, true),
+        class: class(kind),
+        ref_x: "16",
+        ref_y: "7",
+        width: "20",
+        height: "28",
+        view_box: None,
+        child: class_path("M 18,7 L9,13 L14,7 L9,1 Z", Some("0"), None),
+        in_defs: true,
+    });
+
+    // lollipop (markers.js 253-321)
+    let kind = ClassKind::Lollipop;
+    for (start, margin, ref_x, stroke) in [
+        (true, false, "13", None),
+        (false, false, "1", None),
+        (true, true, "13", Some("2")),
+        (false, true, "1", Some("2")),
+    ] {
+        let stroke_width =
+            stroke.map_or_else(String::new, |width| format!(" stroke-width=\"{width}\""));
+        push(ClassMarker {
+            id: id(kind, start, margin),
+            class: class(kind),
+            ref_x,
+            ref_y: "7",
+            width: "190",
+            height: "240",
+            view_box: None,
+            child: format!(
+                "<circle fill=\"transparent\" cx=\"7\" cy=\"7\" r=\"6\"{stroke_width}/>"
+            ),
+            in_defs: true,
+        });
+    }
+    out
+}

@@ -499,6 +499,15 @@ fn paint_edge(
     let colour = stroke_colour(&path_style).filter(|colour| !colour.trim().is_empty());
     let mut markers_out = String::new();
     let mut marker = |arrow: &str, start: bool, markers_out: &mut String| -> Option<String> {
+        // A class relation's marker is named by its kind, and a class relation has no colour
+        // (`edgeMarker.ts` names the marker after the diagram type, and the relation's style is
+        // not a stroke colour of the class syntax).
+        if let Some(class) = markers::ClassKind::from_arrow(arrow) {
+            return Some(format!(
+                "url(#{})",
+                markers::class_marker_id(svg_id, class, start, margin)
+            ));
+        }
         let kind = Kind::from_arrow(arrow)?;
         let id = markers::marker_id(svg_id, diagram_type, kind, start, margin);
         match colour {

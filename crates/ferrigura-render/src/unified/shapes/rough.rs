@@ -12,7 +12,7 @@
 use std::f64::consts::PI;
 
 use super::util::attribute;
-use crate::svg::number;
+use crate::svg::{escape, number};
 use crate::unified::geom::{BBox, Point};
 
 /// rough.js's default `curveStepCount`.
@@ -232,6 +232,87 @@ pub(super) fn stroke(outline: &Outline, style: Option<&str>, stroke_width: &str)
         "<path d=\"{}\" fill=\"none\" stroke-width=\"{stroke_width}\" stroke-dasharray=\"0 0\"{style}/>",
         outline.d,
     )
+}
+
+/// One side of a rough.js line at roughness 0, drawn twice (`_doubleLine`): first as a line, then as
+/// a bowed curve whose control points lie on the segment. The reference's random divergence point
+/// moves no point that a sample can see (the curve is monotone along the segment, so its length and
+/// box are the segment's), so a fixed fraction of the length stands for it.
+pub(super) fn double_side(from: Point, to: Point) -> String {
+    const DIVERGE: f64 = 0.3;
+    let c1 = Point::new(
+        from.x + (to.x - from.x) * DIVERGE,
+        from.y + (to.y - from.y) * DIVERGE,
+    );
+    let c2 = Point::new(
+        from.x + 2.0 * (to.x - from.x) * DIVERGE,
+        from.y + 2.0 * (to.y - from.y) * DIVERGE,
+    );
+    format!(
+        "M{} {} L{} {} M{} {} C{} {} {} {} {} {}",
+        number(from.x),
+        number(from.y),
+        number(to.x),
+        number(to.y),
+        number(from.x),
+        number(from.y),
+        number(c1.x),
+        number(c1.y),
+        number(c2.x),
+        number(c2.y),
+        number(to.x),
+        number(to.y),
+    )
+}
+
+/// `rc.rectangle` at roughness 0 with a solid fill: the fill is the three sides from the first corner,
+/// open (`solidFillPolygon`), and the stroke is each of the four sides drawn twice (`linearPath` with
+/// `_doubleLine`), so its length is twice the perimeter. `style` is the style of both paths.
+pub(super) fn rectangle_paths(
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    style: Option<&str>,
+    stroke_width: &str,
+) -> String {
+    let corners = [
+        Point::new(x, y),
+        Point::new(x + width, y),
+        Point::new(x + width, y + height),
+        Point::new(x, y + height),
+    ];
+    let fill: String = corners
+        .iter()
+        .enumerate()
+        .map(|(index, corner)| {
+            format!(
+                "{}{} {}",
+                if index == 0 { "M" } else { "L" },
+                number(corner.x),
+                number(corner.y)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    let stroke: String = (0..corners.len())
+        .map(|index| double_side(corners[index], corners[(index + 1) % corners.len()]))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let style = style.map_or_else(String::new, |style| format!(" style=\"{}\"", escape(style)));
+    format!(
+        "<path d=\"{fill}\" stroke=\"none\" stroke-width=\"0\"{style}/><path d=\"{stroke}\" fill=\"none\" stroke-width=\"{}\" stroke-dasharray=\"0 0\"{style}/>",
+        escape(stroke_width),
+    )
+}
+
+/// `rc.line` at roughness 0: a stroke path of the segment, drawn twice, with no fill.
+pub(super) fn line(from: Point, to: Point, style: Option<&str>, stroke_width: &str) -> String {
+    let outline = Outline {
+        d: double_side(from, to),
+        bbox: BBox::new(from.x, from.y, to.x - from.x, to.y - from.y),
+    };
+    stroke(&outline, style, stroke_width)
 }
 
 #[cfg(test)]

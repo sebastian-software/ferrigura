@@ -12,10 +12,9 @@
 //! absolute top-left `offset`, the centre and the ELK size. That copy is [`DbNode`] here; the layout
 //! node in `data` gets the same centre and size as the reference writes them back.
 //!
-//! Not ported: the terminal labels of ELK edges (`terminalLabelCenters`, `followMovedEndpoints`,
-//! `slideTerminalLabelsOffFrames`, `putTerminalLabelsOnTheirSide`). The flowchart's build never
-//! creates a terminal label, and the elkjs JSON type does not carry the `terminal` field, so these
-//! passes never change a flowchart.
+//! The terminal labels of the edges (their centres, `followMovedEndpoints`,
+//! `slideTerminalLabelsOffFrames`, `putTerminalLabelsOnTheirSide`) are in [`super::terminal`]. The
+//! flowchart has none, so these passes never change a flowchart.
 
 use std::collections::{HashMap, HashSet};
 
@@ -31,6 +30,7 @@ use super::elk_geometry::{
 use super::elk_straighten::{project_label_onto_straightened_run, straighten_edge_terminals};
 use super::geom::{CenterBox, Point};
 use super::shapes::Intersect;
+use super::terminal;
 
 /// Padding between a subgraph frame and its children (`SUBGRAPH_PADDING`).
 const SUBGRAPH_PADDING: f64 = 24.0;
@@ -432,6 +432,11 @@ impl<'a> Layout<'a> {
             if reversed {
                 points.reverse();
             }
+            // The ports are the ELK route's own ends, before the node centres join it (`elkPorts`).
+            let ports = match (points.first(), points.last()) {
+                (Some(&first), Some(&last)) => Some((first, last)),
+                _ => None,
+            };
             let start_centre = self.refresh_centre(&start);
             let end_centre = self.refresh_centre(&end);
             points.insert(0, start_centre);
@@ -458,6 +463,26 @@ impl<'a> Layout<'a> {
                 layout.y =
                     Some(label.y.unwrap_or(0.0) + offset.y + label.height.unwrap_or(0.0) / 2.0);
             }
+            // The terminal labels follow the centre label in ELK's list, in the order they were
+            // given. A label at the origin is left unplaced (`render.ts` 2085-2098).
+            let mut placed = false;
+            for (index, terminal) in layout.terminals.iter_mut().enumerate() {
+                let Some(label) = edge.labels.get(index + 1) else {
+                    continue;
+                };
+                let (x, y) = (label.x.unwrap_or(0.0), label.y.unwrap_or(0.0));
+                if x == 0.0 && y == 0.0 {
+                    continue;
+                }
+                terminal.centre = Some(Point::new(
+                    x + offset.x + label.width.unwrap_or(0.0) / 2.0,
+                    y + offset.y + label.height.unwrap_or(0.0) / 2.0,
+                ));
+                placed = true;
+            }
+            if placed {
+                layout.ports = ports;
+            }
         }
 
         if straighten {
@@ -474,7 +499,13 @@ impl<'a> Layout<'a> {
                 }
             }
         }
-        // The terminal label passes are not ported; see the module documentation.
+        // `render.ts` 2111-2116: the terminal labels move with their endpoints, slide off the frames
+        // and go to their side, before the labels of opposite edges are separated.
+        for edge in &mut data.edges {
+            terminal::follow_moved_endpoints(edge);
+        }
+        terminal::slide_off_frames(&mut data.edges, &data.nodes);
+        terminal::put_on_their_side(&mut data.edges, &data.nodes);
         separate_opposite_edge_labels(&mut data.edges);
     }
 

@@ -45,6 +45,8 @@ fn measure(input: &FlowchartInput<'_>) -> Result<Measured, RenderError> {
     let mut data = data::get_data(input.diagram, input.config);
     // `flowRenderer-v3-unified.ts` sets the diagram type on the layout data after `getData`.
     data.diagram_type = markers::FLOWCHART.to_owned();
+    // The flowchart's stylesheet centres node labels (`flowchart/style.rs`).
+    data.centre_node_labels = true;
     pipeline::measure(data, input.config, input.themes.primary())
 }
 

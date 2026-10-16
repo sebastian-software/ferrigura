@@ -51,6 +51,7 @@ pub fn get_data(diagram: &FlowchartDiagram, config: &MermaidConfig) -> LayoutDat
         direction: diagram.direction.clone(),
         default_style: diagram.default_style.clone(),
         default_interpolate: diagram.default_interpolate.clone(),
+        centre_node_labels: false,
         diagram_type: String::new(),
     }
 }

@@ -15,6 +15,7 @@
 mod arcs;
 mod braces;
 mod circle;
+mod class_box;
 mod collapsed_group;
 mod containers;
 mod cylinder;
@@ -85,6 +86,11 @@ pub struct ShapeOutput {
     pub bbox: BBox,
     /// How edges meet the outline.
     pub intersect: Intersect,
+    /// The box the shape's elements cover, when it is larger than `bbox` (a class box).
+    pub extent: Option<BBox>,
+    /// The texts the shape draws beside its label, whose fonts the diagram embeds (a class box's
+    /// rows).
+    pub texts: Vec<LabelLayout>,
 }
 
 /// How an edge meets a node's outline: the reference's `node.intersect`.
@@ -156,6 +162,23 @@ pub fn node_label(
     theme: &Value,
     width: Option<f64>,
 ) -> Result<Option<LabelLayout>, RenderError> {
+    node_label_anchored(node, config, theme, width, Anchor::Middle)
+}
+
+/// [`node_label`] with the anchor the diagram's stylesheet gives node labels: centred for the
+/// flowchart, the start for the class diagram (see `LayoutData::centre_node_labels`).
+///
+/// # Errors
+///
+/// Returns an error for a shape name the registry does not know, or if a bundled font cannot be
+/// read.
+pub fn node_label_anchored(
+    node: &Node,
+    config: &MermaidConfig,
+    theme: &Value,
+    width: Option<f64>,
+    anchor: Anchor,
+) -> Result<Option<LabelLayout>, RenderError> {
     let kind = registry::resolve(&node.shape).ok_or_else(|| unknown_shape(&node.shape))?;
     if !kind.draws_label() {
         return Ok(None);
@@ -189,8 +212,7 @@ pub fn node_label(
         width: wrapping_width,
         is_node: true,
         add_background: node.icon.is_some() || node.img.is_some(),
-        // The stylesheet centres node labels (`.node .label text`).
-        anchor: Anchor::Middle,
+        anchor,
         styles: &declarations,
         font_size: util::theme_number(theme, "fontSize").unwrap_or(config.font_size),
     };
@@ -276,6 +298,10 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str) -> String {
 pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
     let kind =
         registry::resolve(&input.node.shape).ok_or_else(|| unknown_shape(&input.node.shape))?;
+    // The box the elements cover, when it is larger than the node's, and the texts a class box
+    // draws beside its label (its rows).
+    let mut extent = None;
+    let mut texts = Vec::new();
     let part = match kind {
         Kind::SquareRect => rect::square_rect(input),
         Kind::RoundedRect => rect::rounded_rect(input),
@@ -340,6 +366,16 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::IconRounded => icon::icon_rounded(input),
         Kind::IconCircle => icon::icon_circle(input),
         Kind::ImageSquare => icon::image_square(input)?,
+        Kind::ClassBox => {
+            let class_box::ClassBox {
+                part,
+                covered,
+                texts: rows,
+            } = class_box::class_box(input)?;
+            extent = Some(covered);
+            texts = rows;
+            part
+        }
     };
     // The node group's box is the shape's and the label's together. The label group's box is the
     // text's own box moved by the label's offset: the box widened to the minimum width (which
@@ -359,6 +395,8 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         label: part.label,
         bbox,
         intersect: part.intersect,
+        extent,
+        texts,
     })
 }
 
