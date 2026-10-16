@@ -37,9 +37,9 @@ use serde_json::Value;
 /// The largest difference that counts as equal, in SVG user units.
 const TOLERANCE: f64 = 0.05;
 
-/// The fewest edges the comparison must cover: every edge of the 82 fixtures, so that a fixture
+/// The fewest edges the comparison must cover: every edge of the 104 fixtures, so that a fixture
 /// whose edges stop being compared fails the test.
-const MIN_COMPARED_EDGES: usize = 529;
+const MIN_COMPARED_EDGES: usize = 805;
 
 fn number(value: &Value) -> f64 {
     value.as_f64().unwrap_or(0.0)
@@ -88,6 +88,7 @@ fn leaf_node(node: &Value) -> Node {
         css_compiled_styles: strings(&drawing["cssCompiledStyles"]),
         css_classes: text(&drawing["cssClasses"]),
         look: drawing["look"].as_str().unwrap_or("neo").to_string(),
+        icon: drawing["icon"].as_str().map(str::to_string),
         is_group: false,
         shape: text(&node["shape"]),
         min_width: drawing["minWidth"].as_f64(),

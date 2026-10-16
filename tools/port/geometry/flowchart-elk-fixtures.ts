@@ -28,12 +28,25 @@
  *
  * Usage: `pnpm exec tsx tools/port/geometry/flowchart-elk-fixtures.ts --capture <dir> [--out <dir>]`
  */
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** Fixtures taken per coverage tag, at most. */
 const PER_TAG = 8;
+
+/**
+ * Fixtures always taken, whatever their tags: the shape-themes fixtures whose edges end at stage C
+ * shapes (sloped rectangle, window pane, tagged rectangle, notched pentagon, half-rounded
+ * rectangle). Their node sizes are a float32 bit away from the reference's, and the reference's
+ * border and tie tests on those sizes decide the edges, so the differential test keeps them.
+ */
+const PINNED = new Set(
+  [1, 2, 4, 11, 12, 15, 21, 22, 23, 31, 32, 34].map(
+    (number) =>
+      `nightly-check-shape-themes-${String(number).padStart(2, '0')}-connect-all-shapes-with-each-other`
+  )
+);
 
 /** Fixtures left out, with the reason. */
 const EXCLUDED: Record<string, string> = {
@@ -56,6 +69,7 @@ interface ElkInputNode {
   cssStyles?: string[];
   cssCompiledStyles?: string[];
   cssClasses?: string;
+  icon?: string;
   minWidth?: number;
   dir?: string;
   layoutOptions?: Record<string, unknown>;
@@ -130,6 +144,8 @@ interface NodeDrawing {
   minWidth: number | null;
   /** The node's direction: its nearest subgraph's `dir`, else the diagram's. */
   dir: string | null;
+  /** The icon name of an icon shape, as the input gives it. */
+  icon: string | null;
 }
 
 /** One fixture as the Rust test reads it. */
@@ -364,6 +380,7 @@ function buildFile(
             look: node.look ?? 'neo',
             minWidth: node.minWidth ?? null,
             dir: nodeDirection,
+            icon: node.icon ?? null,
           };
       nodes.push({
         id: node.id,
@@ -437,8 +454,8 @@ function buildFile(
 }
 
 /**
- * Picks the fixtures: those with the most edges first, then the smaller ones. A fixture is taken
- * when it adds a tag that fewer than `PER_TAG` selected fixtures have.
+ * Picks the fixtures: the `PINNED` ones, then those with the most edges first, then the smaller
+ * ones. A fixture is taken when it adds a tag that fewer than `PER_TAG` selected fixtures have.
  */
 function select(candidates: Candidate[]): Candidate[] {
   const sorted = candidates
@@ -449,14 +466,22 @@ function select(candidates: Candidate[]): Candidate[] {
     );
   const counts = new Map<string, number>();
   const selected: Candidate[] = [];
-  for (const candidate of sorted) {
-    const needed = candidate.tags.some((tag) => (counts.get(tag) ?? 0) < PER_TAG);
-    if (!needed) {
-      continue;
-    }
+  const take = (candidate: Candidate): void => {
     selected.push(candidate);
     for (const tag of candidate.tags) {
       counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  };
+  for (const candidate of sorted.filter((candidate) => PINNED.has(candidate.slug))) {
+    take(candidate);
+  }
+  for (const candidate of sorted) {
+    if (PINNED.has(candidate.slug)) {
+      continue;
+    }
+    const needed = candidate.tags.some((tag) => (counts.get(tag) ?? 0) < PER_TAG);
+    if (needed) {
+      take(candidate);
     }
   }
   return selected;
@@ -520,6 +545,13 @@ async function main(): Promise<void> {
 
   const selected = select(candidates);
   await mkdir(out, { recursive: true });
+  // The directory holds exactly the selection: a fixture left from an earlier selection would
+  // still be compared by the test.
+  for (const name of await readdir(out)) {
+    if (name.endsWith('.json')) {
+      await rm(join(out, name));
+    }
+  }
   for (const candidate of selected) {
     await writeFile(join(out, `${candidate.slug}.json`), `${JSON.stringify(candidate.file)}\n`);
   }
