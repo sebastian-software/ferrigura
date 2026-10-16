@@ -40,7 +40,8 @@ pub struct Cluster {
     pub label: Option<LabelLayout>,
 }
 
-/// Paints a laid-out subgraph: its frame and its title, as `insertCluster` does.
+/// Paints a laid-out subgraph, as `insertCluster` does with the shape of the node: the `rect` frame
+/// of a flowchart subgraph, or one of the state diagram's cluster kinds (`clusters.js`).
 ///
 /// The node's `id` of the element is its `dom_id` as given: the caller prefixes it with the diagram's
 /// id first, as `render.ts` does for every node, so that the ids of the subgraphs are unique in the
@@ -51,6 +52,23 @@ pub struct Cluster {
 /// Returns an error if the subgraph has no position or size after the layout, or if a bundled font
 /// cannot be read.
 pub fn paint(node: &Node, config: &MermaidConfig, theme: &Value) -> Result<Cluster, RenderError> {
+    match node.shape.as_str() {
+        "roundedWithTitle" => rounded_with_title(node, config, theme),
+        "noteGroup" => Ok(note_group(node)),
+        "divider" => Ok(divider(node, config, theme)),
+        _ => rect(node, config, theme),
+    }
+}
+
+/// Whether a subgraph's shape is one of the state diagram's cluster kinds, which have no entry in the
+/// shape registry (`clusters.js` 806-815). Their labels are still measured as the others' are.
+#[must_use]
+pub fn is_cluster_kind(shape: &str) -> bool {
+    matches!(shape, "roundedWithTitle" | "noteGroup" | "divider")
+}
+
+/// The `rect` cluster: the frame of a flowchart subgraph, with its title.
+fn rect(node: &Node, config: &MermaidConfig, theme: &Value) -> Result<Cluster, RenderError> {
     let styles = style::style_list(&node.label_style);
     let width = match node.label_type {
         LabelType::Markdown => node.width.unwrap_or(MARKDOWN_TITLE_WIDTH),
@@ -66,6 +84,7 @@ pub fn paint(node: &Node, config: &MermaidConfig, theme: &Value) -> Result<Clust
         anchor: Anchor::Start,
         styles: &styles,
         font_size: px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE),
+        title: false,
     })?;
     let frame = frame(node, title.bbox, title_top_margin(config))?;
 
@@ -111,6 +130,144 @@ pub fn paint(node: &Node, config: &MermaidConfig, theme: &Value) -> Result<Clust
         title_box,
         label: Some(title),
     })
+}
+
+/// The colour slot of a container as its `[data-color-id]` attribute and its palette colours
+/// (`stampColorSlot`, `colorThemeGate.ts`): the attribute is written only when the theme has a
+/// palette and the container has a slot.
+fn colour_slot(node: &Node, config: &MermaidConfig, theme: &Value) -> (Option<usize>, String) {
+    let palette = style::palette(config, theme);
+    let slot = palette
+        .as_ref()
+        .and_then(|palette| style::palette_slot(node.color_index, palette));
+    let colour_id = slot.map_or_else(String::new, |slot| {
+        format!(" data-color-id=\"color-{slot}\"")
+    });
+    (slot, colour_id)
+}
+
+/// The composite state (`roundedWithTitle`, `clusters.js` 175-306, classic and neo looks): an outer
+/// rect in its own group, the title's label, and an inner rect for the body, under the title. The
+/// title is `createLabel`, the plain text with the `row` class, and it is placed at the subgraph's
+/// left edge plus the title's offset.
+fn rounded_with_title(
+    node: &Node,
+    config: &MermaidConfig,
+    theme: &Value,
+) -> Result<Cluster, RenderError> {
+    let (_, colour_id) = colour_slot(node, config, theme);
+    let title = label::layout(&LabelSpec {
+        text: &node.label,
+        label_type: LabelType::Text,
+        width: f64::INFINITY,
+        is_node: true,
+        add_background: false,
+        // A cluster title has no `text-anchor` of its own: its lines start at the label's origin.
+        anchor: Anchor::Start,
+        styles: &[],
+        font_size: px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE),
+        title: false,
+    })?;
+    let (Some(layout_width), Some(layout_height), Some(x), Some(y)) =
+        (node.width, node.height, node.x, node.y)
+    else {
+        return Err(RenderError::Layout(format!(
+            "the subgraph {} has no position or size after the layout",
+            node.id
+        )));
+    };
+    let padding = 0.0;
+    let text_width = title.bbox.width;
+    let width = if layout_width <= text_width + node.padding {
+        text_width + node.padding
+    } else {
+        layout_width
+    } + padding;
+    let height = layout_height + padding;
+    let inner_height = layout_height + padding - title.bbox.height - 6.0;
+    let outer_x = x - width / 2.0;
+    let outer_y = y - height / 2.0;
+    let inner_y = y - layout_height / 2.0 + title.bbox.height + 2.0;
+    let label_x = x - text_width / 2.0;
+    let label_y = outer_y + 1.0 - 3.0;
+    let outer = BBox::new(outer_x, outer_y, width, height);
+    let svg = format!(
+        "<g class=\"{classes}\" id=\"{id}\" data-id=\"{node_id}\" data-look=\"{look}\"{colour_id}>\
+         <g><rect class=\"outer\" x=\"{outer_x}\" y=\"{outer_y}\" width=\"{width}\" height=\"{height}\" data-look=\"{look}\"/></g>\
+         <g class=\"cluster-label\" transform=\"translate({label_x}, {label_y})\">{title}</g>\
+         <rect class=\"inner\" x=\"{outer_x}\" y=\"{inner_y}\" width=\"{width}\" height=\"{inner_height}\"/>\
+         </g>",
+        classes = escape(&node.css_classes),
+        id = escape(&node.dom_id),
+        node_id = escape(&node.id),
+        look = escape(&node.look),
+        outer_x = number(outer_x),
+        outer_y = number(outer_y),
+        width = number(width),
+        height = number(height),
+        inner_y = number(inner_y),
+        inner_height = number(inner_height),
+        label_x = number(label_x),
+        label_y = number(label_y),
+        title = title.svg(""),
+    );
+    Ok(Cluster {
+        svg,
+        bbox: outer,
+        title_box: title.bbox.translate(label_x, label_y),
+        label: Some(title),
+    })
+}
+
+/// The note group of a composite's note (`noteGroup`, `clusters.js` 144-173): an unfilled rect
+/// around the note, in a group of its own. It has no title.
+fn note_group(node: &Node) -> Cluster {
+    let width = node.width.unwrap_or(0.0);
+    let height = node.height.unwrap_or(0.0);
+    let x = node.x.unwrap_or(0.0) - width / 2.0;
+    let y = node.y.unwrap_or(0.0) - height / 2.0;
+    let bbox = BBox::new(x, y, width, height);
+    let svg = format!(
+        "<g class=\"note-cluster\" id=\"{id}\"><rect x=\"{x}\" y=\"{y}\" width=\"{width}\" height=\"{height}\" fill=\"none\"/></g>",
+        id = escape(&node.dom_id),
+        x = number(x),
+        y = number(y),
+        width = number(width),
+        height = number(height),
+    );
+    Cluster {
+        svg,
+        bbox,
+        title_box: BBox::default(),
+        label: None,
+    }
+}
+
+/// A concurrency region (`divider`, `clusters.js` 419-522): a rect with the `divider` class, in a
+/// group of its own, and no title. Its colour slot is its parent's, see `dataFetcher.ts`.
+fn divider(node: &Node, config: &MermaidConfig, theme: &Value) -> Cluster {
+    let (_, colour_id) = colour_slot(node, config, theme);
+    let width = node.width.unwrap_or(0.0);
+    let height = node.height.unwrap_or(0.0);
+    let x = node.x.unwrap_or(0.0) - width / 2.0;
+    let y = node.y.unwrap_or(0.0) - height / 2.0;
+    let bbox = BBox::new(x, y, width, height);
+    let svg = format!(
+        "<g class=\"{classes}\" id=\"{id}\" data-look=\"{look}\"{colour_id}><g><rect class=\"divider\" x=\"{x}\" y=\"{y}\" width=\"{width}\" height=\"{height}\" data-look=\"{look}\"/></g></g>",
+        classes = escape(&node.css_classes),
+        id = escape(&node.dom_id),
+        look = escape(&node.look),
+        x = number(x),
+        y = number(y),
+        width = number(width),
+        height = number(height),
+    );
+    Cluster {
+        svg,
+        bbox,
+        title_box: BBox::default(),
+        label: None,
+    }
 }
 
 /// The frame of a rect cluster and the place of its title.

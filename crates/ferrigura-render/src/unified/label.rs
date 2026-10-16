@@ -60,6 +60,9 @@ pub struct LabelSpec<'a> {
     pub styles: &'a [String],
     /// The font size in pixels when the style does not set one.
     pub font_size: f64,
+    /// `createText`'s `isTitle`: the lines take the class `title-row` rather than `row`. The state
+    /// diagram's `rectWithTitle` lays out its title and its rows this way (`createLabel`).
+    pub title: bool,
 }
 
 /// One word or styled run of a line, placed.
@@ -99,6 +102,10 @@ pub struct LabelLayout {
     pub background: Option<BBox>,
     /// The font size of the text.
     pub font_size: f64,
+    /// Whether the lines are `title-row`s (`createText`'s `isTitle`) rather than `row`s.
+    pub title: bool,
+    /// Where the lines are anchored on `x = 0`, as the spec asked.
+    pub anchor: Anchor,
 }
 
 impl LabelLayout {
@@ -110,6 +117,8 @@ impl LabelLayout {
             bbox,
             background: None,
             font_size: 16.0,
+            title: false,
+            anchor: Anchor::Middle,
         }
     }
 
@@ -130,7 +139,23 @@ impl LabelLayout {
     /// rectangle and the text. `text_style` is the inline style of the `<text>` element.
     #[must_use]
     pub fn svg(&self, text_style: &str) -> String {
-        let mut out = String::from("<g>");
+        self.svg_with(text_style, "")
+    }
+
+    /// [`LabelLayout::svg`] with the attributes of the `<g>` that `createText` returns, such as the
+    /// `transform` that the reference sets on it (`rectWithTitle.ts`). `attributes` starts with a
+    /// space, or is empty.
+    #[must_use]
+    pub fn svg_with(&self, text_style: &str, attributes: &str) -> String {
+        self.svg_parts(text_style, attributes, "")
+    }
+
+    /// [`LabelLayout::svg_with`] with the attributes of the `<text>` as well: the reference sets a
+    /// `transform` on the `<text>` of a `rectWithTitle` title and rows (`rectWithTitle.ts`).
+    #[must_use]
+    pub fn svg_parts(&self, text_style: &str, group: &str, text: &str) -> String {
+        let mut out = format!("<g{group}>");
+        let line_class = if self.title { "title-row" } else { "row" };
         if let Some(background) = self.background {
             out.push_str(&format!(
                 r#"<rect class="background" style="stroke: none" x="{}" y="{}" width="{}" height="{}"></rect>"#,
@@ -145,14 +170,14 @@ impl LabelLayout {
             out.push_str(r#"<rect class="background" style="stroke: none"></rect>"#);
         }
         out.push_str(&format!(
-            r#"<text y="-10.1" text-anchor="start" style="{}">"#,
+            r#"<text y="-10.1" text-anchor="start" style="{}"{text}>"#,
             escape(text_style)
         ));
         for line in &self.lines {
             // Every line starts at its own x, with `text-anchor` start, so the browser never
             // aligns it by its own measure (decision 0005).
             out.push_str(&format!(
-                r#"<tspan class="text-outer-tspan row" x="{}" y="{}" text-anchor="start">"#,
+                r#"<tspan class="text-outer-tspan {line_class}" x="{}" y="{}" text-anchor="start">"#,
                 number(line.runs.first().map_or(0.0, |run| run.x)),
                 number(line.baseline),
             ));
@@ -253,6 +278,8 @@ pub fn layout(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
         bbox,
         background,
         font_size,
+        title: spec.title,
+        anchor: spec.anchor,
     })
 }
 
@@ -410,6 +437,7 @@ mod tests {
             add_background: false,
             styles,
             font_size: 16.0,
+            title: false,
         }
     }
 

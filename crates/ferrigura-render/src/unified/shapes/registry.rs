@@ -32,6 +32,8 @@ pub(super) enum Kind {
     Anchor,
     LabelRect,
     CollapsedGroup,
+    // The state diagram's shape with a title and rows (`rectWithTitle.ts`).
+    RectWithTitle,
     // The shapes of stage C.
     Bang,
     BowTieRect,
@@ -113,6 +115,7 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "odd" | "rect_left_inv_arrow" => Kind::RectLeftInvArrow,
         "labelRect" => Kind::LabelRect,
         "collapsedGroup" => Kind::CollapsedGroup,
+        "rectWithTitle" => Kind::RectWithTitle,
         "bang" => Kind::Bang,
         "bow-rect" | "stored-data" | "bow-tie-rectangle" => Kind::BowTieRect,
         "browser" => Kind::Browser,
@@ -160,10 +163,11 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
     })
 }
 
-/// The shape a node's shape name stands for. The flowchart's nodes carry no radii, so `rect` is a
-/// `squareRect` there.
-pub(super) fn resolve(name: &str) -> Option<Kind> {
-    resolve_with_radii(name, false)
+/// The shape of a node, with `rect` taken as `roundedRect` when the node has both radii: the
+/// reference's `node.rx && node.ry` (`nodes.ts` 22-29). Only the state diagram sets the radii.
+pub(super) fn resolve_node(node: &Node) -> Option<Kind> {
+    let rounded = node.rx.is_some_and(|rx| rx != 0.0) && node.ry.is_some_and(|ry| ry != 0.0);
+    resolve_with_radii(&node.shape, rounded)
 }
 
 impl Kind {
@@ -173,7 +177,9 @@ impl Kind {
     pub(super) fn draws_label(self) -> bool {
         !matches!(
             self,
-            Self::FilledCircle
+            // `rectWithTitle` lays out its own title and rows (`createLabel`), not the label helper.
+            Self::RectWithTitle
+                | Self::FilledCircle
                 | Self::ForkJoin
                 | Self::Anchor
                 | Self::StateStart
@@ -214,6 +220,11 @@ impl Kind {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The shape of a name for a node without radii, as a flowchart node has.
+    fn resolve(name: &str) -> Option<Kind> {
+        resolve_with_radii(name, false)
+    }
 
     // nodes.spec.ts, "Test Alias for shapes": every alias resolves to the shape of its short name.
 

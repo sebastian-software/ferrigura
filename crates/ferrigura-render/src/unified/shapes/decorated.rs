@@ -326,6 +326,7 @@ pub(super) fn window_pane(input: &ShapeInput<'_>) -> Part {
         crate::svg::number(y + h),
     );
     let outline = Outline {
+        fill: None,
         d,
         bbox: BBox::new(x - o, y - o, w + o, h + o),
     };

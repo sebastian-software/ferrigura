@@ -52,12 +52,15 @@ pub(super) fn note(input: &ShapeInput<'_>) -> Part {
     let total_height = (label.bbox.height + node.padding * 2.0).max(node.height.unwrap_or(0.0));
     let x = -total_width / 2.0;
     let y = -total_height / 2.0;
-    let outline = rough::polygon(&[
-        Point::new(x, y),
-        Point::new(x + total_width, y),
-        Point::new(x + total_width, y + total_height),
-        Point::new(x, y + total_height),
-    ]);
+    let outline = rough::solid_polygon(
+        &[
+            Point::new(x, y),
+            Point::new(x + total_width, y),
+            Point::new(x + total_width, y + total_height),
+            Point::new(x, y + total_height),
+        ],
+        false,
+    );
     let style = path_style(node, &styles);
     let svg = format!(
         "<g class=\"basic label-container outer-path\">{}</g>",

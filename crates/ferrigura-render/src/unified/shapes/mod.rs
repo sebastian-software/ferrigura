@@ -24,6 +24,7 @@ mod intersect;
 mod person;
 mod polygon;
 mod rect;
+mod rect_with_title;
 mod rects;
 mod registry;
 mod rough;
@@ -39,6 +40,7 @@ use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::value::Value;
 use ferrigura_syntax::sanitize::sanitize_text;
 
+use super::clusters;
 use super::data::Node;
 use super::geom::{BBox, CenterBox, Point};
 use super::label::{self, Anchor, LabelLayout, LabelSpec};
@@ -155,19 +157,32 @@ pub fn node_label(
     config: &MermaidConfig,
     theme: &Value,
     width: Option<f64>,
+    anchor: Anchor,
 ) -> Result<Option<LabelLayout>, RenderError> {
-    let kind = registry::resolve(&node.shape).ok_or_else(|| unknown_shape(&node.shape))?;
-    if !kind.draws_label() {
-        return Ok(None);
-    }
-    let default_width = config.flowchart.wrapping_width;
+    // A group's label is measured whatever its cluster kind: `measureGroupLabel` runs `labelHelper`
+    // on every subgraph, and the cluster kinds that paint no title (`noteGroup`, `divider`) still
+    // size their group by it (`createGraph.ts` 42-59, 169-171). Such a group has no shape of its own.
+    let kind = match registry::resolve_node(node) {
+        Some(kind) => {
+            if !kind.draws_label() {
+                return Ok(None);
+            }
+            Some(kind)
+        }
+        None if node.is_group && clusters::is_cluster_kind(&node.shape) => None,
+        None => return Err(unknown_shape(&node.shape)),
+    };
+    // `node.wrappingWidth` (the state diagram's `state.wrappingWidth`) before the flowchart's.
+    let default_width = node
+        .wrapping_width
+        .unwrap_or(config.flowchart.wrapping_width);
     // The icon and image handlers set the node's width before they lay out the label: the icon
     // size or the image's width, at least the wrapping width.
     let wrapping_width = match kind {
-        Kind::Icon | Kind::IconCircle | Kind::IconRounded | Kind::IconSquare => {
+        Some(Kind::Icon | Kind::IconCircle | Kind::IconRounded | Kind::IconSquare) => {
             icon::label_width(node, default_width)
         }
-        Kind::ImageSquare => icon::image_label_width(node, default_width)?,
+        Some(Kind::ImageSquare) => icon::image_label_width(node, default_width)?,
         _ => width
             .or_else(|| node.width.filter(|width| *width != 0.0))
             .unwrap_or(default_width),
@@ -184,15 +199,21 @@ pub fn node_label(
     // label of an `@{ label }` node, which the DB did not sanitise, is sanitised here.
     let text = sanitize_text(&label::decode_entities(&node.label));
     let spec = LabelSpec {
-        text: if kind.empties_label() { "" } else { &text },
+        text: if kind.is_some_and(Kind::empties_label) {
+            ""
+        } else {
+            &text
+        },
         label_type: node.label_type,
         width: wrapping_width,
         is_node: true,
         add_background: node.icon.is_some() || node.img.is_some(),
-        // The stylesheet centres node labels (`.node .label text`).
-        anchor: Anchor::Middle,
+        // The diagram's stylesheet decides where the lines of a node label start: the flowchart's
+        // centres them (`.node .label text`), the state diagram's does not.
+        anchor,
         styles: &declarations,
         font_size: util::theme_number(theme, "fontSize").unwrap_or(config.font_size),
+        title: false,
     };
     // The reference's `labelHelper` takes the label's box from `text.getBBox()` (shapes/util.ts
     // 135-140), before `withMinWidth` widens it. That box is a float32 value. Group titles are
@@ -207,8 +228,8 @@ pub fn node_label(
 /// `positionNode` leave it: the shape's elements, then the label; inside an `<a>` when the node
 /// has a link.
 #[must_use]
-pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str) -> String {
-    let kind = registry::resolve(&node.shape);
+pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm) -> String {
+    let kind = registry::resolve_node(node);
     let styles = util::styles2string(node);
     let shape_svg = shape.svg.replace(SVG_ID_TOKEN, svg_id);
     let after_label = shape.after_label.replace(SVG_ID_TOKEN, svg_id);
@@ -247,6 +268,20 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str) -> String {
 
     let body = format!("{shape_svg}{label_svg}{after_label}");
     match node.link.as_deref() {
+        // The state diagram wraps a clicked node after its render (`stateRenderer-v3-unified.ts`
+        // 80-133): the anchor has no transform, and the tooltip is on the anchor and on the node.
+        Some(link) if links == LinkForm::PostRender => {
+            let tooltip = node
+                .tooltip
+                .as_deref()
+                .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
+            format!(
+                "<a xlink:href=\"{}\"{tooltip}><g class=\"{}\" id=\"{}\"{data_look} transform=\"{transform}\"{tooltip}>{body}</g></a>",
+                escape(link),
+                escape(&class),
+                escape(&id),
+            )
+        }
         // With a link the `<a>` takes the look and the position, and the `<g>` the class and id.
         Some(link) => {
             let target = node
@@ -268,6 +303,16 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str) -> String {
     }
 }
 
+/// How a node with a link is written: the flowchart's anchor carries the node's transform, and the
+/// state diagram's anchor wraps the node after the render.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LinkForm {
+    /// The flowchart's: `<a>` with the transform and the target.
+    Flowchart,
+    /// The state diagram's: `<a>` around the node, with the tooltip.
+    PostRender,
+}
+
 /// Draws a node's shape, as `insertNode` does with the shape's handler.
 ///
 /// # Errors
@@ -275,7 +320,7 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str) -> String {
 /// Returns an error for a shape name the registry does not know.
 pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
     let kind =
-        registry::resolve(&input.node.shape).ok_or_else(|| unknown_shape(&input.node.shape))?;
+        registry::resolve_node(input.node).ok_or_else(|| unknown_shape(&input.node.shape))?;
     let part = match kind {
         Kind::SquareRect => rect::square_rect(input),
         Kind::RoundedRect => rect::rounded_rect(input),
@@ -299,6 +344,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::StateEnd => state::state_end(input),
         Kind::Anchor => state::anchor(input),
         Kind::CollapsedGroup => collapsed_group::collapsed_group(input),
+        Kind::RectWithTitle => rect_with_title::rect_with_title(input)?,
         Kind::Bang => arcs::bang(input),
         Kind::Cloud => arcs::cloud(input),
         Kind::BowTieRect => arcs::bow_tie_rect(input),
@@ -364,6 +410,8 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
 
 /// The error for a shape name that the registry does not know.
 fn unknown_shape(name: &str) -> RenderError {
+    // A node without a shape reads `undefined` in the reference's message (`nodes.ts` 31-35).
+    let name = if name.is_empty() { "undefined" } else { name };
     RenderError::Options(format!("No such shape: {name}. Please check your syntax."))
 }
 
@@ -373,7 +421,7 @@ mod tests {
     use super::*;
 
     fn group_of(node: &Node, shape: &ShapeOutput) -> String {
-        node_svg(node, shape, "svg-id")
+        node_svg(node, shape, "svg-id", LinkForm::Flowchart)
     }
 
     #[test]
@@ -445,7 +493,7 @@ mod tests {
         for shape in ["f-circ", "fork", "sm-circ", "fr-circ", "anchor"] {
             let node = node(shape, "neo");
             assert_eq!(
-                node_label(&node, &config, &theme, None).expect("known"),
+                node_label(&node, &config, &theme, None, Anchor::Middle).expect("known"),
                 None,
                 "{shape}"
             );
@@ -463,7 +511,7 @@ mod tests {
         for (text, shown_as) in [("<11", "<11"), ("&lt;11", "<11")] {
             let mut node = node("squareRect", "neo");
             node.label = text.to_owned();
-            let label = node_label(&node, &config, &theme, None)
+            let label = node_label(&node, &config, &theme, None, Anchor::Middle)
                 .expect("known")
                 .expect("a label");
             let shown: String = label
@@ -481,7 +529,7 @@ mod tests {
         let config = MermaidConfig::default();
         let theme = theme();
         let node = node("no-such-shape", "neo");
-        let error = node_label(&node, &config, &theme, None).expect_err("unknown");
+        let error = node_label(&node, &config, &theme, None, Anchor::Middle).expect_err("unknown");
         assert!(
             error.to_string().contains("No such shape: no-such-shape"),
             "{error}"

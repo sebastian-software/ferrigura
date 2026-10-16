@@ -95,6 +95,7 @@ fn check(label: &Value, deviation: &mut Deviation) -> Result<(), String> {
         add_background: label["addBackground"].as_bool().unwrap_or(false),
         styles: &styles,
         font_size: label["fontSize"].as_f64().unwrap_or(16.0),
+        title: false,
     };
 
     let result = layout(&spec);

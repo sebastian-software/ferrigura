@@ -24,7 +24,8 @@ pub(super) fn choice(input: &ShapeInput<'_>) -> Part {
         Point::new(0.0, -size / 2.0),
         Point::new(-size / 2.0, 0.0),
     ];
-    let outline = rough::polygon(&points);
+    // `rc.path` of the closed path of the diamond: the fill takes its closing side too.
+    let outline = rough::solid_polygon(&points, true);
     let style = path_style(node, &styles);
     let svg = format!(
         "<g>{}</g>",
@@ -141,6 +142,7 @@ pub(super) fn crossed_circle(input: &ShapeInput<'_>) -> Part {
     let q3 = Point::new(-diagonal, -diagonal_y);
     let q4 = Point::new(diagonal, -diagonal_y);
     let line = Outline {
+        fill: None,
         d: format!(
             "M {},{} L {},{} M {},{} L {},{}",
             number(q2.x),
