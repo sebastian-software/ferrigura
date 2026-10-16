@@ -56,16 +56,6 @@ fn measure(input: &ErInput<'_>) -> Result<Measured, RenderError> {
     pipeline::measure(data, input.config, input.themes.primary())
 }
 
-/// The graphs of the layout step, for the differential comparison.
-///
-/// # Errors
-///
-/// Returns an error if a bundled font cannot be read or the layout fails.
-pub fn elk_stages(input: &ErInput<'_>) -> Result<pipeline::ElkStages, RenderError> {
-    let mut measured = measure(input)?;
-    pipeline::lay_out(&mut measured, input.config)
-}
-
 /// Renders the diagram to an SVG document.
 ///
 /// # Errors

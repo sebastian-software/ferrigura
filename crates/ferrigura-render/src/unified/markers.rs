@@ -632,6 +632,55 @@ mod tests {
     }
 
     #[test]
+    fn the_er_kinds_map_from_their_arrow_types() {
+        assert_eq!(Kind::from_arrow("only_one"), Some(Kind::OnlyOne));
+        assert_eq!(Kind::from_arrow("zero_or_one"), Some(Kind::ZeroOrOne));
+        assert_eq!(Kind::from_arrow("one_or_more"), Some(Kind::OneOrMore));
+        assert_eq!(Kind::from_arrow("zero_or_more"), Some(Kind::ZeroOrMore));
+        // `md_parent` has no marker in the reference (`edgeMarker.ts` 92-94).
+        assert_eq!(Kind::from_arrow("md_parent"), None);
+    }
+
+    #[test]
+    fn the_er_marker_ids_have_no_margin_variant() {
+        // `arrowTypesWithMarginSupport` lists no ER type, so the neo look asks for the plain id.
+        assert_eq!(
+            marker_id("svg", ER, Kind::OnlyOne, false, true),
+            "svg_er-onlyOneEnd"
+        );
+        assert_eq!(
+            marker_id("svg", ER, Kind::ZeroOrMore, true, true),
+            "svg_er-zeroOrMoreStart"
+        );
+    }
+
+    #[test]
+    fn the_er_markers_are_eight_in_defs_with_the_ids_the_edges_use() {
+        for neo in [false, true] {
+            let svg = er_markers("svg", neo, "2", "#ffffff");
+            assert_eq!(svg.matches("<defs><marker ").count(), 8, "{svg}");
+            for kind in ["onlyOne", "zeroOrOne", "oneOrMore", "zeroOrMore"] {
+                for position in ["Start", "End"] {
+                    let id = format!("id=\"svg_er-{kind}{position}\"");
+                    assert!(svg.contains(&id), "{id} in {svg}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_neo_set_takes_the_theme_stroke_and_background_and_the_classic_one_does_not() {
+        let neo = er_markers("svg", true, "2", "#ffffff");
+        assert!(neo.contains("markerUnits=\"userSpaceOnUse\""), "{neo}");
+        assert!(neo.contains("stroke-width=\"2\""), "{neo}");
+        assert!(neo.contains("fill=\"#ffffff\" cx=\"45.5\""), "{neo}");
+        let classic = er_markers("svg", false, "2", "#ffffff");
+        assert!(!classic.contains("markerUnits"), "{classic}");
+        assert!(!classic.contains("stroke-width"), "{classic}");
+        assert!(classic.contains("fill=\"white\" cx=\"48\""), "{classic}");
+    }
+
+    #[test]
     fn a_coloured_point_carries_its_colour_on_path_and_fill() {
         let marker = coloured_marker("svg", FLOWCHART, Kind::Point, false, false, "#f00");
         assert!(

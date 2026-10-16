@@ -239,7 +239,7 @@ pub fn style_sheet(
         ),
         rule(
             &format!("{id} .cluster rect"),
-            &format!("fill:var(--clusterBkg);stroke:var(--clusterBorder);stroke-width:1px;"),
+            "fill:var(--clusterBkg);stroke:var(--clusterBorder);stroke-width:1px;",
         ),
         rule(&format!("{id} .cluster text"), "fill:var(--titleColor);"),
         rule(

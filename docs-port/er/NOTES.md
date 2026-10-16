@@ -340,7 +340,7 @@ Notation: `PAD` = `er.diagramPadding` (default 20, schema), `TPAD` = `er.entityP
 PAD_A = PAD                                  (unscaled, line 45 value)
 if calc(label) + 2*PAD_A < minEntityWidth (100): node.width = 100        61-66
 drawRect(labelPaddingX = PAD_A, labelPaddingY = 1.5*PAD_A, rx = ry = 0)  67
-  bbox = labelHelper(markdown label, wrap = node.width || node.wrappingWidth || flowchart.wrappingWidth (200))
+  bbox = labelHelper(markdown label, wrap = node.width || node.wrappingWidth || flowchart.wrappingWidth (120))
   w = max(bbox.w + 2*PAD_A, node.width || 0)
   h = max(bbox.h + 3*PAD_A, node.height || 0)
   <rect x=-w/2 y=-h/2 width=w height=h class="basic label-container">   drawRect.ts 51-61
@@ -348,7 +348,7 @@ drawRect(labelPaddingX = PAD_A, labelPaddingY = 1.5*PAD_A, rx = ry = 0)  67
 node size: getBBox of the group (insertMeasuredNode, createGraph.ts 61-68) = the rect
 ```
 
-Note: `calc` is `calculateTextWidth` (utils.ts 649), an integer (`Math.round`, 694), so the minimum-width test uses a rounded value. The wrap width is 200 for entities without attributes (`flowchart.wrappingWidth`), and their names wrap there. Path B does not wrap (see 5.4).
+Note: `calc` is `calculateTextWidth` (utils.ts 649), an integer (`Math.round`, 694), so the minimum-width test uses a rounded value. The wrap width is 120 for entities without attributes (`flowchart.wrappingWidth`, schema default 120; the 200 that earlier notes gave is wrong), and their names wrap there, at the declared font size (the label's style, `wrap_in_style`). Path B does not wrap (see 5.4).
 
 **Path B: at least one attribute** (87–318)
 
@@ -469,7 +469,7 @@ Edge labels:
 - `genColor` (22–62) emits, per palette slot, `[data-look][data-color-id="color-i"].node path` and `… rect` rules, only when `isColorTheme(theme, borderColorArray)` (colorThemeGate.ts 37–38: theme `redux-color` or `redux-dark-color` and a non-empty palette). Slot count = palette length (42).
 - Colour stamping: `data-color-id = color-${colorIndex % borderColorArray.length}` (erBox.ts 68–71, 241–244), with `colorIndex` from the entity order.
 - Theme variables used: `rowEven`, `rowOdd`, `nodeBorder`, `borderColorArray`, `background` (handDrawn only), `mainBkg`, `lineColor`, `tertiaryColor`, `edgeLabelBackground`, `textColor`, `nodeTextColor`, `fontFamily`, `strokeWidth`, `clusterBkg`, `clusterBorder`, `titleColor`.
-- **`rowEven` and `rowOdd` are set only in `theme-base.js` 124–130 (darkMode-dependent). The Rust redux themes do not set them** (`crates/ferrigura-model/src/theme/*.rs` has no match; `ts_keys.txt` lists them). Needed for the row fills.
+- **`rowEven` and `rowOdd` are set only in `theme-base.js` 124–130 and the default and dark themes. The redux themes do not set them** (`theme-redux-color.js`, `theme-redux-dark-color.js`), so the reference draws a row with no fill path (checked in the reference's SVG, `g.row-rect-odd` has one path). The port reads them when a theme has them and draws no fill otherwise.
 - Non-shipped theme names (`neo`, `neo-dark`, `redux`, `redux-dark`) fall back by the rule in M2 (names ending in `dark` take `redux-dark-color`, others `redux-color`).
 
 ### 5.8 ER config: what is read [R]
@@ -486,7 +486,7 @@ Edge labels:
 | `fontSize` (12), `stroke` (gray), `fill` (honeydew) | —                                     | not read by the ER code                                                                                                                                                                                                                                                                           |
 | `theme`, `look` (per-section defaults)              | config.ts 79–103                      | scope resolution (5.5)                                                                                                                                                                                                                                                                            |
 
-Other ER-visible config: `flowchart.wrappingWidth` (200) for labels, `flowchart.curve` (edges.js 44, only for string-less curves), `htmlLabels` (forced false by the harness), `securityLevel`.
+Other ER-visible config: `flowchart.wrappingWidth` (120, schema default) for labels, `flowchart.curve` (edges.js 44, only for string-less curves), `htmlLabels` (forced false by the harness), `securityLevel`.
 
 One fixture sets `er: { useMaxWidth: false }` (pr-check/should-render-entities-that-have-no-relationships-usemaxwidth-false.mmd).
 
@@ -597,7 +597,7 @@ So 9 comparable fixtures need glyphs the port does not have (no fallback fonts y
 2. Phantom members and the entity/subgraph name collision: reproduce both (as DB behaviour), or name them as exceptions? The notes propose reproducing them.
 3. `nodeSpacing`/`rankSpacing` and the write to `config.flowchart`: not ported, with a named reason, or ported as written to config?
 4. Fixtures with glyphs the bundled font lacks (9): excluded with a named reason, or a fallback font first?
-5. Theme variables `rowEven`/`rowOdd`: add to the Rust redux themes (theme-base.js 124–130)? Colour only, but they are in every row fill.
+5. Theme variables `rowEven`/`rowOdd`: resolved in the M6 port, not needed for the shipped redux themes, which do not set them (5.7).
 6. Classic markers: needed only by the contract (no fixture uses them); port both, as M5 did for flowchart?
 7. Sanitisation of entity names, aliases and roles: none in the DB (canonical rule), so the model keeps them raw. Confirm.
 8. `md_parent`: no marker and a warning in the reference. Reproduce the absence (proposed), and drop the warning.
