@@ -26,7 +26,8 @@ pub(crate) struct DbError(pub(crate) String);
 /// The description of an actor, as `addActor` receives it.
 #[derive(Debug, Clone, PartialEq)]
 struct Description {
-    text: Option<String>,
+    /// The text, a string unless an alias in the metadata is another YAML scalar.
+    text: Option<Value>,
     wrap: Option<bool>,
 }
 
@@ -225,24 +226,23 @@ impl Db {
             }
             None => None,
         };
-        // `type = doc?.type ?? type`: a null `type` falls back to the one the statement gives.
+        // `type = doc?.type ?? type`: a null `type` falls back to the one the statement gives. The
+        // value keeps the YAML type (a number stays a number, as the DB holds it).
         let mut actor_type = yaml_field(&doc, "type")
-            .and_then(js_string)
-            .or_else(|| draw.map(str::to_owned));
+            .filter(|value| !matches!(value, Yaml::Null))
+            .map(yaml_value)
+            .or_else(|| draw.map(|draw| Value::String(draw.to_owned())));
         let mut description = description;
 
         // An alias replaces the name when no description is given (or the description is the name).
-        if let Some(alias) = yaml_field(&doc, "alias")
-            .filter(|value| is_truthy(value))
-            .and_then(js_string)
-        {
+        if let Some(alias) = yaml_field(&doc, "alias").filter(|value| is_truthy(value)) {
             let replace = description
                 .as_ref()
-                .is_none_or(|given| given.text.as_deref() == Some(name));
+                .is_none_or(|given| given.text.as_ref().and_then(Value::as_str) == Some(name));
             if replace {
                 let wrap = description.as_ref().and_then(|given| given.wrap);
                 description = Some(Description {
-                    text: Some(alias),
+                    text: Some(yaml_value(alias)),
                     wrap,
                 });
             }
@@ -277,27 +277,27 @@ impl Db {
             .is_none_or(|given| given.text.is_none())
         {
             description = Some(Description {
-                text: Some(name.to_owned()),
+                text: Some(Value::String(name.to_owned())),
                 wrap: None,
             });
         }
         if actor_type.is_none() {
             description = Some(Description {
-                text: Some(name.to_owned()),
+                text: Some(Value::String(name.to_owned())),
                 wrap: None,
             });
         }
         let given = description.unwrap_or(Description {
-            text: Some(name.to_owned()),
+            text: Some(Value::String(name.to_owned())),
             wrap: None,
         });
         let record = SequenceActor {
             id: id.to_owned(),
             name: name.to_owned(),
-            description: given.text.unwrap_or_default(),
+            description: given.text.unwrap_or(Value::Null),
             actor_type: actor_type
                 .take()
-                .unwrap_or_else(|| "participant".to_owned()),
+                .unwrap_or_else(|| Value::String("participant".to_owned())),
             wrap: given.wrap.unwrap_or_else(|| self.auto_wrap()),
             box_index: assigned_box,
             prev_actor: self.prev_actor.clone(),
@@ -467,7 +467,7 @@ impl Db {
 
 fn to_description(text: &MsgText) -> Description {
     Description {
-        text: Some(text.text.clone()),
+        text: Some(Value::String(text.text.clone())),
         wrap: text.wrap,
     }
 }
@@ -538,13 +538,20 @@ fn yaml_field<'y>(doc: &'y Option<Yaml>, key: &str) -> Option<&'y Yaml> {
     }
 }
 
-/// The string a scalar YAML value reads as in JavaScript, `None` for null and for collections.
-fn js_string(value: &Yaml) -> Option<String> {
+/// A YAML value as the DB's JSON-schema reader gives it: the same kind, with its scalar value.
+fn yaml_value(value: &Yaml) -> Value {
     match value {
-        Yaml::String(text) => Some(text.clone()),
-        Yaml::Number(number) => Some(number.to_string()),
-        Yaml::Bool(flag) => Some(flag.to_string()),
-        Yaml::Null | Yaml::Sequence(_) | Yaml::Mapping(_) => None,
+        Yaml::Null => Value::Null,
+        Yaml::Bool(flag) => Value::Bool(*flag),
+        Yaml::Number(number) => Value::Number(*number),
+        Yaml::String(text) => Value::String(text.clone()),
+        Yaml::Sequence(items) => Value::Array(items.iter().map(yaml_value).collect()),
+        Yaml::Mapping(pairs) => Value::Object(
+            pairs
+                .iter()
+                .map(|(key, value)| (key.clone(), yaml_value(value)))
+                .collect(),
+        ),
     }
 }
 

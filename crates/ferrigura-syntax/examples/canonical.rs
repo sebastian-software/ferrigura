@@ -33,22 +33,21 @@ fn flowchart_outcome(text: &str) -> Outcome {
     }
 }
 
-/// `autoWrap()` of the reference: the top-level `wrap` when a directive gives it, else the
-/// `sequence` section's `wrap`, else `false`.
+/// `autoWrap()` of the reference after `init` and `clear`: `init` copies a truthy top-level `wrap`
+/// into `sequence.wrap` (`sequenceDiagram.ts:21-23`), and `autoWrap` then reads `sequence.wrap`,
+/// else `false`. The top-level value only matters when it is `true`.
 fn sequence_wrap(text: &str) -> bool {
     let Ok(directive) = config::read(text) else {
         return false;
     };
     let resolved = effective(None, Some("sequence"), &directive);
-    match resolved.get("wrap") {
-        Some(Config::Bool(flag)) => *flag,
-        _ => matches!(
-            resolved
-                .get("sequence")
-                .and_then(|section| section.get("wrap")),
-            Some(Config::Bool(true))
-        ),
-    }
+    let top = matches!(resolved.get("wrap"), Some(Config::Bool(true)));
+    top || matches!(
+        resolved
+            .get("sequence")
+            .and_then(|section| section.get("wrap")),
+        Some(Config::Bool(true))
+    )
 }
 
 fn sequence_outcome(text: &str) -> Outcome {

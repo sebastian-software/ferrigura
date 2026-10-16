@@ -846,42 +846,73 @@ fn colour_function_end(text: &str) -> Option<usize> {
     None
 }
 
-/// Whether `value` is a colour that `CSS.supports('color', value)` accepts in Chromium: a CSS
-/// named colour or `transparent` or `currentcolor` (any case), or a colour function with three or
-/// four numeric arguments. See `docs-port/sequence/PLAN.md`, section 9.
+/// Whether `value` is a colour that `CSS.supports('color', value)` accepts in Chromium, as the
+/// port's rule has it (`tools/port/export-sequence.ts`, `cssSupports`): a CSS named colour, a
+/// `transparent`, `currentcolor` or CSS-wide keyword (any case, ASCII), or a colour function with
+/// numeric arguments. The CSS system colours are not in the rule. See `PLAN.md`, section 9.
 pub(crate) fn is_css_colour(value: &str) -> bool {
     let lower = value.to_ascii_lowercase();
-    if lower == "transparent" || lower == "currentcolor" || NAMED_COLOURS.contains(&lower.as_str())
-    {
-        return true;
-    }
-    let Some(open) = lower.find('(') else {
-        return false;
-    };
-    let name = &lower[..open];
-    if !matches!(name, "rgb" | "rgba" | "hsl" | "hsla") || !lower.ends_with(')') {
-        return false;
-    }
-    let inside = &lower[open + 1..lower.len() - 1];
-    let parts: Vec<&str> = inside
-        .split(|c: char| c == ',' || c == '/' || is_js_space(c))
-        .filter(|part| !part.is_empty())
-        .collect();
-    (parts.len() == 3 || parts.len() == 4) && parts.iter().all(|part| is_colour_number(part))
+    NAMED_COLOURS.contains(&lower.as_str())
+        || CSS_KEYWORDS.contains(&lower.as_str())
+        || colour_function().is_some_and(|pattern| pattern.is_match(&lower))
 }
 
-/// A number, optionally with `%` or an angle unit.
-fn is_colour_number(part: &str) -> bool {
-    let body = part
-        .strip_suffix('%')
-        .or_else(|| part.strip_suffix("deg"))
-        .unwrap_or(part);
-    let body = body.strip_prefix(['+', '-']).unwrap_or(body);
-    let digits = body.chars().filter(|c| c.is_ascii_digit()).count();
-    digits > 0
-        && body.chars().all(|c| c.is_ascii_digit() || c == '.')
-        && body.matches('.').count() <= 1
+/// The regular expression of the colour functions, compiled once. It is `None` only if the
+/// pattern is invalid, which the tests catch, so a missing pattern answers false.
+fn colour_function() -> Option<&'static regex::Regex> {
+    static PATTERN: std::sync::OnceLock<Option<regex::Regex>> = std::sync::OnceLock::new();
+    PATTERN
+        .get_or_init(|| regex::Regex::new(&colour_function_pattern()).ok())
+        .as_ref()
 }
+
+/// A CSS number, with an optional exponent (no trailing dot).
+const CSS_NUMBER: &str = r"[+-]?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:e[+-]?[0-9]+)?";
+
+/// The JavaScript `\s` as a character class, for the regular expression.
+const CSS_SPACE: &str = "[\\t\\n\\x0B\\x0C\\r \\x{A0}\\x{1680}\\x{2000}-\\x{200A}\\x{2028}\\x{2029}\\x{202F}\\x{205F}\\x{3000}\\x{FEFF}]";
+
+/// The functional colours: `rgb`/`rgba` and `hsl`/`hsla`, in the legacy comma form or the space
+/// form, with uniform argument kinds and an optional alpha. The expression is the one of
+/// `tools/port/export-sequence.ts`.
+fn colour_function_pattern() -> String {
+    let number = CSS_NUMBER;
+    let space = CSS_SPACE;
+    let percent = format!("{number}%");
+    let hue = format!("{number}(?:deg|grad|rad|turn)?");
+    let alpha = format!("(?:{number}|{percent})");
+    let comma = format!("{space}*,{space}*");
+    let blank = format!("{space}+");
+    let slash = format!("{space}*/{space}*");
+    let rgb = [
+        format!(
+            "(?:{number}{comma}{number}{comma}{number}|{percent}{comma}{percent}{comma}{percent})(?:{comma}{alpha})?"
+        ),
+        format!(
+            "(?:{number}{blank}{number}{blank}{number}|{percent}{blank}{percent}{blank}{percent})(?:{slash}{alpha})?"
+        ),
+    ];
+    let hsl = [
+        format!("{hue}{comma}{percent}{comma}{percent}(?:{comma}{alpha})?"),
+        format!("{hue}{blank}{percent}{blank}{percent}(?:{slash}{alpha})?"),
+    ];
+    format!(
+        "^(?:rgba?\\({space}*(?:{}){space}*\\)|hsla?\\({space}*(?:{}){space}*\\))$",
+        rgb.join("|"),
+        hsl.join("|"),
+    )
+}
+
+/// The CSS keywords that every property accepts, and `transparent` and `currentcolor`.
+const CSS_KEYWORDS: &[&str] = &[
+    "transparent",
+    "currentcolor",
+    "inherit",
+    "initial",
+    "unset",
+    "revert",
+    "revert-layer",
+];
 
 /// The CSS named colours (CSS Color Module Level 4), lower case.
 const NAMED_COLOURS: &[&str] = &[
@@ -1034,3 +1065,24 @@ const NAMED_COLOURS: &[&str] = &[
     "yellow",
     "yellowgreen",
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn colour_functions_follow_the_css_rule() {
+        assert!(
+            colour_function().is_some(),
+            "invalid pattern: {}",
+            colour_function_pattern()
+        );
+        assert!(is_css_colour("rgb(10, 20, 30)"));
+        assert!(is_css_colour("RGBA(1 2 3 / 50%)"));
+        assert!(is_css_colour("hsl(120deg, 100%, 50%)"));
+        assert!(is_css_colour("inherit"));
+        assert!(!is_css_colour("rgb(1%, 2, 3)"));
+        assert!(!is_css_colour("hsl(120, 100, 50)"));
+        assert!(!is_css_colour("Canvas"));
+    }
+}

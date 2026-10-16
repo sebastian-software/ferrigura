@@ -177,13 +177,15 @@ pub enum MessageText {
 pub struct SequenceActor {
     /// The id the messages refer to.
     pub id: String,
-    /// The name, which is the id unless an alias or a description replaced it.
+    /// The name: the id as written, always (an alias sets the description, not the name).
     pub name: String,
-    /// The description shown in the actor's box, the name when none was given.
-    pub description: String,
-    /// `participant`, `actor`, or the `type` of the metadata (`entity`, `database`, …).
+    /// The description shown in the actor's box: the alias or the text after `as`, else the name.
+    /// A string, unless an alias in the metadata is another YAML scalar, which the DB keeps.
+    pub description: Value,
+    /// `participant` or `actor`, or the `type` of the metadata as YAML gives it (`"database"`, or
+    /// a number such as `5`, which the DB keeps as it is).
     #[serde(rename = "type")]
-    pub actor_type: String,
+    pub actor_type: Value,
     /// Whether the label wraps.
     pub wrap: bool,
     /// Index into [`SequenceDiagram::boxes`] of the box the actor is in, `None` if none.
@@ -221,9 +223,10 @@ pub struct SequenceBox {
 pub struct SequenceMessage {
     /// The index of the item in the list, as a string.
     pub id: String,
-    /// The sending actor; `None` for control items and `autonumber`.
+    /// The sending actor. `None` for the block markers (`loop`, `alt`, …) and `autonumber`; set for
+    /// messages, notes, and the activation and central connection items, which name their actor.
     pub from: Option<String>,
-    /// The receiving actor; `None` for control items and `autonumber`.
+    /// The receiving actor. Set for messages and notes only.
     pub to: Option<String>,
     /// The text, or the numbering of an `autonumber` item.
     pub message: MessageText,

@@ -689,10 +689,16 @@ fn actor_run_len(rest: &str) -> usize {
 fn wrap_prefix_len(text: &str, colon: bool) -> Option<usize> {
     let skip = usize::from(colon && text.starts_with(':'));
     let rest = &text[skip..];
-    if rest.len() >= 7 && rest[..7].eq_ignore_ascii_case("nowrap:") {
+    if rest
+        .get(..7)
+        .is_some_and(|word| word.eq_ignore_ascii_case("nowrap:"))
+    {
         return Some(skip + 7);
     }
-    if rest.len() >= 5 && rest[..5].eq_ignore_ascii_case("wrap:") {
+    if rest
+        .get(..5)
+        .is_some_and(|word| word.eq_ignore_ascii_case("wrap:"))
+    {
         return Some(skip + 5);
     }
     None
