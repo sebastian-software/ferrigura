@@ -67,6 +67,7 @@
     "port:text-fixture": "tsx tools/port/text/chromium-fixture.ts",
     "port:geometry-pie": "tsx tools/port/geometry/pie-geometry.ts",
     "port:scope-pie": "tsx tools/port/geometry/pie-scope.ts",
+    "port:styles-flowchart": "tsx tools/port/flowchart-styles.ts",
     "prepare": "husky && pnpm build",
     "pre-commit": "lint-staged"
   },
