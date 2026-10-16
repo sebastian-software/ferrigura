@@ -15,7 +15,9 @@
 mod circle;
 mod collapsed_group;
 mod cylinder;
+mod decorated;
 mod intersect;
+mod person;
 mod polygon;
 mod rect;
 mod registry;
@@ -25,6 +27,7 @@ mod state;
 #[cfg(test)]
 mod test_support;
 mod util;
+mod wave;
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::value::Value;
@@ -107,6 +110,13 @@ pub enum Intersect {
         /// The cap's vertical radius.
         ry: f64,
     },
+    /// The tilted cylinder's own intersect (`tiltedCylinder.ts`): the box, then the cap on its side.
+    TiltedCylinder {
+        /// The cap's horizontal radius.
+        rx: f64,
+        /// The cap's vertical radius.
+        ry: f64,
+    },
 }
 
 impl Intersect {
@@ -120,6 +130,7 @@ impl Intersect {
             Self::Ellipse { rx, ry } => intersect::ellipse(node, *rx, *ry, point),
             Self::Polygon { points } => intersect::polygon(node, points, point),
             Self::Cylinder { rx, ry } => intersect::cylinder(node, *rx, *ry, point),
+            Self::TiltedCylinder { rx, ry } => intersect::tilted_cylinder(node, *rx, *ry, point),
         }
     }
 }
@@ -142,9 +153,12 @@ pub fn node_label(
     if !kind.draws_label() {
         return Ok(None);
     }
+    let default_width = config.flowchart.wrapping_width;
+    // The icon and image handlers set the node's width before they lay out the label: the icon
+    // size or the image's width, at least the wrapping width.
     let wrapping_width = width
         .or_else(|| node.width.filter(|width| *width != 0.0))
-        .unwrap_or(config.flowchart.wrapping_width);
+        .unwrap_or(default_width);
     // The label's own style declarations: the wrap sees them, as `createText` does for nodes.
     let styles = util::styles2string(node);
     let declarations: Vec<String> = styles
@@ -257,6 +271,22 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::StateEnd => state::state_end(input),
         Kind::Anchor => state::anchor(input),
         Kind::CollapsedGroup => collapsed_group::collapsed_group(input),
+        Kind::Person => person::person(input),
+        Kind::LightningBolt => polygon::lightning_bolt(input),
+        Kind::LinedCylinder => cylinder::lined_cylinder(input),
+        Kind::TiltedCylinder => cylinder::tilted_cylinder(input),
+        Kind::LinedWaveEdgedRect => wave::lined_wave_edged_rect(input),
+        Kind::WaveEdgedRectangle => wave::wave_edged_rectangle(input),
+        Kind::MultiWaveEdgedRectangle => wave::multi_wave_edged_rectangle(input),
+        Kind::TaggedWaveEdgedRectangle => wave::tagged_wave_edged_rectangle(input),
+        Kind::WaveRectangle => wave::wave_rectangle(input),
+        Kind::MultiRect => decorated::multi_rect(input),
+        Kind::ShadedProcess => decorated::shaded_process(input),
+        Kind::SlopedRect => decorated::sloped_rect(input),
+        Kind::TaggedRect => decorated::tagged_rect(input),
+        Kind::WindowPane => decorated::window_pane(input),
+        Kind::TrapezoidalPentagon => polygon::trapezoidal_pentagon(input),
+        Kind::Triangle => polygon::triangle(input),
     };
     // The node group's box is the shape's and the label's together. The label group's box is the
     // label's text box moved by the label's offset.

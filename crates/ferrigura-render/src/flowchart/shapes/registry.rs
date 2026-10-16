@@ -32,6 +32,22 @@ pub(super) enum Kind {
     Anchor,
     LabelRect,
     CollapsedGroup,
+    Person,
+    LightningBolt,
+    LinedCylinder,
+    LinedWaveEdgedRect,
+    MultiRect,
+    MultiWaveEdgedRectangle,
+    ShadedProcess,
+    SlopedRect,
+    TaggedRect,
+    TaggedWaveEdgedRectangle,
+    TiltedCylinder,
+    TrapezoidalPentagon,
+    Triangle,
+    WaveEdgedRectangle,
+    WaveRectangle,
+    WindowPane,
 }
 
 /// The shape a name stands for, with `rect` taken as `roundedRect` when it has both radii
@@ -71,6 +87,24 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "odd" | "rect_left_inv_arrow" => Kind::RectLeftInvArrow,
         "labelRect" => Kind::LabelRect,
         "collapsedGroup" => Kind::CollapsedGroup,
+        "person" => Kind::Person,
+        "bolt" | "com-link" | "lightning-bolt" => Kind::LightningBolt,
+        "lin-cyl" | "disk" | "lined-cylinder" => Kind::LinedCylinder,
+        "lin-doc" | "lined-document" => Kind::LinedWaveEdgedRect,
+        "st-rect" | "procs" | "processes" | "stacked-rectangle" => Kind::MultiRect,
+        "docs" | "documents" | "st-doc" | "stacked-document" => Kind::MultiWaveEdgedRectangle,
+        "lin-rect" | "lined-rectangle" | "lined-process" | "lin-proc" | "shaded-process" => {
+            Kind::ShadedProcess
+        }
+        "sl-rect" | "manual-input" | "sloped-rectangle" => Kind::SlopedRect,
+        "tag-rect" | "tagged-rectangle" | "tag-proc" | "tagged-process" => Kind::TaggedRect,
+        "tag-doc" | "tagged-document" => Kind::TaggedWaveEdgedRectangle,
+        "h-cyl" | "das" | "horizontal-cylinder" => Kind::TiltedCylinder,
+        "notch-pent" | "loop-limit" | "notched-pentagon" => Kind::TrapezoidalPentagon,
+        "tri" | "extract" | "triangle" => Kind::Triangle,
+        "doc" | "document" => Kind::WaveEdgedRectangle,
+        "flag" | "paper-tape" => Kind::WaveRectangle,
+        "win-pane" | "internal-storage" | "window-pane" => Kind::WindowPane,
         _ => return None,
     })
 }
@@ -87,7 +121,12 @@ impl Kind {
     pub(super) fn draws_label(self) -> bool {
         !matches!(
             self,
-            Self::FilledCircle | Self::ForkJoin | Self::Anchor | Self::StateStart | Self::StateEnd
+            Self::FilledCircle
+                | Self::ForkJoin
+                | Self::Anchor
+                | Self::StateStart
+                | Self::StateEnd
+                | Self::LightningBolt
         )
     }
 
