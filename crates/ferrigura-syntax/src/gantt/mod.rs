@@ -41,6 +41,26 @@ impl Default for Options {
     }
 }
 
+/// `isInvalidDate` of the reference's gantt DB for a model: whether the day that starts at `time`
+/// (epoch milliseconds, UTC) is excluded by its `includes`, `excludes`, `weekend` and `dateFormat`.
+/// The renderer's excluded ranges use it. The error is the reference's message for a format that
+/// its dayjs plugins cannot print.
+///
+/// # Errors
+///
+/// Returns the message when the model's date format uses a token that the reference cannot print.
+pub fn is_invalid_date(diagram: &GanttDiagram, time: f64) -> Result<bool, String> {
+    db::invalid_date(
+        &diagram.date_format,
+        &diagram.includes,
+        &diagram.excludes,
+        &diagram.weekend,
+        time,
+        0,
+    )
+    .map_err(|error| error.message)
+}
+
 /// Parses a gantt diagram with the system clock.
 pub fn parse(raw: &str) -> Result<GanttDiagram, ParseError> {
     parse_with(raw, Options::default())
