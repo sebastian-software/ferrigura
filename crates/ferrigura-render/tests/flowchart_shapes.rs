@@ -1,4 +1,4 @@
-//! The shapes of stage A against the reference, measured in Chromium (`tools/port/geometry/
+//! The shapes of stages A and C against the reference, measured in Chromium (`tools/port/geometry/
 //! shape-probe.ts`, stored in `tests/fixtures/flowchart-shapes.json`).
 //!
 //! Each case is a single-node flowchart. The reference's label box is fed to `draw` as the
@@ -262,6 +262,7 @@ fn path_points(d: &str) -> Vec<Point> {
                         target,
                         chunk[0],
                         chunk[1],
+                        chunk[2],
                         chunk[3] != 0.0,
                         chunk[4] != 0.0,
                     ));
@@ -277,37 +278,48 @@ fn path_points(d: &str) -> Vec<Point> {
     points
 }
 
-/// The points of an elliptical arc with no rotation, from `from` to `to`, sampled along its
-/// length (SVG's endpoint parameterisation, appendix F.6.5).
-fn arc_points(from: Point, to: Point, rx: f64, ry: f64, large: bool, sweep: bool) -> Vec<Point> {
+/// The points of an elliptical arc, rotated by `rotation` degrees, from `from` to `to`, sampled
+/// along its length (SVG's endpoint parameterisation, appendix F.6.5).
+fn arc_points(
+    from: Point,
+    to: Point,
+    rx: f64,
+    ry: f64,
+    rotation: f64,
+    large: bool,
+    sweep: bool,
+) -> Vec<Point> {
     let (mut rx, mut ry) = (rx.abs(), ry.abs());
+    let (sin, cos) = rotation.to_radians().sin_cos();
     let dx2 = (from.x - to.x) / 2.0;
     let dy2 = (from.y - to.y) / 2.0;
-    let lambda = dx2 * dx2 / (rx * rx) + dy2 * dy2 / (ry * ry);
+    let x1 = cos * dx2 + sin * dy2;
+    let y1 = -sin * dx2 + cos * dy2;
+    let lambda = x1 * x1 / (rx * rx) + y1 * y1 / (ry * ry);
     if lambda > 1.0 {
         rx *= lambda.sqrt();
         ry *= lambda.sqrt();
     }
-    let numerator = rx * rx * ry * ry - rx * rx * dy2 * dy2 - ry * ry * dx2 * dx2;
-    let denominator = rx * rx * dy2 * dy2 + ry * ry * dx2 * dx2;
+    let numerator = rx * rx * ry * ry - rx * rx * y1 * y1 - ry * ry * x1 * x1;
+    let denominator = rx * rx * y1 * y1 + ry * ry * x1 * x1;
     let sign = if large != sweep { 1.0 } else { -1.0 };
     let factor = sign * (numerator / denominator).max(0.0).sqrt();
-    let cxp = factor * rx * dy2 / ry;
-    let cyp = factor * -ry * dx2 / rx;
-    let cx = cxp + (from.x + to.x) / 2.0;
-    let cy = cyp + (from.y + to.y) / 2.0;
+    let cxp = factor * rx * y1 / ry;
+    let cyp = factor * -ry * x1 / rx;
+    let cx = cos * cxp - sin * cyp + (from.x + to.x) / 2.0;
+    let cy = sin * cxp + cos * cyp + (from.y + to.y) / 2.0;
     let angle = |ux: f64, uy: f64, vx: f64, vy: f64| {
         let sign = if ux * vy - uy * vx < 0.0 { -1.0 } else { 1.0 };
         let cos = ((ux * vx + uy * vy) / ((ux * ux + uy * uy).sqrt() * (vx * vx + vy * vy).sqrt()))
             .clamp(-1.0, 1.0);
         sign * cos.acos()
     };
-    let theta1 = angle(1.0, 0.0, (dx2 - cxp) / rx, (dy2 - cyp) / ry);
+    let theta1 = angle(1.0, 0.0, (x1 - cxp) / rx, (y1 - cyp) / ry);
     let mut delta = angle(
-        (dx2 - cxp) / rx,
-        (dy2 - cyp) / ry,
-        (-dx2 - cxp) / rx,
-        (-dy2 - cyp) / ry,
+        (x1 - cxp) / rx,
+        (y1 - cyp) / ry,
+        (-x1 - cxp) / rx,
+        (-y1 - cyp) / ry,
     );
     if !sweep && delta > 0.0 {
         delta -= 2.0 * PI;
@@ -317,7 +329,10 @@ fn arc_points(from: Point, to: Point, rx: f64, ry: f64, large: bool, sweep: bool
     (0..=256)
         .map(|step| {
             let theta = theta1 + delta * f64::from(step) / 256.0;
-            Point::new(cx + rx * theta.cos(), cy + ry * theta.sin())
+            Point::new(
+                cx + rx * cos * theta.cos() - ry * sin * theta.sin(),
+                cy + rx * sin * theta.cos() + ry * cos * theta.sin(),
+            )
         })
         .collect()
 }
@@ -351,6 +366,11 @@ fn outline_box(markup: &str) -> (String, BBox) {
                 let r = tag.number("r");
                 let (cx, cy) = (tag.number("cx"), tag.number("cy"));
                 boxes.push(BBox::new(cx - r, cy - r, 2.0 * r, 2.0 * r));
+            }
+            "ellipse" => {
+                let (rx, ry) = (tag.number("rx"), tag.number("ry"));
+                let (cx, cy) = (tag.number("cx"), tag.number("cy"));
+                boxes.push(BBox::new(cx - rx, cy - ry, 2.0 * rx, 2.0 * ry));
             }
             "line" => points.extend([
                 Point::new(tag.number("x1"), tag.number("y1")),
@@ -460,7 +480,7 @@ fn check(case: &serde_json::Value, shape: &ShapeOutput, deviation: &mut Deviatio
 }
 
 #[test]
-fn the_shapes_of_stage_a_match_the_reference_probe() {
+fn the_shapes_match_the_reference_probe() {
     let fixture: serde_json::Value = serde_json::from_str(FIXTURE).expect("the fixture is JSON");
     let cases = fixture["cases"].as_array().expect("the cases");
     assert!(!cases.is_empty(), "the fixture has cases");
