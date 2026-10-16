@@ -17,3 +17,5 @@ generated/
 packages/mermaid/src/docs/config/setup
 # Generated from elkjs output by crates/ferrigura-elk/tools/capture-corpus.ts
 crates/ferrigura-elk/tests/corpus/
+# Generated from the reference's capture by tools/port/geometry/flowchart-elk-fixtures.ts (one line each)
+crates/ferrigura-render/tests/data/
