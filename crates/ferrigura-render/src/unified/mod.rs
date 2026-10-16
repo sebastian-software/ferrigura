@@ -18,4 +18,5 @@ pub mod markdown;
 pub mod markers;
 pub mod palette;
 pub mod path;
+pub mod pipeline;
 pub mod shapes;

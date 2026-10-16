@@ -10,26 +10,21 @@
 pub mod data;
 pub mod style;
 
-use std::collections::HashMap;
-
-use ferrigura_elk::json::JsonNode;
 use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::flowchart::{FlowchartDiagram, LabelType};
-use ferrigura_model::value::Value;
+use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_text::{
     FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, text_box,
 };
 
 use crate::RenderError;
 use crate::a11y;
-use crate::pie::Themes;
 use crate::svg::{escape, number};
-use crate::unified::data::LayoutData;
+use crate::theme::Themes;
+use crate::unified::edges;
 use crate::unified::geom::BBox;
-use crate::unified::label::LabelLayout;
-use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
-use crate::unified::{clusters, edges, elk_apply, elk_build};
-use crate::variables::px;
+use crate::unified::pipeline::{self, Measured, cover};
+
+pub use crate::unified::pipeline::ElkStages;
 
 /// What the flowchart renderer draws.
 #[derive(Debug, Clone, Copy)]
@@ -45,131 +40,10 @@ pub struct FlowchartInput<'a> {
     pub id: &'a str,
 }
 
-/// The graph handed to ELK and the graph it returned, for the differential comparison with the
-/// reference's capture (`tools/port/geometry/flowchart-geometry.ts`).
-#[derive(Debug, Clone)]
-pub struct ElkStages {
-    /// The input of the layout.
-    pub input: JsonNode,
-    /// The output of the layout.
-    pub output: JsonNode,
-}
-
-/// The diagram after the measure step: the layout data with every size the layout needs, and
-/// what was drawn to measure it.
-struct Measured {
-    data: LayoutData,
-    /// The shape of every leaf node, by id.
-    shapes: HashMap<String, ShapeOutput>,
-    /// The label of every edge that has one, by edge id.
-    edge_labels: HashMap<String, LabelLayout>,
-}
-
-/// The theme variables that give the sizes and the presentation attributes.
-fn primary<'a>(themes: &Themes<'a>) -> &'a Value {
-    match *themes {
-        Themes::Single(variables) => variables,
-        Themes::Schemes { light, .. } => light,
-    }
-}
-
-/// The nearest `dir` of the node or one of its subgraphs, else the diagram's direction, as
-/// `resolveNodeDir` in `createGraph.ts` finds it.
-fn node_dir(data: &LayoutData, index: usize) -> Option<&str> {
-    let by_id: HashMap<&str, &data::Node> = data
-        .nodes
-        .iter()
-        .map(|node| (node.id.as_str(), node))
-        .collect();
-    let mut current = Some(&data.nodes[index]);
-    let mut seen = std::collections::HashSet::new();
-    while let Some(node) = current {
-        if let Some(dir) = node.dir.as_deref() {
-            return Some(dir);
-        }
-        let parent = node.parent_id.as_deref()?;
-        if !seen.insert(parent) {
-            break;
-        }
-        current = by_id.get(parent).copied();
-    }
-    Some(data.direction.as_str()).filter(|dir| !dir.is_empty())
-}
-
-/// `getData`, the edge render data, and the measure step of `createGraphWithElements`.
+/// `getData` and the measure step of the unified renderer.
 fn measure(input: &FlowchartInput<'_>) -> Result<Measured, RenderError> {
-    let theme = primary(&input.themes);
-    let mut data = data::get_data(input.diagram, input.config);
-    edges::prepare(&mut data, input.config);
-
-    let mut shapes = HashMap::new();
-    for index in 0..data.nodes.len() {
-        let node = &data.nodes[index];
-        if node.is_group {
-            // ELK sizes a subgraph from its title, measured unwrapped unless it is Markdown. The
-            // title's box is already a float32 value (`node_label`).
-            let width = (node.label_type != LabelType::Markdown).then_some(f64::INFINITY);
-            let size = shapes::node_label(node, input.config, theme, width)?
-                .map_or((0.0, 0.0), |label| (label.bbox.width, label.bbox.height));
-            data.nodes[index].label_bbox = Some(size);
-            continue;
-        }
-        let label = shapes::node_label(node, input.config, theme, None)?;
-        let shape = shapes::draw(&ShapeInput {
-            node,
-            label: label.as_ref(),
-            config: input.config,
-            theme,
-            dir: node_dir(&data, index),
-        })?;
-        let id = node.id.clone();
-        // `insertMeasuredNode` takes the node's size from the `getBBox` of its group (createGraph.ts
-        // 61-71, line 67), so it is a float32 value.
-        let bbox = shape.bbox.browser();
-        data.nodes[index].width = Some(bbox.width);
-        data.nodes[index].height = Some(bbox.height);
-        shapes.insert(id, shape);
-    }
-
-    let mut edge_labels = HashMap::new();
-    let font_size = px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE);
-    for edge in &mut data.edges {
-        if let Some(label) = edges::label_with_font_size(edge, font_size)? {
-            let (width, height) = edges::label_size(&label);
-            edge.width = Some(width);
-            edge.height = Some(height);
-            edge_labels.insert(edge.id.clone(), label);
-        }
-    }
-
-    Ok(Measured {
-        data,
-        shapes,
-        edge_labels,
-    })
-}
-
-/// Lays the measured diagram out with ELK and applies the result.
-fn lay_out(measured: &mut Measured, config: &MermaidConfig) -> Result<ElkStages, RenderError> {
-    let elk = elk_build::build(&measured.data, config);
-    let layout = ferrigura_elk::layout(&elk.graph, false)
-        .map_err(|error| RenderError::Layout(error.to_string()))?;
-    let intersects = measured
-        .shapes
-        .iter()
-        .map(|(id, shape)| (id.clone(), shape.intersect.clone()))
-        .collect();
-    elk_apply::apply(
-        &mut measured.data,
-        &layout.graph,
-        &elk.state,
-        &intersects,
-        config,
-    );
-    Ok(ElkStages {
-        input: elk.graph,
-        output: layout.graph,
-    })
+    let data = data::get_data(input.diagram, input.config);
+    pipeline::measure(data, input.config, input.themes.primary())
 }
 
 /// The graphs of the layout step, for the differential comparison.
@@ -179,7 +53,7 @@ fn lay_out(measured: &mut Measured, config: &MermaidConfig) -> Result<ElkStages,
 /// Returns an error if a bundled font cannot be read or the layout fails.
 pub fn elk_stages(input: &FlowchartInput<'_>) -> Result<ElkStages, RenderError> {
     let mut measured = measure(input)?;
-    lay_out(&mut measured, input.config)
+    pipeline::lay_out(&mut measured, input.config)
 }
 
 /// Renders a flowchart as an SVG document.
@@ -189,73 +63,12 @@ pub fn elk_stages(input: &FlowchartInput<'_>) -> Result<ElkStages, RenderError> 
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the layout fails.
 pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
     let mut measured = measure(input)?;
-    lay_out(&mut measured, input.config)?;
+    pipeline::lay_out(&mut measured, input.config)?;
     let config = input.config;
-    let theme = primary(&input.themes);
+    let theme = input.themes.primary();
     let id = input.id;
-    let data = &measured.data;
-
-    // Every box the painted elements cover, for the viewBox: what `getBBox` of the svg gives.
-    let mut bounds: Option<BBox> = None;
-    // Every text the diagram draws, to subset the fonts once for the whole diagram.
-    let mut labels: Vec<&LabelLayout> = Vec::new();
-
-    // The paint order of `paintLayoutData`: the clusters in the order `orderNodesForElkPaint` left,
-    // then the nodes as the measure step inserted them, then the edges and their labels.
-    let mut clusters = String::new();
-    let mut painted_clusters = Vec::new();
-    for node in data.nodes.iter().filter(|node| node.is_group) {
-        // `render` prefixes every node's DOM id with the diagram's id before the layout runs.
-        let prefixed = data::Node {
-            dom_id: format!("{id}-{}", node.dom_id),
-            ..node.clone()
-        };
-        let cluster = clusters::paint(&prefixed, config, theme)?;
-        // The frame of an empty subgraph has no height: an unrendered rect, which `getBBox` leaves out
-        // of the drawing's box. Its title is text and counts.
-        if !cluster.bbox.is_empty() {
-            cover(&mut bounds, cluster.bbox);
-        }
-        if !cluster.title_box.is_empty() {
-            cover(&mut bounds, cluster.title_box);
-        }
-        clusters.push_str(&cluster.svg);
-        painted_clusters.push(cluster);
-    }
-    labels.extend(
-        painted_clusters
-            .iter()
-            .filter_map(|cluster| cluster.label.as_ref()),
-    );
-
-    let mut nodes = String::new();
-    for node in data.nodes.iter().filter(|node| !node.is_group) {
-        let Some(shape) = measured.shapes.get(&node.id) else {
-            continue;
-        };
-        let (x, y) = (node.x.unwrap_or(0.0), node.y.unwrap_or(0.0));
-        cover(&mut bounds, shape.bbox.translate(x, y));
-        nodes.push_str(&shapes::node_svg(node, shape, id));
-        labels.extend(shape.label.as_ref());
-    }
-
-    let mut edge_paths = String::new();
-    // The markers in an edge's own colour, which the reference appends after the root group.
-    let mut coloured_markers = String::new();
-    for path in edges::paint_paths(&data.edges, id, config) {
-        cover(&mut bounds, path.bbox);
-        edge_paths.push_str(&path.svg);
-        coloured_markers.push_str(&path.markers);
-    }
-    let mut edge_labels = String::new();
-    for edge in &data.edges {
-        if let Some(label) = measured.edge_labels.get(&edge.id) {
-            let painted = edges::paint_label(edge, label, config);
-            cover(&mut bounds, painted.bbox);
-            edge_labels.push_str(&painted.svg);
-            labels.push(label);
-        }
-    }
+    let painted = pipeline::paint(&measured, id, config, theme)?;
+    let mut bounds = painted.bounds;
 
     // `insertTitle`: centred over everything drawn so far, `titleTopMargin` above the origin.
     let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
@@ -279,7 +92,10 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
         );
     }
 
-    let mut runs: Vec<Run<'_>> = labels.iter().flat_map(|label| label.text_runs()).collect();
+    let mut runs: Vec<Run<'_>> = painted
+        .all_labels()
+        .flat_map(|label| label.text_runs())
+        .collect();
     if !title.is_empty() {
         runs.push(Run {
             text: title,
@@ -311,24 +127,18 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
     let style =
         style::style_sheet_with_fonts(id, input.themes, config, &diagram.classes, &families);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}<g class=\"root\"><g class=\"clusters\">{clusters}</g><g class=\"edges edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g></g>{coloured_markers}</g>{title_svg}{defs}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
         x = number(drawn.x - padding),
         y = number(drawn.y - padding),
         w = number(view_width),
         h = number(view_height),
         markers = edges::markers(id, config),
+        root = painted.root,
+        coloured_markers = painted.coloured_markers,
         defs = style::look_defs(id, input.themes, config),
     ))
 }
-
-/// Adds a painted box to the boxes the viewBox covers.
-fn cover(bounds: &mut Option<BBox>, bbox: BBox) {
-    *bounds = Some(bounds.map_or(bbox, |all| all.union(bbox)));
-}
-
-/// The font size of labels when the theme has none.
-const DEFAULT_FONT_SIZE: f64 = 16.0;
 
 /// The font size of the title: `.flowchartTitleText` in the flowchart styles.
 const TITLE_FONT_SIZE: f64 = 18.0;
