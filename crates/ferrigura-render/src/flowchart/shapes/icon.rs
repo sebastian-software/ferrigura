@@ -560,9 +560,11 @@ mod tests {
     #[test]
     fn the_icon_size_is_the_larger_asset_side_or_forty_eight() {
         assert_eq!(icon_size(&Node::default()), 48.0);
-        let mut sized = Node::default();
-        sized.asset_width = Some(30.0);
-        sized.asset_height = Some(60.0);
+        let sized = Node {
+            asset_width: Some(30.0),
+            asset_height: Some(60.0),
+            ..Node::default()
+        };
         assert_eq!(icon_size(&sized), 60.0);
     }
 

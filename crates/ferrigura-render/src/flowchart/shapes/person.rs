@@ -26,7 +26,7 @@ pub(super) fn person(input: &ShapeInput<'_>) -> Part {
     let width = (label.bbox.width + padding * 2.0)
         .max(node.width.unwrap_or(0.0))
         .max(100.0);
-    let head_radius = (width * 0.23).max(HEAD_RADIUS_MIN).min(HEAD_RADIUS_MAX);
+    let head_radius = (width * 0.23).clamp(HEAD_RADIUS_MIN, HEAD_RADIUS_MAX);
     let overlap = head_radius * 0.27;
     let body_height = (label.bbox.height + padding * 2.0).max(
         node.height

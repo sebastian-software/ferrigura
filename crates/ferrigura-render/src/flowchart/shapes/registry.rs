@@ -127,7 +127,7 @@ pub(super) fn resolve(name: &str) -> Option<Kind> {
 
 impl Kind {
     /// Whether the shape draws a label. The shapes without one set the node's label to nothing
-    /// or ignore it (`filledCircle`, `forkJoin`, `anchor`, `stateStart`, `stateEnd`).
+    /// or ignore it (`filledCircle`, `forkJoin`, `anchor`, `stateStart`, `stateEnd`, `bolt`).
     pub(super) fn draws_label(self) -> bool {
         !matches!(
             self,
