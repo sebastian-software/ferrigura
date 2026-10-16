@@ -1,6 +1,6 @@
 [package]
 name = "ferrigura-model"
-description = "Diagram models and their canonical JSON form for ferrigura"
+description = "Diagram models, configuration and their canonical JSON form for ferrigura"
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
@@ -9,4 +9,10 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+regex = "1"
 serde.workspace = true
+serde_json.workspace = true
+
+[build-dependencies]
+serde_json.workspace = true
+serde_yaml_ng = "0.10"
