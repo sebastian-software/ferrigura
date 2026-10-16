@@ -24,6 +24,7 @@
  * fixture is compared with a fresh run and the script exits non-zero on a difference larger than
  * the tolerance.
  */
+// cspell:ignore Straße AVAV Ünïcödé wörds çedillas Pneumono
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -140,7 +141,7 @@ const TEXTS: string[] = [
   'Mm',
   'ÅÄÖ åäö',
   '&amp; &lt;',
-  "it&#39;s",
+  'it&#39;s',
 ];
 const SIZES = [10, 12, 12.5, 14, 16, 16.25, 20, 24, 32];
 const WEIGHTS = [300, 400, 600, 700];
@@ -498,13 +499,35 @@ interface Fixture {
   wraps: WrapResult[];
   breaks: BreakResult[];
   memo: {
-    dimensions: { first: Dimensions; second: Dimensions; inPage: Outcome<DimensionResult['lexica']['value']>; alone: Outcome<DimensionResult['lexica']['value']> }[];
-    wrap: { first: WrapRequest; second: WrapRequest; inPage: Outcome<string>; alone: Outcome<string> }[];
+    dimensions: {
+      first: Dimensions;
+      second: Dimensions;
+      inPage: Outcome<DimensionResult['lexica']['value']>;
+      alone: Outcome<DimensionResult['lexica']['value']>;
+    }[];
+    wrap: {
+      first: WrapRequest;
+      second: WrapRequest;
+      inPage: Outcome<string>;
+      alone: Outcome<string>;
+    }[];
   };
   drawing: Record<string, unknown>;
-  insertTitle: { title: string; margin: number; cssClass: string; bounds: unknown; markup: string }[];
+  insertTitle: {
+    title: string;
+    margin: number;
+    cssClass: string;
+    bounds: unknown;
+    markup: string;
+  }[];
   viewbox: { padding: number; useMaxWidth: boolean; bounds: unknown; markup: string }[];
-  sizes: { height: number; width: number; useMaxWidth: boolean; attributes: [string, string | number][]; markup: string }[];
+  sizes: {
+    height: number;
+    width: number;
+    useMaxWidth: boolean;
+    attributes: [string, string | number][];
+    markup: string;
+  }[];
   sanitize: { input: string; href: string | null }[];
   boxes: { text: string; fontSize: number; fontWeight: number; box: unknown }[];
 }
@@ -521,7 +544,13 @@ const DIMENSION_REQUESTS: Dimensions[] = TEXTS.flatMap((text) => [
 
 const WRAP_REQUESTS: WrapRequest[] = LABELS.flatMap((label) =>
   WRAP_WIDTHS.flatMap((maxWidth) =>
-    WRAP_SIZES.map((fontSize) => ({ label, maxWidth, fontSize, fontWeight: 400, joinWith: '<br/>' }))
+    WRAP_SIZES.map((fontSize) => ({
+      label,
+      maxWidth,
+      fontSize,
+      fontWeight: 400,
+      joinWith: '<br/>',
+    }))
   )
 );
 
@@ -600,7 +629,10 @@ async function measureAll(): Promise<Fixture> {
 
     // Memoisation: a second request with the same key as an earlier one returns the earlier result.
     const memoDimensions: Collision[] = [
-      { first: { text: 'a1', fontSize: 6, fontWeight: 400, fontFamily: FAMILY }, second: { text: 'a', fontSize: 16, fontWeight: 400, fontFamily: FAMILY } },
+      {
+        first: { text: 'a1', fontSize: 6, fontWeight: 400, fontFamily: FAMILY },
+        second: { text: 'a', fontSize: 16, fontWeight: 400, fontFamily: FAMILY },
+      },
     ];
     const memo: Fixture['memo'] = { dimensions: [], wrap: [] };
     for (const pair of memoDimensions) {
@@ -616,12 +648,20 @@ async function measureAll(): Promise<Fixture> {
           (window as unknown as { dimensions: (r: Dimensions[]) => unknown }).dimensions(requests),
         [pair.second]
       )) as DimensionResult[];
-      memo.dimensions.push({ first: pair.first, second: pair.second, inPage: results[1].lexica, alone: aloneResult.lexica });
+      memo.dimensions.push({
+        first: pair.first,
+        second: pair.second,
+        inPage: results[1].lexica,
+        alone: aloneResult.lexica,
+      });
       await inPage.close();
       await alone.close();
     }
     const memoWraps: { first: WrapRequest; second: WrapRequest }[] = [
-      { first: { label: 'ab', maxWidth: 120, fontSize: 16, fontWeight: 400, joinWith: '<br/>' }, second: { label: 'ab1', maxWidth: 20, fontSize: 16, fontWeight: 400, joinWith: '<br/>' } },
+      {
+        first: { label: 'ab', maxWidth: 120, fontSize: 16, fontWeight: 400, joinWith: '<br/>' },
+        second: { label: 'ab1', maxWidth: 20, fontSize: 16, fontWeight: 400, joinWith: '<br/>' },
+      },
     ];
     for (const pair of memoWraps) {
       const inPage = await openPage(browser, script);
@@ -658,7 +698,9 @@ async function measureAll(): Promise<Fixture> {
     for (const [title, margin, cssClass] of TITLE_CASES) {
       const result = (await drawingPage.evaluate(
         ([t, m, c]: [string, number, string]) =>
-          (window as unknown as { insertTitleCase: (a: string, b: number, c: string) => unknown }).insertTitleCase(t, m, c),
+          (
+            window as unknown as { insertTitleCase: (a: string, b: number, c: string) => unknown }
+          ).insertTitleCase(t, m, c),
         [title, margin, cssClass] as [string, number, string]
       )) as { bounds: unknown; markup: string };
       insertTitles.push({ title, margin, cssClass, ...result });
@@ -666,7 +708,10 @@ async function measureAll(): Promise<Fixture> {
     for (const [padding, useMaxWidth] of VIEWBOX_CASES) {
       const result = (await drawingPage.evaluate(
         ([p, u]: [number, boolean]) =>
-          (window as unknown as { viewboxCase: (a: number, b: boolean) => unknown }).viewboxCase(p, u),
+          (window as unknown as { viewboxCase: (a: number, b: boolean) => unknown }).viewboxCase(
+            p,
+            u
+          ),
         [padding, useMaxWidth] as [number, boolean]
       )) as { bounds: unknown; markup: string };
       viewbox.push({ padding, useMaxWidth, ...result });
@@ -674,14 +719,17 @@ async function measureAll(): Promise<Fixture> {
     for (const [height, width, useMaxWidth] of SIZE_CASES) {
       const result = (await drawingPage.evaluate(
         ([h, w, u]: [number, number, boolean]) =>
-          (window as unknown as { sizeCase: (a: number, b: number, c: boolean) => unknown }).sizeCase(h, w, u),
+          (
+            window as unknown as { sizeCase: (a: number, b: number, c: boolean) => unknown }
+          ).sizeCase(h, w, u),
         [height, width, useMaxWidth] as [number, number, boolean]
       )) as { attributes: [string, string | number][]; markup: string };
       sizes.push({ height, width, useMaxWidth, ...result });
     }
     for (const input of SANITIZE_INPUTS) {
       const href = (await drawingPage.evaluate(
-        (value: string) => (window as unknown as { sanitize: (v: string) => unknown }).sanitize(value),
+        (value: string) =>
+          (window as unknown as { sanitize: (v: string) => unknown }).sanitize(value),
         input
       )) as string | null;
       sanitize.push({ input, href });
@@ -691,7 +739,9 @@ async function measureAll(): Promise<Fixture> {
         for (const fontWeight of RAW_WEIGHTS) {
           const box = (await drawingPage.evaluate(
             ([value, size, weight]: [string, number, number]) =>
-              (window as unknown as { rawBox: (a: string, b: number, c: number) => unknown }).rawBox(value, size, weight),
+              (
+                window as unknown as { rawBox: (a: string, b: number, c: number) => unknown }
+              ).rawBox(value, size, weight),
             [text, fontSize, fontWeight] as [string, number, number]
           )) as unknown;
           boxes.push({ text, fontSize, fontWeight, box });
@@ -722,7 +772,8 @@ async function measureAll(): Promise<Fixture> {
 /** The differences between a fresh run and the committed fixture, as readable lines. */
 function compare(fresh: unknown, committed: unknown, where: string, problems: string[]): void {
   if (typeof fresh === 'number' && typeof committed === 'number') {
-    if (Math.abs(fresh - committed) > TOLERANCE) problems.push(`${where}: ${fresh} vs ${committed}`);
+    if (Math.abs(fresh - committed) > TOLERANCE)
+      problems.push(`${where}: ${fresh} vs ${committed}`);
     return;
   }
   if (Array.isArray(fresh) && Array.isArray(committed)) {
@@ -730,7 +781,9 @@ function compare(fresh: unknown, committed: unknown, where: string, problems: st
       problems.push(`${where}: ${fresh.length} entries vs ${committed.length}`);
       return;
     }
-    fresh.forEach((value, index) => compare(value, committed[index], `${where}[${index}]`, problems));
+    fresh.forEach((value, index) =>
+      compare(value, committed[index], `${where}[${index}]`, problems)
+    );
     return;
   }
   if (fresh && committed && typeof fresh === 'object' && typeof committed === 'object') {
@@ -745,7 +798,8 @@ function compare(fresh: unknown, committed: unknown, where: string, problems: st
     }
     return;
   }
-  if (fresh !== committed) problems.push(`${where}: ${JSON.stringify(fresh)} vs ${JSON.stringify(committed)}`);
+  if (fresh !== committed)
+    problems.push(`${where}: ${JSON.stringify(fresh)} vs ${JSON.stringify(committed)}`);
 }
 
 async function main(): Promise<void> {
@@ -765,7 +819,9 @@ async function main(): Promise<void> {
   }
   await writeFile(fixturePath, `${JSON.stringify(fresh, null, 2)}\n`);
   console.log(`wrote ${fixturePath}`);
-  console.log(`${fresh.dimensions.length} dimension requests, ${fresh.wraps.length} wraps, ${fresh.breaks.length} breaks`);
+  console.log(
+    `${fresh.dimensions.length} dimension requests, ${fresh.wraps.length} wraps, ${fresh.breaks.length} breaks`
+  );
 }
 
 await main();

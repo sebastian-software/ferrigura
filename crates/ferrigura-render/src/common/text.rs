@@ -136,15 +136,19 @@ pub fn split_line_breaks(text: &str) -> Vec<&str> {
     let mut start = 0;
     let mut index = 0;
     while index < bytes.len() {
-        if bytes[index] == b'<' {
-            if let Some(end) = line_break_end(text, index) {
+        let found = if bytes[index] == b'<' {
+            line_break_end(text, index)
+        } else {
+            None
+        };
+        match found {
+            Some(end) => {
                 parts.push(&text[start..index]);
                 start = end;
                 index = end;
-                continue;
             }
+            None => index += 1,
         }
-        index += 1;
     }
     parts.push(&text[start..]);
     parts
@@ -456,6 +460,7 @@ mod tests {
         assert_eq!(split_line_breaks("a<br/>"), ["a", ""]);
         assert_eq!(split_line_breaks("a<br/ >b"), ["a<br/ >b"]);
         assert_eq!(split_line_breaks("a<brb>c"), ["a<brb>c"]);
+        assert_eq!(split_line_breaks("abr>c"), ["abr>c"]);
     }
 
     #[test]
