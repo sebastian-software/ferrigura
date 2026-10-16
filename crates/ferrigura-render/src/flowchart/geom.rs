@@ -34,6 +34,47 @@ pub fn browser_f32(value: f64) -> f64 {
     f64::from(value as f32)
 }
 
+/// A coordinate of a path as the browser reads it from the `d` string: the number the reference
+/// writes (the shortest decimal that reads back as the same double), parsed the way Chromium's SVG
+/// parser parses it. See [`svg_number`].
+#[must_use]
+pub fn path_coordinate_f32(value: f64) -> f64 {
+    f64::from(svg_number(&value.to_string()))
+}
+
+/// Parses a decimal the way Chromium's SVG number parser does, for a decimal without an exponent.
+///
+/// The integer digits accumulate in single precision. The fraction digits accumulate in single
+/// precision too, each digit scaled by a single-precision power of ten that is itself multiplied by
+/// 0.1 at each digit, and the two parts are added in single precision. The result differs from the
+/// correctly rounded float32 of the decimal, by a fraction of a float32 ulp, on values near a tie
+/// between two float32 values, where the reference's border and tie tests are decided. The values
+/// it is checked against are in `svg_number_matches_chromium`.
+fn svg_number(text: &str) -> f32 {
+    let (negative, body) = match text.strip_prefix('-') {
+        Some(rest) => (true, rest),
+        None => (false, text),
+    };
+    let (integer, fraction) = body.split_once('.').unwrap_or((body, ""));
+    let mut whole = 0.0_f32;
+    for digit in integer.bytes() {
+        whole = ((f64::from(whole) * 10.0) as f32) + f32::from(digit - b'0');
+    }
+    let mut parts = 0.0_f32;
+    let mut scale = 1.0_f32;
+    for digit in fraction.bytes() {
+        scale = (f64::from(scale) * 0.1) as f32;
+        let term = (f64::from(digit - b'0') * f64::from(scale)) as f32;
+        parts = (f64::from(parts) + f64::from(term)) as f32;
+    }
+    let value = if fraction.is_empty() {
+        whole
+    } else {
+        (f64::from(whole) + f64::from(parts)) as f32
+    };
+    if negative { -value } else { value }
+}
+
 /// A box by its top-left corner and its size, as `getBBox` returns it.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct BBox {
@@ -116,8 +157,13 @@ impl BBox {
     }
 
     /// The smallest box that holds the points, or `None` for no points.
+    ///
+    /// The points are the coordinates the reference writes into a path's `d`, so each is taken as
+    /// the browser parses it ([`path_coordinate_f32`]) before the box is measured.
     pub fn from_points(points: impl IntoIterator<Item = Point>) -> Option<Self> {
-        let mut points = points.into_iter();
+        let mut points = points
+            .into_iter()
+            .map(|point| Point::new(path_coordinate_f32(point.x), path_coordinate_f32(point.y)));
         let first = points.next()?;
         let (mut left, mut top, mut right, mut bottom) = (first.x, first.y, first.x, first.y);
         for point in points {
@@ -171,6 +217,46 @@ mod tests {
     fn the_union_holds_both_boxes() {
         let union = BBox::new(0.0, 0.0, 10.0, 10.0).union(BBox::new(-5.0, 5.0, 10.0, 20.0));
         assert_eq!(union, BBox::new(-5.0, 0.0, 15.0, 25.0));
+    }
+
+    /// `svg_number` against Chromium: the `getBBox` height of `M0 0 L0 <text>`, measured in Chromium
+    /// for each text, so that the float32 each text becomes is the browser's.
+    #[test]
+    fn svg_number_matches_chromium() {
+        let measured: &[(&str, f32)] = &[
+            ("32.3999996185304", 32.4_f32),
+            ("81.80000000000035", 81.8_f32),
+            ("17.949999809265236", 17.95_f32),
+            ("36.50000000000039", 36.5_f32),
+            ("71.79999923706059", 71.799995_f32),
+            ("14.00000000000003", 14.0_f32),
+            ("107.7000045776366", 107.700005_f32),
+            ("71.79999923706045", 71.799995_f32),
+            ("35.899999618530025", 35.899998_f32),
+            ("88.19999999999966", 88.2_f32),
+            ("32.39999961853032", 32.4_f32),
+            ("29.399999618530302", 29.4_f32),
+            ("71.79999923706049", 71.799995_f32),
+            ("81.80000000000025", 81.8_f32),
+            ("88.19999999999962", 88.2_f32),
+            ("71.79999923706066", 71.799995_f32),
+            ("44.79999923706067", 44.8_f32),
+            ("182.40000915527307", 182.40001_f32),
+            ("32.39999961853027", 32.4_f32),
+            ("182.40000915527312", 182.40001_f32),
+            ("81.79999999999973", 81.8_f32),
+            ("44.79999923706052", 44.8_f32),
+            ("107.70000457763668", 107.700005_f32),
+            ("139.3637778884582", 139.36378_f32),
+            ("17.949999809264735", 17.95_f32),
+            ("35.89999961853027", 35.899998_f32),
+            ("44.79999923706055", 44.8_f32),
+            ("47.79999923706055", 47.8_f32),
+            ("71.79999923706055", 71.799995_f32),
+        ];
+        for &(text, expected) in measured {
+            assert_eq!(svg_number(text), expected, "{text}");
+        }
     }
 
     #[test]
