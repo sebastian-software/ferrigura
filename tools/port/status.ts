@@ -12,15 +12,25 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const statusPath = `${root}docs-port/STATUS.md`;
 
-/** The ported suites of each diagram type, as file names in `crates/ferrigura-syntax/tests/`. */
+/**
+ * The ported suites of each diagram type, as file names in `crates/ferrigura-syntax/tests/`, or in
+ * `crates/ferrigura-render/tests/` with the prefix `render:` (the specs of the layout data and the
+ * renderer).
+ */
 const suites: Record<string, string[]> = {
   pie: ['pie_spec', 'pie_grammar'],
-  timeline: ['timeline_spec', 'timeline_grammar'],
+  timeline: ['timeline_spec', 'timeline_grammar', 'render:timeline_render'],
   info: ['info_spec', 'info_grammar'],
   journey: ['journey_spec', 'journey_db_spec'],
-  er: ['er_spec', 'er_subgraph_spec', 'er_db_spec', 'er_characters_spec'],
-  gantt: ['gantt_parser_spec', 'gantt_db_spec'],
-  gitgraph: ['git_graph_spec', 'git_graph_parser', 'git_graph_populate', 'git_graph_render'],
+  er: [
+    'er_spec',
+    'er_subgraph_spec',
+    'er_db_spec',
+    'er_characters_spec',
+    'render:er_get_data_spec',
+  ],
+  gantt: ['gantt_parser_spec', 'gantt_db_spec', 'render:gantt_render_spec'],
+  gitgraph: ['git_graph_spec', 'git_graph_parser', 'git_graph_populate'],
   class: [
     'class_parser_spec',
     'class_definition_spec',
@@ -28,9 +38,9 @@ const suites: Record<string, string[]> = {
     'class_relationships_spec',
     'class_labels_spec',
     'class_styles_spec',
-    'class_types_spec',
-    'class_color_index_spec',
     'class_brackets_comments_clicks_annotations_spec',
+    'render:class_db_get_data_spec',
+    'render:class_types_display_spec',
   ],
   flowchart: [
     'flowchart_singlenode_spec',
@@ -49,13 +59,22 @@ const suites: Record<string, string[]> = {
     'flowchart_node_data_spec',
     'flowchart_db_spec',
     'flowchart_huge_spec',
+    'render:flowchart_arrow_types_spec',
+    'render:flowchart_db_get_data_spec',
+    'render:flowchart_edge_marker_spec',
+    'render:flowchart_edges_spec',
+    'render:flowchart_line_jump_integration_spec',
+    'render:flowchart_line_jump_spec',
+    'render:flowchart_markers_spec',
+    'render:flowchart_node_data_get_data_spec',
+    'render:flowchart_subgraph_get_data_spec',
   ],
   sequence: [
     'sequence_parse_spec',
     'sequence_statements_spec',
     'sequence_db_spec',
     'sequence_keyword_actors_spec',
-    'sequence_render_spec',
+    'render:sequence_render_spec',
   ],
   state: [
     'state_parser_spec',
@@ -63,10 +82,10 @@ const suites: Record<string, string[]> = {
     'state_style_spec',
     'state_diagram_v2_spec',
     'state_diagram_spec',
-    'state_color_index_spec',
-    'state_note_edge_spec',
-    'state_note_node_spec',
     'state_renderer_spec',
+    'render:state_data_color_index_spec',
+    'render:state_data_note_spec',
+    'render:state_data_style_spec',
   ],
 };
 
@@ -78,7 +97,10 @@ interface Counts {
 
 function countSuite(suite: string): Counts {
   // Cargo's own summary counts the tests that the macros generate, which a textual count misses.
-  const run = spawnSync('cargo', ['test', '--quiet', '-p', 'ferrigura-syntax', '--test', suite], {
+  const [crate, name] = suite.startsWith('render:')
+    ? ['ferrigura-render', suite.slice('render:'.length)]
+    : ['ferrigura-syntax', suite];
+  const run = spawnSync('cargo', ['test', '--quiet', '-p', crate, '--test', name], {
     cwd: root,
     encoding: 'utf8',
   });
