@@ -132,6 +132,7 @@ const measure = (svg) => {
       text: null,
       length: null,
       samples: null,
+      jumps: null,
     };
     if (tag === 'g') {
       entry.transform = element.getAttribute('transform');
@@ -147,11 +148,24 @@ const measure = (svg) => {
       if (matrix) {
         try {
           const samples = [];
+          const jumps = [];
           for (let index = 0; index <= ${PATH_SAMPLES}; index++) {
-            const point = element.getPointAtLength((total * index) / ${PATH_SAMPLES});
+            const at = (total * index) / ${PATH_SAMPLES};
+            const point = element.getPointAtLength(at);
             samples.push(mapPoint(svg, matrix, point.x, point.y));
+            // A sample on a jump between two sub-paths (a move to another point) takes either end
+            // depending on the last bits of the lengths before it: both ends are recorded.
+            const before = element.getPointAtLength(Math.max(0, at - 0.001));
+            const after = element.getPointAtLength(Math.min(total, at + 0.001));
+            const jump = Math.hypot(after.x - before.x, after.y - before.y) > 0.01;
+            jumps.push(
+              jump
+                ? [mapPoint(svg, matrix, before.x, before.y), mapPoint(svg, matrix, after.x, after.y)]
+                : null
+            );
           }
           entry.samples = samples;
+          entry.jumps = jumps;
         } catch {
           // A path without segments has no points to sample: it stays without samples.
           entry.samples = null;

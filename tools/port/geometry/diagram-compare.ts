@@ -40,6 +40,11 @@ export interface ElementGeometry {
   /** A path: its length and its samples along it, in viewBox units. */
   length: number | null;
   samples: Point[] | null;
+  /**
+   * Per sample, the two ends when the sample falls on a jump between two sub-paths (a move), where
+   * the point the browser returns depends on the last bits of the lengths before it; else null.
+   */
+  jumps: (Point[] | null)[] | null;
 }
 
 /** What the page measures of one SVG. */
@@ -57,6 +62,11 @@ export interface Comparison {
   /** The largest difference as a fraction of the tolerance, or null when nothing was compared. */
   worst: number | null;
   problems: string[];
+}
+
+/** Whether two points are within the tolerance on both axes. */
+function near(a: Point, b: Point): boolean {
+  return Math.abs(a.x - b.x) <= PIXEL_TOLERANCE && Math.abs(a.y - b.y) <= PIXEL_TOLERANCE;
 }
 
 /** Collects the numeric and exact differences and the worst one, as a fraction of tolerance. */
@@ -137,9 +147,17 @@ function compareElement(
     if (expected.samples === null || actual.samples === null) {
       checker.problems.push(`${key} samples: missing on one side`);
     } else {
-      expected.samples.forEach((point, index) =>
-        checker.point(actual.samples?.[index] ?? null, point, `${key} sample ${index}`)
-      );
+      expected.samples.forEach((point, index) => {
+        const sample = actual.samples?.[index] ?? null;
+        // On a jump, a sample matches when any end on one side meets any end on the other.
+        const expectedEnds = [point, ...(expected.jumps?.[index] ?? [])];
+        const actualEnds = sample === null ? [] : [sample, ...(actual.jumps?.[index] ?? [])];
+        const onJump = expectedEnds.length > 1 || actualEnds.length > 1;
+        if (onJump && actualEnds.some((end) => expectedEnds.some((other) => near(end, other)))) {
+          return;
+        }
+        checker.point(sample, point, `${key} sample ${index}`);
+      });
     }
   }
 }
