@@ -279,10 +279,9 @@ pub fn melk_default_value(spec: &OptionSpec) -> Option<OptionValue> {
 
 /// `EnumSet` text: `[A, B]` or `A, B`, names trimmed, empty names dropped.
 fn enum_set_names(text: &str) -> Vec<String> {
-    let trimmed = text.trim().trim_start_matches('[').trim_end_matches(']');
-    trimmed
-        .split(',')
-        .map(str::trim)
+    // `enumSetForStringArray`: `split("[\\[\\]\\s,]+")`, so brackets, whitespace and commas all
+    // separate names, and the empty components are skipped.
+    text.split(|c: char| c == '[' || c == ']' || c == ',' || c.is_whitespace())
         .filter(|name| !name.is_empty())
         .map(str::to_string)
         .collect()

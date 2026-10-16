@@ -4,8 +4,8 @@
 //!
 //! The layered graph from the ELK graph: `ElkGraphImporter` and `ElkGraphTransformer.importGraph`.
 //!
-//! Graphs of plain nodes and edges between them, self loops included. Ports and labels on nodes
-//! and nested graphs are reported as unsupported.
+//! Graphs of plain nodes, with their inside labels, and edges between them, self loops included.
+//! Ports on nodes and nested graphs are reported as unsupported.
 
 use std::collections::HashMap;
 
@@ -14,11 +14,13 @@ use crate::core::data::enums::{
     ComponentOrderingStrategy, EdgeLabelPlacement, GraphProperties, OrderingStrategy,
     PortConstraints,
 };
+use crate::core::data::property::PropertyHolder;
 use crate::core::math::KVector;
 use crate::error::LayoutError;
 use crate::graph::{ElkEdge, ElkNode};
 use crate::layered::graph_util::create_port;
 use crate::layered::lgraph::{LEdge, LGraph, LLabel, LNode, LabelId, PortType};
+use crate::layered::nodespacing;
 use crate::layered::options;
 use crate::layered::spacings::{SPACING_BASE_VALUE, apply_base_value};
 
@@ -38,6 +40,15 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
             ));
         }
     };
+    // `createLGraph`: the padding also leaves room for the root's own inside labels. Without labels
+    // that room is zero, so the node spacing code is not asked.
+    if !root.labels.is_empty() {
+        let label_padding = nodespacing::inside_label_padding(&label_probe(root, None), 0, true)?;
+        graph.padding.top += label_padding.top;
+        graph.padding.left += label_padding.left;
+        graph.padding.bottom += label_padding.bottom;
+        graph.padding.right += label_padding.right;
+    }
     let needs_model_order = needs_model_order_based_on_parent(root);
     let mut model_order = 0;
     for child in &root.children {
@@ -47,11 +58,8 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
                 child.id
             )));
         }
-        if !child.ports.is_empty() || !child.labels.is_empty() {
-            return Err(LayoutError::Unsupported(format!(
-                "ports or labels on {}",
-                child.id
-            )));
+        if !child.ports.is_empty() {
+            return Err(LayoutError::Unsupported(format!("ports on {}", child.id)));
         }
         // `needsModelOrder(child)`: the parent asks for the input order, and the child does not opt out.
         let ordered = needs_model_order
@@ -80,15 +88,23 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
                     .insert(GraphProperties::NON_FREE_PORTS);
             }
         }
+        let labels = import_node_labels(child, &mut graph);
+        // `LNode.getDesignation()`: the first label's text when there is one, else the ids of the
+        // ELK node and its parent.
+        let designation = match labels.first() {
+            Some(&first) => graph.labels[first].text.clone(),
+            None => format!("{}.{}", root.id, child.id),
+        };
         graph.nodes.push(LNode {
             id: child.id.clone(),
-            designation: format!("{}.{}", root.id, child.id),
+            designation,
             properties,
             size: KVector {
                 x: child.shape.width,
                 y: child.shape.height,
             },
             model_order: node_model_order,
+            labels,
             ..LNode::default()
         });
     }
@@ -101,6 +117,72 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
     }
     import_edges(root, &mut graph, needs_model_order)?;
     Ok(graph)
+}
+
+/// `transformNode`'s labels: those with text and laid out, each with its origin, the index among the
+/// ELK node's labels, so the position can be written back to the right label.
+fn import_node_labels(node: &ElkNode, graph: &mut LGraph) -> Vec<LabelId> {
+    let mut labels = Vec::new();
+    for (index, label) in node.labels.iter().enumerate() {
+        let text = label.text.clone().unwrap_or_default();
+        if text.is_empty() || label.properties.bool_of(options::NO_LAYOUT) {
+            continue;
+        }
+        let id = graph.add_label(LLabel {
+            text,
+            size: KVector {
+                x: label.shape.width,
+                y: label.shape.height,
+            },
+            position: KVector {
+                x: label.shape.x,
+                y: label.shape.y,
+            },
+            properties: label.properties.clone(),
+            end_label_edge: None,
+            origin: Some(index),
+        });
+        labels.push(id);
+    }
+    labels
+}
+
+/// The graph a node's inside labels are measured in: the node alone, with all of its labels (the
+/// Java's ELK node adapter gives every label, even one without text), and the properties of its
+/// parent, which is where the Java reads the spacings (none for a root).
+fn label_probe(node: &ElkNode, parent: Option<&PropertyHolder>) -> LGraph {
+    let mut probe = LGraph {
+        properties: parent.cloned().unwrap_or_default(),
+        ..LGraph::default()
+    };
+    let mut labels = Vec::new();
+    for label in &node.labels {
+        labels.push(probe.add_label(LLabel {
+            text: label.text.clone().unwrap_or_default(),
+            size: KVector {
+                x: label.shape.width,
+                y: label.shape.height,
+            },
+            position: KVector {
+                x: label.shape.x,
+                y: label.shape.y,
+            },
+            properties: label.properties.clone(),
+            end_label_edge: None,
+            origin: None,
+        }));
+    }
+    probe.nodes.push(LNode {
+        id: node.id.clone(),
+        properties: node.properties.clone(),
+        size: KVector {
+            x: node.shape.width,
+            y: node.shape.height,
+        },
+        labels,
+        ..LNode::default()
+    });
+    probe
 }
 
 /// `importFlatGraph` for the root's edges: each edge gets a port of its own on its source and

@@ -10,11 +10,11 @@
 //! refer to each other by [`CellId`]: the Java shares a cell between its container and the node
 //! context, which plain Rust references cannot express.
 //!
-//! Left out, because only label placement or size constraints reach them: `LabelCell` (the
-//! reduced path has no labels, so no label cell is made), the contribution flags that
-//! `CellSystemConfigurator` sets for size constraints (kept, and always false here), the
-//! minimum size of a grid's center cell (set only for `MINIMUM_SIZE`), and the grid's center
-//! rectangle (read only by `COMPUTE_PADDING`).
+//! `LabelCell` holds the node labels of one inside location. Its labels are not in the arena: the
+//! caller keeps them, and passes their sizes to [`CellSystem::label_positions`]. Left out, because
+//! only outside labels, port labels or the options they need reach them: the outside containers,
+//! the minimum size of a grid's center cell (set only for `MINIMUM_SIZE_ACCOUNTS_FOR_PADDING`) and
+//! the grid's center rectangle (read only by `COMPUTE_PADDING`).
 //!
 //! The arithmetic keeps the Java operand order. All values are `double` in Java, so `f64`.
 
@@ -124,11 +124,37 @@ impl Axis {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct CellId(usize);
 
+/// `HorizontalLabelAlignment`: where a label cell puts its labels across its width.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum HorizontalAlignment {
+    Left,
+    Center,
+    Right,
+}
+
+/// `VerticalLabelAlignment`: where a label cell puts its labels along its height.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum VerticalAlignment {
+    Top,
+    Center,
+    Bottom,
+}
+
 /// What a cell is, with the references to its children.
 #[derive(Debug, Clone, Copy)]
 enum Kind {
     /// `AtomicCell`: content of a minimum size, which the padding surrounds.
     Atomic { min_content: KVector },
+    /// `LabelCell`: the labels added so far, as one minimum content area. `count` is the number of
+    /// labels, which decides where the gap goes.
+    Label {
+        horizontal_layout: bool,
+        gap: f64,
+        horizontal: HorizontalAlignment,
+        vertical: VerticalAlignment,
+        min_content: KVector,
+        count: usize,
+    },
     /// `StripContainerCell`, with its children at begin, center and end.
     Strip {
         strip: Strip,
@@ -233,6 +259,132 @@ impl CellSystem {
         }
     }
 
+    /// `GridContainerCell.setCell(row, column, cell)`.
+    pub fn set_grid_cell(&mut self, grid: CellId, row: Area, column: Area, child: CellId) {
+        match &mut self.cells[grid.0].kind {
+            Kind::Grid { cells, .. } => cells[row.index()][column.index()] = Some(child),
+            _ => unreachable!("set_grid_cell on a cell that is not a grid"),
+        }
+    }
+
+    /// `new LabelCell(gap, location, horizontalLayoutMode)`: a label cell without labels, with the
+    /// alignments of its location.
+    pub fn label(
+        &mut self,
+        gap: f64,
+        horizontal_layout: bool,
+        horizontal: HorizontalAlignment,
+        vertical: VerticalAlignment,
+    ) -> CellId {
+        self.add(Kind::Label {
+            horizontal_layout,
+            gap,
+            horizontal,
+            vertical,
+            min_content: KVector::default(),
+            count: 0,
+        })
+    }
+
+    /// `LabelCell.addLabel(label)`, given the size of the label: the minimum content area grows
+    /// along the stacking direction, and by the gap between two labels.
+    pub fn add_label(&mut self, cell: CellId, size: KVector) {
+        let Kind::Label {
+            horizontal_layout,
+            gap,
+            min_content,
+            count,
+            ..
+        } = &mut self.cells[cell.0].kind
+        else {
+            unreachable!("add_label on a cell that is not a label cell");
+        };
+        *count += 1;
+        if *horizontal_layout {
+            min_content.x = java_max(min_content.x, size.x);
+            min_content.y += size.y;
+            if *count > 1 {
+                min_content.y += *gap;
+            }
+        } else {
+            min_content.x += size.x;
+            min_content.y = java_max(min_content.y, size.y);
+            if *count > 1 {
+                min_content.x += *gap;
+            }
+        }
+    }
+
+    /// `Cell.setContributesToMinimumWidth` and `setContributesToMinimumHeight`.
+    pub fn set_contributes(&mut self, cell: CellId, width: bool, height: bool) {
+        let entry = &mut self.cells[cell.0];
+        if width {
+            entry.contributes_to_min_width = true;
+        }
+        if height {
+            entry.contributes_to_min_height = true;
+        }
+    }
+
+    /// `LabelCell.applyLabelLayout()` as positions: the top left corner of each label, relative to
+    /// the cell's rectangle, in the order the labels were added. `sizes` are the labels' sizes in
+    /// that order.
+    pub fn label_positions(&self, cell: CellId, sizes: &[KVector]) -> Vec<KVector> {
+        let entry = &self.cells[cell.0];
+        let Kind::Label {
+            horizontal_layout,
+            gap,
+            horizontal,
+            vertical,
+            min_content,
+            ..
+        } = entry.kind
+        else {
+            return Vec::new();
+        };
+        let rect = entry.rect;
+        let padding = entry.padding;
+        let mut positions = Vec::with_capacity(sizes.len());
+        if horizontal_layout {
+            let mut y = rect.y;
+            match vertical {
+                VerticalAlignment::Top => {}
+                VerticalAlignment::Center => y += (rect.height - min_content.y) / 2.0,
+                VerticalAlignment::Bottom => y += rect.height - min_content.y,
+            }
+            for size in sizes {
+                let x = match horizontal {
+                    HorizontalAlignment::Left => rect.x + padding.left,
+                    HorizontalAlignment::Center => {
+                        rect.x + padding.left + (rect.width - size.x) / 2.0
+                    }
+                    HorizontalAlignment::Right => rect.x + rect.width - padding.right - size.x,
+                };
+                positions.push(KVector { x, y });
+                y += size.y + gap;
+            }
+        } else {
+            let mut x = rect.x;
+            match horizontal {
+                HorizontalAlignment::Left => {}
+                HorizontalAlignment::Center => x += (rect.width - min_content.x) / 2.0,
+                HorizontalAlignment::Right => x += rect.width - min_content.x,
+            }
+            for size in sizes {
+                let y = match vertical {
+                    VerticalAlignment::Top => rect.y + padding.top,
+                    VerticalAlignment::Center => {
+                        rect.y + padding.top + (rect.height - size.y) / 2.0
+                    }
+                    VerticalAlignment::Bottom => rect.y + rect.height - padding.bottom - size.y,
+                };
+                positions.push(KVector { x, y });
+                x += size.x + gap;
+            }
+        }
+        positions
+    }
+
     pub fn padding(&self, cell: CellId) -> Spacing {
         self.cells[cell.0].padding
     }
@@ -270,6 +422,19 @@ impl CellSystem {
         self.min_extent(cell, Axis::Y)
     }
 
+    /// `Cell.getMinimumWidth()`.
+    pub fn min_width(&self, cell: CellId) -> f64 {
+        self.min_extent(cell, Axis::X)
+    }
+
+    /// `GridContainerCell.getCell(row, column)`: the child at that position, if there is one.
+    pub fn grid_cell(&self, grid: CellId, row: Area, column: Area) -> Option<CellId> {
+        match self.cells[grid.0].kind {
+            Kind::Grid { cells, .. } => cells[row.index()][column.index()],
+            _ => None,
+        }
+    }
+
     /// `Cell.getMinimumWidth()` or `getMinimumHeight()`: the content plus the padding, or zero for
     /// a container that holds nothing.
     fn min_extent(&self, cell: CellId, axis: Axis) -> f64 {
@@ -278,6 +443,11 @@ impl CellSystem {
         let end = axis.end(&entry.padding);
         let value = match entry.kind {
             Kind::Atomic { min_content } => {
+                return axis.content(&min_content) + start + end;
+            }
+            // `LabelCell.getMinimumWidth` and `getMinimumHeight`: the content and the padding, with
+            // no zero case.
+            Kind::Label { min_content, .. } => {
                 return axis.content(&min_content) + start + end;
             }
             Kind::Strip {
@@ -433,7 +603,7 @@ impl CellSystem {
         let rect = entry.rect;
         let padding = entry.padding;
         match entry.kind {
-            Kind::Atomic { .. } => {}
+            Kind::Atomic { .. } | Kind::Label { .. } => {}
             Kind::Strip {
                 strip,
                 symmetrical,

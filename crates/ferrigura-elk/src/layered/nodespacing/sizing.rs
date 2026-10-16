@@ -13,38 +13,52 @@
 //! take the free branch of every Java switch on the constraints. FIXED_POS has its own branches,
 //! which are ported here. FIXED_RATIO is rejected in `NodeContext::new`.
 //!
-//! The phases follow the Java. Some steps do nothing on this path and are left out, with a note
-//! where they are: the minimum client area (no MINIMUM_SIZE), the padding for ports with a border
-//! offset (no port carries one), the port label steps (no labels), the cell system's contribution
-//! flags (no size constraints), `LabelPlacer` (its only effect is on label cells and on the
-//! outside containers, which are not made) and the node padding (COMPUTE_PADDING is rejected).
+//! The phases follow the Java. The steps that need port labels, the minimum client area and the
+//! node padding are left out: they do nothing without port labels, MINIMUM_SIZE_ACCOUNTS_FOR_PADDING
+//! and COMPUTE_PADDING, which [`NodeContext::new`] refuses. The outside label containers are not
+//! made, and their minimum sizes are zero, so the outside-label terms of the size are left out too.
 
-use crate::core::data::enums::{PortAlignment, PortConstraints, PortSide, SizeOptions};
+use crate::core::data::enums::{Direction, PortAlignment, PortConstraints, PortSide, SizeOptions};
 use crate::core::math::KVector;
 use crate::layered::LayoutError;
-use crate::layered::lgraph::LGraph;
+use crate::layered::lgraph::{LGraph, LabelId};
+use crate::layered::options;
 
 use super::context::{NodeContext, PortContext};
 use super::java_max;
+use super::labels;
 
-/// What the size calculation gives one node: its size, and the position of each of its ports.
+/// What the size calculation gives one node: its size, the position of each of its ports, and the
+/// position of each of its inside labels.
 pub(super) struct NodeResult {
     /// Index into `LGraph::nodes`.
     pub node: usize,
     pub size: KVector,
     /// Index into `LGraph::ports`, with the position the port gets.
     pub ports: Vec<(usize, KVector)>,
+    /// Index into `LGraph::labels`, with the position the label gets, relative to the node.
+    pub labels: Vec<(LabelId, KVector)>,
 }
 
-/// `NodeLabelAndSizeCalculator.process(graph, node, true, false)`, without changing the graph.
-pub(super) fn calculate(graph: &LGraph, node: usize) -> Result<NodeResult, LayoutError> {
+/// `NodeLabelAndSizeCalculator.process(graph, node, applyStuff, ignoreInsidePortLabels = false)`.
+/// Without `apply_stuff` the result is the size alone, which is what a nested graph's minimum
+/// size needs. Nothing in `graph` changes.
+pub(super) fn calculate(
+    graph: &LGraph,
+    node: usize,
+    apply_stuff: bool,
+) -> Result<NodeResult, LayoutError> {
     let mut ctx = NodeContext::new(graph, node)?;
+
+    // Phase 1: the inside label cells, with the label stacking of the layout direction.
+    labels::create_node_label_cells(&mut ctx, graph, node, false, horizontal_layout_mode(graph))?;
 
     // Phase 3: the inside port label cells need the room their ports take.
     horizontal_port_placement_size(&mut ctx);
     vertical_port_placement_size(&mut ctx);
 
-    // Phase 4 (CellSystemConfigurator) returns at once without size constraints.
+    // Phase 4: the size contributions of the constraints.
+    labels::configure_size_contributions(&mut ctx);
 
     // Phase 5: the width, then the horizontal ports.
     set_node_width(&mut ctx);
@@ -53,10 +67,18 @@ pub(super) fn calculate(graph: &LGraph, node: usize) -> Result<NodeResult, Layou
     // Phase 6: the height, then the vertical ports. The southern ports are offset by the height.
     update_vertical_inside_port_label_cell_padding(&mut ctx);
     set_node_height(&mut ctx);
+    if !apply_stuff {
+        return Ok(NodeResult {
+            node,
+            size: ctx.node_size,
+            ports: Vec::new(),
+            labels: Vec::new(),
+        });
+    }
     offset_southern_ports(&mut ctx);
     place_vertical_ports(&mut ctx);
 
-    // Phase 7: applyStuff. The node size is applied, and every port gets its position.
+    // Phase 7: `LabelPlacer` places the labels, and applyStuff applies the node size and the ports.
     Ok(NodeResult {
         node,
         size: ctx.node_size,
@@ -65,7 +87,25 @@ pub(super) fn calculate(graph: &LGraph, node: usize) -> Result<NodeResult, Layou
             .iter()
             .map(|port| (port.port, port.position))
             .collect(),
+        labels: labels::place_labels(&ctx),
     })
+}
+
+/// `horizontalLayoutMode` of `process`: labels stack vertically for a graph without a direction,
+/// for UNDEFINED, and for a horizontal direction; a vertical direction stacks them side by side.
+fn horizontal_layout_mode(graph: &LGraph) -> bool {
+    if !graph.properties.has(options::DIRECTION) {
+        return true;
+    }
+    !matches!(
+        graph.properties.enum_of::<Direction>(options::DIRECTION),
+        Some(Direction::UP | Direction::DOWN)
+    )
+}
+
+/// `NodeLabelAndSizeUtilities.areSizeConstraintsFixed`: no constraints (PORT_LABELS is refused).
+fn size_constraints_fixed(ctx: &NodeContext) -> bool {
+    ctx.size_constraints.is_empty()
 }
 
 /// The space that the ports on one side take along that side, with the spacing between them:
@@ -182,10 +222,19 @@ fn fixed_pos_vertical_size(ctx: &mut NodeContext, side: PortSide) {
     ctx.cells.min_content_mut(cell).y = bottommost_port_border;
 }
 
-/// `NodeSizeCalculator.setNodeWidth` without size constraints: the node keeps its width (and the
-/// graph's fixed size only lets it grow), and the node container lays its cells out across it.
+/// `NodeSizeCalculator.setNodeWidth`: a node with fixed size constraints keeps its width; any other
+/// takes the width of its node container, and at least its minimum width. The graph's fixed size
+/// only lets it grow. The node container lays its cells out across the width.
 fn set_node_width(ctx: &mut NodeContext) {
-    let width = ctx.node_size.x;
+    let width = if size_constraints_fixed(ctx) {
+        ctx.node_size.x
+    } else {
+        let mut width = ctx.cells.min_width(ctx.node_container);
+        if let Some(minimum) = ctx.minimum_size {
+            width = java_max(width, minimum.x);
+        }
+        width
+    };
     ctx.node_size.x = if ctx.fixed_graph_size {
         java_max(ctx.node_size.x, width)
     } else {
@@ -197,9 +246,17 @@ fn set_node_width(ctx: &mut NodeContext) {
     ctx.cells.layout_horizontally(ctx.node_container);
 }
 
-/// `NodeSizeCalculator.setNodeHeight` without size constraints, like the width.
+/// `NodeSizeCalculator.setNodeHeight`, like the width, with the minimum height.
 fn set_node_height(ctx: &mut NodeContext) {
-    let height = ctx.node_size.y;
+    let height = if size_constraints_fixed(ctx) {
+        ctx.node_size.y
+    } else {
+        let mut height = ctx.cells.min_height(ctx.node_container);
+        if let Some(minimum) = ctx.minimum_size {
+            height = java_max(height, minimum.y);
+        }
+        height
+    };
     ctx.node_size.y = if ctx.fixed_graph_size {
         java_max(ctx.node_size.y, height)
     } else {

@@ -37,6 +37,9 @@ pub struct LNode {
     pub layer: Option<usize>,
     /// `LNode.getPorts()`: indices into `LGraph::ports`, in order.
     pub ports: Vec<usize>,
+    /// `LNode.getLabels()`: the node's labels with text, as ids in `LGraph::labels`, in the order
+    /// of the ELK node.
+    pub labels: Vec<LabelId>,
     /// `InternalProperties.ORIGIN` of a dummy: the index of the edge it was made for.
     pub origin_edge: Option<usize>,
     /// `InternalProperties.REPRESENTED_LABELS` of a label dummy: the labels it holds, as ids in

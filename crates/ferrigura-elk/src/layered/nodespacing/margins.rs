@@ -3,9 +3,9 @@
 //! Source: plugins/org.eclipse.elk.alg.common/src/org/eclipse/elk/alg/common/nodespacing/NodeMarginCalculator.java
 //!
 //! `NodeMarginCalculator.processNode` as `InnermostNodeMarginCalculator` runs it, with
-//! `excludeEdgeHeadTailLabels()`. The node has no labels and the layered graph has no port
-//! labels, so the bounding box is the node's box joined with the boxes of its ports. Edge
-//! labels are excluded by the configuration and never read.
+//! `excludeEdgeHeadTailLabels()`. The bounding box is the node's box joined with the boxes of its
+//! labels and of its ports. Port labels are not ported, and edge labels are excluded by the
+//! configuration and never read.
 
 use crate::core::math::Spacing;
 use crate::layered::lgraph::LGraph;
@@ -23,6 +23,16 @@ pub(super) fn margin_of(graph: &LGraph, node: usize) -> Spacing {
         lnode.size.x,
         lnode.size.y,
     );
+    // The node's labels, relative to the node.
+    for &label in &lnode.labels {
+        let llabel = &graph.labels[label];
+        bounding_box.union(&Rect::new(
+            llabel.position.x + lnode.position.x,
+            llabel.position.y + lnode.position.y,
+            llabel.size.x,
+            llabel.size.y,
+        ));
+    }
     for &port in &lnode.ports {
         let lport = &graph.ports[port];
         // The port's upper left corner, in the frame of the graph.

@@ -4,22 +4,24 @@
 //! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/intermediate/LabelAndNodeSizeProcessor.java
 //! Source: plugins/org.eclipse.elk.alg.common/src/org/eclipse/elk/alg/common/nodespacing/ (reduced path)
 //!
-//! Node margins, port positions and node sizes of the layered graph.
+//! Node margins, port positions, label positions and node sizes of the layered graph.
 //!
 //! This is the reduced path of ELK's node spacing code, which the layered processors call for
-//! nodes with ports on the four sides and no labels:
+//! nodes with ports on the four sides, and for nodes whose labels are inside them:
 //!
-//! - [`node_margins`] is `InnermostNodeMarginCalculator`: each node's margins wrap its box and
-//!   the boxes of its ports. Edge head and tail labels are excluded, as the Java excludes them.
+//! - [`node_margins`] is `InnermostNodeMarginCalculator`: each node's margins wrap its box, the
+//!   boxes of its labels and the boxes of its ports. Edge head and tail labels are excluded, as
+//!   the Java excludes them.
 //! - [`label_and_node_size`] is `LabelAndNodeSizeProcessor` for the normal nodes of the layers.
-//!   It places the ports (`LPort::position`) and sets the node size. Without size constraints
-//!   the size stays the node's own size; the cell system lays the ports out inside it.
+//!   It places the ports (`LPort::position`), the inside node labels (`LLabel::position`) and sets
+//!   the node size. A node without size constraints keeps its size; with MINIMUM_SIZE or
+//!   NODE_LABELS it takes the size its labels and minimum need.
 //!
-//! Not ported, and reported as `Unsupported` where the input asks for it: node and port labels
-//! (a layered node has no label list, and a layered port has none either), node size
-//! constraints, port constraint `FIXED_RATIO`, a port label placement without `INSIDE` or
-//! `OUTSIDE` (fixed label positions), `COMPUTE_PADDING`, individual spacings on a node, and
-//! external port dummies. `FIXED_POS` and `FIXED_ORDER` are ported: `FIXED_ORDER` takes the free
+//! Not ported, and reported as `Unsupported` where the input asks for it: outside node labels,
+//! port labels, node size constraints other than MINIMUM_SIZE and NODE_LABELS, MINIMUM_SIZE with
+//! `minimumSizeAccountsForPadding`, port constraint `FIXED_RATIO`, a port label placement without
+//! `INSIDE` or `OUTSIDE` (fixed label positions), `COMPUTE_PADDING`, individual spacings on a node,
+//! and external port dummies. `FIXED_POS` and `FIXED_ORDER` are ported: `FIXED_ORDER` takes the free
 //! branches, and `FIXED_POS` keeps the port coordinates it was given. Port border offsets are not
 //! read: `LPort` carries no property holder, and the importer gives ports no options, so no port
 //! has one yet.
@@ -29,6 +31,7 @@
 
 mod cells;
 mod context;
+mod labels;
 mod margins;
 mod sizing;
 #[cfg(test)]
@@ -139,7 +142,7 @@ pub fn label_and_node_size(graph: &mut LGraph) -> Result<(), LayoutError> {
         let view: &LGraph = graph;
         layered_nodes(view, |node| node.node_type == NodeType::NORMAL)
             .into_iter()
-            .map(|node| sizing::calculate(view, node))
+            .map(|node| sizing::calculate(view, node, true))
             .collect::<Result<Vec<_>, LayoutError>>()?
     };
     for result in results {
@@ -147,8 +150,23 @@ pub fn label_and_node_size(graph: &mut LGraph) -> Result<(), LayoutError> {
         for (port, position) in result.ports {
             graph.ports[port].position = position;
         }
+        // `LabelPlacer`: the inside labels, relative to the node.
+        for (label, position) in result.labels {
+            graph.labels[label].position = position;
+        }
     }
     Ok(())
+}
+
+/// `NodeLabelAndSizeCalculator.computeInsideNodeLabelPadding` for the node `node` of `probe`: the
+/// padding its inside labels take. `probe` holds the node alone, with the options of the node's
+/// parent as its own properties (or none, for a root), which is where the Java reads the spacings.
+pub fn inside_label_padding(
+    probe: &LGraph,
+    node: usize,
+    horizontal_layout: bool,
+) -> Result<crate::core::math::Spacing, LayoutError> {
+    labels::inside_label_padding(probe, node, horizontal_layout)
 }
 
 #[cfg(test)]

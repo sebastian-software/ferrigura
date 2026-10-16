@@ -2,9 +2,9 @@
 //! SPDX-License-Identifier: EPL-2.0
 //! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/graph/transform/ElkGraphLayoutTransferrer.java
 //!
-//! `ElkGraphLayoutTransferrer.applyLayout` for the root graph: the node positions, the
-//! edges' routes and the root's size go back into the ELK graph. Labels and junction points
-//! are not transferred yet.
+//! `ElkGraphLayoutTransferrer.applyLayout` for the root graph: the node positions, the sizes of
+//! nodes with size constraints, the inside node labels, the edges' routes and the root's size go
+//! back into the ELK graph. Edge labels and junction points are not transferred yet.
 
 use std::collections::HashMap;
 
@@ -33,6 +33,38 @@ pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutErro
     for (child, node) in root.children.iter_mut().zip(&graph.nodes) {
         child.shape.x = node.position.x + offset.x;
         child.shape.y = node.position.y + offset.y;
+        // `applyNodeLayout`: a node with size constraints takes the size the layout gave it.
+        if !child
+            .properties
+            .enum_set_is_empty(options::NODE_SIZE_CONSTRAINTS)
+        {
+            child.shape.width = node.size.x;
+            child.shape.height = node.size.y;
+        }
+        // The inside labels, where the node or the label has a placement. They are relative to the
+        // node, so the offset does not apply.
+        let node_has_placement = !node
+            .properties
+            .enum_set_is_empty(options::NODE_LABELS_PLACEMENT);
+        for &label_id in &node.labels {
+            let llabel = &graph.labels[label_id];
+            let label_has_placement = !llabel
+                .properties
+                .enum_set_is_empty(options::NODE_LABELS_PLACEMENT);
+            if !(node_has_placement || label_has_placement) {
+                continue;
+            }
+            if let Some(origin) = llabel.origin
+                && let Some(elk_label) = child.labels.get_mut(origin)
+            {
+                elk_label.shape = Shape {
+                    x: llabel.position.x,
+                    y: llabel.position.y,
+                    width: llabel.size.x,
+                    height: llabel.size.y,
+                };
+            }
+        }
     }
     // `applyLayout`'s edge list: the outgoing edges of the nodes' ports, node by node.
     let mut edge_list = Vec::new();

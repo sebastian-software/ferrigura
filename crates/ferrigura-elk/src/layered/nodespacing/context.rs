@@ -27,6 +27,11 @@ use crate::layered::options;
 use crate::layered::spacings::{SPACING_LABEL_PORT_VERTICAL, SPACING_PORT_PORT};
 
 use super::cells::{Area, CellId, CellSystem, Strip};
+use super::labels::NodeLabelCell;
+
+/// `ElkUtil.DEFAULT_MIN_WIDTH` and `DEFAULT_MIN_HEIGHT`, the minimum size DEFAULT_MINIMUM_SIZE gives.
+const DEFAULT_MIN_WIDTH: f64 = 20.0;
+const DEFAULT_MIN_HEIGHT: f64 = 20.0;
 
 pub(super) const PORT_LABELS_PLACEMENT: &str = "org.eclipse.elk.portLabels.placement";
 pub(super) const NODE_LABELS_PLACEMENT: &str = "org.eclipse.elk.nodeLabels.placement";
@@ -70,7 +75,22 @@ pub(super) struct NodeContext {
     pub fixed_graph_size: bool,
     /// `portConstraints` of the node; the placement switches on it (FIXED_POS has its own branches).
     pub port_constraints: PortConstraints,
-    size_options: Vec<SizeOptions>,
+    /// `sizeOptions` of the node, with the defaults.
+    pub size_options: Vec<SizeOptions>,
+    /// `sizeConstraints` of the node: only MINIMUM_SIZE and NODE_LABELS are ported.
+    pub size_constraints: Vec<SizeConstraint>,
+    /// `NodeSizeCalculator`'s minimum size, `getMinimumNodeSize`: set when MINIMUM_SIZE applies.
+    pub minimum_size: Option<KVector>,
+    /// `nodeLabelPlacement` of the node: where a label goes unless the label has its own.
+    pub node_label_placement: Vec<NodeLabelPlacement>,
+    /// `labelLabelSpacing`: the gap between the labels of one cell.
+    pub label_label_spacing: f64,
+    /// `insideNodeLabelContainer`: the grid that holds the inside label cells, in the middle row.
+    pub inside_label_grid: CellId,
+    /// `nodeContainerMiddleRow`: the west cell, the inside label grid and the east cell.
+    pub middle_row: CellId,
+    /// The node label cells, one per location that has labels, in the order they were made.
+    pub label_cells: Vec<NodeLabelCell>,
     /// `portPortSpacing`.
     pub port_port_spacing: f64,
     /// `labelCellSpacing`: twice the label-label spacing, the gap of the inside label grid.
@@ -92,7 +112,7 @@ pub(super) struct NodeContext {
 
 /// An `EnumSet` option of a node. A missing value reads as `default`: `melk_default_value` does
 /// not read the `EnumSet.of(...)` defaults, so the defaults are given here.
-fn enum_set<E: JavaEnum>(
+pub(super) fn enum_set<E: JavaEnum>(
     props: &PropertyHolder,
     id: &str,
     default: &[E],
@@ -201,12 +221,20 @@ impl NodeContext {
             return Err(unsupported(format!("individual spacings on {who}")));
         }
 
-        // Size constraints: `areSizeConstraintsFixed` holds only for none (or only PORT_LABELS,
-        // which is not ported either).
+        // Size constraints: MINIMUM_SIZE and NODE_LABELS are ported. PORTS and PORT_LABELS need the
+        // port label cells, which are not ported.
         let size_constraints =
             enum_set::<SizeConstraint>(props, options::NODE_SIZE_CONSTRAINTS, &[])?;
-        if !size_constraints.is_empty() {
-            return Err(unsupported(format!("node size constraints on {who}")));
+        if let Some(constraint) = size_constraints.iter().find(|constraint| {
+            !matches!(
+                constraint,
+                SizeConstraint::MINIMUM_SIZE | SizeConstraint::NODE_LABELS
+            )
+        }) {
+            return Err(unsupported(format!(
+                "size constraint {} on {who}",
+                constraint.java_name()
+            )));
         }
 
         // FIXED_ORDER takes the free branch of every Java switch on the constraints, so it is
@@ -257,6 +285,32 @@ impl NodeContext {
         if size_options.contains(&SizeOptions::COMPUTE_PADDING) {
             return Err(unsupported(format!("COMPUTE_PADDING on {who}")));
         }
+        // `getMinimumClientAreaSize` and the centre cell's minimum size are not ported.
+        if size_options.contains(&SizeOptions::MINIMUM_SIZE_ACCOUNTS_FOR_PADDING)
+            && size_constraints.contains(&SizeConstraint::MINIMUM_SIZE)
+        {
+            return Err(unsupported(format!(
+                "MINIMUM_SIZE_ACCOUNTS_FOR_PADDING on {who}"
+            )));
+        }
+        // `getMinimumNodeOrClientAreaSize`: the node's minimum size, with the defaults.
+        let minimum_size = size_constraints
+            .contains(&SizeConstraint::MINIMUM_SIZE)
+            .then(|| {
+                let mut minimum = match props.value_or_default(options::NODE_SIZE_MINIMUM) {
+                    Some(OptionValue::Vector(vector)) => vector,
+                    _ => KVector::default(),
+                };
+                if size_options.contains(&SizeOptions::DEFAULT_MINIMUM_SIZE) {
+                    if minimum.x <= 0.0 {
+                        minimum.x = DEFAULT_MIN_WIDTH;
+                    }
+                    if minimum.y <= 0.0 {
+                        minimum.y = DEFAULT_MIN_HEIGHT;
+                    }
+                }
+                minimum
+            });
 
         // The spacings come from the graph, with their defaults (`IndividualSpacings`).
         let graph_props = &graph.properties;
@@ -293,9 +347,9 @@ impl NodeContext {
         let middle_row = cells.strip(Strip::Horizontal, symmetry, 0.0);
         cells.set_strip_cell(node_container, Area::Center, middle_row);
 
-        // `NodeLabelCellCreator.createNodeLabelCellContainers`: the inside label grid, which holds
-        // no labels here. The outside label containers are not made: nothing reads them without
-        // labels or NODE_LABELS constraints.
+        // `NodeLabelCellCreator.createNodeLabelCellContainers`: the inside label grid. The label cells
+        // go into it in `labels::create_node_label_cells`. The outside label containers are not made:
+        // they are only needed for outside labels, which are not ported.
         let inside_container = cells.grid(tabular, symmetry, label_cell_spacing);
         *cells.padding_mut(inside_container) = node_labels_padding;
         cells.set_strip_cell(middle_row, Area::Center, inside_container);
@@ -360,6 +414,13 @@ impl NodeContext {
             fixed_graph_size,
             port_constraints,
             size_options,
+            size_constraints,
+            minimum_size,
+            node_label_placement,
+            label_label_spacing,
+            inside_label_grid: inside_container,
+            middle_row,
+            label_cells: Vec::new(),
             port_port_spacing,
             label_cell_spacing,
             surrounding_port_margins,

@@ -35,6 +35,7 @@ import {
   nodesOnlyGraph,
   slugify,
   syntheticEdgeGraphs,
+  syntheticNodeLabelGraphs,
   stripGwtHashKeys,
   type GraphStats,
   type Json,
@@ -398,6 +399,9 @@ async function writeSyntheticOnly(): Promise<void> {
     await add(`synthetic__nodes-only-${count}`, nodesOnlyGraph(count));
   }
   for (const { name, graph } of syntheticEdgeGraphs()) {
+    await add(name, graph);
+  }
+  for (const { name, graph } of syntheticNodeLabelGraphs()) {
     await add(name, graph);
   }
   generated.sort(byName);

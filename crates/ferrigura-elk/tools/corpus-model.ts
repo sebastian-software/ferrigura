@@ -159,6 +159,53 @@ export function rootLayoutOptionsDefault(): Record<string, string | number | boo
   };
 }
 
+/**
+ * Flat graphs whose leaf nodes carry labels, for the node label sizing of the port: the inside,
+ * top-centred labels that the nested state diagrams use, with the NODE_LABELS and MINIMUM_SIZE
+ * constraints. The labels are wider than their nodes in one case, and the node has a minimum width
+ * in another. There are no edges, so only the node sizes and label boxes are exercised.
+ */
+export function syntheticNodeLabelGraphs(): { name: string; graph: Record<string, unknown> }[] {
+  const labelled = (
+    id: string,
+    width: number,
+    height: number,
+    text: string,
+    labelWidth: number,
+    options: Record<string, string> = {}
+  ): Record<string, unknown> => ({
+    id,
+    width,
+    height,
+    layoutOptions: {
+      'nodeLabels.placement': '[H_CENTER V_TOP, INSIDE]',
+      'nodeSize.constraints': '[MINIMUM_SIZE, NODE_LABELS]',
+      ...options,
+    },
+    labels: [{ text, width: labelWidth, height: 19 }],
+  });
+  return [
+    {
+      name: 'synthetic__node-labels-inside-top',
+      graph: {
+        id: 'root',
+        layoutOptions: rootLayoutOptionsDefault(),
+        children: [
+          labelled('a', 50, 40, 'A', 12),
+          labelled('b', 30, 30, 'Wide label', 80, { 'nodeSize.minimum': '(120, 0)' }),
+          {
+            id: 'c',
+            width: 50,
+            height: 40,
+            labels: [{ text: 'C', width: 12, height: 19 }],
+          },
+        ],
+        edges: [],
+      },
+    },
+  ];
+}
+
 /** A root graph with `count` leaf nodes (50 x 40) and no edges, using Mermaid's root options. */
 export function nodesOnlyGraph(count: number): Record<string, unknown> {
   return {

@@ -7,15 +7,18 @@
 //! transposed and mirrored across y, in the order the mode asks for. Only the reading direction
 //! congruency is ported, which is the default.
 //!
-//! Not ported, because the graphs here do not have them: node labels and their padding (the
-//! importer rejects node labels), node padding (nodes have none), fixed positions (no corpus graph
-//! sets one), and the port indices that `reverseIndex` negates (ports carry none).
+//! The node labels are transposed with their sizes, positions and placements, and the graph's node
+//! label padding with the graph's padding. Not ported, because the graphs here do not have them:
+//! node padding (nodes have none), fixed positions (no corpus graph sets one), and the port indices
+//! that `reverseIndex` negates (ports carry none). The mirroring of node labels is not ported, so
+//! a LEFT or UP graph with node labels is refused.
 
 use crate::core::data::JavaEnum;
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{
-    Alignment, Direction, DirectionCongruency, EdgeLabelSideSelection, PortSide,
+    Alignment, Direction, DirectionCongruency, EdgeLabelSideSelection, NodeLabelPlacement, PortSide,
 };
+use crate::core::data::property::PropertyHolder;
 use crate::core::math::{KVector, Spacing};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
@@ -101,7 +104,15 @@ pub fn transform(graph: &mut LGraph, mode: Mode) -> Result<(), LayoutError> {
             "direction congruency other than reading direction".to_string(),
         ));
     }
-    match graph.properties.enum_of::<Direction>(options::DIRECTION) {
+    let direction = graph.properties.enum_of::<Direction>(options::DIRECTION);
+    if matches!(direction, Some(Direction::LEFT | Direction::UP))
+        && graph.nodes.iter().any(|node| !node.labels.is_empty())
+    {
+        return Err(LayoutError::Unsupported(
+            "node labels in a LEFT or UP graph (their mirroring is not ported)".to_string(),
+        ));
+    }
+    match direction {
         Some(Direction::LEFT) => mirror_all(graph, Axis::X),
         Some(Direction::DOWN) => transpose_all(graph),
         Some(Direction::UP) => {
@@ -242,6 +253,26 @@ fn transpose_all(graph: &mut LGraph) {
                 }),
             );
         }
+        // `transposeProperties`: the minimum size trades its width and height.
+        if let Some(OptionValue::Vector(minimum)) =
+            node.properties.get(options::NODE_SIZE_MINIMUM).cloned()
+        {
+            node.properties.set(
+                options::NODE_SIZE_MINIMUM,
+                Some(OptionValue::Vector(KVector {
+                    x: minimum.y,
+                    y: minimum.x,
+                })),
+            );
+        }
+        transpose_node_label_placement(&mut node.properties);
+        // `transposeAll(nodes)`: the node labels, with their sizes, positions and placements.
+        for &id in &node.labels {
+            let label = &mut graph.labels[id];
+            std::mem::swap(&mut label.position.x, &mut label.position.y);
+            std::mem::swap(&mut label.size.x, &mut label.size.y);
+            transpose_node_label_placement(&mut label.properties);
+        }
     }
     for port in &mut graph.ports {
         std::mem::swap(&mut port.position.x, &mut port.position.y);
@@ -280,6 +311,66 @@ fn transpose_all(graph: &mut LGraph) {
     std::mem::swap(&mut graph.offset.x, &mut graph.offset.y);
     std::mem::swap(&mut graph.size.x, &mut graph.size.y);
     graph.padding = transposed(graph.padding);
+    // The graph's node label padding is transposed too. Unset, it is the default, which is the same
+    // on every side, so there is nothing to do.
+    if let Some(OptionValue::Padding(padding)) =
+        graph.properties.get(options::NODE_LABELS_PADDING).cloned()
+    {
+        graph.properties.set(
+            options::NODE_LABELS_PADDING,
+            Some(OptionValue::Padding(transposed(padding))),
+        );
+    }
+}
+
+/// `GraphTransformer.transposeNodeLabelPlacement`: the horizontal position becomes the vertical one
+/// and back, INSIDE and OUTSIDE stay, and H_PRIORITY is set when the placement did not have it. An
+/// unset or empty placement is left alone.
+pub(crate) fn transpose_node_label_placement(properties: &mut PropertyHolder) {
+    let names = match properties.get(options::NODE_LABELS_PLACEMENT) {
+        Some(OptionValue::EnumSet { names, .. }) if !names.is_empty() => names.clone(),
+        _ => return,
+    };
+    let old: Vec<NodeLabelPlacement> = names
+        .iter()
+        .filter_map(|name| NodeLabelPlacement::from_java_text(name))
+        .collect();
+    let has = |placement: NodeLabelPlacement| old.contains(&placement);
+    let mut new = Vec::new();
+    new.push(if has(NodeLabelPlacement::INSIDE) {
+        NodeLabelPlacement::INSIDE
+    } else {
+        NodeLabelPlacement::OUTSIDE
+    });
+    if !has(NodeLabelPlacement::H_PRIORITY) {
+        new.push(NodeLabelPlacement::H_PRIORITY);
+    }
+    if has(NodeLabelPlacement::H_LEFT) {
+        new.push(NodeLabelPlacement::V_TOP);
+    } else if has(NodeLabelPlacement::H_CENTER) {
+        new.push(NodeLabelPlacement::V_CENTER);
+    } else if has(NodeLabelPlacement::H_RIGHT) {
+        new.push(NodeLabelPlacement::V_BOTTOM);
+    }
+    if has(NodeLabelPlacement::V_TOP) {
+        new.push(NodeLabelPlacement::H_LEFT);
+    } else if has(NodeLabelPlacement::V_CENTER) {
+        new.push(NodeLabelPlacement::H_CENTER);
+    } else if has(NodeLabelPlacement::V_BOTTOM) {
+        new.push(NodeLabelPlacement::H_RIGHT);
+    }
+    // An EnumSet iterates in the order of the constants.
+    new.sort();
+    properties.set(
+        options::NODE_LABELS_PLACEMENT,
+        Some(OptionValue::EnumSet {
+            class: "NodeLabelPlacement",
+            names: new
+                .iter()
+                .map(|placement| placement.java_name().to_string())
+                .collect(),
+        }),
+    );
 }
 
 /// `GraphTransformer.transposeProperties`: left and top alignments trade places, as do right
