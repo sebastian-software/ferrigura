@@ -1,26 +1,26 @@
 # Port status
 
-Last updated: 2026-10-16. M1 to M4 are merged into `main`: pie, info and flowchart parse and match the reference on every collected input; pie renders to SVG through `ferrigura`, its CLI and its Node addon; and `ferrigura-elk` lays out every ELK graph Mermaid's options reach exactly as elkjs does (165 of 169 corpus cases, the rest named out of scope; 1,200 random flat and 900 random compound graphs). Next is M5, flowchart rendering.
+Last updated: 2026-10-16. M1 to M4 are merged into `main`: pie, info and flowchart parse and match the reference on every collected input; pie renders to SVG through `ferrigura`, its CLI and its Node addon; and `ferrigura-elk` lays out every ELK graph Mermaid's options reach exactly as elkjs does (165 of 169 corpus cases, the rest named out of scope; 1,200 random flat and 900 random compound graphs). M5, flowchart rendering, is done on its branch and in review: 294 of 298 comparable flowchart fixtures match the reference within 0.05 px.
 
 Each session updates its section when it stops: what changed, what is next, what blocks it. Test counts and the differential column are written by `pnpm port:status`, which reads the Rust specs and the last `pnpm port:diff` run; run it after both.
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                                                                                                                                                                                                |
-| ---------------------------------- | ----------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                                                |
-| M2 First slice: pie to SVG         | done        | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
-| M3 Flowchart parser                | done        | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
-| M4 ELK Layered port                | done        | main   | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
-| M5 Flowchart rendering             | in progress | m5     | Plan and scaffold in [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md); research in `flowchart/render-notes/`                                                                                                                   |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                                                                                                                                                             |
+| Milestone                          | Status          | Strand | Notes                                                                                                                                                                                                                                |
+| ---------------------------------- | --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M1 Parser foundation: pie and info | done            | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                                                |
+| M2 First slice: pie to SVG         | done            | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
+| M3 Flowchart parser                | done            | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
+| M4 ELK Layered port                | done            | main   | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
+| M5 Flowchart rendering             | done, in review | m5     | 294 of 298 comparable fixtures within tolerance, 54 excluded with reasons; see M5 handover and [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md)                                                                                |
+| M6 Remaining P1 diagrams           | not started     | —      | After M5                                                                                                                                                                                                                             |
 
 ## Strands
 
-| Strand | Session     | Worktree                   | Working on                                   | Next                                    | Blocked by |
-| ------ | ----------- | -------------------------- | -------------------------------------------- | --------------------------------------- | ---------- |
-| main   | —           | —                          | M1 to M4 done and merged                     | —                                       | —          |
-| m5     | coordinator | `port-m5-flowchart-render` | M5 stage A: modules T1 to T7 and the harness | Integration and the geometry comparison | —          |
+| Strand | Session     | Worktree                   | Working on               | Next                                    | Blocked by |
+| ------ | ----------- | -------------------------- | ------------------------ | --------------------------------------- | ---------- |
+| main   | —           | —                          | M1 to M4 done and merged | —                                       | —          |
+| m5     | coordinator | `port-m5-flowchart-render` | M5 done, in review       | Merge into `main` after review; then M6 | —          |
 
 ## M1 handover
 
@@ -88,23 +88,37 @@ How to run the random sets (from the repository root):
 
 Known gaps and notes: no indexed hash collection is iterated by a processor yet, so `indexmap` with `shift_remove` is not needed; the six intermediate commits of the inverted-port series fail the compound random test on their own, and only the tip is green in that run; the commit trailers of this branch name Claude Haiku 5.5. The branch is local and not pushed. It is ready for review and for the merge into `main`, which the user decides.
 
+## M5 handover
+
+Done, for review on the branch `sebastian/port-m5-flowchart-render` (not pushed): flowcharts render to SVG through `ferrigura`, its CLI and its Node addon, on the reference's pipeline, in the `neo` look (the flowchart default) and the `classic` look. The plan, the decisions and the research notes are in [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md) and `flowchart/render-notes/`.
+
+Ported, in `crates/ferrigura-render/src/flowchart/`: `getData` (`data.rs`), labels as `createText` writes them with `htmlLabels: false`, Markdown through Ferromark mapped to the reference's SVG subset (`label.rs`, `markdown.rs`, styled wrapping in `ferrigura-text`), every shape a flowchart can name with its intersect, icons as the reference's fallback icon (`shapes/`), the elkjs graph (`elk_build.rs`, `elk_tree.rs`), the post-processing of the ELK result (`elk_apply.rs`, `elk_geometry.rs`, `elk_straighten.rs`), edges, edge labels, markers and line hops (`edges.rs`, `path.rs`, `markers.rs`, `line_jumps.rs`), subgraph frames (`clusters.rs`), the style sheet with custom properties and the look definitions (`style.rs`), and the paint and the SVG (`mod.rs`). The flowchart DB sanitises node, edge and subgraph texts with a port of the DOMPurify subset that `sanitizeText` reaches (`ferrigura-syntax/src/sanitize.rs`); the canonical model holds those sanitised texts. A value of the wrong type in the configuration no longer fails a render: a numeric string reads as a number, anything else takes the default, with a warning (`config/lenient.rs`).
+
+What the comparison taught, now in the code: Chromium rounds each text run's advance up to 1/64 px; it rounds the ascent and the descent each to a whole pixel with a tie going down, after flooring the size to 1/100 px; `getBBox` returns float32 values and parses path numbers into float32; the post-processing's border tests are exact, so one float32 ulp moves an edge end by pixels.
+
+Verified on this branch: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace --no-fail-fast` (1779 passed, 64 ignored) pass. `pnpm port:geometry-flowchart`: 352 fixtures, 294 within tolerance (0.05 px for every node box and centre, label box, cluster frame, edge path sampled along its length, marker, and the viewBox), 4 outside, 54 excluded (50 `handDrawn`, 3 non-layered algorithms, 1 CJK text); the ELK input equals the reference's in 298 of 298 rendered fixtures. Differentials, all without a difference: `flowchart` 565 inputs, `flowchart-data` (getData) 565, `config` 709 (pie, flowchart and the cases), `pie`, `info`, `yaml`, `theme`; `pnpm port:geometry-pie` 24 of 24, `pnpm port:scope-pie` as declared. Module tests against Chromium or the reference: 83 labels (0.0000 px), 876 shape probes (0.0000 px), 805 post-processed edges, 349 ELK input graphs rebuilt exactly, the style sheet rule by rule, 54 path strings and 26 line-hop cases.
+
+How the harness compares (decisions in RENDER-PLAN.md): both sides get the fixture's text with HTML labels off, the bundled font and strict security forced; a theme ferrigura does not ship is replaced on both sides by its fallback, since only colours differ; each SVG is measured at scale 1. `--capture` stores the reference's SVG and ELK calls per fixture under `target/geometry/flowchart/`, which several module tests are built from.
+
+Known gaps: the 4 fixtures outside (shape-themes 01, 11, 21, 31) share one edge at a sloped rectangle whose box differs from the reference's by one float32 ulp (see `flowchart/render-notes/shapes-core.md` §5); fallback fonts for scripts Lexica does not cover (CJK, the one excluded fixture); images are not read, so an image shape needs `assetWidth` and `assetHeight`; no icon packs, every icon is the fallback icon; `data-points` and terminal labels are not written (flowchart has none); the sanitiser covers the DOMPurify behaviour these texts reach, with the deviations listed in `sanitize.rs`; Linux Chromium is not compared (CI runs on macOS). The branch is local; it is ready for review and for the merge into `main`, which the user decides.
+
 ## P1 diagram types
 
 Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec files under `packages/mermaid/src/diagrams/<type>/`, an approximate count of their test cases, and the e2e fixtures under `e2e/diagrams/`. pie, info and gitGraph also have parser tests in `packages/parser/tests/`.
 
-| Type      | Grammar (JS)                                     | Spec files | ≈ Tests | Fixtures | Parser           | Specs ported / passing | Differential parse        | Layout | Render | Parity |
-| --------- | ------------------------------------------------ | ---------: | ------: | -------: | ---------------- | ---------------------- | ------------------------- | ------ | ------ | ------ |
-| flowchart | `diagrams/flowchart/parser/flow.jison`           |         20 |     318 |      352 | ferrigura-syntax | 953 / 958 (5 ignored)  | 558 inputs, no difference | —      | —      | —      |
-| sequence  | `diagrams/sequence/parser/sequenceDiagram.jison` |         10 |     198 |      193 | —                | —                      | —                         | —      | —      | —      |
-| class     | `diagrams/class/parser/classDiagram.jison`       |          5 |     255 |      247 | —                | —                      | —                         | —      | —      | —      |
-| state     | `diagrams/state/parser/stateDiagram.jison`       |          9 |     121 |      145 | —                | —                      | —                         | —      | —      | —      |
-| ER        | `diagrams/er/parser/erDiagram.jison`             |          3 |     142 |      206 | —                | —                      | —                         | —      | —      | —      |
-| gantt     | `diagrams/gantt/parser/gantt.jison`              |          2 |      40 |       52 | —                | —                      | —                         | —      | —      | —      |
-| pie       | `packages/parser/…/pie/pie.langium`              |          2 |      16 |       24 | ferrigura-syntax | 27 / 29 (2 ignored)    | 87 inputs, no difference  | —      | —      | —      |
-| timeline  | `diagrams/timeline/parser/timeline.jison`        |          1 |      11 |       30 | —                | —                      | —                         | —      | —      | —      |
-| gitGraph  | `packages/parser/…/gitGraph/gitGraph.langium`    |          1 |      69 |      135 | —                | —                      | —                         | —      | —      | —      |
-| journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | —                | —                      | —                         | —      | —      | —      |
-| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                  | 17 inputs, no difference  | —      | —      | —      |
+| Type      | Grammar (JS)                                     | Spec files | ≈ Tests | Fixtures | Parser           | Specs ported / passing | Differential parse        | Layout                        | Render       | Parity                      |
+| --------- | ------------------------------------------------ | ---------: | ------: | -------: | ---------------- | ---------------------- | ------------------------- | ----------------------------- | ------------ | --------------------------- |
+| flowchart | `diagrams/flowchart/parser/flow.jison`           |         20 |     318 |      352 | ferrigura-syntax | 953 / 958 (5 ignored)  | 565 inputs, no difference | ELK input equal in 298 of 298 | 352 fixtures | 294 of 298 within tolerance |
+| sequence  | `diagrams/sequence/parser/sequenceDiagram.jison` |         10 |     198 |      193 | —                | —                      | —                         | —                             | —            | —                           |
+| class     | `diagrams/class/parser/classDiagram.jison`       |          5 |     255 |      247 | —                | —                      | —                         | —                             | —            | —                           |
+| state     | `diagrams/state/parser/stateDiagram.jison`       |          9 |     121 |      145 | —                | —                      | —                         | —                             | —            | —                           |
+| ER        | `diagrams/er/parser/erDiagram.jison`             |          3 |     142 |      206 | —                | —                      | —                         | —                             | —            | —                           |
+| gantt     | `diagrams/gantt/parser/gantt.jison`              |          2 |      40 |       52 | —                | —                      | —                         | —                             | —            | —                           |
+| pie       | `packages/parser/…/pie/pie.langium`              |          2 |      16 |       24 | ferrigura-syntax | 27 / 29 (2 ignored)    | 87 inputs, no difference  | —                             | —            | —                           |
+| timeline  | `diagrams/timeline/parser/timeline.jison`        |          1 |      11 |       30 | —                | —                      | —                         | —                             | —            | —                           |
+| gitGraph  | `packages/parser/…/gitGraph/gitGraph.langium`    |          1 |      69 |      135 | —                | —                      | —                         | —                             | —            | —                           |
+| journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | —                | —                      | —                         | —                             | —            | —                           |
+| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                  | 17 inputs, no difference  | —                             | —            | —                           |
 
 ## Spikes
 
@@ -118,5 +132,6 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 - Open `help wanted` issues for every P3 diagram type and for math in labels once the GitHub repository exists.
 - Decide the mindmap layout when P2 starts.
 - Pie geometry on Linux Chromium: with `--font-render-hinting=none` the redux themes match, but the classic themes (default, dark, forest, neutral), the hovered-slice and the bottom-legend fixtures differ by up to 0.7 px. CI runs the comparison on macOS, where all 24 match; investigate Linux with the Playwright Docker image.
-- M5 (flowchart labels with Markdown): `ferrigura-text`'s `wrap_line` takes one face, but Mermaid wraps styled words one by one, each in its own face (`createText.ts` gives each word after the first a leading space in its own tspan). The runs of a line are measured per run already; the wrapping must take runs too.
+- Fallback fonts for scripts the bundled faces do not cover (CJK, Arabic, emoji); one flowchart fixture is excluded for it.
+- Flowchart: the sloped rectangle's box is one float32 ulp off the reference's in shape-themes 01 and its copies; images are not read (an image shape needs `assetWidth` and `assetHeight`); icon packs are not supported.
 - Replace the inherited changesets setup with release-please when the first crate is published.
