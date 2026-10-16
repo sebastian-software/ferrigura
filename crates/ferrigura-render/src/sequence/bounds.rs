@@ -201,3 +201,124 @@ impl Bounds {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    //! `sequenceDiagram.spec.js:1783-1916`, the bounds block. The reference's `bounds.init()` is
+    //! `Bounds::default()`, and its `insert` reads `boxMargin` from the configuration, which the spec
+    //! sets to 10. The margin is passed here.
+
+    use super::Bounds;
+
+    /// `boxMargin` in the bounds block of the spec.
+    const BOX_MARGIN: f64 = 10.0;
+
+    #[test]
+    fn should_handle_a_simple_bound_call() {
+        // Reference: sequenceDiagram.spec.js:1812.
+        let mut bounds = Bounds::default();
+        bounds.insert(BOX_MARGIN, 100.0, 100.0, 200.0, 200.0);
+        assert_eq!(bounds.data.startx, Some(100.0));
+        assert_eq!(bounds.data.starty, Some(100.0));
+        assert_eq!(bounds.data.stopx, Some(200.0));
+        assert_eq!(bounds.data.stopy, Some(200.0));
+    }
+
+    #[test]
+    fn should_handle_an_expanding_bound() {
+        // Reference: sequenceDiagram.spec.js:1821.
+        let mut bounds = Bounds::default();
+        bounds.insert(BOX_MARGIN, 100.0, 100.0, 200.0, 200.0);
+        bounds.insert(BOX_MARGIN, 25.0, 50.0, 300.0, 400.0);
+        assert_eq!(bounds.data.startx, Some(25.0));
+        assert_eq!(bounds.data.starty, Some(50.0));
+        assert_eq!(bounds.data.stopx, Some(300.0));
+        assert_eq!(bounds.data.stopy, Some(400.0));
+    }
+
+    #[test]
+    fn should_handle_inserts_within_the_bound_without_changing_the_outer_bounds() {
+        // Reference: sequenceDiagram.spec.js:1831.
+        let mut bounds = Bounds::default();
+        bounds.insert(BOX_MARGIN, 100.0, 100.0, 200.0, 200.0);
+        bounds.insert(BOX_MARGIN, 25.0, 50.0, 300.0, 400.0);
+        bounds.insert(BOX_MARGIN, 125.0, 150.0, 150.0, 200.0);
+        assert_eq!(bounds.data.startx, Some(25.0));
+        assert_eq!(bounds.data.starty, Some(50.0));
+        assert_eq!(bounds.data.stopx, Some(300.0));
+        assert_eq!(bounds.data.stopy, Some(400.0));
+    }
+
+    #[test]
+    fn should_handle_a_loop_without_expanding_the_area() {
+        // Reference: sequenceDiagram.spec.js:1842.
+        let mut bounds = Bounds::default();
+        bounds.insert(BOX_MARGIN, 25.0, 50.0, 300.0, 400.0);
+        bounds.vertical_pos = 150.0;
+        bounds.new_block(None, false, None, None);
+        bounds.insert(BOX_MARGIN, 125.0, 150.0, 150.0, 200.0);
+
+        let lp = bounds.end_block().expect("the loop is open");
+        assert_eq!(lp.extent.startx, Some(125.0 - BOX_MARGIN));
+        assert_eq!(lp.extent.starty, Some(150.0 - BOX_MARGIN));
+        assert_eq!(lp.extent.stopx, Some(150.0 + BOX_MARGIN));
+        assert_eq!(lp.extent.stopy, Some(200.0 + BOX_MARGIN));
+
+        // The bounds of the first loop are unchanged.
+        assert_eq!(bounds.data.startx, Some(25.0));
+        assert_eq!(bounds.data.starty, Some(50.0));
+        assert_eq!(bounds.data.stopx, Some(300.0));
+        assert_eq!(bounds.data.stopy, Some(400.0));
+    }
+
+    #[test]
+    fn should_handle_multiple_loops_without_expanding_the_bounds() {
+        // Reference: sequenceDiagram.spec.js:1863.
+        let mut bounds = Bounds::default();
+        bounds.insert(BOX_MARGIN, 100.0, 100.0, 1000.0, 1000.0);
+        bounds.vertical_pos = 200.0;
+        bounds.new_block(None, false, None, None);
+        bounds.new_block(None, false, None, None);
+        bounds.insert(BOX_MARGIN, 200.0, 200.0, 300.0, 300.0);
+
+        // The innermost loop is closed first.
+        let inner = bounds.end_block().expect("the inner loop is open");
+        assert_eq!(inner.extent.startx, Some(200.0 - BOX_MARGIN));
+        assert_eq!(inner.extent.starty, Some(200.0 - BOX_MARGIN));
+        assert_eq!(inner.extent.stopx, Some(300.0 + BOX_MARGIN));
+        assert_eq!(inner.extent.stopy, Some(300.0 + BOX_MARGIN));
+
+        let outer = bounds.end_block().expect("the outer loop is open");
+        assert_eq!(outer.extent.startx, Some(200.0 - 2.0 * BOX_MARGIN));
+        assert_eq!(outer.extent.starty, Some(200.0 - 2.0 * BOX_MARGIN));
+        assert_eq!(outer.extent.stopx, Some(300.0 + 2.0 * BOX_MARGIN));
+        assert_eq!(outer.extent.stopy, Some(300.0 + 2.0 * BOX_MARGIN));
+
+        assert_eq!(bounds.data.startx, Some(100.0));
+        assert_eq!(bounds.data.starty, Some(100.0));
+        assert_eq!(bounds.data.stopx, Some(1000.0));
+        assert_eq!(bounds.data.stopy, Some(1000.0));
+    }
+
+    #[test]
+    fn should_handle_a_loop_that_expands_the_area() {
+        // Reference: sequenceDiagram.spec.js:1894.
+        let mut bounds = Bounds::default();
+        bounds.insert(BOX_MARGIN, 100.0, 100.0, 200.0, 200.0);
+        bounds.vertical_pos = 200.0;
+        bounds.new_block(None, false, None, None);
+        bounds.insert(BOX_MARGIN, 50.0, 50.0, 300.0, 300.0);
+
+        let lp = bounds.end_block().expect("the loop is open");
+        assert_eq!(lp.extent.startx, Some(50.0 - BOX_MARGIN));
+        assert_eq!(lp.extent.starty, Some(50.0 - BOX_MARGIN));
+        assert_eq!(lp.extent.stopx, Some(300.0 + BOX_MARGIN));
+        assert_eq!(lp.extent.stopy, Some(300.0 + BOX_MARGIN));
+
+        // After the loop, the bounds are the loop's edges.
+        assert_eq!(bounds.data.startx, lp.extent.startx);
+        assert_eq!(bounds.data.starty, lp.extent.starty);
+        assert_eq!(bounds.data.stopx, lp.extent.stopx);
+        assert_eq!(bounds.data.stopy, lp.extent.stopy);
+    }
+}

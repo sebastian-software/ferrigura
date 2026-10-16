@@ -259,3 +259,154 @@ pub fn draw_label_by_tspan(
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    //! `svgDraw.spec.js:117-241`: `drawText` of the sequence renderer, one line per `<br>`, anchored by
+    //! the message alignment, with the font written as a style.
+
+    use super::{Font, TextData, draw_text};
+
+    /// The font of the spec's text: `courier`, as the spec names it.
+    fn courier(size: f64) -> Font {
+        Font {
+            family: "courier".to_owned(),
+            size,
+            weight: 500.0,
+        }
+    }
+
+    /// The text content of an element.
+    fn text_of(element: &crate::common::Element) -> String {
+        let mut out = String::new();
+        element.collect_text(&mut out);
+        out
+    }
+
+    /// A text of one line, with a margin and a width, anchored as the test names it.
+    fn anchored<'a>(font: &'a Font, anchor: &'a str) -> TextData<'a> {
+        TextData {
+            text: "hello",
+            x: 100.0,
+            y: 20.0,
+            width: Some(200.0),
+            anchor: Some(anchor),
+            valign: None,
+            text_margin: Some(10.0),
+            dy: None,
+            class: "messageText",
+            tspan: false,
+            font,
+        }
+    }
+
+    #[test]
+    fn should_append_a_single_element() {
+        // Reference: svgDraw.spec.js:117.
+        let font = courier(10.0);
+        let data = TextData {
+            text: "One fine text message",
+            x: 10.0,
+            y: 10.0,
+            width: None,
+            anchor: None,
+            valign: None,
+            text_margin: None,
+            dy: Some("1em"),
+            class: "noteText",
+            tspan: false,
+            font: &font,
+        };
+        let elements = draw_text(&data).expect("the bundled font is read");
+        assert_eq!(elements.len(), 1);
+        let text = &elements[0];
+        assert_eq!(text.get("x"), Some("10"));
+        assert_eq!(text.get("y"), Some("10"));
+        assert_eq!(text.get("dy"), Some("1em"));
+        assert_eq!(text.get("class"), Some("noteText"));
+        assert_eq!(text_of(text), "One fine text message");
+        let style = text.get("style").expect("the text has a style");
+        assert!(style.contains("font-family: courier;"), "{style}");
+        assert!(style.contains("font-size: 10px;"), "{style}");
+        assert!(style.contains("font-weight: 500;"), "{style}");
+    }
+
+    #[test]
+    fn should_append_a_multiple_elements() {
+        // Reference: svgDraw.spec.js:141. Each `<br>` makes a line, and each line is a text.
+        let font = courier(16.0);
+        let data = TextData {
+            text: "One fine text message<br>with multiple<br>fine lines",
+            x: 10.0,
+            y: 10.0,
+            width: None,
+            anchor: None,
+            valign: None,
+            text_margin: None,
+            dy: None,
+            class: "noteText",
+            tspan: false,
+            font: &font,
+        };
+        let elements = draw_text(&data).expect("the bundled font is read");
+        assert_eq!(elements.len(), 3);
+        let lines = ["One fine text message", "with multiple", "fine lines"];
+        for (element, line) in elements.iter().zip(lines) {
+            assert_eq!(element.get("x"), Some("10"));
+            assert_eq!(element.get("y"), Some("10"));
+            assert_eq!(text_of(element), line);
+        }
+    }
+
+    #[test]
+    fn anchor_left_positions_text_at_x_text_margin() {
+        // Reference: svgDraw.spec.js:172. The left anchor starts the text `textMargin` inside the box.
+        let font = courier(16.0);
+        let elements = draw_text(&anchored(&font, "left")).expect("the bundled font is read");
+        assert_eq!(elements[0].get("x"), Some("110"));
+        assert_eq!(elements[0].get("text-anchor"), Some("start"));
+    }
+
+    #[test]
+    fn anchor_center_positions_text_at_x_width_2() {
+        // Reference: svgDraw.spec.js:187. The centre anchor puts the text at the middle of the width.
+        let font = courier(16.0);
+        let elements = draw_text(&anchored(&font, "center")).expect("the bundled font is read");
+        assert_eq!(elements[0].get("x"), Some("200"));
+        assert_eq!(elements[0].get("text-anchor"), Some("middle"));
+    }
+
+    #[test]
+    fn anchor_right_positions_text_at_x_width_text_margin() {
+        // Reference: svgDraw.spec.js:202. The right anchor ends the text `textMargin` inside the box.
+        let font = courier(16.0);
+        let elements = draw_text(&anchored(&font, "right")).expect("the bundled font is read");
+        assert_eq!(elements[0].get("x"), Some("290"));
+        assert_eq!(elements[0].get("text-anchor"), Some("end"));
+    }
+
+    #[test]
+    fn should_work_with_numeral_font_sizes() {
+        // Reference: svgDraw.spec.js:218. The reference takes the size as a number, and writes it in
+        // pixels as it does a string; a font here is always a number.
+        let font = courier(10.0);
+        let data = TextData {
+            text: "One fine text message",
+            x: 10.0,
+            y: 10.0,
+            width: None,
+            anchor: None,
+            valign: None,
+            text_margin: None,
+            dy: Some("1em"),
+            class: "noteText",
+            tspan: false,
+            font: &font,
+        };
+        let elements = draw_text(&data).expect("the bundled font is read");
+        assert_eq!(elements.len(), 1);
+        let style = elements[0].get("style").expect("the text has a style");
+        assert!(style.contains("font-size: 10px;"), "{style}");
+        assert_eq!(elements[0].get("dy"), Some("1em"));
+    }
+}
