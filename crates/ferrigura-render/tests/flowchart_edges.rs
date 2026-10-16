@@ -209,3 +209,56 @@ fn the_line_hops_match_the_reference() {
         failures.join("\n")
     );
 }
+
+/// A neo edge of the default flowchart, as the reference's capture of `nightly-check-02` writes it:
+/// `d` ends 4 px before its last point, the dash array hides those 4 px, and the arrow is the neo
+/// margin variant. The class repeats the thickness and pattern classes, as `flowDb` gives them.
+#[test]
+fn a_neo_edge_matches_the_reference_svg() {
+    let edge = Edge {
+        id: "L_A_B_0".to_owned(),
+        start: "A".to_owned(),
+        end: "B".to_owned(),
+        edge_type: "arrow_point".to_owned(),
+        label_type: LabelType::Text,
+        classes: "edge-thickness-normal edge-pattern-solid flowchart-link".to_owned(),
+        thickness: "normal".to_owned(),
+        pattern: "normal".to_owned(),
+        look: "neo".to_owned(),
+        labelpos: "c".to_owned(),
+        arrow_type_start: "none".to_owned(),
+        arrow_type_end: "arrow_point".to_owned(),
+        curve: Some("rounded".to_owned()),
+        points: vec![Point::new(280.0, 53.0), Point::new(280.0, 154.0)],
+        ..Edge::default()
+    };
+    let painted = paint_paths(
+        std::slice::from_ref(&edge),
+        "svg",
+        &MermaidConfig::default(),
+    );
+    let svg = &painted[0].svg;
+    assert!(svg.contains(" d=\"M280,53L280,150\""), "{svg}");
+    assert!(
+        svg.contains(
+            " class=\" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link\""
+        ),
+        "{svg}"
+    );
+    assert!(
+        svg.contains(" style=\"stroke-dasharray: 0 0 93 4; stroke-dashoffset: 0;;\""),
+        "{svg}"
+    );
+    assert!(svg.contains(" data-look=\"neo\""), "{svg}");
+    assert!(
+        svg.contains(" marker-end=\"url(#svg_flowchart-v2-pointEnd-margin)\""),
+        "{svg}"
+    );
+    assert!(!svg.contains("marker-start"), "{svg}");
+    assert_eq!(
+        painted[0].bbox.height,
+        150.0 - 53.0,
+        "{:?}",
+        painted[0].bbox
+    );
+}
