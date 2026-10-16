@@ -35,6 +35,7 @@ import {
   nodesOnlyGraph,
   slugify,
   syntheticComponentGraphs,
+  syntheticCompoundInvertedPortGraphs,
   syntheticEdgeGraphs,
   syntheticExplicitPortGraphs,
   syntheticExplicitPortGuardGraphs,
@@ -438,6 +439,9 @@ async function syntheticRecords(): Promise<CaseRecord[]> {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticModelOrderFirstTryGraphs()) {
+    await add(name, graph);
+  }
+  for (const { name, graph } of syntheticCompoundInvertedPortGraphs()) {
     await add(name, graph);
   }
   return records.sort(byName);

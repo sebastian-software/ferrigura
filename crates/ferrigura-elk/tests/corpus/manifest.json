@@ -1042,6 +1042,30 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__compound-edge-into-ancestor",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 2,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__compound-hierarchical-offset-order",
+   "fixture": null,
+   "nodes": 9,
+   "edges": 12,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__compound-marked-cross-hierarchy-edge",
+   "fixture": null,
+   "nodes": 12,
+   "edges": 17,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
    "name": "synthetic__edges-chain-3",
    "fixture": null,
    "nodes": 3,

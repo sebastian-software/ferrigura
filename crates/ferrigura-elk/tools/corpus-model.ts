@@ -850,6 +850,612 @@ export function syntheticMarkedExplicitPortGraphs(): {
 }
 
 /**
+ * Compound graphs whose cross-hierarchy edges meet inverted ports, from the random compound graphs of
+ * `random-compound-graphs.ts` (seed 20261017: graphs 43, 579 and 880), which the inverted port dummies
+ * let the port lay out. Each one diverged from elkjs in one place: an edge from a node to its ancestor
+ * (whose coordinates are relative to the ancestor), a cross-hierarchy edge segment among the marked
+ * edges of the Brandes & Koepf log (which names it by its ELK edge's containers), and an edge whose
+ * hierarchical offset is summed over two levels (in Java's order).
+ */
+export function syntheticCompoundInvertedPortGraphs(): {
+  name: string;
+  graph: Record<string, unknown>;
+}[] {
+  return [
+    {
+      name: 'synthetic__compound-edge-into-ancestor',
+      graph: {
+        id: 'root',
+        layoutOptions: {
+          'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+          'elk.algorithm': 'elk.layered',
+          'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+          'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+          'elk.direction': 'UP',
+          'spacing.baseValue': 40,
+          'elk.layered.unnecessaryBendpoints': true,
+          'elk.layered.cycleBreaking.strategy': 'GREEDY',
+          'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+          'elk.layered.mergeEdges': false,
+          'elk.layered.mergeHierarchyEdges': false,
+          'elk.randomSeed': 920,
+          'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+          'elk.spacing.portsSurrounding': '[top=12,left=12,bottom=12,right=12]',
+        },
+        children: [
+          {
+            id: 'g0',
+            children: [
+              {
+                id: 'g1',
+                children: [
+                  {
+                    id: 'g2',
+                    width: 73,
+                    height: 37,
+                  },
+                  {
+                    id: 'g3',
+                    width: 34,
+                    height: 45,
+                    labels: [
+                      {
+                        text: 'Leaf g3',
+                        width: 24,
+                        height: 18,
+                      },
+                    ],
+                    layoutOptions: {
+                      'elk.nodeLabels.placement': '[H_CENTER V_CENTER, INSIDE]',
+                    },
+                  },
+                ],
+                labels: [
+                  {
+                    text: 'Group g1',
+                    width: 38,
+                    height: 12,
+                  },
+                ],
+                layoutOptions: {
+                  'elk.nodeLabels.placement': '[H_LEFT V_TOP, INSIDE]',
+                },
+              },
+            ],
+          },
+          {
+            id: 'g4',
+            width: 33,
+            height: 47,
+          },
+        ],
+        edges: [
+          {
+            id: 'e0',
+            sources: ['g3'],
+            targets: ['g0'],
+            labels: [
+              {
+                text: 'L0',
+                width: 22,
+                height: 17,
+              },
+            ],
+          },
+          {
+            id: 'e1',
+            sources: ['g4'],
+            targets: ['g3'],
+          },
+        ],
+      },
+    },
+    {
+      name: 'synthetic__compound-marked-cross-hierarchy-edge',
+      graph: {
+        id: 'root',
+        layoutOptions: {
+          'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+          'elk.algorithm': 'elk.layered',
+          'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+          'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+          'elk.direction': 'RIGHT',
+          'spacing.baseValue': 40,
+          'elk.layered.unnecessaryBendpoints': true,
+          'elk.layered.cycleBreaking.strategy': 'GREEDY',
+          'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+          'elk.layered.mergeEdges': false,
+          'elk.layered.mergeHierarchyEdges': false,
+          'elk.randomSeed': 306,
+          'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+          'elk.spacing.portsSurrounding': '[top=12,left=12,bottom=12,right=12]',
+        },
+        children: [
+          {
+            id: 'g0',
+            children: [
+              {
+                id: 'g1',
+                width: 58,
+                height: 34,
+                labels: [
+                  {
+                    text: 'Leaf g1',
+                    width: 43,
+                    height: 13,
+                  },
+                ],
+                layoutOptions: {
+                  'elk.nodeLabels.placement': '[H_LEFT V_TOP, INSIDE]',
+                },
+              },
+              {
+                id: 'g2',
+                width: 33,
+                height: 48,
+              },
+            ],
+            labels: [
+              {
+                text: 'Group g0',
+                width: 20,
+                height: 10,
+              },
+            ],
+            layoutOptions: {
+              'elk.nodeLabels.placement': '[H_LEFT V_TOP, INSIDE]',
+            },
+          },
+          {
+            id: 'g3',
+            width: 69,
+            height: 35,
+          },
+          {
+            id: 'g4',
+            children: [
+              {
+                id: 'g5',
+                children: [
+                  {
+                    id: 'g6',
+                    width: 32,
+                    height: 39,
+                  },
+                ],
+                labels: [
+                  {
+                    text: 'Group g5',
+                    width: 44,
+                    height: 11,
+                  },
+                ],
+                layoutOptions: {
+                  'elk.nodeLabels.placement': '[H_CENTER V_CENTER, INSIDE]',
+                },
+              },
+              {
+                id: 'g7',
+                width: 26,
+                height: 39,
+                labels: [
+                  {
+                    text: 'Leaf g7',
+                    width: 27,
+                    height: 15,
+                  },
+                ],
+                layoutOptions: {
+                  'elk.nodeLabels.placement': '[H_LEFT V_TOP, INSIDE]',
+                },
+              },
+              {
+                id: 'g8',
+                width: 33,
+                height: 38,
+              },
+              {
+                id: 'g9',
+                children: [
+                  {
+                    id: 'g10',
+                    width: 60,
+                    height: 49,
+                    labels: [
+                      {
+                        text: 'Leaf g10',
+                        width: 29,
+                        height: 14,
+                      },
+                    ],
+                    layoutOptions: {
+                      'elk.nodeLabels.placement': '[H_RIGHT V_BOTTOM, INSIDE]',
+                    },
+                  },
+                  {
+                    id: 'g11',
+                    width: 72,
+                    height: 22,
+                  },
+                ],
+                labels: [
+                  {
+                    text: 'Group g9',
+                    width: 13,
+                    height: 18,
+                  },
+                ],
+                layoutOptions: {
+                  'elk.nodeLabels.placement': '[H_LEFT V_TOP, INSIDE]',
+                },
+              },
+            ],
+            labels: [
+              {
+                text: 'Group g4',
+                width: 11,
+                height: 10,
+              },
+            ],
+            layoutOptions: {
+              'elk.nodeLabels.placement': '[H_LEFT V_TOP, INSIDE]',
+            },
+          },
+        ],
+        edges: [
+          {
+            id: 'e0',
+            sources: ['g3'],
+            targets: ['g8'],
+          },
+          {
+            id: 'e1',
+            sources: ['g2'],
+            targets: ['g3'],
+            labels: [
+              {
+                text: 'L1',
+                width: 14,
+                height: 15,
+              },
+            ],
+          },
+          {
+            id: 'e2',
+            sources: ['g2'],
+            targets: ['g3'],
+          },
+          {
+            id: 'e3',
+            sources: ['g5'],
+            targets: ['g6'],
+          },
+          {
+            id: 'e4',
+            sources: ['g6'],
+            targets: ['g11'],
+          },
+          {
+            id: 'e5',
+            sources: ['g7'],
+            targets: ['g8'],
+          },
+          {
+            id: 'e6',
+            sources: ['g10'],
+            targets: ['g6'],
+          },
+          {
+            id: 'e7',
+            sources: ['g10'],
+            targets: ['g8'],
+            labels: [
+              {
+                text: 'L7',
+                width: 14,
+                height: 13,
+              },
+            ],
+          },
+          {
+            id: 'e8',
+            sources: ['g6'],
+            targets: ['g11'],
+          },
+          {
+            id: 'e9',
+            sources: ['g7'],
+            targets: ['g8'],
+            labels: [
+              {
+                text: 'L9',
+                width: 19,
+                height: 10,
+              },
+            ],
+          },
+          {
+            id: 'e10',
+            sources: ['g2'],
+            targets: ['g6'],
+          },
+          {
+            id: 'e11',
+            sources: ['g6'],
+            targets: ['g5'],
+          },
+          {
+            id: 'e12',
+            sources: ['g4'],
+            targets: ['g7'],
+          },
+          {
+            id: 'e13',
+            sources: ['g2'],
+            targets: ['g6'],
+          },
+          {
+            id: 'e14',
+            sources: ['g8'],
+            targets: ['g5'],
+          },
+          {
+            id: 'e15',
+            sources: ['g0'],
+            targets: ['g5'],
+            labels: [
+              {
+                text: 'L15',
+                width: 30,
+                height: 10,
+              },
+            ],
+          },
+          {
+            id: 'e16',
+            sources: ['g11'],
+            targets: ['g1'],
+            labels: [
+              {
+                text: 'L16',
+                width: 33,
+                height: 18,
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      name: 'synthetic__compound-hierarchical-offset-order',
+      graph: {
+        id: 'root',
+        layoutOptions: {
+          'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+          'elk.algorithm': 'elk.layered',
+          'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+          'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+          'elk.direction': 'UP',
+          'spacing.baseValue': 40,
+          'elk.layered.unnecessaryBendpoints': true,
+          'elk.layered.cycleBreaking.strategy': 'GREEDY',
+          'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+          'elk.layered.mergeEdges': false,
+          'elk.layered.mergeHierarchyEdges': true,
+          'elk.randomSeed': 441,
+          'elk.layered.considerModelOrder.strategy': 'NONE',
+          'elk.spacing.portsSurrounding': '[top=12,left=12,bottom=12,right=12]',
+        },
+        children: [
+          {
+            id: 'g0',
+            width: 26,
+            height: 59,
+            labels: [
+              {
+                text: 'Leaf g0',
+                width: 19,
+                height: 16,
+              },
+            ],
+            layoutOptions: {
+              'elk.nodeLabels.placement': '[H_CENTER V_CENTER, INSIDE]',
+            },
+          },
+          {
+            id: 'g1',
+            width: 60,
+            height: 58,
+          },
+          {
+            id: 'g2',
+            width: 60,
+            height: 58,
+            labels: [
+              {
+                text: 'Leaf g2',
+                width: 30,
+                height: 12,
+              },
+            ],
+            layoutOptions: {
+              'elk.nodeLabels.placement': '[H_CENTER V_CENTER, INSIDE]',
+            },
+          },
+          {
+            id: 'g3',
+            width: 70,
+            height: 45,
+            labels: [
+              {
+                text: 'Leaf g3',
+                width: 36,
+                height: 19,
+              },
+            ],
+            layoutOptions: {
+              'elk.nodeLabels.placement': '[H_LEFT V_TOP, INSIDE]',
+            },
+          },
+          {
+            id: 'g4',
+            children: [
+              {
+                id: 'g5',
+                width: 75,
+                height: 45,
+                labels: [
+                  {
+                    text: 'Leaf g5',
+                    width: 39,
+                    height: 17,
+                  },
+                ],
+                layoutOptions: {
+                  'elk.nodeLabels.placement': '[H_CENTER V_CENTER, INSIDE]',
+                },
+              },
+              {
+                id: 'g6',
+                width: 41,
+                height: 26,
+              },
+              {
+                id: 'g7',
+                children: [
+                  {
+                    id: 'g8',
+                    width: 55,
+                    height: 54,
+                  },
+                ],
+                labels: [
+                  {
+                    text: 'Group g7',
+                    width: 42,
+                    height: 16,
+                  },
+                ],
+                layoutOptions: {
+                  'elk.nodeLabels.placement': '[H_CENTER V_TOP, INSIDE]',
+                },
+              },
+            ],
+            labels: [
+              {
+                text: 'Group g4',
+                width: 29,
+                height: 15,
+              },
+            ],
+            layoutOptions: {
+              'elk.nodeLabels.placement': '[H_LEFT V_TOP, INSIDE]',
+            },
+          },
+        ],
+        edges: [
+          {
+            id: 'e0',
+            sources: ['g7'],
+            targets: ['g0'],
+            labels: [
+              {
+                text: 'L0',
+                width: 28,
+                height: 18,
+              },
+            ],
+          },
+          {
+            id: 'e1',
+            sources: ['g4'],
+            targets: ['g7'],
+          },
+          {
+            id: 'e2',
+            sources: ['g8'],
+            targets: ['g5'],
+          },
+          {
+            id: 'e3',
+            sources: ['g2'],
+            targets: ['g6'],
+          },
+          {
+            id: 'e4',
+            sources: ['g7'],
+            targets: ['g4'],
+            labels: [
+              {
+                text: 'L4',
+                width: 12,
+                height: 17,
+              },
+            ],
+          },
+          {
+            id: 'e5',
+            sources: ['g8'],
+            targets: ['g2'],
+          },
+          {
+            id: 'e6',
+            sources: ['g5'],
+            targets: ['g0'],
+            labels: [
+              {
+                text: 'L6',
+                width: 17,
+                height: 14,
+              },
+            ],
+          },
+          {
+            id: 'e7',
+            sources: ['g2'],
+            targets: ['g7'],
+          },
+          {
+            id: 'e8',
+            sources: ['g7'],
+            targets: ['g1'],
+            labels: [
+              {
+                text: 'L8',
+                width: 19,
+                height: 11,
+              },
+            ],
+          },
+          {
+            id: 'e9',
+            sources: ['g1'],
+            targets: ['g0'],
+          },
+          {
+            id: 'e10',
+            sources: ['g4'],
+            targets: ['g1'],
+            labels: [
+              {
+                text: 'L10',
+                width: 14,
+                height: 17,
+              },
+            ],
+          },
+          {
+            id: 'e11',
+            sources: ['g0'],
+            targets: ['g8'],
+          },
+        ],
+      },
+    },
+  ];
+}
+
+/**
  * A flat graph with cycles, laid out with the greedy cycle breaker, which Mermaid's legacy preset
  * selects through the GREEDY strategy. The flows of its nodes differ, so the sinks, the sources and
  * the random draw of the node with the largest outflow all take part.
