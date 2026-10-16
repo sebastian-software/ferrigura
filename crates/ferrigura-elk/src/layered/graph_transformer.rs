@@ -7,11 +7,10 @@
 //! transposed and mirrored across y, in the order the mode asks for. Only the reading direction
 //! congruency is ported, which is the default.
 //!
-//! The node labels are transposed with their sizes, positions and placements, and the graph's node
-//! label padding with the graph's padding. Not ported, because the graphs here do not have them:
-//! node padding (nodes have none), fixed positions (no corpus graph sets one), and the port indices
-//! that `reverseIndex` negates (ports carry none). The mirroring of node labels is not ported, so
-//! a LEFT or UP graph with node labels is refused.
+//! The node labels are transposed and mirrored with their sizes, positions and placements, and the
+//! graph's node label padding with the graph's padding. Not ported, because the graphs here do not
+//! have them: node padding (nodes have none), fixed positions (no corpus graph sets one), and the port
+//! indices that `reverseIndex` negates (ports carry none).
 
 use crate::core::data::JavaEnum;
 use crate::core::data::OptionValue;
@@ -106,13 +105,6 @@ pub fn transform(graph: &mut LGraph, mode: Mode) -> Result<(), LayoutError> {
         ));
     }
     let direction = graph.properties.enum_of::<Direction>(options::DIRECTION);
-    if matches!(direction, Some(Direction::LEFT | Direction::UP))
-        && graph.nodes.iter().any(|node| !node.labels.is_empty())
-    {
-        return Err(LayoutError::Unsupported(
-            "node labels in a LEFT or UP graph (their mirroring is not ported)".to_string(),
-        ));
-    }
     match direction {
         Some(Direction::LEFT) => mirror_all(graph, Axis::X),
         Some(Direction::DOWN) => transpose_all(graph),
@@ -195,6 +187,7 @@ fn mirror_nodes(graph: &mut LGraph, nodes: &[usize], axis: Axis, offset: f64) {
             let position = axis.coordinate_mut(&mut graph.nodes[node].position);
             *position = (offset - node_size) - *position;
         }
+        mirror_node_label_placement(&mut graph.nodes[node].properties, axis);
         if let Some(alignment) = graph.nodes[node]
             .properties
             .enum_of::<Alignment>(options::ALIGNMENT)
@@ -236,7 +229,50 @@ fn mirror_nodes(graph: &mut LGraph, nodes: &[usize], axis: Axis, offset: f64) {
                 }
             }
         }
+        // The node labels: their placement, and their position within the node's far side.
+        for label in graph.nodes[node].labels.clone() {
+            let label_size = axis.coordinate(&graph.labels[label].size);
+            mirror_node_label_placement(&mut graph.labels[label].properties, axis);
+            let position = axis.coordinate_mut(&mut graph.labels[label].position);
+            *position = (node_size - label_size) - *position;
+        }
     }
+}
+
+/// `GraphTransformer.mirrorNodeLabelPlacementX` and `mirrorNodeLabelPlacementY`: a placement that names
+/// the left side takes the right side, or the reverse, across x; the top and the bottom across y.
+/// A placement that names neither side is kept.
+fn mirror_node_label_placement(properties: &mut PropertyHolder, axis: Axis) {
+    let (first, second) = match axis {
+        Axis::X => (NodeLabelPlacement::H_LEFT, NodeLabelPlacement::H_RIGHT),
+        Axis::Y => (NodeLabelPlacement::V_TOP, NodeLabelPlacement::V_BOTTOM),
+    };
+    let Some(OptionValue::EnumSet { class, names }) =
+        properties.get(options::NODE_LABELS_PLACEMENT).cloned()
+    else {
+        return;
+    };
+    let (from, to) = if names.iter().any(|name| name == first.java_name()) {
+        (first, second)
+    } else if names.iter().any(|name| name == second.java_name()) {
+        (second, first)
+    } else {
+        return;
+    };
+    let mut mirrored: Vec<String> = names
+        .into_iter()
+        .filter(|name| name != from.java_name())
+        .collect();
+    if !mirrored.iter().any(|name| name == to.java_name()) {
+        mirrored.push(to.java_name().to_string());
+    }
+    properties.set(
+        options::NODE_LABELS_PLACEMENT,
+        Some(OptionValue::EnumSet {
+            class,
+            names: mirrored,
+        }),
+    );
 }
 
 /// `GraphTransformer.transposeAll`: the nodes, their ports, the edges' bend points, junction points
