@@ -361,7 +361,8 @@ impl SelfLoopHolder {
 }
 
 /// `SelfLoopPreProcessor.hideSelfLoops` and `hidePorts`: detaches the self loop edges, and hides the
-/// ports that have only self loops from the node, unless the node's port order is fixed.
+/// ports that have only self loops from the node, unless the node's port order is fixed or the
+/// graph nested in the node has external ports (`hierarchyMode`).
 pub fn hide(graph: &mut LGraph, holder: &mut SelfLoopHolder) -> Result<(), LayoutError> {
     for hyper in &holder.hyper_loops {
         for &edge in &hyper.sl_edges {
@@ -372,7 +373,7 @@ pub fn hide(graph: &mut LGraph, holder: &mut SelfLoopHolder) -> Result<(), Layou
     let constraints = graph.nodes[holder.node]
         .properties
         .enum_with_default::<PortConstraints>(options::PORT_CONSTRAINTS);
-    if ports::is_order_fixed(constraints) {
+    if ports::is_order_fixed(constraints) || graph.nodes[holder.node].nested_external_ports {
         return Ok(());
     }
     for index in 0..holder.sl_ports.len() {

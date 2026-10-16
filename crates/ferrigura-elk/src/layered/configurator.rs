@@ -25,12 +25,18 @@ use crate::layered::phases::{P1, P2, P3, P4, P5, PHASES, PhaseStep};
 
 /// `GraphConfigurator.prepareGraphForLayout`: sets `lgraph.processors`.
 pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
-    // Centred labels and self loops are handled by their processors; other features (hyperedges,
-    // hierarchical ports, ...) need processors that are not ported yet.
+    // Centred labels, self loops, external ports and non-free ports are handled by their
+    // processors; other features (hyperedges, north and south ports, ...) need processors that are
+    // not ported yet.
     if let Some(feature) = graph.graph_properties.iter().find(|feature| {
-        **feature != GraphProperties::CENTER_LABELS
-            && **feature != GraphProperties::END_LABELS
-            && **feature != GraphProperties::SELF_LOOPS
+        !matches!(
+            feature,
+            GraphProperties::CENTER_LABELS
+                | GraphProperties::END_LABELS
+                | GraphProperties::SELF_LOOPS
+                | GraphProperties::EXTERNAL_PORTS
+                | GraphProperties::NON_FREE_PORTS
+        )
     }) {
         return Err(LayoutError::Unsupported(format!(
             "graph feature {feature:?}"

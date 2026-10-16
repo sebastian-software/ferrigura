@@ -157,21 +157,38 @@ impl PhaseStep {
                     .add_after(P5, S::LONG_EDGE_JOINER);
             }
             PhaseStep::NodePlacement(_) => {
-                // Hierarchical ports add one processor, only for graphs with external ports.
+                // `BKNodePlacer.HIERARCHY_PROCESSING_ADDITIONS`, only for graphs with external ports.
                 if graph
                     .graph_properties
                     .contains(&GraphProperties::EXTERNAL_PORTS)
                 {
-                    return Err(LayoutError::Unsupported(
-                        "graphs with external ports are not ported yet".to_string(),
-                    ));
+                    config.add_before(P5, S::HIERARCHICAL_PORT_POSITION_PROCESSOR);
+                    return Ok(Some(config));
                 }
                 return Ok(None);
             }
             PhaseStep::EdgeRouting(_) => {
-                // The orthogonal router adds the self loop processors to a graph with self loops.
-                // It also adds processors for hyperedges, labels and ports; graphs with those are
-                // not ported yet, see `GraphConfigurator`.
+                // `OrthogonalEdgeRouter.getLayoutProcessorConfiguration`. Its additions for labels
+                // are made by `GraphConfigurator`; hyperedges, hypernodes and north and south ports
+                // are refused there.
+                if graph
+                    .graph_properties
+                    .contains(&GraphProperties::NON_FREE_PORTS)
+                    || graph
+                        .properties
+                        .bool_of(crate::layered::options::FEEDBACK_EDGES)
+                {
+                    config.add_before(P3, S::INVERTED_PORT_PROCESSOR);
+                }
+                if graph
+                    .graph_properties
+                    .contains(&GraphProperties::EXTERNAL_PORTS)
+                {
+                    config
+                        .add_before(P3, S::HIERARCHICAL_PORT_CONSTRAINT_PROCESSOR)
+                        .add_before(P4, S::HIERARCHICAL_PORT_DUMMY_SIZE_PROCESSOR)
+                        .add_after(P5, S::HIERARCHICAL_PORT_ORTHOGONAL_EDGE_ROUTER);
+                }
                 if graph
                     .graph_properties
                     .contains(&GraphProperties::SELF_LOOPS)

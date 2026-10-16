@@ -1,8 +1,10 @@
 //! Layered graph model, `LGraph` and friends in `org.eclipse.elk.alg.layered.graph`.
 //!
 //! Graphs are arenas of nodes; layers and lists hold indices into them, which
-//! keeps the Java object graph's sharing explicit. Edges, ports and nested graphs
-//! come with the processors that use them; the importer rejects them for now.
+//! keeps the Java object graph's sharing explicit. The graphs of a compound
+//! layout are a list, the top graph first; a node holds the index of its nested
+//! graph, and a nested graph the indices of its node. Edges between graphs are
+//! kept by the top graph (`CrossHierarchyEdge`).
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -64,8 +66,55 @@ pub struct LNode {
     /// port side processor changed them. Set by the configurator.
     pub original_port_constraints: Option<PortConstraints>,
     /// `LNode.getNestedGraph()`: in a compound layout, the index of the graph inside this node in
-    /// the layout's list of graphs (see `driver::Compound`).
+    /// the layout's list of graphs (see `importer::import_compound`).
     pub nested_graph: Option<usize>,
+    /// The parts of an external port dummy, which stands in a nested graph for a port of the node
+    /// the graph is nested in.
+    pub external_port: Option<ExternalPortDummy>,
+    /// `InternalProperties.IN_LAYER_CONSTRAINT`.
+    pub in_layer_constraint: InLayerConstraint,
+    /// Whether the graph nested in this node has `GraphProperties.EXTERNAL_PORTS`, which the
+    /// compound graph preprocessor records here for the processors of the node's own graph.
+    pub nested_external_ports: bool,
+}
+
+/// The properties of an external port dummy (`NodeType.EXTERNAL_PORT`), which
+/// `LGraphUtil.createExternalPortDummy` sets.
+#[derive(Debug, Clone, Default)]
+pub struct ExternalPortDummy {
+    /// `InternalProperties.EXT_PORT_SIDE`: the side of the parent node the port is on, in the
+    /// graph's current frame.
+    pub side: Option<PortSide>,
+    /// `InternalProperties.EXT_PORT_SIZE`: the size of the port.
+    pub size: KVector,
+    /// `LayeredOptions.PORT_ANCHOR` of the dummy: the anchor the dummy's port was placed at.
+    pub anchor: KVector,
+    /// `InternalProperties.ORIGIN`: the port the dummy stands for, an index into the ports of the
+    /// graph that holds the parent node.
+    pub origin: usize,
+    /// `InternalProperties.EDGE_CONSTRAINT`.
+    pub edge_constraint: EdgeConstraint,
+    /// `InternalProperties.PORT_RATIO_OR_POSITION`, set for port constraints with a fixed order.
+    pub port_ratio_or_position: Option<f64>,
+}
+
+/// `InLayerConstraint`: a node that must be at the top or the bottom of its layer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum InLayerConstraint {
+    #[default]
+    NONE,
+    TOP,
+    BOTTOM,
+}
+
+/// `EdgeConstraint`: a node that may only have incoming or only outgoing edges.
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum EdgeConstraint {
+    #[default]
+    NONE,
+    INCOMING_ONLY,
+    OUTGOING_ONLY,
 }
 
 /// Whether a port is where an edge leaves or enters its node, `PortType`.
@@ -97,6 +146,13 @@ pub struct LPort {
     pub max_edge_thickness: Option<f64>,
     /// `LPort.id`: the index of the port in its node's list, as the self loop routing assigns it.
     pub id: usize,
+    /// `InternalProperties.PORT_DUMMY`: the external port dummy that stands for this port in the
+    /// graph nested in the port's node, an index into that graph's nodes.
+    pub port_dummy: Option<usize>,
+    /// `InternalProperties.INSIDE_CONNECTIONS`: the port has edges to the inside of its node.
+    pub inside_connections: bool,
+    /// `LayeredOptions.PORT_BORDER_OFFSET`: how far the port sits outside its node's border.
+    pub border_offset: f64,
 }
 
 impl LPort {
@@ -112,6 +168,9 @@ impl LPort {
             outgoing: Vec::new(),
             incoming: Vec::new(),
             max_edge_thickness: None,
+            port_dummy: None,
+            inside_connections: false,
+            border_offset: 0.0,
         }
     }
 }
@@ -202,6 +261,65 @@ pub struct LGraph {
     /// `LGraph.getParentNode()`: in a compound layout, the graph that holds the node this graph is
     /// nested in, and the node's index there. `None` for the top graph of a layout.
     pub parent_node: Option<(usize, usize)>,
+    /// The edges of a compound layout whose ends are in different graphs. The top graph holds them,
+    /// as it holds `InternalProperties.CROSS_HIERARCHY_MAP` in Java.
+    pub cross_hierarchy_edges: Vec<CrossHierarchyEdge>,
+    /// `InternalProperties.HIDDEN_NODES`: the `FIRST_SEPARATE` and `LAST_SEPARATE` nodes the layer
+    /// constraint preprocessor took out of the graph during layering. Their edges stay in their own
+    /// ports' lists and leave the lists of the ports at the other end.
+    pub hidden_nodes: Vec<usize>,
+}
+
+/// An edge of a compound layout whose source and target are in different graphs, an `LEdge` that
+/// `ElkGraphImporter.importHierarchicalGraph` attaches to ports of two graphs. The compound graph
+/// preprocessor replaces it with dummy edges in the graphs it passes through (`segments`), and
+/// the postprocessor joins their routes into it.
+#[derive(Debug, Clone, Default)]
+pub struct CrossHierarchyEdge {
+    /// The id of the ELK edge.
+    pub id: String,
+    /// The options of the ELK edge.
+    pub properties: PropertyHolder,
+    /// `InternalProperties.MODEL_ORDER`, when the input order matters.
+    pub model_order: Option<usize>,
+    /// `LEdge.THICKNESS`.
+    pub thickness: f64,
+    /// The graph and the port index of the edge's source.
+    pub source: (usize, usize),
+    /// The graph and the port index of the edge's target.
+    pub target: (usize, usize),
+    /// `LEdge.getLabels()` of the original edge, while the edge holds them: before the preprocessor
+    /// moves them to a segment, and after the postprocessor brings them back (in the coordinates
+    /// of the edge's reference graph).
+    pub labels: Vec<LLabel>,
+    /// The labels the preprocessor moved: the graph of the segment and the label's id there.
+    pub moved_labels: Vec<(usize, LabelId)>,
+    /// `InternalProperties.COORDINATE_SYSTEM_ORIGIN`: the graph the route's coordinates are
+    /// relative to in the ELK graph, when that is not the graph of the source.
+    pub coordinate_system_origin: Option<usize>,
+    /// `CROSS_HIERARCHY_MAP.get(edge)`: the dummy edges that stand for this edge, each with its
+    /// graph and the type of the external port it was made for.
+    pub segments: Vec<CrossHierarchySegment>,
+    /// `LEdge.getBendPoints()`, set by the postprocessor.
+    pub bend_points: Vec<KVector>,
+    /// `LayeredOptions.JUNCTION_POINTS`, set by the postprocessor.
+    pub junction_points: Option<Vec<KVector>>,
+    /// `InternalProperties.TARGET_OFFSET`: moves the target point into the reference graph.
+    pub target_offset: Option<KVector>,
+    /// Whether the edge is attached to its ports (`getSource() != null`): until the preprocessor
+    /// removes it, and again after the postprocessor.
+    pub attached: bool,
+}
+
+/// `CrossHierarchyEdge` in Java: one dummy edge of a cross-hierarchy edge.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CrossHierarchySegment {
+    /// The graph of the dummy edge.
+    pub graph: usize,
+    /// The dummy edge, an index into the graph's edges.
+    pub edge: usize,
+    /// The type of the external port the segment was made for.
+    pub port_type: PortType,
 }
 
 /// The id of an `LLabel` in `LGraph::labels`.

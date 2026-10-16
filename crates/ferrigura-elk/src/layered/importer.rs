@@ -9,7 +9,7 @@
 //! (`importHierarchicalGraph`). Ports on nodes, inside self loops, and edges between nodes of
 //! different graphs are reported as unsupported.
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeSet, HashMap, VecDeque};
 
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{
@@ -21,7 +21,7 @@ use crate::core::math::KVector;
 use crate::error::LayoutError;
 use crate::graph::{ElkEdge, ElkNode};
 use crate::layered::graph_util::create_port;
-use crate::layered::lgraph::{LEdge, LGraph, LLabel, LNode, LabelId, PortType};
+use crate::layered::lgraph::{CrossHierarchyEdge, LEdge, LGraph, LLabel, LNode, LabelId, PortType};
 use crate::layered::nodespacing;
 use crate::layered::options;
 use crate::layered::spacings::{SPACING_BASE_VALUE, apply_base_value};
@@ -215,9 +215,8 @@ fn transform_node(
 /// `root` first, then the nested graphs in the order they were created. A node holds the index of
 /// the graph nested in it, and the graph the index of its node.
 ///
-/// The edges between the nodes of one graph are imported; an edge whose ends are in different
-/// graphs needs the compound graph preprocessor, which is not ported, and is reported as
-/// unsupported.
+/// An edge whose ends are in different graphs goes into the top graph's list of cross-hierarchy
+/// edges, for the compound graph preprocessor.
 pub fn import_compound(
     root: &ElkNode,
     parent: Option<&PropertyHolder>,
@@ -456,10 +455,31 @@ fn import_compound_edges(
                 )));
             };
             if source_graph != parent_graph || target_graph != parent_graph {
-                return Err(LayoutError::Unsupported(format!(
-                    "the cross-hierarchy edge {} (CompoundGraphPreprocessor)",
-                    edge.id
-                )));
+                // `transformEdge` for ends in different graphs: each end gets a port in its own
+                // graph, and the edge joins them across the hierarchy. The labels set their graph
+                // properties on the graph the edge is placed in.
+                let source_port =
+                    create_port(&mut graphs[source_graph], source_index, PortType::OUTPUT);
+                let target_port =
+                    create_port(&mut graphs[target_graph], target_index, PortType::INPUT);
+                let labels = edge_labels(edge, &mut graphs[parent_graph].graph_properties);
+                // `findCoordinateSystemOrigin`: an edge whose ends are not one inside the other has
+                // its coordinates relative to the graph of its ELK container.
+                let related = is_descendant(target_path, source_path)
+                    || is_descendant(source_path, target_path);
+                graphs[0].cross_hierarchy_edges.push(CrossHierarchyEdge {
+                    id: edge.id.clone(),
+                    properties: edge.properties.clone(),
+                    model_order: edge_model_order,
+                    thickness: 1.0,
+                    source: (source_graph, source_port),
+                    target: (target_graph, target_port),
+                    labels,
+                    coordinate_system_origin: (!related).then_some(parent_graph),
+                    attached: true,
+                    ..CrossHierarchyEdge::default()
+                });
+                continue;
             }
             add_edge(
                 &mut graphs[parent_graph],
@@ -640,6 +660,15 @@ fn add_edge(
 /// `transformEdge`'s labels: those with text and laid out, with their placement recorded. A
 /// centred label makes the graph need label dummies, a head or tail one end labels.
 fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LabelId> {
+    let labels = edge_labels(edge, &mut graph.graph_properties);
+    labels
+        .into_iter()
+        .map(|label| graph.add_label(label))
+        .collect()
+}
+
+/// `transformEdge`'s labels as values, with the graph properties of the graph the edge is placed in.
+fn edge_labels(edge: &ElkEdge, graph_properties: &mut BTreeSet<GraphProperties>) -> Vec<LLabel> {
     let mut labels = Vec::new();
     for (index, label) in edge.labels.iter().enumerate() {
         let text = label.text.clone().unwrap_or_default();
@@ -652,12 +681,10 @@ fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LabelId> {
         let mut properties = label.properties.clone();
         match placement {
             EdgeLabelPlacement::HEAD | EdgeLabelPlacement::TAIL => {
-                graph.graph_properties.insert(GraphProperties::END_LABELS);
+                graph_properties.insert(GraphProperties::END_LABELS);
             }
             EdgeLabelPlacement::CENTER => {
-                graph
-                    .graph_properties
-                    .insert(GraphProperties::CENTER_LABELS);
+                graph_properties.insert(GraphProperties::CENTER_LABELS);
                 properties.set(
                     options::EDGE_LABELS_PLACEMENT,
                     Some(OptionValue::Enum {
@@ -667,7 +694,7 @@ fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LabelId> {
                 );
             }
         }
-        let id = graph.add_label(LLabel {
+        labels.push(LLabel {
             text,
             size: KVector {
                 x: label.shape.width,
@@ -678,7 +705,6 @@ fn import_edge_labels(edge: &ElkEdge, graph: &mut LGraph) -> Vec<LabelId> {
             end_label_edge: None,
             origin: Some(index),
         });
-        labels.push(id);
     }
     labels
 }

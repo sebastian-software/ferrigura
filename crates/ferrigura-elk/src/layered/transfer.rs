@@ -28,7 +28,105 @@ pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutErro
 /// `importer::import_compound`): each graph's layout goes into its ELK node, then the layouts of
 /// the graphs nested in its nodes go into theirs.
 pub fn apply_compound_layout(graphs: &[LGraph], root: &mut ElkNode) -> Result<(), LayoutError> {
-    apply_nested_layout(graphs, 0, root)
+    apply_nested_layout(graphs, 0, root)?;
+    for edge in &graphs[0].cross_hierarchy_edges {
+        if edge.attached {
+            apply_cross_hierarchy_edge_layout(graphs, edge, root);
+        }
+    }
+    Ok(())
+}
+
+/// `applyEdgeLayout` for an edge whose ends are in different graphs, which `applyLayout` meets at
+/// its source port: in the graph of its source, or in the source's nested graph when the target is
+/// inside the source. The route is moved into the graph its ELK edge's coordinates are relative to.
+fn apply_cross_hierarchy_edge_layout(
+    graphs: &[LGraph],
+    edge: &crate::layered::lgraph::CrossHierarchyEdge,
+    root: &mut ElkNode,
+) {
+    use crate::layered::compound::is_descendant;
+    let (source_graph, source_port) = edge.source;
+    let (target_graph, target_port) = edge.target;
+    let source_node = (source_graph, graphs[source_graph].ports[source_port].node);
+    let target_node = (target_graph, graphs[target_graph].ports[target_port].node);
+    let into_source = is_descendant(graphs, target_node, source_node);
+    // The graph whose `applyLayout` transfers the edge, and its offset.
+    let graph = if into_source {
+        graphs[source_node.0].nodes[source_node.1]
+            .nested_graph
+            .unwrap_or(source_graph)
+    } else {
+        source_graph
+    };
+    let offset = KVector {
+        x: graphs[graph].offset.x + graphs[graph].padding.left,
+        y: graphs[graph].offset.y + graphs[graph].padding.top,
+    };
+    // `calculateHierarchicalOffset`: from the source's graph up to the coordinate system's graph.
+    let mut edge_offset = offset;
+    if let Some(origin) = edge.coordinate_system_origin {
+        let mut current = source_graph;
+        while current != origin {
+            let Some((parent, node)) = graphs[current].parent_node else {
+                break;
+            };
+            let position = graphs[parent].nodes[node].position;
+            edge_offset.x += position.x + graphs[parent].offset.x + graphs[parent].padding.left;
+            edge_offset.y += position.y + graphs[parent].offset.y + graphs[parent].padding.top;
+            current = parent;
+        }
+    }
+    let source = if into_source {
+        // The external port's anchor, relative to the node's corner, less the offset that is added
+        // to every point below.
+        let port = &graphs[source_graph].ports[source_port];
+        KVector {
+            x: port.position.x + port.anchor.x - offset.x,
+            y: port.position.y + port.anchor.y - offset.y,
+        }
+    } else {
+        absolute_anchor(&graphs[source_graph], source_port)
+    };
+    let mut target = absolute_anchor(&graphs[target_graph], target_port);
+    if let Some(target_offset) = edge.target_offset {
+        target.x += target_offset.x;
+        target.y += target_offset.y;
+    }
+    let shift = |point: KVector| KVector {
+        x: point.x + edge_offset.x,
+        y: point.y + edge_offset.y,
+    };
+    let section = ElkEdgeSection {
+        start: shift(source),
+        end: shift(target),
+        bend_points: edge.bend_points.iter().map(|&point| shift(point)).collect(),
+    };
+    if let Some(elk_edge) = find_edge(root, &edge.id) {
+        elk_edge.sections = vec![section];
+        for label in &edge.labels {
+            if let Some(origin) = label.origin
+                && let Some(elk_label) = elk_edge.labels.get_mut(origin)
+            {
+                elk_label.shape = Shape {
+                    x: label.position.x + edge_offset.x,
+                    y: label.position.y + edge_offset.y,
+                    width: label.size.x,
+                    height: label.size.y,
+                };
+            }
+        }
+    }
+}
+
+/// The ELK edge with the id `id`, at any level below `node`.
+fn find_edge<'a>(node: &'a mut ElkNode, id: &str) -> Option<&'a mut crate::graph::ElkEdge> {
+    if let Some(index) = node.edges.iter().position(|edge| edge.id == id) {
+        return node.edges.get_mut(index);
+    }
+    node.children
+        .iter_mut()
+        .find_map(|child| find_edge(child, id))
 }
 
 /// `applyLayout` for the graph at `index`, whose ELK node is `elk`, and then for its nested graphs.

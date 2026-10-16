@@ -60,6 +60,13 @@ pub fn task_name(
         S::SELF_LOOP_ROUTER => "Self-Loop routing",
         S::SELF_LOOP_POSTPROCESSOR => "Self-Loop post-processing",
         S::HIERARCHICAL_NODE_RESIZER => "Resize child graph to fit parent.",
+        S::HIERARCHICAL_PORT_CONSTRAINT_PROCESSOR => "Hierarchical port constraint processing",
+        S::HIERARCHICAL_PORT_DUMMY_SIZE_PROCESSOR => "Hierarchical port dummy size processing",
+        S::HIERARCHICAL_PORT_POSITION_PROCESSOR => "Hierarchical port position processing",
+        S::HIERARCHICAL_PORT_ORTHOGONAL_EDGE_ROUTER => {
+            "Orthogonally routing hierarchical port edges"
+        }
+        S::INVERTED_PORT_PROCESSOR => "Inverted port preprocessing",
         // `LayerSweepCrossingMinimizer` begins with `"Minimize Crossings " + crossMinType`.
         S::ONE_SIDED_GREEDY_SWITCH => "Minimize Crossings ONE_SIDED_GREEDY_SWITCH",
         S::TWO_SIDED_GREEDY_SWITCH => "Minimize Crossings TWO_SIDED_GREEDY_SWITCH",
@@ -138,9 +145,18 @@ pub fn run(
         IntermediateProcessorStrategy::LAYER_CONSTRAINT_POSTPROCESSOR => {
             crate::layered::layerconstraints::postprocess(graph)?;
         }
-        // In-layer constraints come from external ports, which are not ported, so there are none to
-        // place and the step changes nothing.
-        IntermediateProcessorStrategy::IN_LAYER_CONSTRAINT_PROCESSOR => {}
+        // In-layer constraints come from northern and southern external ports, which are not
+        // ported; without them there are none to place and the step changes nothing.
+        IntermediateProcessorStrategy::IN_LAYER_CONSTRAINT_PROCESSOR => {
+            if graph.layers.iter().flatten().any(|&node| {
+                graph.nodes[node].in_layer_constraint
+                    != crate::layered::lgraph::InLayerConstraint::NONE
+            }) {
+                return Err(LayoutError::Unsupported(
+                    "in-layer constraints (InLayerConstraintProcessor)".to_string(),
+                ));
+            }
+        }
         // Reversed edges are restored by a processor that is not ported yet; with none, it does nothing.
         IntermediateProcessorStrategy::REVERSED_EDGE_RESTORER => {
             crate::layered::p1cycles::restore_reversed_edges(graph);
@@ -186,6 +202,21 @@ pub fn run(
         }
         IntermediateProcessorStrategy::LABEL_DUMMY_REMOVER => {
             crate::layered::labels::label_dummy_removal(graph)?;
+        }
+        IntermediateProcessorStrategy::HIERARCHICAL_PORT_CONSTRAINT_PROCESSOR => {
+            crate::layered::hierarchical_ports::process_port_constraints(graph)?;
+        }
+        IntermediateProcessorStrategy::HIERARCHICAL_PORT_DUMMY_SIZE_PROCESSOR => {
+            crate::layered::hierarchical_ports::process_dummy_sizes(graph);
+        }
+        IntermediateProcessorStrategy::HIERARCHICAL_PORT_POSITION_PROCESSOR => {
+            crate::layered::hierarchical_ports::process_positions(graph)?;
+        }
+        IntermediateProcessorStrategy::HIERARCHICAL_PORT_ORTHOGONAL_EDGE_ROUTER => {
+            crate::layered::hierarchical_ports::route_hierarchical_port_edges(graph)?;
+        }
+        IntermediateProcessorStrategy::INVERTED_PORT_PROCESSOR => {
+            crate::layered::hierarchical_ports::process_inverted_ports(graph)?;
         }
         IntermediateProcessorStrategy::ONE_SIDED_GREEDY_SWITCH => {
             crate::layered::p3order::greedy_switch(graph, true)?;
@@ -262,13 +293,22 @@ fn resize_graph_no_really_i_mean_it(
             graph.offset.y += new.y - old.y;
         }
     }
+    // The eastern and southern external ports move with a larger graph.
     if graph
         .graph_properties
         .contains(&GraphProperties::EXTERNAL_PORTS)
+        && (new.x > old.x || new.y > old.y)
     {
-        return Err(LayoutError::Unsupported(
-            "external ports in HierarchicalNodeResizingProcessor".to_string(),
-        ));
+        for node in graph.layerless_nodes.clone() {
+            if graph.nodes[node].node_type != NodeType::EXTERNAL_PORT {
+                continue;
+            }
+            match crate::layered::hierarchical_ports::ext_port_side(graph, node) {
+                PortSide::EAST => graph.nodes[node].position.x += new.x - old.x,
+                PortSide::SOUTH => graph.nodes[node].position.y += new.y - old.y,
+                _ => {}
+            }
+        }
     }
     let padding = graph.padding;
     graph.size.x = new.x - padding.left - padding.right;
@@ -276,26 +316,97 @@ fn resize_graph_no_really_i_mean_it(
     Ok(())
 }
 
-/// `HierarchicalNodeResizingProcessor.graphLayoutToNode`: the node the graph at `index` is nested
-/// in takes the graph's actual size, and its ports and labels move with it. External ports, which
-/// would fix the node's port positions, are not ported.
+/// `HierarchicalNodeResizingProcessor.graphLayoutToNode`: the ports the external port dummies stand
+/// for take their positions and sides from the dummies, and the node the graph at `index` is
+/// nested in takes the graph's actual size. With external ports, the node's ports are fixed where
+/// they are; otherwise they move with the node's size. Its labels move with it either way.
 fn graph_layout_to_node(
     graphs: &mut [LGraph],
     index: usize,
     parent_graph: usize,
     parent_node: usize,
 ) -> Result<(), LayoutError> {
+    for node in graphs[index].layerless_nodes.clone() {
+        let Some(origin) = graphs[index].nodes[node]
+            .external_port
+            .as_ref()
+            .map(|external| external.origin)
+        else {
+            continue;
+        };
+        let size = graphs[parent_graph].ports[origin].size;
+        let position = external_port_position(&mut graphs[index], node, size.x, size.y);
+        let side = crate::layered::hierarchical_ports::ext_port_side(&graphs[index], node);
+        let port = &mut graphs[parent_graph].ports[origin];
+        port.position = position;
+        port.side = side;
+    }
+    let actual = graphs[index].actual_size();
     if graphs[index]
         .graph_properties
         .contains(&GraphProperties::EXTERNAL_PORTS)
     {
-        return Err(LayoutError::Unsupported(
-            "external ports in HierarchicalNodeResizingProcessor".to_string(),
-        ));
+        // The ports have their positions now.
+        let parent = &mut graphs[parent_graph];
+        parent.nodes[parent_node].properties.set(
+            options::PORT_CONSTRAINTS,
+            Some(crate::core::data::OptionValue::Enum {
+                class: "PortConstraints",
+                name: "FIXED_POS".to_string(),
+            }),
+        );
+        parent
+            .graph_properties
+            .insert(GraphProperties::NON_FREE_PORTS);
+        resize_node(parent, parent_node, actual, false, true);
+    } else {
+        resize_node(&mut graphs[parent_graph], parent_node, actual, true, true);
     }
-    let actual = graphs[index].actual_size();
-    resize_node(&mut graphs[parent_graph], parent_node, actual, true, true);
     Ok(())
+}
+
+/// `LGraphUtil.getExternalPortPosition`: where the port an external port dummy stands for goes on
+/// the graph's node, from the dummy's position, the graph's size, padding and offset, and the
+/// port's border offset. The dummy moves to the matching place outside the content area.
+pub fn external_port_position(
+    graph: &mut LGraph,
+    dummy: usize,
+    port_width: f64,
+    port_height: f64,
+) -> KVector {
+    let node = &graph.nodes[dummy];
+    let mut position = KVector {
+        x: node.position.x + node.size.x / 2.0,
+        y: node.position.y + node.size.y / 2.0,
+    };
+    let port_offset = crate::layered::compound::border_offset_of(node);
+    let size = graph.size;
+    let padding = graph.padding;
+    let offset = graph.offset;
+    match crate::layered::hierarchical_ports::ext_port_side(graph, dummy) {
+        PortSide::NORTH => {
+            position.x += padding.left + offset.x - port_width / 2.0;
+            position.y = -port_height - port_offset;
+            graph.nodes[dummy].position.y = -(padding.top + port_offset + offset.y);
+        }
+        PortSide::EAST => {
+            position.x = size.x + padding.left + padding.right + port_offset;
+            position.y += padding.top + offset.y - port_height / 2.0;
+            graph.nodes[dummy].position.x = size.x + padding.right + port_offset - offset.x;
+        }
+        PortSide::SOUTH => {
+            position.x += padding.left + offset.x - port_width / 2.0;
+            position.y = size.y + padding.top + padding.bottom + port_offset;
+            graph.nodes[dummy].position.y = size.y + padding.bottom + port_offset - offset.y;
+        }
+        PortSide::WEST => {
+            position.x = -port_width - port_offset;
+            position.y += padding.top + offset.y - port_height / 2.0;
+            graph.nodes[dummy].position.x = -(padding.left + port_offset + offset.x);
+        }
+        PortSide::UNDEFINED => {}
+    }
+    position
 }
 
 /// `LGraphUtil.resizeNode(node, newSize, movePorts, moveLabels)`: the node takes the new size, its
@@ -397,19 +508,21 @@ fn layer_size_and_graph_height(graph: &mut LGraph) -> Result<(), LayoutError> {
         found_nodes = true;
         for &node in layer {
             let node = &graph.nodes[node];
-            if node.node_type == NodeType::EXTERNAL_PORT {
-                return Err(LayoutError::Unsupported(
-                    "external ports in the layer size calculation".to_string(),
-                ));
-            }
             layer_size.x = layer_size
                 .x
                 .max(node.size.x + node.margin.left + node.margin.right);
         }
         let first = &graph.nodes[first];
-        let top = first.position.y - first.margin.top;
+        let mut top = first.position.y - first.margin.top;
+        // An external port at either end keeps the port spacing to the graph's border.
+        if first.node_type == NodeType::EXTERNAL_PORT {
+            top -= ports_surrounding(graph)?.top;
+        }
         let last = &graph.nodes[last];
-        let bottom = last.position.y + last.size.y + last.margin.bottom;
+        let mut bottom = last.position.y + last.size.y + last.margin.bottom;
+        if last.node_type == NodeType::EXTERNAL_PORT {
+            bottom += ports_surrounding(graph)?.bottom;
+        }
         layer_size.y = bottom - top;
         min_y = min_y.min(top);
         max_y = max_y.max(bottom);
@@ -424,6 +537,20 @@ fn layer_size_and_graph_height(graph: &mut LGraph) -> Result<(), LayoutError> {
     graph.size.y = max_y - min_y;
     graph.offset.y -= min_y;
     Ok(())
+}
+
+/// `LayeredOptions.SPACING_PORTS_SURROUNDING` of the graph.
+fn ports_surrounding(graph: &LGraph) -> Result<crate::core::math::Spacing, LayoutError> {
+    match graph
+        .properties
+        .value_or_default("org.eclipse.elk.spacing.portsSurrounding")
+    {
+        Some(crate::core::data::OptionValue::Margin(spacing))
+        | Some(crate::core::data::OptionValue::Padding(spacing)) => Ok(spacing),
+        _ => Err(LayoutError::Format(
+            "org.eclipse.elk.spacing.portsSurrounding is not a margin".to_string(),
+        )),
+    }
 }
 
 /// `SortByInputModelProcessor.process`: the ports of each node that the input order does not fix

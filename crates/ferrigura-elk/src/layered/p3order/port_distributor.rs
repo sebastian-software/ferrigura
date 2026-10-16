@@ -137,9 +137,11 @@ impl PortDistributor {
                 &free_layer,
                 port_type_for(!forward),
             );
-            // `hasNestedGraph` is false for every node: nested graphs are not ported.
+            // A node with a nested graph keeps the order its nested graph gave its ports there.
             for &node in &fixed_layer {
-                self.distribute_node_ports(net, &mut layout.node_ports, node, opposed(side));
+                if net.graph().nodes[node].nested_graph.is_none() {
+                    self.distribute_node_ports(net, &mut layout.node_ports, node, opposed(side));
+                }
             }
         } else {
             for &node in &free_layer {

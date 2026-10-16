@@ -1,7 +1,7 @@
 //! Tests of the node spacing reduced path. The expected values are worked out by hand from the
 //! Java code, as the comments say; each comment gives the step that produces the value.
 
-use crate::core::data::enums::{GraphProperties, NodeType, PortAlignment, PortSide};
+use crate::core::data::enums::{NodeType, PortAlignment, PortSide};
 use crate::core::data::{OptionValue, option_by_id};
 use crate::core::math::{KVector, Spacing};
 use crate::layered::LayoutError;
@@ -467,16 +467,6 @@ fn individual_spacings_are_not_ported() {
     );
     add_port(&mut graph, 0, PortSide::WEST, (0.0, 0.0), (5.0, 5.0));
     assert_unsupported(&mut graph, "individual spacings");
-}
-
-#[test]
-fn external_port_dummies_are_not_ported() {
-    let mut graph = node_graph(100.0, 50.0);
-    graph
-        .graph_properties
-        .insert(GraphProperties::EXTERNAL_PORTS);
-    add_port(&mut graph, 0, PortSide::WEST, (0.0, 0.0), (5.0, 5.0));
-    assert_unsupported(&mut graph, "external ports");
 }
 
 #[test]

@@ -12,12 +12,14 @@
 pub use crate::error::LayoutError;
 
 pub mod components;
+pub mod compound;
 pub mod configurator;
 pub mod driver;
 pub mod dummies;
 pub mod endlabels;
 pub mod graph_transformer;
 pub mod graph_util;
+pub mod hierarchical_ports;
 pub mod importer;
 pub mod intermediate;
 pub mod labelcell;

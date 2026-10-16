@@ -3,12 +3,15 @@
 //! Source: plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/intermediate/EdgeAndLayerConstraintEdgeReverser.java,
 //!   LayerConstraintPreprocessor.java and LayerConstraintPostprocessor.java
 //!
-//! Layer constraints `FIRST` and `LAST`. The reverser turns the edges around the constrained nodes
-//! so that the first ones leave them and the last ones enter them. After layering, the postprocessor
-//! moves the constrained nodes into the first and last layers, with the label dummies on their
-//! edges. `FIRST_SEPARATE` and `LAST_SEPARATE` nodes are hidden during layering by the Java
-//! preprocessor; that is not ported, so the preprocessor refuses them.
+//! Layer constraints. The reverser turns the edges around the constrained nodes so that the first
+//! ones leave them and the last ones enter them. The preprocessor hides the `FIRST_SEPARATE` and
+//! `LAST_SEPARATE` nodes during layering. After layering, the postprocessor moves the `FIRST` and
+//! `LAST` nodes into the first and last layers, with the label dummies on their edges, and puts the
+//! hidden nodes into layers of their own before and after them.
 
+use std::collections::HashMap;
+
+use crate::core::data::JavaEnum;
 use crate::core::data::enums::{LayerConstraint, NodeType, PortSide};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
@@ -187,19 +190,169 @@ fn can_reverse_incoming(graph: &LGraph, target_constraint: LayerConstraint, edge
     constraint(graph, source) != LayerConstraint::FIRST_SEPARATE
 }
 
-/// `LayerConstraintPreprocessor.process`. The separate constraints would hide their nodes until the
-/// layering is done; that is not ported, so such a graph is refused. Without them nothing is hidden.
+/// `LayerConstraintPreprocessor.process`: the `FIRST_SEPARATE` and `LAST_SEPARATE` nodes leave the
+/// graph until the layering is done, with their edges. A node left without edges by that takes the
+/// constraint `FIRST` or `LAST`, when it has none of its own.
 pub fn preprocess(graph: &mut LGraph) -> Result<(), LayoutError> {
-    let separate = graph.layerless_nodes.iter().any(|&node| {
-        matches!(
+    let mut hidden = Vec::new();
+    let mut kept = Vec::new();
+    let mut connections: HashMap<usize, HiddenNodeConnections> = HashMap::new();
+    for node in graph.layerless_nodes.clone() {
+        if matches!(
             constraint(graph, node),
             LayerConstraint::FIRST_SEPARATE | LayerConstraint::LAST_SEPARATE
-        )
+        ) {
+            hide(graph, node, &mut connections)?;
+            hidden.push(node);
+        } else {
+            kept.push(node);
+        }
+    }
+    graph.layerless_nodes = kept;
+    graph.hidden_nodes = hidden;
+    Ok(())
+}
+
+/// `LayerConstraintPreprocessor.HiddenNodeConnections`: the kinds of hidden nodes a node was
+/// connected to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+enum HiddenNodeConnections {
+    #[default]
+    None,
+    FirstSeparate,
+    LastSeparate,
+    Both,
+}
+
+impl HiddenNodeConnections {
+    fn combine(self, layer_constraint: LayerConstraint) -> Self {
+        let first = layer_constraint == LayerConstraint::FIRST_SEPARATE;
+        match self {
+            HiddenNodeConnections::None => {
+                if first {
+                    HiddenNodeConnections::FirstSeparate
+                } else {
+                    HiddenNodeConnections::LastSeparate
+                }
+            }
+            HiddenNodeConnections::FirstSeparate => {
+                if first {
+                    HiddenNodeConnections::FirstSeparate
+                } else {
+                    HiddenNodeConnections::Both
+                }
+            }
+            HiddenNodeConnections::LastSeparate => {
+                if first {
+                    HiddenNodeConnections::Both
+                } else {
+                    HiddenNodeConnections::LastSeparate
+                }
+            }
+            HiddenNodeConnections::Both => HiddenNodeConnections::Both,
+        }
+    }
+}
+
+/// `hide(lNode)`: each edge of the node leaves the port at its other end.
+fn hide(
+    graph: &mut LGraph,
+    node: usize,
+    connections: &mut HashMap<usize, HiddenNodeConnections>,
+) -> Result<(), LayoutError> {
+    ensure_no_inacceptable_edges(graph, node)?;
+    // `getConnectedEdges()`: port by port, the incoming edges and then the outgoing ones.
+    let edges: Vec<usize> = graph.nodes[node]
+        .ports
+        .iter()
+        .flat_map(|&port| {
+            let data = &graph.ports[port];
+            data.incoming.iter().chain(data.outgoing.iter()).copied()
+        })
+        .collect();
+    for edge in edges {
+        let (source, target) = (graph.edges[edge].source, graph.edges[edge].target);
+        let outgoing = graph.ports[source].node == node;
+        // The edge leaves the list of the port at its other end, and keeps that port as its end.
+        let opposite = if outgoing {
+            remove_from(&mut graph.ports[target].incoming, edge);
+            target
+        } else {
+            remove_from(&mut graph.ports[source].outgoing, edge);
+            source
+        };
+        let opposite_node = graph.ports[opposite].node;
+        update_opposite_node_layer_constraints(graph, node, opposite_node, connections);
+    }
+    Ok(())
+}
+
+fn remove_from(list: &mut Vec<usize>, edge: usize) {
+    if let Some(index) = list.iter().position(|&found| found == edge) {
+        list.remove(index);
+    }
+}
+
+/// `updateOppositeNodeLayerConstraints`: a node whose last edge to the rest of the graph was hidden
+/// goes to the first or the last layer, by the kind of hidden nodes it was connected to.
+fn update_opposite_node_layer_constraints(
+    graph: &mut LGraph,
+    hidden: usize,
+    opposite: usize,
+    connections: &mut HashMap<usize, HiddenNodeConnections>,
+) {
+    if graph.nodes[opposite]
+        .properties
+        .has(options::LAYER_CONSTRAINT)
+    {
+        return;
+    }
+    let combined = connections
+        .get(&opposite)
+        .copied()
+        .unwrap_or_default()
+        .combine(constraint(graph, hidden));
+    connections.insert(opposite, combined);
+    let still_connected = graph.nodes[opposite].ports.iter().any(|&port| {
+        !graph.ports[port].incoming.is_empty() || !graph.ports[port].outgoing.is_empty()
     });
-    if separate {
-        return Err(LayoutError::Unsupported(
-            "layer constraints FIRST_SEPARATE and LAST_SEPARATE (hidden nodes)".to_string(),
-        ));
+    if still_connected {
+        return;
+    }
+    let new_constraint = match combined {
+        HiddenNodeConnections::FirstSeparate => LayerConstraint::FIRST,
+        HiddenNodeConnections::LastSeparate => LayerConstraint::LAST,
+        _ => return,
+    };
+    graph.nodes[opposite].properties.set(
+        options::LAYER_CONSTRAINT,
+        Some(crate::core::data::OptionValue::Enum {
+            class: "LayerConstraint",
+            name: new_constraint.java_name().to_string(),
+        }),
+    );
+}
+
+/// `ensureNoInacceptableEdges`: a `FIRST_SEPARATE` node must not have incoming edges, nor a
+/// `LAST_SEPARATE` node outgoing ones, unless both ends are external port dummies.
+fn ensure_no_inacceptable_edges(graph: &LGraph, node: usize) -> Result<(), LayoutError> {
+    let layer_constraint = constraint(graph, node);
+    let acceptable = |edge: usize| {
+        let source = graph.ports[graph.edges[edge].source].node;
+        let target = graph.ports[graph.edges[edge].target].node;
+        graph.nodes[source].node_type == NodeType::EXTERNAL_PORT
+            && graph.nodes[target].node_type == NodeType::EXTERNAL_PORT
+    };
+    let (edges, kind) = match layer_constraint {
+        LayerConstraint::FIRST_SEPARATE => (node_edges(graph, node, true), "FIRST_SEPARATE"),
+        LayerConstraint::LAST_SEPARATE => (node_edges(graph, node, false), "LAST_SEPARATE"),
+        _ => return Ok(()),
+    };
+    if edges.into_iter().any(|edge| !acceptable(edge)) {
+        return Err(LayoutError::Unsupported(format!(
+            "node {} has its layer constraint set to {kind}, but has edges against it",
+            graph.nodes[node].designation
+        )));
     }
     Ok(())
 }
@@ -208,9 +361,60 @@ pub fn preprocess(graph: &mut LGraph) -> Result<(), LayoutError> {
 /// nodes to the last one, with their label dummies in label layers at the two ends. Empty layers
 /// are removed.
 pub fn postprocess(graph: &mut LGraph) -> Result<(), LayoutError> {
-    if graph.layers.is_empty() {
-        return Ok(());
+    if !graph.layers.is_empty() {
+        move_first_and_last_nodes(graph)?;
     }
+    // `restoreHiddenNodes`: the separate nodes join new first and last layers, with their edges.
+    if !graph.hidden_nodes.is_empty() {
+        let mut first_separate = Vec::new();
+        let mut last_separate = Vec::new();
+        for hidden in std::mem::take(&mut graph.hidden_nodes) {
+            match constraint(graph, hidden) {
+                LayerConstraint::FIRST_SEPARATE => first_separate.push(hidden),
+                LayerConstraint::LAST_SEPARATE => last_separate.push(hidden),
+                _ => {}
+            }
+            restore_hidden_edges(graph, hidden);
+        }
+        if !first_separate.is_empty() {
+            graph.layers.insert(0, first_separate);
+        }
+        if !last_separate.is_empty() {
+            graph.layers.push(last_separate);
+        }
+    }
+    for (index, layer) in graph.layers.iter().enumerate() {
+        for &node in layer {
+            graph.nodes[node].layer = Some(index);
+        }
+    }
+    Ok(())
+}
+
+/// `restoreHiddenNodes` for the edges of one node: each edge that left the port at its other end
+/// joins that port's list again. An edge between two hidden nodes was hidden only once.
+fn restore_hidden_edges(graph: &mut LGraph, node: usize) {
+    let edges: Vec<usize> = graph.nodes[node]
+        .ports
+        .iter()
+        .flat_map(|&port| {
+            let data = &graph.ports[port];
+            data.incoming.iter().chain(data.outgoing.iter()).copied()
+        })
+        .collect();
+    for edge in edges {
+        let (source, target) = (graph.edges[edge].source, graph.edges[edge].target);
+        if !graph.ports[source].outgoing.contains(&edge) {
+            graph.ports[source].outgoing.push(edge);
+        } else if !graph.ports[target].incoming.contains(&edge) {
+            graph.ports[target].incoming.push(edge);
+        }
+    }
+}
+
+/// `moveFirstAndLastNodes`: the `FIRST` nodes go to the first layer and the `LAST` nodes to the last
+/// one, with their label dummies in label layers at the two ends. Empty layers are removed.
+fn move_first_and_last_nodes(graph: &mut LGraph) -> Result<(), LayoutError> {
     // The label layers are placeholders at both ends, so that the first and last layers keep their
     // place while the nodes move; they stay only if something ends up in them.
     let count = graph.layers.len();
@@ -253,11 +457,6 @@ pub fn postprocess(graph: &mut LGraph) -> Result<(), LayoutError> {
         }
     }
     graph.layers.retain(|layer| !layer.is_empty());
-    for (index, layer) in graph.layers.iter().enumerate() {
-        for &node in layer {
-            graph.nodes[node].layer = Some(index);
-        }
-    }
     Ok(())
 }
 
@@ -306,11 +505,15 @@ fn move_labels(graph: &mut LGraph, node: usize, incoming: bool, label_layer: usi
 mod tests {
     use super::*;
 
+    /// A FIRST_SEPARATE node with one edge to a node: the node is hidden during layering, the other
+    /// node takes FIRST, and the postprocessor puts the hidden node into a layer before it.
     #[test]
-    fn separate_constraints_are_refused() {
-        let mut graph = LGraph::default();
-        graph.nodes.push(Default::default());
-        graph.layerless_nodes.push(0);
+    fn separate_nodes_are_hidden_and_restored() {
+        let mut graph = LGraph {
+            nodes: vec![Default::default(), Default::default()],
+            layerless_nodes: vec![0, 1],
+            ..LGraph::default()
+        };
         graph.nodes[0].properties.set(
             options::LAYER_CONSTRAINT,
             Some(crate::core::data::OptionValue::Enum {
@@ -318,6 +521,27 @@ mod tests {
                 name: "FIRST_SEPARATE".to_string(),
             }),
         );
-        assert!(preprocess(&mut graph).is_err());
+        graph.ports = vec![
+            crate::layered::lgraph::LPort::new(0, PortSide::EAST),
+            crate::layered::lgraph::LPort::new(1, PortSide::WEST),
+        ];
+        graph.nodes[0].ports = vec![0];
+        graph.nodes[1].ports = vec![1];
+        graph.edges.push(crate::layered::lgraph::LEdge {
+            source: 0,
+            target: 1,
+            ..Default::default()
+        });
+        graph.ports[0].outgoing.push(0);
+        graph.ports[1].incoming.push(0);
+        preprocess(&mut graph).unwrap();
+        assert_eq!(graph.layerless_nodes, vec![1]);
+        assert!(graph.ports[1].incoming.is_empty());
+        assert_eq!(constraint(&graph, 1), LayerConstraint::FIRST);
+        graph.layers = vec![vec![1]];
+        graph.layerless_nodes.clear();
+        postprocess(&mut graph).unwrap();
+        assert_eq!(graph.layers, vec![vec![0], vec![1]]);
+        assert_eq!(graph.ports[1].incoming, vec![0]);
     }
 }

@@ -4,226 +4,54 @@
 //!   with GraphInfoHolder.java, SweepCopy.java, ISweepPortDistributor.java, LayerSweepTypeDecider.java
 //!   and CrossMinUtil.java
 //!
-//! The layer sweep crossing minimizer of the root graph with the barycenter heuristic, the default.
-//! Each attempt starts from a random order of one layer, sweeps back and forth over the layers and
-//! keeps the order with the fewest crossings. The best attempt's node order and port order are
-//! written back to the graph.
+//! The layer sweep crossing minimizer with the barycenter heuristic, the default, for the graph of
+//! a flat layout or the graphs of a compound layout (`hierarchy`). Each attempt starts from a
+//! random order of one layer, sweeps back and forth over the layers and keeps the order with the
+//! fewest crossings. The best attempt's node order and port order are written back to the graph.
 //!
 //! The same minimizer runs as the two-sided greedy switch processor before node placement
 //! (`greedy_switch`): the deterministic greedy switch heuristic with the greedy port distributor,
 //! swept in alternating directions until a sweep improves nothing. The one-sided greedy switch is
 //! reported as `Unsupported`.
 //!
-//! The root graph has no parent, so it is always swept bottom-up (`LayerSweepTypeDecider.useBottomUp`)
-//! and the hierarchical branches are not ported. Not ported, and reported as `Unsupported`: the
-//! model-order barycenter (`forceNodeModelOrder`), the crossing counter with node model-order
-//! influence, north and south port dummies (and the barycenter associates they set), external port
-//! dummies, and self-loops. The layered model has no in-layer constraints yet, so
-//! `ForsterConstraintResolver.processConstraints` passes each layer through unchanged.
+//! Not ported, and reported as `Unsupported`: the model-order barycenter (`forceNodeModelOrder`),
+//! the crossing counter with node model-order influence, north and south port dummies (and the
+//! barycenter associates they set), in-layer constraints, and self-loops. Without in-layer
+//! constraints, `ForsterConstraintResolver.processConstraints` passes each layer through unchanged.
 
 mod barycenter;
 mod counting;
 mod greedy_port_distributor;
 mod greedy_switch;
+mod hierarchy;
 mod port_distributor;
 
 use crate::core::data::OptionValue;
-use crate::core::data::enums::{
-    HierarchyHandling, NodeType, OrderingStrategy, PortConstraints, PortSide,
-};
+use crate::core::data::enums::{HierarchyHandling, NodeType, PortConstraints, PortSide};
 use crate::java::random::Random;
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
 use crate::layered::ports::is_order_fixed;
 
-use barycenter::BarycenterHeuristic;
-use counting::AllCrossingsCounter;
 use greedy_port_distributor::GreedyPortDistributor;
 use greedy_switch::GreedySwitchHeuristic;
-use port_distributor::PortDistributor;
 
 /// `LayerSweepCrossingMinimizer.process` for `CrossMinType.BARYCENTER`, the layer sweep of the
 /// default crossing minimization. The task's `begin` and `done` are the phase's.
 pub fn sweep(graph: &mut LGraph) -> Result<(), LayoutError> {
-    if graph.layers.iter().all(Vec::is_empty) {
-        return Ok(());
-    }
     let hierarchical = graph
         .properties
         .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
         == Some(HierarchyHandling::INCLUDE_CHILDREN);
-    if graph.layers.len() == 1 && graph.layers[0].len() == 1 && !hierarchical {
-        return Ok(());
-    }
-    check_supported(graph)?;
-    let thoroughness = graph.properties.int_with_default(options::THOROUGHNESS);
-    let consider_model_order = graph
-        .properties
-        .enum_of::<OrderingStrategy>(options::CONSIDER_MODEL_ORDER_STRATEGY)
-        .is_some_and(|strategy| strategy != OrderingStrategy::NONE);
-    let mut random = graph
-        .random
-        .take()
-        .ok_or_else(|| LayoutError::Unsupported("a graph without a random source".to_string()))?;
-    // `initialize`: the seed the attempts restart from, drawn first.
-    let seed = random.next_long();
-    // `ISweepPortDistributor.create` draws once: node-relative or layer-total port ranks.
-    let node_relative = random.next_boolean();
-    let (best, random) = {
-        let net = Net::new(graph);
-        let mut sweep = Sweep::new(&net, node_relative, consider_model_order, random, None);
-        sweep.compare_randomized_layouts(seed, thoroughness);
-        let best = sweep.best.take();
-        (best, sweep.random)
-    };
-    // `transferNodeAndPortOrdersToGraph`: only a sweep that saved an order transfers it.
-    if let Some(best) = best {
-        transfer_node_and_port_orders(graph, best);
-    }
-    graph.random = Some(random);
-    Ok(())
+    hierarchy::run(std::slice::from_mut(graph), hierarchical)
 }
 
 /// `LayerSweepCrossingMinimizer.process` for `CrossMinType.BARYCENTER` in a compound layout: the
 /// top graph runs the minimizer for the graphs of the whole hierarchy (see
 /// `driver::hierarchical_layout`). `graphs[0]` is the top graph.
-///
-/// Each graph gets a `GraphInfoHolder`, breadth first through the nested graphs in the order of
-/// the nodes in the layers. A graph is swept on its own, bottom-up, when it is the top graph or its
-/// node has fewer than two ports on the east and on the west side, or a fixed port order
-/// (`LayerSweepTypeDecider.useBottomUp`). A sweep that enters a nested graph from the graph around
-/// it (`sweepInHierarchicalNode`) is not ported, nor is the decision by paths that allows it.
-///
-/// The graphs swept bottom-up are swept one after another, the innermost first: each restarts the
-/// top graph's generator from the seed, and each graph's heuristic draws from its own graph's
-/// generator, which the top graph's heuristic shares with the minimizer.
 pub fn sweep_compound(graphs: &mut [LGraph]) -> Result<(), LayoutError> {
-    if graphs[0].layers.iter().all(Vec::is_empty) {
-        return Ok(());
-    }
-    // A single node is swept too, since the layout is hierarchical.
-    let mut random = graphs[0]
-        .random
-        .take()
-        .ok_or_else(|| LayoutError::Unsupported("a graph without a random source".to_string()))?;
-    let result = sweep_hierarchy(graphs, &mut random);
-    graphs[0].random = Some(random);
-    result
-}
-
-/// `initialize`, `minimizeCrossings` and `transferNodeAndPortOrdersToGraph` of a compound layout,
-/// with the top graph's generator taken out of it.
-fn sweep_hierarchy(graphs: &mut [LGraph], random: &mut Random) -> Result<(), LayoutError> {
-    // `initialize`: the seed the attempts restart from, drawn first.
-    let seed = random.next_long();
-    // The graphs breadth first, as `graph.id` numbers them, with the port rule each one drew.
-    let mut holders: Vec<(usize, bool)> = Vec::new();
-    let mut queue = vec![0];
-    let mut next = 0;
-    while next < queue.len() {
-        let index = queue[next];
-        next += 1;
-        check_supported(&graphs[index])?;
-        // `ISweepPortDistributor.create` draws from the graph's own generator.
-        let node_relative = if index == 0 {
-            random.next_boolean()
-        } else {
-            graphs[index]
-                .random
-                .as_mut()
-                .ok_or_else(|| {
-                    LayoutError::Unsupported("a graph without a random source".to_string())
-                })?
-                .next_boolean()
-        };
-        // `GraphInfoHolder.initAtNodeLevel`: the nested graphs, in the order of the layers.
-        for &node in graphs[index].layers.iter().flatten() {
-            if let Some(nested) = graphs[index].nodes[node].nested_graph {
-                queue.push(nested);
-            }
-        }
-        if !use_bottom_up(graphs, index) {
-            return Err(LayoutError::Unsupported(
-                "a hierarchical sweep into a nested graph \
-                 (LayerSweepCrossingMinimizer.sweepInHierarchicalNode)"
-                    .to_string(),
-            ));
-        }
-        holders.push((index, node_relative));
-    }
-    // `graphsToSweepOn`: each graph swept bottom-up goes to the front, so the last one comes first.
-    let mut best_orders: Vec<(usize, Layout)> = Vec::new();
-    for &(index, node_relative) in holders.iter().rev() {
-        if graphs[index].layers.is_empty() {
-            continue;
-        }
-        let thoroughness = graphs[index]
-            .properties
-            .int_with_default(options::THOROUGHNESS);
-        let consider_model_order = graphs[index]
-            .properties
-            .enum_of::<OrderingStrategy>(options::CONSIDER_MODEL_ORDER_STRATEGY)
-            .is_some_and(|strategy| strategy != OrderingStrategy::NONE);
-        let heuristic_random = if index == 0 {
-            None
-        } else {
-            graphs[index].random.take()
-        };
-        let minimizer_random = std::mem::replace(random, Random::new(0));
-        let (best, minimizer_random, heuristic_random) = {
-            let net = Net::new(&graphs[index]);
-            let mut sweep = Sweep::new(
-                &net,
-                node_relative,
-                consider_model_order,
-                minimizer_random,
-                heuristic_random,
-            );
-            sweep.compare_randomized_layouts(seed, thoroughness);
-            (sweep.best.take(), sweep.random, sweep.heuristic_random)
-        };
-        *random = minimizer_random;
-        if index != 0 {
-            graphs[index].random = heuristic_random;
-        }
-        if let Some(best) = best {
-            best_orders.push((index, best));
-        }
-    }
-    // `transferNodeAndPortOrdersToGraph`, in the order of the graph ids.
-    for &(index, _) in &holders {
-        if let Some(position) = best_orders.iter().position(|(found, _)| *found == index) {
-            let (_, best) = best_orders.swap_remove(position);
-            transfer_node_and_port_orders(&mut graphs[index], best);
-        }
-    }
-    Ok(())
-}
-
-/// `LayerSweepTypeDecider.useBottomUp` for the cases that decide without counting paths: the top
-/// graph, a forced bottom-up sweep, a node whose port order is fixed, or a node with fewer than two
-/// ports on its east and on its west side. Otherwise the barycenter heuristic, which is not
-/// deterministic, would count the paths to random and to hierarchical influences; that count is
-/// not ported, and such a graph is reported as swept into.
-fn use_bottom_up(graphs: &[LGraph], index: usize) -> bool {
-    let boundary = graphs[index]
-        .properties
-        .double_with_default(options::CROSSING_MINIMIZATION_HIERARCHICAL_SWEEPINESS);
-    let Some((parent_graph, parent_node)) = graphs[index].parent_node else {
-        return true;
-    };
-    let parent = &graphs[parent_graph];
-    let fixed_port_order = is_order_fixed(port_constraints(parent, parent_node));
-    let side_count = |side: PortSide| {
-        parent.nodes[parent_node]
-            .ports
-            .iter()
-            .filter(|&&port| parent.ports[port].side == side)
-            .count()
-    };
-    let fewer_than_two = side_count(PortSide::EAST) < 2 && side_count(PortSide::WEST) < 2;
-    boundary < -1.0 || fixed_port_order || fewer_than_two
+    hierarchy::run(graphs, true)
 }
 
 /// `LayerSweepCrossingMinimizer.process` for the greedy switch types, the processor that runs before
@@ -324,7 +152,7 @@ fn greedy_sweep_reducing_crossings(
 }
 
 /// The cases this port does not cover, reported before the sweep changes anything.
-fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
+pub(super) fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
     if graph.properties.bool_of(options::FORCE_NODE_MODEL_ORDER) {
         return Err(LayoutError::Unsupported(
             "crossingMinimization.forceNodeModelOrder (ModelOrderBarycenterHeuristic)".to_string(),
@@ -362,18 +190,19 @@ fn check_structure(graph: &LGraph) -> Result<(), LayoutError> {
         .flatten()
         .map(|&node| &graph.nodes[node])
     {
-        match node.node_type {
-            NodeType::NORTH_SOUTH_PORT => {
-                return Err(LayoutError::Unsupported(
-                    "north-south port dummies in crossing minimization".to_string(),
-                ));
-            }
-            NodeType::EXTERNAL_PORT => {
-                return Err(LayoutError::Unsupported(
-                    "external port dummies (hierarchical graphs)".to_string(),
-                ));
-            }
-            _ => {}
+        if node.node_type == NodeType::NORTH_SOUTH_PORT {
+            return Err(LayoutError::Unsupported(
+                "north-south port dummies in crossing minimization".to_string(),
+            ));
+        }
+        // `ForsterConstraintResolver` keeps nodes with in-layer constraints at the top or the
+        // bottom of their layers; the layered model has none of its own, but external port dummies
+        // on the north or south side have them.
+        if node.in_layer_constraint != crate::layered::lgraph::InLayerConstraint::NONE {
+            return Err(LayoutError::Unsupported(
+                "in-layer constraints in crossing minimization (ForsterConstraintResolver)"
+                    .to_string(),
+            ));
         }
     }
     for &node in graph.layers.iter().flatten() {
@@ -397,6 +226,9 @@ pub(super) struct Net<'a> {
     graph: &'a LGraph,
     layer_of: Vec<usize>,
     layer_sizes: Vec<usize>,
+    /// The nodes whose port order the sweep fixed (`setPortOrderOnParentGraph`), which read as
+    /// `FIXED_ORDER` from then on.
+    fixed_order: Vec<bool>,
 }
 
 impl<'a> Net<'a> {
@@ -411,7 +243,13 @@ impl<'a> Net<'a> {
             graph,
             layer_of,
             layer_sizes: graph.layers.iter().map(Vec::len).collect(),
+            fixed_order: vec![false; graph.nodes.len()],
         }
+    }
+
+    /// `node.setProperty(PORT_CONSTRAINTS, FIXED_ORDER)` while the sweep reads the graph.
+    pub(super) fn fix_port_order(&mut self, node: usize) {
+        self.fixed_order[node] = true;
     }
 
     /// The graph the sweep reads.
@@ -444,6 +282,9 @@ impl<'a> Net<'a> {
     }
 
     pub(super) fn constraints(&self, node: usize) -> PortConstraints {
+        if self.fixed_order[node] {
+            return PortConstraints::FIXED_ORDER;
+        }
         port_constraints(self.graph, node)
     }
 
@@ -566,191 +407,8 @@ pub(super) fn start_index(forward: bool, length: usize) -> usize {
     if forward { 0 } else { length.saturating_sub(1) }
 }
 
-/// The state of one sweep: the working order and the flags the attempts share.
-struct Sweep<'n, 'g> {
-    net: &'n Net<'g>,
-    /// `currentNodeOrder` and the port lists the sweep changes.
-    layout: Layout,
-    /// `crossMinimizer` with its `portDistributor`.
-    heuristic: BarycenterHeuristic,
-    /// `crossingsCounter`.
-    counter: AllCrossingsCounter,
-    /// The minimizer's `random`: the top graph's generator, which draws the sweep directions and
-    /// is reset to the seed for every graph.
-    random: Random,
-    /// The generator the graph's heuristic was given, its own graph's, when that is not the top
-    /// graph; `None` when the heuristic shares the minimizer's.
-    heuristic_random: Option<Random>,
-    /// `InternalProperties.FIRST_TRY_WITH_INITIAL_ORDER`, kept here: the root graph is the only one swept.
-    /// Java's `SECOND_TRY_WITH_INITIAL_ORDER` has the same id (`firstTryWithInitialOrder`), and graph
-    /// properties are keyed by id, so both are this one flag.
-    first_try: bool,
-    /// `CONSIDER_MODEL_ORDER_STRATEGY != NONE`.
-    consider_model_order: bool,
-    /// Whether a sweep has run since the attempts began, which `graphsWhoseNodeOrderChanged` records for the root.
-    changed: bool,
-    /// `currentlyBestNodeAndPortOrder`: the order after the latest sweep of an attempt.
-    currently_best: Option<Layout>,
-    /// `bestNodeNPortOrder`: the order saved when an attempt did at least as well as the earlier ones.
-    best: Option<Layout>,
-}
-
-impl<'n, 'g> Sweep<'n, 'g> {
-    fn new(
-        net: &'n Net<'g>,
-        node_relative: bool,
-        consider_model_order: bool,
-        random: Random,
-        heuristic_random: Option<Random>,
-    ) -> Self {
-        let layout = Layout::initial(net.graph);
-        let counter = AllCrossingsCounter::new(net, &layout);
-        let ports = PortDistributor::new(net, node_relative);
-        Sweep {
-            net,
-            layout,
-            heuristic: BarycenterHeuristic::new(net, ports),
-            counter,
-            random,
-            heuristic_random,
-            first_try: false,
-            consider_model_order,
-            changed: false,
-            currently_best: None,
-            best: None,
-        }
-    }
-
-    /// `compareDifferentRandomizedLayouts`, for the crossing counter without model order influence.
-    fn compare_randomized_layouts(&mut self, seed: i64, thoroughness: i32) {
-        // Reset the seed, as the Java does.
-        self.random.set_seed(seed);
-        self.changed = false;
-        if self.consider_model_order {
-            // The first run begins with a forward sweep, so a correct initial order is kept.
-            self.first_try = true;
-        }
-        let mut best_crossings = i32::MAX;
-        for _ in 0..thoroughness {
-            let crossings = self.minimize_crossings_with_counter();
-            if crossings < best_crossings {
-                best_crossings = crossings;
-                self.save_all_node_orders();
-                if best_crossings == 0 {
-                    break;
-                }
-            }
-        }
-    }
-
-    /// `minimizeCrossingsWithCounter`.
-    fn minimize_crossings_with_counter(&mut self) -> i32 {
-        let mut forward = self.random.next_boolean();
-        // If the initial order is already free of crossings and the model order decides it, keep it.
-        let initial_crossings = self.count_crossings();
-        if initial_crossings == 0 && self.first_try {
-            return 0;
-        }
-        if !self.first_try || !self.consider_model_order {
-            self.set_first_layer_order(forward);
-        } else {
-            forward = self.first_try;
-        }
-        self.sweep_reducing_crossings(forward, true);
-        // Java clears the second try, then tests the first one, which is now clear: so the flag
-        // ends cleared, and the second try never starts.
-        self.first_try = false;
-        let mut crossings = self.count_crossings();
-        loop {
-            self.set_currently_best_node_orders();
-            if crossings == 0 {
-                return 0;
-            }
-            forward = !forward;
-            let old_crossings = crossings;
-            self.sweep_reducing_crossings(forward, false);
-            crossings = self.count_crossings();
-            if old_crossings <= crossings {
-                return old_crossings;
-            }
-        }
-    }
-
-    /// `countCurrentNumberOfCrossings` for the root graph.
-    fn count_crossings(&mut self) -> i32 {
-        self.counter.count_all(self.net, &self.layout)
-    }
-
-    /// `ICrossingMinimizationHeuristic.setFirstLayerOrder`: the first layer of the sweep, in random order.
-    fn set_first_layer_order(&mut self, forward: bool) {
-        let random = match &mut self.heuristic_random {
-            Some(random) => random,
-            None => &mut self.random,
-        };
-        self.heuristic
-            .set_first_layer_order(&mut self.layout, random, forward);
-    }
-
-    /// `sweepReducingCrossings`: the port distribution of the first layer, then each following layer
-    /// is reordered by its barycenters and its ports are distributed.
-    fn sweep_reducing_crossings(&mut self, forward: bool, first_sweep: bool) {
-        let length = self.layout.order.len();
-        self.heuristic.ports.distribute_ports_while_sweeping(
-            self.net,
-            &mut self.layout,
-            start_index(forward, length),
-            forward,
-        );
-        // `firstSweep && !FIRST_TRY && !SECOND_TRY`, passed to every layer of this sweep.
-        let is_first_sweep = first_sweep && !self.first_try;
-        let (step, mut index) = if forward {
-            (1_isize, 1_isize)
-        } else {
-            (-1_isize, length as isize - 2)
-        };
-        while in_sweep_range(index, length, forward) {
-            let free = index as usize;
-            let random = match &mut self.heuristic_random {
-                Some(random) => random,
-                None => &mut self.random,
-            };
-            self.heuristic.minimize_crossings(
-                self.net,
-                &mut self.layout,
-                random,
-                free,
-                forward,
-                is_first_sweep,
-            );
-            self.heuristic.ports.distribute_ports_while_sweeping(
-                self.net,
-                &mut self.layout,
-                free,
-                forward,
-            );
-            index += step;
-        }
-        // `graphsWhoseNodeOrderChanged.add(graph)`.
-        self.changed = true;
-    }
-
-    /// `setCurrentlyBestNodeOrders`.
-    fn set_currently_best_node_orders(&mut self) {
-        if self.changed {
-            self.currently_best = Some(self.layout.clone());
-        }
-    }
-
-    /// `saveAllNodeOrdersOfChangedGraphs`.
-    fn save_all_node_orders(&mut self) {
-        if self.changed {
-            self.best = self.currently_best.clone();
-        }
-    }
-}
-
 /// `isNotEnd`: whether the free layer index is still inside the layers in the sweep direction.
-fn in_sweep_range(index: isize, length: usize, forward: bool) -> bool {
+pub(super) fn in_sweep_range(index: isize, length: usize, forward: bool) -> bool {
     if forward {
         index < length as isize
     } else {
@@ -761,7 +419,7 @@ fn in_sweep_range(index: isize, length: usize, forward: bool) -> bool {
 /// `SweepCopy.transferNodeAndPortOrdersToGraph(lGraph, true)`: the layers and the port lists take the
 /// saved order, and nodes whose port order was free become `FIXED_ORDER`. The north and south dummy
 /// side corrections do not apply, as those dummies are unsupported.
-fn transfer_node_and_port_orders(graph: &mut LGraph, best: Layout) {
+pub(super) fn transfer_node_and_port_orders(graph: &mut LGraph, best: Layout) {
     for layer in &best.order {
         for &node in layer {
             graph.nodes[node].ports = best.node_ports[node].clone();
@@ -781,9 +439,9 @@ fn transfer_node_and_port_orders(graph: &mut LGraph, best: Layout) {
 
 #[cfg(test)]
 mod tests {
+    use super::counting::AllCrossingsCounter;
     use super::*;
     use crate::core::data::OptionValue;
-    use crate::core::data::property::PropertyHolder;
     use crate::layered::lgraph::{LEdge, LNode, LPort};
 
     /// A graph with one layer of `count` nodes, in model order `0..count`.
@@ -890,21 +548,18 @@ mod tests {
     }
 
     #[test]
-    fn the_diamond_reaches_zero_crossings_for_both_port_rules_and_seeds() {
+    fn the_diamond_reaches_zero_crossings_for_all_seeds() {
         // Not one order: the sweep reorders the west ports of n3, which can make [1, 2] crossing-free
-        // as well as [2, 1] (seed 0 with the node-relative rule ends with [1, 2]). The invariant is the
-        // crossing count, which must reach zero in every case.
-        for node_relative in [true, false] {
-            for seed in 0..20 {
-                let graph = diamond();
-                let net = Net::new(&graph);
-                let mut sweep = Sweep::new(&net, node_relative, false, Random::new(seed), None);
-                let thoroughness = PropertyHolder::new().int_with_default(options::THOROUGHNESS);
-                sweep.compare_randomized_layouts(seed, thoroughness);
-                let best = sweep.best.take().expect("an attempt saves an order");
-                let crossings = AllCrossingsCounter::new(&net, &best).count_all(&net, &best);
-                assert_eq!(crossings, 0, "node_relative={node_relative}, seed={seed}");
-            }
+        // as well as [2, 1]. The invariant is the crossing count, which must reach zero for every
+        // seed, whichever port rule the seed draws.
+        for seed in 0..40 {
+            let mut graph = diamond();
+            graph.random = Some(Random::new(seed));
+            sweep(&mut graph).unwrap();
+            let net = Net::new(&graph);
+            let layout = Layout::initial(&graph);
+            let crossings = AllCrossingsCounter::new(&net, &layout).count_all(&net, &layout);
+            assert_eq!(crossings, 0, "seed={seed}");
         }
     }
 

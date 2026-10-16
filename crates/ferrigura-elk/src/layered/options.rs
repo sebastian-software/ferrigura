@@ -95,6 +95,9 @@ pub const INSIDE_SELF_LOOPS_ACTIVATE: &str = "org.eclipse.elk.insideSelfLoops.ac
 pub const INSIDE_SELF_LOOPS_YO: &str = "org.eclipse.elk.insideSelfLoops.yo";
 pub const CROSSING_MINIMIZATION_HIERARCHICAL_SWEEPINESS: &str =
     "org.eclipse.elk.layered.crossingMinimization.hierarchicalSweepiness";
+pub const MERGE_HIERARCHY_EDGES: &str = "org.eclipse.elk.layered.mergeHierarchyEdges";
+pub const PORT_LABELS_PLACEMENT: &str = "org.eclipse.elk.portLabels.placement";
+pub const PORT_BORDER_OFFSET: &str = "org.eclipse.elk.port.borderOffset";
 
 #[cfg(test)]
 mod tests {
@@ -158,6 +161,9 @@ mod tests {
             INSIDE_SELF_LOOPS_ACTIVATE,
             INSIDE_SELF_LOOPS_YO,
             CROSSING_MINIMIZATION_HIERARCHICAL_SWEEPINESS,
+            MERGE_HIERARCHY_EDGES,
+            PORT_LABELS_PLACEMENT,
+            PORT_BORDER_OFFSET,
         ] {
             assert!(option_by_id(id).is_some(), "{id} is not registered");
         }

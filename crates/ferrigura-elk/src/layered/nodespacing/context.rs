@@ -60,6 +60,9 @@ pub(super) struct PortContext {
     pub position: KVector,
     /// `portMargin`: space around the port. Only label placement sets it, so it stays zero here.
     pub margin: Spacing,
+    /// `CoreOptions.PORT_BORDER_OFFSET` of the port, 0 when unset: the placement moves the port
+    /// that far out of the node's border.
+    pub border_offset: f64,
 }
 
 /// `NodeContext`: what the size calculation of one node reads and changes.
@@ -400,6 +403,7 @@ impl NodeContext {
                 size: lport.size,
                 position: lport.position,
                 margin: Spacing::default(),
+                border_offset: lport.border_offset,
             });
         }
 

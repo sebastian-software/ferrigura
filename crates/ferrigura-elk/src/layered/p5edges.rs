@@ -122,12 +122,19 @@ fn required_spacing(graph: &LGraph, id: &'static str) -> Result<f64, LayoutError
         .ok_or_else(|| LayoutError::Unsupported(format!("a graph without {id}")))
 }
 
-/// `isLeftLayerExternal` and `isRightLayerExternal`: a missing layer is external, and so is an
-/// empty one, since `Iterables.all` over it holds. The Java predicate for external port nodes
-/// is never true here: such nodes are rejected by [`check_supported`], because the predicate
-/// needs `EXT_PORT_SIDE`, which is not ported.
+/// `isLeftLayerExternal` and `isRightLayerExternal`: a missing layer is external, and so is one
+/// whose nodes all stand for western or eastern external ports
+/// (`PolylineEdgeRouter.PRED_EXTERNAL_WEST_OR_EAST_PORT`), an empty one included.
 fn is_external_layer(graph: &LGraph, layer: Option<usize>) -> bool {
-    layer.is_none_or(|layer| graph.layers[layer].is_empty())
+    layer.is_none_or(|layer| {
+        graph.layers[layer].iter().all(|&node| {
+            graph.nodes[node].node_type == NodeType::EXTERNAL_PORT
+                && matches!(
+                    crate::layered::hierarchical_ports::ext_port_side(graph, node),
+                    PortSide::WEST | PortSide::EAST
+                )
+        })
+    })
 }
 
 /// Rejects the features that the router needs processors for, which are not ported, and the
@@ -140,18 +147,10 @@ fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
     for (property, feature) in [
         (GraphProperties::HYPEREDGES, "hyperedges"),
         (GraphProperties::HYPERNODES, "hypernodes"),
-        (GraphProperties::EXTERNAL_PORTS, "hierarchical ports"),
     ] {
         if graph.graph_properties.contains(&property) {
             return Err(unsupported(feature));
         }
-    }
-    if graph
-        .nodes
-        .iter()
-        .any(|node| node.node_type == NodeType::EXTERNAL_PORT)
-    {
-        return Err(unsupported("external port nodes"));
     }
 
     // Only ports with edges matter to the routing; a port without edges is not routed.

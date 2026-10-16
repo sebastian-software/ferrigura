@@ -15,6 +15,7 @@ use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::error::LayoutError;
 use crate::graph::ElkNode;
 use crate::layered::components;
+use crate::layered::compound;
 use crate::layered::configurator;
 use crate::layered::importer;
 use crate::layered::intermediate::{self, Step};
@@ -116,9 +117,8 @@ fn layout_component(
 }
 
 /// `ElkLayered.doCompoundLayout`: the graphs of a compound layout, the top graph first and the
-/// nested graphs after it (see `importer::import_compound`). The cross-hierarchy edges that the
-/// compound graph pre- and postprocessor split and join are refused by the importer, so the two
-/// processors have nothing to do here.
+/// nested graphs after it (see `importer::import_compound`). The compound graph preprocessor splits
+/// the edges between graphs, and the postprocessor joins them again.
 fn do_compound_layout(
     graphs: &mut [LGraph],
     progress: &mut ProgressMonitor,
@@ -127,11 +127,13 @@ fn do_compound_layout(
     progress.begin(monitor, "Layered layout", 2.0);
     let pre = sub_task(progress, monitor)?;
     progress.begin(pre, "Compound graph preprocessor", 1.0);
+    compound::preprocess(graphs)?;
     progress.done(pre);
     let hierarchical = sub_task(progress, monitor)?;
     hierarchical_layout(graphs, progress, hierarchical)?;
     let post = sub_task(progress, monitor)?;
     progress.begin(post, "Compound graph postprocessor", 1.0);
+    compound::postprocess(graphs)?;
     progress.done(post);
     progress.done(monitor);
     Ok(())
@@ -351,6 +353,9 @@ fn module_name(step: &Step) -> Result<&'static str, LayoutError> {
             }
             S::HIERARCHICAL_NODE_RESIZER => {
                 "org.eclipse.elk.alg.layered.intermediate.HierarchicalNodeResizingProcessor"
+            }
+            S::INVERTED_PORT_PROCESSOR => {
+                "org.eclipse.elk.alg.layered.intermediate.InvertedPortProcessor"
             }
             S::SELF_LOOP_PREPROCESSOR => {
                 "org.eclipse.elk.alg.layered.intermediate.SelfLoopPreProcessor"

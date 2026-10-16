@@ -13,9 +13,8 @@
 //! indices. Java's `HashSet<LEdge>` iterates in identity-hash order, which depends on elkjs's run and not on
 //! the graph, so the `Marked edges` log lists them in the order they were marked instead.
 //!
-//! Not ported: `getLayoutProcessorConfiguration`, which adds `HIERARCHICAL_PORT_POSITION_PROCESSOR` before
-//! edge routing for graphs with external ports. That belongs to the processor configurator, so this placer
-//! refuses such graphs with `Unsupported` rather than leaving the processor out.
+//! `getLayoutProcessorConfiguration`, which adds `HIERARCHICAL_PORT_POSITION_PROCESSOR` before edge
+//! routing for graphs with external ports, is in `phases::PhaseStep::configuration`.
 
 pub mod aligned_layout;
 pub mod aligner;
@@ -27,7 +26,7 @@ mod access;
 
 use indexmap::{IndexMap, IndexSet};
 
-use crate::core::data::enums::{FixedAlignment, GraphProperties, NodeType};
+use crate::core::data::enums::{FixedAlignment, NodeType};
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::error::LayoutError;
 use crate::json::js_number_string;
@@ -48,16 +47,6 @@ pub fn place(
     progress: &mut ProgressMonitor,
     monitor: Monitor,
 ) -> Result<(), LayoutError> {
-    if graph
-        .graph_properties
-        .contains(&GraphProperties::EXTERNAL_PORTS)
-    {
-        return Err(LayoutError::Unsupported(
-            "hierarchical ports need HIERARCHICAL_PORT_POSITION_PROCESSOR before edge routing, \
-             which the processor configurator does not add yet"
-                .to_string(),
-        ));
-    }
     progress.begin(monitor, "Brandes & Koepf node placement", 1.0);
 
     let ni = NeighborhoodInformation::build_for(graph);

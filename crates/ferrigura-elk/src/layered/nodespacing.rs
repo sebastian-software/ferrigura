@@ -20,11 +20,10 @@
 //! Not ported, and reported as `Unsupported` where the input asks for it: outside node labels,
 //! port labels, node size constraints other than MINIMUM_SIZE and NODE_LABELS, MINIMUM_SIZE with
 //! `minimumSizeAccountsForPadding`, port constraint `FIXED_RATIO`, a port label placement without
-//! `INSIDE` or `OUTSIDE` (fixed label positions), `COMPUTE_PADDING`, individual spacings on a node,
-//! and external port dummies. `FIXED_POS` and `FIXED_ORDER` are ported: `FIXED_ORDER` takes the free
-//! branches, and `FIXED_POS` keeps the port coordinates it was given. Port border offsets are not
-//! read: `LPort` carries no property holder, and the importer gives ports no options, so no port
-//! has one yet.
+//! `INSIDE` or `OUTSIDE` (fixed label positions), `COMPUTE_PADDING`, and individual spacings on a
+//! node. `FIXED_POS` and `FIXED_ORDER` are ported: `FIXED_ORDER` takes the free
+//! branches, and `FIXED_POS` keeps the port coordinates it was given. Port border offsets move the
+//! ports out of the node's border; only the ports of nodes with nested graphs have them.
 //!
 //! Both entry points compute every node before they change the graph, so an error leaves the
 //! graph as it was.
@@ -37,7 +36,7 @@ mod sizing;
 #[cfg(test)]
 mod tests;
 
-use crate::core::data::enums::{GraphProperties, NodeType};
+use crate::core::data::enums::NodeType;
 use crate::core::math::Spacing;
 use crate::layered::LayoutError;
 use crate::layered::lgraph::{LGraph, LNode};
@@ -128,16 +127,9 @@ pub fn node_margins(graph: &mut LGraph) -> Result<(), LayoutError> {
 }
 
 /// `LabelAndNodeSizeProcessor.process` for the graph: places the ports of the normal nodes in the
-/// layers and sets their sizes. The processor's external port part is not ported.
+/// layers and sets their sizes. The processor's external port part places the labels of external
+/// port dummies' ports; ports have no labels in this model, so there is nothing to place.
 pub fn label_and_node_size(graph: &mut LGraph) -> Result<(), LayoutError> {
-    if graph
-        .graph_properties
-        .contains(&GraphProperties::EXTERNAL_PORTS)
-    {
-        return Err(LayoutError::Unsupported(
-            "external port dummies in the node size processor".to_string(),
-        ));
-    }
     let results = {
         let view: &LGraph = graph;
         layered_nodes(view, |node| node.node_type == NodeType::NORMAL)

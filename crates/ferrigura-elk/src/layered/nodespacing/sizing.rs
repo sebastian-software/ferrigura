@@ -384,13 +384,14 @@ fn modified_placement_size(alignment: PortAlignment, port_port_spacing: f64, siz
     }
 }
 
-/// `calculateHorizontalPortYCoordinate` without a border offset: northern ports sit above the
-/// node, the others on its border.
+/// `calculateHorizontalPortYCoordinate`: northern ports sit above the node, the others on its
+/// border, each moved out by its border offset. An unset offset is 0, which gives the same
+/// coordinates as the Java's branch without one.
 fn horizontal_port_y(port: &PortContext) -> f64 {
     if port.side == PortSide::NORTH {
-        -port.size.y
+        -port.size.y - port.border_offset
     } else {
-        0.0
+        port.border_offset
     }
 }
 
@@ -483,12 +484,12 @@ fn place_free_vertical(ctx: &mut NodeContext, side: PortSide) {
     }
 }
 
-/// `calculateVerticalPortXCoordinate` without a border offset: western ports stick out to the
-/// left of the node, eastern ports sit on its right border.
+/// `calculateVerticalPortXCoordinate`: western ports stick out to the left of the node, eastern
+/// ports sit on its right border, each moved out by its border offset (0 when unset, as above).
 fn vertical_port_x(port: &PortContext, node_width: f64) -> f64 {
     if port.side == PortSide::WEST {
-        -port.size.x
+        -port.size.x - port.border_offset
     } else {
-        node_width
+        node_width + port.border_offset
     }
 }

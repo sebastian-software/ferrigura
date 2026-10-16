@@ -16,12 +16,13 @@
 use crate::core::data::JavaEnum;
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{
-    Alignment, Direction, DirectionCongruency, EdgeLabelSideSelection, NodeLabelPlacement, PortSide,
+    Alignment, Direction, DirectionCongruency, EdgeLabelSideSelection, LayerConstraint,
+    NodeLabelPlacement, NodeType, PortSide,
 };
 use crate::core::data::property::PropertyHolder;
 use crate::core::math::{KVector, Spacing};
 use crate::layered::LayoutError;
-use crate::layered::lgraph::LGraph;
+use crate::layered::lgraph::{InLayerConstraint, LGraph, LNode};
 use crate::layered::options;
 
 /// `GraphTransformer.Mode`: the direction preprocessor transforms towards the input direction
@@ -207,6 +208,10 @@ fn mirror_nodes(graph: &mut LGraph, nodes: &[usize], axis: Axis, offset: f64) {
                 }),
             );
         }
+        // `mirrorExternalPortSideX/Y` and `mirrorLayerConstraintX` / `mirrorInLayerConstraintY`.
+        if graph.nodes[node].node_type == NodeType::EXTERNAL_PORT {
+            mirror_external_port(&mut graph.nodes[node], axis);
+        }
         for port in graph.nodes[node].ports.clone() {
             let port_size = axis.coordinate(&graph.ports[port].size);
             {
@@ -266,6 +271,10 @@ fn transpose_all(graph: &mut LGraph) {
             );
         }
         transpose_node_label_placement(&mut node.properties);
+        // `transposeExternalPortSide` and `transposeLayerConstraint`.
+        if node.node_type == NodeType::EXTERNAL_PORT {
+            transpose_external_port(node);
+        }
         // `transposeAll(nodes)`: the node labels, with their sizes, positions and placements.
         for &id in &node.labels {
             let label = &mut graph.labels[id];
@@ -321,6 +330,78 @@ fn transpose_all(graph: &mut LGraph) {
             Some(OptionValue::Padding(transposed(padding))),
         );
     }
+}
+
+/// `mirrorExternalPortSideX` with `mirrorLayerConstraintX`, or `mirrorExternalPortSideY` with
+/// `mirrorInLayerConstraintY`, for an external port dummy.
+fn mirror_external_port(node: &mut LNode, axis: Axis) {
+    if let Some(external) = node.external_port.as_mut() {
+        external.side = external.side.map(|side| axis.mirror_side(side));
+    }
+    match axis {
+        Axis::X => {
+            let mirrored = match layer_constraint(node) {
+                LayerConstraint::FIRST => Some(LayerConstraint::LAST),
+                LayerConstraint::FIRST_SEPARATE => Some(LayerConstraint::LAST_SEPARATE),
+                LayerConstraint::LAST => Some(LayerConstraint::FIRST),
+                LayerConstraint::LAST_SEPARATE => Some(LayerConstraint::FIRST_SEPARATE),
+                LayerConstraint::NONE => None,
+            };
+            if let Some(constraint) = mirrored {
+                set_layer_constraint(node, constraint);
+            }
+        }
+        Axis::Y => {
+            node.in_layer_constraint = match node.in_layer_constraint {
+                InLayerConstraint::TOP => InLayerConstraint::BOTTOM,
+                InLayerConstraint::BOTTOM => InLayerConstraint::TOP,
+                InLayerConstraint::NONE => InLayerConstraint::NONE,
+            };
+        }
+    }
+}
+
+/// `transposeExternalPortSide` and `transposeLayerConstraint` for an external port dummy: a dummy in
+/// the first or last separate layer goes to the top or bottom of its layer, and back.
+fn transpose_external_port(node: &mut LNode) {
+    if let Some(external) = node.external_port.as_mut() {
+        external.side = external.side.map(transposed_side);
+    }
+    match (layer_constraint(node), node.in_layer_constraint) {
+        (LayerConstraint::FIRST_SEPARATE, _) => {
+            set_layer_constraint(node, LayerConstraint::NONE);
+            node.in_layer_constraint = InLayerConstraint::TOP;
+        }
+        (LayerConstraint::LAST_SEPARATE, _) => {
+            set_layer_constraint(node, LayerConstraint::NONE);
+            node.in_layer_constraint = InLayerConstraint::BOTTOM;
+        }
+        (_, InLayerConstraint::TOP) => {
+            set_layer_constraint(node, LayerConstraint::FIRST_SEPARATE);
+            node.in_layer_constraint = InLayerConstraint::NONE;
+        }
+        (_, InLayerConstraint::BOTTOM) => {
+            set_layer_constraint(node, LayerConstraint::LAST_SEPARATE);
+            node.in_layer_constraint = InLayerConstraint::NONE;
+        }
+        _ => {}
+    }
+}
+
+/// `LayeredOptions.LAYERING_LAYER_CONSTRAINT` of a node.
+fn layer_constraint(node: &LNode) -> LayerConstraint {
+    node.properties
+        .enum_with_default::<LayerConstraint>(options::LAYER_CONSTRAINT)
+}
+
+fn set_layer_constraint(node: &mut LNode, constraint: LayerConstraint) {
+    node.properties.set(
+        options::LAYER_CONSTRAINT,
+        Some(OptionValue::Enum {
+            class: "LayerConstraint",
+            name: constraint.java_name().to_string(),
+        }),
+    );
 }
 
 /// `GraphTransformer.transposeNodeLabelPlacement`: the horizontal position becomes the vertical one
