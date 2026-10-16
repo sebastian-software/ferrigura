@@ -15,6 +15,7 @@ const statusPath = `${root}docs-port/STATUS.md`;
 /** The ported suites of each diagram type, as file names in `crates/ferrigura-syntax/tests/`. */
 const suites: Record<string, string[]> = {
   pie: ['pie_spec', 'pie_grammar'],
+  timeline: ['timeline_spec', 'timeline_grammar'],
   info: ['info_spec', 'info_grammar'],
   flowchart: [
     'flowchart_singlenode_spec',
