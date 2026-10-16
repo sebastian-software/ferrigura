@@ -322,15 +322,28 @@ fn word_face(kind: MarkdownWordType) -> &'static Face {
 }
 
 /// The last `font-size` declaration of a style, in pixels. Only `px` is read; other units leave the
-/// default size, as the bundled text has no relative size to resolve them against.
+/// default size, as the bundled text has no relative size to resolve them against. A declaration
+/// may carry `!important`, as `styles2String` writes every declaration (`shapes/util.ts`), and the
+/// browser applies it, so the unit is read before that suffix.
 fn declared_font_size(styles: &[String]) -> Option<f64> {
     styles.iter().rev().find_map(|declaration| {
         let (name, value) = declaration.split_once(':')?;
         if !name.trim().eq_ignore_ascii_case("font-size") {
             return None;
         }
-        value.trim().strip_suffix("px")?.trim().parse::<f64>().ok()
+        let value = value.trim();
+        let value = strip_suffix_ignore_case(value, "!important").map_or(value, str::trim_end);
+        let number = strip_suffix_ignore_case(value, "px")?;
+        number.trim().parse::<f64>().ok()
     })
+}
+
+/// `text` without `suffix`, when it ends with it in any case (CSS keywords and units are not
+/// case-sensitive).
+fn strip_suffix_ignore_case<'a>(text: &'a str, suffix: &str) -> Option<&'a str> {
+    let start = text.len().checked_sub(suffix.len())?;
+    let tail = text.get(start..)?;
+    tail.eq_ignore_ascii_case(suffix).then(|| &text[..start])
 }
 
 /// `text.replace(/<br\s*\/?>/g, '<br/>')`: every `<br>` tag becomes `<br/>`, in lower case only.
@@ -351,7 +364,7 @@ fn normalize_breaks(text: &str) -> String {
 
 /// `decodeEntities` in `utils.ts`: the placeholders that the diagram source encodes its entities
 /// with become `&#`, `&` and `;` again.
-fn decode_entities(text: &str) -> String {
+pub(super) fn decode_entities(text: &str) -> String {
     text.replace("ﬂ°°", "&#")
         .replace("ﬂ°", "&")
         .replace("¶ß", ";")
@@ -509,6 +522,55 @@ mod tests {
             plain.background.expect("the default has one too")
         );
         assert_ne!(background.height, layout.bbox.height);
+    }
+
+    /// The words of each line, as the SVG shows them, one string per line.
+    fn line_texts(layout: &LabelLayout) -> Vec<String> {
+        layout
+            .lines
+            .iter()
+            .map(|line| line.runs.iter().map(|run| run.text.as_str()).collect())
+            .collect()
+    }
+
+    /// `styles2String` writes every declaration with `!important` (`shapes/util.ts`), and a class's
+    /// `font-size` reaches the label that way (`classDef larger font-size:30px`). The size is read
+    /// before the suffix, so the text is measured at 30 px.
+    #[test]
+    fn a_font_size_declared_with_important_sets_the_text_size() {
+        let styles = ["font-size:30px !important".to_owned()];
+        let layout = layout(&spec("I am a circle", LabelType::Text, &styles)).expect("lays out");
+        assert_eq!(layout.font_size, 30.0);
+        assert_eq!(
+            declared_font_size(&["font-size: 2PX!IMPORTANT".to_owned()]),
+            Some(2.0)
+        );
+        assert_eq!(
+            declared_font_size(&["font-size:2em !important".to_owned()]),
+            None
+        );
+    }
+
+    /// A node label is wrapped inside the group that carries its style, so the wrap measures the
+    /// text at the class's size (`createText.ts` `computeWidthOfText` in `.label`): "I am a circle"
+    /// is one line at 16 px and two at 30 px, as the reference draws `Node4` in `65-3-bigger-font`.
+    #[test]
+    fn a_node_label_wraps_at_the_font_size_its_class_declares() {
+        let unstyled = {
+            let mut label = spec("I am a circle", LabelType::Text, &[]);
+            label.width = 120.0;
+            layout(&label).expect("lays out")
+        };
+        assert_eq!(line_texts(&unstyled), vec!["I am a circle".to_owned()]);
+
+        let styles = ["font-size:30px !important".to_owned()];
+        let mut label = spec("I am a circle", LabelType::Text, &styles);
+        label.width = 120.0;
+        let styled = layout(&label).expect("lays out");
+        assert_eq!(
+            line_texts(&styled),
+            vec!["I am a".to_owned(), "circle".to_owned()]
+        );
     }
 
     fn layout_with_default(label: &LabelSpec<'_>) -> LabelLayout {

@@ -37,6 +37,7 @@ mod wave;
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::value::Value;
+use ferrigura_syntax::sanitize::sanitize_text;
 
 use super::data::Node;
 use super::geom::{BBox, CenterBox, Point};
@@ -179,12 +180,11 @@ pub fn node_label(
         .filter(|declaration| !declaration.is_empty())
         .map(str::to_owned)
         .collect();
+    // `labelHelper` sanitises the decoded label again when it draws it (`shapes/util.ts`), so the
+    // label of an `@{ label }` node, which the DB did not sanitise, is sanitised here.
+    let text = sanitize_text(&label::decode_entities(&node.label));
     let spec = LabelSpec {
-        text: if kind.empties_label() {
-            ""
-        } else {
-            &node.label
-        },
+        text: if kind.empties_label() { "" } else { &text },
         label_type: node.label_type,
         width: wrapping_width,
         is_node: true,
@@ -443,6 +443,30 @@ mod tests {
                 None,
                 "{shape}"
             );
+        }
+    }
+
+    /// `shapes/util.ts` sanitises the decoded label when it draws it, as DOMPurify writes a `<` that
+    /// starts no tag as `&lt;`, which the plain-text split then reads as `<`. A label that already
+    /// holds `&lt;` (the DB's output) is still drawn as `<`, and so is a raw `<11` (an `@{ label }`
+    /// node, which the DB leaves as it is): `nightly-check/v2/03-should-render-raw-strings`.
+    #[test]
+    fn a_node_label_is_sanitised_and_decoded_as_it_is_drawn() {
+        let config = MermaidConfig::default();
+        let theme = theme();
+        for (text, shown_as) in [("<11", "<11"), ("&lt;11", "<11")] {
+            let mut node = node("squareRect", "neo");
+            node.label = text.to_owned();
+            let label = node_label(&node, &config, &theme, None)
+                .expect("known")
+                .expect("a label");
+            let shown: String = label
+                .lines
+                .iter()
+                .flat_map(|line| &line.runs)
+                .map(|run| run.text.as_str())
+                .collect();
+            assert_eq!(shown, shown_as, "label {text:?}");
         }
     }
 

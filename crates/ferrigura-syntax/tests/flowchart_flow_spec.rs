@@ -169,17 +169,10 @@ mod parsing_a_flow_chart {
             char_test("*", "*");
         }
 
+        /// The DB sanitises the text with DOMPurify, which writes a `<` that starts no tag as `&lt;`.
         #[test]
-        #[ignore = "escaping is rendering (decision 0004), checked in M5"]
         fn should_be_able_to_parse_a_6() {
             char_test("<", "&lt;");
-        }
-
-        /// The model keeps the raw text: the escaped form above is the renderer's, so this pins the
-        /// model side of the same input.
-        #[test]
-        fn should_be_able_to_parse_a_6_raw_text() {
-            char_test("<", "<");
         }
 
         #[test]

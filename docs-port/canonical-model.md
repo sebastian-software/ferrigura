@@ -20,11 +20,13 @@ The text of a value is what the grammar's value rules return from the source, an
 3. **Strings.** Quotes are removed and escapes resolved as Langium's default value converter does: `\b \f \n \r \t \v \0`, and any other escaped character stands for itself.
 4. **Single-line header values** (`title`, `accTitle:`, `accDescr:`) are trimmed, and each run of two or more spaces or tabs becomes one space.
 5. **Block `accDescr { … }`** loses the leading whitespace of each line, the trailing whitespace of each line, collapses runs of blanks, and collapses runs of two or more line breaks into one line break. The order is that of the reference's converter.
-6. **Markup is raw.** `<br>`, `<b>`, `&`, `&amp;` and every other character stay as written. Nothing is escaped or interpreted: escaping for SVG is the renderer's job, and labels are text in SVG ([0004](./decisions/0004-svg-text-labels.md)).
+6. **Markup is raw.** `<br>`, `<b>`, `&`, `&amp;` and every other character stay as written, except the flowchart's node, edge and subgraph texts, which hold the sanitised text (see Sanitisation). Escaping for SVG is the renderer's job, and labels are text in SVG ([0004](./decisions/0004-svg-text-labels.md)).
 
 ### Sanitisation
 
-The reference's DB setters pass every text through DOMPurify (`sanitizeText`). DOMPurify serialises text as HTML, so the DB value of `AT&T` is `AT&amp;T`, and it removes script tags. That is a rendering concern, and it needs a DOM, so the canonical model does not apply it.
+The reference's DB setters pass every text through DOMPurify (`sanitizeText`). DOMPurify serialises text as HTML, so the DB value of `AT&T` is `AT&amp;T`, and it removes script tags.
+
+The flowchart DB keeps that step, because its layout data (`getData`) carries the sanitised texts: the node text of a bracket or text label, the edge text and the subgraph title are the DB values of the reference. The Rust DB applies [`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs), a pure port of the part of DOMPurify 3.4.12 that these texts reach, and `pnpm port:diff flowchart` and `flowchart-data` compare the result with the reference's DOMPurify on every flowchart input. The `@{ label }` text is not sanitised, as the reference does not sanitise it. The other diagram types, and the header texts of the flowchart, are unchanged: the pie and info setters need a DOM that the canonical model does not provide, and the header setters are replaced in the exporters as before.
 
 For the same reason the exporters do not call the setters for the header texts. They read the grammar's AST and apply the DB's two whitespace rules themselves ([`pie-header.ts`](../tools/port/pie-header.ts)):
 
@@ -80,6 +82,6 @@ The flowchart model is the DB state after parsing (`flowDb.ts`), with the names 
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
-- **Sanitised and escaped text.** See Sanitisation above: it belongs to rendering.
+- **Escaped text.** Escaping for SVG belongs to rendering. Sanitising is in the model for the flowchart DB only (see Sanitisation above).
 - **Configuration and directives.** `%%{init: …}%%` and the front matter `config` block are read by `ferrigura-syntax`'s `config` module and resolved by `ferrigura-model`'s `config` module (the effective configuration, checked by `pnpm port:diff config`). The grammar treats directives and comments as hidden, so they never reach a model.
 - **Source positions.** Errors carry them; models do not.
