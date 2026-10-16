@@ -1,6 +1,6 @@
 # M6 gantt parser: plan
 
-Status: the parser, the DB and the date module are written from this plan. Research with probes is in [NOTES.md](./NOTES.md); the section numbers below point to it. Reference: `packages/mermaid/src/diagrams/gantt/` of this tree, with the dayjs 1.11.21 and `@braintree/sanitize-url` 7.1.2 that the package installs.
+Status: implemented. The parser, the DB, the date rules and the URL rules are in `crates/ferrigura-syntax/src/gantt/`; the specs are in `crates/ferrigura-syntax/tests/gantt_*_spec.rs`; `pnpm port:diff gantt` shows 114 inputs, no difference and one named exception (front matter, shared reader). Open items are in section 11.
 
 Rendering (`ganttRenderer.js`, styles, the geometry comparison) is not part of this plan. The renderer stays in the reference until a later strand.
 
@@ -127,7 +127,11 @@ Titles are the reference's. Exact Jison message texts are not copied: a test tha
 - `ferrigura-syntax`'s `canonical` example runs `gantt::parse_with` with the same `now`.
 - Target: zero differences, and no named exception except the ones section 8 allows.
 
-## 11. Open questions
+## 11. Open questions and follow-ups
+
+- The front matter exception: the shared YAML reader rejects a multi-line double-quoted value that js-yaml accepts (the gantt docs block). The config differential names the same entry. Remove both when the reader is fixed.
+- Chains: the exporter probe found 11 of 12 after-links resolving in the reference (NOTES 3.8 says 11 resolve, 12 do not); the explicit chain case in `tools/port/cases.ts` agrees with the reference, so the port follows the reference.
+- `dayjs` strict parsing covers the token table of customParseFormat, with `w`, `z` and `gggg` throwing as in the reference; legacy `Date` covers the forms of section 5.3.
 
 1. The V8 forms of section 5.3 beyond the listed ones are rejected. The differential run decides whether the inputs reach any form that is not listed.
 2. The title sanitising of gantt follows the DB (DOMPurify subset). The other header texts are not sanitised in other types; this is a gantt paragraph in `canonical-model.md`.
