@@ -4,13 +4,14 @@
  * canonical models are compared. A rejection on both sides counts as agreement; any other
  * difference is reported with both results.
  *
- * Usage: `pnpm port:diff pie` or `pnpm port:diff info`
+ * Usage: `pnpm port:diff <pie | info | flowchart | config | yaml | theme>`
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { collectInputs } from './inputs.ts';
+import { exceptions } from './exceptions.ts';
 import type { PortInput, PortOutput } from './reference.ts';
 
 const type = process.argv[2];
@@ -22,8 +23,8 @@ if (type === 'config' || type === 'yaml' || type === 'theme') {
   );
   process.exit(subRun.status ?? 2);
 }
-if (type !== 'pie' && type !== 'info') {
-  console.error('usage: pnpm port:diff pie | info | config | yaml | theme');
+if (type !== 'pie' && type !== 'info' && type !== 'flowchart') {
+  console.error('usage: pnpm port:diff pie | info | flowchart | config | yaml | theme');
   process.exit(2);
 }
 
@@ -75,7 +76,7 @@ run('cargo', [
 ]);
 
 const js = JSON.parse(await readFile(jsPath, 'utf8')) as PortOutput[];
-const rs = JSON.parse(await readFile(rsPath, 'utf8')) as PortOutput[];
+const rs = JSON.parse(await readFile(rsPath, 'utf8')) as (PortOutput & { notYet?: string })[];
 const jsById = new Map(js.map((output) => [output.id, output]));
 const rsById = new Map(rs.map((output) => [output.id, output]));
 
@@ -86,7 +87,11 @@ interface Difference {
   rs: PortOutput | undefined;
 }
 
+const named = new Map((exceptions[type] ?? []).map((entry) => [entry.text, entry.reason]));
 const differences: Difference[] = [];
+const stale: Difference[] = [];
+const excepted: Difference[] = [];
+const notYet: { source: string; construct: string }[] = [];
 let accepted = 0;
 for (const input of inputs as PortInput[]) {
   const jsOutput = jsById.get(input.id);
@@ -94,37 +99,70 @@ for (const input of inputs as PortInput[]) {
   if (jsOutput?.ok) {
     accepted += 1;
   }
+  // A construct the port has not reached yet is neither agreement nor a difference.
+  if (rsOutput?.notYet !== undefined) {
+    notYet.push({ source: input.source, construct: rsOutput.notYet });
+    continue;
+  }
   const agree =
     jsOutput !== undefined &&
     rsOutput !== undefined &&
     jsOutput.ok === rsOutput.ok &&
     (!jsOutput.ok || same(jsOutput.model, rsOutput.model));
+  const difference = { source: input.source, text: input.text, js: jsOutput, rs: rsOutput };
+  if (named.has(input.text)) {
+    (agree ? stale : excepted).push(difference);
+    continue;
+  }
   if (!agree) {
-    differences.push({ source: input.source, text: input.text, js: jsOutput, rs: rsOutput });
+    differences.push(difference);
   }
 }
 
-for (const difference of differences) {
+for (const difference of [...differences, ...stale]) {
   console.log(`\n✗ ${difference.source}`);
   console.log(`  input: ${JSON.stringify(difference.text.slice(0, 300))}`);
   console.log(`  js: ${JSON.stringify(difference.js)}`);
   console.log(`  rs: ${JSON.stringify(difference.rs)}`);
 }
+for (const difference of stale) {
+  console.log(`  stale exception, now agrees: ${named.get(difference.text)}`);
+}
+
+const notYetCounts = new Map<string, number>();
+for (const entry of notYet) {
+  notYetCounts.set(entry.construct, (notYetCounts.get(entry.construct) ?? 0) + 1);
+}
+if (notYet.length > 0) {
+  console.log(`\nnot yet ported: ${notYet.length} inputs`);
+  for (const [construct, count] of [...notYetCounts].sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${count} × ${construct}`);
+  }
+}
 
 console.log(
   `\n${type}: ${inputs.length} inputs, ${accepted} accepted by the reference, ` +
-    `${differences.length} differences`
+    `${notYet.length} not yet ported, ${excepted.length} named exceptions, ` +
+    `${differences.length} differences, ${stale.length} stale exceptions`
 );
 
 await writeFile(
   `${workDir}/${type}-summary.json`,
   JSON.stringify(
-    { type, inputs: inputs.length, accepted, differences: differences.length },
+    {
+      type,
+      inputs: inputs.length,
+      accepted,
+      notYet: notYet.length,
+      excepted: excepted.length,
+      differences: differences.length,
+      stale: stale.length,
+    },
     null,
     2
   )
 );
 
-if (differences.length > 0) {
+if (differences.length > 0 || stale.length > 0) {
   process.exitCode = 1;
 }

@@ -59,6 +59,18 @@ Only the front matter `title` is read. The `config` block and every other key be
 
 The model keeps `title`, `accTitle` and `accDescr` as the grammar gives them. The keyword `showInfo` is not in the grammar's AST, so it is in no model.
 
+## Flowchart
+
+The flowchart model is the DB state after parsing (`flowDb.ts`), with the names of the DB in camelCase. The full field list and the exclusions are in [flowchart/PLAN.md](./flowchart/PLAN.md), sections 8 and 9; the rules here are the ones the other diagrams do not share.
+
+- **Header texts use the flowchart's own rules.** `accTitle` is the grammar's trimmed value without leading blanks. A block or single-line `accDescr` is the grammar's trimmed value with each line break and the blanks after it reduced to one line break. Blank lines are not collapsed, which differs from the pie and info converter in section 5 above.
+- **Title.** The flowchart grammar has no `title` statement, so `title` is the front matter title, or `""`.
+- **Labels.** Each label carries its kind as `labelType`: `text`, `string` (double-quoted) or `markdown` (quoted, between backticks). The text is raw; Markdown is parsed at render time with Ferromark.
+- **Undefined is `null`.** A DB field the input never sets is `null` (`shape`, `link`, `linkTarget`, `style`, `interpolate`, `animate`, `animation`, `dir`, `length` of an `INVALID` link, the shape data fields). An empty list is `[]`.
+- **Order.** Vertices are in creation order, edges in creation order (the order of the DB's `edges` array), subgraphs in closing order (a nested subgraph closes first), with a repeated id merged into its first position. Subgraph `nodes` keep the grammar's order, in which a chain's later nodes come first (`A --> B --> C` gives `[C, B, A]`).
+- **Edge ids.** The `id` is always present: the user's `e1@` id, or the generated `L_<start>_<end>_<n>`, where `n` counts the edges already drawn between the same pair. Tooltips are kept by id even when no vertex has that id.
+- **Config is not in the model.** `maxEdges` is a parser option (default 500). `securityLevel`, `htmlLabels`, `inheritDir` and `curve` act at render time and are not in the model.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

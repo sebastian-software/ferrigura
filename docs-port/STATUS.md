@@ -1,26 +1,26 @@
 # Port status
 
-Last updated: 2026-10-16. M1 is merged into `main`: pie and info parse and match the reference on every collected input. M4 is in progress on branch `sebastian/port-m4-elk-fe5cfa`.
+Last updated: 2026-10-16. M1, M2 and M3 are merged into `main`: pie, info and flowchart parse and match the reference on every collected input, and pie renders to SVG through `ferrigura`, its CLI and its Node addon. M4 is in progress on branch `sebastian/port-m4-elk-fe5cfa`.
 
 Each session updates its section when it stops: what changed, what is next, what blocks it. Test counts and the differential column are written by `pnpm port:status`, which reads the Rust specs and the last `pnpm port:diff` run; run it after both.
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                    |
-| ---------------------------------- | ----------- | ------ | -------------------------------------------------------- |
-| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                    |
-| M2 First slice: pie to SVG         | in progress | m2     | Stage C done: CLI and Node addon; info still open        |
-| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                            |
-| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md` |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                      |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                 |
+| Milestone                          | Status      | Strand | Notes                                                                                               |
+| ---------------------------------- | ----------- | ------ | --------------------------------------------------------------------------------------------------- |
+| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                                               |
+| M2 First slice: pie to SVG         | done        | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                       |
+| M3 Flowchart parser                | done        | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md) |
+| M4 ELK Layered port                | in progress | elk    | Branch `sebastian/port-m4-elk-fe5cfa`; see `elk/PLAN.md`                                            |
+| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                                                 |
+| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                            |
 
 ## Strands
 
-| Strand | Session | Worktree                   | Working on                             | Next                                      | Blocked by |
-| ------ | ------- | -------------------------- | -------------------------------------- | ----------------------------------------- | ---------- |
-| main   | —       | —                          | M1 done and merged                     | M2 (pie to SVG) and M3 (flowchart parser) | —          |
-| m2     | —       | `determined-bartik-42e25d` | Stage C done; end-of-stage report sent | —                                         | —          |
+| Strand | Session    | Worktree             | Working on                     | Next                                     | Blocked by |
+| ------ | ---------- | -------------------- | ------------------------------ | ---------------------------------------- | ---------- |
+| main   | —          | —                    | M1, M2 and M3 done and merged  | M5 (flowchart rendering) once M4 is done | M4         |
+| elk    | M4 session | `port-m4-elk-fe5cfa` | Compound gaps (inverted ports) | M4 done                                  | —          |
 
 ## M1 handover
 
@@ -68,19 +68,19 @@ Known gaps in the configuration: `themeVariables` are not computed (the theme po
 
 Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec files under `packages/mermaid/src/diagrams/<type>/`, an approximate count of their test cases, and the e2e fixtures under `e2e/diagrams/`. pie, info and gitGraph also have parser tests in `packages/parser/tests/`.
 
-| Type      | Grammar (JS)                                     | Spec files | ≈ Tests | Fixtures | Parser           | Specs ported / passing | Differential parse       | Layout | Render | Parity |
-| --------- | ------------------------------------------------ | ---------: | ------: | -------: | ---------------- | ---------------------- | ------------------------ | ------ | ------ | ------ |
-| flowchart | `diagrams/flowchart/parser/flow.jison`           |         20 |     318 |      352 | —                | —                      | —                        | —      | —      | —      |
-| sequence  | `diagrams/sequence/parser/sequenceDiagram.jison` |         10 |     198 |      193 | —                | —                      | —                        | —      | —      | —      |
-| class     | `diagrams/class/parser/classDiagram.jison`       |          5 |     255 |      247 | —                | —                      | —                        | —      | —      | —      |
-| state     | `diagrams/state/parser/stateDiagram.jison`       |          9 |     121 |      145 | —                | —                      | —                        | —      | —      | —      |
-| ER        | `diagrams/er/parser/erDiagram.jison`             |          3 |     142 |      206 | —                | —                      | —                        | —      | —      | —      |
-| gantt     | `diagrams/gantt/parser/gantt.jison`              |          2 |      40 |       52 | —                | —                      | —                        | —      | —      | —      |
-| pie       | `packages/parser/…/pie/pie.langium`              |          2 |      16 |       24 | ferrigura-syntax | 27 / 29 (2 ignored)    | 87 inputs, no difference | —      | —      | —      |
-| timeline  | `diagrams/timeline/parser/timeline.jison`        |          1 |      11 |       30 | —                | —                      | —                        | —      | —      | —      |
-| gitGraph  | `packages/parser/…/gitGraph/gitGraph.langium`    |          1 |      69 |      135 | —                | —                      | —                        | —      | —      | —      |
-| journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | —                | —                      | —                        | —      | —      | —      |
-| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                  | 17 inputs, no difference | —      | —      | —      |
+| Type      | Grammar (JS)                                     | Spec files | ≈ Tests | Fixtures | Parser           | Specs ported / passing | Differential parse        | Layout | Render | Parity |
+| --------- | ------------------------------------------------ | ---------: | ------: | -------: | ---------------- | ---------------------- | ------------------------- | ------ | ------ | ------ |
+| flowchart | `diagrams/flowchart/parser/flow.jison`           |         20 |     318 |      352 | ferrigura-syntax | 953 / 958 (5 ignored)  | 558 inputs, no difference | —      | —      | —      |
+| sequence  | `diagrams/sequence/parser/sequenceDiagram.jison` |         10 |     198 |      193 | —                | —                      | —                         | —      | —      | —      |
+| class     | `diagrams/class/parser/classDiagram.jison`       |          5 |     255 |      247 | —                | —                      | —                         | —      | —      | —      |
+| state     | `diagrams/state/parser/stateDiagram.jison`       |          9 |     121 |      145 | —                | —                      | —                         | —      | —      | —      |
+| ER        | `diagrams/er/parser/erDiagram.jison`             |          3 |     142 |      206 | —                | —                      | —                         | —      | —      | —      |
+| gantt     | `diagrams/gantt/parser/gantt.jison`              |          2 |      40 |       52 | —                | —                      | —                         | —      | —      | —      |
+| pie       | `packages/parser/…/pie/pie.langium`              |          2 |      16 |       24 | ferrigura-syntax | 27 / 29 (2 ignored)    | 87 inputs, no difference  | —      | —      | —      |
+| timeline  | `diagrams/timeline/parser/timeline.jison`        |          1 |      11 |       30 | —                | —                      | —                         | —      | —      | —      |
+| gitGraph  | `packages/parser/…/gitGraph/gitGraph.langium`    |          1 |      69 |      135 | —                | —                      | —                         | —      | —      | —      |
+| journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | —                | —                      | —                         | —      | —      | —      |
+| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                  | 17 inputs, no difference  | —      | —      | —      |
 
 ## Spikes
 

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { createServer } from 'vite';
 
+import jisonPlugin from '../../.vite/jisonPlugin.ts';
 import jsonSchemaPlugin from '../../.vite/jsonSchemaPlugin.ts';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -25,7 +26,7 @@ export async function openReference(): Promise<Reference> {
     root,
     logLevel: 'warn',
     appType: 'custom',
-    plugins: [jsonSchemaPlugin()],
+    plugins: [jsonSchemaPlugin(), jisonPlugin()],
     resolve: { extensions: ['.ts', '.js'] },
     server: { middlewareMode: true, hmr: false, watch: null },
     optimizeDeps: { noDiscovery: true, include: [] },
@@ -54,12 +55,15 @@ export type PortOutput =
  * as `mermaidAPI` does when it loads the diagrams.
  */
 export async function registerDetectors(reference: Reference): Promise<void> {
-  const [detectType, pie, info] = await Promise.all([
+  const [detectType, pie, info, flowchart] = await Promise.all([
     reference.load<{ registerLazyLoadedDiagrams(...diagrams: unknown[]): void }>(
       '/packages/mermaid/src/diagram-api/detectType.ts'
     ),
     reference.load<{ pie: unknown }>('/packages/mermaid/src/diagrams/pie/pieDetector.ts'),
     reference.load<{ info: unknown }>('/packages/mermaid/src/diagrams/info/infoDetector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/flowchart/flowDetector-v2.ts'
+    ),
   ]);
-  detectType.registerLazyLoadedDiagrams(pie.pie, info.info);
+  detectType.registerLazyLoadedDiagrams(pie.pie, info.info, flowchart.default);
 }
