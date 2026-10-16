@@ -683,7 +683,12 @@ You have to call mermaid.initialize.`
     }
 
     const uniq = (a: any[]) => {
-      const prims: any = { boolean: {}, number: {}, string: {} };
+      // Sets, not plain objects: an id such as `__proto__` must count as an ordinary key.
+      const prims: Record<string, Set<unknown>> = {
+        boolean: new Set(),
+        number: new Set(),
+        string: new Set(),
+      };
       const objs: any[] = [];
 
       let dir: string | undefined;
@@ -698,7 +703,11 @@ You have to call mermaid.initialize.`
           return false;
         }
         if (type in prims) {
-          return prims[type].hasOwnProperty(item) ? false : (prims[type][item] = true);
+          if (prims[type].has(item)) {
+            return false;
+          }
+          prims[type].add(item);
+          return true;
         } else {
           return objs.includes(item) ? false : objs.push(item);
         }
