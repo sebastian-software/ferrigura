@@ -163,6 +163,7 @@ fn copy_edge(graph: &mut LGraph, edge: usize, source: usize, target: usize) -> u
         reversed: original.reversed,
         bend_points: Vec::new(),
         thickness: original.thickness,
+        designation: original.designation.clone(),
     };
     graph.edges.push(copy);
     let new_edge = graph.edges.len() - 1;

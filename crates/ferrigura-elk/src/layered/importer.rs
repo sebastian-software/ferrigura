@@ -484,9 +484,27 @@ fn import_compound_edges(
                 // coordinates are relative to the graph of its ELK container, which is the target
                 // when the source is inside it.
                 let into_source = is_descendant(target_path, source_path);
+                // `getOriginIdentifier`: the ELK edge's container is the node of `path`, whose
+                // graph's prefix holds the identifiers of its containers.
+                let container_prefix = if path.is_empty() {
+                    &graphs[0].root_id
+                } else {
+                    node_map
+                        .get(&path)
+                        .and_then(|&(graph, node)| graphs[graph].nodes[node].nested_graph)
+                        .map_or(&graphs[parent_graph].root_id, |graph| {
+                            &graphs[graph].root_id
+                        })
+                };
+                let designation = if edge.id.is_empty() || container_prefix.is_empty() {
+                    edge.id.clone()
+                } else {
+                    format!("{container_prefix}.{}", edge.id)
+                };
                 graphs[0].cross_hierarchy_edges.push(CrossHierarchyEdge {
                     id: edge.id.clone(),
                     properties: edge.properties.clone(),
+                    designation,
                     model_order: edge_model_order,
                     thickness: 1.0,
                     source: (source_graph, source_port),
@@ -826,6 +844,7 @@ fn add_edge(
         reversed: false,
         bend_points: Vec::new(),
         thickness: 1.0,
+        designation: None,
     });
 }
 

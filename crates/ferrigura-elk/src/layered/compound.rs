@@ -854,6 +854,7 @@ fn create_dummy_edge(
         reversed: false,
         bend_points: Vec::new(),
         thickness: orig.thickness,
+        designation: Some(orig.designation.clone()),
     });
     graph.ports[source].outgoing.push(index);
     graph.ports[target].incoming.push(index);

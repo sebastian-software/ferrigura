@@ -220,6 +220,11 @@ pub struct LEdge {
     /// `LEdge.THICKNESS`: the line thickness, 1 by default. A programmatic option, so the
     /// registry does not hold it and the importer sets this field directly.
     pub thickness: f64,
+    /// `LGraphElement.getDesignation()` of an edge whose ELK edge is contained in another level
+    /// than the edge's graph, a segment of a cross-hierarchy edge: the identifiers of the ELK
+    /// edge's containers and its own (`ElkGraphTransformer.getOriginIdentifier`). Other edges go by
+    /// their level's prefix and their id. Copies of the edge take it with their options.
+    pub designation: Option<String>,
 }
 
 /// A label of an edge, `LLabel`.
@@ -302,6 +307,8 @@ pub struct CrossHierarchyEdge {
     pub id: String,
     /// The options of the ELK edge.
     pub properties: PropertyHolder,
+    /// `LGraphElement.getDesignation()`: the identifiers of the ELK edge's containers and its own.
+    pub designation: String,
     /// `InternalProperties.MODEL_ORDER`, when the input order matters.
     pub model_order: Option<usize>,
     /// `LEdge.THICKNESS`.

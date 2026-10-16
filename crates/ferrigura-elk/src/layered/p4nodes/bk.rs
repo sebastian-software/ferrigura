@@ -453,12 +453,14 @@ fn map_text(
 ///
 /// The designation is the first label's text, or else the edge's id with the ids of its containers
 /// in front (`LGraphElement.getDesignation`, `ElkGraphTransformer.getIdentifier`): an edge of the
-/// root level reads `root.<id>`. The level's prefix is `root_id`. A port reads as its designation
+/// root level reads `root.<id>`. The level's prefix is `root_id`; a segment of a cross-hierarchy
+/// edge carries the designation of its ELK edge instead. A port reads as its designation
 /// (`LGraph::port_designation`).
 fn edge_text(graph: &LGraph, edge: &LEdge) -> String {
     let mut text = String::from("e_");
     match edge.labels.first().map(|&id| &graph.labels[id]) {
         Some(label) if !label.text.is_empty() => text.push_str(&label.text),
+        _ if let Some(designation) = &edge.designation => text.push_str(designation),
         _ if !edge.id.is_empty() && !graph.root_id.is_empty() => {
             text.push_str(&format!("{}.{}", graph.root_id, edge.id));
         }

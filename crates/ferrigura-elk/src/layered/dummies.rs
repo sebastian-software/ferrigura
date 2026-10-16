@@ -245,6 +245,7 @@ pub fn split_edge(graph: &mut LGraph, edge: usize, dummy: usize) -> usize {
         reversed: original.reversed,
         bend_points: Vec::new(),
         thickness: original.thickness,
+        designation: original.designation,
     });
     graph.ports[dummy_output].outgoing.push(new_edge);
     graph.ports[old_target].incoming.push(new_edge);
