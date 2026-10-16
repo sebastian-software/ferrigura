@@ -24,6 +24,17 @@ describe('when parsing subgraphs', function () {
     expect(subgraph.title).toBe('One');
     expect(subgraph.id).toBe('One');
   });
+  it('should list a __proto__ node once, as any other node', function () {
+    flow.parser.parse('graph TB\nsubgraph One\nb\nb-->a1\nend');
+    const ordinary = flow.parser.yy.getSubGraphs()[0].nodes;
+    flow.parser.yy = new FlowDB();
+    flow.parser.yy.clear();
+    flow.parser.yy.setGen('gen-2');
+    flow.parser.parse('graph TB\nsubgraph One\n__proto__\n__proto__-->a1\nend');
+    const nodes = flow.parser.yy.getSubGraphs()[0].nodes;
+    expect(nodes).toEqual(ordinary.map((node) => (node === 'b' ? '__proto__' : node)));
+    expect(nodes.filter((node) => node === '__proto__')).toHaveLength(1);
+  });
   it('should handle subgraph with chaining nodes indentation', function () {
     const res = flow.parser.parse('graph TB\nsubgraph One\n\ta1-->a2-->a3\nend');
     const subgraphs = flow.parser.yy.getSubGraphs();
