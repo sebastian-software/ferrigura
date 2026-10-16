@@ -376,16 +376,16 @@ function caseFileContent(record: CaseRecord): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * `--synthetic-only`: regenerates only the hand-built cases (the nodes-only ones and the edge
- * graphs of `syntheticEdgeGraphs`) through Node elkjs, and replaces only their files and manifest
- * entries. The browser captures are left as they are.
+ * Every hand-built case (the nodes-only ones, the edge graphs and the node label graphs), run
+ * through Node elkjs. The full browser capture and `--synthetic-only` both take their synthetic
+ * cases from here, so they write the same files and manifest entries.
  */
-async function writeSyntheticOnly(): Promise<void> {
-  const generated: CaseRecord[] = [];
+async function syntheticRecords(): Promise<CaseRecord[]> {
+  const records: CaseRecord[] = [];
   const add = async (name: string, graph: Record<string, unknown>): Promise<void> => {
     const input = jsonRoundTrip(graph) as Json;
     const run = await runNodeElk(input);
-    generated.push({
+    records.push({
       name,
       fixture: null,
       algorithm: 'elk.layered',
@@ -404,7 +404,15 @@ async function writeSyntheticOnly(): Promise<void> {
   for (const { name, graph } of syntheticNodeLabelGraphs()) {
     await add(name, graph);
   }
-  generated.sort(byName);
+  return records.sort(byName);
+}
+
+/**
+ * `--synthetic-only`: regenerates only the hand-built cases through Node elkjs, and replaces only
+ * their files and manifest entries. The browser captures are left as they are.
+ */
+async function writeSyntheticOnly(): Promise<void> {
+  const generated = await syntheticRecords();
   for (const record of generated) {
     writeFileSync(join(CORPUS_DIR, `${record.name}.json`), caseFileContent(record));
   }
@@ -497,20 +505,7 @@ async function main(): Promise<void> {
     server.stop();
   }
 
-  for (const count of SYNTHETIC_NODE_COUNTS) {
-    const input = jsonRoundTrip(nodesOnlyGraph(count)) as Json;
-    const run = await runNodeElk(input);
-    records.push({
-      name: `synthetic__nodes-only-${count}`,
-      fixture: null,
-      algorithm: 'elk.layered',
-      input,
-      output: run.output,
-      trace: run.trace,
-      stats: graphStats(input as Record<string, unknown>),
-    });
-  }
-
+  records.push(...(await syntheticRecords()));
   records.sort(byName);
   const names = new Set(records.map((record) => record.name));
   if (names.size !== records.length) {
