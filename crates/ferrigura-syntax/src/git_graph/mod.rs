@@ -27,6 +27,13 @@ pub struct Options {
     pub main_branch_name: String,
     /// `mainBranchOrder`: the order of the first branch.
     pub main_branch_order: f64,
+    /// The seed of the generated ids, for the differential and the geometry harness only. `None`,
+    /// the default, derives every generated id from the sequence number (`db::auto_id`). A seed
+    /// makes the ids those of the reference's page when it runs with the same seed (its
+    /// `Math.random` is mulberry32 from that seed, `tools/port/geometry/common.ts`), so the labels and
+    /// the classes of the commits that have no id match.
+    #[doc(hidden)]
+    pub auto_id_seed: Option<u32>,
 }
 
 impl Default for Options {
@@ -34,6 +41,7 @@ impl Default for Options {
         Self {
             main_branch_name: "main".to_owned(),
             main_branch_order: 0.0,
+            auto_id_seed: None,
         }
     }
 }
@@ -95,6 +103,7 @@ pub fn options_of(raw: &str) -> Result<Options, ParseError> {
     Ok(Options {
         main_branch_name,
         main_branch_order,
+        auto_id_seed: None,
     })
 }
 

@@ -143,6 +143,7 @@ fn run(job: &Job) -> Result<(), String> {
         id: job.id.clone(),
         color_scheme: job.scheme,
         now: None,
+        git_graph_seed: None,
     };
     let svg =
         ferrigura::render_with(&text, &config, &options).map_err(|error| error.to_string())?;

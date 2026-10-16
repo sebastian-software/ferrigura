@@ -54,6 +54,11 @@ pub struct RenderOptions {
     /// The current time, in milliseconds since the epoch, for the dates that depend on it (the
     /// gantt diagram's today marker and dates without a day). `None` reads the system clock.
     pub now: Option<i64>,
+    /// The seed of the ids a gitGraph generates for its commits, merges and cherry-picks that have
+    /// no `id:`. `None` derives them from the sequence number. The geometry harness gives the
+    /// reference's seed, so that the ids match the reference's; it is not part of the interface.
+    #[doc(hidden)]
+    pub git_graph_seed: Option<u32>,
 }
 
 /// Renders a diagram to an SVG document.
@@ -115,7 +120,13 @@ pub fn render_with(
             id,
         }),
         DiagramType::GitGraph => git_graph_render::render(&git_graph_render::GitGraphInput {
-            diagram: &git_graph::parse(text)?,
+            diagram: &git_graph::parse_with(
+                text,
+                &git_graph::Options {
+                    auto_id_seed: options.git_graph_seed,
+                    ..git_graph::options_of(text)?
+                },
+            )?,
             config: typed_config,
             themes,
             id,

@@ -42,6 +42,7 @@ pub fn render(
                 .map(colour_scheme)
                 .transpose()?,
             now: None,
+            git_graph_seed: None,
         },
         None => RenderOptions::default(),
     };
