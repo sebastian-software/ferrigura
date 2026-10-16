@@ -1,6 +1,6 @@
 # M6 gantt parser: plan
 
-Status: implemented. The parser, the DB, the date rules and the URL rules are in `crates/ferrigura-syntax/src/gantt/`; the specs are in `crates/ferrigura-syntax/tests/gantt_*_spec.rs`; `pnpm port:diff gantt` shows 114 inputs, no difference and one named exception (front matter, shared reader). Open items are in section 11.
+Status: implemented. The parser, the DB, the date rules and the URL rules are in `crates/ferrigura-syntax/src/gantt/`; the specs are in `crates/ferrigura-syntax/tests/gantt_*_spec.rs`; `pnpm port:diff gantt` shows 125 inputs, no difference and no named exception. Open items are in section 11.
 
 Rendering (`ganttRenderer.js`, styles, the geometry comparison) is not part of this plan. The renderer stays in the reference until a later strand.
 
@@ -99,7 +99,7 @@ Years outside ±10000 are an error (`Invalid date:`), as the reference checks th
 
 Left out, and why: `type` (equal to `section`), `raw`, `prevTaskId`, `processed` (derivable from `startTime` and `endTime`), `taskDb`, `taskCnt`, `lastOrder`, `funs` and click callbacks (no effect in strict mode, decision 0001), the `displayMode` (configuration; `getDisplayMode` is always `''` in the pipeline, NOTES 2.8), the renderer's compact `order` (render time), and `useWidth`, `tickInterval` defaults (configuration).
 
-The header texts are sanitised by the DB (`commonDb.ts`), which the canonical rule of `canonical-model.md` allows for the flowchart only. For gantt, `title`, `accTitle` and `accDescr` are sanitised and task and section names are not. `canonical-model.md` gets a gantt paragraph when M6 lands.
+The header texts are sanitised by the DB (`commonDb.ts`), which the canonical rule of `canonical-model.md` allows for the flowchart only. For gantt, `title`, `accTitle` and `accDescr` are sanitised and task and section names are not. The gantt paragraph of `canonical-model.md` states this.
 
 ## 7. Errors and rejections
 
@@ -129,7 +129,7 @@ Titles are the reference's. Exact Jison message texts are not copied: a test tha
 
 ## 11. Open questions and follow-ups
 
-- The front matter exception: the shared YAML reader rejects a multi-line double-quoted value that js-yaml accepts (the gantt docs block). The config differential names the same entry. Remove both when the reader is fixed.
+- The front matter exception is resolved: the shared YAML reader now accepts the later lines of a quoted scalar at any indentation, as js-yaml does (it only warns), and `pnpm port:diff yaml` covers the cases.
 - Chains: the exporter probe found 11 of 12 after-links resolving in the reference (NOTES 3.8 says 11 resolve, 12 do not); the explicit chain case in `tools/port/cases.ts` agrees with the reference, so the port follows the reference.
 - `dayjs` strict parsing covers the token table of customParseFormat, with `w`, `z` and `gggg` throwing as in the reference; legacy `Date` covers the forms of section 5.3.
 

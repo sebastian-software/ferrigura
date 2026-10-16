@@ -108,6 +108,15 @@ The ER model is the DB state after parsing (`erDb.ts`), with the DB's names in c
 - **Cardinalities** are the DB's strings (`ZERO_OR_ONE`, `ONLY_ONE`, `MD_PARENT`, and the rest); `cardA` is the end on the right of the line, `cardB` the end on the left.
 - **Classes.** An entity's `classes` are the names given by `:::` and `class`, without the `default` that the DB starts with. A class keeps its `textStyles`, which the DB derives from its styles.
 
+## Gantt
+
+The gantt model is the DB state after `getTasks()` (`ganttDb.js`), with the field list and the exclusions in [gantt/PLAN.md](./gantt/PLAN.md), section 6. Its own rules:
+
+- **Dates are numbers.** `startTime`, `endTime` and `renderEndTime` are epoch milliseconds in UTC, and `null` is a date the DB leaves unresolved or an Invalid Date. The parser takes the current time as an option (`now`), for the dates that take missing parts from the clock; the differential run gives both sides the same fixed clock under `TZ=UTC`.
+- **Sanitised texts.** `title`, `accTitle` and `accDescr` are the DB values after the sanitiser of the flowchart ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), with the DB's whitespace rules. A `title` statement overrides the front matter title even when it sanitises to empty. Task texts and section names are raw.
+- **Links** map a task id to the URL of its `click … href` statement after `sanitizeUrl`, for the tasks that exist when the line is read. Callbacks are not in the model (decision 0001).
+- **Statements are raw.** `dateFormat`, `axisFormat`, `tickInterval` and `todayMarker` keep the text after their keyword, blanks included; `includes` and `excludes` are lower case and de-duplicated in first-seen order.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
