@@ -25,7 +25,7 @@ Hand-written scanner (`git_graph/scanner.rs`), as ADR 0002 decides: Chevrotain t
 
 A `title` followed by a blank takes the rest of its line; `titleX` is TITLE `title` and then a REFERENCE, so it is a parse error (NOTES 2.3). `accTitleX` is a REFERENCE.
 
-Quirks kept (probes, NOTES 2.3): `branch 1` is a parse error (INT wins); `branch 1.0` is a REFERENCE; `branch 1-0` is a lexer error; `branch commit` is a parse error and `branch "commit"` is accepted; `branch commitX` and `checkout 02` are REFERENCEs; `commit id:abc` is a parse error because `id:` takes only STRING; `commit;` is a lexer error.
+Quirks kept (probes, NOTES 2.3): `branch 1` is a parse error (INT wins); `branch 1.0` is a REFERENCE; `branch 1-0` is a lexer error; `branch commit` is a parse error and `branch "commit"` is accepted; `branch commitX` and `checkout02` are REFERENCEs, and `checkout 02` is a lexer error (the 0 is an INT); `commit id:abc` is a parse error because `id:` takes only STRING; `commit;` is a lexer error.
 
 ## 3. Grammar and AST
 
@@ -86,7 +86,7 @@ The reference draws the id of a commit, merge or cherry-pick without an explicit
 
 The scheme is documented here and in `git_graph/db.rs`. The model marks each generated id with `autoId: true`. The seq is read before the increment, as the reference does, so the first id is `0-…`.
 
-Differential normalisation (named, in `tools/port/export-gitgraph.ts` and in the Rust example, the same rule on both sides): every commit with `autoId: true` gets the placeholder `auto#k`, where `k` counts the auto commits in model order. Every parent and branch head that equals such an id gets the same placeholder. The JS exporter sets `autoId` from the DB: a commit's id was generated when the `Math.random` count rose during its DB call. The random values themselves are not compared.
+Differential normalisation (named, in `tools/port/export-gitgraph.ts` and in the Rust example, the same rule on both sides): every commit with `autoId: true` gets the placeholder `auto#k`, where `k` counts the distinct auto ids in model order (a repeated id keeps the placeholder of its first occurrence; the two sides count the same, as the seq prefix makes ids unique). Every parent and branch head that equals such an id gets the same placeholder. The JS exporter sets `autoId` from the DB: a commit's id was generated when the `Math.random` count rose during its DB call. The random values themselves are not compared.
 
 ## 8. Model
 
