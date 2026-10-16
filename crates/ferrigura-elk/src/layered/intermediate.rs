@@ -10,13 +10,11 @@
 //! their name is needed, so they cannot silently do nothing.
 
 use crate::core::data::JavaEnum;
-use crate::core::data::OptionValue;
 use crate::core::data::enums::{
-    Alignment, Direction, DirectionCongruency, EdgeLabelSideSelection, GraphProperties,
-    IntermediateProcessorStrategy, LayerConstraint, NodeType, OrderingStrategy, PortConstraints,
-    PortSide,
+    EdgeLabelSideSelection, GraphProperties, IntermediateProcessorStrategy, LayerConstraint,
+    NodeType, OrderingStrategy, PortConstraints,
 };
-use crate::core::math::{KVector, Spacing};
+use crate::core::math::KVector;
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::layered::LayoutError;
 use crate::layered::dummies;
@@ -92,9 +90,17 @@ pub fn run(
     let name = task_name(strategy, graph)?;
     progress.begin(monitor, &name, 1.0);
     match strategy {
-        IntermediateProcessorStrategy::DIRECTION_PREPROCESSOR
-        | IntermediateProcessorStrategy::DIRECTION_POSTPROCESSOR => {
-            transform_direction(graph)?;
+        IntermediateProcessorStrategy::DIRECTION_PREPROCESSOR => {
+            crate::layered::graph_transformer::transform(
+                graph,
+                crate::layered::graph_transformer::Mode::ToInputDirection,
+            )?;
+        }
+        IntermediateProcessorStrategy::DIRECTION_POSTPROCESSOR => {
+            crate::layered::graph_transformer::transform(
+                graph,
+                crate::layered::graph_transformer::Mode::ToInternalLtr,
+            )?;
         }
         IntermediateProcessorStrategy::SORT_BY_INPUT_ORDER_OF_MODEL => {
             sort_by_input_model(graph, progress, monitor)?;
@@ -242,125 +248,6 @@ fn layer_size_and_graph_height(graph: &mut LGraph) -> Result<(), LayoutError> {
     graph.size.y = max_y - min_y;
     graph.offset.y -= min_y;
     Ok(())
-}
-
-/// `GraphTransformer.process` under `DirectionCongruency.READING_DIRECTION`: a
-/// transpose for `DOWN`, nothing for `RIGHT`. The mirror transforms for `LEFT` and
-/// `UP` need the graph's size and offset, which are not ported yet.
-fn transform_direction(graph: &mut LGraph) -> Result<(), LayoutError> {
-    let congruency = graph
-        .properties
-        .enum_of::<DirectionCongruency>(options::DIRECTION_CONGRUENCY);
-    if congruency != Some(DirectionCongruency::READING_DIRECTION) {
-        return Err(LayoutError::Unsupported(
-            "direction congruency other than reading direction".to_string(),
-        ));
-    }
-    match graph.properties.enum_of::<Direction>(options::DIRECTION) {
-        Some(Direction::DOWN) => {
-            // `GraphTransformer.transposeAll`: the nodes, their ports, the edges' bend points
-            // and labels, the graph's offset, size and padding, and the edge label side. Node
-            // padding and label padding are not transposed: nodes have no padding of their own
-            // here, and the label padding only matters with node labels.
-            for node in &mut graph.nodes {
-                std::mem::swap(&mut node.position.x, &mut node.position.y);
-                std::mem::swap(&mut node.size.x, &mut node.size.y);
-                if let Some(alignment) = node
-                    .properties
-                    .enum_of::<Alignment>(options::ALIGNMENT)
-                    .and_then(transposed_alignment)
-                {
-                    node.properties.set(
-                        options::ALIGNMENT,
-                        Some(OptionValue::Enum {
-                            class: "Alignment",
-                            name: alignment.java_name().to_string(),
-                        }),
-                    );
-                }
-            }
-            for port in &mut graph.ports {
-                std::mem::swap(&mut port.position.x, &mut port.position.y);
-                std::mem::swap(&mut port.anchor.x, &mut port.anchor.y);
-                std::mem::swap(&mut port.size.x, &mut port.size.y);
-                port.side = transposed_side(port.side);
-            }
-            for edge in &mut graph.edges {
-                for point in &mut edge.bend_points {
-                    std::mem::swap(&mut point.x, &mut point.y);
-                }
-                for label in &mut edge.labels {
-                    std::mem::swap(&mut label.position.x, &mut label.position.y);
-                    std::mem::swap(&mut label.size.x, &mut label.size.y);
-                }
-            }
-            if let Some(selection) = graph
-                .properties
-                .enum_of::<EdgeLabelSideSelection>(options::EDGE_LABELS_SIDE_SELECTION)
-            {
-                graph.properties.set(
-                    options::EDGE_LABELS_SIDE_SELECTION,
-                    Some(OptionValue::Enum {
-                        class: "EdgeLabelSideSelection",
-                        name: transposed_selection(selection).java_name().to_string(),
-                    }),
-                );
-            }
-            std::mem::swap(&mut graph.offset.x, &mut graph.offset.y);
-            std::mem::swap(&mut graph.size.x, &mut graph.size.y);
-            graph.padding = transposed(graph.padding);
-            Ok(())
-        }
-        Some(Direction::RIGHT) => Ok(()),
-        other => Err(LayoutError::Unsupported(format!(
-            "direction {other:?} (mirror transforms)"
-        ))),
-    }
-}
-
-/// `GraphTransformer.transposeProperties`: left and top alignments trade places, as do right
-/// and bottom. The other alignments stay.
-fn transposed_alignment(alignment: Alignment) -> Option<Alignment> {
-    match alignment {
-        Alignment::LEFT => Some(Alignment::TOP),
-        Alignment::RIGHT => Some(Alignment::BOTTOM),
-        Alignment::TOP => Some(Alignment::LEFT),
-        Alignment::BOTTOM => Some(Alignment::RIGHT),
-        _ => None,
-    }
-}
-
-/// `GraphTransformer.transposePortSide`.
-fn transposed_side(side: PortSide) -> PortSide {
-    match side {
-        PortSide::NORTH => PortSide::WEST,
-        PortSide::WEST => PortSide::NORTH,
-        PortSide::SOUTH => PortSide::EAST,
-        PortSide::EAST => PortSide::SOUTH,
-        PortSide::UNDEFINED => PortSide::UNDEFINED,
-    }
-}
-
-/// `EdgeLabelSideSelection.transpose`.
-fn transposed_selection(selection: EdgeLabelSideSelection) -> EdgeLabelSideSelection {
-    match selection {
-        EdgeLabelSideSelection::ALWAYS_UP => EdgeLabelSideSelection::ALWAYS_DOWN,
-        EdgeLabelSideSelection::ALWAYS_DOWN => EdgeLabelSideSelection::ALWAYS_UP,
-        EdgeLabelSideSelection::DIRECTION_UP => EdgeLabelSideSelection::DIRECTION_DOWN,
-        EdgeLabelSideSelection::DIRECTION_DOWN => EdgeLabelSideSelection::DIRECTION_UP,
-        EdgeLabelSideSelection::SMART_UP => EdgeLabelSideSelection::SMART_DOWN,
-        EdgeLabelSideSelection::SMART_DOWN => EdgeLabelSideSelection::SMART_UP,
-    }
-}
-
-/// `GraphTransformer.transpose(Spacing)`: the top and bottom sides move to the left and right.
-fn transposed(spacing: Spacing) -> Spacing {
-    Spacing {
-        top: spacing.left,
-        left: spacing.top,
-        bottom: spacing.right,
-        right: spacing.bottom,
-    }
 }
 
 /// `SortByInputModelProcessor.process`: the ports of each node that the input order does not fix

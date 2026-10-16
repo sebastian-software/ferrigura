@@ -14,6 +14,7 @@ pub use crate::error::LayoutError;
 pub mod configurator;
 pub mod driver;
 pub mod dummies;
+pub mod graph_transformer;
 pub mod graph_util;
 pub mod importer;
 pub mod intermediate;
