@@ -291,9 +291,28 @@ window.renderReference = async function (id, text) {
 window.geometry = async function (svgText) {
   const stage = document.getElementById('stage');
   stage.innerHTML = svgText;
-  await document.fonts.ready;
   const svg = stage.querySelector('svg');
-  return measure(svg);
+  // Show the diagram at scale 1, so Chromium lays the text out at the size it was measured at:
+  // a scaled svg (width 100%, a fractional max-width) gets its text laid out at the scaled size,
+  // which moves label boxes by a few 1/64 px. The viewBox keeps its origin and grows to whole
+  // pixels, so user coordinates are unchanged; the original viewBox is what is compared.
+  const original = svg.getAttribute('viewBox');
+  const attributes = {
+    width: svg.getAttribute('width'),
+    height: svg.getAttribute('height'),
+    style: svg.getAttribute('style'),
+  };
+  const [x, y, w, h] = numbers(original);
+  if ([x, y, w, h].every(Number.isFinite)) {
+    const width = Math.ceil(w);
+    const height = Math.ceil(h);
+    svg.setAttribute('viewBox', x + ' ' + y + ' ' + width + ' ' + height);
+    svg.setAttribute('width', String(width));
+    svg.setAttribute('height', String(height));
+    svg.style.maxWidth = 'none';
+  }
+  await document.fonts.ready;
+  return { ...measure(svg), ...attributes, viewBox: numbers(original) };
 };
 
 window.sideBySide = function (left, right) {
