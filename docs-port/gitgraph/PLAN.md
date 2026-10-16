@@ -1,6 +1,6 @@
 # M6 gitGraph parser: plan
 
-Status: the parser, the DB and the model are ported in `crates/ferrigura-syntax/src/git_graph/` and `crates/ferrigura-model/src/git_graph.rs`. Rendering is not in this plan; the render-level specs are ignored with a reason. Research and every reference line cited here are in [NOTES.md](./NOTES.md), which stays the source for the probes.
+Status: the parser, the DB and the model are ported in `crates/ferrigura-syntax/src/git_graph/` and `crates/ferrigura-model/src/git_graph.rs`. The renderer is ported in `crates/ferrigura-render/src/git_graph/` (section 12). Research and every reference line cited here are in [NOTES.md](./NOTES.md), which stays the source for the probes.
 
 ## 1. Scope
 
@@ -86,6 +86,8 @@ The reference draws the id of a commit, merge or cherry-pick without an explicit
 
 The scheme is documented here and in `git_graph/db.rs`. The model marks each generated id with `autoId: true`. The seq is read before the increment, as the reference does, so the first id is `0-…`.
 
+Seeded ids (the geometry harness only): `Options::auto_id_seed` (`#[doc(hidden)]`, `RenderOptions::git_graph_seed` in the facade, `--seed` in the `render` example) makes the DB draw the generated ids from a mulberry32 generator, the one the reference page uses when `renderReference` seeds `Math.random` (`tools/port/geometry/common.ts`). Each generated id draws seven values, `Math.floor(Math.random() * 16)` per hex digit, in the order the DB makes the ids, so the ids are the reference's. The default path is unchanged. A merge or cherry-pick without an `id:` shows its id in its class name, which is part of the geometry key, so the seed decides whether those elements match; no commit statement of the fixtures lacks an `id:`, so the labels never depend on it. The reference draws no random number before its parse (checked on the 135 fixtures).
+
 Differential normalisation (named, in `tools/port/export-gitgraph.ts` and in the Rust example, the same rule on both sides): every commit with `autoId: true` gets the placeholder `auto#k`, where `k` counts the distinct auto ids in model order (a repeated id keeps the placeholder of its first occurrence; the two sides count the same, as the seq prefix makes ids unique). Every parent and branch head that equals such an id gets the same placeholder. The JS exporter sets `autoId` from the DB: a commit's id was generated when the `Math.random` count rose during its DB call. The random values themselves are not compared.
 
 ## 8. Model
@@ -105,7 +107,7 @@ Left out: the DB's global `seq` counter (each commit keeps its `seq`), `head` (d
 - `packages/mermaid/src/diagrams/git/gitGraph.spec.ts` (73 declared, 70 active by the loop count) and `packages/parser/tests/gitGraph.test.ts` (27) are ported as parser and DB tests (`crates/ferrigura-syntax/tests/git_graph_*.rs`), with the reference's test names.
 - The three recovery tests (NOTES 2.8) assert that parsing fails, with a position.
 - Error tests keep the exact DB message (`parse_error_message` comparison) and check the statement position for the parser errors.
-- The `gitGraphParser.ts` in-source tests and the `gitGraphRenderer.ts` in-source tests are not parser tests: the parser ones are ported in the same files as parser tests, the renderer ones are ignored with the reason `port: renderer, M6 geometry`.
+- The `gitGraphParser.ts` in-source tests are parser tests, ported in the same files as parser tests. The `gitGraphRenderer.ts` in-source tests are ported as unit tests of the renderer (`layout.rs`, `text.rs`, section 12); the ignored stubs in `tests/git_graph_render.rs` are gone.
 - Config tests (5, gitGraph.spec.ts 1361-1391) check the renderer keys of the `getConfig()` section, which the parser does not read; they are ignored with that reason. The DB reads two keys, `mainBranchName` and `mainBranchOrder`, through `options_of`.
 
 ## 10. Differential
@@ -116,3 +118,29 @@ Left out: the DB's global `seq` counter (each commit keeps its `seq`), `head` (d
 
 1. The `default` theme and the renderer: out of M6's parser scope; the renderer is a later step (NOTES 7.1).
 2. `securityLevel` from front matter or directives changes the title path (`loose` skips sanitising). Pinned to `strict` here; the inputs of the differential decide whether a fixture needs more.
+
+## 12. Renderer
+
+Ported in `crates/ferrigura-render/src/git_graph/`: `tree.rs` (the elements, and the box each one has to `getBBox`), `text.rs` (rows, `drawText`, the line boxes), `palette.rs` (the colours of a theme set), `style.rs` (`styles.js`, colour theme branch), `layout.rs` (positions, bullets, labels, tags, arrows, branches) and `mod.rs` (the root, the title and the viewBox). The research is NOTES 5. Only the redux themes ship (M6-PLAN), so the classic-theme branches of the renderer and of `styles.js` are not ported; every geometry branch is the redux one.
+
+Result of `pnpm port:geometry gitgraph` (135 fixtures): 134 within tolerance, 1 outside (fixture below), none not rendered, none excluded, none failed in the reference.
+
+Decisions and quirks, each with the reference's line:
+
+1. The text is measured with the theme's sizes, not the constants of the research: the root text is `fontSize` (14px in the redux themes, NOTES 5.12 assumed 16px), the commit labels and tags `commitLabelFontSize` and `tagLabelFontSize` (10px), the title 18px.
+2. Branch positions measure the branch name in the regular face, and the label box in the bold face. The lane step (`setBranchPosition`, measured in the first loop of `draw`, renderer 1059-1071) uses a label with the class `branch-label` and no index, which the stylesheet does not set bold; the label box of `drawBranches` has the index, so it gets the weight 600 of `.branch-label0` (styles 91). In a vertical graph the two widths differ.
+3. Commit labels are bold (weight 600 from `noteFontWeight`, styles 140); the bold face is the one bundled for weight 600, as Chromium's font matching picks the heavier face above 500.
+4. The label box of a commit is measured in the bold face, and its box height is the rounded ascent plus descent of that face (`text::line_height`).
+5. `getBBox` union: an empty box (zero width or zero height) is united like any other box. A vertical branch line has zero width and reaches `maxPos`, and the reference's viewBox bottom is that line's end (checked on fixture 20: the viewBox height is 418 with the line, 400 without).
+6. The viewBox is the box of the root: the union of the children's boxes, each mapped through its transform as the axis-aligned box of its four corners. Arcs use their tight box (circle extremes inside the sweep).
+7. The reverse commit's cross is a path of the two diagonals with its box from the four corners (renderer 226-329).
+8. Tags are reversed before drawing (renderer 410-416: `tags.reverse()` on the commit), so the last tag is the one nearest the commit.
+9. The branch order is the stable sort by `order` (`getBranchesAsObjArray`, gitGraphAst 457-469); the parser always gives a branch an order (`branch.order ?? 0`).
+10. Arrows keep the reference's colour rule: the colour of the destination branch, or of the source branch in the reroute's `else` branch and for a merge whose arrow comes from another branch than its first parent (renderer 676-679).
+11. Lanes (`findLane`) are shared between `drawBranches` and `drawArrow`: the branch lines are drawn before the arrows, so the reroute positions depend on the lanes of the branches, as in the reference.
+12. The stylesheet keeps the reference's rule order: colour rules first, then the common rules, so `.commit-highlight-inner` and `.commit-merge` win over the colour of their index. The drop shadow filter's id is `url(#drop-shadow)` in the tag background (`dropShadow` of the theme), as the reference writes it: that id names no element, so no shadow is drawn there.
+13. Colours are CSS custom properties on the diagram's id (decision 0007). Two dark-only differences are carried by properties: the cherry-pick eyes (`--gitEye`, `#000000` in a dark theme, `#fff` otherwise) and the branch label fill (`--gitLabelFill{i}`, the main background in a dark theme). The dark theme is the theme's name, as the reference's `DARK_THEMES` takes it; with two schemes the dark set is dark.
+
+The specs ported (26 unit tests: 24 in `layout.rs`, 2 in `text.rs`): `should_draw_text` and a rows test, the two `setBranchPosition` tests (LR and TB with the reference's stubbed widths), the 8 TB `getCommitPosition` cases, 3 LR cases, the 8 class type cases, the two BT parallel tests and `add`. The reference's LR block has 8 cases, but they expect the TB numbers: its `dir` is shared state that the describe blocks set while they are collected, so the LR cases here check the LR geometry (x is the time, y is the lane plus 7) on three of the commits. The BT parallel tests use the reference's expected values as they are.
+
+Remaining problem (1 fixture): `git/nightly-check/57-…bottom-to-top.mmd`. Its directive sets `theme: 'default'` with `themeVariables`, and the reference keeps the default theme's root font (`"trebuchet ms", verdana, arial, sans-serif` at 16px, read from its SVG); the labels are measured in that fallback face, which the bundled faces do not cover, so the label boxes and the viewBox differ (the reference's text box of `main` is 35 px wide, ferrigura's Lexica is 32.6). Cause: fonts (no fallback faces yet, M2). Not excluded: the rest of the drawing matches.
