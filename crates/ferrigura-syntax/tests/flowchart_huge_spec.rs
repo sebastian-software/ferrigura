@@ -7,7 +7,7 @@
 //! skip also says the test takes minutes, because its edge bookkeeping is quadratic; the port
 //! keeps the same input, not skipped, so a quadratic regression shows as a slow test.
 
-use ferrigura_syntax::flowchart::{Options, parse_with};
+use ferrigura_syntax::flowchart::Options;
 
 /// The input of the reference's test: 47,917 edges between two vertices.
 fn huge_input() -> String {

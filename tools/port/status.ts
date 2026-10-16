@@ -16,6 +16,23 @@ const statusPath = `${root}docs-port/STATUS.md`;
 const suites: Record<string, string[]> = {
   pie: ['pie_spec', 'pie_grammar'],
   info: ['info_spec', 'info_grammar'],
+  flowchart: [
+    'flowchart_singlenode_spec',
+    'flowchart_text_spec',
+    'flowchart_md_string_spec',
+    'flowchart_style_spec',
+    'flowchart_edges_spec',
+    'flowchart_arrows_spec',
+    'flowchart_chaining_spec',
+    'flowchart_lines_spec',
+    'flowchart_comments_spec',
+    'flowchart_direction_spec',
+    'flowchart_subgraph_spec',
+    'flowchart_flow_spec',
+    'flowchart_interactions_spec',
+    'flowchart_node_data_spec',
+    'flowchart_db_spec',
+  ],
 };
 
 interface Counts {
@@ -44,10 +61,11 @@ async function differentialCell(type: string): Promise<string> {
   try {
     const summary = JSON.parse(
       await readFile(`${root}target/port/${type}-summary.json`, 'utf8')
-    ) as { inputs: number; differences: number };
+    ) as { inputs: number; differences: number; notYet?: number };
+    const notYet = summary.notYet ? `, ${summary.notYet} not yet ported` : '';
     return summary.differences === 0
-      ? `${summary.inputs} inputs, no difference`
-      : `${summary.differences} of ${summary.inputs} differ`;
+      ? `${summary.inputs} inputs, no difference${notYet}`
+      : `${summary.differences} of ${summary.inputs} differ${notYet}`;
   } catch {
     return '—';
   }

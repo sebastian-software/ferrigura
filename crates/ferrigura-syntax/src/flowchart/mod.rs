@@ -78,7 +78,24 @@ pub fn parse_with(raw: &str, options: Options) -> Result<FlowchartDiagram, Flowc
     parse_with_warnings(raw, options).map(|(diagram, _)| diagram)
 }
 
+/// Parses the text the way the parser's own specs give it to the reference: the grammar and the
+/// DB on the text, with the parser wrapper's closing-brace rule and nothing else. There is no front
+/// matter, no directive removal, no comment removal, no entity encoding and no trailing line break;
+/// [`parse`] is the diagram text, as `Diagram.fromText` gives it to the parser.
+pub fn parse_grammar(text: &str) -> Result<FlowchartDiagram, FlowchartError> {
+    grammar::parse_text(&close_braces(text), 0, String::new(), Options::default())
+        .map(|(diagram, _)| diagram)
+}
+
+/// The comment removal of the reference (`cleanupComments`): the lines that start with `%%`
+/// (not `%%{`), and the leading blanks of the text.
+#[must_use]
+pub fn clean_comments(text: &str) -> String {
+    cleanup_comments(text)
+}
+
 /// Parses a flowchart and returns the warnings the reference would log while parsing, such as a
+/// style given to a node that does not exist yet. The warnings are not part of the model.
 /// style given to a node that does not exist yet. The warnings are not part of the model.
 pub fn parse_with_warnings(
     raw: &str,
