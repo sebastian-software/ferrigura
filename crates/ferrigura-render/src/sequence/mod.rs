@@ -537,7 +537,10 @@ impl<'a> Renderer<'a> {
         ));
         open.push('>');
         let accessibility = a11y::children(input.id, &diagram.acc_title, &diagram.acc_descr);
-        format!("{open}{accessibility}{content}<style>{style}</style><g/>{rest}</svg>")
+        let svg = format!("{open}{accessibility}{content}<style>{style}</style><g/>{rest}</svg>");
+        // The entities the parser encoded are decoded in the whole document, as the reference
+        // does after rendering (`mermaidAPI.ts:359`).
+        decode_entities(&svg)
     }
 
     /// The embedded font faces of the text the diagram draws, and the family name the style
@@ -596,6 +599,14 @@ fn is_sequence_line(line_type: LineType) -> bool {
             | L::BidirectionalSolid
             | L::BidirectionalDotted
     )
+}
+
+/// `decodeEntities` (`utils.ts:904`): the placeholders of the parser's entities become `&#`, `&`
+/// and `;` again, in the whole document.
+fn decode_entities(text: &str) -> String {
+    text.replace("\u{fb02}\u{b0}\u{b0}", "&#")
+        .replace("\u{fb02}\u{b0}", "&")
+        .replace("\u{b6}\u{df}", ";")
 }
 
 /// JavaScript's truthiness of a number.

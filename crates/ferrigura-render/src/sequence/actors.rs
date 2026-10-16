@@ -780,7 +780,7 @@ impl Renderer<'_> {
         };
         let r = 22.0;
         let mut act = Element::new("g")
-            .with("class", format!("actor-man {}", if footer { "actor-bottom" } else { "actor-top" }))
+            .with("class", format!("actor {}", if footer { "actor-bottom" } else { "actor-top" }))
             .with("name", actor.name.clone());
         act.push_child(
             Element::new("circle")
