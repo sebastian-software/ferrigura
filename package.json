@@ -68,6 +68,7 @@
     "port:geometry-pie": "tsx tools/port/geometry/pie-geometry.ts",
     "port:geometry-flowchart": "tsx tools/port/geometry/flowchart-geometry.ts",
     "port:scope-pie": "tsx tools/port/geometry/pie-scope.ts",
+    "port:styles-flowchart": "tsx tools/port/flowchart-styles.ts",
     "prepare": "husky && pnpm build",
     "pre-commit": "lint-staged"
   },

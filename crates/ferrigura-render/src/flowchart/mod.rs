@@ -34,7 +34,7 @@ use self::shapes::{ShapeInput, ShapeOutput};
 use crate::RenderError;
 use crate::a11y;
 use crate::pie::Themes;
-use crate::svg::{escape, font_faces, number};
+use crate::svg::{escape, number};
 
 /// What the flowchart renderer draws.
 #[derive(Debug, Clone, Copy)]
@@ -205,7 +205,12 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
     let mut clusters = String::new();
     let mut painted_clusters = Vec::new();
     for node in data.nodes.iter().filter(|node| node.is_group) {
-        let cluster = clusters::paint(node, config, theme)?;
+        // `render` prefixes every node's DOM id with the diagram's id before the layout runs.
+        let prefixed = data::Node {
+            dom_id: format!("{id}-{}", node.dom_id),
+            ..node.clone()
+        };
+        let cluster = clusters::paint(&prefixed, config, theme)?;
         cover(&mut bounds, cluster.bbox);
         clusters.push_str(&cluster.svg);
         painted_clusters.push(cluster);
@@ -293,14 +298,10 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
     let accessibility = a11y::children(id, &diagram.acc_title, &diagram.acc_descr);
     let accessible_attributes =
         a11y::root_attributes(id, "flowchart-v2", &diagram.acc_title, &diagram.acc_descr);
-    let style = style::style_sheet(id, input.themes, config, &diagram.classes);
-    let faces = font_faces(&families);
-    let family = families
-        .first()
-        .map(|family| format!("#{id}{{font-family:\"{}\";}}", family.name))
-        .unwrap_or_default();
+    let style =
+        style::style_sheet_with_fonts(id, input.themes, config, &diagram.classes, &families);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{faces}{style}{family}</style><g>{markers}<g class=\"root\"><g class=\"clusters\">{clusters}</g><g class=\"edges edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g></g></g>{title_svg}{defs}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}<g class=\"root\"><g class=\"clusters\">{clusters}</g><g class=\"edges edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g></g></g>{title_svg}{defs}</svg>",
         id = escape(id),
         x = number(drawn.x - padding),
         y = number(drawn.y - padding),
