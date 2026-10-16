@@ -16,6 +16,7 @@ const statusPath = `${root}docs-port/STATUS.md`;
 const suites: Record<string, string[]> = {
   pie: ['pie_spec', 'pie_grammar'],
   info: ['info_spec', 'info_grammar'],
+  er: ['er_spec', 'er_subgraph_spec', 'er_db_spec', 'er_characters_spec'],
   flowchart: [
     'flowchart_singlenode_spec',
     'flowchart_text_spec',
