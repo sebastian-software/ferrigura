@@ -250,6 +250,7 @@ pub fn label_with_font_size(
         is_node: false,
         add_background: true,
         anchor: Anchor::Middle,
+        wrap_in_style: false,
         styles: &styles,
         font_size,
     };

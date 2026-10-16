@@ -55,6 +55,15 @@ pub type MarkdownLine = Vec<MarkdownWord>;
 #[must_use]
 pub fn markdown_to_lines(markdown: &str) -> Vec<MarkdownLine> {
     let source = preprocess_markdown(markdown);
+    // A text of spaces alone is one `space` token of marked, and `markdownToLines` keeps the raw
+    // text of a token that is not a paragraph or HTML as one word (`handle-markdown-text.ts`
+    // 96-100). The ER entity's label of blank spaces is drawn so (`er-diagram/nightly-check`).
+    if !source.is_empty() && source.bytes().all(|byte| byte == b' ') {
+        return vec![vec![MarkdownWord {
+            content: source,
+            kind: MarkdownWordType::Normal,
+        }]];
+    }
     lines_of_document(&source).unwrap_or_else(|_| non_markdown_to_lines(&source))
 }
 

@@ -11,6 +11,9 @@ mod grammar;
 mod lexer;
 mod member;
 
+/// `parseGenericTypes` of `diagrams/common/common.ts`, which the ER and class renderers share.
+pub use member::parse_generic_types;
+
 use ferrigura_model::class::{ClassDiagram, ClassMember};
 
 use crate::error::ParseError;
