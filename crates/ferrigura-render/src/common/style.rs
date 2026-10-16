@@ -40,12 +40,15 @@ pub fn base_style_sheet(
     let shadow = match text_of(variables, "dropShadow") {
         Some(value) if !value.is_empty() => value.replacen(
             "url(#drop-shadow)",
-            &format!("url({svg_id}-drop-shadow)"),
+            // `svgId` is the selector `#id` in styles.ts, so the reference names `url(#id-drop-shadow)`.
+            &format!("url(#{svg_id}-drop-shadow)"),
             1,
         ),
         _ => "none".to_owned(),
     };
     let tokens = declarations(variables);
+    // `:root` names the configured family (mermaidAPI.ts), not the embedded subset of this diagram.
+    let root_font = text_of(variables, "fontFamily").unwrap_or_else(|| font_family.to_owned());
     let colours = match themes {
         Themes::Single(_) => format!("{id}{{{tokens}}}"),
         Themes::Schemes { light, dark } => format!(
@@ -87,7 +90,7 @@ pub fn base_style_sheet(
 {id} [data-look=\"neo\"].node circle .state-start{{fill:#000000;}}\
 {id} [data-look=\"neo\"].icon-shape .icon{{fill:var(--nodeBorder);filter:{shadow};}}\
 {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:var(--nodeBorder);filter:{shadow};}}\
-:root{{--mermaid-font-family:{font_family};}}"
+:root{{--mermaid-font-family:{root_font};}}"
     );
     css_text(&format!("{faces}{colours}{rules}"))
 }
