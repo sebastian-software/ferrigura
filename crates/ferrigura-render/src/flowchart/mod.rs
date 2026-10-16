@@ -23,12 +23,18 @@ use ferrigura_elk::json::JsonNode;
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::{FlowchartDiagram, LabelType};
 use ferrigura_model::value::Value;
+use ferrigura_text::{
+    FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, text_box,
+};
 
 use self::data::LayoutData;
+use self::geom::BBox;
 use self::label::LabelLayout;
 use self::shapes::{ShapeInput, ShapeOutput};
 use crate::RenderError;
+use crate::a11y;
 use crate::pie::Themes;
+use crate::svg::{escape, font_faces, number};
 
 /// What the flowchart renderer draws.
 #[derive(Debug, Clone, Copy)]
@@ -184,6 +190,131 @@ pub fn elk_stages(input: &FlowchartInput<'_>) -> Result<ElkStages, RenderError> 
 pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
     let mut measured = measure(input)?;
     lay_out(&mut measured, input.config)?;
-    let _ = &measured.edge_labels;
-    todo!("paint and assemble the SVG (coordinator, after T1 to T7)")
+    let config = input.config;
+    let theme = primary(&input.themes);
+    let id = input.id;
+    let data = &measured.data;
+
+    // Every box the painted elements cover, for the viewBox: what `getBBox` of the svg gives.
+    let mut bounds: Option<BBox> = None;
+    // Every text the diagram draws, to subset the fonts once for the whole diagram.
+    let mut labels: Vec<&LabelLayout> = Vec::new();
+
+    // The paint order of `paintLayoutData`: the clusters in the order `orderNodesForElkPaint` left,
+    // then the nodes as the measure step inserted them, then the edges and their labels.
+    let mut clusters = String::new();
+    let mut painted_clusters = Vec::new();
+    for node in data.nodes.iter().filter(|node| node.is_group) {
+        let cluster = clusters::paint(node, config, theme)?;
+        cover(&mut bounds, cluster.bbox);
+        clusters.push_str(&cluster.svg);
+        painted_clusters.push(cluster);
+    }
+    labels.extend(
+        painted_clusters
+            .iter()
+            .filter_map(|cluster| cluster.label.as_ref()),
+    );
+
+    let mut nodes = String::new();
+    for node in data.nodes.iter().filter(|node| !node.is_group) {
+        let Some(shape) = measured.shapes.get(&node.id) else {
+            continue;
+        };
+        let (x, y) = (node.x.unwrap_or(0.0), node.y.unwrap_or(0.0));
+        cover(&mut bounds, shape.bbox.translate(x, y));
+        nodes.push_str(&shapes::node_svg(node, shape, id));
+        labels.extend(shape.label.as_ref());
+    }
+
+    let mut edge_paths = String::new();
+    for path in edges::paint_paths(&data.edges, id, config) {
+        cover(&mut bounds, path.bbox);
+        edge_paths.push_str(&path.svg);
+    }
+    let mut edge_labels = String::new();
+    for edge in &data.edges {
+        if let Some(label) = measured.edge_labels.get(&edge.id) {
+            let painted = edges::paint_label(edge, label, config);
+            cover(&mut bounds, painted.bbox);
+            edge_labels.push_str(&painted.svg);
+            labels.push(label);
+        }
+    }
+
+    // `insertTitle`: centred over everything drawn so far, `titleTopMargin` above the origin.
+    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let title = &input.diagram.title;
+    let mut title_svg = String::new();
+    if !title.is_empty() {
+        let drawn = bounds.unwrap_or_default();
+        let width = measure_text(sans, title, TITLE_FONT_SIZE)?;
+        let text_box = text_box(sans, TITLE_FONT_SIZE)?;
+        let baseline = -(config.flowchart.title_top_margin as f64);
+        let x = drawn.x + drawn.width / 2.0 - width / 2.0;
+        cover(
+            &mut bounds,
+            BBox::new(x, baseline - text_box.top, width, text_box.height),
+        );
+        title_svg = format!(
+            "<text text-anchor=\"start\" x=\"{}\" y=\"{}\" class=\"flowchartTitleText\">{}</text>",
+            number(x),
+            number(baseline),
+            escape(title)
+        );
+    }
+
+    let mut runs: Vec<Run<'_>> = labels.iter().flat_map(|label| label.text_runs()).collect();
+    if !title.is_empty() {
+        runs.push(Run {
+            text: title,
+            face: sans,
+        });
+    }
+    let families = embed_runs(&runs)?;
+
+    // `setupViewPortForSVG`: the drawn box with `diagramPadding` around it.
+    let padding = config.flowchart.diagram_padding as f64;
+    let drawn = bounds.unwrap_or_default();
+    let (view_width, view_height) = (drawn.width + padding * 2.0, drawn.height + padding * 2.0);
+    let size_attributes = if config.flowchart.use_max_width {
+        format!(
+            "width=\"100%\" style=\"max-width: {}px;\"",
+            number(view_width)
+        )
+    } else {
+        format!(
+            "height=\"{}\" width=\"{}\"",
+            number(view_height),
+            number(view_width)
+        )
+    };
+    let diagram = input.diagram;
+    let accessibility = a11y::children(id, &diagram.acc_title, &diagram.acc_descr);
+    let accessible_attributes =
+        a11y::root_attributes(id, "flowchart-v2", &diagram.acc_title, &diagram.acc_descr);
+    let style = style::style_sheet(id, input.themes, config, &diagram.classes);
+    let faces = font_faces(&families);
+    let family = families
+        .first()
+        .map(|family| format!("#{id}{{font-family:\"{}\";}}", family.name))
+        .unwrap_or_default();
+    Ok(format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{faces}{style}{family}</style><g>{markers}<g class=\"root\"><g class=\"clusters\">{clusters}</g><g class=\"edges edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g></g></g>{title_svg}{defs}</svg>",
+        id = escape(id),
+        x = number(drawn.x - padding),
+        y = number(drawn.y - padding),
+        w = number(view_width),
+        h = number(view_height),
+        markers = edges::markers(id, config),
+        defs = style::look_defs(id, input.themes, config),
+    ))
 }
+
+/// Adds a painted box to the boxes the viewBox covers.
+fn cover(bounds: &mut Option<BBox>, bbox: BBox) {
+    *bounds = Some(bounds.map_or(bbox, |all| all.union(bbox)));
+}
+
+/// The font size of the title: `.flowchartTitleText` in the flowchart styles.
+const TITLE_FONT_SIZE: f64 = 18.0;

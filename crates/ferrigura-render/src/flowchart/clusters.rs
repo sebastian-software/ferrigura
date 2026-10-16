@@ -7,6 +7,7 @@ use ferrigura_model::value::Value;
 
 use super::data::Node;
 use super::geom::BBox;
+use super::label::LabelLayout;
 use crate::RenderError;
 
 /// A painted subgraph.
@@ -16,6 +17,8 @@ pub struct Cluster {
     pub svg: String,
     /// Its box in absolute coordinates.
     pub bbox: BBox,
+    /// The title as painted, for the font subset.
+    pub label: Option<LabelLayout>,
 }
 
 /// Paints a laid-out subgraph: its frame and its title, as `insertCluster` does.
