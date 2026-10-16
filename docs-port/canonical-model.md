@@ -41,6 +41,8 @@ A JSON number is read to the exact double that JavaScript reads from the same te
 
 When a value is written back, it is written with the shortest representation that reads back to the same double, which is what JavaScript prints. Nothing else rounds a number on the way.
 
+JSON has no `NaN` and no infinity. A number that is not finite is written as the string `"NaN"`, `"Infinity"` or `"-Infinity"`; the configuration (`value.rs`) and the journey scores (below) do so. The exporters write the same strings, since `JSON.stringify` would write `null`.
+
 ## Title precedence
 
 `Diagram.fromText` sets the front matter's title first, then `populateCommonDb` sets the grammar's title, but only when that is non-empty. So:
@@ -78,6 +80,12 @@ The flowchart model is the DB state after parsing (`flowDb.ts`), with the names 
 - **Order.** Vertices are in creation order, edges in creation order (the order of the DB's `edges` array), subgraphs in closing order (a nested subgraph closes first), with a repeated id merged into its first position. Subgraph `nodes` keep the grammar's order, in which a chain's later nodes come first (`A --> B --> C` gives `[C, B, A]`).
 - **Edge ids.** The `id` is always present: the user's `e1@` id, or the generated `L_<start>_<end>_<n>`, where `n` counts the edges already drawn between the same pair. Tooltips are kept by id even when no vertex has that id.
 - **Config is not in the model.** `maxEdges` is a parser option (default 500). `securityLevel`, `htmlLabels`, `inheritDir` and `curve` act at render time and are not in the model.
+
+## Journey
+
+- **Texts are the reader's text.** The journey DB keeps the entities as placeholders (`ﬂ°name¶ß`), and the renderer decodes them as the HTML parser reads a character reference. The model holds that decoded text: `#hearts;` is `♥`, an unknown name stays as `&name;`, and raw text, `&amp;` included, reads as it was written. The rule is in [journey/PLAN.md](./journey/PLAN.md), section 6.
+- **Sanitising.** The title and the accessibility texts go through the sanitiser of the flowchart (`sanitize.rs`, with the full HTML5 names of `entities.rs`), before the entities are read. The task names, the people and the sections are not sanitised.
+- **Scores** are `Number()` of the text, as a number or one of the sentinel strings above.
 
 ## Left out, and why
 
