@@ -73,6 +73,7 @@ GENERICTYPE
 grammr
 graphtype
 halign
+htmllabels
 iife
 instrumenter
 interp
@@ -82,6 +83,7 @@ INVTRAPSTART
 JDBC
 jison
 Kaufmann
+keepentrynodeontop
 keyify
 LABELPOS
 LABELTYPE
@@ -101,6 +103,7 @@ LOGMSG
 lookaheads
 LPAREN
 mdast
+mergeedges
 metafile
 minlen
 Mstartx
@@ -164,6 +167,7 @@ techn
 TESTSTR
 TEXTDATA
 TEXTLENGTH
+titletopmargin
 titlevalue
 topbar
 TRAPEND
