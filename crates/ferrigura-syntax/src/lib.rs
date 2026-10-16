@@ -23,6 +23,7 @@ mod text;
 pub mod config;
 pub mod info;
 pub mod pie;
+pub mod yaml;
 
 use ferrigura_model::info::InfoDiagram;
 use ferrigura_model::pie::PieDiagram;
@@ -64,7 +65,7 @@ pub enum Diagram {
 /// `^\s*info` apply to the first line that is not one of them.
 #[must_use]
 pub fn detect(text: &str) -> Option<DiagramType> {
-    let prepared = preprocess::prepare(text);
+    let prepared = preprocess::prepare(text).ok()?;
     let rest = skip_hidden_prefix(&prepared.text);
     if rest.starts_with("pie") {
         Some(DiagramType::Pie)

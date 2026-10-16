@@ -14,16 +14,16 @@ import { collectInputs } from './inputs.ts';
 import type { PortInput, PortOutput } from './reference.ts';
 
 const type = process.argv[2];
-if (type === 'config') {
-  const configRun = spawnSync(
+if (type === 'config' || type === 'yaml') {
+  const subRun = spawnSync(
     'pnpm',
-    ['exec', 'tsx', fileURLToPath(new URL('./diff-config.ts', import.meta.url))],
+    ['exec', 'tsx', fileURLToPath(new URL(`./diff-${type}.ts`, import.meta.url))],
     { stdio: 'inherit' }
   );
-  process.exit(configRun.status ?? 2);
+  process.exit(subRun.status ?? 2);
 }
 if (type !== 'pie' && type !== 'info') {
-  console.error('usage: pnpm port:diff pie | info | config');
+  console.error('usage: pnpm port:diff pie | info | config | yaml');
   process.exit(2);
 }
 

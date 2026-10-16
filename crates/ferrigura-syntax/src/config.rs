@@ -11,12 +11,13 @@ use ferrigura_model::config::{assign_with_depth, deep_merge, sanitize_directive}
 use serde_json::{Map, Value};
 
 use crate::text::{is_js_space, is_line_term, is_word};
+use crate::yaml::{self, Yaml};
 use crate::{DiagramType, ParseError, detect, preprocess};
 
 /// Reads the configuration that the text carries; see the module documentation.
 pub fn read(text: &str) -> Result<Value, ParseError> {
-    let prepared = preprocess::prepare(text);
-    let front_matter = front_matter_config(prepared.front_matter.as_deref())?;
+    let prepared = preprocess::prepare(text)?;
+    let front_matter = front_matter_config(&prepared.front_matter);
 
     let diagram = detect(text).map(DiagramType::config_key);
     let mut directive =
@@ -32,29 +33,19 @@ pub fn read(text: &str) -> Result<Value, ParseError> {
 }
 
 /// The `config` block of the front matter, with the legacy `displayMode` placed in `gantt`, as
-/// `processFrontmatter` does. Only object-valued blocks are read.
-fn front_matter_config(body: Option<&str>) -> Result<Value, ParseError> {
-    let Some(body) = body else {
-        return Ok(Value::Object(Map::new()));
+/// `processFrontmatter` does. Only a mapping is read as a block.
+fn front_matter_config(fields: &[(String, Yaml)]) -> Value {
+    let field = |name: &str| {
+        fields
+            .iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value)
     };
-    let parsed: Value = serde_yaml_ng::from_str(body).map_err(|error| ParseError {
-        line: 1,
-        column: 1,
-        message: format!("invalid front matter: {error}"),
-    })?;
-    let Value::Object(fields) = parsed else {
-        return Ok(Value::Object(Map::new()));
-    };
-
-    let mut config = match fields.get("config") {
-        Some(Value::Object(config)) => config.clone(),
+    let mut config = match field("config") {
+        Some(Yaml::Mapping(pairs)) => yaml::mapping_to_json(pairs),
         _ => Map::new(),
     };
-    if let Some(mode) = fields.get("displayMode").filter(|value| is_truthy(value)) {
-        let mode = match mode {
-            Value::String(text) => text.clone(),
-            other => other.to_string(),
-        };
+    if let Some(mode) = field("displayMode").and_then(Yaml::truthy_string) {
         let gantt = config
             .entry("gantt")
             .or_insert_with(|| Value::Object(Map::new()));
@@ -62,17 +53,7 @@ fn front_matter_config(body: Option<&str>) -> Result<Value, ParseError> {
             gantt.insert("displayMode".to_owned(), Value::String(mode));
         }
     }
-    Ok(Value::Object(config))
-}
-
-fn is_truthy(value: &Value) -> bool {
-    match value {
-        Value::Null => false,
-        Value::Bool(flag) => *flag,
-        Value::Number(number) => number.as_f64().is_some_and(|float| float != 0.0),
-        Value::String(text) => !text.is_empty(),
-        Value::Array(_) | Value::Object(_) => true,
-    }
+    Value::Object(config)
 }
 
 /// `detectInit`: the arguments of the `init` and `initialize` directives, merged in order, with

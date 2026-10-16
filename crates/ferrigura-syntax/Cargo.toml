@@ -1,6 +1,6 @@
 [package]
 name = "ferrigura-syntax"
-description = "Shared lexer base and hand-written parsers for ferrigura diagram types"
+description = "Shared lexer base, YAML reader and hand-written parsers for ferrigura diagram types"
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
@@ -11,8 +11,9 @@ publish.workspace = true
 [dependencies]
 ferrigura-model.workspace = true
 logos.workspace = true
+regex = "1"
+saphyr-parser = "0.2"
 serde_json.workspace = true
-serde_yaml_ng = "0.10"
 
 [dev-dependencies]
 serde_json.workspace = true

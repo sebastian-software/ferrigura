@@ -1,46 +1,70 @@
 //! Text cleanup before lexing: the parts of `packages/mermaid/src/preprocess.ts` that decide what
 //! the grammar sees.
 //!
-//! Only the front matter title is read here; the front matter `config` block is read by
-//! `crate::config`, which needs the whole YAML document. Comments and directives are not removed
-//! here: the lexer treats them as hidden tokens, as the grammars do.
+//! The front matter is read here, with the YAML reader of `crate::yaml` that the reference's
+//! `js-yaml` corresponds to, so a front matter that does not parse is an error for every diagram.
+//! Comments and directives are not removed here: the lexer treats them as hidden tokens, as the
+//! grammars do.
 
+use crate::ParseError;
 use crate::text::{is_cr_lf, is_js_space, is_word};
+use crate::yaml::{self, Yaml};
 
 /// Text prepared for the lexer.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Prepared {
     /// The text after front matter removal, with CRLF and CR normalised to LF.
     pub text: String,
-    /// The `title` of the front matter, if it has a non-empty one.
+    /// The `title` of the front matter, if it is truthy and its string is not empty.
     pub title: Option<String>,
-    /// The YAML body of the front matter, dedented as `extractFrontMatter` does, if there is one.
-    pub front_matter: Option<String>,
+    /// The fields of the front matter's YAML mapping, in order. Empty when there is no front
+    /// matter, or when its document is not a mapping, as `extractFrontMatter` treats it.
+    pub front_matter: Vec<(String, Yaml)>,
     /// Number of lines removed with the front matter, so positions can be reported against the
     /// original input.
     pub line_offset: usize,
 }
 
-/// Normalises line breaks and quotes HTML attributes, then removes the front matter.
-pub(crate) fn prepare(raw: &str) -> Prepared {
+/// Normalises line breaks and quotes HTML attributes, then removes the front matter and reads it.
+pub(crate) fn prepare(raw: &str) -> Result<Prepared, ParseError> {
     let normalized = quote_html_attributes(&raw.replace("\r\n", "\n").replace('\r', "\n"));
     let chars: Vec<char> = normalized.chars().collect();
-    match match_front_matter(&chars) {
-        Some(front_matter) => {
-            let removed = &chars[..front_matter.length];
-            Prepared {
-                text: chars[front_matter.length..].iter().collect(),
-                title: front_matter_title(&front_matter.body, &front_matter.indent),
-                front_matter: Some(dedent(&front_matter.body, &front_matter.indent)),
-                line_offset: removed.iter().filter(|&&c| c == '\n').count(),
-            }
-        }
-        None => Prepared {
+    let Some(front_matter) = match_front_matter(&chars) else {
+        return Ok(Prepared {
             text: normalized,
             title: None,
-            front_matter: None,
+            front_matter: Vec::new(),
             line_offset: 0,
-        },
+        });
+    };
+
+    let removed = &chars[..front_matter.length];
+    let fields = front_matter_fields(&dedent(&front_matter.body, &front_matter.indent))?;
+    let title = fields
+        .iter()
+        .find(|(key, _)| key == "title")
+        .and_then(|(_, value)| value.truthy_string())
+        .filter(|title| !title.is_empty());
+    Ok(Prepared {
+        text: chars[front_matter.length..].iter().collect(),
+        title,
+        front_matter: fields,
+        line_offset: removed.iter().filter(|&&c| c == '\n').count(),
+    })
+}
+
+/// The fields of the front matter's YAML: the pairs of its mapping, or none when the document is
+/// empty or is not a mapping.
+fn front_matter_fields(body: &str) -> Result<Vec<(String, Yaml)>, ParseError> {
+    match yaml::load(body) {
+        Ok(Some(Yaml::Mapping(pairs))) => Ok(pairs),
+        Ok(_) => Ok(Vec::new()),
+        Err(error) => Err(ParseError {
+            // The body starts on the line after the opening fence.
+            line: error.line + 2,
+            column: error.column + 1,
+            message: format!("invalid front matter: {}", error.message),
+        }),
     }
 }
 
@@ -189,57 +213,6 @@ fn match_front_matter(text: &[char]) -> Option<FrontMatter> {
     None
 }
 
-/// The `title` key of the front matter body, when it is a non-empty scalar.
-///
-/// Only the first top-level `title:` line is read, as a plain or quoted scalar. The reference
-/// reads the whole YAML document with `js-yaml`; documents that rely on other YAML features in
-/// `title` are a known gap until the front matter is ported in full.
-fn front_matter_title(body: &str, indent: &str) -> Option<String> {
-    for line in body.split('\n') {
-        let line = line.strip_prefix(indent).unwrap_or(line);
-        if let Some(value) = line.strip_prefix("title:") {
-            return yaml_scalar(value.trim());
-        }
-    }
-    None
-}
-
-fn yaml_scalar(value: &str) -> Option<String> {
-    let text = if value.len() >= 2 && value.starts_with('"') && value.ends_with('"') {
-        unescape_double_quoted(&value[1..value.len() - 1])
-    } else if value.len() >= 2 && value.starts_with('\'') && value.ends_with('\'') {
-        value[1..value.len() - 1].replace("''", "'")
-    } else {
-        if matches!(value, "" | "null" | "~") {
-            return None;
-        }
-        match value.find(" #") {
-            Some(comment) => value[..comment].trim_end().to_owned(),
-            None => value.to_owned(),
-        }
-    };
-    (!text.is_empty()).then_some(text)
-}
-
-fn unescape_double_quoted(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut chars = text.chars();
-    while let Some(c) = chars.next() {
-        if c != '\\' {
-            out.push(c);
-            continue;
-        }
-        match chars.next() {
-            Some('n') => out.push('\n'),
-            Some('t') => out.push('\t'),
-            Some('r') => out.push('\r'),
-            Some(other) => out.push(other),
-            None => out.push('\\'),
-        }
-    }
-    out
-}
-
 /// Length of a `%%{ … }%%` directive as `directiveRegex` in `regexes.ts` matches it, which is the
 /// loose form the reference uses to find directives before detection. `text` starts with `%%{`.
 pub(crate) fn loose_directive_len(text: &str) -> Option<usize> {
@@ -286,7 +259,8 @@ mod tests {
 
     #[test]
     fn removes_front_matter_and_reads_its_title() {
-        let prepared = prepare("---\ntitle: Pets\nconfig:\n  theme: dark\n---\npie\n\"a\": 1");
+        let prepared = prepare("---\ntitle: Pets\nconfig:\n  theme: dark\n---\npie\n\"a\": 1")
+            .expect("prepares");
         assert_eq!(prepared.text, "pie\n\"a\": 1");
         assert_eq!(prepared.title.as_deref(), Some("Pets"));
         assert_eq!(prepared.line_offset, 5);
@@ -294,7 +268,7 @@ mod tests {
 
     #[test]
     fn normalises_line_breaks_and_quotes_attributes() {
-        let prepared = prepare("pie\r\n\"<b class=\"x\">a</b>\": 1\r");
+        let prepared = prepare("pie\r\n\"<b class=\"x\">a</b>\": 1\r").expect("prepares");
         assert_eq!(prepared.text, "pie\n\"<b class='x'>a</b>\": 1\n");
     }
 
