@@ -3,7 +3,7 @@
 //! `intersect-circle.js`, `intersect-polygon.js`, `intersect-line.js` and the cylinder's intersect
 //! in `shapes/cylinder.ts`.
 
-use crate::flowchart::geom::{CenterBox, Point};
+use crate::unified::geom::{CenterBox, Point};
 
 /// The tolerance of the segment test in `intersectLine`.
 const EPSILON: f64 = 1e-6;

@@ -8,10 +8,10 @@
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
-use ferrigura_render::flowchart::data::Edge;
-use ferrigura_render::flowchart::edges::paint_paths;
-use ferrigura_render::flowchart::geom::Point;
-use ferrigura_render::flowchart::line_jumps::{
+use ferrigura_render::unified::data::Edge;
+use ferrigura_render::unified::edges::paint_paths;
+use ferrigura_render::unified::geom::Point;
+use ferrigura_render::unified::line_jumps::{
     EdgeGeom, JumpStyle, LineJumpConfig, find_edge_intersections, rewrite_edge_path,
 };
 

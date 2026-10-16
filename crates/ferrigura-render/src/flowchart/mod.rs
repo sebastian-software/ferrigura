@@ -7,21 +7,7 @@
 //! the paint. Each step is a module, so that its output can be compared with the reference's. See
 //! `docs-port/flowchart/RENDER-PLAN.md`.
 
-pub mod clusters;
 pub mod data;
-pub mod edges;
-pub mod elk_apply;
-pub mod elk_build;
-pub mod elk_geometry;
-pub mod elk_straighten;
-pub mod elk_tree;
-pub mod geom;
-pub mod label;
-pub mod line_jumps;
-pub mod markdown;
-pub mod markers;
-pub mod path;
-pub mod shapes;
 pub mod style;
 
 use std::collections::HashMap;
@@ -34,14 +20,15 @@ use ferrigura_text::{
     FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, text_box,
 };
 
-use self::data::LayoutData;
-use self::geom::BBox;
-use self::label::LabelLayout;
-use self::shapes::{ShapeInput, ShapeOutput};
 use crate::RenderError;
 use crate::a11y;
 use crate::pie::Themes;
 use crate::svg::{escape, number};
+use crate::unified::data::LayoutData;
+use crate::unified::geom::BBox;
+use crate::unified::label::LabelLayout;
+use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
+use crate::unified::{clusters, edges, elk_apply, elk_build};
 use crate::variables::px;
 
 /// What the flowchart renderer draws.

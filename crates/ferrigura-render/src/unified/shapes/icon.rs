@@ -25,10 +25,10 @@ use super::rough::{self, Outline};
 use super::util::{self, Part, Styles, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::RenderError;
-use crate::flowchart::data::Node;
-use crate::flowchart::geom::{BBox, Point};
-use crate::flowchart::label::LabelLayout;
 use crate::svg::{escape, number};
+use crate::unified::data::Node;
+use crate::unified::geom::{BBox, Point};
+use crate::unified::label::LabelLayout;
 
 /// The icon size when the node gives none (`assetWidth ?? 48`).
 const DEFAULT_ICON_SIZE: f64 = 48.0;
@@ -562,7 +562,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
 mod tests {
     use super::super::test_support::{draw_box, node, theme};
     use super::*;
-    use crate::flowchart::shapes::draw;
+    use crate::unified::shapes::draw;
     use ferrigura_model::config::MermaidConfig;
 
     fn labelled(shape: &str, icon: Option<&str>) -> Node {

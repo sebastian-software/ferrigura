@@ -9,10 +9,10 @@
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::value::Value;
-use ferrigura_render::flowchart::data::Edge;
-use ferrigura_render::flowchart::edges::paint_paths;
-use ferrigura_render::flowchart::geom::Point;
-use ferrigura_render::flowchart::line_jumps::{
+use ferrigura_render::unified::data::Edge;
+use ferrigura_render::unified::edges::paint_paths;
+use ferrigura_render::unified::geom::Point;
+use ferrigura_render::unified::line_jumps::{
     EdgeGeom, JumpStyle, LineJumpConfig, Rewrite, apply_jumps, curve_supports_line_hops,
     find_edge_intersections, rewrite_dash_array,
 };

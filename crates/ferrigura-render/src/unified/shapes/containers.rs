@@ -6,8 +6,8 @@
 use super::arcs::arc_points;
 use super::util::{Part, attribute, create_path_from_points, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
 use crate::svg::{escape, number};
+use crate::unified::geom::{BBox, Point};
 use crate::variables::text_of;
 
 /// The accent colour of the window and bucket outlines: the theme's node border, else its line

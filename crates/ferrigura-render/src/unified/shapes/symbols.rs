@@ -9,9 +9,9 @@ use std::f64::consts::FRAC_PI_4;
 use super::rough::{self, Outline};
 use super::util::{self, Part, label_helper, path_style, stroke_width, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
-use crate::flowchart::label::LabelLayout;
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
+use crate::unified::label::LabelLayout;
 
 /// `choice.ts`: a diamond of 28 across, with no label.
 pub(super) fn choice(input: &ShapeInput<'_>) -> Part {
@@ -173,7 +173,7 @@ pub(super) fn crossed_circle(input: &ShapeInput<'_>) -> Part {
 mod tests {
     use super::super::test_support::{draw_box, node};
     use super::*;
-    use crate::flowchart::label::LabelLayout;
+    use crate::unified::label::LabelLayout;
 
     #[test]
     fn a_choice_is_a_diamond_of_twenty_eight_without_a_label() {

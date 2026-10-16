@@ -12,8 +12,8 @@
 use std::f64::consts::PI;
 
 use super::util::attribute;
-use crate::flowchart::geom::{BBox, Point};
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
 
 /// rough.js's default `curveStepCount`.
 const CURVE_STEP_COUNT: f64 = 9.0;

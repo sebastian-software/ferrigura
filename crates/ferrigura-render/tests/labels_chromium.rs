@@ -5,7 +5,7 @@
 
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_render::RenderError;
-use ferrigura_render::flowchart::label::{Anchor, LabelLayout, LabelSpec, layout};
+use ferrigura_render::unified::label::{Anchor, LabelLayout, LabelSpec, layout};
 use ferrigura_text::TextError;
 use serde_json::Value;
 

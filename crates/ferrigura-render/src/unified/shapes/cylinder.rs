@@ -3,8 +3,8 @@
 
 use super::util::{Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
 
 /// The cylinder's outline: the top ellipse's near half, the side, and the bottom's near half
 /// (`createCylinderPathD`).
@@ -188,7 +188,7 @@ pub(super) fn tilted_cylinder(input: &ShapeInput<'_>) -> Part {
 mod tests {
     use super::super::test_support::{draw_box, node};
     use super::*;
-    use crate::flowchart::label::LabelLayout;
+    use crate::unified::label::LabelLayout;
 
     #[test]
     fn a_neo_cylinder_is_the_label_plus_the_neo_padding_and_its_caps() {

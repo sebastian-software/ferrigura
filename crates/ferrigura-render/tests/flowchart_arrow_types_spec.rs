@@ -2,8 +2,8 @@
 //! before the ELK layout (the reference's `prepareLayoutForElk`).
 
 use ferrigura_model::config::MermaidConfig;
-use ferrigura_render::flowchart::data::{Edge, LayoutData};
-use ferrigura_render::flowchart::edges::prepare;
+use ferrigura_render::unified::data::{Edge, LayoutData};
+use ferrigura_render::unified::edges::prepare;
 
 /// The edge from `A` to `B` of `edge_type`, with the given start arrow, after `prepare`.
 fn prepared(edge_type: &str, arrow_type_start: &str) -> Edge {

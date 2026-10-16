@@ -5,10 +5,10 @@
 use ferrigura_model::value::Value;
 
 use super::{Intersect, ShapeInput};
-use crate::flowchart::data::Node;
-use crate::flowchart::geom::{BBox, Point};
-use crate::flowchart::label::LabelLayout;
 use crate::svg::{escape, number};
+use crate::unified::data::Node;
+use crate::unified::geom::{BBox, Point};
+use crate::unified::label::LabelLayout;
 
 /// What a shape handler draws, before `draw` adds the label's box to the node's box.
 #[derive(Debug, Clone)]

@@ -4,8 +4,8 @@
 
 use super::util::{self, Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
 
 /// `squareRect.ts`: a rectangle around the label. The neo look pads the label by 16 and 12, the
 /// classic look by twice the padding and the padding.
@@ -33,7 +33,7 @@ pub(super) fn rounded_rect(input: &ShapeInput<'_>) -> Part {
 /// its style, and its radius when it has one.
 fn draw_rect(
     input: &ShapeInput<'_>,
-    label: crate::flowchart::label::LabelLayout,
+    label: crate::unified::label::LabelLayout,
     pad_x: f64,
     pad_y: f64,
     radius: Option<f64>,
@@ -104,7 +104,7 @@ pub(super) fn label_rect(input: &ShapeInput<'_>) -> Part {
 mod tests {
     use super::super::test_support::{draw_box, node};
     use super::*;
-    use crate::flowchart::label::LabelLayout;
+    use crate::unified::label::LabelLayout;
 
     // squareRect.spec.ts: the colour slot tests belong to the style task, see the report.
     #[test]

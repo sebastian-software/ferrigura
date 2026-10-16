@@ -11,6 +11,7 @@ pub mod a11y;
 pub mod flowchart;
 pub mod pie;
 pub mod svg;
+pub mod unified;
 mod variables;
 
 use std::fmt;

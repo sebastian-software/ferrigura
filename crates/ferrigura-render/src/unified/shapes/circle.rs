@@ -4,8 +4,8 @@
 
 use super::util::{Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::BBox;
 use crate::svg::number;
+use crate::unified::geom::BBox;
 
 /// `circle.ts`: a circle around the label. Its radius is half the label's diagonal plus 16 in the
 /// neo look, and plus half the padding in the classic look.
@@ -69,8 +69,8 @@ pub(super) fn double_circle(input: &ShapeInput<'_>) -> Part {
 mod tests {
     use super::super::test_support::{draw_box, node};
     use super::*;
-    use crate::flowchart::label::LabelLayout;
-    use crate::flowchart::shapes::ShapeOutput;
+    use crate::unified::label::LabelLayout;
+    use crate::unified::shapes::ShapeOutput;
 
     /// The radius of the circle or the ring with the given class in the markup.
     fn radius_of(svg: &str, class: &str) -> f64 {

@@ -5,8 +5,8 @@
 
 use super::util::{Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
 
 /// The space under the title, where the separator is drawn.
 const SEPARATOR_GAP: f64 = 8.0;
@@ -116,7 +116,7 @@ pub(super) fn collapsed_group(input: &ShapeInput<'_>) -> Part {
 mod tests {
     use super::super::test_support::{draw_box, node};
     use super::*;
-    use crate::flowchart::label::LabelLayout;
+    use crate::unified::label::LabelLayout;
     use ferrigura_model::value::Value;
 
     #[test]

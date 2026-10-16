@@ -12,8 +12,8 @@ use super::util::{
     styles2string,
 };
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
 
 /// The number of points an elliptical arc is sampled at for its box. The box is then within a
 /// thousandth of a pixel of the exact one for every arc these shapes draw.

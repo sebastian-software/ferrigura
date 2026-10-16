@@ -7,7 +7,7 @@ use std::f64::consts::PI;
 use super::rough;
 use super::util::{self, Part, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::Point;
+use crate::unified::geom::Point;
 
 /// The points that sample each semicircular end.
 const ARC_POINTS: usize = 50;
@@ -81,9 +81,9 @@ pub(super) fn stadium(input: &ShapeInput<'_>) -> Part {
 mod tests {
     use super::super::test_support::{draw_box, node};
     use super::*;
-    use crate::flowchart::geom::BBox;
-    use crate::flowchart::label::LabelLayout;
-    use crate::flowchart::shapes::ShapeOutput;
+    use crate::unified::geom::BBox;
+    use crate::unified::label::LabelLayout;
+    use crate::unified::shapes::ShapeOutput;
 
     /// Whether a point is inside a convex polygon: on one side of every edge.
     fn contains(points: &[Point], point: Point) -> bool {
@@ -184,12 +184,8 @@ mod tests {
         let shape = render(120.0, 651.0, "neo", 15.0);
         let points = outline(&shape);
         // The node moved to (300, 500): the intersection is computed in its own box.
-        let node_box = crate::flowchart::geom::CenterBox::new(
-            300.0,
-            500.0,
-            shape.bbox.width,
-            shape.bbox.height,
-        );
+        let node_box =
+            crate::unified::geom::CenterBox::new(300.0, 500.0, shape.bbox.width, shape.bbox.height);
         for (x, y) in [
             (1.0, 0.0),
             (-1.0, 0.0),

@@ -6,9 +6,9 @@
 use super::rough;
 use super::util::{self, Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
-use crate::flowchart::label::LabelLayout;
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
+use crate::unified::label::LabelLayout;
 
 /// `question.ts`: a square turned on its corner, with the label in it. The outline is drawn half
 /// a unit to the right of the box it is measured with (`question.ts:55-56`).
@@ -402,7 +402,7 @@ fn attribute_if(style: &str) -> String {
 mod tests {
     use super::super::test_support::{draw_box, node};
     use super::*;
-    use crate::flowchart::label::LabelLayout;
+    use crate::unified::label::LabelLayout;
 
     // The bounding boxes of the reference's polygon shapes for a 120 by 17 label, as their
     // handlers compute them (shapes-core.md §2.1).

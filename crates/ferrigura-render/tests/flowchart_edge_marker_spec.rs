@@ -4,9 +4,9 @@
 //! Ignored: the aggregation and composition markers, which only the class diagram draws.
 
 use ferrigura_model::config::MermaidConfig;
-use ferrigura_render::flowchart::data::Edge;
-use ferrigura_render::flowchart::edges::paint_paths;
-use ferrigura_render::flowchart::geom::Point;
+use ferrigura_render::unified::data::Edge;
+use ferrigura_render::unified::edges::paint_paths;
+use ferrigura_render::unified::geom::Point;
 
 /// The `<path>` of a two-point edge with the given arrow types.
 fn painted_path(arrow_type_start: &str, arrow_type_end: &str) -> String {

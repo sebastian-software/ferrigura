@@ -12,9 +12,9 @@ use super::util::{
     self, Part, generate_circle_points, label_helper, path_style, stroke_width, styles2string,
 };
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::Point;
-use crate::flowchart::label::LabelLayout;
 use crate::svg::number;
+use crate::unified::geom::Point;
+use crate::unified::label::LabelLayout;
 
 /// The points of an arc of a circle, from `start` to `end` degrees, as the brace files compute
 /// them: the arc is not negated, as `curlyBraceRight.ts` writes it.

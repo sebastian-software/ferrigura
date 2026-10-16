@@ -1376,7 +1376,7 @@ mod tests {
         assert!(truthy_option(Some(-3.0)));
     }
 
-    use crate::flowchart::elk_build::LabelData;
+    use crate::unified::elk_build::LabelData;
     use ferrigura_elk::json::JsonLabel;
 
     /// `intersect-rect.js`, transcribed: the test double for a rectangular leaf.

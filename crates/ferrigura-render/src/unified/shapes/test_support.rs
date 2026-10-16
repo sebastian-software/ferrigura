@@ -5,8 +5,8 @@ use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value;
 
 use super::{ShapeInput, ShapeOutput, draw};
-use crate::flowchart::data::Node;
-use crate::flowchart::label::LabelLayout;
+use crate::unified::data::Node;
+use crate::unified::label::LabelLayout;
 
 /// The redux-color theme's variables, the default of flowcharts.
 pub(super) fn theme() -> Value {

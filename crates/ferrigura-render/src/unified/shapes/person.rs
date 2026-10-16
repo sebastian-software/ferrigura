@@ -4,8 +4,8 @@
 
 use super::util::{self, Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
 
 /// The narrowest and widest the head is, in pixels: the head's radius is 0.23 of the body's
 /// width, clamped to this range.

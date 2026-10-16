@@ -7,8 +7,8 @@
 use super::rough;
 use super::util::{self, Part, attribute, label_helper, path_style, stroke_width, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
 
 /// `datastore.ts`: a rectangle around the label, padded by twice the padding across and the padding
 /// high (`drawRect` with twice the label padding on each side). Its stroke is dashed with its own

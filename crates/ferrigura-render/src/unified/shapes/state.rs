@@ -6,8 +6,8 @@
 use super::rough;
 use super::util::{self, Part, attribute, styles2string};
 use super::{Intersect, SVG_ID_TOKEN, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
 use crate::svg::number;
+use crate::unified::geom::{BBox, Point};
 
 /// The diameter of the state diagram's start and end circles: the node's size when it has none.
 const STATE_DIAMETER: f64 = 14.0;
@@ -143,12 +143,12 @@ pub(super) fn anchor(input: &ShapeInput<'_>) -> Part {
 mod tests {
     use super::super::test_support::{draw_box, node, theme};
     use super::*;
-    use crate::flowchart::data::Node;
-    use crate::flowchart::label::LabelLayout;
-    use crate::flowchart::shapes::{ShapeInput, draw};
+    use crate::unified::data::Node;
+    use crate::unified::label::LabelLayout;
+    use crate::unified::shapes::{ShapeInput, draw};
     use ferrigura_model::config::MermaidConfig;
 
-    fn drawn(shape: &str) -> crate::flowchart::shapes::ShapeOutput {
+    fn drawn(shape: &str) -> crate::unified::shapes::ShapeOutput {
         draw_box(&node(shape, "neo"), &LabelLayout::of_box(BBox::default()))
     }
 

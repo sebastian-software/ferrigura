@@ -3,7 +3,7 @@
 //! error, as `insertNode` throws `No such shape` for it. The names of the other stages are not in
 //! the registry yet, so they are reported the same way until their stage ports them.
 
-use crate::flowchart::data::Node;
+use crate::unified::data::Node;
 
 use super::util;
 

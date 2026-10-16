@@ -14,7 +14,7 @@ use ferrigura_model::value::Value;
 use super::data::Node;
 use super::geom::{BBox, Point};
 use super::label::{self, Anchor, LabelLayout, LabelSpec};
-use super::style::{self, Palette};
+use super::palette::{self as style, Palette};
 use crate::RenderError;
 use crate::svg::{escape, number};
 use crate::variables::{px, text_of, truthy};

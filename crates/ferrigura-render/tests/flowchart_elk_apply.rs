@@ -27,11 +27,11 @@ use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value as ModelValue;
-use ferrigura_render::flowchart::data::{Edge, LayoutData, Node};
-use ferrigura_render::flowchart::elk_apply::apply;
-use ferrigura_render::flowchart::elk_build::{ElkState, LabelData};
-use ferrigura_render::flowchart::geom::Point;
-use ferrigura_render::flowchart::shapes::{self, Intersect, ShapeInput};
+use ferrigura_render::unified::data::{Edge, LayoutData, Node};
+use ferrigura_render::unified::elk_apply::apply;
+use ferrigura_render::unified::elk_build::{ElkState, LabelData};
+use ferrigura_render::unified::geom::Point;
+use ferrigura_render::unified::shapes::{self, Intersect, ShapeInput};
 use serde_json::Value;
 
 /// The largest difference that counts as equal, in SVG user units.

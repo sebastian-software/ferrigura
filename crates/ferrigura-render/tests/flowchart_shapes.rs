@@ -10,10 +10,10 @@ use std::f64::consts::PI;
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value;
-use ferrigura_render::flowchart::data::Node;
-use ferrigura_render::flowchart::geom::{BBox, Point};
-use ferrigura_render::flowchart::label::LabelLayout;
-use ferrigura_render::flowchart::shapes::{ShapeInput, ShapeOutput, draw};
+use ferrigura_render::unified::data::Node;
+use ferrigura_render::unified::geom::{BBox, Point};
+use ferrigura_render::unified::label::LabelLayout;
+use ferrigura_render::unified::shapes::{ShapeInput, ShapeOutput, draw};
 
 /// The tolerance of every comparison, in pixels.
 const TOLERANCE: f64 = 0.05;

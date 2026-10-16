@@ -8,7 +8,7 @@
 use super::rough;
 use super::util::{self, Part, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::Point;
+use crate::unified::geom::Point;
 
 /// The narrowest a document's outline is: the reference widens a narrower one to this
 /// (`waveEdgedRectangle.ts`, `minWidth`).
@@ -367,10 +367,10 @@ pub(super) fn wave_rectangle(input: &ShapeInput<'_>) -> Part {
 mod tests {
     use super::super::test_support::{draw_box, node};
     use super::*;
-    use crate::flowchart::geom::BBox;
-    use crate::flowchart::label::LabelLayout;
+    use crate::unified::geom::BBox;
+    use crate::unified::label::LabelLayout;
 
-    fn drawn(shape: &str, look: &str) -> crate::flowchart::shapes::ShapeOutput {
+    fn drawn(shape: &str, look: &str) -> crate::unified::shapes::ShapeOutput {
         let label = LabelLayout::of_box(BBox::new(-60.0, 0.0, 120.0, 17.0));
         draw_box(&node(shape, look), &label)
     }

@@ -7,7 +7,7 @@
 use super::rough::{self, Outline};
 use super::util::{self, Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point, sloped_outline_height_f32};
+use crate::unified::geom::{BBox, Point, sloped_outline_height_f32};
 
 /// The width of the frame of a shaded process, on its left side.
 const FRAME_WIDTH: f64 = 8.0;
