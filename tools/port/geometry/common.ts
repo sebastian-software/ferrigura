@@ -628,6 +628,21 @@ export function renderReference(
   ) as Promise<ReferenceRender>;
 }
 
+/**
+ * The fixture text as the e2e viewer hands it to the reference: `mermaid.run` reads the element's
+ * HTML and decodes its entities with `entityDecode` (`mermaid.ts` 177-182, `utils.ts` 753-760), so a
+ * fixture's `&lt;&lt;interface&gt;&gt;` is the annotation `<<interface>>`. This runs the same
+ * decoding in the page; a text without entities comes back unchanged. The HTML round trip of
+ * `innerHTML` is left out, as it would also break the texts whose `<` is not escaped.
+ */
+export function decodeFixtureEntities(page: Page, text: string): Promise<string> {
+  return page.evaluate((html) => {
+    const decoder = document.createElement('div');
+    decoder.innerHTML = escape(html).replace(/%26/g, '&').replace(/%23/g, '#').replace(/%3B/g, ';');
+    return unescape(decoder.textContent ?? '');
+  }, text);
+}
+
 /** The page's measurement of one SVG at scale 1. The page's own `measure` returns its shape. */
 export function measureSvg<T>(page: Page, svg: string): Promise<T> {
   return page.evaluate(

@@ -60,6 +60,7 @@ import { join } from 'node:path';
 
 import {
   buildRenderExample,
+  decodeFixtureEntities,
   countClasses,
   exclusionReason,
   uncoveredScriptReason,
@@ -269,7 +270,10 @@ async function main(): Promise<void> {
     for (const file of selected) {
       const slug = slugOf(file);
       const id = `ref-${slug}`;
-      const source = await readFile(join(fixtureRoot, file), 'utf8');
+      const source = await decodeFixtureEntities(
+        page,
+        await readFile(join(fixtureRoot, file), 'utf8')
+      );
       const text = patchText(source, journey ? JOURNEY_SETTINGS : {});
       const result: DiagramResult = {
         fixture: file,
