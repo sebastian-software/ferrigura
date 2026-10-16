@@ -226,7 +226,7 @@ fn url_scheme(text: &str) -> Option<&str> {
                     None
                 }
             })
-            .last();
+            .next_back();
         if let Some(end) = colon {
             return Some(&text[line_start..line_start + end]);
         }
@@ -332,7 +332,7 @@ const USERINFO_SET: &[u8] = b" \"#<>?`{}/:;=@[\\]^|";
 fn percent_encode(text: &str, set: &[u8]) -> String {
     let mut out = String::with_capacity(text.len());
     for byte in text.bytes() {
-        if byte < 0x20 || byte > 0x7E || set.contains(&byte) {
+        if !(0x20..=0x7E).contains(&byte) || set.contains(&byte) {
             out.push_str(&format!("%{byte:02X}"));
         } else {
             out.push(char::from(byte));
@@ -348,7 +348,10 @@ mod tests {
     #[test]
     fn unsafe_schemes_become_blank() {
         assert_eq!(sanitize_url("javascript:alert(1)"), "about:blank");
-        assert_eq!(sanitize_url("&#x6A;avascript:alert(1)"), "avascript:alert(1)");
+        assert_eq!(
+            sanitize_url("&#x6A;avascript:alert(1)"),
+            "avascript:alert(1)"
+        );
         assert_eq!(sanitize_url("  DATA:text/html,x"), "about:blank");
         assert_eq!(sanitize_url(""), "about:blank");
     }

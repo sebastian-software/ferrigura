@@ -420,12 +420,12 @@ fn advanced_pass(pattern: &str, time: Time, now: Parts) -> Result<String, Thrown
     let mut i = 0;
     while i < chars.len() {
         let c = chars[i];
-        if c == '[' {
-            if let Some(end) = closing_bracket(&chars, i) {
-                out.extend(&chars[i..=end]);
-                i = end + 1;
-                continue;
-            }
+        if c == '['
+            && let Some(end) = closing_bracket(&chars, i)
+        {
+            out.extend(&chars[i..=end]);
+            i = end + 1;
+            continue;
         }
         let next = chars.get(i + 1).copied();
         match c {
@@ -497,12 +497,12 @@ fn base_pass(text: &str, now: Parts) -> String {
     let mut i = 0;
     while i < chars.len() {
         let c = chars[i];
-        if c == '[' {
-            if let Some(end) = closing_bracket(&chars, i) {
-                out.extend(&chars[i + 1..end]);
-                i = end + 1;
-                continue;
-            }
+        if c == '['
+            && let Some(end) = closing_bracket(&chars, i)
+        {
+            out.extend(&chars[i + 1..end]);
+            i = end + 1;
+            continue;
         }
         let run = chars[i..].iter().take_while(|&&k| k == c).count();
         let hour12 = if now.hour % 12 == 0 {
@@ -808,13 +808,10 @@ fn exec(matcher: Matcher, part: &[u16]) -> Option<(usize, usize)> {
             .find(|&i| is_digit(part[i]))
             .map(|i| (i, if digits_at(i + 1, 1) { 2 } else { 1 })),
         Matcher::Signed => (0..n).find_map(|i| {
-            let start = if is_digit(part[i]) {
-                i
-            } else if is_sign(part[i]) && digits_at(i + 1, 1) {
-                i
-            } else {
+            if !is_digit(part[i]) && !(is_sign(part[i]) && digits_at(i + 1, 1)) {
                 return None;
-            };
+            }
+            let start = i;
             let sign = usize::from(is_sign(part[i]));
             let run = part[i + sign..]
                 .iter()
@@ -964,15 +961,14 @@ impl Fields {
 
     /// `correctHours`: the afternoon flag of `a` and `A` turns the hour into the 24-hour one.
     fn correct_hours(&mut self) {
-        if let Some(afternoon) = self.afternoon.take() {
-            if let Some(hours) = self.hours {
-                if afternoon {
-                    if hours < 12.0 {
-                        self.hours = Some(hours + 12.0);
-                    }
-                } else if hours == 12.0 {
-                    self.hours = Some(0.0);
+        let afternoon = self.afternoon.take();
+        if let (Some(afternoon), Some(hours)) = (afternoon, self.hours) {
+            if afternoon {
+                if hours < 12.0 {
+                    self.hours = Some(hours + 12.0);
                 }
+            } else if hours == 12.0 {
+                self.hours = Some(0.0);
             }
         }
     }
@@ -1211,8 +1207,11 @@ fn lone_number(digits: &str) -> Option<Time> {
     (!time.is_nan()).then_some(time)
 }
 
+/// The clock of a legacy time: hours, minutes, seconds and milliseconds.
+type Clock = (f64, f64, f64, f64);
+
 /// `HH:mm[:ss[.fff…]]` at the start of `text`: the clock parts in ms, and the rest of the text.
-fn parse_clock(text: &str) -> Option<((f64, f64, f64, f64), &str)> {
+fn parse_clock(text: &str) -> Option<(Clock, &str)> {
     let hour_digits = text.bytes().take_while(u8::is_ascii_digit).count();
     if !(1..=2).contains(&hour_digits) {
         return None;
@@ -1393,7 +1392,7 @@ mod tests {
             ("202-12-01", -55_763_856_000_000.0),
             ("202", -55_792_713_600_000.0),
             ("202304", 6_321_930_336_000_000.0),
-                        ("0", 946_684_800_000.0),
+            ("0", 946_684_800_000.0),
             ("1", 978_307_200_000.0),
             ("13", f64::NAN),
             ("7", 993_945_600_000.0),

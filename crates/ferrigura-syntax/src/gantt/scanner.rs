@@ -288,8 +288,8 @@ fn initial_rule(rest: &str) -> Option<(usize, Action)> {
     }
     // `\%\%(?!\{)*[^\n]*` (line 28): a comment. The lookahead is zero-width, so it is `%%` and the
     // rest of the line.
-    if rest.starts_with("%%") {
-        return Some((2 + line_len(&rest[2..]), Action::Skip));
+    if let Some(after) = rest.strip_prefix("%%") {
+        return Some((2 + line_len(after), Action::Skip));
     }
     // `[^\}]\%\%*[^\n]*` (line 29): any character but `}` followed by `%` starts a comment that
     // takes the rest of the line. The character may be a line break.
@@ -399,8 +399,8 @@ fn initial_rule(rest: &str) -> Option<(usize, Action)> {
         return Some((len, Action::Emit(Token::TaskTxt(text_of(rest, len)))));
     }
     // `":"[^#\n;]+` (line 94): the task data, with its colon.
-    if rest.starts_with(':') {
-        if let Some(len) = run_outside(&rest[1..], &['#', '\n', ';']) {
+    if let Some(after) = rest.strip_prefix(':') {
+        if let Some(len) = run_outside(after, &['#', '\n', ';']) {
             return Some((
                 1 + len,
                 Action::Emit(Token::TaskData(text_of(rest, 1 + len))),

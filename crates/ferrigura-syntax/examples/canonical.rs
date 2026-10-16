@@ -45,7 +45,9 @@ fn gantt_outcome(text: &str) -> Outcome {
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
-        return Err("usage: canonical <pie|info|flowchart|gantt> <inputs.json> <outputs.json>".into());
+        return Err(
+            "usage: canonical <pie|info|flowchart|gantt> <inputs.json> <outputs.json>".into(),
+        );
     };
 
     let inputs: Value = serde_json::from_str(&fs::read_to_string(input)?)?;
