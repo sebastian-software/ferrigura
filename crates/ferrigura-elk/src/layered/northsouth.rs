@@ -21,8 +21,8 @@
 //! self-loop before this runs, so they do not reach it. Ports that may switch sides
 //! (`ALLOW_NON_FLOW_PORTS_TO_SWITCH_SIDES`) are refused by the importer, so every dummy gets its
 //! successor constraint. Spline routing (`processSplineInputPort`) is refused with the router.
-//! The dummies' `ORIGIN` and `CROSSING_HINT` are not kept: nothing reads them once self-loop dummies
-//! are out.
+//! A dummy's `ORIGIN` is the node it was made for, which is also its layout unit, so the layout unit
+//! stands for it (the greedy switch reads it). Nothing reads `CROSSING_HINT`, so it is not kept.
 
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{EdgeRouting, NodeType, PortConstraints, PortSide};
