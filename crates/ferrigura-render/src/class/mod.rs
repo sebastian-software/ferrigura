@@ -2,6 +2,7 @@
 //! `docs-port/class/NOTES.md`, section 5.
 
 pub mod data;
+pub mod member;
 pub mod style;
 
 use ferrigura_model::class::ClassDiagram;

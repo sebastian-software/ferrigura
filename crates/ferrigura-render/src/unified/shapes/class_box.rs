@@ -106,15 +106,6 @@ fn or_zero(value: f64) -> f64 {
     }
 }
 
-/// `parseClassifier` (`classTypes.ts` 136-146): the style of a member's classifier.
-fn classifier_style(member: &ClassMember) -> &'static str {
-    match member.classifier.as_str() {
-        "*" => "font-style:italic;",
-        "$" => "text-decoration:underline;",
-        _ => "",
-    }
-}
-
 /// `addText` (`shapeUtil.ts` 99-189) for a row without HTML: the text is sanitised as the
 /// reference sanitises it, laid out at its wrapping width (its own width plus 50, from the
 /// measured text), and moved to `yOffset` on its centre. `bold` is the label row, whose tspans
@@ -442,7 +433,7 @@ fn member_group(
             input,
             font_size,
             &member.text,
-            classifier_style(member),
+            crate::class::member::css_style(member),
             y_offset,
             false,
         )?;

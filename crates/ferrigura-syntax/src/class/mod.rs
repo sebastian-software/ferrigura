@@ -11,6 +11,8 @@ mod grammar;
 mod lexer;
 mod member;
 
+pub use member::parse_generic_types;
+
 use ferrigura_model::class::{ClassDiagram, ClassMember};
 
 use crate::error::ParseError;

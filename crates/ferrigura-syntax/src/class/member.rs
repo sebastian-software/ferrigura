@@ -213,7 +213,7 @@ fn method_parts(input: &str) -> Option<MethodParts<'_>> {
 
 /// `parseGenericTypes` (`common.ts`): the input is split at commas, and two neighbouring pieces
 /// that each have one `~` are joined again; each piece is then processed by `processSet`.
-pub(crate) fn parse_generic_types(input: &str) -> String {
+pub fn parse_generic_types(input: &str) -> String {
     let mut items: Vec<String> = Vec::new();
     for (index, part) in input.split(',').enumerate() {
         if index > 0 {
