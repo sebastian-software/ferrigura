@@ -452,9 +452,9 @@ mod tests {
         let styles = [];
         let layout = layout(&spec("a<br/>**b**", LabelType::Markdown, &styles)).expect("lays out");
         let svg = layout.svg("fill: red;");
-        assert!(
-            svg.starts_with("<g><text y=\"-10.1\" text-anchor=\"start\" style=\"fill: red;\">")
-        );
+        assert!(svg.starts_with(
+            "<g><rect class=\"background\" style=\"stroke: none\"></rect><text y=\"-10.1\" text-anchor=\"start\" style=\"fill: red;\">"
+        ));
         assert_eq!(
             svg.matches("<tspan class=\"text-outer-tspan row\"").count(),
             2
