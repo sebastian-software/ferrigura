@@ -540,3 +540,56 @@ pub fn paint(edge: &Edge, terminal: &Terminal) -> (String, BBox) {
     );
     (svg, bbox.translate(inner_x + centre.x, inner_y + centre.y))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_start_label_without_a_marker_sits_ten_pixels_beside_its_end_on_the_left() {
+        // `calcTerminalLabelPosition` (`utils.ts` 378-410): the point 25 along the path, the middle of
+        // the first segment, and an offset of 10 (no marker) to the left of the direction of travel.
+        let path = [Point::new(0.0, 0.0), Point::new(100.0, 0.0)];
+        let at = calc_position(0.0, TerminalKey::StartLeft, &path);
+        assert!((at.x - 12.5).abs() < 1e-9, "{at:?}");
+        assert!((at.y + 10.0).abs() < 1e-9, "{at:?}");
+    }
+
+    #[test]
+    fn a_point_is_found_by_its_distance_along_the_path() {
+        let path = [
+            Point::new(0.0, 0.0),
+            Point::new(10.0, 0.0),
+            Point::new(10.0, 10.0),
+        ];
+        assert_eq!(calculate_point(&path, 15.0), Some(Point::new(10.0, 5.0)));
+        assert_eq!(calculate_point(&path, 40.0), None);
+    }
+
+    #[test]
+    fn a_segment_beside_a_box_misses_it_and_one_through_it_hits_it() {
+        // `segmentHitsBox` (`render.ts` 1826-1848): a segment on the box's own side is a hit, as the
+        // comparisons are strict only outside the box.
+        let bounds = Box4 {
+            x1: 0.0,
+            y1: 0.0,
+            x2: 10.0,
+            y2: 10.0,
+        };
+        assert!(!segment_hits_box(
+            Point::new(11.0, -5.0),
+            Point::new(11.0, 15.0),
+            bounds
+        ));
+        assert!(segment_hits_box(
+            Point::new(5.0, -5.0),
+            Point::new(5.0, 15.0),
+            bounds
+        ));
+        assert!(segment_hits_box(
+            Point::new(10.0, -5.0),
+            Point::new(10.0, 5.0),
+            bounds
+        ));
+    }
+}
