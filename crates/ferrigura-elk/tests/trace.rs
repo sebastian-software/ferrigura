@@ -76,7 +76,7 @@ fn nodes_only_trace_matches_elkjs_names_and_nesting() {
 }
 
 /// Cases whose full trace, logs included, matches elkjs. The floor only goes up.
-const TRACE_MATCHING_FLOOR: usize = 146;
+const TRACE_MATCHING_FLOOR: usize = 151;
 
 #[test]
 fn supported_traces_match_elkjs_including_logs() {

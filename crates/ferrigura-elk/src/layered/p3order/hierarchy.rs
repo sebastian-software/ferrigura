@@ -5,10 +5,11 @@
 //!
 //! The layer sweep with the barycenter heuristic over a hierarchy of graphs: the graph of a flat
 //! layout, or the graphs of a compound layout with the top graph first. Each graph gets a
-//! `GraphInfoHolder` and is swept on its own (bottom-up), the innermost first; a graph with
-//! external ports then orders its node's hierarchical ports by its dummies. A nested graph whose
-//! node has two or more ports on its east or west side is decided by `LayerSweepTypeDecider`'s
-//! paths, which with the sweep into nested graphs is not ported yet.
+//! `GraphInfoHolder`. A graph is swept on its own (bottom-up) or, when `LayerSweepTypeDecider`
+//! finds that its node's ports matter more than random influences, as part of the sweep of the
+//! graph around it: the sweep enters the nested graph at the node's layer, orders its first layer
+//! of external port dummies by the node's ports, and orders the node's ports by the dummies of its
+//! last layer.
 //!
 //! The minimizer's generator is the top graph's; it draws the sweep directions and is reset to the
 //! seed for each graph swept bottom-up. Each graph's heuristic draws from its own graph's generator,
@@ -26,7 +27,8 @@ use super::barycenter::BarycenterHeuristic;
 use super::counting::AllCrossingsCounter;
 use super::port_distributor::PortDistributor;
 use super::{
-    Layout, Net, check_supported, in_sweep_range, start_index, transfer_node_and_port_orders,
+    Layout, Net, check_supported, in_north_south_east_west_order, in_sweep_range, start_index,
+    transfer_node_and_port_orders,
 };
 
 /// `GraphInfoHolder` for the barycenter heuristic.
@@ -280,14 +282,102 @@ impl<'g> Hierarchy<'g> {
         if boundary < -1.0 || fixed_port_order || fewer_than_two {
             return Ok(true);
         }
-        // The barycenter heuristic is not deterministic, so the paths to random and to
-        // hierarchical influences would decide whether the graph is swept into. Neither the count
-        // nor the sweep into a nested graph is ported yet.
-        Err(LayoutError::Unsupported(
-            "a nested graph whose sweep the paths decide (LayerSweepTypeDecider, \
-             LayerSweepCrossingMinimizer.sweepInHierarchicalNode)"
-                .to_string(),
-        ))
+        // The barycenter heuristic is not deterministic, so the paths decide.
+        let net = &data.net;
+        let layout = &data.layout;
+        let order = &layout.order;
+        // `nodeInfo`, by layer and position: connected edges, hierarchical and random influence.
+        let mut info: Vec<Vec<[i64; 3]>> = order
+            .iter()
+            .map(|layer| vec![[0; 3]; layer.len()])
+            .collect();
+        let position_of = |node: usize| -> (usize, usize) {
+            let layer = net.layer(node);
+            let index = order[layer]
+                .iter()
+                .position(|&member| member == node)
+                .unwrap_or(0);
+            (layer, index)
+        };
+        let mut paths_to_random: i64 = 0;
+        let mut paths_to_hierarchical: i64 = 0;
+        for (layer_index, layer) in order.iter().enumerate() {
+            let mut north_south_dummies = Vec::new();
+            for (node_index, &node) in layer.iter().enumerate() {
+                if net.node_type(node) == NodeType::NORTH_SOUTH_PORT {
+                    north_south_dummies.push(node);
+                    continue;
+                }
+                let ports = &layout.node_ports[node];
+                if net.node_type(node) == NodeType::EXTERNAL_PORT {
+                    info[layer_index][node_index][1] = 1;
+                    // `originPort(node).getSide()`: the port on the node of the parent graph.
+                    let eastern =
+                        graph.nodes[node]
+                            .external_port
+                            .as_ref()
+                            .is_some_and(|external| {
+                                parent.net.graph().ports[external.origin].side == PortSide::EAST
+                            });
+                    if eastern {
+                        paths_to_hierarchical += info[layer_index][node_index][0];
+                    }
+                } else if has_no_connected_ports(net, ports, PortSide::WEST) {
+                    info[layer_index][node_index][2] = 1;
+                } else if has_no_connected_ports(net, ports, PortSide::EAST) {
+                    paths_to_random += info[layer_index][node_index][0];
+                }
+                let current = info[layer_index][node_index];
+                for &port in ports {
+                    for &edge in net.outgoing(port) {
+                        paths_to_random += current[2];
+                        paths_to_hierarchical += current[1];
+                        let target = net.node_of(net.target(edge));
+                        let (target_layer, target_index) = position_of(target);
+                        let target_info = &mut info[target_layer][target_index];
+                        target_info[1] += current[1];
+                        target_info[2] += current[2];
+                        target_info[0] += current[0];
+                        target_info[0] += 1;
+                    }
+                }
+                // The north and south ports pass the influence to their dummies. North and south
+                // port dummies are not ported (`check_supported`); a hierarchical port on those
+                // sides would pass it to a dummy of another graph, which is reported.
+                if ports.iter().any(|&port| {
+                    matches!(net.side(port), PortSide::NORTH | PortSide::SOUTH)
+                        && graph.ports[port].port_dummy.is_some()
+                }) {
+                    return Err(LayoutError::Unsupported(
+                        "north or south hierarchical ports in LayerSweepTypeDecider".to_string(),
+                    ));
+                }
+            }
+            for node in north_south_dummies {
+                let (node_layer, node_index) = position_of(node);
+                let current = info[node_layer][node_index];
+                for &port in &layout.node_ports[node] {
+                    for &edge in net.outgoing(port) {
+                        paths_to_random += current[2];
+                        paths_to_hierarchical += current[1];
+                        let target = net.node_of(net.target(edge));
+                        let (target_layer, target_index) = position_of(target);
+                        let target_info = &mut info[target_layer][target_index];
+                        target_info[1] += current[1];
+                        target_info[2] += current[2];
+                        target_info[0] += current[0];
+                        target_info[0] += 1;
+                    }
+                }
+            }
+        }
+        let all_paths = (paths_to_random + paths_to_hierarchical) as f64;
+        let normalized = if all_paths == 0.0 {
+            f64::INFINITY
+        } else {
+            (paths_to_random - paths_to_hierarchical) as f64 / all_paths
+        };
+        Ok(normalized >= boundary)
     }
 
     /// `minimizeCrossings`: each graph swept bottom-up, the innermost first, with
@@ -416,8 +506,8 @@ impl<'g> Hierarchy<'g> {
     }
 
     /// `sweepReducingCrossings`: the port distribution of the first layer, then each following layer
-    /// is reordered by its barycenters and its ports are distributed. Every graph is swept
-    /// bottom-up, so `sweepInHierarchicalNodes` has no nested graph to enter.
+    /// is reordered by its barycenters and its ports are distributed; the nested graphs swept into
+    /// follow each layer.
     fn sweep_reducing_crossings(&mut self, holder: usize, forward: bool, first_sweep: bool) {
         let length = self.holders[holder].layout.order.len();
         let first = start_index(forward, length);
@@ -430,6 +520,7 @@ impl<'g> Hierarchy<'g> {
                 forward,
             );
         }
+        self.sweep_in_hierarchical_nodes(holder, first, forward, first_sweep);
         // `firstSweep && !FIRST_TRY && !SECOND_TRY`, passed to every layer of this sweep.
         let is_first_sweep = first_sweep && !self.holders[holder].first_try;
         let (step, mut index) = if forward {
@@ -460,11 +551,108 @@ impl<'g> Hierarchy<'g> {
                     forward,
                 );
             }
+            self.sweep_in_hierarchical_nodes(holder, free, forward, first_sweep);
             index += step;
         }
         // `graphsWhoseNodeOrderChanged.add(graph)`.
         if !self.changed.contains(&holder) {
             self.changed.push(holder);
+        }
+    }
+
+    /// `sweepInHierarchicalNodes`: the nested graphs of the layer's nodes that are swept into.
+    fn sweep_in_hierarchical_nodes(
+        &mut self,
+        holder: usize,
+        layer: usize,
+        forward: bool,
+        first_sweep: bool,
+    ) {
+        let nodes = self.holders[holder].layout.order[layer].clone();
+        for node in nodes {
+            let Some(nested) = self.holders[holder].net.graph().nodes[node].nested_graph else {
+                continue;
+            };
+            let Some(nested_holder) = self.holder_of[nested] else {
+                continue;
+            };
+            if !self.holders[nested_holder].bottom_up {
+                self.sweep_in_hierarchical_node(nested_holder, holder, node, forward, first_sweep);
+            }
+        }
+    }
+
+    /// `sweepInHierarchicalNode`: the nested graph's first layer follows the node's ports, or is
+    /// ordered at random, then the nested graph is swept, and the node's ports follow the nested
+    /// graph's last layer.
+    fn sweep_in_hierarchical_node(
+        &mut self,
+        nested: usize,
+        holder: usize,
+        node: usize,
+        forward: bool,
+        first_sweep: bool,
+    ) {
+        let length = self.holders[nested].layout.order.len();
+        let start = start_index(forward, length);
+        let first_node = self.holders[nested].layout.order[start].first().copied();
+        let first_is_external = first_node.is_some_and(|first| {
+            self.holders[nested].net.node_type(first) == NodeType::EXTERNAL_PORT
+        });
+        if first_is_external {
+            let side = if forward {
+                PortSide::WEST
+            } else {
+                PortSide::EAST
+            };
+            match self.sort_port_dummies_by_port_positions(holder, node, nested, start, side) {
+                Ok(sorted) => self.holders[nested].layout.order[start] = sorted,
+                Err(error) => {
+                    self.error.get_or_insert(error);
+                }
+            }
+        } else {
+            self.set_first_layer_order(nested, forward);
+        }
+        self.sweep_reducing_crossings(nested, forward, first_sweep);
+        let order = self.holders[nested].layout.order.clone();
+        self.sort_ports_by_dummy_positions_in_last_layer(nested, &order, forward);
+    }
+
+    /// `sortPortDummiesByPortPositions`: the dummies of the hierarchical ports on `side` of the node,
+    /// in the order of its ports. The layer keeps any place the ports do not fill.
+    fn sort_port_dummies_by_port_positions(
+        &self,
+        holder: usize,
+        node: usize,
+        nested: usize,
+        layer: usize,
+        side: PortSide,
+    ) -> Result<Vec<usize>, LayoutError> {
+        let parent = &self.holders[holder];
+        let ports =
+            in_north_south_east_west_order(&parent.net, &parent.layout.node_ports[node], side);
+        let current = &self.holders[nested].layout.order[layer];
+        let dummies: Vec<usize> = ports
+            .into_iter()
+            .filter_map(|port| {
+                let data = &parent.net.graph().ports[port];
+                if data.inside_connections {
+                    data.port_dummy
+                } else {
+                    None
+                }
+            })
+            .collect();
+        if dummies.len() == current.len() {
+            Ok(dummies)
+        } else {
+            // The Java throws when there are fewer ports than dummies, and fails on more.
+            Err(LayoutError::Unsupported(format!(
+                "expected {} hierarchical ports, but found {}",
+                current.len(),
+                dummies.len()
+            )))
         }
     }
 
@@ -550,4 +738,12 @@ impl<'g> Hierarchy<'g> {
             data.best = data.currently_best.clone();
         }
     }
+}
+
+/// `hasNoWesternPorts` and `hasNoEasternPorts`: no port on the side has an edge.
+fn has_no_connected_ports(net: &Net, ports: &[usize], side: PortSide) -> bool {
+    ports
+        .iter()
+        .filter(|&&port| net.side(port) == side)
+        .all(|&port| net.degree(port) == 0)
 }
