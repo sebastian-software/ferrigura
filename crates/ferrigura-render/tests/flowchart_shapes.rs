@@ -19,6 +19,8 @@ use ferrigura_render::flowchart::shapes::{ShapeInput, ShapeOutput, draw};
 const TOLERANCE: f64 = 0.05;
 
 const FIXTURE: &str = include_str!("fixtures/flowchart-shapes.json");
+/// The stage C shapes (T3c): the shapes that stage A does not have, the icons and the images.
+const FIXTURE_T3C: &str = include_str!("fixtures/flowchart-shapes-t3c.json");
 
 /// The node of a case, as the flowchart's getData makes it: a vertex of the given shape and look,
 /// with the defaults of the flowchart (padding 15, a minimum label width of 120). An empty label
@@ -28,7 +30,16 @@ const FIXTURE: &str = include_str!("fixtures/flowchart-shapes.json");
 /// (`flowDb.ts` 1237-1257).
 fn node_of(case: &serde_json::Value) -> Node {
     let source = case["labelSource"].as_str().unwrap_or_default();
-    let label = if source.is_empty() { "A" } else { source };
+    // The directive's other properties (`icon`, `pos`, `img`, and `w` and `h` for the asset size).
+    let props = &case["props"];
+    // An empty label is the id, except on an icon or an image, where flowDb empties it
+    // (`flowDb.ts` 245-266).
+    let icon_or_image = props["icon"].is_string() || props["img"].is_string();
+    let label = if source.is_empty() && !icon_or_image {
+        "A"
+    } else {
+        source
+    };
     let collapsed = case["shape"] == "collapsed";
     Node {
         id: "A".to_owned(),
@@ -43,6 +54,11 @@ fn node_of(case: &serde_json::Value) -> Node {
         padding: if collapsed { 8.0 } else { 15.0 },
         min_width: (!collapsed).then_some(120.0),
         css_classes: "default".to_owned(),
+        icon: props["icon"].as_str().map(str::to_owned),
+        pos: props["pos"].as_str().map(str::to_owned),
+        img: props["img"].as_str().map(str::to_owned),
+        asset_width: props["w"].as_f64(),
+        asset_height: props["h"].as_f64(),
         ..Node::default()
     }
 }
@@ -461,7 +477,18 @@ fn check(case: &serde_json::Value, shape: &ShapeOutput, deviation: &mut Deviatio
 
 #[test]
 fn the_shapes_of_stage_a_match_the_reference_probe() {
-    let fixture: serde_json::Value = serde_json::from_str(FIXTURE).expect("the fixture is JSON");
+    check_fixture(FIXTURE, "stage A");
+}
+
+#[test]
+fn the_shapes_of_stage_c_match_the_reference_probe() {
+    check_fixture(FIXTURE_T3C, "stage C (T3c)");
+}
+
+/// Draws every case of a fixture and compares it with the reference's measurements.
+fn check_fixture(fixture_text: &str, stage: &str) {
+    let fixture: serde_json::Value =
+        serde_json::from_str(fixture_text).expect("the fixture is JSON");
     let cases = fixture["cases"].as_array().expect("the cases");
     assert!(!cases.is_empty(), "the fixture has cases");
     let config = MermaidConfig::default();
@@ -472,7 +499,15 @@ fn the_shapes_of_stage_a_match_the_reference_probe() {
     for case in cases {
         let node = node_of(case);
         let label_box = (!case["label"].is_null()).then(|| box_of(&case["label"]["bbox"]));
-        let layout = label_box.map(LabelLayout::of_box);
+        // An icon's or an image's label has the background group the reference measures: the
+        // box of the group is the label's box for the node.
+        let layout = label_box.map(|bbox| {
+            let mut layout = LabelLayout::of_box(bbox);
+            if !case["labelGroup"].is_null() {
+                layout.background = Some(box_of(&case["labelGroup"]));
+            }
+            layout
+        });
         let shape = match draw(&ShapeInput {
             node: &node,
             label: layout.as_ref(),
@@ -489,7 +524,7 @@ fn the_shapes_of_stage_a_match_the_reference_probe() {
         failures.extend(check(case, &shape, &mut deviation));
     }
     println!(
-        "flowchart shapes: {} cases, largest deviation {:.4} px (tolerance {TOLERANCE} px)",
+        "flowchart shapes {stage}: {} cases, largest deviation {:.4} px (tolerance {TOLERANCE} px)",
         cases.len(),
         deviation.worst
     );
