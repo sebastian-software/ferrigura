@@ -1,0 +1,2052 @@
+{
+ "version": 1,
+ "name": "flowchart__1-shapes-layout-default__0",
+ "fixture": "e2e/diagrams/flowchart/pr-check/1-shapes-layout-default.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "A",
+    "label": "Rectangle",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 45
+   },
+   {
+    "id": "B",
+    "label": "Rounded",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "roundedRect",
+    "minWidth": 120,
+    "width": 150,
+    "height": 51
+   },
+   {
+    "id": "C",
+    "label": "Stadium",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "stadium",
+    "minWidth": 120,
+    "width": 171.2268829345703,
+    "height": 45
+   },
+   {
+    "id": "D",
+    "label": "Subroutine",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "subroutine",
+    "minWidth": 120,
+    "width": 164,
+    "height": 33
+   },
+   {
+    "id": "E",
+    "label": "Database",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "cylinder",
+    "minWidth": 120,
+    "width": 144,
+    "height": 85.14869689941406
+   },
+   {
+    "id": "F",
+    "label": "Circle",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "circle",
+    "minWidth": 120,
+    "width": 73.488525390625,
+    "height": 73.488525390625
+   },
+   {
+    "id": "G",
+    "label": "Asymmetric",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "odd",
+    "minWidth": 120,
+    "width": 173.25,
+    "height": 45
+   },
+   {
+    "id": "H",
+    "label": "Decision",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "diamond",
+    "minWidth": 120,
+    "width": 171,
+    "height": 171
+   },
+   {
+    "id": "I",
+    "label": "Hexagon",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "hexagon",
+    "minWidth": 120,
+    "width": 204,
+    "height": 91
+   },
+   {
+    "id": "J",
+    "label": "Parallelogram",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "lean_right",
+    "minWidth": 120,
+    "width": 186,
+    "height": 36
+   },
+   {
+    "id": "K",
+    "label": "Parallelogram alt",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "lean_left",
+    "minWidth": 120,
+    "width": 186,
+    "height": 36
+   },
+   {
+    "id": "L",
+    "label": "Trapezoid",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "trapezoid",
+    "minWidth": 120,
+    "width": 186,
+    "height": 36
+   },
+   {
+    "id": "M",
+    "label": "Trapezoid alt",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "inv_trapezoid",
+    "minWidth": 120,
+    "width": 231,
+    "height": 51
+   },
+   {
+    "id": "N",
+    "label": "Double circle",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "doublecircle",
+    "minWidth": 120,
+    "width": 139.61746215820312,
+    "height": 139.61746215820312
+   }
+  ],
+  "edges": [
+   {
+    "id": "L_A_B_0",
+    "isUserDefinedId": false,
+    "start": "A",
+    "end": "B",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "A"
+    ],
+    "targets": [
+     "B"
+    ],
+    "sourceId": "A",
+    "targetId": "B",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_B_C_0",
+    "isUserDefinedId": false,
+    "start": "B",
+    "end": "C",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "B"
+    ],
+    "targets": [
+     "C"
+    ],
+    "sourceId": "B",
+    "targetId": "C",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_C_D_0",
+    "isUserDefinedId": false,
+    "start": "C",
+    "end": "D",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "C"
+    ],
+    "targets": [
+     "D"
+    ],
+    "sourceId": "C",
+    "targetId": "D",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_D_E_0",
+    "isUserDefinedId": false,
+    "start": "D",
+    "end": "E",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "D"
+    ],
+    "targets": [
+     "E"
+    ],
+    "sourceId": "D",
+    "targetId": "E",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_E_F_0",
+    "isUserDefinedId": false,
+    "start": "E",
+    "end": "F",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "E"
+    ],
+    "targets": [
+     "F"
+    ],
+    "sourceId": "E",
+    "targetId": "F",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_F_G_0",
+    "isUserDefinedId": false,
+    "start": "F",
+    "end": "G",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "F"
+    ],
+    "targets": [
+     "G"
+    ],
+    "sourceId": "F",
+    "targetId": "G",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_G_H_0",
+    "isUserDefinedId": false,
+    "start": "G",
+    "end": "H",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "G"
+    ],
+    "targets": [
+     "H"
+    ],
+    "sourceId": "G",
+    "targetId": "H",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_H_I_0",
+    "isUserDefinedId": false,
+    "start": "H",
+    "end": "I",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "H"
+    ],
+    "targets": [
+     "I"
+    ],
+    "sourceId": "H",
+    "targetId": "I",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_I_J_0",
+    "isUserDefinedId": false,
+    "start": "I",
+    "end": "J",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "I"
+    ],
+    "targets": [
+     "J"
+    ],
+    "sourceId": "I",
+    "targetId": "J",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_J_K_0",
+    "isUserDefinedId": false,
+    "start": "J",
+    "end": "K",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "J"
+    ],
+    "targets": [
+     "K"
+    ],
+    "sourceId": "J",
+    "targetId": "K",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_K_L_0",
+    "isUserDefinedId": false,
+    "start": "K",
+    "end": "L",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "K"
+    ],
+    "targets": [
+     "L"
+    ],
+    "sourceId": "K",
+    "targetId": "L",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_L_M_0",
+    "isUserDefinedId": false,
+    "start": "L",
+    "end": "M",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "L"
+    ],
+    "targets": [
+     "M"
+    ],
+    "sourceId": "L",
+    "targetId": "M",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_M_N_0",
+    "isUserDefinedId": false,
+    "start": "M",
+    "end": "N",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "M"
+    ],
+    "targets": [
+     "N"
+    ],
+    "sourceId": "M",
+    "targetId": "N",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "A",
+    "label": "Rectangle",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 45,
+    "x": 51.5,
+    "y": 12
+   },
+   {
+    "id": "B",
+    "label": "Rounded",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "roundedRect",
+    "minWidth": 120,
+    "width": 150,
+    "height": 51,
+    "x": 52.5,
+    "y": 97
+   },
+   {
+    "id": "C",
+    "label": "Stadium",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "stadium",
+    "minWidth": 120,
+    "width": 171.2268829345703,
+    "height": 45,
+    "x": 41.886558532714844,
+    "y": 188
+   },
+   {
+    "id": "D",
+    "label": "Subroutine",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "subroutine",
+    "minWidth": 120,
+    "width": 164,
+    "height": 33,
+    "x": 45.5,
+    "y": 273
+   },
+   {
+    "id": "E",
+    "label": "Database",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "cylinder",
+    "minWidth": 120,
+    "width": 144,
+    "height": 85.14869689941406,
+    "x": 55.5,
+    "y": 346
+   },
+   {
+    "id": "F",
+    "label": "Circle",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "circle",
+    "minWidth": 120,
+    "width": 73.488525390625,
+    "height": 73.488525390625,
+    "x": 90.7557373046875,
+    "y": 471.14869689941406
+   },
+   {
+    "id": "G",
+    "label": "Asymmetric",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "odd",
+    "minWidth": 120,
+    "width": 173.25,
+    "height": 45,
+    "x": 40.875,
+    "y": 584.6372222900391
+   },
+   {
+    "id": "H",
+    "label": "Decision",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "diamond",
+    "minWidth": 120,
+    "width": 171,
+    "height": 171,
+    "x": 42,
+    "y": 669.6372222900391
+   },
+   {
+    "id": "I",
+    "label": "Hexagon",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "hexagon",
+    "minWidth": 120,
+    "width": 204,
+    "height": 91,
+    "x": 25.5,
+    "y": 880.6372222900391
+   },
+   {
+    "id": "J",
+    "label": "Parallelogram",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "lean_right",
+    "minWidth": 120,
+    "width": 186,
+    "height": 36,
+    "x": 34.5,
+    "y": 1011.6372222900391
+   },
+   {
+    "id": "K",
+    "label": "Parallelogram alt",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "lean_left",
+    "minWidth": 120,
+    "width": 186,
+    "height": 36,
+    "x": 34.5,
+    "y": 1087.637222290039
+   },
+   {
+    "id": "L",
+    "label": "Trapezoid",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "trapezoid",
+    "minWidth": 120,
+    "width": 186,
+    "height": 36,
+    "x": 34.5,
+    "y": 1163.637222290039
+   },
+   {
+    "id": "M",
+    "label": "Trapezoid alt",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "inv_trapezoid",
+    "minWidth": 120,
+    "width": 231,
+    "height": 51,
+    "x": 12,
+    "y": 1239.637222290039
+   },
+   {
+    "id": "N",
+    "label": "Double circle",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "doublecircle",
+    "minWidth": 120,
+    "width": 139.61746215820312,
+    "height": 139.61746215820312,
+    "x": 57.69126892089844,
+    "y": 1330.637222290039
+   }
+  ],
+  "edges": [
+   {
+    "id": "L_A_B_0",
+    "isUserDefinedId": false,
+    "start": "A",
+    "end": "B",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "A"
+    ],
+    "targets": [
+     "B"
+    ],
+    "sourceId": "A",
+    "targetId": "B",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_A_B_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 57
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 97
+      },
+      "incomingShape": "A",
+      "outgoingShape": "B"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_B_C_0",
+    "isUserDefinedId": false,
+    "start": "B",
+    "end": "C",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "B"
+    ],
+    "targets": [
+     "C"
+    ],
+    "sourceId": "B",
+    "targetId": "C",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_B_C_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 148
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 188
+      },
+      "incomingShape": "B",
+      "outgoingShape": "C"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_C_D_0",
+    "isUserDefinedId": false,
+    "start": "C",
+    "end": "D",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "C"
+    ],
+    "targets": [
+     "D"
+    ],
+    "sourceId": "C",
+    "targetId": "D",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_C_D_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 233
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 273
+      },
+      "incomingShape": "C",
+      "outgoingShape": "D"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_D_E_0",
+    "isUserDefinedId": false,
+    "start": "D",
+    "end": "E",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "D"
+    ],
+    "targets": [
+     "E"
+    ],
+    "sourceId": "D",
+    "targetId": "E",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_D_E_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 306
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 346
+      },
+      "incomingShape": "D",
+      "outgoingShape": "E"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_E_F_0",
+    "isUserDefinedId": false,
+    "start": "E",
+    "end": "F",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "E"
+    ],
+    "targets": [
+     "F"
+    ],
+    "sourceId": "E",
+    "targetId": "F",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_E_F_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 431.14869689941406
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 471.14869689941406
+      },
+      "incomingShape": "E",
+      "outgoingShape": "F"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_F_G_0",
+    "isUserDefinedId": false,
+    "start": "F",
+    "end": "G",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "F"
+    ],
+    "targets": [
+     "G"
+    ],
+    "sourceId": "F",
+    "targetId": "G",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_F_G_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 544.6372222900391
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 584.6372222900391
+      },
+      "incomingShape": "F",
+      "outgoingShape": "G"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_G_H_0",
+    "isUserDefinedId": false,
+    "start": "G",
+    "end": "H",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "G"
+    ],
+    "targets": [
+     "H"
+    ],
+    "sourceId": "G",
+    "targetId": "H",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_G_H_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 629.6372222900391
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 669.6372222900391
+      },
+      "incomingShape": "G",
+      "outgoingShape": "H"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_H_I_0",
+    "isUserDefinedId": false,
+    "start": "H",
+    "end": "I",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "H"
+    ],
+    "targets": [
+     "I"
+    ],
+    "sourceId": "H",
+    "targetId": "I",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_H_I_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 840.6372222900391
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 880.6372222900391
+      },
+      "incomingShape": "H",
+      "outgoingShape": "I"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_I_J_0",
+    "isUserDefinedId": false,
+    "start": "I",
+    "end": "J",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "I"
+    ],
+    "targets": [
+     "J"
+    ],
+    "sourceId": "I",
+    "targetId": "J",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_I_J_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 971.6372222900391
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 1011.6372222900391
+      },
+      "incomingShape": "I",
+      "outgoingShape": "J"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_J_K_0",
+    "isUserDefinedId": false,
+    "start": "J",
+    "end": "K",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "J"
+    ],
+    "targets": [
+     "K"
+    ],
+    "sourceId": "J",
+    "targetId": "K",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_J_K_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 1047.637222290039
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 1087.637222290039
+      },
+      "incomingShape": "J",
+      "outgoingShape": "K"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_K_L_0",
+    "isUserDefinedId": false,
+    "start": "K",
+    "end": "L",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "K"
+    ],
+    "targets": [
+     "L"
+    ],
+    "sourceId": "K",
+    "targetId": "L",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_K_L_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 1123.637222290039
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 1163.637222290039
+      },
+      "incomingShape": "K",
+      "outgoingShape": "L"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_L_M_0",
+    "isUserDefinedId": false,
+    "start": "L",
+    "end": "M",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "L"
+    ],
+    "targets": [
+     "M"
+    ],
+    "sourceId": "L",
+    "targetId": "M",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_L_M_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 1199.637222290039
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 1239.637222290039
+      },
+      "incomingShape": "L",
+      "outgoingShape": "M"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_M_N_0",
+    "isUserDefinedId": false,
+    "start": "M",
+    "end": "N",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "M"
+    ],
+    "targets": [
+     "N"
+    ],
+    "sourceId": "M",
+    "targetId": "N",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_M_N_0_s0",
+      "startPoint": {
+       "x": 127.5,
+       "y": 1290.637222290039
+      },
+      "endPoint": {
+       "x": 127.5,
+       "y": 1330.637222290039
+      },
+      "incomingShape": "M",
+      "outgoingShape": "N"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 255,
+  "height": 1482.2546844482422
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.A ports: [p_0[n_root.A] >> 1[n_root.B]]",
+         "Layer 0: L_0[n_root.A]",
+         "Node n_root.B ports: [p_0[n_root.B] >> 1[n_root.C], p_1[n_root.B] << 0[n_root.A]]",
+         "Layer 1: L_1[n_root.B]",
+         "Node n_root.C ports: [p_0[n_root.C] >> 1[n_root.D], p_1[n_root.C] << 0[n_root.B]]",
+         "Layer 2: L_2[n_root.C]",
+         "Node n_root.D ports: [p_0[n_root.D] >> 1[n_root.E], p_1[n_root.D] << 0[n_root.C]]",
+         "Layer 3: L_3[n_root.D]",
+         "Node n_root.E ports: [p_0[n_root.E] >> 1[n_root.F], p_1[n_root.E] << 0[n_root.D]]",
+         "Layer 4: L_4[n_root.E]",
+         "Node n_root.F ports: [p_0[n_root.F] >> 1[n_root.G], p_1[n_root.F] << 0[n_root.E]]",
+         "Layer 5: L_5[n_root.F]",
+         "Node n_root.G ports: [p_0[n_root.G] >> 1[n_root.H], p_1[n_root.G] << 0[n_root.F]]",
+         "Layer 6: L_6[n_root.G]",
+         "Node n_root.H ports: [p_0[n_root.H] >> 1[n_root.I], p_1[n_root.H] << 0[n_root.G]]",
+         "Layer 7: L_7[n_root.H]",
+         "Node n_root.I ports: [p_0[n_root.I] >> 1[n_root.J], p_1[n_root.I] << 0[n_root.H]]",
+         "Layer 8: L_8[n_root.I]",
+         "Node n_root.J ports: [p_0[n_root.J] >> 1[n_root.K], p_1[n_root.J] << 0[n_root.I]]",
+         "Layer 9: L_9[n_root.J]",
+         "Node n_root.K ports: [p_0[n_root.K] >> 1[n_root.L], p_1[n_root.K] << 0[n_root.J]]",
+         "Layer 10: L_10[n_root.K]",
+         "Node n_root.L ports: [p_0[n_root.L] >> 1[n_root.M], p_1[n_root.L] << 0[n_root.K]]",
+         "Layer 11: L_11[n_root.L]",
+         "Node n_root.M ports: [p_0[n_root.M] >> 0[n_root.N], p_1[n_root.M] << 0[n_root.L]]",
+         "Layer 12: L_12[n_root.M]",
+         "Node n_root.N ports: [p_0[n_root.N] << 0[n_root.M]]",
+         "Layer 13: L_13[n_root.N]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 231",
+         "RIGHTUP size is 231",
+         "LEFTDOWN size is 231",
+         "LEFTUP size is 231",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.A, n_root.B, n_root.C, n_root.D, n_root.E, n_root.F, n_root.G, n_root.H, n_root.I, n_root.J, n_root.K, n_root.L, n_root.M, n_root.N]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

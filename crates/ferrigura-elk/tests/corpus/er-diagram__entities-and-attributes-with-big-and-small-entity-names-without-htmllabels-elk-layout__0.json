@@ -1,0 +1,409 @@
+{
+ "version": 1,
+ "name": "er-diagram__entities-and-attributes-with-big-and-small-entity-names-without-htmllabels-elk-layout__0",
+ "fixture": "e2e/diagrams/er-diagram/visual-check/entities-and-attributes-with-big-and-small-entity-names-without-htmllabels-elk-layout.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-PRIVATE_FINANCIAL_INSTITUTION-0",
+    "label": "PRIVATE_FINANCIAL_INSTITUTION",
+    "attributes": [
+     {
+      "type": "string",
+      "name": "name",
+      "keys": [],
+      "comment": ""
+     },
+     {
+      "type": "int",
+      "name": "turnover",
+      "keys": [],
+      "comment": ""
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "width": 296.90625,
+    "height": 104.25
+   },
+   {
+    "id": "entity-EMPLOYEE-1",
+    "label": "EMPLOYEE",
+    "attributes": [
+     {
+      "type": "bool",
+      "name": "officer_of_firm",
+      "keys": [],
+      "comment": ""
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "width": 177.421875,
+    "height": 69.5
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-PRIVATE_FINANCIAL_INSTITUTION-0_entity-EMPLOYEE-1_0",
+    "type": "normal",
+    "start": "entity-PRIVATE_FINANCIAL_INSTITUTION-0",
+    "end": "entity-EMPLOYEE-1",
+    "label": "employs",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "employs",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 56.140625,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-PRIVATE_FINANCIAL_INSTITUTION-0"
+    ],
+    "targets": [
+     "entity-EMPLOYEE-1"
+    ],
+    "sourceId": "entity-PRIVATE_FINANCIAL_INSTITUTION-0",
+    "targetId": "entity-EMPLOYEE-1",
+    "labels": [
+     {
+      "width": 56.140625,
+      "height": 19.999998092651367,
+      "orgWidth": 56.140625,
+      "orgHeight": 19.999998092651367,
+      "text": "employs",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-PRIVATE_FINANCIAL_INSTITUTION-0",
+    "label": "PRIVATE_FINANCIAL_INSTITUTION",
+    "attributes": [
+     {
+      "type": "string",
+      "name": "name",
+      "keys": [],
+      "comment": ""
+     },
+     {
+      "type": "int",
+      "name": "turnover",
+      "keys": [],
+      "comment": ""
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "width": 296.90625,
+    "height": 104.25,
+    "x": 12,
+    "y": 12
+   },
+   {
+    "id": "entity-EMPLOYEE-1",
+    "label": "EMPLOYEE",
+    "attributes": [
+     {
+      "type": "bool",
+      "name": "officer_of_firm",
+      "keys": [],
+      "comment": ""
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "width": 177.421875,
+    "height": 69.5,
+    "x": 71.7421875,
+    "y": 216.24999809265137
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-PRIVATE_FINANCIAL_INSTITUTION-0_entity-EMPLOYEE-1_0",
+    "type": "normal",
+    "start": "entity-PRIVATE_FINANCIAL_INSTITUTION-0",
+    "end": "entity-EMPLOYEE-1",
+    "label": "employs",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "employs",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 56.140625,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-PRIVATE_FINANCIAL_INSTITUTION-0"
+    ],
+    "targets": [
+     "entity-EMPLOYEE-1"
+    ],
+    "sourceId": "entity-PRIVATE_FINANCIAL_INSTITUTION-0",
+    "targetId": "entity-EMPLOYEE-1",
+    "labels": [
+     {
+      "width": 56.140625,
+      "height": 19.999998092651367,
+      "orgWidth": 56.140625,
+      "orgHeight": 19.999998092651367,
+      "text": "employs",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 131.953125,
+      "y": 156.25
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-PRIVATE_FINANCIAL_INSTITUTION-0_entity-EMPLOYEE-1_0_s0",
+      "startPoint": {
+       "x": 160.453125,
+       "y": 116.25
+      },
+      "endPoint": {
+       "x": 160.453125,
+       "y": 216.24999809265137
+      },
+      "incomingShape": "entity-PRIVATE_FINANCIAL_INSTITUTION-0",
+      "outgoingShape": "entity-EMPLOYEE-1"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 320.90625,
+  "height": 297.74999809265137
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.entity-PRIVATE_FINANCIAL_INSTITUTION-0 ports: [p_0[n_root.entity-PRIVATE_FINANCIAL_INSTITUTION-0] >> 1[n(label)_0]]",
+         "Layer 0: L_0[n_root.entity-PRIVATE_FINANCIAL_INSTITUTION-0]",
+         "Layer 1: L_1[n(label)_0]",
+         "Node n_root.entity-EMPLOYEE-1 ports: [p_0[n_root.entity-EMPLOYEE-1] << 0[n(label)_0]]",
+         "Layer 2: L_2[n_root.entity-EMPLOYEE-1]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 296.90625",
+         "RIGHTUP size is 296.90625",
+         "LEFTDOWN size is 296.90625",
+         "LEFTUP size is 296.90625",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.entity-PRIVATE_FINANCIAL_INSTITUTION-0, n(label)_0, n_root.entity-EMPLOYEE-1]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

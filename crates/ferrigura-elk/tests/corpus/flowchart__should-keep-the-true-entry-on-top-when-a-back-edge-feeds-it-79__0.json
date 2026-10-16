@@ -1,0 +1,1095 @@
+{
+ "version": 1,
+ "name": "flowchart__should-keep-the-true-entry-on-top-when-a-back-edge-feeds-it-79__0",
+ "fixture": "e2e/diagrams/flowchart/visual-check/should-keep-the-true-entry-on-top-when-a-back-edge-feeds-it-79.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "san_francisco",
+    "label": "Check San Francisco time",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 66
+   },
+   {
+    "id": "stockholm",
+    "label": "Check the current local time in Stockholm",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 87,
+    "layoutOptions": {
+     "elk.layered.layering.layerConstraint": "FIRST"
+    }
+   },
+   {
+    "id": "new_york",
+    "label": "Check New York time",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 66
+   },
+   {
+    "id": "decide",
+    "label": "Propose a meeting slot",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 66
+   },
+   {
+    "id": "end_decision",
+    "label": "End?",
+    "labelType": "string",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "diamond",
+    "minWidth": 120,
+    "width": 171,
+    "height": 171
+   },
+   {
+    "id": "format_json",
+    "label": "Format JSON",
+    "labelType": "string",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 45
+   }
+  ],
+  "edges": [
+   {
+    "id": "L_stockholm_new_york_0",
+    "isUserDefinedId": false,
+    "start": "stockholm",
+    "end": "new_york",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "stockholm"
+    ],
+    "targets": [
+     "new_york"
+    ],
+    "sourceId": "stockholm",
+    "targetId": "new_york",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_new_york_san_francisco_0",
+    "isUserDefinedId": false,
+    "start": "new_york",
+    "end": "san_francisco",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "new_york"
+    ],
+    "targets": [
+     "san_francisco"
+    ],
+    "sourceId": "new_york",
+    "targetId": "san_francisco",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_san_francisco_decide_0",
+    "isUserDefinedId": false,
+    "start": "san_francisco",
+    "end": "decide",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "san_francisco"
+    ],
+    "targets": [
+     "decide"
+    ],
+    "sourceId": "san_francisco",
+    "targetId": "decide",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_decide_end_decision_0",
+    "isUserDefinedId": false,
+    "start": "decide",
+    "end": "end_decision",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "decide"
+    ],
+    "targets": [
+     "end_decision"
+    ],
+    "sourceId": "decide",
+    "targetId": "end_decision",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_end_decision_format_json_0",
+    "isUserDefinedId": false,
+    "start": "end_decision",
+    "end": "format_json",
+    "type": "arrow_point",
+    "label": "Yes",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": "",
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "Yes",
+    "arrowhead": "normal",
+    "width": 22.84375,
+    "height": 21,
+    "sources": [
+     "end_decision"
+    ],
+    "targets": [
+     "format_json"
+    ],
+    "sourceId": "end_decision",
+    "targetId": "format_json",
+    "labels": [
+     {
+      "width": 22.84375,
+      "height": 21,
+      "orgWidth": 22.84375,
+      "orgHeight": 21,
+      "text": "Yes",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "L_end_decision_stockholm_0",
+    "isUserDefinedId": false,
+    "start": "end_decision",
+    "end": "stockholm",
+    "type": "arrow_point",
+    "label": "No",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": "",
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "No",
+    "arrowhead": "normal",
+    "width": 17.90625,
+    "height": 21,
+    "sources": [
+     "end_decision"
+    ],
+    "targets": [
+     "stockholm"
+    ],
+    "sourceId": "end_decision",
+    "targetId": "stockholm",
+    "labels": [
+     {
+      "width": 17.90625,
+      "height": 21,
+      "orgWidth": 17.90625,
+      "orgHeight": 21,
+      "text": "No",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "san_francisco",
+    "label": "Check San Francisco time",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 66,
+    "x": 12,
+    "y": 245
+   },
+   {
+    "id": "stockholm",
+    "label": "Check the current local time in Stockholm",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 87,
+    "layoutOptions": {
+     "elk.layered.layering.layerConstraint": "FIRST"
+    },
+    "x": 74.5,
+    "y": 12
+   },
+   {
+    "id": "new_york",
+    "label": "Check New York time",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 66,
+    "x": 12,
+    "y": 139
+   },
+   {
+    "id": "decide",
+    "label": "Propose a meeting slot",
+    "labelType": "text",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 66,
+    "x": 12,
+    "y": 351
+   },
+   {
+    "id": "end_decision",
+    "label": "End?",
+    "labelType": "string",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "diamond",
+    "minWidth": 120,
+    "width": 171,
+    "height": 171,
+    "x": 65,
+    "y": 457
+   },
+   {
+    "id": "format_json",
+    "label": "Format JSON",
+    "labelType": "string",
+    "labelStyle": "",
+    "padding": 15,
+    "cssStyles": [],
+    "cssCompiledStyles": [],
+    "cssClasses": "default ",
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "minWidth": 120,
+    "width": 152,
+    "height": 45,
+    "x": 74.5,
+    "y": 729
+   }
+  ],
+  "edges": [
+   {
+    "id": "L_stockholm_new_york_0",
+    "isUserDefinedId": false,
+    "start": "stockholm",
+    "end": "new_york",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "stockholm"
+    ],
+    "targets": [
+     "new_york"
+    ],
+    "sourceId": "stockholm",
+    "targetId": "new_york",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_stockholm_new_york_0_s0",
+      "startPoint": {
+       "x": 128.5,
+       "y": 99
+      },
+      "endPoint": {
+       "x": 88,
+       "y": 139
+      },
+      "bendPoints": [
+       {
+        "x": 128.5,
+        "y": 119
+       },
+       {
+        "x": 88,
+        "y": 119
+       }
+      ],
+      "incomingShape": "stockholm",
+      "outgoingShape": "new_york"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_new_york_san_francisco_0",
+    "isUserDefinedId": false,
+    "start": "new_york",
+    "end": "san_francisco",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "new_york"
+    ],
+    "targets": [
+     "san_francisco"
+    ],
+    "sourceId": "new_york",
+    "targetId": "san_francisco",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_new_york_san_francisco_0_s0",
+      "startPoint": {
+       "x": 88,
+       "y": 205
+      },
+      "endPoint": {
+       "x": 88,
+       "y": 245
+      },
+      "incomingShape": "new_york",
+      "outgoingShape": "san_francisco"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_san_francisco_decide_0",
+    "isUserDefinedId": false,
+    "start": "san_francisco",
+    "end": "decide",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "san_francisco"
+    ],
+    "targets": [
+     "decide"
+    ],
+    "sourceId": "san_francisco",
+    "targetId": "decide",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_san_francisco_decide_0_s0",
+      "startPoint": {
+       "x": 88,
+       "y": 311
+      },
+      "endPoint": {
+       "x": 88,
+       "y": 351
+      },
+      "incomingShape": "san_francisco",
+      "outgoingShape": "decide"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_decide_end_decision_0",
+    "isUserDefinedId": false,
+    "start": "decide",
+    "end": "end_decision",
+    "type": "arrow_point",
+    "label": "",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": [],
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "",
+    "arrowhead": "normal",
+    "sources": [
+     "decide"
+    ],
+    "targets": [
+     "end_decision"
+    ],
+    "sourceId": "decide",
+    "targetId": "end_decision",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_decide_end_decision_0_s0",
+      "startPoint": {
+       "x": 88,
+       "y": 417
+      },
+      "endPoint": {
+       "x": 125.33333333333333,
+       "y": 457
+      },
+      "bendPoints": [
+       {
+        "x": 88,
+        "y": 437
+       },
+       {
+        "x": 125.33333333333333,
+        "y": 437
+       }
+      ],
+      "incomingShape": "decide",
+      "outgoingShape": "end_decision"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_end_decision_format_json_0",
+    "isUserDefinedId": false,
+    "start": "end_decision",
+    "end": "format_json",
+    "type": "arrow_point",
+    "label": "Yes",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": "",
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "Yes",
+    "arrowhead": "normal",
+    "width": 22.84375,
+    "height": 21,
+    "sources": [
+     "end_decision"
+    ],
+    "targets": [
+     "format_json"
+    ],
+    "sourceId": "end_decision",
+    "targetId": "format_json",
+    "labels": [
+     {
+      "width": 22.84375,
+      "height": 21,
+      "orgWidth": 22.84375,
+      "orgHeight": 21,
+      "text": "Yes",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 139,
+      "y": 668
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_end_decision_format_json_0_s0",
+      "startPoint": {
+       "x": 150.5,
+       "y": 628
+      },
+      "endPoint": {
+       "x": 150.5,
+       "y": 729
+      },
+      "incomingShape": "end_decision",
+      "outgoingShape": "format_json"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "L_end_decision_stockholm_0",
+    "isUserDefinedId": false,
+    "start": "end_decision",
+    "end": "stockholm",
+    "type": "arrow_point",
+    "label": "No",
+    "labelType": "text",
+    "labelpos": "c",
+    "thickness": "normal",
+    "minlen": 1,
+    "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "arrowheadStyle": "fill: #333",
+    "cssCompiledStyles": [],
+    "labelStyle": "",
+    "style": [],
+    "pattern": "normal",
+    "look": "neo",
+    "text": "No",
+    "arrowhead": "normal",
+    "width": 17.90625,
+    "height": 21,
+    "sources": [
+     "end_decision"
+    ],
+    "targets": [
+     "stockholm"
+    ],
+    "sourceId": "end_decision",
+    "targetId": "stockholm",
+    "labels": [
+     {
+      "width": 17.90625,
+      "height": 21,
+      "orgWidth": 17.90625,
+      "orgHeight": 21,
+      "text": "No",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 204,
+      "y": 267.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "L_end_decision_stockholm_0_s0",
+      "startPoint": {
+       "x": 175.66666666666669,
+       "y": 457
+      },
+      "endPoint": {
+       "x": 172.5,
+       "y": 99
+      },
+      "bendPoints": [
+       {
+        "x": 175.66666666666669,
+        "y": 437
+       },
+       {
+        "x": 213,
+        "y": 437
+       },
+       {
+        "x": 213,
+        "y": 384
+       },
+       {
+        "x": 213,
+        "y": 172
+       },
+       {
+        "x": 213,
+        "y": 119
+       },
+       {
+        "x": 172.5,
+        "y": 119
+       }
+      ],
+      "incomingShape": "end_decision",
+      "outgoingShape": "stockholm"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 248,
+  "height": 786
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.stockholm ports: [p_0[n_root.stockholm] >> 1[n_root.new_york], p_1[n_root.stockholm] >> 1[n(long_edge)_1]]",
+         "Layer 0: L_0[n_root.stockholm]",
+         "Node n_root.new_york ports: [p_0[n_root.new_york] >> 1[n_root.san_francisco], p_1[n_root.new_york] << 0[n_root.stockholm]]",
+         "Layer 1: L_1[n_root.new_york, n(long_edge)_1]",
+         "Node n_root.san_francisco ports: [p_0[n_root.san_francisco] >> 1[n_root.decide], p_1[n_root.san_francisco] << 0[n_root.new_york]]",
+         "Layer 2: L_2[n_root.san_francisco, n(label)_1]",
+         "Node n_root.decide ports: [p_0[n_root.decide] >> 1[n_root.end_decision], p_1[n_root.decide] << 0[n_root.san_francisco]]",
+         "Layer 3: L_3[n_root.decide, n(long_edge)_1]",
+         "Node n_root.end_decision ports: [p_0[n_root.end_decision] >> 1[n(label)_0], p_1[n_root.end_decision] << 0[n(long_edge)_1], p_2[n_root.end_decision] << 0[n_root.decide]]",
+         "Layer 4: L_4[n_root.end_decision]",
+         "Layer 5: L_5[n(label)_0]",
+         "Node n_root.format_json ports: [p_0[n_root.format_json] << 0[n(label)_0]]",
+         "Layer 6: L_6[n_root.format_json]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 209.90625",
+         "RIGHTUP size is 261.33333333333337",
+         "LEFTDOWN size is 209.90625",
+         "LEFTUP size is 261.33333333333337",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.stockholm, n_root.new_york, n(long_edge)_1, n_root.san_francisco, n(label)_1, n_root.decide, n(long_edge)_1, n_root.end_decision, n(label)_0, n_root.format_json]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

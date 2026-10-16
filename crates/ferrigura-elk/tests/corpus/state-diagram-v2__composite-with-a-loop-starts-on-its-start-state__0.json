@@ -1,0 +1,1269 @@
+{
+ "version": 1,
+ "name": "state-diagram-v2__composite-with-a-loop-starts-on-its-start-state__0",
+ "fixture": "e2e/diagrams/state-diagram-v2/pr-check/composite-with-a-loop-starts-on-its-start-state.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "apa",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "apa",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 23.359375,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "stateStart",
+      "label": "apa_start",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "apa_start",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14,
+      "height": 14
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Still",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Still",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     },
+     {
+      "labelStyle": "",
+      "shape": "stateEnd",
+      "label": "apa_end",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "apa_end",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14.013293266296387,
+      "height": 14
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Moving",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Moving",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Crash",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Crash",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 23.359375,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "apa",
+      "width": 23.359375,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(31.359375, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "apa_start",
+    "end": "Still",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "apa_start"
+    ],
+    "targets": [
+     "Still"
+    ],
+    "sourceId": "apa_start",
+    "targetId": "Still",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge1",
+    "start": "Still",
+    "end": "apa_end",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Still"
+    ],
+    "targets": [
+     "apa_end"
+    ],
+    "sourceId": "Still",
+    "targetId": "apa_end",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge2",
+    "start": "Still",
+    "end": "Moving",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Still"
+    ],
+    "targets": [
+     "Moving"
+    ],
+    "sourceId": "Still",
+    "targetId": "Moving",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge3",
+    "start": "Moving",
+    "end": "Still",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Moving"
+    ],
+    "targets": [
+     "Still"
+    ],
+    "sourceId": "Moving",
+    "targetId": "Still",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge4",
+    "start": "Moving",
+    "end": "Crash",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Moving"
+    ],
+    "targets": [
+     "Crash"
+    ],
+    "sourceId": "Moving",
+    "targetId": "Crash",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge5",
+    "start": "Crash",
+    "end": "apa_end",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Crash"
+    ],
+    "targets": [
+     "apa_end"
+    ],
+    "sourceId": "Crash",
+    "targetId": "apa_end",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "apa",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "apa",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 23.359375,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "stateStart",
+      "label": "apa_start",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "apa_start",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14,
+      "height": 14,
+      "x": 97.23333333333333,
+      "y": 48
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Still",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Still",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 40.03333333333334,
+      "y": 86
+     },
+     {
+      "labelStyle": "",
+      "shape": "stateEnd",
+      "label": "apa_end",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "apa_end",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14.013293266296387,
+      "height": 14,
+      "x": 109.42890224456787,
+      "y": 353
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Moving",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Moving",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 183
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "Crash",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "Crash",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "apa",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 244
+     }
+    ],
+    "labelData": {
+     "width": 23.359375,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "apa",
+      "width": 23.359375,
+      "height": 19,
+      "x": 88.33697916666668,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(31.359375, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 12,
+    "y": 12,
+    "width": 200.03333333333336,
+    "height": 391
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "apa_start",
+    "end": "Still",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "apa_start"
+    ],
+    "targets": [
+     "Still"
+    ],
+    "sourceId": "apa_start",
+    "targetId": "Still",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge0_s0",
+      "startPoint": {
+       "x": 108.03333333333333,
+       "y": 62
+      },
+      "endPoint": {
+       "x": 108.03333333333333,
+       "y": 86
+      },
+      "incomingShape": "apa_start",
+      "outgoingShape": "Still"
+     }
+    ],
+    "container": "apa"
+   },
+   {
+    "id": "edge1",
+    "start": "Still",
+    "end": "apa_end",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Still"
+    ],
+    "targets": [
+     "apa_end"
+    ],
+    "sourceId": "Still",
+    "targetId": "apa_end",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge1_s0",
+      "startPoint": {
+       "x": 136.63333333333333,
+       "y": 123
+      },
+      "endPoint": {
+       "x": 115.17109775543213,
+       "y": 353
+      },
+      "bendPoints": [
+       {
+        "x": 136.63333333333333,
+        "y": 153
+       },
+       {
+        "x": 172,
+        "y": 153
+       },
+       {
+        "x": 172,
+        "y": 311
+       },
+       {
+        "x": 115.17109775543211,
+        "y": 311
+       }
+      ],
+      "incomingShape": "Still",
+      "outgoingShape": "apa_end"
+     }
+    ],
+    "container": "apa"
+   },
+   {
+    "id": "edge2",
+    "start": "Still",
+    "end": "Moving",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Still"
+    ],
+    "targets": [
+     "Moving"
+    ],
+    "sourceId": "Still",
+    "targetId": "Moving",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge2_s0",
+      "startPoint": {
+       "x": 108.03333333333333,
+       "y": 123
+      },
+      "endPoint": {
+       "x": 111.06666666666668,
+       "y": 183
+      },
+      "bendPoints": [
+       {
+        "x": 108.03333333333335,
+        "y": 153
+       },
+       {
+        "x": 111.06666666666668,
+        "y": 153
+       }
+      ],
+      "incomingShape": "Still",
+      "outgoingShape": "Moving"
+     }
+    ],
+    "container": "apa"
+   },
+   {
+    "id": "edge3",
+    "start": "Moving",
+    "end": "Still",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Moving"
+    ],
+    "targets": [
+     "Still"
+    ],
+    "sourceId": "Moving",
+    "targetId": "Still",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge3_s0",
+      "startPoint": {
+       "x": 72.93333333333334,
+       "y": 183
+      },
+      "endPoint": {
+       "x": 79.43333333333334,
+       "y": 123
+      },
+      "bendPoints": [
+       {
+        "x": 72.93333333333334,
+        "y": 153
+       },
+       {
+        "x": 79.43333333333334,
+        "y": 153
+       }
+      ],
+      "incomingShape": "Moving",
+      "outgoingShape": "Still"
+     }
+    ],
+    "container": "apa"
+   },
+   {
+    "id": "edge4",
+    "start": "Moving",
+    "end": "Crash",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Moving"
+    ],
+    "targets": [
+     "Crash"
+    ],
+    "sourceId": "Moving",
+    "targetId": "Crash",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge4_s0",
+      "startPoint": {
+       "x": 92,
+       "y": 220
+      },
+      "endPoint": {
+       "x": 92,
+       "y": 244
+      },
+      "incomingShape": "Moving",
+      "outgoingShape": "Crash"
+     }
+    ],
+    "container": "apa"
+   },
+   {
+    "id": "edge5",
+    "start": "Crash",
+    "end": "apa_end",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "Crash"
+    ],
+    "targets": [
+     "apa_end"
+    ],
+    "sourceId": "Crash",
+    "targetId": "apa_end",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge5_s0",
+      "startPoint": {
+       "x": 92,
+       "y": 281
+      },
+      "endPoint": {
+       "x": 117.69999999999999,
+       "y": 353
+      },
+      "bendPoints": [
+       {
+        "x": 92,
+        "y": 323
+       },
+       {
+        "x": 117.69999999999999,
+        "y": 323
+       }
+      ],
+      "incomingShape": "Crash",
+      "outgoingShape": "apa_end"
+     }
+    ],
+    "container": "apa"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 224.03333333333336,
+  "height": 415
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 149",
+       "RIGHTUP size is 187.4",
+       "LEFTDOWN size is 155.0666666666667",
+       "LEFTUP size is 156.27109775543212",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.apa.apa_start, n_root.apa.Still, n_root.apa.Moving, n(long_edge)_1, n_root.apa.Crash, n(long_edge)_1, n_root.apa.apa_end]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_apa ports: []",
+         "Layer 0: L_0[n_apa]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 200.03333333333336",
+         "RIGHTUP size is 200.03333333333336",
+         "LEFTDOWN size is 200.03333333333336",
+         "LEFTUP size is 200.03333333333336",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_apa]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

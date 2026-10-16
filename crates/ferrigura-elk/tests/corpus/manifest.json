@@ -1,0 +1,1357 @@
+{
+ "version": 1,
+ "cases": [
+  {
+   "name": "class-diagram__1-should-render-a-simple-class-diagram-with-html-labels__0",
+   "fixture": "e2e/diagrams/class-diagram/pr-check/1-should-render-a-simple-class-diagram-with-html-labels.mmd",
+   "nodes": 14,
+   "edges": 10,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__1-should-render-a-simple-class-diagram__0",
+   "fixture": "e2e/diagrams/class-diagram/pr-check/1-should-render-a-simple-class-diagram.mmd",
+   "nodes": 14,
+   "edges": 10,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__16b-should-handle-the-direction-statement-with-tb-2__0",
+   "fixture": "e2e/diagrams/class-diagram/pr-check/16b-should-handle-the-direction-statement-with-tb-2.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__16b-should-handle-the-direction-statement-with-tb__0",
+   "fixture": "e2e/diagrams/class-diagram/pr-check/16b-should-handle-the-direction-statement-with-tb.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__17b-should-handle-the-direction-statement-with-rl-2__0",
+   "fixture": "e2e/diagrams/class-diagram/pr-check/17b-should-handle-the-direction-statement-with-rl-2.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__2-should-render-a-simple-class-diagrams-with-cardinality-3__0",
+   "fixture": "e2e/diagrams/class-diagram/pr-check/2-should-render-a-simple-class-diagrams-with-cardinality-3.mmd",
+   "nodes": 12,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__5-1-should-render-a-simple-class-diagram-with-abstract-method-without-htmllabels__0",
+   "fixture": "e2e/diagrams/class-diagram/pr-check/5-1-should-render-a-simple-class-diagram-with-abstract-method-without-htmllabels.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__6-should-render-a-simple-class-diagram-with-static-method__0",
+   "fixture": "e2e/diagrams/class-diagram/pr-check/6-should-render-a-simple-class-diagram-with-static-method.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__hd-8-should-render-a-simple-class-diagram-with-generic-class-and-relations__0",
+   "fixture": "e2e/diagrams/class-diagram/pr-check/hd-8-should-render-a-simple-class-diagram-with-generic-class-and-relations.mmd",
+   "nodes": 7,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__hd-should-render-a-full-class-diagram-using-elk__0",
+   "fixture": "e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-a-full-class-diagram-using-elk.mmd",
+   "nodes": 16,
+   "edges": 11,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "class-diagram__should-render-a-full-class-diagram-using-elk__0",
+   "fixture": "e2e/diagrams/class-diagram/nightly-check/should-render-a-full-class-diagram-using-elk.mmd",
+   "nodes": 16,
+   "edges": 11,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__1433-should-render-a-simple-er-diagram-with-a-title__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/1433-should-render-a-simple-er-diagram-with-a-title.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__a-cyclical-er-diagram-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/a-cyclical-er-diagram-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__a-not-so-simple-er-diagram-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/a-not-so-simple-er-diagram-elk-layout.mmd",
+   "nodes": 7,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__a-not-so-simple-er-diagram-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/a-not-so-simple-er-diagram-without-htmllabels-elk-layout.mmd",
+   "nodes": 7,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-a-recursive-relationship-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-a-recursive-relationship-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-blank-or-empty-labels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-blank-or-empty-labels-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-bt-direction-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-bt-direction-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-lr-direction-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-lr-direction-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-multiple-relationships-between-the-same-two-entities-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-multiple-relationships-between-the-same-two-entities-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-relationships-with-unicode-text-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-relationships-with-unicode-text-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-relationships-with-unicode-text-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-relationships-with-unicode-text-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-rl-direction-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-rl-direction-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-tb-direction-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-tb-direction-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-unicode-text-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-unicode-text-elk-layout.mmd",
+   "nodes": 1,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__an-er-diagram-with-unicode-text-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-unicode-text-without-htmllabels-elk-layout.mmd",
+   "nodes": 1,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__entities-and-attributes-with-big-and-small-entity-names-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-and-attributes-with-big-and-small-entity-names-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-and-attributes-with-big-and-small-entity-names-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-and-attributes-with-big-and-small-entity-names-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-that-have-no-relationships-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-that-have-no-relationships-elk-layout.mmd",
+   "nodes": 4,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-aliases-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-aliases-elk-layout.mmd",
+   "nodes": 6,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-and-without-attributes-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-and-without-attributes-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-attributes-that-begin-with-asterisk-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-attributes-that-begin-with-asterisk-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-attributes-that-begin-with-asterisk-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-attributes-that-begin-with-asterisk-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-comments-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-comments-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-comments-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-comments-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-entity-name-aliases-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-entity-name-aliases-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-generic-and-array-attributes-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-generic-and-array-attributes-elk-layout.mmd",
+   "nodes": 1,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__entities-with-generic-and-array-attributes-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-generic-and-array-attributes-without-htmllabels-elk-layout.mmd",
+   "nodes": 1,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__entities-with-keys-and-comments-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-keys-and-comments-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-keys-and-comments-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-keys-and-comments-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-keys-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-keys-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-keys-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-keys-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__entities-with-length-in-attributes-type-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-length-in-attributes-type-elk-layout.mmd",
+   "nodes": 1,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__entities-with-length-in-attributes-type-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-length-in-attributes-type-without-htmllabels-elk-layout.mmd",
+   "nodes": 1,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__entities-with-styles-applied-from-class-statement-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-styles-applied-from-class-statement-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__entities-with-styles-applied-from-class-statement-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-styles-applied-from-class-statement-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__entities-with-styles-applied-from-style-statement-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-styles-applied-from-style-statement-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__entities-with-styles-applied-from-style-statement-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-styles-applied-from-style-statement-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__entities-with-styles-applied-from-the-default-class-and-other-styles-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-styles-applied-from-the-default-class-and-other-styles-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__er-diagram-with-edge-labels-centered-when-htmllabels-is-false-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/er-diagram-with-edge-labels-centered-when-htmllabels-is-false-elk-layout.mmd",
+   "nodes": 5,
+   "edges": 5,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__er-subgraphs-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/er-subgraphs-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 1,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__nested-er-subgraphs-with-direction-override-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/nested-er-subgraphs-with-direction-override-elk-layout.mmd",
+   "nodes": 5,
+   "edges": 2,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__relationship-labels-with-line-breaks-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/relationship-labels-with-line-breaks-elk-layout.mmd",
+   "nodes": 5,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__should-render-a-cyclical-er-diagram__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/should-render-a-cyclical-er-diagram.mmd",
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__should-render-a-not-so-simple-er-diagram__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/should-render-a-not-so-simple-er-diagram.mmd",
+   "nodes": 7,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__should-render-an-er-diagram-with-multiple-relationships-between-the-same-two-entities__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/should-render-an-er-diagram-with-multiple-relationships-between-the-same-two-entities.mmd",
+   "nodes": 2,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__should-render-complex-er-diagram-with-mixed-special-entity-names__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/should-render-complex-er-diagram-with-mixed-special-entity-names.mmd",
+   "nodes": 5,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__should-render-edge-labels-correctly-when-flowchart-htmllabels-is-false__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/should-render-edge-labels-correctly-when-flowchart-htmllabels-is-false.mmd",
+   "nodes": 5,
+   "edges": 5,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__should-render-entities-that-have-no-relationships-usemaxwidth-false__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/should-render-entities-that-have-no-relationships-usemaxwidth-false.mmd",
+   "nodes": 4,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__should-render-entities-with-comments__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/should-render-entities-with-comments.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__should-render-nested-subgraphs__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/should-render-nested-subgraphs.mmd",
+   "nodes": 4,
+   "edges": 0,
+   "compound": true,
+   "edgeLabels": false
+  },
+  {
+   "name": "er-diagram__should-render-relationships-between-subgraph-and-entity__0",
+   "fixture": "e2e/diagrams/er-diagram/pr-check/should-render-relationships-between-subgraph-and-entity.mmd",
+   "nodes": 4,
+   "edges": 1,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__simple-er-diagram-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/simple-er-diagram-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "er-diagram__simple-er-diagram-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/er-diagram/visual-check/simple-er-diagram-without-htmllabels-elk-layout.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__1-shapes-layout-default__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/1-shapes-layout-default.mmd",
+   "nodes": 14,
+   "edges": 13,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__12-should-render-a-flowchart-with-long-names-and-class-definitions__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/12-should-render-a-flowchart-with-long-names-and-class-definitions.mmd",
+   "nodes": 15,
+   "edges": 19,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__3-layout-elk-subgraphs__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/3-layout-elk-subgraphs.mmd",
+   "nodes": 9,
+   "edges": 5,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__4-classdef-style__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/4-classdef-style.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__5-icon-shape-bundled__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/5-icon-shape-bundled.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__52-handle-nested-subgraphs-in-several-levels__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/52-handle-nested-subgraphs-in-several-levels.mmd",
+   "nodes": 6,
+   "edges": 2,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__6-markdown-label-html-true__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/6-markdown-label-html-true.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__60-handle-styling-for-all-node-shapes__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/60-handle-styling-for-all-node-shapes.mmd",
+   "nodes": 10,
+   "edges": 5,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__7-markdown-label-html-false__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/7-markdown-label-html-false.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__8368-elk-label-parallel-edge__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/8368-elk-label-parallel-edge.mmd",
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__circle-content-sizing__0",
+   "fixture": "e2e/diagrams/flowchart/pr-check/circle-content-sizing.mmd",
+   "nodes": 12,
+   "edges": 9,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__elk-box-layout-with-edges__0",
+   "fixture": "e2e/diagrams/flowchart/nightly-check/elk-container-algorithms/elk-box-layout-with-edges.mmd",
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__elk-rectpacking-layout-with-edges__0",
+   "fixture": "e2e/diagrams/flowchart/nightly-check/elk-container-algorithms/elk-rectpacking-layout-with-edges.mmd",
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__elk-subgraph-with-box-algorithm__0",
+   "fixture": "e2e/diagrams/flowchart/nightly-check/elk-container-algorithms/elk-subgraph-with-box-algorithm.mmd",
+   "nodes": 6,
+   "edges": 2,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__should-keep-the-true-entry-on-top-when-a-back-edge-feeds-it-79__0",
+   "fixture": "e2e/diagrams/flowchart/visual-check/should-keep-the-true-entry-on-top-when-a-back-edge-feeds-it-79.mmd",
+   "nodes": 6,
+   "edges": 6,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "flowchart__subgraph-titles-wider-than-children__0",
+   "fixture": "e2e/diagrams/flowchart/visual-check/subgraph-titles-wider-than-children.mmd",
+   "nodes": 8,
+   "edges": 5,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__a-not-so-simple-requirement-diagram-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/a-not-so-simple-requirement-diagram-elk-layout.mmd",
+   "nodes": 9,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__a-not-so-simple-requirement-diagram-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/a-not-so-simple-requirement-diagram-without-htmllabels-elk-layout.mmd",
+   "nodes": 9,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__a-requirement-diagram-with-bt-direction-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/a-requirement-diagram-with-bt-direction-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__a-requirement-diagram-with-empty-information-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/a-requirement-diagram-with-empty-information-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "requirement__a-requirement-diagram-with-lr-direction-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/a-requirement-diagram-with-lr-direction-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__a-requirement-diagram-with-rl-direction-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/a-requirement-diagram-with-rl-direction-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__a-requirement-diagram-with-tb-direction-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/a-requirement-diagram-with-tb-direction-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__a-simple-requirement-diagram-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/a-simple-requirement-diagram-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__a-simple-requirement-diagram-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/a-simple-requirement-diagram-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__edge-labels-correctly-when-flowchart-htmllabels-is-false-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/edge-labels-correctly-when-flowchart-htmllabels-is-false-elk-layout.mmd",
+   "nodes": 4,
+   "edges": 5,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-and-without-information-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-and-without-information-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-long-and-short-text-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-long-and-short-text-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-long-and-short-text-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-long-and-short-text-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-markdown-text-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-markdown-text-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-markdown-text-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-markdown-text-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-quoted-text-for-spaces-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-quoted-text-for-spaces-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-styles-applied-from-class-statement-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-styles-applied-from-class-statement-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-styles-applied-from-class-statement-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-styles-applied-from-class-statement-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-styles-applied-from-classes-with-shorthand-syntax-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-styles-applied-from-classes-with-shorthand-syntax-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-styles-applied-from-classes-with-shorthand-syntax-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-styles-applied-from-classes-with-shorthand-syntax-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-styles-applied-from-style-statement-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-styles-applied-from-style-statement-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-styles-applied-from-style-statement-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-styles-applied-from-style-statement-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-styles-applied-from-the-default-class-and-other-styles-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-styles-applied-from-the-default-class-and-other-styles-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__requirements-and-elements-with-styles-applied-from-the-default-class-and-other-styles-without-htmllabels-elk-layout__0",
+   "fixture": "e2e/diagrams/requirement/nightly-check/requirements-and-elements-with-styles-applied-from-the-default-class-and-other-styles-without-htmllabels-elk-layout.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__sample__0",
+   "fixture": "e2e/diagrams/requirement/pr-check/sample.mmd",
+   "nodes": 5,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "requirement__should-render-a-basic-requirement-diagram-with-relationship-in-classic-look-and-default-theme__0",
+   "fixture": "e2e/diagrams/requirement/pr-check/should-render-a-basic-requirement-diagram-with-relationship-in-classic-look-and-default-theme.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__can-have-styles-applied__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/can-have-styles-applied.mmd",
+   "nodes": 1,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "state-diagram-v2__composite-with-a-loop-starts-on-its-start-state__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/composite-with-a-loop-starts-on-its-start-state.mmd",
+   "nodes": 6,
+   "edges": 6,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__elk-composite-entry-default-centering__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/nightly-check/elk/elk-composite-entry-default-centering.mmd",
+   "nodes": 12,
+   "edges": 11,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__elk-notes-keep-their-layout__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/nightly-check/elk/elk-notes-keep-their-layout.mmd",
+   "nodes": 6,
+   "edges": 3,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__elk-start-end-edge-centering__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/nightly-check/elk/elk-start-end-edge-centering.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__should-render-edge-labels-correctly-with-multiple-transitions__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/should-render-edge-labels-correctly-with-multiple-transitions.mmd",
+   "nodes": 19,
+   "edges": 17,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__v2-a-compound-state-should-be-able-to-link-to-itself__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/v2-a-compound-state-should-be-able-to-link-to-itself.mmd",
+   "nodes": 3,
+   "edges": 2,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__v2-handle-transition-from-one-state-in-a-composite-state-to-a-composite-state__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/v2-handle-transition-from-one-state-in-a-composite-state-to-a-composite-state.mmd",
+   "nodes": 5,
+   "edges": 3,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__v2-should-render-a-long-descriptions-instead-of-id-when-available__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-a-long-descriptions-instead-of-id-when-available.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__v2-should-render-a-state-with-a-note__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-a-state-with-a-note.mmd",
+   "nodes": 3,
+   "edges": 1,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__v2-should-render-composite-states__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-composite-states.mmd",
+   "nodes": 8,
+   "edges": 7,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__v2-should-render-concurrency-states__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-concurrency-states.mmd",
+   "nodes": 14,
+   "edges": 10,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram-v2__v2-states-can-have-a-class-applied__0",
+   "fixture": "e2e/diagrams/state-diagram-v2/pr-check/v2-states-can-have-a-class-applied.mmd",
+   "nodes": 4,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram__should-render-a-simple-state-diagrams-with-labels__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-a-simple-state-diagrams-with-labels.mmd",
+   "nodes": 7,
+   "edges": 7,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram__should-render-a-state-with-a-note-together-with-another-state__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-a-state-with-a-note-together-with-another-state.mmd",
+   "nodes": 6,
+   "edges": 3,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram__should-render-a-state-with-states-in-it__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-a-state-with-states-in-it.mmd",
+   "nodes": 3,
+   "edges": 0,
+   "compound": true,
+   "edgeLabels": false
+  },
+  {
+   "name": "state-diagram__should-render-a-states-with-descriptions-including-multi-line-descriptions__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-a-states-with-descriptions-including-multi-line-descriptions.mmd",
+   "nodes": 4,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram__should-render-composite-states__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-composite-states.mmd",
+   "nodes": 8,
+   "edges": 7,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram__should-render-concurrency-states__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-concurrency-states.mmd",
+   "nodes": 14,
+   "edges": 10,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram__should-render-forks-and-joins__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-forks-and-joins.mmd",
+   "nodes": 7,
+   "edges": 7,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram__should-render-forks-in-composit-states__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-forks-in-composit-states.mmd",
+   "nodes": 9,
+   "edges": 8,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram__should-render-multiple-composit-states__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-multiple-composit-states.mmd",
+   "nodes": 12,
+   "edges": 11,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "state-diagram__should-render-state-descriptions__0",
+   "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-state-descriptions.mmd",
+   "nodes": 2,
+   "edges": 1,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__components-not-separated",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__compound-edge-into-ancestor",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 2,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__compound-hierarchical-offset-order",
+   "fixture": null,
+   "nodes": 9,
+   "edges": 12,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__compound-marked-cross-hierarchy-edge",
+   "fixture": null,
+   "nodes": 12,
+   "edges": 17,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__compound-unswept-parent-port-order",
+   "fixture": null,
+   "nodes": 7,
+   "edges": 5,
+   "compound": true,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-chain-3",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-cycle-3",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-diamond-4",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-long-3",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-prefer-edges",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-prefer-nodes",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__explicit-port-marked-edge",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 7,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__explicit-port-marked-edge-on-port",
+   "fixture": null,
+   "nodes": 9,
+   "edges": 16,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__explicit-port-shared",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__explicit-ports-east-west",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__explicit-ports-fixed-side",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__explicit-ports-north-south-right",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__greedy-cycles",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 7,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__head-tail-labels-flat",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__marked-edges-root-names",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 7,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__model-order-first-try-nodes-and-edges",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__model-order-first-try-prefer-edges",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__model-order-labels-nodes-and-edges",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__model-order-labels-none",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__model-order-labels-prefer-edges",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__model-order-labels-prefer-nodes",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__nested-two-components",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 2,
+   "compound": true,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__node-labels-direction-left",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__node-labels-direction-right",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__node-labels-direction-up",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__node-labels-inside-top",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__nodes-only-1",
+   "fixture": null,
+   "nodes": 1,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__nodes-only-3",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__nodes-only-5",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 0,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__self-loops-equally-corners",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 9,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-equally-sides",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 5,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-fixed-side-opposing",
+   "fixture": null,
+   "nodes": 1,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-north-reverse-stacked",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-north-sequenced",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__self-loops-north-south-sequenced",
+   "fixture": null,
+   "nodes": 2,
+   "edges": 5,
+   "compound": false,
+   "edgeLabels": true
+  }
+ ]
+}

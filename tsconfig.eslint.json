@@ -12,6 +12,7 @@
     "./.vite/*.ts",
     "./playwright.config.ts",
     "./scripts",
+    "./crates/ferrigura-elk/tools",
     "./spikes",
     "./tools/port",
     "./crates/ferrigura-node/test",

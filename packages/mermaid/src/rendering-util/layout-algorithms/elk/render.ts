@@ -1276,6 +1276,9 @@ function setIncludeChildrenPolicy(
   }
 }
 
+/** Receives the graph elkjs was given (copied before layout) and the result. Dev tooling only. */
+type ElkCaptureHook = (input: unknown, output: unknown) => void;
+
 async function runElkLayout(
   elk: { layout: (graph: any) => Promise<ElkLayoutResult> },
   elkGraph: any,
@@ -1290,6 +1293,12 @@ async function runElkLayout(
       __mermaidProfiler?: { begin(name: string): void; end(): void };
     }
   ).__mermaidProfiler;
+  // ELK capture hook (dev / test tooling; crates/ferrigura-elk/tools/capture-corpus.ts installs it). elkjs mutates
+  // the graph it is given, so the input is copied before layout runs.
+  const elkCapture = (globalThis as typeof globalThis & { __mermaidElkCapture?: ElkCaptureHook })
+    .__mermaidElkCapture;
+  const captureInput =
+    typeof elkCapture === 'function' ? JSON.parse(JSON.stringify(elkGraph)) : undefined;
   try {
     // Time the actual external elkjs call ("layoutCore") on its own.
     profiler?.begin('layoutCore');
@@ -1303,6 +1312,9 @@ async function runElkLayout(
     // Pass the object, not a pre-serialised string: `JSON.stringify` of the
     // whole laid-out graph ran on every render regardless of log level.
     log.debug('APA01 layout result:', graph);
+    if (captureInput !== undefined && elkCapture !== undefined) {
+      elkCapture(captureInput, graph);
+    }
     return graph;
   } catch (error) {
     log.error('ELK layout error:', error);

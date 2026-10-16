@@ -74,6 +74,9 @@ mermaid-parser.tar.gz
 .fallow/
 test-results/
 .playwright-mcp/
+/.elk-src/
+
+/target/
 
 # Rust build output: the workspace, the port harness cache and the spikes
 /target
