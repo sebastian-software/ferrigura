@@ -1,1654 +1,1549 @@
 {
- "generatedBy": "crates/ferrigura-text/tests/fixtures/generate-chromium.mjs",
- "widths": [
-  {
-   "text": "office",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 38.125
-  },
-  {
-   "text": "office",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 38.046875
-  },
-  {
-   "text": "office",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 41.484375
-  },
-  {
-   "text": "office",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 42.4375
-  },
-  {
-   "text": "office",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "office",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "office",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "office",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "office",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 33.359375
-  },
-  {
-   "text": "office",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 57.171875
-  },
-  {
-   "text": "fluffy",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 33.453125
-  },
-  {
-   "text": "fluffy",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 34.25
-  },
-  {
-   "text": "fluffy",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 39.4375
-  },
-  {
-   "text": "fluffy",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 40.25
-  },
-  {
-   "text": "fluffy",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "fluffy",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "fluffy",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "fluffy",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "fluffy",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 29.265625
-  },
-  {
-   "text": "fluffy",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 50.171875
-  },
-  {
-   "text": "fjord",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 32.34375
-  },
-  {
-   "text": "fjord",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 32.53125
-  },
-  {
-   "text": "fjord",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 34.6875
-  },
-  {
-   "text": "fjord",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 35.21875
-  },
-  {
-   "text": "fjord",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 50.5625
-  },
-  {
-   "text": "fjord",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 50.5625
-  },
-  {
-   "text": "fjord",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 50.5625
-  },
-  {
-   "text": "fjord",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 50.5625
-  },
-  {
-   "text": "fjord",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 28.296875
-  },
-  {
-   "text": "fjord",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 48.515625
-  },
-  {
-   "text": "affinity",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 46.3125
-  },
-  {
-   "text": "affinity",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 46.296875
-  },
-  {
-   "text": "affinity",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 52.328125
-  },
-  {
-   "text": "affinity",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 53.734375
-  },
-  {
-   "text": "affinity",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 80.90625
-  },
-  {
-   "text": "affinity",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 80.90625
-  },
-  {
-   "text": "affinity",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 80.90625
-  },
-  {
-   "text": "affinity",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 80.90625
-  },
-  {
-   "text": "affinity",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 40.53125
-  },
-  {
-   "text": "affinity",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 69.46875
-  },
-  {
-   "text": "AVATAR",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 54.046875
-  },
-  {
-   "text": "AVATAR",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 54
-  },
-  {
-   "text": "AVATAR",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 59.703125
-  },
-  {
-   "text": "AVATAR",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 60.03125
-  },
-  {
-   "text": "AVATAR",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "AVATAR",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "AVATAR",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "AVATAR",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 60.6875
-  },
-  {
-   "text": "AVATAR",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 47.28125
-  },
-  {
-   "text": "AVATAR",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 81.0625
-  },
-  {
-   "text": "Type",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 33.3125
-  },
-  {
-   "text": "Type",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 33.296875
-  },
-  {
-   "text": "Type",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 36.59375
-  },
-  {
-   "text": "Type",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 36.65625
-  },
-  {
-   "text": "Type",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 40.453125
-  },
-  {
-   "text": "Type",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 40.453125
-  },
-  {
-   "text": "Type",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 40.453125
-  },
-  {
-   "text": "Type",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 40.453125
-  },
-  {
-   "text": "Type",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 29.15625
-  },
-  {
-   "text": "Type",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 49.96875
-  },
-  {
-   "text": "WAVE",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 40.140625
-  },
-  {
-   "text": "WAVE",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 40.234375
-  },
-  {
-   "text": "WAVE",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 43.125
-  },
-  {
-   "text": "WAVE",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 43.484375
-  },
-  {
-   "text": "WAVE",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 40.453125
-  },
-  {
-   "text": "WAVE",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 40.453125
-  },
-  {
-   "text": "WAVE",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 40.453125
-  },
-  {
-   "text": "WAVE",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 40.453125
-  },
-  {
-   "text": "WAVE",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 35.125
-  },
-  {
-   "text": "WAVE",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 60.203125
-  },
-  {
-   "text": "Yo",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 16.984375
-  },
-  {
-   "text": "Yo",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 16.953125
-  },
-  {
-   "text": "Yo",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 18.796875
-  },
-  {
-   "text": "Yo",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 19.046875
-  },
-  {
-   "text": "Yo",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "Yo",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "Yo",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "Yo",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "Yo",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 14.859375
-  },
-  {
-   "text": "Yo",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 25.46875
-  },
-  {
-   "text": "Te",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 16.1875
-  },
-  {
-   "text": "Te",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 16.234375
-  },
-  {
-   "text": "Te",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 17.5625
-  },
-  {
-   "text": "Te",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 17.578125
-  },
-  {
-   "text": "Te",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "Te",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "Te",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "Te",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "Te",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 14.15625
-  },
-  {
-   "text": "Te",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 24.265625
-  },
-  {
-   "text": "LT",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 15.890625
-  },
-  {
-   "text": "LT",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 15.921875
-  },
-  {
-   "text": "LT",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 16.8125
-  },
-  {
-   "text": "LT",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 16.90625
-  },
-  {
-   "text": "LT",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "LT",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "LT",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "LT",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 20.234375
-  },
-  {
-   "text": "LT",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 13.90625
-  },
-  {
-   "text": "LT",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 23.84375
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 280.125
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 281.59375
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 297.296875
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 300.515625
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 353.921875
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 353.921875
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 353.921875
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 353.921875
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 245.109375
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 420.171875
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 217.171875
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 220.4375
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 227.28125
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 231.921875
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 262.921875
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 262.921875
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 262.921875
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 262.921875
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 190.03125
-  },
-  {
-   "text": "0123456789 10.5% $1,000.00",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 325.765625
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 198.078125
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 198.078125
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 215.578125
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 216.5
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 293.25
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 293.25
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 293.25
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 293.25
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 173.3125
-  },
-  {
-   "text": " leading and trailing spaces ",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 297.109375
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 231.890625
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 232.046875
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 252.734375
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 256.65625
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 343.8125
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 343.8125
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 343.8125
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 343.8125
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 202.90625
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 347.84375
-  },
-  {
-   "text": "a",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 8.421875
-  },
-  {
-   "text": "a",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 8.34375
-  },
-  {
-   "text": "a",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 8.859375
-  },
-  {
-   "text": "a",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 8.734375
-  },
-  {
-   "text": "a",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 10.125
-  },
-  {
-   "text": "a",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 10.125
-  },
-  {
-   "text": "a",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 10.125
-  },
-  {
-   "text": "a",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 10.125
-  },
-  {
-   "text": "a",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 7.375
-  },
-  {
-   "text": "a",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 12.625
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 250.484375
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 251.21875
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 268.9375
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 271.203125
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 323.59375
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 323.59375
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 323.59375
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 323.59375
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 219.171875
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 375.734375
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 325.796875
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 325.75
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 354.15625
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 358
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 475.265625
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 475.265625
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 475.265625
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 475.265625
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 285.078125
-  },
-  {
-   "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 488.703125
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "sans-regular",
-   "size": 16,
-   "width": 324.578125
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "sans-italic",
-   "size": 16,
-   "width": 326.703125
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "sans-bold",
-   "size": 16,
-   "width": 356.875
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "sans-bolditalic",
-   "size": 16,
-   "width": 360.15625
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "mono-regular",
-   "size": 16,
-   "width": 465.15625
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "mono-italic",
-   "size": 16,
-   "width": 465.15625
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "mono-bold",
-   "size": 16,
-   "width": 465.15625
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "mono-bolditalic",
-   "size": 16,
-   "width": 465.15625
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "sans-regular",
-   "size": 14,
-   "width": 284.015625
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "sans-regular",
-   "size": 24,
-   "width": 486.875
-  }
- ],
- "runs": [
-  {
-   "runs": [
+  "widths": [
     {
-     "text": "A",
-     "style": "sans-regular"
+      "text": "office",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 38.125
     },
     {
-     "text": "V",
-     "style": "sans-bold"
+      "text": "office",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 38.046875
+    },
+    {
+      "text": "office",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 41.484375
+    },
+    {
+      "text": "office",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 42.4375
+    },
+    {
+      "text": "office",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "office",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "office",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "office",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "office",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 33.359375
+    },
+    {
+      "text": "office",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 57.171875
+    },
+    {
+      "text": "fluffy",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 33.453125
+    },
+    {
+      "text": "fluffy",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 34.25
+    },
+    {
+      "text": "fluffy",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 39.4375
+    },
+    {
+      "text": "fluffy",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 40.25
+    },
+    {
+      "text": "fluffy",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "fluffy",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "fluffy",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "fluffy",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "fluffy",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 29.265625
+    },
+    {
+      "text": "fluffy",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 50.171875
+    },
+    {
+      "text": "fjord",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 32.34375
+    },
+    {
+      "text": "fjord",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 32.53125
+    },
+    {
+      "text": "fjord",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 34.6875
+    },
+    {
+      "text": "fjord",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 35.21875
+    },
+    {
+      "text": "fjord",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 50.5625
+    },
+    {
+      "text": "fjord",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 50.5625
+    },
+    {
+      "text": "fjord",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 50.5625
+    },
+    {
+      "text": "fjord",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 50.5625
+    },
+    {
+      "text": "fjord",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 28.296875
+    },
+    {
+      "text": "fjord",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 48.515625
+    },
+    {
+      "text": "affinity",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 46.3125
+    },
+    {
+      "text": "affinity",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 46.296875
+    },
+    {
+      "text": "affinity",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 52.328125
+    },
+    {
+      "text": "affinity",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 53.734375
+    },
+    {
+      "text": "affinity",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 80.90625
+    },
+    {
+      "text": "affinity",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 80.90625
+    },
+    {
+      "text": "affinity",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 80.90625
+    },
+    {
+      "text": "affinity",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 80.90625
+    },
+    {
+      "text": "affinity",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 40.53125
+    },
+    {
+      "text": "affinity",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 69.46875
+    },
+    {
+      "text": "AVATAR",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 54.046875
+    },
+    {
+      "text": "AVATAR",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 54
+    },
+    {
+      "text": "AVATAR",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 59.703125
+    },
+    {
+      "text": "AVATAR",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 60.03125
+    },
+    {
+      "text": "AVATAR",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "AVATAR",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "AVATAR",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "AVATAR",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 60.6875
+    },
+    {
+      "text": "AVATAR",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 47.28125
+    },
+    {
+      "text": "AVATAR",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 81.0625
+    },
+    {
+      "text": "Type",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 33.3125
+    },
+    {
+      "text": "Type",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 33.296875
+    },
+    {
+      "text": "Type",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 36.59375
+    },
+    {
+      "text": "Type",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 36.65625
+    },
+    {
+      "text": "Type",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 40.453125
+    },
+    {
+      "text": "Type",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 40.453125
+    },
+    {
+      "text": "Type",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 40.453125
+    },
+    {
+      "text": "Type",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 40.453125
+    },
+    {
+      "text": "Type",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 29.15625
+    },
+    {
+      "text": "Type",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 49.96875
+    },
+    {
+      "text": "WAVE",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 40.140625
+    },
+    {
+      "text": "WAVE",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 40.234375
+    },
+    {
+      "text": "WAVE",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 43.125
+    },
+    {
+      "text": "WAVE",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 43.484375
+    },
+    {
+      "text": "WAVE",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 40.453125
+    },
+    {
+      "text": "WAVE",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 40.453125
+    },
+    {
+      "text": "WAVE",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 40.453125
+    },
+    {
+      "text": "WAVE",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 40.453125
+    },
+    {
+      "text": "WAVE",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 35.125
+    },
+    {
+      "text": "WAVE",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 60.203125
+    },
+    {
+      "text": "Yo",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 16.984375
+    },
+    {
+      "text": "Yo",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 16.953125
+    },
+    {
+      "text": "Yo",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 18.796875
+    },
+    {
+      "text": "Yo",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 19.046875
+    },
+    {
+      "text": "Yo",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "Yo",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "Yo",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "Yo",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "Yo",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 14.859375
+    },
+    {
+      "text": "Yo",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 25.46875
+    },
+    {
+      "text": "Te",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 16.1875
+    },
+    {
+      "text": "Te",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 16.234375
+    },
+    {
+      "text": "Te",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 17.5625
+    },
+    {
+      "text": "Te",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 17.578125
+    },
+    {
+      "text": "Te",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "Te",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "Te",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "Te",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "Te",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 14.15625
+    },
+    {
+      "text": "Te",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 24.265625
+    },
+    {
+      "text": "LT",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 15.890625
+    },
+    {
+      "text": "LT",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 15.921875
+    },
+    {
+      "text": "LT",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 16.8125
+    },
+    {
+      "text": "LT",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 16.90625
+    },
+    {
+      "text": "LT",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "LT",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "LT",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "LT",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 20.234375
+    },
+    {
+      "text": "LT",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 13.90625
+    },
+    {
+      "text": "LT",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 23.84375
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 280.125
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 281.59375
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 297.296875
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 300.515625
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 353.921875
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 353.921875
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 353.921875
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 353.921875
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 245.109375
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 420.171875
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 217.171875
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 220.4375
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 227.28125
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 231.921875
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 262.921875
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 262.921875
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 262.921875
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 262.921875
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 190.03125
+    },
+    {
+      "text": "0123456789 10.5% $1,000.00",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 325.765625
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 198.078125
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 198.078125
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 215.578125
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 216.5
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 293.25
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 293.25
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 293.25
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 293.25
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 173.3125
+    },
+    {
+      "text": " leading and trailing spaces ",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 297.109375
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 231.890625
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 232.046875
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 252.734375
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 256.65625
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 343.8125
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 343.8125
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 343.8125
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 343.8125
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 202.90625
+    },
+    {
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 347.84375
+    },
+    {
+      "text": "a",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 8.421875
+    },
+    {
+      "text": "a",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 8.34375
+    },
+    {
+      "text": "a",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 8.859375
+    },
+    {
+      "text": "a",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 8.734375
+    },
+    {
+      "text": "a",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 10.125
+    },
+    {
+      "text": "a",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 10.125
+    },
+    {
+      "text": "a",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 10.125
+    },
+    {
+      "text": "a",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 10.125
+    },
+    {
+      "text": "a",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 7.375
+    },
+    {
+      "text": "a",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 12.625
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 250.484375
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 251.21875
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 268.9375
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 271.203125
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 323.59375
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 323.59375
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 323.59375
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 323.59375
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 219.171875
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 375.734375
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 325.796875
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 325.75
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 354.15625
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 358
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 475.265625
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 475.265625
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 475.265625
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 475.265625
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 285.078125
+    },
+    {
+      "text": "Mixed: punctuation, (brackets) [and] {braces}!?",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 488.703125
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "sans-regular",
+      "size": 16,
+      "width": 324.578125
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "sans-italic",
+      "size": 16,
+      "width": 326.703125
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "sans-bold",
+      "size": 16,
+      "width": 356.875
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "sans-bolditalic",
+      "size": 16,
+      "width": 360.15625
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "mono-regular",
+      "size": 16,
+      "width": 465.15625
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "mono-italic",
+      "size": 16,
+      "width": 465.15625
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "mono-bold",
+      "size": 16,
+      "width": 465.15625
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "mono-bolditalic",
+      "size": 16,
+      "width": 465.15625
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "sans-regular",
+      "size": 14,
+      "width": 284.015625
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "sans-regular",
+      "size": 24,
+      "width": 486.875
     }
-   ],
-   "size": 16,
-   "width": 20.53125
-  },
-  {
-   "runs": [
+  ],
+  "runs": [
     {
-     "text": "Type ",
-     "style": "sans-regular"
+      "runs": [
+        {
+          "text": "A",
+          "style": "sans-regular"
+        },
+        {
+          "text": "V",
+          "style": "sans-bold"
+        }
+      ],
+      "size": 16,
+      "width": 20.53125
     },
     {
-     "text": "WAVE",
-     "style": "sans-bold"
+      "runs": [
+        {
+          "text": "Type ",
+          "style": "sans-regular"
+        },
+        {
+          "text": "WAVE",
+          "style": "sans-bold"
+        }
+      ],
+      "size": 16,
+      "width": 80.921875
+    },
+    {
+      "runs": [
+        {
+          "text": "Te",
+          "style": "sans-regular"
+        },
+        {
+          "text": "st",
+          "style": "sans-italic"
+        },
+        {
+          "text": "LT",
+          "style": "sans-bolditalic"
+        }
+      ],
+      "size": 16,
+      "width": 45.953125
+    },
+    {
+      "runs": [
+        {
+          "text": "office ",
+          "style": "sans-regular"
+        },
+        {
+          "text": "fluffy",
+          "style": "sans-bold"
+        }
+      ],
+      "size": 16,
+      "width": 82.03125
+    },
+    {
+      "runs": [
+        {
+          "text": "Mixed ",
+          "style": "sans-regular"
+        },
+        {
+          "text": "bold",
+          "style": "sans-bold"
+        },
+        {
+          "text": " and ",
+          "style": "sans-regular"
+        },
+        {
+          "text": "italic",
+          "style": "sans-italic"
+        },
+        {
+          "text": " end",
+          "style": "sans-regular"
+        }
+      ],
+      "size": 16,
+      "width": 179.875
+    },
+    {
+      "runs": [
+        {
+          "text": "AVATAR ",
+          "style": "mono-regular"
+        },
+        {
+          "text": "Type",
+          "style": "mono-bold"
+        }
+      ],
+      "size": 16,
+      "width": 111.25
+    },
+    {
+      "runs": [
+        {
+          "text": "Mixed",
+          "style": "sans-regular"
+        },
+        {
+          "text": " bold",
+          "style": "sans-bold"
+        },
+        {
+          "text": " and",
+          "style": "sans-regular"
+        },
+        {
+          "text": " italic",
+          "style": "sans-italic"
+        },
+        {
+          "text": " end",
+          "style": "sans-regular"
+        }
+      ],
+      "size": 16,
+      "width": 180.515625
     }
-   ],
-   "size": 16,
-   "width": 80.921875
-  },
-  {
-   "runs": [
+  ],
+  "wraps": [
     {
-     "text": "Te",
-     "style": "sans-regular"
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 80,
+      "lines": ["Supercalifr", "agilisticex", "pialidociou", "s"]
     },
     {
-     "text": "st",
-     "style": "sans-italic"
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 140,
+      "lines": ["Supercalifragilistice", "xpialidocious"]
     },
     {
-     "text": "LT",
-     "style": "sans-bolditalic"
+      "text": "Supercalifragilisticexpialidocious",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 200,
+      "lines": ["Supercalifragilisticexpialido", "cious"]
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 80,
+      "lines": ["CamelCase", "IdentifierW", "ithoutSpac", "es"]
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 140,
+      "lines": ["CamelCaseIdentifie", "rWithoutSpaces"]
+    },
+    {
+      "text": "CamelCaseIdentifierWithoutSpaces",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 200,
+      "lines": ["CamelCaseIdentifierWithout", "Spaces"]
+    },
+    {
+      "text": "The quick brown fox jumps over the lazy dog",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 80,
+      "lines": ["The quick", "brown fox", "jumps over", "the lazy", "dog"]
+    },
+    {
+      "text": "The quick brown fox jumps over the lazy dog",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 140,
+      "lines": ["The quick brown", "fox jumps over the", "lazy dog"]
+    },
+    {
+      "text": "The quick brown fox jumps over the lazy dog",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 200,
+      "lines": ["The quick brown fox jumps", "over the lazy dog"]
+    },
+    {
+      "text": "Data flow: user submits form, system validates input",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 80,
+      "lines": ["Data flow:", "user", "submits", "form,", "system", "validates", "input"]
+    },
+    {
+      "text": "Data flow: user submits form, system validates input",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 140,
+      "lines": ["Data flow: user", "submits form,", "system validates", "input"]
+    },
+    {
+      "text": "Data flow: user submits form, system validates input",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 200,
+      "lines": ["Data flow: user submits", "form, system validates input"]
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 80,
+      "lines": ["Größenänd", "erung", "Übermaß", "Ärger", "öffnen"]
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 140,
+      "lines": ["Größenänderung", "Übermaß Ärger", "öffnen"]
+    },
+    {
+      "text": "Größenänderung Übermaß Ärger öffnen",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 200,
+      "lines": ["Größenänderung Übermaß", "Ärger öffnen"]
+    },
+    {
+      "text": "a b c d e f g h i j k l m n o p",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 80,
+      "lines": ["a b c d e f", "g h i j k l m", "n o p"]
+    },
+    {
+      "text": "a b c d e f g h i j k l m n o p",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 140,
+      "lines": ["a b c d e f g h i j k l", "m n o p"]
+    },
+    {
+      "text": "a b c d e f g h i j k l m n o p",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 200,
+      "lines": ["a b c d e f g h i j k l m n o p"]
+    },
+    {
+      "text": "office fluffy fjord affinity",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 80,
+      "lines": ["office fluffy", "fjord", "affinity"]
+    },
+    {
+      "text": "office fluffy fjord affinity",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 140,
+      "lines": ["office fluffy fjord", "affinity"]
+    },
+    {
+      "text": "office fluffy fjord affinity",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 200,
+      "lines": ["office fluffy fjord affinity"]
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 80,
+      "lines": ["Données", "français:", "«guillemet", "s» — tirets", "– et …"]
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 140,
+      "lines": ["Données français:", "«guillemets» —", "tirets – et …"]
+    },
+    {
+      "text": "Données français: «guillemets» — tirets – et …",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 200,
+      "lines": ["Données français:", "«guillemets» — tirets – et …"]
+    },
+    {
+      "text": " leading   and double  spaces ",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 80,
+      "lines": ["leading", "and double", "spaces"]
+    },
+    {
+      "text": " leading   and double  spaces ",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 140,
+      "lines": ["leading and double", "spaces"]
+    },
+    {
+      "text": " leading   and double  spaces ",
+      "style": "sans-regular",
+      "size": 16,
+      "wrapWidth": 200,
+      "lines": ["leading and double spaces"]
     }
-   ],
-   "size": 16,
-   "width": 45.953125
-  },
-  {
-   "runs": [
+  ],
+  "boxes": [
     {
-     "text": "office ",
-     "style": "sans-regular"
+      "style": "sans-regular",
+      "size": 14,
+      "ascent": 13,
+      "descent": 4
     },
     {
-     "text": "fluffy",
-     "style": "sans-bold"
+      "style": "sans-regular",
+      "size": 16,
+      "ascent": 15,
+      "descent": 5
+    },
+    {
+      "style": "sans-regular",
+      "size": 24,
+      "ascent": 23,
+      "descent": 7
+    },
+    {
+      "style": "sans-italic",
+      "size": 14,
+      "ascent": 13,
+      "descent": 4
+    },
+    {
+      "style": "sans-italic",
+      "size": 16,
+      "ascent": 15,
+      "descent": 5
+    },
+    {
+      "style": "sans-italic",
+      "size": 24,
+      "ascent": 23,
+      "descent": 7
+    },
+    {
+      "style": "sans-bold",
+      "size": 14,
+      "ascent": 13,
+      "descent": 4
+    },
+    {
+      "style": "sans-bold",
+      "size": 16,
+      "ascent": 15,
+      "descent": 5
+    },
+    {
+      "style": "sans-bold",
+      "size": 24,
+      "ascent": 23,
+      "descent": 7
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 14,
+      "ascent": 13,
+      "descent": 4
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 16,
+      "ascent": 15,
+      "descent": 5
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 24,
+      "ascent": 23,
+      "descent": 7
+    },
+    {
+      "style": "mono-regular",
+      "size": 14,
+      "ascent": 14,
+      "descent": 4
+    },
+    {
+      "style": "mono-regular",
+      "size": 16,
+      "ascent": 16,
+      "descent": 5
+    },
+    {
+      "style": "mono-regular",
+      "size": 24,
+      "ascent": 24,
+      "descent": 8
+    },
+    {
+      "style": "mono-italic",
+      "size": 14,
+      "ascent": 14,
+      "descent": 4
+    },
+    {
+      "style": "mono-italic",
+      "size": 16,
+      "ascent": 16,
+      "descent": 5
+    },
+    {
+      "style": "mono-italic",
+      "size": 24,
+      "ascent": 24,
+      "descent": 8
+    },
+    {
+      "style": "mono-bold",
+      "size": 14,
+      "ascent": 14,
+      "descent": 4
+    },
+    {
+      "style": "mono-bold",
+      "size": 16,
+      "ascent": 16,
+      "descent": 5
+    },
+    {
+      "style": "mono-bold",
+      "size": 24,
+      "ascent": 24,
+      "descent": 8
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 14,
+      "ascent": 14,
+      "descent": 4
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 16,
+      "ascent": 16,
+      "descent": 5
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 24,
+      "ascent": 24,
+      "descent": 8
     }
-   ],
-   "size": 16,
-   "width": 82.03125
-  },
-  {
-   "runs": [
-    {
-     "text": "Mixed ",
-     "style": "sans-regular"
-    },
-    {
-     "text": "bold",
-     "style": "sans-bold"
-    },
-    {
-     "text": " and ",
-     "style": "sans-regular"
-    },
-    {
-     "text": "italic",
-     "style": "sans-italic"
-    },
-    {
-     "text": " end",
-     "style": "sans-regular"
-    }
-   ],
-   "size": 16,
-   "width": 179.875
-  },
-  {
-   "runs": [
-    {
-     "text": "AVATAR ",
-     "style": "mono-regular"
-    },
-    {
-     "text": "Type",
-     "style": "mono-bold"
-    }
-   ],
-   "size": 16,
-   "width": 111.25
-  },
-  {
-   "runs": [
-    {
-     "text": "Mixed",
-     "style": "sans-regular"
-    },
-    {
-     "text": " bold",
-     "style": "sans-bold"
-    },
-    {
-     "text": " and",
-     "style": "sans-regular"
-    },
-    {
-     "text": " italic",
-     "style": "sans-italic"
-    },
-    {
-     "text": " end",
-     "style": "sans-regular"
-    }
-   ],
-   "size": 16,
-   "width": 180.515625
-  }
- ],
- "wraps": [
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 80,
-   "lines": [
-    "Supercalifr",
-    "agilisticex",
-    "pialidociou",
-    "s"
-   ]
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 140,
-   "lines": [
-    "Supercalifragilistice",
-    "xpialidocious"
-   ]
-  },
-  {
-   "text": "Supercalifragilisticexpialidocious",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 200,
-   "lines": [
-    "Supercalifragilisticexpialido",
-    "cious"
-   ]
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 80,
-   "lines": [
-    "CamelCase",
-    "IdentifierW",
-    "ithoutSpac",
-    "es"
-   ]
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 140,
-   "lines": [
-    "CamelCaseIdentifie",
-    "rWithoutSpaces"
-   ]
-  },
-  {
-   "text": "CamelCaseIdentifierWithoutSpaces",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 200,
-   "lines": [
-    "CamelCaseIdentifierWithout",
-    "Spaces"
-   ]
-  },
-  {
-   "text": "The quick brown fox jumps over the lazy dog",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 80,
-   "lines": [
-    "The quick",
-    "brown fox",
-    "jumps over",
-    "the lazy",
-    "dog"
-   ]
-  },
-  {
-   "text": "The quick brown fox jumps over the lazy dog",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 140,
-   "lines": [
-    "The quick brown",
-    "fox jumps over the",
-    "lazy dog"
-   ]
-  },
-  {
-   "text": "The quick brown fox jumps over the lazy dog",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 200,
-   "lines": [
-    "The quick brown fox jumps",
-    "over the lazy dog"
-   ]
-  },
-  {
-   "text": "Data flow: user submits form, system validates input",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 80,
-   "lines": [
-    "Data flow:",
-    "user",
-    "submits",
-    "form,",
-    "system",
-    "validates",
-    "input"
-   ]
-  },
-  {
-   "text": "Data flow: user submits form, system validates input",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 140,
-   "lines": [
-    "Data flow: user",
-    "submits form,",
-    "system validates",
-    "input"
-   ]
-  },
-  {
-   "text": "Data flow: user submits form, system validates input",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 200,
-   "lines": [
-    "Data flow: user submits",
-    "form, system validates input"
-   ]
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 80,
-   "lines": [
-    "Größenänd",
-    "erung",
-    "Übermaß",
-    "Ärger",
-    "öffnen"
-   ]
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 140,
-   "lines": [
-    "Größenänderung",
-    "Übermaß Ärger",
-    "öffnen"
-   ]
-  },
-  {
-   "text": "Größenänderung Übermaß Ärger öffnen",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 200,
-   "lines": [
-    "Größenänderung Übermaß",
-    "Ärger öffnen"
-   ]
-  },
-  {
-   "text": "a b c d e f g h i j k l m n o p",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 80,
-   "lines": [
-    "a b c d e f",
-    "g h i j k l m",
-    "n o p"
-   ]
-  },
-  {
-   "text": "a b c d e f g h i j k l m n o p",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 140,
-   "lines": [
-    "a b c d e f g h i j k l",
-    "m n o p"
-   ]
-  },
-  {
-   "text": "a b c d e f g h i j k l m n o p",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 200,
-   "lines": [
-    "a b c d e f g h i j k l m n o p"
-   ]
-  },
-  {
-   "text": "office fluffy fjord affinity",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 80,
-   "lines": [
-    "office fluffy",
-    "fjord",
-    "affinity"
-   ]
-  },
-  {
-   "text": "office fluffy fjord affinity",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 140,
-   "lines": [
-    "office fluffy fjord",
-    "affinity"
-   ]
-  },
-  {
-   "text": "office fluffy fjord affinity",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 200,
-   "lines": [
-    "office fluffy fjord affinity"
-   ]
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 80,
-   "lines": [
-    "Données",
-    "français:",
-    "«guillemet",
-    "s» — tirets",
-    "– et …"
-   ]
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 140,
-   "lines": [
-    "Données français:",
-    "«guillemets» —",
-    "tirets – et …"
-   ]
-  },
-  {
-   "text": "Données français: «guillemets» — tirets – et …",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 200,
-   "lines": [
-    "Données français:",
-    "«guillemets» — tirets – et …"
-   ]
-  },
-  {
-   "text": " leading   and double  spaces ",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 80,
-   "lines": [
-    "leading",
-    "and double",
-    "spaces"
-   ]
-  },
-  {
-   "text": " leading   and double  spaces ",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 140,
-   "lines": [
-    "leading and double",
-    "spaces"
-   ]
-  },
-  {
-   "text": " leading   and double  spaces ",
-   "style": "sans-regular",
-   "size": 16,
-   "wrapWidth": 200,
-   "lines": [
-    "leading and double spaces"
-   ]
-  }
- ],
- "boxes": [
-  {
-   "style": "sans-regular",
-   "size": 14,
-   "ascent": 13,
-   "descent": 4
-  },
-  {
-   "style": "sans-regular",
-   "size": 16,
-   "ascent": 15,
-   "descent": 5
-  },
-  {
-   "style": "sans-regular",
-   "size": 24,
-   "ascent": 23,
-   "descent": 7
-  },
-  {
-   "style": "sans-italic",
-   "size": 14,
-   "ascent": 13,
-   "descent": 4
-  },
-  {
-   "style": "sans-italic",
-   "size": 16,
-   "ascent": 15,
-   "descent": 5
-  },
-  {
-   "style": "sans-italic",
-   "size": 24,
-   "ascent": 23,
-   "descent": 7
-  },
-  {
-   "style": "sans-bold",
-   "size": 14,
-   "ascent": 13,
-   "descent": 4
-  },
-  {
-   "style": "sans-bold",
-   "size": 16,
-   "ascent": 15,
-   "descent": 5
-  },
-  {
-   "style": "sans-bold",
-   "size": 24,
-   "ascent": 23,
-   "descent": 7
-  },
-  {
-   "style": "sans-bolditalic",
-   "size": 14,
-   "ascent": 13,
-   "descent": 4
-  },
-  {
-   "style": "sans-bolditalic",
-   "size": 16,
-   "ascent": 15,
-   "descent": 5
-  },
-  {
-   "style": "sans-bolditalic",
-   "size": 24,
-   "ascent": 23,
-   "descent": 7
-  },
-  {
-   "style": "mono-regular",
-   "size": 14,
-   "ascent": 14,
-   "descent": 4
-  },
-  {
-   "style": "mono-regular",
-   "size": 16,
-   "ascent": 16,
-   "descent": 5
-  },
-  {
-   "style": "mono-regular",
-   "size": 24,
-   "ascent": 24,
-   "descent": 8
-  },
-  {
-   "style": "mono-italic",
-   "size": 14,
-   "ascent": 14,
-   "descent": 4
-  },
-  {
-   "style": "mono-italic",
-   "size": 16,
-   "ascent": 16,
-   "descent": 5
-  },
-  {
-   "style": "mono-italic",
-   "size": 24,
-   "ascent": 24,
-   "descent": 8
-  },
-  {
-   "style": "mono-bold",
-   "size": 14,
-   "ascent": 14,
-   "descent": 4
-  },
-  {
-   "style": "mono-bold",
-   "size": 16,
-   "ascent": 16,
-   "descent": 5
-  },
-  {
-   "style": "mono-bold",
-   "size": 24,
-   "ascent": 24,
-   "descent": 8
-  },
-  {
-   "style": "mono-bolditalic",
-   "size": 14,
-   "ascent": 14,
-   "descent": 4
-  },
-  {
-   "style": "mono-bolditalic",
-   "size": 16,
-   "ascent": 16,
-   "descent": 5
-  },
-  {
-   "style": "mono-bolditalic",
-   "size": 24,
-   "ascent": 24,
-   "descent": 8
-  }
- ]
+  ]
 }
