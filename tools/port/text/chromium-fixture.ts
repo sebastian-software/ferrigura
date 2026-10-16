@@ -7,10 +7,13 @@
  * values and exits non-zero instead of writing.
  *
  * Widths are the drawn extent of a `<text>` element: from the start of its first character to the
- * end of its last one. Box metrics are the canvas font bounding box, rounded to whole pixels. Wrapped
- * lines run Mermaid's `splitLineToFitWidth` (`packages/mermaid/src/rendering-util/splitText.ts`) in
- * the page, with the width of a candidate line measured in SVG. `getComputedTextLength` is used
- * only here, in Chromium; WebKit reports widths without kerning through it, so no check in WebKit uses it.
+ * end of its last one. Box metrics are read from `getBBox` of a `<text>` at a known baseline: the box
+ * top gives the ascent and the box height gives the descent. The canvas font bounding box must give
+ * the same whole pixels, and the run fails if it does not. Chromium sets SVG text at the size floored
+ * to 1/100 px, so the fixture's fractional sizes check that as well. Wrapped lines run Mermaid's
+ * `splitLineToFitWidth` (`packages/mermaid/src/rendering-util/splitText.ts`) in the page, with the
+ * width of a candidate line measured in SVG. `getComputedTextLength` is used only here, in Chromium;
+ * WebKit reports widths without kerning through it, so no check in WebKit uses it.
  *
  * Usage: `pnpm exec tsx tools/port/text/chromium-fixture.ts [--check]`
  */
@@ -172,11 +175,21 @@ function wrapText(text, size, style, wrapWidth) {
   return splitLineToFitWidth(words, checkFit).map((line) => line.map((word) => word.content).join(' '));
 }
 
+/** The ascent and descent of a face at a size, from the box of a \`<text>\` whose baseline is at y = 100. */
 function boxMetrics(style, size) {
+  const baseline = 100;
+  const { svg, text } = svgText([{ text: 'Hxg', style: null }], size, style);
+  const box = text.getBBox();
+  svg.remove();
+  const ascent = baseline - box.y;
+  const descent = box.height - ascent;
   const context = document.createElement('canvas').getContext('2d');
   context.font = size + 'px ft-' + style;
-  const metrics = context.measureText('x');
-  return { ascent: Math.round(metrics.fontBoundingBoxAscent), descent: Math.round(metrics.fontBoundingBoxDescent) };
+  const metrics = context.measureText('Hxg');
+  if (metrics.fontBoundingBoxAscent !== ascent || metrics.fontBoundingBoxDescent !== descent) {
+    throw new Error('canvas and SVG boxes differ for ' + style + ' at ' + size + 'px');
+  }
+  return { ascent, descent };
 }
 `;
 

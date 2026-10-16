@@ -31,7 +31,11 @@ fn text_box_matches_chromium_for_every_face_and_size() {
             "{style} {size}px height"
         );
     }
-    assert_eq!(boxes.len(), 24, "three sizes for each of the eight faces");
+    assert_eq!(
+        boxes.len(),
+        230,
+        "the eight faces at the key sizes, the regular faces at 2 to 60 px, and fractional sizes"
+    );
 }
 
 #[test]
