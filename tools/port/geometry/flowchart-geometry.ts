@@ -406,6 +406,11 @@ function exclusionReason(source: string): string | null {
   if (typeof layout === 'string' && NON_LAYERED_LAYOUTS.includes(layout)) {
     return `layout ${layout}: not layered, ferrigura falls back to layered`;
   }
+  // Scripts the bundled faces do not cover need a fallback font, which ferrigura does not have
+  // yet (STATUS.md, open since M2); the reference draws them in a system font.
+  if (/[\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF]/.test(source)) {
+    return 'CJK text: needs a fallback font, which ferrigura does not have yet';
+  }
   // A subgraph's own algorithm, from its shape data (`grp@{ algorithm: elk.box }`).
   for (const match of source.matchAll(/algorithm\s*:\s*["']?([\w.-]+)/g)) {
     if (NON_LAYERED_LAYOUTS.includes(match[1])) {
