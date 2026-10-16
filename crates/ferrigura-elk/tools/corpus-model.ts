@@ -211,6 +211,103 @@ export function syntheticComponentGraphs(): { name: string; graph: Record<string
 }
 
 /**
+ * The fan of `syntheticEdgeGraphs` with labels on some of its edges, under each model order
+ * strategy. The labels add dummies to the layers, and the model order decides the order of the
+ * ports and nodes that the greedy switch then works on.
+ */
+export function syntheticModelOrderLabelGraphs(): {
+  name: string;
+  graph: Record<string, unknown>;
+}[] {
+  const ids = ['n0', 'n1', 'n2', 'n3', 'n4'];
+  const pairs: [string, string][] = [
+    ['n0', 'n1'],
+    ['n0', 'n2'],
+    ['n0', 'n3'],
+    ['n1', 'n4'],
+    ['n2', 'n4'],
+    ['n3', 'n4'],
+    ['n0', 'n4'],
+    ['n0', 'n4'],
+  ];
+  const labelled = new Set([0, 3, 6]);
+  const graph = (strategy: string): Record<string, unknown> => ({
+    id: 'root',
+    layoutOptions: {
+      ...rootLayoutOptionsDefault(),
+      'elk.layered.considerModelOrder.strategy': strategy,
+    },
+    children: ids.map((id) => ({ id, width: 50, height: 40 })),
+    edges: pairs.map(([source, target], index) => ({
+      id: `e${index}`,
+      sources: [source],
+      targets: [target],
+      ...(labelled.has(index)
+        ? {
+            labels: [
+              {
+                text: `l${index}`,
+                width: 20 + index,
+                height: 10,
+                layoutOptions: { 'elk.edgeLabels.placement': 'CENTER' },
+              },
+            ],
+          }
+        : {}),
+    })),
+  });
+  return ['NONE', 'NODES_AND_EDGES', 'PREFER_EDGES', 'PREFER_NODES'].map((strategy) => ({
+    name: `synthetic__model-order-labels-${strategy.toLowerCase().replace(/_/g, '-')}`,
+    graph: graph(strategy),
+  }));
+}
+
+/**
+ * Two nodes in each of two layers, with three edges from one node and one from the other, under the
+ * model order strategies that compare ports by their edges (NODES_AND_EDGES, PREFER_EDGES). The
+ * sweep takes its first attempt with the initial order, and the random seed decides the next
+ * attempts: seed 3 gives a different layout from the one elkjs gives under seed 1.
+ */
+export function syntheticModelOrderFirstTryGraphs(): {
+  name: string;
+  graph: Record<string, unknown>;
+}[] {
+  const graph = (strategy: string): Record<string, unknown> => ({
+    id: 'root',
+    layoutOptions: {
+      'elk.hierarchyHandling': 'SEPARATE_CHILDREN',
+      'elk.algorithm': 'elk.layered',
+      'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+      'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+      'elk.direction': 'RIGHT',
+      'spacing.baseValue': 40,
+      'elk.layered.unnecessaryBendpoints': true,
+      'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
+      'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+      'elk.layered.mergeEdges': false,
+      'elk.randomSeed': 3,
+      'elk.layered.considerModelOrder.strategy': strategy,
+    },
+    children: [
+      { id: 'n1', width: 57, height: 55 },
+      { id: 'n2', width: 50, height: 40 },
+      { id: 'n3', width: 43, height: 47 },
+      { id: 'n4', width: 46, height: 26 },
+    ],
+    edges: [
+      { id: 'e3', sources: ['n3'], targets: ['n4'] },
+      { id: 'e4', sources: ['n2'], targets: ['n4'] },
+      { id: 'e5', sources: ['n2'], targets: ['n4'] },
+      { id: 'e7', sources: ['n2'], targets: ['n1'] },
+    ],
+  });
+  return [
+    { name: 'synthetic__model-order-first-try-nodes-and-edges', graph: graph('NODES_AND_EDGES') },
+    { name: 'synthetic__model-order-first-try-prefer-edges', graph: graph('PREFER_EDGES') },
+  ];
+}
+
+/**
  * A flat graph with cycles, laid out with the greedy cycle breaker, which Mermaid's legacy preset
  * selects through the GREEDY strategy. The flows of its nodes differ, so the sinks, the sources and
  * the random draw of the node with the largest outflow all take part.

@@ -1098,6 +1098,54 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__model-order-first-try-nodes-and-edges",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__model-order-first-try-prefer-edges",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__model-order-labels-nodes-and-edges",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__model-order-labels-none",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__model-order-labels-prefer-edges",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__model-order-labels-prefer-nodes",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
    "name": "synthetic__nested-two-components",
    "fixture": null,
    "nodes": 5,

@@ -37,6 +37,8 @@ import {
   syntheticComponentGraphs,
   syntheticEdgeGraphs,
   syntheticGreedyCycleGraphs,
+  syntheticModelOrderFirstTryGraphs,
+  syntheticModelOrderLabelGraphs,
   syntheticNodeLabelGraphs,
   stripGwtHashKeys,
   type GraphStats,
@@ -410,6 +412,12 @@ async function syntheticRecords(): Promise<CaseRecord[]> {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticGreedyCycleGraphs()) {
+    await add(name, graph);
+  }
+  for (const { name, graph } of syntheticModelOrderLabelGraphs()) {
+    await add(name, graph);
+  }
+  for (const { name, graph } of syntheticModelOrderFirstTryGraphs()) {
     await add(name, graph);
   }
   return records.sort(byName);
