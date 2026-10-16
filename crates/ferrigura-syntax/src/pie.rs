@@ -28,7 +28,7 @@ struct Slice {
 ///
 /// The error position is the first problem in the source, counted from its first line.
 pub fn parse(raw: &str) -> Result<PieDiagram, ParseError> {
-    let prepared = prepare(raw);
+    let prepared = prepare(raw)?;
     let source = Source::new(&prepared.text, prepared.line_offset);
     let mut cursor = Cursor::new(source, lex(&source)?);
 

@@ -208,15 +208,30 @@ mod parse_spec {
 }
 
 mod config {
+    use ferrigura_model::config::{PieDiagramConfig, defaults};
+
+    // `setConfig` and `resetConfig` are `it.todo` in the reference, and their bodies are commented
+    // out: nothing is asserted there, and the pie DB has no `setConfig` to call.
+
     #[test]
-    #[ignore = "port: deferred to M2, needs the configuration model"]
+    #[ignore = "port: it.todo in the reference with its body commented out; the pie DB has no setConfig"]
     fn set_config() {}
 
     #[test]
-    #[ignore = "port: deferred to M2, needs the configuration model"]
-    fn get_config() {}
+    fn get_config() {
+        // The reference checks that the DB's config is the pie section of the defaults. That section
+        // is the schema's pie defaults, plus `useWidth` from `defaultConfig.ts`.
+        let pie = PieDiagramConfig::default();
+        assert_eq!(pie.text_position, 0.75);
+        assert_eq!(pie.donut_hole, 0.0);
+        assert_eq!(pie.legend_position, "right");
+        assert_eq!(pie.highlight_slice, "");
+        let mut expected = serde_json::to_value(&pie).expect("the pie config serialises");
+        expected["useWidth"] = serde_json::json!(984);
+        assert_eq!(defaults()["pie"], expected);
+    }
 
     #[test]
-    #[ignore = "port: deferred to M2, needs the configuration model"]
+    #[ignore = "port: it.todo in the reference with its body commented out; the pie DB has no resetConfig"]
     fn reset_config() {}
 }
