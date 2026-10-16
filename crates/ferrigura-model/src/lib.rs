@@ -14,6 +14,7 @@ pub mod flowchart;
 pub mod info;
 pub mod pie;
 pub mod theme;
+pub mod timeline;
 pub mod value;
 
 /// Version of the canonical model, written as `"version"` into every model. It is bumped when a

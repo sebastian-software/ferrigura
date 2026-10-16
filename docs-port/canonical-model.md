@@ -18,13 +18,13 @@ The text of a value is what the grammar's value rules return from the source, an
 1. **Line breaks.** CRLF and CR become LF before anything else, in the reference's `cleanupText` and in `preprocess.rs`.
 2. **HTML attribute quotes.** Inside a tag, `="x"` becomes `='x'`, as the reference's `cleanupText` does before parsing. The canonical text contains the rewritten form, because it is what the grammar sees.
 3. **Strings.** Quotes are removed and escapes resolved as Langium's default value converter does: `\b \f \n \r \t \v \0`, and any other escaped character stands for itself.
-4. **Single-line header values** (`title`, `accTitle:`, `accDescr:`) are trimmed, and each run of two or more spaces or tabs becomes one space.
+4. **Single-line header values** (`title`, `accTitle:`, `accDescr:`) are trimmed, and each run of two or more spaces or tabs becomes one space. The timeline keeps its own rules, see [Timeline](#timeline).
 5. **Block `accDescr { … }`** loses the leading whitespace of each line, the trailing whitespace of each line, collapses runs of blanks, and collapses runs of two or more line breaks into one line break. The order is that of the reference's converter.
 6. **Markup is raw.** `<br>`, `<b>`, `&`, `&amp;` and every other character stay as written, except the flowchart's node, edge and subgraph texts, which hold the sanitised text (see Sanitisation). Escaping for SVG is the renderer's job, and labels are text in SVG ([0004](./decisions/0004-svg-text-labels.md)).
 
 ### Sanitisation
 
-The reference's DB setters pass every text through DOMPurify (`sanitizeText`). DOMPurify serialises text as HTML, so the DB value of `AT&T` is `AT&amp;T`, and it removes script tags.
+The reference's DB setters pass every text through DOMPurify (`sanitizeText`). DOMPurify returns text that has no `<` unchanged (its fast path, `purify.es.mjs` 2250), so the DB value of `AT&T` is `AT&T`. Text with markup is serialised as HTML: `AT&T <b>bold</b>` becomes `AT&amp;T <b>bold</b>`, and script tags are removed.
 
 The flowchart DB keeps that step, because its layout data (`getData`) carries the sanitised texts: the node text of a bracket or text label, the edge text and the subgraph title are the DB values of the reference. The Rust DB applies [`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs), a pure port of the part of DOMPurify 3.4.12 that these texts reach, and `pnpm port:diff flowchart` and `flowchart-data` compare the result with the reference's DOMPurify on every flowchart input. The `@{ label }` text is not sanitised, as the reference does not sanitise it. The other diagram types, and the header texts of the flowchart, are unchanged: the pie and info setters need a DOM that the canonical model does not provide, and the header setters are replaced in the exporters as before.
 
@@ -50,6 +50,8 @@ When a value is written back, it is written with the shortest representation tha
 - otherwise the title is `""`.
 
 The grammar's own rule is that the last `title` line wins, even when it is empty; an empty last title therefore lets the front matter title through. The cases are pinned in [`cases.ts`](../tools/port/cases.ts) and in `crates/ferrigura-syntax/tests/title_precedence.rs`.
+
+The timeline is the exception: its DB has no front matter setter, so only the grammar's title reaches the model, and a blank last title stays blank (see [Timeline](#timeline)).
 
 The info DB has no title setter, so the front matter title does not reach the info model, and the info title is the grammar's alone.
 
@@ -78,6 +80,15 @@ The flowchart model is the DB state after parsing (`flowDb.ts`), with the names 
 - **Order.** Vertices are in creation order, edges in creation order (the order of the DB's `edges` array), subgraphs in closing order (a nested subgraph closes first), with a repeated id merged into its first position. Subgraph `nodes` keep the grammar's order, in which a chain's later nodes come first (`A --> B --> C` gives `[C, B, A]`).
 - **Edge ids.** The `id` is always present: the user's `e1@` id, or the generated `L_<start>_<end>_<n>`, where `n` counts the edges already drawn between the same pair. Tooltips are kept by id even when no vertex has that id.
 - **Config is not in the model.** `maxEdges` is a parser option (default 500). `securityLevel`, `htmlLabels`, `inheritDir` and `curve` act at render time and are not in the model.
+
+## Timeline
+
+The model is the DB state after parsing, as [timeline/PLAN.md](./timeline/PLAN.md) describes it: `direction`, the header texts, `sections`, and `periods` with their `section`, `period` and `events`, in input order. The timeline's rules differ from the others in these points:
+
+- **Header texts use the grammar's own rules.** The grammar calls `trim()` on `accTitle` and `accDescr` (`timeline.jison` 73-75) and nothing on `title`, so runs of blanks are kept, and a title keeps its leading and trailing blanks. The `accDescr` setter then removes the indentation after each line break.
+- **Title.** The front matter title does not reach the model (the timeline DB has no setter). The title is the grammar's last `title` line, even when it is blank.
+- **Text is encoded, not decoded.** Entities are encoded before parsing (`#quot;` is `ﬂ°quot¶ß`), and the model keeps the encoded form, as the flowchart does. Sections, periods and events are not sanitised. The title and the header texts are, as above.
+- **Left out.** The task `id` (a counter that `clear` does not reset), `type` (always the section) and `score` (always 0).
 
 ## Left out, and why
 
