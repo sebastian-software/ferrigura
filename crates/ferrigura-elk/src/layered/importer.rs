@@ -480,10 +480,10 @@ fn import_compound_edges(
                 let target_port =
                     create_port(&mut graphs[target_graph], target_index, PortType::INPUT);
                 let labels = edge_labels(edge, &mut graphs[parent_graph].graph_properties);
-                // `findCoordinateSystemOrigin`: an edge whose ends are not one inside the other has
-                // its coordinates relative to the graph of its ELK container.
-                let related = is_descendant(target_path, source_path)
-                    || is_descendant(source_path, target_path);
+                // `findCoordinateSystemOrigin`: unless the target is inside the source, the edge's
+                // coordinates are relative to the graph of its ELK container, which is the target
+                // when the source is inside it.
+                let into_source = is_descendant(target_path, source_path);
                 graphs[0].cross_hierarchy_edges.push(CrossHierarchyEdge {
                     id: edge.id.clone(),
                     properties: edge.properties.clone(),
@@ -492,7 +492,7 @@ fn import_compound_edges(
                     source: (source_graph, source_port),
                     target: (target_graph, target_port),
                     labels,
-                    coordinate_system_origin: (!related).then_some(parent_graph),
+                    coordinate_system_origin: (!into_source).then_some(parent_graph),
                     attached: true,
                     ..CrossHierarchyEdge::default()
                 });

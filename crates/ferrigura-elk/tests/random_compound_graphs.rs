@@ -18,7 +18,7 @@ use support::largest_difference;
 
 /// The graphs that match elkjs in coordinates and in the trace with logs, for the graphs the tool
 /// wrote with its default seed. The floor only goes up.
-const PASS_FLOOR: usize = 537;
+const PASS_FLOOR: usize = 695;
 
 /// The directory the tool wrote to: `FERRIGURA_COMPOUND_GRAPHS`, else the workspace's `target/`.
 fn graph_dir() -> PathBuf {
