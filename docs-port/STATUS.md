@@ -156,6 +156,5 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 - Fallback fonts for scripts the bundled faces do not cover (CJK, Arabic, emoji); one flowchart fixture is excluded for it.
 - Flowchart: images are not read (an image shape needs `assetWidth` and `assetHeight`); icon packs are not supported.
 - Replace the inherited changesets setup with release-please when the first crate is published.
-- Sequence: the menu links of an actor are kept in a sorted map in the model; the reference keeps their insertion order. An ordered map in the canonical model fixes it (no fixture has links).
 - The text measurement of the custom renderers takes the configured font, which the reference keeps over `sans-serif` on macOS for every probed text; probe Linux and Windows, where the system `sans-serif` may be larger.
 - Shared helpers in more than one place: `sanitizeUrl` (class, gantt, `ferrigura-render/common`), the entity decoding (`unified/label.rs`, timeline) and a text-width helper (gitGraph, journey).

@@ -106,7 +106,7 @@ The two-backslash heads are literal `\\` in the source. The table is the grammar
 `crates/ferrigura-model/src/sequence.rs`, `SequenceDiagram`, version 1, camelCase. Shape, following the DB:
 
 - `title`, `accTitle`, `accDescr`: strings, `""` when absent (canonical-model.md). Sanitised (DOMPurify subset) as the setters do.
-- `actors`: in the DB's map order. Each: `id`; `name`, the id as written, always (an alias sets only the description); `description`, the alias or the text after `as`, else the name (a YAML value when an alias is a number); `type`, `participant` or `actor`, or the metadata's `type` as YAML gives it (a JSON value, so a number stays a number); `wrap`; `box` (index into `boxes`, or null); `prevActor`; `nextActor` (null when unset); `links` and `properties` (JSON objects, keys as the DB has them).
+- `actors`: in the DB's map order. Each: `id`; `name`, the id as written, always (an alias sets only the description); `description`, the alias or the text after `as`, else the name (a YAML value when an alias is a number); `type`, `participant` or `actor`, or the metadata's `type` as YAML gives it (a JSON value, so a number stays a number); `wrap`; `box` (index into `boxes`, or null); `prevActor`; `nextActor` (null when unset); `links` (a JSON object in the key order of a JavaScript object, which the menu lists them in; canonical-model.md, Sequence) and `properties` (a JSON object, keys as the DB has them).
 - `boxes`: `name` (null when the title is absent), `wrap`, `fill` (the colour as written, or `transparent`), `actorKeys` (the ids, repeats kept).
 - `messages`: in `apply` order. Each: `id` (decimal index), `from`, `to` (null for the block markers and autonumber; set for messages, notes, and the activation and central connection items), `message` (text, or `{start, step, visible}` for autonumber, with null for undefined start and step), `wrap`, `type` (the line type's name, section 6), `activate` (null for notes and autonumber, which have no field in the DB), `centralConnection` (`NONE`, `CENTRAL_CONNECTION`, `CENTRAL_CONNECTION_REVERSE`, `CENTRAL_CONNECTION_DUAL`, null for notes and autonumber), `placement` (`LEFT_OF`, `RIGHT_OF`, `OVER`, null for others).
 - `createdActors`, `destroyedActors`: actor id to message count.
@@ -149,7 +149,7 @@ The parser- and DB-level blocks of `sequenceDiagram.spec.js` (`:97-1782` and `:2
 
 ## 11. Differential run
 
-`tools/port/export-sequence.ts` runs the reference's `preprocessDiagram`, `encodeEntities`, the Jison parser and `SequenceDB` through the Vite loader (as `export-flowchart.ts`), with DOMPurify given a window. The wrap option is set as the config resolves it. Inputs: `collectInputs('sequence')` (the fixtures, the spec literals, the docs, and `cases.ts`). `pnpm port:diff sequence` compares them. `config` gets the `sequence` group.
+`tools/port/export-sequence.ts` runs the reference's `preprocessDiagram`, `encodeEntities`, the Jison parser and `SequenceDB` through the Vite loader (as `export-flowchart.ts`), with DOMPurify given a window. The wrap option is set as the config resolves it. Inputs: `collectInputs('sequence')` (the fixtures, the spec literals, the docs, and `cases.ts`). `pnpm port:diff sequence` compares them. `config` gets the `sequence` group. Both sides write an actor's `links` as `[key, value]` pairs, so their order is compared (canonical-model.md, Sequence); `cases.ts` has links in an order that is not sorted, repeated keys and array-index keys.
 
 ## 12. Open questions
 
@@ -172,6 +172,7 @@ The renderer is `crates/ferrigura-render/src/sequence/`. All 193 fixtures of `pn
 - **The icons under sanitising.** Every security level but `loose` and `sandbox` runs DOMPurify on the output, whose allow-list has no `use`; an `@icon` is therefore not drawn (`mermaidAPI.ts:644-650`, `conf.rs` `sanitized`).
 - **The root font size.** The root's `font-size` is the theme's `fontSize` (14 px in the redux themes), not the text's 16 px (`styles.ts`, `mod.rs` `write`).
 - **The unknown actor type.** An actor of a type the switch does not know draws nothing and keeps its height (`svgDraw.js:1361-1404`).
+- **Menu order.** `drawPopup` lists the links with `for…in` (`svgDraw.js:116`), in the key order of a JavaScript object: the array indices first, ascending, then the other keys in insertion order, with a repeated key in its first place. The model keeps that order (`JsObject`), and `actor_menu` in `sequence_render_spec.rs` checks the menu.
 - **Menus with no box.** An actor with links whose type draws no box throws, as the reference reads `rectData.class` of `undefined` (`actors.rs` `draw_popup`).
 - **Messages that cannot be measured.** A message whose text the measurement rejects is skipped, as the reference's `try` around the message does (`mod.rs`).
 - **Section heights.** A block's section heights are computed by the reference and not drawn; the port does not keep them (no output depends on them).
@@ -179,7 +180,6 @@ The renderer is `crates/ferrigura-render/src/sequence/`. All 193 fixtures of `pn
 **Named differences:**
 
 - **Click handlers.** The `onclick` and `cursor` of an actor with links are not drawn (decision 0001). The menus themselves are drawn hidden (`display: none`), as the SVG of the reference, and `forceMenus` shows them.
-- **Menu order.** The reference lists an actor's links in insertion order; the canonical model keeps them in a `BTreeMap`, so they are listed in key order. No fixture has links. Keeping the order needs an ordered map in the model (open).
 - **Lifeline counter.** `actorCnt` is module state in the reference and carries over between renders in one page; the port counts from zero for each render. Only the `id`s of the lifelines and menus differ, which the harness does not compare.
 - **Maths.** A text with `$$` is drawn as written. The reference renders KaTeX there; no fixture uses it, and ferrigura has no KaTeX.
 - **`textPlacement`.** The reference reads `fo` and `old` from the configuration; the schema has no such key, so the port draws every label as `byTspan`.

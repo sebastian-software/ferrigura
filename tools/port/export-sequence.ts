@@ -301,7 +301,9 @@ await runExporter(loadModules, (input, modules) => {
       box: boxIndex(actor.box),
       prevActor: nullable(actor.prevActor),
       nextActor: nullable(actor.nextActor),
-      links: actor.links,
+      // As `[key, value]` pairs in the object's key order, the order of the actor's menu: the
+      // differential run compares objects without regard to their key order.
+      links: Object.entries(actor.links),
       properties: actor.properties,
     })),
     boxes: boxes.map((box) => ({
