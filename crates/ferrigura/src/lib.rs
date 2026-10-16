@@ -106,6 +106,11 @@ pub fn render_with(
             column: 1,
             message: "the sequence diagram is not rendered yet".to_owned(),
         })),
+        Some(DiagramType::State) => Err(RenderError::Parse(ParseError {
+            line: 1,
+            column: 1,
+            message: "the state diagram is not rendered yet".to_owned(),
+        })),
         None => Err(RenderError::Parse(ParseError {
             line: 1,
             column: 1,

@@ -4,8 +4,8 @@
 //! and returns the diagram model of `ferrigura-model`. See `docs-port/decisions/0002` for why the
 //! parsers are written by hand on one lexer base.
 //!
-//! The crate covers the pie, info, flowchart, timeline and journey diagrams for now; the other types follow in
-//! later milestones.
+//! The crate covers the pie, info, flowchart, timeline, journey, gitGraph, ER, class, sequence and
+//! state diagrams for now; the other types follow in later milestones.
 
 #![warn(missing_docs)]
 #![cfg_attr(
@@ -33,6 +33,7 @@ pub mod journey;
 pub mod pie;
 pub mod sanitize;
 pub mod sequence;
+pub mod state;
 pub mod timeline;
 pub mod yaml;
 
@@ -44,6 +45,7 @@ use ferrigura_model::info::InfoDiagram;
 use ferrigura_model::journey::JourneyDiagram;
 use ferrigura_model::pie::PieDiagram;
 use ferrigura_model::sequence::SequenceDiagram;
+use ferrigura_model::state::StateDiagram;
 use ferrigura_model::timeline::TimelineDiagram;
 
 pub use error::ParseError;
@@ -69,6 +71,8 @@ pub enum DiagramType {
     Class,
     /// The sequence diagram, written `sequenceDiagram`.
     Sequence,
+    /// The state diagram, written `stateDiagram` or `stateDiagram-v2`.
+    State,
 }
 
 impl DiagramType {
@@ -85,6 +89,7 @@ impl DiagramType {
             Self::Er => "er",
             Self::Class => "class",
             Self::Sequence => "sequence",
+            Self::State => "state",
         }
     }
 }
@@ -110,6 +115,8 @@ pub enum Diagram {
     Class(ClassDiagram),
     /// A sequence diagram.
     Sequence(SequenceDiagram),
+    /// A state diagram.
+    State(StateDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -139,6 +146,8 @@ pub fn detect(text: &str) -> Option<DiagramType> {
         Some(DiagramType::Class)
     } else if rest.starts_with("sequenceDiagram") {
         Some(DiagramType::Sequence)
+    } else if rest.starts_with("stateDiagram") {
+        Some(DiagramType::State)
     } else {
         None
     }
@@ -158,6 +167,7 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         Some(DiagramType::GitGraph) => git_graph::parse(text).map(Diagram::GitGraph),
         Some(DiagramType::Class) => class::parse(text).map(Diagram::Class),
         Some(DiagramType::Sequence) => sequence::parse(text).map(Diagram::Sequence),
+        Some(DiagramType::State) => state::parse(text).map(Diagram::State),
         None => Err(ParseError {
             line: 1,
             column: 1,

@@ -20,4 +20,5 @@ export const exceptions: Record<string, PortException[]> = {
   gitgraph: [],
   er: [],
   sequence: [],
+  state: [],
 };

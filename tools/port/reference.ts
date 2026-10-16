@@ -67,30 +67,41 @@ export type PortOutput =
  * as `mermaidAPI` does when it loads the diagrams.
  */
 export async function registerDetectors(reference: Reference): Promise<void> {
-  const [detectType, pie, info, flowchart, timeline, journey, gitGraph, classPlugin, sequence] =
-    await Promise.all([
-      reference.load<{ registerLazyLoadedDiagrams(...diagrams: unknown[]): void }>(
-        '/packages/mermaid/src/diagram-api/detectType.ts'
-      ),
-      reference.load<{ pie: unknown }>('/packages/mermaid/src/diagrams/pie/pieDetector.ts'),
-      reference.load<{ info: unknown }>('/packages/mermaid/src/diagrams/info/infoDetector.ts'),
-      reference.load<{ default: unknown }>(
-        '/packages/mermaid/src/diagrams/flowchart/flowDetector-v2.ts'
-      ),
-      reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/timeline/detector.ts'),
-      reference.load<{ default: unknown }>(
-        '/packages/mermaid/src/diagrams/user-journey/journeyDetector.ts'
-      ),
-      reference.load<{ default: unknown }>(
-        '/packages/mermaid/src/diagrams/git/gitGraphDetector.ts'
-      ),
-      reference.load<{ default: unknown }>(
-        '/packages/mermaid/src/diagrams/class/classDetector-V2.ts'
-      ),
-      reference.load<{ default: unknown }>(
-        '/packages/mermaid/src/diagrams/sequence/sequenceDetector.ts'
-      ),
-    ]);
+  const [
+    detectType,
+    pie,
+    info,
+    flowchart,
+    timeline,
+    journey,
+    gitGraph,
+    classPlugin,
+    sequence,
+    state,
+  ] = await Promise.all([
+    reference.load<{ registerLazyLoadedDiagrams(...diagrams: unknown[]): void }>(
+      '/packages/mermaid/src/diagram-api/detectType.ts'
+    ),
+    reference.load<{ pie: unknown }>('/packages/mermaid/src/diagrams/pie/pieDetector.ts'),
+    reference.load<{ info: unknown }>('/packages/mermaid/src/diagrams/info/infoDetector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/flowchart/flowDetector-v2.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/timeline/detector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/user-journey/journeyDetector.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/git/gitGraphDetector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/class/classDetector-V2.ts'
+    ),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/sequence/sequenceDetector.ts'
+    ),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/state/stateDetector-V2.ts'
+    ),
+  ]);
   detectType.registerLazyLoadedDiagrams(
     pie.pie,
     info.info,
@@ -99,7 +110,8 @@ export async function registerDetectors(reference: Reference): Promise<void> {
     journey.default,
     gitGraph.default,
     classPlugin.default,
-    sequence.default
+    sequence.default,
+    state.default
   );
 }
 

@@ -16,6 +16,21 @@ const root = new URL('../../', import.meta.url);
 /** The spec files whose literals are collected, where a type's specs are JavaScript. */
 const specPatterns: Record<string, RegExp> = { er: /\.(spec|test)\.[jt]s$/ };
 
+/**
+ * The fixture folders of a type, where it is not `e2e/diagrams/<type>/`. The state folder names are
+ * the reference's two headers.
+ */
+const fixtureFolders: Record<string, string[]> = {
+  gitgraph: ['e2e/diagrams/git/'],
+  er: ['e2e/diagrams/er-diagram/'],
+  class: ['e2e/diagrams/class-diagram/'],
+  state: [
+    'e2e/diagrams/state-diagram/',
+    'e2e/diagrams/state-diagram-v2/',
+    'e2e/platform/dev-diagrams/',
+  ],
+};
+
 const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
@@ -26,17 +41,11 @@ const detectors: Record<string, RegExp> = {
   er: /^\s*erDiagram/,
   class: /^\s*classDiagram/,
   sequence: /^\s*sequenceDiagram/,
-};
-
-/** The e2e folder of a diagram type, where it is not the type itself. */
-const fixtureFolders: Record<string, string> = {
-  gitgraph: 'git',
-  er: 'er-diagram',
-  class: 'class-diagram',
+  state: /^\s*stateDiagram/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */
-function looksLikeType(type: string, text: string): boolean {
+export function looksLikeType(type: string, text: string): boolean {
   let body = text.replace(/^---[\t ]*\r?\n[\S\s]*?\r?\n---(?:\r?\n|$)/, '');
   body = body.replace(/^\s*%%{[\S\s]*?}%%\s*/, '');
   return detectors[type].test(body);
@@ -80,10 +89,15 @@ function mermaidBlocks(source: string): string[] {
 export async function collectInputs(type: string): Promise<PortInput[]> {
   const candidates: { source: string; text: string }[] = [];
 
-  const folder = fixtureFolders[type] ?? type;
-  const fixtures = await walk(`e2e/diagrams/${folder}/`, (path) => path.endsWith('.mmd'));
-  for (const fixture of fixtures) {
-    candidates.push({ source: fixture, text: await readFile(new URL(fixture, root), 'utf8') });
+  // The state fixtures are in two folders, and some state inputs sit in the platform's dev folder.
+  // Those are kept by detector, and the info smoke test in the state folders is dropped the same way.
+  for (const folder of fixtureFolders[type] ?? [`e2e/diagrams/${type}/`]) {
+    const fixtures = await walk(folder, (path) => path.endsWith('.mmd'));
+    for (const fixture of fixtures) {
+      const text = await readFile(new URL(fixture, root), 'utf8');
+      if (type === 'state' && !looksLikeType(type, text)) continue;
+      candidates.push({ source: fixture, text });
+    }
   }
 
   const specPattern = specPatterns[type] ?? /\.(spec|test)\.(ts|js)$/;

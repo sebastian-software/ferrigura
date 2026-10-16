@@ -1,7 +1,7 @@
 //! Parses inputs with a ferrigura parser and writes the canonical JSON of each result. The
 //! differential harness (`pnpm port:diff`) runs this against the JS exporters of `tools/port/`.
 //!
-//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence> <inputs.json> <outputs.json>`
+//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
 //! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
@@ -18,7 +18,8 @@ use ferrigura_model::value::Value as Config;
 use ferrigura_syntax::flowchart::{self, FlowchartError};
 use ferrigura_syntax::sequence::{self, Options};
 use ferrigura_syntax::{
-    DiagramType, ParseError, class, config, detect, er, git_graph, info, journey, pie, timeline,
+    DiagramType, ParseError, class, config, detect, er, git_graph, info, journey, pie, state,
+    timeline,
 };
 use serde_json::{Value, json};
 
@@ -132,7 +133,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
         return Err(
-            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence> <inputs.json> <outputs.json>".into(),
+            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state> <inputs.json> <outputs.json>".into(),
         );
     };
 
@@ -173,6 +174,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => Outcome::Rejected(error),
             },
             "sequence" => sequence_outcome(text),
+            "state" if detect(text) != Some(DiagramType::State) => Outcome::Rejected(ParseError {
+                line: 1,
+                column: 1,
+                message: "no state diagram detected".to_owned(),
+            }),
+            "state" => match state::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
             other => return Err(format!("unknown diagram type {other}").into()),
         };
         results.push(match outcome {

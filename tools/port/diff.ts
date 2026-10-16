@@ -4,7 +4,7 @@
  * canonical models are compared. A rejection on both sides counts as agreement; any other
  * difference is reported with both results.
  *
- * Usage: `pnpm port:diff <pie | info | flowchart | journey | gitgraph | class | sequence | flowchart-data | config | yaml | theme>`
+ * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | flowchart-data | config | yaml | theme>`
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
@@ -32,10 +32,11 @@ if (
   type !== 'gitgraph' &&
   type !== 'er' &&
   type !== 'class' &&
-  type !== 'sequence'
+  type !== 'sequence' &&
+  type !== 'state'
 ) {
   console.error(
-    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | flowchart-data | config | yaml | theme'
+    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | flowchart-data | config | yaml | theme'
   );
   process.exit(2);
 }

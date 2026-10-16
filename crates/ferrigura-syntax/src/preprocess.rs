@@ -213,6 +213,13 @@ fn match_front_matter(text: &[char]) -> Option<FrontMatter> {
     None
 }
 
+/// Byte length of the blanks at the start of `text`.
+fn ws_len(text: &str) -> usize {
+    text.char_indices()
+        .find(|&(_, c)| !is_js_space(c))
+        .map_or(text.len(), |(index, _)| index)
+}
+
 /// Length of a `%%{ … }%%` directive as `directiveRegex` in `regexes.ts` matches it, which is the
 /// loose form the reference uses to find directives before detection. `text` starts with `%%{`.
 pub(crate) fn loose_directive_len(text: &str) -> Option<usize> {
@@ -247,9 +254,20 @@ pub(crate) fn loose_directive_len(text: &str) -> Option<usize> {
             i
         });
     }
-    Some(match text[i..].find("}%%") {
-        Some(close) => i + close + 3,
-        None => text.len(),
+    // The free text `(?:(?!}%{2}).|\r?\n)*` stops before `}%%`, and before a character that `.`
+    // does not match: U+2028, U+2029 and a bare CR. The `\s*` after it takes that character and the
+    // blanks that follow, and the closing `}%%` is optional.
+    let stop = text[i..]
+        .char_indices()
+        .find(|&(index, c)| {
+            matches!(c, '\u{2028}' | '\u{2029}' | '\r') || text[i + index..].starts_with("}%%")
+        })
+        .map_or(text.len(), |(index, _)| i + index);
+    let end = stop + ws_len(&text[stop..]);
+    Some(if text[end..].starts_with("}%%") {
+        end + 3
+    } else {
+        end
     })
 }
 

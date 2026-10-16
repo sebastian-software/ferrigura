@@ -44,6 +44,17 @@ const suites: Record<string, string[]> = {
     'sequence_keyword_actors_spec',
     'sequence_render_spec',
   ],
+  state: [
+    'state_parser_spec',
+    'state_db_spec',
+    'state_style_spec',
+    'state_diagram_v2_spec',
+    'state_diagram_spec',
+    'state_color_index_spec',
+    'state_note_edge_spec',
+    'state_note_node_spec',
+    'state_renderer_spec',
+  ],
 };
 
 interface Counts {
