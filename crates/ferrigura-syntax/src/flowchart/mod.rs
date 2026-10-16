@@ -61,10 +61,11 @@ pub fn parse_with(raw: &str, options: Options) -> Result<FlowchartDiagram, Flowc
     parse_with_warnings(raw, options).map(|(diagram, _)| diagram)
 }
 
-/// Parses the text the way the parser's own specs give it to the reference: the grammar and the
-/// DB on the text, with the parser wrapper's closing-brace rule and nothing else. There is no front
-/// matter, no directive removal, no comment removal, no entity encoding and no trailing line break;
-/// [`parse`] is the diagram text, as `Diagram.fromText` gives it to the parser.
+/// Parses flowchart text with the grammar and the DB alone, and nothing else. It exists for the
+/// ported parser specs, which call the reference's parser directly. The text gets only the parser
+/// wrapper's closing-brace rule: no front matter, no directive removal, no comment removal, no
+/// entity encoding and no trailing line break. [`parse`] is the diagram text, as `Diagram.fromText`
+/// gives it to the parser, and it is the entry point for everything else.
 pub fn parse_grammar(text: &str) -> Result<FlowchartDiagram, FlowchartError> {
     grammar::parse_text(&close_braces(text), 0, String::new(), Options::default())
         .map(|(diagram, _)| diagram)

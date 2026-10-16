@@ -60,7 +60,7 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 
 | Type      | Grammar (JS)                                     | Spec files | ≈ Tests | Fixtures | Parser           | Specs ported / passing | Differential parse        | Layout | Render | Parity |
 | --------- | ------------------------------------------------ | ---------: | ------: | -------: | ---------------- | ---------------------- | ------------------------- | ------ | ------ | ------ |
-| flowchart | `diagrams/flowchart/parser/flow.jison`           |         20 |     318 |      352 | ferrigura-syntax | 951 / 955 (4 ignored)  | 558 inputs, no difference | —      | —      | —      |
+| flowchart | `diagrams/flowchart/parser/flow.jison`           |         20 |     318 |      352 | ferrigura-syntax | 953 / 958 (5 ignored)  | 558 inputs, no difference | —      | —      | —      |
 | sequence  | `diagrams/sequence/parser/sequenceDiagram.jison` |         10 |     198 |      193 | —                | —                      | —                         | —      | —      | —      |
 | class     | `diagrams/class/parser/classDiagram.jison`       |          5 |     255 |      247 | —                | —                      | —                         | —      | —      | —      |
 | state     | `diagrams/state/parser/stateDiagram.jison`       |          9 |     121 |      145 | —                | —                      | —                         | —      | —      | —      |

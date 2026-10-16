@@ -32,6 +32,7 @@ const suites: Record<string, string[]> = {
     'flowchart_interactions_spec',
     'flowchart_node_data_spec',
     'flowchart_db_spec',
+    'flowchart_huge_spec',
   ],
 };
 
