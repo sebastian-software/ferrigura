@@ -6,7 +6,7 @@
 //! reference's `node.intersect` being undefined means. See `docs-port/flowchart/render-notes/elk-apply.md`
 //! sections 3.6 and 3.7.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use super::geom::{CenterBox, Point};
 
@@ -362,36 +362,18 @@ pub fn replace_endpoint(points: &mut Vec<Point>, which: Side, value: Point, tol:
 }
 
 /// The nearest common ancestor of two nodes in the subgraph tree, or `None` for the root
-/// (`findCommonAncestor`). A node is its own ancestor when it is the other one's parent, so an
-/// edge from a subgraph to its own member gets the subgraph.
+/// (`findCommonAncestor`, see [`super::elk_tree::find_common_ancestor`]). A node is its own
+/// ancestor when it is the other one's parent, so an edge from a subgraph to its own member gets
+/// the subgraph.
 #[must_use]
 pub fn find_common_ancestor(
     id1: &str,
     id2: &str,
     parent_by_id: &HashMap<String, String>,
 ) -> Option<String> {
-    if id1 == id2 {
-        return parent_by_id.get(id1).cloned();
-    }
-
-    let mut visited = HashSet::new();
-    let mut current = Some(id1);
-    while let Some(id) = current {
-        visited.insert(id);
-        if id == id2 {
-            return Some(id.to_string());
-        }
-        current = parent_by_id.get(id).map(String::as_str);
-    }
-
-    let mut current = Some(id2);
-    while let Some(id) = current {
-        if visited.contains(id) {
-            return Some(id.to_string());
-        }
-        current = parent_by_id.get(id).map(String::as_str);
-    }
-    None
+    let ancestor = super::elk_tree::find_common_ancestor(id1, id2, parent_by_id);
+    // `calcOffset` treats the root by name.
+    (ancestor != "root").then_some(ancestor)
 }
 
 #[cfg(test)]
