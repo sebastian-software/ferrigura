@@ -101,7 +101,7 @@ pub(super) fn run(graphs: &mut [LGraph], hierarchical: bool) -> Result<(), Layou
         let view: &[LGraph] = graphs;
         sweep_all(view, random, seed, &mut own_randoms)
     };
-    let (random, orders, fixed_order_parents) = match result {
+    let (random, orders, live_ports, fixed_order_parents) = match result {
         Ok(result) => result,
         Err((error, random)) => {
             graphs[0].random = Some(random);
@@ -129,20 +129,35 @@ pub(super) fn run(graphs: &mut [LGraph], hierarchical: bool) -> Result<(), Layou
     for (graph, best) in orders {
         transfer_node_and_port_orders(&mut graphs[graph], best);
     }
+    // A graph without a best sweep was never swept, and is not transferred: its nodes keep their
+    // live port lists, which a nested graph's `setPortOrderOnParentGraph` may have changed.
+    for (graph, node_ports) in live_ports {
+        for (node, ports) in node_ports.into_iter().enumerate() {
+            graphs[graph].nodes[node].ports = ports;
+        }
+    }
     Ok(())
 }
 
-/// The sweep of the whole hierarchy, on the graphs as they are. Returns the top graph's generator,
-/// the best order of each graph that has one (by graph index, in the order of the graph ids), and
-/// the nodes whose port order `setPortOrderOnParentGraph` fixed. On an error, the generator comes
-/// back with it.
-#[allow(clippy::type_complexity)]
+/// What the sweep of the hierarchy gives back: the top graph's generator, the best order of each
+/// graph that has one (by graph index, in the order of the graph ids), the live port lists of the
+/// graphs without one (by graph index), and the nodes whose port order `setPortOrderOnParentGraph`
+/// fixed.
+type SweepResult = (
+    Random,
+    Vec<(usize, Layout)>,
+    Vec<(usize, Vec<Vec<usize>>)>,
+    Vec<(usize, usize)>,
+);
+
+/// The sweep of the whole hierarchy, on the graphs as they are (see `SweepResult`). On an error,
+/// the generator comes back with it.
 fn sweep_all(
     graphs: &[LGraph],
     random: Random,
     seed: i64,
     own_randoms: &mut [Option<Random>],
-) -> Result<(Random, Vec<(usize, Layout)>, Vec<(usize, usize)>), (LayoutError, Random)> {
+) -> Result<SweepResult, (LayoutError, Random)> {
     let mut hierarchy = Hierarchy {
         holders: Vec::new(),
         holder_of: vec![None; graphs.len()],
@@ -163,12 +178,16 @@ fn sweep_all(
                     own_randoms[holder.graph] = holder.random.take();
                 }
             }
-            let orders = hierarchy
-                .holders
-                .iter_mut()
-                .filter_map(|holder| holder.best.take().map(|best| (holder.graph, best)))
-                .collect();
-            Ok((hierarchy.random, orders, fixed))
+            let mut orders = Vec::new();
+            let mut live_ports = Vec::new();
+            for holder in &mut hierarchy.holders {
+                match holder.best.take() {
+                    Some(best) => orders.push((holder.graph, best)),
+                    None => live_ports
+                        .push((holder.graph, std::mem::take(&mut holder.layout.node_ports))),
+                }
+            }
+            Ok((hierarchy.random, orders, live_ports, fixed))
         }
         Err(error) => {
             for holder in &mut hierarchy.holders {
