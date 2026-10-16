@@ -220,8 +220,14 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str) -> String {
         } else {
             String::new()
         };
+        // `note.ts` gives its label group a class of its own.
+        let label_class = if kind == Some(Kind::Note) {
+            "label noteLabel"
+        } else {
+            "label"
+        };
         label_svg = format!(
-            "<g class=\"label\"{style} transform=\"translate({}, {})\"><rect></rect>{}</g>",
+            "<g class=\"{label_class}\"{style} transform=\"translate({}, {})\"><rect></rect>{}</g>",
             number(offset.x),
             number(offset.y),
             label.svg(&util::node_text_style(&styles.label)),
