@@ -80,7 +80,7 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 
 ## Open items
 
-- Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release; then create `sebastian-software/ferrigura` and rename the repository.
+- Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release. The repository is public as `sebastian-software/ferrigura` since 2026-10-16; the local folder is still called `ferraid`.
 - Open `help wanted` issues for every P3 diagram type and for math in labels once the GitHub repository exists.
 - Decide the mindmap layout when P2 starts.
 - Replace the inherited changesets setup with release-please when the first crate is published.
