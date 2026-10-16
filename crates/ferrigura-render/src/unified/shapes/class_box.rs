@@ -22,10 +22,11 @@ use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, measure};
 use super::util::{self, Part};
 use super::{Intersect, ShapeInput, rough};
 use crate::RenderError;
+use crate::common::decode_entities;
 use crate::svg::{escape, number};
 use crate::unified::data::ClassNodeData;
 use crate::unified::geom::{BBox, Point};
-use crate::unified::label::{self, Anchor, LabelLayout, LabelSpec, layout_inheriting};
+use crate::unified::label::{Anchor, LabelLayout, LabelSpec, layout_inheriting};
 
 /// `config.class.padding ?? 12` (`classBox.ts` 18-19); `GAP` is the same value.
 const DEFAULT_PADDING: f64 = 12.0;
@@ -120,7 +121,7 @@ fn add_text(
 ) -> Result<Row, RenderError> {
     // `textContent.substring(1)` when the text starts with a backslash (`shapeUtil.ts` 120-122).
     let content = text.strip_prefix('\\').unwrap_or(text);
-    let sanitized = sanitize_text(&label::decode_entities(content));
+    let sanitized = sanitize_text(&decode_entities(content));
     let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
     // `calculateTextWidth(textContent, config) + 50`: the DOM width of the text, rounded to a pixel.
     let width = measure(sans, content, input.config.font_size)?.round() + WRAP_SLACK;

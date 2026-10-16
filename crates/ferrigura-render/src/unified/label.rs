@@ -19,6 +19,7 @@ use ferrigura_text::{
 use super::geom::{BBox, Point};
 use super::markdown::{MarkdownWordType, br_tag_length, markdown_to_lines, non_markdown_to_lines};
 use crate::RenderError;
+use crate::common::decode_entities;
 use crate::svg::{escape, number};
 
 /// The line height of labels, in ems: `lh` in `createFormattedText`.
@@ -456,14 +457,6 @@ fn normalize_breaks(text: &str) -> String {
         }
     }
     out
-}
-
-/// `decodeEntities` in `utils.ts`: the placeholders that the diagram source encodes its entities
-/// with become `&#`, `&` and `;` again.
-pub(super) fn decode_entities(text: &str) -> String {
-    text.replace("ﬂ°°", "&#")
-        .replace("ﬂ°", "&")
-        .replace("¶ß", ";")
 }
 
 /// `decodeHTMLEntities` in `createText.ts`: `&amp;`, `&lt;` and `&gt;` become their characters,

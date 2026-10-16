@@ -23,9 +23,9 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::a11y;
-use crate::common::Element;
 use crate::common::style::base_style_sheet_with;
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
+use crate::common::{Element, decode_entities};
 use crate::svg::{escape, number};
 use crate::theme::Themes;
 use crate::variables::{px, text_of, texts_of, truthy};
@@ -389,18 +389,11 @@ pub(super) fn zero_box() -> BBox {
     }
 }
 
-/// `decodeEntities` (`utils.ts` 904-906): the placeholders the parser writes become `&#`, `&` and `;`.
-pub(super) fn decode(text: &str) -> String {
-    text.replace("ﬂ°°", "&#")
-        .replace("ﬂ°", "&")
-        .replace("¶ß", ";")
-}
-
 /// The markup of a text the diagram draws. The reference escapes the text when it serialises the
 /// SVG and then decodes the entities over the whole markup (`mermaidAPI.ts` 359), so the escape comes
 /// first and the decode after it.
 pub(super) fn markup(text: &str) -> String {
-    decode(&escape(text))
+    decode_entities(&escape(text))
 }
 
 /// The text a reader sees for an encoded text: its markup with the entities read, as the browser

@@ -1,7 +1,9 @@
 //! What the custom renderers of the reference share: the text measurement of `utils.ts`
 //! ([`text`]), the drawing helpers of `diagrams/common/svgDrawCommon.ts` ([`draw`], whose URL
 //! sanitiser is [`ferrigura_syntax::url::sanitize_url`]), the sizing of `setupGraphViewbox.js`
-//! ([`viewbox`]) and the title of `insertTitle` ([`title`]). The element they write is [`element::Element`].
+//! ([`viewbox`]), the title of `insertTitle` ([`title`]), and `decodeEntities`
+//! ([`decode_entities`]), which the unified renderer's labels use as well. The element they write
+//! is [`element::Element`].
 
 pub mod draw;
 pub mod element;
@@ -11,6 +13,7 @@ pub mod title;
 pub mod viewbox;
 
 pub use element::Element;
+pub use ferrigura_syntax::decode_entities;
 pub use text::{BreakString, MeasureError, TextDimensions, TextMemo, TextStyle, WrapStyle};
 
 /// JavaScript's `\s`: white space and the line terminators, as `String.prototype.trim` removes them.

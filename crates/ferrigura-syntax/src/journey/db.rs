@@ -7,6 +7,7 @@
 
 use ferrigura_model::journey::{JourneyDiagram, JourneyTask};
 
+use crate::preprocess::decode_entities;
 use crate::sanitize::{decode_references, sanitize_text};
 use crate::text::{js_number, js_trim, newline_then_space_to_newline, strip_leading_space};
 
@@ -128,11 +129,7 @@ pub(crate) fn display_text(encoded: &str) -> String {
             other => escaped.push(other),
         }
     }
-    let decoded = escaped
-        .replace("ﬂ°°", "&#")
-        .replace("ﬂ°", "&")
-        .replace("¶ß", ";");
-    decode_references(&decoded)
+    decode_references(&decode_entities(&escaped))
 }
 
 #[cfg(test)]
