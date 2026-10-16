@@ -1403,8 +1403,92 @@
   "boxes": [
     {
       "style": "sans-regular",
+      "size": 2,
+      "ascent": 2,
+      "descent": 1
+    },
+    {
+      "style": "sans-regular",
+      "size": 3,
+      "ascent": 3,
+      "descent": 1
+    },
+    {
+      "style": "sans-regular",
+      "size": 4,
+      "ascent": 4,
+      "descent": 1
+    },
+    {
+      "style": "sans-regular",
+      "size": 5,
+      "ascent": 5,
+      "descent": 1
+    },
+    {
+      "style": "sans-regular",
+      "size": 6,
+      "ascent": 6,
+      "descent": 2
+    },
+    {
+      "style": "sans-regular",
+      "size": 7,
+      "ascent": 7,
+      "descent": 2
+    },
+    {
+      "style": "sans-regular",
+      "size": 8,
+      "ascent": 8,
+      "descent": 2
+    },
+    {
+      "style": "sans-regular",
+      "size": 9,
+      "ascent": 9,
+      "descent": 3
+    },
+    {
+      "style": "sans-regular",
+      "size": 10,
+      "ascent": 9,
+      "descent": 3
+    },
+    {
+      "style": "sans-regular",
+      "size": 10.005,
+      "ascent": 9,
+      "descent": 3
+    },
+    {
+      "style": "sans-regular",
+      "size": 11,
+      "ascent": 10,
+      "descent": 3
+    },
+    {
+      "style": "sans-regular",
+      "size": 12,
+      "ascent": 11,
+      "descent": 3
+    },
+    {
+      "style": "sans-regular",
+      "size": 13,
+      "ascent": 12,
+      "descent": 4
+    },
+    {
+      "style": "sans-regular",
       "size": 14,
       "ascent": 13,
+      "descent": 4
+    },
+    {
+      "style": "sans-regular",
+      "size": 15,
+      "ascent": 14,
       "descent": 4
     },
     {
@@ -1415,9 +1499,333 @@
     },
     {
       "style": "sans-regular",
+      "size": 17,
+      "ascent": 16,
+      "descent": 5
+    },
+    {
+      "style": "sans-regular",
+      "size": 18,
+      "ascent": 17,
+      "descent": 5
+    },
+    {
+      "style": "sans-regular",
+      "size": 19,
+      "ascent": 18,
+      "descent": 6
+    },
+    {
+      "style": "sans-regular",
+      "size": 20,
+      "ascent": 19,
+      "descent": 6
+    },
+    {
+      "style": "sans-regular",
+      "size": 21,
+      "ascent": 20,
+      "descent": 6
+    },
+    {
+      "style": "sans-regular",
+      "size": 22,
+      "ascent": 21,
+      "descent": 6
+    },
+    {
+      "style": "sans-regular",
+      "size": 23,
+      "ascent": 22,
+      "descent": 7
+    },
+    {
+      "style": "sans-regular",
       "size": 24,
       "ascent": 23,
       "descent": 7
+    },
+    {
+      "style": "sans-regular",
+      "size": 25,
+      "ascent": 24,
+      "descent": 7
+    },
+    {
+      "style": "sans-regular",
+      "size": 26,
+      "ascent": 25,
+      "descent": 8
+    },
+    {
+      "style": "sans-regular",
+      "size": 27,
+      "ascent": 26,
+      "descent": 8
+    },
+    {
+      "style": "sans-regular",
+      "size": 28,
+      "ascent": 27,
+      "descent": 8
+    },
+    {
+      "style": "sans-regular",
+      "size": 29,
+      "ascent": 28,
+      "descent": 8
+    },
+    {
+      "style": "sans-regular",
+      "size": 30,
+      "ascent": 28,
+      "descent": 9
+    },
+    {
+      "style": "sans-regular",
+      "size": 30.001,
+      "ascent": 28,
+      "descent": 9
+    },
+    {
+      "style": "sans-regular",
+      "size": 30.999,
+      "ascent": 29,
+      "descent": 9
+    },
+    {
+      "style": "sans-regular",
+      "size": 31,
+      "ascent": 29,
+      "descent": 9
+    },
+    {
+      "style": "sans-regular",
+      "size": 32,
+      "ascent": 30,
+      "descent": 9
+    },
+    {
+      "style": "sans-regular",
+      "size": 33,
+      "ascent": 31,
+      "descent": 10
+    },
+    {
+      "style": "sans-regular",
+      "size": 34,
+      "ascent": 32,
+      "descent": 10
+    },
+    {
+      "style": "sans-regular",
+      "size": 35,
+      "ascent": 33,
+      "descent": 10
+    },
+    {
+      "style": "sans-regular",
+      "size": 36,
+      "ascent": 34,
+      "descent": 10
+    },
+    {
+      "style": "sans-regular",
+      "size": 37,
+      "ascent": 35,
+      "descent": 11
+    },
+    {
+      "style": "sans-regular",
+      "size": 38,
+      "ascent": 36,
+      "descent": 11
+    },
+    {
+      "style": "sans-regular",
+      "size": 39,
+      "ascent": 37,
+      "descent": 11
+    },
+    {
+      "style": "sans-regular",
+      "size": 40,
+      "ascent": 38,
+      "descent": 12
+    },
+    {
+      "style": "sans-regular",
+      "size": 41,
+      "ascent": 39,
+      "descent": 12
+    },
+    {
+      "style": "sans-regular",
+      "size": 42,
+      "ascent": 40,
+      "descent": 12
+    },
+    {
+      "style": "sans-regular",
+      "size": 43,
+      "ascent": 41,
+      "descent": 12
+    },
+    {
+      "style": "sans-regular",
+      "size": 44,
+      "ascent": 42,
+      "descent": 13
+    },
+    {
+      "style": "sans-regular",
+      "size": 45,
+      "ascent": 43,
+      "descent": 13
+    },
+    {
+      "style": "sans-regular",
+      "size": 46,
+      "ascent": 44,
+      "descent": 13
+    },
+    {
+      "style": "sans-regular",
+      "size": 47,
+      "ascent": 45,
+      "descent": 14
+    },
+    {
+      "style": "sans-regular",
+      "size": 48,
+      "ascent": 46,
+      "descent": 14
+    },
+    {
+      "style": "sans-regular",
+      "size": 49,
+      "ascent": 47,
+      "descent": 14
+    },
+    {
+      "style": "sans-regular",
+      "size": 50,
+      "ascent": 47,
+      "descent": 14
+    },
+    {
+      "style": "sans-regular",
+      "size": 51,
+      "ascent": 48,
+      "descent": 15
+    },
+    {
+      "style": "sans-regular",
+      "size": 52,
+      "ascent": 49,
+      "descent": 15
+    },
+    {
+      "style": "sans-regular",
+      "size": 53,
+      "ascent": 50,
+      "descent": 15
+    },
+    {
+      "style": "sans-regular",
+      "size": 54,
+      "ascent": 51,
+      "descent": 16
+    },
+    {
+      "style": "sans-regular",
+      "size": 55,
+      "ascent": 52,
+      "descent": 16
+    },
+    {
+      "style": "sans-regular",
+      "size": 56,
+      "ascent": 53,
+      "descent": 16
+    },
+    {
+      "style": "sans-regular",
+      "size": 57,
+      "ascent": 54,
+      "descent": 17
+    },
+    {
+      "style": "sans-regular",
+      "size": 58,
+      "ascent": 55,
+      "descent": 17
+    },
+    {
+      "style": "sans-regular",
+      "size": 59,
+      "ascent": 56,
+      "descent": 17
+    },
+    {
+      "style": "sans-regular",
+      "size": 60,
+      "ascent": 57,
+      "descent": 17
+    },
+    {
+      "style": "sans-regular",
+      "size": 62.5,
+      "ascent": 59,
+      "descent": 18
+    },
+    {
+      "style": "sans-regular",
+      "size": 70,
+      "ascent": 66,
+      "descent": 20
+    },
+    {
+      "style": "sans-regular",
+      "size": 90,
+      "ascent": 85,
+      "descent": 26
+    },
+    {
+      "style": "sans-regular",
+      "size": 110,
+      "ascent": 104,
+      "descent": 32
+    },
+    {
+      "style": "sans-regular",
+      "size": 125,
+      "ascent": 119,
+      "descent": 36
+    },
+    {
+      "style": "sans-regular",
+      "size": 150,
+      "ascent": 142,
+      "descent": 43
+    },
+    {
+      "style": "sans-regular",
+      "size": 187.5,
+      "ascent": 178,
+      "descent": 54
+    },
+    {
+      "style": "sans-regular",
+      "size": 250,
+      "ascent": 237,
+      "descent": 72
+    },
+    {
+      "style": "sans-italic",
+      "size": 10,
+      "ascent": 9,
+      "descent": 3
     },
     {
       "style": "sans-italic",
@@ -1433,9 +1841,81 @@
     },
     {
       "style": "sans-italic",
+      "size": 20,
+      "ascent": 19,
+      "descent": 6
+    },
+    {
+      "style": "sans-italic",
       "size": 24,
       "ascent": 23,
       "descent": 7
+    },
+    {
+      "style": "sans-italic",
+      "size": 30,
+      "ascent": 28,
+      "descent": 9
+    },
+    {
+      "style": "sans-italic",
+      "size": 50,
+      "ascent": 47,
+      "descent": 14
+    },
+    {
+      "style": "sans-italic",
+      "size": 62.5,
+      "ascent": 59,
+      "descent": 18
+    },
+    {
+      "style": "sans-italic",
+      "size": 70,
+      "ascent": 66,
+      "descent": 20
+    },
+    {
+      "style": "sans-italic",
+      "size": 90,
+      "ascent": 85,
+      "descent": 26
+    },
+    {
+      "style": "sans-italic",
+      "size": 110,
+      "ascent": 104,
+      "descent": 32
+    },
+    {
+      "style": "sans-italic",
+      "size": 125,
+      "ascent": 119,
+      "descent": 36
+    },
+    {
+      "style": "sans-italic",
+      "size": 150,
+      "ascent": 142,
+      "descent": 43
+    },
+    {
+      "style": "sans-italic",
+      "size": 187.5,
+      "ascent": 178,
+      "descent": 54
+    },
+    {
+      "style": "sans-italic",
+      "size": 250,
+      "ascent": 237,
+      "descent": 72
+    },
+    {
+      "style": "sans-bold",
+      "size": 10,
+      "ascent": 9,
+      "descent": 3
     },
     {
       "style": "sans-bold",
@@ -1451,9 +1931,81 @@
     },
     {
       "style": "sans-bold",
+      "size": 20,
+      "ascent": 19,
+      "descent": 6
+    },
+    {
+      "style": "sans-bold",
       "size": 24,
       "ascent": 23,
       "descent": 7
+    },
+    {
+      "style": "sans-bold",
+      "size": 30,
+      "ascent": 28,
+      "descent": 9
+    },
+    {
+      "style": "sans-bold",
+      "size": 50,
+      "ascent": 47,
+      "descent": 14
+    },
+    {
+      "style": "sans-bold",
+      "size": 62.5,
+      "ascent": 59,
+      "descent": 18
+    },
+    {
+      "style": "sans-bold",
+      "size": 70,
+      "ascent": 66,
+      "descent": 20
+    },
+    {
+      "style": "sans-bold",
+      "size": 90,
+      "ascent": 85,
+      "descent": 26
+    },
+    {
+      "style": "sans-bold",
+      "size": 110,
+      "ascent": 104,
+      "descent": 32
+    },
+    {
+      "style": "sans-bold",
+      "size": 125,
+      "ascent": 119,
+      "descent": 36
+    },
+    {
+      "style": "sans-bold",
+      "size": 150,
+      "ascent": 142,
+      "descent": 43
+    },
+    {
+      "style": "sans-bold",
+      "size": 187.5,
+      "ascent": 178,
+      "descent": 54
+    },
+    {
+      "style": "sans-bold",
+      "size": 250,
+      "ascent": 237,
+      "descent": 72
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 10,
+      "ascent": 9,
+      "descent": 3
     },
     {
       "style": "sans-bolditalic",
@@ -1469,15 +2021,165 @@
     },
     {
       "style": "sans-bolditalic",
+      "size": 20,
+      "ascent": 19,
+      "descent": 6
+    },
+    {
+      "style": "sans-bolditalic",
       "size": 24,
       "ascent": 23,
       "descent": 7
     },
     {
+      "style": "sans-bolditalic",
+      "size": 30,
+      "ascent": 28,
+      "descent": 9
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 50,
+      "ascent": 47,
+      "descent": 14
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 62.5,
+      "ascent": 59,
+      "descent": 18
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 70,
+      "ascent": 66,
+      "descent": 20
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 90,
+      "ascent": 85,
+      "descent": 26
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 110,
+      "ascent": 104,
+      "descent": 32
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 125,
+      "ascent": 119,
+      "descent": 36
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 150,
+      "ascent": 142,
+      "descent": 43
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 187.5,
+      "ascent": 178,
+      "descent": 54
+    },
+    {
+      "style": "sans-bolditalic",
+      "size": 250,
+      "ascent": 237,
+      "descent": 72
+    },
+    {
+      "style": "mono-regular",
+      "size": 2,
+      "ascent": 2,
+      "descent": 1
+    },
+    {
+      "style": "mono-regular",
+      "size": 3,
+      "ascent": 3,
+      "descent": 1
+    },
+    {
+      "style": "mono-regular",
+      "size": 4,
+      "ascent": 4,
+      "descent": 1
+    },
+    {
+      "style": "mono-regular",
+      "size": 5,
+      "ascent": 5,
+      "descent": 2
+    },
+    {
+      "style": "mono-regular",
+      "size": 6,
+      "ascent": 6,
+      "descent": 2
+    },
+    {
+      "style": "mono-regular",
+      "size": 7,
+      "ascent": 7,
+      "descent": 2
+    },
+    {
+      "style": "mono-regular",
+      "size": 8,
+      "ascent": 8,
+      "descent": 3
+    },
+    {
+      "style": "mono-regular",
+      "size": 9,
+      "ascent": 9,
+      "descent": 3
+    },
+    {
+      "style": "mono-regular",
+      "size": 10,
+      "ascent": 10,
+      "descent": 3
+    },
+    {
+      "style": "mono-regular",
+      "size": 10.005,
+      "ascent": 10,
+      "descent": 3
+    },
+    {
+      "style": "mono-regular",
+      "size": 11,
+      "ascent": 11,
+      "descent": 3
+    },
+    {
+      "style": "mono-regular",
+      "size": 12,
+      "ascent": 12,
+      "descent": 4
+    },
+    {
+      "style": "mono-regular",
+      "size": 13,
+      "ascent": 13,
+      "descent": 4
+    },
+    {
       "style": "mono-regular",
       "size": 14,
       "ascent": 14,
       "descent": 4
+    },
+    {
+      "style": "mono-regular",
+      "size": 15,
+      "ascent": 15,
+      "descent": 5
     },
     {
       "style": "mono-regular",
@@ -1487,9 +2189,333 @@
     },
     {
       "style": "mono-regular",
+      "size": 17,
+      "ascent": 17,
+      "descent": 5
+    },
+    {
+      "style": "mono-regular",
+      "size": 18,
+      "ascent": 18,
+      "descent": 6
+    },
+    {
+      "style": "mono-regular",
+      "size": 19,
+      "ascent": 19,
+      "descent": 6
+    },
+    {
+      "style": "mono-regular",
+      "size": 20,
+      "ascent": 20,
+      "descent": 6
+    },
+    {
+      "style": "mono-regular",
+      "size": 21,
+      "ascent": 21,
+      "descent": 7
+    },
+    {
+      "style": "mono-regular",
+      "size": 22,
+      "ascent": 22,
+      "descent": 7
+    },
+    {
+      "style": "mono-regular",
+      "size": 23,
+      "ascent": 23,
+      "descent": 7
+    },
+    {
+      "style": "mono-regular",
       "size": 24,
       "ascent": 24,
       "descent": 8
+    },
+    {
+      "style": "mono-regular",
+      "size": 25,
+      "ascent": 25,
+      "descent": 8
+    },
+    {
+      "style": "mono-regular",
+      "size": 26,
+      "ascent": 26,
+      "descent": 8
+    },
+    {
+      "style": "mono-regular",
+      "size": 27,
+      "ascent": 27,
+      "descent": 9
+    },
+    {
+      "style": "mono-regular",
+      "size": 28,
+      "ascent": 28,
+      "descent": 9
+    },
+    {
+      "style": "mono-regular",
+      "size": 29,
+      "ascent": 29,
+      "descent": 9
+    },
+    {
+      "style": "mono-regular",
+      "size": 30,
+      "ascent": 30,
+      "descent": 9
+    },
+    {
+      "style": "mono-regular",
+      "size": 30.001,
+      "ascent": 30,
+      "descent": 9
+    },
+    {
+      "style": "mono-regular",
+      "size": 30.999,
+      "ascent": 30,
+      "descent": 10
+    },
+    {
+      "style": "mono-regular",
+      "size": 31,
+      "ascent": 31,
+      "descent": 10
+    },
+    {
+      "style": "mono-regular",
+      "size": 32,
+      "ascent": 31,
+      "descent": 10
+    },
+    {
+      "style": "mono-regular",
+      "size": 33,
+      "ascent": 32,
+      "descent": 10
+    },
+    {
+      "style": "mono-regular",
+      "size": 34,
+      "ascent": 33,
+      "descent": 11
+    },
+    {
+      "style": "mono-regular",
+      "size": 35,
+      "ascent": 34,
+      "descent": 11
+    },
+    {
+      "style": "mono-regular",
+      "size": 36,
+      "ascent": 35,
+      "descent": 11
+    },
+    {
+      "style": "mono-regular",
+      "size": 37,
+      "ascent": 36,
+      "descent": 12
+    },
+    {
+      "style": "mono-regular",
+      "size": 38,
+      "ascent": 37,
+      "descent": 12
+    },
+    {
+      "style": "mono-regular",
+      "size": 39,
+      "ascent": 38,
+      "descent": 12
+    },
+    {
+      "style": "mono-regular",
+      "size": 40,
+      "ascent": 39,
+      "descent": 13
+    },
+    {
+      "style": "mono-regular",
+      "size": 41,
+      "ascent": 40,
+      "descent": 13
+    },
+    {
+      "style": "mono-regular",
+      "size": 42,
+      "ascent": 41,
+      "descent": 13
+    },
+    {
+      "style": "mono-regular",
+      "size": 43,
+      "ascent": 42,
+      "descent": 14
+    },
+    {
+      "style": "mono-regular",
+      "size": 44,
+      "ascent": 43,
+      "descent": 14
+    },
+    {
+      "style": "mono-regular",
+      "size": 45,
+      "ascent": 44,
+      "descent": 14
+    },
+    {
+      "style": "mono-regular",
+      "size": 46,
+      "ascent": 45,
+      "descent": 15
+    },
+    {
+      "style": "mono-regular",
+      "size": 47,
+      "ascent": 46,
+      "descent": 15
+    },
+    {
+      "style": "mono-regular",
+      "size": 48,
+      "ascent": 47,
+      "descent": 15
+    },
+    {
+      "style": "mono-regular",
+      "size": 49,
+      "ascent": 48,
+      "descent": 15
+    },
+    {
+      "style": "mono-regular",
+      "size": 50,
+      "ascent": 49,
+      "descent": 16
+    },
+    {
+      "style": "mono-regular",
+      "size": 51,
+      "ascent": 50,
+      "descent": 16
+    },
+    {
+      "style": "mono-regular",
+      "size": 52,
+      "ascent": 51,
+      "descent": 16
+    },
+    {
+      "style": "mono-regular",
+      "size": 53,
+      "ascent": 52,
+      "descent": 17
+    },
+    {
+      "style": "mono-regular",
+      "size": 54,
+      "ascent": 53,
+      "descent": 17
+    },
+    {
+      "style": "mono-regular",
+      "size": 55,
+      "ascent": 54,
+      "descent": 17
+    },
+    {
+      "style": "mono-regular",
+      "size": 56,
+      "ascent": 55,
+      "descent": 18
+    },
+    {
+      "style": "mono-regular",
+      "size": 57,
+      "ascent": 56,
+      "descent": 18
+    },
+    {
+      "style": "mono-regular",
+      "size": 58,
+      "ascent": 57,
+      "descent": 18
+    },
+    {
+      "style": "mono-regular",
+      "size": 59,
+      "ascent": 58,
+      "descent": 19
+    },
+    {
+      "style": "mono-regular",
+      "size": 60,
+      "ascent": 59,
+      "descent": 19
+    },
+    {
+      "style": "mono-regular",
+      "size": 62.5,
+      "ascent": 61,
+      "descent": 20
+    },
+    {
+      "style": "mono-regular",
+      "size": 70,
+      "ascent": 69,
+      "descent": 22
+    },
+    {
+      "style": "mono-regular",
+      "size": 90,
+      "ascent": 89,
+      "descent": 28
+    },
+    {
+      "style": "mono-regular",
+      "size": 110,
+      "ascent": 108,
+      "descent": 35
+    },
+    {
+      "style": "mono-regular",
+      "size": 125,
+      "ascent": 123,
+      "descent": 39
+    },
+    {
+      "style": "mono-regular",
+      "size": 150,
+      "ascent": 148,
+      "descent": 47
+    },
+    {
+      "style": "mono-regular",
+      "size": 187.5,
+      "ascent": 184,
+      "descent": 59
+    },
+    {
+      "style": "mono-regular",
+      "size": 250,
+      "ascent": 246,
+      "descent": 79
+    },
+    {
+      "style": "mono-italic",
+      "size": 10,
+      "ascent": 10,
+      "descent": 3
     },
     {
       "style": "mono-italic",
@@ -1505,9 +2531,81 @@
     },
     {
       "style": "mono-italic",
+      "size": 20,
+      "ascent": 20,
+      "descent": 6
+    },
+    {
+      "style": "mono-italic",
       "size": 24,
       "ascent": 24,
       "descent": 8
+    },
+    {
+      "style": "mono-italic",
+      "size": 30,
+      "ascent": 30,
+      "descent": 9
+    },
+    {
+      "style": "mono-italic",
+      "size": 50,
+      "ascent": 49,
+      "descent": 16
+    },
+    {
+      "style": "mono-italic",
+      "size": 62.5,
+      "ascent": 61,
+      "descent": 20
+    },
+    {
+      "style": "mono-italic",
+      "size": 70,
+      "ascent": 69,
+      "descent": 22
+    },
+    {
+      "style": "mono-italic",
+      "size": 90,
+      "ascent": 89,
+      "descent": 28
+    },
+    {
+      "style": "mono-italic",
+      "size": 110,
+      "ascent": 108,
+      "descent": 35
+    },
+    {
+      "style": "mono-italic",
+      "size": 125,
+      "ascent": 123,
+      "descent": 39
+    },
+    {
+      "style": "mono-italic",
+      "size": 150,
+      "ascent": 148,
+      "descent": 47
+    },
+    {
+      "style": "mono-italic",
+      "size": 187.5,
+      "ascent": 184,
+      "descent": 59
+    },
+    {
+      "style": "mono-italic",
+      "size": 250,
+      "ascent": 246,
+      "descent": 79
+    },
+    {
+      "style": "mono-bold",
+      "size": 10,
+      "ascent": 10,
+      "descent": 3
     },
     {
       "style": "mono-bold",
@@ -1523,9 +2621,81 @@
     },
     {
       "style": "mono-bold",
+      "size": 20,
+      "ascent": 20,
+      "descent": 6
+    },
+    {
+      "style": "mono-bold",
       "size": 24,
       "ascent": 24,
       "descent": 8
+    },
+    {
+      "style": "mono-bold",
+      "size": 30,
+      "ascent": 30,
+      "descent": 9
+    },
+    {
+      "style": "mono-bold",
+      "size": 50,
+      "ascent": 49,
+      "descent": 16
+    },
+    {
+      "style": "mono-bold",
+      "size": 62.5,
+      "ascent": 61,
+      "descent": 20
+    },
+    {
+      "style": "mono-bold",
+      "size": 70,
+      "ascent": 69,
+      "descent": 22
+    },
+    {
+      "style": "mono-bold",
+      "size": 90,
+      "ascent": 89,
+      "descent": 28
+    },
+    {
+      "style": "mono-bold",
+      "size": 110,
+      "ascent": 108,
+      "descent": 35
+    },
+    {
+      "style": "mono-bold",
+      "size": 125,
+      "ascent": 123,
+      "descent": 39
+    },
+    {
+      "style": "mono-bold",
+      "size": 150,
+      "ascent": 148,
+      "descent": 47
+    },
+    {
+      "style": "mono-bold",
+      "size": 187.5,
+      "ascent": 184,
+      "descent": 59
+    },
+    {
+      "style": "mono-bold",
+      "size": 250,
+      "ascent": 246,
+      "descent": 79
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 10,
+      "ascent": 10,
+      "descent": 3
     },
     {
       "style": "mono-bolditalic",
@@ -1541,9 +2711,75 @@
     },
     {
       "style": "mono-bolditalic",
+      "size": 20,
+      "ascent": 20,
+      "descent": 6
+    },
+    {
+      "style": "mono-bolditalic",
       "size": 24,
       "ascent": 24,
       "descent": 8
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 30,
+      "ascent": 30,
+      "descent": 9
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 50,
+      "ascent": 49,
+      "descent": 16
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 62.5,
+      "ascent": 61,
+      "descent": 20
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 70,
+      "ascent": 69,
+      "descent": 22
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 90,
+      "ascent": 89,
+      "descent": 28
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 110,
+      "ascent": 108,
+      "descent": 35
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 125,
+      "ascent": 123,
+      "descent": 39
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 150,
+      "ascent": 148,
+      "descent": 47
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 187.5,
+      "ascent": 184,
+      "descent": 59
+    },
+    {
+      "style": "mono-bolditalic",
+      "size": 250,
+      "ascent": 246,
+      "descent": 79
     }
   ]
 }

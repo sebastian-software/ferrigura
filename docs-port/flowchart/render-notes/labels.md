@@ -145,7 +145,7 @@ Source: `createText.ts:106-107` (y, dy), `:162` (text y), `:159` (lh = 1.1). Rul
 - The `<text y="-10.1">` is overridden by the first tspan's absolute `y` (**derived**, unverified in a browser).
 - Text box of the `<text>` element from `getBBox` (rounding confirmed by the spike; multi-line composition unverified, see below):
   - `top = b0 − A`, `bottom = b_{N−1} + D`.
-  - `A` = round(ascent), `D` = round(descent), each rounded to whole pixels on its own (`docs-port/spikes/text-measurement.md:30`; `crates/ferrigura-text/src/metrics.rs:64-76`).
+  - `A` = round(ascent), `D` = round(descent), each rounded to whole pixels on its own, a tie going down (28.5 becomes 28), at the size floored to 1/100 px (`docs-port/spikes/text-measurement.md:30`; `crates/ferrigura-text/src/metrics.rs`; Chromium evidence in `crates/ferrigura-text/tests/fixtures/chromium.json`, boxes).
   - `H = 1.1·S·(N−1) + A + D`; `top y = S − A`.
   - Width `W = max_i w_i`; with per-line anchors the box is `[−W/2, W/2]` (middle) or `[0, W]` (start).
 - The spike reports box height and top as exact after rounding (`spikes/text-measurement.md:22-23`). It does not say whether any of its boxes were multi-line, so the formula above is **unverified** for N > 1.
