@@ -21,6 +21,7 @@ pub mod importer;
 pub mod intermediate;
 pub mod labelcell;
 pub mod labels;
+pub mod layerconstraints;
 pub mod lgraph;
 pub mod nodespacing;
 pub mod options;

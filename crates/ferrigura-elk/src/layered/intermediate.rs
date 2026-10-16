@@ -11,8 +11,8 @@
 
 use crate::core::data::JavaEnum;
 use crate::core::data::enums::{
-    EdgeLabelSideSelection, IntermediateProcessorStrategy, LayerConstraint, NodeType,
-    OrderingStrategy, PortConstraints,
+    EdgeLabelSideSelection, IntermediateProcessorStrategy, NodeType, OrderingStrategy,
+    PortConstraints,
 };
 use crate::core::math::KVector;
 use crate::core::util::progress::{Monitor, ProgressMonitor};
@@ -122,24 +122,18 @@ pub fn run(
         IntermediateProcessorStrategy::LONG_EDGE_JOINER => {
             dummies::join_long_edges(graph);
         }
-        // Without layer constraints these steps change nothing; with them, they are not ported.
-        IntermediateProcessorStrategy::EDGE_AND_LAYER_CONSTRAINT_EDGE_REVERSER
-        | IntermediateProcessorStrategy::LAYER_CONSTRAINT_PREPROCESSOR
-        | IntermediateProcessorStrategy::LAYER_CONSTRAINT_POSTPROCESSOR
-        | IntermediateProcessorStrategy::IN_LAYER_CONSTRAINT_PROCESSOR => {
-            let constrained = graph.nodes.iter().any(|node| {
-                matches!(
-                    node.properties
-                        .enum_of::<LayerConstraint>(options::LAYER_CONSTRAINT),
-                    Some(constraint) if constraint != LayerConstraint::NONE
-                )
-            });
-            if constrained {
-                return Err(LayoutError::Unsupported(
-                    "layer constraints (the layer constraint processors)".to_string(),
-                ));
-            }
+        IntermediateProcessorStrategy::EDGE_AND_LAYER_CONSTRAINT_EDGE_REVERSER => {
+            crate::layered::layerconstraints::reverse_edges(graph)?;
         }
+        IntermediateProcessorStrategy::LAYER_CONSTRAINT_PREPROCESSOR => {
+            crate::layered::layerconstraints::preprocess(graph)?;
+        }
+        IntermediateProcessorStrategy::LAYER_CONSTRAINT_POSTPROCESSOR => {
+            crate::layered::layerconstraints::postprocess(graph)?;
+        }
+        // In-layer constraints come from external ports, which are not ported, so there are none to
+        // place and the step changes nothing.
+        IntermediateProcessorStrategy::IN_LAYER_CONSTRAINT_PROCESSOR => {}
         // Reversed edges are restored by a processor that is not ported yet; with none, it does nothing.
         IntermediateProcessorStrategy::REVERSED_EDGE_RESTORER => {
             crate::layered::p1cycles::restore_reversed_edges(graph);
