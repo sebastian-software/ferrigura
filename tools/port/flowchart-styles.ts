@@ -85,9 +85,16 @@ interface FlowStylesModule {
   default: unknown;
 }
 
+/** A class as the flowchart DB stores it: its styles, and the text styles of its colours. */
+interface DbClass {
+  id: string;
+  styles: string[];
+  textStyles: string[];
+}
+
 interface FlowDb {
   clear(): void;
-  classes: Map<string, { id: string; styles: string[]; textStyles: string[] }>;
+  classes: Map<string, DbClass>;
 }
 
 interface FlowParser {
@@ -133,7 +140,7 @@ async function loadModules(reference: Reference): Promise<Modules> {
 }
 
 /** The `classDef` classes of the fixture, as the reference's flowchart DB stores them. */
-function classesOf(text: string, modules: Modules): { id: string; styles: string[] }[] {
+function classesOf(text: string, modules: Modules): DbClass[] {
   const { preprocess, encode, flowParser, flowDb } = modules;
   const { code } = preprocess.preprocessDiagram(text);
   const db = new flowDb.FlowDB();
@@ -143,6 +150,7 @@ function classesOf(text: string, modules: Modules): { id: string; styles: string
   return [...db.classes.values()].map((classDef) => ({
     id: classDef.id,
     styles: [...classDef.styles],
+    textStyles: [...classDef.textStyles],
   }));
 }
 
