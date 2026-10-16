@@ -576,6 +576,280 @@ export function syntheticExplicitPortGuardGraphs(): {
 }
 
 /**
+ * A flat graph whose layer sweep leaves a marked edge that leaves an explicit port: the Brandes & Koepf
+ * placement works on the port's edge. Found by a search over random graphs with explicit ports, one edge per
+ * port, through Node elkjs; the search is not part of the repository.
+ */
+export function syntheticMarkedExplicitPortGraphs(): {
+  name: string;
+  graph: Record<string, unknown>;
+}[] {
+  return [
+    {
+      name: 'synthetic__explicit-port-marked-edge-on-port',
+      graph: {
+        id: 'root',
+        layoutOptions: {
+          'elk.hierarchyHandling': 'SEPARATE_CHILDREN',
+          'elk.algorithm': 'elk.layered',
+          'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+          'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+          'elk.direction': 'UP',
+          'spacing.baseValue': 40,
+          'elk.layered.unnecessaryBendpoints': true,
+          'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
+          'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+          'elk.layered.mergeEdges': false,
+          'elk.randomSeed': 398,
+        },
+        children: [
+          {
+            id: 'n0',
+            width: 47,
+            height: 61,
+          },
+          {
+            id: 'n1',
+            width: 33,
+            height: 38,
+          },
+          {
+            id: 'n2',
+            width: 59,
+            height: 37,
+            layoutOptions: {
+              'elk.portConstraints': 'FIXED_SIDE',
+            },
+            ports: [
+              {
+                id: 'p2_0',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'WEST',
+                },
+              },
+              {
+                id: 'p2_1',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'WEST',
+                },
+              },
+            ],
+          },
+          {
+            id: 'n3',
+            width: 67,
+            height: 54,
+          },
+          {
+            id: 'n4',
+            width: 53,
+            height: 52,
+          },
+          {
+            id: 'n5',
+            width: 57,
+            height: 55,
+            layoutOptions: {
+              'elk.portConstraints': 'FIXED_SIDE',
+            },
+            ports: [
+              {
+                id: 'p5_0',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'SOUTH',
+                },
+              },
+              {
+                id: 'p5_1',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'SOUTH',
+                },
+              },
+            ],
+          },
+          {
+            id: 'n6',
+            width: 68,
+            height: 34,
+            layoutOptions: {
+              'elk.portConstraints': 'FIXED_SIDE',
+            },
+            ports: [
+              {
+                id: 'p6_0',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'NORTH',
+                },
+              },
+              {
+                id: 'p6_1',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'EAST',
+                },
+              },
+            ],
+          },
+          {
+            id: 'n7',
+            width: 51,
+            height: 58,
+            layoutOptions: {
+              'elk.portConstraints': 'FIXED_SIDE',
+            },
+            ports: [
+              {
+                id: 'p7_0',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'NORTH',
+                },
+              },
+              {
+                id: 'p7_1',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'NORTH',
+                },
+              },
+            ],
+          },
+          {
+            id: 'n8',
+            width: 63,
+            height: 54,
+            layoutOptions: {
+              'elk.portConstraints': 'FIXED_SIDE',
+            },
+            ports: [
+              {
+                id: 'p8_0',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'SOUTH',
+                },
+              },
+              {
+                id: 'p8_1',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'EAST',
+                },
+              },
+              {
+                id: 'p8_2',
+                width: 6,
+                height: 6,
+                layoutOptions: {
+                  'elk.port.side': 'WEST',
+                },
+              },
+            ],
+          },
+        ],
+        edges: [
+          {
+            id: 'e0',
+            sources: ['n3'],
+            targets: ['n7'],
+          },
+          {
+            id: 'e1',
+            sources: ['n7'],
+            targets: ['p2_1'],
+          },
+          {
+            id: 'e2',
+            sources: ['n4'],
+            targets: ['p7_0'],
+          },
+          {
+            id: 'e4',
+            sources: ['n8'],
+            targets: ['n4'],
+          },
+          {
+            id: 'e5',
+            sources: ['n4'],
+            targets: ['n7'],
+          },
+          {
+            id: 'e9',
+            sources: ['p6_1'],
+            targets: ['p8_0'],
+          },
+          {
+            id: 'e10',
+            sources: ['n5'],
+            targets: ['n1'],
+          },
+          {
+            id: 'e11',
+            sources: ['n2'],
+            targets: ['n3'],
+          },
+          {
+            id: 'e14',
+            sources: ['p7_1'],
+            targets: ['n1'],
+          },
+          {
+            id: 'e15',
+            sources: ['p5_0'],
+            targets: ['n8'],
+          },
+          {
+            id: 'e16',
+            sources: ['n8'],
+            targets: ['p2_0'],
+          },
+          {
+            id: 'e17',
+            sources: ['n1'],
+            targets: ['n2'],
+          },
+          {
+            id: 'e18',
+            sources: ['n7'],
+            targets: ['n8'],
+          },
+          {
+            id: 'e19',
+            sources: ['p5_1'],
+            targets: ['n1'],
+          },
+          {
+            id: 'e22',
+            sources: ['n4'],
+            targets: ['n2'],
+          },
+          {
+            id: 'e23',
+            sources: ['n0'],
+            targets: ['n3'],
+          },
+        ],
+      },
+    },
+  ];
+}
+
+/**
  * A flat graph with cycles, laid out with the greedy cycle breaker, which Mermaid's legacy preset
  * selects through the GREEDY strategy. The flows of its nodes differ, so the sinks, the sources and
  * the random draw of the node with the largest outflow all take part.

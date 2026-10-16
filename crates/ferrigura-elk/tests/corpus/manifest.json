@@ -1098,6 +1098,14 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__explicit-port-marked-edge-on-port",
+   "fixture": null,
+   "nodes": 9,
+   "edges": 16,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__explicit-port-shared",
    "fixture": null,
    "nodes": 4,

@@ -116,3 +116,61 @@ fn supported_cases_do_not_regress() {
         "{supported} corpus cases pass the driver; the floor is {SUPPORTED_FLOOR}"
     );
 }
+
+/// The corpus cases the port does not lay out yet, each with its reason. A case that does not lay out
+/// and is not named here fails `unsupported_cases_are_named`; a named case that does lay out fails
+/// `named_cases_are_unsupported`, so this list only shrinks as the port grows.
+const NOT_PORTED: &[(&str, &str)] = &[
+    (
+        "flowchart__elk-box-layout-with-edges__0",
+        "elk.box is a non-layered algorithm; the port runs elk.layered only",
+    ),
+    (
+        "flowchart__elk-subgraph-with-box-algorithm__0",
+        "elk.box is a non-layered algorithm; the port runs elk.layered only",
+    ),
+    (
+        "flowchart__elk-rectpacking-layout-with-edges__0",
+        "elk.rectpacking is a non-layered algorithm; the port runs elk.layered only",
+    ),
+    (
+        "synthetic__explicit-port-shared",
+        "a port with two edges is laid out with HYPEREDGES, which is not ported; Mermaid's ELK integration \
+         never creates an ELK port (render.ts names the nodes as the ends of its edges), so this is outside \
+         Mermaid's reach",
+    ),
+    (
+        "synthetic__explicit-port-marked-edge-on-port",
+        "an inverted port (InvertedPortProcessor dummies), which the next port step ports; the case guards \
+         a BK marked edge that leaves an explicit port",
+    ),
+];
+
+#[test]
+fn unsupported_cases_are_named() {
+    let unnamed: Vec<String> = case_names()
+        .into_iter()
+        .filter(|name| {
+            let case = load(name);
+            let input: JsonNode = serde_json::from_value(case["input"].clone()).unwrap();
+            ferrigura_elk::layout(&input, false).is_err()
+                && !NOT_PORTED.iter().any(|(named, _)| named == name)
+        })
+        .collect();
+    assert!(
+        unnamed.is_empty(),
+        "corpus cases the port does not lay out, and that NOT_PORTED does not name: {unnamed:?}"
+    );
+}
+
+#[test]
+fn named_cases_are_unsupported() {
+    for (name, reason) in NOT_PORTED {
+        let case = load(name);
+        let input: JsonNode = serde_json::from_value(case["input"].clone()).unwrap();
+        assert!(
+            ferrigura_elk::layout(&input, false).is_err(),
+            "{name} lays out now; remove it from NOT_PORTED (it was: {reason})"
+        );
+    }
+}
