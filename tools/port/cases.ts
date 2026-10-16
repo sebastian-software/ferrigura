@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 /**
  * Explicit inputs of the differential run, added to the ones the reference already tests.
  *
@@ -49,4 +51,56 @@ export const explicitCases: Record<string, string[]> = {
     // Invisible links and an open arrow have no markers; the edge classes depend on the stroke.
     'flowchart TB\nA ~~~ B\nA --- C\nA --o D\nA -- text --> E',
   ],
+  er: [
+    // Value states at the end of the input: the value is empty, so the end marker follows without `EOF`.
+    'erDiagram\naccTitle:',
+    'erDiagram\naccTitle: foo',
+    'erDiagram\naccDescr { foo',
+    // A style line with blanks before its line break: the break is swallowed by the style state.
+    'erDiagram\nA ||--o{ B : x\nstyle A color:red \nC ||--o{ D : y',
+    // A direction takes the rest of its line, and the next line starts a statement.
+    'erDiagram\nA ||--o{ B : has direction TB\nC ||--o{ D : x',
+    // The members of a subgraph include the names the grammar keeps from other statements.
+    'erDiagram\nsubgraph G\nclassDef foo fill:#f9f\naccTitle: T\nA ||--o{ B : x\nend',
+    // Nested subgraphs: the inner id is a member of the outer one, and a direction is its own.
+    'erDiagram\nsubgraph outer\n  A\n  subgraph inner\n    direction RL\n    B\n  end\nend\ndirection TB\nC',
+    // Classes on entities and subgraphs, and attribute blocks with keys, comments and generics.
+    'erDiagram\nclass A,B c1,c2\nA:::c3 {\n  string name PK, UK "comment"\n  type~T~ tag\n  `my type` x\n}\nsubgraph A\nB\nend',
+    // Alias forms: the alias is kept on the first definition only.
+    'erDiagram\nc[First]:::k\nc[Second] {}\nd[Other] ||--o| c : x',
+    // Header texts and the front-matter title are sanitised.
+    '---\ntitle: A & B\n---\nerDiagram\naccTitle:   AT&T  \naccDescr {\n  line one\n\n  line two\n}\nsubgraph "G & H"\nA\nend',
+    // Quoted roles may span lines; a quote inside a name is not allowed.
+    'erDiagram\nA ||--o{ B : "multi\nline"\nC ||--o{ "x"y : z',
+    // Parent-child and cardinality words, and the `1` in its three readings.
+    'erDiagram\nPROJECT u--o{ TEAM : "p"\nA 1--1 B : x\nC 1..one or more D : y\n1 ||--|| 2 : z',
+    ...erCharacterCases(),
+  ],
 };
+
+/**
+ * The texts of the generated character cases of `erDiagram.spec.js`: the characters of its list,
+ * each in the five forms of its loop, and all of them together. They are read from the spec, so the
+ * list is the reference's.
+ */
+function erCharacterCases(): string[] {
+  const spec = readFileSync(
+    new URL('../../packages/mermaid/src/diagrams/er/parser/erDiagram.spec.js', import.meta.url),
+    'utf8'
+  );
+  const list = /const chars =\s*"([^"]*)";/.exec(spec)?.[1] ?? '';
+  const characters = list.split(' ');
+  const texts: string[] = [];
+  for (const c of characters) {
+    const single = `Blo${c}rf`;
+    const repeated = `Blo${c}${c}rf`;
+    texts.push(
+      `erDiagram\n ${single}\n`,
+      `erDiagram\n "${single}"\n`,
+      `erDiagram\n "${repeated}"\n`
+    );
+    texts.push(`erDiagram\n "Blorf${c}"\n`);
+  }
+  texts.push(`erDiagram\n "a${characters.join('')}"\n`);
+  return texts;
+}
