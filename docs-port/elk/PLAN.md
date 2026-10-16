@@ -273,7 +273,7 @@ Not yet ported, with the checkpoint in mind: `alg.common/networksimplex` (`Netwo
 
 ## 10. Stage C status
 
-The checkpoint from the coordinator: a corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for all 120 supported corpus cases**, including the first nested Mermaid case (`state-diagram__should-render-a-state-with-states-in-it__0`): node boxes, edge sections and label boxes match elkjs exactly (tolerance 0, `tests/differential.rs`), and the full trace matches with its logs (`tests/trace.rs`).
+The checkpoint from the coordinator: a corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for all 132 supported corpus cases**, including the first nested Mermaid case (`state-diagram__should-render-a-state-with-states-in-it__0`): node boxes, edge sections and label boxes match elkjs exactly (tolerance 0, `tests/differential.rs`), and the full trace matches with its logs (`tests/trace.rs`).
 
 Corrections to §3, which lists the configurations as if they were unconditional:
 
@@ -296,15 +296,29 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 
 ### Coverage
 
-- Corpus: 120 of 145 cases pass the driver. The other 25 report `Unsupported`: 9 have several connected components, 12 have a nested graph inside a compound layout, 3 are non-layered algorithms (`elk.box`, `elk.rectpacking`), and 1 needs explicit ELK ports (`synthetic__self-loops-fixed-side-opposing`).
-- All 120 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 120). All 120 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 120).
-- Crate tests: 137 unit tests; the differential and trace tests pass, with their diagnostics still ignored; `clippy -D warnings` is clean.
+- Corpus: 132 of 148 cases pass the driver. The other 16 report `Unsupported`: 12 have a nested graph inside a compound layout, 3 are non-layered algorithms (`elk.box` twice, `elk.rectpacking`), and 1 needs explicit ELK ports (`synthetic__self-loops-fixed-side-opposing`).
+- All 132 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 132). All 132 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 132).
+- Crate tests: 168 unit tests and the integration tests pass; the differential and trace diagnostics stay ignored; `clippy -D warnings` is clean, and `cargo test --workspace` passes.
+- Mermaid never sets the option that turns off the component split, so the synthetic case `synthetic__components-not-separated` covers it on its own.
+
+### Done since the first checkpoint
+
+- Unset options read their layered defaults. An option that targets parents takes the `supports` value of Layered.melk (`edgeRouting` is ORTHOGONAL when unset); an option that targets nodes keeps its melk default (`portAlignment.default` is DISTRIBUTED when unset, probed through Node elkjs). The generator reads `option ^default`, which the registry lacked before.
+- The two-sided greedy switch in the layer sweep. It settles the nine several-components cases, and the eight that need it all match.
+- The greedy cycle breaker, which the default strategy and Mermaid's `legacy` preset reach. It is checked on the synthetic case `synthetic__greedy-cycles`.
+
+### Known gaps outside the corpus
+
+- Model order with edge labels: the coordinates differ whether the greedy switch is on or off. No corpus case has both, so the gap is open.
+- The BK "Marked edges" log names root-level edges `e_<id>`; elkjs writes `e_root.<id>`. No corpus case with a marked edge hits it.
+- The one-sided greedy switch (`GreedySwitchType.ONE_SIDED`) is Unsupported; no default or corpus case needs it.
 
 ### Next, in order
 
-1. Nested graphs (22 left): several connected components (9 cases, `ComponentsProcessor`), and a nested graph inside a compound layout (12 cases), which needs the hierarchical ports and the cross-hierarchy edges.
+1. Nested graphs (12 left): a nested graph inside a compound layout, which needs the hierarchical ports and the cross-hierarchy edges.
 2. Explicit ELK ports (1): the importer does not read them, so the opposing self loops of `synthetic__self-loops-fixed-side-opposing` are not checked yet.
-3. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
+3. Mirror node labels for LEFT and UP, with a synthetic case per direction through Node elkjs.
+4. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
 
 ### Edge pipeline: state and order
 
