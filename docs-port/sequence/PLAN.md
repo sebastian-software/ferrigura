@@ -8,7 +8,7 @@ Reference: `packages/mermaid/src/diagrams/sequence/` of this worktree (`04b952b4
 
 - **In:** the lexer and grammar of `sequenceDiagram.jison`, the DB of `sequenceDb.ts` (state and `apply`), the header texts (`title`, `accTitle`, `accDescr`), `@{ … }` actor metadata (YAML, shared with flowchart), and the shared pipeline steps (front matter, directives, comments, entities).
 - **Out:** the renderer (`sequenceRenderer.ts`, `svgDraw.js`, `actorBands.ts`), the styles and the `links`/`properties` popup menus, which need JavaScript (decision 0001). Their parse state stays in the model (section 4).
-- **Options:** `Options { wrap: bool }`, default `false`. It is the resolved `autoWrap()` value. The reference reads it from the configuration (`wrapEnabled`, then `sequence.wrap`, then `false`, `sequenceDb.ts:366-373`); the caller resolves it, as `maxEdges` is resolved for the flowchart.
+- **Options:** `Options { wrap: bool }`, default `false`. It is the `autoWrap()` value the DB has during the parse: `Diagram.fromText` calls `clear()`, which resets `wrapEnabled` (`Diagram.ts:49`), and `init` then copies a truthy top-level `wrap` into `sequence.wrap` (`sequenceDiagram.ts:21-23`). So the value is `sequence.wrap`, else `false`. The caller resolves it, as `maxEdges` is resolved for the flowchart.
 
 ## 2. Pipeline
 
@@ -51,7 +51,7 @@ Rule groups, in order:
 Two rules matter most for the port:
 
 - **Q1, newline swallowed.** In INITIAL, `\s+` at line 25 comes after `[\n]+` and matches blanks and line breaks together. A line that ends in blanks loses its line break as a token, so the statement before it has no NEWLINE. Reproduced by the same rule order.
-- **Q3, INVALID lines.** A lone `/`, `\`, `(`, `)`, `<` or `>` at the start of a token is INVALID (rule 126), and `line: INVALID` is accepted and dropped. `participant A:B` is INVALID in the ID state, with the state popped, so it is also silently dropped.
+- **Q3, INVALID lines.** A lone `/`, `\`, `(`, `)`, `<` or `>` at the start of a token is INVALID (rule 126), and `line: INVALID` is accepted and dropped. Where a statement needs an actor, an INVALID token is a syntax error: `participant A:B` is INVALID in the ID state (rule 39), and `participant` requires an actor (`sequenceDiagram.jison:263-265`), so the line is rejected.
 
 ## 4. Grammar and DB calls
 
@@ -104,9 +104,9 @@ The two-backslash heads are literal `\\` in the source. The table is the grammar
 `crates/ferrigura-model/src/sequence.rs`, `SequenceDiagram`, version 1, camelCase. Shape, following the DB:
 
 - `title`, `accTitle`, `accDescr`: strings, `""` when absent (canonical-model.md). Sanitised (DOMPurify subset) as the setters do.
-- `actors`: in the DB's map order. Each: `id`, `name`, `description`, `type` (`participant`, `actor`, or a YAML `type`), `wrap`, `box` (index into `boxes`, or null), `prevActor`, `nextActor` (null when unset), `links`, `properties` (JSON objects, keys as the DB has them).
+- `actors`: in the DB's map order. Each: `id`; `name`, the id as written, always (an alias sets only the description); `description`, the alias or the text after `as`, else the name (a YAML value when an alias is a number); `type`, `participant` or `actor`, or the metadata's `type` as YAML gives it (a JSON value, so a number stays a number); `wrap`; `box` (index into `boxes`, or null); `prevActor`; `nextActor` (null when unset); `links` and `properties` (JSON objects, keys as the DB has them).
 - `boxes`: `name` (null when the title is absent), `wrap`, `fill` (the colour as written, or `transparent`), `actorKeys` (the ids, repeats kept).
-- `messages`: in `apply` order. Each: `id` (decimal index), `from`, `to` (null for control items and autonumber), `message` (text, or `{start, step, visible}` for autonumber, with null for undefined start and step), `wrap`, `type` (the line type's name, section 6), `activate` (null for notes and autonumber, which have no field in the DB), `centralConnection` (`NONE`, `CENTRAL_CONNECTION`, `CENTRAL_CONNECTION_REVERSE`, `CENTRAL_CONNECTION_DUAL`, null for notes and autonumber), `placement` (`LEFT_OF`, `RIGHT_OF`, `OVER`, null for others).
+- `messages`: in `apply` order. Each: `id` (decimal index), `from`, `to` (null for the block markers and autonumber; set for messages, notes, and the activation and central connection items), `message` (text, or `{start, step, visible}` for autonumber, with null for undefined start and step), `wrap`, `type` (the line type's name, section 6), `activate` (null for notes and autonumber, which have no field in the DB), `centralConnection` (`NONE`, `CENTRAL_CONNECTION`, `CENTRAL_CONNECTION_REVERSE`, `CENTRAL_CONNECTION_DUAL`, null for notes and autonumber), `placement` (`LEFT_OF`, `RIGHT_OF`, `OVER`, null for others).
 - `createdActors`, `destroyedActors`: actor id to message count.
 
 Left out, and why:
@@ -139,7 +139,7 @@ Each is in the code with a comment that cites the reference line.
 ## 9. Text, sanitising and colours
 
 - Message, note, block and actor texts are raw (`addMessage` `:256-270`, `addNote` `:425-450`, `addActor` `:155-231`). Only the title, `accTitle`, `accDescr`, the box title, and the `links` and `properties` texts are sanitised. The sanitiser is `sanitize.rs`, with the config resolved as the reference does for `htmlLabels` true and `securityLevel` strict (the default); the exporter pins both.
-- A box colour is valid when `window.CSS.supports('color', colour)` is true (`:400-404`). Chromium's answer is not the same as jsdom's (the exporter's fallback path, `:405-411`), and the difference is checked in section 10. The port uses a list of the CSS named colours, `transparent` and `currentcolor`, plus the functional `rgb`, `rgba`, `hsl` and `hsla` forms, and the check is an open question until Chromium confirms it.
+- A box colour is valid when `CSS.supports('color', colour)` is true in Chromium. The port's rule is the exporter's (`tools/port/export-sequence.ts`, `cssSupports`): the CSS named colours, `transparent`, `currentcolor` and the CSS-wide keywords (`inherit` and the others, which Chromium accepts for any property), any ASCII case, and the functions `rgb`, `rgba`, `hsl` and `hsla` with CSS numbers and uniform argument kinds, in the comma or the space form, with an optional alpha. CSS system colours are not in the rule. The rule is the reference's own harness, not a Chromium check yet (section 12).
 
 ## 10. Specs
 
@@ -151,7 +151,7 @@ The parser- and DB-level blocks of `sequenceDiagram.spec.js` (`:97-1782` and `:2
 
 ## 12. Open questions
 
-1. Box colour validity in Chromium (section 9). Check with `CSS.supports` in a browser before the list is final.
-2. Non-string `type` in `@{ … }` (a number or a boolean). The DB keeps the YAML value. The model has a string; the decision follows the inputs.
-3. The `links A: {…}` statement: the lexer reads `links` as a keyword when a non-excluded character follows the blanks, so the probe decides whether it is a statement or text (the notes say text).
-4. Whether `activate` and `centralConnection` are `false`/`0` on control items (the code says so, `sequenceDb.ts:272-308`), not undefined as NOTES 3.5 says. The differential run decides.
+1. Box colour validity in Chromium (section 9). The rule is the exporter's and is not checked in Chromium yet. The built-in browser pane could not run a script on a local file, so the check needs another route.
+2. Resolved: an actor's `type` and `description` keep their YAML value (`Value`). The differential run confirmed a numeric type (`participant A@{ type: 5 }`).
+3. Resolved: `links A: {…}` is the `links` statement. The reference agrees on the explicit `links` case of `cases.ts`.
+4. Resolved: control items have `activate` false and `centralConnection` NONE, as `addSignal` gives them (`sequenceDb.ts:272-308`). NOTES 3.5 is wrong on this point; the differential run confirmed the code.
