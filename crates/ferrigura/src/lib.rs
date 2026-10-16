@@ -86,6 +86,11 @@ pub fn render_with(
             column: 1,
             message: "the journey diagram is not rendered yet".to_owned(),
         })),
+        Some(DiagramType::GitGraph) => Err(RenderError::Parse(ParseError {
+            line: 1,
+            column: 1,
+            message: "the gitGraph diagram is not rendered yet".to_owned(),
+        })),
         None => Err(RenderError::Parse(ParseError {
             line: 1,
             column: 1,

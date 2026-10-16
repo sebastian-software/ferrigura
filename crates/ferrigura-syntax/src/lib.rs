@@ -18,6 +18,7 @@ mod cursor;
 mod entities;
 mod error;
 pub mod flowchart;
+pub mod git_graph;
 mod lexer;
 mod preprocess;
 mod scan;
@@ -32,6 +33,7 @@ pub mod timeline;
 pub mod yaml;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
+use ferrigura_model::git_graph::GitGraphDiagram;
 use ferrigura_model::info::InfoDiagram;
 use ferrigura_model::journey::JourneyDiagram;
 use ferrigura_model::pie::PieDiagram;
@@ -52,6 +54,8 @@ pub enum DiagramType {
     Timeline,
     /// The user journey, written `journey`.
     Journey,
+    /// The gitGraph diagram.
+    GitGraph,
 }
 
 impl DiagramType {
@@ -64,6 +68,7 @@ impl DiagramType {
             Self::Flowchart => "flowchart",
             Self::Timeline => "timeline",
             Self::Journey => "journey",
+            Self::GitGraph => "gitGraph",
         }
     }
 }
@@ -81,6 +86,8 @@ pub enum Diagram {
     Timeline(TimelineDiagram),
     /// A user journey.
     Journey(JourneyDiagram),
+    /// A gitGraph.
+    GitGraph(GitGraphDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -101,6 +108,8 @@ pub fn detect(text: &str) -> Option<DiagramType> {
         Some(DiagramType::Timeline)
     } else if rest.starts_with("journey") {
         Some(DiagramType::Journey)
+    } else if rest.starts_with("gitGraph") {
+        Some(DiagramType::GitGraph)
     } else {
         None
     }
@@ -116,6 +125,7 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
             .map_err(|flowchart::FlowchartError::Syntax(error)| error),
         Some(DiagramType::Timeline) => timeline::parse(text).map(Diagram::Timeline),
         Some(DiagramType::Journey) => journey::parse(text).map(Diagram::Journey),
+        Some(DiagramType::GitGraph) => git_graph::parse(text).map(Diagram::GitGraph),
         None => Err(ParseError {
             line: 1,
             column: 1,

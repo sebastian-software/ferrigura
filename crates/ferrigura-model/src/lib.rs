@@ -11,6 +11,7 @@
 
 pub mod config;
 pub mod flowchart;
+pub mod git_graph;
 pub mod info;
 pub mod journey;
 pub mod pie;

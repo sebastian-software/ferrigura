@@ -123,7 +123,7 @@ fn title(lex: &mut Lexer<Token>) -> String {
 }
 
 /// The `:` form of `accTitle` and `accDescr`: `[\t ]*:` and the rest of the line up to `%%`.
-fn colon_form(rest: &str) -> Option<(String, usize)> {
+pub(crate) fn colon_form(rest: &str) -> Option<(String, usize)> {
     let blanks = rest.len() - rest.trim_start_matches(['\t', ' ']).len();
     if !rest[blanks..].starts_with(':') {
         return None;
@@ -200,7 +200,7 @@ fn fence_boundary(tail: &str) -> Option<usize> {
 
 /// `%%{[\S\s]*?}%%(?:\r?\n|(?!\S))` where `rest` starts after `%%`: the length of the directive,
 /// or `None` if it has no closing fence that is followed by a boundary.
-fn directive_len(rest: &str) -> Option<usize> {
+pub(crate) fn directive_len(rest: &str) -> Option<usize> {
     let mut from = 1;
     while let Some(close) = rest[from..].find("}%%").map(|k| from + k) {
         let end = close + 3;
@@ -225,7 +225,7 @@ fn comment(lex: &mut Lexer<Token>) -> FilterResult<(), LexError> {
 }
 
 /// The length of a `---` block as `YAML` matches it, after the opening `---`.
-fn yaml_len(rest: &str) -> Option<usize> {
+pub(crate) fn yaml_len(rest: &str) -> Option<usize> {
     let blanks = rest.len() - rest.trim_start_matches(['\t', ' ']).len();
     let body_start = if rest[blanks..].starts_with("\r\n") {
         blanks + 2

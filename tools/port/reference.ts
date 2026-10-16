@@ -67,7 +67,7 @@ export type PortOutput =
  * as `mermaidAPI` does when it loads the diagrams.
  */
 export async function registerDetectors(reference: Reference): Promise<void> {
-  const [detectType, pie, info, flowchart, timeline, journey] = await Promise.all([
+  const [detectType, pie, info, flowchart, timeline, journey, gitGraph] = await Promise.all([
     reference.load<{ registerLazyLoadedDiagrams(...diagrams: unknown[]): void }>(
       '/packages/mermaid/src/diagram-api/detectType.ts'
     ),
@@ -80,12 +80,14 @@ export async function registerDetectors(reference: Reference): Promise<void> {
     reference.load<{ default: unknown }>(
       '/packages/mermaid/src/diagrams/user-journey/journeyDetector.ts'
     ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/git/gitGraphDetector.ts'),
   ]);
   detectType.registerLazyLoadedDiagrams(
     pie.pie,
     info.info,
     flowchart.default,
     timeline.default,
-    journey.default
+    journey.default,
+    gitGraph.default
   );
 }

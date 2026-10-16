@@ -102,6 +102,68 @@ pub fn sanitize_text(text: &str) -> String {
     out
 }
 
+/// `sanitizeText` for a configuration without `securityLevel`, as the gitGraph section is: the
+/// reference takes the escape branch of `sanitizeMore`, which turns `<br>` into a placeholder,
+/// escapes `<`, `>` and `=`, puts the breaks back as `<br/>`, and then runs DOMPurify. The
+/// result is therefore not the DOMPurify output alone: `a=b` gives `a&equals;b`. The empty text
+/// is returned as it is.
+#[must_use]
+pub fn sanitize_section(text: &str) -> String {
+    if text.is_empty() {
+        return String::new();
+    }
+    let placeholder = break_to_placeholder(text);
+    let escaped = placeholder
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('=', "&equals;");
+    sanitize_text(&escaped.replace("#br#", "<br/>"))
+}
+
+/// `replace(/<\/?br\s*\/?>/gi, '#br#')`: a line break tag, in any case and with JavaScript blanks,
+/// becomes the placeholder `#br#`.
+fn break_to_placeholder(text: &str) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = String::with_capacity(text.len());
+    let mut i = 0;
+    while i < chars.len() {
+        if let Some(end) = line_break_tag_end(&chars, i) {
+            out.push_str("#br#");
+            i = end;
+        } else {
+            out.push(chars[i]);
+            i += 1;
+        }
+    }
+    out
+}
+
+/// The index after a `<br>` tag that starts at `start`, if one does.
+fn line_break_tag_end(chars: &[char], start: usize) -> Option<usize> {
+    if chars.get(start) != Some(&'<') {
+        return None;
+    }
+    let mut i = start + 1;
+    if chars.get(i) == Some(&'/') {
+        i += 1;
+    }
+    let is_br = chars.get(i).is_some_and(|c| c.eq_ignore_ascii_case(&'b'))
+        && chars
+            .get(i + 1)
+            .is_some_and(|c| c.eq_ignore_ascii_case(&'r'));
+    if !is_br {
+        return None;
+    }
+    i += 2;
+    while chars.get(i).is_some_and(|&c| crate::text::is_js_space(c)) {
+        i += 1;
+    }
+    if chars.get(i) == Some(&'/') {
+        i += 1;
+    }
+    (chars.get(i) == Some(&'>')).then_some(i + 1)
+}
+
 /// The elements that void in HTML: they have no content and no end tag.
 const VOID_ELEMENTS: &[&str] = &[
     "area", "base", "basefont", "bgsound", "br", "col", "embed", "frame", "hr", "img", "input",
@@ -2039,5 +2101,45 @@ mod tests {
     fn a_line_break_tag_is_kept_and_a_closing_br_is_read_as_one() {
         assert_eq!(sanitize_text("a</br>b"), "a<br>b");
         assert_eq!(sanitize_text("a<br/>b"), "a<br>b");
+    }
+
+    /// `sanitizeText` with the gitGraph section, checked against DOMPurify 3.4.12 with jsdom and the
+    /// escape branch of `sanitizeMore` (`packages/mermaid/src/diagrams/common/common.ts`), on the
+    /// inputs `docs-port/gitgraph/NOTES.md` section 2.6 lists.
+    #[test]
+    fn the_section_escapes_angle_brackets_and_equals_before_dompurify() {
+        use super::sanitize_section;
+        assert_eq!(sanitize_section("AT&T"), "AT&T");
+        assert_eq!(sanitize_section("<b>x</b>"), "&lt;b&gt;x&lt;/b&gt;");
+        assert_eq!(sanitize_section("a=b"), "a&equals;b");
+        assert_eq!(sanitize_section("a<br>b"), "a<br>b");
+        assert_eq!(sanitize_section("a<br/>b"), "a<br>b");
+        assert_eq!(sanitize_section("a <br /> b"), "a <br> b");
+        assert_eq!(sanitize_section("<BR>x"), "<br>x");
+        assert_eq!(sanitize_section("x<y"), "x&lt;y");
+        assert_eq!(sanitize_section("<tag>"), "&lt;tag&gt;");
+        assert_eq!(sanitize_section("a&b<c>"), "a&b&lt;c&gt;");
+        assert_eq!(sanitize_section("#br#"), "<br>");
+        assert_eq!(
+            sanitize_section("<script>x</script>"),
+            "&lt;script&gt;x&lt;/script&gt;"
+        );
+        assert_eq!(
+            sanitize_section("a&lt;b<i>q</i>"),
+            "a&lt;b&lt;i&gt;q&lt;/i&gt;"
+        );
+        assert_eq!(sanitize_section("a<"), "a&lt;");
+        assert_eq!(sanitize_section(""), "");
+    }
+
+    /// The title path: `removeScript` and then the `style` rule, which give the same text as one
+    /// DOMPurify pass on these inputs (checked as above).
+    #[test]
+    fn the_strict_path_drops_an_unfinished_tag_and_keeps_equals() {
+        assert_eq!(sanitize_text("a<b"), "a");
+        assert_eq!(sanitize_text("x<y"), "x");
+        assert_eq!(sanitize_text("a=b &amp; c"), "a=b &amp; c");
+        assert_eq!(sanitize_text("<tag>"), "");
+        assert_eq!(sanitize_text("<b>a"), "<b>a</b>");
     }
 }

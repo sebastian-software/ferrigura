@@ -16,4 +16,5 @@ export const exceptions: Record<string, PortException[]> = {
   'flowchart-data': [],
   timeline: [],
   journey: [],
+  gitgraph: [],
 };

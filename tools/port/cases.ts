@@ -224,4 +224,58 @@ export const explicitCases: Record<string, string[]> = {
     'journey\nsection A\nsection B\nsection A\nT: 1: a\nU: 2: b\nsection C\nV: 3: c',
     'journey\nT: 1: a,b,c\nU: 1: , \nV: 1:\u00a0\nW: 1:',
   ],
+  gitgraph: [
+    // The DB's refusals: the head of the current branch belongs to the other branch, the same
+    // branch, no commit yet, a duplicate merge id.
+    'gitGraph\ncommit id:"A"\nbranch b\ncheckout b\nmerge main',
+    'gitGraph\ncommit id:"A"\nbranch b\ncheckout b\nmerge b',
+    'gitGraph\nmerge x',
+    'gitGraph\ncommit id:"A"\nbranch b\ncheckout b\ncommit id:"B"\ncheckout main\nmerge b id:"B"',
+    // A duplicate commit id only warns: the entry is replaced and the commit is its own parent.
+    'gitGraph\ncommit id:"a"\ncommit id:"a"',
+    // Cherry-picks with a tag, without one (the default tag), with an empty one, and a merge source.
+    'gitGraph\ncommit id:"A"\nbranch b\ncheckout b\ncommit id:"B"\ncheckout main\ncherry-pick id:"B" tag:"picked"',
+    'gitGraph\ncommit id:"A"\nbranch b\ncheckout b\ncommit id:"B"\ncheckout main\ncherry-pick id:"B"',
+    'gitGraph\ncommit id:"A"\nbranch b\ncheckout b\ncommit id:"B"\ncheckout main\ncherry-pick id:"B" tag:""',
+    'gitGraph\ncommit id:"A"\nbranch b\ncommit id:"B"\ncheckout main\nmerge b id:"M"\ncheckout b\ncherry-pick id:"M"',
+    'gitGraph\ncommit id:"A"\nbranch b\ncommit id:"B"\ncheckout main\nmerge b id:"M"\ncheckout b\ncherry-pick id:"M" parent:"B"',
+    // Branch names that the lexer reads as numbers, as commands, or as quoted strings.
+    'gitGraph\nbranch 1',
+    'gitGraph\nbranch 1.0\ncommit',
+    'gitGraph\nbranch 1-0',
+    'gitGraph\nbranch commit',
+    'gitGraph\nbranch "commit"\ncommit',
+    'gitGraph\ncommitX',
+    'gitGraph\ncommit\nbranch commitX\ncheckout commitX\ncommit',
+    // A keyword followed by word characters is one REFERENCE; `checkout 02` is an INT, not a name.
+    'gitGraph\ncommit\nbranch checkout02\ncheckout checkout02\ncommit',
+    'gitGraph\ncommit\nbranch "02"\ncheckout 02\ncommit',
+    // Titles and accessibility lines, and the order of a branch.
+    'gitGraph\ntitle Git title\ncommit',
+    'gitGraph\ntitle X %% comment\ncommit',
+    'gitGraph\naccDescr {\n  one\n  two\n}\ncommit',
+    'gitGraph\naccTitle: Spaced title  \ncommit',
+    'gitGraph\ncommit\nbranch b order: 2\nbranch c order: 1',
+    // The header: a direction with a colon, and one without (an error).
+    'gitGraph TB:\ncommit',
+    'gitGraph BT:\ncommit',
+    'gitGraph LR\ncommit',
+    'gitGraph commit',
+    // The commit types on commits and merges, with and without the option.
+    'gitGraph\ncommit type: REVERSE\ncommit type: HIGHLIGHT\ncommit type: NORMAL',
+    'gitGraph\ncommit id:"A"\nbranch b\ncommit id:"B"\ncheckout main\nmerge b id:"M" type: REVERSE\nmerge b type: HIGHLIGHT\nmerge b tag:"x"',
+    // Messages: the `msg:` option and a bare string.
+    'gitGraph\ncommit msg:"hello there"\ncommit "bare message"',
+    // Ids and tags with characters the sanitiser escapes.
+    'gitGraph\ncommit id:"a=b" msg:"x<y"\ncommit id:"x<y" tag:"<b>t</b>"\ncommit id:"AT&T"',
+    // Empty values: a commit with an empty tag, and empty ids, which are generated.
+    'gitGraph\ncommit tag:""',
+    'gitGraph\ncommit id:""\ncommit id:""',
+    // The title from front matter, and from the grammar, which wins.
+    '---\ntitle: From front matter\n---\ngitGraph\ntitle From grammar\ncommit',
+    '---\ntitle: Only front matter\n---\ngitGraph\ncommit',
+    // The main branch's name and order from front matter, and from a directive.
+    '---\nconfig:\n  gitGraph:\n    mainBranchName: trunk\n    mainBranchOrder: 3\n---\ngitGraph\ncommit\nbranch dev\ncommit',
+    '%%{init: {"gitGraph": {"mainBranchName": "trunk"}}}%%\ngitGraph\ncommit',
+  ],
 };
