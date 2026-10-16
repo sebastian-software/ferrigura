@@ -487,7 +487,8 @@ function renderFerrigura(text: string, id: string): { svg: string } | { error: s
   if (result.error) return { error: result.error.message };
   if (result.status !== 0) {
     const line = (result.stderr || `exit status ${result.status}`).trim().split('\n')[0];
-    return { error: line };
+    // A panic names its thread id, which would keep equal causes apart in the summary.
+    return { error: line.replace(/^thread '([^']*)' \(\d+\) /, "thread '$1' ") };
   }
   return { svg: result.stdout };
 }
