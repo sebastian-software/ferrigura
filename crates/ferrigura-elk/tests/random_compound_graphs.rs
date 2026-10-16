@@ -32,8 +32,8 @@ fn graph_dir() -> PathBuf {
     }
 }
 
-/// A message with its node names replaced, so that the same gap counts once: `an inverted port on
-/// g3 (...)` and `an inverted port on g7 (...)` are one entry.
+/// A message with its node names replaced, so that the same gap counts once: `edge e3 across levels
+/// (...)` and `edge e7 across levels (...)` are one entry.
 fn gap_of(message: &str) -> String {
     message
         .split(' ')

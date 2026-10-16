@@ -301,10 +301,11 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 
 ### Coverage
 
-- Corpus: 160 of 164 cases pass the driver. The other 4 report `Unsupported`: 3 are non-layered algorithms (`elk.box` twice, `elk.rectpacking`), and 1 is `synthetic__explicit-port-shared`, a port with two edges, which Java lays out with HYPEREDGES; that feature is not ported.
-- All 160 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 160). All 160 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 160).
+- Corpus: 165 of 169 cases pass the driver. The other 4 report `Unsupported`: 3 are non-layered algorithms (`elk.box` twice, `elk.rectpacking`), and 1 is `synthetic__explicit-port-shared`, a port with two edges, which Java lays out with HYPEREDGES; that feature is not ported.
+- All 165 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 165). All 165 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 165).
 - Random flat graphs: 1200 of 1200 match elkjs in coordinates and in the trace with logs. They come from `tools/random-graphs.ts` (seeded, all four directions, the model order strategies, both cycle breakers, labels, self-loops); the ignored test `random_graphs_match_elkjs` runs them.
-- Crate tests: 168 unit tests and the integration tests pass; the differential and trace diagnostics stay ignored; `clippy -D warnings` is clean.
+- Random compound graphs: 900 of 900 match elkjs in coordinates and in the trace with logs, none unsupported. They come from `tools/random-compound-graphs.ts` (seed 20261017); the ignored test `random_compound_graphs_match_elkjs` runs them (floor 900). Four more seeds of 900 graphs each matched as well, and so did random flat graphs with explicit ports on side-fixed nodes, with and without `feedbackEdges`; those runs are not in the repository.
+- Crate tests: 181 unit tests and the integration tests pass; the differential and trace diagnostics and the random graph runs stay ignored; `clippy -D warnings` is clean.
 - Mermaid never sets the option that turns off the component split, so the synthetic case `synthetic__components-not-separated` covers it on its own.
 
 ### Done since the first checkpoint
@@ -314,11 +315,12 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 - The greedy cycle breaker, which the default strategy and Mermaid's `legacy` preset reach. It is checked on the synthetic case `synthetic__greedy-cycles`.
 - `separateConnectedComponents` reads its layered default; its synthetic case `synthetic__components-not-separated` matches.
 - The model order fix, the marked-edge trace names, and the random graph comparison, each with its corpus case first (`synthetic__model-order-first-try-*`, `synthetic__marked-edges-root-names`).
+- Inverted ports (`InvertedPortProcessor`): an edge into an eastern input port or out of a western output port of a side-fixed node turns at a long edge dummy in the node's layer, and the orthogonal router routes the in-layer edges this makes. The case `synthetic__explicit-port-marked-edge-on-port` now matches. Four compound fixes that the inverted ports exposed came with their corpus cases first (`synthetic__compound-*`): the coordinate origin of an edge into an ancestor, the names of cross-hierarchy edge segments in the Brandes & Koepf log, the order of the hierarchical offset sum, and the live port order of a graph the layer sweep leaves unswept.
 
 ### Known gaps outside the corpus
 
 - The one-sided greedy switch (`GreedySwitchType.ONE_SIDED`) is Unsupported. No default, corpus case or random graph reaches it.
-- Compound layouts (`INCLUDE_CHILDREN`) stop at these, each Unsupported with its name: an inverted port on a node (`InvertedPortProcessor` dummies); northern and southern external port dummies (`HierarchicalPortOrthogonalEdgeRouter`); a fixed order of eastern and western external ports (`HierarchicalPortConstraintProcessor`); `insideSelfLoops.activate`; the greedy switch in a compound layout (a hierarchical `LayerSweepCrossingMinimizer`); and in-layer constraints. Inverted ports are the main gap for real compound diagrams: 900 random compound graphs through Node elkjs gave 499 exact matches, no difference, and the rest stopped at an inverted port.
+- Compound layouts (`INCLUDE_CHILDREN`) stop at these, each Unsupported with its name: northern and southern external port dummies (`HierarchicalPortOrthogonalEdgeRouter`); a fixed order of eastern and western external ports (`HierarchicalPortConstraintProcessor`); `insideSelfLoops.activate`; the greedy switch in a compound layout (a hierarchical `LayerSweepCrossingMinimizer`); and in-layer constraints. None of the random compound graphs reaches them.
 - Nested graphs take the top graph's direction; a nested `elk.direction` is ignored, as in Java.
 - The `ports` a node gets from the input are not read by the importer (item 2 below); the port model order of Java, `CONSIDER_MODEL_ORDER_PORT_MODEL_ORDER`, is not read for those ports either.
 
@@ -326,7 +328,7 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 
 1. Random graphs with node labels in every direction, so the LEFT and UP mirror is covered beyond the synthetic cases; and explicit ports in the random generator.
 2. Hyperedges (`synthetic__explicit-port-shared`), and the explicit-port refusals listed in the commit history: north and south self loops at north and south ports, hierarchical north and south ports, `allowNonFlowPortsToSwitchSides`, spline routing with north and south ports.
-3. Inverted ports and the other compound gaps above, each as a synthetic case first.
+3. The other compound gaps above, each as a synthetic case first.
 4. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
 
 ### Edge pipeline: state and order

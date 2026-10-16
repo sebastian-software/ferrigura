@@ -1,6 +1,6 @@
 # Port status
 
-Last updated: 2026-10-16. M1 is merged into `main`: pie and info parse and match the reference on every collected input. M4 is in progress on branch `sebastian/port-m4-elk-fe5cfa`: 160 of the 164 corpus cases are supported, and all 160 match elkjs exactly in coordinates, edge sections, label boxes and trace (`crates/ferrigura-elk`, see `elk/PLAN.md` §10).
+Last updated: 2026-10-16. M1 is merged into `main`: pie and info parse and match the reference on every collected input. M4 is in progress on branch `sebastian/port-m4-elk-fe5cfa`: 165 of the 169 corpus cases are supported, and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace (`crates/ferrigura-elk`, see `elk/PLAN.md` §10).
 
 Each session updates its section when it stops: what changed, what is next, what blocks it. Test counts and the differential column are written by `pnpm port:status`, which reads the Rust specs and the last `pnpm port:diff` run; run it after both.
 
@@ -11,17 +11,17 @@ Each session updates its section when it stops: what changed, what is next, what
 | M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                                                                                      |
 | M2 First slice: pie to SVG         | in progress | m2     | Branch `sebastian/determined-bartik-42e25d`; Stage A done, see M2 handover                                                                 |
 | M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                                                                                                              |
-| M4 ELK Layered port                | in progress | elk    | 160 of 164 corpus cases supported, all 160 match elkjs exactly in coordinates, edge sections, label boxes and trace; see `elk/PLAN.md` §10 |
+| M4 ELK Layered port                | in progress | elk    | 165 of 169 corpus cases supported, all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; see `elk/PLAN.md` §10 |
 | M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                                                                                        |
 | M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                                                                   |
 
 ## Strands
 
-| Strand | Session            | Worktree                                                                       | Working on                                                                                                                                                                      | Next                                                   | Blocked by |
-| ------ | ------------------ | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------- |
-| main   | —                  | —                                                                              | M1 done and merged                                                                                                                                                              | M2 (pie to SVG) and M3 (flowchart parser)              | —          |
-| m2     | —                  | `determined-bartik-42e25d`                                                     | Stage A: configuration and text, checkpoint pending                                                                                                                             | Stage B after the coordinating session answers         | —          |
-| elk    | port-m4-elk-fe5cfa | `.claude/worktrees/port-m4-elk-fe5cfa` (branch `sebastian/port-m4-elk-fe5cfa`) | M4: Layered pipeline with edges, labels, the input-model order, the greedy switch, compound layouts, explicit ports, LEFT and UP node labels; 160 of 164 corpus cases supported | north-south port processing, hyperedges, compound gaps | None       |
+| Strand | Session            | Worktree                                                                       | Working on                                                                                                                                                                                      | Next                                                   | Blocked by |
+| ------ | ------------------ | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------- |
+| main   | —                  | —                                                                              | M1 done and merged                                                                                                                                                                              | M2 (pie to SVG) and M3 (flowchart parser)              | —          |
+| m2     | —                  | `determined-bartik-42e25d`                                                     | Stage A: configuration and text, checkpoint pending                                                                                                                                             | Stage B after the coordinating session answers         | —          |
+| elk    | port-m4-elk-fe5cfa | `.claude/worktrees/port-m4-elk-fe5cfa` (branch `sebastian/port-m4-elk-fe5cfa`) | M4: Layered pipeline with edges, labels, the input-model order, the greedy switch, compound layouts, explicit ports, inverted ports, LEFT and UP node labels; 165 of 169 corpus cases supported | north-south port processing, hyperedges, compound gaps | None       |
 
 ## M1 handover
 
