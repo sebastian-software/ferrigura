@@ -218,13 +218,13 @@ pub(super) fn bow_tie_rect(input: &ShapeInput<'_>) -> Part {
         true,
     ));
 
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = path_style(node, &styles);
     let shift = rx / 2.0;
     let svg = format!(
         "<g class=\"basic label-container outer-path\" transform=\"translate({}, 0)\">{}</g>",
         number(shift),
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles), true),
+        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
     );
     Part {
         svg,
@@ -279,13 +279,13 @@ pub(super) fn curved_trapezoid(input: &ShapeInput<'_>) -> Part {
         90.0,
     ));
 
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = path_style(node, &styles);
     let svg = format!(
         "<g class=\"basic label-container outer-path\" transform=\"translate({}, {})\">{}</g>",
         number(-width / 2.0),
         number(-height / 2.0),
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles), true),
+        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
     );
     Part {
         svg,
@@ -330,11 +330,11 @@ pub(super) fn half_rounded_rectangle(input: &ShapeInput<'_>) -> Part {
     points.push(Point::new(width / 2.0 - radius, height / 2.0));
     points.push(Point::new(-width / 2.0, height / 2.0));
 
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = path_style(node, &styles);
     let svg = format!(
         "<g class=\"basic label-container outer-path\">{}</g>",
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles), true),
+        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
     );
     Part {
         svg,

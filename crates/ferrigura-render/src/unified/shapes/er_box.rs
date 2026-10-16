@@ -16,7 +16,7 @@ use ferrigura_syntax::class::parse_generic_types;
 use ferrigura_syntax::sanitize::sanitize_text;
 use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, measure};
 
-use super::rough::{Fill, double_stroked_polygon};
+use super::rough::{self, Fill};
 use super::util::{self, attribute};
 use super::{Intersect, ShapeInput, ShapeOutput};
 use crate::RenderError;
@@ -251,7 +251,7 @@ fn attribute_table(
     svg.push_str(&format!(
         "<g class=\"outer-path\"{}>{}</g>",
         attribute("style", &node_css_styles(input)),
-        double_stroked_polygon(
+        polygon_svg(
             &outer,
             Some(Fill {
                 colour: &fill,
@@ -277,7 +277,7 @@ fn attribute_table(
             "<g{} class=\"row-rect-{}\">{}</g>",
             attribute("style", &node_css_styles(input)),
             if even { "even" } else { "odd" },
-            double_stroked_polygon(
+            polygon_svg(
                 &points,
                 row_colour.as_deref().map(|colour| Fill {
                     colour,
@@ -346,7 +346,7 @@ fn attribute_table(
     for points in dividers {
         svg.push_str(&format!(
             "<g class=\"divider\">{}</g>",
-            double_stroked_polygon(
+            polygon_svg(
                 &points,
                 Some(Fill {
                     colour: &fill,
@@ -465,6 +465,34 @@ fn style_value(styles: &util::Styles, key: &str) -> Option<String> {
 }
 
 /// The corners of a rectangle as rough.js takes them: top-left, top-right, bottom-right, bottom-left.
+/// The outline of an ER entity's rectangle, row or divider: an `rc.polygon` at roughness 0 with its
+/// fill (when it has one) and its stroke. The reference writes the colours as presentation attributes
+/// here, unlike the flowchart's outlines, so the attributes are passed on (`erBox.ts`).
+fn polygon_svg(
+    points: &[Point],
+    fill: Option<Fill<'_>>,
+    stroke: &str,
+    stroke_width: &str,
+    style: Option<&str>,
+) -> String {
+    let outline = rough::polygon(
+        points,
+        rough::Paint {
+            fill: fill.is_some(),
+            stroke: true,
+        },
+    );
+    rough::attributed(
+        &outline,
+        &rough::Attrs {
+            style,
+            fill,
+            stroke: Some(stroke),
+            stroke_width,
+        },
+    )
+}
+
 fn rectangle_points(x: f64, y: f64, width: f64, height: f64) -> [Point; 4] {
     [
         Point::new(x, y),

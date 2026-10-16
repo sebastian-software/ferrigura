@@ -179,12 +179,8 @@ fn tspan_style(styles: &str) -> Option<String> {
 
 /// The divider between two groups: `rc.line` at roughness 0, a stroke path only.
 fn divider(x1: f64, y1: f64, x2: f64, y2: f64, styles: &str, stroke_width: &str) -> String {
-    rough::line(
-        Point::new(x1, y1),
-        Point::new(x2, y2),
-        Some(styles),
-        stroke_width,
-    )
+    let outline = rough::line(Point::new(x1, y1), Point::new(x2, y2), rough::Paint::STROKE);
+    rough::paths(&outline, Some(styles), stroke_width)
 }
 
 /// What a class box draws: its part, the box the drawing covers, and the texts of its rows.
@@ -391,11 +387,8 @@ pub(super) fn class_box(input: &ShapeInput<'_>) -> Result<ClassBox, RenderError>
 
     let rect_svg = format!(
         "<g class=\"basic label-container outer-path\">{}</g>",
-        rough::rectangle_paths(
-            rect_x,
-            rect_y,
-            rect_width,
-            rect_height,
+        rough::paths(
+            &rough::rectangle(rect_x, rect_y, rect_width, rect_height, rough::Paint::BOTH,),
             Some(styles.as_str()),
             &stroke_width,
         ),

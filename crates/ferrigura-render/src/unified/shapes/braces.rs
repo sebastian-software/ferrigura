@@ -40,15 +40,23 @@ fn arc_points(
         .collect()
 }
 
-/// The outline of an open polyline: the points as rough.js draws them at roughness 0, without the
-/// closing segment (the reference removes the `Z` of the path).
+/// The outline of an open polyline, as the brace's `rc.path`: the points as rough.js draws them at
+/// roughness 0 with no fill, and no closing side (the reference removes the `Z` of the path).
 fn open_outline(points: &[Point]) -> Outline {
-    let closed = rough::polygon(points);
-    Outline {
-        fill: None,
-        d: closed.d.trim_end_matches(" Z").to_owned(),
-        bbox: closed.bbox,
+    let mut segments = Vec::with_capacity(points.len());
+    for (index, point) in points.iter().enumerate() {
+        segments.push(if index == 0 {
+            rough::Segment::Move(*point)
+        } else {
+            rough::Segment::Line(*point)
+        });
     }
+    rough::path(&segments, rough::Paint::STROKE)
+}
+
+/// The outline of a closed polyline, as the brace's rectangle: `createPathFromPoints`, with its `Z`.
+fn closed_outline(points: &[Point]) -> Outline {
+    rough::path(&rough::points_path(points), rough::Paint::STROKE)
 }
 
 /// The SVG of a brace's strokes, in the order the reference inserts them: the visible stroke, then
@@ -56,8 +64,8 @@ fn open_outline(points: &[Point]) -> Outline {
 fn strokes(curve: &Outline, rect: &Outline, style: Option<&str>, width: &str) -> String {
     format!(
         "<g>{}</g><g stroke-opacity=\"0\">{}</g>",
-        rough::stroke(curve, style, width),
-        rough::stroke(rect, style, width),
+        rough::paths(curve, style, width),
+        rough::paths(rect, style, width),
     )
 }
 
@@ -393,14 +401,14 @@ pub(super) fn curly_braces(input: &ShapeInput<'_>) -> Part {
     let style = Some(style.as_str());
     let left_outline = open_outline(&left);
     let right_outline = open_outline(&right);
-    let rect_outline = open_outline(&rect);
+    let rect_outline = closed_outline(&rect);
     let width = stroke_width(&styles);
     let svg = format!(
         "<g class=\"text\" transform=\"translate({}, 0)\"><g>{}</g><g>{}</g><g stroke-opacity=\"0\">{}</g></g>",
         number(radius - radius / 4.0),
-        rough::stroke(&right_outline, style, &width),
-        rough::stroke(&left_outline, style, &width),
-        rough::stroke(&rect_outline, style, &width),
+        rough::paths(&right_outline, style, &width),
+        rough::paths(&left_outline, style, &width),
+        rough::paths(&rect_outline, style, &width),
     );
     let shift = radius - radius / 4.0;
     let bbox = right_outline
@@ -438,7 +446,7 @@ fn finish(
     let style = path_style(node, styles);
     let width = stroke_width(styles);
     let curve_outline = open_outline(curve);
-    let rect_outline = open_outline(rect);
+    let rect_outline = closed_outline(rect);
     let svg = format!(
         "<g class=\"text\" transform=\"translate({}, 0)\">{}</g>",
         number(shift),
@@ -476,7 +484,20 @@ mod tests {
 
     #[test]
     fn a_brace_outline_is_the_stroke_of_an_open_path() {
-        let outline = open_outline(&[Point::new(0.0, 0.0), Point::new(10.0, 5.0)]);
-        assert_eq!(outline.d, "M0,0 L10,5");
+        // One segment, drawn twice, and no fill: the path has no closing side.
+        let outline = open_outline(&[
+            Point::new(0.0, 0.0),
+            Point::new(10.0, 5.0),
+            Point::new(10.0, 0.0),
+        ]);
+        assert!(outline.fill.is_none());
+        let stroke = outline.stroke.expect("a stroke");
+        assert_eq!(
+            stroke
+                .iter()
+                .filter(|op| matches!(op, rough::Op::Move(_)))
+                .count(),
+            4
+        );
     }
 }

@@ -63,17 +63,12 @@ pub(super) fn wave_edged_rectangle(input: &ShapeInput<'_>) -> Part {
     points.push(Point::new(w / 2.0 + extra_w, -final_h / 2.0));
     points.push(Point::new(-w / 2.0 - extra_w, -final_h / 2.0));
 
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let svg = group(
         "basic label-container outer-path",
         Some(Point::new(0.0, -wave / 2.0)),
-        &rough::paths(
-            &outline,
-            Some(style.as_str()),
-            &util::stroke_width(&styles),
-            true,
-        ),
+        &rough::paths(&outline, Some(style.as_str()), &util::stroke_width(&styles)),
     );
     let label_offset = Point::new(
         -w / 2.0 + node.padding - label.bbox.x,
@@ -128,17 +123,12 @@ pub(super) fn lined_wave_edged_rect(input: &ShapeInput<'_>) -> Part {
         Point::new(-w / 2.0, -final_h / 2.0),
     ]);
 
-    let outline = rough::polygon(&points);
+    let outline = rough::polygon(&points, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let svg = group(
         "basic label-container outer-path",
         Some(Point::new(0.0, -wave / 2.0)),
-        &rough::paths(
-            &outline,
-            Some(style.as_str()),
-            &util::stroke_width(&styles),
-            true,
-        ),
+        &rough::paths(&outline, Some(style.as_str()), &util::stroke_width(&styles)),
     );
     let label_offset = Point::new(
         -w / 2.0 + node.padding + ((w / 2.0) * 0.1) / 2.0 - label.bbox.x,
@@ -208,14 +198,14 @@ pub(super) fn multi_wave_edged_rectangle(input: &ShapeInput<'_>) -> Part {
         Point::new(x, y),
     ];
 
-    let outer_outline = rough::polygon(&outer);
-    let inner_outline = rough::polygon(&inner);
+    let outer_outline = rough::closed_polygon(&outer, rough::Paint::BOTH);
+    let inner_outline = rough::closed_polygon(&inner, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let stroke = util::stroke_width(&styles);
     let body = format!(
         "{}<g>{}</g>",
-        rough::paths(&outer_outline, Some(style.as_str()), &stroke, true),
-        rough::paths(&inner_outline, Some(style.as_str()), &stroke, true),
+        rough::paths(&outer_outline, Some(style.as_str()), &stroke),
+        rough::paths(&inner_outline, Some(style.as_str()), &stroke),
     );
     let svg = group(
         "basic label-container outer-path",
@@ -283,14 +273,14 @@ pub(super) fn tagged_wave_edged_rectangle(input: &ShapeInput<'_>) -> Part {
         0.5,
     ));
 
-    let outline = rough::polygon(&points);
-    let tag = rough::polygon(&tag_points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
+    let tag = rough::closed_polygon(&tag_points, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let stroke = util::stroke_width(&styles);
     let body = format!(
         "<g>{}</g>{}",
-        rough::paths(&outline, Some(style.as_str()), &stroke, true),
-        rough::paths(&tag, Some(style.as_str()), &stroke, true),
+        rough::paths(&outline, Some(style.as_str()), &stroke),
+        rough::paths(&tag, Some(style.as_str()), &stroke),
     );
     let svg = group(
         "basic label-container outer-path",
@@ -348,17 +338,12 @@ pub(super) fn wave_rectangle(input: &ShapeInput<'_>) -> Part {
         -1.0,
     ));
 
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let svg = group(
         "basic label-container",
         None,
-        &rough::paths(
-            &outline,
-            Some(style.as_str()),
-            &util::stroke_width(&styles),
-            true,
-        ),
+        &rough::paths(&outline, Some(style.as_str()), &util::stroke_width(&styles)),
     );
     Part::with_centred_label(svg, outline.bbox, Intersect::Polygon { points }, label)
 }
