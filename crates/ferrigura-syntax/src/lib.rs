@@ -16,8 +16,10 @@
 mod common;
 mod cursor;
 mod error;
+pub mod flowchart;
 mod lexer;
 mod preprocess;
+mod scan;
 mod text;
 
 pub mod info;
