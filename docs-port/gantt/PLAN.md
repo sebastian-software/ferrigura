@@ -2,7 +2,7 @@
 
 Status: implemented. The parser, the DB, the date rules and the URL rules are in `crates/ferrigura-syntax/src/gantt/`; the specs are in `crates/ferrigura-syntax/tests/gantt_*_spec.rs`; `pnpm port:diff gantt` shows 125 inputs, no difference and no named exception. Open items are in section 11.
 
-Rendering (`ganttRenderer.js`, styles, the geometry comparison) is not part of this plan. The renderer stays in the reference until a later strand.
+The renderer (`ganttRenderer.js`, `styles.js`) is ported in `crates/ferrigura-render/src/gantt/`; section 12 records its decisions.
 
 ## 1. Scope
 
@@ -136,3 +136,56 @@ Titles are the reference's. Exact Jison message texts are not copied: a test tha
 1. The V8 forms of section 5.3 beyond the listed ones are rejected. The differential run decides whether the inputs reach any form that is not listed.
 2. The title sanitising of gantt follows the DB (DOMPurify subset). The other header texts are not sanitised in other types; this is a gantt paragraph in `canonical-model.md`.
 3. `securityLevel` is `strict` by default. `loose` (click callbacks run in the browser) is not ported; the model has no callbacks.
+
+## 12. Renderer
+
+The renderer draws the model. The reference's rules are in `NOTES.md` section 6 and the code is in `crates/ferrigura-render/src/gantt/`: `mod.rs` (dimensions, task order, compact rows, root), `draw.rs` (excluded days, grids, bars and labels, section labels, today marker, title), `time.rs` and `scale.rs` (d3-time 3.1.0 and d3-scale 4.0.2 in UTC), `format.rs` (d3-time-format 4.1.0, en-US), `axis.rs` (d3-axis 3.0.0), `dayjs.rs` (the dayjs operations the renderer uses), `text.rs` (labels, entity placeholders, `<br>` splits, widths), `style.rs` (the sheet and the colours).
+
+### Status
+
+- `pnpm port:geometry gantt`: 52 of 52 fixtures within tolerance, 0 outside, 0 not rendered, 0 excluded. The element counts are the reference's.
+- Computed styles (`fill`, `stroke`, font, anchor, transform, opacity and the rest) match the reference's on every element of the 52 fixtures (a scratch probe over the same pages, not in the repository).
+- Unit tests in `time.rs`, `scale.rs`, `format.rs`, `dayjs.rs`, `text.rs`; the element-level spec in `crates/ferrigura-render/tests/gantt_render_spec.rs`. The reference has no renderer spec for gantt (`NOTES.md` 5.1), so there is none to port.
+
+### Width and clock
+
+- The reference takes `elem.parentElement.offsetWidth` when `useWidth` is unset (`ganttRenderer.js:98`). ferrigura has no container, so it uses 1200 (the reference's own fallback, `:101-103`). The harness page has no body margin, so the reference's container is the 1200 px viewport: a probe measures a block appended to the body at 1200 px, and every fixture without `useWidth` has `viewBox` width 1200 on both sides. The page already had `body { margin: 0 }`; the change is a comment in `tools/port/geometry/common.ts`. `pnpm port:geometry-pie` 24 of 24 and `pnpm port:geometry-flowchart` 298 of 298 are unchanged.
+- The harness runs the reference in UTC with the clock `Date.now()` and passes the same instant to ferrigura (`--now`), so the today marker agrees.
+
+### Decisions
+
+| Question                     | Decision                                                                                                                                                                    | Why                                                                                                                                                                                                                |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Axis offset                  | 0.5 (device pixel ratio 1)                                                                                                                                                  | `d3-axis` uses 0 above DPR 1. The harness renders at DPR 1; the reference's e2e baseline uses DPR 2 (`playwright.config.ts:54`). A server renderer has no device, so the port writes the value the harness checks. |
+| Label width                  | the text laid out with the default `white-space` (runs of blanks collapse, blanks at the ends are dropped), measured in the sans face at 1/64 px                            | The reference's `getBBox` does not count trailing blanks (`width-76.03125` for `Completed task` followed by twelve blanks).                                                                                        |
+| Entities                     | the placeholders the parser writes (`ﬂ°°N¶ß`, `ﬂ°name¶ß`) are read back as the character they name in the SVG and in the width; an unknown name is the text `&name;`        | `utils.ts:874-906`: the reference decodes the placeholders in the SVG string. No fixture uses an entity code.                                                                                                      |
+| Attributes DOMPurify removes | `text-height` is not written; class values are trimmed                                                                                                                      | The reference's shipped SVG passes through `DOMPurify.sanitize` (`mermaidAPI.ts:645`), which drops `text-height` (`ganttRenderer.js:437`) and trims attribute values.                                              |
+| Colours                      | the reference's rules, scoped to `#id`, with `var(--token)`; the concrete colour of each coloured element as a presentation attribute, chosen by the cascade of `styles.js` | decision 0007. The tick text's `fill="#000"` of the reference is overridden by the reference's own CSS, so the port writes the text colour.                                                                        |
+| Links                        | `<a xlink:href target="_top">` around the bar and its label, at the end of the group (the sandbox branch's structure)                                                       | Decision 0001 keeps links as `<a>`. The strict-mode reference binds a JavaScript click instead (`ganttDb.js:744-778`, `ganttRenderer.js:508-531`). No fixture uses `click`.                                        |
+| Callbacks                    | not drawn                                                                                                                                                                   | Decision 0001 (`click … call` is in the model only as `clickable`).                                                                                                                                                |
+| Unresolved tasks             | drawn with `NaN` in `x`, `width` and `transform-origin`, as the reference does                                                                                              | The compatibility promise; not in any fixture. Open question 8 of section 8 is answered for the renderer: the port reproduces `NaN`.                                                                               |
+| Sorting                      | a stable insertion sort with the reference's comparator                                                                                                                     | Matches `Array.prototype.sort` for consistent comparators and cannot panic on `NaN` ones.                                                                                                                          |
+
+### Quirks reproduced
+
+- A run of excluded days that is still open at the last day of the span is not drawn (`ganttRenderer.js:580-590`: the open range is never pushed). Pinned by a spec.
+- `renderEndTime || endTime` takes the render end whenever it is set, including a time of 0 (a Date is truthy).
+- Milestone labels are measured in the regular face (the class with `milestoneText` is not set when the reference measures), and drawn in italic (`.milestoneText`).
+- The label class and the label's `x` use different ends for a milestone (`ganttRenderer.js:400-506`): `x` uses the shifted start and the render end; `class` uses the end time.
+- `drawRects` sorts the task array in place, markers last; `drawExcludeDays` and the bars read it in that order.
+- `getMaxIntersections` writes the compact row into the task (`order`), and the section label's `y` accumulates the counts of the earlier sections (`prevGap`).
+- The custom tick interval is ignored when its estimate exceeds 10000 ticks, and the top axis then uses the default ticks (`ganttRenderer.js:683-713`, `753`).
+- `dateFormat` with a single `D` changes the axis format to `%d`; the axis format and tick text keep their blanks (`' %d/%m'` gives `' 07/01'`).
+- The grid group and tick text carry the d3 attributes the reference writes (`fill="none"`, `font-family="sans-serif"`, `text-anchor` as a presentation attribute and as a style).
+
+### Not reproduced, or approximated
+
+- The `<a>` wrapping of a linked task is written, but the reference's strict mode has no anchor; see the links row.
+- A `font-weight: bold` of `.taskText.clickable` is in the sheet, but the embedded faces are regular only, so Chromium synthesises the bold.
+- Entity names other than the five of XML stay as text (`&name;`). The browser would decode the HTML entity names; no fixture has one.
+- The reference's `weekday` names that are not a day of the week make the tick function undefined and throw. The port returns a render error for them.
+
+### Shared files changed
+
+- `crates/ferrigura-syntax/src/gantt/db.rs` and `mod.rs`: the DB's `isInvalidDate` is a free function (`invalid_date`) and `gantt::is_invalid_date(&GanttDiagram, f64)` exposes it. The renderer's excluded days need the reference's dayjs formatting, which the parser already has. The method's behaviour is unchanged.
+- `tools/port/geometry/common.ts`: a comment on the page's zero body margin (see Width and clock). No behaviour change.
