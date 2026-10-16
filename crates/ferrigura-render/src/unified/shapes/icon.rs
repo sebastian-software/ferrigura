@@ -208,25 +208,17 @@ fn icon_intersect(
 
 /// The paths of a rough outline with no stroke or style of its own, as the icon handlers draw
 /// their rectangles and circles (`rc.rectangle` and `rc.circle` with the icon options).
-fn outline_group(outline: &Outline, stroke_width: &str, stroke: bool) -> String {
-    format!(
-        "<g>{}</g>",
-        rough::paths(outline, None, stroke_width, stroke)
-    )
+fn outline_group(outline: &Outline, stroke_width: &str) -> String {
+    format!("<g>{}</g>", rough::paths(outline, None, stroke_width))
 }
 
 /// The outline of the icon's shape, moved vertically by `shift` (`iconShape.attr('transform')`):
 /// the shape sits above or below the centre so that the label fits under or over it.
-fn shifted_outline_group(
-    outline: &Outline,
-    stroke_width: &str,
-    stroke: bool,
-    shift: f64,
-) -> String {
+fn shifted_outline_group(outline: &Outline, stroke_width: &str, shift: f64) -> String {
     format!(
         "<g transform=\"translate(0, {})\">{}</g>",
         number(shift),
-        rough::paths(outline, None, stroke_width, stroke)
+        rough::paths(outline, None, stroke_width)
     )
 }
 
@@ -245,7 +237,7 @@ pub(super) fn icon(input: &ShapeInput<'_>) -> Part {
     };
     let stroke_width = util::stroke_width(&styles);
 
-    let shape = rough::rectangle(-size / 2.0, -size / 2.0, size, size);
+    let shape = rough::rectangle(-size / 2.0, -size / 2.0, size, size, rough::Paint::FILL);
     let outer_width = size.max(label.bbox.width);
     let outer_height = size + label.bbox.height + label_padding;
     let outer = rough::rectangle(
@@ -253,6 +245,7 @@ pub(super) fn icon(input: &ShapeInput<'_>) -> Part {
         -outer_height / 2.0,
         outer_width,
         outer_height,
+        rough::Paint::FILL,
     );
     let shift = if top {
         label.bbox.height / 2.0 + label_padding / 2.0
@@ -276,7 +269,7 @@ pub(super) fn icon(input: &ShapeInput<'_>) -> Part {
     )
     .union(BBox::new(-size / 2.0, -size / 2.0 + shift, size, size))
     .union(label.bbox.translate(label_offset.x, label_offset.y));
-    let mut after_label = outline_group(&outer, &stroke_width, false);
+    let mut after_label = outline_group(&outer, &stroke_width);
     if has_icon(node) {
         let at = Point::new(
             -size / 2.0,
@@ -287,7 +280,7 @@ pub(super) fn icon(input: &ShapeInput<'_>) -> Part {
     }
     let intersect = icon_intersect(node, top, (size, size), &label, label_padding, bbox.height);
     Part {
-        svg: shifted_outline_group(&shape, &stroke_width, false, shift),
+        svg: shifted_outline_group(&shape, &stroke_width, shift),
         after_label,
         bbox,
         intersect,
@@ -314,7 +307,10 @@ fn framed(input: &ShapeInput<'_>, radius: f64) -> Part {
     let height = width;
     let stroke_width = util::stroke_width(&styles);
 
-    let shape = rough::rounded_rectangle(-width / 2.0, -height / 2.0, width, height, radius);
+    let shape = rough::path(
+        &rough::rounded_rectangle_path(-width / 2.0, -height / 2.0, width, height, radius),
+        rough::Paint::BOTH,
+    );
     // The reference gives the framed outline a stroke (`stroke = fill ?? mainBkg`).
     let outer_width = width.max(label.bbox.width);
     let outer_height = height + label.bbox.height + label_padding;
@@ -323,6 +319,7 @@ fn framed(input: &ShapeInput<'_>, radius: f64) -> Part {
         -outer_height / 2.0,
         outer_width,
         outer_height,
+        rough::Paint::FILL,
     );
     let shift = if top {
         label.bbox.height / 2.0 + label_padding / 2.0
@@ -351,7 +348,7 @@ fn framed(input: &ShapeInput<'_>, radius: f64) -> Part {
         height,
     ))
     .union(label.bbox.translate(label_offset.x, label_offset.y));
-    let mut after_label = outline_group(&outer, &stroke_width, false);
+    let mut after_label = outline_group(&outer, &stroke_width);
     if has_icon(node) {
         let at = Point::new(
             -size / 2.0,
@@ -369,7 +366,7 @@ fn framed(input: &ShapeInput<'_>, radius: f64) -> Part {
         bbox.height,
     );
     Part {
-        svg: shifted_outline_group(&shape, &stroke_width, true, shift),
+        svg: shifted_outline_group(&shape, &stroke_width, shift),
         after_label,
         bbox,
         intersect,
@@ -405,7 +402,7 @@ pub(super) fn icon_circle(input: &ShapeInput<'_>) -> Part {
     // The icon's box is the icon's size, or nothing without an icon (an empty `<g>`).
     let icon_box = if has_icon(node) { icon_size(node) } else { 0.0 };
     let diameter = icon_box * std::f64::consts::SQRT_2 + CIRCLE_PADDING * 2.0;
-    let circle = rough::ellipse(0.0, 0.0, diameter, diameter);
+    let circle = rough::ellipse(0.0, 0.0, diameter, diameter, rough::Paint::BOTH);
     let outer_width = diameter.max(label.bbox.width);
     let outer_height = diameter + label.bbox.height + label_padding;
     let outer = rough::rectangle(
@@ -413,6 +410,7 @@ pub(super) fn icon_circle(input: &ShapeInput<'_>) -> Part {
         -outer_height / 2.0,
         outer_width,
         outer_height,
+        rough::Paint::FILL,
     );
     let shift = if top {
         label.bbox.height / 2.0 + label_padding / 2.0
@@ -446,9 +444,9 @@ pub(super) fn icon_circle(input: &ShapeInput<'_>) -> Part {
         bbox = bbox.union(BBox::new(at.x, at.y, icon_box, icon_box));
         after_label.push_str(&icon_element(input, &styles, at));
     }
-    after_label.push_str(&outline_group(&outer, &stroke_width, false));
+    after_label.push_str(&outline_group(&outer, &stroke_width));
     Part {
-        svg: shifted_outline_group(&circle, &stroke_width, true, shift),
+        svg: shifted_outline_group(&circle, &stroke_width, shift),
         after_label,
         bbox,
         intersect: Intersect::Rect,
@@ -482,6 +480,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
         -image_height / 2.0,
         image_width,
         image_height,
+        rough::Paint::BOTH,
     );
     let outer_width = image_width.max(label.bbox.width);
     let outer_height = image_height + label.bbox.height + label_padding;
@@ -490,6 +489,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
         -outer_height / 2.0,
         outer_width,
         outer_height,
+        rough::Paint::FILL,
     );
     let shift = if top {
         label.bbox.height / 2.0 + label_padding / 2.0
@@ -518,7 +518,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
         image_height,
     ))
     .union(label.bbox.translate(label_offset.x, label_offset.y));
-    let mut after_label = outline_group(&outer, &stroke_width, false);
+    let mut after_label = outline_group(&outer, &stroke_width);
     if let Some(img) = node.img.as_deref().filter(|img| !img.is_empty()) {
         let image_y = if top {
             outer_height / 2.0 - image_height
@@ -549,7 +549,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
         bbox.height,
     );
     Ok(Part {
-        svg: shifted_outline_group(&shape, &stroke_width, true, shift),
+        svg: shifted_outline_group(&shape, &stroke_width, shift),
         after_label,
         bbox,
         intersect,

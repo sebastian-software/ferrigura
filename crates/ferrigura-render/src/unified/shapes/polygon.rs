@@ -209,7 +209,7 @@ pub(super) fn rect_left_inv_arrow(input: &ShapeInput<'_>) -> Part {
         Point::new(-x, -y),
         Point::new(-x, y),
     ];
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let path_style = util::path_style(node, &styles);
     let shift = -notch / 2.0;
     let svg = format!(
@@ -218,8 +218,7 @@ pub(super) fn rect_left_inv_arrow(input: &ShapeInput<'_>) -> Part {
         rough::paths(
             &outline,
             Some(path_style.as_str()),
-            &util::stroke_width(&styles),
-            true
+            &util::stroke_width(&styles)
         ),
     );
     let label_offset = Point::new(
@@ -255,7 +254,7 @@ pub(super) fn lightning_bolt(input: &ShapeInput<'_>) -> Part {
         Point::new(width, height - GAP / 2.0),
         Point::new(2.0 * GAP, height - GAP / 2.0),
     ];
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let translate_x = -width / 2.0;
     let translate_y = -height;
@@ -263,12 +262,7 @@ pub(super) fn lightning_bolt(input: &ShapeInput<'_>) -> Part {
         "<g class=\"outer-path\" transform=\"translate({}, {})\">{}</g>",
         number(translate_x),
         number(translate_y),
-        rough::paths(
-            &outline,
-            Some(style.as_str()),
-            &util::stroke_width(&styles),
-            true
-        ),
+        rough::paths(&outline, Some(style.as_str()), &util::stroke_width(&styles)),
     );
     Part::without_label(
         svg,
@@ -301,16 +295,11 @@ pub(super) fn trapezoidal_pentagon(input: &ShapeInput<'_>) -> Part {
         Point::new(-w / 2.0, h / 2.0),
         Point::new(-w / 2.0, (-h / 2.0) * 0.6),
     ];
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let svg = format!(
         "<g class=\"basic label-container outer-path\">{}</g>",
-        rough::paths(
-            &outline,
-            Some(style.as_str()),
-            &util::stroke_width(&styles),
-            true
-        ),
+        rough::paths(&outline, Some(style.as_str()), &util::stroke_width(&styles)),
     );
     Part::with_centred_label(svg, outline.bbox, Intersect::Polygon { points }, label)
 }
@@ -334,7 +323,7 @@ pub(super) fn triangle(input: &ShapeInput<'_>) -> Part {
         Point::new(height, 0.0),
         Point::new(height / 2.0, -height),
     ];
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let translate_x = -height / 2.0;
     let translate_y = height / 2.0;
@@ -342,12 +331,7 @@ pub(super) fn triangle(input: &ShapeInput<'_>) -> Part {
         "<g class=\"outer-path\" transform=\"translate({}, {})\">{}</g>",
         number(translate_x),
         number(translate_y),
-        rough::paths(
-            &outline,
-            Some(style.as_str()),
-            &util::stroke_width(&styles),
-            true
-        ),
+        rough::paths(&outline, Some(style.as_str()), &util::stroke_width(&styles)),
     );
     // The label sits under the apex: its bottom is `padding` above the base's line, measured in
     // the SVG text box (`htmlLabels` off: the padding is not halved).

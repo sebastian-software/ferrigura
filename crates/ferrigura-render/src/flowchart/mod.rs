@@ -81,13 +81,20 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
         let width = measure_text(sans, title, TITLE_FONT_SIZE)?;
         let text_box = text_box(sans, TITLE_FONT_SIZE)?;
         let baseline = -(config.flowchart.title_top_margin as f64);
-        let x = drawn.x + drawn.width / 2.0 - width / 2.0;
+        // `text-anchor: middle` at the centre (`utils.ts`, `insertTitle`): the title's box starts half
+        // its width left of the centre.
+        let x = drawn.x + drawn.width / 2.0;
         cover(
             &mut bounds,
-            BBox::new(x, baseline - text_box.top, width, text_box.height),
+            BBox::new(
+                x - width / 2.0,
+                baseline - text_box.top,
+                width,
+                text_box.height,
+            ),
         );
         title_svg = format!(
-            "<text text-anchor=\"start\" x=\"{}\" y=\"{}\" class=\"flowchartTitleText\">{}</text>",
+            "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"flowchartTitleText\">{}</text>",
             number(x),
             number(baseline),
             escape(title)

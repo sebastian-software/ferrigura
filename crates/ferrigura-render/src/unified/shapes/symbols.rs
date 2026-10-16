@@ -6,7 +6,7 @@
 
 use std::f64::consts::FRAC_PI_4;
 
-use super::rough::{self, Outline};
+use super::rough;
 use super::util::{self, Part, label_helper, path_style, stroke_width, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::svg::number;
@@ -25,11 +25,11 @@ pub(super) fn choice(input: &ShapeInput<'_>) -> Part {
         Point::new(-size / 2.0, 0.0),
     ];
     // `rc.path` of the closed path of the diamond: the fill takes its closing side too.
-    let outline = rough::solid_polygon(&points, true);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = path_style(node, &styles);
     let svg = format!(
         "<g>{}</g>",
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles), true),
+        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
     );
     Part::without_label(
         svg,
@@ -59,14 +59,14 @@ pub(super) fn hourglass(input: &ShapeInput<'_>) -> Part {
         Point::new(0.0, height),
         Point::new(width, height),
     ];
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = path_style(node, &styles);
     let (translate_x, translate_y) = (-width / 2.0, -height / 2.0);
     let svg = format!(
         "<g class=\"basic label-container outer-path\" transform=\"translate({}, {})\">{}</g>",
         number(translate_x),
         number(translate_y),
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles), true),
+        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
     );
     Part {
         svg,
@@ -100,14 +100,14 @@ pub(super) fn flipped_triangle(input: &ShapeInput<'_>) -> Part {
         Point::new(triangle_width, -h),
         Point::new(triangle_width / 2.0, 0.0),
     ];
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = path_style(node, &styles);
     let (translate_x, translate_y) = (-h / 2.0, h / 2.0);
     let svg = format!(
         "<g class=\"outer-path\" transform=\"translate({}, {})\">{}</g>",
         number(translate_x),
         number(translate_y),
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles), true),
+        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
     );
     let label_offset = Point::new(
         -label.bbox.width / 2.0 - label.bbox.x,
@@ -131,7 +131,7 @@ pub(super) fn crossed_circle(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
     let styles = styles2string(node);
     let radius = 30.0_f64.max(node.width.unwrap_or(0.0));
-    let circle = rough::ellipse(0.0, 0.0, radius * 2.0, radius * 2.0);
+    let circle = rough::ellipse(0.0, 0.0, radius * 2.0, radius * 2.0, rough::Paint::BOTH);
 
     // The diagonals of the circle, from quadrant II to IV and from I to III (`createLine`).
     let line_length = radius * 2.0;
@@ -141,28 +141,22 @@ pub(super) fn crossed_circle(input: &ShapeInput<'_>) -> Part {
     let q2 = Point::new(-diagonal, diagonal_y);
     let q3 = Point::new(-diagonal, -diagonal_y);
     let q4 = Point::new(diagonal, -diagonal_y);
-    let line = Outline {
-        fill: None,
-        d: format!(
-            "M {},{} L {},{} M {},{} L {},{}",
-            number(q2.x),
-            number(q2.y),
-            number(q4.x),
-            number(q4.y),
-            number(q1.x),
-            number(q1.y),
-            number(q3.x),
-            number(q3.y),
-        ),
-        bbox: BBox::from_points([q1, q2, q3, q4]).unwrap_or_default(),
-    };
+    // `createLine`: two sub-paths, `M q2 L q4` and `M q1 L q3`, drawn as one rc.path. Each has two
+    // points, so its fill has no polygon to draw.
+    let segments = [
+        rough::Segment::Move(q2),
+        rough::Segment::Line(q4),
+        rough::Segment::Move(q1),
+        rough::Segment::Line(q3),
+    ];
+    let line = rough::path(&segments, rough::Paint::BOTH);
 
     let style = path_style(node, &styles);
     let width = stroke_width(&styles);
     let svg = format!(
         "<g class=\"outer-path\">{}<g>{}</g></g>",
-        rough::paths(&circle, Some(style.as_str()), &width, true),
-        rough::paths(&line, Some(style.as_str()), &width, true),
+        rough::paths(&circle, Some(style.as_str()), &width),
+        rough::paths(&line, Some(style.as_str()), &width),
     );
     Part::without_label(
         svg,
@@ -210,6 +204,9 @@ mod tests {
             "{}",
             shape.svg
         );
-        assert!(shape.svg.contains("M "), "{}", shape.svg);
+        // The two diagonals have two sub-paths of two points each: their fill is empty, and their
+        // stroke is two double lines (`path` in `generator.js`).
+        assert!(shape.svg.contains("<g><path d=\"\""), "{}", shape.svg);
+        assert!(shape.svg.contains("<path d=\"M-21.2"), "{}", shape.svg);
     }
 }

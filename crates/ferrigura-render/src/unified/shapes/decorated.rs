@@ -31,11 +31,17 @@ fn group(class: &str, translate: Option<Point>, body: &str) -> String {
     format!("<g class=\"{class}\"{transform}>{body}</g>")
 }
 
-/// One path that carries both the fill and the stroke of an outline, as `mergePaths` leaves it.
+/// The group that `mergePaths` returns for an outline: one path holding the data of the rough paths,
+/// the fill's first, joined by a space (`util.ts`, `mergePaths`).
 fn merged_path(outline: &Outline, style: &str, stroke_width: &str) -> String {
+    let data: Vec<String> = [outline.fill.as_deref(), outline.stroke.as_deref()]
+        .into_iter()
+        .flatten()
+        .map(rough::data)
+        .collect();
     format!(
-        "<path d=\"{}\" stroke-width=\"{stroke_width}\" stroke-dasharray=\"0 0\"{}/>",
-        outline.d,
+        "<g><path d=\"{}\" stroke-width=\"{stroke_width}\" stroke-dasharray=\"0 0\"{}/></g>",
+        data.join(" "),
         attribute("style", style),
     )
 }
@@ -83,8 +89,8 @@ pub(super) fn multi_rect(input: &ShapeInput<'_>) -> Part {
         Point::new(x, y),
     ];
 
-    let outer_outline = rough::polygon(&outer);
-    let inner_outline = rough::polygon(&inner);
+    let outer_outline = rough::closed_polygon(&outer, rough::Paint::BOTH);
+    let inner_outline = rough::closed_polygon(&inner, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let stroke = util::stroke_width(&styles);
     let svg = group(
@@ -144,17 +150,12 @@ pub(super) fn shaded_process(input: &ShapeInput<'_>) -> Part {
         Point::new(x, y),
         Point::new(x, y + h),
     ];
-    let outline = rough::polygon(&points);
+    let outline = rough::polygon(&points, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let svg = group(
         "basic label-container outer-path",
         None,
-        &rough::paths(
-            &outline,
-            Some(style.as_str()),
-            &util::stroke_width(&styles),
-            true,
-        ),
+        &rough::paths(&outline, Some(style.as_str()), &util::stroke_width(&styles)),
     );
     let label_offset = Point::new(
         FRAME_WIDTH / 2.0 - label.bbox.width / 2.0 - label.bbox.x,
@@ -194,7 +195,7 @@ pub(super) fn sloped_rect(input: &ShapeInput<'_>) -> Part {
         Point::new(x + w, y + h),
         Point::new(x + w, y - h / 2.0),
     ];
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     // `updateNodeBounds(node, polygon)` sizes the node by the `getBBox` of the outline's own group,
     // which has no transform of its own, so the height is the browser's height of the outline's
     // path (`geom::sloped_outline_height_f32`), not the height of the translated box.
@@ -203,12 +204,7 @@ pub(super) fn sloped_rect(input: &ShapeInput<'_>) -> Part {
     let svg = group(
         "basic label-container outer-path",
         Some(Point::new(0.0, h / 4.0)),
-        &rough::paths(
-            &outline,
-            Some(style.as_str()),
-            &util::stroke_width(&styles),
-            true,
-        ),
+        &rough::paths(&outline, Some(style.as_str()), &util::stroke_width(&styles)),
     );
     let label_offset = Point::new(
         -w / 2.0 + node.padding - label.bbox.x,
@@ -261,8 +257,8 @@ pub(super) fn tagged_rect(input: &ShapeInput<'_>) -> Part {
         Point::new(x + w + tag_width / 2.0, y + h),
         Point::new(x + w + tag_width / 2.0, y + h - tag_height),
     ];
-    let rect = rough::polygon(&rect_points);
-    let tag = rough::polygon(&tag_points);
+    let rect = rough::closed_polygon(&rect_points, rough::Paint::BOTH);
+    let tag = rough::closed_polygon(&tag_points, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let stroke = util::stroke_width(&styles);
     let svg = group(
@@ -270,8 +266,8 @@ pub(super) fn tagged_rect(input: &ShapeInput<'_>) -> Part {
         None,
         &format!(
             "<g>{}</g>{}",
-            rough::paths(&rect, Some(style.as_str()), &stroke, true),
-            rough::paths(&tag, Some(style.as_str()), &stroke, true),
+            rough::paths(&rect, Some(style.as_str()), &stroke),
+            rough::paths(&tag, Some(style.as_str()), &stroke),
         ),
     );
     Part::with_centred_label(
@@ -304,42 +300,27 @@ pub(super) fn window_pane(input: &ShapeInput<'_>) -> Part {
     let y = -h / 2.0;
     let o = WINDOW_OFFSET;
 
-    let d = format!(
-        "M{},{} L{},{} L{},{} L{},{} L{},{} M{},{} L{},{} M{},{} L{},{}",
-        crate::svg::number(x - o),
-        crate::svg::number(y - o),
-        crate::svg::number(x + w),
-        crate::svg::number(y - o),
-        crate::svg::number(x + w),
-        crate::svg::number(y + h),
-        crate::svg::number(x - o),
-        crate::svg::number(y + h),
-        crate::svg::number(x - o),
-        crate::svg::number(y - o),
-        crate::svg::number(x - o),
-        crate::svg::number(y),
-        crate::svg::number(x + w),
-        crate::svg::number(y),
-        crate::svg::number(x),
-        crate::svg::number(y - o),
-        crate::svg::number(x),
-        crate::svg::number(y + h),
-    );
-    let outline = Outline {
-        fill: None,
-        d,
-        bbox: BBox::new(x - o, y - o, w + o, h + o),
-    };
+    // `windowPane.ts`: the frame's sides and the two bars, as one rc.path of `M L ... M L ... M L`
+    // with no `Z`. Its fill has one sub-path of its own (the frame), so the fill is an open polyline
+    // through the frame's points (`generator.js`, `path`).
+    let at = Point::new;
+    let segments = [
+        rough::Segment::Move(at(x - o, y - o)),
+        rough::Segment::Line(at(x + w, y - o)),
+        rough::Segment::Line(at(x + w, y + h)),
+        rough::Segment::Line(at(x - o, y + h)),
+        rough::Segment::Line(at(x - o, y - o)),
+        rough::Segment::Move(at(x - o, y)),
+        rough::Segment::Line(at(x + w, y)),
+        rough::Segment::Move(at(x, y - o)),
+        rough::Segment::Line(at(x, y + h)),
+    ];
+    let outline = rough::path(&segments, rough::Paint::BOTH);
     let style = util::path_style(node, &styles);
     let svg = group(
         "basic label-container outer-path",
         Some(Point::new(WINDOW_OFFSET / 2.0, WINDOW_OFFSET / 2.0)),
-        &rough::paths(
-            &outline,
-            Some(style.as_str()),
-            &util::stroke_width(&styles),
-            true,
-        ),
+        &rough::paths(&outline, Some(style.as_str()), &util::stroke_width(&styles)),
     );
     let label_offset = Point::new(
         -(label.bbox.width / 2.0) + WINDOW_OFFSET / 2.0 - label.bbox.x,

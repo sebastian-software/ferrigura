@@ -54,16 +54,10 @@ pub(super) fn note(input: &ShapeInput<'_>) -> Part {
     let y = -total_height / 2.0;
     let style = path_style(node, &styles);
     // `rc.rectangle` at roughness 0: the fill and the doubled stroke of the rectangle.
+    let outline = rough::rectangle(x, y, total_width, total_height, rough::Paint::BOTH);
     let svg = format!(
         "<g class=\"basic label-container outer-path\">{}</g>",
-        rough::rectangle_paths(
-            x,
-            y,
-            total_width,
-            total_height,
-            Some(style.as_str()),
-            &stroke_width(&styles)
-        ),
+        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
     );
     let outline_box = BBox::new(x, y, total_width, total_height);
     let label_offset = Point::new(
@@ -107,11 +101,11 @@ pub(super) fn divided_rectangle(input: &ShapeInput<'_>) -> Part {
         Point::new(-x, y),
         Point::new(-x, y + rect_offset),
     ];
-    let outline = rough::polygon(&points);
+    let outline = rough::polygon(&points, rough::Paint::BOTH);
     let style = path_style(node, &styles);
     let svg = format!(
         "<g class=\"basic label-container outer-path\">{}</g>",
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles), true),
+        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
     );
     let label_offset = Point::new(
         x + node.padding / 2.0 - label.bbox.x,

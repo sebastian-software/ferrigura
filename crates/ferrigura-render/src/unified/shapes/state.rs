@@ -7,7 +7,7 @@ use super::rough;
 use super::util::{self, Part, attribute, styles2string};
 use super::{Intersect, SVG_ID_TOKEN, ShapeInput};
 use crate::svg::number;
-use crate::unified::geom::{BBox, Point};
+use crate::unified::geom::BBox;
 
 /// The diameter of the state diagram's start and end circles: the node's size when it has none.
 const STATE_DIAMETER: f64 = 14.0;
@@ -31,22 +31,13 @@ pub(super) fn fork_join(input: &ShapeInput<'_>) -> Part {
     };
     let x = -width / 2.0;
     let y = -height / 2.0;
-    let outline = rough::solid_polygon(
-        &[
-            Point::new(x, y),
-            Point::new(x + width, y),
-            Point::new(x + width, y + height),
-            Point::new(x, y + height),
-        ],
-        false,
-    );
+    let outline = rough::rectangle(x, y, width, height, rough::Paint::BOTH);
     let svg = format!(
         "<g>{}</g>",
         rough::paths(
             &outline,
             Some(util::path_style(node, &styles).as_str()),
-            &util::stroke_width(&styles),
-            true,
+            &util::stroke_width(&styles)
         ),
     );
     Part::without_label(svg, BBox::new(x, y, width, height), Intersect::Rect)
@@ -81,14 +72,14 @@ pub(super) fn state_end(input: &ShapeInput<'_>) -> Part {
     let inner_diameter = width * 5.0 / 14.0;
     // The outer ring's paths take the node's declarations, and so does the inner ring's.
     let style = util::path_style(node, &styles);
-    let outer = rough::ellipse(0.0, 0.0, width, width);
-    let inner = rough::ellipse(0.0, 0.0, inner_diameter, inner_diameter);
+    let outer = rough::ellipse(0.0, 0.0, width, width, rough::Paint::BOTH);
+    let inner = rough::ellipse(0.0, 0.0, inner_diameter, inner_diameter, rough::Paint::BOTH);
     let filter =
         small_shadow(input, width).map_or_else(String::new, |filter| attribute("style", &filter));
     let svg = format!(
         "<g class=\"outer-path\"{filter}>{}<g>{}</g></g>",
-        rough::paths(&outer, Some(style.as_str()), "2", true),
-        rough::paths(&inner, Some(style.as_str()), "2", true),
+        rough::paths(&outer, Some(style.as_str()), "2"),
+        rough::paths(&inner, Some(style.as_str()), "2"),
     );
     let bbox = outer.bbox.union(inner.bbox);
     Part::without_label(
@@ -105,7 +96,7 @@ pub(super) fn state_end(input: &ShapeInput<'_>) -> Part {
 pub(super) fn filled_circle(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
     let styles = styles2string(node);
-    let outline = rough::ellipse(0.0, 0.0, 14.0, 14.0);
+    let outline = rough::ellipse(0.0, 0.0, 14.0, 14.0, rough::Paint::BOTH);
     // The reference fills the dot with `nodeBorder` unless the node's declarations say
     // otherwise; the fill is the style task's, and the node's declarations are written here.
     let style = if !styles.node.is_empty() {
@@ -117,12 +108,7 @@ pub(super) fn filled_circle(input: &ShapeInput<'_>) -> Part {
     };
     let svg = format!(
         "<g>{}</g>",
-        rough::paths(
-            &outline,
-            style.as_deref(),
-            &util::stroke_width(&styles),
-            true
-        ),
+        rough::paths(&outline, style.as_deref(), &util::stroke_width(&styles)),
     );
     Part::without_label(svg, outline.bbox, Intersect::Circle { radius: 7.0 })
 }
@@ -132,12 +118,13 @@ pub(super) fn filled_circle(input: &ShapeInput<'_>) -> Part {
 pub(super) fn anchor(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
     let styles = styles2string(node);
-    let outline = rough::ellipse(0.0, 0.0, 2.0, 2.0);
+    // `anchor.ts`: `fill: black` and `stroke: none`, so the dot has a fill path and no stroke path.
+    let outline = rough::ellipse(0.0, 0.0, 2.0, 2.0, rough::Paint::FILL);
     let style = node.css_styles.join(",");
     let svg = format!(
         "<g class=\"anchor\"{}>{}</g>",
         attribute("style", &style),
-        rough::paths(&outline, None, &util::stroke_width(&styles), false),
+        rough::paths(&outline, None, &util::stroke_width(&styles)),
     );
     Part::without_label(svg, outline.bbox, Intersect::Circle { radius: 1.0 })
 }

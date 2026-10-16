@@ -64,14 +64,13 @@ pub(super) fn stadium(input: &ShapeInput<'_>) -> Part {
         450.0,
     ));
 
-    let outline = rough::polygon(&points);
+    let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let svg = format!(
         "<g class=\"basic label-container outer-path\">{}</g>",
         rough::paths(
             &outline,
             Some(util::path_style(node, &styles).as_str()),
-            &util::stroke_width(&styles),
-            true,
+            &util::stroke_width(&styles)
         ),
     );
     Part::with_centred_label(svg, outline.bbox, Intersect::Polygon { points }, label)
