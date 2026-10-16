@@ -180,8 +180,10 @@ dependencies = [
  "ferrigura-syntax",
  "ferrigura-text",
  "ferromark",
+ "regex",
  "serde",
  "serde_json",
+ "url",
 ]
 
 [[package]]
