@@ -3,10 +3,12 @@
 //! `packages/mermaid/src/config.ts`, `utils/sanitizeDirective.ts`, `assignWithDepth.ts` and
 //! `utils.ts`; the order of the layers is the one `mermaidAPI` applies.
 
+use std::collections::BTreeMap as Map;
+
 use regex::Regex;
-use serde_json::{Map, Value};
 
 use super::{CONFIG_KEYS, defaults};
+use crate::value::Value;
 
 /// The settings a diagram section may set for its own diagram type.
 const APPEARANCE_KEYS: [&str; 3] = ["theme", "look", "layout"];
@@ -383,9 +385,14 @@ fn sanitize_css(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
     use super::*;
+
+    /// `serde_json::json!`, as a configuration value.
+    macro_rules! json {
+        ($($tokens:tt)*) => {
+            Value::from(serde_json::json!($($tokens)*))
+        };
+    }
 
     #[test]
     fn assign_merges_objects_two_levels_deep() {

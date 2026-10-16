@@ -209,6 +209,7 @@ mod parse_spec {
 
 mod config {
     use ferrigura_model::config::{PieDiagramConfig, defaults};
+    use ferrigura_model::value::Value;
 
     // `setConfig` and `resetConfig` are `it.todo` in the reference, and their bodies are commented
     // out: nothing is asserted there, and the pie DB has no `setConfig` to call.
@@ -226,8 +227,11 @@ mod config {
         assert_eq!(pie.donut_hole, 0.0);
         assert_eq!(pie.legend_position, "right");
         assert_eq!(pie.highlight_slice, "");
-        let mut expected = serde_json::to_value(&pie).expect("the pie config serialises");
-        expected["useWidth"] = serde_json::json!(984);
+        let mut expected =
+            Value::from(serde_json::to_value(&pie).expect("the pie config serialises"));
+        if let Value::Object(map) = &mut expected {
+            map.insert("useWidth".to_owned(), Value::Number(984.0));
+        }
         assert_eq!(defaults()["pie"], expected);
     }
 
