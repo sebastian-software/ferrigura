@@ -25,6 +25,7 @@ mod text;
 pub mod config;
 pub mod info;
 pub mod pie;
+pub mod sanitize;
 pub mod yaml;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
