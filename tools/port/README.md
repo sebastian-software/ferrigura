@@ -2,24 +2,26 @@
 
 Scripts that compare ferrigura with the TypeScript reference. The conventions the canonical models follow are in [`docs-port/canonical-model.md`](../../docs-port/canonical-model.md); the decision to test this way is in [0003](../../docs-port/decisions/0003-differential-testing.md).
 
-| Command                  | What it does                                                                                                                                                                    |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm port:diff pie`     | Collects the inputs, runs the exporter and `ferrigura-syntax`'s `canonical` example, and reports each difference                                                                |
-| `pnpm port:diff info`    | The same for info                                                                                                                                                               |
-| `pnpm port:diff config`  | Runs the effective configuration of the pie inputs and of `config-cases.ts` through both sides, and the key set                                                                 |
-| `pnpm port:diff yaml`    | Loads the front matter and flowchart shape data of the fixtures and specs, and `yaml-cases.ts`, with js-yaml and `ferrigura-syntax`'s `yaml`                                    |
-| `pnpm port:diff theme`   | Computes the theme variables of the two shipped themes for 110 cases and compares them with the reference (`theme`, `khroma`)                                                   |
-| `pnpm port:geometry-pie` | Renders the pie fixtures with the reference and with ferrigura and compares the geometry in Chromium; `--images <dir>` writes side-by-side PNGs                                 |
-| `pnpm port:scope-pie`    | Inlines three ferrigura pies with their own ids in one Chromium page, under a page stylesheet that paints everything, and checks the computed colours against the declared ones |
-| `pnpm port:check-header` | Compares the pie header rules in `pie-header.ts` with the real pie DB setters, with jsdom as the DOM                                                                            |
-| `pnpm port:text-fixture` | Regenerates `crates/ferrigura-text/tests/fixtures/chromium.json` in Chromium from the requests in it; `-- --check` compares instead of writing                                  |
-| `pnpm port:status`       | Counts the ported Rust specs per type and rewrites the P1 table of `docs-port/STATUS.md`                                                                                        |
+| Command                         | What it does                                                                                                                                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm port:diff pie`            | Collects the inputs, runs the exporter and `ferrigura-syntax`'s `canonical` example, and reports each difference                                                                                  |
+| `pnpm port:diff info`           | The same for info                                                                                                                                                                                 |
+| `pnpm port:diff flowchart-data` | Runs the reference's `getData()` over the flowchart inputs, with the render's configuration scope, and `ferrigura-render`'s `flowchart_data` example, and compares the layout data field by field |
+| `pnpm port:diff config`         | Runs the effective configuration of the pie inputs and of `config-cases.ts` through both sides, and the key set                                                                                   |
+| `pnpm port:diff yaml`           | Loads the front matter and flowchart shape data of the fixtures and specs, and `yaml-cases.ts`, with js-yaml and `ferrigura-syntax`'s `yaml`                                                      |
+| `pnpm port:diff theme`          | Computes the theme variables of the two shipped themes for 110 cases and compares them with the reference (`theme`, `khroma`)                                                                     |
+| `pnpm port:geometry-pie`        | Renders the pie fixtures with the reference and with ferrigura and compares the geometry in Chromium; `--images <dir>` writes side-by-side PNGs                                                   |
+| `pnpm port:scope-pie`           | Inlines three ferrigura pies with their own ids in one Chromium page, under a page stylesheet that paints everything, and checks the computed colours against the declared ones                   |
+| `pnpm port:check-header`        | Compares the pie header rules in `pie-header.ts` with the real pie DB setters, with jsdom as the DOM                                                                                              |
+| `pnpm port:text-fixture`        | Regenerates `crates/ferrigura-text/tests/fixtures/chromium.json` in Chromium from the requests in it; `-- --check` compares instead of writing                                                    |
+| `pnpm port:status`              | Counts the ported Rust specs per type and rewrites the P1 table of `docs-port/STATUS.md`                                                                                                          |
 
 ## Files
 
 - `diff.ts` runs both sides for one type and writes the outputs and a summary to `target/port/`. A rejection on both sides counts as agreement.
 - `inputs.ts` collects the inputs: the e2e fixtures, the string literals of the spec files that start like the diagram, the mermaid blocks of the docs, and the explicit cases of `cases.ts`. Identical texts are kept once.
 - `cases.ts` holds explicit inputs the reference's tests do not cover, such as title precedence and blank handling in `accDescr` blocks.
+- `export-flowchart-data.ts` runs the reference's `getData()` after the same steps as a render (`setDiagramConfigScope`, the directives), and writes the layout data in the names and the nulls of the Rust `LayoutData`. `diff-flowchart-data.ts` runs it, runs the `flowchart_data` example over the same input file (or on one text on stdin, for a single case) and compares the outputs field by field; the named exceptions are in `exceptions.ts` under `flowchart-data`.
 - `export-pie.ts` and `export-info.ts` write the canonical JSON of the TypeScript reference. They run with tsx, and `exporter.ts` holds their shared loop.
 - `export-config.ts` runs the steps of `mermaidAPI` for each input (site settings, reset, `preprocessDiagram`, the diagram scope, `addDirective`) and writes `getConfig()` and `configKeys`. `diff-config.ts` compares them with `cargo run --example config`; `config-cases.ts` holds the explicit inputs. The comparison covers the top level and the pie section: other diagram sections are compared when their type is ported, because the reference fills them with its own generator (`.build/jsonSchema.ts`).
 - `pie-header.ts` holds the pie header rules: title precedence and the two DB whitespace rules. Both the exporter and the check use it.
