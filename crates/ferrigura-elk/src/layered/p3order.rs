@@ -19,10 +19,12 @@
 //! southern ports, and the crossings between the dummies and their nodes in a layer. The best order
 //! is written back with the port lists of the dummies' nodes sorted again (`SweepCopy`).
 //!
+//! The greedy switch keeps a dummy beside its node and counts the dummies' crossings with their
+//! neighbours (`greedy_switch`).
+//!
 //! Not ported, and reported as `Unsupported`: the model-order barycenter (`forceNodeModelOrder`),
-//! the crossing counter with node model-order influence, north and south port dummies in the greedy
-//! switch (`NorthSouthEdgeNeighbouringNodeCrossingsCounter`), the in-layer constraints of external
-//! port dummies (`InLayerConstraint`), and self-loops.
+//! the crossing counter with node model-order influence, the in-layer constraints of external port
+//! dummies (`InLayerConstraint`), and self-loops.
 
 mod barycenter;
 mod counting;
@@ -85,7 +87,7 @@ pub fn greedy_switch(graph: &mut LGraph, one_sided: bool) -> Result<(), LayoutEr
             "the one-sided greedy switch (GreedySwitchType.ONE_SIDED)".to_string(),
         ));
     }
-    check_structure(graph, false)?;
+    check_structure(graph)?;
     let mut random = graph
         .random
         .take()
@@ -175,13 +177,11 @@ pub(super) fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
             "the crossing counter with model order influence".to_string(),
         ));
     }
-    check_structure(graph, true)
+    check_structure(graph)
 }
 
 /// The parts of a graph no layer sweep of this port handles, the barycenter's or the greedy switch's.
-/// North and south port dummies are handled by the barycenter sweep (`north_south_dummies`), not by
-/// the greedy switch.
-fn check_structure(graph: &LGraph, north_south_dummies: bool) -> Result<(), LayoutError> {
+fn check_structure(graph: &LGraph) -> Result<(), LayoutError> {
     // A self loop is detached while the self loop processors hold it, so only attached edges count.
     for (index, edge) in graph.edges.iter().enumerate() {
         if graph.is_attached(index)
@@ -198,13 +198,6 @@ fn check_structure(graph: &LGraph, north_south_dummies: bool) -> Result<(), Layo
         .flatten()
         .map(|&node| &graph.nodes[node])
     {
-        if node.node_type == NodeType::NORTH_SOUTH_PORT && !north_south_dummies {
-            return Err(LayoutError::Unsupported(
-                "north-south port dummies in the greedy switch \
-                 (NorthSouthEdgeNeighbouringNodeCrossingsCounter)"
-                    .to_string(),
-            ));
-        }
         // `ForsterConstraintResolver` keeps nodes with in-layer constraints at the top or the
         // bottom of their layers; the layered model has none of its own, but external port dummies
         // on the north or south side have them.

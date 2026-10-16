@@ -15,13 +15,9 @@
 //! `CrossingCountSide` are not ported. The parts that only matter in hierarchical graphs (the
 //! parent's port crossings in `SwitchDecider`) are absent: only a root graph is swept.
 //!
-//! In-layer constraints are not in the layered model: `IN_LAYER_SUCCESSOR_CONSTRAINTS` and
-//! `IN_LAYER_LAYOUT_UNIT` come from the north/south port preprocessor, the hierarchical port
-//! constraint processor and the semi-interactive processor, none of which is ported. So no successor
-//! constraint prevents a switch, and the layout units of any two nodes are both `null`, never
-//! different. North/south port dummies and their `PORT_DUMMY` ports do not exist either (the sweep
-//! rejects them), so `NorthSouthEdgeNeighbouringNodeCrossingsCounter` counts zero in both orders, as
-//! the Java does for a layer without them.
+//! The north/south port preprocessor's in-layer successor constraints and layout units keep a dummy
+//! and its node from switching, and `NorthSouthEdgeNeighbouringNodeCrossingsCounter` counts the
+//! crossings of the implicit edges between the dummies and their nodes' ports.
 
 use std::collections::HashMap;
 
@@ -156,6 +152,8 @@ struct SwitchDecider {
     left_in_layer: CrossingsCounter,
     /// `rightInLayerCounter`, initialized on the east side.
     right_in_layer: CrossingsCounter,
+    /// `northSouthCounter`.
+    north_south: NorthSouthEdgeNeighbouringNodeCrossingsCounter,
     crossing_matrix: CrossingMatrixFiller,
 }
 
@@ -189,10 +187,12 @@ impl SwitchDecider {
             PortSide::EAST,
             positions,
         );
+        let north_south = NorthSouthEdgeNeighbouringNodeCrossingsCounter::new(net, layout, nodes);
         Ok(SwitchDecider {
             free,
             left_in_layer,
             right_in_layer,
+            north_south,
             crossing_matrix,
         })
     }
@@ -249,8 +249,9 @@ impl SwitchDecider {
                 PortSide::EAST,
                 positions,
             )?;
-        // `northSouthCounter.countCrossings`: zero in both orders without north/south port dummies.
-        let (north_south_upper_lower, north_south_lower_upper) = (0, 0);
+        let (north_south_upper_lower, north_south_lower_upper) = self
+            .north_south
+            .count_crossings(net, layout, upper, lower)?;
         let upper_lower = self
             .crossing_matrix
             .entry(net, layout, node_ids, upper, lower)?
@@ -267,30 +268,59 @@ impl SwitchDecider {
     }
 }
 
-/// `constraintsPreventSwitch`. Successor constraints and layout units do not exist in this model (see
-/// the module comment), so `haveSuccessorConstraints` is false and `haveLayoutUnitConstraints` comes
-/// down to its north and south edge test.
+/// `constraintsPreventSwitch`: a successor constraint between the two nodes, their layout units, or
+/// a normal node beside a north/south port dummy.
 fn constraints_prevent_switch(net: &Net, layout: &Layout, upper: usize, lower: usize) -> bool {
-    have_layout_unit_constraints(net, layout, upper, lower)
+    have_successor_constraints(net, upper, lower)
+        || have_layout_unit_constraints(net, layout, upper, lower)
         || are_normal_and_north_south_port_dummy(net, upper, lower)
 }
 
-/// `haveLayoutUnitConstraints` with both layout units `null`: `areInDifferentLayoutUnits` is false,
-/// so only an upper node with northern edges or a lower node with southern edges prevents the
-/// switch, unless one of the two is a long edge dummy.
+/// `haveSuccessorConstraints`: the upper node must come before the lower one.
+fn have_successor_constraints(net: &Net, upper: usize, lower: usize) -> bool {
+    net.graph().nodes[upper]
+        .in_layer_successor_constraints
+        .contains(&lower)
+}
+
+/// `haveLayoutUnitConstraints`: unless one of the two is a long edge dummy, nodes of different
+/// layout units that hold more than themselves (or that have southern edges above or northern
+/// edges below the other) stay in order, and so does an upper node with northern edges or a lower
+/// node with southern ones.
 fn have_layout_unit_constraints(net: &Net, layout: &Layout, upper: usize, lower: usize) -> bool {
     let neither_is_long_edge_dummy =
         net.node_type(upper) != NodeType::LONG_EDGE && net.node_type(lower) != NodeType::LONG_EDGE;
+    let upper_unit = net.graph().nodes[upper].in_layer_layout_unit;
+    let lower_unit = net.graph().nodes[lower].in_layer_layout_unit;
+    let in_different_layout_units = upper_unit != lower_unit;
+    // `partOfMultiNodeLayoutUnit`: a unit other than the node itself.
+    let part_of_multi_node_unit =
+        |node: usize, unit: Option<usize>| unit.is_some_and(|unit| unit != node);
+    let mut nodes_have_layout_units =
+        part_of_multi_node_unit(upper, upper_unit) || part_of_multi_node_unit(lower, lower_unit);
     let upper_has_northern_edges = has_edges_on_side(net, layout, upper, PortSide::NORTH);
     let lower_has_southern_edges = has_edges_on_side(net, layout, lower, PortSide::SOUTH);
-    neither_is_long_edge_dummy && (upper_has_northern_edges || lower_has_southern_edges)
+    // The Java's hotfix for #162: north or south edges mean a layout unit.
+    nodes_have_layout_units |= has_edges_on_side(net, layout, upper, PortSide::SOUTH)
+        || has_edges_on_side(net, layout, lower, PortSide::NORTH);
+    let has_layout_unit_constraint = (nodes_have_layout_units && in_different_layout_units)
+        || upper_has_northern_edges
+        || lower_has_southern_edges;
+    neither_is_long_edge_dummy && has_layout_unit_constraint
 }
 
-/// `hasEdgesOnSide`: a port on `side` with an edge (no port has a `PORT_DUMMY` here).
+/// `hasEdgesOnSide`: a port on `side` with a `PORT_DUMMY` or an edge.
 fn has_edges_on_side(net: &Net, layout: &Layout, node: usize, side: PortSide) -> bool {
     net.side_ports(&layout.node_ports[node], side)
         .into_iter()
-        .any(|port| net.degree(port) > 0)
+        .any(|port| has_port_dummy(net, port) || net.degree(port) > 0)
+}
+
+/// `port.getProperty(PORT_DUMMY) != null`: the north/south port preprocessor's dummy, or the
+/// compound graph preprocessor's.
+fn has_port_dummy(net: &Net, port: usize) -> bool {
+    let data = &net.graph().ports[port];
+    data.north_south_dummy.is_some() || data.port_dummy.is_some()
 }
 
 /// `areNormalAndNorthSouthPortDummy`.
@@ -298,6 +328,176 @@ fn are_normal_and_north_south_port_dummy(net: &Net, upper: usize, lower: usize) 
     let north_south = |node| net.node_type(node) == NodeType::NORTH_SOUTH_PORT;
     let normal = |node| net.node_type(node) == NodeType::NORMAL;
     north_south(upper) && normal(lower) || north_south(lower) && normal(upper)
+}
+
+/// `NorthSouthEdgeNeighbouringNodeCrossingsCounter`: the crossings of the implicit edges between
+/// north/south port dummies and their nodes' ports, for two neighbouring nodes of the free layer in
+/// both orders.
+struct NorthSouthEdgeNeighbouringNodeCrossingsCounter {
+    /// `portPositions`: the place of each northern and southern port of the layer's nodes along its
+    /// side, west to east, as the layer was when the counter was made.
+    port_positions: HashMap<usize, i32>,
+}
+
+impl NorthSouthEdgeNeighbouringNodeCrossingsCounter {
+    /// `new` with `initializePortPositions`: the southern, then the northern ports of each node.
+    fn new(net: &Net, layout: &Layout, nodes: &[usize]) -> Self {
+        let mut port_positions = HashMap::new();
+        for &node in nodes {
+            for side in [PortSide::SOUTH, PortSide::NORTH] {
+                for (id, port) in
+                    in_north_south_east_west_order(net, &layout.node_ports[node], side)
+                        .into_iter()
+                        .enumerate()
+                {
+                    port_positions.insert(port, id as i32);
+                }
+            }
+        }
+        NorthSouthEdgeNeighbouringNodeCrossingsCounter { port_positions }
+    }
+
+    /// `countCrossings`: the upper-lower and the lower-upper crossings.
+    fn count_crossings(
+        &self,
+        net: &Net,
+        layout: &Layout,
+        upper: usize,
+        lower: usize,
+    ) -> Result<(i32, i32), LayoutError> {
+        let mut crossings = (0, 0);
+        // `processIfTwoNorthSouthNodes`.
+        if is_north_south(net, upper)
+            && is_north_south(net, lower)
+            && origin_of(net, upper) == origin_of(net, lower)
+        {
+            // The dummy further from the node first: the upper one above the node, the lower one
+            // below it. The Java sets the two counts the same way in both cases.
+            crossings = if self.is_north_of_normal_node(net, layout, upper)? {
+                self.count_crossings_of_two_north_south_dummies(net, layout, upper, lower)?
+            } else {
+                self.count_crossings_of_two_north_south_dummies(net, layout, lower, upper)?
+            };
+        }
+        // `processIfNorthSouthLongEdgeDummyCrossing`.
+        if is_north_south(net, upper) && is_long_edge_dummy(net, lower) {
+            if self.is_north_of_normal_node(net, layout, upper)? {
+                crossings.0 = 1;
+            } else {
+                crossings.1 = 1;
+            }
+        } else if is_north_south(net, lower) && is_long_edge_dummy(net, upper) {
+            if self.is_north_of_normal_node(net, layout, lower)? {
+                crossings.1 = 1;
+            } else {
+                crossings.0 = 1;
+            }
+        }
+        // `processIfNormalNodeWithNSPortsAndLongEdgeDummy`.
+        if is_normal(net, upper) && is_long_edge_dummy(net, lower) {
+            crossings.0 = number_of_north_south_edges(net, layout, upper, PortSide::SOUTH);
+            crossings.1 = number_of_north_south_edges(net, layout, upper, PortSide::NORTH);
+        }
+        if is_normal(net, lower) && is_long_edge_dummy(net, upper) {
+            crossings.0 = number_of_north_south_edges(net, layout, lower, PortSide::NORTH);
+            crossings.1 = number_of_north_south_edges(net, layout, lower, PortSide::SOUTH);
+        }
+        Ok(crossings)
+    }
+
+    /// `countCrossingsOfTwoNorthSouthDummies`: the dummy further from the node crosses the edges of
+    /// the closer one when their ports are the other way round. Returns `upperLowerCrossings` (the
+    /// degree of a port of the closer dummy) and `lowerUpperCrossings` (of the further one).
+    fn count_crossings_of_two_north_south_dummies(
+        &self,
+        net: &Net,
+        layout: &Layout,
+        further: usize,
+        closer: usize,
+    ) -> Result<(i32, i32), LayoutError> {
+        let first_degree = |node: usize, side: PortSide| {
+            net.side_ports(&layout.node_ports[node], side)
+                .first()
+                .map_or(0, |&port| net.degree(port) as i32)
+        };
+        if self.origin_port_position_of(net, layout, further)?
+            > self.origin_port_position_of(net, layout, closer)?
+        {
+            Ok((
+                first_degree(closer, PortSide::EAST),
+                first_degree(further, PortSide::WEST),
+            ))
+        } else {
+            Ok((
+                first_degree(closer, PortSide::WEST),
+                first_degree(further, PortSide::EAST),
+            ))
+        }
+    }
+
+    /// `originPortPositionOf`: the place of the port the dummy stands for.
+    fn origin_port_position_of(
+        &self,
+        net: &Net,
+        layout: &Layout,
+        node: usize,
+    ) -> Result<i32, LayoutError> {
+        origin_port_of(net, layout, node)
+            .and_then(|port| self.port_positions.get(&port).copied())
+            .ok_or_else(|| {
+                LayoutError::Format(
+                    "a north/south port dummy whose port has no position \
+                     (NorthSouthEdgeNeighbouringNodeCrossingsCounter)"
+                        .to_string(),
+                )
+            })
+    }
+
+    /// `isNorthOfNormalNode`: the port the dummy stands for is on the north side.
+    fn is_north_of_normal_node(
+        &self,
+        net: &Net,
+        layout: &Layout,
+        node: usize,
+    ) -> Result<bool, LayoutError> {
+        origin_port_of(net, layout, node)
+            .map(|port| net.side(port) == PortSide::NORTH)
+            .ok_or_else(|| {
+                LayoutError::Format("a north/south port dummy without its port".to_string())
+            })
+    }
+}
+
+/// `originPortOf`: the `ORIGIN` of the dummy's first port, the port the dummy stands for.
+fn origin_port_of(net: &Net, layout: &Layout, node: usize) -> Option<usize> {
+    let &first = layout.node_ports[node].first()?;
+    net.graph().ports[first].origin_port
+}
+
+/// `originOf`: the `ORIGIN` of a north/south port dummy, the node it was made for, which is also its
+/// layout unit.
+fn origin_of(net: &Net, node: usize) -> Option<usize> {
+    net.graph().nodes[node].in_layer_layout_unit
+}
+
+/// `numberOfNorthSouthEdges`: the ports on `side` with a `PORT_DUMMY`.
+fn number_of_north_south_edges(net: &Net, layout: &Layout, node: usize, side: PortSide) -> i32 {
+    net.side_ports(&layout.node_ports[node], side)
+        .into_iter()
+        .filter(|&port| has_port_dummy(net, port))
+        .count() as i32
+}
+
+fn is_north_south(net: &Net, node: usize) -> bool {
+    net.node_type(node) == NodeType::NORTH_SOUTH_PORT
+}
+
+fn is_long_edge_dummy(net: &Net, node: usize) -> bool {
+    net.node_type(node) == NodeType::LONG_EDGE
+}
+
+fn is_normal(net: &Net, node: usize) -> bool {
+    net.node_type(node) == NodeType::NORMAL
 }
 
 /// `CrossingMatrixFiller`, two-sided: the between-layer crossings of each pair of nodes of the free
