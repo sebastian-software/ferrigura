@@ -153,7 +153,7 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
     let title_right = PIE_WIDTH / 2.0 + title_width / 2.0;
     let view_box_x = 0.0_f64.min(title_left);
     let view_box_right = chart_width.max(title_right);
-    let total_width = view_box_right - view_box_x;
+    let total_width = layout_unit(view_box_right - view_box_x);
 
     let slice_labels: Vec<String> = visible
         .iter()
@@ -297,6 +297,14 @@ fn pie_arcs(sections: &[PieSection], total: f64) -> Vec<Slice<'_>> {
             }
         })
         .collect()
+}
+
+/// A length rounded to the browser's layout unit of 1/64 px. A width that is not on that grid makes
+/// the browser scale the drawing by a fraction, and it then lays the text out at the scaled size,
+/// which moves the text's width by a few hundredths of a pixel. The reference's widths are on the
+/// grid, because the browser measured them.
+fn layout_unit(length: f64) -> f64 {
+    (length * 64.0).round() / 64.0
 }
 
 /// The percentage of a slice, as the reference's `toFixed(0)` writes it.

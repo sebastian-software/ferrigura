@@ -117,9 +117,14 @@ const pointIn = (svg, element, x, y) => {
   const mapped = point.matrixTransform(element.getCTM());
   return [mapped.x, mapped.y];
 };
-window.geometry = (svgText) => {
-  const stage = document.getElementById('stage');
+window.geometry = async (svgText) => {
+  const stage = document.getElementById("stage");
   stage.innerHTML = svgText;
+  // The embedded faces load asynchronously; measuring before they load would use a fallback font.
+  for (const [, family] of svgText.matchAll(/font-family: ?"([^"]+)"/g)) {
+    await document.fonts.load('16px "' + family + '"');
+  }
+  await document.fonts.ready;
   const svg = stage.querySelector('svg');
   const viewBox = svg.getAttribute('viewBox').trim().split(/\\s+/).map(Number);
   const circle = svg.querySelector('.pieOuterCircle');
@@ -330,11 +335,11 @@ async function main(): Promise<void> {
       );
       const ferrigura = renderFerrigura(text);
       const jsGeometry = (await page.evaluate(
-        (svg) => (window as unknown as { geometry: (s: string) => unknown }).geometry(svg),
+        (svg) => (window as unknown as { geometry: (s: string) => Promise<unknown> }).geometry(svg),
         referenceSvg
       )) as Geometry;
       const rsGeometry = (await page.evaluate(
-        (svg) => (window as unknown as { geometry: (s: string) => unknown }).geometry(svg),
+        (svg) => (window as unknown as { geometry: (s: string) => Promise<unknown> }).geometry(svg),
         ferrigura
       )) as Geometry;
       if (process.env.DUMP === basename(file, '.mmd')) {
