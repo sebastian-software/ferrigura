@@ -63,6 +63,7 @@ pub const NODE_SIZE_FIXED_GRAPH_SIZE: &str = "org.eclipse.elk.nodeSize.fixedGrap
 pub const NODE_LABELS_PLACEMENT: &str = "org.eclipse.elk.nodeLabels.placement";
 pub const NODE_LABELS_PADDING: &str = "org.eclipse.elk.nodeLabels.padding";
 pub const NODE_SIZE_MINIMUM: &str = "org.eclipse.elk.nodeSize.minimum";
+pub const CONTENT_ALIGNMENT: &str = "org.eclipse.elk.contentAlignment";
 pub const NO_LAYOUT: &str = "org.eclipse.elk.noLayout";
 pub const PORT_CONSTRAINTS: &str = "org.eclipse.elk.portConstraints";
 pub const SPACING_EDGE_LABEL: &str = "org.eclipse.elk.spacing.edgeLabel";

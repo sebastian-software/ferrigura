@@ -11,8 +11,8 @@ use std::collections::HashMap;
 
 use crate::core::data::OptionValue;
 use crate::core::data::enums::{
-    ComponentOrderingStrategy, EdgeLabelPlacement, GraphProperties, OrderingStrategy,
-    PortConstraints,
+    ComponentOrderingStrategy, EdgeLabelPlacement, GraphProperties, HierarchyHandling,
+    OrderingStrategy, PortConstraints,
 };
 use crate::core::data::property::PropertyHolder;
 use crate::core::math::KVector;
@@ -26,9 +26,21 @@ use crate::layered::spacings::{SPACING_BASE_VALUE, apply_base_value};
 
 /// `importGraph` for a root whose children are plain nodes, joined by edges.
 pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
+    import_level(root, None, &root.id)
+}
+
+/// `ElkGraphImporter.importGraph` for the level of `root`: its children, as plain nodes, joined by
+/// edges. `parent` holds the options of `root`'s parent, which the Java reads for the spacings of
+/// `root`'s inside labels and for its minimum size; it is `None` for the root of the graph. `chain`
+/// is `root`'s designation prefix: the ids from the root of the graph down to `root`.
+pub fn import_level(
+    root: &ElkNode,
+    parent: Option<&PropertyHolder>,
+    chain: &str,
+) -> Result<LGraph, LayoutError> {
     let mut graph = LGraph {
         properties: root.properties.clone(),
-        root_id: root.id.clone(),
+        root_id: chain.to_string(),
         ..LGraph::default()
     };
     // `ElkGraphImporter`: the root's padding is the margin the drawing keeps inside the root node.
@@ -43,16 +55,64 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
     // `createLGraph`: the padding also leaves room for the root's own inside labels. Without labels
     // that room is zero, so the node spacing code is not asked.
     if !root.labels.is_empty() {
-        let label_padding = nodespacing::inside_label_padding(&label_probe(root, None), 0, true)?;
+        let label_padding = nodespacing::inside_label_padding(&label_probe(root, parent), 0, true)?;
         graph.padding.top += label_padding.top;
         graph.padding.left += label_padding.left;
         graph.padding.bottom += label_padding.bottom;
         graph.padding.right += label_padding.right;
     }
+    // `calculateMinimumGraphSize`: a nested graph's node with size constraints takes a minimum size
+    // from its labels, and the configured minimum, and the graph gets the MINIMUM_SIZE constraint.
+    // The Java also writes the result into the node's own minimum, through a shared object. That is
+    // not reproduced: the layout's size is already at least that minimum, so the node's size does
+    // not change either way.
+    if let Some(parent) = parent
+        && !root
+            .properties
+            .enum_set_is_empty(options::NODE_SIZE_CONSTRAINTS)
+    {
+        let probe = label_probe(root, Some(parent));
+        let minimum = nodespacing::minimum_size_of(&probe, 0)?;
+        let configured = match graph
+            .properties
+            .value_or_default(options::NODE_SIZE_MINIMUM)
+        {
+            Some(OptionValue::Vector(vector)) => vector,
+            _ => KVector::default(),
+        };
+        let mut names = match root.properties.get(options::NODE_SIZE_CONSTRAINTS) {
+            Some(OptionValue::EnumSet { names, .. }) => names.clone(),
+            _ => Vec::new(),
+        };
+        if !names.iter().any(|name| name == "MINIMUM_SIZE") {
+            names.push("MINIMUM_SIZE".to_string());
+        }
+        graph.properties.set(
+            options::NODE_SIZE_CONSTRAINTS,
+            Some(OptionValue::EnumSet {
+                class: "SizeConstraint",
+                names,
+            }),
+        );
+        graph.properties.set(
+            options::NODE_SIZE_MINIMUM,
+            Some(OptionValue::Vector(KVector {
+                x: minimum.x.max(configured.x),
+                y: minimum.y.max(configured.y),
+            })),
+        );
+    }
     let needs_model_order = needs_model_order_based_on_parent(root);
     let mut model_order = 0;
     for child in &root.children {
-        if !child.children.is_empty() {
+        // A child with children is a leaf of this level once it was laid out on its own, which its
+        // hierarchy handling says. Any other child with children is a nested graph of this level.
+        if !child.children.is_empty()
+            && child
+                .properties
+                .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
+                != Some(HierarchyHandling::SEPARATE_CHILDREN)
+        {
             return Err(LayoutError::Unsupported(format!(
                 "nested graph in {}",
                 child.id
@@ -93,7 +153,7 @@ pub fn import_root(root: &ElkNode) -> Result<LGraph, LayoutError> {
         // ELK node and its parent.
         let designation = match labels.first() {
             Some(&first) => graph.labels[first].text.clone(),
-            None => format!("{}.{}", root.id, child.id),
+            None => format!("{chain}.{}", child.id),
         };
         graph.nodes.push(LNode {
             id: child.id.clone(),

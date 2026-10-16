@@ -8,6 +8,8 @@
 
 use std::collections::HashMap;
 
+use crate::core::data::OptionValue;
+use crate::core::data::property::PropertyHolder;
 use crate::core::math::KVector;
 use crate::error::LayoutError;
 use crate::graph::{ElkEdgeSection, ElkNode, Shape};
@@ -112,13 +114,87 @@ pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutErro
             label.shape = shape;
         }
     }
-    // `applyParentNodeLayout`: the root takes the actual size, unless its size is fixed.
+    // `applyParentNodeLayout`: the node takes the actual size of its graph, unless its size is fixed.
     if !root.properties.bool_of(options::NODE_SIZE_FIXED_GRAPH_SIZE) {
         let actual = graph.actual_size();
-        root.shape.width = actual.x;
-        root.shape.height = actual.y;
+        resize_node(root, actual.x, actual.y);
     }
+    // Then the node's size is fixed (`SizeConstraint.fixed()`), whatever it was. The level above
+    // reads this: a node laid out on its own is sized as it is, not by its labels again.
+    root.properties.set(
+        options::NODE_SIZE_CONSTRAINTS,
+        Some(OptionValue::EnumSet {
+            class: "SizeConstraint",
+            names: Vec::new(),
+        }),
+    );
     Ok(())
+}
+
+/// `ElkUtil.resizeNode(node, width, height, movePorts, moveLabels)` without ports: the node becomes
+/// at least `width` by `height` and at least its minimum size, and its labels move with the new
+/// size as they keep their place in the node.
+fn resize_node(node: &mut ElkNode, width: f64, height: f64) {
+    let old = KVector {
+        x: node.shape.width,
+        y: node.shape.height,
+    };
+    let minimum = effective_minimum_size(&node.properties);
+    let new = KVector {
+        x: minimum.x.max(width),
+        y: minimum.y.max(height),
+    };
+    let width_diff = new.x - old.x;
+    let height_diff = new.y - old.y;
+    node.shape.width = new.x;
+    node.shape.height = new.y;
+    for label in &mut node.labels {
+        let mid_x = label.shape.x + label.shape.width / 2.0;
+        let mid_y = label.shape.y + label.shape.height / 2.0;
+        let width_percent = mid_x / old.x;
+        let height_percent = mid_y / old.y;
+        if width_percent + height_percent >= 1.0 {
+            if width_percent - height_percent > 0.0 && mid_y >= 0.0 {
+                // The label is on the right.
+                label.shape.x += width_diff;
+                label.shape.y += height_diff * height_percent;
+            } else if width_percent - height_percent < 0.0 && mid_x >= 0.0 {
+                // The label is on the bottom.
+                label.shape.x += width_diff * width_percent;
+                label.shape.y += height_diff;
+            }
+        }
+    }
+}
+
+/// `ElkUtil.effectiveMinSizeConstraintFor`: the node's minimum size under MINIMUM_SIZE, with the
+/// defaults of DEFAULT_MINIMUM_SIZE for a width or height that is not set. Zero otherwise.
+pub fn effective_minimum_size(properties: &PropertyHolder) -> KVector {
+    if !properties.enum_set_contains(options::NODE_SIZE_CONSTRAINTS, "MINIMUM_SIZE") {
+        return KVector::default();
+    }
+    let mut minimum = match properties.value_or_default(options::NODE_SIZE_MINIMUM) {
+        Some(OptionValue::Vector(vector)) => vector,
+        _ => KVector::default(),
+    };
+    // Unset, `nodeSize.options` is `EnumSet.of(DEFAULT_MINIMUM_SIZE)`, which the registry's default
+    // does not express.
+    let default_minimum = match properties.get(options::NODE_SIZE_OPTIONS) {
+        Some(OptionValue::EnumSet { names, .. }) => {
+            names.iter().any(|name| name == "DEFAULT_MINIMUM_SIZE")
+        }
+        _ => true,
+    };
+    if default_minimum {
+        // `ElkUtil.DEFAULT_MIN_WIDTH` and `DEFAULT_MIN_HEIGHT`.
+        if minimum.x <= 0.0 {
+            minimum.x = 20.0;
+        }
+        if minimum.y <= 0.0 {
+            minimum.y = 20.0;
+        }
+    }
+    minimum
 }
 
 /// `applyEdgeLayout`: an edge's route as one section, from the anchor of its source port to the

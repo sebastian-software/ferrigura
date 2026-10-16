@@ -37,11 +37,31 @@ pub fn layout(graph: &json::JsonNode, logging: bool) -> Result<Layout, LayoutErr
     let mut output = graph.clone();
     output.width = Some(elk.shape.width);
     output.height = Some(elk.shape.height);
-    for (json, node) in output.children.iter_mut().zip(elk.children.iter_mut()) {
+    write_level(&mut output, &elk);
+    Ok(Layout {
+        graph: output,
+        trace,
+    })
+}
+
+/// Writes the layout of one level into its JSON: each child with its position, size and labels,
+/// then the child's own level, and the level's edges.
+fn write_level(output: &mut json::JsonNode, elk: &graph::ElkNode) {
+    for (json, node) in output.children.iter_mut().zip(elk.children.iter()) {
         json.x = Some(node.shape.x);
         json.y = Some(node.shape.y);
         json.width = Some(node.shape.width);
         json.height = Some(node.shape.height);
+        // The labels with text are laid out; the others keep what the input gave them.
+        for (json_label, label) in json.labels.iter_mut().zip(node.labels.iter()) {
+            if label.text.as_deref().is_some_and(|text| !text.is_empty()) {
+                json_label.x = Some(label.shape.x);
+                json_label.y = Some(label.shape.y);
+                json_label.width = Some(label.shape.width);
+                json_label.height = Some(label.shape.height);
+            }
+        }
+        write_level(json, node);
     }
     // Each edge's route: one section, `<id>_s<index>`, with its shapes as the endpoint ids.
     for (json, edge) in output.edges.iter_mut().zip(elk.edges.iter()) {
@@ -82,8 +102,4 @@ pub fn layout(graph: &json::JsonNode, logging: bool) -> Result<Layout, LayoutErr
             }
         }
     }
-    Ok(Layout {
-        graph: output,
-        trace,
-    })
 }

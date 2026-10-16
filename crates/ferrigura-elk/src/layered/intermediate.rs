@@ -11,8 +11,8 @@
 
 use crate::core::data::JavaEnum;
 use crate::core::data::enums::{
-    EdgeLabelSideSelection, IntermediateProcessorStrategy, NodeType, OrderingStrategy,
-    PortConstraints,
+    EdgeLabelSideSelection, HierarchyHandling, IntermediateProcessorStrategy, NodeType,
+    OrderingStrategy, PortConstraints,
 };
 use crate::core::math::KVector;
 use crate::core::util::progress::{Monitor, ProgressMonitor};
@@ -60,6 +60,9 @@ pub fn task_name(
         S::SELF_LOOP_ROUTER => "Self-Loop routing",
         S::SELF_LOOP_POSTPROCESSOR => "Self-Loop post-processing",
         S::HIERARCHICAL_NODE_RESIZER => "Resize child graph to fit parent.",
+        // `LayerSweepCrossingMinimizer` begins with `"Minimize Crossings " + crossMinType`.
+        S::ONE_SIDED_GREEDY_SWITCH => "Minimize Crossings ONE_SIDED_GREEDY_SWITCH",
+        S::TWO_SIDED_GREEDY_SWITCH => "Minimize Crossings TWO_SIDED_GREEDY_SWITCH",
         S::LABEL_DUMMY_SWITCHER => "Label dummy switching",
         S::LABEL_DUMMY_REMOVER => "Label dummy removal",
         S::LABEL_SIDE_SELECTOR => {
@@ -184,10 +187,32 @@ pub fn run(
         IntermediateProcessorStrategy::LABEL_DUMMY_REMOVER => {
             crate::layered::labels::label_dummy_removal(graph)?;
         }
+        IntermediateProcessorStrategy::ONE_SIDED_GREEDY_SWITCH
+        | IntermediateProcessorStrategy::TWO_SIDED_GREEDY_SWITCH => {
+            greedy_switch(graph)?;
+        }
         _ => {}
     }
     progress.done(monitor);
     Ok(())
+}
+
+/// `LayerSweepCrossingMinimizer` run as a greedy switch. It returns at once for an empty graph and
+/// for a single node outside a hierarchical layout, as its `process` does before it sorts anything.
+/// Other graphs need the greedy switch heuristic, which is not ported.
+fn greedy_switch(graph: &LGraph) -> Result<(), LayoutError> {
+    let empty = graph.layers.iter().all(Vec::is_empty);
+    let single = graph.layers.len() == 1 && graph.layers[0].len() == 1;
+    let hierarchical = graph
+        .properties
+        .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
+        == Some(HierarchyHandling::INCLUDE_CHILDREN);
+    if empty || (single && !hierarchical) {
+        return Ok(());
+    }
+    Err(LayoutError::Unsupported(
+        "greedy switch crossing minimization on several nodes".to_string(),
+    ))
 }
 
 /// `HierarchicalNodeResizingProcessor.process` for the root graph: the nodes leave their

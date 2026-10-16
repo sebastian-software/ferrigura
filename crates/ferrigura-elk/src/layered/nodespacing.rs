@@ -158,6 +158,16 @@ pub fn label_and_node_size(graph: &mut LGraph) -> Result<(), LayoutError> {
     Ok(())
 }
 
+/// `NodeLabelAndSizeCalculator.process(graph, node, false, true)` for the node `node` of `probe`: the
+/// size the node needs for its labels and its minimum size. A nested graph's own minimum size is
+/// made of it (`ElkGraphImporter.calculateMinimumGraphSize`).
+pub fn minimum_size_of(
+    probe: &LGraph,
+    node: usize,
+) -> Result<crate::core::math::KVector, LayoutError> {
+    Ok(sizing::calculate(probe, node, false)?.size)
+}
+
 /// `NodeLabelAndSizeCalculator.computeInsideNodeLabelPadding` for the node `node` of `probe`: the
 /// padding its inside labels take. `probe` holds the node alone, with the options of the node's
 /// parent as its own properties (or none, for a root), which is where the Java reads the spacings.

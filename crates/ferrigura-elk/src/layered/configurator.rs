@@ -190,10 +190,26 @@ fn phase_independent(graph: &LGraph) -> Result<LayoutProcessorConfiguration<S>, 
     {
         return Err(LayoutError::Unsupported("interactive layout".to_string()));
     }
+    // `configuration.addBefore(P4_NODE_PLACEMENT, internalGreedyType)`: the hierarchical type for a
+    // hierarchical graph, the plain one otherwise.
     if greedy_switch_active(graph) {
-        return Err(LayoutError::Unsupported(
-            "greedy switch crossing minimization".to_string(),
-        ));
+        let hierarchical = props.enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
+            == Some(HierarchyHandling::INCLUDE_CHILDREN);
+        let switch_type = if hierarchical {
+            props.enum_of::<GreedySwitchType>(
+                options::CROSSING_MINIMIZATION_GREEDY_SWITCH_HIERARCHICAL_TYPE,
+            )
+        } else {
+            props.enum_of::<GreedySwitchType>(options::CROSSING_MINIMIZATION_GREEDY_SWITCH_TYPE)
+        };
+        config.add_before(
+            P4,
+            if switch_type == Some(GreedySwitchType::ONE_SIDED) {
+                S::ONE_SIDED_GREEDY_SWITCH
+            } else {
+                S::TWO_SIDED_GREEDY_SWITCH
+            },
+        );
     }
     Ok(config)
 }
