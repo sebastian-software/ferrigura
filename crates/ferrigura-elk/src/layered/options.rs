@@ -81,6 +81,11 @@ pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_NODE_INFLUENCE: &str =
     "org.eclipse.elk.layered.considerModelOrder.crossingCounterNodeInfluence";
 pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_PORT_INFLUENCE: &str =
     "org.eclipse.elk.layered.considerModelOrder.crossingCounterPortInfluence";
+pub const EDGE_ROUTING_SELF_LOOP_DISTRIBUTION: &str =
+    "org.eclipse.elk.layered.edgeRouting.selfLoopDistribution";
+pub const EDGE_ROUTING_SELF_LOOP_ORDERING: &str =
+    "org.eclipse.elk.layered.edgeRouting.selfLoopOrdering";
+pub const SPACING_NODE_SELF_LOOP: &str = "org.eclipse.elk.spacing.nodeSelfLoop";
 
 #[cfg(test)]
 mod tests {

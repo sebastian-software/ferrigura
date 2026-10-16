@@ -14,9 +14,9 @@
 //! Java's `HashMap` from ports to segments is a `HashMap` here; it is only looked up, never
 //! iterated. The debug output of `routeEdges` is not ported.
 
-mod cycles;
+pub(in crate::layered) mod cycles;
 mod direction;
-mod segment;
+pub(in crate::layered) mod segment;
 mod splitter;
 
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -349,7 +349,7 @@ fn minimum_difference(mut numbers: Vec<f64>) -> f64 {
 
 /// `breakNonCriticalCycles`: removes the zero-weight dependencies on cycles and reverses the
 /// others.
-fn break_non_critical_cycles(
+pub(in crate::layered) fn break_non_critical_cycles(
     arena: &mut Arena,
     segments: &[usize],
     random: &mut Option<Random>,

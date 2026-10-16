@@ -7,11 +7,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::core::data::JavaEnum;
-use crate::core::data::enums::{GraphProperties, NodeType, PortSide};
+use crate::core::data::enums::{GraphProperties, NodeType, PortConstraints, PortSide};
 use crate::core::data::property::PropertyHolder;
 use crate::core::math::{KVector, Spacing};
 use crate::java::random::Random;
 use crate::layered::labels::LabelSide;
+use crate::layered::loops::SelfLoopHolder;
 
 /// A node of the layered graph, `LNode`.
 #[derive(Debug, Clone, Default)]
@@ -53,6 +54,12 @@ pub struct LNode {
     pub label_side: LabelSide,
     /// `InternalProperties.LONG_EDGE_BEFORE_LABEL_DUMMY`: a long edge dummy that precedes a label dummy.
     pub long_edge_before_label_dummy: bool,
+    /// `InternalProperties.SELF_LOOP_HOLDER`: the self loops of the node, installed by the self loop
+    /// preprocessor and taken out while the self loop processors work on the node.
+    pub self_loops: Option<SelfLoopHolder>,
+    /// `InternalProperties.ORIGINAL_PORT_CONSTRAINTS`: the port constraints the node had before the
+    /// port side processor changed them. Set by the configurator.
+    pub original_port_constraints: Option<PortConstraints>,
 }
 
 /// Whether a port is where an edge leaves or enters its node, `PortType`.
@@ -82,6 +89,8 @@ pub struct LPort {
     /// `InternalProperties.MAX_EDGE_THICKNESS`: the largest thickness of the port's edges, set when
     /// the port has end labels.
     pub max_edge_thickness: Option<f64>,
+    /// `LPort.id`: the index of the port in its node's list, as the self loop routing assigns it.
+    pub id: usize,
 }
 
 impl LPort {
@@ -93,6 +102,7 @@ impl LPort {
             position: KVector::default(),
             size: KVector::default(),
             anchor: KVector::default(),
+            id: 0,
             outgoing: Vec::new(),
             incoming: Vec::new(),
             max_edge_thickness: None,
@@ -229,6 +239,41 @@ impl LGraph {
         }
         self.edges[edge].target = port;
         self.ports[port].incoming.push(edge);
+    }
+
+    /// Whether the edge is in the outgoing list of its source port, which is Java's
+    /// `LEdge.getSource() != null`. A self loop that the preprocessor hid is detached until it is
+    /// restored; its `source` and `target` keep their indices meanwhile.
+    pub fn is_attached(&self, edge: usize) -> bool {
+        self.ports[self.edges[edge].source].outgoing.contains(&edge)
+    }
+
+    /// `LEdge.setSource(null)` and `setTarget(null)`: the edge leaves the outgoing list of its source
+    /// port and the incoming list of its target port. Its ends are kept, so it can be attached again.
+    pub fn detach_edge(&mut self, edge: usize) {
+        let (source, target) = (self.edges[edge].source, self.edges[edge].target);
+        if let Some(index) = self.ports[source]
+            .outgoing
+            .iter()
+            .position(|&found| found == edge)
+        {
+            self.ports[source].outgoing.remove(index);
+        }
+        if let Some(index) = self.ports[target]
+            .incoming
+            .iter()
+            .position(|&found| found == edge)
+        {
+            self.ports[target].incoming.remove(index);
+        }
+    }
+
+    /// `LEdge.setSource(source)` and `setTarget(target)` for the ends a detached edge kept: the edge
+    /// is appended to the outgoing list of its source port and the incoming list of its target port.
+    pub fn attach_edge(&mut self, edge: usize) {
+        let (source, target) = (self.edges[edge].source, self.edges[edge].target);
+        self.ports[source].outgoing.push(edge);
+        self.ports[target].incoming.push(edge);
     }
 
     /// `LGraph.getActualSize()`: the size with the padding around it.

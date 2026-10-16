@@ -11,7 +11,7 @@
 //! with other features, which need processors that are not ported, are rejected by
 //! [`check_supported`] instead of being routed wrongly.
 
-mod orthogonal;
+pub(in crate::layered) mod orthogonal;
 
 use crate::core::data::enums::{GraphProperties, NodeType, PortSide};
 use crate::java::random::Random;
@@ -174,7 +174,11 @@ fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
             layer_of[node] = Some(index);
         }
     }
-    for edge in &graph.edges {
+    // The self loops of a node are detached while they are routed, so only attached edges are routed here.
+    for (index, edge) in graph.edges.iter().enumerate() {
+        if !graph.is_attached(index) {
+            continue;
+        }
         let source = &graph.ports[edge.source];
         let target = &graph.ports[edge.target];
         if source.node == target.node {

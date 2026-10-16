@@ -55,6 +55,10 @@ pub fn task_name(
         S::END_LABEL_POSTPROCESSOR => "End label post-processing",
         S::END_LABEL_SORTER => "Sort end labels",
         S::REVERSED_EDGE_RESTORER => "Restoring reversed edges",
+        S::SELF_LOOP_PREPROCESSOR => "Self-Loop pre-processing",
+        S::SELF_LOOP_PORT_RESTORER => "Self-Loop ordering",
+        S::SELF_LOOP_ROUTER => "Self-Loop routing",
+        S::SELF_LOOP_POSTPROCESSOR => "Self-Loop post-processing",
         S::HIERARCHICAL_NODE_RESIZER => "Resize child graph to fit parent.",
         S::LABEL_DUMMY_SWITCHER => "Label dummy switching",
         S::LABEL_DUMMY_REMOVER => "Label dummy removal",
@@ -137,6 +141,18 @@ pub fn run(
         // Reversed edges are restored by a processor that is not ported yet; with none, it does nothing.
         IntermediateProcessorStrategy::REVERSED_EDGE_RESTORER => {
             crate::layered::p1cycles::restore_reversed_edges(graph);
+        }
+        IntermediateProcessorStrategy::SELF_LOOP_PREPROCESSOR => {
+            crate::layered::loops::preprocess(graph)?;
+        }
+        IntermediateProcessorStrategy::SELF_LOOP_PORT_RESTORER => {
+            crate::layered::loops::restore_ports(graph)?;
+        }
+        IntermediateProcessorStrategy::SELF_LOOP_ROUTER => {
+            crate::layered::loops::route(graph)?;
+        }
+        IntermediateProcessorStrategy::SELF_LOOP_POSTPROCESSOR => {
+            crate::layered::loops::postprocess(graph)?;
         }
         IntermediateProcessorStrategy::END_LABEL_PREPROCESSOR => {
             crate::layered::endlabels::preprocess(graph);

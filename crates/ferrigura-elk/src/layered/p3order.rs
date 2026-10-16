@@ -100,8 +100,9 @@ fn check_supported(graph: &LGraph) -> Result<(), LayoutError> {
             "the crossing counter with model order influence".to_string(),
         ));
     }
-    for edge in &graph.edges {
-        if graph.ports[edge.source].node == graph.ports[edge.target].node {
+    // A self loop is detached while the self loop processors hold it, so only attached edges count.
+    for (index, edge) in graph.edges.iter().enumerate() {
+        if graph.is_attached(index) && graph.ports[edge.source].node == graph.ports[edge.target].node {
             return Err(LayoutError::Unsupported(
                 "self-loops in crossing minimization".to_string(),
             ));
