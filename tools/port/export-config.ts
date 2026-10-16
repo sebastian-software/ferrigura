@@ -4,9 +4,11 @@
  *
  * For each input this runs the steps `mermaidAPI` runs: the `initialize` settings become the site
  * config, the configuration is reset, the text goes through `preprocessDiagram`, its diagram type
- * is detected, and the merged front matter and directive configuration is added. The output is the
- * configuration the reference then returns from `getConfig()`, as JSON, `themeVariables` included.
- * The key set the directives may use is written too.
+ * is detected and the diagram scope is set to its section, and the merged front matter and
+ * directive configuration is added. This is `processAndSetConfigs` of `mermaidAPI.ts`, which every
+ * render runs. The output is the configuration the reference then returns from `getConfig()`, as
+ * JSON, `themeVariables` included, with the section of the scope (`scope`, `null` when the type is
+ * not detected). The key set the directives may use is written too.
  *
  * Usage: `tsx tools/port/export-config.ts inputs.json outputs.json`
  */
@@ -41,22 +43,34 @@ interface Modules {
   defaultConfig: {
     configKeys: Set<string>;
   };
+  diagramConfigKeys: {
+    getDiagramConfigKey(diagramType: string): string;
+  };
 }
 
 async function loadModules(reference: Reference): Promise<Modules> {
   await registerDetectors(reference);
-  const [config, preprocess, detectType, defaultConfig] = await Promise.all([
+  const [config, preprocess, detectType, defaultConfig, diagramConfigKeys] = await Promise.all([
     reference.load<Modules['config']>('/packages/mermaid/src/config.ts'),
     reference.load<Modules['preprocess']>('/packages/mermaid/src/preprocess.ts'),
     reference.load<Modules['detectType']>('/packages/mermaid/src/diagram-api/detectType.ts'),
     reference.load<Modules['defaultConfig']>('/packages/mermaid/src/defaultConfig.ts'),
+    reference.load<Modules['diagramConfigKeys']>(
+      '/packages/mermaid/src/diagram-api/diagramConfigKeys.ts'
+    ),
   ]);
-  return { config, preprocess, detectType, defaultConfig };
+  return { config, preprocess, detectType, defaultConfig, diagramConfigKeys };
 }
 
-/** The effective configuration of one input, as the reference computes it. */
-function effectiveConfig(input: ConfigInput, modules: Modules): Record<string, unknown> {
-  const { config, preprocess, detectType } = modules;
+/**
+ * The effective configuration of one input, as the reference computes it, and the section of its
+ * diagram scope, which is `null` when the type is not detected.
+ */
+function effectiveConfig(
+  input: ConfigInput,
+  modules: Modules
+): { scope: string | null; config: Record<string, unknown> } {
+  const { config, preprocess, detectType, diagramConfigKeys } = modules;
 
   config.setSiteConfig(input.site ?? {});
   config.reset();
@@ -72,7 +86,9 @@ function effectiveConfig(input: ConfigInput, modules: Modules): Record<string, u
 
   const effective = jsonValue(config.getConfig()) as Record<string, unknown>;
   config.setDiagramConfigScope(undefined);
-  return effective;
+  const scope =
+    diagramType === undefined ? null : diagramConfigKeys.getDiagramConfigKey(diagramType);
+  return { scope, config: effective };
 }
 
 /**
@@ -114,7 +130,7 @@ try {
   const modules = await loadModules(reference);
   const results = inputs.map((input) => {
     try {
-      return { id: input.id, ok: true, config: effectiveConfig(input, modules) };
+      return { id: input.id, ok: true, ...effectiveConfig(input, modules) };
     } catch (error) {
       return {
         id: input.id,
