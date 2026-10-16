@@ -106,7 +106,7 @@ Left out: the DB's global `seq` counter (each commit keeps its `seq`), `head` (d
 - The three recovery tests (NOTES 2.8) assert that parsing fails, with a position.
 - Error tests keep the exact DB message (`parse_error_message` comparison) and check the statement position for the parser errors.
 - The `gitGraphParser.ts` in-source tests and the `gitGraphRenderer.ts` in-source tests are not parser tests: the parser ones are ported in the same files as parser tests, the renderer ones are ignored with the reason `port: renderer, M6 geometry`.
-- Config tests (5) assert the four config keys the DB reads, as `config::read` values.
+- Config tests (5, gitGraph.spec.ts 1361-1391) check the renderer keys of the `getConfig()` section, which the parser does not read; they are ignored with that reason. The DB reads two keys, `mainBranchName` and `mainBranchOrder`, through `options_of`.
 
 ## 10. Differential
 
