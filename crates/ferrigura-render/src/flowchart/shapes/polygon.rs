@@ -411,11 +411,12 @@ mod tests {
     fn a_neo_hexagon_is_the_label_plus_the_neo_padding_on_each_side() {
         let label = LabelLayout::of_box(BBox::new(-60.0, 0.0, 120.0, 17.0));
         let shape = draw_box(&node("hexagon", "neo"), &label);
-        // height 17 + 70 = 87; m = 87 / 3.5; width 120 + 2m + 32.
+        // height 17 + 70 = 87; m = 87 / 3.5; width 120 + 2m + 32. The box is measured from the
+        // path's coordinates as the browser reads them, so it is exact to float32 precision.
         let m = 87.0 / 3.5;
         let width = 120.0 + 2.0 * m + 32.0;
-        assert!((shape.bbox.width - width).abs() < 1e-9, "{:?}", shape.bbox);
-        assert!((shape.bbox.height - 87.0).abs() < 1e-9, "{:?}", shape.bbox);
+        assert!((shape.bbox.width - width).abs() < 1e-4, "{:?}", shape.bbox);
+        assert!((shape.bbox.height - 87.0).abs() < 1e-4, "{:?}", shape.bbox);
     }
 
     #[test]

@@ -144,8 +144,10 @@ mod tests {
     #[test]
     fn preserves_the_existing_short_neo_stadium_dimensions() {
         let shape = render(120.0, 21.0, "neo", 15.0);
+        // The width is measured from the path's float32 coordinates, so it is exact to that
+        // precision (about 3e-6 from the double value here).
         assert!(
-            (shape.bbox.width - 171.22687973).abs() < 1e-6,
+            (shape.bbox.width - 171.22687973).abs() < 1e-5,
             "{:?}",
             shape.bbox
         );
