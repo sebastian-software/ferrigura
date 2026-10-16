@@ -715,6 +715,11 @@ fn import_port(graph: &mut LGraph, node: usize, elk_port: &ElkPort) -> Result<us
         .properties
         .double_of(options::PORT_BORDER_OFFSET)
         .unwrap_or(0.0);
+    // `getOriginIdentifier`: the ids of the port's containers, then its own.
+    port.designation = Some(format!(
+        "{}.{}.{}",
+        graph.root_id, graph.nodes[node].id, elk_port.id
+    ));
     note_port_side(graph, side);
     graph.ports.push(port);
     let index = graph.ports.len() - 1;

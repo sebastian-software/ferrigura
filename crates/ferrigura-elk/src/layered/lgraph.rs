@@ -169,6 +169,9 @@ pub struct LPort {
     /// `InternalProperties.ORIGIN` of a north/south port dummy's port: the northern or southern
     /// port it holds the edges of.
     pub origin_port: Option<usize>,
+    /// `LGraphElement.getDesignation()` of a port the importer read: the identifier of its ELK port
+    /// (`ElkGraphTransformer.getOriginIdentifier`). Other ports have none and go by their index.
+    pub designation: Option<String>,
 }
 
 impl LPort {
@@ -189,6 +192,7 @@ impl LPort {
             border_offset: 0.0,
             north_south_dummy: None,
             origin_port: None,
+            designation: None,
         }
     }
 }
@@ -371,6 +375,21 @@ impl LGraph {
                 data.node_type.java_name().to_lowercase()
             )
         }
+    }
+
+    /// `LPort.getDesignation()`: the identifier of the port's ELK port, or else its index in its
+    /// node's port list. Ports have no labels in this port.
+    pub fn port_designation(&self, port: usize) -> String {
+        if let Some(designation) = &self.ports[port].designation {
+            return designation.clone();
+        }
+        let owner = self.ports[port].node;
+        self.nodes[owner]
+            .ports
+            .iter()
+            .position(|&found| found == port)
+            .map_or(-1, |index| index as i64)
+            .to_string()
     }
 
     /// `LEdge.setTarget(port)`: the edge leaves its old target's incoming list and joins the new port's.

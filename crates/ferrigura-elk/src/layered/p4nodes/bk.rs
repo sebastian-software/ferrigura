@@ -453,9 +453,8 @@ fn map_text(
 ///
 /// The designation is the first label's text, or else the edge's id with the ids of its containers
 /// in front (`LGraphElement.getDesignation`, `ElkGraphTransformer.getIdentifier`): an edge of the
-/// root level reads `root.<id>`. The level's prefix is `root_id`. The port designation is its index
-/// in its node, which is what Java prints for a port with no label and no origin identifier. The importer
-/// keeps neither for edges or ports, so the text can differ from Java where those are set.
+/// root level reads `root.<id>`. The level's prefix is `root_id`. A port reads as its designation
+/// (`LGraph::port_designation`).
 fn edge_text(graph: &LGraph, edge: &LEdge) -> String {
     let mut text = String::from("e_");
     match edge.labels.first().map(|&id| &graph.labels[id]) {
@@ -470,22 +469,12 @@ fn edge_text(graph: &LGraph, edge: &LEdge) -> String {
     let target = &graph.ports[edge.target];
     text.push_str(&format!(
         " {}[{}] -> {}[{}]",
-        port_index(graph, edge.source),
+        graph.port_designation(edge.source),
         graph.node_name(source.node),
-        port_index(graph, edge.target),
+        graph.port_designation(edge.target),
         graph.node_name(target.node),
     ));
     text
-}
-
-/// `LPort.getIndex()`: the position of the port in its node's port list.
-fn port_index(graph: &LGraph, port: usize) -> usize {
-    let owner = graph.ports[port].node;
-    graph.nodes[owner]
-        .ports
-        .iter()
-        .position(|&found| found == port)
-        .unwrap_or(0)
 }
 
 #[cfg(test)]

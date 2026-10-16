@@ -649,25 +649,21 @@ fn sort_by_input_model(
     Ok(())
 }
 
-/// `LPort.toString()`: `p_<index>[<owner>]`, with the single edge's other end, as ` << ` for an
+/// `LPort.toString()`: `p_<designation>[<owner>]`, with the single edge's other end, as ` << ` for an
 /// incoming and ` >> ` for an outgoing edge, when the port has only that one edge.
 fn port_name(graph: &LGraph, port: usize) -> String {
     let data = &graph.ports[port];
-    let index_on_owner = |port: usize| {
-        let owner = graph.ports[port].node;
-        graph.nodes[owner]
-            .ports
-            .iter()
-            .position(|&member| member == port)
-            .map_or(-1, |index| index as i64)
-    };
-    let mut text = format!("p_{}[{}]", index_on_owner(port), graph.node_name(data.node));
+    let mut text = format!(
+        "p_{}[{}]",
+        graph.port_designation(port),
+        graph.node_name(data.node)
+    );
     if data.incoming.len() == 1 && data.outgoing.is_empty() {
         let source = graph.edges[data.incoming[0]].source;
         if source != port {
             text += &format!(
                 " << {}[{}]",
-                index_on_owner(source),
+                graph.port_designation(source),
                 graph.node_name(graph.ports[source].node)
             );
         }
@@ -677,7 +673,7 @@ fn port_name(graph: &LGraph, port: usize) -> String {
         if target != port {
             text += &format!(
                 " >> {}[{}]",
-                index_on_owner(target),
+                graph.port_designation(target),
                 graph.node_name(graph.ports[target].node)
             );
         }
