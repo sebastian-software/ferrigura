@@ -66,6 +66,13 @@ impl BBox {
         Point::new(self.x + self.width / 2.0, self.y + self.height / 2.0)
     }
 
+    /// Whether the box has no width or no height. `getBBox` leaves such a box out of a union, so
+    /// an empty box does not move the box of a drawing.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.width <= 0.0 || self.height <= 0.0
+    }
+
     /// The smallest box that holds both boxes.
     #[must_use]
     pub fn union(self, other: Self) -> Self {

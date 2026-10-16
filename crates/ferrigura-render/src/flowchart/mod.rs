@@ -220,7 +220,14 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
             ..node.clone()
         };
         let cluster = clusters::paint(&prefixed, config, theme)?;
-        cover(&mut bounds, cluster.bbox);
+        // The frame of an empty subgraph has no height: an unrendered rect, which `getBBox` leaves out
+        // of the drawing's box. Its title is text and counts.
+        if !cluster.bbox.is_empty() {
+            cover(&mut bounds, cluster.bbox);
+        }
+        if !cluster.title_box.is_empty() {
+            cover(&mut bounds, cluster.title_box);
+        }
         clusters.push_str(&cluster.svg);
         painted_clusters.push(cluster);
     }

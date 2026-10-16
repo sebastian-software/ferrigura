@@ -32,6 +32,9 @@ pub struct Cluster {
     pub svg: String,
     /// Its box in absolute coordinates.
     pub bbox: BBox,
+    /// The box of its title's text in absolute coordinates. A title is text, so `getBBox` counts it
+    /// even when the frame has no height.
+    pub title_box: BBox,
     /// The title as it is painted, so that the coordinator can subset the fonts for its runs
     /// (`LabelLayout::text_runs`).
     pub label: Option<LabelLayout>,
@@ -85,6 +88,7 @@ pub fn paint(node: &Node, config: &MermaidConfig, theme: &Value) -> Result<Clust
         format!(" stroke=\"{}\"", escape(&stroke))
     });
     let bbox = frame.bbox;
+    let title_box = title.bbox.translate(frame.title.x, frame.title.y);
     let svg = format!(
         "<g class=\"cluster {classes}\" id=\"{id}\" data-look=\"{look}\"{colour_id}>\
          <rect{style} x=\"{x}\" y=\"{y}\" width=\"{width}\" height=\"{height}\"{fill}{stroke}/>\
@@ -104,6 +108,7 @@ pub fn paint(node: &Node, config: &MermaidConfig, theme: &Value) -> Result<Clust
     Ok(Cluster {
         svg,
         bbox,
+        title_box,
         label: Some(title),
     })
 }
