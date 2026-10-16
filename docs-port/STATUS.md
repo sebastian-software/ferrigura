@@ -1,26 +1,25 @@
 # Port status
 
-Last updated: 2026-10-16. M1, M2 and M3 are merged into `main`: pie, info and flowchart parse and match the reference on every collected input, and pie renders to SVG through `ferrigura`, its CLI and its Node addon. M4 is in progress on branch `sebastian/port-m4-elk-fe5cfa`. M4 is in progress on branch `sebastian/port-m4-elk-fe5cfa`: 165 of the 169 corpus cases are supported, and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace (`crates/ferrigura-elk`, see `elk/PLAN.md` §10).
+Last updated: 2026-10-16. M1 to M4 are merged into `main`: pie, info and flowchart parse and match the reference on every collected input; pie renders to SVG through `ferrigura`, its CLI and its Node addon; and `ferrigura-elk` lays out every ELK graph Mermaid's options reach exactly as elkjs does (165 of 169 corpus cases, the rest named out of scope; 1,200 random flat and 900 random compound graphs). Next is M5, flowchart rendering.
 
 Each session updates its section when it stops: what changed, what is next, what blocks it. Test counts and the differential column are written by `pnpm port:status`, which reads the Rust specs and the last `pnpm port:diff` run; run it after both.
 
 ## Milestones
 
-| Milestone                          | Status          | Strand | Notes                                                                                                                                                                                                          |
-| ---------------------------------- | --------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1 Parser foundation: pie and info | done            | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                          |
-| M2 First slice: pie to SVG         | done            | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                  |
-| M3 Flowchart parser                | done            | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                            |
-| M4 ELK Layered port                | done for review | elk    | 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
-| M5 Flowchart rendering             | not started     | —      | Needs M2, M3 and M4                                                                                                                                                                                            |
-| M6 Remaining P1 diagrams           | not started     | —      | After M5                                                                                                                                                                                                       |
+| Milestone                          | Status      | Strand | Notes                                                                                                                                                                                                                                |
+| ---------------------------------- | ----------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                                                |
+| M2 First slice: pie to SVG         | done        | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
+| M3 Flowchart parser                | done        | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
+| M4 ELK Layered port                | done        | main   | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
+| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                                                                                                                                                                                  |
+| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                                                                                                                                                             |
 
 ## Strands
 
-| Strand | Session            | Worktree                                                                       | Working on                                                                          | Next                                     | Blocked by |
-| ------ | ------------------ | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ---------------------------------------- | ---------- |
-| main   | —                  | —                                                                              | M1, M2 and M3 done and merged                                                       | M5 (flowchart rendering) once M4 is done | M4         |
-| elk    | port-m4-elk-fe5cfa | `.claude/worktrees/port-m4-elk-fe5cfa` (branch `sebastian/port-m4-elk-fe5cfa`) | M4 done for review: the ELK Layered port for Mermaid's options, see the M4 handover | Review, then merge into `main`           | None       |
+| Strand | Session | Worktree | Working on               | Next                     | Blocked by |
+| ------ | ------- | -------- | ------------------------ | ------------------------ | ---------- |
+| main   | —       | —        | M1 to M4 done and merged | M5 (flowchart rendering) | —          |
 
 ## M1 handover
 

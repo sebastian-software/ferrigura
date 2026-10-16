@@ -15,3 +15,5 @@ packages/mermaid/src/config.type.ts
 generated/
 # Intermediate typedoc output (git-ignored), copied into docs/ by `docs:build`
 packages/mermaid/src/docs/config/setup
+# Generated from elkjs output by crates/ferrigura-elk/tools/capture-corpus.ts
+crates/ferrigura-elk/tests/corpus/
