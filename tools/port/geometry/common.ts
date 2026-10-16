@@ -152,6 +152,28 @@ export const NON_LAYERED_LAYOUTS: readonly string[] = [
 /** The look that is out of scope: rough.js sketching is not part of the port. */
 export const EXCLUDED_LOOK = 'handDrawn';
 
+/**
+ * Symbols and scripts that the bundled faces do not draw: arrows, miscellaneous symbols and dingbats,
+ * kana, CJK symbols and compatibility characters, and emoji. The bundled Lexica faces cover Latin
+ * letters such as Ø, ζ and ẽ (the ER notes, section 6.1), and not these. The reference draws them in
+ * a system font, which ferrigura does not have, so their fixtures are excluded until fallback fonts
+ * exist (M6-PLAN, decisions: scripts).
+ */
+const UNCOVERED_SYMBOLS =
+  /[\u2190-\u21FF\u2600-\u26FF\u2700-\u27BF\u3000-\u303F\u3040-\u30FF\u3300-\u33FF\u{1F000}-\u{1FAFF}]/u;
+
+/**
+ * The exclusion of a fixture whose text has a symbol or script the bundled faces do not cover, or
+ * null. It is separate from `exclusionReason`, which the flowchart harness shares, so that the
+ * flowchart's comparison is the same as before.
+ */
+export function uncoveredScriptReason(source: string): string | null {
+  if (UNCOVERED_SYMBOLS.test(source)) {
+    return 'text the bundled faces do not cover (arrows, symbols, kana, emoji): needs a fallback font, which ferrigura does not have yet';
+  }
+  return null;
+}
+
 /** Why a fixture is excluded from the comparison, or null when it is compared. */
 export function exclusionReason(source: string): string | null {
   const { look, layout } = effectiveSettings(source);
