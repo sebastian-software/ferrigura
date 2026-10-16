@@ -17,6 +17,7 @@ const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
   flowchart: /^\s*(graph|flowchart)/,
+  sequence: /^\s*sequenceDiagram/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */

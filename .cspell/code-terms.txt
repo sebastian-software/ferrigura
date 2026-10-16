@@ -33,6 +33,7 @@ controlx
 controly
 cplusplus
 CSSCLASS
+currentcolor
 curv
 CYLINDEREND
 CYLINDERSTART

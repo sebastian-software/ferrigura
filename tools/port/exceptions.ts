@@ -14,4 +14,5 @@ export interface PortException {
 export const exceptions: Record<string, PortException[]> = {
   flowchart: [],
   'flowchart-data': [],
+  sequence: [],
 };
