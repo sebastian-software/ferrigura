@@ -12,6 +12,7 @@ use ferrigura_model::config::{effective, typed, user_theme_variables};
 use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
+use ferrigura_render::flowchart::{self, FlowchartInput};
 use ferrigura_render::pie::{PieInput, Themes, render as render_pie};
 use ferrigura_syntax::{DiagramType, ParseError, config, detect, pie};
 
@@ -69,6 +70,7 @@ pub fn render_with(
 ) -> Result<String, RenderError> {
     match detect(text) {
         Some(DiagramType::Pie) => render_pie_text(text, config, options),
+        Some(DiagramType::Flowchart) => with_flowchart(text, config, options, flowchart::render),
         Some(DiagramType::Info) => Err(RenderError::Parse(ParseError {
             line: 1,
             column: 1,
@@ -118,6 +120,77 @@ fn render_pie_text(
     render_pie(&PieInput {
         diagram: &diagram,
         config: &typed_config.pie,
+        themes,
+        id: &id,
+    })
+}
+
+/// The graph a flowchart hands to ELK and the graph ELK returns, as elkjs JSON:
+/// `{"elkInput": …, "elkOutput": …}`. For the differential comparison with the reference
+/// (`tools/port/geometry/flowchart-geometry.ts`); not part of the interface.
+///
+/// # Errors
+///
+/// Returns the errors of [`render_with`] for a flowchart, and an error for any other diagram.
+#[doc(hidden)]
+pub fn flowchart_elk_stages(
+    text: &str,
+    config: &Value,
+    options: &RenderOptions,
+) -> Result<serde_json::Value, RenderError> {
+    if detect(text) != Some(DiagramType::Flowchart) {
+        return Err(RenderError::Parse(ParseError {
+            line: 1,
+            column: 1,
+            message: "not a flowchart".to_owned(),
+        }));
+    }
+    let stages = with_flowchart(text, config, options, flowchart::elk_stages)?;
+    Ok(serde_json::json!({
+        "elkInput": stages.input,
+        "elkOutput": stages.output,
+    }))
+}
+
+/// Parses a flowchart, resolves its configuration and theme, and hands them to `step`.
+fn with_flowchart<T>(
+    text: &str,
+    site: &Value,
+    options: &RenderOptions,
+    step: impl FnOnce(&FlowchartInput<'_>) -> Result<T, RenderError>,
+) -> Result<T, RenderError> {
+    let id = match &options.id {
+        Some(id) if valid_id(id) => id.clone(),
+        Some(id) => return Err(RenderError::Options(format!("invalid id {id:?}"))),
+        None => derived_id(text, site),
+    };
+    let directive = config::read(text)?;
+    let effective_config = effective(Some(site), Some("flowchart"), &directive);
+    let typed_config =
+        typed(&effective_config).map_err(|error| RenderError::Config(error.to_string()))?;
+
+    let configured = effective_config
+        .get("themeVariables")
+        .cloned()
+        .unwrap_or_else(Value::empty_object);
+    let overrides = user_theme_variables(Some(site), &directive);
+    let light = Theme::ReduxColor.variables(Some(&overrides));
+    let dark = Theme::ReduxDarkColor.variables(Some(&overrides));
+    let themes = match options.color_scheme {
+        None => Themes::Single(&configured),
+        Some(ColorScheme::Light) => Themes::Single(&light),
+        Some(ColorScheme::Dark) => Themes::Single(&dark),
+        Some(ColorScheme::Auto) => Themes::Schemes {
+            light: &light,
+            dark: &dark,
+        },
+    };
+
+    let diagram = ferrigura_syntax::flowchart::parse(text)
+        .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
+    step(&FlowchartInput {
+        diagram: &diagram,
+        config: &typed_config,
         themes,
         id: &id,
     })

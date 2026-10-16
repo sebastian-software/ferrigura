@@ -590,4 +590,14 @@ mod tests {
         let config = effective(Some(&site), None, &json!({}));
         assert_eq!(config["unknownKey"], json!(1));
     }
+
+    #[test]
+    fn a_flowchart_defaults_to_the_neo_look_and_the_redux_colour_theme() {
+        // `config.appearance.spec.ts`: the flowchart section's defaults resolve onto the top level.
+        let config = effective(None, Some("flowchart"), &json!({}));
+        assert_eq!(config["look"], json!("neo"));
+        assert_eq!(config["theme"], json!("redux-color"));
+        let classic = effective(None, Some("flowchart"), &json!({ "look": "classic" }));
+        assert_eq!(classic["look"], json!("classic"));
+    }
 }

@@ -1,0 +1,352 @@
+# Flowchart shapes: core render notes (M5)
+
+Read-only research notes. Neo is the primary look (fork default); classic is the second. handDrawn is out of scope, but every place where classic or neo still goes through roughjs is marked.
+
+Paths are relative to `packages/mermaid/src/` in the worktree unless prefixed. `intersect/` and `shapes/` are under `rendering-util/rendering-elements/`. roughjs 4.6.6 is at `node_modules/.pnpm/roughjs@4.6.6_patch_hash=3543d4.../node_modules/roughjs/` (the repo patch only touches a `.d.ts`).
+
+Tags: **[V]** verified by reading code, or by running roughjs / a tight-bbox replica in node. **[U]** not confirmed (needs a browser or a read I did not do).
+
+## 0. Defaults the numbers depend on
+
+| Setting | Value | Source |
+|---|---|---|
+| flowchart theme | `redux-color` | schema `FlowchartDiagramConfig.theme` (~l.2457); root value via `resolveAppearance` (`config.ts`, `APPEARANCE_KEYS` l.12) |
+| look | `neo` (classic second) | schema `FlowchartDiagramConfig.look` (~l.2460); flowDb reads root `config.look`, fallback `'classic'` (`diagrams/flowchart/flowDb.ts:1287`) [V] |
+| `P` = node.padding | `config.flowchart.padding \|\| 8` = **15** | `flowDb.ts` (node base object ~l.1094); schema padding 15 [V] |
+| minNodeWidth | 120, only on ordinary vertices | `flowDb.ts:1099` (not set for collapsed groups or subgraph rects) [V] |
+| wrappingWidth | 120 | `shapes/util.ts:98` falls back to `flowchart.wrappingWidth` [V] |
+| state.padding | 8 (forkJoin only) | schema StateDiagramConfig (~l.1686) [V] |
+| handDrawnSeed | 0 → roughjs uses `Math.random()` | schema l.71-75; roughjs `math.js` Random (`seed ? LCG : Math.random`) [V] |
+| redux-color vars | radius **12**, strokeWidth **2**, useGradient false, dropShadow `url(#drop-shadow)`, nodeShadow **true** | `themes/theme-redux-color.js:20-36` [V] |
+| neo theme (not default) | radius 3, strokeWidth 2, useGradient true, dropShadow CSS `drop-shadow(...)` | `themes/theme-neo.js:20-36` [V] |
+| default / base themes | radius 5; base useGradient true | `themes/theme-default.js:37,136-139`, `theme-base.js:19-26` [V] |
+
+Notation: `P` = node.padding; `W`, `H` = label bbox after labelHelper widening; `W0` = natural label width (no minWidth widening); `W` includes minWidth unless the shape passes `ignoreMinWidth`. "outer" = size the layout gets (section 1.8).
+
+---
+
+## 1. Infrastructure
+
+### 1.1 Pipeline
+
+| Step | Where | Rule |
+|---|---|---|
+| measure | `rendering-util/createGraph.ts:61-71` `insertMeasuredNode` | calls `insertNode(nodesGroup, node, {config, dir})`, then sets `node.width/height = getBBox()` of the returned outer element. **This overwrites any width/height the handler wrote.** [V] |
+| dispatch | `rendering-elements/nodes.ts:14-67` | `rect` → `roundedRect` if `rx && ry`, else `squareRect` (22-29); unknown name → throws `No such shape` (31-35); with a link, the shape goes into `svg:a` (37-53) |
+| data-look | `nodes.ts:55` | `data-look = node.look` on the returned element (the `a` when linked) |
+| title / clickable | `nodes.ts:57-65` | tooltip → `title` attr on the shape group; haveCallback → class `clickable` |
+| position | `nodes.ts:77-100` | non-cluster: `transform="translate(x, y)"` on the outer element (97) |
+| dir | `createGraph.ts:102-118` | nearest ancestor with `dir`, else diagram direction; passed as `ShapeRenderOptions.dir` (only forkJoin reads it) |
+
+### 1.2 Element structure (both looks, classic and neo emit the same elements)
+
+```
+<g class="node default  " id="{domId||id}" data-look="neo|classic" transform="translate(x, y)">   util.ts:69-72, nodes.ts:55,97
+  <shape elements>             inserted :first-child, so they paint under the label
+  <g class="label" style="{labelStyles}" transform="translate(0, -H/2)">   util.ts:75-78,147
+    <rect></rect>              util.ts:152, empty, no geometry
+    <g>                        createText.ts:160
+      <rect class="background" style="stroke: none"></rect>   createText.ts:161 (no geometry unless icon/img)
+      <text y="-10.1" style="{nodeLabelTextStyle}">          createText.ts:162,387
+        <tspan class="text-outer-tspan row" x="0" y="(i*1.1-0.1)em" dy="1.1em">   createText.ts:96-112,415
+          <tspan class="text-inner-tspan" font-style="normal" font-weight="normal">word</tspan>   createText.ts:237-256
+```
+
+- Outer class = `'node' + ' ' + cssClasses + ' ' + extra`, with cssClasses `'default ' + classes.join(' ')` (`flowDb.ts:~1115`). An unclassed node therefore has two literal trailing spaces: `"node default  "` [V] (`util.ts:249-250`).
+- `data-look` is on the same element as `class="node"`, which matters for CSS (section 2.4).
+- Shapes that do not call labelHelper emit no label group: filledCircle, forkJoin, anchor, stateStart, stateEnd (node.label is set to '' or ignored). [V]
+
+### 1.3 labelHelper (`shapes/util.ts:50-154`)
+
+- `node.stereotype` set → `c4LabelHelper` (57-59). Not a flowchart path. [V]
+- `minLabelWidth = label && !node.width && !ignoreMinWidth ? node.minWidth ?? 0 : 0` (92). Empty label → 0. [V]
+- Width passed to createText: `node.width || node.wrappingWidth || flowchart.wrappingWidth` (98) = 120 by default. [V]
+- SVG path (htmlLabels false, the only path used here): `bbox = text.getBBox()` (139-140), then `withMinWidth` (26-48): if `w < minW`, `x -= (minW - w)/2` and `width = minW`. This keeps SVG text centred. [V]
+- SVG label transform (147): `translate(0, -H/2)`. `centerLabel` (149) is not used by core shapes. [V]
+- HTML branch (119-133) and `configureLabelImages` (124) are HTML-only, so they do not run here. [V]
+
+### 1.4 SVG text geometry (`rendering-util/createText.ts`)
+
+- Lines are wrapped by `computeWidthOfText` (`getComputedTextLength`, 114-125) against the width above, using `splitLineToFitWidth` (172-174). **Wrapping depends on browser font metrics.** [U]
+- Node labels: `centerText = !isNode = false`, so no `text-anchor` attribute. Centring comes from CSS (below). [V]
+- Line spacing: `lineHeight = 1.1` (159), tspan y = `(i*1.1 - 0.1)em`, dy = `1.1em` (96-112). The first baseline is therefore at y = 1.0em, from the tspan values rather than `y="-10.1"`. [V]
+- The label bbox height and its vertical offset come from the font's ascent and descent: **[U], font-dependent**.
+- Node-label style: stroke and fill removed, `color:` → `fill:` (378-387). Icon or img labels get a background rect sized from the text bbox (182-196). [V]
+
+### 1.5 Stylesheet facts that decide classic and neo geometry attributes
+
+Flowchart styles (`diagrams/flowchart/styles.ts`), applied to both looks:
+
+- l.157 `.label text, span { fill: nodeTextColor }`
+- l.162-168 `.node rect, .node circle, .node ellipse, .node polygon, .node path { fill: mainBkg; stroke: nodeBorder; stroke-width: strokeWidth px }`. **These beat presentation attributes** (fill, stroke, stroke-width). Consequences: rough stroke paths render at `strokeWidth` px (2 in redux-color), not at the attribute 1.3; the fillPath's `stroke="none"` attribute is overridden, so the fill path also gets a stroke; forkJoin's `fill`/`stroke = lineColor` attributes are overridden (fill → mainBkg, stroke → nodeBorder) [V by reading; visual result [U]].
+- l.171-173 `.rough-node .label text, .node .label text { text-anchor: middle }`. [V]
+- l.181-183 `text-align: center`. [V]
+- l.277-280 `rect.text { fill: none; stroke-width: 0 }`. [V]
+- l.189-193 `.root .anchor path { fill: lineColor !important; stroke-width: 0; stroke: lineColor }` (needs a `.root` ancestor, [U]).
+
+### 1.6 Style helpers (`shapes/handDrawnShapeStyles.ts`)
+
+- `compileStyles` (31-42): merges `cssCompiledStyles`, `cssStyles`, and `labelStyle` (later wins). `styles2Map` (44-51).
+- `isLabelStyle` (53-74): color, font-*, text-*, line-height, letter-spacing, word-*, white-space, hyphens, etc.
+- `styles2String` (75-104): labelStyles = label keys as `key:value !important` joined by `;`; nodeStyles = all other keys, same format. [V]
+- `userNodeOverrides` (108-130): defaults roughness 0.7, fill = style fill ‖ mainBkg, fillStyle hachure, fillWeight 1.5, hachureGap 1.5, stroke = style stroke ‖ nodeBorder, seed = handDrawnSeed, strokeWidth = style stroke-width (px stripped) ‖ 1.3, fillLineDash [0,0], strokeLineDash = dasharray ‖ [0,0]. Caller options override. Neither look changes this helper. [V]
+- Because `strokeLineDash` is always truthy, roughjs writes `stroke-dasharray="0 0"` on every rough stroke path (roughjs `bin/svg.js` draw). [V]
+
+### 1.7 Other helpers
+
+- `updateNodeBounds` (util.ts:220-247): with `knownBounds` sets width/height without a DOM read; otherwise `getBBox()` of the element in its own user space (its own transform ignored, children's included). [V]
+- `getNodeClasses` (249-250): classic and neo both give `'node' ...`; only handDrawn changes it to `rough-node`. [V]
+- `createPathFromPoints` (252-256): `M x,y L x,y ... Z`, single spaces, JS number-to-string. [V]
+- `generateCirclePoints` (295-323): for `n` points over degrees a0→a1, step = (a1−a0)/(n−1), emits **(−(cx + r·cos a), −(cy + r·sin a))**. Both coordinates are negated (l.319). Only stadium uses it among core shapes. [V]
+- `generateFullSineWavePoints` (258-285): 51 points, y = mid + A·sin(2π/(dx/cycles)·(x−x1)). Not used by core shapes (waveEdgedRectangle etc.). [V]
+- `insertPolygonShape` (`shapes/insertPolygonShape.ts:3-21`): `polygon.label-container`, `points="x,y ..."`, inserted :first-child, transform `translate(-w/2, h/2)`. Callers may overwrite the transform (question does). [V]
+- `drawRect` (`shapes/drawRect.ts`): classic rect `rect.basic.label-container` with `style=nodeStyles` and `x,y,width,height`; `rx`/`ry` only if the options or node define them (56-57). Totals at 21-22; `updateNodeBounds` with knownBounds (68-72); intersect rect (74-80). [V]
+- `roundedRectPath.ts`: only used by handDrawn drawRect and handDrawn collapsedGroup. Not used by classic or neo. [V]
+- `labelImageUtils.ts`: HTML labels with `<img>` only. [V]
+
+### 1.8 Measured size (the value the layout uses)
+
+- `insertMeasuredNode` (createGraph.ts:61-71) replaces the handler's width/height with the **union bbox of the outer element**, which covers the shape and the label group (children's transforms included). [V]
+- Consequences: handler-set sizes are not used for layout (forkJoin's padding, section 2.2). Intersect closures that read `node.width` at call time see the same union. [V]
+- Whether dagre and ELK both go through `createGraphWithElements` [U] (not checked for every layout).
+
+### 1.9 Intersect (`rendering-elements/intersect/`)
+
+- `index.js`: exports `node`, `circle`, `ellipse`, `polygon`, `rect`. [V]
+- **rect** (`intersect-rect.js:1-30`): w = width/2, h = height/2, dx, dy from node centre to the query point. If `|dy|·w > |dx|·h`: top/bottom, `sx = h·dx/dy`, `sy = ±h`; else sides, `sx = ±w`, `sy = w·dy/dx`. Not clamped. A query at the centre returns `(x+w, y)`. [V]
+- **ellipse** (`intersect-ellipse.js:1-22`): `px = cx−qx`, `py = cy−qy`, `det = sqrt(rx²·py² + ry²·px²)`, `dx = |rx·ry·px/det|` signed by `qx < cx`, `dy` likewise. A query at the centre gives NaN. [V]
+- **circle** (`intersect-circle.js`): ellipse with rx = ry = r. [V]
+- **polygon** (`intersect-polygon.js:7-61`): minX/minY over the points; `left = node.x − node.width/2 − minX`, `top = node.y − node.height/2 − minY`; each vertex is `(left+px, top+py)`. Tests each edge with `intersectLine(centre→query, edge)`, returns the candidate nearest the query. None → returns the node (centre). **node.width/height must equal the points' bbox.** [V]
+- **line** (`intersect-line.js:4-82`): intersection of the infinite line centre→query with the edge's infinite line, using the Graphics Gems formula (x = (b1c2−b2c1)/denom, y = (a2c1−a1c2)/denom, lines 77-78, no half-unit nudge, see comment 49-76). First test (l.23) rejects when both edge endpoints are on the same side (nonzero). **Second test (l.39) is gated by `|r1|<1e-6 && |r2|<1e-6`, so it never rejects in practice** (dagre-d3 uses `r1 !== 0 && r2 !== 0`). Denominator 0 → no hit. [V]
+- Users: `rendering-elements/edges.js:661-699` (`tail.intersect`, `head.intersect`); ELK `layout-algorithms/elk/geometry.ts:141-194` (`tryNodeIntersect`, bisection probes). [V]
+
+---
+
+## 2. Core flowchart shapes
+
+### 2.1 Sizes, neo (primary) and classic (second)
+
+Outer width/height as the layout sees them (section 1.8). `W`, `H`, `P` as in section 0. Only the padding constants differ between looks; everything else in each shape is identical.
+
+| Shape (handler file) | neo | classic |
+|---|---|---|
+| squareRect (`squareRect.ts:7-33`) | `labelPaddingX=16, labelPaddingY=12` (l.9-10). w = **W + 32**, h = **H + 24** | `labelPaddingX=2P, labelPaddingY=P`. w = **W + 4P** (60), h = **H + 2P** (30) |
+| roundedRect (`roundedRect.ts:5-21`) | same as classic (no look branch). `labelPaddingX=labelPaddingY=P`, w = **W + 2P**, h = **H + 2P**. rx = ry = `themeVariables.radius ?? 5` = **12** under redux-color | same. rx = radius (12 under redux-color) |
+| stadium (`stadium.ts:16-85`) | `paddingX=40, paddingY=24` (l.39-40). h = H + 24, radius h/2, w = max(W + h/4 + 40, 1.5h + (h − ins), W + 40 + h − capW) | `paddingX=paddingY=P`. h = H + P |
+| question (`question.ts:20-92`) | no look branch: s = W + H + 2P, box s×s | same |
+| circle (`circle.ts:10-63`) | r = sqrt(W0²+H²)/2 **+ 16**. d = 2r (l.29, neo comment 28) | r = sqrt(W0²+H²)/2 **+ P/2** (`halfPadding`, util.ts:116) |
+| doublecircle (`doubleCircle.ts:10-79`) | inner = sqrt(W0²+H²)/2 **+ 16**, gap = **12** (l.15, 18). Total = 2·(inner+12) | inner = sqrt(W0²+H²)/2 **+ P**, gap = **5**. Total = 2·(inner+5) |
+| hexagon (`hexagon.ts:27-94`) | `f=3.5`, `labelPaddingX=70 (wa)`, `labelPaddingY=32 (ha)` (l.29,32-36). h = H + 70, m = h/3.5, w = W + 2m + 32 | `f=4`, both paddings P. h = H + P, m = h/4, w = W + 2m + P |
+| lean_right (`leanRight.ts:9-61`) | `padY=P`, `padX=2P` (l.13-14). h = max(H+P, node.height), w = max(W+2P, node.width−h). Outer **w+h** | `padX=P`. w = max(W+P, ·). Outer **w+h** |
+| lean_left (`leanLeft.ts:9-61`) | same as lean_right | same as lean_right with P |
+| trapezoid (`trapezoid.ts:9-61`) | `padY=P`, `padX=2P` (l.13-14). Outer w+h | both P. Outer w+h |
+| inv_trapezoid (`invertedTrapezoid.ts:9-67`) | `padX=2P` (l.18), h = max(H+2P, ·) (`padY·2`), w = max(W + 2·2P, ·) = **W+4P**. Outer w+h | `padX=P`, w = max(W+2P, ·). Outer w+h |
+| subroutine (`subroutine.ts:13-72`) | `padX=28, padY=12` (l.18-19). outer w = max(W+16+28, node.width) = **W+44**; h = max(H+12, ·) | `padX=padY=P` (node.padding ?? 8, only when undefined). outer w = max(W+16+P, ·) = W+31; h = max(H+P, ·) |
+| cylinder (`cylinder.ts:57-154`) | `padX=padY=24` (l.62-63). w = max(node.width, W) + 24; ry = (w/2)/(2.5 + w/50); h = max(node.height, H) + 24 + ry; outer height **h + 2ry** | `padX=padY=P`. w = W + P; outer height H + P + 3ry |
+| rect_left_inv_arrow (`rectLeftInvArrow.ts:8-76`) | `padX=21, padY=12` (l.15-16). labelWidth = W + 2·21 (l.19), h = max(H + 2·12, ·) (l.21). notch = h/4, w = max(labelWidth, node.width − h/4). Outer width **w + h/4** | `padX=padY=P`. labelWidth = W+P; h = max(H+P, ·) |
+| text (`text.ts:7-37`) | same | same. outer w = max(W+P, node.width\|\|0), h = max(H+P, node.height\|\|0) |
+| filledCircle (`filledCircle.ts:9-56`) | same | same. d = 14 (r = 7 fixed, l.21) |
+| forkJoin (`forkJoin.ts:8-68`) | same. TB 70×10, LR/RL 10×70 (see 2.2) | same |
+| stateStart (`stateStart.ts:8-78`) | same. 14×14 (min 14 when given) | same |
+| stateEnd (`stateEnd.ts:8-96`) | same. outer diameter = node.width (14, see 2.3) | same |
+| anchor (`anchor.ts:10-46`) | same. d = 2 (r = 1 fixed, l.23) | same |
+| collapsedGroup (`collapsedGroup.ts:76-190`) | same, no look branch. P = node.padding ?? 8 (flowDb sets 8). w = max(W + 2·8, 80, node.width), h = max(H + 8 + 20 + 16, node.height) | same |
+| labelRect (`labelRect.ts:6-43`, internal) | same. 0.1 × 0.1 | same |
+
+Verified numerically (`[V]`): for a stadium with w, h the sampled arc points give a bbox width of **w − h·(1 − cos(π/98))** and height h. Checked for (120,30), (200,15), (60,50); the closed form matched to 5 decimals. This is the value `insertMeasuredNode` will store.
+
+### 2.2 forkJoin size: handler value lost
+
+`forkJoin.ts:59-63` adds `state.padding/2` (= 4) to node.width and node.height after `updateNodeBounds`. `insertMeasuredNode` (createGraph.ts:67-69) then overwrites both with the bbox of the group, so the effective size is **70×10 (TB) or 10×70 (LR/RL)** in both looks. [V reading; not run.]
+
+### 2.3 Rough.js-based outlines in neo and classic (roughness 0)
+
+These shapes use `rc.*` with `roughness = 0, fillStyle = 'solid'` when `look !== 'handDrawn'` (both neo and classic): **stadium, rectLeftInvArrow, forkJoin, filledCircle, anchor, stateEnd** (inner and outer rings). [V]
+
+Rules, verified by running roughjs in node (roughjs bundled `rough.cjs.js`, generator API):
+
+- **R1 doubled strokes.** `disableMultiStroke` is false by default (`generator.js` defaultOptions), so every line segment becomes two overlapping `move + bcurveTo` pairs (`renderer.js` `_doubleLine` 237-245). Stadium stroke path: **206 `M` + 206 `C`** (103 segments × 2). Fill path: one `M` then one `C` per segment (`_mergedShape` keeps only the first move, `generator.js:284-293`). [V]
+- **R2 nondeterministic d.** Each `_line` draws `divergePoint = 0.2 + 0.2·random()` (`renderer.js` `_line`), and `_offset` consumes a random number even at roughness 0 (`renderer.js:231-236`). With `handDrawnSeed = 0` (the default), two runs gave **different stroke d strings**; geometry is identical (control points stay on the segment). [V]
+- **R3 full precision.** `svg.js` passes `fixedDecimalPlaceDigits` (undefined here), so numbers are not rounded. [V]
+- **R4 attributes.** Fill path: `fill=<fill>, stroke="none", stroke-width="0"`. Stroke path: `fill="none", stroke=<stroke>, stroke-width=<strokeWidth>, stroke-dasharray="0 0"`. Fill paths come first in the group (`svg.js` draw). [V]
+- **R5 bbox overshoot.** Rough ellipse points at roughness 0 are sampled at increment/4 (`renderer.js` `_computeEllipsePoints`, coreOnly branch 386-408). Tight cubic bounds (replicated by me, not checked in a browser) give: circle d=14 → **width 14.0133**, height 14; d=5 → 5.0047; d=2 → 2.0019. Heights are exact. The rectangle 70×10 is exact. [V computed; [U] vs browser getBBox]
+- **R6 reproducible port** needs `handDrawnSeed ≠ 0`, the roughjs LCG (`math.js:4-16`: `seed = imul(48271, seed)`, mask 2³¹−1, divide by 2³¹), and the exact sequence of `random()` calls (including the ones `_offset` makes at roughness 0). [V]
+
+Shapes that use plain SVG elements in both looks, with roughjs only under handDrawn: circle, doubleCircle (plain circles), question, hexagon, lean_right, lean_left, trapezoid, inv_trapezoid, subroutine (polygons), cylinder (path), stateStart (circle), collapsedGroup (rect). [V]
+
+### 2.4 Outline, label and intersect (both looks)
+
+| Shape | Outline element(s) | Label transform | intersect | Special cases |
+|---|---|---|---|---|
+| squareRect | `rect.basic.label-container`, x=−w/2, y=−h/2 | `translate(0, -H/2)` | rect | rx/ry absent (`node.rx` undefined in flowchart) |
+| roundedRect | `rect.basic.label-container` rx = ry = 12 (redux-color) | `translate(0, -H/2)` | rect (corners not in intersect) | radius from theme, not look |
+| stadium | `g.basic.label-container.outer-path` with rough path (R1-R6) from the 104 sampled points: `M(-w/2+r,-h/2) L(w/2-r,-h/2)` + arc1 + `L(w/2-r,h/2)` + arc2 + `Z`, r = h/2 (`stadium.ts:55-64`) | `translate(0, -H/2)` | polygon(104 points) (`stadium.ts:79-82`) | arcs have 50 samples each; measured width per 2.1 |
+| question | `polygon.label-container`, points (s/2,0),(s,−s/2),(s/2,−s),(0,−s/2), **transform overridden to `translate(-s/2 + 0.5, s/2)`** (`question.ts:55-56`) | `translate(0, -H/2)` | calcIntersect with the same points at origin through polygon (minX=0), so the +0.5 x shift is ignored (question.ts:64-89) | 0.5 px drawing offset only |
+| circle | `circle.basic.label-container` cx=cy=0, r | `translate(0, -H/2)` | circle(r) (`circle.ts:53-60`) | label width natural, `ignoreMinWidth` |
+| doublecircle | `g.basic.label-container` (style nodeStyles) > `circle.outer-circle` (r=outer) + `circle.inner-circle` (r=inner) (`doubleCircle.ts:49-69`) | `translate(0, -H/2)` | circle(outer) (73-76) | `node.width` (if set) replaces labelRadius (l.26) |
+| hexagon | `polygon.label-container`, points (m,0),(w−m,0),(w,−h/2),(w−m,−h),(m,−h),(0,−h/2), transform `translate(-w/2, h/2)` | `translate(0, -H/2)` | polygon | pre-adjust from node.width/height (l.37-42, not used by flowchart) |
+| lean_right | `polygon.label-container`: (−h/2,0),(w,0),(w+h/2,−h),(0,−h), transform `translate(-w/2, h/2)` | `translate(0, -H/2)` | polygon | the handler's `node.width = w` is overwritten (1.8) |
+| lean_left | `polygon.label-container`: (0,0),(w+h/2,0),(w,−h),(−h/2,−h) | `translate(0, -H/2)` | polygon | as lean_right |
+| trapezoid | `polygon.label-container`: (−h/2,0),(w+h/2,0),(w,−h),(0,−h) | `translate(0, -H/2)` | polygon | as lean_right |
+| inv_trapezoid | `polygon.label-container`: (0,0),(w,0),(w+h/2,−h),(−h/2,−h) | `translate(0, -H/2)` | polygon | as lean_right |
+| subroutine | `polygon.label-container`, 10 points (0,0),(w,0),(w,−h),(0,−h),(0,0),(−8,0),(w+8,0),(w+8,−h),(−8,−h),(−8,0), transform `translate(-w/2, h/2)` (`subroutine.ts:31-60`) | `translate(0, -H/2)` | polygon(10 points) | frame lines inside the outer rect |
+| cylinder | `path.basic.label-container.outer-path` `d = M0,ry a rx,ry 0,0,0 w,0 a rx,ry 0,0,0 -w,0 l0,h a rx,ry 0,0,0 w,0 l0,-h` (`cylinder.ts:9-25,109-116`), `label-offset-y=ry`, transform `translate(-w/2, -(h/2+ry))` | x = 0; **y = −H/2 + P/1.5 − bbox.y** (`cylinder.ts:123-126`, P = node.padding in both looks) | rect, then ellipse offset `y' = ry − sqrt(ry²(1−x²/rx²))` signed by the query side (`cylinder.ts:128-151`) | no rough in either look (only handDrawn) |
+| rect_left_inv_arrow | `g.basic.label-container.outer-path`, rough path (R1-R6) from 5 points (−w/2−h/4,−h/2),(−w/2,0),(−w/2−h/4,h/2),(w/2,h/2),(w/2,−h/2), transform `translate(h/8, 0)` (`rectLeftInvArrow.ts:31-63`) | x = h/8 (= −notch/2) + centred; **y = −H/2 − bbox.y** (65-68) | polygon(points) | node.width = w + h/4 |
+| text | `rect.text` rx=ry=0 (invisible: CSS fill none, stroke-width 0, styles.ts:277) | `translate(0, -H/2)` | rect | outer = max(W+P, node.width\|\|0) |
+| labelRect (internal) | `rect` 0.1×0.1 with no x/y, in `g.label.edgeLabel` (class overwritten, l.17) | x = 0 and **y = −H/2 − bbox.y** (18-21) | rect | reached only via layout swimlane edge labels (`layout-algorithms/swimlanes/edgeLabelNodes.ts:80`) |
+| filledCircle | `g` (class getNodeClasses) > rough circle d=14, roughness 0, fillStyle solid. Each path gets `style="fill: nodeBorder !important;"` (l.37). No label (`node.label=''`) | none | circle(7) fixed (49-53) | size R5 |
+| forkJoin | `g` (class getNodeClasses) > rough rectangle at (−w/2,−h/2), roughness 0, fill = stroke = lineColor (both overridden by CSS, 1.5) | none | rect(node) reads node.width/height at call time (64-66) | `dir` LR/RL swaps dims |
+| stateStart | `g.node.default` (hard-coded class, l.39) > `circle.state-start` r = width/2, attributes width/height (no cx/cy) | none | circle(node.width/2) (73-75) | `filter:url(#<svgid>-drop-shadow-small)` inline when `width<25 && nodeShadow` (65-69) — redux-color has nodeShadow true, so both looks |
+| stateEnd | `g.node.default` > `g.outer-path` rough circle d = node.width, stroke lineColor, strokeWidth 2 (46-58) > nested rough circle d = width·5/14 (60-67) | none | circle(node.width/2) (91-93) | outer g style replaced with the filter when `width<25 && nodeShadow` (83-87) |
+| anchor | `g` (class getNodeClasses) > `g.anchor` rough circle d=2, fill black, stroke none, roughness 0 (29-36) | none | circle(1) fixed (40-43) | reached only via `@{shape: anchor}` |
+| collapsedGroup | `rect.basic.label-container.collapsed-group` (rx=ry=8, attributes fill=clusterBkg, stroke=clusterBorder, x,y,w,h, style nodeStyles) first child (135-146), then `line.collapsed-separator` (x1=x+8, x2=x+w−8, y = y + 8 + H + 8, dasharray "3, 3") and three `circle.collapsed-indicator` (cx = −10, 0, 10; cy = separatorY + 10; r 2.5; fill = stroke) (153-177) | `translate(0, -H/2 − 14)` (106-112) | rect | no minWidth (flowDb sets none); colorIndex stamp only with a colour theme (`colorThemeGate.ts:114-125`) |
+
+### 2.5 Label placement rules
+
+- Default: `translate(0, -H/2)`. The x part is correct because CSS centres the text (bbox.x = −W/2). The y part is only exact when `bbox.y = 0`. The shapes that add `- bbox.y` (cylinder, rectLeftInvArrow, labelRect) are the exact ones. [V]
+- The vertical offset `bbox.y` and `H` both come from font metrics. [U]
+
+### 2.6 Neo-only CSS (applies to the same shapes; classic does not get these)
+
+Global stylesheet `src/styles.ts:120-160`, emitted for every diagram. These rules require `data-look="neo"` and `.node` on the **same element**.
+
+| Selector (line) | Effect in neo | Shapes hit |
+|---|---|---|
+| `[data-look="neo"].node rect, …cluster rect, …node polygon` (120-122) | `stroke: nodeBorder` (gradient only if useGradient; redux-color false, theme-neo true); `filter: url(#<svgid>-drop-shadow)` (redux-color dropShadow is an SVG filter reference, theme-neo uses a CSS `drop-shadow()` function) | squareRect, roundedRect, text (invisible), collapsedGroup rect, polygon shapes: hexagon, lean_right, lean_left, trapezoid, inv_trapezoid, subroutine, question. rect_left_inv_arrow is a path, so it is not in this row |
+| `[data-look="neo"].node path` (129-132) | `stroke: nodeBorder`; `stroke-width: strokeWidth px` (2 in redux-color) | rough paths: stadium, rect_left_inv_arrow, forkJoin, filledCircle, anchor, stateEnd rings. Also the fillPath, which then draws an outline |
+| `[data-look="neo"].node .outer-path` (134-136) | `filter: drop-shadow` on the group or path | stadium g, cylinder path, rect_left_inv_arrow g, stateEnd outer g |
+| `[data-look="neo"].node circle` (143-146) | `stroke: nodeBorder`; `filter: drop-shadow` | circle, doubleCircle circles, stateStart circle (stateStart inline filter wins over the stylesheet filter) |
+| `[data-look="neo"].node circle .state-start` (148-150) | `fill: #000` | **Does not match** the state-start circle itself, because the selector needs a `circle` ancestor [V selector reading] |
+
+Shared flowchart rule (`flowchart/styles.ts:162-168`): stroke-width and fill apply in both looks (see 1.5).
+
+Filter defs exist in both looks: `insertLookDefs` appends `<svgid>-drop-shadow` and `<svgid>-drop-shadow-small` for every diagram (`insertLookDefs.ts:46-47`, called from `render.ts:98`). `svgId` in styles is `#<id>` (`mermaidAPI.ts:324`). [V]
+
+**Link-wrapped nodes.** `data-look` is set on the `svg:a` wrapper (nodes.ts:45-55), but `.node` is on the inner group. The neo selectors above need both on one element, so **neo rules do not apply to linked nodes** [V reading; visual [U]].
+
+### 2.7 Helper and structural differences between neo and classic
+
+- labelHelper, createText, drawRect, insertPolygonShape, getNodeClasses, userNodeOverrides, styles2String: **no look branch**. [V]
+- Only the neo branches in section 2.1 change geometry. Element choice is look-independent (the handDrawn check is the only element branch). [V]
+- `data-look` attribute value differs. Global neo CSS differs (section 2.6). Filter defs present in both. [V]
+
+### 2.8 Other handlers with neo branches (not core)
+
+Grep found neo branches also in: flippedTriangle, linedWaveEdgedRect, curvedTrapezoid, waveEdgedRectangle, classBox, trapezoidalPentagon, multiRect, triangle, slopedRect, defaultMindmapNode, card, halfRoundedRectangle, tiltedCylinder, requirementBox, multiWaveEdgedRectangle, waveRectangle, bowTieRect, shadedProcess, windowPane, curlyBraces, taggedRect, dividedRect, linedCylinder, state, curlyBraceRight. Not read in detail. [U]
+
+---
+
+## 3. Registry (all entries)
+
+Source: `rendering-elements/shapes.ts`. shapesDefs at l.107-534 (53 entries, 150 unique keys); undocumented names at l.538-584; the map is built at l.536-601 with `Object.fromEntries` (later keys override, none conflict). `isValidShape` = own key (l.605-608).
+
+**Flowchart reach** (codes):
+- **L** legacy syntax. Grammar `flow.jison:432-462`, lexer `:174-195, 279-283`. Types: square, doublecircle, circle, ellipse (throws, see below), stadium, subroutine, rect (props form), cylinder, round, diamond, hexagon, odd, trapezoid (`[/t\]`), inv_trapezoid (`[\t/]`), lean_right (`[/t/]`), lean_left (`[\t\]`).
+- **D** directive `@{ shape: … }`. Accepted only if all lowercase, no underscore, in the map (`flowDb.ts:236-242`). Excludes camelCase and underscore keys.
+- **I** internal: `getTypeFromVertex` (`flowDb.ts:995-1017`: img → imageSquare; icon → iconSquare/iconCircle/iconRounded/icon by form); collapsedGroup (`flowDb.ts:1248`); layout swimlane edge labels (labelRect).
+- **N** not reachable from flowchart.
+
+Outline codes: **P** plain SVG element; **R0** rough path/polygon/circle at roughness 0 in classic and neo; **C** custom group/DOM; **D-** delegates; **G** classified by grep only (file not read) [U].
+
+| # | Key(s): shortName; aliases; internal | Handler → file | Outline | intersect | Reach |
+|---|---|---|---|---|---|
+| 1 | rect; proc, process, rectangle; — | squareRect → `squareRect.ts` (+drawRect) | P rect | rect | L (square); D |
+| 2 | rounded; event; roundedRect | roundedRect → `roundedRect.ts` | P rect rx | rect | L (round); D |
+| 3 | stadium; terminal, pill | stadium → `stadium.ts` | R0 | polygon | L; D |
+| 4 | fr-rect; subprocess, subproc, framed-rectangle, subroutine | subroutine → `subroutine.ts` | P polygon | polygon | L; D |
+| 5 | cyl; db, database, cylinder | cylinder → `cylinder.ts` | P path | rect+ellipse | L; D |
+| 6 | datastore; data-store | datastore → `datastore.ts` (drawRect) | P rect + rough lines [U] | rect | D |
+| 7 | folder; directory | folder → `folder.ts` | G plain path | polygon | D |
+| 8 | bucket | bucket → `bucket.ts` | G plain path | polygon | D |
+| 9 | console | consoleWindow → `console.ts` | C | rect | D |
+| 10 | browser | browser → `browser.ts` | C | rect | D |
+| 11 | person | person → `person.ts` | C (circle, rect) | polygon | D |
+| 12 | circle; circ; — | circle → `circle.ts` | P circle | circle | L; D |
+| 13 | bang | bang → `bang.ts` | G plain path | rect | D |
+| 14 | cloud | cloud → `cloud.ts` | G plain path | rect | D |
+| 15 | diam; decision, diamond, question | question → `question.ts` | P polygon | polygon | L (diamond); D |
+| 16 | hex; hexagon, prepare | hexagon → `hexagon.ts` | P polygon | polygon | L; D |
+| 17 | lean-r; lean-right, in-out; lean_right | lean_right → `leanRight.ts` | P polygon | polygon | L; D (no underscore name) |
+| 18 | lean-l; lean-left, out-in; lean_left | lean_left → `leanLeft.ts` | P polygon | polygon | L; D |
+| 19 | trap-b; priority, trapezoid-bottom, trapezoid | trapezoid → `trapezoid.ts` | P polygon | polygon | L; D |
+| 20 | trap-t; manual, trapezoid-top, inv-trapezoid; inv_trapezoid | inv_trapezoid → `invertedTrapezoid.ts` | P polygon | polygon | L; D |
+| 21 | dbl-circ; double-circle; doublecircle | doublecircle → `doubleCircle.ts` | P g of circles | circle | L; D |
+| 22 | text | text → `text.ts` | P rect.text | rect | D |
+| 23 | notch-rect; card, notched-rectangle | card → `card.ts` | G polygon + rough | polygon | D |
+| 24 | lin-rect; lined-rectangle, lined-process, lin-proc, shaded-process | shadedProcess → `shadedProcess.ts` | R0 rc.polygon | rect | D |
+| 25 | sm-circ; start, small-circle; stateStart | stateStart → `stateStart.ts` | P circle | circle | D (sm-circ, start, small-circle) |
+| 26 | fr-circ; stop, framed-circle; stateEnd | stateEnd → `stateEnd.ts` | R0 circles | circle | D (fr-circ, stop, framed-circle) |
+| 27 | fork; join; forkJoin | forkJoin → `forkJoin.ts` | R0 rectangle | rect | D (fork, join) |
+| 28 | hourglass; hourglass, collate | hourglass → `hourglass.ts` | R0 rc.path | polygon | D |
+| 29 | brace; comment, brace-l | curlyBraceLeft → `curlyBraceLeft.ts` | R0 rc.path ×2 | polygon | D |
+| 30 | brace-r | curlyBraceRight → `curlyBraceRight.ts` | R0 | polygon | D |
+| 31 | braces | curlyBraces → `curlyBraces.ts` | R0 | polygon | D |
+| 32 | bolt; com-link, lightning-bolt | lightningBolt → `lightningBolt.ts` | R0 | polygon | D |
+| 33 | doc; doc, document | waveEdgedRectangle → `waveEdgedRectangle.ts` | R0 | polygon | D |
+| 34 | delay; half-rounded-rectangle | halfRoundedRectangle → `halfRoundedRectangle.ts` | R0 | polygon | D |
+| 35 | h-cyl; das, horizontal-cylinder | tiltedCylinder → `tiltedCylinder.ts` | G plain path | rect | D |
+| 36 | lin-cyl; disk, lined-cylinder | linedCylinder → `linedCylinder.ts` | G plain path | rect | D |
+| 37 | curv-trap; curved-trapezoid, display | curvedTrapezoid → `curvedTrapezoid.ts` | R0 | polygon | D |
+| 38 | div-rect; div-proc, divided-rectangle, divided-process | dividedRectangle → `dividedRect.ts` | R0 rc.polygon | rect | D |
+| 39 | tri; extract, triangle | triangle → `triangle.ts` | R0 (roughness 0 seen) | polygon | D |
+| 40 | win-pane; internal-storage, window-pane | windowPane → `windowPane.ts` | R0 | polygon | D |
+| 41 | f-circ; junction, filled-circle; — | filledCircle → `filledCircle.ts` | R0 | circle | D (f-circ, junction, filled-circle). Note: the key `filledCircle` itself is not in the map |
+| 42 | notch-pent; loop-limit, notched-pentagon | trapezoidalPentagon → `trapezoidalPentagon.ts` | R0 | polygon | D |
+| 43 | flip-tri; manual-file, flipped-triangle | flippedTriangle → `flippedTriangle.ts` | R0 | polygon | D |
+| 44 | sl-rect; manual-input, sloped-rectangle | slopedRect → `slopedRect.ts` | R0 | polygon | D |
+| 45 | docs; documents, st-doc, stacked-document | multiWaveEdgedRectangle → `multiWaveEdgedRectangle.ts` | R0 | polygon | D |
+| 46 | st-rect; procs, processes, stacked-rectangle | multiRect → `multiRect.ts` | R0 | polygon | D |
+| 47 | bow-rect; stored-data, bow-tie-rectangle | bowTieRect → `bowTieRect.ts` | R0 | polygon | D |
+| 48 | cross-circ; summary, crossed-circle | crossedCircle → `crossedCircle.ts` | R0 | circle | D |
+| 49 | tag-doc; tagged-document | taggedWaveEdgedRectangle → `taggedWaveEdgedRectangle.ts` | R0 | polygon | D |
+| 50 | tag-rect; tagged-rectangle, tag-proc, tagged-process | taggedRect → `taggedRect.ts` | R0 | polygon | D |
+| 51 | flag; paper-tape | waveRectangle → `waveRectangle.ts` | R0 | polygon | D |
+| 52 | odd; — ; rect_left_inv_arrow | rect_left_inv_arrow → `rectLeftInvArrow.ts` | R0 | polygon | L (`>t]`); D (odd) |
+| 53 | lin-doc; lined-document | linedWaveEdgedRect → `linedWaveEdgedRect.ts` | R0 rc.polygon | polygon | D |
+| 54 | state | state → `state.ts` (drawRect) | P rect | rect | D (lowercase) |
+| 55 | choice | choice → `choice.ts` | R0 rc.path | polygon | D |
+| 56 | note | note → `note.ts` | R0 rc.rectangle | rect | D |
+| 57 | composite | composite → `composite.ts` | P rect | rect | D |
+| 58 | rectWithTitle | rectWithTitle → `rectWithTitle.ts` | C | rect | N (uppercase) |
+| 59 | labelRect (internal) | labelRect → `labelRect.ts` | P rect 0.1 | rect | I (swimlane edge labels) |
+| 60 | block_arrow | block_arrow → `blockArrow.ts` | G polygon | polygon | N (underscore) |
+| 61 | collapsedGroup (internal) | collapsedGroup → `collapsedGroup.ts` | P rect + line + circles | rect | I (flowDb.ts:1248) |
+| 62 | iconSquare | iconSquare → `iconSquare.ts` | C | rect/polygon | I (icon form square) |
+| 63 | iconCircle | iconCircle → `iconCircle.ts` | C | rect | I (icon form circle) |
+| 64 | icon | icon → `icon.ts` | C | polygon/rect | D (icon) and I (icon, no form) |
+| 65 | iconRounded | iconRounded → `iconRounded.ts` | C | polygon/rect | I (icon form rounded) |
+| 66 | imageSquare | imageSquare → `imageSquare.ts` | C | polygon/rect | I (vertex.img) |
+| 67 | anchor | anchor → `anchor.ts` | R0 circle | circle | D (lowercase) |
+| 68 | kanbanItem | kanbanItem → `kanbanItem.ts` | C | rect | N |
+| 69 | mindmapCircle | mindmapCircle → `mindmapCircle.ts` | D- → circle | circle | N |
+| 70 | defaultMindmapNode | defaultMindmapNode → `defaultMindmapNode.ts` | C | rect | N |
+| 71 | classBox | classBox → `classBox.ts` | C | rect | N |
+| 72 | erBox | erBox → `erBox.ts` | C | rect | N |
+| 73 | requirementBox | requirementBox → `requirementBox.ts` | C | rect | N |
+| 74 | usecaseActor | usecaseActor → `usecaseActor.ts` | C | rect | N |
+| 75 | usecaseActorHollow | usecaseActorHollow → `usecaseActorHollow.ts` | D- → renderUsecaseActor | [U] | N |
+| 76 | usecaseActorAwesome | usecaseActorAwesome → `usecaseActorAwesome.ts` | D- | [U] | N |
+| 77 | usecaseActorIcon | usecaseActorIcon → `usecaseActorIcon.ts` | C | rect | N |
+| 78 | usecaseBusiness | usecaseBusiness → `usecaseBusiness.ts` | C ellipse | ellipse | N |
+| 79 | usecaseEllipse | usecaseEllipse → `usecaseEllipse.ts` | C ellipse | ellipse | N |
+| 80 | usecaseJsonTable | usecaseJsonTable → `usecaseJsonTable.ts` | C | rect | N |
+
+Notes:
+- **ellipse**: flowchart `(-text-)` (`flow.jison:438`) emits type `'ellipse'`, which is not a key (`flowDb.ts:1000` has a ts-expect-error). `insertNode` throws `No such shape: ellipse` (nodes.ts:31-35). [V reading; not run]
+- Entries 1–66 are the shapesDefs plus the icon/img/collapsed/labelRect internals; 67–80 are undocumented.
+- Lowercase, underscore-free directive names in the map: 147 (141 from shapesDefs + state, choice, note, composite, anchor, icon). [V count]
+
+---
+
+## 4. Open questions
+
+1. **Font metrics (blocking).** Every label-driven size (W, H, wrapping, the y offset of the label) needs the reference font's SVG getBBox. Which font does the reference render with (theme fontFamily)? [U]
+2. **handDrawnSeed.** With the default 0, the rough d strings (stadium, rectLeftInvArrow, forkJoin, filledCircle, anchor, stateEnd) are random per run. Geometry is deterministic; the comparator must compare geometry, or the reference must set a seed. [V behaviour; [U] which the test harness uses]
+3. **roughjs bbox replica.** The tight-bbox values for rough circles (14.0133 etc.) come from my replica of cubic bounds, not from a browser getBBox. [U]
+4. **forkJoin fill and stroke.** The CSS `.node path` rules override the lineColor attributes in both looks. Visual confirmation needed. [U]
+5. **Linked nodes lose neo CSS** (2.6). Confirm the reference does the same. [V reading; [U] visual]
+6. **Layout coverage.** Confirmed only createGraphWithElements → insertMeasuredNode; ELK paths not checked for every case. [U]
+7. **ellipse throw.** Code-path reading only. [U]
+8. **Grep-only classifications** (the G rows, the D-/C rows, and every row marked [U] in section 3) need a file read. [U]
+9. **Theme for the reference.** The reference brief said classic; the fork default is neo with redux-color. Radius (12), strokeWidth (2), and nodeShadow all come from the theme, so the comparison must fix the theme as well as the look. [V]
+10. **`.root .anchor path`** needs a `.root` ancestor; confirm the flowchart root carries that class. [U]

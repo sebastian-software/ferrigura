@@ -12,14 +12,15 @@ Each session updates its section when it stops: what changed, what is next, what
 | M2 First slice: pie to SVG         | done        | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
 | M3 Flowchart parser                | done        | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
 | M4 ELK Layered port                | done        | main   | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                                                                                                                                                                                  |
+| M5 Flowchart rendering             | in progress | m5     | Plan and scaffold in [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md); research in `flowchart/render-notes/`                                                                                                                   |
 | M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                                                                                                                                                             |
 
 ## Strands
 
-| Strand | Session | Worktree | Working on               | Next                     | Blocked by |
-| ------ | ------- | -------- | ------------------------ | ------------------------ | ---------- |
-| main   | —       | —        | M1 to M4 done and merged | M5 (flowchart rendering) | —          |
+| Strand | Session     | Worktree                   | Working on                                   | Next                                    | Blocked by |
+| ------ | ----------- | -------------------------- | -------------------------------------------- | --------------------------------------- | ---------- |
+| main   | —           | —                          | M1 to M4 done and merged                     | —                                       | —          |
+| m5     | coordinator | `port-m5-flowchart-render` | M5 stage A: modules T1 to T7 and the harness | Integration and the geometry comparison | —          |
 
 ## M1 handover
 

@@ -8,6 +8,7 @@
 #![warn(missing_docs)]
 
 pub mod a11y;
+pub mod flowchart;
 pub mod pie;
 pub mod svg;
 
@@ -27,6 +28,8 @@ pub enum RenderError {
     Options(String),
     /// A bundled font could not be read or subset.
     Text(TextError),
+    /// The layout failed.
+    Layout(String),
 }
 
 impl fmt::Display for RenderError {
@@ -36,6 +39,7 @@ impl fmt::Display for RenderError {
             Self::Config(message) => write!(f, "invalid configuration: {message}"),
             Self::Options(message) => write!(f, "invalid option: {message}"),
             Self::Text(error) => write!(f, "text: {error:?}"),
+            Self::Layout(message) => write!(f, "layout: {message}"),
         }
     }
 }

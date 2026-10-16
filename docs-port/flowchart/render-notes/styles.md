@@ -1,0 +1,603 @@
+# Flowchart styles and SVG structure: notes for M5
+
+Read-only research for the Rust port (ferrigura, M5). Reference code: the JS tree under `packages/mermaid/src`.
+Paths are relative to the worktree root unless they start with `crates/` or `docs-port/`. Line numbers are for commit `e8af08065`. The main checkout is at the same commit, and the files cited here are identical in both.
+
+**Primary look: `neo`** (the fork's flowchart default). **Second look: `classic`.** `handDrawn` (roughjs, `rough-node`) is out of scope and appears only where it changes a selector shared by the two looks.
+
+## 0. Method and verification status
+
+| Item | Status |
+|---|---|
+| Source read | `diagrams/flowchart/{styles.ts,flowDb.ts,flowRenderer-v3-unified.ts,flowDiagram.ts,flowDetector-v2.ts}`, `parser/flow.jison`; `styles.ts`; `mermaidAPI.ts`; `rendering-util/{render.ts,insertLookDefs.ts,setupViewPortForSVG.ts,createGraph.ts,insertElementsForSize.js,layout-algorithms/common/index.ts,layout-algorithms/elk/render.ts,rendering-elements/{markers.js,edges.js,edgeMarker.ts,lineJump.ts,clusters.js,nodes.ts,createText.ts,shapes.ts,shapes/*.ts}}`; `utils/lineWithOffset.ts`; `utils.ts`; `setupGraphViewbox.js`; `accessibility.ts`; `config.ts`; `defaultConfig.ts`; `schemas/config.schema.yaml`; `diagrams/common/{colorThemeGate.ts,svgDrawCommon.ts}`; `themes/theme-redux-color.js`, `themes/theme-redux-dark-color.js`, `themes/theme-base.js`; `config.appearance.spec.ts` (assertions only) |
+| Executed, read-only | (a) stylis 4.3.6 for the namespacing cases in section 2. (b) khroma 2.1.0 through the JS theme modules, for the values in sections 11 and 12. (c) `yaml@2.9.0` to read `config.schema.yaml` defaults (section 13) |
+| Not executed | Any mermaid render, browser, or vitest run. Anything about the final DOM or pixels is from code and marked "by reading" |
+| Rust side | `crates/ferrigura-render/src` has no flowchart renderer yet (`a11y.rs`, `lib.rs`, `pie.rs`, `svg.rs`). Theme keys were checked by grep for presence only, not values |
+| Side effect | I wrote an empty `/tmp/none` by mistake during an identifier listing and removed it. Nothing else was written except this file |
+
+## 1. Findings that matter (neo first)
+
+1. **Default look is `neo`.** `FlowchartDiagramConfig.look` defaults to `neo` (`config.schema.yaml:2458-2460`); the global `look` defaults to `classic` (`:68-70`). `resolveAppearance` checks the diagram section first (`config.ts:79-107`). The repo's spec asserts the default (`config.appearance.spec.ts:71-80`, not run). Setting `look: classic` globally (or in frontmatter) gives classic.
+2. **Neo changes geometry, not only CSS.** Node sizes change (`squareRect.ts:9-10`: height +8 px per default rect, section 7). Edges use margin markers and an inline dash pattern (section 8). Layout is therefore different between looks, so the differential comparison must run per look.
+3. **Neo's defs are always emitted.** `insertLookDefs` runs for every look (`render.ts:98`). The two drop-shadow filters exist in classic output too, unreferenced there (section 5).
+4. **Neo cluster stroke is `nodeBorder`, but a redux palette overrides it.** `[data-look="neo"].cluster rect` (0,2,1) beats `.cluster rect` (0,1,1); the palette rule (0,4,1) beats both (section 9).
+5. **Several neo rules have no producer.** `.node .neo-node`, `.icon-neo path` and `.icon` (no class producer found). `.neo-line` is produced only by class diagrams (section 4).
+6. **The JS reference writes literal colours into CSS, not `var()`.** Presentation attributes carry theme colours only for collapsed groups (`collapsedGroup.ts:54-60`, `:145-146`) and recoloured markers (`edgeMarker.ts:120-124`). ADR 0007 is a port-side design, so compare resolved values, not strings.
+7. **`:root { --mermaid-font-family }` never applies** (`mermaidAPI.ts:152-154` inside the namespaced block; stylis gives `#id :root`, section 2). Only `diagrams/git/styles.js:130` reads it.
+8. **`style` on a subgraph id overwrites the subgraph's classes** (section 13 and 14). Order-dependent.
+
+## 2. How the `<style>` element is built (same for both looks)
+
+### 2.1 Composition order (`styles.ts:11-164`)
+
+| Order | Block | Lines | Notes |
+|---|---|---|---|
+| 1 | `& { font-family; font-size; fill: textColor }` | 42-46 | Only these three declarations keep the bare `#id` (`mermaidAPI.ts:247-270`) |
+| 2 | `@keyframes edge-animation-frame`, `@keyframes dash`, `.edge-animation-slow`, `.edge-animation-fast` | 47-68 | Use `stroke-dasharray: 9,5 !important` |
+| 3 | `.error-icon`, `.error-text` | 71-77 | Error diagram only |
+| 4 | `.edge-thickness-normal` (strokeWidth px), `-thick` (3.5px), `-invisible`; `.edge-pattern-solid` (0), `-dashed` (3), `-dotted` (2) | 79-97 | Flowchart edge classes (`edges.js:780-805`, `flowDb.ts:1322`) |
+| 5 | `.marker` (fill and stroke = lineColor), `.marker.cross` | 99-105 | Colour of all flowchart arrow markers |
+| 6 | `& svg { font-family; font-size }`, `& p { margin: 0 }` | 107-113 | |
+| 7 | `${diagramStyles}` = flowchart `getStyles` | 115 | Sections 4-5 of the flowchart styles |
+| 8 | Neo rules | 116-160 | Section 4 |
+| 9 | `${userStyles}`: `config.themeCSS`, `:root` var, classDef rules | 162; `mermaidAPI.ts:142-207` | Last in the source |
+
+Registration and lookup: `diagramAPI.ts:55` (`addStylesForDiagram`), `flowDiagram.ts:9,16,23`, `styles.ts:35-38`. Options come from `createUserStyles` (`mermaidAPI.ts:319-334`), which is called at `mermaidAPI.ts:596`.
+
+### 2.2 classDef and textStyles (`mermaidAPI.ts:142-207`)
+
+| Step | Lines | Output |
+|---|---|---|
+| `:root { --mermaid-font-family }`, only if `config.fontFamily` | 151-154 | Dead after namespacing |
+| Element list: `['> *','span']` with htmlLabels, else `['rect','polygon','ellipse','circle','path']` | 162-165 | Targets of classDef CSS |
+| `.<id> <element> { <decl> !important; ... }` (`cssImportantStyles`) | 126-131, 168-177 | Node classDef |
+| `.<id> tspan { fill: ... !important }` for textStyles, `color` renamed `fill` | 179-186 | SVG label text colour |
+| `config.themeCSS` prepended | 189-206 | Namespaced like everything else |
+
+`htmlLabels` = `config.htmlLabels ?? true` (`config.ts:324-326`); `defaultConfig.ts:24` leaves it `undefined`, so it is `true` by default.
+
+### 2.3 Namespacing (`compileCSS`, `mermaidAPI.ts:226-~270`)
+
+The whole `userStyles + getStyles` text is compiled as `#id{...}` by stylis, then rewritten: `&` becomes `#id`; nested selectors get a `#id ` prefix; at-rules other than `@media`, `@supports`, `@layer`, `@scope`, `@container`, `@starting-style`, `@keyframes` become comments (`mermaidAPI.ts:293-310`).
+
+Stylis 4.3.6 output (run here; the middleware only rewrites `&` rules):
+
+| Input inside `#id{...}` | Output |
+|---|---|
+| `& {font-family: a; font-size: 14px; fill: #333}` | `#id{font-family:a;font-size:14px;fill:#333;}` |
+| `.label text,span {fill: red;}` | `#id .label text,#id span{fill:red;}` |
+| `:root { --mermaid-font-family: "x"}` | `#id :root{--mermaid-font-family:"x";}` (matches nothing) |
+| `.labelBkg { ...; // background-color: }` | the `//` line is dropped |
+
+The reference CSS is minified (no spaces). Compare normalised text.
+
+## 3. Where the look is read
+
+| Reader | Lines | Effect |
+|---|---|---|
+| `flowDb.getData` passes `config.look \|\| 'classic'` to every regular node | `flowDb.ts:1287` (`baseNode.look` at `:1065-1071`) | `node.look` |
+| Subgraph nodes take `config.look` | `flowDb.ts:1251`, `:1269` | `cluster.look` |
+| Edges take `config.look` | `flowDb.ts:1337` | `edge.look` |
+| Node element `data-look` | `nodes.ts:55` | `[data-look="neo"]` rules match nodes |
+| Cluster element `data-look` | `clusters.js:28` (and the other cluster shapes) | `[data-look="neo"].cluster` rules |
+| Edge path `data-look` | `edges.js:901` | |
+| Palette selector | `styles.ts:54` (`safeLook`), `:61` | `[data-look="<look>"][data-color-id=...]`; invalid look falls back to `classic` (`colorThemeGate.ts:51-61`) |
+| Edge marker margin | `edges.js:946` | `useMargin = !animatedEdge && edge.look === 'neo'` |
+| Edge dash inline | `edges.js:883` | neo only, not animated |
+| Node shape paddings | section 7 | `node.look === 'neo'` branches |
+| Defs | `insertLookDefs.ts` | **not** gated by look (`render.ts:98`) |
+
+## 4. CSS rules that depend on the look
+
+### 4.1 Neo rules (`styles.ts:116-160`)
+
+| # | Lines | Selector | Declarations | Theme input | Producer in flowchart path | Status |
+|---|---|---|---|---|---|---|
+| N1 | 116-118 | `.node .neo-node` | `stroke: nodeBorder` | nodeBorder | none (grep of `src`: only `styles.ts`) | **dead** |
+| N2 | 120-123 | `[data-look="neo"].node rect, [data-look="neo"].cluster rect, [data-look="neo"].node polygon` | `stroke: <useGradient ? url(#<id>-gradient) : nodeBorder>; filter: <dropShadow ? dropShadow with url(#<id>-drop-shadow) : none>` | nodeBorder, useGradient, dropShadow | Basic rect (`drawRect.ts:51-55`), cluster rect (`clusters.js:99-100`), polygon shapes | **live** |
+| N3 | 124-126 | `[data-look="neo"].swimlane.cluster rect` | `filter: none` | none | swimlane layout clusters | live only for `layout: swimlane` |
+| N4 | 129-132 | `[data-look="neo"].node path` | `stroke: <gradient or nodeBorder>; stroke-width: (strokeWidth ?? 1)px` | nodeBorder, useGradient, strokeWidth | path-drawn shapes (not the default rect) | live for path shapes |
+| N5 | 134-136 | `[data-look="neo"].node .outer-path` | `filter: <dropShadow>` | dropShadow | shapes that set class `outer-path`: `cylinder.ts:113`, `note.ts:44`, `triangle.ts:57`, `hourglass.ts:39`, `multiRect.ts:91`, `classBox.ts:93` and others | live |
+| N6 | 138-141 | `[data-look="neo"].node .neo-line path` | `stroke: nodeBorder; filter: none` | nodeBorder | `neo-line` only in `classBox.ts:218,235` | **not reachable from flowchart** |
+| N7 | 143-146 | `[data-look="neo"].node circle` | `stroke: <gradient or nodeBorder>; filter: <dropShadow>` | nodeBorder, useGradient, dropShadow | `circle` elements (`shapes/circle.ts`, `doubleCircle.ts`) | live |
+| N8 | 148-150 | `[data-look="neo"].node circle .state-start` | `fill: #000000` | none | `stateStart.ts:51,59` | state diagrams only |
+| N9 | 152-155 | `[data-look="neo"].icon-shape .icon` | `fill: <gradient or nodeBorder>; filter: <dropShadow>` | nodeBorder, useGradient, dropShadow | class `icon` has no producer in `rendering-util` (icon shapes emit `icon-shape default` `icon.ts:22`, `iconCircle.ts:22`, `iconSquare.ts:26`, `iconRounded.ts:26`; `iconRounded.ts:63` emits `icon-shape2`) | **dead by grep** |
+| N10 | 157-160 | `[data-look="neo"].icon-shape .icon-neo path` | `stroke; filter` | | class `icon-neo` has no producer | **dead** |
+
+Neo rules that overlap the shared base: N2 changes the stroke and adds a filter, but not the fill. The base `.node rect` fill (`styles.ts:162-170`, `fill: mainBkg`) stays for both looks.
+
+### 4.2 Classic counterparts (what the same elements get without neo)
+
+| Element | Neo | Classic |
+|---|---|---|
+| Node rect stroke | `nodeBorder` or gradient (N2) | `nodeBorder` from `.node rect` (`styles.ts:162-170`) |
+| Node rect filter | `url(#<id>-drop-shadow)` (N2) | none |
+| Node rect stroke-width | `strokeWidth` px from `.node rect` (`styles.ts:162-170`, value `2px`) | same |
+| Cluster rect stroke | `nodeBorder` (N2) unless palette | `clusterBorder` from `.cluster rect` (`styles.ts:228-232`) |
+| Cluster rect filter | drop shadow (N2) | none |
+| Path-drawn node stroke-width | `strokeWidth` (N4) | `strokeWidth` (`styles.ts:162-170`) |
+| Edge stroke-dasharray | inline per-edge (section 8) | class value: solid `0`, dashed `3`, dotted `2` (`styles.ts:85-97`) |
+| Marker ids | `-margin` variants (section 8) | plain |
+| `data-look` values | `"neo"` | `"classic"` |
+
+## 5. Defs emitted by `insertLookDefs` (`rendering-util/insertLookDefs.ts`)
+
+Called once per render, before layout, for every look (`render.ts:98`).
+
+| Def | Element and id | Attributes | Lines | Used by neo | Used by classic |
+|---|---|---|---|---|---|
+| Drop shadow | `<filter id="<svgId>-drop-shadow" height="130%" width="130%">` (appended to `svg`) | `feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="<flood>"`. `x`/`y` not set (SVG default) | `:32-44`, `:46` | N2, N5, N7 via `url(#<id>-drop-shadow)` | no (emitted, unreferenced) |
+| Drop shadow small | `<filter id="<svgId>-drop-shadow-small" height="150%" width="150%">` | `feDropShadow dx="2" dy="2"`, same flood | `:47` | **no** neo rule in the flowchart path. Referenced only by `stateStart.ts:67`, `stateEnd.ts:85` | no |
+| Gradient | `<linearGradient id="<svgId>-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%">` appended to `svg` (no `defs`) with two `svg:stop` (`gradientStart` at 0%, `gradientStop` at 100%, `stop-opacity="1"`) | only when `themeVariables.useGradient` | `:49-72` | N2, N4, N7, N9 via `url(#<id>-gradient)` | no |
+
+Flood colour: `#FFFFFF` if `config.theme` contains `dark`, else `#000000` (`insertLookDefs.ts:30`). Only the name `redux-dark-color` contains `dark`, so only the dark theme gets the white flood. `useGradient` is `false` in both redux themes, so the gradient is not emitted by default.
+
+Replacement: the `dropShadow` theme string `url(#drop-shadow)` is rewritten to `url(#<svgId>-drop-shadow)` in N2, N5, N7 (`styles.ts:122`, `:135`, `:145`, `:154`, `:159`). Any other `dropShadow` string is used as written, so no def is needed for it.
+
+`svgId` in `styles.ts` is the selector with `#` (`mermaidAPI.ts:333`), so `url(#<id>-gradient)` in CSS and `${svgId}-gradient` as the element id give the same string.
+
+## 6. Neo: the data-look attribute and what it selects
+
+| Element | Attribute | Set by | Matched by |
+|---|---|---|---|
+| Node `g` (and the `a` wrapper, when linked) | `data-look` | `nodes.ts:55` | `[data-look="neo"].node ...` |
+| Cluster `g` | `data-look` | `clusters.js:28` | `[data-look="neo"].cluster rect` (N2) |
+| Edge path | `data-look` | `edges.js:901` | not matched by any shared rule |
+| Palette stamp | `data-color-id="color-N"` on clusters (`clusters.js:33`) and squareRect when `colorIndex` is set (`squareRect.ts:27-30`) | `colorThemeGate.ts:114-125` | palette rules (section 9) |
+
+## 7. Neo: node geometry (shape padding)
+
+The flowchart's vertex types map to shapes through `getTypeFromVertex` (`flowDb.ts:995`; `case 'round'` at `:1015` gives `roundedRect`) and the shape registry (`shapes.ts:107-~540`, aliases and internal aliases). Regular flowchart nodes get `padding = config.flowchart.padding || 8` (`flowDb.ts:1071`), so `nodePadding = 8` in the classic branch below. Subgraph nodes also use 8 (`flowDb.ts:1236-1276`, the `padding: 8` literal).
+
+### 7.1 Default rectangle (`squareRect`, `squareRect.ts:7-33`; `drawRect.ts:21-22`)
+
+`totalWidth = max(bbox.width + 2 * labelPaddingX, node.width)`, `totalHeight = max(bbox.height + 2 * labelPaddingY, node.height)`.
+
+| Look | `labelPaddingX` | `labelPaddingY` | Width added | Height added |
+|---|---|---|---|---|
+| neo (`squareRect.ts:9-10`) | 16 | 12 | 32 | 24 |
+| classic (`squareRect.ts:9-10`, `nodePadding*2`, `nodePadding`) | 16 | 8 | 32 | 16 |
+
+Neo makes a default rectangle 8 px taller. The round shape `roundedRect` (`roundedRect.ts:4-19`) has no neo branch: padding is `padding * 1` = 8 in both looks, so round nodes are not affected.
+
+### 7.2 Every neo branch in the shape files
+
+Expressions as written in the source. `classic` values are with `nodePadding = 8` and `node.padding ?? 0 = 8`. "flowchart" marks shapes that a flowchart can produce (through the shape registry or `@{ shape: ... }`). Diagram-specific shapes are listed last.
+
+| Shape file (registry name) | Lines | Neo | Classic | Flowchart |
+|---|---|---|---|---|
+| `squareRect.ts` (`rect`) | 9-10 | X 16, Y 12 | X `nodePadding*2` (16), Y `nodePadding` (8) | yes |
+| `roundedRect.ts` (`rounded`) | 4-19 | none (X = Y = `padding`) | 8 | yes |
+| `stadium.ts` (`stadium`) | 39-40 | X 40, Y 24 | `nodePadding` (8) | yes |
+| `subroutine.ts` (`fr-rect`) | 18-19 | X 28, Y 12 | 8 | yes |
+| `cylinder.ts` (`cyl`) | 62-63 | X 24, Y 24 | 8 | yes |
+| `circle.ts` (`circle`) | 29 (radius) | radius = `labelRadius + 16` | `labelRadius + padding`, where `padding = halfPadding = node.padding / 2` = 4 (`shapes/util.ts:116`) | yes |
+| `doubleCircle.ts` (`dbl-circ`) | 15, 18, 26-27 | gap 12, labelPadding 16 | gap 5, labelPadding = padding (8). Inner = `labelRadius + labelPadding`, outer = inner + gap | yes |
+| `hexagon.ts` (`hex`) | 29, 35-36 (and the width adjustment below) | `f = 3.5`; labelPaddingX 70, labelPaddingY 32 | `f = 4`; both `nodePadding` | yes |
+| `trapezoid.ts` (`trap-b`) | 13-14 | Y `nodePadding`; X `nodePadding*2` (16) | X `nodePadding` (8) | yes |
+| `invertedTrapezoid.ts` (`trap-t`) | 18 | X `nodePadding*2` | X `nodePadding` | yes |
+| `leanRight.ts` (`lean-r`) | 14 | X `nodePadding*2` | X `nodePadding` | yes |
+| `leanLeft.ts` (`lean-l`) | 14 | X `nodePadding*2` | X `nodePadding` | yes |
+| `rectLeftInvArrow.ts` (`odd`) | 15-21 | X 21, Y 12; width and height use `*2` | X `nodePadding ?? 0`, Y `nodePadding`; width and height not doubled | yes |
+| `flippedTriangle.ts` (`flip-tri`) | 20 | X `nodePadding*2` | X `nodePadding` | yes |
+| `triangle.ts` (`tri`) | 19 | X `nodePadding*2` | X `nodePadding` | yes |
+| `card.ts` (`notch-rect`) | 24-25, 30, 32 | X 28, Y 24; width `X*2`, height `Y*2` | X `nodePadding`; width `X + NOTCH_SIZE`; height `Y` | yes |
+| `shadedProcess.ts` (`lin-rect`) | 19-20, 25 | X 16, Y 12; frame `FRAME_WIDTH` | `nodePadding`; frame `FRAME_WIDTH*2` | yes |
+| `multiRect.ts` (`st-rect`) | 18-20 | X 16, Y 12; offset 10 | `nodePadding`; offset 5 | yes |
+| `multiWaveEdgedRectangle.ts` (`docs`) | 23-24, 35 | X 16, Y 12; amplitude `h/4` | `nodePadding`; `h/8` | yes |
+| `waveEdgedRectangle.ts` (`doc`) | 22-23, 41 | X 16, Y 12; amplitude `h/4` | `nodePadding`; `h/8` | yes |
+| `linedWaveEdgedRect.ts` (`lin-doc`) | 21-22, 38 | X 16, Y 12; amplitude `h/4` | `nodePadding`; `h/8` | yes |
+| `waveRectangle.ts` (`flag`) | 21-22 | X 16, Y 20 | `nodePadding` | yes |
+| `curvedTrapezoid.ts` (`curv-trap`) | 21-22 | X 16, Y 12 | `nodePadding` | yes |
+| `linedCylinder.ts` (`lin-cyl`) | 70-71 | X 16, Y 24 | `nodePadding` | yes |
+| `tiltedCylinder.ts` (`h-cyl`) | 64 | 12 | `nodePadding / 2` | yes |
+| `halfRoundedRectangle.ts` (`delay`) | 24-25 | X 16, Y 12 | `node.padding ?? 0` | yes |
+| `trapezoidalPentagon.ts` (`notch-pent`) | 15-16 | X 16, Y 12 | `nodePadding` | yes |
+| `bowTieRect.ts` (`bow-rect`) | 90-91 | X 16, Y 12 | `nodePadding` | yes |
+| `taggedRect.ts` (`tag-rect`) | 16-17 | X 16, Y 12 | `nodePadding` | yes |
+| `dividedRect.ts` (`div-rect`) | 15-16 | X 16, Y 16 | `node.padding ?? 0` | yes |
+| `windowPane.ts` (`win-pane`) | 15-16 | X 16, Y 12 | `node.padding ?? 0` | yes |
+| `curlyBraces.ts` (`braces`) | 45-48 | X 18, Y 12; width and height `+ 2*padding` | `node.padding ?? 0`; `+ padding` | yes |
+| `curlyBraceLeft.ts` (`brace`) | 45-46 | X 18, Y 12 | `node.padding ?? 0` | yes |
+| `curlyBraceRight.ts` (`brace-r`) | 45-48 | X 18, Y 12; width and height `+ 2*padding` | `node.padding ?? 0`; `+ padding` | yes |
+| `stateStart.ts`, `stateEnd.ts` | (no neo branch; `nodeShadow` only) | | | state only |
+| `state.ts` | 7-8 | rx = ry = 3 | 5 | state only |
+| `classBox.ts` | 218, 235 | `neo-line` class on dividers | none | class only |
+| `requirementBox.ts` | 171 | neo branch | | requirement only |
+| `defaultMindmapNode.ts` | 26 | neo branch | | mindmap only |
+| Not in the neo list | `ellipse`, `question` (`diam`), `cloud`, `bang`, `person`, `folder`, `datastore`, `bucket`, `console`, `browser`, `fork`, `hourglass` (no neo branch; `hourglass` has the `outer-path` class, N5) | same | same | |
+
+Hexagon width adjustment: `hexagon.ts:14-16` subtracts `2*m + labelPaddingY` where `m = height / f`. The look changes `f` and `labelPaddingY`, so neo hexagons are wider. The full expression was not traced further.
+
+Circles under neo are larger: the default circle radius is `labelRadius + 16` (neo) vs `labelRadius + 4` (classic), and the `doubleCircle` outer ring adds 12 instead of 5.
+
+### 7.3 Clusters and the root SVG
+
+- `clusters.js:15-143` (the flowchart `rect` cluster) has no neo branch, only `handDrawn`. Geometry is the same in both looks; only CSS differs (N2).
+- The viewBox is computed from the rendered bbox (section 11), so neo's larger nodes change the viewBox and root `width`/`height`.
+
+## 8. Neo: edges
+
+### 8.1 Marker variants
+
+`addEdgeMarker` appends `-margin` to the marker id when `useMargin && marginSupport` (`edgeMarker.ts:99-100`). `arrowTypesWithMarginSupport` = `cross`, `point`, `circle`, `lollipop`, `aggregation`, `extension`, `composition`, `dependency`, `barb` (`edgeMarker.ts:59-69`). `useMargin = !animatedEdge && edge.look === 'neo'` (`edges.js:946`).
+
+| Arrow (grammar) | Marker type | Neo id suffix | Classic id |
+|---|---|---|---|
+| `arrow_point` | `point` | `-pointEnd-margin` / `-pointStart-margin` | `-pointEnd` / `-pointStart` |
+| `arrow_circle` | `circle` | `-circleEnd-margin` / `-circleStart-margin` | `-circleEnd` / `-circleStart` |
+| `arrow_cross` | `cross` | `-crossEnd-margin` / `-crossStart-margin` | `-crossEnd` / `-crossStart` |
+| `arrow_open`, `none` | none | none | none |
+
+Full id: `<diagramId>_flowchart-v2-<type><End|Start>[-margin]`, and coloured clones append `_<colorId>` (`edgeMarker.ts:100`, `:105-106`).
+
+Marker geometry (`markers.js`, same function for both, the margin variant is a separate `marker`):
+
+| Marker | Lines | Neo (margin) | Classic |
+|---|---|---|---|
+| point end | `:323-388`; margin `:358` | `viewBox 0 0 11.5 14`, `refX 11.5`, `refY 7`, `markerWidth 10.5`, `markerHeight 14`, path `M 0 0 L 11.5 7 L 0 14 z`, `stroke-width 0` | `viewBox 0 0 10 10`, `refX 5`, `refY 5`, `markerWidth 8`, `markerHeight 8`, path `M 0 0 L 10 5 L 0 10 z`, `stroke-width 1` |
+| point start | `:374` | `refX 1`, `refY 7`, `markerWidth 11.5`, polygon `0,7 11.5,14 11.5,0`, `stroke-width 0` | `refX 4.5`, `refY 5`, path `M 0 5 L 10 10 L 10 0 z` |
+| circle end | `:389-464`; margin `:429` | `viewBox 0 0 10 10`, `refX 12.25`, `refY 5`, `markerWidth 14`, `markerHeight 14`, circle r 5, `stroke-width 0` | `refX 11`, `refY 5`, `markerWidth 11`, `markerHeight 11`, circle r 5, `stroke-width 1` |
+| circle start | `:448` | `refX -2`, size 14, `stroke-width 0` | `refX -1`, size 11 |
+| cross end | `:465-533`; margin `:503` | `viewBox 0 0 15 15`, `refX 17.7`, `refY 7.5`, `markerWidth 12`, `markerHeight 12`, path `M 1,1 L 14,14 M 1,14 L 14,1`, `stroke-width 2.5` | `viewBox 0 0 11 11`, `refX 12`, `refY 5.2`, `markerWidth 11`, `markerHeight 11`, path `M 1,1 l 9,9 M 10,1 l -9,9`, `stroke-width 2` |
+| cross start | `:519` | `viewBox 0 0 15 15`, `refX -3.5`, `refY 7.5`, `stroke-width 2.5` | `refX -1`, `refY 5.2` |
+
+Markers are appended directly to the placeholder `g` (no `defs`), for both looks (`markers.js:323-533`). Point, circle and cross read no theme variable.
+
+Whether the margin tips land on the path end exactly, and how the arrow looks on screen, was not checked in a browser.
+
+### 8.2 Inline dash pattern (neo only, `edges.js:883-891`)
+
+Applies when `edge.look === 'neo' && !animatedEdge`. `len = path.getTotalLength()`, `oS = markerOffsets2[arrowTypeStart] || 0`, `oE = markerOffsets2[arrowTypeEnd] || 0` (`edges.js:879-881`). `markerOffsets2` (`utils/lineWithOffset.ts:21-25`): `arrow_point` 4, `arrow_cross` 12.5, `arrow_circle` 12.5, anything else 0.
+
+| Edge pattern | `stroke-dasharray` (prepended to the path `style`) |
+|---|---|
+| solid (`-->`) | `0 <oS> <len - oS - oE> <oE>` |
+| dashed or dotted (`edge.pattern` is `dashed` or `dotted`) | `generateDashArray(len, oS, oE)` = `0 <oS>` + `"2 2"` repeated `floor((len - oS - oE) / 4)` times (clamped at 0) + `<oE>` (`edges.js:601-622`) |
+
+Consequences:
+- Under neo, dashed and dotted are the same pattern (2 on, 2 off). Classic dashed is 3 and dotted is 2 from the class (`styles.ts:92-97`).
+- The first `oS` and last `oE` pixels are hidden, so the stroke stops short of the arrow.
+- A later `stroke-dasharray` in the same style (classDef or linkStyle) overrides the neo prefix, because `mOffset` is prepended (`edges.js:890-891`).
+- `lineJump.ts:729-759` reads the neo offsets back from the dash rule and rewrites them for the new length, so line jumps keep the neo shape.
+
+### 8.3 Animated edges
+
+`animate` or `animation` (or a classDef containing `animation`, `edges.js:877`) makes `animatedEdge` true. Both the inline dash (`:883`) and the margin markers (`:946`) are skipped, so an animated neo edge looks like a classic one.
+
+### 8.4 Path ends (both looks)
+
+Path ends are pulled back by `getLineFunctionsWithOffset` (`edges.js:777`, `utils/lineWithOffset.ts:56-100`) using `markerOffsets` (`lineWithOffset.ts:6-14`: `arrow_point` 4, cross and circle commented out). This does not depend on the look.
+
+## 9. Clusters and the palette
+
+Palette rules are generated by `genColor` (`styles.ts:49-127`), only with a redux theme (`colorThemeGate.ts:17,37-38`). For slot `i`, `B_i = borderColorArray[i]`, `K_i = bkgColorArray[i]`, and `L = safeLook(config.look)` (`styles.ts:54`, `:61`). The slot is `colorIndex % 12` (`colorThemeGate.ts:114-125`).
+
+| Rule | Lines | Declarations | Specificity |
+|---|---|---|---|
+| `[data-look="L"][data-color-id="color-i"].cluster:not(.swimlane) rect` | 78-81 | `stroke: B_i; fill: K_i` | (0,4,1) |
+| `... .cluster:not(.swimlane) path` | 83-86 | `stroke: B_i; fill: K_i` | (0,4,1) |
+| `... .swimlane.cluster rect.swimlane-title, ... rect.swimlane-body` | 89-93 | `stroke: B_i; fill: K_i` | (0,5,1) |
+| `... .swimlane.cluster path:nth-of-type(2)` (title and body) | 96-98 | `stroke: B_i` | (0,5,1) |
+| `... .swimlane.cluster path:first-of-type` (title and body) | 103-105 | `stroke: K_i` (only with `K`) | (0,5,1) |
+| `... .node .collapsed-group` (and `... path`) | 109-113 | `stroke: B_i; fill: K_i` | (0,4,0), (0,4,1) for `path` |
+| `... .node .collapsed-indicator` | 117-119 | `fill: B_i` | (0,4,0) |
+| `... .node .collapsed-separator` | 121-123 | `stroke: B_i` | (0,4,0) |
+
+Specificity counts `[data-look]` and `[data-color-id]` as classes, and `:not(.swimlane)` as `.swimlane`.
+
+`K_i` rules exist only when `bkgColorArray` is non-empty. `redux-color` has 12 entries; `redux-dark-color` has `[]` (`theme-redux-dark-color.js:85`), so dark clusters keep `clusterBkg` as their fill.
+
+Under neo:
+
+| Rule | Specificity | Stroke on a cluster rect |
+|---|---|---|
+| `.cluster rect` (`styles.ts:228-232`) | (0,1,1) | `clusterBorder` |
+| N2 `[data-look="neo"].cluster rect` (`styles.ts:120-123`) | (0,2,1) | `nodeBorder` (or gradient) |
+| Palette `[data-look][data-color-id].cluster:not(.swimlane) rect` (`styles.ts:78-81`) | (0,4,1) | `borderColorArray[i]` |
+| Inline `style` of the rect (`clusters.js:100`) | inline | class styles with `!important` only |
+
+Result with `redux-color` + neo (the default): the palette colour. Result without a palette theme + neo: `nodeBorder`. With classic: the palette colour if present, else `clusterBorder`.
+
+Palette fill (`bkgColorArray[i]`, `styles.ts:81`, `:86`) exists only with a non-empty `bkgColorArray`. `redux-color` has 12; `redux-dark-color` has `[]` (`theme-redux-dark-color.js:85`), so dark clusters keep `clusterBkg` as fill.
+
+## 10. Classic (second look): what differs in one place
+
+| Area | Classic | Where |
+|---|---|---|
+| Node rect filter | none | section 4.2 |
+| Cluster rect stroke | `clusterBorder` | `styles.ts:228-232` |
+| Node padding (rect) | Y 8 (height +16) | section 7.1 |
+| Circle and doubleCircle | radius +4; doubleCircle gap 5 and padding 8 | section 7.2 |
+| Stadium, subroutine, cylinder, trapezoid, lean, card, multiRect, etc. | `nodePadding` (8) or the `*2` form, see table 7.2 | |
+| Edge markers | plain ids and viewBoxes | section 8.1 |
+| Edge dash | class-based (solid 0, dashed 3, dotted 2) | `styles.ts:85-97` |
+| Drop-shadow defs | emitted, unreferenced | section 5 |
+| `data-look` value | `"classic"` | section 6 |
+| Palette selector | `[data-look="classic"]` | `styles.ts:61` |
+| Layout geometry | the classic numbers in section 7 | |
+
+Classic selects no rule that neo does not also match (both use the shared base). The only classic-specific runtime effect is the absence of N2 to N10 and of the inline dash and margin markers.
+
+## 11. The root `<svg>` and viewBox (both looks)
+
+| Attribute | Value | Set by |
+|---|---|---|
+| `id` | diagram id | `mermaidAPI.ts:410-412` (`appendDivSvgG`) |
+| `width` | `100%` first; overwritten by the number W (no `useMaxWidth`) or kept at `100%` | `mermaidAPI.ts:413`, `setupGraphViewbox.js:23-33, 43-46` |
+| `height` | H (number), only without `useMaxWidth` | `setupGraphViewbox.js:29` |
+| `style` | `max-width: <W>px;` with `useMaxWidth` | `setupGraphViewbox.js:27` |
+| `xmlns` | `http://www.w3.org/2000/svg` | `mermaidAPI.ts:414` |
+| `class` | `flowchart` (not `flowchart-v2`) | `setupViewPortForSVG.ts:12`; `flowRenderer-v3-unified.ts:51` |
+| `viewBox` | `<x-p> <y-p> <w+2p> <h+2p>` | `setupViewPortForSVG.ts:21-22`, `:38-40` |
+| `role` | `graphics-document document` | `accessibility.ts:19`, `:28` |
+| `aria-roledescription` | `flowchart-v2` (also for `graph`) | `accessibility.ts:29-31`; `flowDetector-v2.ts:7`; `mermaidAPI.ts:623` |
+| `aria-labelledby` / `aria-describedby` | `chart-title-<id>` / `chart-desc-<id>` when set | `accessibility.ts:55-63` |
+
+viewBox formula:
+
+| Quantity | Formula | Source |
+|---|---|---|
+| padding | `flowchart.diagramPadding ?? 8` | `flowRenderer-v3-unified.ts:44`; schema default 8 (`config.schema.yaml:2480-2482`) |
+| bbox | `svg.node().getBBox()` on the root `svg`, after `render` and after the title was added. Includes the placeholder `g` content and the title. Excludes `<style>`, `<defs>` and markers (not rendered). Strokes are not included | `setupViewPortForSVG.ts:28-36`. Strokes excluded: standard SVG behaviour, not checked in a browser |
+| W, H | `bbox.width + 2*padding`, `bbox.height + 2*padding` | `setupViewPortForSVG.ts:29-35` |
+| origin | `bbox.x - padding`, `bbox.y - padding` | `setupViewPortForSVG.ts:38-40` |
+| Title | `x = bounds.x + bounds.width/2` (bounds read before the title exists), `y = -titleTopMargin`, `text-anchor: middle`, class `flowchartTitleText` | `utils.ts:793-813`; `flowRenderer-v3-unified.ts:45-50`; schema default 25 (`config.schema.yaml:2461-2463`) |
+
+Number output: `d3` writes JS number-to-string. The Rust `number()` (`crates/ferrigura-render/src/svg.rs:27-33`) prints `0` below 1e-10, else Rust `Display`, which never uses an exponent. This differs from JS for |x| < 1e-6 and |x| ≥ 1e21. Irrelevant at normal sizes.
+
+## 12. SVG element order (both looks)
+
+| Phase | Code | Adds |
+|---|---|---|
+| 1 | `appendDivSvgG` (`mermaidAPI.ts:397-421`, called at `:559`) | `svg#id[width=100%][xmlns]` > `g` (placeholder, `:419`) |
+| 2 | `svg.insertBefore(style1, firstChild)` (`mermaidAPI.ts:594-600`) | `style` before the placeholder `g` |
+| 3 | `draw` > `render` > `insertLookDefs` (`flowRenderer:43`, `render.ts:98`) | filters and gradient (section 5), appended to the `svg` after `g` |
+| 4 | `insertMarkers(element)` (`layout-algorithms/common/index.ts:135-146`) | 12 `marker` elements into the placeholder `g` (point, circle, cross, each with 4) |
+| 5 | `prepare` (`common/index.ts:159-161`; ELK `prepareLayoutForElk` `elk/render.ts:678-685`) | edge render data |
+| 6 | `measure` = `createGraphWithElements` (`createGraph.ts:122-215`) | `g.root` in the placeholder `g`: `g.clusters`, `g.edges.edgePaths`, `g.edgeLabels`, `g.nodes` (`createGraph.ts:33-37`). Nodes and edge labels inserted here (`:159-197`). Group labels measured in a temporary node and removed |
+| 7 | `runLayoutCore` (ELK) | `orderNodesForElkPaint` (`elk/render.ts:700`, `:765-`): groups first, by depth, stable. Paint order only |
+| 8 | `paintLayoutData` (`common/index.ts:220-245`) | clusters into `g.clusters` (`:256`); edge paths into `g.edgePaths` (`:292-303`); edge labels positioned (`:304-309`) |
+| 9 | `afterPaint` = `applyElkLineJumps` (`elk/render.ts:750`) | rewrites edge `d` and the neo dash (section 8.2). Not traced further |
+| 10 | `insertTitle`, `setupViewPortForSVG` (`flowRenderer:45-51`) | `text.flowchartTitleText`; root attributes |
+| 11 | `addA11yInfo` (`mermaidAPI.ts:623`, `:750-758`) | `role`, `aria-roledescription`; `title`, `desc` as first children |
+| 12 | `serializeSvg` (`mermaidAPI.ts:629-656`) | `cleanUpSvgCode`, `DOMPurify.sanitize` (attribute lists not read) |
+
+Tree (`[]` = conditional):
+
+```
+svg#<id>.flowchart  role aria-roledescription=flowchart-v2 [aria-labelledby] [aria-describedby]
+                    width/height or style; viewBox; xmlns
+  [title#chart-title-<id>]                          accessibility.ts:60-63 (first child)
+  [desc#chart-desc-<id>]                            accessibility.ts:55-59 (first child)
+  style                                             mermaidAPI.ts:600
+  g                                                 placeholder; common/index.ts:135
+    marker#<id>_flowchart-v2-pointEnd               markers.js:323-388
+    marker  -pointStart, -pointEnd-margin, -pointStart-margin
+    marker  circleEnd, circleStart, *-margin       markers.js:389-464
+    marker  crossEnd, crossStart, *-margin         markers.js:465-533
+    g.root
+      g.clusters                                    createGraph.ts:34
+        g.cluster.<cssClasses>#<domId>[data-look]   clusters.js:25-28
+          rect (first child)
+          g.cluster-label
+      g.edges.edgePaths                             createGraph.ts:35 (class "edges edgePaths")
+        path#<id>-<edgeId>[data-look][data-edge]    edges.js:857-901
+      g.edgeLabels                                  createGraph.ts:36
+        g.edgeLabel                                 edges.js:81
+          g.label[data-id]                          edges.js:84
+            foreignObject (HTML) | g > rect.background + text (SVG)
+        g.edgeTerminals > g.inner                   edges.js:142-143 (terminal labels only)
+      g.nodes                                       createGraph.ts:37, in data4Layout.nodes order
+        [a (svg:a xlink:href, target)]              nodes.ts:44-52 (linked nodes only)
+          g.node.<cssClasses>#<domId>[data-look]    util.ts:69-72; nodes.ts:55
+            rect.basic.label-container (classic and neo)   drawRect.ts:51-55
+            g.label                                 util.ts:75-78
+    [marker clones for coloured linkStyle]          edgeMarker.ts:129 (after g.root)
+  defs#<id>-drop-shadow                             insertLookDefs.ts:32-46
+  defs#<id>-drop-shadow-small                       insertLookDefs.ts:47
+  [linearGradient#<id>-gradient]                    insertLookDefs.ts:53-72 (useGradient only)
+  [text.flowchartTitleText]                         utils.ts:806-812
+```
+
+Order notes:
+- Inside `g.root`, the order is fixed by creation (clusters, edgePaths, edgeLabels, nodes), whatever the phase that fills them.
+- Inside `g.nodes`, nodes follow `data4Layout.nodes` order. Each shape's `g` is created before the first `await` (`shapes/util.ts:69-75`, `drawRect.ts:16-19`). Read from code, not run.
+- Inside `g.clusters`, ELK paint order: groups by depth, outer first (`elk/render.ts:765-`).
+
+## 13. classDef, class, style, linkStyle and `:::` (both looks)
+
+Grammar and DB:
+
+| Statement | Grammar | DB | Stored |
+|---|---|---|---|
+| `classDef N a:b,c:d` | `flow.jison:532-533` | `addClass` (`flowDb.ts:415-440`): splits on `,` and `;`. Entries containing `color` also go to `textStyles`, with `fill` replaced by `bgFill` | `classes` Map (`flowDb.ts:610-612`) |
+| `class a,b N` | `flow.jison:535-538` | `setClass` (`flowDb.ts:471-486`) | `vertex.classes`, `edge.classes`, `subGraph.classes` |
+| `A:::N` | `flow.jison:428` | `setClass` | same |
+| `style A a:b` | `flow.jison:557-558` | `addVertex(id, undefined, undefined, styles)` (`flowDb.ts:216-218`) | `vertex.styles` |
+| `linkStyle N a:b` | `flow.jison:564-565` | `updateLink` (`flowDb.ts:391-412`): `edges[N].style`; appends `fill:none` if no `fill` | `edge.style` |
+| `linkStyle default a:b` | `flow.jison:562-563` | `updateLink`: `defaultStyle` (`flowDb.ts:400-401`), no `fill:none` | `edges.defaultStyle` |
+
+Placement:
+
+| Source | Element | Mechanism | Lines | Precedence |
+|---|---|---|---|---|
+| classDef, node | basic rect (htmlLabels off), or `> *` (on) | CSS `.N rect/...` with `!important` | `mermaidAPI.ts:163-177` | Beats `.node rect` (`styles.ts:162-170`) and N2 (N2 has no `!important`) |
+| classDef, node | basic rect `style` | `styles2String` nodeStyles, each with ` !important` | `handDrawnShapeStyles.ts:75-104`; `drawRect.ts:16-17`, `:55` | Inline `!important` |
+| classDef, node | `g.label` style (label keys) | labelStyles, each with ` !important` | `shapes/util.ts:75-78`; `handDrawnShapeStyles.ts:53-74` | Inline |
+| classDef, node text | SVG text `style` (`color` to `fill`); HTML `span` and `div` style | | `createText.ts:382-387`, `:55-60` | Inline |
+| classDef with color, SVG labels | `.N tspan { fill: ... !important }` | | `mermaidAPI.ts:179-186` | CSS `!important` |
+| `style A ...` | from `node.cssStyles` | `compileStyles` order: classes, then `cssStyles`, then label style, last wins (`handDrawnShapeStyles.ts:31-42`) | | Inline `!important` beats stylesheet `!important` |
+| `class N` on a node | node `g` class; compiled styles | `flowDb.ts:1063`, `:1074`, `:1105-1117` | | |
+| `classDef default` | new vertices: compiled styles include `default` and `node` (`flowDb.ts:1073`); `cssClasses` starts `default` (`:1074`). Existing nodes do not (`:1061-1063`) | `.default rect` CSS | | |
+| linkStyle N | path `style`: class styles, then edge styles, each written twice (`edges.js:850-856`) | inline, non-`!important` | `edges.js:857-868` | Beats `.flowchart-link` |
+| linkStyle `stroke:X` | marker clone with `stroke` (and `fill` for filled arrows), id `<orig>_<colorId>` (`edgeMarker.ts:103-134`) | presentation attributes | | |
+| `class e1 N` (edge) | path class gets N (`edges.js:842-844`, `:863-865`); compiled styles in path style (`edges.js:646-651`, `:850-856`) | inline | | `.N path` cannot match the path itself |
+| Stroke from classDef on an edge | `strokeColor` read from the path style (`edges.js:871`) | recolours the marker | | |
+| `click` / `clickable` | `setClass(clickable)` (`flowDb.ts:561`, `:579`) | `.node.clickable` (`styles.ts:184-186`) | | |
+
+Other notes:
+- `isLabelStyle` filtering in `insertEdge` (`edges.js:646-651`) is a no-op for arrays (for-in gives indices), so label keys from classes reach the path style too.
+- A `stroke-dasharray` in the path style overrides the neo prefix (section 8.2).
+
+## 14. Label colour (both looks)
+
+| Label | htmlLabels false (SVG) | htmlLabels true (default) |
+|---|---|---|
+| Node text | `text` style: `color` becomes `fill`; `stroke`, `stroke-width`, `fill` removed (`createText.ts:382-387`). `g.label` also has `color: ... !important` (`shapes/util.ts:75-78`) | `span` and `div` style with `color` (`createText.ts:55-60`, `:352`) |
+| Node background | none (`addSvgBackground` = `!!node.icon \|\| !!node.img`, `shapes/util.ts:88`) | none |
+| Edge text | `text` style: `color` to `fill` (`createText.ts:404-409`) | `span`/`div` style (`createText.ts:55-60`) |
+| Edge background | `rect.background` style only from `background:` (`createText.ts:394-401`); CSS `.edgeLabel rect` (`styles.ts:214-218`) | `div.labelBkg` (`createText.ts:69-71`), CSS `.labelBkg` (`styles.ts:223-226`) |
+| Default text colour | `.label text,span` (`styles.ts:157-160`) | same, applies to `span` |
+
+The `stroke:` rename in `createText.ts:378-380` leaves a `lineColor:` declaration in the style attribute. It is unreachable for flowchart nodes: `styles2String` puts only label keys in `labelStyles` (`handDrawnShapeStyles.ts:82-86`). For the same reason the `fill:` removal (`createText.ts:382-387`) does nothing for flowchart nodes.
+
+## 15. Theme variables used by the flowchart
+
+Values: JS theme modules run with khroma 2.1.0, no user overrides. `darkMode` is never set by the theme files (`theme-redux-dark-color.js:108` only reads it), so the light branches run in both themes. Only an override can set it (`config.type.ts:256`).
+
+| Variable | Used by | Look | redux-color | redux-dark-color | Rust (`crates/ferrigura-model/src/theme/`) |
+|---|---|---|---|---|---|
+| `useGradient` | `insertLookDefs.ts:26,49`; N2, N4, N7, N9 | neo | `false` | `false` | both files |
+| `gradientStart`, `gradientStop` | `insertLookDefs.ts:26,65,71` | neo (gradient only) | `#0042eb`, `#eb0042` | same | both |
+| `dropShadow` | N2, N5, N7 (`styles.ts:122,135,145,154,159`) | neo | `url(#drop-shadow)` | same | both |
+| `nodeBorder` | `styles.ts:117,168`; N2, N4, N6, N7, N9; `handDrawnShapeStyles.ts:110` (handDrawn) | both | `#28253D` | `#FFFFFF` | both |
+| `radius` | `roundedRect.ts:10` (round nodes) | both | `12` | `12` | both |
+| `strokeWidth` | `styles.ts:80,131,169,201`; `markers.js` (not flowchart) | both | `2` | `2` | both |
+| `clusterBorder` | `styles.ts:230,247,253`; `clusters.js:19`; `collapsedGroup.ts:41` | both (classic cluster rect; collapsed node in both looks) | `#BDBCCC` | `#BDBCCC` | both |
+| `clusterBkg` | `styles.ts:229`; `clusters.js:19`; `collapsedGroup.ts:40` | both | `#F9F9FB` | `#1E1A2E` | both |
+| `flowContainerStroke`, `secondaryBorderColor` | `collapsedGroup.ts:50` | collapsed nodes | `hsl(-120, 0%, 70%)` | `hsl(180, 0%, 18.3529411765%)` | both |
+| `borderColorArray` | `styles.ts:59`; `clusters.js:33`; `colorThemeGate.ts:86-96` | both (palette) | 12 colours from `#E879F9` | 12 colours, same | both |
+| `bkgColorArray` | `styles.ts:60,102-105` | both (palette fill) | 12 colours from `#FDF4FF` | `[]` | both; dark sets `text_array(&[])` (`redux_dark_color.rs:120`) |
+| `THEME_COLOR_LIMIT` | `styles.ts:58` via `colorThemeGate.ts:86-96` (only without palette) | both | `12` | `12` | both |
+| `fontFamily` | `styles.ts:144,262`; `:43,108` | both | `"Recursive Variable", arial, sans-serif` | same | both |
+| `fontSize` | `styles.ts:44,109` | both | `14px` | `14px` | both |
+| `textColor` | `styles.ts:145,158-159,274`; `:45` | both | `#28253D` | `#ccc` | both |
+| `nodeTextColor` | `styles.ts:145,158-159` | both | `#28253D` | `#e0dfdf` | both |
+| `titleColor` | `styles.ts:148,151,235,239` | both | `#000000` | `rgb(222.9999999999, 223.6666666666, 223.9999999999)` | both |
+| `mainBkg` | `styles.ts:167`; `handDrawnShapeStyles.ts:110` (handDrawn) | both | `#ffffff` | `#111113` | both |
+| `lineColor` | `styles.ts:99-105`, `:190-192`, `:200` (dead), `:204-207` | both | `#000000` | `#cccccc` | both |
+| `arrowheadColor` | `styles.ts:196` (dead rule only) | none | `#000000` | `#cccccc` | both |
+| `edgeLabelBackground` | `styles.ts:210-217`, `:224`, `:283-291` | both | `hsl(-120, 0%, 80%)` | `hsl(180, 1.5873015873%, 28.3529411765%)` | both |
+| `border2` | `styles.ts:265` (tooltip, dead) | none | `hsl(0, 0%, 90%)` | `rgba(255, 255, 255, 0.25)` | both |
+| `tertiaryColor` | `styles.ts:264` (tooltip, dead) | none | `#ffffff` | `hsl(20, 1.5873015873%, 12.3529411765%)` | both |
+| `errorBkgColor`, `errorTextColor` | `styles.ts:72,75-76` (error only) | none | `#ffffff`, `#000000` | `hsl(20, ...)`, `rgb(...)` | both |
+| `nodeShadow` | state shapes only | none | `true` | `true` | both |
+| `primaryBorderColor`, `compositeTitleBackground` | declared in option types (`styles.ts:23-24`), not read | none | | | both |
+
+Non-theme inputs: `config.theme` (palette gating `colorThemeGate.ts:17,37-38`; flood colour `insertLookDefs.ts:30`), `config.look` (`styles.ts:54`; `data-look`), `config.handDrawnSeed` (handDrawn only), `config.flowchart.*` (section 16).
+
+Rust notes (from reading the Rust theme files):
+- Key coverage: every key above appears in both `crates/ferrigura-model/src/theme/redux_color.rs` and `redux_dark_color.rs` (grep). Values not compared.
+- Palette gating uses the requested name in JS (`colorThemeGate.ts:17`). Rust resolves any name to one of two themes (`theme/mod.rs:65-72`, `name.ends_with("dark")`).
+- Flood colour uses `includes('dark')` on the requested name (`insertLookDefs.ts:30`).
+- `redux_dark_color.rs:5-6` documents that `darkMode` is unset in the theme.
+
+## 16. Khroma functions and config defaults
+
+### 16.1 `fade` (`styles.ts:129-139`)
+
+```
+fade(color, opacity) = khroma.rgba(channel(color,'r'), channel(color,'g'), channel(color,'b'), opacity)
+```
+
+- `channel(c, k)` = `round(Color.parse(c)[k])`, `round(n) = Math.round(n*1e10)/1e10` (`khroma/dist/methods/channel.js`, `utils/lang.js:9-10`). Not an integer; the alpha of `c` is dropped.
+- `Color.parse` accepts hex, rgb(a), hsl(a) and keyword, else throws `Unsupported color format` (`color/index.js`). So a non-colour `edgeLabelBackground` (e.g. `var(--x)`) makes the JS render throw.
+- `rgba(r, g, b, a)` clamps, then `Color.stringify`; with `a < 1` it returns `rgba(${round(r)}, ${round(g)}, ${round(b)}, ${round(a)})` (`color/rgb.js:24-32`).
+
+Computed with khroma 2.1.0:
+
+| Input | `fade(input, 0.5)` |
+|---|---|
+| `hsl(-120, 0%, 80%)` (redux-color `edgeLabelBackground`) | `rgba(204, 204, 204, 0.5)` |
+| `hsl(180, 1.5873015873%, 28.3529411765%)` (redux-dark-color) | `rgba(71.1523809525, 73.4476190477, 73.4476190477, 0.5)` |
+| `#1E1A2E` | `rgba(30, 26, 46, 0.5)` |
+
+`darken`/`lighten` appear only in theme derivations, and only with `darkMode` set (`theme-redux-color.js:136-138`). The redux-dark `border2` (`theme-redux-dark-color.js:27`) is an `rgba` value with alpha below 1, returned as written.
+
+The `titleColor` value `rgb(222.9999999999, ...)` shows the 10-digit rounding. Rust `khroma.rs` `rgba` (`:1024`) and `stringify` (`:808`) must reproduce it if the strings are compared.
+
+### 16.2 Config defaults
+
+| Key | Effective default | Source |
+|---|---|---|
+| `look` (global) | `classic` | `config.schema.yaml:68-70` |
+| `look` (flowchart section) | **`neo`**, and it wins over the global default unless the user sets `look` | `config.schema.yaml:2458-2460`; `config.ts:79-107`; `config.appearance.spec.ts:71-80` |
+| `theme` (global) | `default` | `config.schema.yaml:61-63` |
+| `theme` (flowchart section) | `redux-color` (wins over the global default) | `config.schema.yaml:2455-2457`; `config.appearance.spec.ts:71-80` |
+| `themeVariables` default | the `default` theme's variables, replaced when the flowchart resolves `redux-color` | `defaultConfig.ts:48`; `config.ts:128-137` |
+| `htmlLabels` | `undefined`, effectively `true` | `defaultConfig.ts:24`; `config.ts:324-326`; `shapes/util.ts:61` |
+| `flowchart.diagramPadding` | `8` | `config.schema.yaml:2480-2482`; `flowRenderer-v3-unified.ts:44` |
+| `flowchart.titleTopMargin` | `25` | `config.schema.yaml:2461-2463`; `flowRenderer-v3-unified.ts:48` |
+| `flowchart.padding` (node) | `8` | `flowDb.ts:1071` |
+| `flowchart.useMaxWidth` | `false` in the render (`flowRenderer-v3-unified.ts:51`); schema default `false` at `config.schema.yaml:1234-1236`, `:2623-2625`. Inheritance not traced | |
+| `fontSize` (global) | `16` in the schema (`config.schema.yaml:443-445`). The CSS uses `themeVariables.fontSize` (14px), so the global value does not reach flowchart CSS (not traced further) | |
+| `fontFamily` | a top-level value given to `initialize` moves into `themeVariables.fontFamily` (`mermaidAPI.ts:699-704`), so it reaches the CSS. The top-level `:root` var does not (section 1.7) | |
+
+## 17. Dead, partial and surprising rules
+
+| Item | Lines | What happens |
+|---|---|---|
+| N1 `.node .neo-node` | `styles.ts:116-118` | Dead: no producer |
+| N9 `.icon` under `.icon-shape` | `styles.ts:152-155` | Dead by grep: no class `icon` producer in `rendering-util` |
+| N10 `.icon-neo path` | `styles.ts:157-160` | Dead: no producer |
+| N6 `.neo-line path` | `styles.ts:138-141` | Not reachable from flowchart: produced only by class dividers (`classBox.ts:218,235`) |
+| `-drop-shadow-small` def | `insertLookDefs.ts:47` | Unreferenced for flowchart (only state start and end) |
+| Gradient def without `useGradient` | `insertLookDefs.ts:49-51` | Not emitted |
+| `.arrowheadPath` | `styles.ts:195-197` | Dead: no producer. `arrowheadStyle` (`flowDb.ts:1332`, copied at `elk/render.ts:2753-2756`) is never read for rendering |
+| `.edgePaths .path` | `styles.ts:199-202` | Dead: no `path` class on edge paths |
+| `div.mermaidTooltip` | `styles.ts:257-269` | Never matches: the tooltip is appended to `body` (`svgDrawCommon.ts:140-145`). Its inline styles still apply |
+| `.root .anchor path` | `styles.ts:189-193` | Partial: `anchor.ts:36` emits a `circle`, not a `path` |
+| `:root { --mermaid-font-family }` | `mermaidAPI.ts:152-154` | Dead after namespacing (section 2.3). Only `git/styles.js:130` reads it |
+| `rect.text` | `styles.ts:277-280` | Only for shape `text` (`shapes/text.ts:21`) |
+| `style` on a subgraph id | `flow.jison:557-558`; `flowDb.ts:176-196`; `:1061-1063`; `:1281-1287`; `clusters.js:100` | The `style` creates a vertex with the subgraph id. The vertex loop then sets `cssStyles` (so the subgraph's fill takes effect) and replaces `cssCompiledStyles` and `cssClasses` with the vertex's own. Class styles on that subgraph are lost unless the `class` statement ran after the vertex existed (`setClass` pushes to the vertex only if it exists, `flowDb.ts:474-476`). Order-dependent, not run |
+| `background-color` in classDef textStyles | `mermaidAPI.ts:184` | Becomes `background-fill`, which is not a property |
+| `bgFill` in `addClass` | `flowDb.ts:431-433` | The replaced string goes only into `textStyles`, and only for entries containing both `color` and `fill` |
+| Duplicate class tokens on edges | `flowDb.ts:1322-1324`; `edges.js:842-844` | Class string repeats `edge-thickness-normal edge-pattern-solid` |
+| Duplicate edge styles on path | `edges.js:853-856` | Each edge style appears twice in the `style` attribute |
+| `isLabelStyle` filter in `insertEdge` | `edges.js:646-651` | No-op for arrays |
+| `classDef default` for existing nodes | `flowDb.ts:1061-1063` | Not applied to nodes that already exist during `getData` |
+| `.labelBkg` contains `// background-color:` | `styles.ts:225` | Not CSS; dropped by stylis (verified) |
+| `.node .katex path` hard-coded `#000` | `styles.ts:175-179` | Not themed |
+| `.node circle .state-start` hard-coded `#000000` | `styles.ts:148-150` | State only |
+
+## 18. Trickiest rules (neo first)
+
+1. **Default rectangles grow 8 px in height under neo** (`squareRect.ts:9-10`: Y 12 vs 8). Round nodes do not change (`roundedRect.ts`). Stadium, cylinder, subroutine and circles change a lot (section 7.2).
+2. **Neo cluster stroke is `nodeBorder` (N2), but the redux palette beats it** (`[data-look][data-color-id].cluster:not(.swimlane) rect`, (0,4,1) vs (0,2,1)). With the default theme and neo, the cluster border is the palette colour.
+3. **Neo edges hide the ends of the line with an inline dash.** `0 oS (len-oS-oE) oE` (`edges.js:883-891`); `oS`/`oE` come from `markerOffsets2` (4 for point, 12.5 for cross and circle). Under neo, dashed and dotted are the same (2 on, 2 off).
+4. **Neo edges reference `-margin` markers**, with different viewBox, refX and marker size (section 8.1). Animated edges fall back to the classic markers and class dash.
+5. **Drop shadows** come from N2, N5 and N7 (`url(#<id>-drop-shadow)`). The defs are emitted for every look. Dark themes flood white at 0.06 opacity.
+6. **Neo rules that match nothing** (N1, N9, N10) are still in the CSS; the port can drop them or keep them, but they cannot change output.
+
+## 19. Port implications (neo first)
+
+| Topic | Recommendation |
+|---|---|
+| Look selection | Resolve `look` the way `resolveAppearance` does (diagram section, then global). Default `neo` for flowcharts |
+| Neo geometry | Implement section 7 as a table keyed by shape and look. A single `look` branch in the padding code is not enough |
+| Edge dash | Implement `generateDashArray` and the inline prefix exactly. Keep the prefix before any existing `style` text (section 8.2) |
+| Edge markers | Emit the `-margin` ids and geometry by default. Keep the coloured clone ids (`_<colorId>`) |
+| Defs | Always emit the two drop-shadow filters (as the reference does), emit the gradient only with `useGradient`. Keep the flood colour rule |
+| CSS | Emit the neo rules N2, N4, N5, N7 with the same specificity. N1, N9, N10 can be omitted (no output effect) |
+| Colour strings | ADR 0007: `var(--token)` plus attribute fallback. Keep the JS literal value per token |
+| Element order | Section 12. Markers are direct children of the placeholder `g`, not in `defs` |
+| Shape classes | Keep `node`, `cluster`, `default` and user classes in the same order (`util.ts:249-250`, `flowDb.ts:1063-1074`) |
+
+## 20. Open questions and unverified items
+
+| # | Question | Status |
+|---|---|---|
+| 1 | Does a plain flowchart really render with `neo`? | Asserted by `config.appearance.spec.ts:71-80`; derived from `config.ts:79-107` and the schema. Not run |
+| 2 | Visual effect of the margin markers and the neo dash (where the tip lands, how far the stroke stops short) | From the numbers only. Not rendered |
+| 3 | Is the `style`-on-subgraph overwrite intended? | Read from code (section 17) |
+| 4 | Should the palette follow the requested or the resolved theme name? | Decision needed (section 15) |
+| 5 | Is the `Color.parse` throw for non-colour `edgeLabelBackground` a behaviour to keep? | From khroma source, not run |
+| 6 | `.icon` class (N9): does `getIconSVG` add a class `icon` on the icon path? | Not traced; grep found no producer in `rendering-util` |
+| 7 | Hexagon width adjustment (`hexagon.ts:14-16`) under neo | Not traced beyond the lines shown |
+| 8 | Drop-shadow filter region: only `height`/`width` are set (130%, 150%), `x`/`y` default | Attributes as written. Clipping not checked |
+| 9 | `DOMPurify` attribute lists (`DOMPURIFY_ATTR`, `DOMPURIFY_TAGS`) and `sanitizeCss` (`mermaidAPI.ts:131`) | Not read |
+| 10 | Effect of `applyElkLineJumps` on the neo dash (section 8.2) | Read from `lineJump.ts:729-759`; not run |
+| 11 | Node DOM order with `svg:a` (linked nodes) | From code, not run |
+| 12 | Whether `themeCSS` is ever scoped differently | Namespaced the same way (`mermaidAPI.ts:189-206`) |
+| 13 | JS vs Rust `number()` for very small or very large values | Section 11; not relevant at normal sizes |

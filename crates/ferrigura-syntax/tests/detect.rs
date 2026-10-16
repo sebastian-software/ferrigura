@@ -1,13 +1,18 @@
 //! Detection of the diagram type from the start of the text, as the detectors of the reference
-//! `pieDetector.ts` and `infoDetector.ts` decide it.
+//! `pieDetector.ts`, `infoDetector.ts` and `flowDetector-v2.ts` decide it.
 
 use ferrigura_syntax::{Diagram, DiagramType, detect, parse};
 
 #[test]
-fn detects_pie_and_info_at_the_first_content_line() {
+fn detects_pie_info_and_flowchart_at_the_first_content_line() {
     assert_eq!(detect("pie\n\"a\": 1"), Some(DiagramType::Pie));
     assert_eq!(detect("  \n\tinfo"), Some(DiagramType::Info));
-    assert_eq!(detect("flowchart LR\n  a-->b"), None);
+    assert_eq!(
+        detect("flowchart LR\n  a-->b"),
+        Some(DiagramType::Flowchart)
+    );
+    assert_eq!(detect("graph TD\n  a-->b"), Some(DiagramType::Flowchart));
+    assert_eq!(detect("sequenceDiagram\n  A->>B: hi"), None);
 }
 
 #[test]
@@ -31,6 +36,10 @@ fn an_unclosed_directive_is_not_skipped() {
 fn parse_dispatches_on_the_detected_type() {
     assert!(matches!(parse("pie\n\"a\": 1"), Ok(Diagram::Pie(_))));
     assert!(matches!(parse("info title T"), Ok(Diagram::Info(_))));
-    let error = parse("flowchart LR").expect_err("no diagram type matches");
+    assert!(matches!(
+        parse("flowchart LR\n  a-->b"),
+        Ok(Diagram::Flowchart(_))
+    ));
+    let error = parse("sequenceDiagram").expect_err("no diagram type matches");
     assert_eq!((error.line, error.column), (1, 1));
 }
