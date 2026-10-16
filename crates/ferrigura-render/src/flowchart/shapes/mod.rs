@@ -16,6 +16,7 @@ mod circle;
 mod collapsed_group;
 mod cylinder;
 mod decorated;
+mod icon;
 mod intersect;
 mod person;
 mod polygon;
@@ -156,9 +157,15 @@ pub fn node_label(
     let default_width = config.flowchart.wrapping_width;
     // The icon and image handlers set the node's width before they lay out the label: the icon
     // size or the image's width, at least the wrapping width.
-    let wrapping_width = width
-        .or_else(|| node.width.filter(|width| *width != 0.0))
-        .unwrap_or(default_width);
+    let wrapping_width = match kind {
+        Kind::Icon | Kind::IconCircle | Kind::IconRounded | Kind::IconSquare => {
+            icon::label_width(node, default_width)
+        }
+        Kind::ImageSquare => icon::image_label_width(node, default_width)?,
+        _ => width
+            .or_else(|| node.width.filter(|width| *width != 0.0))
+            .unwrap_or(default_width),
+    };
     // The label's own style declarations: the wrap sees them, as `createText` does for nodes.
     let styles = util::styles2string(node);
     let declarations: Vec<String> = styles
@@ -287,6 +294,11 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::WindowPane => decorated::window_pane(input),
         Kind::TrapezoidalPentagon => polygon::trapezoidal_pentagon(input),
         Kind::Triangle => polygon::triangle(input),
+        Kind::Icon => icon::icon(input),
+        Kind::IconSquare => icon::icon_square(input),
+        Kind::IconRounded => icon::icon_rounded(input),
+        Kind::IconCircle => icon::icon_circle(input),
+        Kind::ImageSquare => icon::image_square(input)?,
     };
     // The node group's box is the shape's and the label's together. The label group's box is the
     // label's text box moved by the label's offset.

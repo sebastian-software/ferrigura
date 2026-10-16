@@ -48,6 +48,11 @@ pub(super) enum Kind {
     WaveEdgedRectangle,
     WaveRectangle,
     WindowPane,
+    Icon,
+    IconCircle,
+    IconRounded,
+    IconSquare,
+    ImageSquare,
 }
 
 /// The shape a name stands for, with `rect` taken as `roundedRect` when it has both radii
@@ -105,6 +110,11 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "doc" | "document" => Kind::WaveEdgedRectangle,
         "flag" | "paper-tape" => Kind::WaveRectangle,
         "win-pane" | "internal-storage" | "window-pane" => Kind::WindowPane,
+        "icon" => Kind::Icon,
+        "iconCircle" => Kind::IconCircle,
+        "iconRounded" => Kind::IconRounded,
+        "iconSquare" => Kind::IconSquare,
+        "imageSquare" => Kind::ImageSquare,
         _ => return None,
     })
 }
@@ -141,6 +151,11 @@ impl Kind {
         match self {
             Self::StateStart | Self::StateEnd => "node default".to_owned(),
             Self::LabelRect => "label edgeLabel".to_owned(),
+            // The icon and image handlers pass their own class to `labelHelper`.
+            Self::Icon | Self::IconCircle | Self::IconRounded | Self::IconSquare => {
+                "icon-shape default".to_owned()
+            }
+            Self::ImageSquare => "image-shape default".to_owned(),
             _ => util::node_classes(node),
         }
     }
