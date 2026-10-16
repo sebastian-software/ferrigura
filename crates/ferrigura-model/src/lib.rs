@@ -10,6 +10,7 @@
 #![warn(missing_docs)]
 
 pub mod config;
+pub mod er;
 pub mod flowchart;
 pub mod info;
 pub mod pie;
