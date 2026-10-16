@@ -294,28 +294,35 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 - **Two generator and reader bugs, both fixed.** The melk reader returned no default for `new ElkPadding(12)`, so the root padding was absent; it now reads the all-sides `ElkPadding` and `ElkMargin` constructors. The enum generator let a nested `SelfHyperLoopLabels.Alignment` replace the core `Alignment`, which lost `AUTOMATIC`; a top-level enum in its own file now wins. Only that enum changed in the generated file.
 - **JSON numbers.** serde_json's default float parser is not correctly rounded. The inputs and the reference outputs are read through it, so both are read with `float_roundtrip`, which makes them exact as JavaScript reads them. Until that was enabled, the differential test reported differences of about 1e-14 on cases that were otherwise identical. The one-ulp Brandes & Koepf size in `state-diagram-v2__elk-start-end-edge-centering__0` had the same cause, a width of `14.013293266296387` read one ulp away.
 
+- **Unset options read their layered defaults.** The rule was probed through Node elkjs 0.9.3. An option that targets `parents` takes the `supports` value of Layered.melk when it is unset: an unset `edgeRouting` behaves as ORTHOGONAL. An option that targets `nodes` keeps its melk default: an unset `portAlignment.default` behaves as DISTRIBUTED, not the layered JUSTIFIED. The registry lacked `option ^default` (`portAlignment.default`, `nodeFlexibility.default`), and the generator reads it now. Compound nodes with node-target options are not probed.
+- **The layer sweep's first and second try share one flag.** Java declares `SECOND_TRY_WITH_INITIAL_ORDER` with the id `firstTryWithInitialOrder`, the id of `FIRST_TRY_WITH_INITIAL_ORDER`. Graph properties are keyed by id, so the second try never starts, and the port keeps one flag. This is what the model order divergence was; labels and the greedy switch were not the cause.
+- **Trace names are Java's designations.** `LEdge.toString` writes `e_<designation>`, and the designation is the ELK edge's id with its containers' ids in front (`ElkGraphTransformer.getIdentifier`): `e_root.e22` for a root edge.
+- **The trace test checks every case it can lay out.** It skipped a case that failed with the trace enabled, so a missing processor name hid the case. It now fails on such a case.
+
 ### Coverage
 
-- Corpus: 132 of 148 cases pass the driver. The other 16 report `Unsupported`: 12 have a nested graph inside a compound layout, 3 are non-layered algorithms (`elk.box` twice, `elk.rectpacking`), and 1 needs explicit ELK ports (`synthetic__self-loops-fixed-side-opposing`).
-- All 132 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 132). All 132 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 132).
-- Crate tests: 168 unit tests and the integration tests pass; the differential and trace diagnostics stay ignored; `clippy -D warnings` is clean, and `cargo test --workspace` passes.
+- Corpus: 139 of 155 cases pass the driver. The other 16 report `Unsupported`: 12 have a nested graph inside a compound layout, 3 are non-layered algorithms (`elk.box` twice, `elk.rectpacking`), and 1 needs explicit ELK ports (`synthetic__self-loops-fixed-side-opposing`).
+- All 139 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 139). All 139 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 139).
+- Random flat graphs: 1200 of 1200 match elkjs in coordinates and in the trace with logs. They come from `tools/random-graphs.ts` (seeded, all four directions, the model order strategies, both cycle breakers, labels, self-loops); the ignored test `random_graphs_match_elkjs` runs them.
+- Crate tests: 168 unit tests and the integration tests pass; the differential and trace diagnostics stay ignored; `clippy -D warnings` is clean.
 - Mermaid never sets the option that turns off the component split, so the synthetic case `synthetic__components-not-separated` covers it on its own.
 
 ### Done since the first checkpoint
 
-- Unset options read their layered defaults. An option that targets parents takes the `supports` value of Layered.melk (`edgeRouting` is ORTHOGONAL when unset); an option that targets nodes keeps its melk default (`portAlignment.default` is DISTRIBUTED when unset, probed through Node elkjs). The generator reads `option ^default`, which the registry lacked before.
+- Unset options read their layered defaults (see Findings).
 - The two-sided greedy switch in the layer sweep. It settles the nine several-components cases, and the eight that need it all match.
 - The greedy cycle breaker, which the default strategy and Mermaid's `legacy` preset reach. It is checked on the synthetic case `synthetic__greedy-cycles`.
+- `separateConnectedComponents` reads its layered default; its synthetic case `synthetic__components-not-separated` matches.
+- The model order fix, the marked-edge trace names, and the random graph comparison, each with its corpus case first (`synthetic__model-order-first-try-*`, `synthetic__marked-edges-root-names`).
 
 ### Known gaps outside the corpus
 
-- Model order with edge labels: the coordinates differ whether the greedy switch is on or off. No corpus case has both, so the gap is open.
-- The BK "Marked edges" log names root-level edges `e_<id>`; elkjs writes `e_root.<id>`. No corpus case with a marked edge hits it.
-- The one-sided greedy switch (`GreedySwitchType.ONE_SIDED`) is Unsupported; no default or corpus case needs it.
+- The one-sided greedy switch (`GreedySwitchType.ONE_SIDED`) is Unsupported. No default, corpus case or random graph reaches it.
+- The `ports` a node gets from the input are not read by the importer (item 2 below); the port model order of Java, `CONSIDER_MODEL_ORDER_PORT_MODEL_ORDER`, is not read for those ports either.
 
 ### Next, in order
 
-1. Nested graphs (12 left): a nested graph inside a compound layout, which needs the hierarchical ports and the cross-hierarchy edges.
+1. Nested graphs inside a compound layout (12 cases, `hierarchyHandling: INCLUDE_CHILDREN` with a nested child): the hierarchical ports and the cross-hierarchy edges.
 2. Explicit ELK ports (1): the importer does not read them, so the opposing self loops of `synthetic__self-loops-fixed-side-opposing` are not checked yet.
 3. Mirror node labels for LEFT and UP, with a synthetic case per direction through Node elkjs.
 4. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
