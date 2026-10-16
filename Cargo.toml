@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/ferrigura-model", "crates/ferrigura-syntax"]
+members = ["crates/ferrigura-model", "crates/ferrigura-syntax", "crates/ferrigura-text"]
 resolver = "3"
 
 [workspace.package]
