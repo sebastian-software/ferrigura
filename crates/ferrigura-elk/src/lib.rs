@@ -9,6 +9,8 @@
 //! Modules are named after the Java packages they port. Files keep the Eclipse
 //! Public License 2.0 notice of the original sources; see `LICENSE` and `NOTICE.md`.
 
+use std::collections::HashMap;
+
 pub mod common;
 pub mod core;
 pub mod error;
@@ -38,14 +40,17 @@ pub fn layout(graph: &json::JsonNode, logging: bool) -> Result<Layout, LayoutErr
     output.width = Some(elk.shape.width);
     output.height = Some(elk.shape.height);
     write_level(&mut output, &elk);
+    let mut edges = HashMap::new();
+    collect_edges(&elk, &mut edges);
+    write_edges(&mut output, &edges);
     Ok(Layout {
         graph: output,
         trace,
     })
 }
 
-/// Writes the layout of one level into its JSON: each child with its position, size and labels,
-/// then the child's own level, and the level's edges.
+/// Writes the layout of the children of one level into their JSON: each child with its position,
+/// size and labels, then the child's own level.
 fn write_level(output: &mut json::JsonNode, elk: &graph::ElkNode) {
     for (json, node) in output.children.iter_mut().zip(elk.children.iter()) {
         json.x = Some(node.shape.x);
@@ -63,8 +68,25 @@ fn write_level(output: &mut json::JsonNode, elk: &graph::ElkNode) {
         }
         write_level(json, node);
     }
-    // Each edge's route: one section, `<id>_s<index>`, with its shapes as the endpoint ids.
-    for (json, edge) in output.edges.iter_mut().zip(elk.edges.iter()) {
+}
+
+/// Every edge of the graph, by id, from the level it was moved to.
+fn collect_edges<'a>(node: &'a graph::ElkNode, edges: &mut HashMap<&'a str, &'a graph::ElkEdge>) {
+    for edge in &node.edges {
+        edges.insert(edge.id.as_str(), edge);
+    }
+    for child in &node.children {
+        collect_edges(child, edges);
+    }
+}
+
+/// Writes the edges' routes into the JSON of the level where the input has each edge, found by id.
+fn write_edges(output: &mut json::JsonNode, edges: &HashMap<&str, &graph::ElkEdge>) {
+    for json in output.edges.iter_mut() {
+        let Some(edge) = edges.get(json.id.as_str()) else {
+            continue;
+        };
+        // Each edge's route: one section, `<id>_s<index>`, with its shapes as the endpoint ids.
         json.sections = edge
             .sections
             .iter()
@@ -101,5 +123,8 @@ fn write_level(output: &mut json::JsonNode, elk: &graph::ElkNode) {
                 json_label.height = Some(label.shape.height);
             }
         }
+    }
+    for child in output.children.iter_mut() {
+        write_edges(child, edges);
     }
 }

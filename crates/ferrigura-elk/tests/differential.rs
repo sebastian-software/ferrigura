@@ -75,6 +75,16 @@ fn corpus_summary() {
     );
 }
 
+/// Every edge below `value`, level by level: the edges a level holds, then the levels of its
+/// children, in document order. Both the input and the output keep each edge at its level.
+fn all_edges(value: &Value) -> Vec<&Value> {
+    let mut edges: Vec<&Value> = value["edges"].as_array().into_iter().flatten().collect();
+    for child in value["children"].as_array().into_iter().flatten() {
+        edges.extend(all_edges(child));
+    }
+    edges
+}
+
 /// Each edge's route as a flat list of numbers: the number of sections, then per section its
 /// start, the number of its bend points and the bend points, and its end.
 fn edge_routes(value: &Value) -> Vec<Vec<f64>> {
@@ -84,10 +94,8 @@ fn edge_routes(value: &Value) -> Vec<Vec<f64>> {
             value["y"].as_f64().unwrap_or(0.0),
         ]
     };
-    value["edges"]
-        .as_array()
+    all_edges(value)
         .into_iter()
-        .flatten()
         .map(|edge| {
             let sections = edge["sections"]
                 .as_array()
@@ -113,10 +121,8 @@ fn edge_routes(value: &Value) -> Vec<Vec<f64>> {
 
 /// Each edge label's box as `[x, y, width, height]`, in the order of the edges and their labels.
 fn label_boxes(value: &Value) -> Vec<[f64; 4]> {
-    value["edges"]
-        .as_array()
+    all_edges(value)
         .into_iter()
-        .flatten()
         .flat_map(|edge| edge["labels"].as_array().into_iter().flatten())
         .map(|label| {
             [

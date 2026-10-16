@@ -6,12 +6,16 @@
 //!
 //! Follows `JsonImporter.xtend` (ELK, `org.eclipse.elk.graph.json`) in its
 //! order: a node takes its identifier, its options, its individual spacings, its
-//! shape, its ports, its labels, and then its children. Edges are read after
-//! all nodes; that part is not ported yet and is reported as unsupported.
+//! shape, its ports, its labels, and then its children. The edges are read
+//! afterwards, level by level in document order: each edge is read where the
+//! input has it, and then moved to the lowest common ancestor of its ends, as
+//! `ElkGraphUtil.updateContainment` does.
 //!
 //! Unknown option keys are ignored, and so are keys whose text does not parse
 //! for their type, as `setOption` does. A key whose type is not ported yet is an
 //! error, so an option is never dropped silently.
+
+use std::collections::HashMap;
 
 use crate::core::data::property::PropertyHolder;
 use crate::core::data::{option_by_suffix, parse_value};
@@ -19,9 +23,89 @@ use crate::error::LayoutError;
 use crate::graph::{ElkEdge, ElkLabel, ElkNode, ElkPort, Shape};
 use crate::json::{JsonEdge, JsonLabel, JsonNode, JsonPort, option_pairs_of};
 
-/// `transformNode` for the root, with no parent.
+/// `transformNode` for the root, with no parent, and then the edges of every level.
 pub fn import_graph(root: &JsonNode) -> Result<ElkNode, LayoutError> {
-    transform_node(root)
+    let mut elk = transform_node(root)?;
+    let mut paths = HashMap::new();
+    index_nodes(&elk, &mut Vec::new(), &mut paths);
+    transform_edges(root, &mut elk, &paths)?;
+    Ok(elk)
+}
+
+/// The path of child indices from the root to each node, by id. A repeated id keeps the first node.
+fn index_nodes(node: &ElkNode, path: &mut Vec<usize>, paths: &mut HashMap<String, Vec<usize>>) {
+    paths.entry(node.id.clone()).or_insert_with(|| path.clone());
+    for (index, child) in node.children.iter().enumerate() {
+        path.push(index);
+        index_nodes(child, path, paths);
+        path.pop();
+    }
+}
+
+/// `transformEdges`: the edges of a JSON node, each moved to its container, then the children's
+/// edges, in document order.
+fn transform_edges(
+    json: &JsonNode,
+    root: &mut ElkNode,
+    paths: &HashMap<String, Vec<usize>>,
+) -> Result<(), LayoutError> {
+    for edge in &json.edges {
+        let elk_edge = transform_edge(edge)?;
+        let container = edge_container(&elk_edge, paths)?;
+        node_at_mut(root, &container)?.edges.push(elk_edge);
+    }
+    for child in &json.children {
+        transform_edges(child, root, paths)?;
+    }
+    Ok(())
+}
+
+/// `ElkGraphUtil.findBestEdgeContainment` for an edge with one source and one target: the parent of
+/// the two when they are siblings, the source or the target when one contains the other, and the
+/// lowest common ancestor otherwise. A self loop is contained by the node's parent.
+fn edge_container(
+    edge: &ElkEdge,
+    paths: &HashMap<String, Vec<usize>>,
+) -> Result<Vec<usize>, LayoutError> {
+    let (Some(source), Some(target)) = (edge.sources.first(), edge.targets.first()) else {
+        return Err(LayoutError::Unsupported(format!(
+            "edge {} without a source or a target",
+            edge.id
+        )));
+    };
+    let (Some(source_path), Some(target_path)) = (paths.get(source), paths.get(target)) else {
+        return Err(LayoutError::Unsupported(format!(
+            "edge {} to a node outside the graph",
+            edge.id
+        )));
+    };
+    if source_path == target_path {
+        let mut parent = source_path.clone();
+        if parent.pop().is_none() {
+            return Err(LayoutError::Unsupported(format!(
+                "a self loop on the root, edge {}",
+                edge.id
+            )));
+        }
+        return Ok(parent);
+    }
+    let common = source_path
+        .iter()
+        .zip(target_path)
+        .take_while(|(a, b)| a == b)
+        .count();
+    Ok(source_path[..common].to_vec())
+}
+
+/// The node at a path of child indices from `root`.
+fn node_at_mut<'a>(root: &'a mut ElkNode, path: &[usize]) -> Result<&'a mut ElkNode, LayoutError> {
+    let mut node = root;
+    for &index in path {
+        node = node.children.get_mut(index).ok_or_else(|| {
+            LayoutError::Format("an edge container outside the graph".to_string())
+        })?;
+    }
+    Ok(node)
 }
 
 fn transform_node(json: &JsonNode) -> Result<ElkNode, LayoutError> {
@@ -46,9 +130,6 @@ fn transform_node(json: &JsonNode) -> Result<ElkNode, LayoutError> {
     node.labels = transform_labels(&json.labels)?;
     for child in &json.children {
         node.children.push(transform_node(child)?);
-    }
-    for edge in &json.edges {
-        node.edges.push(transform_edge(edge)?);
     }
     Ok(node)
 }
