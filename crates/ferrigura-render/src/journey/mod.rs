@@ -7,8 +7,9 @@
 //! sizes the root `<svg>`, writes the title and the activity line, and embeds the fonts.
 //!
 //! Labels are SVG text, not HTML (`docs-port/decisions/0004`): the default placement, `fo`, draws
-//! the lines the browser would break the HTML into. Text is measured in the bundled face, so the
-//! `titleFontFamily` of the configuration is read, but the title is set in the bundled face too.
+//! the lines the browser would break the HTML into. Every text is set in the bundled face, as in
+//! the other renderers, so `titleFontFamily` and `taskFontFamily` of the configuration are not read;
+//! the geometry harness pins them to the bundled face on the reference side (`journey-labels.ts`).
 
 mod face;
 mod legend;

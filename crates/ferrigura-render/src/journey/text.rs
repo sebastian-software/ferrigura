@@ -78,11 +78,26 @@ fn pieces(collapsed: &str) -> Vec<String> {
     pieces
 }
 
+/// The width of the widest piece of a text: the least width the browser can give the cell of the
+/// text, since a piece has no break opportunity inside it. The table cell of the `fo` label takes
+/// at least this width (`min-content`), so a long word widens the cell rather than overflowing it.
+///
+/// # Errors
+///
+/// Returns an error if the bundled font cannot be read.
+fn min_content_width(text: &str, size: f64) -> Result<f64, RenderError> {
+    let mut widest: f64 = 0.0;
+    for piece in pieces(&collapse_white_space(text)) {
+        widest = widest.max(width(piece.trim_end(), size)?);
+    }
+    Ok(widest)
+}
+
 /// The lines the browser sets a text in, in a cell `cell_width` wide, at the font size `size`.
 ///
 /// A line takes the next piece while its text, without the blank at its end (the blank hangs), is
-/// no wider than the cell. The first piece of a line always goes on it, so a piece wider than the
-/// cell is set alone and overflows it: there is no break opportunity inside the piece.
+/// no wider than the cell. The first piece of a line always goes on it; the cell is never narrower
+/// than its widest piece ([`min_content_width`]), so every piece fits on a line of its own.
 ///
 /// # Errors
 ///
@@ -194,10 +209,17 @@ pub fn label(placement: Placement, label: &Label<'_>) -> Result<Vec<Element>, Re
 /// The line box is the font's text box (`ferrigura_text::text_box`); a block shorter than the cell
 /// is centred vertically (`vertical-align: middle` in a `table-cell` of the cell's height), and a
 /// block taller than it starts at the top of the cell (`NOTES.md` 7.6.1). Each line is centred
-/// horizontally; a line wider than the cell starts at its left edge, as CSS does for an overflow.
+/// horizontally in the cell, which is widened to its widest piece when that is wider.
 fn fo_label(label: &Label<'_>) -> Result<Element, RenderError> {
     let cell = label.cell;
-    let lines = break_lines(label.text, cell.width, label.font_size)?;
+    // The reference's cell is a table cell, which is never narrower than its min-content width: a
+    // piece wider than the foreignObject widens the cell, and the lines are broken and centred in
+    // the widened cell. Measured in Chromium, with the word `reallyvery…` of 270.797 px in a 150 px
+    // cell, the line `A` starts at 550 + (270.797 - 8.766) / 2 = 681.016, as the reference puts it.
+    let width = cell
+        .width
+        .max(min_content_width(label.text, label.font_size)?);
+    let lines = break_lines(label.text, width, label.font_size)?;
     let metrics = text_box(regular(), label.font_size)?;
     let block = lines.len() as f64 * metrics.height;
     let top = if block < cell.height {
@@ -211,11 +233,7 @@ fn fo_label(label: &Label<'_>) -> Result<Element, RenderError> {
     for (index, line) in lines.iter().enumerate() {
         // The centring offset is in layout units of 1/64 px, rounded down, as Chromium places it
         // (the reference's line of 70.765625 px in a 150 px cell starts 39.609375 px in, not 39.6171875).
-        let x = if line.width <= cell.width {
-            cell.x + floor_layout_unit((cell.width - line.width) / 2.0)
-        } else {
-            cell.x
-        };
+        let x = cell.x + floor_layout_unit((width - line.width) / 2.0);
         let y = top + index as f64 * metrics.height + metrics.top;
         text = text.child(
             Element::new("tspan")
@@ -363,6 +381,26 @@ mod tests {
                 "name that should wrap",
                 "across several lines in",
                 "the box",
+            ]
+        );
+    }
+
+    /// The reference's measurement: the word of 270.796875 px is the widest piece, so the cell is
+    /// that wide, and the line `A` is broken off before it (`NOTES.md` 7.6.1; the dump of the
+    /// reference's label boxes).
+    #[test]
+    fn a_long_word_is_the_least_width_of_its_cell() {
+        let text = "A reallyveryveryveryveryverylongunbrokenword in a cell";
+        let widest = min_content_width(text, 14.0).expect("measures");
+        assert_eq!(widest, 270.796875);
+        let lines = break_lines(text, widest, 14.0).expect("measures");
+        let texts: Vec<&str> = lines.iter().map(|line| line.text.as_str()).collect();
+        assert_eq!(
+            texts,
+            [
+                "A",
+                "reallyveryveryveryveryverylongunbrokenword",
+                "in a cell"
             ]
         );
     }

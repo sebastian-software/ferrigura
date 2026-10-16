@@ -56,13 +56,45 @@ fn eye(cx: f64, cy: f64) -> Element {
         .with("stroke", "#666")
 }
 
+/// `d3-path`'s `pathRound(3)`: every number of a path rounded to three decimals (`Math.round(x *
+/// 1000) / 1000`), as d3 writes the path of an arc. The reference's mouth is `M7.5,0A7.5,7.5,0,1,1,
+/// -7.5,0L-6.818,0A6.818,6.818,0,1,0,6.818,0Z`, with the radius 6.818 and not 6.8181818....
+fn round_path(d: &str) -> String {
+    fn flush(token: &mut String, out: &mut String) {
+        if token.is_empty() {
+            return;
+        }
+        match token.parse::<f64>() {
+            Ok(value) => out.push_str(&number((value * 1000.0).round() / 1000.0)),
+            Err(_) => out.push_str(token),
+        }
+        token.clear();
+    }
+    let mut out = String::with_capacity(d.len());
+    let mut token = String::new();
+    for character in d.chars() {
+        if character.is_ascii_digit() || character == '.' || (character == '-' && token.is_empty())
+        {
+            token.push(character);
+        } else {
+            flush(&mut token, &mut out);
+            out.push(character);
+        }
+    }
+    flush(&mut token, &mut out);
+    out
+}
+
 /// A mouth: the arc between two angles of the face's radius, from `radius / 2.2` to `radius / 2`
 /// (`svgDraw.js` 42-69), placed at `(cx, cy)`. `d3-shape` swaps the radii when the inner one is the
 /// larger, which is the case here, so the inner radius of the path is the smaller one.
 fn mouth(cx: f64, cy: f64, start: f64, end: f64) -> Element {
     Element::new("path")
         .with("class", "mouth")
-        .with("d", arc_path(RADIUS / 2.2, RADIUS / 2.0, start, end))
+        .with(
+            "d",
+            round_path(&arc_path(RADIUS / 2.2, RADIUS / 2.0, start, end)),
+        )
         .with(
             "transform",
             format!("translate({},{})", number(cx), number(cy)),
@@ -81,8 +113,10 @@ mod tests {
         let mouth = &group.children()[2];
         assert_eq!(mouth.get("class"), Some("mouth"));
         assert_eq!(mouth.get("transform"), Some("translate(225,302)"));
-        let d = mouth.get("d").expect("a path");
-        assert!(d.starts_with("M7.5,0A7.5,7.5,0,1,1,-7.5,0L-6.81"), "{d}");
+        assert_eq!(
+            mouth.get("d"),
+            Some("M7.5,0A7.5,7.5,0,1,1,-7.5,0L-6.818,0A6.818,6.818,0,1,0,6.818,0Z")
+        );
     }
 
     #[test]
