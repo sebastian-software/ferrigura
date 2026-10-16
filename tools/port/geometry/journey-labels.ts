@@ -35,10 +35,15 @@ export interface LabelGeometry {
 /**
  * The settings the journey fixtures get on top of the forced ones (`FORCED_SETTINGS`). The
  * reference sets the title in `titleFontFamily`, which the default names as system fonts
- * (`trebuchet ms`), so both sides use the bundled face: ferrigura always does.
+ * (`trebuchet ms`), and the `tspan` placement in `taskFontFamily` (`Open Sans`). Both sides use the
+ * bundled face instead, which ferrigura always does. The default `fo` placement does not read the
+ * task font, so the pin changes only the fixtures that choose another placement.
  */
 export const JOURNEY_SETTINGS: Record<string, unknown> = {
-  journey: { titleFontFamily: '"Lexica Ultralegible"' },
+  journey: {
+    titleFontFamily: '"Lexica Ultralegible"',
+    taskFontFamily: '"Lexica Ultralegible"',
+  },
 };
 
 /**
@@ -58,8 +63,9 @@ const labelLines = (svg, element) => {
       range.setStart(node, index);
       range.setEnd(node, index + 1);
       const rect = range.getBoundingClientRect();
-      // A blank the browser collapses has no box: it is not part of the drawn text.
-      if (rect.width === 0 && rect.height === 0) continue;
+      // A blank the browser collapses has no width (its box has a height, but no width): it is not
+      // part of the drawn text, so a run of blanks reads as one blank, as SVG and HTML both draw it.
+      if (rect.width === 0) continue;
       const character = node.data[index];
       let line = lines[lines.length - 1];
       if (!line || Math.abs(line.top - rect.top) > 0.5) {
