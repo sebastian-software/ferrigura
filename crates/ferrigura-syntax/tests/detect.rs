@@ -1,5 +1,5 @@
 //! Detection of the diagram type from the start of the text, as the detectors of the reference
-//! `pieDetector.ts`, `infoDetector.ts` and `flowDetector-v2.ts` decide it.
+//! `pieDetector.ts`, `infoDetector.ts`, `flowDetector-v2.ts` and `stateDetector-V2.ts` decide it.
 
 use ferrigura_syntax::{Diagram, DiagramType, detect, parse};
 
@@ -28,6 +28,16 @@ fn skips_front_matter_directives_and_comment_lines_before_the_keyword() {
 }
 
 #[test]
+fn detects_state_diagrams_in_both_headers_case_sensitively() {
+    assert_eq!(detect("stateDiagram\n  A --> B"), Some(DiagramType::State));
+    assert_eq!(
+        detect("stateDiagram-v2\n  A --> B"),
+        Some(DiagramType::State)
+    );
+    assert_eq!(detect("STATEDIAGRAM-V2\n  A --> B"), None);
+}
+
+#[test]
 fn an_unclosed_directive_is_not_skipped() {
     assert_eq!(detect("%%{init: {}\npie"), None);
 }
@@ -39,6 +49,10 @@ fn parse_dispatches_on_the_detected_type() {
     assert!(matches!(
         parse("flowchart LR\n  a-->b"),
         Ok(Diagram::Flowchart(_))
+    ));
+    assert!(matches!(
+        parse("stateDiagram-v2\nA --> B"),
+        Ok(Diagram::State(_))
     ));
     let error = parse("sequenceDiagram").expect_err("no diagram type matches");
     assert_eq!((error.line, error.column), (1, 1));

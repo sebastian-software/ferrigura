@@ -4,8 +4,8 @@
 //! and returns the diagram model of `ferrigura-model`. See `docs-port/decisions/0002` for why the
 //! parsers are written by hand on one lexer base.
 //!
-//! The crate covers the pie, info and flowchart diagrams for now; the other types follow in later
-//! milestones.
+//! The crate covers the pie, info, flowchart and state diagrams for now; the other types follow in
+//! later milestones.
 
 #![warn(missing_docs)]
 #![cfg_attr(
