@@ -45,6 +45,7 @@ fn arc_points(
 fn open_outline(points: &[Point]) -> Outline {
     let closed = rough::polygon(points);
     Outline {
+        fill: None,
         d: closed.d.trim_end_matches(" Z").to_owned(),
         bbox: closed.bbox,
     }

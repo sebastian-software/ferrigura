@@ -253,6 +253,7 @@ pub fn label_with_font_size(
         wrap_in_style: false,
         styles: &styles,
         font_size,
+        title: false,
     };
     label::layout(&spec).map(Some)
 }
@@ -644,6 +645,8 @@ mod tests {
             bbox: text,
             background: Some(BBox::new(-1.0, -1.0, 24.0, 21.0)),
             font_size: 14.0,
+            title: false,
+            anchor: Anchor::Middle,
         };
         assert_eq!(label_size(&layout), (24.0, 21.0));
         assert_eq!(label_size(&LabelLayout::of_box(text)), (20.0, 17.0));

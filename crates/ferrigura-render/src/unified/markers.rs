@@ -37,6 +37,8 @@ pub enum Kind {
     OneOrMore,
     /// `zero_or_more`: a crow's foot and a circle (ER).
     ZeroOrMore,
+    /// `arrow_barb` and `arrow_barb_neo`: the barb of the state diagram (`markers.js` `barb`).
+    Barb,
 }
 
 impl Kind {
@@ -52,6 +54,7 @@ impl Kind {
             "zero_or_one" => Some(Self::ZeroOrOne),
             "one_or_more" => Some(Self::OneOrMore),
             "zero_or_more" => Some(Self::ZeroOrMore),
+            "arrow_barb" | "arrow_barb_neo" => Some(Self::Barb),
             _ => None,
         }
     }
@@ -67,20 +70,22 @@ impl Kind {
             Self::ZeroOrOne => "zeroOrOne",
             Self::OneOrMore => "oneOrMore",
             Self::ZeroOrMore => "zeroOrMore",
+            Self::Barb => "barb",
         }
     }
 
     /// Whether the reference's `arrowTypesMap` fills the marker with the stroke colour.
     #[must_use]
     pub const fn fills(self) -> bool {
-        matches!(self, Self::Point)
+        matches!(self, Self::Point | Self::Barb)
     }
 
     /// Whether the reference's `arrowTypesWithMarginSupport` lists the kind: every flowchart kind
     /// does, and no ER kind does (`edgeMarker.ts` 59-69).
     #[must_use]
     pub const fn has_margin(self) -> bool {
-        matches!(self, Self::Point | Self::Circle | Self::Cross)
+        // The ER cardinalities have no margin variant; the state diagram's barb has one.
+        matches!(self, Self::Point | Self::Circle | Self::Cross | Self::Barb)
     }
 }
 
@@ -363,6 +368,30 @@ pub fn markers(svg_id: &str, diagram_type: &str, config: &MermaidConfig) -> Stri
             definition_xml(&id, diagram_type, definition, None)
         })
         .collect()
+}
+
+/// The barb markers of the state diagram, as `insertMarkers` writes them for the look: `barb` (the
+/// classic look) or `barbNeo` (the neo look, with its margin variant), each in its own `defs` as
+/// `markers.js` 534-578 writes them. The margin variant's fill is the theme's `transitionColor`.
+/// The ids are `<svgId>_<diagramType>-barbEnd` and `-barbEnd-margin`.
+#[must_use]
+pub fn barb_markers(
+    svg_id: &str,
+    diagram_type: &str,
+    neo: bool,
+    transition_colour: &str,
+) -> String {
+    let id = format!("{svg_id}_{diagram_type}-barbEnd");
+    if !neo {
+        return format!(
+            "<defs><marker id=\"{id}\" refX=\"19\" refY=\"7\" markerWidth=\"20\" markerHeight=\"14\" markerUnits=\"userSpaceOnUse\" orient=\"auto\"><path d=\"M 19,7 L9,13 L14,7 L9,1 Z\"></path></marker></defs>"
+        );
+    }
+    format!(
+        "<defs><marker id=\"{id}\" refX=\"19\" refY=\"7\" markerWidth=\"20\" markerHeight=\"14\" markerUnits=\"strokeWidth\" orient=\"auto\"><path d=\"M 19,7 L11,14 L13,7 L11,0 Z\"></path></marker></defs>\
+         <defs><marker id=\"{id}-margin\" refX=\"17\" refY=\"7\" markerWidth=\"20\" markerHeight=\"14\" markerUnits=\"userSpaceOnUse\" orient=\"auto\"><path d=\"M 19,7 L11,14 L13,7 L11,0 Z\" fill=\"{}\"></path></marker></defs>",
+        escape(transition_colour),
+    )
 }
 
 /// The name of a marker in `markers.js` (`pointEnd-margin`, `crossStart`, ...), from its kind,

@@ -64,6 +64,9 @@ pub struct LabelSpec<'a> {
     pub styles: &'a [String],
     /// The font size in pixels when the style does not set one.
     pub font_size: f64,
+    /// `createText`'s `isTitle`: the lines take the class `title-row` rather than `row`. The state
+    /// diagram's `rectWithTitle` lays out its title and its rows this way (`createLabel`).
+    pub title: bool,
 }
 
 /// One word or styled run of a line, placed.
@@ -103,6 +106,10 @@ pub struct LabelLayout {
     pub background: Option<BBox>,
     /// The font size of the text.
     pub font_size: f64,
+    /// Whether the lines are `title-row`s (`createText`'s `isTitle`) rather than `row`s.
+    pub title: bool,
+    /// Where the lines are anchored on `x = 0`, as the spec asked.
+    pub anchor: Anchor,
 }
 
 impl LabelLayout {
@@ -114,6 +121,8 @@ impl LabelLayout {
             bbox,
             background: None,
             font_size: 16.0,
+            title: false,
+            anchor: Anchor::Middle,
         }
     }
 
@@ -134,10 +143,25 @@ impl LabelLayout {
     /// rectangle and the text. `text_style` is the inline style of the `<text>` element.
     #[must_use]
     pub fn svg(&self, text_style: &str) -> String {
+        self.svg_with(text_style, "")
+    }
+
+    /// [`LabelLayout::svg`] with the attributes of the `<g>` that `createText` returns, such as the
+    /// `transform` that the reference sets on it (`rectWithTitle.ts`). `attributes` starts with a
+    /// space, or is empty.
+    #[must_use]
+    pub fn svg_with(&self, text_style: &str, attributes: &str) -> String {
+        self.svg_parts(text_style, attributes, "")
+    }
+
+    /// [`LabelLayout::svg_with`] with the attributes of the `<text>` as well: the reference sets a
+    /// `transform` on the `<text>` of a `rectWithTitle` title and rows (`rectWithTitle.ts`).
+    #[must_use]
+    pub fn svg_parts(&self, text_style: &str, group: &str, text: &str) -> String {
         format!(
-            "<g>{}{}</g>",
+            "<g{group}>{}{}</g>",
             self.background_rect(),
-            self.text_element(text_style, None)
+            self.text_element_with(text_style, text, false)
         )
     }
 
@@ -163,7 +187,7 @@ impl LabelLayout {
     /// ER entity's centring uses (`erBox.ts` 74-78, 90-94 of `drawRect`); `None` writes none.
     #[must_use]
     pub fn text_element(&self, text_style: &str, translate: Option<Point>) -> String {
-        self.text_element_with(text_style, translate, false)
+        self.text_element_with(text_style, &translate_attribute(translate), false)
     }
 
     /// The `<text>` element of the label with each line as one text node, without its word tspans.
@@ -172,26 +196,21 @@ impl LabelLayout {
     /// `createText.ts` 96-112). The measure is the same, as the words are in one face.
     #[must_use]
     pub fn text_element_flat(&self, text_style: &str, translate: Option<Point>) -> String {
-        self.text_element_with(text_style, translate, true)
+        self.text_element_with(text_style, &translate_attribute(translate), true)
     }
 
-    fn text_element_with(&self, text_style: &str, translate: Option<Point>, flat: bool) -> String {
-        let transform = translate.map_or_else(String::new, |offset| {
-            format!(
-                r#" transform="translate({}, {})""#,
-                number(offset.x),
-                number(offset.y)
-            )
-        });
+    /// The `<text>` element with `attributes` (empty, or starting with a space) after its style.
+    fn text_element_with(&self, text_style: &str, attributes: &str, flat: bool) -> String {
+        let line_class = if self.title { "title-row" } else { "row" };
         let mut out = format!(
-            r#"<text y="-10.1" text-anchor="start" style="{}"{transform}>"#,
+            r#"<text y="-10.1" text-anchor="start" style="{}"{attributes}>"#,
             escape(text_style)
         );
         for line in &self.lines {
             // Every line starts at its own x, with `text-anchor` start, so the browser never
             // aligns it by its own measure (decision 0005).
             out.push_str(&format!(
-                r#"<tspan class="text-outer-tspan row" x="{}" y="{}" text-anchor="start">"#,
+                r#"<tspan class="text-outer-tspan {line_class}" x="{}" y="{}" text-anchor="start">"#,
                 number(line.runs.first().map_or(0.0, |run| run.x)),
                 number(line.baseline),
             ));
@@ -219,6 +238,17 @@ impl LabelLayout {
         out.push_str("</text>");
         out
     }
+}
+
+/// The `transform` attribute of a translation, with its leading space; empty for `None`.
+fn translate_attribute(translate: Option<Point>) -> String {
+    translate.map_or_else(String::new, |offset| {
+        format!(
+            r#" transform="translate({}, {})""#,
+            number(offset.x),
+            number(offset.y)
+        )
+    })
 }
 
 /// Lays out a label as `createText` does.
@@ -298,6 +328,8 @@ pub fn layout(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
         bbox,
         background,
         font_size,
+        title: spec.title,
+        anchor: spec.anchor,
     })
 }
 
@@ -461,6 +493,7 @@ mod tests {
             add_background: false,
             styles,
             font_size: 16.0,
+            title: false,
         }
     }
 

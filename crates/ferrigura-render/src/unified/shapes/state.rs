@@ -31,12 +31,15 @@ pub(super) fn fork_join(input: &ShapeInput<'_>) -> Part {
     };
     let x = -width / 2.0;
     let y = -height / 2.0;
-    let outline = rough::polygon(&[
-        Point::new(x, y),
-        Point::new(x + width, y),
-        Point::new(x + width, y + height),
-        Point::new(x, y + height),
-    ]);
+    let outline = rough::solid_polygon(
+        &[
+            Point::new(x, y),
+            Point::new(x + width, y),
+            Point::new(x + width, y + height),
+            Point::new(x, y + height),
+        ],
+        false,
+    );
     let svg = format!(
         "<g>{}</g>",
         rough::paths(

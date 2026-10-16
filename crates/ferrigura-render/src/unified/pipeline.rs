@@ -17,7 +17,7 @@ use ferrigura_model::value::Value;
 use crate::RenderError;
 use crate::unified::data::{LayoutData, Node};
 use crate::unified::geom::BBox;
-use crate::unified::label::LabelLayout;
+use crate::unified::label::{Anchor, LabelLayout};
 use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
 use crate::unified::{clusters, edges, elk_apply, elk_build};
 use crate::variables::px;
@@ -105,6 +105,7 @@ pub fn measure(
 ) -> Result<Measured, RenderError> {
     edges::prepare(&mut data, config);
 
+    let anchor = node_anchor(&data.diagram_type);
     let mut shapes = HashMap::new();
     for index in 0..data.nodes.len() {
         let node = &data.nodes[index];
@@ -112,12 +113,17 @@ pub fn measure(
             // ELK sizes a subgraph from its title, measured unwrapped unless it is Markdown. The
             // title's box is already a float32 value (`node_label`).
             let width = (node.label_type != LabelType::Markdown).then_some(f64::INFINITY);
-            let size = shapes::node_label(node, config, theme, width)?
-                .map_or((0.0, 0.0), |label| (label.bbox.width, label.bbox.height));
+            // `measureGroupLabel` gives a group without a label no size (`createGraph.ts` 56-58).
+            let size = if node.label.is_empty() {
+                (0.0, 0.0)
+            } else {
+                shapes::node_label(node, config, theme, width, anchor)?
+                    .map_or((0.0, 0.0), |label| (label.bbox.width, label.bbox.height))
+            };
             data.nodes[index].label_bbox = Some(size);
             continue;
         }
-        let label = shapes::node_label(node, config, theme, None)?;
+        let label = shapes::node_label(node, config, theme, None, anchor)?;
         let shape = shapes::draw(&ShapeInput {
             node,
             label: label.as_ref(),
@@ -150,6 +156,18 @@ pub fn measure(
         shapes,
         edge_labels,
     })
+}
+
+/// Where the lines of a node's label start on `x = 0`. The flowchart's stylesheet centres node labels
+/// (`.node .label text`), and the state diagram's does not, so its lines start at the label's origin
+/// (`state/styles.js` has no text-anchor for them).
+#[must_use]
+pub fn node_anchor(diagram_type: &str) -> Anchor {
+    if diagram_type == crate::state::DIAGRAM_TYPE {
+        Anchor::Start
+    } else {
+        Anchor::Middle
+    }
 }
 
 /// Lays the measured diagram out with ELK and applies the result.
@@ -224,7 +242,13 @@ pub fn paint<'a>(
         };
         let (x, y) = (node.x.unwrap_or(0.0), node.y.unwrap_or(0.0));
         cover(&mut bounds, shape.bbox.translate(x, y));
-        nodes.push_str(&shapes::node_svg(node, shape, id));
+        // A state diagram's links are written after its render (`LinkForm::PostRender`).
+        let links = if data.diagram_type == crate::state::DIAGRAM_TYPE {
+            shapes::LinkForm::PostRender
+        } else {
+            shapes::LinkForm::Flowchart
+        };
+        nodes.push_str(&shapes::node_svg(node, shape, id, links));
         labels.extend(shape.label.as_ref());
         labels.extend(shape.texts.iter());
     }

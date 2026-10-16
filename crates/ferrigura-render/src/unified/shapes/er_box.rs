@@ -424,6 +424,7 @@ fn label_layout(
         add_background: false,
         styles: &declarations,
         font_size: util::theme_number(input.theme, "fontSize").unwrap_or(input.config.font_size),
+        title: false,
     })
 }
 

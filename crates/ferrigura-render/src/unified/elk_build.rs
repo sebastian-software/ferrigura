@@ -801,12 +801,16 @@ fn label_data_of(node: &Node, config: &MermaidConfig) -> LabelData {
         Some((width, height)) => LabelData {
             width,
             height: (height - 2.0).max(0.0),
-            wrapping_width: config.flowchart.wrapping_width,
+            wrapping_width: node
+                .wrapping_width
+                .unwrap_or(config.flowchart.wrapping_width),
         },
         None => LabelData {
             width: 0.0,
             height: 0.0,
-            wrapping_width: config.flowchart.wrapping_width,
+            wrapping_width: node
+                .wrapping_width
+                .unwrap_or(config.flowchart.wrapping_width),
         },
     }
 }

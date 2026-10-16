@@ -563,6 +563,18 @@ The configuration port must add the `state` scope to `tools/port/diff-config.ts`
 
 ---
 
+### 5.8 Found while rendering (M6 renderer task)
+
+Checked by the geometry run (`pnpm port:geometry state`, 137 of 139 comparable fixtures within tolerance; 5 handDrawn excluded, 1 info smoke test not a state diagram):
+
+- **Label anchor.** State node labels start at the label origin: the state stylesheet has no `.node .label text { text-anchor: middle }` (that rule is the flowchart's). The label group is at `translate(-W/2, -H/2)`, with W the label box widened to `state.minNodeWidth` (120). `rectWithTitle` titles and the cluster titles start at their origin too. Ferrigura takes the anchor from the diagram (`pipeline::node_anchor`).
+- **Rough outlines (`unified/shapes/rough.rs` `solid_polygon`).** rough.js's solid fill of a polygon is `M p0 L p1 … L pn`, open (a rectangle's fill is three sides), while a `polygon` path (the choice's `rc.path` with `Z`) is closed. Every stroke side is drawn twice (`_doubleLine`). The control points of each pass lie on its side at roughness 0, so the passes are straight for length and sampling; the random divergence point (`_line`, `Math.random` for seed 0) moves control points only. Fork bars, notes and choices use this.
+- **Note outline.** The note's size is `max(label box + 2·padding, node.width)`, where the node width comes from the measure step's minimum width of 120 (`state.minNodeWidth` applies to non-groups). The note padding is `flowchart.padding` (15 by default).
+- **rectWithTitle rows.** The rows are measured by their first line (`text` child of the first `tspan`): the rows sit at `(titleW − lineW)/2` under the title, and the title shifts by `−(titleW − lineW)/2` when the first line is wider. The `text` element, not its group, carries the transform.
+- **Links.** A clicked state's node is wrapped after the render as `<a xlink:href title>` around its `<g>` (which also carries the title), with no transform on the anchor (`stateRenderer-v3-unified.ts` 80-133). Only leaves are wrapped (`g.node`, not `g.cluster`).
+- **Curve.** The reference's ELK edge routing reads `conf.curve` at the top level of the configuration, a key no configuration sets (the `curve` of the schema is in the flowchart section), so state edges take the default curve. Ferrigura takes `flowchart.curve`, which is the same unless the user sets it for a state diagram (open).
+- **Residual.** Two fixtures (`should-render-state-descriptions`, pr-check and v2) differ by 0.81 px in the width of the first row "New line" (52.30 in the reference, 53.11 here) while the layout's own box is 52.30. The run widths and the title match, so the cause is in how Chromium lays out the explicit `x` of a run after the first; flowing the runs instead made the title worse.
+
 ## 6. Fixtures
 
 ### 6.1 Counts

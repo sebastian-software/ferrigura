@@ -8,7 +8,7 @@ use super::{Intersect, ShapeInput};
 use crate::svg::{escape, number};
 use crate::unified::data::Node;
 use crate::unified::geom::{BBox, Point};
-use crate::unified::label::LabelLayout;
+use crate::unified::label::{Anchor, LabelLayout};
 
 /// What a shape handler draws, before `draw` adds the label's box to the node's box.
 #[derive(Debug, Clone)]
@@ -94,9 +94,16 @@ pub(super) fn with_min_width(bbox: BBox, min_width: f64) -> BBox {
     )
 }
 
-/// The offset of a centred label: `translate(0, -H/2)` (`shapes/util.ts:147`).
+/// The offset of a centred label: `translate(0, -H/2)` (`shapes/util.ts:147`). A label whose lines
+/// start at its origin (the state diagram's, which its stylesheet does not centre) is offset by half
+/// its width instead, as `labelHelper` writes it: `translate(-W/2, -H/2)`.
 pub(super) fn centred_label_offset(label: &LabelLayout) -> Point {
-    Point::new(0.0, -label.bbox.height / 2.0)
+    let x = if label.anchor == Anchor::Start {
+        -label.bbox.width / 2.0
+    } else {
+        0.0
+    };
+    Point::new(x, -label.bbox.height / 2.0)
 }
 
 /// The node's declarations as `compileStyles` and `styles2String` split them.

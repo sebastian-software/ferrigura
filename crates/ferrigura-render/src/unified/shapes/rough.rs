@@ -21,8 +21,10 @@ const CURVE_STEP_COUNT: f64 = 9.0;
 /// An outline: its path data and its box, in the coordinates of the points.
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct Outline {
-    /// The path data.
+    /// The path data of the stroke.
     pub d: String,
+    /// The path data of the solid fill, when it differs from the stroke's (see [`solid_polygon`]).
+    pub fill: Option<String>,
     /// The box of the path's geometry.
     pub bbox: BBox,
 }
@@ -33,6 +35,52 @@ pub(super) struct Outline {
 pub(super) fn polygon(points: &[Point]) -> Outline {
     Outline {
         d: super::util::create_path_from_points(points),
+        fill: None,
+        bbox: BBox::from_points(points.iter().copied()).unwrap_or_default(),
+    }
+}
+
+/// The outline of a polygon that rough.js draws solid at roughness 0: the state diagram's forks,
+/// joins, choices and notes (`rc.polygon` and `rc.rectangle` with `fillStyle: 'solid'`).
+///
+/// The fill is the points as lines, from the first to the last, without the side that closes them:
+/// rough.js's solid fill is `M p0 L p1 … L pn` (`generator.js`, `solidFillPolygon`), so a rectangle's
+/// fill is three of its sides. The stroke draws every side, the closing one too, twice: each side is
+/// a `move` and a `bcurveTo` from `_doubleLine` (`renderer.js` 237-245), so the path has two passes
+/// per side, in the order of the sides. At roughness 0 the control points of each pass lie on its
+/// side (`_line`: the offsets are multiplied by the roughness), so a pass is the side whatever its
+/// random divergence point, and lengths and points along the path are the sides'. The passes are
+/// written as lines. A closed path, as the choice's, is filled with its closing side too: `closed`
+/// gives that fill.
+pub(super) fn solid_polygon(points: &[Point], closed: bool) -> Outline {
+    let mut fill = String::new();
+    let mut stroke = String::new();
+    for (index, point) in points.iter().enumerate() {
+        let command = if index == 0 { "M" } else { "L" };
+        fill.push_str(&format!(
+            "{command}{},{} ",
+            number(point.x),
+            number(point.y)
+        ));
+    }
+    if closed {
+        fill.push('Z');
+    }
+    for (index, start) in points.iter().enumerate() {
+        let end = points[(index + 1) % points.len()];
+        for _ in 0..2 {
+            stroke.push_str(&format!(
+                "M{},{} L{},{} ",
+                number(start.x),
+                number(start.y),
+                number(end.x),
+                number(end.y),
+            ));
+        }
+    }
+    Outline {
+        d: stroke.trim_end().to_owned(),
+        fill: Some(fill.trim_end().to_owned()),
         bbox: BBox::from_points(points.iter().copied()).unwrap_or_default(),
     }
 }
@@ -72,6 +120,7 @@ pub(super) fn rounded_rectangle(x: f64, y: f64, width: f64, height: f64, radius:
         number(y),
     );
     Outline {
+        fill: None,
         d,
         bbox: BBox::new(x, y, width, height),
     }
@@ -128,6 +177,7 @@ pub(super) fn ellipse(cx: f64, cy: f64, width: f64, height: f64) -> Outline {
         bounds.extend(cubic_extremes(here, control_1, control_2, next));
     }
     Outline {
+        fill: None,
         d,
         bbox: BBox::from_points(bounds).unwrap_or_default(),
     }
@@ -217,8 +267,9 @@ pub(super) fn paths(
     } else {
         " stroke=\"none\""
     };
+    let fill = outline.fill.as_deref().unwrap_or(&outline.d);
     format!(
-        "<path d=\"{d}\" stroke=\"none\" stroke-width=\"0\"{style}/><path d=\"{d}\" fill=\"none\"{stroke} stroke-width=\"{stroke_width}\" stroke-dasharray=\"0 0\"{style}/>",
+        "<path d=\"{fill}\" stroke=\"none\" stroke-width=\"0\"{style}/><path d=\"{d}\" fill=\"none\"{stroke} stroke-width=\"{stroke_width}\" stroke-dasharray=\"0 0\"{style}/>",
         d = outline.d,
     )
 }
@@ -405,5 +456,38 @@ mod tests {
             Point::new(70.0, -10.0),
         ]);
         assert_eq!(outline.bbox, BBox::new(0.0, -10.0, 70.0, 10.0));
+    }
+
+    #[test]
+    fn a_solid_rectangle_fills_three_sides_and_strokes_each_side_twice() {
+        // The note of `a-state-with-a-note`: its fill is `M L L L` (393.2 long, not 486.4), and each of
+        // its four sides is drawn twice (`renderer.js` `_doubleLine`).
+        let points = [
+            Point::new(-75.0, -46.6),
+            Point::new(75.0, -46.6),
+            Point::new(75.0, 46.6),
+            Point::new(-75.0, 46.6),
+        ];
+        let outline = solid_polygon(&points, false);
+        let fill = outline.fill.expect("a solid fill");
+        assert_eq!(fill.matches('L').count(), 3, "{fill}");
+        assert!(!fill.contains('Z'), "{fill}");
+        assert_eq!(outline.d.matches('M').count(), 8, "{}", outline.d);
+        assert!(
+            outline
+                .d
+                .starts_with("M-75,-46.6 L75,-46.6 M-75,-46.6 L75,-46.6")
+        );
+    }
+
+    #[test]
+    fn a_closed_solid_polygon_is_filled_with_its_closing_side() {
+        let points = [
+            Point::new(0.0, 14.0),
+            Point::new(14.0, 0.0),
+            Point::new(0.0, -14.0),
+        ];
+        let outline = solid_polygon(&points, true);
+        assert!(outline.fill.expect("a solid fill").ends_with('Z'));
     }
 }
