@@ -65,7 +65,7 @@ const MAX_TICK_COUNT: f64 = 10_000.0;
 /// while drawing (an excluded day that is not found, a custom tick interval with an unknown
 /// weekday).
 pub fn render(input: &GanttInput<'_>) -> Result<String, RenderError> {
-    let mut chart = Chart::new(input)?;
+    let mut chart = Chart::new(input);
     let mut texts = Texts::default();
     let mut body = String::new();
     // `appendDivSvgG` leaves an empty group before the chart's own elements (`mermaidAPI.ts:418`).
@@ -178,7 +178,7 @@ pub(super) struct Chart<'a> {
 
 impl<'a> Chart<'a> {
     /// The chart's values, as `draw` computes them before it writes anything.
-    fn new(input: &GanttInput<'a>) -> Result<Self, RenderError> {
+    fn new(input: &GanttInput<'a>) -> Self {
         let model = input.diagram;
         let conf = &input.config.gantt;
         let input = *input;
@@ -255,7 +255,7 @@ impl<'a> Chart<'a> {
         let mut array: Vec<usize> = (0..tasks.len()).collect();
         sort_js(&mut array, |a, b| compare_start(starts[a], starts[b]));
 
-        Ok(Self {
+        Self {
             input,
             model,
             conf,
@@ -272,7 +272,7 @@ impl<'a> Chart<'a> {
             vert,
             array,
             rows: without_vert.len(),
-        })
+        }
     }
 
     /// Whether any task has a link, so that the root declares the `xlink` namespace.
