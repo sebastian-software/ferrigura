@@ -34,6 +34,17 @@ const suites: Record<string, string[]> = {
     'flowchart_db_spec',
     'flowchart_huge_spec',
   ],
+  state: [
+    'state_parser_spec',
+    'state_db_spec',
+    'state_style_spec',
+    'state_diagram_v2_spec',
+    'state_diagram_spec',
+    'state_color_index_spec',
+    'state_note_edge_spec',
+    'state_note_node_spec',
+    'state_renderer_spec',
+  ],
 };
 
 interface Counts {

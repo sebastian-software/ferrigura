@@ -1,10 +1,10 @@
 /**
- * Differential run for the configuration. The pie and flowchart inputs of `inputs.ts` and every
+ * Differential run for the configuration. The pie, flowchart and state inputs of `inputs.ts` and every
  * explicit case of `config-cases.ts` go through the TypeScript reference (`export-config.ts`) and
  * through ferrigura (`cargo run --example config`). Each side detects the diagram type from the
  * text, as a render does, so each input gets its own diagram scope: the reference through
  * `processAndSetConfigs`, ferrigura through `detect`. A flowchart input must come out in the
- * `flowchart` scope on both sides, and a pie input or case in `pie`.
+ * `flowchart` scope on both sides, a state input in `state`, and a pie input or case in `pie`.
  *
  * The key set that directives may use is compared first. Then, per input, the scope and the
  * effective configuration: the top level (with `theme`, `look` and `layout` resolved), `elk`, the
@@ -18,7 +18,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { configCases } from './config-cases.ts';
-import { collectInputs } from './inputs.ts';
+import { collectInputs, looksLikeType } from './inputs.ts';
 
 interface ConfigInput {
   id: number;
@@ -75,6 +75,11 @@ function same(a: unknown, b: unknown): boolean {
 
 const pieInputs = await collectInputs('pie');
 const flowchartInputs = await collectInputs('flowchart');
+// The state group is the inputs the state detector accepts: a case that is not a state diagram
+// belongs to no group, and the reference's config of it is in no diagram scope.
+const stateInputs = (await collectInputs('state')).filter((input) =>
+  looksLikeType('state', input.text)
+);
 const inputs: ConfigInput[] = [
   ...pieInputs.map((input) => ({
     id: 0,
@@ -89,6 +94,13 @@ const inputs: ConfigInput[] = [
     text: input.text,
     group: 'flowchart',
     expectedScope: 'flowchart',
+  })),
+  ...stateInputs.map((input) => ({
+    id: 0,
+    source: input.source,
+    text: input.text,
+    group: 'state',
+    expectedScope: 'state',
   })),
   ...configCases.map((testCase) => ({
     id: 0,
@@ -135,8 +147,8 @@ if (missingInRust.length > 0 || extraInRust.length > 0) {
  * The diagram sections whose defaults the port does not own yet. The reference fills them with its
  * own generator (`.build/jsonSchema.ts`), which applies a section's own defaults only, and the
  * TypeScript defaults replace some sections whole; ferrigura takes them from the schema. A section
- * is compared only for an input of its own diagram type: `pie` and `flowchart` are ported, and
- * `info` has no section. Every other section is left out.
+ * is compared only for an input of its own diagram type: `pie`, `flowchart` and `state` are ported,
+ * and `info` has no section. Every other section is left out.
  */
 const UNPORTED_SECTIONS = [
   'flowchart',

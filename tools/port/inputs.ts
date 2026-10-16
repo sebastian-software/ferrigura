@@ -30,7 +30,7 @@ const detectors: Record<string, RegExp> = {
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */
-function looksLikeType(type: string, text: string): boolean {
+export function looksLikeType(type: string, text: string): boolean {
   let body = text.replace(/^---[\t ]*\r?\n[\S\s]*?\r?\n---(?:\r?\n|$)/, '');
   body = body.replace(/^\s*%%{[\S\s]*?}%%\s*/, '');
   return detectors[type].test(body);
