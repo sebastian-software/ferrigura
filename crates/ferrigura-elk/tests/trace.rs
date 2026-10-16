@@ -81,11 +81,20 @@ const TRACE_MATCHING_FLOOR: usize = 139;
 #[test]
 fn supported_traces_match_elkjs_including_logs() {
     let mut matching = Vec::new();
+    let mut untraced = Vec::new();
     for name in corpus_names() {
         let case = corpus_case(&name);
         let input: JsonNode = serde_json::from_value(case["input"].clone()).unwrap();
-        let Ok(layout) = ferrigura_elk::layout(&input, true) else {
-            continue;
+        let layout = match ferrigura_elk::layout(&input, true) {
+            Ok(layout) => layout,
+            Err(error) => {
+                // The coordinates test lays the case out without the trace; a case that is
+                // supported there but not with the trace is a gap, not a skip.
+                if ferrigura_elk::layout(&input, false).is_ok() {
+                    untraced.push(format!("{name}: {error}"));
+                }
+                continue;
+            }
         };
         if layout.trace.to_json() == case["trace"] {
             matching.push(name);
@@ -93,9 +102,17 @@ fn supported_traces_match_elkjs_including_logs() {
             println!("logs differ  {name}");
         }
     }
+    for line in &untraced {
+        println!("untraced     {line}");
+    }
     println!(
         "{} supported cases have the same trace, logs included",
         matching.len()
+    );
+    assert!(
+        untraced.is_empty(),
+        "{} supported cases have no trace",
+        untraced.len()
     );
     assert!(
         matching.len() >= TRACE_MATCHING_FLOOR,

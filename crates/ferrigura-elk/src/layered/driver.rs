@@ -218,6 +218,16 @@ fn module_name(step: &Step) -> Result<&'static str, LayoutError> {
             S::HIERARCHICAL_NODE_RESIZER => {
                 "org.eclipse.elk.alg.layered.intermediate.HierarchicalNodeResizingProcessor"
             }
+            S::SELF_LOOP_PREPROCESSOR => {
+                "org.eclipse.elk.alg.layered.intermediate.SelfLoopPreProcessor"
+            }
+            S::SELF_LOOP_PORT_RESTORER => {
+                "org.eclipse.elk.alg.layered.intermediate.SelfLoopPortRestorer"
+            }
+            S::SELF_LOOP_ROUTER => "org.eclipse.elk.alg.layered.intermediate.SelfLoopRouter",
+            S::SELF_LOOP_POSTPROCESSOR => {
+                "org.eclipse.elk.alg.layered.intermediate.SelfLoopPostProcessor"
+            }
             S::ONE_SIDED_GREEDY_SWITCH | S::TWO_SIDED_GREEDY_SWITCH => {
                 "org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer"
             }
