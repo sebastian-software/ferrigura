@@ -189,7 +189,31 @@ export function syntheticEdgeGraphs(): { name: string; graph: Record<string, unk
       targets: [target],
     })),
   });
+  // A fan-out, a fan-in, parallel long edges through dummies, under the two ordering strategies that
+  // compare ports and nodes by their edges (PREFER_EDGES) or by their nodes (PREFER_NODES).
+  const fan = graph(
+    ['n0', 'n1', 'n2', 'n3', 'n4'],
+    [
+      ['n0', 'n1'],
+      ['n0', 'n2'],
+      ['n0', 'n3'],
+      ['n1', 'n4'],
+      ['n2', 'n4'],
+      ['n3', 'n4'],
+      ['n0', 'n4'],
+      ['n0', 'n4'],
+    ]
+  );
+  const ordered = (strategy: string): Record<string, unknown> => ({
+    ...fan,
+    layoutOptions: {
+      ...rootLayoutOptionsDefault(),
+      'elk.layered.considerModelOrder.strategy': strategy,
+    },
+  });
   return [
+    { name: 'synthetic__edges-prefer-edges', graph: ordered('PREFER_EDGES') },
+    { name: 'synthetic__edges-prefer-nodes', graph: ordered('PREFER_NODES') },
     {
       name: 'synthetic__edges-chain-3',
       graph: graph(

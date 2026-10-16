@@ -1,0 +1,588 @@
+{
+ "version": 1,
+ "name": "synthetic__edges-prefer-nodes",
+ "fixture": null,
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+   "elk.layered.considerModelOrder.strategy": "PREFER_NODES"
+  },
+  "children": [
+   {
+    "id": "n0",
+    "width": 50,
+    "height": 40
+   },
+   {
+    "id": "n1",
+    "width": 50,
+    "height": 40
+   },
+   {
+    "id": "n2",
+    "width": 50,
+    "height": 40
+   },
+   {
+    "id": "n3",
+    "width": 50,
+    "height": 40
+   },
+   {
+    "id": "n4",
+    "width": 50,
+    "height": 40
+   }
+  ],
+  "edges": [
+   {
+    "id": "e0",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n1"
+    ]
+   },
+   {
+    "id": "e1",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n2"
+    ]
+   },
+   {
+    "id": "e2",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n3"
+    ]
+   },
+   {
+    "id": "e3",
+    "sources": [
+     "n1"
+    ],
+    "targets": [
+     "n4"
+    ]
+   },
+   {
+    "id": "e4",
+    "sources": [
+     "n2"
+    ],
+    "targets": [
+     "n4"
+    ]
+   },
+   {
+    "id": "e5",
+    "sources": [
+     "n3"
+    ],
+    "targets": [
+     "n4"
+    ]
+   },
+   {
+    "id": "e6",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n4"
+    ]
+   },
+   {
+    "id": "e7",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n4"
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+   "elk.layered.considerModelOrder.strategy": "PREFER_NODES"
+  },
+  "children": [
+   {
+    "id": "n0",
+    "width": 50,
+    "height": 40,
+    "x": 192,
+    "y": 12
+   },
+   {
+    "id": "n1",
+    "width": 50,
+    "height": 40,
+    "x": 12,
+    "y": 112
+   },
+   {
+    "id": "n2",
+    "width": 50,
+    "height": 40,
+    "x": 102,
+    "y": 112
+   },
+   {
+    "id": "n3",
+    "width": 50,
+    "height": 40,
+    "x": 192,
+    "y": 112
+   },
+   {
+    "id": "n4",
+    "width": 50,
+    "height": 40,
+    "x": 192,
+    "y": 212
+   }
+  ],
+  "edges": [
+   {
+    "id": "e0",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n1"
+    ],
+    "sections": [
+     {
+      "id": "e0_s0",
+      "startPoint": {
+       "x": 207,
+       "y": 52
+      },
+      "endPoint": {
+       "x": 37,
+       "y": 112
+      },
+      "bendPoints": [
+       {
+        "x": 207,
+        "y": 72
+       },
+       {
+        "x": 37,
+        "y": 72
+       }
+      ],
+      "incomingShape": "n0",
+      "outgoingShape": "n1"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e1",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n2"
+    ],
+    "sections": [
+     {
+      "id": "e1_s0",
+      "startPoint": {
+       "x": 212,
+       "y": 52
+      },
+      "endPoint": {
+       "x": 127,
+       "y": 112
+      },
+      "bendPoints": [
+       {
+        "x": 212,
+        "y": 92
+       },
+       {
+        "x": 127,
+        "y": 92
+       }
+      ],
+      "incomingShape": "n0",
+      "outgoingShape": "n2"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e2",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n3"
+    ],
+    "sections": [
+     {
+      "id": "e2_s0",
+      "startPoint": {
+       "x": 217,
+       "y": 52
+      },
+      "endPoint": {
+       "x": 217,
+       "y": 112
+      },
+      "incomingShape": "n0",
+      "outgoingShape": "n3"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e3",
+    "sources": [
+     "n1"
+    ],
+    "targets": [
+     "n4"
+    ],
+    "sections": [
+     {
+      "id": "e3_s0",
+      "startPoint": {
+       "x": 37,
+       "y": 152
+      },
+      "endPoint": {
+       "x": 207,
+       "y": 212
+      },
+      "bendPoints": [
+       {
+        "x": 37,
+        "y": 192
+       },
+       {
+        "x": 207,
+        "y": 192
+       }
+      ],
+      "incomingShape": "n1",
+      "outgoingShape": "n4"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e4",
+    "sources": [
+     "n2"
+    ],
+    "targets": [
+     "n4"
+    ],
+    "sections": [
+     {
+      "id": "e4_s0",
+      "startPoint": {
+       "x": 127,
+       "y": 152
+      },
+      "endPoint": {
+       "x": 212,
+       "y": 212
+      },
+      "bendPoints": [
+       {
+        "x": 127,
+        "y": 172
+       },
+       {
+        "x": 212,
+        "y": 172
+       }
+      ],
+      "incomingShape": "n2",
+      "outgoingShape": "n4"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e5",
+    "sources": [
+     "n3"
+    ],
+    "targets": [
+     "n4"
+    ],
+    "sections": [
+     {
+      "id": "e5_s0",
+      "startPoint": {
+       "x": 217,
+       "y": 152
+      },
+      "endPoint": {
+       "x": 217,
+       "y": 212
+      },
+      "incomingShape": "n3",
+      "outgoingShape": "n4"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e6",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n4"
+    ],
+    "sections": [
+     {
+      "id": "e6_s0",
+      "startPoint": {
+       "x": 222,
+       "y": 52
+      },
+      "endPoint": {
+       "x": 222,
+       "y": 212
+      },
+      "bendPoints": [
+       {
+        "x": 222,
+        "y": 92
+       },
+       {
+        "x": 262,
+        "y": 92
+       },
+       {
+        "x": 262,
+        "y": 132
+       },
+       {
+        "x": 262,
+        "y": 172
+       },
+       {
+        "x": 222,
+        "y": 172
+       }
+      ],
+      "incomingShape": "n0",
+      "outgoingShape": "n4"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e7",
+    "sources": [
+     "n0"
+    ],
+    "targets": [
+     "n4"
+    ],
+    "sections": [
+     {
+      "id": "e7_s0",
+      "startPoint": {
+       "x": 227,
+       "y": 52
+      },
+      "endPoint": {
+       "x": 227,
+       "y": 212
+      },
+      "bendPoints": [
+       {
+        "x": 227,
+        "y": 72
+       },
+       {
+        "x": 283,
+        "y": 72
+       },
+       {
+        "x": 283,
+        "y": 132
+       },
+       {
+        "x": 283,
+        "y": 192
+       },
+       {
+        "x": 227,
+        "y": 192
+       }
+      ],
+      "incomingShape": "n0",
+      "outgoingShape": "n4"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 296,
+  "height": 264
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model PREFER_NODES",
+        "logs": [
+         "Node n_root.n0 ports: [p_0[n_root.n0] >> 1[n_root.n1], p_1[n_root.n0] >> 1[n_root.n2], p_2[n_root.n0] >> 1[n_root.n3], p_3[n_root.n0] >> 1[n(long_edge)_3], p_4[n_root.n0] >> 1[n(long_edge)_4]]",
+         "Layer 0: L_0[n_root.n0]",
+         "Node n_root.n1 ports: [p_0[n_root.n1] >> 3[n_root.n4], p_1[n_root.n1] << 0[n_root.n0]]",
+         "Node n_root.n2 ports: [p_0[n_root.n2] >> 2[n_root.n4], p_1[n_root.n2] << 1[n_root.n0]]",
+         "Node n_root.n3 ports: [p_0[n_root.n3] >> 1[n_root.n4], p_1[n_root.n3] << 2[n_root.n0]]",
+         "Layer 1: L_1[n_root.n1, n_root.n2, n_root.n3, n(long_edge)_3, n(long_edge)_4]",
+         "Node n_root.n4 ports: [p_0[n_root.n4] << 0[n(long_edge)_4], p_1[n_root.n4] << 0[n(long_edge)_3], p_2[n_root.n4] << 0[n_root.n3], p_3[n_root.n4] << 0[n_root.n2], p_4[n_root.n4] << 0[n_root.n1]]",
+         "Layer 2: L_2[n_root.n4]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 272",
+         "RIGHTUP size is 286",
+         "LEFTDOWN size is 272",
+         "LEFTUP size is 286",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.n0, n_root.n1, n_root.n2, n_root.n3, n(long_edge)_3, n(long_edge)_4, n_root.n4]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

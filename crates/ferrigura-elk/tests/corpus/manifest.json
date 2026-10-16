@@ -1066,6 +1066,22 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__edges-prefer-edges",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__edges-prefer-nodes",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__nodes-only-1",
    "fixture": null,
    "nodes": 1,
