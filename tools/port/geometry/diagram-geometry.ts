@@ -52,8 +52,9 @@
  *
  * `FERRIGURA_RENDER` replaces the ferrigura `render` example, as in the other harnesses.
  *
- * Exit code 1 only if a fixture rendered on both sides is outside the tolerance (for `--self`,
- * whenever the two reference renders differ).
+ * Exit code 1 if a fixture rendered on both sides is outside the tolerance, or if ferrigura does
+ * not render a fixture the reference renders (every P1 type is ported since M6, so that is a
+ * regression); for `--self`, whenever the two reference renders differ.
  */
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -451,7 +452,7 @@ async function main(): Promise<void> {
     );
   }
   console.log(`  written to ${join(workDir, outputName)}`);
-  if (counts.outside > 0) process.exit(1);
+  if (counts.outside > 0 || counts['not rendered'] > 0) process.exit(1);
 }
 
 try {
