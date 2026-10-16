@@ -28,6 +28,10 @@ pub fn number(value: f64) -> String {
     if value.abs() < 1e-10 {
         return "0".to_owned();
     }
+    // Rust writes `inf`; JavaScript, which the reference's attributes come from, writes `Infinity`.
+    if value.is_infinite() {
+        return if value > 0.0 { "Infinity" } else { "-Infinity" }.to_owned();
+    }
     format!("{value}")
 }
 

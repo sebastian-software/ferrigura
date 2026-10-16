@@ -642,7 +642,7 @@ Counts: `maxLabelWidth` in 4 fixtures (320, 100, 200, 320); `useMaxWidth: true` 
 
 ## 10. Reference harness (M6 geometry check)
 
-There is no journey geometry comparison yet. The M5 harness (`tools/port/geometry/`, `flowchart-geometry.ts`) is the model. For journey:
+Built (M6, renderer task): `pnpm port:geometry journey` compares the 18 fixtures, all within tolerance. The journey mode of the generic harness (`diagram-geometry.ts`) leaves each `switch` (an `fo` label) out of the element comparison and compares its laid-out lines instead (`journey-labels.ts`: the text of each line, and the box of its characters). The settings pin `journey.titleFontFamily` and `taskFontFamily` to the bundled face. The requirements of the harness were:
 
 - Reference: the built bundle `packages/mermaid/dist` in Chromium, as `probe-ref.mjs` does [V]; the harness must pin: `fontFamily: "Lexica Ultralegible"`, `journey.titleFontFamily: "Lexica Ultralegible"`, `htmlLabels: false`, `securityLevel: strict`; `theme`: `redux-color` for every fixture whose theme ferrigura does not ship (the same fallback M2 uses, which maps `dark` to `redux-dark-color`). `taskFontFamily` is only the hidden fallback and need not be pinned.
 - Keep `textPlacement: fo` (the default): it is the reference's visible output.
@@ -696,7 +696,7 @@ Overall: about a tenth of M3 plus M5 in code (estimate 2,000 to 2,500 Rust lines
 
 ### 11.4 Open questions for the coordinator
 
-1. **Decision: the `fo` text.** ferrigura draws text as SVG, not HTML (decision 0004). Option A: draw the default `fo` as SVG text with wrapping that reproduces Chromium's HTML layout (7.6.1), and keep `textPlacement: tspan` and `old` as they are; this follows 0004 and the geometry check compares lines, not elements. Option B: emit `foreignObject` as the reference does; this keeps HTML inside the SVG, which ferrigura's output does not otherwise need, and the geometry depends on a browser. Recommendation: A, recorded as a decision (0008, or an amendment to 0004).
+1. **Decision: the `fo` text.** ferrigura draws text as SVG, not HTML (decision 0004). Option A: draw the default `fo` as SVG text with wrapping that reproduces Chromium's HTML layout (7.6.1), and keep `textPlacement: tspan` and `old` as they are; this follows 0004 and the geometry check compares lines, not elements. Option B: emit `foreignObject` as the reference does; this keeps HTML inside the SVG, which ferrigura's output does not otherwise need, and the geometry depends on a browser. Recommendation: A, recorded as a decision (0008, or an amendment to 0004). Decided: option A, as decision 0004 has it; the renderer draws the lines the browser breaks the HTML into (`crates/ferrigura-render/src/journey/text.rs`).
 2. **Named entities.** Full HTML5 table, or the 39-name subset with a note? (R2)
 3. **Score encoding** in the canonical model: the sentinel strings (section 5). Confirm it is an allowed convention.
 4. **Quirks Q1-Q12**: confirm the proposals in 11.3, especially Q2 and Q7.

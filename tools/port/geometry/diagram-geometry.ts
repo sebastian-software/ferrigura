@@ -82,6 +82,12 @@ import {
   type FixtureResult,
 } from './common.js';
 import { compareDiagrams, type DiagramGeometry } from './diagram-compare.js';
+import {
+  compareLabels,
+  JOURNEY_SETTINGS,
+  LABEL_LINES,
+  type LabelGeometry,
+} from './journey-labels.js';
 
 const fixtureRoot = join(root, 'e2e/diagrams');
 
@@ -103,12 +109,14 @@ const TYPE_FOLDERS: Record<string, string[]> = {
 /**
  * The page-side measurement of one SVG, as source text for the page (`pageHtml` in `common.ts`).
  * `record` gives one element its entry; `walk` visits the children of an element, in document
- * order, with the structural key of the parent.
+ * order, with the structural key of the parent. In journey mode (`labels`) every `switch` is a
+ * label: it is recorded with its lines, and left out of the elements (`journey-labels.ts`).
  */
-const MEASURE = `
+function measureSource(labels: boolean): string {
+  return `
 const SKIPPED = new Set(['style', 'defs', 'marker', 'title', 'desc']);
 const BOXED = new Set(['rect', 'circle', 'ellipse', 'line', 'polygon', 'polyline', 'image', 'text']);
-
+${LABEL_LINES}
 const measure = (svg) => {
   const record = (element, key) => {
     const tag = element.tagName;
@@ -151,6 +159,7 @@ const measure = (svg) => {
     return entry;
   };
   const elements = [];
+  const labelsFound = [];
   const walk = (parent, parentKey) => {
     const seen = new Map();
     for (const child of parent.children) {
@@ -159,6 +168,10 @@ const measure = (svg) => {
       const index = seen.get(signature) ?? 0;
       seen.set(signature, index + 1);
       const key = parentKey + '/' + signature + '[' + index + ']';
+      if (${labels} && child.tagName === 'switch') {
+        labelsFound.push({ key: key, lines: labelLines(svg, child) });
+        continue;
+      }
       elements.push(record(child, key));
       walk(child, key);
     }
@@ -169,9 +182,17 @@ const measure = (svg) => {
     viewBox: numbers(svg.getAttribute('viewBox')),
     roledescription: svg.getAttribute('aria-roledescription'),
     elements: elements,
+    labels: ${labels} ? labelsFound : null,
   };
 };
 `;
+}
+
+/** A measured SVG in the generic harness: the reference's and ferrigura's alike. */
+interface MeasuredSvg extends DiagramGeometry {
+  /** The journey's labels; null for the other types. */
+  labels: LabelGeometry[] | null;
+}
 
 interface Options {
   type: string;
@@ -242,12 +263,14 @@ async function main(): Promise<void> {
   );
 
   const results: DiagramResult[] = [];
-  await withPage(MEASURE, async (page) => {
+  // Journey mode: the labels are compared by their lines, and the settings pin the title font.
+  const journey = options.type === 'journey';
+  await withPage(measureSource(journey), async (page) => {
     for (const file of selected) {
       const slug = slugOf(file);
       const id = `ref-${slug}`;
       const source = await readFile(join(fixtureRoot, file), 'utf8');
-      const text = patchText(source);
+      const text = patchText(source, journey ? JOURNEY_SETTINGS : {});
       const result: DiagramResult = {
         fixture: file,
         id,
@@ -270,13 +293,13 @@ async function main(): Promise<void> {
         console.log(`! ${file}  reference failed: ${reference.error}`);
         continue;
       }
-      const referenceGeometry = await measureSvg<DiagramGeometry>(page, reference.svg);
+      const referenceGeometry = await measureSvg<MeasuredSvg>(page, reference.svg);
       result.roledescription = referenceGeometry.roledescription;
       result.elements = referenceGeometry.elements.length;
 
       // The other side: a second render of the same text, or ferrigura's SVG.
       const otherName = options.self ? 'the second reference render' : 'ferrigura';
-      let other: { svg: string; geometry: DiagramGeometry } | null = null;
+      let other: { svg: string; geometry: MeasuredSvg } | null = null;
       const excluded = options.self
         ? null
         : (exclusionReason(source) ?? uncoveredScriptReason(source));
@@ -294,7 +317,7 @@ async function main(): Promise<void> {
         }
         other = {
           svg: second.svg,
-          geometry: await measureSvg<DiagramGeometry>(page, second.svg),
+          geometry: await measureSvg<MeasuredSvg>(page, second.svg),
         };
       } else {
         const rendered = renderFerrigura(text, id, clock.now, clock.seed);
@@ -305,13 +328,23 @@ async function main(): Promise<void> {
         } else {
           other = {
             svg: rendered.svg,
-            geometry: await measureSvg<DiagramGeometry>(page, rendered.svg),
+            geometry: await measureSvg<MeasuredSvg>(page, rendered.svg),
           };
         }
       }
 
       if (other !== null) {
-        const { worst, problems } = compareDiagrams(referenceGeometry, other.geometry, otherName);
+        const compared = compareDiagrams(referenceGeometry, other.geometry, otherName);
+        // The labels of the journey: their lines, with the same tolerance and the same worst fraction.
+        const labels =
+          referenceGeometry.labels !== null && other.geometry.labels !== null
+            ? compareLabels(referenceGeometry.labels, other.geometry.labels, otherName)
+            : { worst: null, problems: [] };
+        const problems = [...compared.problems, ...labels.problems];
+        const worst = [compared.worst, labels.worst].reduce<number | null>(
+          (most, value) => (value === null ? most : Math.max(most ?? 0, value)),
+          null
+        );
         result.class = problems.length === 0 ? 'within' : 'outside';
         result.worstPercent = worst === null ? null : worst * 100;
         result.problems = problems;
