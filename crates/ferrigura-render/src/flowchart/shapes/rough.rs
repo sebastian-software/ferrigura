@@ -183,6 +183,17 @@ pub(super) fn paths(
     )
 }
 
+/// The stroke alone, for an outline with `fill: none` (`curlyBraces`): rough.js writes no fill path
+/// for it, so only the stroke path is drawn.
+#[must_use]
+pub(super) fn stroke(outline: &Outline, style: Option<&str>, stroke_width: &str) -> String {
+    let style = style.map_or_else(String::new, |style| attribute("style", style));
+    format!(
+        "<path d=\"{}\" fill=\"none\" stroke-width=\"{stroke_width}\" stroke-dasharray=\"0 0\"{style}/>",
+        outline.d,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

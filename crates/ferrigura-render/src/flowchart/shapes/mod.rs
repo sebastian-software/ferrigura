@@ -12,16 +12,21 @@
 //! with the same geometry (`rough`). The `handDrawn` look is out of scope; it takes the `classic`
 //! geometry with plain elements.
 
+mod arcs;
+mod braces;
 mod circle;
 mod collapsed_group;
+mod containers;
 mod cylinder;
 mod intersect;
 mod polygon;
 mod rect;
+mod rects;
 mod registry;
 mod rough;
 mod stadium;
 mod state;
+mod symbols;
 #[cfg(test)]
 mod test_support;
 mod util;
@@ -154,7 +159,11 @@ pub fn node_label(
         .map(str::to_owned)
         .collect();
     let spec = LabelSpec {
-        text: &node.label,
+        text: if kind.empties_label() {
+            ""
+        } else {
+            &node.label
+        },
         label_type: node.label_type,
         width: wrapping_width,
         is_node: true,
@@ -257,12 +266,37 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::StateEnd => state::state_end(input),
         Kind::Anchor => state::anchor(input),
         Kind::CollapsedGroup => collapsed_group::collapsed_group(input),
+        Kind::Bang => arcs::bang(input),
+        Kind::Cloud => arcs::cloud(input),
+        Kind::BowTieRect => arcs::bow_tie_rect(input),
+        Kind::CurvedTrapezoid => arcs::curved_trapezoid(input),
+        Kind::HalfRoundedRectangle => arcs::half_rounded_rectangle(input),
+        Kind::CurlyBraceLeft => braces::curly_brace_left(input),
+        Kind::CurlyBraceRight => braces::curly_brace_right(input),
+        Kind::CurlyBraces => braces::curly_braces(input),
+        Kind::Folder => containers::folder(input),
+        Kind::Bucket => containers::bucket(input),
+        Kind::Browser => containers::browser(input),
+        Kind::Console => containers::console(input),
+        Kind::Datastore => rects::datastore(input),
+        Kind::Note => rects::note(input),
+        Kind::DividedRectangle => rects::divided_rectangle(input),
+        Kind::Card => rects::card(input),
+        Kind::Choice => symbols::choice(input),
+        Kind::Hourglass => symbols::hourglass(input),
+        Kind::FlippedTriangle => symbols::flipped_triangle(input),
+        Kind::CrossedCircle => symbols::crossed_circle(input),
     };
     // The node group's box is the shape's and the label's together. The label group's box is the
-    // label's text box moved by the label's offset.
+    // text's own box moved by the label's offset: the box widened to the minimum width (which
+    // sizes the label) is not in the DOM, so the input's box is the one that counts.
     let mut bbox = part.bbox;
-    if let (Some(offset), Some(label)) = (part.label_offset, &part.label) {
-        bbox = bbox.union(label.bbox.translate(offset.x, offset.y));
+    if let Some(offset) = part.label_offset {
+        let text = input
+            .label
+            .or(part.label.as_ref())
+            .map_or_else(BBox::default, |label| label.bbox);
+        bbox = bbox.union(text.translate(offset.x, offset.y));
     }
     Ok(ShapeOutput {
         svg: part.svg,

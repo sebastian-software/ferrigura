@@ -26,7 +26,11 @@ const distDir = join(root, 'packages/mermaid/dist');
 const fontDir = join(root, 'crates/ferrigura-text/fonts');
 const fixturePath = join(root, 'crates/ferrigura-render/tests/fixtures/flowchart-shapes.json');
 
-/** The shapes of stage A, by the name the flowchart's `@{ shape: … }` directive takes. */
+/**
+ * The shapes of stages A and C, by the name the flowchart's `@{ shape: … }` directive takes. The
+ * directive takes lowercase names without underscores (`flowDb.ts`), so a shape whose handler name
+ * is camelCase is named by its short name or an alias.
+ */
 const SHAPES: [directive: string, internal: string][] = [
   ['rect', 'squareRect'],
   ['rounded', 'roundedRect'],
@@ -49,6 +53,26 @@ const SHAPES: [directive: string, internal: string][] = [
   ['anchor', 'anchor'],
   ['odd', 'rect_left_inv_arrow'],
   ['collapsed', 'collapsedGroup'],
+  ['bang', 'bang'],
+  ['bow-rect', 'bowTieRect'],
+  ['browser', 'browser'],
+  ['bucket', 'bucket'],
+  ['notch-rect', 'card'],
+  ['cloud', 'cloud'],
+  ['console', 'consoleWindow'],
+  ['cross-circ', 'crossedCircle'],
+  ['brace', 'curlyBraceLeft'],
+  ['brace-r', 'curlyBraceRight'],
+  ['braces', 'curlyBraces'],
+  ['curv-trap', 'curvedTrapezoid'],
+  ['datastore', 'datastore'],
+  ['div-rect', 'dividedRectangle'],
+  ['flip-tri', 'flippedTriangle'],
+  ['folder', 'folder'],
+  ['delay', 'halfRoundedRectangle'],
+  ['hourglass', 'hourglass'],
+  ['choice', 'choice'],
+  ['note', 'note'],
 ];
 
 /** The labels: empty, short, a phrase, a long label that wraps, and two lines. */

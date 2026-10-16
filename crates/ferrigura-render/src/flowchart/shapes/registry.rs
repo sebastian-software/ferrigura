@@ -1,13 +1,13 @@
 //! The shape registry: the names and aliases of `rendering-elements/shapes.ts` that the flowchart
-//! reaches, mapped to the shapes of stage A. A name that the registry does not know is an error,
-//! as `insertNode` throws `No such shape` for it. The names of the other stages are not in the
-//! registry yet, so they are reported the same way until their stage ports them.
+//! reaches, mapped to the shapes of stages A and C. A name that the registry does not know is an
+//! error, as `insertNode` throws `No such shape` for it. The names of the other stages are not in
+//! the registry yet, so they are reported the same way until their stage ports them.
 
 use crate::flowchart::data::Node;
 
 use super::util;
 
-/// The shapes of stage A, one per handler of `shapes/`.
+/// The shapes of stages A and C, one per handler of `shapes/`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Kind {
     SquareRect,
@@ -32,6 +32,27 @@ pub(super) enum Kind {
     Anchor,
     LabelRect,
     CollapsedGroup,
+    // The shapes of stage C.
+    Bang,
+    BowTieRect,
+    Browser,
+    Bucket,
+    Card,
+    Choice,
+    Cloud,
+    Console,
+    CrossedCircle,
+    CurlyBraceLeft,
+    CurlyBraceRight,
+    CurlyBraces,
+    CurvedTrapezoid,
+    Datastore,
+    DividedRectangle,
+    FlippedTriangle,
+    Folder,
+    HalfRoundedRectangle,
+    Hourglass,
+    Note,
 }
 
 /// The shape a name stands for, with `rect` taken as `roundedRect` when it has both radii
@@ -71,6 +92,26 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "odd" | "rect_left_inv_arrow" => Kind::RectLeftInvArrow,
         "labelRect" => Kind::LabelRect,
         "collapsedGroup" => Kind::CollapsedGroup,
+        "bang" => Kind::Bang,
+        "bow-rect" | "stored-data" | "bow-tie-rectangle" => Kind::BowTieRect,
+        "browser" => Kind::Browser,
+        "bucket" => Kind::Bucket,
+        "notch-rect" | "card" | "notched-rectangle" => Kind::Card,
+        "choice" => Kind::Choice,
+        "cloud" => Kind::Cloud,
+        "console" => Kind::Console,
+        "cross-circ" | "summary" | "crossed-circle" => Kind::CrossedCircle,
+        "brace" | "comment" | "brace-l" => Kind::CurlyBraceLeft,
+        "brace-r" => Kind::CurlyBraceRight,
+        "braces" => Kind::CurlyBraces,
+        "curv-trap" | "curved-trapezoid" | "display" => Kind::CurvedTrapezoid,
+        "datastore" | "data-store" => Kind::Datastore,
+        "div-rect" | "div-proc" | "divided-rectangle" | "divided-process" => Kind::DividedRectangle,
+        "flip-tri" | "manual-file" | "flipped-triangle" => Kind::FlippedTriangle,
+        "folder" | "directory" => Kind::Folder,
+        "delay" | "half-rounded-rectangle" => Kind::HalfRoundedRectangle,
+        "hourglass" | "collate" => Kind::Hourglass,
+        "note" => Kind::Note,
         _ => return None,
     })
 }
@@ -83,12 +124,25 @@ pub(super) fn resolve(name: &str) -> Option<Kind> {
 
 impl Kind {
     /// Whether the shape draws a label. The shapes without one set the node's label to nothing
-    /// or ignore it (`filledCircle`, `forkJoin`, `anchor`, `stateStart`, `stateEnd`).
+    /// or ignore it (`filledCircle`, `forkJoin`, `anchor`, `stateStart`, `stateEnd`), or do not
+    /// call `labelHelper` (`choice`, `crossedCircle`).
     pub(super) fn draws_label(self) -> bool {
         !matches!(
             self,
-            Self::FilledCircle | Self::ForkJoin | Self::Anchor | Self::StateStart | Self::StateEnd
+            Self::FilledCircle
+                | Self::ForkJoin
+                | Self::Anchor
+                | Self::StateStart
+                | Self::StateEnd
+                | Self::Choice
+                | Self::CrossedCircle
         )
+    }
+
+    /// Whether the shape sets the node's label to nothing before it lays it out, so that its label
+    /// group is empty whatever the node's text (`hourglass.ts` sets `node.label = ''`).
+    pub(super) fn empties_label(self) -> bool {
+        matches!(self, Self::Hourglass)
     }
 
     /// Whether the shape stores its label declarations on the node (`node.labelStyle`), which
@@ -208,6 +262,39 @@ mod tests {
     fn should_support_alias_for_filledcircle_shape() {
         assert_eq!(resolve("junction"), resolve("f-circ"));
         assert_eq!(resolve("filled-circle"), resolve("f-circ"));
+    }
+
+    // shapes.ts: the aliases of the stage C shapes resolve to the shape of their short name.
+
+    #[test]
+    fn should_support_alias_for_stage_c_shapes() {
+        assert_eq!(resolve("stored-data"), resolve("bow-rect"));
+        assert_eq!(resolve("bow-tie-rectangle"), resolve("bow-rect"));
+        assert_eq!(resolve("notched-rectangle"), resolve("notch-rect"));
+        assert_eq!(resolve("comment"), resolve("brace"));
+        assert_eq!(resolve("brace-l"), resolve("brace"));
+        assert_eq!(resolve("summary"), resolve("cross-circ"));
+        assert_eq!(resolve("crossed-circle"), resolve("cross-circ"));
+        assert_eq!(resolve("display"), resolve("curv-trap"));
+        assert_eq!(resolve("curved-trapezoid"), resolve("curv-trap"));
+        assert_eq!(resolve("data-store"), resolve("datastore"));
+        assert_eq!(resolve("div-proc"), resolve("div-rect"));
+        assert_eq!(resolve("divided-process"), resolve("div-rect"));
+        assert_eq!(resolve("manual-file"), resolve("flip-tri"));
+        assert_eq!(resolve("directory"), resolve("folder"));
+        assert_eq!(resolve("half-rounded-rectangle"), resolve("delay"));
+        assert_eq!(resolve("collate"), resolve("hourglass"));
+    }
+
+    #[test]
+    fn the_shapes_that_draw_no_label_are_known_to_the_registry() {
+        for name in ["choice", "summary", "note", "folder", "bang"] {
+            assert!(resolve(name).is_some(), "{name}");
+        }
+        assert!(!Kind::Choice.draws_label());
+        assert!(!Kind::CrossedCircle.draws_label());
+        assert!(Kind::Hourglass.draws_label());
+        assert!(Kind::Hourglass.empties_label());
     }
 
     #[test]
