@@ -206,6 +206,22 @@ pub fn collapse_white_space(text: &str) -> String {
     out
 }
 
+/// The width of a text in an SVG `<text>` as Chromium reports it (`getComputedTextLength`, and the
+/// width of `getBoundingClientRect`): the advance of the text with its white space collapsed
+/// ([`collapse_white_space`]), snapped to the 1/64 px layout unit. A text with no glyph left
+/// measures 0.
+///
+/// # Errors
+///
+/// Returns an error if the bundled font cannot be read.
+pub fn collapsed_width(face: &Face, text: &str, size: f64) -> Result<f64, TextError> {
+    let collapsed = collapse_white_space(text);
+    if collapsed.is_empty() {
+        return Ok(0.0);
+    }
+    Ok(layout_width(measure(face, &collapsed, size)?))
+}
+
 /// The width and the height of one line, before rounding: the snapped advance, and the text box.
 fn line_metrics(line: &str, style: &TextStyle) -> Result<(f64, f64), MeasureError> {
     let face = face_of(style);

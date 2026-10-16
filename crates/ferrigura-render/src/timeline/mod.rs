@@ -24,6 +24,7 @@ use ferrigura_text::{
 use crate::RenderError;
 use crate::a11y;
 use crate::common::style::base_style_sheet_with;
+use crate::common::text::{collapse_white_space, collapsed_width};
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
 use crate::common::{Element, decode_entities};
 use crate::svg::{escape, number};
@@ -446,7 +447,7 @@ pub(super) fn title(
     text: &str,
 ) -> Result<(Element, Option<BBox>), RenderError> {
     let shown_text = shown(text);
-    let width = text::width_of(cx.bold, cx.title_size, &shown_text)?;
+    let width = collapsed_width(cx.bold, &shown_text, cx.title_size)?;
     let TextBox {
         ascent, descent, ..
     } = text_box(cx.bold, cx.title_size)?;
@@ -457,7 +458,7 @@ pub(super) fn title(
         .with("y", "20")
         .raw_text(markup(text));
     // A title with no glyph, such as one blank, has no box (as a node text with no glyph has none).
-    let bounds = (!text::collapse(&shown_text).is_empty()).then_some(BBox {
+    let bounds = (!collapse_white_space(&shown_text).is_empty()).then_some(BBox {
         x,
         y: 20.0 - ascent,
         width,
