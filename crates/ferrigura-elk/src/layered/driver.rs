@@ -232,6 +232,9 @@ fn module_name(step: &Step) -> Result<&'static str, LayoutError> {
             PhaseStep::CycleBreaking(CycleBreakingStrategy::DEPTH_FIRST) => {
                 "org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker"
             }
+            PhaseStep::CycleBreaking(CycleBreakingStrategy::GREEDY) => {
+                "org.eclipse.elk.alg.layered.p1cycles.GreedyCycleBreaker"
+            }
             PhaseStep::Layering(LayeringStrategy::NETWORK_SIMPLEX) => {
                 "org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer"
             }

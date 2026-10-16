@@ -1082,6 +1082,14 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__greedy-cycles",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 7,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__nested-two-components",
    "fixture": null,
    "nodes": 5,

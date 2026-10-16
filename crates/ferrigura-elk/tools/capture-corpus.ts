@@ -36,6 +36,7 @@ import {
   slugify,
   syntheticComponentGraphs,
   syntheticEdgeGraphs,
+  syntheticGreedyCycleGraphs,
   syntheticNodeLabelGraphs,
   stripGwtHashKeys,
   type GraphStats,
@@ -406,6 +407,9 @@ async function syntheticRecords(): Promise<CaseRecord[]> {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticComponentGraphs()) {
+    await add(name, graph);
+  }
+  for (const { name, graph } of syntheticGreedyCycleGraphs()) {
     await add(name, graph);
   }
   return records.sort(byName);

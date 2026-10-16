@@ -80,6 +80,7 @@ pub const SPACING_NODE_NODE_BETWEEN_LAYERS: &str =
 pub const UNNECESSARY_BENDPOINTS: &str = "org.eclipse.elk.layered.unnecessaryBendpoints";
 pub const PRIORITY_SHORTNESS: &str = "org.eclipse.elk.layered.priority.shortness";
 pub const PRIORITY_STRAIGHTNESS: &str = "org.eclipse.elk.layered.priority.straightness";
+pub const PRIORITY_DIRECTION: &str = "org.eclipse.elk.layered.priority.direction";
 pub const LAYER_CONSTRAINT: &str = "org.eclipse.elk.layered.layering.layerConstraint";
 pub const CONSIDER_MODEL_ORDER_CROSSING_COUNTER_NODE_INFLUENCE: &str =
     "org.eclipse.elk.layered.considerModelOrder.crossingCounterNodeInfluence";
@@ -149,6 +150,7 @@ mod tests {
             SPACING_NODE_NODE_BETWEEN_LAYERS,
             PRIORITY_SHORTNESS,
             PRIORITY_STRAIGHTNESS,
+            PRIORITY_DIRECTION,
         ] {
             assert!(option_by_id(id).is_some(), "{id} is not registered");
         }

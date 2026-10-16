@@ -185,7 +185,7 @@ export function syntheticComponentGraphs(): { name: string; graph: Record<string
               'elk.algorithm': 'elk.layered',
               'elk.direction': 'DOWN',
               'elk.hierarchyHandling': 'SEPARATE_CHILDREN',
-              // As Mermaid's composite states set it; the greedy cycle breaker is not ported.
+              // As Mermaid's composite states set it.
               'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
             },
             children: [node('a'), node('b'), node('c'), node('d')],
@@ -193,6 +193,42 @@ export function syntheticComponentGraphs(): { name: string; graph: Record<string
           },
         ],
         edges: [edge('e0', 'a', 'b'), edge('e1', 'c', 'd')],
+      },
+    },
+  ];
+}
+
+/**
+ * A flat graph with cycles, laid out with the greedy cycle breaker, which Mermaid's legacy preset
+ * selects through the GREEDY strategy. The flows of its nodes differ, so the sinks, the sources and
+ * the random draw of the node with the largest outflow all take part.
+ */
+export function syntheticGreedyCycleGraphs(): { name: string; graph: Record<string, unknown> }[] {
+  const node = (id: string): Record<string, unknown> => ({ id, width: 50, height: 40 });
+  const edge = (id: string, source: string, target: string): Record<string, unknown> => ({
+    id,
+    sources: [source],
+    targets: [target],
+  });
+  return [
+    {
+      name: 'synthetic__greedy-cycles',
+      graph: {
+        id: 'root',
+        layoutOptions: {
+          ...rootLayoutOptionsDefault(),
+          'elk.layered.cycleBreaking.strategy': 'GREEDY',
+        },
+        children: [node('a'), node('b'), node('c'), node('d'), node('e')],
+        edges: [
+          edge('e0', 'a', 'b'),
+          edge('e1', 'b', 'c'),
+          edge('e2', 'c', 'a'),
+          edge('e3', 'c', 'd'),
+          edge('e4', 'd', 'e'),
+          edge('e5', 'e', 'b'),
+          edge('e6', 'a', 'd'),
+        ],
       },
     },
   ];

@@ -9,6 +9,9 @@
 use crate::core::data::JavaEnum;
 use crate::core::data::OptionValue;
 use crate::core::data::enums::EdgeLabelPlacement;
+use std::collections::VecDeque;
+
+use crate::java::random::Random;
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
 
@@ -46,6 +49,191 @@ pub fn break_cycles(graph: &mut LGraph) {
     for edge in to_reverse {
         reverse_edge(graph, edge);
         graph.cyclic = true;
+    }
+}
+
+/// `GreedyCycleBreaker.process`: the nodes are taken off one at a time. Sinks go to the right and
+/// sources to the left; when neither is left, a node with the largest outflow, drawn at random,
+/// goes to the left. The edges that then point left are reversed. The edge priorities weigh the flow.
+pub fn break_cycles_greedy(graph: &mut LGraph, random: &mut Random) {
+    let nodes = graph.layerless_nodes.clone();
+    let count = nodes.len();
+    let mut flow = Flow::new(graph, &nodes);
+    let mut unprocessed = count as i64;
+    // The next ranks for sinks (from the right, negative) and for sources (from the left).
+    let mut next_right: i32 = -1;
+    let mut next_left: i32 = 1;
+    while unprocessed > 0 {
+        while let Some(sink) = flow.sinks.pop_front() {
+            flow.mark[sink] = next_right;
+            next_right -= 1;
+            flow.update_neighbors(graph, nodes[sink]);
+            unprocessed -= 1;
+        }
+        while let Some(source) = flow.sources.pop_front() {
+            flow.mark[source] = next_left;
+            next_left += 1;
+            flow.update_neighbors(graph, nodes[source]);
+            unprocessed -= 1;
+        }
+        if unprocessed > 0 {
+            let mut max_outflow = i32::MIN;
+            let mut max_nodes: Vec<usize> = Vec::new();
+            for index in 0..count {
+                if flow.mark[index] == 0 {
+                    let outflow = flow.outdeg[index].wrapping_sub(flow.indeg[index]);
+                    if outflow >= max_outflow {
+                        if outflow > max_outflow {
+                            max_nodes.clear();
+                            max_outflow = outflow;
+                        }
+                        max_nodes.push(index);
+                    }
+                }
+            }
+            // An unmarked node is always a candidate here, so the list is not empty.
+            if max_nodes.is_empty() {
+                break;
+            }
+            // `chooseNodeWithMaxOutflow`: `random.nextInt(nodes.size())`.
+            let draw = random.next_int_bounded(i32::try_from(max_nodes.len()).unwrap_or(i32::MAX));
+            let chosen = max_nodes[draw as usize];
+            flow.mark[chosen] = next_left;
+            next_left += 1;
+            flow.update_neighbors(graph, nodes[chosen]);
+            unprocessed -= 1;
+        }
+    }
+    // The sinks have negative ranks; they move past the sources.
+    let shift_base = i32::try_from(count + 1).unwrap_or(i32::MAX);
+    for mark in flow.mark.iter_mut() {
+        if *mark < 0 {
+            *mark += shift_base;
+        }
+    }
+    for &node in &nodes {
+        for port in graph.nodes[node].ports.clone() {
+            for edge in graph.ports[port].outgoing.clone() {
+                let target = graph.ports[graph.edges[edge].target].node;
+                if flow.mark[flow.id[node]] > flow.mark[flow.id[target]] {
+                    reverse_edge(graph, edge);
+                    graph.cyclic = true;
+                }
+            }
+        }
+    }
+}
+
+/// The arrays of `GreedyCycleBreaker`. Positions are a node's place in the layerless list, which
+/// the Java code keeps as `node.id`.
+struct Flow {
+    /// The position of each graph node (indexed by node), for the layerless nodes.
+    id: Vec<usize>,
+    indeg: Vec<i32>,
+    outdeg: Vec<i32>,
+    mark: Vec<i32>,
+    sources: VecDeque<usize>,
+    sinks: VecDeque<usize>,
+}
+
+/// The priority of an edge in the flow, `edge.getProperty(PRIORITY_DIRECTION)`.
+fn flow_priority(graph: &LGraph, edge: usize) -> i32 {
+    graph.edges[edge]
+        .properties
+        .int_with_default(options::PRIORITY_DIRECTION)
+}
+
+impl Flow {
+    /// The in and out flow of each node, and the first sinks and sources.
+    fn new(graph: &LGraph, nodes: &[usize]) -> Self {
+        let mut id = vec![0; graph.nodes.len()];
+        for (index, &node) in nodes.iter().enumerate() {
+            id[node] = index;
+        }
+        let mut flow = Flow {
+            id,
+            indeg: vec![0; nodes.len()],
+            outdeg: vec![0; nodes.len()],
+            mark: vec![0; nodes.len()],
+            sources: VecDeque::new(),
+            sinks: VecDeque::new(),
+        };
+        for (index, &node) in nodes.iter().enumerate() {
+            for &port in &graph.nodes[node].ports {
+                // Self-loops do not count.
+                for &edge in &graph.ports[port].incoming {
+                    if graph.ports[graph.edges[edge].source].node == node {
+                        continue;
+                    }
+                    let priority = flow_priority(graph, edge);
+                    let weight = if priority > 0 {
+                        priority.wrapping_add(1)
+                    } else {
+                        1
+                    };
+                    flow.indeg[index] = flow.indeg[index].wrapping_add(weight);
+                }
+                for &edge in &graph.ports[port].outgoing {
+                    if graph.ports[graph.edges[edge].target].node == node {
+                        continue;
+                    }
+                    let priority = flow_priority(graph, edge);
+                    let weight = if priority > 0 {
+                        priority.wrapping_add(1)
+                    } else {
+                        1
+                    };
+                    flow.outdeg[index] = flow.outdeg[index].wrapping_add(weight);
+                }
+            }
+            if flow.outdeg[index] == 0 {
+                flow.sinks.push_back(index);
+            } else if flow.indeg[index] == 0 {
+                flow.sources.push_back(index);
+            }
+        }
+        flow
+    }
+
+    /// `updateNeighbors`: a node is taken off, so each neighbour that is not marked yet loses
+    /// the flow of the edge between them, and joins the sinks or sources when that flow ends.
+    fn update_neighbors(&mut self, graph: &LGraph, node: usize) {
+        for &port in &graph.nodes[node].ports {
+            // `getConnectedEdges`: the incoming edges, then the outgoing ones.
+            for &edge in graph.ports[port]
+                .incoming
+                .iter()
+                .chain(&graph.ports[port].outgoing)
+            {
+                let edge_data = &graph.edges[edge];
+                let connected = if edge_data.source == port {
+                    edge_data.target
+                } else {
+                    edge_data.source
+                };
+                let endpoint = graph.ports[connected].node;
+                // Self-loops are excluded.
+                if endpoint == node {
+                    continue;
+                }
+                let priority = flow_priority(graph, edge).max(0);
+                let index = self.id[endpoint];
+                if self.mark[index] != 0 {
+                    continue;
+                }
+                if edge_data.target == connected {
+                    self.indeg[index] = self.indeg[index].wrapping_sub(priority.wrapping_add(1));
+                    if self.indeg[index] <= 0 && self.outdeg[index] > 0 {
+                        self.sources.push_back(index);
+                    }
+                } else {
+                    self.outdeg[index] = self.outdeg[index].wrapping_sub(priority.wrapping_add(1));
+                    if self.outdeg[index] <= 0 && self.indeg[index] > 0 {
+                        self.sinks.push_back(index);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -218,6 +406,22 @@ mod tests {
     fn an_acyclic_graph_keeps_its_edges() {
         let mut graph = graph_with(3, &[(0, 1), (1, 2), (0, 2)]);
         break_cycles(&mut graph);
+        assert!(!graph.cyclic);
+        assert!(graph.edges.iter().all(|edge| !edge.reversed));
+    }
+
+    #[test]
+    fn greedy_breaks_a_two_cycle_with_one_reversed_edge() {
+        let mut graph = graph_with(2, &[(0, 1), (1, 0)]);
+        break_cycles_greedy(&mut graph, &mut Random::new(1));
+        assert!(graph.cyclic);
+        assert_eq!(graph.edges.iter().filter(|edge| edge.reversed).count(), 1);
+    }
+
+    #[test]
+    fn greedy_keeps_the_edges_of_an_acyclic_graph() {
+        let mut graph = graph_with(3, &[(0, 1), (1, 2), (0, 2)]);
+        break_cycles_greedy(&mut graph, &mut Random::new(1));
         assert!(!graph.cyclic);
         assert!(graph.edges.iter().all(|edge| !edge.reversed));
     }

@@ -189,7 +189,7 @@ impl PhaseStep {
 }
 
 /// The cycle breaking of phase 1. Without edges there are no cycles, whatever the strategy;
-/// with edges only the depth-first breaker is ported.
+/// with edges the depth-first and the greedy breakers are ported.
 fn cycle_breaking(graph: &mut LGraph, strategy: CycleBreakingStrategy) -> Result<(), LayoutError> {
     if graph.edges.is_empty() {
         return Ok(());
@@ -197,6 +197,15 @@ fn cycle_breaking(graph: &mut LGraph, strategy: CycleBreakingStrategy) -> Result
     match strategy {
         CycleBreakingStrategy::DEPTH_FIRST => {
             p1cycles::break_cycles(graph);
+            Ok(())
+        }
+        CycleBreakingStrategy::GREEDY => {
+            // `layeredGraph.getProperty(InternalProperties.RANDOM)`: taken, then given back.
+            let mut random = graph.random.take().ok_or_else(|| {
+                LayoutError::Format("the layered graph has no random generator".to_string())
+            })?;
+            p1cycles::break_cycles_greedy(graph, &mut random);
+            graph.random = Some(random);
             Ok(())
         }
         other => Err(LayoutError::Unsupported(format!(
