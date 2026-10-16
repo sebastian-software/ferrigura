@@ -20,6 +20,7 @@ mod lexer;
 mod preprocess;
 mod text;
 
+pub mod config;
 pub mod info;
 pub mod pie;
 
@@ -35,6 +36,17 @@ pub enum DiagramType {
     Pie,
     /// The info diagram.
     Info,
+}
+
+impl DiagramType {
+    /// The configuration section of the diagram type, as `getDiagramConfigKey` names it.
+    #[must_use]
+    pub fn config_key(self) -> &'static str {
+        match self {
+            Self::Pie => "pie",
+            Self::Info => "info",
+        }
+    }
 }
 
 /// A parsed diagram of any type this crate covers.

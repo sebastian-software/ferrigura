@@ -1,9 +1,9 @@
 //! Text cleanup before lexing: the parts of `packages/mermaid/src/preprocess.ts` that decide what
 //! the grammar sees.
 //!
-//! Only the front matter title is read from the front matter; its `config` block belongs to the
-//! configuration port and is skipped. Comments and directives are not removed here: the lexer
-//! treats them as hidden tokens, as the grammars do.
+//! Only the front matter title is read here; the front matter `config` block is read by
+//! `crate::config`, which needs the whole YAML document. Comments and directives are not removed
+//! here: the lexer treats them as hidden tokens, as the grammars do.
 
 use crate::text::{is_cr_lf, is_js_space, is_word};
 
@@ -14,6 +14,8 @@ pub(crate) struct Prepared {
     pub text: String,
     /// The `title` of the front matter, if it has a non-empty one.
     pub title: Option<String>,
+    /// The YAML body of the front matter, dedented as `extractFrontMatter` does, if there is one.
+    pub front_matter: Option<String>,
     /// Number of lines removed with the front matter, so positions can be reported against the
     /// original input.
     pub line_offset: usize,
@@ -29,15 +31,29 @@ pub(crate) fn prepare(raw: &str) -> Prepared {
             Prepared {
                 text: chars[front_matter.length..].iter().collect(),
                 title: front_matter_title(&front_matter.body, &front_matter.indent),
+                front_matter: Some(dedent(&front_matter.body, &front_matter.indent)),
                 line_offset: removed.iter().filter(|&&c| c == '\n').count(),
             }
         }
         None => Prepared {
             text: normalized,
             title: None,
+            front_matter: None,
             line_offset: 0,
         },
     }
+}
+
+/// Removes the captured indent from the start of each line that has it, as `extractFrontMatter`
+/// does before it parses the YAML: js-yaml rejects indented documents.
+fn dedent(body: &str, indent: &str) -> String {
+    if indent.is_empty() {
+        return body.to_owned();
+    }
+    body.split('\n')
+        .map(|line| line.strip_prefix(indent).unwrap_or(line))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// `replace(/<(\w+)([^>]*)>/g, …)` with `="x"` changed to `='x'` inside the tag.

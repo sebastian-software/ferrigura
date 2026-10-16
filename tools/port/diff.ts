@@ -14,8 +14,16 @@ import { collectInputs } from './inputs.ts';
 import type { PortInput, PortOutput } from './reference.ts';
 
 const type = process.argv[2];
+if (type === 'config') {
+  const configRun = spawnSync(
+    'pnpm',
+    ['exec', 'tsx', fileURLToPath(new URL('./diff-config.ts', import.meta.url))],
+    { stdio: 'inherit' }
+  );
+  process.exit(configRun.status ?? 2);
+}
 if (type !== 'pie' && type !== 'info') {
-  console.error('usage: pnpm port:diff pie | info');
+  console.error('usage: pnpm port:diff pie | info | config');
   process.exit(2);
 }
 
