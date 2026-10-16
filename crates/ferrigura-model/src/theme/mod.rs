@@ -12,6 +12,7 @@ use crate::value::Value;
 mod helpers;
 pub mod khroma;
 mod redux_color;
+mod redux_dark_color;
 
 /// The result of computing the variables of a theme.
 pub(crate) type Res<T> = Result<T, ThemeError>;
@@ -57,14 +58,16 @@ impl fmt::Display for ThemeError {
 impl std::error::Error for ThemeError {}
 
 impl Theme {
-    /// The theme for a configured `theme` name. A name that ferrigura does not ship falls back to a
-    /// theme by its darkness: names ending in `dark` take the dark theme, everything else the light one.
+    /// The theme for a configured `theme` name: `redux-color` and `redux-dark-color` are themselves.
+    /// A name that ferrigura does not ship falls back to a theme by its darkness: names ending in
+    /// `dark` take the dark theme, everything else the light one.
     #[must_use]
     pub fn from_name(name: &str) -> Self {
-        if name.ends_with("dark") {
-            Self::ReduxDarkColor
-        } else {
-            Self::ReduxColor
+        match name {
+            "redux-color" => Self::ReduxColor,
+            "redux-dark-color" => Self::ReduxDarkColor,
+            _ if name.ends_with("dark") => Self::ReduxDarkColor,
+            _ => Self::ReduxColor,
         }
     }
 
@@ -87,8 +90,7 @@ impl Theme {
     pub fn try_variables(self, overrides: Option<&Value>) -> Result<Value, ThemeError> {
         match self {
             Self::ReduxColor => redux_color::variables(overrides),
-            // Placeholder until the dark theme is ported.
-            Self::ReduxDarkColor => Ok(Value::empty_object()),
+            Self::ReduxDarkColor => redux_dark_color::variables(overrides),
         }
     }
 }
