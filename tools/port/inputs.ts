@@ -24,12 +24,14 @@ const detectors: Record<string, RegExp> = {
   journey: /^\s*journey/,
   gitgraph: /^\s*gitGraph/,
   er: /^\s*erDiagram/,
+  class: /^\s*classDiagram/,
 };
 
 /** The e2e folder of a diagram type, where it is not the type itself. */
 const fixtureFolders: Record<string, string> = {
   gitgraph: 'git',
   er: 'er-diagram',
+  class: 'class-diagram',
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */

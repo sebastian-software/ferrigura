@@ -8,7 +8,7 @@ mod db;
 mod grammar;
 mod scanner;
 mod shapes;
-mod unicode;
+pub(crate) mod unicode;
 
 use std::error::Error;
 use std::fmt;

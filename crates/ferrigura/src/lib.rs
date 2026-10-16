@@ -96,6 +96,11 @@ pub fn render_with(
             column: 1,
             message: "the ER diagram is not rendered yet".to_owned(),
         })),
+        Some(DiagramType::Class) => Err(RenderError::Parse(ParseError {
+            line: 1,
+            column: 1,
+            message: "the class diagram is not rendered yet".to_owned(),
+        })),
         None => Err(RenderError::Parse(ParseError {
             line: 1,
             column: 1,

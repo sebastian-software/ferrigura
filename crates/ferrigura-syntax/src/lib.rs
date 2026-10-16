@@ -23,7 +23,9 @@ mod lexer;
 mod preprocess;
 mod scan;
 mod text;
+mod url;
 
+pub mod class;
 pub mod config;
 pub mod er;
 pub mod info;
@@ -33,6 +35,7 @@ pub mod sanitize;
 pub mod timeline;
 pub mod yaml;
 
+use ferrigura_model::class::ClassDiagram;
 use ferrigura_model::er::ErDiagram;
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::git_graph::GitGraphDiagram;
@@ -60,6 +63,8 @@ pub enum DiagramType {
     GitGraph,
     /// The ER diagram, written `erDiagram`.
     Er,
+    /// The class diagram, written `classDiagram` or `classDiagram-v2`.
+    Class,
 }
 
 impl DiagramType {
@@ -74,6 +79,7 @@ impl DiagramType {
             Self::Journey => "journey",
             Self::GitGraph => "gitGraph",
             Self::Er => "er",
+            Self::Class => "class",
         }
     }
 }
@@ -95,6 +101,8 @@ pub enum Diagram {
     GitGraph(GitGraphDiagram),
     /// An ER diagram.
     Er(ErDiagram),
+    /// A class diagram.
+    Class(ClassDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -120,6 +128,8 @@ pub fn detect(text: &str) -> Option<DiagramType> {
         Some(DiagramType::Journey)
     } else if rest.starts_with("gitGraph") {
         Some(DiagramType::GitGraph)
+    } else if rest.starts_with("classDiagram") {
+        Some(DiagramType::Class)
     } else {
         None
     }
@@ -137,6 +147,7 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         Some(DiagramType::Timeline) => timeline::parse(text).map(Diagram::Timeline),
         Some(DiagramType::Journey) => journey::parse(text).map(Diagram::Journey),
         Some(DiagramType::GitGraph) => git_graph::parse(text).map(Diagram::GitGraph),
+        Some(DiagramType::Class) => class::parse(text).map(Diagram::Class),
         None => Err(ParseError {
             line: 1,
             column: 1,

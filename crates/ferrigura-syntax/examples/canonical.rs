@@ -1,7 +1,7 @@
 //! Parses inputs with a ferrigura parser and writes the canonical JSON of each result. The
 //! differential harness (`pnpm port:diff`) runs this against the JS exporters of `tools/port/`.
 //!
-//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er> <inputs.json> <outputs.json>`
+//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
 //! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
@@ -15,7 +15,7 @@ use std::fs;
 
 use ferrigura_syntax::flowchart::{self, FlowchartError};
 use ferrigura_syntax::{
-    DiagramType, ParseError, detect, er, git_graph, info, journey, pie, timeline,
+    DiagramType, ParseError, class, detect, er, git_graph, info, journey, pie, timeline,
 };
 use serde_json::{Value, json};
 
@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
         return Err(
-            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er> <inputs.json> <outputs.json>"
+            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class> <inputs.json> <outputs.json>"
                 .into(),
         );
     };
@@ -134,6 +134,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => Outcome::Rejected(error),
             },
             "er" => match er::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "class" => match class::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
