@@ -1,7 +1,7 @@
 //! The labels against the reference: `label::layout` compared with `createText` (`htmlLabels: false`)
 //! run in Chromium, from `fixtures/labels-chromium.json`, which `tools/port/text/label-fixture.ts`
 //! writes. For every label the lines, their words and their styles, the start of every word, the
-//! width of every line, the box of the text and the background must agree within 0.05 px.
+//! width of every line, the box of the text and the background must agree within 0.001 px.
 
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_render::RenderError;
@@ -9,8 +9,9 @@ use ferrigura_render::flowchart::label::{Anchor, LabelLayout, LabelSpec, layout}
 use ferrigura_text::TextError;
 use serde_json::Value;
 
-/// The largest difference allowed in pixels, the tolerance of the other geometry comparisons.
-const TOLERANCE: f64 = 0.05;
+/// The largest difference allowed in pixels. Widths, starts and boxes are on Chromium's 1/64 px
+/// grid and agree exactly, so the tolerance is a thousandth of a pixel.
+const TOLERANCE: f64 = 0.001;
 
 const FIXTURE: &str = include_str!("fixtures/labels-chromium.json");
 

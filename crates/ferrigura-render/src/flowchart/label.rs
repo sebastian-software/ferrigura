@@ -12,8 +12,8 @@ use std::fmt::Write as _;
 
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_text::{
-    Face, FontFamily, FontStyle, FontWeight, Run, TextError, Word, face, fit_line, measure,
-    measure_words, text_box,
+    Face, FontFamily, FontStyle, FontWeight, Run, TextError, Word, face, fit_line, layout_width,
+    measure, measure_words, text_box,
 };
 
 use super::geom::BBox;
@@ -257,8 +257,9 @@ pub fn layout(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
 }
 
 /// Places the lines at `size` pixels, anchored on `x = 0` as `anchor` says, and returns them with the
-/// box of their text. A centred line starts at minus half its width, a start-anchored line at zero,
-/// and each run starts where the runs before it end. The box is the union of the runs' boxes, each
+/// box of their text. Each run is as wide as Chromium lays it out ([`layout_width`]), so every run
+/// starts on the 1/64 px grid where the run before it ends, and a line's width is the sum of its
+/// runs. A centred line starts at minus half its width, a start-anchored line at zero. The box is the union of the runs' boxes, each
 /// from the run's ascent to its descent, as `getBBox` takes it; a line without words has no box, so
 /// an empty line adds no height.
 fn place(
@@ -272,7 +273,7 @@ fn place(
         let baseline = size * (1.0 + LINE_HEIGHT * index as f64);
         let mut widths = Vec::with_capacity(line.len());
         for (text, face) in line {
-            widths.push(measure(face, text, size)?);
+            widths.push(layout_width(measure(face, text, size)?));
         }
         let width: f64 = widths.iter().sum();
         let mut x = match anchor {
