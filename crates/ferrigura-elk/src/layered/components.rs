@@ -17,7 +17,6 @@
 
 use std::collections::HashMap;
 
-use crate::core::data::OptionValue;
 use crate::core::data::enums::GraphProperties;
 use crate::core::math::KVector;
 use crate::error::LayoutError;
@@ -40,10 +39,7 @@ const PRIORITY: &str = "org.eclipse.elk.priority";
 /// Whether the graph is split into its connected components: `separateConnectedComponents`, which
 /// is on unless it is set to false.
 pub fn separates(graph: &LGraph) -> bool {
-    !matches!(
-        graph.properties.get(SEPARATE_CONNECTED_COMPONENTS),
-        Some(OptionValue::Boolean(false))
-    )
+    graph.properties.bool_of(SEPARATE_CONNECTED_COMPONENTS)
 }
 
 /// `ComponentsProcessor.split`: one graph per connected component of the graph's nodes, in the

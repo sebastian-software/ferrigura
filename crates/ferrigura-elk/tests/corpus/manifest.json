@@ -1034,6 +1034,14 @@
    "edgeLabels": true
   },
   {
+   "name": "synthetic__components-not-separated",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 2,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__edges-chain-3",
    "fixture": null,
    "nodes": 3,

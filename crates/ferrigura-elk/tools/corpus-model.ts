@@ -174,6 +174,18 @@ export function syntheticComponentGraphs(): { name: string; graph: Record<string
   });
   return [
     {
+      name: 'synthetic__components-not-separated',
+      graph: {
+        id: 'root',
+        layoutOptions: {
+          ...rootLayoutOptionsDefault(),
+          'elk.separateConnectedComponents': false,
+        },
+        children: [node('a'), node('b'), node('c'), node('d')],
+        edges: [edge('e0', 'a', 'b'), edge('e1', 'c', 'd')],
+      },
+    },
+    {
       name: 'synthetic__nested-two-components',
       graph: {
         id: 'root',
