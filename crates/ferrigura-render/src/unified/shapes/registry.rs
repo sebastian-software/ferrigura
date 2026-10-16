@@ -55,6 +55,7 @@ pub(super) enum Kind {
     HalfRoundedRectangle,
     Hourglass,
     Note,
+    ClassBox,
     Person,
     LightningBolt,
     LinedCylinder,
@@ -138,6 +139,7 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "delay" | "half-rounded-rectangle" => Kind::HalfRoundedRectangle,
         "hourglass" | "collate" => Kind::Hourglass,
         "note" => Kind::Note,
+        "classBox" => Kind::ClassBox,
         "person" => Kind::Person,
         "bolt" | "com-link" | "lightning-bolt" => Kind::LightningBolt,
         "lin-cyl" | "disk" | "lined-cylinder" => Kind::LinedCylinder,
@@ -183,6 +185,7 @@ impl Kind {
             // `rectWithTitle` lays out its own title and rows (`createLabel`), not the label helper.
             Self::RectWithTitle
                 | Self::FilledCircle
+                | Self::ClassBox
                 | Self::ForkJoin
                 | Self::Anchor
                 | Self::StateStart

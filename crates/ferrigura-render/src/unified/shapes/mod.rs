@@ -15,6 +15,7 @@
 mod arcs;
 mod braces;
 mod circle;
+mod class_box;
 mod collapsed_group;
 mod containers;
 mod cylinder;
@@ -84,8 +85,8 @@ pub struct ShapeOutput {
     /// The label as the shape draws it: the input label with the minimum width applied, if the
     /// shape applies one.
     pub label: Option<LabelLayout>,
-    /// Further labels the shape draws in its own elements (the cells of an ER entity), which the
-    /// font subsets of the diagram cover as they cover `label`.
+    /// Further labels the shape draws in its own elements (the cells of an ER entity, the rows of a
+    /// class box), which the font subsets of the diagram cover as they cover `label`.
     pub texts: Vec<LabelLayout>,
     /// Attributes the shape writes on the node's `<g>`, after its `data-look`, each with its
     /// leading space (the colour slot of an ER entity). Empty for the other shapes.
@@ -94,6 +95,8 @@ pub struct ShapeOutput {
     pub bbox: BBox,
     /// How edges meet the outline.
     pub intersect: Intersect,
+    /// The box the shape's elements cover, when it is larger than `bbox` (a class box).
+    pub extent: Option<BBox>,
 }
 
 /// How an edge meets a node's outline: the reference's `node.intersect`.
@@ -330,6 +333,10 @@ pub enum LinkForm {
 pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
     let kind =
         registry::resolve_node(input.node).ok_or_else(|| unknown_shape(&input.node.shape))?;
+    // The box the elements cover, when it is larger than the node's, and the texts a class box
+    // draws beside its label (its rows).
+    let mut extent = None;
+    let mut texts = Vec::new();
     let part = match kind {
         Kind::SquareRect => rect::square_rect(input),
         Kind::RoundedRect => rect::rounded_rect(input),
@@ -397,6 +404,16 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::ImageSquare => icon::image_square(input)?,
         // The entity draws its own labels and their group box, so it returns its output whole.
         Kind::ErBox => return er_box::er_box(input),
+        Kind::ClassBox => {
+            let class_box::ClassBox {
+                part,
+                covered,
+                texts: rows,
+            } = class_box::class_box(input)?;
+            extent = Some(covered);
+            texts = rows;
+            part
+        }
     };
     // The node group's box is the shape's and the label's together. The label group's box is the
     // text's own box moved by the label's offset: the box widened to the minimum width (which
@@ -414,10 +431,11 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         after_label: part.after_label,
         label_offset: part.label_offset,
         label: part.label,
-        texts: Vec::new(),
         group_attributes: String::new(),
         bbox,
         intersect: part.intersect,
+        extent,
+        texts,
     })
 }
 

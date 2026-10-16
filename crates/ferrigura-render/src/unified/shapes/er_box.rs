@@ -128,6 +128,7 @@ fn plain_box(
         group_attributes: colour,
         bbox: rect.union(text_box),
         intersect: Intersect::Rect,
+        extent: None,
     })
 }
 
@@ -367,6 +368,7 @@ fn attribute_table(
         group_attributes: colour,
         bbox,
         intersect: Intersect::Rect,
+        extent: None,
     })
 }
 

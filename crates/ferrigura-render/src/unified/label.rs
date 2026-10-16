@@ -257,6 +257,20 @@ fn translate_attribute(translate: Option<Point>) -> String {
 ///
 /// Returns an error if a bundled font cannot be read.
 pub fn layout(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
+    layout_inheriting(spec, None)
+}
+
+/// [`layout`], where the runs take their weight from the element above them instead of their own
+/// markup: `inherited` is that weight. A class box's rows clear the `font-weight` of their tspans
+/// (`shapeUtil.ts` 141-145), so a row takes the weight of its group's style (`bolder`).
+///
+/// # Errors
+///
+/// Returns an error if a bundled font cannot be read.
+pub fn layout_inheriting(
+    spec: &LabelSpec<'_>,
+    inherited: Option<FontWeight>,
+) -> Result<LabelLayout, RenderError> {
     // The style's font size sets the text. A node label is wrapped inside the group that carries
     // its style, so the wrap sees the size. An edge label and a cluster title are wrapped in their
     // unstyled containers, which are the ones with `text-anchor` set or left to the cluster.
@@ -281,7 +295,7 @@ pub fn layout(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
             .iter()
             .map(|word| Word {
                 text: word.content.clone(),
-                face: word_face(word.kind),
+                face: word_face(word.kind, inherited),
             })
             .collect();
         let fits = |line: &[Word]| -> Result<bool, TextError> {
@@ -389,12 +403,12 @@ fn place(
 /// style are not used, because the reference sets `font-weight` and `font-style` on every word's
 /// `tspan` (`createText.ts`), which overrides them; only the font size of the style reaches the
 /// text.
-fn word_face(kind: MarkdownWordType) -> &'static Face {
-    let weight = if kind == MarkdownWordType::Strong {
+fn word_face(kind: MarkdownWordType, inherited: Option<FontWeight>) -> &'static Face {
+    let weight = inherited.unwrap_or(if kind == MarkdownWordType::Strong {
         FontWeight::Bold
     } else {
         FontWeight::Normal
-    };
+    });
     let style = if kind == MarkdownWordType::Em {
         FontStyle::Italic
     } else {

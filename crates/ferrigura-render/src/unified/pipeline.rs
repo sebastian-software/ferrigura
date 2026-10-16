@@ -19,7 +19,7 @@ use crate::unified::data::{LayoutData, Node};
 use crate::unified::geom::BBox;
 use crate::unified::label::{Anchor, LabelLayout};
 use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
-use crate::unified::{clusters, edges, elk_apply, elk_build};
+use crate::unified::{clusters, edges, elk_apply, elk_build, terminal};
 use crate::variables::px;
 
 /// The graph handed to ELK and the graph it returned, for the differential comparison with the
@@ -149,6 +149,7 @@ pub fn measure(
             edge.height = Some(height);
             edge_labels.insert(edge.id.clone(), label);
         }
+        edge.terminals = terminal::measure(edge)?;
     }
 
     Ok(Measured {
@@ -159,11 +160,12 @@ pub fn measure(
 }
 
 /// Where the lines of a node's label start on `x = 0`. The flowchart's stylesheet centres node labels
-/// (`.node .label text`), and the state diagram's does not, so its lines start at the label's origin
-/// (`state/styles.js` has no text-anchor for them).
+/// (`.node .label text`); the state and class diagrams' do not, so their lines start at the label's
+/// origin (`state/styles.js` and `class/styles.js` have no text-anchor for them).
 #[must_use]
 pub fn node_anchor(diagram_type: &str) -> Anchor {
-    if diagram_type == crate::state::DIAGRAM_TYPE {
+    if diagram_type == crate::state::DIAGRAM_TYPE || diagram_type == crate::unified::markers::CLASS
+    {
         Anchor::Start
     } else {
         Anchor::Middle
@@ -241,7 +243,10 @@ pub fn paint<'a>(
             continue;
         };
         let (x, y) = (node.x.unwrap_or(0.0), node.y.unwrap_or(0.0));
-        cover(&mut bounds, shape.bbox.translate(x, y));
+        cover(
+            &mut bounds,
+            shape.extent.unwrap_or(shape.bbox).translate(x, y),
+        );
         // A state diagram's links are written after its render (`LinkForm::PostRender`).
         let links = if data.diagram_type == crate::state::DIAGRAM_TYPE {
             shapes::LinkForm::PostRender
@@ -267,6 +272,21 @@ pub fn paint<'a>(
             cover(&mut bounds, painted.bbox);
             edge_labels.push_str(&painted.svg);
             labels.push(label);
+        }
+        // `insertEdgeLabel` runs for an edge with a label or a terminal label (`hasEdgeLabel`,
+        // `edges.js` 55-62): without text, the label has no position, and its background sits beside it.
+        if edge.label.is_empty() && !edge.terminals.is_empty() {
+            edge_labels.push_str(&format!(
+                "<g class=\"edgeLabel\"><g class=\"label\" data-id=\"{}\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g>",
+                crate::svg::escape(&edge.id),
+            ));
+        }
+        // The terminal labels of an edge follow its centre label in `edgeLabels` (`insertEdgeLabel`).
+        for terminal_label in &edge.terminals {
+            let (svg, bbox) = terminal::paint(edge, terminal_label);
+            cover(&mut bounds, bbox);
+            edge_labels.push_str(&svg);
+            labels.push(&terminal_label.label);
         }
     }
 

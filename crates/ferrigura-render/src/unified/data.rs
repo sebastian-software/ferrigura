@@ -12,6 +12,7 @@
 
 use std::collections::BTreeMap;
 
+use ferrigura_model::class::ClassMember;
 use ferrigura_model::er::ErAttribute;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::value::Value;
@@ -69,7 +70,8 @@ pub struct Node {
     pub label_style: String,
     /// The innermost subgraph that contains the node.
     pub parent_id: Option<String>,
-    /// The padding the shapes add around the label.
+    /// The padding the shapes add around the label. Zero when the node has none (the class
+    /// vertices of `classDb.ts` `getData` carry no padding; the ER entities carry 0).
     pub padding: f64,
     /// The node's `style` declarations, in statement order.
     pub css_styles: Vec<String>,
@@ -106,7 +108,7 @@ pub struct Node {
     /// `flowchart.minNodeWidth`, set on vertices only (`state.minNodeWidth` on a state diagram's
     /// non-groups).
     pub min_width: Option<f64>,
-    /// The colour slot of a subgraph.
+    /// The colour slot of a subgraph, or of a class.
     pub color_index: Option<u32>,
     /// The subgraph's metadata.
     pub metadata: BTreeMap<String, Value>,
@@ -136,6 +138,9 @@ pub struct Node {
     /// the label). `rectWithTitle` draws them as its rows.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<Vec<String>>,
+    /// The class data of a class node: what its `classBox` shape draws (see [`ClassNodeData`]).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub class: Option<ClassNodeData>,
 
     /// The size the layout uses: the measured box of a leaf, ELK's size afterwards.
     #[serde(skip)]
@@ -160,6 +165,27 @@ impl Node {
     pub fn is_neo(&self) -> bool {
         self.look == "neo"
     }
+}
+
+/// What a class node carries beyond the common node fields (`classDb.ts` `getData`, which spreads
+/// the DB's `ClassNode` into the node). The names are the reference's.
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassNodeData {
+    /// The row that names the class: the name, with the generic type written as `&lt;T&gt;`.
+    pub text: String,
+    /// The annotations; the box draws the first one.
+    pub annotations: Vec<String>,
+    /// The attributes, in source order.
+    pub members: Vec<ClassMember>,
+    /// The methods, in source order.
+    pub methods: Vec<ClassMember>,
+    /// The `style` and `cssClass` declarations of the class, in order.
+    pub styles: Vec<String>,
+    /// The class's parent namespace as the DB holds it (before the compact-mode redirection).
+    pub parent: Option<String>,
+    /// Whether a `callback` was set on the class.
+    pub have_callback: Option<bool>,
 }
 
 /// An edge of the layout.
@@ -222,6 +248,14 @@ pub struct Edge {
     /// The label's measured height.
     #[serde(skip)]
     pub height: Option<f64>,
+    /// The start cardinality of a class relation (`startLabelRight`): empty when there is none.
+    /// Left out of the other edges.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_label_right: Option<String>,
+    /// The end cardinality of a class relation (`endLabelLeft`). Left out of the other edges.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_label_left: Option<String>,
+
     /// The label's centre after layout.
     #[serde(skip)]
     pub x: Option<f64>,
@@ -231,4 +265,58 @@ pub struct Edge {
     /// The points of the path after layout, in absolute coordinates.
     #[serde(skip)]
     pub points: Vec<Point>,
+    /// The terminal labels (cardinalities) of the edge, in the order `edges.js` records them
+    /// (`terminalLabelSizes`). Only class relations have them.
+    #[serde(skip)]
+    pub terminals: Vec<Terminal>,
+    /// The ports of the edge after layout: the first and last point ELK routed, before the edge is
+    /// clipped at the outlines (`elkPorts`). Set when a terminal label has a centre.
+    #[serde(skip)]
+    pub ports: Option<(Point, Point)>,
+}
+
+/// Which end of an edge a terminal label belongs to, and on which side of the line it sits
+/// (`TerminalLabelKey`, `rendering-util/types.ts`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TerminalKey {
+    /// The start, on the left of the direction of travel.
+    StartLeft,
+    /// The start, on the right of the direction of travel.
+    StartRight,
+    /// The end, on the left of the direction of travel.
+    EndLeft,
+    /// The end, on the right of the direction of travel.
+    EndRight,
+}
+
+impl TerminalKey {
+    /// Whether the label is at the start of the edge.
+    #[must_use]
+    pub fn at_start(self) -> bool {
+        matches!(self, Self::StartLeft | Self::StartRight)
+    }
+
+    /// Whether the label is on the right of the direction of travel.
+    #[must_use]
+    pub fn on_right(self) -> bool {
+        matches!(self, Self::StartRight | Self::EndRight)
+    }
+}
+
+/// A terminal label: its text, its laid-out size (the text's box, unpadded), and its centre once
+/// the layout has placed it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Terminal {
+    /// The end and side.
+    pub key: TerminalKey,
+    /// The text.
+    pub text: String,
+    /// The laid-out label (its text box).
+    pub label: crate::unified::label::LabelLayout,
+    /// The width of the text's box.
+    pub width: f64,
+    /// The height of the text's box.
+    pub height: f64,
+    /// The centre after layout, when ELK placed the label (`terminalLabelCenters`).
+    pub centre: Option<Point>,
 }

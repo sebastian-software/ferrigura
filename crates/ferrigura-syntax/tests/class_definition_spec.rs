@@ -2,9 +2,10 @@
 //! the spec's titles in snake_case, with camelCase words split (`accTitle` is `acc_title`).
 //!
 //! Ignored tests:
-//! - Three tests read `getData()` with the `hierarchicalNamespaces` setting. Compact and hierarchical
-//!   grouping are rendering, not the model. Their bodies only parse the input.
 //! - The `it.skip` test of a leading newline stays ignored.
+//!
+//! The three `getData()` tests of the compact and hierarchical namespaces are in
+//! `ferrigura-render/tests/class_db_get_data_spec.rs`.
 //!
 //! The five `it.each` families over the keyword list each run as one test that loops over the
 //! keywords. The assertion message names every failing keyword. The note families check the note
@@ -309,52 +310,6 @@ fn should_handle_syntactically_nested_namespace_blocks() {
     // Both are explicitly declared via syntactic nesting, so both are `explicit`.
     assert!(namespace(&diagram, "Outer").explicit);
     assert!(namespace(&diagram, "Outer.Inner").explicit);
-}
-
-#[test]
-#[ignore = "port: getData() is rendering, not in the model"]
-fn emits_only_explicit_namespaces_from_get_data_in_compact_mode() {
-    // The expectations are on `getData()` with `hierarchicalNamespaces: false`: rendering.
-    parse(
-        r#"classDiagram
-          namespace Company.Engineering.Backend {
-            class Developer {
-              +writeCode()
-            }
-          }
-          namespace Company {
-            class CEO {
-              +makeDecisions()
-            }
-          }"#,
-    );
-}
-
-#[test]
-#[ignore = "port: getData() is rendering, not in the model"]
-fn moves_classes_inside_implicit_namespaces_to_the_nearest_explicit_ancestor_in_compact_mode() {
-    // The expectations are on `getData()` with `hierarchicalNamespaces: false`: rendering.
-    parse(
-        r#"classDiagram
-          namespace Company.Engineering.Backend {
-            class Developer
-          }
-          namespace Company {
-            class CEO
-          }"#,
-    );
-}
-
-#[test]
-#[ignore = "port: getData() is rendering, not in the model"]
-fn defaults_to_hierarchical_rendering_when_hierarchical_namespaces_is_unset() {
-    // The expectations are on `getData()`, the hierarchical grouping: rendering.
-    parse(
-        r#"classDiagram
-        namespace A.B {
-          class Foo
-        }"#,
-    );
 }
 
 #[test]

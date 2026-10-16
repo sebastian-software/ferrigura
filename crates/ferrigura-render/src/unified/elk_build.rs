@@ -18,8 +18,9 @@ use ferrigura_model::config::{MermaidConfig, MermaidConfigElk};
 use ferrigura_model::value::Value;
 use serde_json::{Number, Value as Json};
 
-use super::data::{Edge, LayoutData, Node};
+use super::data::{Edge, LayoutData, Node, Terminal};
 use super::elk_tree::{find_common_ancestor, find_subgraph_feedback_edges};
+use super::terminal;
 
 /// The measured title of a subgraph, as the reference keeps it in `labelData`.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -863,16 +864,40 @@ fn add_edges(data: &LayoutData) -> Vec<JsonEdge> {
             id: edge.id.clone(),
             sources: vec![edge.start.clone()],
             targets: vec![edge.end.clone()],
-            labels: vec![JsonLabel {
+            labels: std::iter::once(JsonLabel {
                 text: Some(edge.label.clone()),
                 width: Some(edge.width.unwrap_or(0.0)),
                 height: Some(edge.height.unwrap_or(0.0)),
                 layout_options: Some(edge_label_options()),
                 ..JsonLabel::default()
-            }],
+            })
+            .chain(edge.terminals.iter().map(terminal_elk_label(edge)))
+            .collect(),
             ..JsonEdge::default()
         })
         .collect()
+}
+
+/// The ELK label of a terminal label: padded past its end's marker, and placed at the start or the
+/// end of the edge (`terminalElkLabels`, `render.ts` 1148-1170).
+fn terminal_elk_label(edge: &Edge) -> impl Fn(&Terminal) -> JsonLabel + '_ {
+    move |terminal| {
+        let pad = terminal::elk_padding(edge, terminal.key);
+        let mut options = LayoutOptions::default();
+        let placement = if terminal.key.at_start() {
+            "TAIL"
+        } else {
+            "HEAD"
+        };
+        set(&mut options, "edgeLabels.placement", text(placement));
+        JsonLabel {
+            text: Some(terminal.text.clone()),
+            width: Some(terminal.width + 2.0 * pad),
+            height: Some(terminal.height + 2.0 * pad),
+            layout_options: Some(options),
+            ..JsonLabel::default()
+        }
+    }
 }
 
 /// The options of an edge label: its position in the middle of the edge.

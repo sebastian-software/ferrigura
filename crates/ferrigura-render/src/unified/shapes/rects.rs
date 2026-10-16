@@ -52,20 +52,20 @@ pub(super) fn note(input: &ShapeInput<'_>) -> Part {
     let total_height = (label.bbox.height + node.padding * 2.0).max(node.height.unwrap_or(0.0));
     let x = -total_width / 2.0;
     let y = -total_height / 2.0;
-    let outline = rough::solid_polygon(
-        &[
-            Point::new(x, y),
-            Point::new(x + total_width, y),
-            Point::new(x + total_width, y + total_height),
-            Point::new(x, y + total_height),
-        ],
-        false,
-    );
     let style = path_style(node, &styles);
+    // `rc.rectangle` at roughness 0: the fill and the doubled stroke of the rectangle.
     let svg = format!(
         "<g class=\"basic label-container outer-path\">{}</g>",
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles), true),
+        rough::rectangle_paths(
+            x,
+            y,
+            total_width,
+            total_height,
+            Some(style.as_str()),
+            &stroke_width(&styles)
+        ),
     );
+    let outline_box = BBox::new(x, y, total_width, total_height);
     let label_offset = Point::new(
         -label.bbox.width / 2.0 - label.bbox.x,
         -label.bbox.height / 2.0 - label.bbox.y,
@@ -73,7 +73,7 @@ pub(super) fn note(input: &ShapeInput<'_>) -> Part {
     Part {
         svg,
         after_label: String::new(),
-        bbox: outline.bbox,
+        bbox: outline_box,
         intersect: Intersect::Rect,
         label_offset: Some(label_offset),
         label: Some(label),
