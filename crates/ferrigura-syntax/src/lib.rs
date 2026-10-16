@@ -15,6 +15,7 @@
 
 mod common;
 mod cursor;
+mod entities;
 mod error;
 pub mod flowchart;
 mod lexer;
