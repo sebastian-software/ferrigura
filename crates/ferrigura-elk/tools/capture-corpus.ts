@@ -34,6 +34,7 @@ import {
   jsonRoundTrip,
   nodesOnlyGraph,
   slugify,
+  syntheticComponentGraphs,
   syntheticEdgeGraphs,
   syntheticNodeLabelGraphs,
   stripGwtHashKeys,
@@ -402,6 +403,9 @@ async function syntheticRecords(): Promise<CaseRecord[]> {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticNodeLabelGraphs()) {
+    await add(name, graph);
+  }
+  for (const { name, graph } of syntheticComponentGraphs()) {
     await add(name, graph);
   }
   return records.sort(byName);

@@ -1082,6 +1082,14 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__nested-two-components",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 2,
+   "compound": true,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__node-labels-inside-top",
    "fixture": null,
    "nodes": 3,

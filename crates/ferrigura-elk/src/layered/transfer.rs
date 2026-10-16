@@ -31,8 +31,18 @@ pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutErro
         x: graph.offset.x + graph.padding.left,
         y: graph.offset.y + graph.padding.top,
     };
-    // The nodes of the graph are the root's children, in the same order.
-    for (child, node) in root.children.iter_mut().zip(&graph.nodes) {
+    // The nodes of the graph are the root's children. They are matched by id, since the components
+    // of a level may have been put back in another order.
+    let node_of_id: HashMap<&str, usize> = graph
+        .layerless_nodes
+        .iter()
+        .map(|&index| (graph.nodes[index].id.as_str(), index))
+        .collect();
+    for child in root.children.iter_mut() {
+        let Some(&index) = node_of_id.get(child.id.as_str()) else {
+            continue;
+        };
+        let node = &graph.nodes[index];
         child.shape.x = node.position.x + offset.x;
         child.shape.y = node.position.y + offset.y;
         // `applyNodeLayout`: a node with size constraints takes the size the layout gave it.
@@ -239,7 +249,16 @@ mod tests {
     #[test]
     fn a_section_runs_from_the_source_anchor_to_the_target_anchor() {
         let mut graph = LGraph {
-            nodes: vec![LNode::default(), LNode::default()],
+            nodes: vec![
+                LNode {
+                    id: "a".to_string(),
+                    ..LNode::default()
+                },
+                LNode {
+                    id: "b".to_string(),
+                    ..LNode::default()
+                },
+            ],
             layerless_nodes: vec![0, 1],
             ..LGraph::default()
         };
@@ -302,7 +321,16 @@ mod tests {
         use crate::graph::ElkLabel;
         use crate::layered::lgraph::{LEdge, LLabel, LNode};
         let mut graph = LGraph {
-            nodes: vec![LNode::default(), LNode::default()],
+            nodes: vec![
+                LNode {
+                    id: "a".to_string(),
+                    ..LNode::default()
+                },
+                LNode {
+                    id: "b".to_string(),
+                    ..LNode::default()
+                },
+            ],
             layerless_nodes: vec![0, 1],
             ..LGraph::default()
         };

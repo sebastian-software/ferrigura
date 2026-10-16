@@ -7,8 +7,6 @@
 //! the graph. A level whose hierarchy handling is INCLUDE_CHILDREN is laid out as a compound graph
 //! (`doCompoundLayout`); any other level as a flat graph (`doLayout`).
 
-use std::collections::HashSet;
-
 use crate::core::data::enums::HierarchyHandling;
 use crate::core::data::property::PropertyHolder;
 use crate::core::data::{JavaEnum, OptionValue};
@@ -16,6 +14,7 @@ use crate::core::math::KVector;
 use crate::core::util::progress::{Monitor, ProgressMonitor};
 use crate::error::LayoutError;
 use crate::graph::ElkNode;
+use crate::layered::components;
 use crate::layered::configurator;
 use crate::layered::importer;
 use crate::layered::intermediate::{self, Step};
@@ -46,8 +45,8 @@ pub fn layout(
     transfer::apply_layout(&graph, node)
 }
 
-/// `ElkLayered.doLayout`: the processors of a graph without nested graphs, which must be one
-/// connected component, then the graph's size is resized to its minimum.
+/// `ElkLayered.doLayout`: the connected components of the graph are laid out one after another,
+/// and then combined into the graph, which is resized to its minimum.
 fn do_layout(
     graph: &mut LGraph,
     progress: &mut ProgressMonitor,
@@ -55,13 +54,45 @@ fn do_layout(
 ) -> Result<(), LayoutError> {
     progress.begin(monitor, "Layered layout", 1.0);
     configurator::prepare(graph)?;
-    if connected_components(graph) > 1 {
-        return Err(LayoutError::Unsupported(
-            "several connected components (the components processor is not ported)".to_string(),
-        ));
+    if !components::separates(graph) {
+        layout_component(graph, progress, monitor)?;
+    } else {
+        let mut parts = components::split(graph)?;
+        // The components share the graph's random generator, which each one takes in turn.
+        let mut random = graph.random.take();
+        if parts.len() == 1 {
+            // `layout(components.get(0), theMonitor)`: the level's own task.
+            let part = &mut parts[0];
+            part.random = random.take();
+            layout_component(part, progress, monitor)?;
+            random = part.random.take();
+        } else {
+            for part in &mut parts {
+                // `layout(comp, theMonitor.subTask(compWork))`: a component is a task of its own.
+                let sub = sub_task(progress, monitor)?;
+                progress.begin(sub, "Component Layout", 1.0);
+                part.random = random.take();
+                layout_component(part, progress, sub)?;
+                random = part.random.take();
+                progress.done(sub);
+            }
+        }
+        graph.random = random;
+        components::combine(parts, graph)?;
     }
+    resize_flat_graph(graph);
+    progress.done(monitor);
+    Ok(())
+}
+
+/// `ElkLayered.layout` for one graph: the module log, then the processors, then the nodes leave the
+/// layers for the layerless list.
+fn layout_component(
+    graph: &mut LGraph,
+    progress: &mut ProgressMonitor,
+    monitor: Monitor,
+) -> Result<(), LayoutError> {
     let steps: Vec<Step> = graph.processors.clone();
-    // `ElkLayered.layout`: the modules of the configuration, when the log is on.
     if progress.is_logging_enabled() {
         progress.log(
             monitor,
@@ -79,8 +110,6 @@ fn do_layout(
         run_step(step, graph, progress, sub)?;
     }
     move_nodes_to_layerless(graph);
-    resize_flat_graph(graph);
-    progress.done(monitor);
     Ok(())
 }
 
@@ -130,29 +159,6 @@ fn run_step(
         Step::Intermediate(strategy) => intermediate::run(strategy, graph, progress, monitor),
         Step::Phase(phase) => phase.run(graph, progress, monitor),
     }
-}
-
-/// The number of connected components of the graph's nodes, joined by its edges.
-fn connected_components(graph: &LGraph) -> usize {
-    let mut parent: Vec<usize> = (0..graph.nodes.len()).collect();
-    fn find(parent: &mut [usize], mut node: usize) -> usize {
-        while parent[node] != node {
-            parent[node] = parent[parent[node]];
-            node = parent[node];
-        }
-        node
-    }
-    for edge in &graph.edges {
-        let source = find(&mut parent, graph.ports[edge.source].node);
-        let target = find(&mut parent, graph.ports[edge.target].node);
-        parent[source] = target;
-    }
-    graph
-        .layerless_nodes
-        .iter()
-        .map(|&node| find(&mut parent, node))
-        .collect::<HashSet<usize>>()
-        .len()
 }
 
 /// The Java class of a step's processor, as the module log prints it. Only the modules that the

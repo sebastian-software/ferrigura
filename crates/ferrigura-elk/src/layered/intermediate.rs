@@ -199,7 +199,8 @@ pub fn run(
 
 /// `LayerSweepCrossingMinimizer` run as a greedy switch. It returns at once for an empty graph and
 /// for a single node outside a hierarchical layout, as its `process` does before it sorts anything.
-/// Other graphs need the greedy switch heuristic, which is not ported.
+/// A graph whose layers hold at most one node each has no pair to switch, so the heuristic changes
+/// nothing there either. Other graphs need the greedy switch heuristic, which is not ported.
 fn greedy_switch(graph: &LGraph) -> Result<(), LayoutError> {
     let empty = graph.layers.iter().all(Vec::is_empty);
     let single = graph.layers.len() == 1 && graph.layers[0].len() == 1;
@@ -207,7 +208,8 @@ fn greedy_switch(graph: &LGraph) -> Result<(), LayoutError> {
         .properties
         .enum_of::<HierarchyHandling>(options::HIERARCHY_HANDLING)
         == Some(HierarchyHandling::INCLUDE_CHILDREN);
-    if empty || (single && !hierarchical) {
+    let no_pairs = graph.layers.iter().all(|layer| layer.len() <= 1);
+    if empty || (single && !hierarchical) || no_pairs {
         return Ok(());
     }
     Err(LayoutError::Unsupported(

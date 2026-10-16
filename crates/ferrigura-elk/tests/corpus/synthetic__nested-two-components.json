@@ -1,0 +1,528 @@
+{
+ "version": 1,
+ "name": "synthetic__nested-two-components",
+ "fixture": null,
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "x",
+    "layoutOptions": {
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST"
+    },
+    "children": [
+     {
+      "id": "a",
+      "width": 50,
+      "height": 40
+     },
+     {
+      "id": "b",
+      "width": 50,
+      "height": 40
+     },
+     {
+      "id": "c",
+      "width": 50,
+      "height": 40
+     },
+     {
+      "id": "d",
+      "width": 50,
+      "height": 40
+     }
+    ],
+    "edges": []
+   }
+  ],
+  "edges": [
+   {
+    "id": "e0",
+    "sources": [
+     "a"
+    ],
+    "targets": [
+     "b"
+    ]
+   },
+   {
+    "id": "e1",
+    "sources": [
+     "c"
+    ],
+    "targets": [
+     "d"
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "x",
+    "layoutOptions": {
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST"
+    },
+    "children": [
+     {
+      "id": "a",
+      "width": 50,
+      "height": 40,
+      "x": 12,
+      "y": 12
+     },
+     {
+      "id": "b",
+      "width": 50,
+      "height": 40,
+      "x": 12,
+      "y": 72
+     },
+     {
+      "id": "c",
+      "width": 50,
+      "height": 40,
+      "x": 82,
+      "y": 12
+     },
+     {
+      "id": "d",
+      "width": 50,
+      "height": 40,
+      "x": 82,
+      "y": 72
+     }
+    ],
+    "edges": [],
+    "x": 12,
+    "y": 12,
+    "width": 144,
+    "height": 124
+   }
+  ],
+  "edges": [
+   {
+    "id": "e0",
+    "sources": [
+     "a"
+    ],
+    "targets": [
+     "b"
+    ],
+    "sections": [
+     {
+      "id": "e0_s0",
+      "startPoint": {
+       "x": 37,
+       "y": 52
+      },
+      "endPoint": {
+       "x": 37,
+       "y": 72
+      },
+      "incomingShape": "a",
+      "outgoingShape": "b"
+     }
+    ],
+    "container": "x"
+   },
+   {
+    "id": "e1",
+    "sources": [
+     "c"
+    ],
+    "targets": [
+     "d"
+    ],
+    "sections": [
+     {
+      "id": "e1_s0",
+      "startPoint": {
+       "x": 107,
+       "y": 52
+      },
+      "endPoint": {
+       "x": 107,
+       "y": 72
+      },
+      "incomingShape": "c",
+      "outgoingShape": "d"
+     }
+    ],
+    "container": "x"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 168,
+  "height": 148
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Component Layout",
+      "logs": [
+       "ELK Layered uses the following 21 modules:",
+       "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+       "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+       "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+       "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+       "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+       "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+       "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+       "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+       "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+       "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+       "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+       "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+       "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+       "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+       "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+       "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+       "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+       "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+       "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+      ],
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 50",
+         "RIGHTUP size is 50",
+         "LEFTDOWN size is 50",
+         "LEFTUP size is 50",
+         "RIGHTDOWN is feasible: true",
+         "RIGHTUP is feasible: true",
+         "LEFTDOWN is feasible: true",
+         "LEFTUP is feasible: true",
+         "Chosen node placement: RIGHTDOWN",
+         "Blocks: {n_root.x.a=[n_root.x.a, n_root.x.b]}",
+         "Classes: {n_root.x.a=[n_root.x.a]}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Component Layout",
+      "logs": [
+       "ELK Layered uses the following 21 modules:",
+       "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+       "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+       "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+       "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+       "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+       "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+       "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+       "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+       "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+       "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+       "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+       "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+       "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+       "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+       "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+       "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+       "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+       "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+       "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+      ],
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 50",
+         "RIGHTUP size is 50",
+         "LEFTDOWN size is 50",
+         "LEFTUP size is 50",
+         "RIGHTDOWN is feasible: true",
+         "RIGHTUP is feasible: true",
+         "LEFTDOWN is feasible: true",
+         "LEFTUP is feasible: true",
+         "Chosen node placement: RIGHTDOWN",
+         "Blocks: {n_root.x.c=[n_root.x.c, n_root.x.d]}",
+         "Classes: {n_root.x.c=[n_root.x.c]}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 144",
+         "RIGHTUP size is 144",
+         "LEFTDOWN size is 144",
+         "LEFTUP size is 144",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.x]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

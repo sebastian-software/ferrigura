@@ -202,7 +202,7 @@ fn largest_difference(ours: &JsonNode, theirs: &Value) -> Result<f64, String> {
 }
 
 /// Cases whose coordinates match elkjs. The floor only goes up, as `SUPPORTED_FLOOR` does.
-const MATCHING_FLOOR: usize = 120;
+const MATCHING_FLOOR: usize = 122;
 
 #[test]
 fn coordinates_match_elkjs() {
@@ -237,7 +237,7 @@ fn coordinates_match_elkjs() {
 
 /// Cases that pass the driver today. The floor only goes up: a change that makes a
 /// case unsupported again fails here, and so does CI. Raise it as the port grows.
-const SUPPORTED_FLOOR: usize = 120;
+const SUPPORTED_FLOOR: usize = 122;
 
 #[test]
 fn supported_cases_do_not_regress() {

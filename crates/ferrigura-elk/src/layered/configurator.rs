@@ -69,10 +69,13 @@ fn configure_graph_properties(graph: &mut LGraph) {
         .properties
         .has(options::NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES)
     {
-        let orthogonal = graph
-            .properties
-            .enum_of::<EdgeRouting>(options::EDGE_ROUTING)
-            == Some(EdgeRouting::ORTHOGONAL);
+        // Unset, the edge routing is the layered algorithm's own default, which is orthogonal
+        // (`supports org.eclipse.elk.edgeRouting = EdgeRouting.ORTHOGONAL` in Layered.melk).
+        let orthogonal = !graph.properties.has(options::EDGE_ROUTING)
+            || graph
+                .properties
+                .enum_of::<EdgeRouting>(options::EDGE_ROUTING)
+                == Some(EdgeRouting::ORTHOGONAL);
         graph.properties.set(
             options::NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES,
             Some(crate::core::data::OptionValue::Boolean(orthogonal)),

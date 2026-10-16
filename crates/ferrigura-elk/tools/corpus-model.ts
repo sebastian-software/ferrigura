@@ -160,6 +160,45 @@ export function rootLayoutOptionsDefault(): Record<string, string | number | boo
 }
 
 /**
+ * A separately laid out child with two connected components: a chain of two nodes and a second
+ * chain, in a child that is laid out on its own. The edges are written at the root, as Mermaid
+ * writes them, so their containment is the child, where the root's edges meet the child's nodes. No
+ * layer of a component has two nodes, so the greedy switch does nothing in either.
+ */
+export function syntheticComponentGraphs(): { name: string; graph: Record<string, unknown> }[] {
+  const node = (id: string): Record<string, unknown> => ({ id, width: 50, height: 40 });
+  const edge = (id: string, source: string, target: string): Record<string, unknown> => ({
+    id,
+    sources: [source],
+    targets: [target],
+  });
+  return [
+    {
+      name: 'synthetic__nested-two-components',
+      graph: {
+        id: 'root',
+        layoutOptions: rootLayoutOptionsDefault(),
+        children: [
+          {
+            id: 'x',
+            layoutOptions: {
+              'elk.algorithm': 'elk.layered',
+              'elk.direction': 'DOWN',
+              'elk.hierarchyHandling': 'SEPARATE_CHILDREN',
+              // As Mermaid's composite states set it; the greedy cycle breaker is not ported.
+              'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
+            },
+            children: [node('a'), node('b'), node('c'), node('d')],
+            edges: [],
+          },
+        ],
+        edges: [edge('e0', 'a', 'b'), edge('e1', 'c', 'd')],
+      },
+    },
+  ];
+}
+
+/**
  * Flat graphs whose leaf nodes carry labels, for the node label sizing of the port: the inside,
  * top-centred labels that the nested state diagrams use, with the NODE_LABELS and MINIMUM_SIZE
  * constraints. The labels are wider than their nodes in one case, and the node has a minimum width

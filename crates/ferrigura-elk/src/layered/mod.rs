@@ -11,6 +11,7 @@
 
 pub use crate::error::LayoutError;
 
+pub mod components;
 pub mod configurator;
 pub mod driver;
 pub mod dummies;
