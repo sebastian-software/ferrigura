@@ -6,14 +6,12 @@
 //! break at the end. The DB then compiles the dates, so a diagram with a date that cannot be read
 //! is rejected here, as the reference rejects it in `getTasks`.
 
-mod db;
 mod date;
+mod db;
 mod parser;
 mod scanner;
 mod url;
 
-use std::error::Error;
-use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use ferrigura_model::gantt::GanttDiagram;
@@ -36,27 +34,12 @@ impl Default for Options {
     fn default() -> Self {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_or(0, |elapsed| i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX));
+            .map_or(0, |elapsed| {
+                i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX)
+            });
         Self { now }
     }
 }
-
-/// Why a gantt diagram could not be parsed or compiled.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GanttError {
-    /// A syntax error, or a date the DB cannot compile.
-    Syntax(ParseError),
-}
-
-impl fmt::Display for GanttError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Syntax(error) => write!(f, "{error}"),
-        }
-    }
-}
-
-impl Error for GanttError {}
 
 /// Parses a gantt diagram with the system clock.
 pub fn parse(raw: &str) -> Result<GanttDiagram, ParseError> {

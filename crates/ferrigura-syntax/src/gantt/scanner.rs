@@ -360,7 +360,15 @@ fn initial_rule(rest: &str) -> Option<(usize, Action)> {
     }
     // `weekday\s+monday` … `weekday\s+sunday` (lines 80-86) and `weekend\s+friday`,
     // `weekend\s+saturday` (lines 87-88). The names are matched in the order written.
-    for day in ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] {
+    for day in [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ] {
         if let Some(len) = day_statement(rest, "weekday", day) {
             return Some((len, Action::Emit(Token::Weekday(day))));
         }
@@ -393,7 +401,10 @@ fn initial_rule(rest: &str) -> Option<(usize, Action)> {
     // `":"[^#\n;]+` (line 94): the task data, with its colon.
     if rest.starts_with(':') {
         if let Some(len) = run_outside(&rest[1..], &['#', '\n', ';']) {
-            return Some((1 + len, Action::Emit(Token::TaskData(text_of(rest, 1 + len)))));
+            return Some((
+                1 + len,
+                Action::Emit(Token::TaskData(text_of(rest, 1 + len))),
+            ));
         }
         // `":"` (line 95).
         return Some((1, Action::Emit(Token::Colon)));
@@ -428,11 +439,17 @@ fn state_rule(state: State, rest: &str) -> Option<(usize, Action)> {
         // `(?!\n|;|#)*[^\n]*` (line 21): the rest of the line.
         State::AccTitle => {
             let len = line_len(rest);
-            Some((len, Action::End(Some(Token::AccTitleValue(text_of(rest, len))))))
+            Some((
+                len,
+                Action::End(Some(Token::AccTitleValue(text_of(rest, len)))),
+            ))
         }
         State::AccDescr => {
             let len = line_len(rest);
-            Some((len, Action::End(Some(Token::AccDescrValue(text_of(rest, len))))))
+            Some((
+                len,
+                Action::End(Some(Token::AccDescrValue(text_of(rest, len)))),
+            ))
         }
         // `[\}]` (line 25) and `[^\}]*` (line 26).
         State::AccDescrMulti => {
@@ -440,7 +457,10 @@ fn state_rule(state: State, rest: &str) -> Option<(usize, Action)> {
                 return Some((1, Action::End(None)));
             }
             let len = rest.find('}').unwrap_or(rest.len());
-            Some((len, Action::Emit(Token::AccDescrMultiValue(text_of(rest, len)))))
+            Some((
+                len,
+                Action::Emit(Token::AccDescrMultiValue(text_of(rest, len))),
+            ))
         }
         // `["]` (line 43) and `[^"]*` (line 44).
         State::Href => {
@@ -576,6 +596,9 @@ mod tests {
         // Q4: `[^(]*` takes line breaks.
         let stream = tokens("click A call f\nB :b, 2014-01-01, 1d\n(x)\n");
         assert_eq!(stream[0], Token::ClickId("A".to_owned()));
-        assert_eq!(stream[1], Token::CallbackName("f\nB :b, 2014-01-01, 1d\n".to_owned()));
+        assert_eq!(
+            stream[1],
+            Token::CallbackName("f\nB :b, 2014-01-01, 1d\n".to_owned())
+        );
     }
 }

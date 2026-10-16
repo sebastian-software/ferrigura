@@ -339,16 +339,15 @@ impl Db {
 
         if let Some(start) = self.tasks[position].start {
             let end_data = self.tasks[position].end_data.clone();
-            let end = self.get_end_date(start, &end_data);
+            let end = self.get_end_date(start, &end_data, offset)?;
             self.tasks[position].end = end;
             if end.is_some() {
                 self.tasks[position].processed = true;
-                self.tasks[position].manual_end_time = date::strict_parse(
-                    &end_data,
-                    "YYYY-MM-DD",
-                    self.now,
-                )
-                .is_some();
+                self.tasks[position].manual_end_time =
+                    date::strict_parse(&end_data, "YYYY-MM-DD", self.now)
+                        .ok()
+                        .flatten()
+                        .is_some();
                 self.check_task_dates(position)?;
             }
         }
@@ -394,7 +393,7 @@ impl Db {
             });
         }
 
-        if let Some(time) = date::strict_parse(text, format, self.now) {
+        if let Some(time) = strict(text, format, self.now, offset)? {
             return Ok(Some(time));
         }
         // The legacy fallback of `new Date(str)`, with the reference's range check.
@@ -411,7 +410,7 @@ impl Db {
 
     /// `getEndDate` (lines 409-466), without its warnings. `None` is an `undefined` result, which
     /// happens only for an `until` whose tasks have no start yet.
-    fn get_end_date(&self, prev: Time, text: &str) -> Option<Time> {
+    fn get_end_date(&self, prev: Time, text: &str, offset: usize) -> Result<Option<Time>, DbError> {
         let text = js_trim(text);
         let format = self.date_format.trim();
 
@@ -434,29 +433,29 @@ impl Db {
                     }
                 }
             }
-            return match earliest {
+            return Ok(match earliest {
                 Some(task) => self.tasks[task].start,
                 None => Some(date::start_of_day(self.now)),
-            };
+            });
         }
 
-        if let Some(time) = date::strict_parse(text, format, self.now) {
+        if let Some(time) = strict(text, format, self.now, offset)? {
             let time = if self.inclusive_end_dates {
                 date::add(time, 1.0, Unit::Day)
             } else {
                 time
             };
-            return Some(time);
+            return Ok(Some(time));
         }
 
         // A duration from the start; an unparsable one leaves the end at the start.
-        match date::parse_duration(text) {
+        Ok(match date::parse_duration(text) {
             None => Some(prev),
             Some((value, unit)) => {
                 let end = date::add(prev, value, unit);
                 Some(if end.is_nan() { prev } else { end })
             }
-        }
+        })
     }
 
     /// `checkTaskDates` (lines 227-254): with `excludes`, the end moves past the excluded days.
@@ -492,7 +491,7 @@ impl Db {
             if !invalid {
                 render_end = Some(end);
             }
-            invalid = self.is_invalid_date(start);
+            invalid = self.is_invalid_date(start, offset)?;
             if invalid {
                 end = date::add(end, 1.0, Unit::Day);
                 if end > max_end {
@@ -510,11 +509,11 @@ impl Db {
 
     /// `isInvalidDate` (lines 183-201): the includes win; the weekend rule, the day name and the
     /// date or the format's text decide the rest.
-    fn is_invalid_date(&self, date: Time) -> bool {
-        let formatted = date::format(date, self.date_format.trim());
-        let date_only = date::format(date, "YYYY-MM-DD");
+    fn is_invalid_date(&self, date: Time, offset: usize) -> Result<bool, DbError> {
+        let formatted = shown(date, self.date_format.trim(), offset)?;
+        let date_only = shown(date, "YYYY-MM-DD", offset)?;
         if self.includes.contains(&formatted) || self.includes.contains(&date_only) {
-            return false;
+            return Ok(false);
         }
         if self.excludes.iter().any(|item| item == "weekends") {
             let weekend_start = match self.weekend.as_str() {
@@ -525,15 +524,15 @@ impl Db {
             if let Some(start) = weekend_start {
                 let day = date::iso_weekday(date);
                 if day == start || day == start + 1 {
-                    return true;
+                    return Ok(true);
                 }
             }
         }
-        let day_name = date::format(date, "dddd").to_lowercase();
+        let day_name = shown(date, "dddd", offset)?.to_lowercase();
         if self.excludes.contains(&day_name) {
-            return true;
+            return Ok(true);
         }
-        self.excludes.contains(&formatted) || self.excludes.contains(&date_only)
+        Ok(self.excludes.contains(&formatted) || self.excludes.contains(&date_only))
     }
 
     /// The model of the DB after `getTasks`. Dates are the epoch milliseconds, and an unresolved
@@ -579,9 +578,26 @@ impl Db {
     }
 }
 
+/// A strict parse of the DB; a throw of the reference is a rejection at the task's statement.
+fn strict(text: &str, format: &str, now: Time, offset: usize) -> Result<Option<Time>, DbError> {
+    date::strict_parse(text, format, now).map_err(|thrown| DbError {
+        offset,
+        message: thrown.0,
+    })
+}
+
+/// `dayjs(time).format(format)`; a throw of the reference is a rejection at the task's statement.
+fn shown(time: Time, format: &str, offset: usize) -> Result<String, DbError> {
+    date::format(time, format).map_err(|thrown| DbError {
+        offset,
+        message: thrown.0,
+    })
+}
+
 /// A date of the DB as a model value: integral milliseconds, or `null` for `undefined` and NaN.
 fn model_time(time: Option<Time>) -> Option<i64> {
-    time.filter(|value| value.is_finite()).map(|value| value as i64)
+    time.filter(|value| value.is_finite())
+        .map(|value| value as i64)
 }
 
 /// `mergeTokens` (lines 133-139): the tokens of `text`, lower case and split on blanks and commas,
