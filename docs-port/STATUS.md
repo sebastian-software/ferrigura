@@ -6,21 +6,21 @@ Each session updates its section when it stops: what changed, what is next, what
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                                                                                                      |
-| ---------------------------------- | ----------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                                                                                      |
-| M2 First slice: pie to SVG         | done        | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                              |
-| M3 Flowchart parser                | done        | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                        |
-| M4 ELK Layered port                | in progress | elk    | 165 of 169 corpus cases supported, all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; see `elk/PLAN.md` §10 |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                                                                                        |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                                                                   |
+| Milestone                          | Status          | Strand | Notes                                                                                                                                                                                                          |
+| ---------------------------------- | --------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1 Parser foundation: pie and info | done            | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                          |
+| M2 First slice: pie to SVG         | done            | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                  |
+| M3 Flowchart parser                | done            | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                            |
+| M4 ELK Layered port                | done for review | elk    | 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
+| M5 Flowchart rendering             | not started     | —      | Needs M2, M3 and M4                                                                                                                                                                                            |
+| M6 Remaining P1 diagrams           | not started     | —      | After M5                                                                                                                                                                                                       |
 
 ## Strands
 
-| Strand | Session            | Worktree                                                                       | Working on                                                                                                                                                                                      | Next                                         | Blocked by |
-| ------ | ------------------ | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ---------- |
-| main   | —                  | —                                                                              | M1, M2 and M3 done and merged                                                                                                                                                                   | M5 (flowchart rendering) once M4 is done     | M4         |
-| elk    | port-m4-elk-fe5cfa | `.claude/worktrees/port-m4-elk-fe5cfa` (branch `sebastian/port-m4-elk-fe5cfa`) | M4: Layered pipeline with edges, labels, the input-model order, the greedy switch, compound layouts, explicit ports, inverted ports, LEFT and UP node labels; 165 of 169 corpus cases supported | hyperedges (not reached by Mermaid); M4 done | None       |
+| Strand | Session            | Worktree                                                                       | Working on                                                                          | Next                                     | Blocked by |
+| ------ | ------------------ | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ---------------------------------------- | ---------- |
+| main   | —                  | —                                                                              | M1, M2 and M3 done and merged                                                       | M5 (flowchart rendering) once M4 is done | M4         |
+| elk    | port-m4-elk-fe5cfa | `.claude/worktrees/port-m4-elk-fe5cfa` (branch `sebastian/port-m4-elk-fe5cfa`) | M4 done for review: the ELK Layered port for Mermaid's options, see the M4 handover | Review, then merge into `main`           | None       |
 
 ## M1 handover
 
@@ -63,6 +63,30 @@ YAML, done: `crates/ferrigura-syntax/src/yaml.rs` reads YAML as js-yaml 4 does w
 Text, done: `crates/ferrigura-text` (fonts, measurement with harfrust, line metrics, Mermaid's wrapping, styled runs, subsetting with per-subset family names) is merged from its own worktree. Verified against Chromium in a fixture (180 widths, 24 boxes, 27 wraps, 7 styled-run lines) and against the spike's Rust binary. Deviations from the spike: the subset family name is a 16-hex-digit FNV-1a hash, not six digits; `wrap_line` takes one face, although Mermaid wraps styled words per word (styled runs are measured per run); no fallback fonts, WOFF2 or caching yet. The spike's generator for the Chromium fixture is not committed.
 
 Known gaps in the configuration: `themeVariables` are not computed (the theme port does that in Stage B), and they are left out of the comparison; non-finite numbers (`.inf`, `.nan`) are carried as the strings `"Infinity"`, `"-Infinity"` and `"NaN"`, because a serde_json value cannot hold them (a theme reads `THEME_COLOR_LIMIT` from there); a `config` key in a directive maps to the section of pie and info only; a directive whose arguments are not an object (a word, a number, an array, a string) contributes nothing, as the reference's merge ignores such values, and 13 explicit cases in `config-cases.ts` show it; the front matter `config` block is ignored when it is not an object, which the same cases check.
+
+## M4 handover
+
+Done, for review: the ELK Layered port (`crates/ferrigura-elk`), bit-exact with elkjs 0.9.3 (ELK pin 9bc93474e) for the layered algorithm on the options Mermaid sets. Verified on `51c211525` (this branch, merged with `main` at `5413c8047`): `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` (1348 tests) pass; the corpus has 165 of 169 cases passing, and all 165 match elkjs in coordinates and in the trace with logs; 1200 of 1200 random flat graphs and 900 of 900 random compound graphs match.
+
+Ported: the five phases of the layered pipeline with the processor order that elkjs logs; DEPTH_FIRST and GREEDY cycle breaking; network simplex layering; the layer sweep with barycenter, the two-sided greedy switch and the model order (including the first-try flag that elkjs shares between its two tries); Brandes & Koepf placement; orthogonal edge routing; node, edge, centre and end labels, with their sizes and placements, and the LEFT and UP mirror of node labels; self loops with one edge; layer constraints FIRST and LAST; the separate handling of connected components; nested graphs laid out level by level; compound layouts (`INCLUDE_CHILDREN`) with cross-hierarchy edges, hierarchical ports on the east and west sides, and inverted ports; explicit ports on east, west, north and south sides, with one edge each; the random source and the GWT merge sort. The Java semantics that elkjs has and the source does not show are written down where they occur, with the probe or log that settled them.
+
+Unsupported, and why:
+
+- Hyperedges (a port with several edges, `synthetic__explicit-port-shared`): Mermaid never creates an ELK port (its edges name nodes), so it does not reach them.
+- Compound gaps that the 900 random compound graphs do not reach, each raising its own message: north and south external port dummies and a fixed order of east and west external ports (both need fixed-side or fixed-order ports on compound nodes, which Mermaid does not set); in-layer constraints (they come only from north and south external ports); inside self-loops (`elk.insideSelfLoops.activate`, commented out in Mermaid's option catalogue); allowing non-flow ports to switch sides (needs port constraints); north and south self-loops at north and south ports (needs explicit ports on those sides).
+- Splines and polylines (`edgeRouting` other than orthogonal, self loops with a polyline or spline router): outside the option inventory.
+- The one-sided greedy switch (`GreedySwitchType.ONE_SIDED`): no default or corpus case reaches it.
+- Non-layered algorithms (`elk.box`, `elk.rectpacking`): the port runs `elk.layered` only; they are the three cases named in `NOT_PORTED`.
+- Port labels, an explicit port anchor, and a port without a side: refused with their names.
+
+How to run the random sets (from the repository root):
+
+- Flat: `pnpm exec tsx crates/ferrigura-elk/tools/random-graphs.ts --count 1200`, then `cargo test -p ferrigura-elk --test random_graphs -- --ignored --show-output`.
+- Compound: `pnpm exec tsx crates/ferrigura-elk/tools/random-compound-graphs.ts --count 900`, then `cargo test -p ferrigura-elk --test random_compound_graphs -- --ignored --show-output`.
+- The graphs are written under `target/` (not tracked). Each tool takes `--seed` and `--out`; the tests read `FERRIGURA_RANDOM_GRAPHS` or `FERRIGURA_COMPOUND_GRAPHS` when set.
+- The corpus: `cargo test -p ferrigura-elk --test differential -- --nocapture` and `--test trace -- --nocapture`. Synthetic cases are regenerated through Node elkjs with `pnpm exec tsx crates/ferrigura-elk/tools/capture-corpus.ts --synthetic-only`; the full capture also drives the browser and was not run for this handover.
+
+Known gaps and notes: no indexed hash collection is iterated by a processor yet, so `indexmap` with `shift_remove` is not needed; the six intermediate commits of the inverted-port series fail the compound random test on their own, and only the tip is green in that run; the commit trailers of this branch name Claude Haiku 5.5. The branch is local and not pushed. It is ready for review and for the merge into `main`, which the user decides.
 
 ## P1 diagram types
 
