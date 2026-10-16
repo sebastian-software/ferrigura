@@ -14,21 +14,23 @@ use std::error::Error;
 use std::io::Read;
 use std::{fs, io};
 
-use ferrigura_model::config::{MermaidConfig, effective, typed, user_theme_variables};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::config::{MermaidConfig, effective, typed};
 use ferrigura_model::value::Value;
 use ferrigura_render::class::data::get_data;
 use ferrigura_syntax::{DiagramType, class, config, detect};
 use serde_json::{Value as Json, json};
 
-/// The effective configuration of the text, and the light theme variables it is drawn with.
+/// The effective configuration of the text, and the theme variables it is drawn with: the configured
+/// theme's, as the facade gives them to the renderer (`prepare`, `ferrigura/src/lib.rs`).
 fn configuration(text: &str) -> Result<(MermaidConfig, Value), String> {
     let directive = config::read(text).map_err(|error| error.message)?;
     let scope = detect(text).map(DiagramType::config_key);
-    let site = Value::empty_object();
-    let config = typed(&effective(None, scope, &directive)).map_err(|error| error.to_string())?;
-    let overrides = user_theme_variables(Some(&site), &directive);
-    let theme = Theme::ReduxColor.variables(Some(&overrides));
+    let effective_config = effective(None, scope, &directive);
+    let config = typed(&effective_config).map_err(|error| error.to_string())?;
+    let theme = effective_config
+        .get("themeVariables")
+        .cloned()
+        .unwrap_or_else(Value::empty_object);
     Ok((config, theme))
 }
 
