@@ -364,7 +364,7 @@ fn normalize_breaks(text: &str) -> String {
 
 /// `decodeEntities` in `utils.ts`: the placeholders that the diagram source encodes its entities
 /// with become `&#`, `&` and `;` again.
-fn decode_entities(text: &str) -> String {
+pub(super) fn decode_entities(text: &str) -> String {
     text.replace("ﬂ°°", "&#")
         .replace("ﬂ°", "&")
         .replace("¶ß", ";")
