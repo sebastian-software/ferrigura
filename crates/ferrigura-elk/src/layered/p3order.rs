@@ -436,9 +436,9 @@ struct Sweep<'n, 'g> {
     counter: AllCrossingsCounter,
     random: Random,
     /// `InternalProperties.FIRST_TRY_WITH_INITIAL_ORDER`, kept here: the root graph is the only one swept.
+    /// Java's `SECOND_TRY_WITH_INITIAL_ORDER` has the same id (`firstTryWithInitialOrder`), and graph
+    /// properties are keyed by id, so both are this one flag.
     first_try: bool,
-    /// `InternalProperties.SECOND_TRY_WITH_INITIAL_ORDER`.
-    second_try: bool,
     /// `CONSIDER_MODEL_ORDER_STRATEGY != NONE`.
     consider_model_order: bool,
     /// Whether a sweep has run since the attempts began, which `graphsWhoseNodeOrderChanged` records for the root.
@@ -466,7 +466,6 @@ impl<'n, 'g> Sweep<'n, 'g> {
             counter,
             random,
             first_try: false,
-            second_try: false,
             consider_model_order,
             changed: false,
             currently_best: None,
@@ -504,19 +503,15 @@ impl<'n, 'g> Sweep<'n, 'g> {
         if initial_crossings == 0 && self.first_try {
             return 0;
         }
-        if (!self.first_try && !self.second_try) || !self.consider_model_order {
+        if !self.first_try || !self.consider_model_order {
             self.set_first_layer_order(forward);
         } else {
             forward = self.first_try;
         }
         self.sweep_reducing_crossings(forward, true);
-        if self.second_try {
-            self.second_try = false;
-        }
-        if self.first_try {
-            self.first_try = false;
-            self.second_try = true;
-        }
+        // Java clears the second try, then tests the first one, which is now clear: so the flag
+        // ends cleared, and the second try never starts.
+        self.first_try = false;
         let mut crossings = self.count_crossings();
         loop {
             self.set_currently_best_node_orders();
@@ -555,7 +550,7 @@ impl<'n, 'g> Sweep<'n, 'g> {
             forward,
         );
         // `firstSweep && !FIRST_TRY && !SECOND_TRY`, passed to every layer of this sweep.
-        let is_first_sweep = first_sweep && !self.first_try && !self.second_try;
+        let is_first_sweep = first_sweep && !self.first_try;
         let (step, mut index) = if forward {
             (1_isize, 1_isize)
         } else {
