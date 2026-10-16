@@ -96,6 +96,32 @@ impl Element {
         &self.children
     }
 
+    /// Appends a child to an element that is already built, as d3's `append` does to a selection.
+    pub fn push_child(&mut self, child: Element) {
+        self.children.push(child);
+    }
+
+    /// Appends the text of this element and of the elements below it, in document order, to `out`.
+    /// Used to collect the characters a diagram draws, to embed the fonts it needs.
+    pub fn collect_text(&self, out: &mut String) {
+        match &self.content {
+            Content::Empty | Content::Raw(_) => {}
+            Content::Text(text) => out.push_str(text),
+        }
+        for child in &self.children {
+            child.collect_text(out);
+        }
+    }
+
+    /// Visits this element and every element below it, parents first. Used to set an attribute on
+    /// an element that was built earlier, as the reference's `select('#id').attr(...)` does.
+    pub fn visit_mut(&mut self, visit: &mut dyn FnMut(&mut Element)) {
+        visit(self);
+        for child in &mut self.children {
+            child.visit_mut(visit);
+        }
+    }
+
     /// The markup of the element: the attributes in order, then the text and the children. An
     /// element with neither text nor children is written with `/>`.
     #[must_use]

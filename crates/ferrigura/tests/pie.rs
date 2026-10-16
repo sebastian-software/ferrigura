@@ -49,7 +49,7 @@ fn should_escape_the_title_and_the_labels() {
 
 #[test]
 fn should_not_render_a_diagram_type_that_is_not_ported() {
-    assert!(render("sequenceDiagram\n  A->>B: hi", &Value::empty_object()).is_err());
+    assert!(render("gantt\n  title A", &Value::empty_object()).is_err());
 }
 
 #[test]

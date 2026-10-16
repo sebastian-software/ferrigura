@@ -157,3 +157,31 @@ The parser- and DB-level blocks of `sequenceDiagram.spec.js` (`:97-1782` and `:2
 2. Resolved: an actor's `type` and `description` keep their YAML value (`Value`). The differential run confirmed a numeric type (`participant A@{ type: 5 }`).
 3. Resolved: `links A: {…}` is the `links` statement. The reference agrees on the explicit `links` case of `cases.ts`.
 4. Resolved: control items have `activate` false and `centralConnection` NONE, as `addSignal` gives them (`sequenceDb.ts:272-308`). NOTES 3.5 is wrong on this point; the differential run confirmed the code.
+
+## 13. Renderer (M6-R)
+
+The renderer is `crates/ferrigura-render/src/sequence/`. All 193 fixtures of `pnpm port:geometry sequence` are within tolerance, in both looks. The research is in NOTES section 5; this section lists what the port reproduces and where it differs.
+
+**Reproduced (each one in the code, with the reference line):**
+
+- **The bounds counter.** `updateBounds` shares one depth counter between the open blocks and the activations, so an activation can get a depth of zero or less (`sequenceRenderer.ts:57-80`, `bounds.rs` `update_bounds`).
+- **`endActivation` with no activation of the actor.** `splice(-1, 1)` removes the last activation (`bounds.rs` `end_activation`).
+- **Zero coordinates are false.** `calculateLoopBounds` tests `msgModel.startx && msgModel.stopx`, so a message at x = 0 does not widen its blocks (`layout.rs`).
+- **The entity placeholders.** Text is measured as the parser encodes it, with the placeholders; the whole document is decoded at the end (`mermaidAPI.ts:359`, `mod.rs` `decode_entities`).
+- **The entity shape's class.** An `entity` draws its group with the class `actor`, not `actor-man` (`svgDraw.js:891-997`, `actors.rs`).
+- **The icons under sanitising.** Every security level but `loose` and `sandbox` runs DOMPurify on the output, whose allow-list has no `use`; an `@icon` is therefore not drawn (`mermaidAPI.ts:644-650`, `conf.rs` `sanitized`).
+- **The root font size.** The root's `font-size` is the theme's `fontSize` (14 px in the redux themes), not the text's 16 px (`styles.ts`, `mod.rs` `write`).
+- **The unknown actor type.** An actor of a type the switch does not know draws nothing and keeps its height (`svgDraw.js:1361-1404`).
+- **Menus with no box.** An actor with links whose type draws no box throws, as the reference reads `rectData.class` of `undefined` (`actors.rs` `draw_popup`).
+- **Messages that cannot be measured.** A message whose text the measurement rejects is skipped, as the reference's `try` around the message does (`mod.rs`).
+- **Section heights.** A block's section heights are computed by the reference and not drawn; the port does not keep them (no output depends on them).
+
+**Named differences:**
+
+- **Click handlers.** The `onclick` and `cursor` of an actor with links are not drawn (decision 0001). The menus themselves are drawn hidden (`display: none`), as the SVG of the reference, and `forceMenus` shows them.
+- **Menu order.** The reference lists an actor's links in insertion order; the canonical model keeps them in a `BTreeMap`, so they are listed in key order. No fixture has links. Keeping the order needs an ordered map in the model (open).
+- **Lifeline counter.** `actorCnt` is module state in the reference and carries over between renders in one page; the port counts from zero for each render. Only the `id`s of the lifelines and menus differ, which the harness does not compare.
+- **Maths.** A text with `$$` is drawn as written. The reference renders KaTeX there; no fixture uses it, and ferrigura has no KaTeX.
+- **`textPlacement`.** The reference reads `fo` and `old` from the configuration; the schema has no such key, so the port draws every label as `byTspan`.
+- **`arrowMarkerAbsolute`.** The marker URLs are relative (`url(#id-…)`); the reference's absolute form uses `window.location`, which a server render does not have.
+- **`themeCSS`.** Not applied (out of the M2 scope of the themes).
