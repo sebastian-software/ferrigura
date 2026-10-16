@@ -58,6 +58,7 @@ enum Kind {
 }
 
 /// One generated field: its Rust type, the expression of its default, and its documentation.
+#[derive(Clone)]
 struct Field {
     ident: String,
     json: String,
@@ -65,6 +66,7 @@ struct Field {
     expr: String,
     option: bool,
     doc: String,
+    kind: Kind,
 }
 
 struct Generator<'a> {
@@ -73,6 +75,9 @@ struct Generator<'a> {
     names: BTreeSet<String>,
     /// Structs of `$defs` entries, by pointer: the name and whether they carry defaults.
     shared: BTreeMap<String, (String, bool)>,
+    /// The fields of every generated struct, by its name: a schema default of an object is built
+    /// from them.
+    struct_fields: BTreeMap<String, Vec<Field>>,
 }
 
 fn main() {
@@ -89,6 +94,7 @@ fn main() {
         blocks: Vec::new(),
         names: BTreeSet::new(),
         shared: BTreeMap::new(),
+        struct_fields: BTreeMap::new(),
     };
     let root = generator.flatten(&schema);
     generator.struct_for(&root, "MermaidConfig", None);
@@ -218,6 +224,7 @@ impl Generator<'_> {
 
         let doc = description(flat).unwrap_or_else(|| format!("Configuration of `{name}`."));
         self.blocks.push(emit_struct(&name, &doc, &fields));
+        self.struct_fields.insert(name.clone(), fields);
         if let Some(pointer) = def {
             self.shared
                 .insert(pointer.to_owned(), (name.clone(), carries_default));
@@ -237,10 +244,23 @@ impl Generator<'_> {
         let default = flat.get("default");
         let (ty, option, expr, carries) = match &kind {
             Kind::Object { name, has_defaults } => {
-                if *has_defaults {
-                    (name.clone(), false, "Default::default()".to_owned(), true)
-                } else {
-                    (format!("Option<{name}>"), true, "None".to_owned(), false)
+                let literal = default
+                    .and_then(Value::as_object)
+                    .map(|object| self.struct_literal(name, object));
+                match (*has_defaults, literal) {
+                    (true, literal) => (
+                        name.clone(),
+                        false,
+                        literal.unwrap_or_else(|| "Default::default()".to_owned()),
+                        true,
+                    ),
+                    (false, Some(literal)) => (
+                        format!("Option<{name}>"),
+                        true,
+                        format!("Some({literal})"),
+                        true,
+                    ),
+                    (false, None) => (format!("Option<{name}>"), true, "None".to_owned(), false),
                 }
             }
             Kind::Json => match default.and_then(|value| literal(&kind, value)) {
@@ -274,8 +294,43 @@ impl Generator<'_> {
             expr,
             option,
             doc: description(&flat).unwrap_or_else(|| format!("The `{key}` option.")),
+            kind,
         };
         (field, carries)
+    }
+
+    /// A struct literal of `name`, for a default that is an object in the schema: the options it
+    /// names take the values of the default, the others the defaults of the struct.
+    fn struct_literal(&self, name: &str, object: &Map<String, Value>) -> String {
+        let fields = self
+            .struct_fields
+            .get(name)
+            .unwrap_or_else(|| panic!("no generated struct {name} for a schema default"));
+        let parts: Vec<String> = fields
+            .iter()
+            .map(|field| {
+                let expr = object
+                    .get(&field.json)
+                    .and_then(|value| self.value_expr(field, value))
+                    .unwrap_or_else(|| field.expr.clone());
+                format!("{}: {expr}", field.ident)
+            })
+            .collect();
+        format!("{name} {{ {} }}", parts.join(", "))
+    }
+
+    /// The expression of one option from a schema default, or `None` when the value does not fit
+    /// the option's type.
+    fn value_expr(&self, field: &Field, value: &Value) -> Option<String> {
+        let expr = match &field.kind {
+            Kind::Object { name, .. } => self.struct_literal(name, value.as_object()?),
+            kind => literal(kind, value)?,
+        };
+        Some(if field.option {
+            format!("Some({expr})")
+        } else {
+            expr
+        })
     }
 
     fn kind(&mut self, flat: &Value, hint: &str, def: Option<&str>) -> Kind {
