@@ -15,12 +15,14 @@
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
 
+pub mod embed;
 mod error;
 pub mod fonts;
 pub mod measure;
 pub mod metrics;
 pub mod wrap;
 
+pub use embed::{EmbeddedFamily, embed_runs, subset_face};
 pub use error::TextError;
 pub use fonts::{Face, FontFamily, FontStyle, FontWeight, face};
 pub use measure::{Run, measure, measure_data, measure_line};
