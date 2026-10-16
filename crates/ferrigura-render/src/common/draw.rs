@@ -7,11 +7,12 @@
 //! flowchart, class, state and agentflow use it for the tooltip of a click, and clicks are dropped
 //! (`docs-port/decisions/0001`), so no SVG of this crate needs it.
 
+use ferrigura_syntax::url::sanitize_url;
+
 use crate::svg::number;
 
 use super::Element;
 use super::text::split_line_breaks;
-use super::url::sanitize_url;
 
 /// `RectData` (`commonTypes.ts`): what `drawRect` writes. An absent value is not written, as the
 /// reference's `undefined` is not, and an attribute that is falsy in JavaScript (an empty name, a

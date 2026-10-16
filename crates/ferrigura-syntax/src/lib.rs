@@ -24,7 +24,7 @@ mod lexer;
 mod preprocess;
 mod scan;
 mod text;
-mod url;
+pub mod url;
 
 pub mod class;
 pub mod config;

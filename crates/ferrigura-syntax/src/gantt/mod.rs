@@ -10,7 +10,6 @@ mod date;
 mod db;
 mod parser;
 mod scanner;
-mod url;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 

@@ -1,14 +1,13 @@
 //! What the custom renderers of the reference share: the text measurement of `utils.ts`
-//! ([`text`]), the drawing helpers of `diagrams/common/svgDrawCommon.ts` ([`draw`], with the URL
-//! sanitiser of [`url`]), the sizing of `setupGraphViewbox.js` ([`viewbox`]) and the title of
-//! `insertTitle` ([`title`]). The element they write is [`element::Element`].
+//! ([`text`]), the drawing helpers of `diagrams/common/svgDrawCommon.ts` ([`draw`], whose URL
+//! sanitiser is [`ferrigura_syntax::url::sanitize_url`]), the sizing of `setupGraphViewbox.js`
+//! ([`viewbox`]) and the title of `insertTitle` ([`title`]). The element they write is [`element::Element`].
 
 pub mod draw;
 pub mod element;
 pub mod style;
 pub mod text;
 pub mod title;
-pub mod url;
 pub mod viewbox;
 
 pub use element::Element;
@@ -34,10 +33,4 @@ pub fn is_js_whitespace(c: char) -> bool {
 #[must_use]
 pub fn js_trim(text: &str) -> &str {
     text.trim_matches(is_js_whitespace)
-}
-
-/// `String.prototype.trimStart`.
-#[must_use]
-pub fn js_trim_start(text: &str) -> &str {
-    text.trim_start_matches(is_js_whitespace)
 }
