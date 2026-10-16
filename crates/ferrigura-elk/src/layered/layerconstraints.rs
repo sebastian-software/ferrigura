@@ -93,10 +93,11 @@ fn handle_inner_nodes(graph: &mut LGraph, remaining: &[usize]) {
         }
         let mut all_reversed = true;
         for port in graph.nodes[node].ports.clone() {
-            let net_flow = graph.ports[port].incoming.len() as i64
-                - graph.ports[port].outgoing.len() as i64;
+            let net_flow =
+                graph.ports[port].incoming.len() as i64 - graph.ports[port].outgoing.len() as i64;
             let side = graph.ports[port].side;
-            if !((side == PortSide::EAST && net_flow > 0) || (side == PortSide::WEST && net_flow < 0))
+            if !((side == PortSide::EAST && net_flow > 0)
+                || (side == PortSide::WEST && net_flow < 0))
             {
                 all_reversed = false;
                 break;

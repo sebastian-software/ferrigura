@@ -172,7 +172,10 @@ impl PhaseStep {
                 // The orthogonal router adds the self loop processors to a graph with self loops.
                 // It also adds processors for hyperedges, labels and ports; graphs with those are
                 // not ported yet, see `GraphConfigurator`.
-                if graph.graph_properties.contains(&GraphProperties::SELF_LOOPS) {
+                if graph
+                    .graph_properties
+                    .contains(&GraphProperties::SELF_LOOPS)
+                {
                     config
                         .add_before(P1, S::SELF_LOOP_PREPROCESSOR)
                         .add_after(P5, S::SELF_LOOP_POSTPROCESSOR)
