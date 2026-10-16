@@ -23,6 +23,17 @@ impl Point {
     }
 }
 
+/// A measured size as the browser gives it. `getBBox` returns an `SVGRect`, whose members are
+/// single-precision floats, so every size the reference takes from it is a float32 value (for
+/// example the node box height 56.400001525878906 in `shape-themes/07`). Its later arithmetic is
+/// double precision on those values, which is exact where the layout tests a point against a box
+/// edge (`outsideNode`, `outlineAttachPoint`); a double size only comes close to the edge, and the
+/// test then decides the other way.
+#[must_use]
+pub fn browser_f32(value: f64) -> f64 {
+    f64::from(value as f32)
+}
+
 /// A box by its top-left corner and its size, as `getBBox` returns it.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct BBox {
@@ -71,6 +82,18 @@ impl BBox {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.width <= 0.0 || self.height <= 0.0
+    }
+
+    /// The box as the browser's `getBBox` returns it, each value rounded to the nearest float32.
+    /// See [`browser_f32`].
+    #[must_use]
+    pub fn browser(self) -> Self {
+        Self::new(
+            browser_f32(self.x),
+            browser_f32(self.y),
+            browser_f32(self.width),
+            browser_f32(self.height),
+        )
     }
 
     /// The smallest box that holds both boxes.
