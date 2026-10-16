@@ -13,6 +13,9 @@ import type { PortInput } from './reference.ts';
 
 const root = new URL('../../', import.meta.url);
 
+/** The spec files whose literals are collected, where a type's specs are JavaScript. */
+const specPatterns: Record<string, RegExp> = { er: /\.(spec|test)\.[jt]s$/ };
+
 const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
@@ -20,11 +23,13 @@ const detectors: Record<string, RegExp> = {
   timeline: /^\s*timeline/,
   journey: /^\s*journey/,
   gitgraph: /^\s*gitGraph/,
+  er: /^\s*erDiagram/,
 };
 
 /** The e2e folder of a diagram type, where it is not the type itself. */
 const fixtureFolders: Record<string, string> = {
   gitgraph: 'git',
+  er: 'er-diagram',
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */
@@ -72,14 +77,14 @@ function mermaidBlocks(source: string): string[] {
 export async function collectInputs(type: string): Promise<PortInput[]> {
   const candidates: { source: string; text: string }[] = [];
 
-  const fixtures = await walk(`e2e/diagrams/${fixtureFolders[type] ?? type}/`, (path) =>
-    path.endsWith('.mmd')
-  );
+  const folder = fixtureFolders[type] ?? type;
+  const fixtures = await walk(`e2e/diagrams/${folder}/`, (path) => path.endsWith('.mmd'));
   for (const fixture of fixtures) {
     candidates.push({ source: fixture, text: await readFile(new URL(fixture, root), 'utf8') });
   }
 
-  const specs = await walk('packages/', (path) => /\.(spec|test)\.(ts|js)$/.test(path));
+  const specPattern = specPatterns[type] ?? /\.(spec|test)\.(ts|js)$/;
+  const specs = await walk('packages/', (path) => specPattern.test(path));
   for (const spec of specs) {
     const source = await readFile(new URL(spec, root), 'utf8');
     for (const literal of stringLiterals(spec, source)) {

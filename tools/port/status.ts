@@ -18,6 +18,7 @@ const suites: Record<string, string[]> = {
   timeline: ['timeline_spec', 'timeline_grammar'],
   info: ['info_spec', 'info_grammar'],
   journey: ['journey_spec', 'journey_db_spec'],
+  er: ['er_spec', 'er_subgraph_spec', 'er_db_spec', 'er_characters_spec'],
   flowchart: [
     'flowchart_singlenode_spec',
     'flowchart_text_spec',

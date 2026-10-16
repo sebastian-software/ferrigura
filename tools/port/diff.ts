@@ -29,10 +29,11 @@ if (
   type !== 'flowchart' &&
   type !== 'timeline' &&
   type !== 'journey' &&
-  type !== 'gitgraph'
+  type !== 'gitgraph' &&
+  type !== 'er'
 ) {
   console.error(
-    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | flowchart-data | config | yaml | theme'
+    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | flowchart-data | config | yaml | theme'
   );
   process.exit(2);
 }

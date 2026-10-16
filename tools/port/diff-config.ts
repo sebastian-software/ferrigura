@@ -80,6 +80,7 @@ const timelineInputs = await collectInputs('timeline');
 const undetectedTimeline = new Set(undetectedCases.timeline ?? []);
 const journeyInputs = await collectInputs('journey');
 const gitGraphInputs = await collectInputs('gitgraph');
+const erInputs = await collectInputs('er');
 const inputs: ConfigInput[] = [
   ...pieInputs.map((input) => ({
     id: 0,
@@ -115,6 +116,13 @@ const inputs: ConfigInput[] = [
     text: input.text,
     group: 'gitgraph',
     expectedScope: 'gitGraph',
+  })),
+  ...erInputs.map((input) => ({
+    id: 0,
+    source: input.source,
+    text: input.text,
+    group: 'er',
+    expectedScope: 'er',
   })),
   ...configCases.map((testCase) => ({
     id: 0,
@@ -161,7 +169,7 @@ if (missingInRust.length > 0 || extraInRust.length > 0) {
  * The diagram sections whose defaults the port does not own yet. The reference fills them with its
  * own generator (`.build/jsonSchema.ts`), which applies a section's own defaults only, and the
  * TypeScript defaults replace some sections whole; ferrigura takes them from the schema. A section
- * is compared only for an input of its own diagram type: `pie`, `flowchart`, `timeline`, `journey` and `gitGraph` are ported,
+ * is compared only for an input of its own diagram type: `pie`, `flowchart`, `timeline`, `journey`, `gitGraph` and `er` are ported,
  * and `info` has no section. Every other section is left out.
  */
 const UNPORTED_SECTIONS = [
@@ -172,7 +180,6 @@ const UNPORTED_SECTIONS = [
   'gantt',
   'class',
   'state',
-  'er',
   'quadrantChart',
   'xyChart',
   'requirement',

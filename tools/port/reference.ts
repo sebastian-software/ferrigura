@@ -91,3 +91,17 @@ export async function registerDetectors(reference: Reference): Promise<void> {
     gitGraph.default
   );
 }
+
+/**
+ * Registers the ER detector, which `registerDetectors` leaves out: the exporters of ER and the
+ * configuration run need it, since a directive or a configuration scope detects the diagram type.
+ */
+export async function registerErDetector(reference: Reference): Promise<void> {
+  const [detectType, er] = await Promise.all([
+    reference.load<{ registerLazyLoadedDiagrams(...diagrams: unknown[]): void }>(
+      '/packages/mermaid/src/diagram-api/detectType.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/er/erDetector.ts'),
+  ]);
+  detectType.registerLazyLoadedDiagrams(er.default);
+}
