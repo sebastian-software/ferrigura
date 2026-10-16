@@ -235,3 +235,17 @@ const GOLDEN_NAME: &str = "fg-03d728be4d324b53-sans";
 fn no_runs_embed_nothing() {
     assert!(embed_runs(&[]).expect("embeds").is_empty());
 }
+
+#[test]
+fn an_empty_label_still_embeds_its_face() {
+    // A run with no characters uses its face, so the face is embedded with no glyphs of its own.
+    let families = embed_runs(&[Run {
+        text: "",
+        face: regular(),
+    }])
+    .expect("embeds");
+    assert_eq!(families.len(), 1);
+    assert_eq!(families[0].css.matches("@font-face").count(), 1);
+    let empty = subset_face(regular(), "").expect("face subsets");
+    assert!(empty.len() < regular().data().len() / 4);
+}
