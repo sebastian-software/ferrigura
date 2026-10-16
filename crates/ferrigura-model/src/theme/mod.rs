@@ -5,7 +5,11 @@
 //! the per-diagram values. The reference computes them in `packages/mermaid/src/themes/` with the
 //! colour functions of `khroma`; the port of those functions is in [`khroma`].
 
+use std::fmt;
+
 use crate::value::Value;
+
+pub mod khroma;
 
 /// A theme that ferrigura ships.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -15,6 +19,37 @@ pub enum Theme {
     /// `redux-dark-color`, the dark theme.
     ReduxDarkColor,
 }
+
+/// Why the variables of a theme could not be computed. The reference throws in the same cases: a
+/// colour that the colour functions cannot read, such as `unreadable`, or a value that is not a
+/// string where a colour is needed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ThemeError {
+    message: String,
+}
+
+impl ThemeError {
+    /// An error with the given message.
+    pub(crate) fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+        }
+    }
+
+    /// What went wrong, as the reference words it.
+    #[must_use]
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+}
+
+impl fmt::Display for ThemeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for ThemeError {}
 
 impl Theme {
     /// The theme for a configured `theme` name. A name that ferrigura does not ship falls back to a
@@ -35,8 +70,4 @@ impl Theme {
         let _ = (self, overrides);
         Value::empty_object()
     }
-}
-
-pub mod khroma {
-    //! Port of the khroma functions the themes use. Placeholder until the theme port lands.
 }
