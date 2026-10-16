@@ -7,7 +7,7 @@
 use super::rough::{self, Outline};
 use super::util::{self, Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
-use crate::flowchart::geom::{BBox, Point};
+use crate::flowchart::geom::{BBox, Point, sloped_outline_height_f32};
 
 /// The width of the frame of a shaded process, on its left side.
 const FRAME_WIDTH: f64 = 8.0;
@@ -195,6 +195,10 @@ pub(super) fn sloped_rect(input: &ShapeInput<'_>) -> Part {
         Point::new(x + w, y - h / 2.0),
     ];
     let outline = rough::polygon(&points);
+    // `updateNodeBounds(node, polygon)` sizes the node by the `getBBox` of the outline's own group,
+    // which has no transform of its own, so the height is the browser's height of the outline's
+    // path (`geom::sloped_outline_height_f32`), not the height of the translated box.
+    let height = sloped_outline_height_f32(outline.bbox.y, outline.bbox.bottom());
     let style = util::path_style(node, &styles);
     let svg = group(
         "basic label-container outer-path",
@@ -213,7 +217,12 @@ pub(super) fn sloped_rect(input: &ShapeInput<'_>) -> Part {
     Part {
         svg,
         after_label: String::new(),
-        bbox: outline.bbox.translate(0.0, h / 4.0),
+        bbox: BBox::new(
+            outline.bbox.x,
+            outline.bbox.y + h / 4.0,
+            outline.bbox.width,
+            height,
+        ),
         intersect: Intersect::Polygon { points },
         label_offset: Some(label_offset),
         label: Some(label),
