@@ -17,6 +17,7 @@ fn svg_with(text: &str, scheme: Option<ColorScheme>, id: Option<&str>) -> String
     let options = RenderOptions {
         id: id.map(str::to_owned),
         color_scheme: scheme,
+        now: None,
     };
     render_with(text, &Value::empty_object(), &options).expect("the pie renders")
 }
@@ -205,6 +206,7 @@ fn an_id_that_is_not_a_css_identifier_is_refused() {
         let options = RenderOptions {
             id: Some(bad.to_owned()),
             color_scheme: None,
+            now: None,
         };
         assert!(
             render_with(PIE, &Value::empty_object(), &options).is_err(),

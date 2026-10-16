@@ -263,8 +263,17 @@ export function flagValue(argv: string[], flag: string): string | null {
 // ---------------------------------------------------------------------------------------------
 
 /** The ferrigura render of the text, or the first line of its error. */
-export function renderFerrigura(text: string, id: string): { svg: string } | { error: string } {
-  const result = spawnSync(renderBinary, ['--id', id], {
+/**
+ * Ferrigura's SVG of the text. `now` is the clock the reference was given, in milliseconds since
+ * the epoch, so that the dates that depend on it (the gantt today marker) agree.
+ */
+export function renderFerrigura(
+  text: string,
+  id: string,
+  now?: number
+): { svg: string } | { error: string } {
+  const args = now === undefined ? ['--id', id] : ['--id', id, '--now', String(Math.trunc(now))];
+  const result = spawnSync(renderBinary, args, {
     input: text,
     cwd: root,
     encoding: 'utf8',
@@ -514,7 +523,12 @@ export async function withPage<T>(measure: string, run: (page: Page) => Promise<
   const { server, port } = await serve(pageHtml(measure));
   const browser = await chromium.launch({ args: ['--font-render-hinting=none'] });
   try {
-    const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+    // The reference reads dates in the browser's time zone and ferrigura in UTC (M6-PLAN, gantt
+    // time), so the page runs in UTC.
+    const page = await browser.newPage({
+      viewport: { width: 1200, height: 900 },
+      timezoneId: 'UTC',
+    });
     page.on('pageerror', (error) => console.error('page error:', error.message));
     await page.goto(`http://127.0.0.1:${port}/`);
     await page.waitForFunction(

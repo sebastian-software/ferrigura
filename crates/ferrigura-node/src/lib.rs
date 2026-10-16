@@ -41,6 +41,7 @@ pub fn render(
                 .as_deref()
                 .map(colour_scheme)
                 .transpose()?,
+            now: None,
         },
         None => RenderOptions::default(),
     };

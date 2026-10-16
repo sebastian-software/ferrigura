@@ -8,13 +8,22 @@
 
 use std::hash::Hasher;
 
-use ferrigura_model::config::{effective, typed, user_theme_variables};
+use ferrigura_model::config::{MermaidConfig, effective, typed, user_theme_variables};
 use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
 use ferrigura_render::flowchart::{self, FlowchartInput};
-use ferrigura_render::pie::{PieInput, Themes, render as render_pie};
-use ferrigura_syntax::{DiagramType, ParseError, config, detect, pie};
+use ferrigura_render::pie::{PieInput, render as render_pie};
+use ferrigura_render::theme::Themes;
+use ferrigura_render::{
+    class as class_render, er as er_render, gantt as gantt_render, git_graph as git_graph_render,
+    info as info_render, journey as journey_render, sequence as sequence_render,
+    state as state_render, timeline as timeline_render,
+};
+use ferrigura_syntax::{
+    DiagramType, ParseError, class, config, detect, er, gantt, git_graph, info, journey, pie,
+    sequence, state, timeline,
+};
 
 pub use ferrigura_render::RenderError as Error;
 
@@ -42,6 +51,9 @@ pub struct RenderOptions {
     pub id: Option<String>,
     /// The colour scheme. `None` keeps the colours of the configured theme.
     pub color_scheme: Option<ColorScheme>,
+    /// The current time, in milliseconds since the epoch, for the dates that depend on it (the
+    /// gantt diagram's today marker and dates without a day). `None` reads the system clock.
+    pub now: Option<i64>,
 }
 
 /// Renders a diagram to an SVG document.
@@ -68,101 +80,158 @@ pub fn render_with(
     config: &Value,
     options: &RenderOptions,
 ) -> Result<String, RenderError> {
-    match detect(text) {
-        Some(DiagramType::Pie) => render_pie_text(text, config, options),
-        Some(DiagramType::Flowchart) => with_flowchart(text, config, options, flowchart::render),
-        Some(DiagramType::Info) => Err(RenderError::Parse(ParseError {
-            line: 1,
-            column: 1,
-            message: "the info diagram is not rendered yet".to_owned(),
-        })),
-        Some(DiagramType::Timeline) => Err(RenderError::Parse(ParseError {
-            line: 1,
-            column: 1,
-            message: "the timeline diagram is not rendered yet".to_owned(),
-        })),
-        Some(DiagramType::Journey) => Err(RenderError::Parse(ParseError {
-            line: 1,
-            column: 1,
-            message: "the journey diagram is not rendered yet".to_owned(),
-        })),
-        Some(DiagramType::GitGraph) => Err(RenderError::Parse(ParseError {
-            line: 1,
-            column: 1,
-            message: "the gitGraph diagram is not rendered yet".to_owned(),
-        })),
-        Some(DiagramType::Er) => Err(RenderError::Parse(ParseError {
-            line: 1,
-            column: 1,
-            message: "the ER diagram is not rendered yet".to_owned(),
-        })),
-        Some(DiagramType::Class) => Err(RenderError::Parse(ParseError {
-            line: 1,
-            column: 1,
-            message: "the class diagram is not rendered yet".to_owned(),
-        })),
-        Some(DiagramType::Sequence) => Err(RenderError::Parse(ParseError {
-            line: 1,
-            column: 1,
-            message: "the sequence diagram is not rendered yet".to_owned(),
-        })),
-        Some(DiagramType::State) => Err(RenderError::Parse(ParseError {
-            line: 1,
-            column: 1,
-            message: "the state diagram is not rendered yet".to_owned(),
-        })),
-        Some(DiagramType::Gantt) => Err(RenderError::Parse(ParseError {
-            line: 1,
-            column: 1,
-            message: "the gantt diagram is not rendered yet".to_owned(),
-        })),
-        None => Err(RenderError::Parse(ParseError {
+    let Some(kind) = detect(text) else {
+        return Err(RenderError::Parse(ParseError {
             line: 1,
             column: 1,
             message: "no diagram type detected".to_owned(),
-        })),
+        }));
+    };
+    let prepared = prepare(text, config, options, kind)?;
+    let (typed_config, themes, id) = (&prepared.config, prepared.themes(), prepared.id.as_str());
+    match kind {
+        DiagramType::Pie => render_pie(&PieInput {
+            diagram: &pie::parse(text)?,
+            config: &typed_config.pie,
+            themes,
+            id,
+        }),
+        DiagramType::Info => info_render::render(&info_render::InfoInput {
+            diagram: &info::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Timeline => timeline_render::render(&timeline_render::TimelineInput {
+            diagram: &timeline::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Journey => journey_render::render(&journey_render::JourneyInput {
+            diagram: &journey::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::GitGraph => git_graph_render::render(&git_graph_render::GitGraphInput {
+            diagram: &git_graph::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Er => er_render::render(&er_render::ErInput {
+            diagram: &er::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Class => class_render::render(&class_render::ClassInput {
+            diagram: &class::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Sequence => sequence_render::render(&sequence_render::SequenceInput {
+            diagram: &sequence::parse_with(
+                text,
+                sequence::Options {
+                    wrap: sequence_wrap(&prepared.effective),
+                },
+            )?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::State => state_render::render(&state_render::StateInput {
+            diagram: &state::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Gantt => {
+            let now = options.now.unwrap_or_else(|| gantt::Options::default().now);
+            gantt_render::render(&gantt_render::GanttInput {
+                diagram: &gantt::parse_with(text, gantt::Options { now })?,
+                config: typed_config,
+                themes,
+                id,
+                now,
+            })
+        }
+        DiagramType::Flowchart => with_flowchart(text, &prepared, flowchart::render),
     }
 }
 
-fn render_pie_text(
+/// What every renderer needs besides its diagram: the id, the effective configuration in the
+/// diagram's scope, and the theme variables of each scheme.
+struct Prepared {
+    id: String,
+    effective: Value,
+    config: MermaidConfig,
+    configured: Value,
+    light: Value,
+    dark: Value,
+    scheme: Option<ColorScheme>,
+}
+
+impl Prepared {
+    fn themes(&self) -> Themes<'_> {
+        match self.scheme {
+            None => Themes::Single(&self.configured),
+            Some(ColorScheme::Light) => Themes::Single(&self.light),
+            Some(ColorScheme::Dark) => Themes::Single(&self.dark),
+            Some(ColorScheme::Auto) => Themes::Schemes {
+                light: &self.light,
+                dark: &self.dark,
+            },
+        }
+    }
+}
+
+/// Resolves the id, the configuration and the themes of a render, as `mermaidAPI` does before it
+/// calls the diagram's renderer.
+fn prepare(
     text: &str,
     site: &Value,
     options: &RenderOptions,
-) -> Result<String, RenderError> {
+    kind: DiagramType,
+) -> Result<Prepared, RenderError> {
     let id = match &options.id {
         Some(id) if valid_id(id) => id.clone(),
         Some(id) => return Err(RenderError::Options(format!("invalid id {id:?}"))),
         None => derived_id(text, site),
     };
     let directive = config::read(text)?;
-    let effective_config = effective(Some(site), Some("pie"), &directive);
+    let effective_config = effective(Some(site), Some(kind.config_key()), &directive);
     let typed_config =
         typed(&effective_config).map_err(|error| RenderError::Config(error.to_string()))?;
-
     let configured = effective_config
         .get("themeVariables")
         .cloned()
         .unwrap_or_else(Value::empty_object);
     let overrides = user_theme_variables(Some(site), &directive);
-    let light = Theme::ReduxColor.variables(Some(&overrides));
-    let dark = Theme::ReduxDarkColor.variables(Some(&overrides));
-    let themes = match options.color_scheme {
-        None => Themes::Single(&configured),
-        Some(ColorScheme::Light) => Themes::Single(&light),
-        Some(ColorScheme::Dark) => Themes::Single(&dark),
-        Some(ColorScheme::Auto) => Themes::Schemes {
-            light: &light,
-            dark: &dark,
-        },
-    };
-
-    let diagram = pie::parse(text)?;
-    render_pie(&PieInput {
-        diagram: &diagram,
-        config: &typed_config.pie,
-        themes,
-        id: &id,
+    Ok(Prepared {
+        id,
+        config: typed_config,
+        configured,
+        light: Theme::ReduxColor.variables(Some(&overrides)),
+        dark: Theme::ReduxDarkColor.variables(Some(&overrides)),
+        scheme: options.color_scheme,
+        effective: effective_config,
     })
+}
+
+/// `autoWrap()` of the sequence diagram after `init`: a truthy top-level `wrap` is copied into
+/// `sequence.wrap` (`sequenceDiagram.ts` 21-23), which is then read, else `false`.
+fn sequence_wrap(effective: &Value) -> bool {
+    matches!(effective.get("wrap"), Some(Value::Bool(true)))
+        || matches!(
+            effective
+                .get("sequence")
+                .and_then(|section| section.get("wrap")),
+            Some(Value::Bool(true))
+        )
 }
 
 /// The graph a flowchart hands to ELK and the graph ELK returns, as elkjs JSON:
@@ -185,54 +254,27 @@ pub fn flowchart_elk_stages(
             message: "not a flowchart".to_owned(),
         }));
     }
-    let stages = with_flowchart(text, config, options, flowchart::elk_stages)?;
+    let prepared = prepare(text, config, options, DiagramType::Flowchart)?;
+    let stages = with_flowchart(text, &prepared, flowchart::elk_stages)?;
     Ok(serde_json::json!({
         "elkInput": stages.input,
         "elkOutput": stages.output,
     }))
 }
 
-/// Parses a flowchart, resolves its configuration and theme, and hands them to `step`.
+/// Parses a flowchart and hands it, with its configuration and theme, to `step`.
 fn with_flowchart<T>(
     text: &str,
-    site: &Value,
-    options: &RenderOptions,
+    prepared: &Prepared,
     step: impl FnOnce(&FlowchartInput<'_>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
-    let id = match &options.id {
-        Some(id) if valid_id(id) => id.clone(),
-        Some(id) => return Err(RenderError::Options(format!("invalid id {id:?}"))),
-        None => derived_id(text, site),
-    };
-    let directive = config::read(text)?;
-    let effective_config = effective(Some(site), Some("flowchart"), &directive);
-    let typed_config =
-        typed(&effective_config).map_err(|error| RenderError::Config(error.to_string()))?;
-
-    let configured = effective_config
-        .get("themeVariables")
-        .cloned()
-        .unwrap_or_else(Value::empty_object);
-    let overrides = user_theme_variables(Some(site), &directive);
-    let light = Theme::ReduxColor.variables(Some(&overrides));
-    let dark = Theme::ReduxDarkColor.variables(Some(&overrides));
-    let themes = match options.color_scheme {
-        None => Themes::Single(&configured),
-        Some(ColorScheme::Light) => Themes::Single(&light),
-        Some(ColorScheme::Dark) => Themes::Single(&dark),
-        Some(ColorScheme::Auto) => Themes::Schemes {
-            light: &light,
-            dark: &dark,
-        },
-    };
-
     let diagram = ferrigura_syntax::flowchart::parse(text)
         .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
     step(&FlowchartInput {
         diagram: &diagram,
-        config: &typed_config,
-        themes,
-        id: &id,
+        config: &prepared.config,
+        themes: prepared.themes(),
+        id: &prepared.id,
     })
 }
 
