@@ -41,11 +41,8 @@ interface Counts {
   passing: number;
 }
 
-async function countSuite(suite: string): Promise<Counts> {
-  const source = await readFile(`${root}crates/ferrigura-syntax/tests/${suite}.rs`, 'utf8');
-  const ported = source.match(/#\[test]/g)?.length ?? 0;
-  const ignored = source.match(/#\[ignore/g)?.length ?? 0;
-
+function countSuite(suite: string): Counts {
+  // Cargo's own summary counts the tests that the macros generate, which a textual count misses.
   const run = spawnSync('cargo', ['test', '--quiet', '-p', 'ferrigura-syntax', '--test', suite], {
     cwd: root,
     encoding: 'utf8',
@@ -54,7 +51,9 @@ async function countSuite(suite: string): Promise<Counts> {
     `${run.stdout}\n${run.stderr}`
   );
   const passing = summary ? Number(summary[1]) : 0;
-  return { ported, ignored, passing };
+  const failing = summary ? Number(summary[2]) : 0;
+  const ignored = summary ? Number(summary[3]) : 0;
+  return { ported: passing + failing + ignored, ignored, passing };
 }
 
 async function differentialCell(type: string): Promise<string> {
@@ -75,7 +74,7 @@ const counts: Record<string, Counts> = {};
 for (const [type, files] of Object.entries(suites)) {
   const total: Counts = { ported: 0, ignored: 0, passing: 0 };
   for (const file of files) {
-    const count = await countSuite(file);
+    const count = countSuite(file);
     total.ported += count.ported;
     total.ignored += count.ignored;
     total.passing += count.passing;
