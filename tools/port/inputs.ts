@@ -17,6 +17,12 @@ const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
   flowchart: /^\s*(graph|flowchart)/,
+  gitgraph: /^\s*gitGraph/,
+};
+
+/** The e2e folder of a diagram type, where it is not the type itself. */
+const fixtureFolders: Record<string, string> = {
+  gitgraph: 'git',
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */
@@ -64,7 +70,9 @@ function mermaidBlocks(source: string): string[] {
 export async function collectInputs(type: string): Promise<PortInput[]> {
   const candidates: { source: string; text: string }[] = [];
 
-  const fixtures = await walk(`e2e/diagrams/${type}/`, (path) => path.endsWith('.mmd'));
+  const fixtures = await walk(`e2e/diagrams/${fixtureFolders[type] ?? type}/`, (path) =>
+    path.endsWith('.mmd')
+  );
   for (const fixture of fixtures) {
     candidates.push({ source: fixture, text: await readFile(new URL(fixture, root), 'utf8') });
   }

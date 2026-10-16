@@ -1,10 +1,11 @@
 /**
- * Differential run for the configuration. The pie and flowchart inputs of `inputs.ts` and every
- * explicit case of `config-cases.ts` go through the TypeScript reference (`export-config.ts`) and
- * through ferrigura (`cargo run --example config`). Each side detects the diagram type from the
- * text, as a render does, so each input gets its own diagram scope: the reference through
- * `processAndSetConfigs`, ferrigura through `detect`. A flowchart input must come out in the
- * `flowchart` scope on both sides, and a pie input or case in `pie`.
+ * Differential run for the configuration. The pie, flowchart and gitGraph inputs of `inputs.ts` and
+ * every explicit case of `config-cases.ts` go through the TypeScript reference
+ * (`export-config.ts`) and through ferrigura (`cargo run --example config`). Each side detects the
+ * diagram type from the text, as a render does, so each input gets its own diagram scope: the
+ * reference through `processAndSetConfigs`, ferrigura through `detect`. A flowchart input must come
+ * out in the `flowchart` scope on both sides, a gitGraph input in `gitGraph`, and a pie input or
+ * case in `pie`.
  *
  * The key set that directives may use is compared first. Then, per input, the scope and the
  * effective configuration: the top level (with `theme`, `look` and `layout` resolved), `elk`, the
@@ -25,7 +26,7 @@ interface ConfigInput {
   source: string;
   text: string;
   site?: Record<string, unknown>;
-  /** The collection the input came from: `pie`, `flowchart` or `case`. */
+  /** The collection the input came from: `pie`, `flowchart`, `gitgraph` or `case`. */
   group: string;
   /** The scope the input must be run in. */
   expectedScope: string;
@@ -75,6 +76,7 @@ function same(a: unknown, b: unknown): boolean {
 
 const pieInputs = await collectInputs('pie');
 const flowchartInputs = await collectInputs('flowchart');
+const gitGraphInputs = await collectInputs('gitgraph');
 const inputs: ConfigInput[] = [
   ...pieInputs.map((input) => ({
     id: 0,
@@ -89,6 +91,13 @@ const inputs: ConfigInput[] = [
     text: input.text,
     group: 'flowchart',
     expectedScope: 'flowchart',
+  })),
+  ...gitGraphInputs.map((input) => ({
+    id: 0,
+    source: input.source,
+    text: input.text,
+    group: 'gitgraph',
+    expectedScope: 'gitGraph',
   })),
   ...configCases.map((testCase) => ({
     id: 0,
@@ -135,8 +144,8 @@ if (missingInRust.length > 0 || extraInRust.length > 0) {
  * The diagram sections whose defaults the port does not own yet. The reference fills them with its
  * own generator (`.build/jsonSchema.ts`), which applies a section's own defaults only, and the
  * TypeScript defaults replace some sections whole; ferrigura takes them from the schema. A section
- * is compared only for an input of its own diagram type: `pie` and `flowchart` are ported, and
- * `info` has no section. Every other section is left out.
+ * is compared only for an input of its own diagram type: `pie`, `flowchart` and `gitGraph` inputs
+ * have their section compared, and `info` has no section. Every other section is left out.
  */
 const UNPORTED_SECTIONS = [
   'flowchart',
