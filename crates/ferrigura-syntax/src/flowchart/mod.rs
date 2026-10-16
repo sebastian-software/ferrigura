@@ -95,7 +95,7 @@ pub fn parse_with_warnings(
 }
 
 /// Removes the `%%{ … }%%` directives, as `removeDirectives` does.
-fn remove_directives(text: &str) -> String {
+pub(crate) fn remove_directives(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while let Some(start) = rest.find("%%{") {
@@ -114,7 +114,7 @@ fn remove_directives(text: &str) -> String {
 
 /// Removes the comment lines, as `cleanupComments` does: `^\s*%%(?!{)[^\n]+\n?` with the
 /// multi-line flag, then the leading whitespace of the text.
-fn cleanup_comments(text: &str) -> String {
+pub(crate) fn cleanup_comments(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut copied = 0;
     let mut line_start = 0;
@@ -174,7 +174,7 @@ fn close_braces(text: &str) -> String {
 
 /// `encodeEntities`: the semicolon that ends a `style` or `classDef` line with a colour is dropped,
 /// and `#name;` or `#123;` become placeholders that the renderer decodes.
-fn encode_entities(text: &str) -> String {
+pub(crate) fn encode_entities(text: &str) -> String {
     let text = drop_colour_semicolons(text, "style");
     let text = drop_colour_semicolons(&text, "classDef");
     encode_hash_entities(&text)
