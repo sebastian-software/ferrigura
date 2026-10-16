@@ -93,5 +93,6 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 - Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release. The repository is public as `sebastian-software/ferrigura` since 2026-10-16; the local folder is still called `ferraid`.
 - Open `help wanted` issues for every P3 diagram type and for math in labels once the GitHub repository exists.
 - Decide the mindmap layout when P2 starts.
+- Pie geometry on Linux Chromium: with `--font-render-hinting=none` the redux themes match, but the classic themes (default, dark, forest, neutral), the hovered-slice and the bottom-legend fixtures differ by up to 0.7 px. CI runs the comparison on macOS, where all 24 match; investigate Linux with the Playwright Docker image.
 - M5 (flowchart labels with Markdown): `ferrigura-text`'s `wrap_line` takes one face, but Mermaid wraps styled words one by one, each in its own face (`createText.ts` gives each word after the first a leading space in its own tspan). The runs of a line are measured per run already; the wrapping must take runs too.
 - Replace the inherited changesets setup with release-please when the first crate is published.
