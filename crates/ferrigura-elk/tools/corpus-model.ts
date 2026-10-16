@@ -352,6 +352,50 @@ export function syntheticMarkedEdgeGraphs(): { name: string; graph: Record<strin
 }
 
 /**
+ * Flat nodes with explicit ports, the ports fixed to their sides: edges leave and enter the ports, and
+ * one node's edge is not on a port, so the explicit ports sit beside the ports the edges make.
+ */
+export function syntheticExplicitPortGraphs(): { name: string; graph: Record<string, unknown> }[] {
+  const port = (id: string, side: string): Record<string, unknown> => ({
+    id,
+    width: 6,
+    height: 6,
+    layoutOptions: { 'elk.port.side': side },
+  });
+  return [
+    {
+      name: 'synthetic__explicit-ports-fixed-side',
+      graph: {
+        id: 'root',
+        layoutOptions: rootLayoutOptionsDefault(),
+        children: [
+          {
+            id: 'n0',
+            width: 50,
+            height: 40,
+            layoutOptions: { 'elk.portConstraints': 'FIXED_SIDE' },
+            ports: [port('p0', 'EAST'), port('p1', 'SOUTH')],
+          },
+          {
+            id: 'n1',
+            width: 60,
+            height: 30,
+            layoutOptions: { 'elk.portConstraints': 'FIXED_SIDE' },
+            ports: [port('p2', 'WEST'), port('p3', 'NORTH')],
+          },
+          { id: 'n2', width: 40, height: 40 },
+        ],
+        edges: [
+          { id: 'e0', sources: ['p0'], targets: ['p2'] },
+          { id: 'e1', sources: ['p1'], targets: ['p3'] },
+          { id: 'e2', sources: ['n1'], targets: ['n2'] },
+        ],
+      },
+    },
+  ];
+}
+
+/**
  * A flat graph with cycles, laid out with the greedy cycle breaker, which Mermaid's legacy preset
  * selects through the GREEDY strategy. The flows of its nodes differ, so the sinks, the sources and
  * the random draw of the node with the largest outflow all take part.

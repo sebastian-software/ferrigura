@@ -36,6 +36,7 @@ import {
   slugify,
   syntheticComponentGraphs,
   syntheticEdgeGraphs,
+  syntheticExplicitPortGraphs,
   syntheticGreedyCycleGraphs,
   syntheticMarkedEdgeGraphs,
   syntheticModelOrderFirstTryGraphs,
@@ -416,6 +417,9 @@ async function syntheticRecords(): Promise<CaseRecord[]> {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticMarkedEdgeGraphs()) {
+    await add(name, graph);
+  }
+  for (const { name, graph } of syntheticExplicitPortGraphs()) {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticModelOrderLabelGraphs()) {
