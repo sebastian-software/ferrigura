@@ -426,6 +426,156 @@ export function syntheticExplicitPortGraphs(): { name: string; graph: Record<str
 }
 
 /**
+ * Explicit ports in the shapes that the port's random runs found: a port with several edges (which
+ * the port refuses, as Java marks the graph with a multi-edge feature), a northern and a southern port in a
+ * right-to-left layout, a marked edge that leaves an explicit port, and edge labels at the head and
+ * at the tail of their edges.
+ */
+export function syntheticExplicitPortGuardGraphs(): {
+  name: string;
+  graph: Record<string, unknown>;
+}[] {
+  const port = (id: string, side: string): Record<string, unknown> => ({
+    id,
+    width: 6,
+    height: 6,
+    layoutOptions: { 'elk.port.side': side },
+  });
+  const edge = (id: string, source: string, target: string): Record<string, unknown> => ({
+    id,
+    sources: [source],
+    targets: [target],
+  });
+  const right = { ...rootLayoutOptionsDefault(), 'elk.direction': 'RIGHT' };
+  return [
+    {
+      name: 'synthetic__explicit-port-shared',
+      graph: {
+        id: 'root',
+        layoutOptions: right,
+        children: [
+          {
+            id: 'n0',
+            width: 50,
+            height: 40,
+            layoutOptions: { 'elk.portConstraints': 'FIXED_SIDE' },
+            ports: [port('p0', 'EAST')],
+          },
+          { id: 'n1', width: 40, height: 30 },
+          { id: 'n2', width: 40, height: 30 },
+          { id: 'n3', width: 30, height: 30 },
+        ],
+        edges: [
+          edge('e0', 'p0', 'n1'),
+          edge('e1', 'p0', 'n2'),
+          edge('e2', 'n1', 'n3'),
+          edge('e3', 'n2', 'n3'),
+        ],
+      },
+    },
+    {
+      name: 'synthetic__explicit-ports-north-south-right',
+      graph: {
+        id: 'root',
+        layoutOptions: right,
+        children: [
+          {
+            id: 'n0',
+            width: 50,
+            height: 40,
+            layoutOptions: { 'elk.portConstraints': 'FIXED_SIDE' },
+            ports: [port('p0', 'NORTH'), port('p1', 'SOUTH')],
+          },
+          {
+            id: 'n1',
+            width: 60,
+            height: 30,
+            layoutOptions: { 'elk.portConstraints': 'FIXED_SIDE' },
+            ports: [port('p2', 'WEST')],
+          },
+          { id: 'n2', width: 40, height: 40 },
+        ],
+        edges: [edge('e0', 'p0', 'p2'), edge('e1', 'p1', 'n2'), edge('e2', 'n1', 'n2')],
+      },
+    },
+    {
+      name: 'synthetic__explicit-port-marked-edge',
+      graph: {
+        id: 'root',
+        layoutOptions: {
+          ...right,
+          'elk.hierarchyHandling': 'SEPARATE_CHILDREN',
+          'elk.randomSeed': 44,
+        },
+        children: [
+          { id: 'n0', width: 54, height: 38 },
+          {
+            id: 'n1',
+            width: 78,
+            height: 20,
+            layoutOptions: { 'elk.portConstraints': 'FIXED_SIDE' },
+            ports: [port('p1', 'EAST'), port('p4', 'EAST'), port('p6', 'EAST'), port('p7', 'EAST')],
+          },
+          { id: 'n2', width: 35, height: 57 },
+          { id: 'n3', width: 24, height: 51 },
+          { id: 'n5', width: 25, height: 47 },
+        ],
+        edges: [
+          edge('e2', 'n2', 'n3'),
+          edge('e3', 'p1', 'n3'),
+          edge('e4', 'p4', 'n5'),
+          edge('e5', 'n3', 'n5'),
+          edge('e6', 'p6', 'n5'),
+          edge('e7', 'p7', 'n2'),
+          edge('e8', 'n2', 'n0'),
+        ],
+      },
+    },
+    {
+      name: 'synthetic__head-tail-labels-flat',
+      graph: {
+        id: 'root',
+        layoutOptions: right,
+        children: [
+          { id: 'n0', width: 50, height: 40 },
+          { id: 'n1', width: 50, height: 40 },
+          { id: 'n2', width: 50, height: 40 },
+        ],
+        edges: [
+          {
+            id: 'e0',
+            sources: ['n0'],
+            targets: ['n1'],
+            labels: [
+              {
+                text: 'head',
+                width: 30,
+                height: 12,
+                layoutOptions: { 'elk.edgeLabels.placement': 'HEAD' },
+              },
+            ],
+          },
+          {
+            id: 'e1',
+            sources: ['n1'],
+            targets: ['n2'],
+            labels: [
+              {
+                text: 'tail',
+                width: 28,
+                height: 12,
+                layoutOptions: { 'elk.edgeLabels.placement': 'TAIL' },
+              },
+            ],
+          },
+          edge('e2', 'n0', 'n2'),
+        ],
+      },
+    },
+  ];
+}
+
+/**
  * A flat graph with cycles, laid out with the greedy cycle breaker, which Mermaid's legacy preset
  * selects through the GREEDY strategy. The flows of its nodes differ, so the sinks, the sources and
  * the random draw of the node with the largest outflow all take part.

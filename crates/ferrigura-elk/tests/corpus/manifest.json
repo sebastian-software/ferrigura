@@ -1090,6 +1090,22 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__explicit-port-marked-edge",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 7,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__explicit-port-shared",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__explicit-ports-east-west",
    "fixture": null,
    "nodes": 3,
@@ -1106,12 +1122,28 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__explicit-ports-north-south-right",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__greedy-cycles",
    "fixture": null,
    "nodes": 5,
    "edges": 7,
    "compound": false,
    "edgeLabels": false
+  },
+  {
+   "name": "synthetic__head-tail-labels-flat",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
   },
   {
    "name": "synthetic__marked-edges-root-names",
