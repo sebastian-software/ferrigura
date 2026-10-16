@@ -93,17 +93,34 @@ pub(crate) struct Db {
     pub links: Vec<Link>,
 }
 
-/// `extract`: each root statement, in order, goes to the DB. The root's notes are sanitised in
-/// place, as `addState` does to the note object it is given.
-pub(crate) fn extract(document: &mut [Statement]) -> Db {
+/// The ids of the root states, as they are before the next translation pass.
+pub(crate) fn root_state_ids(document: &[Statement]) -> Vec<Option<String>> {
+    document
+        .iter()
+        .map(|item| match item {
+            Statement::State(state) => Some(state.id.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// `extract`: each root statement, in order, goes to the DB. The DB is keyed by `ids`, the root
+/// state ids of the first translation pass. The root's notes are sanitised in place, as `addState`
+/// does to the note object it is given.
+pub(crate) fn extract(document: &mut [Statement], ids: &[Option<String>]) -> Db {
     let mut db = Db::default();
-    for item in document.iter_mut() {
+    for (index, item) in document.iter_mut().enumerate() {
         match item {
             Statement::State(state) => {
                 if let Some(note) = state.note.as_mut() {
                     note.text = sanitize_text(&note.text);
                 }
-                let id = js_trim(&state.id).to_owned();
+                let id = js_trim(
+                    ids.get(index)
+                        .and_then(Option::as_deref)
+                        .unwrap_or(&state.id),
+                )
+                .to_owned();
                 let kind = state.kind.clone().unwrap_or_else(|| "default".to_owned());
                 db.add_state(
                     &id,

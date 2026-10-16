@@ -46,8 +46,16 @@ fn build(text: &str, line_offset: usize, title: String) -> Result<StateDiagram, 
     let parsed = grammar::Parser::new(source, tokens).start()?;
 
     let mut document = parsed.document;
+    // The reference translates the document twice during the parse: `setRootDoc` calls
+    // `getRootDocV2`, and so does the `dataFetcher` call inside `extract`. A composite id written
+    // with a trailing blank (`state "x" as [*] {`) is trimmed by the first pass and becomes a start
+    // marker on the second. Later passes change nothing.
     db::translate_root(&mut document);
-    let db = db::extract(&mut document);
+    // `extract` keys the DB with the ids of the first pass, which the second pass then changes in
+    // the document only.
+    let first_pass_ids = db::root_state_ids(&document);
+    db::translate_root(&mut document);
+    let db = db::extract(&mut document, &first_pass_ids);
     if let Some(message) = db::group_label_error(&document) {
         return Err(source.error(0, message));
     }

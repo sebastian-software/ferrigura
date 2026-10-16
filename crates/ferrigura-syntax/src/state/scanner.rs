@@ -519,8 +519,10 @@ impl Lexer {
             }
             // 87: <SCALE>\s+"width"
             let spaces = ws_len(rest);
-            if spaces > 0 && ci_prefix(&rest[spaces..], "width") {
-                return found(Hit::skip(spaces + 5).and_then(|h| h.leave()));
+            if spaces > 0
+                && let Some(len) = ci_word(&rest[spaces..], "width")
+            {
+                return found(Hit::skip(spaces + len).and_then(|h| h.leave()));
             }
         }
         // 89-90: accTitle\s*":"\s* and the rest of the line
@@ -760,7 +762,7 @@ impl Lexer {
         // 144: \s*"as"\s*
         if when(state, &[FloatingNote]) {
             let spaces = ws_len(rest);
-            if ci_prefix(&rest[spaces..], "as") {
+            if ci_word(&rest[spaces..], "as").is_some() {
                 let len = spaces + 2 + ws_len(&rest[spaces + 2..]);
                 return found(
                     Hit::token(len, Kind::As, &rest[..len]).and_then(|h| h.swap(FloatingNoteId)),
