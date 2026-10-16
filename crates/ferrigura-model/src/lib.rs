@@ -9,6 +9,7 @@
 
 #![warn(missing_docs)]
 
+pub mod class;
 pub mod config;
 pub mod flowchart;
 pub mod info;
