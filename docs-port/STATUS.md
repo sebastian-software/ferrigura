@@ -1,26 +1,26 @@
 # Port status
 
-Last updated: 2026-10-16. M1 is merged into `main`: pie and info parse and match the reference on every collected input. M4 is in progress on branch `sebastian/port-m4-elk-fe5cfa`: 109 of the 138 corpus cases are supported, and all 109 match elkjs exactly in coordinates, edge sections, label boxes and trace (`crates/ferrigura-elk`, see `elk/PLAN.md` §10).
+Last updated: 2026-10-16. M1 is merged into `main`: pie and info parse and match the reference on every collected input. M4 is in progress on branch `sebastian/port-m4-elk-fe5cfa`: 117 of the 144 corpus cases are supported, and all 117 match elkjs exactly in coordinates, edge sections, label boxes and trace (`crates/ferrigura-elk`, see `elk/PLAN.md` §10).
 
 Each session updates its section when it stops: what changed, what is next, what blocks it. Test counts and the differential column are written by `pnpm port:status`, which reads the Rust specs and the last `pnpm port:diff` run; run it after both.
 
 ## Milestones
 
-| Milestone                          | Status      | Strand | Notes                                                                                                                                                                           |
-| ---------------------------------- | ----------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                           |
-| M2 First slice: pie to SVG         | not started | —      | After M1, in parallel with M3                                                                                                                                                   |
-| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                                                                                                                                                   |
-| M4 ELK Layered port                | in progress | elk    | 109 of 138 corpus cases supported, all 109 match elkjs exactly in coordinates, edge sections, label boxes and trace; self loops next, then nested graphs; see `elk/PLAN.md` §10 |
-| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                                                                                                                             |
-| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                                                                                                        |
+| Milestone                          | Status      | Strand | Notes                                                                                                                                                                             |
+| ---------------------------------- | ----------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                             |
+| M2 First slice: pie to SVG         | not started | —      | After M1, in parallel with M3                                                                                                                                                     |
+| M3 Flowchart parser                | not started | —      | After M1, in parallel with M2                                                                                                                                                     |
+| M4 ELK Layered port                | in progress | elk    | 117 of 144 corpus cases supported, all 117 match elkjs exactly in coordinates, edge sections, label boxes and trace; explicit ports and nested graphs next; see `elk/PLAN.md` §10 |
+| M5 Flowchart rendering             | not started | —      | Needs M2, M3 and M4                                                                                                                                                               |
+| M6 Remaining P1 diagrams           | not started | —      | After M5                                                                                                                                                                          |
 
 ## Strands
 
-| Strand | Session            | Worktree                                                                       | Working on                                                                                                                                                                                     | Next                                      | Blocked by |
-| ------ | ------------------ | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------- |
-| main   | —                  | —                                                                              | M1 done and merged                                                                                                                                                                             | M2 (pie to SVG) and M3 (flowchart parser) | —          |
-| elk    | port-m4-elk-fe5cfa | `.claude/worktrees/port-m4-elk-fe5cfa` (branch `sebastian/port-m4-elk-fe5cfa`) | M4: Layered pipeline with edges, centred labels and the input-model order; 109 of 138 corpus cases supported, all 109 match elkjs exactly in coordinates, edge sections, label boxes and trace | self loops (3), then nested graphs (24)   | None       |
+| Strand | Session            | Worktree                                                                       | Working on                                                                                                                                                                                     | Next                                        | Blocked by |
+| ------ | ------------------ | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------- |
+| main   | —                  | —                                                                              | M1 done and merged                                                                                                                                                                             | M2 (pie to SVG) and M3 (flowchart parser)   | —          |
+| elk    | port-m4-elk-fe5cfa | `.claude/worktrees/port-m4-elk-fe5cfa` (branch `sebastian/port-m4-elk-fe5cfa`) | M4: Layered pipeline with edges, centred labels and the input-model order; 117 of 144 corpus cases supported, all 117 match elkjs exactly in coordinates, edge sections, label boxes and trace | explicit ports (1), then nested graphs (24) | None       |
 
 ## M1 handover
 
