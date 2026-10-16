@@ -23,8 +23,10 @@ export interface PieHeader {
 }
 
 export function pieHeader(ast: PieHeaderAst, frontMatterTitle?: string): PieHeader {
+  const grammarTitle = ast.title ?? '';
   return {
-    title: ast.title || frontMatterTitle || '',
+    // An empty grammar title falls through to the front matter title, as in `Diagram.fromText`.
+    title: grammarTitle !== '' ? grammarTitle : (frontMatterTitle ?? ''),
     accTitle: ast.accTitle ? ast.accTitle.replace(/^\s+/g, '') : '',
     accDescr: ast.accDescr ? ast.accDescr.replace(/\n\s+/g, '\n') : '',
   };
