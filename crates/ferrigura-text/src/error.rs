@@ -14,6 +14,8 @@ pub enum TextError {
     Shape(harfrust::ShapeError),
     /// Subsetting the font failed; the message comes from `skera`.
     Subset(String),
+    /// A word holds a newline, so the line cannot be wrapped; the reference throws for it.
+    NewlineInLine,
 }
 
 impl fmt::Display for TextError {
@@ -23,6 +25,10 @@ impl fmt::Display for TextError {
             Self::MissingLineMetrics => write!(f, "the font has no line metrics"),
             Self::Shape(error) => write!(f, "shaping failed: {error:?}"),
             Self::Subset(message) => write!(f, "subsetting failed: {message}"),
+            Self::NewlineInLine => write!(
+                f,
+                "splitLineToFitWidth does not support newlines in the line"
+            ),
         }
     }
 }
