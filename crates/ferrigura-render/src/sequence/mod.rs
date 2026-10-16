@@ -27,17 +27,17 @@ mod text;
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::sequence::{LineType, SequenceDiagram};
-use ferrigura_text::{EmbeddedFamily, Run, embed_runs, face, FontFamily, FontStyle, FontWeight};
+use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 
 use self::blocks::BlockAction;
-use self::bounds::{Bounds, get_max, js_round};
+use self::bounds::{Bounds, js_round};
 use self::conf::Conf;
-use self::model::{Block, Layout, Message, MessageModel};
+use self::model::{Block, Layout, Message};
 use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
 use crate::common::TextMemo;
-use crate::common::viewbox::{calculate_svg_size_attrs};
+use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::svg::number;
 use crate::theme::Themes;
 
@@ -159,11 +159,12 @@ impl<'a> Renderer<'a> {
             self.append(element);
         }
         let has_boxes = !self.layout.boxes.is_empty();
-        let has_box_titles = self
-            .layout
-            .boxes
-            .iter()
-            .any(|sequence_box| sequence_box.name.as_deref().is_some_and(|name| !name.is_empty()));
+        let has_box_titles = self.layout.boxes.iter().any(|sequence_box| {
+            sequence_box
+                .name
+                .as_deref()
+                .is_some_and(|name| !name.is_empty())
+        });
         if has_boxes {
             self.bounds.bump(self.conf.box_margin);
             if has_box_titles {
@@ -228,8 +229,7 @@ impl<'a> Renderer<'a> {
                         BlockAction::Open { fill: None },
                     )?;
                 }
-                LineType::ParStart
-                | LineType::ParOverStart => {
+                LineType::ParStart | LineType::ParOverStart => {
                     self.adjust_loop_height_for_wrap(
                         &loop_widths,
                         index,
@@ -258,8 +258,7 @@ impl<'a> Renderer<'a> {
                     backgrounds.push(block.clone());
                     self.bounds.bump(stop_y(&block) - self.bounds.vertical_pos);
                 }
-                LineType::AltElse
-                | LineType::CriticalOption => {
+                LineType::AltElse | LineType::CriticalOption => {
                     self.adjust_loop_height_for_wrap(
                         &loop_widths,
                         index,
@@ -312,14 +311,11 @@ impl<'a> Renderer<'a> {
                         model.starty = self.bounds.vertical_pos;
                         model.sequence_index = sequence_index;
                         model.sequence_visible = self.sequence_numbers;
-                        match self.bound_message(&mut model) {
-                            Ok(line_start_y) => {
-                                self.adjust_created_destroyed(index, &mut model, line_start_y);
-                                self.layout.messages[index].message_model = Some(model);
-                                to_draw.push((index, line_start_y));
-                            }
-                            // The reference logs a message it cannot bound and goes on.
-                            Err(_) => {}
+                        // The reference logs a message it cannot bound and goes on.
+                        if let Ok(line_start_y) = self.bound_message(&mut model) {
+                            self.adjust_created_destroyed(index, &mut model, line_start_y);
+                            self.layout.messages[index].message_model = Some(model);
+                            to_draw.push((index, line_start_y));
                         }
                     }
                 }
@@ -332,7 +328,10 @@ impl<'a> Renderer<'a> {
 
         self.draw_actors(false);
         for (index, line_start_y) in to_draw {
-            let model = self.layout.messages[index].message_model.clone().unwrap_or_default();
+            let model = self.layout.messages[index]
+                .message_model
+                .clone()
+                .unwrap_or_default();
             self.draw_message(index, &model, line_start_y)?;
         }
         if self.conf.mirror_actors {
@@ -364,30 +363,43 @@ impl<'a> Renderer<'a> {
             self.bounds.bump(box_margin);
         }
 
-        // The menus of the actors (`drawActorsPopup`) take no room: their links are not drawn
-        // as a menu here (decision 0001), so the drawing is the bounds of the content.
+        // The menus of the actors (`drawActorsPopup`), drawn after the boxes: a menu taller or
+        // wider than the content makes the drawing that much bigger (`:1424-1441`).
+        let (menu_height, menu_width) = self.draw_actors_popups()?;
         let data = self.bounds.data;
         let startx = data.startx.unwrap_or(0.0);
         let starty = data.starty.unwrap_or(0.0);
         let stopx = data.stopx.unwrap_or(0.0);
         let stopy = data.stopy.unwrap_or(0.0);
         let mut box_height = stopy - starty;
+        if box_height < menu_height {
+            box_height = menu_height;
+        }
         let mut height = box_height + 2.0 * self.conf.diagram_margin_y;
         if self.conf.mirror_actors {
             height = height - self.conf.box_margin + self.conf.bottom_margin_adj;
         }
-        box_height = box_height.max(0.0);
-        let box_width = stopx - startx;
+        let mut box_width = stopx - startx;
+        if box_width < menu_width {
+            box_width = menu_width;
+        }
         let width = box_width + 2.0 * self.conf.diagram_margin_x;
         if !title.is_empty() {
             let title_element = Element::new("text")
-                .with("x", number((stopx - startx) / 2.0 - 2.0 * self.conf.diagram_margin_x))
+                .with(
+                    "x",
+                    number((stopx - startx) / 2.0 - 2.0 * self.conf.diagram_margin_x),
+                )
                 .with("y", "-25")
                 .text(title);
             self.append(title_element);
         }
         let title_extra = if title.is_empty() { 0.0 } else { 40.0 };
-        let neo_extra = if !self.layout.actors.is_empty() && self.conf.neo { 30.0 } else { 0.0 };
+        let neo_extra = if !self.layout.actors.is_empty() && self.conf.neo {
+            30.0
+        } else {
+            0.0
+        };
         self.view = Some(View {
             startx,
             width,
@@ -420,10 +432,9 @@ impl<'a> Renderer<'a> {
     /// opens on its actor, in a group of its own at the back of the root.
     fn new_activation_for(&mut self, msg: &Message) -> Result<(), RenderError> {
         let key = msg.from.clone().unwrap_or_default();
-        let index = self
-            .layout
-            .actor_index(&key)
-            .ok_or_else(|| RenderError::Layout("an activation names an undeclared actor".to_owned()))?;
+        let index = self.layout.actor_index(&key).ok_or_else(|| {
+            RenderError::Layout("an activation names an undeclared actor".to_owned())
+        })?;
         let stacked = self.bounds.activation_count(&key) as f64;
         let actor = &self.layout.actors[index];
         let x = actor.x + actor.width / 2.0 + ((stacked - 1.0) * self.conf.activation_width) / 2.0;
@@ -507,7 +518,9 @@ impl<'a> Renderer<'a> {
             element.collect_text(&mut text);
         }
         let (families, font_family) = self.embedded_fonts(&text);
-        let font_size = self.conf.message_font.size_css();
+        // The root's font size is the theme's `fontSize` (the base styles read it), not the text's.
+        let font_size = crate::variables::text_of(input.themes.primary(), "fontSize")
+            .unwrap_or_else(|| "16px".to_owned());
         let style = style::style_sheet(
             input.id,
             input.themes,
@@ -517,7 +530,10 @@ impl<'a> Renderer<'a> {
             self.conf.neo,
         );
         let size = calculate_svg_size_attrs(view.height, view.width, self.conf.use_max_width);
-        let mut open = format!("<svg xmlns=\"{SVG_NAMESPACE}\" id=\"{}\"", crate::svg::escape(input.id));
+        let mut open = format!(
+            "<svg xmlns=\"{SVG_NAMESPACE}\" id=\"{}\"",
+            crate::svg::escape(input.id)
+        );
         for (name, value) in size {
             open.push_str(&format!(" {name}=\"{}\"", crate::svg::escape(&value)));
         }
@@ -547,19 +563,27 @@ impl<'a> Renderer<'a> {
     /// refers to. The regular face is embedded; the bold one as well when a font is heavier.
     fn embedded_fonts(&self, text: &str) -> (Vec<EmbeddedFamily>, String) {
         let regular = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
-        let heavy = [&self.conf.actor_font, &self.conf.note_font, &self.conf.message_font]
-            .iter()
-            .any(|font| font.weight > 500.0);
-        let mut runs = vec![Run { text, face: regular }];
+        let heavy = [
+            &self.conf.actor_font,
+            &self.conf.note_font,
+            &self.conf.message_font,
+        ]
+        .iter()
+        .any(|font| font.weight > 500.0);
+        let mut runs = vec![Run {
+            text,
+            face: regular,
+        }];
         if heavy {
             let bold = face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal);
             runs.push(Run { text, face: bold });
         }
         match embed_runs(&runs) {
             Ok(families) => {
-                let name = families
-                    .first()
-                    .map_or_else(|| self.conf.message_font.family.clone(), |family| format!("\"{}\"", family.name));
+                let name = families.first().map_or_else(
+                    || self.conf.message_font.family.clone(),
+                    |family| format!("\"{}\"", family.name),
+                );
                 (families, name)
             }
             Err(_) => (Vec::new(), self.conf.message_font.family.clone()),
@@ -639,10 +663,5 @@ mod tests {
     fn a_sequence_number_follows_a_line_type_only() {
         assert!(is_sequence_line(LineType::Solid));
         assert!(!is_sequence_line(LineType::Note));
-    }
-
-    #[test]
-    fn the_maximum_helper_keeps_the_larger_value() {
-        assert_eq!(get_max(&[Some(1.0), None, Some(3.0)]), 3.0);
     }
 }

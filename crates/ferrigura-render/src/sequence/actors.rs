@@ -263,7 +263,11 @@ impl Renderer<'_> {
             Some(custom) => class = custom,
             None => rect.fill = Some("#eaeaea".to_owned()),
         }
-        class.push_str(if footer { " actor-bottom" } else { " actor-top" });
+        class.push_str(if footer {
+            " actor-bottom"
+        } else {
+            " actor-top"
+        });
         rect.x = actor.x;
         rect.y = actor_y;
         rect.width = actor.width;
@@ -278,14 +282,24 @@ impl Renderer<'_> {
         let source = property_text(actor, "icon")?;
         let source = source.trim();
         let (ix, iy) = (x + width - 20.0, y + 10.0);
-        Some(match source.strip_prefix('@') {
-            Some(id) => draw_embedded_image(ix, iy, id),
-            None => draw_image(ix, iy, source),
-        })
+        match source.strip_prefix('@') {
+            // A `use` is not in the sanitiser's allow-list, so a sanitised diagram loses it.
+            Some(_) if self.conf.sanitized => None,
+            Some(id) => Some(draw_embedded_image(ix, iy, id)),
+            None => Some(draw_image(ix, iy, source)),
+        }
     }
 
     /// The label of an actor, placed as `byTspan` places it, in its class.
-    fn label(&self, actor: &Actor, x: f64, y: f64, width: f64, height: f64, class: &str) -> Vec<Element> {
+    fn label(
+        &self,
+        actor: &Actor,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        class: &str,
+    ) -> Vec<Element> {
         draw_label_by_tspan(
             &actor.description,
             x,
@@ -300,7 +314,13 @@ impl Renderer<'_> {
     /// Places a participant of the first shape: the lowered group of the lifeline and the inner
     /// group (header), or the group itself (footer). `group` carries the attributes the reference
     /// sets on it; `children` are the shape's elements.
-    fn place_grouped(&mut self, footer: bool, lifeline: Element, mut group: Element, children: Vec<Element>) {
+    fn place_grouped(
+        &mut self,
+        footer: bool,
+        lifeline: Element,
+        mut group: Element,
+        children: Vec<Element>,
+    ) {
         for child in children {
             group.push_child(child);
         }
@@ -332,21 +352,29 @@ impl Renderer<'_> {
                 group.set("data-look", "neo");
             }
         }
+        self.layout.actors[index].rect_data = Some(rect.clone());
         let mut shape = draw_rect(&rect);
         if neo {
             shape.set("data-look", "neo");
         }
-        if self.uses_palettes() {
-            if let Some(style) = style_text(&self.shape_style(index, true)) {
-                shape.set("style", style);
-            }
+        if let Some(style) =
+            style_text(&self.shape_style(index, true)).filter(|_| self.uses_palettes())
+        {
+            shape.set("style", style);
         }
         if neo {
             shape.set("filter", format!("url(#{}-drop-shadow)", self.id));
         }
         let mut children = vec![shape];
         children.extend(self.icon(&actor, rect.x, rect.y, rect.width));
-        children.extend(self.label(&actor, rect.x, rect.y, rect.width, rect.height, "actor actor-box"));
+        children.extend(self.label(
+            &actor,
+            rect.x,
+            rect.y,
+            rect.width,
+            rect.height,
+            "actor actor-box",
+        ));
         if !footer {
             group.set("data-et", "participant");
             group.set("data-type", "participant");
@@ -386,6 +414,7 @@ impl Renderer<'_> {
                 group.set("data-look", "neo");
             }
         }
+        self.layout.actors[index].rect_data = Some(rect.clone());
         let mut main = draw_rect(&rect);
         let mut stacked = draw_rect(&shadow);
         // `svgDraw.drawRect` marks every rectangle of the neo look.
@@ -393,18 +422,25 @@ impl Renderer<'_> {
             main.set("data-look", "neo");
             stacked.set("data-look", "neo");
         }
-        if self.uses_palettes() {
-            if let Some(style) = style_text(&self.shape_style(index, true)) {
-                main.set("style", style.clone());
-                stacked.set("style", style);
-            }
+        if let Some(style) =
+            style_text(&self.shape_style(index, true)).filter(|_| self.uses_palettes())
+        {
+            main.set("style", style.clone());
+            stacked.set("style", style);
         }
         if neo {
             group.set("filter", format!("url(#{}-drop-shadow)", self.id));
         }
         let mut children = vec![main, stacked];
         children.extend(self.icon(&actor, rect.x, rect.y, rect.width));
-        children.extend(self.label(&actor, rect.x - offset, rect.y + offset, rect.width, rect.height, "actor actor-box"));
+        children.extend(self.label(
+            &actor,
+            rect.x - offset,
+            rect.y + offset,
+            rect.width,
+            rect.height,
+            "actor actor-box",
+        ));
         if !footer {
             group.set("data-et", "participant");
             group.set("data-type", "collections");
@@ -433,6 +469,7 @@ impl Renderer<'_> {
             }
         }
         group.set("class", rect.class.clone().unwrap_or_default());
+        self.layout.actors[index].rect_data = Some(rect.clone());
 
         // The cylinder: its ends are half ellipses of radius `ry = h/2` and `rx = ry/(2.5 + h/50)`
         // (`:702-703`).
@@ -459,8 +496,7 @@ impl Renderer<'_> {
             number(ry),
             number(h),
         );
-        let mut cylinder_group = Element::new("g")
-            .child(Element::new("path").with("d", body));
+        let mut cylinder_group = Element::new("g").child(Element::new("path").with("d", body));
         let mut cylinder_arc = Element::new("g").child(Element::new("path").with("d", arc));
         cylinder_group.set(
             "transform",
@@ -468,20 +504,31 @@ impl Renderer<'_> {
         );
         cylinder_arc.set(
             "transform",
-            format!("translate({}, {})", number(rect.width - rx), number(-(h / 2.0))),
+            format!(
+                "translate({}, {})",
+                number(rect.width - rx),
+                number(-(h / 2.0))
+            ),
         );
         if neo {
             cylinder_group.set("filter", format!("url(#{}-drop-shadow)", self.id));
         }
-        if self.uses_palettes() {
-            if let Some(style) = style_text(&self.shape_style(index, true)) {
-                cylinder_group.set("style", style.clone());
-                cylinder_arc.set("style", style);
-            }
+        if let Some(style) =
+            style_text(&self.shape_style(index, true)).filter(|_| self.uses_palettes())
+        {
+            cylinder_group.set("style", style.clone());
+            cylinder_arc.set("style", style);
         }
         let mut children = vec![cylinder_group, cylinder_arc];
         children.extend(self.icon(&actor, rect.x, rect.y, rect.width));
-        children.extend(self.label(&actor, rect.x, rect.y, rect.width, rect.height, "actor actor-box"));
+        children.extend(self.label(
+            &actor,
+            rect.x,
+            rect.y,
+            rect.width,
+            rect.height,
+            "actor actor-box",
+        ));
         if !footer {
             group.set("data-et", "participant");
             group.set("data-type", "queue");
@@ -519,7 +566,11 @@ impl Renderer<'_> {
         let w = rect.width / 3.0;
         let rx = w / 2.0;
         let ry = rx / (2.5 + w / 50.0);
-        let h = if band.is_some() { GLYPH_BAND_HEIGHT } else { rect.width / 3.0 };
+        let h = if band.is_some() {
+            GLYPH_BAND_HEIGHT
+        } else {
+            rect.width / 3.0
+        };
         let cylinder_y = match band {
             Some(band) => band.glyph_bottom_y - h - ry,
             None => rect.y,
@@ -540,7 +591,9 @@ impl Renderer<'_> {
             number(w),
             number(h - 2.0 * ry),
         );
-        let mut cylinder_group = Element::new("g").with("class", rect.class.clone().unwrap_or_default());
+        self.layout.actors[index].rect_data = Some(rect.clone());
+        let mut cylinder_group =
+            Element::new("g").with("class", rect.class.clone().unwrap_or_default());
         cylinder_group.push_child(Element::new("path").with("d", d));
         if neo {
             cylinder_group.set("filter", format!("url(#{}-drop-shadow)", self.id));
@@ -550,15 +603,31 @@ impl Renderer<'_> {
                 cylinder_group.set("style", style);
             }
         } else {
-            cylinder_group.set("style", format!("stroke: {};", self.theme_colour("actorBorder").unwrap_or_default()));
+            cylinder_group.set(
+                "style",
+                format!(
+                    "stroke: {};",
+                    self.theme_colour("actorBorder").unwrap_or_default()
+                ),
+            );
         }
-        cylinder_group.set("transform", format!("translate({}, {})", number(w), number(ry)));
+        cylinder_group.set(
+            "transform",
+            format!("translate({}, {})", number(w), number(ry)),
+        );
         let label_y = match band {
             Some(band) => band.label_centre_y - rect.height / 2.0,
             None => rect.y + 35.0,
         };
         let mut children = vec![cylinder_group];
-        children.extend(self.label(&actor, rect.x, label_y, rect.width, rect.height, "actor actor-box"));
+        children.extend(self.label(
+            &actor,
+            rect.x,
+            label_y,
+            rect.width,
+            rect.height,
+            "actor actor-box",
+        ));
         if !footer {
             group.set("data-et", "participant");
             group.set("data-type", "database");
@@ -597,9 +666,12 @@ impl Renderer<'_> {
             None => actor_y + 12.0,
         };
         let mut lifeline_element = None;
-        let mut cnt = self.actor_cnt;
+        let cnt = if footer {
+            self.actor_cnt
+        } else {
+            self.next_lifeline(index)
+        };
         if !footer {
-            cnt = self.next_lifeline(index);
             let centre = actor.x + actor.width / 2.0;
             let centre_y = match band {
                 Some(band) => band.lifeline_start_y,
@@ -610,7 +682,13 @@ impl Renderer<'_> {
         self.place_beside(lifeline_element);
         let centre = actor.x + actor.width / 2.0;
         let mut act = Element::new("g")
-            .with("class", format!("actor-man {}", if footer { "actor-bottom" } else { "actor-top" }))
+            .with(
+                "class",
+                format!(
+                    "actor-man {}",
+                    if footer { "actor-bottom" } else { "actor-top" }
+                ),
+            )
             .with("name", actor.name.clone());
         act.push_child(
             Element::new("line")
@@ -642,7 +720,13 @@ impl Renderer<'_> {
                 act.set("style", style);
             }
         } else {
-            act.set("style", format!("stroke: {};", self.theme_colour("actorBorder").unwrap_or_default()));
+            act.set(
+                "style",
+                format!(
+                    "stroke: {};",
+                    self.theme_colour("actorBorder").unwrap_or_default()
+                ),
+            );
         }
         if band.is_none() {
             // Classic: the circle's own height and the label box's (`:1200-1206`).
@@ -653,13 +737,23 @@ impl Renderer<'_> {
             None => actor_y + 15.0,
         };
         let label_rect_height = row_height;
-        let label = self.label(&actor, rect.x, label_y, rect.width, label_rect_height, "actor actor-man");
+        let label = self.label(
+            &actor,
+            rect.x,
+            label_y,
+            rect.width,
+            label_rect_height,
+            "actor actor-man",
+        );
         for child in label {
             act.push_child(child);
         }
         if band.is_none() {
             // The legacy nudge; under the band model the circle is placed exactly.
-            act.set("transform", format!("translate(0,{})", number(radius / 2.0 + 10.0)));
+            act.set(
+                "transform",
+                format!("translate(0,{})", number(radius / 2.0 + 10.0)),
+            );
         }
         if !footer {
             act.set("data-et", "participant");
@@ -692,9 +786,12 @@ impl Renderer<'_> {
         };
         let r = 22.0;
         let mut lifeline_element = None;
-        let mut cnt = self.actor_cnt;
+        let cnt = if footer {
+            self.actor_cnt
+        } else {
+            self.next_lifeline(index)
+        };
         if !footer {
-            cnt = self.next_lifeline(index);
             lifeline_element = Some(lifeline(cnt, centre, centre_y, &actor.name));
         }
         self.place_beside(lifeline_element);
@@ -708,10 +805,18 @@ impl Renderer<'_> {
                 .with("markerHeight", "28")
                 .with("orient", "172.5")
                 .with("stroke-width", "1.2")
-                .child(Element::new("path").with("d", "M 14.4 5.6 L 7.2 10.4 L 8.8 5.6 L 7.2 0.8 Z")),
+                .child(
+                    Element::new("path").with("d", "M 14.4 5.6 L 7.2 10.4 L 8.8 5.6 L 7.2 0.8 Z"),
+                ),
         );
         let mut act = Element::new("g")
-            .with("class", format!("actor-man {}", if footer { "actor-bottom" } else { "actor-top" }))
+            .with(
+                "class",
+                format!(
+                    "actor-man {}",
+                    if footer { "actor-bottom" } else { "actor-top" }
+                ),
+            )
             .with("name", actor.name.clone())
             .child(marker);
         let filter = if neo {
@@ -728,15 +833,24 @@ impl Renderer<'_> {
         );
         act.push_child(
             Element::new("line")
-                .with("marker-end", format!("url(#{}-filled-head-control)", self.id))
-                .with("transform", format!("translate({}, {})", number(cx), number(cy - r))),
+                .with(
+                    "marker-end",
+                    format!("url(#{}-filled-head-control)", self.id),
+                )
+                .with(
+                    "transform",
+                    format!("translate({}, {})", number(cx), number(cy - r)),
+                ),
         );
         if self.uses_palettes() {
             if let Some(style) = style_text(&self.shape_style(index, true)) {
                 act.set("style", style);
             }
         } else {
-            let (stroke, fill) = (self.theme_colour("actorBorder"), self.theme_colour("actorBkg"));
+            let (stroke, fill) = (
+                self.theme_colour("actorBorder"),
+                self.theme_colour("actorBkg"),
+            );
             act.set(
                 "style",
                 style_text(&[("stroke", stroke), ("fill", fill)]).unwrap_or_default(),
@@ -750,7 +864,14 @@ impl Renderer<'_> {
             Some(band) => band.label_centre_y - row_height / 2.0,
             None => rect.y + r + if footer { 5.0 } else { 12.0 },
         };
-        let label = self.label(&actor, rect.x, label_y, rect.width, row_height, "actor actor-man");
+        let label = self.label(
+            &actor,
+            rect.x,
+            label_y,
+            rect.width,
+            row_height,
+            "actor actor-man",
+        );
         for child in label {
             act.push_child(child);
         }
@@ -780,7 +901,13 @@ impl Renderer<'_> {
         };
         let r = 22.0;
         let mut act = Element::new("g")
-            .with("class", format!("actor {}", if footer { "actor-bottom" } else { "actor-top" }))
+            .with(
+                "class",
+                format!(
+                    "actor {}",
+                    if footer { "actor-bottom" } else { "actor-top" }
+                ),
+            )
             .with("name", actor.name.clone());
         act.push_child(
             Element::new("circle")
@@ -801,19 +928,22 @@ impl Renderer<'_> {
         if neo {
             act.set("filter", format!("url(#{}-drop-shadow)", self.id));
         }
-        if self.uses_palettes() {
-            if let Some(style) = style_text(&self.shape_style(index, true)) {
-                act.set("style", style);
-            }
+        if self.uses_palettes()
+            && let Some(style) = style_text(&self.shape_style(index, true))
+        {
+            act.set("style", style);
         }
         if band.is_none() {
             // Classic: the circle's extent plus the label box's height (`:936-937`).
             self.layout.actors[index].height = 2.0 * r + self.conf.label_box_height;
         }
         let mut lifeline_element = None;
-        let mut cnt = self.actor_cnt;
+        let cnt = if footer {
+            self.actor_cnt
+        } else {
+            self.next_lifeline(index)
+        };
         if !footer {
-            cnt = self.next_lifeline(index);
             lifeline_element = Some(lifeline(cnt, centre, centre_y, &actor.name));
         }
         self.place_beside(lifeline_element);
@@ -821,7 +951,14 @@ impl Renderer<'_> {
             Some(band) => band.label_centre_y - row_height / 2.0,
             None => rect.y + if footer { 15.0 } else { 30.0 },
         };
-        let label = self.label(&actor, rect.x, label_y, rect.width, row_height, "actor actor-man");
+        let label = self.label(
+            &actor,
+            rect.x,
+            label_y,
+            rect.width,
+            row_height,
+            "actor actor-man",
+        );
         for child in label {
             act.push_child(child);
         }
@@ -847,14 +984,23 @@ impl Renderer<'_> {
         let centre = actor.x + actor.width / 2.0;
         let centre_y = band.map_or(actor_y + 80.0, |band| band.lifeline_start_y);
         let mut lifeline_element = None;
-        let mut cnt = self.actor_cnt;
+        let cnt = if footer {
+            self.actor_cnt
+        } else {
+            self.next_lifeline(index)
+        };
         if !footer {
-            cnt = self.next_lifeline(index);
             lifeline_element = Some(lifeline(cnt, centre, centre_y, &actor.name));
         }
         self.place_beside(lifeline_element);
         let mut act = Element::new("g")
-            .with("class", format!("actor-man {}", if footer { "actor-bottom" } else { "actor-top" }))
+            .with(
+                "class",
+                format!(
+                    "actor-man {}",
+                    if footer { "actor-bottom" } else { "actor-top" }
+                ),
+            )
             .with("name", actor.name.clone());
         if !footer {
             act.set("data-et", "participant");
@@ -918,17 +1064,196 @@ impl Renderer<'_> {
                 act.set("style", style);
             }
         } else {
-            act.set("style", format!("stroke: {};", self.theme_colour("actorBorder").unwrap_or_default()));
+            act.set(
+                "style",
+                format!(
+                    "stroke: {};",
+                    self.theme_colour("actorBorder").unwrap_or_default()
+                ),
+            );
         }
         let label_y = match band {
             Some(band) => band.label_centre_y - actor.height / 2.0,
             None => actor_y + 35.0,
         };
-        let label = self.label(&actor, actor.x, label_y, actor.width, actor.height, "actor actor-man");
+        let label = self.label(
+            &actor,
+            actor.x,
+            label_y,
+            actor.width,
+            actor.height,
+            "actor actor-man",
+        );
         for child in label {
             act.push_child(child);
         }
         self.append_shape(act);
         self.layout.actors[index].height
     }
+}
+
+impl Renderer<'_> {
+    /// `drawActorsPopup` (`sequenceRenderer.ts:1505-1520`): the menus of the actors, as the
+    /// reference lays them out. Returns the height and the width the menus need. The menus are
+    /// drawn hidden (`display: none`), as the reference does; the click that shows them is a
+    /// JavaScript handler, which is not drawn (decision 0001).
+    pub(super) fn draw_actors_popups(&mut self) -> Result<(f64, f64), RenderError> {
+        let mut max_height = 0.0_f64;
+        let mut max_width = 0.0_f64;
+        let keys = self.layout.actor_keys.clone();
+        for key in &keys {
+            let Some(index) = self.layout.actor_index(key) else {
+                continue;
+            };
+            let min_width = self.required_popup_width(index)?;
+            let (height, width) = self.draw_popup(index, min_width)?;
+            max_height = get_max(&[Some(max_height), Some(height)]);
+            let actor_x = self.layout.actors[index].x;
+            max_width = get_max(&[Some(max_width), Some(width + actor_x)]);
+        }
+        Ok((max_height, max_width))
+    }
+
+    /// `getRequiredPopupWidth` (`sequenceRenderer.ts:1592-1602`): the width the widest link label
+    /// needs, with the padding of the menu.
+    fn required_popup_width(&mut self, index: usize) -> Result<f64, RenderError> {
+        let actor = self.layout.actors[index].clone();
+        let font = self.conf.actor_font.clone();
+        let padding = self.conf.wrap_padding;
+        let margin = self.conf.box_margin;
+        let mut required = 0.0_f64;
+        for key in actor.links.keys() {
+            let dims = super::text::dimensions(&mut self.memo, key, &font)?;
+            let label_width = dims.width + 2.0 * padding + 2.0 * margin;
+            if required < label_width {
+                required = label_width;
+            }
+        }
+        Ok(required)
+    }
+
+    /// `drawPopup` (`svgDraw.js:79-116`): the hidden menu of an actor with links. Returns the height
+    /// and the width of the menu; an actor without links draws nothing and returns zeros.
+    fn draw_popup(&mut self, index: usize, min_width: f64) -> Result<(f64, f64), RenderError> {
+        let actor = self.layout.actors[index].clone();
+        if actor.links.is_empty() {
+            return Ok((0.0, 0.0));
+        }
+        // The reference reads the actor's rectangle, which only the box-shaped participants set.
+        let rect = actor.rect_data.clone().ok_or_else(|| {
+            RenderError::Layout(format!(
+                "the menu of {} needs a box, and its type draws none",
+                actor.name
+            ))
+        })?;
+        let display = if self.conf.force_menus {
+            "block !important"
+        } else {
+            "none"
+        };
+        let cnt = actor
+            .actor_cnt
+            .map_or_else(|| "undefined".to_owned(), |cnt| cnt.to_string());
+        let class_suffix = rect
+            .class
+            .as_ref()
+            .map(|class| format!(" {class}"))
+            .unwrap_or_default();
+        let menu_width = if rect.width > min_width {
+            rect.width
+        } else {
+            min_width
+        };
+        let mut panel = Element::new("rect")
+            .with("class", format!("actorPopupMenuPanel{class_suffix}"))
+            .with("x", number(rect.x))
+            .with("y", number(rect.height));
+        if let Some(fill) = &rect.fill {
+            panel.set("fill", fill.as_str());
+        }
+        if let Some(stroke) = &rect.stroke {
+            panel.set("stroke", stroke.as_str());
+        }
+        panel.set("width", number(menu_width));
+        panel.set("height", number(rect.height));
+        panel.set("rx", number(rect.rx.unwrap_or(0.0)));
+        panel.set("ry", number(rect.ry.unwrap_or(0.0)));
+        let mut group = Element::new("g")
+            .with("id", format!("actor{cnt}_popup"))
+            .with("class", "actorPopupMenu")
+            .with("display", display);
+        let mut link_y = 20.0_f64;
+        let font = self.conf.actor_font.clone();
+        let mut panel_children = Vec::new();
+        for (key, value) in &actor.links {
+            let target = super::model::value_text(value);
+            let mut link = Element::new("a")
+                .with("xlink:href", crate::common::url::sanitize_url(&target))
+                .with("target", "_blank");
+            for element in draw_menu_item_text(
+                key,
+                rect.x + 10.0,
+                rect.height + link_y,
+                menu_width,
+                20.0,
+                &font,
+            ) {
+                link.push_child(element);
+            }
+            panel_children.push(link);
+            link_y += 30.0;
+        }
+        panel.set("height", number(link_y));
+        group.push_child(panel);
+        for child in panel_children {
+            group.push_child(child);
+        }
+        self.append(group);
+        Ok((rect.height + link_y, menu_width))
+    }
+}
+
+/// The text of a menu item (`_drawMenuItemTextCandidateFunc`, `byTspan`): one line per `<br>`
+/// piece, starting at `x`, centred on the item's `height` as the reference centres it.
+fn draw_menu_item_text(
+    content: &str,
+    x: f64,
+    y: f64,
+    _width: f64,
+    height: f64,
+    font: &super::conf::Font,
+) -> Vec<Element> {
+    let lines = crate::common::text::split_line_breaks(content);
+    let size = font.size;
+    let count = lines.len() as f64;
+    lines
+        .iter()
+        .enumerate()
+        .map(|(index, line)| {
+            let dy = index as f64 * size - (size * (count - 1.0)) / 2.0;
+            let mut text = Element::new("text")
+                .with("x", number(x))
+                .with("y", number(y))
+                .with(
+                    "style",
+                    format!(
+                        "text-anchor: start; font-size: {}; font-weight: {}; font-family: {};",
+                        font.size_css(),
+                        number(font.weight),
+                        font.family
+                    ),
+                )
+                .child(
+                    Element::new("tspan")
+                        .with("x", number(x))
+                        .with("dy", number(dy))
+                        .text(*line),
+                );
+            text.set("y", number(y + height / 2.0));
+            text.set("dominant-baseline", "central");
+            text.set("alignment-baseline", "central");
+            text.set("class", "actor");
+            text
+        })
+        .collect()
 }

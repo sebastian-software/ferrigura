@@ -6,7 +6,11 @@
 
 use std::collections::BTreeMap;
 
-use ferrigura_model::sequence::{Autonumber, CentralConnection, LineType, Placement, SequenceDiagram};
+use ferrigura_model::sequence::{
+    Autonumber, CentralConnection, LineType, Placement, SequenceDiagram,
+};
+
+use crate::common::draw::RectData;
 use ferrigura_model::value::Value;
 
 /// A participant, with the layout the renderer gives it: `width`, `height`, `margin`, `x`,
@@ -50,6 +54,9 @@ pub struct Actor {
     pub actor_cnt: Option<i64>,
     /// The height of the label block of the neo bands, `actorTextHeight`.
     pub actor_text_height: Option<f64>,
+    /// The rectangle of a box-shaped participant (`actor.rectData`), which the menu of the actor is
+    /// placed from. Absent for the shapes that set none.
+    pub rect_data: Option<RectData>,
 }
 
 /// A box around actors (`box … end`): its title, its colour and its place.
@@ -188,10 +195,6 @@ pub struct Block {
     pub extent: Extent,
     /// The title (`title.message`); absent for a `rect`.
     pub title: Option<String>,
-    /// Whether the title wraps.
-    pub wrap: bool,
-    /// The width of the title, when it wraps.
-    pub width: Option<f64>,
     /// The height, rounded at the end.
     pub height: f64,
     /// The fill of a `rect`.
@@ -259,6 +262,7 @@ impl Layout {
                 stopy: None,
                 actor_cnt: None,
                 actor_text_height: None,
+                rect_data: None,
             })
             .collect::<Vec<_>>();
         let boxes = diagram
@@ -308,7 +312,10 @@ impl Layout {
             })
             .collect();
         Self {
-            actor_keys: actors.iter().map(|actor: &Actor| actor.id.clone()).collect(),
+            actor_keys: actors
+                .iter()
+                .map(|actor: &Actor| actor.id.clone())
+                .collect(),
             actors,
             boxes,
             messages,

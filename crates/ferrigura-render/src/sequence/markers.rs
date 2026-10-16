@@ -17,11 +17,13 @@ fn symbol(id: String, width: Option<&str>, path: &str, fill_rule: bool) -> Eleme
         symbol.set("width", width);
         symbol.set("height", width);
     }
-    Element::new("defs").child(symbol.child(
-        Element::new("path")
-            .with("transform", "scale(.5)")
-            .with("d", path),
-    ))
+    Element::new("defs").child(
+        symbol.child(
+            Element::new("path")
+                .with("transform", "scale(.5)")
+                .with("d", path),
+        ),
+    )
 }
 
 /// `insertDatabaseIcon`, `insertComputerIcon` and `insertClockIcon`, in that order.
@@ -35,7 +37,15 @@ pub fn icons(id: &str) -> Vec<Element> {
 }
 
 /// A marker: its `refX`, `refY`, size and orientation, with the path it draws.
-fn marker(id: String, ref_x: f64, ref_y: f64, size: (f64, f64), orient: &str, units: bool, path: Element) -> Element {
+fn marker(
+    id: String,
+    ref_x: f64,
+    ref_y: f64,
+    size: (f64, f64),
+    orient: &str,
+    units: bool,
+    path: Element,
+) -> Element {
     let mut marker = Element::new("marker")
         .with("id", id)
         .with("refX", crate::svg::number(ref_x))

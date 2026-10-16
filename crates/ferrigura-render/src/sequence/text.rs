@@ -61,7 +61,8 @@ pub fn dimensions(
     text: &str,
     font: &Font,
 ) -> Result<TextDimensions, RenderError> {
-    memo.dimensions(text, &font.text_style()).map_err(measure_error)
+    memo.dimensions(text, &font.text_style())
+        .map_err(measure_error)
 }
 
 /// `wrapLabel(label, maxWidth, font)`: the label broken into lines, joined with `<br/>`.
@@ -79,7 +80,8 @@ pub fn wrap(
         text: font.text_style(),
         join_with: JOIN_WITH.to_owned(),
     };
-    memo.wrap_label(label, max_width, &style).map_err(measure_error)
+    memo.wrap_label(label, max_width, &style)
+        .map_err(measure_error)
 }
 
 /// `common.splitBreaks(text).length`: the number of lines of a text.
@@ -159,7 +161,7 @@ pub fn draw_text(data: &TextData<'_>) -> Result<Vec<Element>, RenderError> {
     let mut elements = Vec::with_capacity(lines.len());
     for (index, line) in lines.iter().enumerate() {
         let dy = match data.text_margin {
-            Some(margin) if margin == 0.0 => index as f64 * line_size,
+            Some(0.0) => index as f64 * line_size,
             _ => 0.0,
         };
         let y = match (data.valign, margin) {
@@ -172,7 +174,9 @@ pub fn draw_text(data: &TextData<'_>) -> Result<Vec<Element>, RenderError> {
             }
             _ => data.y,
         };
-        let mut element = Element::new("text").with("x", number(x)).with("y", number(y));
+        let mut element = Element::new("text")
+            .with("x", number(x))
+            .with("y", number(y));
         if let Some(anchor) = &anchor {
             element.set("text-anchor", anchor.as_str());
             // The baseline is set only when the anchor was mapped (`dominantBaseline` in the

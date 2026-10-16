@@ -32,7 +32,11 @@ pub fn js_max(a: f64, b: f64) -> f64 {
 #[must_use]
 pub fn js_round(value: f64) -> f64 {
     let floor = value.floor();
-    if value - floor >= 0.5 { floor + 1.0 } else { floor }
+    if value - floor >= 0.5 {
+        floor + 1.0
+    } else {
+        floor
+    }
 }
 
 /// `common.getMax` (`common.ts:168`): the largest of the values that are not NaN, or negative
@@ -85,8 +89,14 @@ impl Bounds {
     /// `bounds.insert(startx, starty, stopx, stopy)`: grows the diagram and every open block and
     /// activation around the given rectangle. The corners are put in order first.
     pub fn insert(&mut self, box_margin: f64, startx: f64, starty: f64, stopx: f64, stopy: f64) {
-        let (startx, stopx) = (get_min(&[Some(startx), Some(stopx)]), get_max(&[Some(startx), Some(stopx)]));
-        let (starty, stopy) = (get_min(&[Some(starty), Some(stopy)]), get_max(&[Some(starty), Some(stopy)]));
+        let (startx, stopx) = (
+            get_min(&[Some(startx), Some(stopx)]),
+            get_max(&[Some(startx), Some(stopx)]),
+        );
+        let (starty, stopy) = (
+            get_min(&[Some(starty), Some(stopy)]),
+            get_max(&[Some(starty), Some(stopy)]),
+        );
         update(&mut self.data.startx, startx, js_min);
         update(&mut self.data.starty, starty, js_min);
         update(&mut self.data.stopx, stopx, js_max);
@@ -116,7 +126,11 @@ impl Bounds {
             cnt += 1;
             let n = (items_len - cnt + 1) as f64;
             let activation = &mut self.activations[index];
-            update(&mut activation.extent.starty, starty - n * box_margin, js_min);
+            update(
+                &mut activation.extent.starty,
+                starty - n * box_margin,
+                js_min,
+            );
             update(&mut activation.extent.stopy, stopy + n * box_margin, js_max);
             update(&mut self.data.startx, startx - n * box_margin, js_min);
             update(&mut self.data.stopx, stopx + n * box_margin, js_max);
@@ -168,7 +182,7 @@ impl Bounds {
     }
 
     /// `createLoop` and `newLoop`: opens a block at the current row (`sequenceItems.push`).
-    pub fn new_block(&mut self, title: Option<String>, wrap: bool, width: Option<f64>, fill: Option<String>) {
+    pub fn new_block(&mut self, title: Option<String>, fill: Option<String>) {
         self.items.push(Block {
             extent: Extent {
                 startx: None,
@@ -177,8 +191,6 @@ impl Bounds {
                 stopy: None,
             },
             title,
-            wrap,
-            width,
             height: 0.0,
             fill,
             sections: Vec::new(),
@@ -255,7 +267,7 @@ mod tests {
         let mut bounds = Bounds::default();
         bounds.insert(BOX_MARGIN, 25.0, 50.0, 300.0, 400.0);
         bounds.vertical_pos = 150.0;
-        bounds.new_block(None, false, None, None);
+        bounds.new_block(None, None);
         bounds.insert(BOX_MARGIN, 125.0, 150.0, 150.0, 200.0);
 
         let lp = bounds.end_block().expect("the loop is open");
@@ -277,8 +289,8 @@ mod tests {
         let mut bounds = Bounds::default();
         bounds.insert(BOX_MARGIN, 100.0, 100.0, 1000.0, 1000.0);
         bounds.vertical_pos = 200.0;
-        bounds.new_block(None, false, None, None);
-        bounds.new_block(None, false, None, None);
+        bounds.new_block(None, None);
+        bounds.new_block(None, None);
         bounds.insert(BOX_MARGIN, 200.0, 200.0, 300.0, 300.0);
 
         // The innermost loop is closed first.
@@ -306,7 +318,7 @@ mod tests {
         let mut bounds = Bounds::default();
         bounds.insert(BOX_MARGIN, 100.0, 100.0, 200.0, 200.0);
         bounds.vertical_pos = 200.0;
-        bounds.new_block(None, false, None, None);
+        bounds.new_block(None, None);
         bounds.insert(BOX_MARGIN, 50.0, 50.0, 300.0, 300.0);
 
         let lp = bounds.end_block().expect("the loop is open");

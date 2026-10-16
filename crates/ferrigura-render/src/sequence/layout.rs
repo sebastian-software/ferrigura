@@ -57,7 +57,11 @@ pub fn is_arrow(line_type: LineType) -> bool {
 
 /// `calculateCentralConnectionOffset` (`sequenceRenderer.ts:1820-1840`): the shift of the start of a
 /// message that has a central connection.
-fn central_offset(central: Option<CentralConnection>, line_type: LineType, is_arrow_to_right: bool) -> f64 {
+fn central_offset(
+    central: Option<CentralConnection>,
+    line_type: LineType,
+    is_arrow_to_right: bool,
+) -> f64 {
     let mut offset = 0.0;
     let reverse_or_dual = matches!(
         central,
@@ -122,7 +126,12 @@ impl Renderer<'_> {
                 self.conf.message_font.clone()
             };
             let wrapped = if msg.wrap {
-                wrap(&mut self.memo, &msg.text, self.conf.width - 2.0 * padding, &font)?
+                wrap(
+                    &mut self.memo,
+                    &msg.text,
+                    self.conf.width - 2.0 * padding,
+                    &font,
+                )?
             } else {
                 msg.text.clone()
             };
@@ -177,7 +186,11 @@ impl Renderer<'_> {
                     &actor_font,
                 )?;
             }
-            let dims = dimensions(&mut self.memo, &self.layout.actors[index].description, &actor_font)?;
+            let dims = dimensions(
+                &mut self.memo,
+                &self.layout.actors[index].description,
+                &actor_font,
+            )?;
             let actor = &mut self.layout.actors[index];
             actor.width = if actor.wrap {
                 self.conf.width
@@ -234,18 +247,21 @@ impl Renderer<'_> {
             total_width -= 2.0 * self.conf.box_text_margin;
             let sequence_box = &mut self.layout.boxes[box_index];
             let message_font = self.conf.message_font.clone();
-            if sequence_box.wrap {
-                if let Some(name) = sequence_box.name.clone() {
-                    let wrapped = wrap(
-                        &mut self.memo,
-                        &name,
-                        total_width - 2.0 * padding,
-                        &message_font,
-                    )?;
-                    self.layout.boxes[box_index].name = Some(wrapped);
-                }
+            if sequence_box.wrap
+                && let Some(name) = sequence_box.name.clone()
+            {
+                let wrapped = wrap(
+                    &mut self.memo,
+                    &name,
+                    total_width - 2.0 * padding,
+                    &message_font,
+                )?;
+                self.layout.boxes[box_index].name = Some(wrapped);
             }
-            let name = self.layout.boxes[box_index].name.clone().unwrap_or_default();
+            let name = self.layout.boxes[box_index]
+                .name
+                .clone()
+                .unwrap_or_default();
             let dims = dimensions(&mut self.memo, &name, &message_font)?;
             max_box_height = get_max(&[Some(dims.height), Some(max_box_height)]);
             let min_width = get_max(&[Some(total_width), Some(dims.width + 2.0 * padding)]);
@@ -283,12 +299,8 @@ impl Renderer<'_> {
             msg.text.clone()
         };
         let mut text_dims = dimensions(&mut self.memo, &measured_text, &note_font)?;
-        let mut width = if should_wrap {
-            width_conf
-        } else {
-            get_max(&[Some(width_conf), Some(text_dims.width + 2.0 * padding)])
-        };
-        let mut note_startx = from.x;
+        let width;
+        let note_startx;
         if msg.placement == Some(Placement::RightOf) {
             width = if should_wrap {
                 get_max(&[Some(width_conf), Some(text_dims.width)])
@@ -363,9 +375,10 @@ impl Renderer<'_> {
     /// The index of an actor the reference looks up with `actors.get(name)` and then reads; a
     /// missing actor is the TypeError the reference would throw.
     fn actor_of(&self, key: Option<&str>) -> Result<usize, RenderError> {
-        key.and_then(|key| self.layout.actor_index(key)).ok_or_else(|| {
-            RenderError::Layout("a message refers to an actor that is not declared".to_owned())
-        })
+        key.and_then(|key| self.layout.actor_index(key))
+            .ok_or_else(|| {
+                RenderError::Layout("a message refers to an actor that is not declared".to_owned())
+            })
     }
 
     /// `buildMessageModel` (`:1953-2032`): the geometry of a message, or `None` for the items that
@@ -388,7 +401,11 @@ impl Renderer<'_> {
         let conf_width = self.conf.width;
 
         let is_arrow_to_right = from_left <= to_left;
-        let mut startx = if is_arrow_to_right { from_right } else { from_left };
+        let mut startx = if is_arrow_to_right {
+            from_right
+        } else {
+            from_left
+        };
         let mut stopx = if is_arrow_to_right { to_left } else { to_right };
 
         if neo {
@@ -465,7 +482,11 @@ impl Renderer<'_> {
         let message_font = self.conf.message_font.clone();
         let dims = dimensions(&mut self.memo, &text, &message_font)?;
         let width = get_max(&[
-            Some(if msg.wrap { 0.0 } else { dims.width + 2.0 * padding }),
+            Some(if msg.wrap {
+                0.0
+            } else {
+                dims.width + 2.0 * padding
+            }),
             Some(bounded_width + 2.0 * padding),
             Some(conf_width),
         ]);
@@ -557,7 +578,8 @@ impl Renderer<'_> {
                     let index = self.actor_of(Some(&key))?;
                     let actor = &self.layout.actors[index];
                     let stacked = self.bounds.activation_count(&key) as f64;
-                    let x = actor.x + actor.width / 2.0 + ((stacked - 1.0) * activation_width) / 2.0;
+                    let x =
+                        actor.x + actor.width / 2.0 + ((stacked - 1.0) * activation_width) / 2.0;
                     self.bounds.activations.push(super::model::Activation {
                         extent: Extent {
                             startx: Some(x),
@@ -590,10 +612,9 @@ impl Renderer<'_> {
                     let current = &mut arena[open];
                     current.from = get_min(&[Some(current.from), Some(from)]);
                     current.to = get_max(&[Some(current.to), Some(from + width)]);
-                    current.width = get_max(&[
-                        Some(current.width),
-                        Some((current.from - current.to).abs()),
-                    ]) - label_box_width;
+                    current.width =
+                        get_max(&[Some(current.width), Some((current.from - current.to).abs())])
+                            - label_box_width;
                 }
             } else {
                 let model = self.build_message_model(msg_index)?;
@@ -633,8 +654,8 @@ impl Renderer<'_> {
                             let current = &mut arena[open];
                             current.from = get_min(&[Some(startx), Some(current.from)]);
                             current.to = get_max(&[Some(stopx), Some(current.to)]);
-                            current.width =
-                                get_max(&[Some(current.width), Some(model_width)]) - label_box_width;
+                            current.width = get_max(&[Some(current.width), Some(model_width)])
+                                - label_box_width;
                         }
                     }
                 }
@@ -665,27 +686,35 @@ impl Renderer<'_> {
             };
             let actor_box = self.layout.actors[index].box_index;
             // The end of a box, when the actor is in another one (`:755-761`).
-            if let Some(previous) = prev_box {
-                if Some(previous) != actor_box {
-                    self.bounds.boxes.push(previous);
-                    prev_margin += box_margin + self.layout.boxes[previous].margin;
-                }
+            if let Some(previous) = prev_box
+                && Some(previous) != actor_box
+            {
+                self.bounds.boxes.push(previous);
+                prev_margin += box_margin + self.layout.boxes[previous].margin;
             }
             // The start of a box (`:763-769`).
-            if let Some(current) = actor_box {
-                if Some(current) != prev_box {
-                    let sequence_box = &mut self.layout.boxes[current];
-                    sequence_box.x = prev_width + prev_margin;
-                    sequence_box.y = 0.0;
-                    prev_margin += sequence_box.margin;
-                }
+            if let Some(current) = actor_box
+                && Some(current) != prev_box
+            {
+                let sequence_box = &mut self.layout.boxes[current];
+                sequence_box.x = prev_width + prev_margin;
+                sequence_box.y = 0.0;
+                prev_margin += sequence_box.margin;
             }
             let actor: &mut Actor = &mut self.layout.actors[index];
             actor.width = get_max(&[Some(or_default(actor.width, width_conf)), Some(width_conf)]);
-            actor.height = get_max(&[Some(or_default(actor.height, height_conf)), Some(height_conf)]);
+            actor.height = get_max(&[
+                Some(or_default(actor.height, height_conf)),
+                Some(height_conf),
+            ]);
             actor.margin = Some(or_default(actor.margin.unwrap_or(0.0), margin_conf));
             max_height = get_max(&[Some(max_height), Some(actor.height)]);
-            if self.layout.created.get(&actor.name).is_some_and(|count| *count != 0) {
+            if self
+                .layout
+                .created
+                .get(&actor.name)
+                .is_some_and(|count| *count != 0)
+            {
                 prev_margin += actor.width / 2.0;
             }
             actor.x = prev_width + prev_margin;
@@ -736,10 +765,20 @@ mod tests {
 
     #[test]
     fn the_central_offset_follows_the_connection_and_the_direction() {
-        assert_eq!(central_offset(Some(CentralConnection::Central), LineType::Solid, true), 0.0);
-        assert_eq!(central_offset(Some(CentralConnection::Reverse), LineType::Solid, true), 4.0);
         assert_eq!(
-            central_offset(Some(CentralConnection::Dual), LineType::BidirectionalSolid, false),
+            central_offset(Some(CentralConnection::Central), LineType::Solid, true),
+            0.0
+        );
+        assert_eq!(
+            central_offset(Some(CentralConnection::Reverse), LineType::Solid, true),
+            4.0
+        );
+        assert_eq!(
+            central_offset(
+                Some(CentralConnection::Dual),
+                LineType::BidirectionalSolid,
+                false
+            ),
             -2.0
         );
     }

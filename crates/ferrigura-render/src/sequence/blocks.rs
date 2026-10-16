@@ -104,7 +104,8 @@ impl Renderer<'_> {
         self.bounds.bump(text_height + 2.0 * note_margin);
         note.stopy = note.starty + text_height + 2.0 * note_margin;
         note.stopx = note.startx + width;
-        self.bounds.insert(box_margin, note.startx, note.starty, note.stopx, note.stopy);
+        self.bounds
+            .insert(box_margin, note.startx, note.starty, note.stopx, note.stopy);
         Ok(())
     }
 
@@ -140,14 +141,20 @@ impl Renderer<'_> {
         group.push_child(frame(startx, stopy, stopx, stopy));
         group.push_child(frame(startx, starty, startx, stopy));
         for section in &block.sections {
-            group.push_child(frame(startx, section.y, stopx, section.y).with("style", "stroke-dasharray: 3, 3;"));
+            group.push_child(
+                frame(startx, section.y, stopx, section.y).with("style", "stroke-dasharray: 3, 3;"),
+            );
         }
 
         // The label box: a polygon with its corner cut, then the label in it.
         let label_width = get_max(&[Some(self.conf.label_box_width), Some(50.0)]);
         let label_height = {
             let height = self.conf.label_box_height + if self.conf.neo { 15.0 } else { 0.0 };
-            if height == 0.0 || height.is_nan() { 20.0 } else { height }
+            if height == 0.0 || height.is_nan() {
+                20.0
+            } else {
+                height
+            }
         };
         let label_x = startx;
         let label_y = starty;
@@ -253,31 +260,31 @@ impl Renderer<'_> {
         let mut height_adjust = post_margin;
         let id = self.layout.messages[msg_index].id.clone();
         let text = self.layout.messages[msg_index].text.clone();
-        if !id.is_empty() && !text.is_empty() {
-            if let Some(&loop_width) = loop_widths.get(&id) {
-                let font = self.conf.message_font.clone();
-                let wrapped = super::text::wrap(
-                    &mut self.memo,
-                    &format!("[{text}]"),
-                    loop_width - 2.0 * padding,
-                    &font,
-                )?;
-                {
-                    let msg = &mut self.layout.messages[msg_index];
-                    msg.text = wrapped.clone();
-                    msg.width = Some(loop_width);
-                    msg.wrap = true;
-                }
-                let dims = super::text::dimensions(&mut self.memo, &wrapped, &font)?;
-                let total_offset = get_max(&[Some(dims.height), Some(label_box_height)]);
-                height_adjust = post_margin + total_offset;
+        if !id.is_empty()
+            && !text.is_empty()
+            && let Some(&loop_width) = loop_widths.get(&id)
+        {
+            let font = self.conf.message_font.clone();
+            let wrapped = super::text::wrap(
+                &mut self.memo,
+                &format!("[{text}]"),
+                loop_width - 2.0 * padding,
+                &font,
+            )?;
+            {
+                let msg = &mut self.layout.messages[msg_index];
+                msg.text = wrapped.clone();
+                msg.width = Some(loop_width);
+                msg.wrap = true;
             }
+            let dims = super::text::dimensions(&mut self.memo, &wrapped, &font)?;
+            let total_offset = get_max(&[Some(dims.height), Some(label_box_height)]);
+            height_adjust = post_margin + total_offset;
         }
         let msg = self.layout.messages[msg_index].clone();
         match action {
             BlockAction::Open { fill } => {
-                self.bounds
-                    .new_block(Some(msg.text.clone()), msg.wrap, msg.width, fill);
+                self.bounds.new_block(Some(msg.text.clone()), fill);
             }
             BlockAction::Section => self.bounds.add_section(msg.text.clone()),
         }
@@ -292,7 +299,8 @@ impl Renderer<'_> {
             x: block.extent.startx.unwrap_or(f64::NAN),
             y: block.extent.starty.unwrap_or(f64::NAN),
             width: block.extent.stopx.unwrap_or(f64::NAN) - block.extent.startx.unwrap_or(f64::NAN),
-            height: block.extent.stopy.unwrap_or(f64::NAN) - block.extent.starty.unwrap_or(f64::NAN),
+            height: block.extent.stopy.unwrap_or(f64::NAN)
+                - block.extent.starty.unwrap_or(f64::NAN),
             fill: block.fill.clone(),
             class: Some("rect".to_owned()),
             ..RectData::default()
@@ -302,7 +310,12 @@ impl Renderer<'_> {
 
     /// `drawActivation` (`svgDraw.js:1477-1518`): the activation's rectangle, in the group that was
     /// anchored when it opened, with the class of its stack depth.
-    pub(super) fn draw_activation(&mut self, activation: &Activation, vertical_pos: f64, stacked: usize) {
+    pub(super) fn draw_activation(
+        &mut self,
+        activation: &Activation,
+        vertical_pos: f64,
+        stacked: usize,
+    ) {
         let mut rect = get_note_rect();
         rect.x = activation.extent.startx.unwrap_or(f64::NAN);
         rect.y = activation.extent.starty.unwrap_or(f64::NAN);
@@ -315,7 +328,10 @@ impl Renderer<'_> {
         }
         if self.uses_palettes() {
             let (bkg, border) = self.palettes();
-            let place = self.layout.actor_index(&activation.actor).map_or(0, |index| self.place_of(index));
+            let place = self
+                .layout
+                .actor_index(&activation.actor)
+                .map_or(0, |index| self.place_of(index));
             let stroke = super::actors::palette_color(&border, place);
             let fill = super::actors::palette_color(&bkg, place)
                 .or_else(|| crate::variables::text_of(self.themes.primary(), "mainBkg"));

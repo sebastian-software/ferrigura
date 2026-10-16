@@ -102,10 +102,18 @@ pub fn marker_end(line_type: LineType) -> Option<&'static str> {
 #[must_use]
 pub fn marker_start(line_type: LineType) -> Option<&'static str> {
     Some(match line_type {
-        LineType::SolidArrowTopReverse | LineType::SolidArrowTopReverseDotted => "solidBottomArrowHead",
-        LineType::SolidArrowBottomReverse | LineType::SolidArrowBottomReverseDotted => "solidTopArrowHead",
-        LineType::StickArrowTopReverse | LineType::StickArrowTopReverseDotted => "stickBottomArrowHead",
-        LineType::StickArrowBottomReverse | LineType::StickArrowBottomReverseDotted => "stickTopArrowHead",
+        LineType::SolidArrowTopReverse | LineType::SolidArrowTopReverseDotted => {
+            "solidBottomArrowHead"
+        }
+        LineType::SolidArrowBottomReverse | LineType::SolidArrowBottomReverseDotted => {
+            "solidTopArrowHead"
+        }
+        LineType::StickArrowTopReverse | LineType::StickArrowTopReverseDotted => {
+            "stickBottomArrowHead"
+        }
+        LineType::StickArrowBottomReverse | LineType::StickArrowBottomReverseDotted => {
+            "stickTopArrowHead"
+        }
         LineType::BidirectionalSolid | LineType::BidirectionalDotted => "arrowhead",
         _ => return None,
     })
@@ -138,17 +146,29 @@ impl Renderer<'_> {
             let dx = get_max(&[Some(text_width / 2.0), Some(self.conf.width / 2.0)]);
             let top = self.bounds.vertical_pos - 10.0 + total_offset;
             let bottom = self.bounds.vertical_pos + 30.0 + total_offset;
-            self.bounds.insert(box_margin, model.startx - dx, top, model.stopx + dx, bottom);
+            self.bounds
+                .insert(box_margin, model.startx - dx, top, model.stopx + dx, bottom);
         } else {
             total_offset += box_margin;
             line_start_y = self.bounds.vertical_pos + total_offset;
-            self.bounds
-                .insert(box_margin, model.startx, line_start_y - 10.0, model.stopx, line_start_y);
+            self.bounds.insert(
+                box_margin,
+                model.startx,
+                line_start_y - 10.0,
+                model.stopx,
+                line_start_y,
+            );
         }
         self.bounds.bump(total_offset);
         model.height += total_offset;
         model.stopy = model.starty + model.height;
-        self.bounds.insert(box_margin, model.from_bounds, model.starty, model.to_bounds, model.stopy);
+        self.bounds.insert(
+            box_margin,
+            model.from_bounds,
+            model.starty,
+            model.to_bounds,
+            model.stopy,
+        );
         Ok(line_start_y)
     }
 
@@ -160,8 +180,14 @@ impl Renderer<'_> {
         model: &mut MessageModel,
         line_start_y: f64,
     ) {
-        let msg_from = self.layout.messages[msg_index].from.clone().unwrap_or_default();
-        let msg_to = self.layout.messages[msg_index].to.clone().unwrap_or_default();
+        let msg_from = self.layout.messages[msg_index]
+            .from
+            .clone()
+            .unwrap_or_default();
+        let msg_to = self.layout.messages[msg_index]
+            .to
+            .clone()
+            .unwrap_or_default();
         let created_to = self.layout.created.get(&msg_to).copied();
         let destroyed_from = self.layout.destroyed.get(&msg_from).copied();
         let destroyed_to = self.layout.destroyed.get(&msg_to).copied();
@@ -225,13 +251,28 @@ impl Renderer<'_> {
     ) {
         let box_margin = self.conf.box_margin;
         let note_margin = self.conf.note_margin;
-        let from_x = self.layout.actor_index(msg_from).map_or(0.0, |index| self.layout.actors[index].x);
+        let from_x = self
+            .layout
+            .actor_index(msg_from)
+            .map_or(0.0, |index| self.layout.actors[index].x);
         let below = model.stopy + actor.height / 2.0 + note_margin;
         if actor.x < from_x {
-            self.bounds.insert(box_margin, model.stopx - adjustment, model.starty, model.startx, below);
+            self.bounds.insert(
+                box_margin,
+                model.stopx - adjustment,
+                model.starty,
+                model.startx,
+                below,
+            );
             model.stopx += adjustment;
         } else {
-            self.bounds.insert(box_margin, model.startx, model.starty, model.stopx + adjustment, below);
+            self.bounds.insert(
+                box_margin,
+                model.startx,
+                model.starty,
+                model.stopx + adjustment,
+                below,
+            );
             model.stopx -= adjustment;
         }
     }
@@ -246,13 +287,28 @@ impl Renderer<'_> {
     ) {
         let box_margin = self.conf.box_margin;
         let note_margin = self.conf.note_margin;
-        let to_x = self.layout.actor_index(msg_to).map_or(0.0, |index| self.layout.actors[index].x);
+        let to_x = self
+            .layout
+            .actor_index(msg_to)
+            .map_or(0.0, |index| self.layout.actors[index].x);
         let below = model.stopy + actor.height / 2.0 + note_margin;
         if actor.x < to_x {
-            self.bounds.insert(box_margin, model.startx - adjustment, model.starty, model.stopx, below);
+            self.bounds.insert(
+                box_margin,
+                model.startx - adjustment,
+                model.starty,
+                model.stopx,
+                below,
+            );
             model.startx += adjustment;
         } else {
-            self.bounds.insert(box_margin, model.stopx, model.starty, model.startx + adjustment, below);
+            self.bounds.insert(
+                box_margin,
+                model.stopx,
+                model.starty,
+                model.startx + adjustment,
+                below,
+            );
             model.startx -= adjustment;
         }
     }
@@ -298,13 +354,21 @@ impl Renderer<'_> {
 
         // The line: a path that loops back for a message to the same actor, else a straight line.
         let mut line = if self_message {
-            let line_start_x = startx + if autonumber_on && (is_reverse_type || bidirectional) { 10.0 } else { 0.0 };
+            let line_start_x = startx
+                + if autonumber_on && (is_reverse_type || bidirectional) {
+                    10.0
+                } else {
+                    0.0
+                };
             let d = if self.conf.right_angles {
                 format!(
                     "M  {},{} H {} V {} H {}",
                     number(line_start_x),
                     number(line_start_y),
-                    number(startx + get_max(&[Some(self.conf.width / 2.0), Some(text_dims.width / 2.0)])),
+                    number(
+                        startx
+                            + get_max(&[Some(self.conf.width / 2.0), Some(text_dims.width / 2.0)])
+                    ),
                     number(line_start_y + 25.0),
                     number(startx),
                 )
@@ -350,10 +414,13 @@ impl Renderer<'_> {
         line.set("data-to", msg.to.clone().unwrap_or_default());
         line.set("stroke-width", "2");
         line.set("stroke", "none");
-        line.set("style", match line.get("style") {
-            Some(dash) => format!("{dash} fill: none;"),
-            None => "fill: none;".to_owned(),
-        });
+        line.set(
+            "style",
+            match line.get("style") {
+                Some(dash) => format!("{dash} fill: none;"),
+                None => "fill: none;".to_owned(),
+            },
+        );
         if let Some(name) = marker_end(line_type) {
             line.set("marker-end", format!("url(#{}-{name})", self.id));
         }
@@ -397,12 +464,13 @@ impl Renderer<'_> {
         );
         let central_any = has_central_connection(msg.central);
         let mut line_start_x = startx;
-        let mut line_stop_x = stopx;
+        let mut line_stop_x;
         if bidirectional {
             if startx < stopx {
                 line_start_x = startx + SEQUENCE_NUMBER_RADIUS * 2.0;
             } else {
-                line_start_x = startx - SEQUENCE_NUMBER_RADIUS + if central_any { -5.0 } else { 0.0 };
+                line_start_x =
+                    startx - SEQUENCE_NUMBER_RADIUS + if central_any { -5.0 } else { 0.0 };
                 line_start_x += if central_shift { -7.5 } else { 0.0 };
             }
             line.set("x1", number(line_start_x));
@@ -464,7 +532,12 @@ impl Renderer<'_> {
 
     /// `drawCentralConnection` (`:288-374`): the circles at the ends of a message with a central
     /// connection, in a group of their own.
-    fn central_connection(&self, msg: &super::model::Message, model: &MessageModel, line_start_y: f64) -> Element {
+    fn central_connection(
+        &self,
+        msg: &super::model::Message,
+        model: &MessageModel,
+        line_start_y: f64,
+    ) -> Element {
         let from = msg
             .from
             .as_deref()
