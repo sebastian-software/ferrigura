@@ -132,6 +132,18 @@ impl std::ops::Index<&str> for Value {
     }
 }
 
+impl From<&str> for Value {
+    fn from(text: &str) -> Self {
+        Self::String(text.to_owned())
+    }
+}
+
+impl From<String> for Value {
+    fn from(text: String) -> Self {
+        Self::String(text)
+    }
+}
+
 impl From<serde_json::Value> for Value {
     fn from(value: serde_json::Value) -> Self {
         match value {

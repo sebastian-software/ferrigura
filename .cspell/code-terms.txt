@@ -55,6 +55,7 @@ DOUBLECIRCLESTART
 DQUOTE
 DSTART
 DUMMYNODE
+dylib
 EBNF
 edgesep
 Eiglsperger
@@ -88,6 +89,7 @@ layoutstop
 lcov
 LEFTOF
 Lexa
+libferrigura
 linebreak
 LINETYPE
 LINKSTYLE

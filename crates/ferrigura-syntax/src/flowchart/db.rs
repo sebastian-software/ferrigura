@@ -12,6 +12,8 @@ use ferrigura_model::flowchart::{
     FlowClass, FlowEdge, FlowSubgraph, FlowTooltip, FlowVertex, FlowchartDiagram, LabelType,
 };
 
+use ferrigura_model::value::Value;
+
 use crate::text::{is_js_space, js_trim};
 use crate::yaml::Yaml;
 
@@ -181,7 +183,7 @@ impl Db {
         {
             let metadata = &mut self.subgraphs[index].metadata;
             for (key, value) in pairs {
-                metadata.insert(key.clone(), value.to_json());
+                metadata.insert(key.clone(), Value::from(value));
             }
             return Ok(());
         }

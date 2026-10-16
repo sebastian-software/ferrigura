@@ -10,8 +10,8 @@
 //! it yet.
 
 use ferrigura_model::flowchart::{FlowSubgraph, FlowchartDiagram};
+use ferrigura_model::value::Value;
 use ferrigura_syntax::flowchart::parse;
-use serde_json::Value;
 
 fn subgraph<'a>(diagram: &'a FlowchartDiagram, id: &str) -> &'a FlowSubgraph {
     diagram

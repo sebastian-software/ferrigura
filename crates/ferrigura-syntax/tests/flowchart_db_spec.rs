@@ -13,8 +13,8 @@
 use std::collections::BTreeMap;
 
 use ferrigura_model::flowchart::{FlowClass, FlowSubgraph, FlowchartDiagram};
+use ferrigura_model::value::Value;
 use ferrigura_syntax::flowchart::parse;
-use serde_json::Value;
 
 /// Four subgraphs of four, the fixture of the spec's `beforeEach`: `s1` holds `a b c e`, `s2` holds
 /// `f g h`, `s3` holds `i j`, `s4` holds `k`.

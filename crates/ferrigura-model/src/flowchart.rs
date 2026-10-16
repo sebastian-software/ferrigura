@@ -9,9 +9,9 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::CANONICAL_VERSION;
+use crate::value::Value;
 
 /// The kind of a label: plain text, a quoted string, or a Markdown string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
