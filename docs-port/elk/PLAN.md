@@ -273,7 +273,7 @@ Not yet ported, with the checkpoint in mind: `alg.common/networksimplex` (`Netwo
 
 ## 10. Stage C status
 
-The checkpoint from the coordinator: a corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for all 117 supported corpus cases**: node boxes, edge sections and label boxes match elkjs exactly (tolerance 0, `tests/differential.rs`), and the full trace matches with its logs (`tests/trace.rs`).
+The checkpoint from the coordinator: a corpus graph runs through the Rust driver with the same processor trace as elkjs, and lays out the same. **Met for all 120 supported corpus cases**, including the first nested Mermaid case (`state-diagram__should-render-a-state-with-states-in-it__0`): node boxes, edge sections and label boxes match elkjs exactly (tolerance 0, `tests/differential.rs`), and the full trace matches with its logs (`tests/trace.rs`).
 
 Corrections to §3, which lists the configurations as if they were unconditional:
 
@@ -296,20 +296,20 @@ The assembly is ordinal-sorted within each slot, and that reproduces elkjs's ord
 
 ### Coverage
 
-- Corpus: 117 of 144 cases pass the driver. The other 27 report `Unsupported`: 24 are nested graphs, 1 needs explicit ELK ports (`synthetic__self-loops-fixed-side-opposing`; the importer does not read ports), and 2 are non-layered algorithms (`elk.box`, `elk.rectpacking`).
-- All 117 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 117). All 117 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 117).
+- Corpus: 120 of 145 cases pass the driver. The other 25 report `Unsupported`: 9 have several connected components, 12 have a nested graph inside a compound layout, 3 are non-layered algorithms (`elk.box`, `elk.rectpacking`), and 1 needs explicit ELK ports (`synthetic__self-loops-fixed-side-opposing`).
+- All 120 match elkjs exactly in coordinates, edge sections and label boxes (`coordinates_match_elkjs`, tolerance 0, floor 120). All 120 match the full trace, names and logs (`supported_traces_match_elkjs_including_logs`, floor 120).
 - Crate tests: 137 unit tests; the differential and trace tests pass, with their diagnostics still ignored; `clippy -D warnings` is clean.
 
 ### Next, in order
 
-1. Explicit ELK ports (1): the importer does not read them, so the opposing self loops of `synthetic__self-loops-fixed-side-opposing` are not checked yet.
-2. Nested graphs (24): `CompoundGraphPreprocessor` and `Postprocessor`, the hierarchical port processors, and `RecursiveGraphLayoutEngine` for `SEPARATE_CHILDREN`. The two non-layered algorithms stay excluded.
+1. Nested graphs (22 left): several connected components (9 cases, `ComponentsProcessor`), and a nested graph inside a compound layout (12 cases), which needs the hierarchical ports and the cross-hierarchy edges.
+2. Explicit ELK ports (1): the importer does not read them, so the opposing self loops of `synthetic__self-loops-fixed-side-opposing` are not checked yet.
 3. Indexed hash order (`indexmap` with `shift_remove`) once a processor iterates a hash collection; none does yet.
 
 ### Edge pipeline: state and order
 
 The simplest corpus case with edges, `requirement__a-simple-requirement-diagram-elk-layout__0` (two nodes, one edge with a centred label), needs the 26 processors that its elkjs trace lists, in order: transformation to the input direction, edge and layer constraint reversal, depth-first cycle removal, label dummy insertions, layer constraint pre-processing, network simplex layering, layer constraint post-processing, edge splitting, port side processing, port order processing, sort by input model (with ports), minimize crossings, layer constraint edge reversal, node and port label placement and node sizing, node margin calculation, label dummy switching, label side selection, Brandes & Koepf, layer size calculation, orthogonal edge routing, edge joining, label dummy removal, sort end labels, restoring reversed edges, the resizer, and the transformation back.
 
-Done on this branch, in order: edge import with a port per end; the depth-first cycle breaker and the reversed edge restorer; label dummy insertion, the long edge split and join; port sides and port order; the DOWN transform, and the mirror transforms for LEFT and UP (`graph_transformer.rs`); network simplex and the layerer; the sort by input model, with the model order comparators (`preserveorder.rs`), checked on synthetic PREFER_EDGES and PREFER_NODES cases; the layer sweep with edges; the transfer of edge sections and label boxes; the orthogonal router; Brandes & Koepf with edges; the label dummy switcher, side selector and remover; node margins and the label and node sizes; the port-based alignment of `placeNodesHorizontally`; the head and tail labels, with `LabelCell` and the strip overlap remover; the layer constraints FIRST and LAST (`layerconstraints.rs`); the self loops for single-edge loops (`layered/loops/`), checked on the three corpus cases and synthetic cases for each ordering, distribution and corner branch, with hyper loops of two or more edges left as Unsupported; and the configurator. Labels live in one arena, `LGraph::labels`, and the edges and label dummies hold their ids.
+Done on this branch, in order: edge import with a port per end; the depth-first cycle breaker and the reversed edge restorer; label dummy insertion, the long edge split and join; port sides and port order; the DOWN transform, and the mirror transforms for LEFT and UP (`graph_transformer.rs`); network simplex and the layerer; the sort by input model, with the model order comparators (`preserveorder.rs`), checked on synthetic PREFER_EDGES and PREFER_NODES cases; the layer sweep with edges; the transfer of edge sections and label boxes; the orthogonal router; Brandes & Koepf with edges; the label dummy switcher, side selector and remover; node margins and the label and node sizes; the port-based alignment of `placeNodesHorizontally`; the head and tail labels, with `LabelCell` and the strip overlap remover; the layer constraints FIRST and LAST (`layerconstraints.rs`); the self loops for single-edge loops, checked on the three corpus cases and synthetic cases for each ordering, distribution and corner branch, with hyper loops of two or more edges left as Unsupported; node labels inside a node, with the NODE_LABELS and MINIMUM_SIZE constraints, checked on a synthetic flat case; the separately handled levels of nested graphs, one layered graph per level, laid out bottom-up, which matches the first nested Mermaid case and one more; and the configurator. Labels live in one arena, `LGraph::labels`, and the edges and label dummies hold their ids.
 
 Still open: the features in the coverage list above.
