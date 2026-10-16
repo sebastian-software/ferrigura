@@ -6,21 +6,21 @@ Each session updates its section when it stops: what changed, what is next, what
 
 ## Milestones
 
-| Milestone                          | Status          | Strand | Notes                                                                                                                                                                                                                                |
-| ---------------------------------- | --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| M1 Parser foundation: pie and info | done            | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                                                |
-| M2 First slice: pie to SVG         | done            | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
-| M3 Flowchart parser                | done            | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
-| M4 ELK Layered port                | done            | main   | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
-| M5 Flowchart rendering             | done, in review | m5     | 298 of 298 comparable fixtures within tolerance, 54 excluded with reasons; see M5 handover and [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md)                                                                                |
-| M6 Remaining P1 diagrams           | not started     | —      | After M5                                                                                                                                                                                                                             |
+| Milestone                          | Status      | Strand | Notes                                                                                                                                                                                                                                |
+| ---------------------------------- | ----------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M1 Parser foundation: pie and info | done        | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                                                |
+| M2 First slice: pie to SVG         | done        | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
+| M3 Flowchart parser                | done        | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
+| M4 ELK Layered port                | done        | main   | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
+| M5 Flowchart rendering             | done        | main   | Merged on 2026-10-16; 298 of 298 comparable fixtures within tolerance, 54 excluded with reasons; see M5 handover and [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md)                                                          |
+| M6 Remaining P1 diagrams           | in progress | m6     | Stage 1 (parsers) done: all eight types without a difference; renderers next. See M6 progress and [M6-PLAN.md](./M6-PLAN.md)                                                                                                         |
 
 ## Strands
 
-| Strand | Session     | Worktree                   | Working on               | Next                                    | Blocked by |
-| ------ | ----------- | -------------------------- | ------------------------ | --------------------------------------- | ---------- |
-| main   | —           | —                          | M1 to M4 done and merged | —                                       | —          |
-| m5     | coordinator | `port-m5-flowchart-render` | M5 done, in review       | Merge into `main` after review; then M6 | —          |
+| Strand | Session     | Worktree  | Working on                      | Next                                                    | Blocked by |
+| ------ | ----------- | --------- | ------------------------------- | ------------------------------------------------------- | ---------- |
+| main   | —           | —         | M1 to M5 done and merged        | —                                                       | —          |
+| m6     | coordinator | `port-m6` | M6 stage 2 and 3: the renderers | Renderers on the unified renderer, then the custom ones | —          |
 
 ## M1 handover
 
@@ -102,23 +102,29 @@ How the harness compares (decisions in RENDER-PLAN.md): both sides get the fixtu
 
 Known gaps: the sloped rectangle's height follows a rule measured in Chromium, not derived from its source (one float32 above the nearest when the span is not a float32; `geom::sloped_outline_height_f32`, `flowchart/render-notes/shapes-core.md` §5); fallback fonts for scripts Lexica does not cover (CJK, the one excluded fixture); images are not read, so an image shape needs `assetWidth` and `assetHeight`; no icon packs, every icon is the fallback icon; `data-points` and terminal labels are not written (flowchart has none); the sanitiser covers the DOMPurify behaviour these texts reach, with the deviations listed in `sanitize.rs`; Linux Chromium is not compared (CI runs on macOS). The branch is local; it is ready for review and for the merge into `main`, which the user decides.
 
+## M6 progress
+
+Branch `sebastian/port-m6-p1-diagrams` (local). Stage 1 is done: sequence, class, state, ER, gantt, timeline, gitGraph and journey each have a parser, a DB and a canonical model in `ferrigura-syntax` and `ferrigura-model`, their specs as far as they test the parse, and an exporter in `tools/port/` that runs the reference's real parser and DB. Every `pnpm port:diff <type>` shows no difference and no named exception (counts in the table below); `pnpm port:diff config` covers each type's own section on 3472 inputs. The pre-lexing helpers the types share (`removeDirectives`, `cleanupComments`, `encodeEntities`) are in `ferrigura-syntax/src/preprocess.rs`. The YAML reader now accepts the later lines of a quoted scalar at any indentation, as js-yaml does.
+
+Most ignored specs test the renderer or its layout data: the class display texts and CSS styles (93), the sequence renderer (79), state `getData` (17), the gitGraph renderer (30), ER `getData` (2). They are ported with the renderers in stages 2 and 3. Each of the rest names its reason: skipped upstream, or something the port leaves out (callbacks by decision 0001, the JavaScript API, the DOM, a time zone other than UTC). Each type's research and parser decisions are in `<type>/NOTES.md` and `<type>/PLAN.md`.
+
 ## P1 diagram types
 
 Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec files under `packages/mermaid/src/diagrams/<type>/`, an approximate count of their test cases, and the e2e fixtures under `e2e/diagrams/`. pie, info and gitGraph also have parser tests in `packages/parser/tests/`.
 
-| Type      | Grammar (JS)                                     | Spec files | ≈ Tests | Fixtures | Parser           | Specs ported / passing | Differential parse        | Layout                        | Render       | Parity                      |
-| --------- | ------------------------------------------------ | ---------: | ------: | -------: | ---------------- | ---------------------- | ------------------------- | ----------------------------- | ------------ | --------------------------- |
-| flowchart | `diagrams/flowchart/parser/flow.jison`           |         20 |     318 |      352 | ferrigura-syntax | 953 / 958 (5 ignored)  | 565 inputs, no difference | ELK input equal in 298 of 298 | 352 fixtures | 298 of 298 within tolerance |
-| sequence  | `diagrams/sequence/parser/sequenceDiagram.jison` |         10 |     198 |      193 | ferrigura-syntax | 146 / 227 (81 ignored) | 312 inputs, no difference | —                             | —            | —                           |
-| class     | `diagrams/class/parser/classDiagram.jison`       |          5 |     255 |      247 | —                | —                      | —                         | —                             | —            | —                           |
-| state     | `diagrams/state/parser/stateDiagram.jison`       |          9 |     121 |      145 | ferrigura-syntax | 103 / 124 (21 ignored) | 389 inputs, no difference | —                             | —            | —                           |
-| ER        | `diagrams/er/parser/erDiagram.jison`             |          3 |     142 |      206 | ferrigura-syntax | 655 / 660 (5 ignored)  | 751 inputs, no difference | —                             | —            | —                           |
-| gantt     | `diagrams/gantt/parser/gantt.jison`              |          2 |      40 |       52 | ferrigura-syntax | 74 / 76 (2 ignored)    | 114 inputs, no difference | —                             | —            | —                           |
-| pie       | `packages/parser/…/pie/pie.langium`              |          2 |      16 |       24 | ferrigura-syntax | 27 / 29 (2 ignored)    | 87 inputs, no difference  | —                             | —            | —                           |
-| timeline  | `diagrams/timeline/parser/timeline.jison`        |          1 |      11 |       30 | —                | —                      | —                         | —                             | —            | —                           |
-| gitGraph  | `packages/parser/…/gitGraph/gitGraph.langium`    |          1 |      69 |      135 | —                | —                      | —                         | —                             | —            | —                           |
-| journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | —                | —                      | —                         | —                             | —            | —                           |
-| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                  | —                         | —                             | —            | —                           |
+| Type      | Grammar (JS)                                     | Spec files | ≈ Tests | Fixtures | Parser           | Specs ported / passing  | Differential parse        | Layout                        | Render       | Parity                      |
+| --------- | ------------------------------------------------ | ---------: | ------: | -------: | ---------------- | ----------------------- | ------------------------- | ----------------------------- | ------------ | --------------------------- |
+| flowchart | `diagrams/flowchart/parser/flow.jison`           |         20 |     318 |      352 | ferrigura-syntax | 953 / 957 (4 ignored)   | 781 inputs, no difference | ELK input equal in 298 of 298 | 352 fixtures | 298 of 298 within tolerance |
+| sequence  | `diagrams/sequence/parser/sequenceDiagram.jison` |         10 |     198 |      193 | ferrigura-syntax | 146 / 227 (81 ignored)  | 442 inputs, no difference | —                             | —            | —                           |
+| class     | `diagrams/class/parser/classDiagram.jison`       |          5 |     255 |      247 | ferrigura-syntax | 142 / 248 (106 ignored) | 328 inputs, no difference | —                             | —            | —                           |
+| state     | `diagrams/state/parser/stateDiagram.jison`       |          9 |     121 |      145 | ferrigura-syntax | 103 / 124 (21 ignored)  | 389 inputs, no difference | —                             | —            | —                           |
+| ER        | `diagrams/er/parser/erDiagram.jison`             |          3 |     142 |      206 | ferrigura-syntax | 655 / 660 (5 ignored)   | 751 inputs, no difference | —                             | —            | —                           |
+| gantt     | `diagrams/gantt/parser/gantt.jison`              |          2 |      40 |       52 | ferrigura-syntax | 74 / 76 (2 ignored)     | 125 inputs, no difference | —                             | —            | —                           |
+| pie       | `packages/parser/…/pie/pie.langium`              |          2 |      16 |       24 | ferrigura-syntax | 27 / 29 (2 ignored)     | 88 inputs, no difference  | —                             | —            | —                           |
+| timeline  | `diagrams/timeline/parser/timeline.jison`        |          1 |      11 |       30 | ferrigura-syntax | 34 / 34                 | 83 inputs, no difference  | —                             | —            | —                           |
+| gitGraph  | `packages/parser/…/gitGraph/gitGraph.langium`    |          1 |      69 |      135 | ferrigura-syntax | 98 / 137 (39 ignored)   | 299 inputs, no difference | —                             | —            | —                           |
+| journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | ferrigura-syntax | 16 / 16                 | 131 inputs, no difference | —                             | —            | —                           |
+| info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                   | 18 inputs, no difference  | —                             | —            | —                           |
 
 ## Spikes
 

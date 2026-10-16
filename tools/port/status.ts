@@ -20,6 +20,18 @@ const suites: Record<string, string[]> = {
   journey: ['journey_spec', 'journey_db_spec'],
   er: ['er_spec', 'er_subgraph_spec', 'er_db_spec', 'er_characters_spec'],
   gantt: ['gantt_parser_spec', 'gantt_db_spec'],
+  gitgraph: ['git_graph_spec', 'git_graph_parser', 'git_graph_populate', 'git_graph_render'],
+  class: [
+    'class_parser_spec',
+    'class_definition_spec',
+    'class_members_generics_spec',
+    'class_relationships_spec',
+    'class_labels_spec',
+    'class_styles_spec',
+    'class_types_spec',
+    'class_color_index_spec',
+    'class_brackets_comments_clicks_annotations_spec',
+  ],
   flowchart: [
     'flowchart_singlenode_spec',
     'flowchart_text_spec',
@@ -111,6 +123,9 @@ for (const type of Object.keys(suites)) {
   differential[type] = await differentialCell(type);
 }
 
+/** The name of a type's row in the P1 table, where it is not the type itself. */
+const rowNames: Record<string, string> = { er: 'ER', gitgraph: 'gitGraph' };
+
 /** Rewrites the parser, specs and differential cells of one P1 row. */
 function rewriteRow(line: string, type: string): string {
   const cells = line.split('|');
@@ -127,7 +142,7 @@ const rewritten = status
   .split('\n')
   .map((line) => {
     for (const type of Object.keys(suites)) {
-      if (line.startsWith(`| ${type} `)) {
+      if (line.startsWith(`| ${rowNames[type] ?? type} `)) {
         return rewriteRow(line, type);
       }
     }
