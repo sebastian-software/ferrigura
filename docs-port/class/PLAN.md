@@ -1,6 +1,6 @@
 # M6 class parser: plan
 
-Status: parser and DB in progress. Reference: the JS tree at `04b952b4e` (the commit of `main` and of this worktree). Research: [NOTES.md](./NOTES.md). Line numbers are `file:line` in the reference.
+Status: parser, DB, model and specs ported. `pnpm port:diff class`: 327 inputs, 266 accepted by the reference, 0 differences. `pnpm port:diff config`: the class group included, 0 differences. Reference: the JS tree at `04b952b4e` (the commit of `main` and of this worktree). Research: [NOTES.md](./NOTES.md). Line numbers are `file:line` in the reference.
 
 ## 1. Scope and sources
 
@@ -88,6 +88,11 @@ Each is a test in the port (the test name cites the reference line).
 - Q21 The annotation test on a member is `startsWith('<<') && endsWith('>>')` after trim, so `<<>>` gives an empty annotation.
 
 ## 9. Open items and approximations
+
+- `sanitizeUrl` (`url.rs`) follows the node oracle except where the `url` crate (2.5.8) differs: a caret in an http(s) path is not percent-encoded, and an `xn--` label whose punycode does not decode is rejected. A lone surrogate from an entity becomes U+FFFD, since a Rust string cannot hold it.
+- Config: the class section drops the schema defaults that `defaultConfig.ts` does not carry (`padding`, `textHeight`, `diagramPadding`, `titleTopMargin`, `useMaxWidth`, `arrowMarkerAbsolute`), in `build.rs`. `arrowMarkerAbsolute` is set by the reference's `init` at parse time, which the config export does not run.
+- Specs: 142 passing, 106 ignored, 0 failing. The ignores are: getData and rendering (colour slots, compact namespace groups), `it.skip`, callbacks (decision 0001), the JavaScript own-property test, and the `classTypes.spec.ts` displayText and cssStyle tests (93). The member text of `classTypes` is covered through `class_members_generics_spec.rs`. The 93 tests need a model-level port with a derivation of displayText from `text` and cssStyle from `classifier`; that port is not done.
+- Header texts are sanitised by the real `commonDb` setters in the exporter (section 6), so they are compared, not replicated.
 
 - The single FORBID pass stands for the reference's two DOMPurify passes in the default configuration (§4).
 - Non-default configuration (`htmlLabels: false`, `loose`, others) is implemented from the source and is not in the differential: the harness runs the defaults.
