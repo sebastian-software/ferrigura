@@ -242,9 +242,12 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
     }
 
     let mut edge_paths = String::new();
+    // The markers in an edge's own colour, which the reference appends after the root group.
+    let mut coloured_markers = String::new();
     for path in edges::paint_paths(&data.edges, id, config) {
         cover(&mut bounds, path.bbox);
         edge_paths.push_str(&path.svg);
+        coloured_markers.push_str(&path.markers);
     }
     let mut edge_labels = String::new();
     for edge in &data.edges {
@@ -310,7 +313,7 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
     let style =
         style::style_sheet_with_fonts(id, input.themes, config, &diagram.classes, &families);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}<g class=\"root\"><g class=\"clusters\">{clusters}</g><g class=\"edges edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g></g></g>{title_svg}{defs}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}<g class=\"root\"><g class=\"clusters\">{clusters}</g><g class=\"edges edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g></g>{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
         x = number(drawn.x - padding),
         y = number(drawn.y - padding),

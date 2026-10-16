@@ -107,9 +107,14 @@ class Checker {
   }
 
   /** A size that ELK may leave out (it computes group sizes): absent on both sides is equal. */
-  optionalNumber(actual: number | undefined, expected: number | undefined, where: string): void {
-    if (actual === undefined && expected === undefined) return;
-    if (actual === undefined || expected === undefined) {
+  optionalNumber(
+    actual: number | null | undefined,
+    expected: number | null | undefined,
+    where: string
+  ): void {
+    // ferrigura's JSON writes an absent size as null, the reference leaves the key out.
+    if (actual == null && expected == null) return;
+    if (actual == null || expected == null) {
       this.problems.push(
         `${where}: ferrigura ${actual ?? 'absent'}, reference ${expected ?? 'absent'}`
       );

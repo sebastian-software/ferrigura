@@ -76,8 +76,27 @@ const elkBinary = elkOverride ?? join(root, 'target/debug/examples/flowchart-elk
 const SAMPLES = 16;
 
 /** The directive every fixture gets right after its front matter (the brief's exact text). */
-const FORCED_DIRECTIVE =
-  '%%{init: {"htmlLabels": false, "fontFamily": "\\"Lexica Ultralegible\\"", "securityLevel": "strict"}}%%';
+const FORCED_SETTINGS: Record<string, unknown> = {
+  htmlLabels: false,
+  fontFamily: '"Lexica Ultralegible"',
+  securityLevel: 'strict',
+};
+
+/** The themes ferrigura ships; any other name falls back to one of them (STATUS.md, M2). */
+const SHIPPED_THEMES = ['redux-color', 'redux-dark-color'];
+
+/**
+ * The directive both sides get. A theme that ferrigura does not ship is replaced by the one it
+ * falls back to (names ending in `dark` take redux-dark-color, the others redux-color), so that
+ * both sides measure with the same theme sizes (`fontSize`, `radius`); colours are not compared.
+ */
+function forcedDirective(theme: unknown): string {
+  const settings = { ...FORCED_SETTINGS };
+  if (typeof theme === 'string' && !SHIPPED_THEMES.includes(theme)) {
+    settings.theme = theme.endsWith('dark') ? 'redux-dark-color' : 'redux-color';
+  }
+  return `%%{init: ${JSON.stringify(settings)}}%%`;
+}
 
 const FRONT_MATTER = /^---[\t ]*\r?\n[\S\s]*?\r?\n---[\t ]*(?:\r?\n|$)/;
 const INIT_DIRECTIVE = /%%{\s*(?:init|initialize)\s*:\s*([\S\s]*?)}%%/g;
@@ -330,14 +349,15 @@ function patchText(source: string): string {
   const body = source.slice(head.length);
   const headWithLine = head === '' || head.endsWith('\n') ? head : `${head}\n`;
   const bodyWithLine = body === '' || body.endsWith('\n') ? body : `${body}\n`;
-  return `${headWithLine}${FORCED_DIRECTIVE}\n${bodyWithLine}${FORCED_DIRECTIVE}\n`;
+  const directive = forcedDirective(effectiveSettings(source).theme);
+  return `${headWithLine}${directive}\n${bodyWithLine}${directive}\n`;
 }
 
 /**
  * The look and layout the fixture's text asks for: front matter first, then the directives in
  * order, as the reference merges them (a later key wins).
  */
-function effectiveSettings(source: string): { look: unknown; layout: unknown } {
+function effectiveSettings(source: string): { look: unknown; layout: unknown; theme: unknown } {
   const settings: Record<string, unknown> = {};
   const frontMatter = FRONT_MATTER.exec(source);
   if (frontMatter) {
@@ -355,7 +375,7 @@ function effectiveSettings(source: string): { look: unknown; layout: unknown } {
       // A directive that is not JSON is not read by the reference either.
     }
   }
-  return { look: settings.look, layout: settings.layout };
+  return { look: settings.look, layout: settings.layout, theme: settings.theme };
 }
 
 /** Why a fixture is excluded from the comparison, or null when it is compared. */
@@ -366,6 +386,12 @@ function exclusionReason(source: string): string | null {
   }
   if (typeof layout === 'string' && NON_LAYERED_LAYOUTS.includes(layout)) {
     return `layout ${layout}: not layered, ferrigura falls back to layered`;
+  }
+  // A subgraph's own algorithm, from its shape data (`grp@{ algorithm: elk.box }`).
+  for (const match of source.matchAll(/algorithm\s*:\s*["']?([\w.-]+)/g)) {
+    if (NON_LAYERED_LAYOUTS.includes(match[1])) {
+      return `subgraph algorithm ${match[1]}: not layered, ferrigura falls back to layered`;
+    }
   }
   return null;
 }

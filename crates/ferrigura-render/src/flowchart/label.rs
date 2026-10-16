@@ -139,6 +139,10 @@ impl LabelLayout {
                 number(background.width),
                 number(background.height),
             ));
+        } else {
+            // `createFormattedText` inserts the rectangle in every label and sizes it only for a
+            // background; an empty one has no box.
+            out.push_str(r#"<rect class="background" style="stroke: none"></rect>"#);
         }
         out.push_str(&format!(
             r#"<text y="-10.1" text-anchor="start" style="{}">"#,
