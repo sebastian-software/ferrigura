@@ -156,6 +156,7 @@ pub(crate) fn tokenize(text: &str) -> Result<Vec<Token>, LexError> {
         pos: 0,
         states: StateStack::new(State::Initial),
         first_graph: true,
+        index: Index::new(text),
     };
     let mut tokens = Vec::new();
     while lexer.pos < text.len() {
@@ -183,11 +184,71 @@ pub(crate) fn tokenize(text: &str) -> Result<Vec<Token>, LexError> {
     Ok(tokens)
 }
 
+/// The words of the `.*direction\s+WORD` rules, in the order the rules are written.
+const DIRECTION_WORDS: [&str; 5] = ["TB", "BT", "RL", "LR", "TD"];
+
+/// Positions the look-ahead rules need, found once per text, so that each token costs a binary
+/// search instead of a scan of the rest of the line.
+struct Index {
+    /// The length of the text.
+    len: usize,
+    /// Blanks and quotes: a run of an id stops at one of these.
+    breaks: Vec<usize>,
+    /// Line terminators: the `.` of the direction rules cannot cross one.
+    line_breaks: Vec<usize>,
+    /// Every `@`.
+    ats: Vec<usize>,
+    /// For each direction word, the `direction` occurrences that a `\s+WORD` follows, as the start
+    /// of `direction` and the end of the word.
+    directions: Vec<Vec<(usize, usize)>>,
+}
+
+impl Index {
+    fn new(text: &str) -> Self {
+        let mut breaks = Vec::new();
+        let mut line_breaks = Vec::new();
+        let mut ats = Vec::new();
+        for (index, c) in text.char_indices() {
+            if is_js_space(c) || c == '"' {
+                breaks.push(index);
+            }
+            if is_line_term(c) {
+                line_breaks.push(index);
+            }
+            if c == '@' {
+                ats.push(index);
+            }
+        }
+        let mut directions = vec![Vec::new(); DIRECTION_WORDS.len()];
+        for (start, _) in text.match_indices("direction") {
+            let after = start + "direction".len();
+            let spaces = space_len(&text[after..]);
+            if spaces == 0 {
+                continue;
+            }
+            let word_start = after + spaces;
+            for (word, occurrences) in DIRECTION_WORDS.iter().zip(directions.iter_mut()) {
+                if text[word_start..].starts_with(word) {
+                    occurrences.push((start, word_start + word.len()));
+                }
+            }
+        }
+        Self {
+            len: text.len(),
+            breaks,
+            line_breaks,
+            ats,
+            directions,
+        }
+    }
+}
+
 struct Lexer {
     pos: usize,
     states: StateStack<State>,
     /// Whether the next graph keyword is the first one, which starts the header (`firstGraph`).
     first_graph: bool,
+    index: Index,
 }
 
 impl Lexer {
@@ -379,14 +440,14 @@ impl Lexer {
         // `.*direction\s+TB…` and the other directions: the rest of the line, from the start of
         // the token, which may take earlier text of the same line.
         if state == Initial {
-            for (word, kind) in [
-                ("TB", Kind::DirectionTb),
-                ("BT", Kind::DirectionBt),
-                ("RL", Kind::DirectionRl),
-                ("LR", Kind::DirectionLr),
-                ("TD", Kind::DirectionTd),
-            ] {
-                if let Some(len) = direction_statement_len(rest, word) {
+            for (word, kind) in DIRECTION_WORDS.iter().zip([
+                Kind::DirectionTb,
+                Kind::DirectionBt,
+                Kind::DirectionRl,
+                Kind::DirectionLr,
+                Kind::DirectionTd,
+            ]) {
+                if let Some(len) = self.direction_len(rest, word) {
                     return hit(len, kind);
                 }
             }
@@ -394,7 +455,7 @@ impl Lexer {
 
         // Link ids, numbers, and the single-character tokens of the INITIAL state.
         if state == Initial
-            && let Some(len) = link_id_len(rest)
+            && let Some(len) = self.link_id_len(rest)
         {
             return hit(len, Kind::LinkId);
         }
@@ -696,6 +757,55 @@ impl Lexer {
     }
 }
 
+impl Lexer {
+    /// `[^\s"]+@(?=[^{"])` at the current position: an id followed by `@`, with the longest run
+    /// the look-ahead allows. The `@` must come after at least one character of the id.
+    fn link_id_len(&self, rest: &str) -> Option<usize> {
+        let pos = self.pos;
+        let breaks = &self.index.breaks;
+        let run_end = breaks
+            .get(breaks.partition_point(|&b| b < pos))
+            .copied()
+            .unwrap_or(self.index.len);
+        let ats = &self.index.ats;
+        let upper = ats.partition_point(|&at| at < run_end);
+        for &at in ats[..upper].iter().rev() {
+            if at <= pos {
+                break;
+            }
+            let rel = at + 1 - pos;
+            if let Some(next) = rest.get(rel..).and_then(|tail| tail.chars().next())
+                && next != '{'
+                && next != '"'
+            {
+                return Some(rel);
+            }
+        }
+        None
+    }
+
+    /// `.*direction\s+WORD[^\n]*` at the current position: the last `direction` on the line that a
+    /// `\s+WORD` follows, and the rest of the line. Earlier text of the line belongs to the token.
+    fn direction_len(&self, rest: &str, word: &str) -> Option<usize> {
+        let pos = self.pos;
+        let word_index = DIRECTION_WORDS.iter().position(|&w| w == word)?;
+        let line_breaks = &self.index.line_breaks;
+        let line_end = line_breaks
+            .get(line_breaks.partition_point(|&b| b < pos))
+            .copied()
+            .unwrap_or(self.index.len);
+        let occurrences = &self.index.directions[word_index];
+        let upper = occurrences.partition_point(|&(start, _)| start < line_end);
+        let &(start, end) = occurrences[..upper].last()?;
+        if start < pos {
+            return None;
+        }
+        let rel_end = end - pos;
+        let line_rest = rest.get(rel_end..)?;
+        Some(rel_end + line_rest.find('\n').unwrap_or(line_rest.len()))
+    }
+}
+
 /// The graph keyword at the start of `rest`, with its length: `swimlane-beta`, `graph` or
 /// `flowchart`.
 fn graph_keyword_len(rest: &str) -> Option<usize> {
@@ -734,23 +844,6 @@ fn digits_len(rest: &str) -> Option<usize> {
         .find(|c: char| !c.is_ascii_digit())
         .unwrap_or(rest.len());
     (len > 0).then_some(len)
-}
-
-/// `[^\s"]+@(?=[^{"])`: an id followed by `@`, when the character after the `@` is not `{` or a
-/// quote. The id is the longest such run, as the regular expression backtracks to the last `@`
-/// that satisfies the lookahead.
-fn link_id_len(rest: &str) -> Option<usize> {
-    let run = rest
-        .find(|c: char| is_js_space(c) || c == '"')
-        .unwrap_or(rest.len());
-    rest[..run]
-        .char_indices()
-        .rev()
-        .filter(|&(index, c)| c == '@' && index > 0)
-        .find_map(|(index, _)| {
-            let after = rest[index + 1..].chars().next()?;
-            (after != '{' && after != '"').then_some(index + 1)
-        })
 }
 
 /// Length of `\s*[xo<]?` followed by a run of `bar` and a closing character from `[bar xo>]`, and
@@ -931,31 +1024,6 @@ fn newline_len(rest: &str) -> Option<usize> {
 fn newline_then_blank_len(rest: &str) -> Option<usize> {
     let spaces = space_len(rest);
     rest[..spaces].rfind('\n').map(|index| index + 1)
-}
-
-/// `.*direction\s+WORD[^\n]*`: a `direction` statement. The `.` cannot cross a line terminator,
-/// so the word must start on the current line; the greedy match takes the last such occurrence,
-/// and everything up to the end of the line belongs to the token.
-fn direction_statement_len(rest: &str, word: &str) -> Option<usize> {
-    let line_end = rest.find(is_line_term).unwrap_or(rest.len());
-    let mut found = None;
-    for (index, _) in rest[..line_end].match_indices("direction") {
-        let after = index + "direction".len();
-        let spaces = space_len(&rest[after..]);
-        if spaces == 0 {
-            continue;
-        }
-        let word_start = after + spaces;
-        if rest[word_start..].starts_with(word) {
-            found = Some(word_start + word.len());
-        }
-    }
-    let end = found?;
-    Some(
-        rest[end..]
-            .find('\n')
-            .map_or(rest.len(), |newline| end + newline),
-    )
 }
 
 /// `\n\s*` replaced by `<br/>`, as the shape data of a quoted string is written.
