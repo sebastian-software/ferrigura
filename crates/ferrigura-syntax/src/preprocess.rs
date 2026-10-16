@@ -337,7 +337,6 @@ fn comment_match_end(text: &str, start: usize) -> Option<usize> {
     Some(end)
 }
 
-
 /// `encodeEntities`: the semicolon that ends a `style` or `classDef` line with a colour is dropped,
 /// and `#name;` or `#123;` become placeholders that the renderer decodes.
 pub(crate) fn encode_entities(text: &str) -> String {

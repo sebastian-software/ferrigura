@@ -16,7 +16,7 @@ use std::fmt;
 use ferrigura_model::flowchart::FlowchartDiagram;
 
 use crate::error::ParseError;
-use crate::preprocess::{cleanup_comments, encode_entities, loose_directive_len, prepare, remove_directives};
+use crate::preprocess::{cleanup_comments, encode_entities, prepare, remove_directives};
 use crate::text::is_js_space;
 
 /// Options of the parser. The defaults are the reference's defaults.
