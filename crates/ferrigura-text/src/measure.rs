@@ -44,6 +44,10 @@ pub fn measure_data(data: &[u8], text: &str, size: f64) -> Result<f64, TextError
 /// applied across two runs, which matches the reference: Mermaid puts each styled word in its own
 /// `tspan`, and a change of face starts a new shaping run in the browser too.
 ///
+/// Mermaid draws every word after the first with a leading space in its own `tspan`, and that
+/// space takes the style of the word. To lay a line out the way Mermaid does, start each run with
+/// the space that precedes it, as in `" bold"` in bold after `"Mixed"` in regular.
+///
 /// # Errors
 ///
 /// Returns the first error [`measure`] reports for a run.

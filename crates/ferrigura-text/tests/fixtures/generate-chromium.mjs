@@ -92,6 +92,15 @@ const RUN_LINES = [
     ['AVATAR ', 'mono-regular'],
     ['Type', 'mono-bold'],
   ],
+  // Mermaid's layout: each word after the first is its own tspan with a leading space, and the
+  // space takes the style of its word (createText.ts, updateTextContentAndStyles).
+  [
+    ['Mixed', 'sans-regular'],
+    [' bold', 'sans-bold'],
+    [' and', 'sans-regular'],
+    [' italic', 'sans-italic'],
+    [' end', 'sans-regular'],
+  ],
 ];
 
 const fontFace = (style) =>
