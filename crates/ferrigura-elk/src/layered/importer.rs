@@ -4,8 +4,8 @@
 //!
 //! The layered graph from the ELK graph: `ElkGraphImporter` and `ElkGraphTransformer.importGraph`.
 //!
-//! Graphs of plain nodes and edges between them. Ports and labels on nodes, nested
-//! graphs and self loops are reported as unsupported.
+//! Graphs of plain nodes and edges between them, self loops included. Ports and labels on nodes
+//! and nested graphs are reported as unsupported.
 
 use std::collections::HashMap;
 
@@ -140,8 +140,9 @@ fn import_edges(
                 edge.id
             )));
         };
+        // `LGraphUtil.computeGraphProperties`: an edge from a node to itself is a self loop.
         if source_node == target_node {
-            return Err(LayoutError::Unsupported(format!("self loop {}", edge.id)));
+            graph.graph_properties.insert(GraphProperties::SELF_LOOPS);
         }
         let source_port = create_port(graph, source_node, PortType::OUTPUT);
         let target_port = create_port(graph, target_node, PortType::INPUT);
@@ -240,4 +241,43 @@ fn needs_model_order_based_on_parent(root: &ElkNode) -> bool {
         )
         || strategy_is(options::LAYERING_STRATEGY, "BF_MODEL_ORDER")
         || strategy_is(options::LAYERING_STRATEGY, "DF_MODEL_ORDER")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `elk.layered.edgeRouting.selfLoopDistribution` is a node option. Set on the root only, it is
+    /// the root's value, and the child keeps its own, as Java's `copyProperties` gives it.
+    #[test]
+    fn a_root_only_self_loop_distribution_does_not_reach_the_children() {
+        let mut root = ElkNode {
+            id: "root".to_string(),
+            ..ElkNode::default()
+        };
+        root.properties.set(
+            options::EDGE_ROUTING_SELF_LOOP_DISTRIBUTION,
+            Some(OptionValue::Enum {
+                class: "SelfLoopDistributionStrategy",
+                name: "EQUALLY".to_string(),
+            }),
+        );
+        root.children.push(ElkNode {
+            id: "entity".to_string(),
+            ..ElkNode::default()
+        });
+
+        let graph = import_root(&root).unwrap();
+
+        assert!(
+            graph
+                .properties
+                .has(options::EDGE_ROUTING_SELF_LOOP_DISTRIBUTION)
+        );
+        assert!(
+            !graph.nodes[0]
+                .properties
+                .has(options::EDGE_ROUTING_SELF_LOOP_DISTRIBUTION)
+        );
+    }
 }

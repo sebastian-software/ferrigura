@@ -14,7 +14,7 @@ use crate::core::alg::LayoutProcessorConfiguration;
 use crate::core::data::enums::{
     CrossingMinimizationStrategy, CycleBreakingStrategy, Direction, EdgeRouting, GraphProperties,
     GreedySwitchType, HierarchyHandling, IntermediateProcessorStrategy as S, LayeringStrategy,
-    NodePlacementStrategy, NodePromotionStrategy, OrderingStrategy,
+    NodePlacementStrategy, NodePromotionStrategy, OrderingStrategy, PortConstraints,
 };
 use crate::java::random::Random;
 use crate::layered::LayoutError;
@@ -25,10 +25,12 @@ use crate::layered::phases::{P1, P2, P3, P4, P5, PHASES, PhaseStep};
 
 /// `GraphConfigurator.prepareGraphForLayout`: sets `lgraph.processors`.
 pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
-    // Centred labels are handled by their processors; other features (end labels, hyperedges,
+    // Centred labels and self loops are handled by their processors; other features (hyperedges,
     // hierarchical ports, ...) need processors that are not ported yet.
     if let Some(feature) = graph.graph_properties.iter().find(|feature| {
-        **feature != GraphProperties::CENTER_LABELS && **feature != GraphProperties::END_LABELS
+        **feature != GraphProperties::CENTER_LABELS
+            && **feature != GraphProperties::END_LABELS
+            && **feature != GraphProperties::SELF_LOOPS
     }) {
         return Err(LayoutError::Unsupported(format!(
             "graph feature {feature:?}"
@@ -42,6 +44,7 @@ pub fn prepare(graph: &mut LGraph) -> Result<(), LayoutError> {
         ));
     }
     configure_graph_properties(graph);
+    copy_original_port_constraints(graph);
     graph.random = Some(random_source(graph)?);
     graph.processors = assemble(graph)?;
     Ok(())
@@ -73,6 +76,18 @@ fn configure_graph_properties(graph: &mut LGraph) {
         graph.properties.set(
             options::NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES,
             Some(crate::core::data::OptionValue::Boolean(orthogonal)),
+        );
+    }
+}
+
+/// `GraphConfigurator.copyPortContraints`: each node keeps the port constraints it was given, since
+/// the port side processing and the self loop preprocessing change the ones it uses.
+fn copy_original_port_constraints(graph: &mut LGraph) {
+    for node in &mut graph.nodes {
+        node.original_port_constraints = Some(
+            node.properties
+                .enum_of::<PortConstraints>(options::PORT_CONSTRAINTS)
+                .unwrap_or(PortConstraints::UNDEFINED),
         );
     }
 }

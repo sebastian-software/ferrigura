@@ -169,9 +169,16 @@ impl PhaseStep {
                 return Ok(None);
             }
             PhaseStep::EdgeRouting(_) => {
-                // The router adds processors for hyperedges, self loops, labels and ports.
-                // Graphs with any of those are not ported yet; see `GraphConfigurator`.
-                return Ok(None);
+                // The orthogonal router adds the self loop processors to a graph with self loops.
+                // It also adds processors for hyperedges, labels and ports; graphs with those are
+                // not ported yet, see `GraphConfigurator`.
+                if graph.graph_properties.contains(&GraphProperties::SELF_LOOPS) {
+                    config
+                        .add_before(P1, S::SELF_LOOP_PREPROCESSOR)
+                        .add_after(P5, S::SELF_LOOP_POSTPROCESSOR)
+                        .add_before(P4, S::SELF_LOOP_PORT_RESTORER)
+                        .add_before(P4, S::SELF_LOOP_ROUTER);
+                }
             }
         }
         Ok(Some(config))
