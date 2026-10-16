@@ -14,13 +14,14 @@
  * - the fields that only the layout sets (sizes, positions, points, the arrowhead) are not written,
  *   as they are not serialised on the Rust side.
  *
- * As in `export-flowchart.ts`, sanitising is the identity and a link is only trimmed: the Rust
- * model keeps the raw text (`docs-port/canonical-model.md`, Sanitisation).
+ * The reference's `sanitizeText` runs as it does (DOMPurify, with a window from
+ * `provideDomForSanitising`), so the labels are the sanitised texts that the Rust DB produces with
+ * `ferrigura-syntax`'s `sanitize`. A link is only trimmed; `formatUrl` needs no DOM for these inputs.
  *
  * Usage: `tsx tools/port/export-flowchart-data.ts inputs.json outputs.json`
  */
 import { runExporter } from './exporter.ts';
-import { registerDetectors, type Reference } from './reference.ts';
+import { provideDomForSanitising, registerDetectors, type Reference } from './reference.ts';
 
 type Json = Record<string, unknown>;
 
@@ -55,6 +56,7 @@ interface Modules {
 }
 
 async function loadModules(reference: Reference): Promise<Modules> {
+  provideDomForSanitising();
   await registerDetectors(reference);
   const [config, detectType, preprocess, encode, flowParser, flowDb, common, utils] =
     await Promise.all([
@@ -69,8 +71,7 @@ async function loadModules(reference: Reference): Promise<Modules> {
       reference.load<Modules['common']>('/packages/mermaid/src/diagrams/common/common.ts'),
       reference.load<Modules['utils']>('/packages/mermaid/src/utils.ts'),
     ]);
-  // The DOM-dependent steps are the identity, and a link is only trimmed; see the header.
-  common.default.sanitizeText = (text: string) => text;
+  // A link is only trimmed; see the header.
   utils.default.formatUrl = (link: string) => link.trim() || undefined;
   return { config, detectType, preprocess, encode, flowParser, flowDb, common, utils };
 }

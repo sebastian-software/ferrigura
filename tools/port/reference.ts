@@ -7,6 +7,7 @@
  */
 import { fileURLToPath } from 'node:url';
 
+import { JSDOM } from 'jsdom';
 import { createServer } from 'vite';
 
 import jisonPlugin from '../../.vite/jisonPlugin.ts';
@@ -35,6 +36,17 @@ export async function openReference(): Promise<Reference> {
     load: <T>(path: string) => server.ssrLoadModule(path) as Promise<T>,
     close: () => server.close(),
   };
+}
+
+/**
+ * Gives the reference's DOMPurify a window. DOMPurify takes its window when its module loads, so
+ * this runs before the reference's modules load, and it is needed wherever `sanitizeText` runs
+ * (the flowchart DB sanitises node, edge and title texts). `check-header.ts` does the same.
+ */
+export function provideDomForSanitising(): void {
+  if ('window' in globalThis) return;
+  const dom = new JSDOM('<!doctype html><html><body></body></html>');
+  Object.assign(globalThis, { window: dom.window, document: dom.window.document });
 }
 
 /** One input of the differential run. `id` ties the output back to the input. */
