@@ -65,11 +65,12 @@ pub fn apply(
 
 /// The crossing of a leaf's outline: where the ray from the leaf's centre through a probe point
 /// leaves the outline, or `None` for a node without one. The leaf is given by its id and its box.
-type Crossing<'a> = &'a dyn Fn(&str, CenterBox, Point) -> Option<Point>;
+pub type Crossing<'a> = &'a dyn Fn(&str, CenterBox, Point) -> Option<Point>;
 
-/// [`apply`], with the leaves' outlines given as a function. The shapes' intersect functions are
-/// the function [`apply`] passes; tests give their own.
-fn apply_with_crossing(
+/// [`apply`], with the leaves' outlines given as a function instead of the shapes' intersects. The
+/// differential test passes the reference's `intersect-rect` for rectangular leaves until the other
+/// shapes' intersects are ported; [`apply`] passes the shapes' own.
+pub fn apply_with_crossing(
     data: &mut LayoutData,
     output: &JsonNode,
     state: &ElkState,
