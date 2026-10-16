@@ -1,0 +1,403 @@
+{
+ "version": 1,
+ "name": "synthetic__node-labels-direction-right",
+ "fixture": null,
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "RIGHT",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "a",
+    "width": 50,
+    "height": 40,
+    "layoutOptions": {
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]"
+    },
+    "labels": [
+     {
+      "text": "A",
+      "width": 12,
+      "height": 19
+     }
+    ]
+   },
+   {
+    "id": "b",
+    "width": 60,
+    "height": 40,
+    "layoutOptions": {
+     "nodeLabels.placement": "[H_LEFT V_TOP, INSIDE]",
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]"
+    },
+    "labels": [
+     {
+      "text": "Bee",
+      "width": 30,
+      "height": 19
+     }
+    ]
+   },
+   {
+    "id": "c",
+    "width": 50,
+    "height": 40,
+    "layoutOptions": {
+     "nodeLabels.placement": "[H_RIGHT V_BOTTOM, INSIDE]",
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]"
+    },
+    "labels": [
+     {
+      "text": "Cee",
+      "width": 26,
+      "height": 19
+     }
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "id": "e0",
+    "sources": [
+     "a"
+    ],
+    "targets": [
+     "b"
+    ]
+   },
+   {
+    "id": "e1",
+    "sources": [
+     "b"
+    ],
+    "targets": [
+     "c"
+    ]
+   },
+   {
+    "id": "e2",
+    "sources": [
+     "a"
+    ],
+    "targets": [
+     "c"
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "RIGHT",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "a",
+    "width": 22,
+    "height": 48,
+    "layoutOptions": {
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]"
+    },
+    "labels": [
+     {
+      "text": "A",
+      "width": 12,
+      "height": 19,
+      "x": 5,
+      "y": 5
+     }
+    ],
+    "x": 12,
+    "y": 12
+   },
+   {
+    "id": "b",
+    "width": 70,
+    "height": 48,
+    "layoutOptions": {
+     "nodeLabels.placement": "[H_LEFT V_TOP, INSIDE]",
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]"
+    },
+    "labels": [
+     {
+      "text": "Bee",
+      "width": 30,
+      "height": 19,
+      "x": 5,
+      "y": 5
+     }
+    ],
+    "x": 74,
+    "y": 34.5
+   },
+   {
+    "id": "c",
+    "width": 62,
+    "height": 48,
+    "layoutOptions": {
+     "nodeLabels.placement": "[H_RIGHT V_BOTTOM, INSIDE]",
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]"
+    },
+    "labels": [
+     {
+      "text": "Cee",
+      "width": 26,
+      "height": 19,
+      "x": 31,
+      "y": 24
+     }
+    ],
+    "x": 184,
+    "y": 12
+   }
+  ],
+  "edges": [
+   {
+    "id": "e0",
+    "sources": [
+     "a"
+    ],
+    "targets": [
+     "b"
+    ],
+    "sections": [
+     {
+      "id": "e0_s0",
+      "startPoint": {
+       "x": 34,
+       "y": 40.66666666666667
+      },
+      "endPoint": {
+       "x": 74,
+       "y": 58.50000000000001
+      },
+      "bendPoints": [
+       {
+        "x": 54,
+        "y": 40.66666666666667
+       },
+       {
+        "x": 54,
+        "y": 58.50000000000001
+       }
+      ],
+      "incomingShape": "a",
+      "outgoingShape": "b"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e1",
+    "sources": [
+     "b"
+    ],
+    "targets": [
+     "c"
+    ],
+    "sections": [
+     {
+      "id": "e1_s0",
+      "startPoint": {
+       "x": 144,
+       "y": 58.50000000000001
+      },
+      "endPoint": {
+       "x": 184,
+       "y": 40.66666666666667
+      },
+      "bendPoints": [
+       {
+        "x": 164,
+        "y": 58.50000000000001
+       },
+       {
+        "x": 164,
+        "y": 40.66666666666667
+       }
+      ],
+      "incomingShape": "b",
+      "outgoingShape": "c"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e2",
+    "sources": [
+     "a"
+    ],
+    "targets": [
+     "c"
+    ],
+    "sections": [
+     {
+      "id": "e2_s0",
+      "startPoint": {
+       "x": 34,
+       "y": 31.333333333333336
+      },
+      "endPoint": {
+       "x": 184,
+       "y": 31.333333333333336
+      },
+      "bendPoints": [
+       {
+        "x": 54,
+        "y": 31.333333333333336
+       },
+       {
+        "x": 54,
+        "y": 13.500000000000004
+       },
+       {
+        "x": 109,
+        "y": 13.500000000000004
+       },
+       {
+        "x": 164,
+        "y": 13.500000000000004
+       },
+       {
+        "x": 164,
+        "y": 31.333333333333336
+       }
+      ],
+      "incomingShape": "a",
+      "outgoingShape": "c"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 258,
+  "height": 94.5
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 88.33333333333334",
+         "RIGHTUP size is 69",
+         "LEFTDOWN size is 88.33333333333334",
+         "LEFTUP size is 69",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_A, n(long_edge)_0, n_Bee, n_Cee]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

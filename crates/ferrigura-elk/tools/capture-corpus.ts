@@ -42,6 +42,7 @@ import {
   syntheticMarkedEdgeGraphs,
   syntheticModelOrderFirstTryGraphs,
   syntheticModelOrderLabelGraphs,
+  syntheticNodeLabelDirectionGraphs,
   syntheticNodeLabelGraphs,
   stripGwtHashKeys,
   type GraphStats,
@@ -409,6 +410,9 @@ async function syntheticRecords(): Promise<CaseRecord[]> {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticNodeLabelGraphs()) {
+    await add(name, graph);
+  }
+  for (const { name, graph } of syntheticNodeLabelDirectionGraphs()) {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticComponentGraphs()) {

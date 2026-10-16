@@ -1210,6 +1210,30 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__node-labels-direction-left",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__node-labels-direction-right",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__node-labels-direction-up",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__node-labels-inside-top",
    "fixture": null,
    "nodes": 3,

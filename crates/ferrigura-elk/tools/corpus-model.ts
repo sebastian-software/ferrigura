@@ -658,6 +658,52 @@ export function syntheticNodeLabelGraphs(): { name: string; graph: Record<string
   ];
 }
 
+/**
+ * Inside node labels in a graph whose direction mirrors the layout: LEFT mirrors across x and UP
+ * across y, so the horizontal and vertical placements of the labels change sides. RIGHT is the
+ * control. The placements are the centre top, the left top and the right bottom.
+ */
+export function syntheticNodeLabelDirectionGraphs(): {
+  name: string;
+  graph: Record<string, unknown>;
+}[] {
+  const labelled = (
+    id: string,
+    width: number,
+    height: number,
+    placement: string,
+    text: string,
+    labelWidth: number
+  ): Record<string, unknown> => ({
+    id,
+    width,
+    height,
+    layoutOptions: {
+      'nodeLabels.placement': placement,
+      'nodeSize.constraints': '[MINIMUM_SIZE, NODE_LABELS]',
+    },
+    labels: [{ text, width: labelWidth, height: 19 }],
+  });
+  const graph = (direction: string): Record<string, unknown> => ({
+    id: 'root',
+    layoutOptions: { ...rootLayoutOptionsDefault(), 'elk.direction': direction },
+    children: [
+      labelled('a', 50, 40, '[H_CENTER V_TOP, INSIDE]', 'A', 12),
+      labelled('b', 60, 40, '[H_LEFT V_TOP, INSIDE]', 'Bee', 30),
+      labelled('c', 50, 40, '[H_RIGHT V_BOTTOM, INSIDE]', 'Cee', 26),
+    ],
+    edges: [
+      { id: 'e0', sources: ['a'], targets: ['b'] },
+      { id: 'e1', sources: ['b'], targets: ['c'] },
+      { id: 'e2', sources: ['a'], targets: ['c'] },
+    ],
+  });
+  return ['LEFT', 'UP', 'RIGHT'].map((direction) => ({
+    name: `synthetic__node-labels-direction-${direction.toLowerCase()}`,
+    graph: graph(direction),
+  }));
+}
+
 /** A root graph with `count` leaf nodes (50 x 40) and no edges, using Mermaid's root options. */
 export function nodesOnlyGraph(count: number): Record<string, unknown> {
   return {
