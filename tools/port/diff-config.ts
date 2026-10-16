@@ -18,6 +18,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { configCases } from './config-cases.ts';
+import { undetectedCases } from './cases.ts';
 import { collectInputs } from './inputs.ts';
 
 interface ConfigInput {
@@ -27,8 +28,8 @@ interface ConfigInput {
   site?: Record<string, unknown>;
   /** The collection the input came from: `pie`, `flowchart` or `case`. */
   group: string;
-  /** The scope the input must be run in. */
-  expectedScope: string;
+  /** The scope the input must be run in, or `null` for an input that no detector takes. */
+  expectedScope: string | null;
 }
 
 interface ConfigOutput {
@@ -75,6 +76,8 @@ function same(a: unknown, b: unknown): boolean {
 
 const pieInputs = await collectInputs('pie');
 const flowchartInputs = await collectInputs('flowchart');
+const timelineInputs = await collectInputs('timeline');
+const undetectedTimeline = new Set(undetectedCases.timeline ?? []);
 const inputs: ConfigInput[] = [
   ...pieInputs.map((input) => ({
     id: 0,
@@ -89,6 +92,13 @@ const inputs: ConfigInput[] = [
     text: input.text,
     group: 'flowchart',
     expectedScope: 'flowchart',
+  })),
+  ...timelineInputs.map((input) => ({
+    id: 0,
+    source: input.source,
+    text: input.text,
+    group: 'timeline',
+    expectedScope: undetectedTimeline.has(input.text) ? null : 'timeline',
   })),
   ...configCases.map((testCase) => ({
     id: 0,
