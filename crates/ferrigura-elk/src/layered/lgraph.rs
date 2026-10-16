@@ -166,7 +166,8 @@ pub struct LGraph {
     pub layerless_nodes: Vec<usize>,
     /// Layers, each a list of indices into `nodes`, left to right.
     pub layers: Vec<Vec<usize>>,
-    /// The id of the root graph, used in node designations.
+    /// The designation prefix of this level's root: the ids from the root of the graph down to it,
+    /// as node and edge designations start with it (`root` for the top level).
     pub root_id: String,
     /// The processor steps `GraphConfigurator` assembled.
     pub processors: Vec<crate::layered::intermediate::Step>,
