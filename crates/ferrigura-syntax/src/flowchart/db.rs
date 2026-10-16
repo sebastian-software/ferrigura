@@ -67,6 +67,9 @@ pub(crate) struct Db {
     acc_descr: String,
     vertices: Vec<FlowVertex>,
     vertex_index: HashMap<String, usize>,
+    /// The reference's `vertexCounter`: the number of `addVertex` calls that reach the vertex
+    /// creation, which the DOM id of a new vertex takes.
+    vertex_counter: u32,
     edges: Vec<FlowEdge>,
     edge_index: HashMap<String, usize>,
     pair_counts: HashMap<(String, String), usize>,
@@ -92,6 +95,7 @@ impl Db {
             acc_descr: String::new(),
             vertices: Vec::new(),
             vertex_index: HashMap::new(),
+            vertex_counter: 0,
             edges: Vec::new(),
             edge_index: HashMap::new(),
             pair_counts: HashMap::new(),
@@ -162,6 +166,10 @@ impl Db {
     /// subgraph id takes it as its metadata, an edge id as its edge data, and a vertex takes its
     /// fields. Each check comes in the order of the reference, and an id that is already an edge's
     /// id returns before a vertex is made, with or without shape data.
+    ///
+    /// The vertex counter moves on for every call that reaches the vertex creation, a new vertex or
+    /// not, as the reference's `vertexCounter` does (`flowDb.ts` 191 and 197). A new vertex takes the
+    /// counter's value as its `dom_counter`.
     pub(crate) fn add_vertex(
         &mut self,
         id: &str,
@@ -219,12 +227,14 @@ impl Db {
                     constraint: None,
                     asset_width: None,
                     asset_height: None,
+                    dom_counter: self.vertex_counter,
                 });
                 let index = self.vertices.len() - 1;
                 self.vertex_index.insert(id.to_owned(), index);
                 index
             }
         };
+        self.vertex_counter += 1;
         let vertex = &mut self.vertices[index];
         if let Some(text) = text {
             // The text is trimmed; one pair of surrounding quotes is removed.
