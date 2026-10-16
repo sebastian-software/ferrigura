@@ -683,8 +683,10 @@ mod tests {
     fn the_label_font_size_is_the_theme_font_size() {
         // `redux-color` sets `fontSize` to 14px; the labels inherit it from the root rule.
         assert_eq!(theme_font_size(&MermaidConfig::default()), 14.0);
-        let mut config = MermaidConfig::default();
-        config.theme_variables = Some(Value::from(serde_json::json!({"fontSize": "20px"})));
+        let config = MermaidConfig {
+            theme_variables: Some(Value::from(serde_json::json!({"fontSize": "20px"}))),
+            ..MermaidConfig::default()
+        };
         assert_eq!(theme_font_size(&config), 20.0);
     }
 
