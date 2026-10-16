@@ -164,7 +164,13 @@ pub fn node_label(
         styles: &declarations,
         font_size: util::theme_number(theme, "fontSize").unwrap_or(config.font_size),
     };
-    label::layout(&spec).map(Some)
+    // The reference's `labelHelper` takes the label's box from `text.getBBox()` (shapes/util.ts
+    // 135-140), before `withMinWidth` widens it. That box is a float32 value. Group titles are
+    // measured through the same `labelHelper` (createGraph.ts `measureGroupLabel`).
+    label::layout(&spec).map(|mut label| {
+        label.bbox = label.bbox.browser();
+        Some(label)
+    })
 }
 
 /// The node's `<g>` for the diagram `svg_id`, positioned at its centre, as `insertNode` and

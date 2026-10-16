@@ -119,7 +119,8 @@ fn measure(input: &FlowchartInput<'_>) -> Result<Measured, RenderError> {
     for index in 0..data.nodes.len() {
         let node = &data.nodes[index];
         if node.is_group {
-            // ELK sizes a subgraph from its title, measured unwrapped unless it is Markdown.
+            // ELK sizes a subgraph from its title, measured unwrapped unless it is Markdown. The
+            // title's box is already a float32 value (`node_label`).
             let width = (node.label_type != LabelType::Markdown).then_some(f64::INFINITY);
             let size = shapes::node_label(node, input.config, theme, width)?
                 .map_or((0.0, 0.0), |label| (label.bbox.width, label.bbox.height));
@@ -135,8 +136,11 @@ fn measure(input: &FlowchartInput<'_>) -> Result<Measured, RenderError> {
             dir: node_dir(&data, index),
         })?;
         let id = node.id.clone();
-        data.nodes[index].width = Some(shape.bbox.width);
-        data.nodes[index].height = Some(shape.bbox.height);
+        // `insertMeasuredNode` takes the node's size from the `getBBox` of its group (createGraph.ts
+        // 61-71, line 67), so it is a float32 value.
+        let bbox = shape.bbox.browser();
+        data.nodes[index].width = Some(bbox.width);
+        data.nodes[index].height = Some(bbox.height);
         shapes.insert(id, shape);
     }
 

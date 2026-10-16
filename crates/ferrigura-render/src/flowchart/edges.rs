@@ -264,6 +264,9 @@ pub fn label_size(label: &LabelLayout) -> (f64, f64) {
         Some(background) => label.bbox.union(background),
         None => label.bbox,
     };
+    // `edge.width` and `edge.height` are the `getBBox` of the label's group (edges.js 122), so
+    // they are float32 values.
+    let group = group.browser();
     (group.width, group.height)
 }
 
