@@ -7,6 +7,7 @@ use ferrigura_model::config::MermaidConfig;
 use ferrigura_render::unified::data::Edge;
 use ferrigura_render::unified::edges::paint_paths;
 use ferrigura_render::unified::geom::Point;
+use ferrigura_render::unified::markers::FLOWCHART;
 
 /// The `<path>` of a two-point edge with the given arrow types.
 fn painted_path(arrow_type_start: &str, arrow_type_end: &str) -> String {
@@ -22,6 +23,7 @@ fn painted_path(arrow_type_start: &str, arrow_type_end: &str) -> String {
     paint_paths(
         std::slice::from_ref(&edge),
         "svg",
+        FLOWCHART,
         &MermaidConfig::default(),
     )
     .remove(0)

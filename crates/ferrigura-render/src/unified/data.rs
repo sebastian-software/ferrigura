@@ -32,6 +32,11 @@ pub struct LayoutData {
     pub default_style: Option<Vec<String>>,
     /// The `linkStyle default interpolate` value, kept on the edge array as well.
     pub default_interpolate: Option<String>,
+    /// The diagram type the renderer sets on the layout data (`flowchart-v2`, `classDiagram`,
+    /// `stateDiagram`, `erDiagram`): it names the markers and their class. Not part of `getData`,
+    /// so it is not written to the layout data's JSON.
+    #[serde(skip)]
+    pub diagram_type: String,
 }
 
 /// A node of the layout: a vertex, or a subgraph (`is_group`), or a collapsed subgraph.

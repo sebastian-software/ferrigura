@@ -12,7 +12,7 @@ use ferrigura_model::config::MermaidConfig;
 use crate::svg::escape;
 
 /// The diagram type that the reference puts in every marker id and class.
-pub const DIAGRAM_TYPE: &str = "flowchart-v2";
+pub const FLOWCHART: &str = "flowchart-v2";
 
 /// The three marker kinds an edge end can use, in the order `markers.js` writes them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -234,17 +234,23 @@ const DEFINITIONS: [Definition; 12] = [
     },
 ];
 
-/// The id of a marker, as `edgeMarker.ts` builds it: `<svgId>_flowchart-v2-<name>`, with the end
+/// The id of a marker, as `edgeMarker.ts` builds it: `<svgId>_<diagramType>-<name>`, with the end
 /// or start name of the kind and `-margin` for the neo variants.
 #[must_use]
-pub fn marker_id(svg_id: &str, kind: Kind, start: bool, margin: bool) -> String {
+pub fn marker_id(
+    svg_id: &str,
+    diagram_type: &str,
+    kind: Kind,
+    start: bool,
+    margin: bool,
+) -> String {
     let position = if start { "Start" } else { "End" };
     let suffix = if margin && kind.has_margin() {
         "-margin"
     } else {
         ""
     };
-    format!("{svg_id}_{DIAGRAM_TYPE}-{}{position}{suffix}", kind.name())
+    format!("{svg_id}_{diagram_type}-{}{position}{suffix}", kind.name())
 }
 
 /// The id of the copy of a marker that carries a stroke colour: the marker's id, then the colour
@@ -265,10 +271,15 @@ pub fn coloured_id(marker_id: &str, colour: &str) -> String {
     format!("{marker_id}_{sanitised}")
 }
 
-fn definition_xml(id: &str, definition: &Definition, colour: Option<&str>) -> String {
+fn definition_xml(
+    id: &str,
+    diagram_type: &str,
+    definition: &Definition,
+    colour: Option<&str>,
+) -> String {
     let class = match definition.kind {
-        Kind::Cross => format!("marker cross {DIAGRAM_TYPE}"),
-        _ => format!("marker {DIAGRAM_TYPE}"),
+        Kind::Cross => format!("marker cross {diagram_type}"),
+        _ => format!("marker {diagram_type}"),
     };
     let style = if definition.dash {
         format!(
@@ -321,13 +332,13 @@ fn definition_xml(id: &str, definition: &Definition, colour: Option<&str>) -> St
 /// The marker definitions of a flowchart, as `insertMarkers(element, ['point', 'circle', 'cross'])`
 /// writes them: twelve markers, each with its id under the SVG's id.
 #[must_use]
-pub fn markers(svg_id: &str, config: &MermaidConfig) -> String {
+pub fn markers(svg_id: &str, diagram_type: &str, config: &MermaidConfig) -> String {
     let _ = config;
     DEFINITIONS
         .iter()
         .map(|definition| {
-            let id = format!("{svg_id}_{DIAGRAM_TYPE}-{}", definition.name);
-            definition_xml(&id, definition, None)
+            let id = format!("{svg_id}_{diagram_type}-{}", definition.name);
+            definition_xml(&id, diagram_type, definition, None)
         })
         .collect()
 }
@@ -349,19 +360,20 @@ fn definition_name(kind: Kind, start: bool, margin: bool) -> String {
 #[must_use]
 pub fn coloured_marker(
     svg_id: &str,
+    diagram_type: &str,
     kind: Kind,
     start: bool,
     margin: bool,
     colour: &str,
 ) -> String {
     let name = definition_name(kind, start, margin);
-    let original = marker_id(svg_id, kind, start, margin);
+    let original = marker_id(svg_id, diagram_type, kind, start, margin);
     let id = coloured_id(&original, colour);
     let definition = DEFINITIONS
         .iter()
         .find(|definition| definition.name == name)
         .unwrap_or(&DEFINITIONS[0]);
-    definition_xml(&id, definition, Some(colour))
+    definition_xml(&id, diagram_type, definition, Some(colour))
 }
 
 #[cfg(test)]
@@ -371,15 +383,15 @@ mod tests {
     #[test]
     fn the_ids_follow_the_reference() {
         assert_eq!(
-            marker_id("mermaid-svg", Kind::Point, false, false),
+            marker_id("mermaid-svg", FLOWCHART, Kind::Point, false, false),
             "mermaid-svg_flowchart-v2-pointEnd"
         );
         assert_eq!(
-            marker_id("mermaid-svg", Kind::Point, false, true),
+            marker_id("mermaid-svg", FLOWCHART, Kind::Point, false, true),
             "mermaid-svg_flowchart-v2-pointEnd-margin"
         );
         assert_eq!(
-            marker_id("mermaid-svg", Kind::Cross, true, true),
+            marker_id("mermaid-svg", FLOWCHART, Kind::Cross, true, true),
             "mermaid-svg_flowchart-v2-crossStart-margin"
         );
     }
@@ -395,7 +407,7 @@ mod tests {
 
     #[test]
     fn there_are_twelve_markers_with_their_margin_variants() {
-        let svg = markers("svg", &MermaidConfig::default());
+        let svg = markers("svg", FLOWCHART, &MermaidConfig::default());
         assert_eq!(svg.matches("<marker ").count(), 12);
         assert!(svg.contains("id=\"svg_flowchart-v2-pointEnd-margin\""));
         assert!(svg.contains("id=\"svg_flowchart-v2-crossStart-margin\""));
@@ -406,7 +418,7 @@ mod tests {
 
     #[test]
     fn a_coloured_point_carries_its_colour_on_path_and_fill() {
-        let marker = coloured_marker("svg", Kind::Point, false, false, "#f00");
+        let marker = coloured_marker("svg", FLOWCHART, Kind::Point, false, false, "#f00");
         assert!(
             marker.starts_with("<marker id=\"svg_flowchart-v2-pointEnd__f00\""),
             "{marker}"
@@ -416,7 +428,7 @@ mod tests {
 
     #[test]
     fn a_coloured_polygon_keeps_its_attributes() {
-        let marker = coloured_marker("svg", Kind::Point, true, true, "red");
+        let marker = coloured_marker("svg", FLOWCHART, Kind::Point, true, true, "red");
         assert!(!marker.contains("stroke=\"red\""), "{marker}");
     }
 }

@@ -20,9 +20,9 @@ use crate::RenderError;
 use crate::a11y;
 use crate::svg::{escape, number};
 use crate::theme::Themes;
-use crate::unified::edges;
 use crate::unified::geom::BBox;
 use crate::unified::pipeline::{self, Measured, cover};
+use crate::unified::{edges, markers};
 
 pub use crate::unified::pipeline::ElkStages;
 
@@ -42,7 +42,9 @@ pub struct FlowchartInput<'a> {
 
 /// `getData` and the measure step of the unified renderer.
 fn measure(input: &FlowchartInput<'_>) -> Result<Measured, RenderError> {
-    let data = data::get_data(input.diagram, input.config);
+    let mut data = data::get_data(input.diagram, input.config);
+    // `flowRenderer-v3-unified.ts` sets the diagram type on the layout data after `getData`.
+    data.diagram_type = markers::FLOWCHART.to_owned();
     pipeline::measure(data, input.config, input.themes.primary())
 }
 

@@ -359,14 +359,19 @@ struct Painted {
 }
 
 /// Paints the edges of a laid-out diagram: one path per edge, then the line hops over all of
-/// them, as `paintLayoutData` and `applyElkLineJumps` do.
+/// them, as `paintLayoutData` and `applyElkLineJumps` do. `diagram_type` names the markers.
 #[must_use]
-pub fn paint_paths(edges: &[Edge], svg_id: &str, config: &MermaidConfig) -> Vec<EdgePath> {
+pub fn paint_paths(
+    edges: &[Edge],
+    svg_id: &str,
+    diagram_type: &str,
+    config: &MermaidConfig,
+) -> Vec<EdgePath> {
     let default_curve = config.flowchart.curve.clone();
     let mut created = std::collections::HashSet::new();
     let mut painted: Vec<Painted> = edges
         .iter()
-        .map(|edge| paint_edge(edge, svg_id, &default_curve, &mut created))
+        .map(|edge| paint_edge(edge, svg_id, diagram_type, &default_curve, &mut created))
         .collect();
 
     if let Some(style) = jump_style(config) {
@@ -424,6 +429,7 @@ pub fn paint_paths(edges: &[Edge], svg_id: &str, config: &MermaidConfig) -> Vec<
 fn paint_edge(
     edge: &Edge,
     svg_id: &str,
+    diagram_type: &str,
     default_curve: &str,
     created: &mut std::collections::HashSet<String>,
 ) -> Painted {
@@ -494,13 +500,18 @@ fn paint_edge(
     let mut markers_out = String::new();
     let mut marker = |arrow: &str, start: bool, markers_out: &mut String| -> Option<String> {
         let kind = Kind::from_arrow(arrow)?;
-        let id = markers::marker_id(svg_id, kind, start, margin);
+        let id = markers::marker_id(svg_id, diagram_type, kind, start, margin);
         match colour {
             Some(colour) => {
                 let coloured = markers::coloured_id(&id, colour);
                 if created.insert(coloured.clone()) {
                     markers_out.push_str(&markers::coloured_marker(
-                        svg_id, kind, start, margin, colour,
+                        svg_id,
+                        diagram_type,
+                        kind,
+                        start,
+                        margin,
+                        colour,
                     ));
                 }
                 Some(format!("url(#{coloured})"))
@@ -585,10 +596,10 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, config: &MermaidConfig) -> 
     }
 }
 
-/// The marker definitions the diagram uses, as `insertMarkers` writes them for `flowchart-v2`.
+/// The marker definitions the flowchart uses, as `insertMarkers` writes them for `flowchart-v2`.
 #[must_use]
 pub fn markers(svg_id: &str, config: &MermaidConfig) -> String {
-    markers::markers(svg_id, config)
+    markers::markers(svg_id, markers::FLOWCHART, config)
 }
 
 #[cfg(test)]

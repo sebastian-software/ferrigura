@@ -230,7 +230,7 @@ pub fn paint<'a>(
 
     let mut edge_paths = String::new();
     let mut coloured_markers = String::new();
-    for path in edges::paint_paths(&data.edges, id, config) {
+    for path in edges::paint_paths(&data.edges, id, &data.diagram_type, config) {
         cover(&mut bounds, path.bbox);
         edge_paths.push_str(&path.svg);
         coloured_markers.push_str(&path.markers);

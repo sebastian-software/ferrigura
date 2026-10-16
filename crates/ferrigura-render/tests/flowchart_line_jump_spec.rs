@@ -16,6 +16,7 @@ use ferrigura_render::unified::line_jumps::{
     EdgeGeom, JumpStyle, LineJumpConfig, Rewrite, apply_jumps, curve_supports_line_hops,
     find_edge_intersections, rewrite_dash_array,
 };
+use ferrigura_render::unified::markers::FLOWCHART;
 
 const ARC: LineJumpConfig = LineJumpConfig {
     jump_radius: 1.0,
@@ -272,7 +273,7 @@ fn returns_plain_polylines_for_every_edge_when_disabled() {
         painted_edge("h", &[(0.0, 50.0), (100.0, 50.0)]),
         painted_edge("v", &[(50.0, 0.0), (50.0, 100.0)]),
     ];
-    let hopped = paint_paths(&edges, "svg", &MermaidConfig::default());
+    let hopped = paint_paths(&edges, "svg", FLOWCHART, &MermaidConfig::default());
     assert!(
         d_attribute(&hopped[0].svg).contains("A6,6"),
         "{}",
@@ -281,7 +282,7 @@ fn returns_plain_polylines_for_every_edge_when_disabled() {
 
     let mut config = MermaidConfig::default();
     config.elk.line_hops = Some(Value::from(serde_json::json!(false)));
-    let plain = paint_paths(&edges, "svg", &config);
+    let plain = paint_paths(&edges, "svg", FLOWCHART, &config);
     assert!(
         !d_attribute(&plain[0].svg).contains('A'),
         "{}",
