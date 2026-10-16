@@ -5,7 +5,7 @@
 
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_render::RenderError;
-use ferrigura_render::flowchart::label::{LabelLayout, LabelSpec, layout};
+use ferrigura_render::flowchart::label::{Anchor, LabelLayout, LabelSpec, layout};
 use ferrigura_text::TextError;
 use serde_json::Value;
 
@@ -81,11 +81,16 @@ fn check(label: &Value, deviation: &mut Deviation) -> Result<(), String> {
         .filter(|declaration| !declaration.trim().is_empty())
         .map(str::to_owned)
         .collect();
+    let anchor = match label["anchor"].as_str() {
+        Some("start") => Anchor::Start,
+        _ => Anchor::Middle,
+    };
     let spec = LabelSpec {
         text,
         label_type,
         width,
         is_node,
+        anchor,
         add_background: label["addBackground"].as_bool().unwrap_or(false),
         styles: &styles,
         font_size: label["fontSize"].as_f64().unwrap_or(16.0),

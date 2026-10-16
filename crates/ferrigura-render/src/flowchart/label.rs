@@ -28,6 +28,17 @@ const LINE_HEIGHT: f64 = 1.1;
 /// `createFormattedText`.
 const BACKGROUND_PADDING: f64 = 2.0;
 
+/// Where the lines of a label are anchored on `x = 0`, as `text-anchor` places them in the reference.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Anchor {
+    /// Every line is centred on `x = 0`: node labels, which the stylesheet centres, and edge
+    /// labels, which carry `text-anchor="middle"`.
+    #[default]
+    Middle,
+    /// Every line starts at `x = 0`, as in a cluster title, which has no `text-anchor`.
+    Start,
+}
+
 /// What to lay out: the arguments of `createText`.
 #[derive(Debug, Clone)]
 pub struct LabelSpec<'a> {
@@ -37,9 +48,11 @@ pub struct LabelSpec<'a> {
     pub label_type: LabelType,
     /// The width at which lines wrap; `f64::INFINITY` never wraps.
     pub width: f64,
-    /// `createText`'s `isNode`: node labels are centred by the stylesheet in the reference, the
-    /// others by `text-anchor="middle"`. Both are centred on `x = 0`.
+    /// `createText`'s `isNode`. Node labels and cluster titles set it; edge labels do not.
     pub is_node: bool,
+    /// Where the lines are anchored on `x = 0`. The lines of a node or edge label are centred, and
+    /// those of a cluster title start there.
+    pub anchor: Anchor,
     /// Whether a background rectangle is drawn behind the text (edge labels).
     pub add_background: bool,
     /// The label's style declarations (`key:value`), from which the font size, weight and style
@@ -136,7 +149,7 @@ impl LabelLayout {
             // aligns it by its own measure (decision 0005).
             out.push_str(&format!(
                 r#"<tspan class="text-outer-tspan row" x="{}" y="{}" text-anchor="start">"#,
-                number(-line.width / 2.0),
+                number(line.runs.first().map_or(0.0, |run| run.x)),
                 number(line.baseline),
             ));
             for run in &line.runs {
@@ -166,9 +179,10 @@ impl LabelLayout {
 /// Returns an error if a bundled font cannot be read.
 pub fn layout(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
     // The style's font size sets the text. A node label is wrapped inside the group that carries
-    // its style, so the wrap sees the size; an edge label is wrapped in its unstyled container.
+    // its style, so the wrap sees the size. An edge label and a cluster title are wrapped in their
+    // unstyled containers, which are the ones with `text-anchor` set or left to the cluster.
     let font_size = declared_font_size(spec.styles).unwrap_or(spec.font_size);
-    let wrap_size = if spec.is_node {
+    let wrap_size = if spec.is_node && spec.anchor == Anchor::Middle {
         font_size
     } else {
         spec.font_size
@@ -216,11 +230,11 @@ pub fn layout(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
         })
         .collect();
 
-    let (lines, bbox) = place(&pieces, font_size)?;
+    let (lines, bbox) = place(&pieces, font_size, spec.anchor)?;
     let background = if spec.add_background && !spec.text.is_empty() {
         // The reference measures the background before the label style is applied to the text,
         // so the rectangle is the box of the unstyled text.
-        let (_, unstyled) = place(&pieces, spec.font_size)?;
+        let (_, unstyled) = place(&pieces, spec.font_size, spec.anchor)?;
         Some(BBox::new(
             unstyled.x - BACKGROUND_PADDING,
             unstyled.y - BACKGROUND_PADDING,
@@ -238,13 +252,15 @@ pub fn layout(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
     })
 }
 
-/// Places the lines at `size` pixels, centred on `x = 0`, and returns them with the box of their
-/// text. Each line is centred on its own width, and each run starts where the runs before it end.
-/// The box is the union of the runs' boxes, each from the run's ascent to its descent, as
-/// `getBBox` takes it; a line without words has no box, so an empty line adds no height.
+/// Places the lines at `size` pixels, anchored on `x = 0` as `anchor` says, and returns them with the
+/// box of their text. A centred line starts at minus half its width, a start-anchored line at zero,
+/// and each run starts where the runs before it end. The box is the union of the runs' boxes, each
+/// from the run's ascent to its descent, as `getBBox` takes it; a line without words has no box, so
+/// an empty line adds no height.
 fn place(
     pieces: &[Vec<(String, &'static Face)>],
     size: f64,
+    anchor: Anchor,
 ) -> Result<(Vec<LabelLine>, BBox), TextError> {
     let mut lines = Vec::with_capacity(pieces.len());
     let mut bbox: Option<BBox> = None;
@@ -255,7 +271,10 @@ fn place(
             widths.push(measure(face, text, size)?);
         }
         let width: f64 = widths.iter().sum();
-        let mut x = -width / 2.0;
+        let mut x = match anchor {
+            Anchor::Middle => -width / 2.0,
+            Anchor::Start => 0.0,
+        };
         let mut runs = Vec::with_capacity(line.len());
         for ((text, face), run_width) in line.iter().zip(widths) {
             let metrics = text_box(face, size)?;
@@ -369,6 +388,7 @@ mod tests {
             label_type,
             width: 200.0,
             is_node: true,
+            anchor: Anchor::Middle,
             add_background: false,
             styles,
             font_size: 16.0,
@@ -438,6 +458,23 @@ mod tests {
         assert_eq!(svg.matches("class=\"text-inner-tspan\"").count(), 2);
         assert!(svg.contains("font-weight=\"bold\" x=\""), "{svg}");
         assert!(svg.ends_with("</text></g>"), "{svg}");
+    }
+
+    #[test]
+    fn a_start_anchored_label_starts_each_line_at_zero() {
+        let styles = [];
+        let mut label = spec("Title<br/>second line", LabelType::Text, &styles);
+        label.anchor = Anchor::Start;
+        let layout = layout(&label).expect("lays out");
+        for line in &layout.lines {
+            assert_eq!(line.runs[0].x, 0.0);
+        }
+        assert_eq!(layout.bbox.x, 0.0);
+        assert!(
+            layout
+                .svg("")
+                .contains("<tspan class=\"text-outer-tspan row\" x=\"0\"")
+        );
     }
 
     #[test]

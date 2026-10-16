@@ -7,6 +7,7 @@
       "text": "Start",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -39,6 +40,7 @@
       "text": "A plain label with several words",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -117,6 +119,7 @@
       "text": "two  spaces   and single",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -176,6 +179,7 @@
       "text": "a<br>b",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -219,6 +223,7 @@
       "text": "a<br/>b",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -262,6 +267,7 @@
       "text": "a<br />b",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -305,6 +311,7 @@
       "text": "a<BR>b",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -348,6 +355,7 @@
       "text": "a\\nb",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -391,6 +399,7 @@
       "text": "a\nb",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -434,6 +443,7 @@
       "text": "trailing<br/>",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -468,6 +478,7 @@
       "text": "<br/>leading",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -502,6 +513,7 @@
       "text": "a<br/><br/>b",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -547,6 +559,7 @@
       "text": "<br/><br/>",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -574,6 +587,7 @@
       "text": "",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -597,6 +611,7 @@
       "text": "   ",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -620,6 +635,7 @@
       "text": "x < y and a > b",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -668,6 +684,7 @@
       "text": "x<y>z",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -716,6 +733,7 @@
       "text": "it&#39;s &amp; co",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -764,6 +782,7 @@
       "text": "a &lt;c&gt; d",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -812,6 +831,7 @@
       "text": "x ﬂ°°35¶ß y",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -860,6 +880,7 @@
       "text": "<b>bold</b> text",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -919,6 +940,7 @@
       "text": "say \"hi\" to 'you'",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -975,6 +997,7 @@
       "text": "The quick brown fox jumps over the lazy dog and keeps running far away",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1123,6 +1146,7 @@
       "text": "Supercalifragilisticexpialidocious and more words",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1193,6 +1217,7 @@
       "text": "Pneumonoultramicroscopicsilicovolcanoconiosis",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 200,
       "style": "",
       "addBackground": false,
@@ -1236,6 +1261,7 @@
       "text": "One line label",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1284,6 +1310,7 @@
       "text": "The quick brown fox jumps over the lazy dog",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1386,6 +1413,7 @@
       "text": "quoted string, with punctuation: a; b.",
       "labelType": "string",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1464,6 +1492,7 @@
       "text": "Long quoted string that will wrap across several lines at width 120 pixels",
       "labelType": "string",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1604,6 +1633,7 @@
       "text": "**bold** text",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1644,6 +1674,7 @@
       "text": "*italic* text",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1684,6 +1715,7 @@
       "text": "***both*** text",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1724,6 +1756,7 @@
       "text": "**a *b* c**",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1772,6 +1805,7 @@
       "text": "__u__ _e_",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1812,6 +1846,7 @@
       "text": "This is **bold** and *italic* and ***both***",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1895,6 +1930,7 @@
       "text": "a\nb",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1938,6 +1974,7 @@
       "text": "x<br/>**y**",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -1981,6 +2018,7 @@
       "text": "line one<br/><br/>line three",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2040,6 +2078,7 @@
       "text": "a  \nb",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2080,6 +2119,7 @@
       "text": "a\n\nb",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2123,6 +2163,7 @@
       "text": "`code` and text",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2163,6 +2204,7 @@
       "text": "[link](https://example.com) here",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2195,6 +2237,7 @@
       "text": "x ~~del~~ y",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2235,6 +2278,7 @@
       "text": "a \\*escaped\\* star",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2283,6 +2327,7 @@
       "text": "x ![alt](i.png) y",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2323,6 +2368,7 @@
       "text": "&amp; &lt;c&gt;",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2363,6 +2409,7 @@
       "text": "&copy; &#35; &nbsp;x",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2414,6 +2461,7 @@
       "text": "it's",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2446,6 +2494,7 @@
       "text": "She said \"hi\"",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2494,6 +2543,7 @@
       "text": "a < b > c",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2558,6 +2608,7 @@
       "text": "<span>styled</span> text",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2617,6 +2668,7 @@
       "text": "# Heading text",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2649,6 +2701,7 @@
       "text": "- item one\n- item two",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2660,6 +2713,7 @@
       "text": "**Bold words** and *italic words* make a long label that must wrap across several lines at width 120",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2846,6 +2900,7 @@
       "text": "Pneumonoultramicroscopicsilicovolcanoconiosis **bold**",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2911,6 +2966,7 @@
       "text": "Start\n    indented",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2954,6 +3010,7 @@
       "text": "C:\\path\\to",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -2986,6 +3043,7 @@
       "text": "",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -3009,6 +3067,7 @@
       "text": "**Start** with 14px text",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "",
       "addBackground": false,
@@ -3068,6 +3127,7 @@
       "text": "The quick brown fox jumps over the lazy dog and keeps running far away",
       "labelType": "text",
       "isNode": false,
+      "anchor": "middle",
       "width": null,
       "style": "",
       "addBackground": true,
@@ -3215,6 +3275,7 @@
       "text": "",
       "labelType": "text",
       "isNode": false,
+      "anchor": "middle",
       "width": null,
       "style": "",
       "addBackground": true,
@@ -3238,6 +3299,7 @@
       "text": "Edge label",
       "labelType": "text",
       "isNode": false,
+      "anchor": "middle",
       "width": null,
       "style": "",
       "addBackground": true,
@@ -3283,6 +3345,7 @@
       "text": "**Edge** label with *em* and more words to wrap around",
       "labelType": "markdown",
       "isNode": false,
+      "anchor": "middle",
       "width": null,
       "style": "",
       "addBackground": true,
@@ -3395,6 +3458,7 @@
       "text": "Edge *label* at 14",
       "labelType": "markdown",
       "isNode": false,
+      "anchor": "middle",
       "width": null,
       "style": "",
       "addBackground": true,
@@ -3456,6 +3520,7 @@
       "text": "Start label",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "font-size:20px;",
       "addBackground": false,
@@ -3496,6 +3561,7 @@
       "text": "The quick brown fox jumps over the lazy dog",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "font-size:20px;",
       "addBackground": false,
@@ -3601,6 +3667,7 @@
       "text": "**Start** with *more* text here",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "font-size:20px;",
       "addBackground": false,
@@ -3671,6 +3738,7 @@
       "text": "Bold style label words here",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "font-weight:bold;",
       "addBackground": false,
@@ -3738,6 +3806,7 @@
       "text": "Plain words and *em*",
       "labelType": "markdown",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "font-weight:bold;",
       "addBackground": false,
@@ -3797,6 +3866,7 @@
       "text": "Italic style label",
       "labelType": "text",
       "isNode": true,
+      "anchor": "middle",
       "width": 120,
       "style": "font-style:italic;",
       "addBackground": false,
@@ -3845,6 +3915,7 @@
       "text": "Edge label at twenty",
       "labelType": "text",
       "isNode": false,
+      "anchor": "middle",
       "width": null,
       "style": "font-size:20px;",
       "addBackground": true,
@@ -3906,6 +3977,7 @@
       "text": "Edge bold label",
       "labelType": "text",
       "isNode": false,
+      "anchor": "middle",
       "width": null,
       "style": "font-weight:bold;",
       "addBackground": true,
@@ -3953,6 +4025,799 @@
         "width": 113.140625,
         "height": 24
       }
+    },
+    {
+      "id": "cluster-plain-two-lines",
+      "text": "Subgraph title<br/>second line",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "Subgraph",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 16
+          },
+          {
+            "text": " title",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 67.546875,
+            "y": 16
+          }
+        ],
+        [
+          {
+            "text": "second",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " line",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 50.578125,
+            "y": 33.599998474121094
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        99.296875,
+        80.21875
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1,
+        "width": 99.296875,
+        "height": 37.599998474121094
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-plain-empty-middle",
+      "text": "first<br/><br/>third",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "first",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 16
+          }
+        ],
+        [],
+        [
+          {
+            "text": "third",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 51.19999694824219
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        26.59375,
+        0,
+        32.84375
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1,
+        "width": 32.84375,
+        "height": 55.19999694824219
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-plain-leading-empty",
+      "text": "<br/>after a blank line",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [],
+        [
+          {
+            "text": "after",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " a",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 32.640625,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " blank",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 45.546875,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " line",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 87.90625,
+            "y": 33.599998474121094
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        0,
+        117.546875
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 18.599998474121094,
+        "width": 117.546875,
+        "height": 20
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-plain-trailing-empty",
+      "text": "before<br/>",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "before",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 16
+          }
+        ],
+        []
+      ],
+      "lineTextLengths": [
+        45.21875,
+        0
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1,
+        "width": 45.21875,
+        "height": 20
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-plain-entities",
+      "text": "a &amp; b<br/>c &lt; d",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "a",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 16
+          },
+          {
+            "text": " &",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 8.421875,
+            "y": 16
+          },
+          {
+            "text": " b",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 24.1875,
+            "y": 16
+          }
+        ],
+        [
+          {
+            "text": "c",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " <",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 8,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " d",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 21.328125,
+            "y": 33.599998474121094
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        37.734375,
+        34.84375
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1,
+        "width": 37.734375,
+        "height": 37.599998474121094
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-plain-14px",
+      "text": "Title line one<br/>line two",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 14,
+      "lines": [
+        [
+          {
+            "text": "Title",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 14,
+            "x": 0,
+            "y": 14.000000953674316
+          },
+          {
+            "text": " line",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 14,
+            "x": 27.140625,
+            "y": 14.000000953674316
+          },
+          {
+            "text": " one",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 14,
+            "x": 53.078125,
+            "y": 14.000000953674316
+          }
+        ],
+        [
+          {
+            "text": "line",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 14,
+            "x": 0,
+            "y": 29.400001525878906
+          },
+          {
+            "text": " two",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 14,
+            "x": 22.015625,
+            "y": 29.400001525878906
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        79.765625,
+        47.359375
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1.0000009536743164,
+        "width": 79.765625,
+        "height": 32.400001525878906
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-plain-style",
+      "text": "Title at twenty<br/>second line",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "font-size:20px;",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "Title",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 0,
+            "y": 20
+          },
+          {
+            "text": " at",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 38.765625,
+            "y": 20
+          },
+          {
+            "text": " twenty",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 61.375,
+            "y": 20
+          }
+        ],
+        [
+          {
+            "text": "second",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 0,
+            "y": 42
+          },
+          {
+            "text": " line",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 63.234375,
+            "y": 42
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        123.046875,
+        100.28125
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1,
+        "width": 123.046875,
+        "height": 47
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-plain-empty",
+      "text": "",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        []
+      ],
+      "lineTextLengths": [
+        0
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-md-wrap",
+      "text": "**Bold** cluster title with *emphasis* that is long enough to wrap at two hundred pixels",
+      "labelType": "markdown",
+      "isNode": true,
+      "anchor": "start",
+      "width": 200,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "Bold",
+            "weight": 700,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 16
+          },
+          {
+            "text": " cluster",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 33.890625,
+            "y": 16
+          },
+          {
+            "text": " title",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 85.5625,
+            "y": 16
+          },
+          {
+            "text": " with",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 117.3125,
+            "y": 16
+          }
+        ],
+        [
+          {
+            "text": "emphasis",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 16,
+            "x": 0,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " that",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 67.859375,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " is",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 99.859375,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " long",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 116.328125,
+            "y": 33.599998474121094
+          }
+        ],
+        [
+          {
+            "text": "enough",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 51.19999694824219
+          },
+          {
+            "text": " to",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 52.296875,
+            "y": 51.19999694824219
+          },
+          {
+            "text": " wrap",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 70.796875,
+            "y": 51.19999694824219
+          },
+          {
+            "text": " at",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 108.421875,
+            "y": 51.19999694824219
+          },
+          {
+            "text": " two",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 126.515625,
+            "y": 51.19999694824219
+          }
+        ],
+        [
+          {
+            "text": "hundred",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 68.80000305175781
+          },
+          {
+            "text": " pixels",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 57.984375,
+            "y": 68.80000305175781
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        150.625,
+        150.9375,
+        155.484375,
+        103.34375
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1,
+        "width": 155.484375,
+        "height": 72.80000305175781
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-md-two-lines",
+      "text": "**Start** line<br/>*second* line",
+      "labelType": "markdown",
+      "isNode": true,
+      "anchor": "start",
+      "width": 200,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "Start",
+            "weight": 700,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 16
+          },
+          {
+            "text": " line",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 37.09375,
+            "y": 16
+          }
+        ],
+        [
+          {
+            "text": "second",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 16,
+            "x": 0,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " line",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 50.515625,
+            "y": 33.599998474121094
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        66.734375,
+        80.15625
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1,
+        "width": 80.15625,
+        "height": 37.599998474121094
+      },
+      "background": null
+    },
+    {
+      "id": "cluster-md-style",
+      "text": "Cluster title in markdown with *styled* text that is long enough to wrap around",
+      "labelType": "markdown",
+      "isNode": true,
+      "anchor": "start",
+      "width": 200,
+      "style": "font-size:20px;",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "Cluster",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 0,
+            "y": 20
+          },
+          {
+            "text": " title",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 62.109375,
+            "y": 20
+          },
+          {
+            "text": " in",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 101.796875,
+            "y": 20
+          },
+          {
+            "text": " markdown",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 123.890625,
+            "y": 20
+          }
+        ],
+        [
+          {
+            "text": "with",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 0,
+            "y": 42
+          },
+          {
+            "text": " styled",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 20,
+            "x": 36.046875,
+            "y": 42
+          },
+          {
+            "text": " text",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 93.53125,
+            "y": 42
+          },
+          {
+            "text": " that",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 132.09375,
+            "y": 42
+          },
+          {
+            "text": " is",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 172.09375,
+            "y": 42
+          },
+          {
+            "text": " long",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 192.6875,
+            "y": 42
+          }
+        ],
+        [
+          {
+            "text": "enough",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 0,
+            "y": 64
+          },
+          {
+            "text": " to",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 65.375,
+            "y": 64
+          },
+          {
+            "text": " wrap",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 88.5,
+            "y": 64
+          },
+          {
+            "text": " around",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 20,
+            "x": 135.53125,
+            "y": 64
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        219.453125,
+        235.953125,
+        202.203125
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1,
+        "width": 235.953125,
+        "height": 69
+      },
+      "background": null
     }
   ]
 }

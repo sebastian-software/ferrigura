@@ -12,8 +12,8 @@
  * node labels are centred by it.
  *
  * Each label is measured the way the reference calls it: node labels inside the `g.label` that
- * `labelHelper` creates, with that group's `style` attribute, and edge labels in the plain group
- * that `insertEdgeLabel` passes. The recorded values are, for every outer line and inner word:
+ * `labelHelper` creates, with that group's `style` attribute, edge labels in the plain group that
+ * `insertEdgeLabel` passes, and cluster titles in a `g.cluster-label` as `clusters.js` does. The recorded values are, for every outer line and inner word:
  * the text (with its leading space), the computed weight, style and font size, and the start
  * position of its first character. Also recorded: each line's `getComputedTextLength`, the
  * `getBBox` of the `<text>`, and the background rectangle when there is one.
@@ -50,6 +50,11 @@ interface Request {
   labelType: 'text' | 'string' | 'markdown';
   /** Node labels are inside `labelHelper`'s group; edge labels take `insertEdgeLabel`'s call. */
   isNode: boolean;
+  /**
+   * Where the lines are anchored: `middle` for node and edge labels (the stylesheet or the attribute
+   * centres them), `start` for a cluster title, which has no `text-anchor`.
+   */
+  anchor: 'middle' | 'start';
   /** The wrap width, or `null` for the reference's default (120 for nodes, 200 for edges). */
   width: number | null;
   /** The label's style declarations, as `styles2String` writes them. */
@@ -85,6 +90,9 @@ interface Measured extends Request {
   background: Box | null;
 }
 
+/** A wrap width that no label reaches: the reference's `Infinity` for a plain cluster title. */
+const NO_WRAP = 1e9;
+
 const node = (
   id: string,
   text: string,
@@ -95,6 +103,7 @@ const node = (
   text,
   labelType,
   isNode: true,
+  anchor: 'middle',
   width: 120,
   style: '',
   addBackground: false,
@@ -112,6 +121,7 @@ const edge = (
   text,
   labelType,
   isNode: false,
+  anchor: 'middle',
   width: null,
   style: '',
   addBackground: true,
@@ -226,6 +236,54 @@ const requests: Request[] = [
   node('style-italic', 'Italic style label', 'text', { style: 'font-style:italic;' }),
   edge('style-edge-size-20', 'Edge label at twenty', 'text', { style: 'font-size:20px;' }),
   edge('style-edge-bold', 'Edge bold label', 'text', { style: 'font-weight:bold;' }),
+
+  // Cluster titles: anchored at the start, so each line starts at x = 0. A plain title never wraps
+  // (`createLabel` passes `Infinity`); a Markdown title wraps at the node width, 200 here. Its group
+  // carries no style, so the wrap does not see the title's font size.
+  node('cluster-plain-two-lines', 'Subgraph title<br/>second line', 'text', {
+    anchor: 'start',
+    width: NO_WRAP,
+  }),
+  node('cluster-plain-empty-middle', 'first<br/><br/>third', 'text', {
+    anchor: 'start',
+    width: NO_WRAP,
+  }),
+  node('cluster-plain-leading-empty', '<br/>after a blank line', 'text', {
+    anchor: 'start',
+    width: NO_WRAP,
+  }),
+  node('cluster-plain-trailing-empty', 'before<br/>', 'text', { anchor: 'start', width: NO_WRAP }),
+  node('cluster-plain-entities', 'a &amp; b<br/>c &lt; d', 'text', {
+    anchor: 'start',
+    width: NO_WRAP,
+  }),
+  node('cluster-plain-14px', 'Title line one<br/>line two', 'text', {
+    anchor: 'start',
+    width: NO_WRAP,
+    fontSize: 14,
+  }),
+  node('cluster-plain-style', 'Title at twenty<br/>second line', 'text', {
+    anchor: 'start',
+    width: NO_WRAP,
+    style: 'font-size:20px;',
+  }),
+  node('cluster-plain-empty', '', 'text', { anchor: 'start', width: NO_WRAP }),
+  node(
+    'cluster-md-wrap',
+    '**Bold** cluster title with *emphasis* that is long enough to wrap at two hundred pixels',
+    'markdown',
+    { anchor: 'start', width: 200 }
+  ),
+  node('cluster-md-two-lines', '**Start** line<br/>*second* line', 'markdown', {
+    anchor: 'start',
+    width: 200,
+  }),
+  node(
+    'cluster-md-style',
+    'Cluster title in markdown with *styled* text that is long enough to wrap around',
+    'markdown',
+    { anchor: 'start', width: 200, style: 'font-size:20px;' }
+  ),
 ];
 
 /** The fonts of the page: Lexica Ultralegible in its four styles, as data URLs. */
@@ -266,7 +324,19 @@ const measure = async (request) => {
   const markdown = request.labelType === 'markdown';
   const width = request.width === null ? undefined : request.width;
   let returned;
-  if (request.isNode) {
+  if (request.anchor === 'start') {
+    // clusters.js: createLabel (or createText for Markdown) in a 'g.cluster-label', which has no style
+    // attribute and no stylesheet rule, so the text has no text-anchor and starts at x = 0.
+    const labelEl = select(container).append('g').attr('class', 'cluster-label');
+    returned = await createText(labelEl, request.text, {
+      useHtmlLabels: false,
+      width,
+      style: request.style,
+      addSvgBackground: request.addBackground,
+      markdown,
+      isNode: true,
+    });
+  } else if (request.isNode) {
     // labelHelper: a 'g.label' with the node's label style, the text drawn into it.
     const shape = select(container).append('g').attr('class', 'node default');
     const labelEl = shape.insert('g').attr('class', 'label').attr('style', request.style);
