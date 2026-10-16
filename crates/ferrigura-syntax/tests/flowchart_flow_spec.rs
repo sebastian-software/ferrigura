@@ -36,7 +36,6 @@ macro_rules! unsafe_id_tests {
         }
 
         #[test]
-        #[ignore = "port: interactions, step 6"]
         fn $tooltip() {
             parse(concat!(
                 "graph LR\nclick ",
@@ -49,7 +48,6 @@ macro_rules! unsafe_id_tests {
         }
 
         #[test]
-        #[ignore = "port: styles and classes, step 5"]
         fn $class() {
             parse(concat!(
                 "graph LR\n",
@@ -172,7 +170,7 @@ mod parsing_a_flow_chart {
         }
 
         #[test]
-        #[ignore = "port: open issue, see report: the text of `<` is `<`, the reference's `&lt;` is sanitising, which the canonical model leaves out"]
+        #[ignore = "port: sanitised text, left out of the canonical model (canonical-model.md)"]
         fn should_be_able_to_parse_a_6() {
             char_test("<", "&lt;");
         }

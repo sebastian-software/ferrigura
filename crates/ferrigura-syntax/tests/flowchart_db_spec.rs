@@ -115,7 +115,6 @@ mod flow_db_add_class {
     use super::*;
 
     #[test]
-    #[ignore = "port: styles and classes, step 5"]
     fn should_detect_many_classes() {
         let diagram = parse("flowchart TB\nclassDef a,b stroke-width: 8px").expect("parses");
 
@@ -124,7 +123,6 @@ mod flow_db_add_class {
     }
 
     #[test]
-    #[ignore = "port: styles and classes, step 5"]
     fn should_detect_single_class() {
         let diagram = parse("flowchart TB\nclassDef a stroke-width: 8px").expect("parses");
 
@@ -365,7 +363,6 @@ mod flow_db_repeated_subgraph_ids_issue_8326 {
     }
 
     #[test]
-    #[ignore = "port: styles and classes, step 5"]
     fn applies_a_class_set_after_a_repeated_declaration_to_the_merged_subgraph() {
         let diagram = parse(
             "flowchart LR\nsubgraph S\n  x\nend\nsubgraph S\n  y\nend\nclassDef hot fill:#f00\nclass S hot",

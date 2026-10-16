@@ -28,19 +28,16 @@ mod interactions_when_parsing {
     use super::*;
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_be_possible_to_use_click_to_a_callback() {
         parse("graph TD\nA-->B\nclick A callback").expect("parses");
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_be_possible_to_use_click_to_a_click_and_call_callback() {
         parse("graph TD\nA-->B\nclick A call callback()").expect("parses");
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_be_possible_to_use_click_to_a_callback_with_tooltip() {
         let diagram = parse("graph TD\nA-->B\nclick A callback \"tooltip\"").expect("parses");
 
@@ -48,7 +45,6 @@ mod interactions_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_be_possible_to_use_click_to_a_click_and_call_callback_with_tooltip() {
         let diagram =
             parse("graph TD\nA-->B\nclick A call callback() \"tooltip\"").expect("parses");
@@ -57,13 +53,11 @@ mod interactions_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_be_possible_to_use_click_to_a_callback_with_an_arbitrary_number_of_args() {
         parse("graph TD\nA-->B\nclick A call callback(\"test0\", test1, test2)").expect("parses");
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_handle_interaction_click_to_a_link() {
         let diagram = parse("graph TD\nA-->B\nclick A \"click.html\"").expect("parses");
 
@@ -71,7 +65,6 @@ mod interactions_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_handle_interaction_click_to_a_click_and_href_link() {
         let diagram = parse("graph TD\nA-->B\nclick A href \"click.html\"").expect("parses");
 
@@ -79,7 +72,6 @@ mod interactions_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_handle_interaction_click_to_a_link_with_tooltip() {
         let diagram = parse("graph TD\nA-->B\nclick A \"click.html\" \"tooltip\"").expect("parses");
 
@@ -88,7 +80,6 @@ mod interactions_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_handle_interaction_click_to_a_click_and_href_link_with_tooltip() {
         let diagram =
             parse("graph TD\nA-->B\nclick A href \"click.html\" \"tooltip\"").expect("parses");
@@ -98,7 +89,6 @@ mod interactions_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_handle_interaction_click_to_a_link_with_target() {
         let diagram = parse("graph TD\nA-->B\nclick A \"click.html\" _blank").expect("parses");
 
@@ -107,7 +97,6 @@ mod interactions_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_handle_interaction_click_to_a_click_and_href_link_with_target() {
         let diagram = parse("graph TD\nA-->B\nclick A href \"click.html\" _blank").expect("parses");
 
@@ -116,7 +105,6 @@ mod interactions_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_handle_interaction_click_to_a_link_with_tooltip_and_target() {
         let diagram =
             parse("graph TD\nA-->B\nclick A \"click.html\" \"tooltip\" _blank").expect("parses");
@@ -127,7 +115,6 @@ mod interactions_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: interactions, step 6"]
     fn should_handle_interaction_click_to_a_click_and_href_link_with_tooltip_and_target() {
         let diagram = parse("graph TD\nA-->B\nclick A href \"click.html\" \"tooltip\" _blank")
             .expect("parses");
