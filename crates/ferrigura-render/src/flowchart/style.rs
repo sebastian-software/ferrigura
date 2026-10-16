@@ -745,6 +745,34 @@ mod tests {
     }
 
     #[test]
+    fn embedded_fonts_are_named_by_the_rules_and_declared_first() {
+        let family = ferrigura_text::EmbeddedFamily {
+            family: ferrigura_text::FontFamily::Sans,
+            name: "fg-0123456789abcdef-sans".to_owned(),
+            css: "@font-face{font-family:\"fg-0123456789abcdef-sans\";src:url(data:font/ttf;base64,AA==)}".to_owned(),
+        };
+        let sheet = style_sheet_with_fonts(
+            "flowchart",
+            Themes::Single(&light()),
+            &config("redux-color", "neo"),
+            &[],
+            std::slice::from_ref(&family),
+        );
+        assert!(
+            sheet.starts_with("@font-face{font-family:\"fg-0123456789abcdef-sans\";"),
+            "{sheet}"
+        );
+        assert!(
+            sheet.contains("#flowchart{font-family:\"fg-0123456789abcdef-sans\";font-size:14px;"),
+            "{sheet}"
+        );
+        assert!(
+            sheet.contains("#flowchart .label{font-family:\"fg-0123456789abcdef-sans\";"),
+            "{sheet}"
+        );
+    }
+
+    #[test]
     fn the_flood_of_a_dark_theme_is_white() {
         let defs = look_defs(
             "flowchart",
