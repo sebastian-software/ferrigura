@@ -789,6 +789,14 @@ fn add_edge(
     let index = graph.edges.len();
     graph.ports[source_port].outgoing.push(index);
     graph.ports[target_port].incoming.push(index);
+    // `transformEdge`: a port with several incoming or several outgoing edges makes the graph one
+    // with HYPEREDGES. Only explicit ports can be shared, since each other end gets its own port.
+    if [source_port, target_port]
+        .into_iter()
+        .any(|port| graph.ports[port].incoming.len() > 1 || graph.ports[port].outgoing.len() > 1)
+    {
+        graph.graph_properties.insert(GraphProperties::HYPEREDGES);
+    }
     let labels = import_edge_labels(edge, graph);
     graph.edges.push(LEdge {
         id: edge.id.clone(),
