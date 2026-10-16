@@ -13,10 +13,20 @@ import type { PortInput } from './reference.ts';
 
 const root = new URL('../../', import.meta.url);
 
+/** The fixture folders of a type. The state folder names are the reference's two headers. */
+const fixtureFolders: Record<string, string[]> = {
+  state: [
+    'e2e/diagrams/state-diagram/',
+    'e2e/diagrams/state-diagram-v2/',
+    'e2e/platform/dev-diagrams/',
+  ],
+};
+
 const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
   flowchart: /^\s*(graph|flowchart)/,
+  state: /^\s*stateDiagram/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */
@@ -64,12 +74,20 @@ function mermaidBlocks(source: string): string[] {
 export async function collectInputs(type: string): Promise<PortInput[]> {
   const candidates: { source: string; text: string }[] = [];
 
-  const fixtures = await walk(`e2e/diagrams/${type}/`, (path) => path.endsWith('.mmd'));
-  for (const fixture of fixtures) {
-    candidates.push({ source: fixture, text: await readFile(new URL(fixture, root), 'utf8') });
+  // The state fixtures are in two folders, and some state inputs sit in the platform's dev folder.
+  // Those are kept by detector, and the info smoke test in the state folders is dropped the same way.
+  for (const folder of fixtureFolders[type] ?? [`e2e/diagrams/${type}/`]) {
+    const fixtures = await walk(folder, (path) => path.endsWith('.mmd'));
+    for (const fixture of fixtures) {
+      const text = await readFile(new URL(fixture, root), 'utf8');
+      if (type === 'state' && !looksLikeType(type, text)) continue;
+      candidates.push({ source: fixture, text });
+    }
   }
 
-  const specs = await walk('packages/', (path) => /\.(spec|test)\.ts$/.test(path));
+  // The state specs are JavaScript files, the others are TypeScript.
+  const specPattern = type === 'state' ? /\.(spec|test)\.(ts|js)$/ : /\.(spec|test)\.ts$/;
+  const specs = await walk('packages/', (path) => specPattern.test(path));
   for (const spec of specs) {
     const source = await readFile(new URL(spec, root), 'utf8');
     for (const literal of stringLiterals(spec, source)) {

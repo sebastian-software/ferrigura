@@ -55,6 +55,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => Outcome::Rejected(error),
             },
             "flowchart" => flowchart_outcome(text),
+            "state"
+                if ferrigura_syntax::detect(text) != Some(ferrigura_syntax::DiagramType::State) =>
+            {
+                Outcome::Rejected(ParseError {
+                    line: 1,
+                    column: 1,
+                    message: "no state diagram detected".to_owned(),
+                })
+            }
             "state" => match state::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
