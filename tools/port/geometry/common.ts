@@ -73,8 +73,8 @@ export const SHIPPED_THEMES: readonly string[] = ['redux-color', 'redux-dark-col
  * `default`, which ferrigura does not ship; a diagram section whose own default is redux-color
  * gets the same theme either way.
  */
-export function forcedDirective(theme: unknown): string {
-  const settings: Record<string, unknown> = { ...FORCED_SETTINGS };
+export function forcedDirective(theme: unknown, extra: Record<string, unknown> = {}): string {
+  const settings: Record<string, unknown> = { ...FORCED_SETTINGS, ...extra };
   if (theme === undefined || (typeof theme === 'string' && !SHIPPED_THEMES.includes(theme))) {
     settings.theme =
       typeof theme === 'string' && theme.endsWith('dark') ? 'redux-dark-color' : 'redux-color';
@@ -91,13 +91,13 @@ const INIT_DIRECTIVE = /%%{\s*(?:init|initialize)\s*:\s*([\S\s]*?)}%%/g;
  * last value wins, so a fixture's own body directive (five flowchart fixtures set htmlLabels to
  * true there) would win over the first copy; the last copy comes after it.
  */
-export function patchText(source: string): string {
+export function patchText(source: string, extra: Record<string, unknown> = {}): string {
   const frontMatter = FRONT_MATTER.exec(source);
   const head = frontMatter ? frontMatter[0] : '';
   const body = source.slice(head.length);
   const headWithLine = head === '' || head.endsWith('\n') ? head : `${head}\n`;
   const bodyWithLine = body === '' || body.endsWith('\n') ? body : `${body}\n`;
-  const directive = forcedDirective(effectiveSettings(source).theme);
+  const directive = forcedDirective(effectiveSettings(source).theme, extra);
   return `${headWithLine}${directive}\n${bodyWithLine}${directive}\n`;
 }
 
