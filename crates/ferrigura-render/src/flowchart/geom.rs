@@ -42,6 +42,26 @@ pub fn path_coordinate_f32(value: f64) -> f64 {
     f64::from(svg_number(&value.to_string()))
 }
 
+/// The height of a sloped rectangle's outline as the browser's `getBBox` gives it, from the
+/// outline's top and bottom as the browser parses them ([`path_coordinate_f32`]).
+///
+/// The outline runs from `-2 * bottom` to `bottom`, so its exact span is `3 * bottom`. When that
+/// span is a float32 the browser returns it. When it is not, the browser returns the float32 one
+/// above the nearest float32 to it. Measured in Chromium on 433 outlines of this shape (half and
+/// quarter ulps of the span among them) with no exception, and on 163 exact spans unchanged. The
+/// rule is measured for this shape only: for spans between unrelated coordinates the same
+/// nearest-plus-one answer misses on 11 of 178 and 87 of 484 inexact spans, so other paths keep
+/// the nearest float32 of their span.
+#[must_use]
+pub fn sloped_outline_height_f32(top: f64, bottom: f64) -> f64 {
+    let exact = bottom - top;
+    let nearest = exact as f32;
+    if f64::from(nearest) == exact {
+        return exact;
+    }
+    f64::from(f32::from_bits(nearest.to_bits() + 1))
+}
+
 /// Parses a decimal the way Chromium's SVG number parser does, for a decimal without an exponent.
 ///
 /// The integer digits accumulate in single precision. The fraction digits accumulate in single
@@ -257,6 +277,30 @@ mod tests {
         for &(text, expected) in measured {
             assert_eq!(svg_number(text), expected, "{text}");
         }
+    }
+
+    /// `sloped_outline_height_f32` against Chromium: the `getBBox` height of a path `M0 -2b L0 b`
+    /// (and of the sloped outline of `shape-themes/01`, whose parsed top and bottom are
+    /// -71.79999542236328 and 35.89999771118164). The exact span is 3b; the reference's value
+    /// is the float32 above the nearest one when 3b is not a float32.
+    #[test]
+    fn sloped_outline_height_matches_chromium() {
+        let measured: &[(f64, f64)] = &[
+            // The node of shape-themes/01: 3 * 35.89999771118164 is a half ulp off a float32.
+            (35.89999771118164, 107.70000457763672),
+            (20.184999465942383, 60.55500411987305),
+            (22.219999313354492, 66.66000366210938),
+            (23.145000457763672, 69.43500518798828),
+        ];
+        for &(bottom, expected) in measured {
+            assert_eq!(
+                sloped_outline_height_f32(-2.0 * bottom, bottom),
+                expected,
+                "bottom {bottom}"
+            );
+        }
+        // An exact span is the browser's, unchanged: 3 * 20 = 60.
+        assert_eq!(sloped_outline_height_f32(-40.0, 20.0), 60.0);
     }
 
     #[test]
