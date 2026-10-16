@@ -4,9 +4,9 @@
 //! with the diagram's id as the scope; here every colour is a custom property declared on the id
 //! (`docs-port/decisions/0007`), and the rules refer to it with `var(…)`.
 //!
-//! A diagram's own rules (`styles.js` of the type, such as `flowchart/style.rs`) come after these.
-//! The reference's `getStyles` puts a diagram's rules between the `& svg` rules and the `neo` rules;
-//! the diagrams that use this sheet have none, so the order is only the base's own.
+//! A diagram's own rules (`styles.ts` of the type, such as `flowchart/style.rs`) come between the
+//! `p` rule and the `neo` rules, as the reference's `getStyles` places them. The info diagram has no
+//! rules of its own, so this sheet is its whole style.
 
 use ferrigura_text::EmbeddedFamily;
 

@@ -3,9 +3,9 @@
 //! `getTextObj`. Each returns the element it writes, with the attributes the reference sets, in the
 //! order it sets them; a caller that appends it to a group places it where the reference does.
 //!
-//! Not ported: `createTooltip` appends a `div` to the document body, not to the SVG, and it is only
-//! called by the parsers of flowchart, class, state and agentflow, which show the tooltip of a
-//! click. Clicks are dropped (`docs-port/decisions/0001`), so the tooltip is not drawn.
+//! Not ported: `createTooltip` appends a `div` to the document body, not to the SVG. The databases of
+//! flowchart, class, state and agentflow use it for the tooltip of a click, and clicks are dropped
+//! (`docs-port/decisions/0001`), so no SVG of this crate needs it.
 
 use crate::svg::number;
 

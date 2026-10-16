@@ -19,8 +19,9 @@
 //!   height of one line;
 //! - the reference also measures in `sans-serif` and keeps those values only when they are larger in
 //!   width, height and line height at once. ferrigura has no system sans-serif face, so it measures
-//!   the configured font, which is the choice the reference makes for every probed text
-//!   (`tools/port/text/common-fixture.ts`, where `sans-serif` is smaller in height at every size).
+//!   the configured font. On this machine the reference keeps the configured font for all 492 probed
+//!   requests that have both measurements (`tools/port/text/common-fixture.ts`); the test
+//!   `the_reference_keeps_the_configured_font_for_every_probed_text` holds that finding.
 //!
 //! The reference memoises `calculateTextDimensions`, `wrapLabel` and `breakString` by a string key
 //! built from the arguments (`${text}${fontSize}${fontWeight}${fontFamily}` and so on), and the key
@@ -28,7 +29,7 @@
 //! keeps the same keys for one render, so the same collisions happen as in one page of the
 //! reference. The reference's cache lives as long as its page, which holds several renders; a
 //! ferrigura render does not share a cache with another, so a collision across renders is not
-//! reproduced (`docs-port/M6-PLAN.md`, open questions).
+//! reproduced (open in the report of the task).
 
 use std::collections::HashMap;
 
