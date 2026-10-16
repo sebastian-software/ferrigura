@@ -12,11 +12,24 @@
 
 use std::collections::BTreeMap;
 
+use ferrigura_model::er::ErAttribute;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::value::Value;
 use serde::Serialize;
 
 use super::geom::Point;
+
+/// The fields that only an entity of an ER diagram carries (`EntityNode` in
+/// `diagrams/er/erTypes.ts`): the alias and the attributes, which its `erBox` shape draws. They are
+/// flattened into the node, as the reference's entity object has them next to the node's fields.
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntityFields {
+    /// The alias, which replaces the name as the drawn label; empty if none.
+    pub alias: String,
+    /// The attributes, in the order the DB's entity holds them (the source order of the model).
+    pub attributes: Vec<ErAttribute>,
+}
 
 /// The nodes and edges of a diagram, in the order its `getData` gives them.
 #[derive(Debug, Clone, Default, Serialize)]
@@ -96,6 +109,9 @@ pub struct Node {
     pub color_index: Option<u32>,
     /// The subgraph's metadata.
     pub metadata: BTreeMap<String, Value>,
+    /// The alias and attributes of an ER entity; `None` for every other node.
+    #[serde(flatten)]
+    pub entity: Option<EntityFields>,
 
     /// The size the layout uses: the measured box of a leaf, ELK's size afterwards.
     #[serde(skip)]

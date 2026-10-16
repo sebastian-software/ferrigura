@@ -1,6 +1,8 @@
 //! The ER diagram: a port of the unified renderer with the ER `getData` (`diagrams/er/erRenderer-unified.ts`, `erDb.ts`). The research is in
 //! `docs-port/er/NOTES.md`, section 5.
 
+pub mod data;
+
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::er::ErDiagram;
 
