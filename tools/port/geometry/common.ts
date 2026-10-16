@@ -270,9 +270,14 @@ export function flagValue(argv: string[], flag: string): string | null {
 export function renderFerrigura(
   text: string,
   id: string,
-  now?: number
+  now?: number,
+  seed?: number
 ): { svg: string } | { error: string } {
-  const args = now === undefined ? ['--id', id] : ['--id', id, '--now', String(Math.trunc(now))];
+  const args = ['--id', id];
+  if (now !== undefined) args.push('--now', String(Math.trunc(now)));
+  // The seed of the reference's random numbers: the generated gitGraph ids (commits, merges and
+  // cherry-picks without an `id:`) are drawn from the same generator.
+  if (seed !== undefined) args.push('--seed', String(seed));
   const result = spawnSync(renderBinary, args, {
     input: text,
     cwd: root,

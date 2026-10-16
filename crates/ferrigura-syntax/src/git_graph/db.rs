@@ -28,6 +28,40 @@ struct BranchState {
     head: Option<String>,
 }
 
+/// The generator of the page the reference is rendered in: its `Math.random` is mulberry32 from a
+/// fixed seed (`renderReference` in `tools/port/geometry/common.ts`). A seeded parse draws the
+/// generated ids from it, in the order the DB makes them, so they are the reference's ids.
+#[derive(Debug, Clone)]
+pub(crate) struct Mulberry32 {
+    state: i32,
+}
+
+impl Mulberry32 {
+    /// The generator of a seed, as `clock.seed` of the harness.
+    pub(crate) fn new(seed: u32) -> Self {
+        Self { state: seed as i32 }
+    }
+
+    /// The next hex digit of `makeRandomHex`: `Math.floor(Math.random() * 16)`, which is the top four
+    /// bits of the 32-bit value the generator returns.
+    fn next_digit(&mut self) -> usize {
+        self.state = self.state.wrapping_add(0x6d2b_79f5);
+        let state = self.state;
+        let mut t = (state ^ ((state as u32) >> 15) as i32).wrapping_mul(1 | state);
+        t = t.wrapping_add((t ^ ((t as u32) >> 7) as i32).wrapping_mul(61 | t)) ^ t;
+        let value = (t ^ ((t as u32) >> 14) as i32) as u32;
+        (value >> 28) as usize
+    }
+
+    /// The id part of `random({ length })`: `length` hex digits, each drawn from the generator.
+    fn hex_digits(&mut self, length: usize) -> String {
+        const DIGITS: &[u8; 16] = b"0123456789abcdef";
+        (0..length)
+            .map(|_| char::from(DIGITS[self.next_digit()]))
+            .collect()
+    }
+}
+
 /// The state of a gitGraph while its statements are applied.
 pub(crate) struct Db {
     title: String,
@@ -41,6 +75,7 @@ pub(crate) struct Db {
     commit_index: HashMap<String, usize>,
     seq: u64,
     warnings: Vec<String>,
+    random: Option<Mulberry32>,
 }
 
 /// The id a commit gets when the input gives none. The reference draws seven hex digits from
@@ -83,6 +118,16 @@ impl Db {
             commit_index: HashMap::new(),
             seq: 0,
             warnings: Vec::new(),
+            random: options.auto_id_seed.map(Mulberry32::new),
+        }
+    }
+
+    /// The id of a commit that has none: `<seq>-` and seven hex digits. Seeded, the digits are the
+    /// reference's `getID()`; otherwise they come from `auto_id`.
+    fn generated_id(&mut self, seq: u64) -> String {
+        match &mut self.random {
+            Some(random) => format!("{seq}-{}", random.hex_digits(7)),
+            None => auto_id(seq),
         }
     }
 
@@ -147,7 +192,10 @@ impl Db {
         // `seq` is read before its increment, so the first id is `0-…`.
         let seq = self.next_seq();
         let auto_id_used = given.is_none();
-        let id = given.unwrap_or_else(|| auto_id(seq));
+        let id = match given {
+            Some(id) => id,
+            None => self.generated_id(seq),
+        };
         let commit = GitGraphCommit {
             id: id.clone(),
             seq,
@@ -241,7 +289,7 @@ impl Db {
         let seq = self.next_seq();
         let auto_id_used = custom.is_empty();
         let id = if auto_id_used {
-            auto_id(seq)
+            self.generated_id(seq)
         } else {
             custom.clone()
         };
@@ -344,7 +392,7 @@ impl Db {
             vec![format!("cherry-pick:{}{merge_suffix}", source_commit.id)]
         });
         let parents = vec![current_id, source_commit.id.clone()];
-        let id = auto_id(seq);
+        let id = self.generated_id(seq);
         let commit = GitGraphCommit {
             id: id.clone(),
             seq,
@@ -435,5 +483,44 @@ mod tests {
             );
         }
         assert_ne!(auto_id(0), auto_id(1));
+    }
+}
+
+#[cfg(test)]
+mod seeded_id_tests {
+    use crate::git_graph::{Options, parse_with};
+
+    /// A seeded parse draws the generated ids from the reference page's generator: the merge without
+    /// an `id:` in fixture `e2e/diagrams/git/nightly-check/20-…` is `4-a08ff49` in the reference
+    /// rendered with `clock.seed` 1 (`tools/port/geometry/common.ts`), and so here.
+    #[test]
+    fn a_seeded_parse_gives_the_reference_ids() {
+        let text = "gitGraph TB:\n  commit id: \"1\"\n  commit id: \"2\"\n  branch develop\n  checkout develop\n  commit id: \"3\"\n  commit id: \"4\"\n  checkout main\n  merge develop\n  commit id: \"5\"\n  commit id: \"6\"\n";
+        let seeded = parse_with(
+            text,
+            &Options {
+                auto_id_seed: Some(1),
+                ..Options::default()
+            },
+        )
+        .unwrap();
+        let merge = seeded.commits.iter().find(|commit| commit.auto_id).unwrap();
+        assert_eq!(merge.id, "4-a08ff49");
+        let unseeded = parse_with(text, &Options::default()).unwrap();
+        assert!(
+            unseeded
+                .commits
+                .iter()
+                .any(|commit| commit.id.starts_with("4-") && commit.auto_id)
+        );
+        assert_ne!(
+            unseeded
+                .commits
+                .iter()
+                .find(|commit| commit.auto_id)
+                .unwrap()
+                .id,
+            "4-a08ff49"
+        );
     }
 }
