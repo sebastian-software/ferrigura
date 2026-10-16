@@ -277,7 +277,6 @@ mod when_parsing_subgraphs {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_attach_metadata_to_a_subgraph_and_collapse_it() {
         let diagram = parse(
             "\n      graph TD\n        subgraph one [My Group]\n          A --> B\n        end\n        C --> A\n        one@{ view: collapsed }\n    ",

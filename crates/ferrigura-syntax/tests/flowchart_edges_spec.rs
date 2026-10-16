@@ -388,7 +388,6 @@ mod edges_when_parsing {
             );
 
             #[test]
-            #[ignore = "port: shape data, step 7"]
             fn should_handle_normal_edges_where_you_also_have_a_node_with_metadata() {
                 let diagram =
                     parse("flowchart LR\nA id1@-->B\nA@{ shape: 'rect' }\n").expect("parses");

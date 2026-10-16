@@ -7,6 +7,7 @@
 mod db;
 mod grammar;
 mod scanner;
+mod shapes;
 mod unicode;
 
 use std::error::Error;
@@ -38,30 +39,12 @@ impl Default for Options {
 pub enum FlowchartError {
     /// The text is not a flowchart, or the DB rejects it (an unknown shape, too many edges, …).
     Syntax(ParseError),
-    /// The text uses a construct the port has not reached yet. This is not a verdict on the text:
-    /// the differential run counts these separately until the port covers them.
-    NotYetPorted {
-        /// Line of the construct, 1-based.
-        line: usize,
-        /// Column of the construct, 1-based.
-        column: usize,
-        /// What the construct is.
-        construct: &'static str,
-    },
 }
 
 impl fmt::Display for FlowchartError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Syntax(error) => write!(f, "{error}"),
-            Self::NotYetPorted {
-                line,
-                column,
-                construct,
-            } => write!(
-                f,
-                "line {line}, column {column}: not yet ported: {construct}"
-            ),
         }
     }
 }

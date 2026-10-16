@@ -13,6 +13,9 @@ use ferrigura_model::flowchart::{
 };
 
 use crate::text::{is_js_space, js_trim};
+use crate::yaml::Yaml;
+
+use super::shapes::is_valid_shape;
 
 /// A text with its kind, as the grammar's `text`, `edgeText` and `textNoTags` rules give it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -153,8 +156,10 @@ impl Db {
         self.direction = direction;
     }
 
-    /// `addVertex`, for the forms the grammar uses here: an id with an optional text and shape,
-    /// and the `[|key:value|…]` properties.
+    /// `addVertex`. `metadata` is the text of the shape data (`@{ … }`) after the id, if any: a
+    /// subgraph id takes it as its metadata, an edge id as its edge data, and a vertex takes its
+    /// fields. Each check comes in the order of the reference, and an id that is already an edge's
+    /// id returns before a vertex is made, with or without shape data.
     pub(crate) fn add_vertex(
         &mut self,
         id: &str,
@@ -162,15 +167,31 @@ impl Db {
         shape: Option<&str>,
         styles: Option<&[String]>,
         props: Option<(String, String)>,
+        metadata: Option<&str>,
     ) -> Result<(), DbError> {
         if js_trim(id).is_empty() {
             return Ok(());
         }
-        // An id that is already the id of an edge returns before any vertex is made. The
-        // reference does this for every call, not only for shape data.
-        if self.edge_index.contains_key(id) {
+        let doc = match metadata {
+            Some(text) => parse_shape_data(text)?,
+            None => None,
+        };
+        if let Some(pairs) = doc.as_ref().and_then(mapping)
+            && let Some(&index) = self.subgraph_index.get(id)
+        {
+            let metadata = &mut self.subgraphs[index].metadata;
+            for (key, value) in pairs {
+                metadata.insert(key.clone(), value.to_json());
+            }
             return Ok(());
         }
+        if let Some(&index) = self.edge_index.get(id) {
+            if let Some(pairs) = doc.as_ref().and_then(mapping) {
+                apply_edge_data(&mut self.edges[index], pairs);
+            }
+            return Ok(());
+        }
+
         let index = match self.vertex_index.get(id) {
             Some(&index) => index,
             None => {
@@ -218,6 +239,9 @@ impl Db {
         }
         if let Some((field, value)) = props {
             vertex.props.insert(field, value);
+        }
+        if let Some(doc) = doc {
+            apply_vertex_data(vertex, &doc)?;
         }
         Ok(())
     }
@@ -527,6 +551,148 @@ fn unique_items(body: &[BodyItem]) -> (Vec<String>, Option<String>) {
         }
     }
     (nodes, dir)
+}
+
+/// `yaml.load(…, JSON_SCHEMA)` of the shape data. A single line is wrapped in braces, as the
+/// reference does; a line break inside it makes it a block mapping.
+fn parse_shape_data(metadata: &str) -> Result<Option<Yaml>, DbError> {
+    let text = if metadata.contains('\n') {
+        format!("{metadata}\n")
+    } else {
+        format!("{{\n{metadata}\n}}")
+    };
+    crate::yaml::load(&text).map_err(|error| DbError(error.message))
+}
+
+fn mapping(doc: &Yaml) -> Option<&[(String, Yaml)]> {
+    match doc {
+        Yaml::Mapping(pairs) => Some(pairs),
+        _ => None,
+    }
+}
+
+fn field<'a>(pairs: &'a [(String, Yaml)], key: &str) -> Option<&'a Yaml> {
+    pairs
+        .iter()
+        .find(|(name, _)| name == key)
+        .map(|(_, value)| value)
+}
+
+/// JavaScript's truthiness of a YAML value.
+fn truthy(value: &Yaml) -> bool {
+    match value {
+        Yaml::Null => false,
+        Yaml::Bool(flag) => *flag,
+        Yaml::Number(number) => *number != 0.0 && !number.is_nan(),
+        Yaml::String(text) => !text.is_empty(),
+        Yaml::Sequence(_) | Yaml::Mapping(_) => true,
+    }
+}
+
+/// JavaScript's `Number(…)` of a YAML value.
+fn js_number(value: &Yaml) -> f64 {
+    match value {
+        Yaml::Null => 0.0,
+        Yaml::Bool(flag) => f64::from(u8::from(*flag)),
+        Yaml::Number(number) => *number,
+        Yaml::String(text) => {
+            let trimmed = js_trim(text);
+            if trimmed.is_empty() {
+                0.0
+            } else {
+                trimmed.parse::<f64>().unwrap_or(f64::NAN)
+            }
+        }
+        Yaml::Sequence(_) | Yaml::Mapping(_) => f64::NAN,
+    }
+}
+
+/// `sanitizeNodeLabelType`: the three kinds are kept, anything else is Markdown.
+fn label_kind(value: Option<&Yaml>) -> LabelType {
+    match value {
+        Some(Yaml::String(kind)) if kind == "text" => LabelType::Text,
+        Some(Yaml::String(kind)) if kind == "string" => LabelType::String,
+        _ => LabelType::Markdown,
+    }
+}
+
+/// The edge fields of shape data: `animate`, `animation` and `curve` (the interpolation).
+fn apply_edge_data(edge: &mut FlowEdge, pairs: &[(String, Yaml)]) {
+    if let Some(value) = field(pairs, "animate") {
+        match value {
+            Yaml::Bool(flag) => edge.animate = Some(*flag),
+            Yaml::Null => edge.animate = None,
+            _ => {}
+        }
+    }
+    if let Some(value) = field(pairs, "animation") {
+        edge.animation = (!matches!(value, Yaml::Null)).then(|| value.js_string());
+    }
+    if let Some(value) = field(pairs, "curve") {
+        edge.interpolate = (!matches!(value, Yaml::Null)).then(|| value.js_string());
+    }
+}
+
+/// The vertex fields of shape data, applied in the reference's order: shape, label, icon, form,
+/// position, image, constraint, and the width and height of the asset.
+fn apply_vertex_data(vertex: &mut FlowVertex, doc: &Yaml) -> Result<(), DbError> {
+    let Some(pairs) = mapping(doc) else {
+        return Ok(());
+    };
+    if let Some(shape) = field(pairs, "shape").filter(|value| truthy(value)) {
+        let Yaml::String(name) = shape else {
+            return Err(DbError(format!("No such shape: {}.", shape.js_string())));
+        };
+        if name != &name.to_lowercase() || name.contains('_') {
+            return Err(DbError(format!(
+                "No such shape: {name}. Shape names should be lowercase."
+            )));
+        }
+        if !is_valid_shape(name) {
+            return Err(DbError(format!("No such shape: {name}.")));
+        }
+        vertex.shape = Some(name.clone());
+    }
+    let label = field(pairs, "label").filter(|value| truthy(value));
+    if let Some(label) = label {
+        vertex.text = label.js_string();
+        vertex.label_type = label_kind(field(pairs, "labelType"));
+    }
+    // A blank label with an icon or an image leaves the text empty, when the text is still the id.
+    let label_blank = match field(pairs, "label") {
+        None | Some(Yaml::Null) => true,
+        Some(Yaml::String(text)) => js_trim(text).is_empty(),
+        Some(_) => false,
+    };
+    let blank_text_if_no_label = |vertex: &mut FlowVertex| {
+        if label_blank && vertex.text == vertex.id {
+            vertex.text = String::new();
+        }
+    };
+    if let Some(icon) = field(pairs, "icon").filter(|value| truthy(value)) {
+        vertex.icon = Some(icon.js_string());
+        blank_text_if_no_label(vertex);
+    }
+    if let Some(form) = field(pairs, "form").filter(|value| truthy(value)) {
+        vertex.form = Some(form.js_string());
+    }
+    if let Some(pos) = field(pairs, "pos").filter(|value| truthy(value)) {
+        vertex.pos = Some(pos.js_string());
+    }
+    if let Some(img) = field(pairs, "img").filter(|value| truthy(value)) {
+        vertex.img = Some(img.js_string());
+        blank_text_if_no_label(vertex);
+    }
+    if let Some(constraint) = field(pairs, "constraint").filter(|value| truthy(value)) {
+        vertex.constraint = Some(constraint.js_string());
+    }
+    if let Some(width) = field(pairs, "w").filter(|value| truthy(value)) {
+        vertex.asset_width = Some(js_number(width));
+    }
+    if let Some(height) = field(pairs, "h").filter(|value| truthy(value)) {
+        vertex.asset_height = Some(js_number(height));
+    }
+    Ok(())
 }
 
 /// The quotes that `addVertex` and `addSingleLink` remove: one pair around the whole text.

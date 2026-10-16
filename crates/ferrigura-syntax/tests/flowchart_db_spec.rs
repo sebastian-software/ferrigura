@@ -143,7 +143,6 @@ mod flow_db_get_data {
     use super::*;
 
     #[test]
-    #[ignore = "port: getData mapping, M5"]
     fn should_use_default_interpolate_for_edges_without_specific_interpolate() {
         // The spec checks the rendered `curve`. The model keeps the default that `linkStyle` sets and
         // leaves the fallback to the renderer.
@@ -154,7 +153,6 @@ mod flow_db_get_data {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5"]
     fn should_prioritize_edge_specific_interpolate_over_default_interpolate() {
         let diagram = parse(
             "flowchart TB\nA-->B\nlinkStyle default interpolate stepBefore\nlinkStyle 0 interpolate basis",
@@ -165,7 +163,6 @@ mod flow_db_get_data {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5"]
     fn should_support_modifying_interpolate_using_edge_id_syntax() {
         let diagram = parse(
             "flowchart TB\nA-->B\nA e2@-->C\nB e3@-->D\nC-->D\nlinkStyle default interpolate stepBefore\nlinkStyle 0 interpolate basis\ne2@{ curve: monotoneX }\ne3@{ curve: catmullRom }",
@@ -183,7 +180,6 @@ mod flow_db_collapsible_subgraphs {
     use super::*;
 
     #[test]
-    #[ignore = "port: getData mapping, M5"]
     fn renders_a_subgraph_normally_as_a_group_when_no_collapse_metadata_is_set() {
         // The spec checks `isGroup`, which is rendering. The model keeps the members and the edge.
         let diagram = parse("flowchart TB\nA-->B\nC-->A\nsubgraph sub1 [My Group]\nA\nB\nend")
@@ -200,7 +196,6 @@ mod flow_db_collapsible_subgraphs {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5; the metadata is shape data, step 7"]
     fn forwards_subgraph_metadata_to_the_group_node_so_layouts_can_read_it() {
         let diagram =
             parse("flowchart TB\nsubgraph sub1 [My Group]\nA\nB\nend\nsub1@{ algorithm: elk.box }")
@@ -213,7 +208,6 @@ mod flow_db_collapsible_subgraphs {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5; the metadata is shape data, step 7"]
     fn renders_a_collapsed_subgraph_as_a_single_collapsedgroup_node_and_hides_its_members() {
         let diagram = parse(
             "flowchart TB\nA-->B\nC-->A\nsubgraph sub1 [My Group]\nA\nB\nend\nsub1@{ view: collapsed }",
@@ -225,7 +219,6 @@ mod flow_db_collapsible_subgraphs {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5; the metadata is shape data, step 7"]
     fn redirects_edges_crossing_into_a_collapsed_subgraph_to_the_collapsed_node() {
         let diagram = parse(
             "flowchart TB\nC-->A\nsubgraph sub1 [My Group]\nA\nB\nend\nsub1@{ view: collapsed }",
@@ -236,7 +229,6 @@ mod flow_db_collapsible_subgraphs {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5; the metadata is shape data, step 7"]
     fn drops_edges_fully_internal_to_a_collapsed_subgraph_avoids_a_self_loop() {
         let diagram = parse(
             "flowchart TB\nA-->B\nsubgraph sub1 [My Group]\nA\nB\nend\nsub1@{ view: collapsed }",
@@ -247,7 +239,6 @@ mod flow_db_collapsible_subgraphs {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5; the metadata is shape data, step 7"]
     fn redirects_edges_to_the_outermost_collapsed_ancestor_for_nested_collapsed_subgraphs() {
         let diagram = parse(
             "flowchart TB\nC-->A\nsubgraph inner [Inner]\nA\nB\nend\nsubgraph outer [Outer]\ninner\nend\ninner@{ view: collapsed }\nouter@{ view: collapsed }",
@@ -281,7 +272,6 @@ mod flow_db_subgraph_colour_slots {
     use super::*;
 
     #[test]
-    #[ignore = "port: getData mapping, M5"]
     fn numbers_flat_subgraphs_in_source_order() {
         // The spec checks `colorIndex`, which is rendering. The model keeps the subgraphs in closing
         // order, which for these flat subgraphs is the source order.
@@ -294,7 +284,6 @@ mod flow_db_subgraph_colour_slots {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5"]
     fn numbers_nested_subgraphs_in_source_order_parent_before_its_children() {
         // The model lists subgraphs in closing order, so the nested ones come before their parent.
         // The colour numbering that the spec checks is rendering.
@@ -307,7 +296,6 @@ mod flow_db_subgraph_colour_slots {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5; the metadata is shape data, step 7"]
     fn keeps_a_collapsed_subgraph_on_its_own_slot_so_the_cycle_does_not_shift() {
         let diagram = parse(
             "flowchart TB\nA\nB\nC\nsubgraph first [First]\nA\nend\nsubgraph second [Second]\nB\nend\nsubgraph third [Third]\nC\nend\nsecond@{ view: collapsed }",
@@ -319,7 +307,6 @@ mod flow_db_subgraph_colour_slots {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5"]
     fn leaves_plain_vertices_without_a_slot() {
         // A plain vertex has no colour slot in the model; the subgraph is the only one listed.
         let diagram = parse("flowchart TB\nA\nsubgraph only [Only]\nA\nend").expect("parses");
@@ -351,7 +338,6 @@ mod flow_db_repeated_subgraph_ids_issue_8326 {
     }
 
     #[test]
-    #[ignore = "port: getData mapping, M5"]
     fn produces_a_single_group_node_in_getdata_with_both_members_parented_to_it() {
         // The spec checks the `getData` nodes and their `parentId`. The model keeps one subgraph
         // with both members.
@@ -378,7 +364,6 @@ mod flow_db_repeated_subgraph_ids_issue_8326 {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn collapses_a_repeated_subgraph_when_its_collapsed_metadata_comes_after_the_repeated_declaration()
      {
         let diagram = parse(
@@ -393,7 +378,6 @@ mod flow_db_repeated_subgraph_ids_issue_8326 {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn collapses_a_repeated_subgraph_when_its_collapsed_metadata_comes_between_the_two_declarations()
      {
         let diagram = parse(

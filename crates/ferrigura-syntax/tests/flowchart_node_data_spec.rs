@@ -41,7 +41,6 @@ mod when_parsing_directions {
     use super::*;
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_basic_shape_data_statements() {
         let diagram = parse("flowchart TB\n      D@{ shape: rounded}").expect("parses");
 
@@ -51,7 +50,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_basic_shape_data_statements_2() {
         let diagram = parse("flowchart TB\n      D@{ shape: rounded }").expect("parses");
 
@@ -61,7 +59,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_basic_shape_data_statements_with() {
         let diagram = parse("flowchart TB\n      D@{ shape: rounded } & E").expect("parses");
 
@@ -71,7 +68,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_shape_data_statements_with_edges() {
         let diagram = parse("flowchart TB\n      D@{ shape: rounded } --> E").expect("parses");
 
@@ -81,7 +77,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_basic_shape_data_statements_with_amp_and_edges_1() {
         let diagram = parse("flowchart TB\n      D@{ shape: rounded } & E --> F").expect("parses");
 
@@ -91,7 +86,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_basic_shape_data_statements_with_amp_and_edges_2() {
         let diagram =
             parse("flowchart TB\n      D@{ shape: rounded } & E@{ shape: rounded } --> F")
@@ -103,7 +97,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_basic_shape_data_statements_with_amp_and_edges_3() {
         let diagram = parse(
             "flowchart TB\n      D@{ shape: rounded } & E@{ shape: rounded } --> F & G@{ shape: rounded }",
@@ -116,7 +109,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_basic_shape_data_statements_with_amp_and_edges_4() {
         let diagram = parse(
             "flowchart TB\n      D@{ shape: rounded } & E@{ shape: rounded } --> F@{ shape: rounded } & G@{ shape: rounded }",
@@ -129,7 +121,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_basic_shape_data_statements_with_amp_and_edges_5_trailing_space() {
         let diagram = parse(
             "flowchart TB\n         D@{ shape: rounded } & E@{ shape: rounded } --> F{ shape: rounded } & G{ shape: rounded }    ",
@@ -142,7 +133,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_no_matter_of_there_are_no_leading_spaces() {
         let diagram = parse("flowchart TB\n      D@{shape: rounded}").expect("parses");
 
@@ -152,7 +142,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_no_matter_of_there_are_many_leading_spaces() {
         let diagram = parse("flowchart TB\n      D@{       shape: rounded}").expect("parses");
 
@@ -162,7 +151,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_be_forgiving_with_many_spaces_before_the_end() {
         let diagram = parse("flowchart TB\n      D@{ shape: rounded         }").expect("parses");
 
@@ -172,7 +160,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_be_possible_to_add_multiple_properties_on_the_same_line() {
         let diagram =
             parse("flowchart TB\n      D@{ shape: rounded , label: \"DD\"}").expect("parses");
@@ -183,7 +170,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_be_possible_to_link_to_a_node_with_more_data() {
         let diagram = parse(
             "flowchart TB\n      A --> D@{\n        shape: circle\n        other: \"clock\"\n     }\n\n      ",
@@ -197,7 +183,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_not_disturb_adding_multiple_nodes_after_each_other() {
         let diagram = parse(
             "flowchart TB\n      A[hello]\n      B@{\n        shape: circle\n        other: \"clock\"\n     }\n      C[Hello]@{\n        shape: circle\n        other: \"clock\"\n     }\n      ",
@@ -211,7 +196,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_use_handle_bracket_end_character_inside_the_shape_data() {
         let diagram = parse(
             "flowchart TB\n      A@{\n        label: \"This is }\"\n        other: \"clock\"\n     }\n      ",
@@ -223,7 +207,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_error_on_nonexistent_shape() {
         let error =
             syntax_error("flowchart TB\n      A@{ shape: this-shape-does-not-exist }\n      ");
@@ -236,7 +219,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_error_on_a_shape_name_that_is_only_an_object_property() {
         let error = syntax_error("flowchart TB\n      A@{ shape: constructor }\n      ");
 
@@ -244,7 +226,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_error_on_internal_only_shape() {
         // This shape does exist, but it is only supposed to be for internal/backwards compatibility use.
         let error = syntax_error("flowchart TB\n      A@{ shape: rect_left_inv_arrow }\n      ");
@@ -266,7 +247,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn multi_line_strings_should_be_supported() {
         let diagram = parse(
             "flowchart TB\n      A@{\n        label: |\n          This is a\n          multiline string\n        other: \"clock\"\n     }\n      ",
@@ -278,7 +258,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn multi_line_strings_should_be_supported_2() {
         let diagram = parse(
             "flowchart TB\n      A@{\n        label: \"This is a\n          multiline string\"\n        other: \"clock\"\n     }\n      ",
@@ -290,7 +269,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_be_possible_to_use_in_strings() {
         let diagram = parse(
             "flowchart TB\n      A@{\n        label: \"This is a string with }\"\n        other: \"clock\"\n     }\n      ",
@@ -302,7 +280,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_be_possible_to_use_in_strings_2() {
         let diagram = parse(
             "flowchart TB\n      A@{\n        label: \"This is a string with @\"\n        other: \"clock\"\n     }\n      ",
@@ -314,7 +291,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_be_possible_to_use_in_strings_3() {
         let diagram = parse(
             "flowchart TB\n      A@{\n        label: \"This is a string with}\"\n        other: \"clock\"\n     }\n      ",
@@ -326,7 +302,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_be_possible_to_use_syntax_to_add_labels_on_multi_nodes() {
         let diagram = parse(
             "flowchart TB\n       n2[\"label for n2\"] &   n4@{ label: \"label for n4\"}   & n5@{ label: \"label for n5\"}\n      ",
@@ -341,7 +316,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_be_possible_to_use_syntax_to_add_labels_on_multi_nodes_with_edge_link() {
         let diagram = parse(
             "flowchart TD\n    A[\"A\"] --> B[\"for B\"] &    C@{ label: \"for c\"} & E@{label : \"for E\"}\n    D@{label: \"for D\"}\n      ",
@@ -353,7 +327,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_be_possible_to_use_syntax_in_labels() {
         let diagram = parse(
             "flowchart TD\n    A[\"@A@\"] --> B[\"@for@ B@\"] & C@{ label: \"@for@ c@\"} & E{\"`@for@ E@`\"} & D((\"@for@ D@\"))\n      H1{{\"@for@ H@\"}}\n      H2{{\"`@for@ H@`\"}}\n      Q1{\"@for@ Q@\"}\n      Q2{\"`@for@ Q@`\"}\n      AS1>\"@for@ AS@\"]\n      AS2>\"`@for@ AS@`\"]\n      ",
@@ -412,7 +385,6 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_overriding_edge_animate_again() {
         let diagram = parse(
             "flowchart TD\n     A e1@--> B\n     C e2@--> D\n     E e3@--> F\n    e1@{ animate: true }\n    e2@{ animate: false }\n    e3@{ animate: true }\n    e3@{ animate: false }\n      ",
@@ -430,7 +402,7 @@ mod when_parsing_directions {
     }
 
     #[test]
-    #[ignore = "port: skipped upstream: skipped; also shape data, step 7"]
+    #[ignore = "port: skipped upstream: skipped"]
     fn should_be_possible_to_use_syntax_to_add_labels_with_trail_spaces() {
         let diagram = parse(
             "flowchart TB\n       n2[\"label for n2\"] &   n4@{ label: \"label for n4\"}   & n5@{ label: \"label for n5\"} ",

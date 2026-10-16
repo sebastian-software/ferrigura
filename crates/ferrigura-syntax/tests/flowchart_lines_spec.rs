@@ -26,7 +26,6 @@ mod lines_when_parsing {
     }
 
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_edge_curve_properties_using_edge_id() {
         let diagram = parse(
             "graph TD\nA e1@-->B\nA uniqueName@-->C\ne1@{curve: basis}\nuniqueName@{curve: cardinal}",
@@ -38,7 +37,6 @@ mod lines_when_parsing {
 
     // Uses `@{ … }` edge metadata, which is step 7.
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_edge_curve_properties_using_edge_id_but_without_overriding_default() {
         let diagram = parse(
             "graph TD\nA e1@-->B\nA-->C\nlinkStyle default interpolate linear\ne1@{curve: stepAfter}",
@@ -50,7 +48,6 @@ mod lines_when_parsing {
 
     // Uses `@{ … }` edge metadata, which is step 7.
     #[test]
-    #[ignore = "port: shape data, step 7"]
     fn should_handle_edge_curve_properties_using_edge_id_mixed_with_line_interpolation() {
         let diagram = parse(
             "graph TD\nA e1@-->B-->D\nA-->C e4@-->D-->E\nlinkStyle default interpolate linear\nlinkStyle 1 interpolate basis\ne1@{curve: monotoneX}\ne4@{curve: stepBefore}",

@@ -2,8 +2,8 @@
 //! production of the grammar has a function here, named after it; the DB calls happen where the
 //! grammar's actions run, in the same order (see `docs-port/flowchart/PLAN.md`, section 3.4).
 //!
-//! The constructs of later steps (styles, classes, `linkStyle`, interactions, shape data) are
-//! reported as not yet ported; they are not parsed into the model.
+//! Every construct of `flow.jison` is parsed into the model; the interactions and the shape data
+//! go through the DB as the reference's actions give them.
 
 use ferrigura_model::flowchart::{FlowchartDiagram, LabelType};
 
@@ -165,15 +165,6 @@ impl Parser<'_> {
 
     fn db<T>(&self, result: Result<T, DbError>) -> Result<T, FlowchartError> {
         result.or_else(|DbError(message)| self.syntax(message))
-    }
-
-    fn not_yet<T>(&self, construct: &'static str) -> Result<T, FlowchartError> {
-        let at = self.source.error(self.offset(), "");
-        Err(FlowchartError::NotYetPorted {
-            line: at.line,
-            column: at.column,
-            construct,
-        })
     }
 
     /// `graphConfig`: leading blanks, then `graph` with a direction, or with none. The DB gets the
@@ -388,43 +379,75 @@ impl Parser<'_> {
     /// its node reduces, and each link after the node that follows it; the returned ids are in the
     /// grammar's order, in which each chain step puts its nodes in front.
     fn vertex_statement(&mut self) -> Result<Vec<String>, FlowchartError> {
-        let group = self.node_group()?;
+        let (group, pending) = self.node_group()?;
+        let mut had_pending = pending.is_some();
+        if let Some(shape) = pending {
+            self.add_shape_data(&group, &shape)?;
+        }
         let mut chunks = vec![group.clone()];
         let mut previous = group;
         loop {
-            // `spaceList` may end a vertex statement, so blanks may come before the next link.
+            // `spaceList` may end a vertex statement, so blanks may come before the next link, but
+            // not after shape data: `vertexStatement: node shapeData` takes no blanks.
             let save = self.pos;
-            while self.kind() == Kind::Space {
-                self.take();
+            if !had_pending {
+                while self.kind() == Kind::Space {
+                    self.take();
+                }
             }
             if !matches!(self.kind(), Kind::Link | Kind::StartLink | Kind::LinkId) {
                 self.pos = save;
                 break;
             }
             let link = self.link()?;
-            let group = self.node_group()?;
+            let (group, pending) = self.node_group()?;
+            had_pending = pending.is_some();
+            if let Some(shape) = pending {
+                self.add_shape_data(&group, &shape)?;
+            }
             let added = self.db.add_link(&previous, &group, &link);
             self.db(added)?;
             chunks.push(group.clone());
             previous = group;
         }
-        // `spaceList` at the end of the statement.
-        while self.kind() == Kind::Space {
-            self.take();
+        // `spaceList` at the end of the statement; none may follow shape data.
+        if self.kind() == Kind::Space {
+            if had_pending {
+                return self.syntax("expected the end of the statement after shape data");
+            }
+            while self.kind() == Kind::Space {
+                self.take();
+            }
         }
         Ok(chunks.into_iter().rev().flatten().collect())
     }
 
-    /// `node`: styled vertices joined by `&`. Shape data after a vertex belongs to the group only
-    /// when an `&` follows it; otherwise it is returned as pending for the statement.
-    fn node_group(&mut self) -> Result<Vec<String>, FlowchartError> {
+    /// The shape data of a vertex: `addVertex` with the metadata, for the last node of the group.
+    fn add_shape_data(&mut self, group: &[String], shape: &str) -> Result<(), FlowchartError> {
+        let last = group.last().cloned().unwrap_or_default();
+        let added = self
+            .db
+            .add_vertex(&last, None, None, None, None, Some(shape));
+        self.db(added)
+    }
+
+    /// `shapeData`: the text of one or more shape data tokens, joined as written.
+    fn shape_data(&mut self) -> String {
+        let mut text = String::new();
+        while self.kind() == Kind::ShapeData {
+            text.push_str(&self.take().value);
+        }
+        text
+    }
+
+    /// `node`: styled vertices joined by `&`. Shape data after a vertex belongs to the group when an
+    /// `&` follows it, and is returned as pending when the statement continues or ends there.
+    fn node_group(&mut self) -> Result<(Vec<String>, Option<String>), FlowchartError> {
         let first = self.styled_vertex()?;
         let mut group = vec![first];
         loop {
-            if self.kind() == Kind::ShapeData {
-                return self.not_yet("shape data");
-            }
-            let save = self.pos;
+            let shape = (self.kind() == Kind::ShapeData).then(|| self.shape_data());
+            let after_shape = self.pos;
             let mut spaces = 0;
             while self.kind() == Kind::Space {
                 self.take();
@@ -437,14 +460,16 @@ impl Parser<'_> {
                     self.take();
                 }
                 let next = self.styled_vertex()?;
+                if let Some(shape) = shape {
+                    self.add_shape_data(&group, &shape)?;
+                }
                 group.push(next);
                 continue;
             }
-            // Not a continuation: the spaces belong to the statement.
-            self.pos = save;
-            break;
+            // Not a continuation: the statement takes the shape data; the blanks stay unread.
+            self.pos = after_shape;
+            return Ok((group, shape));
         }
-        Ok(group)
     }
 
     /// `styledVertex: vertex | vertex STYLE_SEPARATOR idString`.
@@ -526,7 +551,9 @@ impl Parser<'_> {
         let id = self.id_string()?;
         self.expect(Kind::Space, "a space after the node id")?;
         let styles = self.styles_opt()?;
-        let added = self.db.add_vertex(&id, None, None, Some(&styles), None);
+        let added = self
+            .db
+            .add_vertex(&id, None, None, Some(&styles), None, None);
         self.db(added)
     }
 
@@ -694,7 +721,7 @@ impl Parser<'_> {
                 let props = Some((field.value, value.value));
                 let added = self
                     .db
-                    .add_vertex(&id, Some(text), Some("rect"), None, props);
+                    .add_vertex(&id, Some(text), Some("rect"), None, props, None);
                 self.db(added)?;
                 return Ok(id);
             }
@@ -756,7 +783,7 @@ impl Parser<'_> {
             }
             _ => (None, None),
         };
-        let added = self.db.add_vertex(&id, text, shape, None, None);
+        let added = self.db.add_vertex(&id, text, shape, None, None, None);
         self.db(added)?;
         Ok(id)
     }

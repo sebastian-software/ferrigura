@@ -4,8 +4,7 @@
 //! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
-//! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`, or, for a construct
-//! the port has not reached yet, `{"id": 0, "ok": false, "notYet": "…", "error": {…}}`.
+//! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
 
 use std::error::Error;
 use std::fs;
@@ -18,7 +17,6 @@ use serde_json::{Value, json};
 enum Outcome {
     Model(Value),
     Rejected(ParseError),
-    NotYet(&'static str, ParseError),
 }
 
 fn error_value(error: &ParseError) -> Value {
@@ -29,18 +27,6 @@ fn flowchart_outcome(text: &str) -> Outcome {
     match flowchart::parse(text) {
         Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
         Err(FlowchartError::Syntax(error)) => Outcome::Rejected(error),
-        Err(FlowchartError::NotYetPorted {
-            line,
-            column,
-            construct,
-        }) => Outcome::NotYet(
-            construct,
-            ParseError {
-                line,
-                column,
-                message: format!("not yet ported: {construct}"),
-            },
-        ),
     }
 }
 
@@ -74,12 +60,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             Outcome::Rejected(error) => {
                 json!({ "id": id, "ok": false, "error": error_value(&error) })
             }
-            Outcome::NotYet(construct, error) => json!({
-                "id": id,
-                "ok": false,
-                "notYet": construct,
-                "error": error_value(&error),
-            }),
         });
     }
 
