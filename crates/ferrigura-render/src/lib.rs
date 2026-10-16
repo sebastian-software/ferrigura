@@ -7,6 +7,7 @@
 
 #![warn(missing_docs)]
 
+pub mod a11y;
 pub mod pie;
 pub mod svg;
 
@@ -22,6 +23,8 @@ pub enum RenderError {
     Parse(ParseError),
     /// The configuration holds a value of the wrong type.
     Config(String),
+    /// An option of the render is not valid, such as an id that is not a CSS identifier.
+    Options(String),
     /// A bundled font could not be read or subset.
     Text(TextError),
 }
@@ -31,6 +34,7 @@ impl fmt::Display for RenderError {
         match self {
             Self::Parse(error) => write!(f, "{error}"),
             Self::Config(message) => write!(f, "invalid configuration: {message}"),
+            Self::Options(message) => write!(f, "invalid option: {message}"),
             Self::Text(error) => write!(f, "text: {error:?}"),
         }
     }

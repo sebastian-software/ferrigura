@@ -20,14 +20,14 @@ fn slice_labels(svg: &str) -> Vec<String> {
 #[test]
 fn should_render_slices_in_input_order_not_sorted_by_size() {
     let out = svg("pie\n  \"A\" : 10\n  \"B\" : 100\n  \"C\" : 50\n");
-    assert_eq!(out.matches("class=\"pieCircle\"").count(), 3);
+    assert_eq!(out.matches("class=\"pieCircle ").count(), 3);
     assert_eq!(slice_labels(&out), ["6%", "63%", "31%"]);
 }
 
 #[test]
 fn should_leave_out_slices_that_round_to_zero_percent_but_keep_their_legend() {
     let out = svg("pie\n  \"A\" : 10\n  \"B\" : 100\n  \"C\" : 0.1\n  \"D\" : 50\n");
-    assert_eq!(out.matches("class=\"pieCircle\"").count(), 3);
+    assert_eq!(out.matches("class=\"pieCircle ").count(), 3);
     assert_eq!(out.matches("class=\"legend\"").count(), 4);
     assert!(!slice_labels(&out).iter().any(|label| label == "0%"));
 }

@@ -2,15 +2,24 @@
 //! `pieStyles.ts`. The layout follows the reference step by step, so that the geometry can be
 //! compared with it (`tools/port/`); the text widths come from `ferrigura-text`, where the reference
 //! measures the DOM.
+//!
+//! The colours follow `docs-port/decisions/0007`: every colour is a CSS custom property, declared on
+//! the diagram's own id, and every element that has a colour also carries its concrete value as a
+//! presentation attribute, so a viewer without custom properties still draws the colours. No colour
+//! is set inline. Every selector starts with the diagram's id, so the diagram does not reach other
+//! diagrams or the page around it.
 
 use std::f64::consts::PI;
 
 use ferrigura_model::config::PieDiagramConfig;
 use ferrigura_model::pie::{PieDiagram, PieSection};
 use ferrigura_model::value::Value;
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure};
+use ferrigura_text::{
+    EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure,
+};
 
 use crate::RenderError;
+use crate::a11y;
 use crate::svg::{arc_path, escape, font_faces, number};
 
 const MARGIN: f64 = 40.0;
@@ -19,21 +28,61 @@ const LEGEND_SPACING: f64 = 4.0;
 const HEIGHT: f64 = 450.0;
 const PIE_WIDTH: f64 = HEIGHT;
 
-/// What the pie renderer draws: the model, the pie configuration and the theme's variables.
+/// The number of slice colours: the reference's `myGeneratedColors` has twelve, and a slice takes
+/// the colour of its position among all the sections, wrapping around.
+const SLICE_COLOURS: usize = 12;
+
+/// The colour tokens that are not slice colours.
+const TEXT_COLOURS: [&str; 5] = [
+    "pieStrokeColor",
+    "pieOuterStrokeColor",
+    "pieTitleTextColor",
+    "pieSectionTextColor",
+    "pieLegendTextColor",
+];
+
+/// The themes a pie is drawn with.
+#[derive(Debug, Clone, Copy)]
+pub enum Themes<'a> {
+    /// One set of variables, written as it is.
+    Single(&'a Value),
+    /// A light and a dark set. The light set is written; the dark set applies under
+    /// `prefers-color-scheme: dark`, so one SVG follows the viewer's scheme.
+    Schemes {
+        /// The variables of the light scheme.
+        light: &'a Value,
+        /// The variables of the dark scheme.
+        dark: &'a Value,
+    },
+}
+
+impl Themes<'_> {
+    /// The set that gives the presentation attributes and the sizes: the single set, or the light one.
+    fn primary(&self) -> &Value {
+        match self {
+            Self::Single(variables) => variables,
+            Self::Schemes { light, .. } => light,
+        }
+    }
+}
+
+/// What the pie renderer draws.
 pub struct PieInput<'a> {
     /// The parsed diagram.
     pub diagram: &'a PieDiagram,
     /// The pie section of the effective configuration.
     pub config: &'a PieDiagramConfig,
-    /// The `themeVariables` object of the theme.
-    pub theme: &'a Value,
-    /// The id of the SVG element.
+    /// The colours and sizes of the theme.
+    pub themes: Themes<'a>,
+    /// The id of the SVG element. It scopes every selector of the diagram, so it must be a CSS
+    /// identifier.
     pub id: &'a str,
 }
 
-/// One slice of the pie: its section, its start and end angles, and whether it is drawn.
+/// One slice of the pie: its section and its position among the sections, and its start and end angles.
 struct Slice<'a> {
     section: &'a PieSection,
+    index: usize,
     start: f64,
     end: f64,
 }
@@ -44,14 +93,13 @@ struct Slice<'a> {
 ///
 /// Returns an error if a bundled font cannot be read or subset.
 pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
-    let theme = Theme {
-        variables: input.theme,
-    };
+    let themes = input.themes;
+    let variables = themes.primary();
     let config = input.config;
     let sections = &input.diagram.sections;
     let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
 
-    let outer_stroke_width = theme.px("pieOuterStrokeWidth").unwrap_or(2.0);
+    let outer_stroke_width = px(variables, "pieOuterStrokeWidth").unwrap_or(2.0);
     let inner_hole = if config.donut_hole > 0.0 && config.donut_hole <= 0.9 {
         config.donut_hole
     } else {
@@ -63,21 +111,14 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
 
     let total: f64 = sections.iter().map(|section| section.value).sum();
     let arcs = pie_arcs(sections, total);
-    let colors: Vec<Option<String>> = (0..12)
-        .map(|index| theme.text(&format!("pie{}", index + 1)))
-        .collect();
-    let color_of = |label: &str| -> Option<String> {
-        let index = sections.iter().position(|section| section.label == label)?;
-        colors[index % colors.len()].clone()
-    };
     let visible: Vec<&Slice<'_>> = arcs
         .iter()
         .filter(|arc| to_fixed0(arc.section.value / total * 100.0) != "0")
         .collect();
 
-    let section_size = theme.px("pieSectionTextSize").unwrap_or(16.0);
-    let legend_size = theme.px("pieLegendTextSize").unwrap_or(16.0);
-    let title_size = theme.px("pieTitleTextSize").unwrap_or(25.0);
+    let section_size = px(variables, "pieSectionTextSize").unwrap_or(16.0);
+    let legend_size = px(variables, "pieLegendTextSize").unwrap_or(16.0);
+    let title_size = px(variables, "pieTitleTextSize").unwrap_or(25.0);
 
     let legend_labels: Vec<String> = sections
         .iter()
@@ -166,13 +207,7 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
         text: title,
         face: sans,
     });
-    for label in &legend_labels {
-        runs.push(Run {
-            text: label,
-            face: sans,
-        });
-    }
-    for label in &slice_labels {
+    for label in legend_labels.iter().chain(&slice_labels) {
         runs.push(Run {
             text: label,
             face: sans,
@@ -195,17 +230,22 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
     );
     body.push_str(&pie_open);
     body.push_str(&format!(
-        "<circle class=\"pieOuterCircle\" cx=\"0\" cy=\"0\" r=\"{}\"/>",
-        number(radius + outer_stroke_width / 2.0)
+        "<circle class=\"pieOuterCircle\" cx=\"0\" cy=\"0\" r=\"{}\"{}/>",
+        number(radius + outer_stroke_width / 2.0),
+        attribute(variables, "stroke", "pieOuterStrokeColor"),
     ));
     for arc in &visible {
-        let class = slice_class(input.config, arc.section);
-        let fill = color_of(&arc.section.label)
-            .map(|color| format!(" fill=\"{}\"", escape(&color)))
-            .unwrap_or_default();
+        let mut class = format!("pieCircle {}", slot_class(arc.index));
+        if config.highlight_slice == "hover" {
+            class.push_str(" highlightedOnHover");
+        } else if config.highlight_slice == arc.section.label {
+            class.push_str(" highlighted");
+        }
         body.push_str(&format!(
-            "<path class=\"{class}\" d=\"{}\"{fill}/>",
-            arc_path(inner_radius, radius, arc.start, arc.end)
+            "<path class=\"{class}\" d=\"{}\"{}{}/>",
+            arc_path(inner_radius, radius, arc.start, arc.end),
+            attribute(variables, "fill", &slot_token(arc.index)),
+            attribute(variables, "stroke", "pieStrokeColor"),
         ));
     }
     for (arc, text) in visible.iter().zip(&slice_labels) {
@@ -213,7 +253,8 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
         let (cx, cy) = (label_radius * middle.cos(), label_radius * middle.sin());
         let width = measure(sans, text, section_size)?;
         body.push_str(&format!(
-            "<text class=\"slice\" x=\"{}\" y=\"{}\">{}</text>",
+            "<text class=\"slice\"{} x=\"{}\" y=\"{}\">{}</text>",
+            attribute(variables, "fill", "pieSectionTextColor"),
             number(cx - width / 2.0),
             number(cy),
             escape(text)
@@ -223,29 +264,30 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
 
     let title_x = -title_width / 2.0;
     body.push_str(&format!(
-        "<text class=\"pieTitleText\" x=\"{}\" y=\"{}\">{}</text>",
+        "<text class=\"pieTitleText\"{} x=\"{}\" y=\"{}\">{}</text>",
+        attribute(variables, "fill", "pieTitleTextColor"),
         number(title_x),
         number(-(HEIGHT - 50.0) / 2.0),
         escape(title)
     ));
 
-    for (index, section) in sections.iter().enumerate() {
-        let color = color_of(&section.label)
-            .map(|color| escape(&color))
-            .unwrap_or_default();
+    for (index, label) in legend_labels.iter().enumerate() {
         body.push_str(&format!(
-            "<g class=\"legend\" transform=\"{}\"><rect width=\"{}\" height=\"{}\" style=\"fill: {color}; stroke: {color};\"/><text x=\"{}\" y=\"{}\">{}</text></g>",
+            "<g class=\"legend\" transform=\"{}\"><rect class=\"{}\" width=\"{}\" height=\"{}\"{}{}/><text{} x=\"{}\" y=\"{}\">{}</text></g>",
             legend_transform(index),
+            slot_class(index),
             number(LEGEND_RECT_SIZE),
             number(LEGEND_RECT_SIZE),
+            attribute(variables, "fill", &slot_token(index)),
+            attribute(variables, "stroke", &slot_token(index)),
+            attribute(variables, "fill", "pieLegendTextColor"),
             number(LEGEND_RECT_SIZE + LEGEND_SPACING),
             number(LEGEND_RECT_SIZE - LEGEND_SPACING),
-            escape(&legend_labels[index]),
+            escape(label),
         ));
     }
     body.push_str("</g>");
 
-    let style = styles(&theme, &family_name, &families);
     let size_attributes = if input.config.use_max_width {
         format!(
             "width=\"100%\" style=\"max-width: {}px;\"",
@@ -258,8 +300,17 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
             number(total_width)
         )
     };
+    let style = style_element(input.id, themes, &family_name, &families);
+    let accessibility =
+        a11y::children(input.id, &input.diagram.acc_title, &input.diagram.acc_descr);
+    let accessible_attributes = a11y::root_attributes(
+        input.id,
+        "pie",
+        &input.diagram.acc_title,
+        &input.diagram.acc_descr,
+    );
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} viewBox=\"{x} 0 {w} {h}\" role=\"graphics-document document\" aria-roledescription=\"pie\"><style>{style}</style>{body}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} viewBox=\"{x} 0 {w} {h}\"{accessible_attributes}>{accessibility}{style}{body}</svg>",
         id = escape(input.id),
         x = number(view_box_x),
         w = number(total_width),
@@ -270,11 +321,12 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
 /// The slices with their angles, as `d3-shape`'s pie makes them: the slices that are at least one
 /// per cent of the total, in order, sharing the full circle between them.
 fn pie_arcs(sections: &[PieSection], total: f64) -> Vec<Slice<'_>> {
-    let included: Vec<&PieSection> = sections
+    let included: Vec<(usize, &PieSection)> = sections
         .iter()
-        .filter(|section| (section.value / total) * 100.0 >= 1.0)
+        .enumerate()
+        .filter(|(_, section)| (section.value / total) * 100.0 >= 1.0)
         .collect();
-    let sum: f64 = included.iter().map(|section| section.value).sum();
+    let sum: f64 = included.iter().map(|(_, section)| section.value).sum();
     let k = if sum != 0.0 && !sum.is_nan() {
         2.0 * PI / sum
     } else {
@@ -283,7 +335,7 @@ fn pie_arcs(sections: &[PieSection], total: f64) -> Vec<Slice<'_>> {
     let mut angle = 0.0;
     included
         .into_iter()
-        .map(|section| {
+        .map(|(index, section)| {
             let start = angle;
             angle += if section.value > 0.0 {
                 section.value * k
@@ -292,11 +344,110 @@ fn pie_arcs(sections: &[PieSection], total: f64) -> Vec<Slice<'_>> {
             };
             Slice {
                 section,
+                index,
                 start,
                 end: angle,
             }
         })
         .collect()
+}
+
+/// The class of a slice's colour slot: the slot is the position among the sections, wrapping around
+/// after twelve colours.
+fn slot_class(index: usize) -> String {
+    format!("pie-slot-{}", index % SLICE_COLOURS)
+}
+
+/// The name of the colour token of a slice: `pie1` to `pie12`.
+fn slot_token(index: usize) -> String {
+    format!("pie{}", index % SLICE_COLOURS + 1)
+}
+
+/// The presentation attribute of a colour token, with a leading space, or nothing when the theme
+/// does not set the token.
+fn attribute(variables: &Value, name: &str, token: &str) -> String {
+    text_of(variables, token)
+        .map(|colour| format!(" {name}=\"{}\"", escape(&colour)))
+        .unwrap_or_default()
+}
+
+/// The CSS custom property declarations of the colour tokens of a set of variables.
+fn declarations(variables: &Value) -> String {
+    colour_tokens()
+        .iter()
+        .filter_map(|token| {
+            text_of(variables, token).map(|colour| format!("--{token}: {};", css_text(&colour)))
+        })
+        .collect()
+}
+
+/// Every colour token: the five text and stroke colours, and the twelve slice colours.
+fn colour_tokens() -> Vec<String> {
+    TEXT_COLOURS
+        .iter()
+        .map(|token| (*token).to_owned())
+        .chain((1..=SLICE_COLOURS).map(|index| format!("pie{index}")))
+        .collect()
+}
+
+/// The `<style>` element: the colour tokens of the themes, the diagram's rules as `pieStyles.ts`
+/// writes them with the colours as `var(…)` references, and the embedded font faces. Every rule is
+/// scoped to the diagram's id.
+fn style_element(
+    id: &str,
+    themes: Themes<'_>,
+    family: &str,
+    families: &[EmbeddedFamily],
+) -> String {
+    let variables = themes.primary();
+    let tokens = match themes {
+        Themes::Single(set) => format!("#{id}{{{}}}", declarations(set)),
+        Themes::Schemes { light, dark } => format!(
+            "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
+            declarations(light),
+            declarations(dark)
+        ),
+    };
+    let stroke_width = text_of(variables, "pieStrokeWidth").unwrap_or_default();
+    let opacity = text_of(variables, "pieOpacity").unwrap_or_default();
+    let outer_stroke_width = text_of(variables, "pieOuterStrokeWidth").unwrap_or_default();
+    let title_size = text_of(variables, "pieTitleTextSize").unwrap_or_default();
+    let section_size = text_of(variables, "pieSectionTextSize").unwrap_or_default();
+    let legend_size = text_of(variables, "pieLegendTextSize").unwrap_or_default();
+    let slots: String = (0..SLICE_COLOURS)
+        .map(|slot| {
+            format!(
+                "#{id} .pieCircle.pie-slot-{slot}{{fill: var(--pie{});}}#{id} .legend rect.pie-slot-{slot}{{fill: var(--pie{}); stroke: var(--pie{});}}",
+                slot + 1,
+                slot + 1,
+                slot + 1
+            )
+        })
+        .collect();
+    let faces = if families.is_empty() {
+        String::new()
+    } else {
+        font_faces(families)
+    };
+    let rules = format!(
+        "#{id} .pieCircle{{stroke: var(--pieStrokeColor);stroke-width: {stroke_width};opacity: {opacity};}}\
+#{id} .pieCircle.highlighted{{scale: 1.05;opacity: 1;}}\
+#{id} .pieCircle.highlightedOnHover:hover{{transition-duration: 250ms;scale: 1.05;opacity: 1;}}\
+#{id} .pieOuterCircle{{stroke: var(--pieOuterStrokeColor);stroke-width: {outer_stroke_width};fill: none;}}\
+#{id} .pieTitleText{{text-anchor: start;font-size: {title_size};fill: var(--pieTitleTextColor);font-family: \"{family}\";}}\
+#{id} .slice{{font-family: \"{family}\";fill: var(--pieSectionTextColor);font-size: {section_size};}}\
+#{id} .legend text{{fill: var(--pieLegendTextColor);font-family: \"{family}\";font-size: {legend_size};}}\
+#{id} text{{white-space: pre;}}"
+    );
+    format!("<style>{}{tokens}{rules}{slots}</style>", css_text(&faces))
+}
+
+/// Text for a `<style>` element: the characters that would end the element or start a reference
+/// are escaped, and the quotes of CSS are kept as they are.
+fn css_text(css: &str) -> String {
+    css.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 /// A length rounded to the browser's layout unit of 1/64 px. A width that is not on that grid makes
@@ -320,66 +471,18 @@ fn slice_text(section: &PieSection, total: f64) -> String {
     format!("{}%", to_fixed0(section.value / total * 100.0))
 }
 
-fn slice_class(config: &PieDiagramConfig, section: &PieSection) -> String {
-    let mut class = "pieCircle".to_owned();
-    if config.highlight_slice == "hover" {
-        class.push_str(" highlightedOnHover");
-    } else if config.highlight_slice == section.label {
-        class.push_str(" highlighted");
+/// A variable as text: a string as it is, a number as JavaScript prints it.
+fn text_of(variables: &Value, name: &str) -> Option<String> {
+    match variables.get(name)? {
+        Value::String(text) => Some(text.clone()),
+        Value::Number(number_value) => Some(number(*number_value)),
+        _ => None,
     }
-    class
 }
 
-/// The CSS of the pie, as `pieStyles.ts` writes it, with the embedded font family.
-fn styles(theme: &Theme<'_>, family: &str, families: &[ferrigura_text::EmbeddedFamily]) -> String {
-    let stroke = theme.text("pieStrokeColor").unwrap_or_default();
-    let stroke_width = theme.text("pieStrokeWidth").unwrap_or_default();
-    let opacity = theme.text("pieOpacity").unwrap_or_default();
-    let outer_stroke = theme.text("pieOuterStrokeColor").unwrap_or_default();
-    let outer_stroke_width = theme.text("pieOuterStrokeWidth").unwrap_or_default();
-    let title_size = theme.text("pieTitleTextSize").unwrap_or_default();
-    let title_color = theme.text("pieTitleTextColor").unwrap_or_default();
-    let section_color = theme.text("pieSectionTextColor").unwrap_or_default();
-    let section_size = theme.text("pieSectionTextSize").unwrap_or_default();
-    let legend_color = theme.text("pieLegendTextColor").unwrap_or_default();
-    let legend_size = theme.text("pieLegendTextSize").unwrap_or_default();
-    format!(
-        "{faces}\
-.pieCircle{{stroke: {stroke};stroke-width: {stroke_width};opacity: {opacity};}}\
-.pieCircle.highlighted{{scale: 1.05;opacity: 1;}}\
-.pieCircle.highlightedOnHover:hover{{transition-duration: 250ms;scale: 1.05;opacity: 1;}}\
-.pieOuterCircle{{stroke: {outer_stroke};stroke-width: {outer_stroke_width};fill: none;}}\
-.pieTitleText{{text-anchor: start;font-size: {title_size};fill: {title_color};font-family: \"{family}\";}}\
-.slice{{font-family: \"{family}\";fill: {section_color};font-size: {section_size};}}\
-.legend text{{fill: {legend_color};font-family: \"{family}\";font-size: {legend_size};}}\
-text{{white-space: pre;}}",
-        faces = if families.is_empty() {
-            String::new()
-        } else {
-            font_faces(families)
-        },
-    )
-}
-
-/// The `themeVariables` of the diagram, read as the renderer reads them.
-struct Theme<'a> {
-    variables: &'a Value,
-}
-
-impl Theme<'_> {
-    /// A variable as text: a string as it is, a number as JavaScript prints it.
-    fn text(&self, name: &str) -> Option<String> {
-        match self.variables.get(name)? {
-            Value::String(text) => Some(text.clone()),
-            Value::Number(number_value) => Some(number(*number_value)),
-            _ => None,
-        }
-    }
-
-    /// The leading pixel count of a font size or stroke width, as `parseFontSize` reads it.
-    fn px(&self, name: &str) -> Option<f64> {
-        leading_integer(&self.text(name)?)
-    }
+/// The leading pixel count of a font size or stroke width, as `parseFontSize` reads it.
+fn px(variables: &Value, name: &str) -> Option<f64> {
+    leading_integer(&text_of(variables, name)?)
 }
 
 /// `parseInt(text, 10)` for the leading digits of a size such as `25px`.

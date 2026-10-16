@@ -14,7 +14,9 @@ mod generated {
 mod layers;
 
 pub use generated::*;
-pub use layers::{assign_with_depth, deep_merge, effective, sanitize_directive};
+pub use layers::{
+    assign_with_depth, deep_merge, effective, sanitize_directive, user_theme_variables,
+};
 
 use crate::value::Value;
 
