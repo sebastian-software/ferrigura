@@ -13,4 +13,5 @@ ferrigura-elk = { path = "../ferrigura-elk" }
 ferrigura-model.workspace = true
 ferrigura-syntax = { path = "../ferrigura-syntax" }
 ferrigura-text = { path = "../ferrigura-text" }
+ferromark = "3.1.0"
 serde_json.workspace = true
