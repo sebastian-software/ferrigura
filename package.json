@@ -64,6 +64,7 @@
     "port:diff": "tsx tools/port/diff.ts",
     "port:status": "tsx tools/port/status.ts",
     "port:check-header": "tsx tools/port/check-header.ts",
+    "port:text-fixture": "tsx tools/port/text/chromium-fixture.ts",
     "prepare": "husky && pnpm build",
     "pre-commit": "lint-staged"
   },

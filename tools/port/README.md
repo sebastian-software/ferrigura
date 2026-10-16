@@ -2,14 +2,15 @@
 
 Scripts that compare ferrigura with the TypeScript reference. The conventions the canonical models follow are in [`docs-port/canonical-model.md`](../../docs-port/canonical-model.md); the decision to test this way is in [0003](../../docs-port/decisions/0003-differential-testing.md).
 
-| Command                  | What it does                                                                                                                                 |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm port:diff pie`     | Collects the inputs, runs the exporter and `ferrigura-syntax`'s `canonical` example, and reports each difference                             |
-| `pnpm port:diff info`    | The same for info                                                                                                                            |
-| `pnpm port:diff config`  | Runs the effective configuration of the pie inputs and of `config-cases.ts` through both sides, and the key set                              |
-| `pnpm port:diff yaml`    | Loads the front matter and flowchart shape data of the fixtures and specs, and `yaml-cases.ts`, with js-yaml and `ferrigura-syntax`'s `yaml` |
-| `pnpm port:check-header` | Compares the pie header rules in `pie-header.ts` with the real pie DB setters, with jsdom as the DOM                                         |
-| `pnpm port:status`       | Counts the ported Rust specs per type and rewrites the P1 table of `docs-port/STATUS.md`                                                     |
+| Command                  | What it does                                                                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm port:diff pie`     | Collects the inputs, runs the exporter and `ferrigura-syntax`'s `canonical` example, and reports each difference                               |
+| `pnpm port:diff info`    | The same for info                                                                                                                              |
+| `pnpm port:diff config`  | Runs the effective configuration of the pie inputs and of `config-cases.ts` through both sides, and the key set                                |
+| `pnpm port:diff yaml`    | Loads the front matter and flowchart shape data of the fixtures and specs, and `yaml-cases.ts`, with js-yaml and `ferrigura-syntax`'s `yaml`   |
+| `pnpm port:check-header` | Compares the pie header rules in `pie-header.ts` with the real pie DB setters, with jsdom as the DOM                                           |
+| `pnpm port:text-fixture` | Regenerates `crates/ferrigura-text/tests/fixtures/chromium.json` in Chromium from the requests in it; `-- --check` compares instead of writing |
+| `pnpm port:status`       | Counts the ported Rust specs per type and rewrites the P1 table of `docs-port/STATUS.md`                                                       |
 
 ## Files
 
