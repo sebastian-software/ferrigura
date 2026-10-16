@@ -11,8 +11,8 @@ mod scanner;
 use ferrigura_model::timeline::TimelineDiagram;
 
 use crate::error::{ParseError, Source};
-use crate::flowchart::{cleanup_comments, encode_entities, remove_directives};
 use crate::preprocess::prepare;
+use crate::preprocess::{cleanup_comments, encode_entities, remove_directives};
 use crate::text::js_trim;
 
 use db::Db;

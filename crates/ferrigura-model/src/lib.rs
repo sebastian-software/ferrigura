@@ -12,6 +12,7 @@
 pub mod config;
 pub mod flowchart;
 pub mod info;
+pub mod journey;
 pub mod pie;
 pub mod theme;
 pub mod timeline;

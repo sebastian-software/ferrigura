@@ -4,7 +4,7 @@
 //! and returns the diagram model of `ferrigura-model`. See `docs-port/decisions/0002` for why the
 //! parsers are written by hand on one lexer base.
 //!
-//! The crate covers the pie, info, flowchart and timeline diagrams for now; the other types follow in
+//! The crate covers the pie, info, flowchart, timeline and journey diagrams for now; the other types follow in
 //! later milestones.
 
 #![warn(missing_docs)]
@@ -15,6 +15,7 @@
 
 mod common;
 mod cursor;
+mod entities;
 mod error;
 pub mod flowchart;
 mod lexer;
@@ -24,6 +25,7 @@ mod text;
 
 pub mod config;
 pub mod info;
+pub mod journey;
 pub mod pie;
 pub mod sanitize;
 pub mod timeline;
@@ -31,6 +33,7 @@ pub mod yaml;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::info::InfoDiagram;
+use ferrigura_model::journey::JourneyDiagram;
 use ferrigura_model::pie::PieDiagram;
 use ferrigura_model::timeline::TimelineDiagram;
 
@@ -47,6 +50,8 @@ pub enum DiagramType {
     Flowchart,
     /// The timeline.
     Timeline,
+    /// The user journey, written `journey`.
+    Journey,
 }
 
 impl DiagramType {
@@ -58,6 +63,7 @@ impl DiagramType {
             Self::Info => "info",
             Self::Flowchart => "flowchart",
             Self::Timeline => "timeline",
+            Self::Journey => "journey",
         }
     }
 }
@@ -73,6 +79,8 @@ pub enum Diagram {
     Flowchart(FlowchartDiagram),
     /// A timeline.
     Timeline(TimelineDiagram),
+    /// A user journey.
+    Journey(JourneyDiagram),
 }
 
 /// Decides the diagram type from the start of the text, as the detectors of the reference do.
@@ -91,6 +99,8 @@ pub fn detect(text: &str) -> Option<DiagramType> {
         Some(DiagramType::Flowchart)
     } else if rest.starts_with("timeline") {
         Some(DiagramType::Timeline)
+    } else if rest.starts_with("journey") {
+        Some(DiagramType::Journey)
     } else {
         None
     }
@@ -105,6 +115,7 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
             .map(Diagram::Flowchart)
             .map_err(|flowchart::FlowchartError::Syntax(error)| error),
         Some(DiagramType::Timeline) => timeline::parse(text).map(Diagram::Timeline),
+        Some(DiagramType::Journey) => journey::parse(text).map(Diagram::Journey),
         None => Err(ParseError {
             line: 1,
             column: 1,

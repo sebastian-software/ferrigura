@@ -18,6 +18,7 @@ const detectors: Record<string, RegExp> = {
   info: /^\s*info/,
   flowchart: /^\s*(graph|flowchart)/,
   timeline: /^\s*timeline/,
+  journey: /^\s*journey/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */

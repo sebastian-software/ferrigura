@@ -41,6 +41,8 @@ A JSON number is read to the exact double that JavaScript reads from the same te
 
 When a value is written back, it is written with the shortest representation that reads back to the same double, which is what JavaScript prints. Nothing else rounds a number on the way.
 
+JSON has no `NaN` and no infinity. A number that is not finite is written as the string `"NaN"`, `"Infinity"` or `"-Infinity"`; the configuration (`value.rs`) and the journey scores (below) do so. The exporters write the same strings, since `JSON.stringify` would write `null`.
+
 ## Title precedence
 
 `Diagram.fromText` sets the front matter's title first, then `populateCommonDb` sets the grammar's title, but only when that is non-empty. So:
@@ -89,6 +91,12 @@ The model is the DB state after parsing, as [timeline/PLAN.md](./timeline/PLAN.m
 - **Title.** The front matter title does not reach the model (the timeline DB has no setter). The title is the grammar's last `title` line, even when it is blank.
 - **Text is encoded, not decoded.** Entities are encoded before parsing (`#quot;` is `ﬂ°quot¶ß`), and the model keeps the encoded form, as the flowchart does. Sections, periods and events are not sanitised. The title and the header texts are, as above.
 - **Left out.** The task `id` (a counter that `clear` does not reset), `type` (always the section) and `score` (always 0).
+
+## Journey
+
+- **Texts are the reader's text.** The journey DB keeps the entities as placeholders (`ﬂ°name¶ß`), and the renderer decodes them as the HTML parser reads a character reference. The model holds that decoded text: `#hearts;` is `♥`, an unknown name stays as `&name;`, and raw text, `&amp;` included, reads as it was written. The rule is in [journey/PLAN.md](./journey/PLAN.md), section 6.
+- **Sanitising.** The title and the accessibility texts go through the sanitiser of the flowchart (`sanitize.rs`, with the full HTML5 names of `entities.rs`), before the entities are read. The task names, the people and the sections are not sanitised.
+- **Scores** are `Number()` of the text, as a number or one of the sentinel strings above.
 
 ## Left out, and why
 

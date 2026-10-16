@@ -174,6 +174,93 @@ pub fn newline_then_space_to_newline(s: &str) -> String {
     out
 }
 
+/// `Number(text)`: JavaScript's conversion of a string to a number (`StringToNumber`). Blank text is
+/// 0; `0x`, `0o` and `0b` take no sign; `Infinity` takes an optional sign; a decimal literal takes a
+/// sign, a fraction and an exponent. Anything else, `NaN` included, is NaN.
+#[must_use]
+pub fn js_number(text: &str) -> f64 {
+    let trimmed = js_trim(text);
+    if trimmed.is_empty() {
+        return 0.0;
+    }
+    for (prefix, radix) in [
+        ("0x", 16),
+        ("0X", 16),
+        ("0o", 8),
+        ("0O", 8),
+        ("0b", 2),
+        ("0B", 2),
+    ] {
+        if let Some(digits) = trimmed.strip_prefix(prefix) {
+            return radix_number(digits, radix);
+        }
+    }
+    match trimmed {
+        "Infinity" | "+Infinity" => f64::INFINITY,
+        "-Infinity" => f64::NEG_INFINITY,
+        _ if is_decimal_literal(trimmed) => trimmed.parse().unwrap_or(f64::NAN),
+        _ => f64::NAN,
+    }
+}
+
+/// Whether `text` is a `StrDecimalLiteral` without `Infinity`: an optional sign, digits with an
+/// optional fraction (at least one digit in all), and an optional exponent with digits.
+fn is_decimal_literal(text: &str) -> bool {
+    let unsigned = text.strip_prefix(['+', '-']).unwrap_or(text);
+    let (mantissa, exponent) = match unsigned.find(['e', 'E']) {
+        Some(at) => (&unsigned[..at], Some(&unsigned[at + 1..])),
+        None => (unsigned, None),
+    };
+    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let all_digits = |part: &str| part.bytes().all(|b| b.is_ascii_digit());
+    let mantissa_ok =
+        all_digits(whole) && all_digits(fraction) && !(whole.is_empty() && fraction.is_empty());
+    let exponent_ok = exponent.is_none_or(|exp| {
+        let digits = exp.strip_prefix(['+', '-']).unwrap_or(exp);
+        !digits.is_empty() && all_digits(digits)
+    });
+    mantissa_ok && exponent_ok
+}
+
+/// The value of hexadecimal, octal or binary `digits`, rounded to the nearest double as JavaScript
+/// rounds it: the bits are read in order, the first 53 are kept, and the rest decide the rounding.
+fn radix_number(digits: &str, radix: u32) -> f64 {
+    if digits.is_empty() || !digits.chars().all(|c| c.is_digit(radix)) {
+        return f64::NAN;
+    }
+    let bits_per_digit = radix.trailing_zeros();
+    let mut bits: Vec<bool> = Vec::with_capacity(digits.len() * bits_per_digit as usize);
+    for c in digits.chars() {
+        let value = c.to_digit(radix).unwrap_or(0);
+        for shift in (0..bits_per_digit).rev() {
+            bits.push((value >> shift) & 1 == 1);
+        }
+    }
+    let first = bits.iter().position(|&bit| bit).unwrap_or(bits.len());
+    let bits = &bits[first..];
+    let length = bits.len();
+    if length == 0 {
+        return 0.0;
+    }
+    let read = |slice: &[bool]| {
+        slice
+            .iter()
+            .fold(0u64, |acc, &bit| acc * 2 + u64::from(bit))
+    };
+    if length <= 53 {
+        return read(bits) as f64;
+    }
+    let mut mantissa = read(&bits[..53]);
+    let round_up = bits[53] && (bits[54..].iter().any(|&bit| bit) || mantissa & 1 == 1);
+    if round_up {
+        mantissa += 1;
+    }
+    // The value is `mantissa * 2^(length - 53)`; the scale is a power of two, so the product is exact
+    // until it overflows to infinity.
+    let scale = 2f64.powi(i32::try_from(length - 53).unwrap_or(i32::MAX));
+    mantissa as f64 * scale
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -187,6 +274,55 @@ mod tests {
         assert_eq!(strip_line_ends("a \n  \nb"), "a\nb");
         assert_eq!(strip_line_ends("lines\n"), "lines");
         assert_eq!(newline_then_space_to_newline("a\n  \n  b"), "a\nb");
+    }
+
+    #[test]
+    fn reads_a_string_as_javascript_number_reads_it() {
+        assert_eq!(js_number(""), 0.0);
+        assert_eq!(js_number(" \t "), 0.0);
+        assert_eq!(js_number("5"), 5.0);
+        assert_eq!(js_number(" 5 "), 5.0);
+        assert_eq!(js_number("+3"), 3.0);
+        assert_eq!(js_number("-2"), -2.0);
+        assert_eq!(js_number("1e1"), 10.0);
+        assert_eq!(js_number("1."), 1.0);
+        assert_eq!(js_number(".5"), 0.5);
+        assert_eq!(js_number("0x10"), 16.0);
+        assert_eq!(js_number("0o17"), 15.0);
+        assert_eq!(js_number("0b101"), 5.0);
+        assert_eq!(js_number("Infinity"), f64::INFINITY);
+        assert_eq!(js_number("-Infinity"), f64::NEG_INFINITY);
+        assert!(js_number("-0").is_sign_negative());
+    }
+
+    #[test]
+    fn reads_the_other_strings_as_nan() {
+        for text in [
+            "abc", "5px", "2rem", "1_000", "NaN", "infinity", "inf", "+", ".", "1e", "0x", "-0x10",
+            "0x1g", "0b2",
+        ] {
+            assert!(js_number(text).is_nan(), "{text:?}");
+        }
+    }
+
+    #[test]
+    fn rounds_long_hexadecimal_numbers_as_javascript_does() {
+        // 2^64 + 1 is not a double: it rounds to 2^64.
+        assert_eq!(
+            js_number("0x10000000000000001"),
+            18_446_744_073_709_551_616.0
+        );
+        // 2^64 + 2048 is halfway between 2^64 and its successor 2^64 + 4096: ties go to the even
+        // mantissa, which is 2^64, and one more bit goes up.
+        assert_eq!(
+            js_number("0x10000000000000800"),
+            18_446_744_073_709_551_616.0
+        );
+        assert_eq!(
+            js_number("0x10000000000000801"),
+            18_446_744_073_709_555_712.0
+        );
+        assert_eq!(js_number(&format!("0x{}", "f".repeat(300))), f64::INFINITY);
     }
 
     #[test]

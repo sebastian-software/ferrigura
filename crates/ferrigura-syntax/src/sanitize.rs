@@ -38,11 +38,11 @@
 //! table parts), the adoption agency for misnested formatting elements, foster parenting, the
 //! breakout of `<b>` and other HTML tags out of `<svg>`, the case adjustment of SVG and MathML
 //! element and attribute names, the DOM-clobbering check of `id` and `name`, the mXSS checks, the
-//! `rel="noopener"` hook that the reference installs for `target="_blank"`, `dompurifyConfig`, and
-//! the named character references outside the table below (they stay as written, while DOMPurify
-//! writes their characters). The corpus in the tests holds DOMPurify's own output for the cases
-//! the subset covers.
+//! `rel="noopener"` hook that the reference installs for `target="_blank"`, and `dompurifyConfig`.
+//! The named character references are the full HTML5 table (`entities.rs`). The corpus in the tests
+//! holds DOMPurify's own output for the cases the subset covers.
 
+use crate::entities;
 use crate::text::js_trim;
 
 /// The namespace of an element, as far as labels can reach it.
@@ -131,56 +131,6 @@ const RAW_TEXT_PARENTS: &[&str] = &[
 /// which is an approximation for `template`, whose content is markup).
 const HEAD_VOID: &[&str] = &["base", "basefont", "bgsound", "link", "meta"];
 const HEAD_RAW: &[&str] = &["noframes", "script", "style", "template", "title"];
-
-/// The named character references the subset decodes, with and without `;` only where the list
-/// says so (`LEGACY_NAMED`). Other names stay as written.
-const NAMED_REFERENCES: &[(&str, char)] = &[
-    ("AMP", '&'),
-    ("amp", '&'),
-    ("apos", '\''),
-    ("bull", '\u{2022}'),
-    ("cent", '\u{a2}'),
-    ("copy", '\u{a9}'),
-    ("darr", '\u{2193}'),
-    ("deg", '\u{b0}'),
-    ("euro", '\u{20ac}'),
-    ("GT", '>'),
-    ("gt", '>'),
-    ("harr", '\u{2194}'),
-    ("hellip", '\u{2026}'),
-    ("laquo", '\u{ab}'),
-    ("larr", '\u{2190}'),
-    ("ldquo", '\u{201c}'),
-    ("lsquo", '\u{2018}'),
-    ("LT", '<'),
-    ("lt", '<'),
-    ("mdash", '\u{2014}'),
-    ("micro", '\u{b5}'),
-    ("middot", '\u{b7}'),
-    ("nbsp", '\u{a0}'),
-    ("ndash", '\u{2013}'),
-    ("para", '\u{b6}'),
-    ("plusmn", '\u{b1}'),
-    ("pound", '\u{a3}'),
-    ("QUOT", '"'),
-    ("quot", '"'),
-    ("raquo", '\u{bb}'),
-    ("rarr", '\u{2192}'),
-    ("rdquo", '\u{201d}'),
-    ("reg", '\u{ae}'),
-    ("rsquo", '\u{2019}'),
-    ("sect", '\u{a7}'),
-    ("times", '\u{d7}'),
-    ("trade", '\u{2122}'),
-    ("uarr", '\u{2191}'),
-    ("yen", '\u{a5}'),
-];
-
-/// The references that a browser decodes without the `;` (in text, and in an attribute when the
-/// next character is neither a letter nor a digit nor `=`).
-const LEGACY_NAMED: &[&str] = &[
-    "AMP", "amp", "copy", "GT", "gt", "LT", "lt", "nbsp", "QUOT", "quot", "reg",
-];
 
 /// The HTML parser's tree for `chars`: the body's children, before any sanitising.
 fn parse(chars: &[char]) -> Vec<Node> {
@@ -672,7 +622,8 @@ fn decode_attribute(chars: &[char]) -> String {
     out
 }
 
-fn decode_references(text: &str) -> String {
+/// The text with its character references decoded, as the HTML parser reads the text state.
+pub(crate) fn decode_references(text: &str) -> String {
     let chars: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());
     let mut index = 0;
@@ -733,31 +684,29 @@ fn reference_at(chars: &[char], start: usize, in_attribute: bool) -> Option<(Str
     }
     let name: String = chars[start + 1..end].iter().collect();
     if chars.get(end) == Some(&';') {
-        let character = named_character(&name)?;
-        return Some((character.to_string(), end + 1 - start));
+        let value = named_character(&name)?;
+        return Some((value.to_owned(), end + 1 - start));
     }
     // Without `;`, only the legacy names are decoded, and a legacy name may be the start of a longer
     // run of letters, as the browser reads it.
     for length in (1..=name.len()).rev() {
         let prefix = &name[..length];
-        if !LEGACY_NAMED.contains(&prefix) {
+        if !entities::is_legacy(prefix) {
             continue;
         }
         let next = chars.get(start + 1 + length);
         if in_attribute && (next == Some(&'=') || next.is_some_and(|c| c.is_ascii_alphanumeric())) {
             return None;
         }
-        let character = named_character(prefix)?;
-        return Some((character.to_string(), 1 + length));
+        let value = named_character(prefix)?;
+        return Some((value.to_owned(), 1 + length));
     }
     None
 }
 
-fn named_character(name: &str) -> Option<char> {
-    NAMED_REFERENCES
-        .iter()
-        .find(|(known, _)| *known == name)
-        .map(|(_, character)| *character)
+/// The value of a named reference written without its `;`, from the full HTML5 table.
+fn named_character(name: &str) -> Option<&'static str> {
+    entities::named(name)
 }
 
 /// The character a numeric reference stands for, as the HTML parser reads it: NUL, surrogates and
@@ -2053,6 +2002,31 @@ mod tests {
         assert_eq!(sanitize_text("&copy; 2024 <b>x</b>"), "© 2024 <b>x</b>");
         assert_eq!(sanitize_text("<b>&#x80;&#0;</b>"), "<b>€�</b>");
         assert_eq!(sanitize_text("AT&T <b>x</b>"), "AT&amp;T <b>x</b>");
+    }
+
+    /// The full HTML5 table decodes the names the subset did not have, including one with two code
+    /// points, and writes each back as its characters.
+    #[test]
+    fn names_of_the_full_html5_table_are_decoded() {
+        assert_eq!(sanitize_text("<i>a &hearts; b</i>"), "<i>a \u{2665} b</i>");
+        assert_eq!(
+            sanitize_text("<i>&NotEqualTilde;</i>"),
+            "<i>\u{2242}\u{338}</i>"
+        );
+        assert_eq!(
+            sanitize_text("<i>&rarr;&larr;</i>"),
+            "<i>\u{2192}\u{2190}</i>"
+        );
+    }
+
+    /// Without its `;` a name is decoded only when it is one of the legacy names a browser reads
+    /// that way; `&hearts` stays as written, and so does a name the table does not have.
+    #[test]
+    fn a_name_without_its_semicolon_is_decoded_only_when_it_is_legacy() {
+        assert_eq!(
+            sanitize_text("<i>&eacute x &copy y &hearts z &nope w</i>"),
+            "<i>\u{e9} x \u{a9} y &amp;hearts z &amp;nope w</i>"
+        );
     }
 
     /// A `&nbsp;` is written back as an entity, and the plain-text label then shows it as text.
