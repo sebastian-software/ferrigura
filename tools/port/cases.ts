@@ -49,4 +49,5 @@ export const explicitCases: Record<string, string[]> = {
     // Invisible links and an open arrow have no markers; the edge classes depend on the stroke.
     'flowchart TB\nA ~~~ B\nA --- C\nA --o D\nA -- text --> E',
   ],
+  gantt: [],
 };
