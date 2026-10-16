@@ -5,8 +5,8 @@
 
 #![warn(missing_docs)]
 
-use ferrigura_model::config::{assign_with_depth, effective, sanitize_directive, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::config::{effective, typed};
+
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
 use ferrigura_render::pie::{PieInput, render as render_pie};
@@ -41,24 +41,15 @@ pub fn render(text: &str, config: &Value) -> Result<String, RenderError> {
 }
 
 fn render_pie_text(text: &str, site: &Value) -> Result<String, RenderError> {
-    let mut directive = config::read(text)?;
+    let directive = config::read(text)?;
     let effective_config = effective(Some(site), Some("pie"), &directive);
     let typed_config =
         typed(&effective_config).map_err(|error| RenderError::Config(error.to_string()))?;
 
-    sanitize_directive(&mut directive);
-    let mut overrides = site
+    let theme_variables = effective_config
         .get("themeVariables")
         .cloned()
         .unwrap_or_else(Value::empty_object);
-    if let Some(directive_overrides) = directive.get("themeVariables") {
-        assign_with_depth(&mut overrides, directive_overrides, 2);
-    }
-    let theme_name = effective_config
-        .get("theme")
-        .and_then(Value::as_str)
-        .unwrap_or("default");
-    let theme_variables = Theme::from_name(theme_name).variables(Some(&overrides));
 
     let diagram = pie::parse(text)?;
     render_pie(&PieInput {

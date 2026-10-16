@@ -14,7 +14,7 @@ import { collectInputs } from './inputs.ts';
 import type { PortInput, PortOutput } from './reference.ts';
 
 const type = process.argv[2];
-if (type === 'config' || type === 'yaml') {
+if (type === 'config' || type === 'yaml' || type === 'theme') {
   const subRun = spawnSync(
     'pnpm',
     ['exec', 'tsx', fileURLToPath(new URL(`./diff-${type}.ts`, import.meta.url))],
@@ -23,7 +23,7 @@ if (type === 'config' || type === 'yaml') {
   process.exit(subRun.status ?? 2);
 }
 if (type !== 'pie' && type !== 'info') {
-  console.error('usage: pnpm port:diff pie | info | config | yaml');
+  console.error('usage: pnpm port:diff pie | info | config | yaml | theme');
   process.exit(2);
 }
 

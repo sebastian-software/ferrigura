@@ -5,8 +5,8 @@
  * For each input this runs the steps `mermaidAPI` runs: the `initialize` settings become the site
  * config, the configuration is reset, the text goes through `preprocessDiagram`, its diagram type
  * is detected, and the merged front matter and directive configuration is added. The output is the
- * configuration the reference then returns from `getConfig()`, as JSON, without `themeVariables`,
- * which the theme port computes later. The key set the directives may use is written too.
+ * configuration the reference then returns from `getConfig()`, as JSON, `themeVariables` included.
+ * The key set the directives may use is written too.
  *
  * Usage: `tsx tools/port/export-config.ts inputs.json outputs.json`
  */
@@ -71,7 +71,6 @@ function effectiveConfig(input: ConfigInput, modules: Modules): Record<string, u
   config.addDirective(processed.config ?? {});
 
   const effective = jsonValue(config.getConfig()) as Record<string, unknown>;
-  delete effective.themeVariables;
   config.setDiagramConfigScope(undefined);
   return effective;
 }
