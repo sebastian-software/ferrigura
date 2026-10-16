@@ -15,8 +15,9 @@ use crate::CANONICAL_VERSION;
 pub struct GanttDiagram {
     /// Canonical model version, see [`CANONICAL_VERSION`].
     pub version: u32,
-    /// Diagram title, sanitised. The grammar's `title` wins when it is non-empty; otherwise the
-    /// front matter's title is kept, and otherwise it is empty.
+    /// Diagram title, sanitised: the last `title` statement, which overrides the front matter's
+    /// title even when it sanitises to empty; the front matter's title when there is no statement;
+    /// otherwise empty.
     pub title: String,
     /// Accessible title from `accTitle`, sanitised, without leading blanks.
     pub acc_title: String,
