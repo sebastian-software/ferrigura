@@ -12,6 +12,7 @@
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -80,6 +81,24 @@ export function forcedDirective(theme: unknown): string {
       typeof theme === 'string' && theme.endsWith('dark') ? 'redux-dark-color' : 'redux-color';
   }
   return `%%{init: ${JSON.stringify(settings)}}%%`;
+}
+
+/**
+ * The forced settings as the site configuration of a patched text: what `initialize` gets on the
+ * reference side and `--config` on ferrigura's, with the theme the patched text resolves to. A
+ * fixture whose own init directive is not valid JSON makes the reference drop every directive, the
+ * forced ones too; the site configuration stays, so both sides still draw with the bundled font
+ * and a shipped theme. Where the directives apply, they set the same values.
+ */
+export function forcedSiteConfig(text: string): Record<string, unknown> {
+  const theme = effectiveSettings(text).theme;
+  const shipped =
+    typeof theme === 'string' && SHIPPED_THEMES.includes(theme)
+      ? theme
+      : typeof theme === 'string' && theme.endsWith('dark')
+        ? 'redux-dark-color'
+        : 'redux-color';
+  return { ...FORCED_SETTINGS, theme: shipped };
 }
 
 export const FRONT_MATTER = /^---[\t ]*\r?\n[\S\s]*?\r?\n---[\t ]*(?:\r?\n|$)/;
@@ -273,7 +292,11 @@ export function renderFerrigura(
   now?: number,
   seed?: number
 ): { svg: string } | { error: string } {
-  const args = ['--id', id];
+  // The site configuration goes through a file of this process, so parallel runs do not share it.
+  const configPath = join(workDir, `site-config-${process.pid}.json`);
+  mkdirSync(workDir, { recursive: true });
+  writeFileSync(configPath, JSON.stringify(forcedSiteConfig(text)));
+  const args = ['--id', id, '--config', configPath];
   if (now !== undefined) args.push('--now', String(Math.trunc(now)));
   // The seed of the reference's random numbers: the generated gitGraph ids (commits, merges and
   // cherry-picks without an `id:`) are drawn from the same generator.
@@ -393,8 +416,8 @@ ${measure}
 // The clock and the random numbers of a render are fixed when a clock is given: the today marker of
 // a gantt and the generated ids (gitGraph commits, rough.js strokes) read them, and two renders of
 // the same text would otherwise differ. Both get the same time and seed, so they are equal.
-window.renderReference = async function (id, text, clock) {
-  mermaid.initialize({ startOnLoad: false });
+window.renderReference = async function (id, text, clock, site) {
+  mermaid.initialize({ startOnLoad: false, ...(site ?? {}) });
   window.__elkCalls = [];
   const RealDate = Date;
   const realRandom = Math.random;
@@ -568,17 +591,18 @@ export function renderReference(
   clock?: RenderClock
 ): Promise<ReferenceRender> {
   return page.evaluate(
-    ([svgId, source, fixed]) =>
+    ([svgId, source, fixed, site]) =>
       (
         window as unknown as {
           renderReference: (
             id: string,
             text: string,
-            clock?: RenderClock
+            clock?: RenderClock,
+            site?: Record<string, unknown>
           ) => Promise<ReferenceRender>;
         }
-      ).renderReference(svgId, source, fixed ?? undefined),
-    [id, text, clock ?? null] as const
+      ).renderReference(svgId, source, fixed ?? undefined, site),
+    [id, text, clock ?? null, forcedSiteConfig(text)] as const
   ) as Promise<ReferenceRender>;
 }
 
