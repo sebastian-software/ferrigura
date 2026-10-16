@@ -373,14 +373,41 @@ const boxOf = (svg, element) => {
 
 ${measure}
 
-window.renderReference = async function (id, text) {
+// The clock and the random numbers of a render are fixed when a clock is given: the today marker of
+// a gantt and the generated ids (gitGraph commits, rough.js strokes) read them, and two renders of
+// the same text would otherwise differ. Both get the same time and seed, so they are equal.
+window.renderReference = async function (id, text, clock) {
   mermaid.initialize({ startOnLoad: false });
   window.__elkCalls = [];
+  const RealDate = Date;
+  const realRandom = Math.random;
+  if (clock) {
+    const fixed = clock.now;
+    window.Date = class extends RealDate {
+      constructor(...args) {
+        if (args.length === 0) super(fixed);
+        else super(...args);
+      }
+      static now() {
+        return fixed;
+      }
+    };
+    let state = clock.seed >>> 0;
+    Math.random = function () {
+      state = (state + 0x6d2b79f5) | 0;
+      let t = Math.imul(state ^ (state >>> 15), 1 | state);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
   try {
     const result = await mermaid.render(id, text);
     return { ok: true, svg: result.svg, error: null, elk: window.__elkCalls };
   } catch (error) {
     return { ok: false, svg: null, error: String((error && error.message) || error), elk: window.__elkCalls };
+  } finally {
+    window.Date = RealDate;
+    Math.random = realRandom;
   }
 };
 
@@ -503,15 +530,33 @@ export async function withPage<T>(measure: string, run: (page: Page) => Promise<
 }
 
 /** The reference's render of the text, with its SVG and ELK calls. */
-export function renderReference(page: Page, id: string, text: string): Promise<ReferenceRender> {
+/**
+ * The clock and the seed of a render: the time the render sees and the seed of its random numbers.
+ * The same clock for two renders makes them equal (the self check of the generic harness).
+ */
+export interface RenderClock {
+  now: number;
+  seed: number;
+}
+
+export function renderReference(
+  page: Page,
+  id: string,
+  text: string,
+  clock?: RenderClock
+): Promise<ReferenceRender> {
   return page.evaluate(
-    ([svgId, source]) =>
+    ([svgId, source, fixed]) =>
       (
         window as unknown as {
-          renderReference: (id: string, text: string) => Promise<ReferenceRender>;
+          renderReference: (
+            id: string,
+            text: string,
+            clock?: RenderClock
+          ) => Promise<ReferenceRender>;
         }
-      ).renderReference(svgId, source),
-    [id, text] as const
+      ).renderReference(svgId, source, fixed ?? undefined),
+    [id, text, clock ?? null] as const
   ) as Promise<ReferenceRender>;
 }
 
