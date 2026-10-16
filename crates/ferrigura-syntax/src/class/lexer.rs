@@ -119,6 +119,8 @@ enum Action {
     Push(State),
     /// `popState()`.
     Pop,
+    /// `popState()` and then `begin(state)`: the state on top is replaced.
+    Replace(State),
     /// `popState()` twice.
     PopTwice,
     /// `popState()` and `less(0)`: the match is read again in the state below.
@@ -312,7 +314,7 @@ fn rule(state: State, rest: &str) -> Option<Hit<'_>> {
                 if after[spaces..].starts_with(')') {
                     return skip(2 + spaces, Action::Pop);
                 }
-                return skip(1, Action::Push(State::CallbackArgs));
+                return skip(1, Action::Replace(State::CallbackArgs));
             }
             let len = rest.find('(').unwrap_or(rest.len());
             return token(len, Kind::CallbackName, &rest[..len], Action::Keep);
@@ -647,6 +649,10 @@ impl Lexer<'_> {
             match hit.action {
                 Action::Keep => {}
                 Action::Push(state) => self.states.push(state),
+                Action::Replace(state) => {
+                    self.states.pop();
+                    self.states.push(state);
+                }
                 Action::Pop | Action::PopRetry => self.states.pop(),
                 Action::PopTwice => {
                     self.states.pop();

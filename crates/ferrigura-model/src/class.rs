@@ -128,7 +128,7 @@ pub struct ClassMember {
     pub parameters: Option<String>,
     /// The return type of a method, trimmed, without its classifier; `None` for an attribute.
     pub return_type: Option<String>,
-    /// The display text: a backslash and the visibility, the name, and `(params) : type` for a
+    /// The DB's `text`, which the renderer shows: a backslash and the visibility, the name, and `(params) : type` for a
     /// method, with `<` and `>` written as `&lt;` and `&gt;`.
     pub text: String,
 }

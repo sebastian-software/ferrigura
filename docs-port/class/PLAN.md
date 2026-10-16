@@ -44,7 +44,7 @@ Version 1, camelCase. Field names follow the DB; conversions to canonical names 
 
 - `title`, `accTitle`, `accDescr`, `direction` (`TB` by default).
 - `classes` in creation order: `id`, `type` (generic, `""` when none), `label`, `text`, `cssClasses`, `annotations`, `members`, `methods`, `styles`, `parent`, `link`, `linkTarget`, `tooltip`, `haveCallback` (`null` unless a callback was set).
-- `members` and `methods` are `ClassMember`: `memberType`, `visibility`, `classifier`, `id`, `parameters` and `returnType` (`null` for attributes, as the DB leaves them undefined), `text` (the DB's display text).
+- `members` and `methods` are `ClassMember`: `memberType`, `visibility`, `classifier`, `id`, `parameters` and `returnType` (`null` for attributes, as the DB leaves them undefined), `text` (the DB's `text`, which the renderer shows).
 - `relations`: `id1`, `id2`, `relationTitle1`, `relationTitle2` (`"none"` when no cardinality, as the DB holds it), `title` (`null` without a label), `type1`, `type2` (marker names `none`, `aggregation`, `extension`, `composition`, `dependency`, `lollipop`, from the DB's numbers), `lineType` (`solid` or `dotted`).
 - `notes`: `id`, `class` (raw, `null` for a plain note), `text` (raw, not sanitised), `index`, `parent`.
 - `interfaces`: `id`, `label` (raw), `classId`.
