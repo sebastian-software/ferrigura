@@ -1,96 +1,126 @@
 //! Differential test of the flowchart's ELK post-processing against the reference.
 //!
 //! Each file of `tests/data/flowchart-elk` is one flowchart fixture of the reference, written by
-//! `tools/port/geometry/flowchart-elk-fixtures.ts`: the elkjs output, the sizes of the input graph,
-//! and the reference's node centres, subgraph frames, edge points and edge label centres. The test
-//! runs `apply_with_crossing` on the elkjs output and compares the result with the reference, within
-//! 0.05 px.
+//! `tools/port/geometry/flowchart-elk-fixtures.ts`: the elkjs output, the sizes of the input graph
+//! with each leaf's drawing inputs, and the reference's node centres, subgraph frames, edge points
+//! and edge label centres. For every leaf the test draws the shape with the port's own shape
+//! handler (`shapes::node_label` and `shapes::draw`), which gives the leaf's `Intersect` as the
+//! pipeline does, and runs `apply` on the elkjs output with those intersects. The result is compared
+//! with the reference within 0.05 px: the node centres, the subgraph frames, every edge's points
+//! whatever shapes its ends are, and the edge label centres.
 //!
-//! The leaves' outlines are the reference's `intersect-rect`, transcribed in [`rect_crossing`], for
-//! the rectangular shapes (`squareRect`, `roundedRect`). Only the edges whose two ends are
-//! rectangles or subgraphs are compared; the other leaves have no outline here. Polygon and circle
-//! ends (diamonds, circles, hexagons, ...) join the comparison when the shapes' intersect functions
-//! land (task T3): `apply` then passes each leaf's `Intersect`, and this test can pass the same
-//! function for every leaf and compare every edge.
+//! The leaf's drawn box, as the measure step stores it (a float32 value, `BBox::browser`), must be
+//! the size the reference's ELK input gives it, since the intersect reads the box at call time. The
+//! ports come from the reference's elkjs output, and whether a port lies on a box edge is decided
+//! on these sizes; the float32 rounding is what makes those decisions coincide with the reference's.
 //!
-//! Node centres, subgraph frames and label centres do not depend on the outlines, so they are
-//! compared for every fixture. A subgraph without children is compared by its centre only: the
-//! reference's frame painter widens it to its title plus padding (`clusters.js:63`), which is paint.
+//! Two polylines are compared after their near-coincident points are merged (see [`merged`]).
+//!
+//! A subgraph without children is compared by its centre only: the reference's frame painter widens
+//! it to its title plus padding (`clusters.js:63`), which is paint.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use ferrigura_elk::json::JsonNode;
+use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::flowchart::LabelType;
+use ferrigura_model::theme::Theme;
+use ferrigura_model::value::Value as ModelValue;
 use ferrigura_render::flowchart::data::{Edge, LayoutData, Node};
-use ferrigura_render::flowchart::elk_apply::apply_with_crossing;
+use ferrigura_render::flowchart::elk_apply::apply;
 use ferrigura_render::flowchart::elk_build::{ElkState, LabelData};
-use ferrigura_render::flowchart::geom::{CenterBox, Point};
+use ferrigura_render::flowchart::geom::Point;
+use ferrigura_render::flowchart::shapes::{self, Intersect, ShapeInput};
 use serde_json::Value;
 
 /// The largest difference that counts as equal, in SVG user units.
 const TOLERANCE: f64 = 0.05;
 
-/// The fewest edges the comparison must cover. Guards against a pass that compares nothing.
-const MIN_COMPARED_EDGES: usize = 150;
-
-/// The leaf shapes whose outline is the rectangle.
-const RECTANGLE_SHAPES: [&str; 2] = ["squareRect", "roundedRect"];
-
-/// `intersect-rect.js` of the reference, transcribed: where the ray from the centre of a rectangle
-/// through `point` leaves it.
-fn rect_crossing(node: CenterBox, point: Point) -> Point {
-    let dx = point.x - node.x;
-    let dy = point.y - node.y;
-    let mut w = node.width / 2.0;
-    let mut h = node.height / 2.0;
-    let (sx, sy);
-    if dy.abs() * w > dx.abs() * h {
-        // The intersection is on the top or bottom of the box.
-        if dy < 0.0 {
-            h = -h;
-        }
-        sx = if dy == 0.0 { 0.0 } else { (h * dx) / dy };
-        sy = h;
-    } else {
-        // The intersection is on the left or right of the box.
-        if dx < 0.0 {
-            w = -w;
-        }
-        sx = w;
-        sy = if dx == 0.0 { 0.0 } else { (w * dy) / dx };
-    }
-    Point::new(node.x + sx, node.y + sy)
-}
+/// The fewest edges the comparison must cover: every edge of the 82 fixtures, so that a fixture
+/// whose edges stop being compared fails the test.
+const MIN_COMPARED_EDGES: usize = 529;
 
 fn number(value: &Value) -> f64 {
     value.as_f64().unwrap_or(0.0)
+}
+
+fn text(value: &Value) -> String {
+    value.as_str().unwrap_or_default().to_string()
 }
 
 fn point_of(value: &Value) -> Point {
     Point::new(number(&value["x"]), number(&value["y"]))
 }
 
-/// The layout data, the side tables and the rectangular leaves of one fixture.
+fn strings(value: &Value) -> Vec<String> {
+    value
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .map(str::to_string)
+        .collect()
+}
+
+fn label_type(name: &str) -> LabelType {
+    match name {
+        "string" => LabelType::String,
+        "markdown" => LabelType::Markdown,
+        _ => LabelType::Text,
+    }
+}
+
+/// A leaf as the flowchart's measure step builds it, from the fixture's drawing inputs. Its width
+/// is left unset, as it is when the measure step draws the label (`node.width` is set afterwards).
+fn leaf_node(node: &Value) -> Node {
+    let id = text(&node["id"]);
+    let drawing = &node["drawing"];
+    Node {
+        dom_id: format!("flowchart-{id}-0"),
+        id,
+        label: text(&drawing["label"]),
+        label_type: label_type(drawing["labelType"].as_str().unwrap_or("text")),
+        label_style: text(&drawing["labelStyle"]),
+        parent_id: node["parent"].as_str().map(str::to_string),
+        padding: number(&node["padding"]),
+        css_styles: strings(&drawing["cssStyles"]),
+        css_compiled_styles: strings(&drawing["cssCompiledStyles"]),
+        css_classes: text(&drawing["cssClasses"]),
+        look: drawing["look"].as_str().unwrap_or("neo").to_string(),
+        is_group: false,
+        shape: text(&node["shape"]),
+        min_width: drawing["minWidth"].as_f64(),
+        ..Node::default()
+    }
+}
+
+/// The layout data, the side tables and the outline of every leaf of one fixture.
 struct Scene {
     data: LayoutData,
     state: ElkState,
-    rectangles: HashSet<String>,
+    intersects: HashMap<String, Intersect>,
 }
 
-fn scene(fixture: &Value) -> Scene {
+/// Builds the scene of a fixture. Each leaf is drawn with the port's shape handler, and the drawn
+/// box is compared with the reference's size for it.
+fn build_scene(
+    name: &str,
+    fixture: &Value,
+    config: &MermaidConfig,
+    theme: &ModelValue,
+    failures: &mut Vec<String>,
+) -> Scene {
     let mut nodes = Vec::new();
     let mut parent_by_id = HashMap::new();
     let mut label_data = HashMap::new();
-    let mut rectangles = HashSet::new();
-    let mut has_children = HashSet::new();
+    let mut intersects = HashMap::new();
     for node in fixture["sizes"]["nodes"].as_array().into_iter().flatten() {
-        let id = node["id"].as_str().unwrap_or_default().to_string();
+        let id = text(&node["id"]);
         let parent = node["parent"].as_str().map(str::to_string);
         let is_group = node["isGroup"].as_bool().unwrap_or(false);
-        let shape = node["shape"].as_str().unwrap_or_default().to_string();
         if let Some(parent) = &parent {
             parent_by_id.insert(id.clone(), parent.clone());
-            has_children.insert(parent.clone());
         }
         if is_group {
             label_data.insert(
@@ -101,14 +131,42 @@ fn scene(fixture: &Value) -> Scene {
                     wrapping_width: 0.0,
                 },
             );
-        } else if RECTANGLE_SHAPES.contains(&shape.as_str()) {
-            rectangles.insert(id.clone());
+        } else {
+            let drawn_node = leaf_node(node);
+            let label = shapes::node_label(&drawn_node, config, theme, None)
+                .unwrap_or_else(|error| panic!("{name}: the label of {id}: {error}"));
+            let dir = node["drawing"]["dir"].as_str();
+            let drawn = shapes::draw(&ShapeInput {
+                node: &drawn_node,
+                label: label.as_ref(),
+                config,
+                theme,
+                dir,
+            })
+            .unwrap_or_else(|error| panic!("{name}: the shape of {id}: {error}"));
+            // The layout takes the drawn box as the measure step stores it, a float32 value.
+            let size = drawn.bbox.browser();
+            compare_value(
+                failures,
+                name,
+                &format!("leaf {id} drawn width"),
+                size.width,
+                number(&node["width"]),
+            );
+            compare_value(
+                failures,
+                name,
+                &format!("leaf {id} drawn height"),
+                size.height,
+                number(&node["height"]),
+            );
+            intersects.insert(id.clone(), drawn.intersect);
         }
         nodes.push(Node {
             id,
             parent_id: parent,
             is_group,
-            shape,
+            shape: text(&node["shape"]),
             padding: number(&node["padding"]),
             width: node["width"].as_f64(),
             height: node["height"].as_f64(),
@@ -119,20 +177,20 @@ fn scene(fixture: &Value) -> Scene {
     let mut edges = Vec::new();
     let mut reversed_edges = HashSet::new();
     for edge in fixture["sizes"]["edges"].as_array().into_iter().flatten() {
-        let id = edge["id"].as_str().unwrap_or_default().to_string();
+        let id = text(&edge["id"]);
         if edge["reversed"].as_bool().unwrap_or(false) {
             reversed_edges.insert(id.clone());
         }
         edges.push(Edge {
             id,
-            start: edge["start"].as_str().unwrap_or_default().to_string(),
-            end: edge["end"].as_str().unwrap_or_default().to_string(),
+            start: text(&edge["start"]),
+            end: text(&edge["end"]),
             arrow_type_start: edge["arrowTypeStart"]
                 .as_str()
                 .unwrap_or("none")
                 .to_string(),
             arrow_type_end: edge["arrowTypeEnd"].as_str().unwrap_or("none").to_string(),
-            label: edge["label"].as_str().unwrap_or_default().to_string(),
+            label: text(&edge["label"]),
             width: edge["width"].as_f64(),
             height: edge["height"].as_f64(),
             ..Edge::default()
@@ -151,7 +209,7 @@ fn scene(fixture: &Value) -> Scene {
             reversed_edges,
             ..ElkState::default()
         },
-        rectangles,
+        intersects,
     }
 }
 
@@ -159,10 +217,27 @@ fn scene(fixture: &Value) -> Scene {
 #[derive(Default)]
 struct Totals {
     nodes: usize,
+    leaves: usize,
     clusters: usize,
     edges: usize,
     labels: usize,
-    skipped_edges: usize,
+}
+
+/// The points of a polyline with each point that lies within the tolerance of the point kept before
+/// it removed. At the tolerance such a point is the one before it. Whether a port lies on the edge
+/// of its box is decided on differences of a few thousandths of a pixel (`outsideNode`,
+/// `outlineAttachPoint`), so a decision can add or drop such a point on one side only.
+fn merged(points: &[Point]) -> Vec<Point> {
+    let mut kept: Vec<Point> = Vec::with_capacity(points.len());
+    for &point in points {
+        if kept
+            .last()
+            .is_none_or(|last| (point.x - last.x).hypot(point.y - last.y) >= TOLERANCE)
+        {
+            kept.push(point);
+        }
+    }
+    kept
 }
 
 /// Records a value that differs from the reference's by more than the tolerance.
@@ -178,14 +253,23 @@ fn compare_value(failures: &mut Vec<String>, name: &str, what: &str, ours: f64, 
 
 /// Runs `apply` on one fixture and compares the result with the reference, recording every value
 /// that differs by more than the tolerance.
-fn check(name: &str, fixture: &Value, totals: &mut Totals, failures: &mut Vec<String>) {
-    let mut scene = scene(fixture);
+fn check(
+    name: &str,
+    fixture: &Value,
+    config: &MermaidConfig,
+    theme: &ModelValue,
+    totals: &mut Totals,
+    failures: &mut Vec<String>,
+) {
+    let mut scene = build_scene(name, fixture, config, theme, failures);
     let elk: JsonNode = serde_json::from_value(fixture["elk"].clone()).expect("the elkjs output");
-    let rectangles = scene.rectangles.clone();
-    let crossing = move |id: &str, node: CenterBox, probe: Point| {
-        rectangles.contains(id).then(|| rect_crossing(node, probe))
-    };
-    apply_with_crossing(&mut scene.data, &elk, &scene.state, &crossing, true);
+    apply(
+        &mut scene.data,
+        &elk,
+        &scene.state,
+        &scene.intersects,
+        config,
+    );
 
     let index: HashMap<&str, usize> = scene
         .data
@@ -193,13 +277,6 @@ fn check(name: &str, fixture: &Value, totals: &mut Totals, failures: &mut Vec<St
         .iter()
         .enumerate()
         .map(|(position, node)| (node.id.as_str(), position))
-        .collect();
-    let groups: HashSet<&str> = scene
-        .data
-        .nodes
-        .iter()
-        .filter(|node| node.is_group)
-        .map(|node| node.id.as_str())
         .collect();
     let with_children: HashSet<&str> = scene
         .state
@@ -234,6 +311,10 @@ fn check(name: &str, fixture: &Value, totals: &mut Totals, failures: &mut Vec<St
             theirs.y,
         );
         totals.nodes += 1;
+        if !scene.intersects.contains_key(id.as_str()) {
+            continue;
+        }
+        totals.leaves += 1;
     }
 
     for (id, rect) in fixture["reference"]["clusters"]
@@ -280,40 +361,38 @@ fn check(name: &str, fixture: &Value, totals: &mut Totals, failures: &mut Vec<St
     }
 
     for edge in &scene.data.edges {
-        let rect_ended = [&edge.start, &edge.end]
-            .iter()
-            .all(|id| groups.contains(id.as_str()) || scene.rectangles.contains(id.as_str()));
-        if !rect_ended {
-            totals.skipped_edges += 1;
+        let Some(reference) = fixture["reference"]["edges"][&edge.id].as_array() else {
+            failures.push(format!("{name}: edge {} has no reference", edge.id));
             continue;
-        }
-        if let Some(reference) = fixture["reference"]["edges"][&edge.id].as_array() {
-            totals.edges += 1;
-            if reference.len() != edge.points.len() {
-                failures.push(format!(
-                    "{name}: edge {} has {} points, the reference {}",
-                    edge.id,
-                    edge.points.len(),
-                    reference.len()
-                ));
-            } else {
-                for (position, (ours, theirs)) in edge.points.iter().zip(reference).enumerate() {
-                    let theirs = point_of(theirs);
-                    compare_value(
-                        failures,
-                        name,
-                        &format!("edge {} point {position} x", edge.id),
-                        ours.x,
-                        theirs.x,
-                    );
-                    compare_value(
-                        failures,
-                        name,
-                        &format!("edge {} point {position} y", edge.id),
-                        ours.y,
-                        theirs.y,
-                    );
-                }
+        };
+        totals.edges += 1;
+        let ours = merged(&edge.points);
+        let theirs = merged(&reference.iter().map(point_of).collect::<Vec<_>>());
+        if ours.len() != theirs.len() {
+            failures.push(format!(
+                "{name}: edge {} has {} points, the reference {}: ours {:?}, reference {:?}",
+                edge.id,
+                ours.len(),
+                theirs.len(),
+                ours,
+                theirs
+            ));
+        } else {
+            for (position, (ours, theirs)) in ours.iter().zip(&theirs).enumerate() {
+                compare_value(
+                    failures,
+                    name,
+                    &format!("edge {} point {position} x", edge.id),
+                    ours.x,
+                    theirs.x,
+                );
+                compare_value(
+                    failures,
+                    name,
+                    &format!("edge {} point {position} y", edge.id),
+                    ours.y,
+                    theirs.y,
+                );
             }
         }
         if let Some(label) = fixture["reference"]["labels"].get(&edge.id) {
@@ -351,6 +430,11 @@ fn apply_matches_the_reference_on_the_captured_flowcharts() {
     paths.sort();
     assert!(!paths.is_empty(), "no fixtures in {}", directory.display());
 
+    // The configuration and the theme of the fixtures: the flowchart defaults, with the redux-color
+    // theme, as the harness forces for both sides.
+    let config = MermaidConfig::default();
+    let theme = Theme::ReduxColor.variables(None);
+
     let mut totals = Totals::default();
     let mut failures = Vec::new();
     for path in &paths {
@@ -362,7 +446,7 @@ fn apply_matches_the_reference_on_the_captured_flowcharts() {
         let fixture: Value =
             serde_json::from_str(&std::fs::read_to_string(path).expect("a readable fixture"))
                 .expect("a fixture as JSON");
-        check(&name, &fixture, &mut totals, &mut failures);
+        check(&name, &fixture, &config, &theme, &mut totals, &mut failures);
     }
 
     assert!(
@@ -378,16 +462,16 @@ fn apply_matches_the_reference_on_the_captured_flowcharts() {
     );
     assert!(
         totals.edges >= MIN_COMPARED_EDGES,
-        "only {} rectangular edges compared",
+        "only {} edges compared",
         totals.edges
     );
     eprintln!(
-        "{} fixtures: {} nodes, {} subgraphs, {} edges ({} edge labels) compared; {} edges with other shapes skipped",
+        "{} fixtures: {} nodes ({} leaves drawn), {} subgraphs, {} edges ({} edge labels) compared, every end",
         paths.len(),
         totals.nodes,
+        totals.leaves,
         totals.clusters,
         totals.edges,
-        totals.labels,
-        totals.skipped_edges
+        totals.labels
     );
 }

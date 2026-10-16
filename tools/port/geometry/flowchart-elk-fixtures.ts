@@ -11,14 +11,20 @@
  * - `elk`: the elkjs output, reduced to the fields `apply` reads (`layoutOptions` and the rest are
  *   dropped);
  * - `sizes`: the nodes and edges of the input, with the measured sizes, the parents, the shapes and
- *   the title sizes that the post-processing reads;
+ *   the title sizes that the post-processing reads, and for each leaf what its shape handler needs
+ *   to draw it again (label, label type, styles, classes, look, minimum width, direction), so that
+ *   the Rust test builds the leaf's real outline (`shapes::draw`) and its intersect;
  * - `reference`: the centres of the vertices, the frames of the subgraphs, the points of the edges
  *   (`dataPoints`) and the centres of the edge labels, as the reference painted them.
  *
  * Selection: a fixture is taken when it adds a coverage tag that fewer than `PER_TAG` selected
- * fixtures have. Fixtures whose leaves are rectangles come first, so that more edges are compared.
+ * fixtures have. The tags include the shape at each edge end, so the diamonds, circles, hexagons,
+ * stadiums, cylinders and lean and trapezoid shapes are covered. Fixtures with more edges come
+ * first, so that more edges are compared.
  * Excluded: hand-drawn fixtures (the reference paints their subgraph frames by rough.js, so their
- * frames are empty boxes), and fixtures whose painted edge labels move with a paint-only margin.
+ * frames are empty boxes), fixtures with a layout other than `elk.layered` (ferrigura falls back to
+ * layered there), fixtures with a shape the registry does not resolve (ferrigura cannot draw them),
+ * and fixtures whose painted edge labels move with a paint-only margin.
  *
  * Usage: `pnpm exec tsx tools/port/geometry/flowchart-elk-fixtures.ts --capture <dir> [--out <dir>]`
  */
@@ -28,9 +34,6 @@ import { fileURLToPath } from 'node:url';
 
 /** Fixtures taken per coverage tag, at most. */
 const PER_TAG = 8;
-
-/** Leaf shapes whose outline is the rectangle, as the reference's `intersect-rect` gives it. */
-const RECTANGLE_SHAPES = new Set(['squareRect', 'roundedRect']);
 
 /** Fixtures left out, with the reason. */
 const EXCLUDED: Record<string, string> = {
@@ -47,6 +50,15 @@ interface ElkInputNode {
   height?: number;
   labelData?: { width: number; height: number };
   look?: string;
+  label?: string;
+  labelType?: string;
+  labelStyle?: string;
+  cssStyles?: string[];
+  cssCompiledStyles?: string[];
+  cssClasses?: string;
+  minWidth?: number;
+  dir?: string;
+  layoutOptions?: Record<string, unknown>;
   children?: ElkInputNode[];
 }
 
@@ -106,6 +118,20 @@ interface ReferenceGeometry {
   edgeLabels?: { dataId: string; box: { x: number; y: number; width: number; height: number } }[];
 }
 
+/** What a leaf's shape handler needs to draw it, as the reference's ELK input carries it. */
+interface NodeDrawing {
+  label: string;
+  labelType: string;
+  labelStyle: string;
+  cssStyles: string[];
+  cssCompiledStyles: string[];
+  cssClasses: string;
+  look: string;
+  minWidth: number | null;
+  /** The node's direction: its nearest subgraph's `dir`, else the diagram's. */
+  dir: string | null;
+}
+
 /** One fixture as the Rust test reads it. */
 interface FixtureFile {
   fixture: string;
@@ -122,6 +148,8 @@ interface FixtureFile {
       padding: number;
       labelWidth: number | null;
       labelHeight: number | null;
+      /** The leaf's own drawing inputs; null for a subgraph. */
+      drawing: NodeDrawing | null;
     }[];
     edges: {
       id: string;
@@ -147,12 +175,27 @@ interface FixtureFile {
 interface Candidate {
   slug: string;
   tags: string[];
-  /** Whether every leaf is a rectangle, so that all of its edges can be compared. */
-  rectangular: boolean;
-  /** The edges whose two ends are rectangles or subgraphs. */
-  rectangleEdges: number;
+  /** The number of edges, all of which the test compares. */
+  edgeCount: number;
   nodeCount: number;
   file: FixtureFile;
+}
+
+/**
+ * The shape names the registry resolves: the string literals of `resolve_with_radii` in
+ * `shapes/registry.rs`. A fixture with any other shape cannot be drawn by ferrigura.
+ */
+async function portedShapes(repo: string): Promise<Set<string>> {
+  const source = await readFile(
+    join(repo, 'crates/ferrigura-render/src/flowchart/shapes/registry.rs'),
+    'utf8'
+  );
+  const start = source.indexOf('pub(super) fn resolve_with_radii');
+  const end = source.indexOf('\n}\n', start);
+  if (start === -1 || end === -1) {
+    throw new Error('resolve_with_radii not found in shapes/registry.rs');
+  }
+  return new Set([...source.slice(start, end).matchAll(/"([^"]+)"/g)].map((match) => match[1]));
 }
 
 /** The tags a fixture covers, from its input graph and its ELK output. */
@@ -169,10 +212,12 @@ function coverageTags(input: ElkInputRoot, output: ElkOutputRoot): string[] {
 
   const depth = new Map<string, number>();
   const isGroup = new Map<string, boolean>();
+  const shapeOf = new Map<string, string>();
   const visit = (nodes: ElkInputNode[] | undefined, level: number): void => {
     for (const node of nodes ?? []) {
       depth.set(node.id, level);
       isGroup.set(node.id, node.isGroup === true);
+      shapeOf.set(node.id, node.shape ?? '');
       if (node.isGroup && (node.children ?? []).length === 0) {
         tags.add('empty-subgraph');
       }
@@ -199,6 +244,11 @@ function coverageTags(input: ElkInputRoot, output: ElkOutputRoot): string[] {
     }
     if (isGroup.get(edge.start)) {
       tags.add('edge-out-of-subgraph');
+    }
+    for (const end of [edge.start, edge.end]) {
+      if (!isGroup.get(end)) {
+        tags.add(`end-shape:${shapeOf.get(end)}`);
+      }
     }
     const levels = Math.abs((depth.get(edge.start) ?? 0) - (depth.get(edge.end) ?? 0));
     if (levels >= 2) {
@@ -268,6 +318,21 @@ function reduceEdges(edges: ElkOutputEdge[] | undefined): ElkOutputEdge[] {
   }));
 }
 
+/** Whether any node or the graph itself runs an algorithm other than `elk.layered`. */
+function usesOtherAlgorithm(input: ElkInputRoot): boolean {
+  const other = (node: ElkInputNode): boolean => {
+    const algorithm = node.layoutOptions?.['elk.algorithm'];
+    return (
+      (algorithm !== undefined && algorithm !== 'elk.layered') || (node.children ?? []).some(other)
+    );
+  };
+  const rootAlgorithm = input.layoutOptions?.['elk.algorithm'];
+  return (
+    (rootAlgorithm !== undefined && rootAlgorithm !== 'elk.layered') ||
+    (input.children ?? []).some(other)
+  );
+}
+
 /** The fixture file for one captured fixture. */
 function buildFile(
   slug: string,
@@ -275,11 +340,31 @@ function buildFile(
   output: ElkOutputRoot,
   reference: ReferenceGeometry
 ): Candidate {
+  const direction = String(input.layoutOptions?.['elk.direction']);
+  const diagramDirection = { RIGHT: 'LR', LEFT: 'RL', DOWN: 'TB', UP: 'BT' }[direction] ?? null;
   const parents = new Map<string, string | null>();
   const nodes: FixtureFile['sizes']['nodes'] = [];
-  const walk = (children: ElkInputNode[] | undefined, parent: string | null): void => {
+  const walk = (
+    children: ElkInputNode[] | undefined,
+    parent: string | null,
+    parentDirection: string | null
+  ): void => {
     for (const node of children ?? []) {
       parents.set(node.id, parent);
+      const nodeDirection = node.dir ?? parentDirection;
+      const drawing: NodeDrawing | null = node.isGroup
+        ? null
+        : {
+            label: node.label ?? '',
+            labelType: node.labelType ?? 'text',
+            labelStyle: node.labelStyle ?? '',
+            cssStyles: node.cssStyles ?? [],
+            cssCompiledStyles: node.cssCompiledStyles ?? [],
+            cssClasses: node.cssClasses ?? '',
+            look: node.look ?? 'neo',
+            minWidth: node.minWidth ?? null,
+            dir: nodeDirection,
+          };
       nodes.push({
         id: node.id,
         parent,
@@ -290,11 +375,12 @@ function buildFile(
         padding: node.padding ?? 0,
         labelWidth: node.labelData?.width ?? null,
         labelHeight: node.labelData?.height ?? null,
+        drawing,
       });
-      walk(node.children, node.id);
+      walk(node.children, node.id, nodeDirection);
     }
   };
-  walk(input.children, null);
+  walk(input.children, null, diagramDirection);
 
   const edges: FixtureFile['sizes']['edges'] = (input.edges ?? []).map((edge) => ({
     id: edge.id,
@@ -335,18 +421,10 @@ function buildFile(
   }
 
   const covers = coverageTags(input, output);
-  const rectangle = (id: string | null): boolean => {
-    const node = nodes.find((candidate) => candidate.id === id);
-    return node !== undefined && (node.isGroup || RECTANGLE_SHAPES.has(node.shape));
-  };
-  const rectangleEdges = edges.filter(
-    (edge) => rectangle(edge.start) && rectangle(edge.end)
-  ).length;
   return {
     slug,
     tags: covers,
-    rectangular: nodes.every((node) => node.isGroup || RECTANGLE_SHAPES.has(node.shape)),
-    rectangleEdges,
+    edgeCount: edges.length,
     nodeCount: nodes.length,
     file: {
       fixture: slug,
@@ -359,19 +437,15 @@ function buildFile(
 }
 
 /**
- * Picks the fixtures: rectangular ones first, then those with the most edges the test compares,
- * then the smaller ones. A fixture is taken when it adds a tag that fewer than `PER_TAG` selected
- * fixtures have.
+ * Picks the fixtures: those with the most edges first, then the smaller ones. A fixture is taken
+ * when it adds a tag that fewer than `PER_TAG` selected fixtures have.
  */
 function select(candidates: Candidate[]): Candidate[] {
   const sorted = candidates
-    .filter((candidate) => candidate.rectangleEdges > 0)
+    .filter((candidate) => candidate.edgeCount > 0)
     .sort(
       (a, b) =>
-        Number(!a.rectangular) - Number(!b.rectangular) ||
-        b.rectangleEdges - a.rectangleEdges ||
-        a.nodeCount - b.nodeCount ||
-        a.slug.localeCompare(b.slug)
+        b.edgeCount - a.edgeCount || a.nodeCount - b.nodeCount || a.slug.localeCompare(b.slug)
     );
   const counts = new Map<string, number>();
   const selected: Candidate[] = [];
@@ -409,8 +483,9 @@ async function main(): Promise<void> {
     option('--out', join(repo, 'crates/ferrigura-render/tests/data/flowchart-elk'))!
   );
 
+  const ported = await portedShapes(repo);
   const candidates: Candidate[] = [];
-  let skippedHandDrawn = 0;
+  const skipped = { handDrawn: 0, otherLayout: 0, unportedShape: 0 };
   for (const slug of (await readdir(capture)).sort()) {
     const dir = join(capture, slug);
     let input: ElkInputRoot[];
@@ -423,12 +498,24 @@ async function main(): Promise<void> {
       continue;
     }
     if (usesHandDrawnLook(input[0].children)) {
-      skippedHandDrawn += 1;
+      skipped.handDrawn += 1;
+      continue;
+    }
+    if (usesOtherAlgorithm(input[0])) {
+      skipped.otherLayout += 1;
       continue;
     }
     const output = (await readJson<ElkOutputRoot[]>(join(dir, 'elk-output.json')))[0];
     const reference = await readJson<ReferenceGeometry>(join(dir, 'reference-geometry.json'));
-    candidates.push(buildFile(slug, input[0], output, reference));
+    const candidate = buildFile(slug, input[0], output, reference);
+    const drawable = candidate.file.sizes.nodes.every(
+      (node) => node.isGroup || ported.has(node.shape)
+    );
+    if (!drawable) {
+      skipped.unportedShape += 1;
+      continue;
+    }
+    candidates.push(candidate);
   }
 
   const selected = select(candidates);
@@ -443,7 +530,9 @@ async function main(): Promise<void> {
     }
   }
   console.log(
-    `${selected.length} fixtures of ${candidates.length} candidates (${skippedHandDrawn} hand-drawn left out) written to ${out}`
+    `${selected.length} fixtures of ${candidates.length} candidates written to ${out} ` +
+      `(left out: ${skipped.handDrawn} hand-drawn, ${skipped.otherLayout} with another layout, ` +
+      `${skipped.unportedShape} with a shape the registry does not resolve)`
   );
   for (const [tag, count] of [...coverage].sort()) {
     console.log(`  ${tag}: ${count}`);
