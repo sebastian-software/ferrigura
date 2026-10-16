@@ -140,6 +140,7 @@ dependencies = [
  "ferrigura-model",
  "ferrigura-syntax",
  "ferrigura-text",
+ "serde",
  "serde_json",
 ]
 
