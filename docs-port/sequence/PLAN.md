@@ -12,6 +12,8 @@ Reference: `packages/mermaid/src/diagrams/sequence/` of this worktree (`04b952b4
 
 ## 2. Pipeline
 
+Error positions count the lines of the original input. A line break that `cleanupComments` trims from the start is counted; a comment line that it removes is not, so a position after a removed comment line is one line too small.
+
 Same steps as the flowchart parser, in the same order (`Diagram.fromText`, `Diagram.ts:19-83`):
 
 1. `prepare`: front matter removed, its `title` kept (shared, `preprocess.rs`).
@@ -51,7 +53,7 @@ Rule groups, in order:
 Two rules matter most for the port:
 
 - **Q1, newline swallowed.** In INITIAL, `\s+` at line 25 comes after `[\n]+` and matches blanks and line breaks together. A line that ends in blanks loses its line break as a token, so the statement before it has no NEWLINE. Reproduced by the same rule order.
-- **Q3, INVALID lines.** A lone `/`, `\`, `(`, `)`, `<` or `>` at the start of a token is INVALID (rule 126), and `line: INVALID` is accepted and dropped. Where a statement needs an actor, an INVALID token is a syntax error: `participant A:B` is INVALID in the ID state (rule 39), and `participant` requires an actor (`sequenceDiagram.jison:263-265`), so the line is rejected.
+- **Q3, INVALID lines.** A lone `/`, `\`, `(`, `)`, `<` or `>` at the start of a token is INVALID (rule 126), and `line: INVALID` is accepted and dropped. Where a statement needs an actor, an INVALID token is a syntax error: `participant A:B` is INVALID in the ID state (rule 39). The grammar has no production for `participant` followed by INVALID (`sequenceDiagram.jison:263-270`), so the line is a syntax error, and only a lone INVALID line is dropped.
 
 ## 4. Grammar and DB calls
 
