@@ -11,7 +11,8 @@
  *
  * Both sides get the patched text (`patchText` in `common.ts`): the forced directive, and the
  * fallback theme. Each SVG is measured at scale 1. Excluded fixtures are those with `handDrawn`, a
- * non-layered layout, or CJK text; they are not compared.
+ * non-layered layout, or text the bundled faces do not cover (CJK, arrows, symbols, emoji); they are
+ * not compared.
  *
  * The measurement walks every element below the root, skipping `style`, `defs`, `marker` (with
  * their contents), `title` and `desc`. Each element gets its structural key, the chain of
@@ -61,6 +62,7 @@ import {
   buildRenderExample,
   countClasses,
   exclusionReason,
+  uncoveredScriptReason,
   flagValue,
   matchesFilter,
   measureSvg,
@@ -275,7 +277,9 @@ async function main(): Promise<void> {
       // The other side: a second render of the same text, or ferrigura's SVG.
       const otherName = options.self ? 'the second reference render' : 'ferrigura';
       let other: { svg: string; geometry: DiagramGeometry } | null = null;
-      const excluded = options.self ? null : exclusionReason(source);
+      const excluded = options.self
+        ? null
+        : (exclusionReason(source) ?? uncoveredScriptReason(source));
       if (excluded !== null) {
         result.class = 'excluded';
         result.reason = excluded;

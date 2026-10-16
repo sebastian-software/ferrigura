@@ -16,7 +16,7 @@ use ferrigura_text::{
     measure, measure_words, text_box,
 };
 
-use super::geom::BBox;
+use super::geom::{BBox, Point};
 use super::markdown::{MarkdownWordType, br_tag_length, markdown_to_lines, non_markdown_to_lines};
 use crate::RenderError;
 use crate::svg::{escape, number};
@@ -53,6 +53,10 @@ pub struct LabelSpec<'a> {
     /// Where the lines are anchored on `x = 0`. The lines of a node or edge label are centred, and
     /// those of a cluster title start there.
     pub anchor: Anchor,
+    /// Whether the lines wrap at the font size the label's style declares. A node label is wrapped
+    /// inside the element that carries its style (`labelHelper`'s label group), so the wrap sees the
+    /// style's size; an edge label and a cluster title wrap in an unstyled container.
+    pub wrap_in_style: bool,
     /// Whether a background rectangle is drawn behind the text (edge labels).
     pub add_background: bool,
     /// The label's style declarations (`key:value`), from which the font size, weight and style
@@ -130,24 +134,59 @@ impl LabelLayout {
     /// rectangle and the text. `text_style` is the inline style of the `<text>` element.
     #[must_use]
     pub fn svg(&self, text_style: &str) -> String {
-        let mut out = String::from("<g>");
+        format!(
+            "<g>{}{}</g>",
+            self.background_rect(),
+            self.text_element(text_style, None)
+        )
+    }
+
+    /// The background rectangle of the label, as `createFormattedText` inserts it in every label:
+    /// sized to the text plus the padding when the label has a background, else empty.
+    #[must_use]
+    pub fn background_rect(&self) -> String {
         if let Some(background) = self.background {
-            out.push_str(&format!(
+            format!(
                 r#"<rect class="background" style="stroke: none" x="{}" y="{}" width="{}" height="{}"></rect>"#,
                 number(background.x),
                 number(background.y),
                 number(background.width),
                 number(background.height),
-            ));
+            )
         } else {
-            // `createFormattedText` inserts the rectangle in every label and sizes it only for a
-            // background; an empty one has no box.
-            out.push_str(r#"<rect class="background" style="stroke: none"></rect>"#);
+            // An empty rectangle has no box.
+            r#"<rect class="background" style="stroke: none"></rect>"#.to_owned()
         }
-        out.push_str(&format!(
-            r#"<text y="-10.1" text-anchor="start" style="{}">"#,
+    }
+
+    /// The `<text>` element of the label. `translate` is a `transform` on the element, which the
+    /// ER entity's centring uses (`erBox.ts` 74-78, 90-94 of `drawRect`); `None` writes none.
+    #[must_use]
+    pub fn text_element(&self, text_style: &str, translate: Option<Point>) -> String {
+        self.text_element_with(text_style, translate, false)
+    }
+
+    /// The `<text>` element of the label with each line as one text node, without its word tspans.
+    /// The reference's `erBox` does this to a cell whose text has `&lt;` or `&gt;`: its undo step sets
+    /// the `textContent` of the line, which replaces the word tspans (`erBox.ts` 370-385 and
+    /// `createText.ts` 96-112). The measure is the same, as the words are in one face.
+    #[must_use]
+    pub fn text_element_flat(&self, text_style: &str, translate: Option<Point>) -> String {
+        self.text_element_with(text_style, translate, true)
+    }
+
+    fn text_element_with(&self, text_style: &str, translate: Option<Point>, flat: bool) -> String {
+        let transform = translate.map_or_else(String::new, |offset| {
+            format!(
+                r#" transform="translate({}, {})""#,
+                number(offset.x),
+                number(offset.y)
+            )
+        });
+        let mut out = format!(
+            r#"<text y="-10.1" text-anchor="start" style="{}"{transform}>"#,
             escape(text_style)
-        ));
+        );
         for line in &self.lines {
             // Every line starts at its own x, with `text-anchor` start, so the browser never
             // aligns it by its own measure (decision 0005).
@@ -156,6 +195,12 @@ impl LabelLayout {
                 number(line.runs.first().map_or(0.0, |run| run.x)),
                 number(line.baseline),
             ));
+            if flat {
+                let text: String = line.runs.iter().map(|run| run.text.as_str()).collect();
+                out.push_str(&escape(&text));
+                out.push_str("</tspan>");
+                continue;
+            }
             for run in &line.runs {
                 let weight = match run.weight {
                     FontWeight::Normal => "normal",
@@ -171,7 +216,7 @@ impl LabelLayout {
             }
             out.push_str("</tspan>");
         }
-        out.push_str("</text></g>");
+        out.push_str("</text>");
         out
     }
 }
@@ -186,7 +231,7 @@ pub fn layout(spec: &LabelSpec<'_>) -> Result<LabelLayout, RenderError> {
     // its style, so the wrap sees the size. An edge label and a cluster title are wrapped in their
     // unstyled containers, which are the ones with `text-anchor` set or left to the cluster.
     let font_size = declared_font_size(spec.styles).unwrap_or(spec.font_size);
-    let wrap_size = if spec.is_node && spec.anchor == Anchor::Middle {
+    let wrap_size = if spec.wrap_in_style {
         font_size
     } else {
         spec.font_size
@@ -280,11 +325,16 @@ fn place(
             Anchor::Middle => -width / 2.0,
             Anchor::Start => 0.0,
         };
+        // A line of spaces alone has no glyph to box: SVG text collapses its leading and trailing
+        // spaces, so the `getBBox` of its `<text>` is empty (`er-diagram/nightly-check`, blank labels).
+        let blank = line.iter().all(|(text, _)| text.chars().all(|c| c == ' '));
         let mut runs = Vec::with_capacity(line.len());
         for ((text, face), run_width) in line.iter().zip(widths) {
             let metrics = text_box(face, size)?;
             let run_box = BBox::new(x, baseline - metrics.ascent, run_width, metrics.height);
-            bbox = Some(bbox.map_or(run_box, |so_far| so_far.union(run_box)));
+            if !blank {
+                bbox = Some(bbox.map_or(run_box, |so_far| so_far.union(run_box)));
+            }
             runs.push(LabelRun {
                 text: text.clone(),
                 weight: face.weight(),
@@ -407,6 +457,7 @@ mod tests {
             width: 200.0,
             is_node: true,
             anchor: Anchor::Middle,
+            wrap_in_style: true,
             add_background: false,
             styles,
             font_size: 16.0,

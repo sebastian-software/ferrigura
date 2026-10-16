@@ -74,6 +74,8 @@ pub(super) enum Kind {
     IconRounded,
     IconSquare,
     ImageSquare,
+    // The ER entity (`erBox.ts`), which draws its own labels.
+    ErBox,
 }
 
 /// The shape a name stands for, with `rect` taken as `roundedRect` when it has both radii
@@ -156,6 +158,7 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "iconRounded" => Kind::IconRounded,
         "iconSquare" => Kind::IconSquare,
         "imageSquare" => Kind::ImageSquare,
+        "erBox" => Kind::ErBox,
         _ => return None,
     })
 }
@@ -181,6 +184,8 @@ impl Kind {
                 | Self::Choice
                 | Self::CrossedCircle
                 | Self::LightningBolt
+                // An entity's labels are its own cells, drawn by its handler, not one label.
+                | Self::ErBox
         )
     }
 

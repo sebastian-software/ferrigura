@@ -19,6 +19,7 @@ mod collapsed_group;
 mod containers;
 mod cylinder;
 mod decorated;
+mod er_box;
 mod icon;
 mod intersect;
 mod person;
@@ -81,6 +82,12 @@ pub struct ShapeOutput {
     /// The label as the shape draws it: the input label with the minimum width applied, if the
     /// shape applies one.
     pub label: Option<LabelLayout>,
+    /// Further labels the shape draws in its own elements (the cells of an ER entity), which the
+    /// font subsets of the diagram cover as they cover `label`.
+    pub texts: Vec<LabelLayout>,
+    /// Attributes the shape writes on the node's `<g>`, after its `data-look`, each with its
+    /// leading space (the colour slot of an ER entity). Empty for the other shapes.
+    pub group_attributes: String,
     /// The box of the whole node group, in the node's coordinates.
     pub bbox: BBox,
     /// How edges meet the outline.
@@ -191,6 +198,7 @@ pub fn node_label(
         add_background: node.icon.is_some() || node.img.is_some(),
         // The stylesheet centres node labels (`.node .label text`).
         anchor: Anchor::Middle,
+        wrap_in_style: true,
         styles: &declarations,
         font_size: util::theme_number(theme, "fontSize").unwrap_or(config.font_size),
     };
@@ -240,6 +248,7 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str) -> String {
     let y = node.y.unwrap_or(0.0);
     let transform = format!("translate({}, {})", number(x), number(y));
     let data_look = util::attribute("data-look", &node.look);
+    let group_attributes = &shape.group_attributes;
     let title = node
         .tooltip
         .as_deref()
@@ -254,14 +263,14 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str) -> String {
                 .as_deref()
                 .map_or_else(String::new, |target| util::attribute("target", target));
             format!(
-                "<a xlink:href=\"{}\"{target}{data_look} transform=\"{transform}\"><g class=\"{}\" id=\"{}\"{title}>{body}</g></a>",
+                "<a xlink:href=\"{}\"{target}{data_look} transform=\"{transform}\"><g class=\"{}\" id=\"{}\"{group_attributes}{title}>{body}</g></a>",
                 escape(link),
                 escape(&class),
                 escape(&id),
             )
         }
         None => format!(
-            "<g class=\"{}\" id=\"{}\"{data_look} transform=\"{transform}\"{title}>{body}</g>",
+            "<g class=\"{}\" id=\"{}\"{data_look}{group_attributes} transform=\"{transform}\"{title}>{body}</g>",
             escape(&class),
             escape(&id),
         ),
@@ -340,6 +349,8 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::IconRounded => icon::icon_rounded(input),
         Kind::IconCircle => icon::icon_circle(input),
         Kind::ImageSquare => icon::image_square(input)?,
+        // The entity draws its own labels and their group box, so it returns its output whole.
+        Kind::ErBox => return er_box::er_box(input),
     };
     // The node group's box is the shape's and the label's together. The label group's box is the
     // text's own box moved by the label's offset: the box widened to the minimum width (which
@@ -357,6 +368,8 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         after_label: part.after_label,
         label_offset: part.label_offset,
         label: part.label,
+        texts: Vec::new(),
+        group_attributes: String::new(),
         bbox,
         intersect: part.intersect,
     })

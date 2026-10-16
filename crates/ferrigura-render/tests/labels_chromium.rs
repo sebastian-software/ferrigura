@@ -92,6 +92,8 @@ fn check(label: &Value, deviation: &mut Deviation) -> Result<(), String> {
         width,
         is_node,
         anchor,
+        // The rule the fixtures were measured under: a centred node label wraps at its style's size.
+        wrap_in_style: is_node && anchor == Anchor::Middle,
         add_background: label["addBackground"].as_bool().unwrap_or(false),
         styles: &styles,
         font_size: label["fontSize"].as_f64().unwrap_or(16.0),

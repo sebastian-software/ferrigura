@@ -226,6 +226,7 @@ pub fn paint<'a>(
         cover(&mut bounds, shape.bbox.translate(x, y));
         nodes.push_str(&shapes::node_svg(node, shape, id));
         labels.extend(shape.label.as_ref());
+        labels.extend(shape.texts.iter());
     }
 
     let mut edge_paths = String::new();

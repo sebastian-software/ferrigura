@@ -12,7 +12,7 @@
 use std::f64::consts::PI;
 
 use super::util::attribute;
-use crate::svg::number;
+use crate::svg::{escape, number};
 use crate::unified::geom::{BBox, Point};
 
 /// rough.js's default `curveStepCount`.
@@ -234,9 +234,141 @@ pub(super) fn stroke(outline: &Outline, style: Option<&str>, stroke_width: &str)
     )
 }
 
+/// The fill of a polygon: its colour, and whether it carries `fill-rule="evenodd"`, which
+/// `rc.polygon` gives and `rc.rectangle` does not.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Fill<'a> {
+    /// The fill colour.
+    pub colour: &'a str,
+    /// Whether the fill's rule is `evenodd`.
+    pub evenodd: bool,
+}
+
+/// A closed polygon as rough.js draws it at roughness 0 with `fillStyle: solid`, as `rc.rectangle`
+/// and `rc.polygon` write it (the ER entity's `erBox.ts`, the `neo` look):
+///
+/// - the fill is the points as an open polyline, `M p0 L p1 ... L pn`, with no closing side;
+/// - the stroke has two passes along every side, the closing side included (`renderer.js`
+///   `_doubleLine`, `disableMultiStroke` false). Each pass is a cubic whose control points lie on
+///   the side, so both passes trace it and the stroke's length is twice the perimeter. The second
+///   pass's control points differ from the first's in the reference (`divergePoint` is random);
+///   they stay on the side, so the geometry does not.
+///
+/// The fill path is written only when the options give a fill: roughjs writes nothing for an
+/// `undefined` fill, as the rows of an ER entity draw without one in the redux themes.
+/// `path_style` is the `style` of every path, when the node has style declarations.
+#[must_use]
+pub(super) fn double_stroked_polygon(
+    points: &[Point],
+    fill: Option<Fill<'_>>,
+    stroke: &str,
+    stroke_width: &str,
+    path_style: Option<&str>,
+) -> String {
+    let style = path_style.map_or_else(String::new, |style| attribute("style", style));
+    let mut out = String::new();
+    if let Some(fill) = fill {
+        let rule = if fill.evenodd {
+            " fill-rule=\"evenodd\""
+        } else {
+            ""
+        };
+        let d = points
+            .iter()
+            .enumerate()
+            .map(|(index, point)| {
+                format!(
+                    "{}{},{}",
+                    if index == 0 { "M" } else { " L" },
+                    number(point.x),
+                    number(point.y)
+                )
+            })
+            .collect::<String>();
+        out.push_str(&format!(
+            "<path d=\"{d}\" stroke=\"none\" stroke-width=\"0\" fill=\"{}\"{rule}{style}/>",
+            escape(fill.colour),
+        ));
+    }
+    let mut d = String::new();
+    for (index, start) in points.iter().enumerate() {
+        let end = points[(index + 1) % points.len()];
+        let first = Point::new(
+            start.x + (end.x - start.x) / 3.0,
+            start.y + (end.y - start.y) / 3.0,
+        );
+        let second = Point::new(
+            start.x + 2.0 * (end.x - start.x) / 3.0,
+            start.y + 2.0 * (end.y - start.y) / 3.0,
+        );
+        for _ in 0..2 {
+            d.push_str(&format!(
+                "M{},{} C{},{} {},{} {},{} ",
+                number(start.x),
+                number(start.y),
+                number(first.x),
+                number(first.y),
+                number(second.x),
+                number(second.y),
+                number(end.x),
+                number(end.y),
+            ));
+        }
+    }
+    out.push_str(&format!(
+        "<path d=\"{}\" fill=\"none\" stroke=\"{}\" stroke-width=\"{}\" stroke-dasharray=\"0 0\"{style}/>",
+        d.trim_end(),
+        escape(stroke),
+        escape(stroke_width),
+    ));
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_double_stroked_rectangle_has_a_fill_polyline_and_two_passes_a_side() {
+        let points = [
+            Point::new(0.0, 0.0),
+            Point::new(10.0, 0.0),
+            Point::new(10.0, 4.0),
+            Point::new(0.0, 4.0),
+        ];
+        let svg = double_stroked_polygon(
+            &points,
+            Some(Fill {
+                colour: "#ffffff",
+                evenodd: false,
+            }),
+            "#000",
+            "1.3",
+            None,
+        );
+        // The fill is open: four points and no closing side.
+        assert!(
+            svg.starts_with("<path d=\"M0,0 L10,0 L10,4 L0,4\" stroke=\"none\""),
+            "{svg}"
+        );
+        assert!(!svg.contains("fill-rule"), "{svg}");
+        // Four sides, two passes each: eight `M` moves, and the closing side starts the last pass.
+        let stroke = svg.split("stroke-width=\"0\"").nth(1).expect("the stroke");
+        assert_eq!(stroke.matches('M').count(), 8, "{svg}");
+        assert!(stroke.contains("M0,4 C0,"), "{svg}");
+    }
+
+    #[test]
+    fn a_polygon_without_a_fill_writes_only_the_stroke() {
+        let points = [
+            Point::new(0.0, 0.0),
+            Point::new(1.0, 0.0),
+            Point::new(1.0, 1.0),
+        ];
+        let svg = double_stroked_polygon(&points, None, "#000", "1.3", Some("fill: red"));
+        assert_eq!(svg.matches("<path ").count(), 1, "{svg}");
+        assert!(svg.contains("style=\"fill: red\""), "{svg}");
+    }
 
     #[test]
     fn a_circle_of_diameter_fourteen_overshoots_its_diameter_by_the_reference_amount() {

@@ -64,6 +64,7 @@ pub fn paint(node: &Node, config: &MermaidConfig, theme: &Value) -> Result<Clust
         add_background: false,
         // No rule centres a cluster title: its lines start at the label's origin.
         anchor: Anchor::Start,
+        wrap_in_style: false,
         styles: &styles,
         font_size: px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE),
     })?;

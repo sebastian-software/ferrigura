@@ -1,6 +1,7 @@
 //! Port of `packages/mermaid/src/diagrams/er/erDb.spec.js`. Test names follow the spec's titles in
 //! snake_case. The DB is driven directly, as the spec drives `ErDB`; the spec's `beforeEach` is a
-//! fresh DB. The two `getData` tests check the render data, which is not ported (the ER renderer).
+//! fresh DB. The two `getData` tests check the render data, which the ER renderer ports, in
+//! `ferrigura-render/tests/er_get_data_spec.rs`.
 
 use ferrigura_model::er::{Cardinality, Identification, RelSpec};
 use ferrigura_syntax::er::{ErDb, Member};
@@ -102,15 +103,8 @@ mod er_db_subgraph_behavior {
         }
     }
 
-    mod get_data_cluster_behavior {
-        #[test]
-        #[ignore = "port: getData is the render data of the ER renderer, not ported in M6"]
-        fn returns_nested_cluster_nodes_with_correct_parent_relationships() {}
-
-        #[test]
-        #[ignore = "port: getData is the render data of the ER renderer, not ported in M6"]
-        fn returns_edges_connected_to_subgraphs() {}
-    }
+    // The `getData cluster behavior` cases are the render data of the ER renderer: they are in
+    // `ferrigura-render/tests/er_get_data_spec.rs`.
 
     mod css_styles_and_classes_behavior {
         use super::*;
