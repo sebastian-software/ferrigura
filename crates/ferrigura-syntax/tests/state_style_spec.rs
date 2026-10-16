@@ -5,9 +5,8 @@
 //! Each test parses the spec's text with `parse_grammar`, which runs the grammar and the DB alone,
 //! as the reference's `stateDiagram.parser.parse` does.
 //!
-//! The three tests that read `getData()` (the `cssStyles` of the nodes after a `style` statement)
-//! are ignored: the render data is not ported yet. Their bodies are comments and their names are
-//! kept.
+//! The three tests of the spec's "defining (style)" block read `getData()` (the `cssStyles` of the
+//! nodes after a `style` statement). They are ported in `ferrigura-render/tests/state_data_style_spec.rs`.
 
 use ferrigura_model::state::{ClassDef, RelationStmt, StateDiagram, StateEntry, Statement};
 use ferrigura_syntax::state::parse_grammar;
@@ -375,28 +374,5 @@ mod comments_parsing {
         .expect("parses");
         assert!(find_state(&diagram, "Moving").is_some());
         assert!(find_state(&diagram, "Still%Active").is_some());
-    }
-}
-
-mod defining_style {
-    // The spec reads `getData().nodes[..].cssStyles` after each `style` line below. That is render
-    // data, so the expectations are not ported here.
-
-    #[test]
-    #[ignore = "port: getData (dataFetcher node and edge data), M6 data differential"]
-    fn has_style_as_a_keyword_an_id_and_can_set_a_css_style_attribute() {
-        // getData: nodes[0].cssStyles after `style id1 background:#bbb`.
-    }
-
-    #[test]
-    #[ignore = "port: getData (dataFetcher node and edge data), M6 data differential"]
-    fn has_style_as_a_keyword_an_id_and_can_set_a_css_style_attribute_2() {
-        // getData: nodes[0] and nodes[1].cssStyles after `style id1,id2 background:#bbb`.
-    }
-
-    #[test]
-    #[ignore = "port: getData (dataFetcher node and edge data), M6 data differential"]
-    fn can_define_multiple_attributes_separated_by_commas_2() {
-        // getData: nodes[0] and nodes[1].cssStyles after `style id1,id2` with three attributes.
     }
 }

@@ -4,7 +4,7 @@
  * canonical models are compared. A rejection on both sides counts as agreement; any other
  * difference is reported with both results.
  *
- * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | flowchart-data | config | yaml | theme>`
+ * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | flowchart-data | state-data | config | yaml | theme>`
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
@@ -15,7 +15,13 @@ import { exceptions } from './exceptions.ts';
 import type { PortInput, PortOutput } from './reference.ts';
 
 const type = process.argv[2];
-if (type === 'config' || type === 'yaml' || type === 'theme' || type === 'flowchart-data') {
+if (
+  type === 'config' ||
+  type === 'yaml' ||
+  type === 'theme' ||
+  type === 'flowchart-data' ||
+  type === 'state-data'
+) {
   const subRun = spawnSync(
     'pnpm',
     ['exec', 'tsx', fileURLToPath(new URL(`./diff-${type}.ts`, import.meta.url))],
@@ -37,7 +43,7 @@ if (
   type !== 'gantt'
 ) {
   console.error(
-    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | flowchart-data | config | yaml | theme'
+    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | flowchart-data | state-data | config | yaml | theme'
   );
   process.exit(2);
 }

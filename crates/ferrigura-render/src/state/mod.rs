@@ -4,6 +4,8 @@
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::state::StateDiagram;
 
+pub mod data;
+
 use crate::RenderError;
 use crate::theme::Themes;
 

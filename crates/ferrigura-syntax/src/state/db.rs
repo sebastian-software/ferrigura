@@ -14,33 +14,62 @@ use ferrigura_model::state::{
 use crate::sanitize::sanitize_text;
 use crate::text::js_trim;
 
-/// The id of a trailing concurrency region. The reference draws it with `Math.random`; the port
-/// writes this placeholder, and the exporter writes the same one for the reference's random id.
-pub(crate) const GENERATED_ID: &str = "<generated>";
+/// The id of the `number`-th trailing concurrency region, counted from 1 in the order the reference
+/// creates them (`docTranslator` splits a composite before it translates the composite's children).
+/// The reference draws the id with `Math.random`; the port writes this placeholder, and the
+/// exporters number the reference's random ids in the same order, so the two agree. The numbers
+/// keep two trailing regions apart: each one is a state of its own.
+pub(crate) fn generated_id(number: usize) -> String {
+    format!("<generated:{number}>")
+}
 
-/// `docTranslator` for the root document, whose parent is `root`.
-pub(crate) fn translate_root(document: &mut [Statement]) {
+/// The text of a state id as the reference's `sanitizeText` leaves it, with the placeholders of
+/// the trailing regions kept as they are. The reference's random id is plain text (an alphanumeric
+/// run), which sanitising leaves alone, so the label of `<generated:k>_start` is the id itself; the
+/// placeholder would be taken for an HTML tag otherwise.
+pub fn sanitize_state_id(id: &str) -> String {
+    const PREFIX: &str = "<generated:";
+    let mut out = String::new();
+    let mut rest = id;
+    while let Some(start) = rest.find(PREFIX) {
+        let after = &rest[start + PREFIX.len()..];
+        let Some(end) = after.find('>') else { break };
+        let number = &after[..end];
+        if number.is_empty() || !number.bytes().all(|byte| byte.is_ascii_digit()) {
+            break;
+        }
+        out.push_str(&sanitize_text(&rest[..start]));
+        out.push_str(&rest[start..start + PREFIX.len() + end + 1]);
+        rest = &after[end + 1..];
+    }
+    out.push_str(&sanitize_text(rest));
+    out
+}
+
+/// `docTranslator` for the root document, whose parent is `root`. `regions` counts the trailing
+/// regions the translation has created, over both passes of the parse.
+pub(crate) fn translate_root(document: &mut [Statement], regions: &mut usize) {
     for node in document {
-        translate_statement("root", node, true);
+        translate_statement("root", node, true, regions);
     }
 }
 
 /// `docTranslator` for one statement: a relation translates its two states, a state its id and
 /// its document.
-fn translate_statement(parent: &str, node: &mut Statement, first: bool) {
+fn translate_statement(parent: &str, node: &mut Statement, first: bool, regions: &mut usize) {
     match node {
         Statement::Relation(relation) => {
-            translate_state(parent, &mut relation.state1, true);
-            translate_state(parent, &mut relation.state2, false);
+            translate_state(parent, &mut relation.state1, true, regions);
+            translate_state(parent, &mut relation.state2, false, regions);
         }
-        Statement::State(state) => translate_state(parent, state, first),
+        Statement::State(state) => translate_state(parent, state, first, regions),
         _ => {}
     }
 }
 
 /// `docTranslator` for a state: `[*]` becomes `<parent>_start` or `<parent>_end`, other ids are
 /// trimmed, and a document is split at its dividers.
-fn translate_state(parent: &str, state: &mut StateStmt, first: bool) {
+fn translate_state(parent: &str, state: &mut StateStmt, first: bool, regions: &mut usize) {
     if state.id == "[*]" {
         state.id = format!("{parent}{}", if first { "_start" } else { "_end" });
         state.start = Some(first);
@@ -67,7 +96,8 @@ fn translate_state(parent: &str, state: &mut StateStmt, first: bool) {
         }
     }
     let document = if !split.is_empty() && !current.is_empty() {
-        let mut trailing = StateStmt::new(GENERATED_ID, Some("divider"));
+        let mut trailing = StateStmt::new(generated_id(*regions + 1), Some("divider"));
+        *regions += 1;
         trailing.doc = Some(current);
         split.push(Statement::State(trailing));
         split
@@ -78,7 +108,7 @@ fn translate_state(parent: &str, state: &mut StateStmt, first: bool) {
     state.doc = Some(document);
     let id = state.id.clone();
     for child in state.doc.iter_mut().flatten() {
-        translate_statement(&id, child, true);
+        translate_statement(&id, child, true, regions);
     }
 }
 

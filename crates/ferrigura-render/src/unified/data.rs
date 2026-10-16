@@ -90,12 +90,36 @@ pub struct Node {
     pub is_group: bool,
     /// The shape name, as the registry knows it.
     pub shape: String,
-    /// `flowchart.minNodeWidth`, set on vertices only.
+    /// `flowchart.minNodeWidth`, set on vertices only (`state.minNodeWidth` on a state diagram's
+    /// non-groups).
     pub min_width: Option<f64>,
     /// The colour slot of a subgraph.
     pub color_index: Option<u32>,
     /// The subgraph's metadata.
     pub metadata: BTreeMap<String, Value>,
+    /// The corner radius of a rounded shape. A `rect` with both radii is a rounded rectangle
+    /// (`nodes.ts` 22-29). Only the state diagram sets them; a flowchart node has none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rx: Option<f64>,
+    /// See `rx`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ry: Option<f64>,
+    /// The width at which the label wraps (`state.wrappingWidth` on a state diagram).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub wrapping_width: Option<f64>,
+    /// The reference's `type` of the node: `group` for a composite state, `node` for a note.
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub node_type: Option<String>,
+    /// The reference's `centerLabel`, which the state diagram sets on its states.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub center_label: Option<bool>,
+    /// The side of a note: `left of` or `right of`, as written.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<String>,
+    /// The descriptions of a state that has two or more of them, after the first one (which is
+    /// the label). `rectWithTitle` draws them as its rows.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<Vec<String>>,
 
     /// The size the layout uses: the measured box of a leaf, ELK's size afterwards.
     #[serde(skip)]

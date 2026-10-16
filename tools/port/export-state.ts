@@ -7,12 +7,14 @@
  *
  * Normalisation, documented here: the reference names a trailing concurrency region with
  * `generateId()` (`Math.random`). Every id that such a region gives, and every id built from it
- * (`<id>_start` of a `[*]` inside it), is written as `<generated>`, the placeholder of the port.
+ * (`<id>_start` of a `[*]` inside it), is written with the placeholder of its region, `<generated:k>`
+ * (`state-generated.ts`).
  *
  * Usage: `tsx tools/port/export-state.ts inputs.json outputs.json`
  */
 import { provideDomForSanitising, registerDetectors, type Reference } from './reference.ts';
 import { runExporter } from './exporter.ts';
+import { generatedPlaceholders, replaceGenerated } from './state-generated.ts';
 
 interface StateDb {
   rootDoc: unknown[];
@@ -62,38 +64,6 @@ async function loadModules(reference: Reference): Promise<Modules> {
   };
 }
 
-/** The ids of the trailing regions: dividers whose id is not one the parser numbers. */
-function generatedIds(node: unknown, found: Set<string>): void {
-  if (Array.isArray(node)) {
-    for (const item of node) generatedIds(item, found);
-    return;
-  }
-  if (typeof node !== 'object' || node === null) return;
-  const record = node as Record<string, unknown>;
-  if (record.stmt === 'state' && record.type === 'divider' && typeof record.id === 'string') {
-    if (!/^divider-id-\d+$/.test(record.id)) found.add(record.id);
-  }
-  for (const value of Object.values(record)) generatedIds(value, found);
-}
-
-/** Replaces a generated id, and an id built from it, by the placeholder. */
-function normalise(node: unknown, generated: Set<string>): unknown {
-  if (typeof node === 'string') {
-    for (const id of generated) {
-      if (node === id) return '<generated>';
-      if (node.startsWith(`${id}_`)) return `<generated>${node.slice(id.length)}`;
-    }
-    return node;
-  }
-  if (Array.isArray(node)) return node.map((item) => normalise(item, generated));
-  if (typeof node === 'object' && node !== null) {
-    return Object.fromEntries(
-      Object.entries(node).map(([key, value]) => [key, normalise(value, generated)])
-    );
-  }
-  return node;
-}
-
 await runExporter(loadModules, async (input, { detectType, preprocess, encode, state }) => {
   const { code, title } = preprocess.preprocessDiagram(input.text);
   // `Diagram.fromText` detects the type of the cleaned text first; the header is case-sensitive there.
@@ -108,8 +78,7 @@ await runExporter(loadModules, async (input, { detectType, preprocess, encode, s
   // The snapshot comes before `getData()`: that call runs `docTranslator` a second time on the same
   // objects, which the draw does too, and the model is the DB after the parse.
   const document = db.rootDoc;
-  const generated = new Set<string>();
-  generatedIds(document, generated);
+  const placeholders = generatedPlaceholders(document);
   const snapshot = JSON.parse(
     JSON.stringify({
       title: db.getDiagramTitle(),
@@ -145,5 +114,5 @@ await runExporter(loadModules, async (input, { detectType, preprocess, encode, s
     })
   );
   const model = { version: 1, ...snapshot, layoutDirection: db.getData().direction };
-  return normalise(model, generated);
+  return replaceGenerated(model, placeholders);
 });
