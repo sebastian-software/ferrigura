@@ -1098,6 +1098,14 @@
    "edgeLabels": false
   },
   {
+   "name": "synthetic__marked-edges-root-names",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 7,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
    "name": "synthetic__model-order-first-try-nodes-and-edges",
    "fixture": null,
    "nodes": 4,

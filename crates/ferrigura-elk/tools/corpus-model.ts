@@ -308,6 +308,50 @@ export function syntheticModelOrderFirstTryGraphs(): {
 }
 
 /**
+ * A flat graph whose layer sweep ends with marked edges, so the Brandes & Koepf log names its edges.
+ * The root's edges are named with the root's id in front (`e_root.e2`), as elkjs writes them.
+ */
+export function syntheticMarkedEdgeGraphs(): { name: string; graph: Record<string, unknown> }[] {
+  return [
+    {
+      name: 'synthetic__marked-edges-root-names',
+      graph: {
+        id: 'root',
+        layoutOptions: {
+          'elk.hierarchyHandling': 'SEPARATE_CHILDREN',
+          'elk.algorithm': 'elk.layered',
+          'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+          'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+          'elk.direction': 'RIGHT',
+          'spacing.baseValue': 40,
+          'elk.layered.unnecessaryBendpoints': true,
+          'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
+          'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+          'elk.layered.mergeEdges': false,
+          'elk.randomSeed': 44,
+        },
+        children: [
+          { id: 'n0', width: 54, height: 38 },
+          { id: 'n1', width: 78, height: 20 },
+          { id: 'n2', width: 35, height: 57 },
+          { id: 'n3', width: 24, height: 51 },
+          { id: 'n5', width: 25, height: 47 },
+        ],
+        edges: [
+          { id: 'e2', sources: ['n2'], targets: ['n3'] },
+          { id: 'e3', sources: ['n1'], targets: ['n3'] },
+          { id: 'e4', sources: ['n1'], targets: ['n5'] },
+          { id: 'e5', sources: ['n3'], targets: ['n5'] },
+          { id: 'e6', sources: ['n1'], targets: ['n5'] },
+          { id: 'e7', sources: ['n1'], targets: ['n2'] },
+          { id: 'e8', sources: ['n2'], targets: ['n0'] },
+        ],
+      },
+    },
+  ];
+}
+
+/**
  * A flat graph with cycles, laid out with the greedy cycle breaker, which Mermaid's legacy preset
  * selects through the GREEDY strategy. The flows of its nodes differ, so the sinks, the sources and
  * the random draw of the node with the largest outflow all take part.

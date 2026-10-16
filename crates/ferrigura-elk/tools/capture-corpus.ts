@@ -37,6 +37,7 @@ import {
   syntheticComponentGraphs,
   syntheticEdgeGraphs,
   syntheticGreedyCycleGraphs,
+  syntheticMarkedEdgeGraphs,
   syntheticModelOrderFirstTryGraphs,
   syntheticModelOrderLabelGraphs,
   syntheticNodeLabelGraphs,
@@ -412,6 +413,9 @@ async function syntheticRecords(): Promise<CaseRecord[]> {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticGreedyCycleGraphs()) {
+    await add(name, graph);
+  }
+  for (const { name, graph } of syntheticMarkedEdgeGraphs()) {
     await add(name, graph);
   }
   for (const { name, graph } of syntheticModelOrderLabelGraphs()) {
