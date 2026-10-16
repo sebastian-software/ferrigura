@@ -1,0 +1,22 @@
+[package]
+name = "ferrigura-node"
+description = "The ferrigura Node addon: renders Mermaid diagram text to SVG in Node.js"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ferrigura = { path = "../ferrigura" }
+ferrigura-model.workspace = true
+napi = { version = "3", features = ["serde-json"] }
+napi-derive = "3"
+serde_json.workspace = true
+
+[build-dependencies]
+napi-build = "2"
