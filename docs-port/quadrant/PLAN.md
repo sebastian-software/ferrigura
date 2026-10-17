@@ -1,8 +1,8 @@
-# quadrantChart parser and DB: plan
+# quadrantChart: plan
 
-Status: ported. Reference: this worktree's `packages/mermaid/src/diagrams/quadrant-chart/` (`parser/quadrant.jison`, `quadrantDb.ts`). Research and probes are in [NOTES.md](./NOTES.md); this page says what the port does, which quirks it keeps and which it does not. Quirk ids are the notes' ids: `Q1`–`Q38` for the grammar and the DB (NOTES 2.4), `C1`–`C5` for the coordinates (NOTES 2.3), and `L1`–`L6` for the lexer (NOTES 2.1, the rows the notes do not number).
+Status: ported (the parser, the DB and the model in sections 1 to 11; the builder and the renderer in section 12). Reference: this worktree's `packages/mermaid/src/diagrams/quadrant-chart/` (`parser/quadrant.jison`, `quadrantDb.ts`). Research and probes are in [NOTES.md](./NOTES.md); this page says what the port does, which quirks it keeps and which it does not. Quirk ids are the notes' ids: `Q1`–`Q38` for the grammar and the DB (NOTES 2.4), `C1`–`C5` for the coordinates (NOTES 2.3), and `L1`–`L6` for the lexer (NOTES 2.1, the rows the notes do not number).
 
-Scope: the parser, the DB and the model. The chart builder (`quadrantBuilder.ts`), the renderer and the theme are not ported. The configuration is compared by `pnpm port:diff config`.
+Scope: the parser, the DB and the model (sections 1 to 11), and the chart builder and the renderer (section 12). The theme is the theme port's (`ferrigura-model`), and the configuration is compared by `pnpm port:diff config`.
 
 ## 1. Sources
 
@@ -205,6 +205,25 @@ Fuzzing (not committed; the generators and the inputs were in the scratchpad): 1
 
 1. **Front matter that js-yaml rejects.** Two kinds: js-yaml's "the stream contains non-printable characters" (a control character such as U+000B or U+000C in the front matter), and a malformed mapping that js-yaml reports as "a line break is expected" (for example `--->escription: >-`). The shared `yaml.rs` accepts both, and the `yaml` differential (4,281 inputs, no difference) does not cover them. This is a gap of the shared front matter, which affects every type with front matter. It is not fixed here. Recommendation: the YAML port adds these inputs and fixes the reader.
 2. **The sanitiser's configuration.** The port applies the first pass of `sanitizeText` with the default configuration. `sanitizeMore` reads `securityLevel` and `htmlLabels` (section 6); the probes agree, but a directive that changes the sanitising of a quoted text with markup is not reproduced. The `getConfig` spy test of the reference's DB spec is ignored for this reason. Recommendation: accept, and revisit with the sanitiser port.
-3. **The NaN coordinate in the drawing.** The model holds `"NaN"` (C3). The renderer writes `cx` as nothing and `translate(undefined, …)` (NOTES 2.3). That is the renderer's to decide, under the M6 rule for named exceptions.
-4. **The NaN fill of the redux themes** (NOTES 6.6, `hsl(240, 90%, NaN%)`). It belongs to the theme port; no quadrant model field carries a colour that the theme gives.
-5. **The layout data differential** (NOTES 8.3, question 3). Proposed for the renderer stage; this port stops at the DB state.
+3. **The NaN coordinate in the drawing.** The model holds `"NaN"` (C3). Reproduced, not named as an exception: the renderer writes no `cx` (or `cy`) and `translate(undefined, …)` (or `NaN`), as section 12 lists (R1).
+4. **The NaN fill of the redux themes** (NOTES 6.6, `hsl(240, 90%, NaN%)`). The theme port gives it, and the renderer copies it (section 12, R2).
+5. **The layout data differential** (NOTES 8.3, question 3). Not added. The renderer's exact text is compared instead, with the same numbers (section 12).
+
+## 12. Builder and renderer
+
+Ported in `crates/ferrigura-render/src/quadrant_chart/`: `builder.rs` is `quadrantBuilder.ts` (`calculateSpace`, `getAxisLabels`, `getQuadrants`, `getQuadrantPoints`, `getBorders`, `getTitle`, `build`), and `mod.rs` is `quadrantRenderer.ts` (`draw`). Nothing is measured: every box is the configuration's arithmetic (NOTES 6.3, 6.7).
+
+- **Scale.** The point positions use `common::d3::LinearScale` on [0, 1], which computes `a * (1 - t) + b * t` (NOTES 6.4). The complete chart's `cx="295.47999999999996"` is the reference's bit pattern.
+- **R1, NaN coordinates.** A coordinate that the scale cannot read drops `cx` or `cy`; the label's transform writes `translate(undefined, …)` for an x and `translate(…, NaN)` for a y (NOTES 2.3). Reproduced.
+- **R2, the NaN fill.** The redux themes give `quadrantPointFill` as `hsl(240, 90%, NaN%)`; the theme port produces it (`redux_color.rs`), and the point's fill and default stroke copy it. The renderer does not correct it.
+- **R3, the x axis.** It is at the bottom whenever there are points (`builder` 611). A stroke-less point takes the theme's point fill as its stroke, not its own colour.
+- **R4, empty texts and groups.** The five groups of `g.main` are always written, the four quadrant texts are written when empty, and a border line is written for each of the six.
+- **Border styles.** The reference sets the stroke with d3's `style`, so the browser writes it as a declaration: `stroke: rgb(24, 24, 24); stroke-width: 2;`. A hex colour becomes `rgb()`. An `hsl()` colour is converted as Blink does it, in single precision: the redux border `hsl(247.5, 0%, 9.2156862745%)` reads as 24, where double precision reads 23. An `hsl()` with a NaN component is dropped, as the browser drops it. Other forms are written as given (probe p10: `red`, `rgb(10, 20, 30)`). This answers NOTES 8.3, question 5.
+- **Entities.** A text is `decode_entities(escape(text))`, the whole-SVG pass of `mermaidAPI.ts` 359. The font subset takes the characters the reader sees, so the apostrophe and the quote are in it, and not their `&#39;` and `&quot;` markup.
+- **Root.** The width comes first, then the namespace, then `height` or `style`, as the reference writes it; `title` and `desc` are the first children when the texts are set.
+
+**Verification.** `pnpm port:geometry quadrantChart` covers the 14 fixtures and 16 probes (`tools/port/geometry/probes/quadrantChart/`, p01 to p16: edges, coordinates read as numbers, NaN coordinates, long texts, classes and point styles, 121 points, delimiters, entities, theme colours in CSS forms, the dark theme, sizes, accessible texts, empty texts, a chart smaller than its axes, hsl borders). Every comparable case is within tolerance. Beyond the harness, the SVG text of each case was compared with the reference's, with the `<style>` and the empty-element serialisation set aside: 29 of 30 are byte for byte the same, and the other writes `&#35;` where the browser's DOM writes `#` (p09), which is the same text.
+
+**The harness.** `diagram-geometry.ts` now matches the type name without regard to case: `quadrantChart` was rejected because the argument was lower-cased before the lookup.
+
+**Not covered.** The browser's style form of the colour keywords and of `rgba()`, which no reference fixture uses; the `<style>` sheet, which the harness does not compare; and the configuration differential of quadrantChart (open question 7).
