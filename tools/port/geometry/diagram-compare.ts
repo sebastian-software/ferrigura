@@ -75,6 +75,11 @@ class Checker {
   readonly problems: string[] = [];
 
   number(actual: number | undefined, expected: number | undefined, where: string): void {
+    // The same non-finite number on both sides agrees: a NaN from a configuration the reference
+    // computes with (a `bitsPerRow` that is not a number) is written as NaN by both.
+    if (typeof actual === 'number' && typeof expected === 'number' && Object.is(actual, expected)) {
+      return;
+    }
     if (
       actual === undefined ||
       expected === undefined ||

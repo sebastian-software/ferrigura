@@ -189,10 +189,11 @@ pub fn render_with(
             id,
         }),
         DiagramType::Packet => packet_render::render(&packet_render::PacketInput {
-            diagram: &packet::parse(text)?,
+            diagram: &packet::parse_with(text, &prepared.effective)?,
             config: typed_config,
             themes,
             id,
+            bits_per_row: packet::bits_per_row(&prepared.effective),
         }),
         DiagramType::XyChart => xychart_render::render(&xychart_render::XyChartInput {
             diagram: &xychart::parse(text)?,
