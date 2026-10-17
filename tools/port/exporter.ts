@@ -4,13 +4,19 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 
+import type { Plugin } from 'vite';
+
 import type { PortInput, PortOutput } from './reference.ts';
 import { openReference, type Reference } from './reference.ts';
 
-/** Reads `<inputs.json> <outputs.json>` from the arguments and runs `convert` on every input. */
+/**
+ * Reads `<inputs.json> <outputs.json>` from the arguments and runs `convert` on every input. The
+ * optional `extraPlugins` are added to the reference's loader (see `openReference`).
+ */
 export async function runExporter<Modules>(
   loadModules: (reference: Reference) => Promise<Modules>,
-  convert: (input: PortInput, modules: Modules) => unknown
+  convert: (input: PortInput, modules: Modules) => unknown,
+  extraPlugins: Plugin[] = []
 ): Promise<void> {
   const [inputPath, outputPath] = process.argv.slice(2);
   if (!inputPath || !outputPath) {
@@ -18,7 +24,7 @@ export async function runExporter<Modules>(
   }
   const inputs = JSON.parse(await readFile(inputPath, 'utf8')) as PortInput[];
 
-  const reference = await openReference();
+  const reference = await openReference(extraPlugins);
   try {
     const modules = await loadModules(reference);
     const outputs: PortOutput[] = [];

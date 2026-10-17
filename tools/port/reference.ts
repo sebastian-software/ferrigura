@@ -8,7 +8,7 @@
 import { fileURLToPath } from 'node:url';
 
 import { JSDOM } from 'jsdom';
-import { createServer } from 'vite';
+import { createServer, type Plugin } from 'vite';
 
 import jisonPlugin from '../../.vite/jisonPlugin.ts';
 import jsonSchemaPlugin from '../../.vite/jsonSchemaPlugin.ts';
@@ -21,13 +21,18 @@ export interface Reference {
   close(): Promise<void>;
 }
 
-export async function openReference(): Promise<Reference> {
+/**
+ * Opens the reference's module loader. `extraPlugins` lets one exporter add a transform of its
+ * own, such as a read of a module's state that the module does not export (`export-kanban.ts`);
+ * the reference's source is not changed.
+ */
+export async function openReference(extraPlugins: Plugin[] = []): Promise<Reference> {
   const server = await createServer({
     configFile: false,
     root,
     logLevel: 'warn',
     appType: 'custom',
-    plugins: [jsonSchemaPlugin(), jisonPlugin()],
+    plugins: [jsonSchemaPlugin(), jisonPlugin(), ...extraPlugins],
     resolve: { extensions: ['.ts', '.js'] },
     server: { middlewareMode: true, hmr: false, watch: null },
     optimizeDeps: { noDiscovery: true, include: [] },

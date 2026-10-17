@@ -124,6 +124,12 @@ The sequence model is the DB state after parsing (`sequenceDb.ts`), with the fie
 
 - **Links keep the key order of a JavaScript object.** The reference lists an actor's links in its menu with `for…in`, so their order is part of the model: the array indices (the canonical integers from 0 to 2^32 − 2) first, ascending, then the other keys in insertion order; a repeated key keeps its place and takes the new value. The model holds them in a `JsObject` ([`js_object.rs`](../crates/ferrigura-model/src/js_object.rs)), which serde writes as a JSON object in that order. The differential run cannot compare that order as an object: `serde_json::Value` sorts the keys, and `same` in [`diff.ts`](../tools/port/diff.ts) ignores their order. The exporter ([`export-sequence.ts`](../tools/port/export-sequence.ts), `Object.entries`) and the canonical example ([`canonical.rs`](../crates/ferrigura-syntax/examples/canonical.rs)) therefore both write `links` as a list of `[key, value]` pairs, which is compared in order. `properties` stay an object, as no output depends on their order.
 
+## Kanban
+
+- **The DB state.** The model holds the nodes that the kanban DB holds, in the order the grammar added them, sections and items alike (`isSection` marks a section), with the shape-data and decoration fields the DB keeps. The shape is not in it, because the DB never stores one (quirk K7). Width and padding are left out: the configuration sets them, and no field the renderer reads depends on them. The rules are in [kanban/PLAN.md](./kanban/PLAN.md), sections 5 and 6.
+- **Texts** are what the DB holds, with the entity placeholders kept. Ids, descriptions, and the icon and classes of a decoration are sanitised; the label, icon, assignee and ticket of the shape data are not, as the YAML gives them.
+- **Values.** A label or a priority from the shape data keeps its number, boolean, array or object. A non-finite number is its sentinel string, as the other models write it.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

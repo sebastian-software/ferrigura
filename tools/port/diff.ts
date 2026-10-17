@@ -26,7 +26,6 @@ const p2Types = [
   'quadrantChart',
   'requirement',
   'c4',
-  'kanban',
   'architecture',
   'treemap',
   'ishikawa',
@@ -62,6 +61,7 @@ if (
   type !== 'sequence' &&
   type !== 'state' &&
   type !== 'gantt' &&
+  type !== 'kanban' &&
   !p2Types.includes(type)
 ) {
   console.error(
