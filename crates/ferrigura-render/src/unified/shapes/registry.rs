@@ -12,6 +12,8 @@ use super::util;
 pub(super) enum Kind {
     SquareRect,
     RoundedRect,
+    // The mindmap's circle (`mindmapCircle.ts`): the circle's handler with the node's padding.
+    MindmapCircle,
     Stadium,
     Question,
     Circle,
@@ -105,6 +107,8 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         }
         "cyl" | "db" | "database" | "cylinder" => Kind::Cylinder,
         "circle" | "circ" => Kind::Circle,
+        // The mindmap's circle (`mindmapCircle.ts`), which takes the node's padding whole.
+        "mindmapCircle" => Kind::MindmapCircle,
         "diam" | "decision" | "diamond" | "question" => Kind::Question,
         "hex" | "hexagon" | "prepare" => Kind::Hexagon,
         "lean-r" | "lean-right" | "in-out" | "lean_right" => Kind::LeanRight,

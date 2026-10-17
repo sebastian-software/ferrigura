@@ -294,6 +294,14 @@ impl Prepared {
     }
 }
 
+/// Whether the top-level `layout` is set by the user: in the site configuration (`initialize`) or in
+/// the text's directives and front matter. A diagram-scoped `layout` does not count
+/// (`userDefinedConfig`, `config.ts` 305-317, `mindmapDb.ts` 361-362).
+fn user_sets_layout(site: Option<&Value>, directive: &Value) -> bool {
+    let set = |value: &Value| value.get("layout").is_some_and(|layout| !layout.is_null());
+    site.is_some_and(set) || set(directive)
+}
+
 /// Resolves the id, the configuration and the themes of a render, as `mermaidAPI` does before it
 /// calls the diagram's renderer.
 fn prepare(
@@ -309,8 +317,13 @@ fn prepare(
     };
     let directive = config::read(text)?;
     let effective_config = effective(Some(site), Some(kind.config_key()), &directive);
-    let typed_config =
+    let mut typed_config =
         typed(&effective_config).map_err(|error| RenderError::Config(error.to_string()))?;
+    // `getData` sets the mindmap's layout to cose-bilkent unless the top-level `layout` is set by the
+    // user (`mindmapDb.ts` 361-367): the schema's default, `elk`, does not reach a mindmap.
+    if matches!(kind, DiagramType::Mindmap) && !user_sets_layout(Some(site), &directive) {
+        typed_config.layout = "cose-bilkent".to_owned();
+    }
     let configured = effective_config
         .get("themeVariables")
         .cloned()

@@ -28,6 +28,29 @@ pub(super) fn circle(input: &ShapeInput<'_>) -> Part {
     Part::with_centred_label(svg, bbox, Intersect::Circle { radius }, label)
 }
 
+/// `mindmapCircle.ts`: the circle handler of `circle.ts` with the options `{ padding: node.padding }`.
+/// Its radius is half the label's diagonal plus the node's whole padding in the classic look, and
+/// plus 16 in the neo look (`circle.ts` 23-29; the neo branch ignores the padding). The label's
+/// minimum width does not apply (`ignoreMinWidth`).
+pub(super) fn mindmap_circle(input: &ShapeInput<'_>) -> Part {
+    let node = input.node;
+    let styles = styles2string(node);
+    let label = label_helper(input, true);
+    let label_radius = (label.bbox.width.powi(2) + label.bbox.height.powi(2)).sqrt() / 2.0;
+    let radius = if node.is_neo() {
+        label_radius + 16.0
+    } else {
+        label_radius + node.padding
+    };
+    let svg = format!(
+        "<circle class=\"basic label-container\"{} r=\"{}\" cx=\"0\" cy=\"0\"/>",
+        attribute("style", &styles.node),
+        number(radius),
+    );
+    let bbox = BBox::new(-radius, -radius, 2.0 * radius, 2.0 * radius);
+    Part::with_centred_label(svg, bbox, Intersect::Circle { radius }, label)
+}
+
 /// `doubleCircle.ts`: two concentric circles around the label. The inner ring is the label's
 /// diagonal plus 16 in neo and plus the padding in classic; the outer ring is 12 (neo) or 5
 /// (classic) further out.
