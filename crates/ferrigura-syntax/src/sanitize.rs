@@ -684,8 +684,10 @@ fn decode_attribute(chars: &[char]) -> String {
     out
 }
 
-/// The text with its character references decoded, as the HTML parser reads the text state.
-pub(crate) fn decode_references(text: &str) -> String {
+/// The text with its character references decoded, as the HTML parser reads the text state. A
+/// reference the parser does not know is left as it is.
+#[must_use]
+pub fn decode_references(text: &str) -> String {
     let chars: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());
     let mut index = 0;

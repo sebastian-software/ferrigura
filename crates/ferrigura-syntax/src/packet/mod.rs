@@ -25,9 +25,19 @@ use crate::text::{newline_then_space_to_newline, strip_leading_space};
 /// `bitsPerRow` of the packet defaults (`defaultConfig.ts`, `schemas/config.schema.yaml`).
 const DEFAULT_BITS_PER_ROW: f64 = 32.0;
 
-/// Parses a packet diagram, with its front matter and directives, and returns its model.
+/// Parses a packet diagram, with the configuration that its own front matter and directives give,
+/// and returns its model. A `bitsPerRow` given to `initialize` is not seen: [`parse_with`] takes
+/// the effective configuration for that.
 pub fn parse(raw: &str) -> Result<PacketDiagram, ParseError> {
-    let bits_per_row = bits_per_row_of(raw)?;
+    let configured = effective(None, Some("packet"), &config::read(raw)?);
+    parse_with(raw, &configured)
+}
+
+/// Parses a packet diagram with the effective configuration `configured`, which the reference's
+/// `getConfig` reads during the parse: the site's configuration, the front matter's and the
+/// directives'. The rows depend on its `bitsPerRow`.
+pub fn parse_with(raw: &str, configured: &Value) -> Result<PacketDiagram, ParseError> {
+    let bits_per_row = BitsPerRow::of(&bits_per_row_value(configured));
     let prepared = prepare(raw)?;
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
@@ -54,14 +64,19 @@ pub fn parse(raw: &str) -> Result<PacketDiagram, ParseError> {
     Ok(diagram)
 }
 
-/// `bitsPerRow` of the effective configuration of the text, in the packet scope.
-fn bits_per_row_of(raw: &str) -> Result<BitsPerRow, ParseError> {
-    let settings = config::read(raw)?;
-    let resolved = effective(None, Some("packet"), &settings);
-    let value = resolved
+/// `bitsPerRow` of an effective configuration, as the renderer's arithmetic reads it: the number
+/// that `bitWidth * bitsPerRow` and `start % bitsPerRow` take, which is `NaN` for a string that is
+/// not a number, as in the reference.
+#[must_use]
+pub fn bits_per_row(configured: &Value) -> f64 {
+    BitsPerRow::of(&bits_per_row_value(configured)).times
+}
+
+/// The `bitsPerRow` of an effective configuration, in the packet scope, or the default.
+fn bits_per_row_value(configured: &Value) -> Value {
+    configured
         .get("packet")
         .and_then(|section| section.get("bitsPerRow"))
         .cloned()
-        .unwrap_or(Value::Number(DEFAULT_BITS_PER_ROW));
-    Ok(BitsPerRow::of(&value))
+        .unwrap_or(Value::Number(DEFAULT_BITS_PER_ROW))
 }
