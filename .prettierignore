@@ -21,6 +21,8 @@ crates/ferrigura-elk/tests/corpus/
 crates/ferrigura-cose/tests/corpus/
 # Generated from Chromium captures by crates/ferrigura-cose/tools/capture-fcose-corpus.ts
 crates/ferrigura-cose/tests/fcose-corpus/
+# Generated from Chromium's getBBox() by tools/port/path-bounds.ts
+crates/ferrigura-path/tests/corpus/
 # Generated from reference captures by the M5 port tools (tools/port/)
 crates/ferrigura-render/tests/data/
 crates/ferrigura-render/tests/fixtures/

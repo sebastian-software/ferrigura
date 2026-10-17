@@ -6,6 +6,12 @@
 //! default, so it is checked on macOS, where the samples were taken. `hypot` is V8's plain
 //! arithmetic, the same everywhere.
 
+// The unary checks and their helper are compiled only where the fdlibm functions fuse.
+#![cfg_attr(
+    not(any(target_arch = "aarch64", target_feature = "fma")),
+    allow(dead_code, unused_imports)
+)]
+
 mod support;
 
 use ferrigura_jsmath::node;

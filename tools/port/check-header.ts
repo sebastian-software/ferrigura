@@ -59,7 +59,16 @@ try {
   const mismatches: string[] = [];
 
   for (const input of inputs) {
-    const { code, title: frontMatterTitle } = preprocess.preprocessDiagram(input.text);
+    // An init directive in a text with no detectable type makes the preprocessing throw
+    // (`detectInit`), which rejects the text before the parser runs.
+    let preprocessed: ReturnType<PreprocessModule['preprocessDiagram']>;
+    try {
+      preprocessed = preprocess.preprocessDiagram(input.text);
+    } catch {
+      rejected += 1;
+      continue;
+    }
+    const { code, title: frontMatterTitle } = preprocessed;
 
     let ast: PieHeaderAst;
     try {
