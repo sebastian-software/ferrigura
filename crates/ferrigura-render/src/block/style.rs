@@ -141,7 +141,7 @@ pub fn style_sheet_with_fonts(
             &format!("{id} .flowchartTitleText"),
             "text-anchor:middle;font-size:18px;fill:var(--textColor);",
         ),
-        composite_cluster_rule(&id, variables, &stroke_width),
+        composite_cluster_colours(&id, themes, &stroke_width),
     ];
     if let Some(palette) = palette(config, variables) {
         rules.push(palette_rules(&id, look, palette.border.len()));
@@ -159,6 +159,20 @@ pub fn style_sheet_with_fonts(
         custom_properties(svg_id, themes, config),
         rules.concat()
     ))
+}
+
+/// The composite's cluster colours for the scheme or schemes of the theme. With a light and a dark set, the
+/// dark rule applies under `prefers-color-scheme: dark`, as the custom properties do, since the colours are
+/// written with their alpha and cannot follow a custom property.
+fn composite_cluster_colours(id: &str, themes: Themes<'_>, stroke_width: &str) -> String {
+    match themes {
+        Themes::Single(variables) => composite_cluster_rule(id, variables, stroke_width),
+        Themes::Schemes { light, dark } => format!(
+            "{}@media (prefers-color-scheme: dark){{{}}}",
+            composite_cluster_rule(id, light, stroke_width),
+            composite_cluster_rule(id, dark, stroke_width),
+        ),
+    }
 }
 
 /// `styles.ts` `.node .cluster`: a composite's fill and stroke are the cluster colours at half and a

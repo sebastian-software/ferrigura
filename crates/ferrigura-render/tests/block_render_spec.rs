@@ -96,3 +96,28 @@ fn a_plain_block_takes_no_palette_slot() {
     // The style sheet names the slots in its selectors; no element may carry one.
     assert!(!svg.contains(" data-color-id=\""), "{svg}");
 }
+
+#[test]
+fn a_composite_takes_the_dark_cluster_colours_under_the_dark_scheme() {
+    // Both schemes write the composite's cluster fill: the dark one under `prefers-color-scheme`, since its
+    // colours carry an alpha and cannot be a custom property.
+    let diagram = ferrigura_syntax::block::parse("block\n  columns 2\n  block:g\n    a\n  end")
+        .expect("the text parses");
+    let light = Theme::ReduxColor.variables(None);
+    let dark = Theme::ReduxDarkColor.variables(None);
+    let svg = render(&BlockInput {
+        diagram: &diagram,
+        config: &MermaidConfig::default(),
+        themes: Themes::Schemes {
+            light: &light,
+            dark: &dark,
+        },
+        id: "b1",
+    })
+    .expect("renders");
+
+    let (_, scheme) = svg
+        .split_once("@media (prefers-color-scheme: dark)")
+        .expect("the dark scheme is in a media query");
+    assert!(scheme.contains("#b1 .node .cluster{fill:"), "{svg}");
+}
