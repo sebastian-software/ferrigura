@@ -41,7 +41,12 @@ pub(super) fn double_circle(input: &ShapeInput<'_>) -> Part {
     };
     let label = label_helper(input, true);
     let label_radius = (label.bbox.width.powi(2) + label.bbox.height.powi(2)).sqrt() / 2.0;
-    let inner_radius = label_radius + label_padding;
+    // A node with a width (a block in its placed pass) takes its inner ring from that width, as
+    // `doubleCircle.ts` 26 reads `node.width`.
+    let inner_radius = match node.width.filter(|width| *width != 0.0) {
+        Some(width) => width / 2.0,
+        None => label_radius,
+    } + label_padding;
     let outer_radius = inner_radius + gap;
     let style = attribute("style", &styles.node);
     let svg = format!(

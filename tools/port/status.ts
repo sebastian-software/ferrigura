@@ -90,7 +90,12 @@ const suites: Record<string, string[]> = {
   // The P2 types have no suites until their parser tasks add them. Their rows of the P2 table are
   // left as written while the list is empty.
   mindmap: ['mindmap_spec', 'mindmap_colors_spec', 'mindmap_get_data_spec', 'mindmap_layout_spec'],
-  block: ['block_spec', 'block_db_spec', 'block_layout_spec', 'block_color_index_spec'],
+  block: [
+    'block_spec',
+    'block_db_spec',
+    'render:block_layout_spec',
+    'render:block_color_index_spec',
+  ],
   packet: ['packet_spec', 'packet_grammar', 'packet_db_spec', 'render:packet_render_spec'],
   xychart: ['xychart_parser_spec', 'xychart_db_spec'],
   sankey: ['sankey_spec', 'sankey_grammar'],

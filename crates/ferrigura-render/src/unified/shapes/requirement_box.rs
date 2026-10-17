@@ -268,6 +268,8 @@ pub(super) fn requirement_box(input: &ShapeInput<'_>) -> Result<ShapeOutput, Ren
         label: None,
         texts: texts.into_iter().map(|text| text.label).collect(),
         group_attributes: colour_group_attribute(input),
+        // `updateNodeBounds(node, rect)` reads the outline (`requirementBox.ts` 187).
+        element: BBox::new(x, y, total_width, total_height),
         bbox,
         intersect: Intersect::Rect,
         extent: None,
