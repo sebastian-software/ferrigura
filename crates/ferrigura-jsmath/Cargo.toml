@@ -4,7 +4,8 @@ description = "JavaScript's Math functions (sin, cos, tan, asin, acos, atan, ata
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+# MIT for the crate, with the licences of the ported parts (NOTICE.md).
+license = "MIT AND Apache-2.0 WITH LLVM-exception AND BSD-3-Clause"
 repository.workspace = true
 publish.workspace = true
 
