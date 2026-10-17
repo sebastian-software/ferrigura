@@ -110,6 +110,15 @@ The xychart model is the DB state after the parse, before the chart builder runs
 - **X values are strings** as the DB stores them: the category, or the JavaScript string of the linear position (`1.6666666666666667`, `1e-7`).
 - **Colours** are the palette entries of the theme the configuration resolves to, one per plot in declaration order. The exporter applies ferrigura's rule for themes it does not ship.
 
+## QuadrantChart
+
+The quadrant model is the DB state after the parse, before the chart builder lays it out, with the field list in [quadrant/PLAN.md](./quadrant/PLAN.md), section 7. Its own rules:
+
+- **Coordinates** are `Number(text)` of the token the grammar read, the value the scale reads: `0x5` is 5, and `0,5` is `"NaN"`.
+- **Entities** keep the placeholders the DB holds (`ﬂ°°35¶ß`); the renderer decodes them.
+- **Styles are present only when set**: a point or class without a `radius` has no `radius` key.
+- **Order**: the points are in the DB's order, the last source line first, and the classes are a list of `[name, styles]` pairs in the order of their first definition.
+
 ## Block
 
 The block model is the DB state after parsing (`blockDB.ts`), with the field list and the quirks in [block/PLAN.md](./block/PLAN.md), sections 6 and 8. Its own rules:

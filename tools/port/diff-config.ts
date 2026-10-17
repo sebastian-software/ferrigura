@@ -240,8 +240,8 @@ if (missingInRust.length > 0 || extraInRust.length > 0) {
  * TypeScript defaults replace some sections whole; ferrigura takes them from the schema. A section
  * is compared only for an input of its own diagram type, and only once that type is ported:
  * `pie`, `flowchart`, `timeline`, `journey`, `gitGraph`, `er`, `class`, `sequence`, `state`, `gantt`,
- * `requirement`, `kanban`, `c4`, `block`, `xyChart` and `mindmap` are ported, and `info` has no section. Every other section is left out, the P2
- * sections included.
+ * `requirement`, `kanban`, `c4`, `block`, `xyChart`, `mindmap` and `quadrantChart` are ported, and
+ * `info` has no section. Every other section is left out, the P2 sections included.
  */
 const UNPORTED_SECTIONS = [
   'flowchart',
@@ -276,7 +276,6 @@ const UNPORTED_SECTIONS = [
 const NOT_PORTED_SECTIONS = new Set([
   'packet',
   'sankey',
-  'quadrantChart',
   'architecture',
   'treemap',
   'ishikawa',
