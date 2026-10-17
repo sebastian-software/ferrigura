@@ -16,14 +16,15 @@ use crate::text::{is_js_space, is_line_term, is_word};
 use crate::yaml::Yaml;
 use crate::{DiagramType, ParseError, detect, preprocess};
 
-/// Reads the configuration that the text carries; see the module documentation.
+/// Reads the configuration that the text carries; see the module documentation. An `init` directive
+/// with arguments, in a text that no diagram type is detected in, is an error.
 pub fn read(text: &str) -> Result<Value, ParseError> {
     let prepared = preprocess::prepare(text)?;
     let front_matter = front_matter_config(&prepared.front_matter);
 
     let diagram = detect(text).map(DiagramType::config_key);
     let mut directive =
-        detect_init(&prepared.text, diagram).unwrap_or_else(|| Value::Object(Map::new()));
+        detect_init(&prepared.text, diagram)?.unwrap_or_else(|| Value::Object(Map::new()));
     if let (Some(wrap), Value::Object(map)) = (detect_wrap(&prepared.text), &mut directive) {
         map.insert("wrap".to_owned(), Value::Bool(wrap));
     }
@@ -64,15 +65,21 @@ fn front_matter_config(fields: &[(String, Yaml)]) -> Value {
 /// `detectInit`: the arguments of the `init` and `initialize` directives, merged in order, with
 /// the `config` key moved under the diagram's section. `None` when there is none, or when the
 /// arguments are not an object.
-fn detect_init(text: &str, diagram: Option<&str>) -> Option<Value> {
-    let found = directives(text).ok()?;
+///
+/// The reference calls `detectType` on the text whenever the arguments are truthy (or several
+/// directives are given), and `detectType` throws when no diagram type is detected: then the text
+/// has no configuration, and this is an error, as `preprocessDiagram` makes it.
+fn detect_init(text: &str, diagram: Option<&str>) -> Result<Option<Value>, ParseError> {
+    let Ok(found) = directives(text) else {
+        return Ok(None);
+    };
     let inits: Vec<&Directive> = found
         .iter()
         .filter(|directive| is_init_type(&directive.kind))
         .collect();
-    let mut results = match inits.as_slice() {
-        [] => return None,
-        [only] => only.args.clone(),
+    let (mut results, reaches_detect) = match inits.as_slice() {
+        [] => return Ok(None),
+        [only] => (only.args.clone(), is_truthy(&only.args)),
         many => {
             let mut args = Value::Array(
                 many.iter()
@@ -82,18 +89,37 @@ fn detect_init(text: &str, diagram: Option<&str>) -> Option<Value> {
             sanitize_directive(&mut args);
             let mut merged = Value::Object(Map::new());
             assign_with_depth(&mut merged, &args, 2);
-            merged
+            (merged, true)
         }
     };
+    if reaches_detect && diagram.is_none() {
+        return Err(ParseError {
+            line: 1,
+            column: 1,
+            message: "no diagram type detected for an init directive".to_owned(),
+        });
+    }
     let Value::Object(map) = &mut results else {
-        return None;
+        return Ok(None);
     };
     if let Some(config) = map.remove("config")
         && let Some(key) = diagram
     {
         map.insert(key.to_owned(), config);
     }
-    Some(results)
+    Ok(Some(results))
+}
+
+/// JavaScript's truthiness of a directive's arguments: `null`, `false`, zero, `NaN` and the empty
+/// string are falsy.
+fn is_truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(flag) => *flag,
+        Value::Number(number) => *number != 0.0 && !number.is_nan(),
+        Value::String(text) => !text.is_empty(),
+        Value::Array(_) | Value::Object(_) => true,
+    }
 }
 
 /// `wrap` as `processDirectives` sets it: `Some(true)` for a `%%{wrap}%%` directive, `Some(false)`
