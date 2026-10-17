@@ -79,6 +79,8 @@ pub(super) enum Kind {
     ImageSquare,
     // The ER entity (`erBox.ts`), which draws its own labels.
     ErBox,
+    // The requirement's box (`requirementBox.ts`), which draws its own labels too.
+    RequirementBox,
 }
 
 /// The shape a name stands for, with `rect` taken as `roundedRect` when it has both radii
@@ -164,6 +166,7 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "iconSquare" => Kind::IconSquare,
         "imageSquare" => Kind::ImageSquare,
         "erBox" => Kind::ErBox,
+        "requirementBox" => Kind::RequirementBox,
         _ => return None,
     })
 }
@@ -195,6 +198,8 @@ impl Kind {
                 | Self::LightningBolt
                 // An entity's labels are its own cells, drawn by its handler, not one label.
                 | Self::ErBox
+                // A requirement's labels are its own texts, drawn by its handler.
+                | Self::RequirementBox
         )
     }
 

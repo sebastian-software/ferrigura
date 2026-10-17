@@ -30,6 +30,7 @@ export const exceptions: Record<string, PortException[]> = {
   sankey: [],
   quadrantChart: [],
   requirement: [],
+  'requirement-data': [],
   c4: [],
   kanban: [],
   architecture: [],

@@ -141,6 +141,10 @@ pub struct Node {
     /// The class data of a class node: what its `classBox` shape draws (see [`ClassNodeData`]).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub class: Option<ClassNodeData>,
+    /// The fields of a requirement or an element, which its `requirementBox` shape draws; `None`
+    /// for every other node.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub requirement: Option<RequirementFields>,
 
     /// The size the layout uses: the measured box of a leaf, ELK's size afterwards.
     #[serde(skip)]
@@ -165,6 +169,44 @@ impl Node {
     pub fn is_neo(&self) -> bool {
         self.look == "neo"
     }
+}
+
+/// The fields that only a requirement or an element carries (`types.ts` of the requirement
+/// diagram), which its `requirementBox` shape draws. The two kinds are told apart as the
+/// reference's shape tells them: a requirement has the `verifyMethod` key, an element never has it
+/// (`requirementBox.ts` 25). Serialised untagged, so the object holds the fields of its kind only.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum RequirementFields {
+    /// A requirement: its kind, id, text, risk and verification method, each empty when unset.
+    Requirement {
+        /// The name, which is also the node's id.
+        name: String,
+        /// The kind as the DB's display string (`Requirement`, `Design Constraint`, ...).
+        #[serde(rename = "type")]
+        kind: String,
+        /// The `id` property (`requirementId` in the reference).
+        #[serde(rename = "requirementId")]
+        requirement_id: String,
+        /// The `text` property.
+        text: String,
+        /// The `risk` property: `Low`, `Medium`, `High` or empty.
+        risk: String,
+        /// The `verifyMethod` property, as the DB's display string or empty.
+        #[serde(rename = "verifyMethod")]
+        verify_method: String,
+    },
+    /// An element: its type and its document reference, each empty when unset.
+    Element {
+        /// The name, which is also the node's id.
+        name: String,
+        /// The `type` property of the element.
+        #[serde(rename = "type")]
+        kind: String,
+        /// The `docref` property (`docRef` in the reference).
+        #[serde(rename = "docRef")]
+        doc_ref: String,
+    },
 }
 
 /// What a class node carries beyond the common node fields (`classDb.ts` `getData`, which spreads

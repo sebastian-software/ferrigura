@@ -1,8 +1,8 @@
 # P2 requirement: parser and DB plan
 
-Status: the parser, the DB, the model and the specs are ported; `pnpm port:diff requirement` shows no difference on its 266 inputs. Reference: `packages/mermaid/src/diagrams/requirement/` (the Jison grammar, `requirementDb.ts`). Research and the probes behind this page are in [NOTES.md](./NOTES.md). Quirk ids `Q1`-`Q44` are NOTES section 2.5; `Q45`-`Q53` are the quirks that the port found by reading the lexer rules or by the differential, and the probes of `cases.ts` carry the same ids in their comments.
+Status: the parser, the DB, the model and the specs are ported; `pnpm port:diff requirement` shows no difference on its 266 inputs. The renderer is ported too (section 11). Reference: `packages/mermaid/src/diagrams/requirement/` (the Jison grammar, `requirementDb.ts`). Research and the probes behind this page are in [NOTES.md](./NOTES.md). Quirk ids `Q1`-`Q44` are NOTES section 2.5; `Q45`-`Q53` are the quirks that the port found by reading the lexer rules or by the differential, and the probes of `cases.ts` carry the same ids in their comments.
 
-The renderer stage (`getData`, the shape, the markers, the style sheet, the layout data) is not part of this task: the model is the DB state after the parse.
+The renderer stage (`getData`, the shape, the markers, the style sheet, the layout data) is not part of the parser task: the model is the DB state after the parse. The renderer task is section 11.
 
 ## 1. Sources
 
@@ -141,3 +141,34 @@ Random inputs were run through both sides as well: 10000 generated texts (token 
 4. **Error messages.** The port reports the position and the token it rejects, with its own text; the Jison `Expecting` lists are not reproduced (decision 0002).
 5. **The texts keep the placeholders.** Answered by the port: the model holds what the DB holds (`ﬂ°…¶ß`), as NOTES section 4 proposed. The renderer decodes them.
 6. **The `state` section quirk** (title margin and `useMaxWidth`, NOTES 6.8) is the renderer's, and is not reproduced here.
+
+## 11. Renderer
+
+The renderer is on the unified pipeline, as `class`, `state` and `er` are. The research and the reference's lines are in [NOTES.md](./NOTES.md), section 6.
+
+- **Layout data** (`pnpm port:diff requirement-data`): `getData` in `crates/ferrigura-render/src/requirement/data.rs`; the reference's exporter is `tools/port/export-requirement-data.ts`, and the example is `requirement_data`. 266 inputs, 232 accepted by the reference, 0 differences. A requirement or an element carries its fields in `Node.requirement` (`RequirementFields`, `unified/data.rs`), as a class carries `Node.class`.
+- **Shape** (`unified/shapes/requirement_box.rs`, `requirementBox`): it draws its own labels, as `erBox` does. Each text is measured with `getBBox` plus 6 in height, the outline is the box of the texts plus 20, and the labels are moved by their index. Divider: a polygon in neo, a line in classic.
+- **Markers** (`unified/markers.rs`, `requirement_markers`): `requirement_arrow` and `requirement_contains` in the classic and neo forms; the edges name them through `Kind::RequirementArrow` and `Kind::RequirementContains`.
+- **Style sheet** (`requirement/style.rs`): the reference's rules in its order, rule by rule (checked against a capture: the same selectors and properties, and the same values once the custom properties of decision 0007 are resolved). The font families are the embedded subsets, as the ER sheet has them.
+- **Root** (`requirement/mod.rs`): the title at `-state.titleTopMargin`, the viewport from `state.useMaxWidth`, the class `requirementDiagram` and `aria-roledescription="requirement"`.
+
+Findings that the research did not have:
+
+- **Bold and other weights.** The reference measures every word of a label in the weight its group's style declares: the name is bold because its group's style says so (measured: 51.086 px against 46.130 px for `sys_req`), and a `font-weight:bold` on a node or in a class is measured the same way. The port applies a `font-weight` of the group's style to every word (`style_weight`, `requirement_box.rs`).
+- **Body alignment.** The reference's `center` branch (`requirementBox.ts` 30 and 238-243, for a `layout` other than `elk`) writes no `text-anchor`, and a node's text is never centred by `createText` (`centerText` is false for nodes). So the body starts at the origin for every layout, and the port does the same. Q8 of section 8.3 is answered by this reading; the harness draws only `elk` (the other layouts are excluded).
+- **`htmlLabels`.** Ignored, as decision 0004 has it: labels are SVG text.
+- **Config.** `state.titleTopMargin` and `state.useMaxWidth` are read (Q6, reproduced); the `requirement.rect_*`, `text_color`, `fontSize` and `line_height` keys are read nowhere (Q6, accepted).
+
+Answers to section 8.3 (the question numbers are NOTES' own):
+
+- **Q1.** The two malformed fixtures stay "reference failed" in the harness; their text is not the port's question.
+- **Q2 and Q3.** Named exceptions: `render` refuses a relationship to a name that is no requirement or element, and a requirement and an element with one name (`requirement/mod.rs`, `check_names`). The reference fails in ELK for the first and writes duplicate ids for the second. No fixture has either.
+- **Q4.** Not applicable: the renderer has no parse errors.
+- **Q5.** The texts keep the placeholders in the model, and the renderer draws `sanitize_text(decode_entities(…))`.
+- **Q6.** Reproduced, as above.
+- **Q7.** Neo is the default look, resolved by the requirement scope.
+- **Q8.** See the body alignment above.
+- **Q9.** Not ported, as decision 0004 has it.
+- **Q10.** The direction is kept in the model and the layout; `clear()` has no effect, since a new DB starts at `TB`.
+
+Counts of `pnpm port:geometry requirement` (172 fixtures): within tolerance 146, outside 0, not rendered 0, excluded 24 (handDrawn), reference failed 2 (the malformed fixtures of section 7.3). The DB spec's edge-id test is ported to `crates/ferrigura-render/tests/requirement_get_data_spec.rs`. The syntax spec's parallel-relationship test is no longer ignored: it checks the order of the relationships, which is what the model holds.

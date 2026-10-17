@@ -531,7 +531,7 @@ fn vertical_line(x: f64, y1: f64, y2: f64) -> [Point; 4] {
 /// The reference measures in both `sans-serif` and the configured family and keeps the second unless
 /// the first is larger in every dimension (`utils.ts` 712-720). ferrigura has only the bundled
 /// family, which the second measure is, so the result is the bundled family's width.
-fn calculate_text_width(text: &str, font_size: f64) -> Result<f64, RenderError> {
+pub(super) fn calculate_text_width(text: &str, font_size: f64) -> Result<f64, RenderError> {
     if text.is_empty() {
         return Ok(0.0);
     }
