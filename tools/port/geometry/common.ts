@@ -184,12 +184,36 @@ const UNCOVERED_SYMBOLS =
   /[\u2190-\u21FF\u2600-\u26FF\u2700-\u27BF\u3000-\u303F\u3040-\u30FF\u3300-\u33FF\u{1F000}-\u{1FAFF}]/u;
 
 /**
- * The exclusion of a fixture whose text has a symbol or script the bundled faces do not cover, or
- * null. It is separate from `exclusionReason`, which the flowchart harness shares, so that the
- * flowchart's comparison is the same as before.
+ * The text of a fixture that a diagram can draw: the body, and the front matter's `title`. The
+ * rest of the front matter (a `description`, the `config`) is never drawn, so a symbol there does
+ * not exclude the fixture.
+ */
+function drawnText(source: string): string {
+  const frontMatter = FRONT_MATTER.exec(source);
+  if (!frontMatter) {
+    return source;
+  }
+  const body = source.slice(frontMatter[0].length);
+  const yaml = frontMatter[0].replace(/^---[^\n]*\n/, '').replace(/\n---[^\n]*\n?$/, '');
+  let title = '';
+  try {
+    const data: unknown = load(yaml, { schema: JSON_SCHEMA });
+    if (typeof data === 'object' && data !== null && 'title' in data) {
+      title = String((data as { title: unknown }).title);
+    }
+  } catch {
+    // Front matter that is not YAML is the reference's error; the body decides then.
+  }
+  return `${title}\n${body}`;
+}
+
+/**
+ * The exclusion of a fixture whose drawn text (`drawnText`) has a symbol or script the bundled
+ * faces do not cover, or null. It is separate from `exclusionReason`, which the flowchart harness
+ * shares, so that the flowchart's comparison is the same as before.
  */
 export function uncoveredScriptReason(source: string): string | null {
-  if (UNCOVERED_SYMBOLS.test(source)) {
+  if (UNCOVERED_SYMBOLS.test(drawnText(source))) {
     return 'text the bundled faces do not cover (arrows, symbols, kana, emoji): needs a fallback font, which ferrigura does not have yet';
   }
   return null;
