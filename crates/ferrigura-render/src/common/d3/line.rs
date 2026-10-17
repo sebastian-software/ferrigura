@@ -1,7 +1,26 @@
 //! `line()` of `d3-shape` 3.2.0 with its linear curve (`curve/linear.js`) and the three-digit path
 //! writer of `d3-path` (`path.js`).
 
-use crate::common::d3::d3_number;
+use crate::common::d3::{d3_number, js_number};
+
+/// The path of `linkHorizontal()` of `d3-shape` 1.3.7 from `(x0, y0)` to `(x1, y1)`: `M` to the
+/// start, then one cubic with its two control points at the middle `xm = (x0 + x1) / 2` (`link/index.js`
+/// 52-55 and 71-73). `d3-path` 1.0.9 writes the numbers as JavaScript writes them, without rounding.
+#[must_use]
+pub fn link_horizontal(x0: f64, y0: f64, x1: f64, y1: f64) -> String {
+    let xm = (x0 + x1) / 2.0;
+    format!(
+        "M{},{}C{},{},{},{},{},{}",
+        js_number(x0),
+        js_number(y0),
+        js_number(xm),
+        js_number(y0),
+        js_number(xm),
+        js_number(y1),
+        js_number(x1),
+        js_number(y1),
+    )
+}
 
 /// The path of `line()(points)`: `M` to the first point, `L` to each other, with each coordinate
 /// rounded to three digits (`Math.round(v * 1000) / 1000`). A single point is closed with `Z`, as
