@@ -110,6 +110,15 @@ The xychart model is the DB state after the parse, before the chart builder runs
 - **X values are strings** as the DB stores them: the category, or the JavaScript string of the linear position (`1.6666666666666667`, `1e-7`).
 - **Colours** are the palette entries of the theme the configuration resolves to, one per plot in declaration order. The exporter applies ferrigura's rule for themes it does not ship.
 
+## Block
+
+The block model is the DB state after parsing (`blockDB.ts`), with the field list and the quirks in [block/PLAN.md](./block/PLAN.md), sections 6 and 8. Its own rules:
+
+- **Generated ids are placeholders.** The ids the reference draws at random (of space cells and anonymous composites) are deterministic in the port, and the differential replaces them by `$genK` on both sides, in tree order. A space cell's label is its generated id, so it takes the same placeholder. The counter itself is not compared (section 7 of the plan).
+- **Undefined is absent**, with one exception: the first block of a chained link (`A --> B --> C`) is an empty object, as the reference's DB holds it (quirk B2).
+- **Texts** are the sanitised labels, with the entity placeholders kept, as the DB keeps them. Blanks in directions and styles are kept as written.
+- **Left out**: the layout, the palette slots and the shapes (renderer concerns), and the edge's `type`, which is always `edge`.
+
 ## ER
 
 The ER model is the DB state after parsing (`erDb.ts`), with the DB's names in camelCase, as the flowchart's model is. The full field list and the exclusions are in [er/PLAN.md](./er/PLAN.md), sections 4 and 5; the rules here are the ones the other diagrams do not share.

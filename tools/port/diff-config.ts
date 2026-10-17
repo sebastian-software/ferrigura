@@ -257,7 +257,6 @@ const UNPORTED_SECTIONS = [
   'gitGraph',
   'c4',
   'sankey',
-  'block',
   'packet',
   'treeView',
   'architecture',
@@ -277,7 +276,6 @@ const UNPORTED_SECTIONS = [
  */
 const NOT_PORTED_SECTIONS = new Set([
   'mindmap',
-  'block',
   'packet',
   'sankey',
   'quadrantChart',
