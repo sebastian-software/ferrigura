@@ -1,0 +1,100 @@
+{
+ "name": "generated-026",
+ "group": "generated",
+ "source": "seed 20261017 index 26",
+ "text": "mindmap\n  Ember\n    [orbit v2 engine journey gradient]\n      (Ledger keystone telescope yonder notebook portfolio anchor evidence)\n        ((Summit horizon ledger 2026 yonder doorway forest archive oasis cipher))\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 85.71875,
+    "height": 34
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 68
+   },
+   {
+    "id": "2",
+    "width": 150,
+    "height": 198
+   },
+   {
+    "id": "3",
+    "width": 232.56527709960938,
+    "height": 232.56527709960938
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 141.47234289387848,
+    "y": 690.4525048726341
+   },
+   {
+    "id": "1",
+    "x": 131.7172476730127,
+    "y": 586.189252349418
+   },
+   {
+    "id": "2",
+    "x": 149.14133925703368,
+    "y": 399.92447269343995
+   },
+   {
+    "id": "3",
+    "x": 131.2826385498047,
+    "y": 131.2826385498047
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 140.0750131790386,
+    "startY": 675.5177310320959,
+    "midX": 136.5947952834456,
+    "midY": 638.320878611026,
+    "endX": 133.1145773878526,
+    "endY": 601.1240261899562
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 133.11431956144747,
+    "startY": 571.2544543883291,
+    "midX": 140.4292934650232,
+    "midY": 493.056862521429,
+    "endX": 147.7442673685989,
+    "endY": 414.85927065452887
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 148.14636933572106,
+    "startY": 384.9575079090996,
+    "midX": 140.21198890341918,
+    "midY": 265.6035556216223,
+    "endX": 132.2776084711173,
+    "endY": 146.249603334145
+   }
+  ]
+ }
+}

@@ -1,0 +1,2301 @@
+{
+ "version": 1,
+ "cases": [
+  {
+   "name": "generated-000",
+   "group": "generated",
+   "source": "seed 20261017 index 0",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "generated-001",
+   "group": "generated",
+   "source": "seed 20261017 index 1",
+   "nodes": 150,
+   "edges": 149
+  },
+  {
+   "name": "generated-002",
+   "group": "generated",
+   "source": "seed 20261017 index 2",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-003",
+   "group": "generated",
+   "source": "seed 20261017 index 3",
+   "nodes": 60,
+   "edges": 59
+  },
+  {
+   "name": "generated-004",
+   "group": "generated",
+   "source": "seed 20261017 index 4",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-005",
+   "group": "generated",
+   "source": "seed 20261017 index 5",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-006",
+   "group": "generated",
+   "source": "seed 20261017 index 6",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-007",
+   "group": "generated",
+   "source": "seed 20261017 index 7",
+   "nodes": 114,
+   "edges": 113
+  },
+  {
+   "name": "generated-008",
+   "group": "generated",
+   "source": "seed 20261017 index 8",
+   "nodes": 20,
+   "edges": 19
+  },
+  {
+   "name": "generated-009",
+   "group": "generated",
+   "source": "seed 20261017 index 9",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-010",
+   "group": "generated",
+   "source": "seed 20261017 index 10",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-011",
+   "group": "generated",
+   "source": "seed 20261017 index 11",
+   "nodes": 95,
+   "edges": 94
+  },
+  {
+   "name": "generated-012",
+   "group": "generated",
+   "source": "seed 20261017 index 12",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-013",
+   "group": "generated",
+   "source": "seed 20261017 index 13",
+   "nodes": 19,
+   "edges": 18
+  },
+  {
+   "name": "generated-014",
+   "group": "generated",
+   "source": "seed 20261017 index 14",
+   "nodes": 8,
+   "edges": 7
+  },
+  {
+   "name": "generated-015",
+   "group": "generated",
+   "source": "seed 20261017 index 15",
+   "nodes": 112,
+   "edges": 111
+  },
+  {
+   "name": "generated-016",
+   "group": "generated",
+   "source": "seed 20261017 index 16",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-017",
+   "group": "generated",
+   "source": "seed 20261017 index 17",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-018",
+   "group": "generated",
+   "source": "seed 20261017 index 18",
+   "nodes": 3,
+   "edges": 2
+  },
+  {
+   "name": "generated-019",
+   "group": "generated",
+   "source": "seed 20261017 index 19",
+   "nodes": 97,
+   "edges": 96
+  },
+  {
+   "name": "generated-020",
+   "group": "generated",
+   "source": "seed 20261017 index 20",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-021",
+   "group": "generated",
+   "source": "seed 20261017 index 21",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-022",
+   "group": "generated",
+   "source": "seed 20261017 index 22",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-023",
+   "group": "generated",
+   "source": "seed 20261017 index 23",
+   "nodes": 92,
+   "edges": 91
+  },
+  {
+   "name": "generated-024",
+   "group": "generated",
+   "source": "seed 20261017 index 24",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-025",
+   "group": "generated",
+   "source": "seed 20261017 index 25",
+   "nodes": 21,
+   "edges": 20
+  },
+  {
+   "name": "generated-026",
+   "group": "generated",
+   "source": "seed 20261017 index 26",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-027",
+   "group": "generated",
+   "source": "seed 20261017 index 27",
+   "nodes": 126,
+   "edges": 125
+  },
+  {
+   "name": "generated-028",
+   "group": "generated",
+   "source": "seed 20261017 index 28",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-029",
+   "group": "generated",
+   "source": "seed 20261017 index 29",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-030",
+   "group": "generated",
+   "source": "seed 20261017 index 30",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "generated-031",
+   "group": "generated",
+   "source": "seed 20261017 index 31",
+   "nodes": 78,
+   "edges": 77
+  },
+  {
+   "name": "generated-032",
+   "group": "generated",
+   "source": "seed 20261017 index 32",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-033",
+   "group": "generated",
+   "source": "seed 20261017 index 33",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-034",
+   "group": "generated",
+   "source": "seed 20261017 index 34",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "generated-035",
+   "group": "generated",
+   "source": "seed 20261017 index 35",
+   "nodes": 97,
+   "edges": 96
+  },
+  {
+   "name": "generated-036",
+   "group": "generated",
+   "source": "seed 20261017 index 36",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "generated-037",
+   "group": "generated",
+   "source": "seed 20261017 index 37",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-038",
+   "group": "generated",
+   "source": "seed 20261017 index 38",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-039",
+   "group": "generated",
+   "source": "seed 20261017 index 39",
+   "nodes": 119,
+   "edges": 118
+  },
+  {
+   "name": "generated-040",
+   "group": "generated",
+   "source": "seed 20261017 index 40",
+   "nodes": 8,
+   "edges": 7
+  },
+  {
+   "name": "generated-041",
+   "group": "generated",
+   "source": "seed 20261017 index 41",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-042",
+   "group": "generated",
+   "source": "seed 20261017 index 42",
+   "nodes": 19,
+   "edges": 18
+  },
+  {
+   "name": "generated-043",
+   "group": "generated",
+   "source": "seed 20261017 index 43",
+   "nodes": 138,
+   "edges": 137
+  },
+  {
+   "name": "generated-044",
+   "group": "generated",
+   "source": "seed 20261017 index 44",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-045",
+   "group": "generated",
+   "source": "seed 20261017 index 45",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-046",
+   "group": "generated",
+   "source": "seed 20261017 index 46",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-047",
+   "group": "generated",
+   "source": "seed 20261017 index 47",
+   "nodes": 127,
+   "edges": 126
+  },
+  {
+   "name": "generated-048",
+   "group": "generated",
+   "source": "seed 20261017 index 48",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-049",
+   "group": "generated",
+   "source": "seed 20261017 index 49",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-050",
+   "group": "generated",
+   "source": "seed 20261017 index 50",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-051",
+   "group": "generated",
+   "source": "seed 20261017 index 51",
+   "nodes": 146,
+   "edges": 145
+  },
+  {
+   "name": "generated-052",
+   "group": "generated",
+   "source": "seed 20261017 index 52",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-053",
+   "group": "generated",
+   "source": "seed 20261017 index 53",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-054",
+   "group": "generated",
+   "source": "seed 20261017 index 54",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-055",
+   "group": "generated",
+   "source": "seed 20261017 index 55",
+   "nodes": 126,
+   "edges": 125
+  },
+  {
+   "name": "generated-056",
+   "group": "generated",
+   "source": "seed 20261017 index 56",
+   "nodes": 20,
+   "edges": 19
+  },
+  {
+   "name": "generated-057",
+   "group": "generated",
+   "source": "seed 20261017 index 57",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "generated-058",
+   "group": "generated",
+   "source": "seed 20261017 index 58",
+   "nodes": 21,
+   "edges": 20
+  },
+  {
+   "name": "generated-059",
+   "group": "generated",
+   "source": "seed 20261017 index 59",
+   "nodes": 66,
+   "edges": 65
+  },
+  {
+   "name": "generated-060",
+   "group": "generated",
+   "source": "seed 20261017 index 60",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-061",
+   "group": "generated",
+   "source": "seed 20261017 index 61",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-062",
+   "group": "generated",
+   "source": "seed 20261017 index 62",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-063",
+   "group": "generated",
+   "source": "seed 20261017 index 63",
+   "nodes": 149,
+   "edges": 148
+  },
+  {
+   "name": "generated-064",
+   "group": "generated",
+   "source": "seed 20261017 index 64",
+   "nodes": 8,
+   "edges": 7
+  },
+  {
+   "name": "generated-065",
+   "group": "generated",
+   "source": "seed 20261017 index 65",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-066",
+   "group": "generated",
+   "source": "seed 20261017 index 66",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-067",
+   "group": "generated",
+   "source": "seed 20261017 index 67",
+   "nodes": 130,
+   "edges": 129
+  },
+  {
+   "name": "generated-068",
+   "group": "generated",
+   "source": "seed 20261017 index 68",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-069",
+   "group": "generated",
+   "source": "seed 20261017 index 69",
+   "nodes": 17,
+   "edges": 16
+  },
+  {
+   "name": "generated-070",
+   "group": "generated",
+   "source": "seed 20261017 index 70",
+   "nodes": 15,
+   "edges": 14
+  },
+  {
+   "name": "generated-071",
+   "group": "generated",
+   "source": "seed 20261017 index 71",
+   "nodes": 125,
+   "edges": 124
+  },
+  {
+   "name": "generated-072",
+   "group": "generated",
+   "source": "seed 20261017 index 72",
+   "nodes": 8,
+   "edges": 7
+  },
+  {
+   "name": "generated-073",
+   "group": "generated",
+   "source": "seed 20261017 index 73",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-074",
+   "group": "generated",
+   "source": "seed 20261017 index 74",
+   "nodes": 21,
+   "edges": 20
+  },
+  {
+   "name": "generated-075",
+   "group": "generated",
+   "source": "seed 20261017 index 75",
+   "nodes": 95,
+   "edges": 94
+  },
+  {
+   "name": "generated-076",
+   "group": "generated",
+   "source": "seed 20261017 index 76",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "generated-077",
+   "group": "generated",
+   "source": "seed 20261017 index 77",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "generated-078",
+   "group": "generated",
+   "source": "seed 20261017 index 78",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-079",
+   "group": "generated",
+   "source": "seed 20261017 index 79",
+   "nodes": 68,
+   "edges": 67
+  },
+  {
+   "name": "generated-080",
+   "group": "generated",
+   "source": "seed 20261017 index 80",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-081",
+   "group": "generated",
+   "source": "seed 20261017 index 81",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "generated-082",
+   "group": "generated",
+   "source": "seed 20261017 index 82",
+   "nodes": 20,
+   "edges": 19
+  },
+  {
+   "name": "generated-083",
+   "group": "generated",
+   "source": "seed 20261017 index 83",
+   "nodes": 106,
+   "edges": 105
+  },
+  {
+   "name": "generated-084",
+   "group": "generated",
+   "source": "seed 20261017 index 84",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "generated-085",
+   "group": "generated",
+   "source": "seed 20261017 index 85",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-086",
+   "group": "generated",
+   "source": "seed 20261017 index 86",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-087",
+   "group": "generated",
+   "source": "seed 20261017 index 87",
+   "nodes": 112,
+   "edges": 111
+  },
+  {
+   "name": "generated-088",
+   "group": "generated",
+   "source": "seed 20261017 index 88",
+   "nodes": 8,
+   "edges": 7
+  },
+  {
+   "name": "generated-089",
+   "group": "generated",
+   "source": "seed 20261017 index 89",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-090",
+   "group": "generated",
+   "source": "seed 20261017 index 90",
+   "nodes": 19,
+   "edges": 18
+  },
+  {
+   "name": "generated-091",
+   "group": "generated",
+   "source": "seed 20261017 index 91",
+   "nodes": 64,
+   "edges": 63
+  },
+  {
+   "name": "generated-092",
+   "group": "generated",
+   "source": "seed 20261017 index 92",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-093",
+   "group": "generated",
+   "source": "seed 20261017 index 93",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-094",
+   "group": "generated",
+   "source": "seed 20261017 index 94",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-095",
+   "group": "generated",
+   "source": "seed 20261017 index 95",
+   "nodes": 120,
+   "edges": 119
+  },
+  {
+   "name": "generated-096",
+   "group": "generated",
+   "source": "seed 20261017 index 96",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-097",
+   "group": "generated",
+   "source": "seed 20261017 index 97",
+   "nodes": 18,
+   "edges": 17
+  },
+  {
+   "name": "generated-098",
+   "group": "generated",
+   "source": "seed 20261017 index 98",
+   "nodes": 7,
+   "edges": 6
+  },
+  {
+   "name": "generated-099",
+   "group": "generated",
+   "source": "seed 20261017 index 99",
+   "nodes": 110,
+   "edges": 109
+  },
+  {
+   "name": "generated-100",
+   "group": "generated",
+   "source": "seed 20261017 index 100",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-101",
+   "group": "generated",
+   "source": "seed 20261017 index 101",
+   "nodes": 18,
+   "edges": 17
+  },
+  {
+   "name": "generated-102",
+   "group": "generated",
+   "source": "seed 20261017 index 102",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-103",
+   "group": "generated",
+   "source": "seed 20261017 index 103",
+   "nodes": 84,
+   "edges": 83
+  },
+  {
+   "name": "generated-104",
+   "group": "generated",
+   "source": "seed 20261017 index 104",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-105",
+   "group": "generated",
+   "source": "seed 20261017 index 105",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-106",
+   "group": "generated",
+   "source": "seed 20261017 index 106",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-107",
+   "group": "generated",
+   "source": "seed 20261017 index 107",
+   "nodes": 138,
+   "edges": 137
+  },
+  {
+   "name": "generated-108",
+   "group": "generated",
+   "source": "seed 20261017 index 108",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-109",
+   "group": "generated",
+   "source": "seed 20261017 index 109",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-110",
+   "group": "generated",
+   "source": "seed 20261017 index 110",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-111",
+   "group": "generated",
+   "source": "seed 20261017 index 111",
+   "nodes": 90,
+   "edges": 89
+  },
+  {
+   "name": "generated-112",
+   "group": "generated",
+   "source": "seed 20261017 index 112",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "generated-113",
+   "group": "generated",
+   "source": "seed 20261017 index 113",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-114",
+   "group": "generated",
+   "source": "seed 20261017 index 114",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-115",
+   "group": "generated",
+   "source": "seed 20261017 index 115",
+   "nodes": 113,
+   "edges": 112
+  },
+  {
+   "name": "generated-116",
+   "group": "generated",
+   "source": "seed 20261017 index 116",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-117",
+   "group": "generated",
+   "source": "seed 20261017 index 117",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-118",
+   "group": "generated",
+   "source": "seed 20261017 index 118",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-119",
+   "group": "generated",
+   "source": "seed 20261017 index 119",
+   "nodes": 126,
+   "edges": 125
+  },
+  {
+   "name": "generated-120",
+   "group": "generated",
+   "source": "seed 20261017 index 120",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-121",
+   "group": "generated",
+   "source": "seed 20261017 index 121",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-122",
+   "group": "generated",
+   "source": "seed 20261017 index 122",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-123",
+   "group": "generated",
+   "source": "seed 20261017 index 123",
+   "nodes": 70,
+   "edges": 69
+  },
+  {
+   "name": "generated-124",
+   "group": "generated",
+   "source": "seed 20261017 index 124",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-125",
+   "group": "generated",
+   "source": "seed 20261017 index 125",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-126",
+   "group": "generated",
+   "source": "seed 20261017 index 126",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-127",
+   "group": "generated",
+   "source": "seed 20261017 index 127",
+   "nodes": 87,
+   "edges": 86
+  },
+  {
+   "name": "generated-128",
+   "group": "generated",
+   "source": "seed 20261017 index 128",
+   "nodes": 14,
+   "edges": 13
+  },
+  {
+   "name": "generated-129",
+   "group": "generated",
+   "source": "seed 20261017 index 129",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "generated-130",
+   "group": "generated",
+   "source": "seed 20261017 index 130",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-131",
+   "group": "generated",
+   "source": "seed 20261017 index 131",
+   "nodes": 150,
+   "edges": 149
+  },
+  {
+   "name": "generated-132",
+   "group": "generated",
+   "source": "seed 20261017 index 132",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-133",
+   "group": "generated",
+   "source": "seed 20261017 index 133",
+   "nodes": 7,
+   "edges": 6
+  },
+  {
+   "name": "generated-134",
+   "group": "generated",
+   "source": "seed 20261017 index 134",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-135",
+   "group": "generated",
+   "source": "seed 20261017 index 135",
+   "nodes": 109,
+   "edges": 108
+  },
+  {
+   "name": "generated-136",
+   "group": "generated",
+   "source": "seed 20261017 index 136",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-137",
+   "group": "generated",
+   "source": "seed 20261017 index 137",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-138",
+   "group": "generated",
+   "source": "seed 20261017 index 138",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-139",
+   "group": "generated",
+   "source": "seed 20261017 index 139",
+   "nodes": 113,
+   "edges": 112
+  },
+  {
+   "name": "generated-140",
+   "group": "generated",
+   "source": "seed 20261017 index 140",
+   "nodes": 14,
+   "edges": 13
+  },
+  {
+   "name": "generated-141",
+   "group": "generated",
+   "source": "seed 20261017 index 141",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-142",
+   "group": "generated",
+   "source": "seed 20261017 index 142",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-143",
+   "group": "generated",
+   "source": "seed 20261017 index 143",
+   "nodes": 128,
+   "edges": 127
+  },
+  {
+   "name": "generated-144",
+   "group": "generated",
+   "source": "seed 20261017 index 144",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "generated-145",
+   "group": "generated",
+   "source": "seed 20261017 index 145",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-146",
+   "group": "generated",
+   "source": "seed 20261017 index 146",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-147",
+   "group": "generated",
+   "source": "seed 20261017 index 147",
+   "nodes": 126,
+   "edges": 125
+  },
+  {
+   "name": "generated-148",
+   "group": "generated",
+   "source": "seed 20261017 index 148",
+   "nodes": 3,
+   "edges": 2
+  },
+  {
+   "name": "generated-149",
+   "group": "generated",
+   "source": "seed 20261017 index 149",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-150",
+   "group": "generated",
+   "source": "seed 20261017 index 150",
+   "nodes": 15,
+   "edges": 14
+  },
+  {
+   "name": "generated-151",
+   "group": "generated",
+   "source": "seed 20261017 index 151",
+   "nodes": 121,
+   "edges": 120
+  },
+  {
+   "name": "generated-152",
+   "group": "generated",
+   "source": "seed 20261017 index 152",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-153",
+   "group": "generated",
+   "source": "seed 20261017 index 153",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-154",
+   "group": "generated",
+   "source": "seed 20261017 index 154",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "generated-155",
+   "group": "generated",
+   "source": "seed 20261017 index 155",
+   "nodes": 75,
+   "edges": 74
+  },
+  {
+   "name": "generated-156",
+   "group": "generated",
+   "source": "seed 20261017 index 156",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-157",
+   "group": "generated",
+   "source": "seed 20261017 index 157",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-158",
+   "group": "generated",
+   "source": "seed 20261017 index 158",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-159",
+   "group": "generated",
+   "source": "seed 20261017 index 159",
+   "nodes": 144,
+   "edges": 143
+  },
+  {
+   "name": "generated-160",
+   "group": "generated",
+   "source": "seed 20261017 index 160",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-161",
+   "group": "generated",
+   "source": "seed 20261017 index 161",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-162",
+   "group": "generated",
+   "source": "seed 20261017 index 162",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-163",
+   "group": "generated",
+   "source": "seed 20261017 index 163",
+   "nodes": 64,
+   "edges": 63
+  },
+  {
+   "name": "generated-164",
+   "group": "generated",
+   "source": "seed 20261017 index 164",
+   "nodes": 18,
+   "edges": 17
+  },
+  {
+   "name": "generated-165",
+   "group": "generated",
+   "source": "seed 20261017 index 165",
+   "nodes": 14,
+   "edges": 13
+  },
+  {
+   "name": "generated-166",
+   "group": "generated",
+   "source": "seed 20261017 index 166",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-167",
+   "group": "generated",
+   "source": "seed 20261017 index 167",
+   "nodes": 116,
+   "edges": 115
+  },
+  {
+   "name": "generated-168",
+   "group": "generated",
+   "source": "seed 20261017 index 168",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-169",
+   "group": "generated",
+   "source": "seed 20261017 index 169",
+   "nodes": 7,
+   "edges": 6
+  },
+  {
+   "name": "generated-170",
+   "group": "generated",
+   "source": "seed 20261017 index 170",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-171",
+   "group": "generated",
+   "source": "seed 20261017 index 171",
+   "nodes": 133,
+   "edges": 132
+  },
+  {
+   "name": "generated-172",
+   "group": "generated",
+   "source": "seed 20261017 index 172",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-173",
+   "group": "generated",
+   "source": "seed 20261017 index 173",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-174",
+   "group": "generated",
+   "source": "seed 20261017 index 174",
+   "nodes": 11,
+   "edges": 10
+  },
+  {
+   "name": "generated-175",
+   "group": "generated",
+   "source": "seed 20261017 index 175",
+   "nodes": 105,
+   "edges": 104
+  },
+  {
+   "name": "generated-176",
+   "group": "generated",
+   "source": "seed 20261017 index 176",
+   "nodes": 17,
+   "edges": 16
+  },
+  {
+   "name": "generated-177",
+   "group": "generated",
+   "source": "seed 20261017 index 177",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-178",
+   "group": "generated",
+   "source": "seed 20261017 index 178",
+   "nodes": 11,
+   "edges": 10
+  },
+  {
+   "name": "generated-179",
+   "group": "generated",
+   "source": "seed 20261017 index 179",
+   "nodes": 132,
+   "edges": 131
+  },
+  {
+   "name": "generated-180",
+   "group": "generated",
+   "source": "seed 20261017 index 180",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-181",
+   "group": "generated",
+   "source": "seed 20261017 index 181",
+   "nodes": 8,
+   "edges": 7
+  },
+  {
+   "name": "generated-182",
+   "group": "generated",
+   "source": "seed 20261017 index 182",
+   "nodes": 11,
+   "edges": 10
+  },
+  {
+   "name": "generated-183",
+   "group": "generated",
+   "source": "seed 20261017 index 183",
+   "nodes": 110,
+   "edges": 109
+  },
+  {
+   "name": "generated-184",
+   "group": "generated",
+   "source": "seed 20261017 index 184",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-185",
+   "group": "generated",
+   "source": "seed 20261017 index 185",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-186",
+   "group": "generated",
+   "source": "seed 20261017 index 186",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-187",
+   "group": "generated",
+   "source": "seed 20261017 index 187",
+   "nodes": 73,
+   "edges": 72
+  },
+  {
+   "name": "generated-188",
+   "group": "generated",
+   "source": "seed 20261017 index 188",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "generated-189",
+   "group": "generated",
+   "source": "seed 20261017 index 189",
+   "nodes": 11,
+   "edges": 10
+  },
+  {
+   "name": "generated-190",
+   "group": "generated",
+   "source": "seed 20261017 index 190",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-191",
+   "group": "generated",
+   "source": "seed 20261017 index 191",
+   "nodes": 144,
+   "edges": 143
+  },
+  {
+   "name": "generated-192",
+   "group": "generated",
+   "source": "seed 20261017 index 192",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-193",
+   "group": "generated",
+   "source": "seed 20261017 index 193",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-194",
+   "group": "generated",
+   "source": "seed 20261017 index 194",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-195",
+   "group": "generated",
+   "source": "seed 20261017 index 195",
+   "nodes": 95,
+   "edges": 94
+  },
+  {
+   "name": "generated-196",
+   "group": "generated",
+   "source": "seed 20261017 index 196",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-197",
+   "group": "generated",
+   "source": "seed 20261017 index 197",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-198",
+   "group": "generated",
+   "source": "seed 20261017 index 198",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-199",
+   "group": "generated",
+   "source": "seed 20261017 index 199",
+   "nodes": 76,
+   "edges": 75
+  },
+  {
+   "name": "generated-200",
+   "group": "generated",
+   "source": "seed 20261017 index 200",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-201",
+   "group": "generated",
+   "source": "seed 20261017 index 201",
+   "nodes": 21,
+   "edges": 20
+  },
+  {
+   "name": "generated-202",
+   "group": "generated",
+   "source": "seed 20261017 index 202",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-203",
+   "group": "generated",
+   "source": "seed 20261017 index 203",
+   "nodes": 128,
+   "edges": 127
+  },
+  {
+   "name": "generated-204",
+   "group": "generated",
+   "source": "seed 20261017 index 204",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-205",
+   "group": "generated",
+   "source": "seed 20261017 index 205",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-206",
+   "group": "generated",
+   "source": "seed 20261017 index 206",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-207",
+   "group": "generated",
+   "source": "seed 20261017 index 207",
+   "nodes": 65,
+   "edges": 64
+  },
+  {
+   "name": "generated-208",
+   "group": "generated",
+   "source": "seed 20261017 index 208",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-209",
+   "group": "generated",
+   "source": "seed 20261017 index 209",
+   "nodes": 3,
+   "edges": 2
+  },
+  {
+   "name": "generated-210",
+   "group": "generated",
+   "source": "seed 20261017 index 210",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-211",
+   "group": "generated",
+   "source": "seed 20261017 index 211",
+   "nodes": 145,
+   "edges": 144
+  },
+  {
+   "name": "generated-212",
+   "group": "generated",
+   "source": "seed 20261017 index 212",
+   "nodes": 17,
+   "edges": 16
+  },
+  {
+   "name": "generated-213",
+   "group": "generated",
+   "source": "seed 20261017 index 213",
+   "nodes": 20,
+   "edges": 19
+  },
+  {
+   "name": "generated-214",
+   "group": "generated",
+   "source": "seed 20261017 index 214",
+   "nodes": 7,
+   "edges": 6
+  },
+  {
+   "name": "generated-215",
+   "group": "generated",
+   "source": "seed 20261017 index 215",
+   "nodes": 121,
+   "edges": 120
+  },
+  {
+   "name": "generated-216",
+   "group": "generated",
+   "source": "seed 20261017 index 216",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-217",
+   "group": "generated",
+   "source": "seed 20261017 index 217",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-218",
+   "group": "generated",
+   "source": "seed 20261017 index 218",
+   "nodes": 8,
+   "edges": 7
+  },
+  {
+   "name": "generated-219",
+   "group": "generated",
+   "source": "seed 20261017 index 219",
+   "nodes": 74,
+   "edges": 73
+  },
+  {
+   "name": "generated-220",
+   "group": "generated",
+   "source": "seed 20261017 index 220",
+   "nodes": 18,
+   "edges": 17
+  },
+  {
+   "name": "generated-221",
+   "group": "generated",
+   "source": "seed 20261017 index 221",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-222",
+   "group": "generated",
+   "source": "seed 20261017 index 222",
+   "nodes": 11,
+   "edges": 10
+  },
+  {
+   "name": "generated-223",
+   "group": "generated",
+   "source": "seed 20261017 index 223",
+   "nodes": 108,
+   "edges": 107
+  },
+  {
+   "name": "generated-224",
+   "group": "generated",
+   "source": "seed 20261017 index 224",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-225",
+   "group": "generated",
+   "source": "seed 20261017 index 225",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-226",
+   "group": "generated",
+   "source": "seed 20261017 index 226",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-227",
+   "group": "generated",
+   "source": "seed 20261017 index 227",
+   "nodes": 95,
+   "edges": 94
+  },
+  {
+   "name": "generated-228",
+   "group": "generated",
+   "source": "seed 20261017 index 228",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-229",
+   "group": "generated",
+   "source": "seed 20261017 index 229",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-230",
+   "group": "generated",
+   "source": "seed 20261017 index 230",
+   "nodes": 18,
+   "edges": 17
+  },
+  {
+   "name": "generated-231",
+   "group": "generated",
+   "source": "seed 20261017 index 231",
+   "nodes": 91,
+   "edges": 90
+  },
+  {
+   "name": "generated-232",
+   "group": "generated",
+   "source": "seed 20261017 index 232",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-233",
+   "group": "generated",
+   "source": "seed 20261017 index 233",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-234",
+   "group": "generated",
+   "source": "seed 20261017 index 234",
+   "nodes": 15,
+   "edges": 14
+  },
+  {
+   "name": "generated-235",
+   "group": "generated",
+   "source": "seed 20261017 index 235",
+   "nodes": 128,
+   "edges": 127
+  },
+  {
+   "name": "generated-236",
+   "group": "generated",
+   "source": "seed 20261017 index 236",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-237",
+   "group": "generated",
+   "source": "seed 20261017 index 237",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-238",
+   "group": "generated",
+   "source": "seed 20261017 index 238",
+   "nodes": 18,
+   "edges": 17
+  },
+  {
+   "name": "generated-239",
+   "group": "generated",
+   "source": "seed 20261017 index 239",
+   "nodes": 93,
+   "edges": 92
+  },
+  {
+   "name": "generated-240",
+   "group": "generated",
+   "source": "seed 20261017 index 240",
+   "nodes": 3,
+   "edges": 2
+  },
+  {
+   "name": "generated-241",
+   "group": "generated",
+   "source": "seed 20261017 index 241",
+   "nodes": 19,
+   "edges": 18
+  },
+  {
+   "name": "generated-242",
+   "group": "generated",
+   "source": "seed 20261017 index 242",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-243",
+   "group": "generated",
+   "source": "seed 20261017 index 243",
+   "nodes": 136,
+   "edges": 135
+  },
+  {
+   "name": "generated-244",
+   "group": "generated",
+   "source": "seed 20261017 index 244",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-245",
+   "group": "generated",
+   "source": "seed 20261017 index 245",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-246",
+   "group": "generated",
+   "source": "seed 20261017 index 246",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-247",
+   "group": "generated",
+   "source": "seed 20261017 index 247",
+   "nodes": 134,
+   "edges": 133
+  },
+  {
+   "name": "generated-248",
+   "group": "generated",
+   "source": "seed 20261017 index 248",
+   "nodes": 11,
+   "edges": 10
+  },
+  {
+   "name": "generated-249",
+   "group": "generated",
+   "source": "seed 20261017 index 249",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-250",
+   "group": "generated",
+   "source": "seed 20261017 index 250",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "generated-251",
+   "group": "generated",
+   "source": "seed 20261017 index 251",
+   "nodes": 119,
+   "edges": 118
+  },
+  {
+   "name": "generated-252",
+   "group": "generated",
+   "source": "seed 20261017 index 252",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "generated-253",
+   "group": "generated",
+   "source": "seed 20261017 index 253",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-254",
+   "group": "generated",
+   "source": "seed 20261017 index 254",
+   "nodes": 15,
+   "edges": 14
+  },
+  {
+   "name": "generated-255",
+   "group": "generated",
+   "source": "seed 20261017 index 255",
+   "nodes": 60,
+   "edges": 59
+  },
+  {
+   "name": "generated-256",
+   "group": "generated",
+   "source": "seed 20261017 index 256",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "generated-257",
+   "group": "generated",
+   "source": "seed 20261017 index 257",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-258",
+   "group": "generated",
+   "source": "seed 20261017 index 258",
+   "nodes": 14,
+   "edges": 13
+  },
+  {
+   "name": "generated-259",
+   "group": "generated",
+   "source": "seed 20261017 index 259",
+   "nodes": 83,
+   "edges": 82
+  },
+  {
+   "name": "generated-260",
+   "group": "generated",
+   "source": "seed 20261017 index 260",
+   "nodes": 25,
+   "edges": 24
+  },
+  {
+   "name": "generated-261",
+   "group": "generated",
+   "source": "seed 20261017 index 261",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-262",
+   "group": "generated",
+   "source": "seed 20261017 index 262",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-263",
+   "group": "generated",
+   "source": "seed 20261017 index 263",
+   "nodes": 64,
+   "edges": 63
+  },
+  {
+   "name": "generated-264",
+   "group": "generated",
+   "source": "seed 20261017 index 264",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-265",
+   "group": "generated",
+   "source": "seed 20261017 index 265",
+   "nodes": 14,
+   "edges": 13
+  },
+  {
+   "name": "generated-266",
+   "group": "generated",
+   "source": "seed 20261017 index 266",
+   "nodes": 7,
+   "edges": 6
+  },
+  {
+   "name": "generated-267",
+   "group": "generated",
+   "source": "seed 20261017 index 267",
+   "nodes": 102,
+   "edges": 101
+  },
+  {
+   "name": "generated-268",
+   "group": "generated",
+   "source": "seed 20261017 index 268",
+   "nodes": 15,
+   "edges": 14
+  },
+  {
+   "name": "generated-269",
+   "group": "generated",
+   "source": "seed 20261017 index 269",
+   "nodes": 12,
+   "edges": 11
+  },
+  {
+   "name": "generated-270",
+   "group": "generated",
+   "source": "seed 20261017 index 270",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-271",
+   "group": "generated",
+   "source": "seed 20261017 index 271",
+   "nodes": 123,
+   "edges": 122
+  },
+  {
+   "name": "generated-272",
+   "group": "generated",
+   "source": "seed 20261017 index 272",
+   "nodes": 11,
+   "edges": 10
+  },
+  {
+   "name": "generated-273",
+   "group": "generated",
+   "source": "seed 20261017 index 273",
+   "nodes": 14,
+   "edges": 13
+  },
+  {
+   "name": "generated-274",
+   "group": "generated",
+   "source": "seed 20261017 index 274",
+   "nodes": 3,
+   "edges": 2
+  },
+  {
+   "name": "generated-275",
+   "group": "generated",
+   "source": "seed 20261017 index 275",
+   "nodes": 126,
+   "edges": 125
+  },
+  {
+   "name": "generated-276",
+   "group": "generated",
+   "source": "seed 20261017 index 276",
+   "nodes": 14,
+   "edges": 13
+  },
+  {
+   "name": "generated-277",
+   "group": "generated",
+   "source": "seed 20261017 index 277",
+   "nodes": 21,
+   "edges": 20
+  },
+  {
+   "name": "generated-278",
+   "group": "generated",
+   "source": "seed 20261017 index 278",
+   "nodes": 13,
+   "edges": 12
+  },
+  {
+   "name": "generated-279",
+   "group": "generated",
+   "source": "seed 20261017 index 279",
+   "nodes": 147,
+   "edges": 146
+  },
+  {
+   "name": "generated-280",
+   "group": "generated",
+   "source": "seed 20261017 index 280",
+   "nodes": 22,
+   "edges": 21
+  },
+  {
+   "name": "generated-281",
+   "group": "generated",
+   "source": "seed 20261017 index 281",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "generated-282",
+   "group": "generated",
+   "source": "seed 20261017 index 282",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "generated-283",
+   "group": "generated",
+   "source": "seed 20261017 index 283",
+   "nodes": 128,
+   "edges": 127
+  },
+  {
+   "name": "generated-284",
+   "group": "generated",
+   "source": "seed 20261017 index 284",
+   "nodes": 17,
+   "edges": 16
+  },
+  {
+   "name": "generated-285",
+   "group": "generated",
+   "source": "seed 20261017 index 285",
+   "nodes": 24,
+   "edges": 23
+  },
+  {
+   "name": "generated-286",
+   "group": "generated",
+   "source": "seed 20261017 index 286",
+   "nodes": 11,
+   "edges": 10
+  },
+  {
+   "name": "generated-287",
+   "group": "generated",
+   "source": "seed 20261017 index 287",
+   "nodes": 70,
+   "edges": 69
+  },
+  {
+   "name": "generated-288",
+   "group": "generated",
+   "source": "seed 20261017 index 288",
+   "nodes": 21,
+   "edges": 20
+  },
+  {
+   "name": "generated-289",
+   "group": "generated",
+   "source": "seed 20261017 index 289",
+   "nodes": 17,
+   "edges": 16
+  },
+  {
+   "name": "generated-290",
+   "group": "generated",
+   "source": "seed 20261017 index 290",
+   "nodes": 23,
+   "edges": 22
+  },
+  {
+   "name": "generated-291",
+   "group": "generated",
+   "source": "seed 20261017 index 291",
+   "nodes": 135,
+   "edges": 134
+  },
+  {
+   "name": "generated-292",
+   "group": "generated",
+   "source": "seed 20261017 index 292",
+   "nodes": 9,
+   "edges": 8
+  },
+  {
+   "name": "generated-293",
+   "group": "generated",
+   "source": "seed 20261017 index 293",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "generated-294",
+   "group": "generated",
+   "source": "seed 20261017 index 294",
+   "nodes": 14,
+   "edges": 13
+  },
+  {
+   "name": "generated-295",
+   "group": "generated",
+   "source": "seed 20261017 index 295",
+   "nodes": 74,
+   "edges": 73
+  },
+  {
+   "name": "generated-296",
+   "group": "generated",
+   "source": "seed 20261017 index 296",
+   "nodes": 14,
+   "edges": 13
+  },
+  {
+   "name": "generated-297",
+   "group": "generated",
+   "source": "seed 20261017 index 297",
+   "nodes": 6,
+   "edges": 5
+  },
+  {
+   "name": "generated-298",
+   "group": "generated",
+   "source": "seed 20261017 index 298",
+   "nodes": 5,
+   "edges": 4
+  },
+  {
+   "name": "generated-299",
+   "group": "generated",
+   "source": "seed 20261017 index 299",
+   "nodes": 60,
+   "edges": 59
+  },
+  {
+   "name": "nightly-check__a-root-with-a-shape",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/a-root-with-a-shape.mmd",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "nightly-check__a-root-with-an-icon",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/a-root-with-an-icon.mmd",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "nightly-check__a-root-with-wrapping-text-and-a-shape",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-a-shape.mmd",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "nightly-check__a-root-with-wrapping-text-and-long-words-that-exceed-width",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-long-words-that-exceed-width.mmd",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "nightly-check__adding-children",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/adding-children.mmd",
+   "nodes": 3,
+   "edges": 2
+  },
+  {
+   "name": "nightly-check__adding-grand-children",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/adding-grand-children.mmd",
+   "nodes": 4,
+   "edges": 3
+  },
+  {
+   "name": "nightly-check__all-shapes-neo-look-neo-dark-theme",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-dark-theme.mmd",
+   "nodes": 29,
+   "edges": 28
+  },
+  {
+   "name": "nightly-check__all-shapes-neo-look-neo-theme",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-neo-theme.mmd",
+   "nodes": 29,
+   "edges": 28
+  },
+  {
+   "name": "nightly-check__all-shapes-neo-look-redux-color-theme",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-color-theme.mmd",
+   "nodes": 29,
+   "edges": 28
+  },
+  {
+   "name": "nightly-check__all-shapes-neo-look-redux-dark-color-theme",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-color-theme.mmd",
+   "nodes": 29,
+   "edges": 28
+  },
+  {
+   "name": "nightly-check__all-shapes-neo-look-redux-dark-theme",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-dark-theme.mmd",
+   "nodes": 29,
+   "edges": 28
+  },
+  {
+   "name": "nightly-check__all-shapes-neo-look-redux-theme",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/all-shapes-neo-look-redux-theme.mmd",
+   "nodes": 29,
+   "edges": 28
+  },
+  {
+   "name": "nightly-check__all-shapes-with-mdi-fire-icon",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/all-shapes-with-mdi-fire-icon.mmd",
+   "nodes": 8,
+   "edges": 7
+  },
+  {
+   "name": "nightly-check__bang-and-cloud-shape",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape.mmd",
+   "nodes": 3,
+   "edges": 2
+  },
+  {
+   "name": "nightly-check__bang-and-cloud-shape-with-icons",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape-with-icons.mmd",
+   "nodes": 3,
+   "edges": 2
+  },
+  {
+   "name": "nightly-check__branches",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/branches.mmd",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "nightly-check__branches-with-shapes-and-labels",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/branches-with-shapes-and-labels.mmd",
+   "nodes": 10,
+   "edges": 9
+  },
+  {
+   "name": "nightly-check__circle-shape",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/circle-shape.mmd",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "nightly-check__default-shape",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/default-shape.mmd",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "nightly-check__level-2-nodes-exceeding-11",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/level-2-nodes-exceeding-11.mmd",
+   "nodes": 16,
+   "edges": 15
+  },
+  {
+   "name": "nightly-check__only-a-root",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/only-a-root.mmd",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "nightly-check__rounded-rect-shape",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/rounded-rect-shape.mmd",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "nightly-check__square-shape",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/square-shape.mmd",
+   "nodes": 1,
+   "edges": 0
+  },
+  {
+   "name": "nightly-check__text-should-wrap-with-icon",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/nightly-check/text-should-wrap-with-icon.mmd",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "pr-check__6-should-centre-svg-text-labels-in-all-node-shapes-issue-8387",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/pr-check/6-should-centre-svg-text-labels-in-all-node-shapes-issue-8387.mmd",
+   "nodes": 7,
+   "edges": 6
+  },
+  {
+   "name": "pr-check__depth-colors",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/pr-check/depth-colors.mmd",
+   "nodes": 15,
+   "edges": 14
+  },
+  {
+   "name": "pr-check__formatted-label-with-linebreak-and-a-wrapping-label-and-emojis",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/pr-check/formatted-label-with-linebreak-and-a-wrapping-label-and-emojis.mmd",
+   "nodes": 2,
+   "edges": 1
+  },
+  {
+   "name": "pr-check__simple-mindmap",
+   "group": "fixture",
+   "source": "e2e/diagrams/mindmap/pr-check/simple-mindmap.mmd",
+   "nodes": 7,
+   "edges": 6
+  }
+ ]
+}

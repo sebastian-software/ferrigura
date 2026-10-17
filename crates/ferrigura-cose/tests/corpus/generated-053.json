@@ -1,0 +1,100 @@
+{
+ "name": "generated-053",
+ "group": "generated",
+ "source": "seed 20261017 index 53",
+ "text": "mindmap\n  ((Saddle portfolio 3d velvet balance cipher responsibilities marble landscape))\n    ((saddle beacon river characterisation 2026 signal ripple circuit island oasis firmware))\n      ((validation))\n      ((landscape saddle saddle keystone lantern engine signal forest journey interdisciplinary))\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 241.84678649902344,
+    "height": 241.84678649902344
+   },
+   {
+    "id": "1",
+    "width": 241.84678649902344,
+    "height": 241.84678649902344
+   },
+   {
+    "id": "2",
+    "width": 95.02066040039062,
+    "height": 95.02066040039062
+   },
+   {
+    "id": "3",
+    "width": 241.84678649902344,
+    "height": 241.84678649902344
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_1_3",
+    "source": "1",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 496.72910433759023,
+    "y": 705.3898811424104
+   },
+   {
+    "id": "1",
+    "x": 284.43853009351085,
+    "y": 420.65663719596114
+   },
+   {
+    "id": "2",
+    "x": 62.51033020019531,
+    "y": 420.656637195961
+   },
+   {
+    "id": "3",
+    "x": 496.7291043375907,
+    "y": 135.92339324951172
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 487.76318087682967,
+    "startY": 693.3643991771925,
+    "midX": 390.58381721555054,
+    "midY": 563.0232591691858,
+    "endX": 293.4044535542714,
+    "endY": 432.6821191611791
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 269.43853009351085,
+    "startY": 420.65663719596114,
+    "midX": 173.47443014685308,
+    "midY": 420.65663719596114,
+    "endX": 77.51033020019531,
+    "endY": 420.656637195961
+   },
+   {
+    "id": "edge_1_3",
+    "startX": 293.40445355427147,
+    "startY": 408.63115523074316,
+    "midX": 390.58381721555077,
+    "midY": 278.29001522273643,
+    "endX": 487.76318087683006,
+    "endY": 147.9488752147297
+   }
+  ]
+ }
+}

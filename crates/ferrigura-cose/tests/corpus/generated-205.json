@@ -1,0 +1,124 @@
+{
+ "name": "generated-205",
+ "group": "generated",
+ "source": "seed 20261017 index 205",
+ "text": "mindmap\n  kernel kernel\n    [umbrella garden saddle circuit overview anchor kernel engine zephyr summit beacon]\n      (evidence overview lantern reproducibility yonder)\n        ((Nectar doorway doorway journey hypothesis))\n      (2026 saddle harbour garden circuit signal portfolio firmware pixel harbour portfolio characterisation)\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 135.234375,
+    "height": 34
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 188
+   },
+   {
+    "id": "2",
+    "width": 150,
+    "height": 150
+   },
+   {
+    "id": "3",
+    "width": 225.6793670654297,
+    "height": 225.6793670654297
+   },
+   {
+    "id": "4",
+    "width": 150,
+    "height": 222
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_1_4",
+    "source": "1",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 712.9390610801914,
+    "y": 498.52547525560874
+   },
+   {
+    "id": "1",
+    "x": 577.329397131013,
+    "y": 365.8592140153454
+   },
+   {
+    "id": "2",
+    "x": 369.01553946247316,
+    "y": 349.13382143764125
+   },
+   {
+    "id": "3",
+    "x": 127.83968353271484,
+    "y": 331.38485568911403
+   },
+   {
+    "id": "4",
+    "x": 752.5738975499024,
+    "y": 126
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 702.2167338321896,
+    "startY": 488.0358757214627,
+    "midX": 645.1342291056022,
+    "midY": 432.19234463547707,
+    "endX": 588.0517243790149,
+    "endY": 376.34881354949147
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 562.377512523974,
+    "startY": 364.65873631967924,
+    "midX": 473.1724682967431,
+    "midY": 357.4965177264933,
+    "endX": 383.9674240695121,
+    "endY": 350.3342991333074
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 354.0559951857266,
+    "startY": 348.032896811675,
+    "midX": 248.427611497594,
+    "midY": 340.25933856337764,
+    "endX": 142.79922780946143,
+    "endY": 332.48578031508026
+   },
+   {
+    "id": "edge_1_4",
+    "startX": 586.1784203343313,
+    "startY": 353.7474516189336,
+    "midX": 664.9516473404577,
+    "midY": 245.9296070076727,
+    "endX": 743.7248743465841,
+    "endY": 138.1117623964118
+   }
+  ]
+ }
+}

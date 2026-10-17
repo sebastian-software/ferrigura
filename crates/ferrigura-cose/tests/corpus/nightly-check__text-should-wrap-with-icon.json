@@ -1,0 +1,52 @@
+{
+ "name": "nightly-check__text-should-wrap-with-icon",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/text-should-wrap-with-icon.mmd",
+ "text": "---\ndescription: >-\n  A single child node (rounded-rectangle shape) carrying both an icon and a long\n  label that must wrap while keeping the node size in check.\n---\nmindmap\nroot\n  Child3(A node with an icon and with a long text that wraps to keep the node size in check)\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 69.734375,
+    "height": 34
+   },
+   {
+    "id": "1",
+    "width": 150,
+    "height": 174
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 253.3616639436084,
+    "y": 102
+   },
+   {
+    "id": "1",
+    "x": 90,
+    "y": 102
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 238.3616639436084,
+    "startY": 102,
+    "midX": 171.6808319718042,
+    "midY": 102,
+    "endX": 105,
+    "endY": 102
+   }
+  ]
+ }
+}

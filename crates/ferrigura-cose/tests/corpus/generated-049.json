@@ -1,0 +1,124 @@
+{
+ "name": "generated-049",
+ "group": "generated",
+ "source": "seed 20261017 index 49",
+ "text": "mindmap\n  ((Balance circuit interdisciplinary orbit velvet archive))\n    {{Engine circuit roadmap interdisciplinary quartz photographs}}\n      {{journey beacon zephyr migration junction horizon validation ripple signal infrastructure glacier signal}}\n      )Quotient garden island beacon evidence multiplication(\n    {{beacon}}\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 232.56527709960938,
+    "height": 232.56527709960938
+   },
+   {
+    "id": "1",
+    "width": 211.296875,
+    "height": 140
+   },
+   {
+    "id": "2",
+    "width": 258,
+    "height": 236
+   },
+   {
+    "id": "3",
+    "width": 267.2347106933594,
+    "height": 182.9372100830078
+   },
+   {
+    "id": "4",
+    "width": 93.296875,
+    "height": 44
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_1_3",
+    "source": "1",
+    "target": "3"
+   },
+   {
+    "id": "edge_0_4",
+    "source": "0",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 552.0644193163209,
+    "y": 552.0598042301392
+   },
+   {
+    "id": "1",
+    "x": 431.855936054498,
+    "y": 318.20002993680407
+   },
+   {
+    "id": "2",
+    "x": 144,
+    "y": 288.26271850176965
+   },
+   {
+    "id": "3",
+    "x": 508.9925189280925,
+    "y": 106.4686050415039
+   },
+   {
+    "id": "4",
+    "x": 651.8654364149852,
+    "y": 737.4450988117271
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 545.2070079674027,
+    "startY": 538.719043022782,
+    "midX": 491.96017768540946,
+    "midY": 435.1299170834716,
+    "endX": 438.71334740341626,
+    "endY": 331.5407911441613
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 416.9364054529044,
+    "startY": 316.64838351183727,
+    "midX": 287.927968027249,
+    "midY": 303.23137421928686,
+    "endX": 158.91953060159358,
+    "endY": 289.81436492673646
+   },
+   {
+    "id": "edge_1_3",
+    "startX": 436.99050799470695,
+    "startY": 304.10619543405716,
+    "midX": 470.42422749129526,
+    "midY": 212.334317489154,
+    "endX": 503.85794698788357,
+    "endY": 120.56243954425082
+   },
+   {
+    "id": "edge_0_4",
+    "startX": 559.174710728672,
+    "startY": 565.2675200065877,
+    "midX": 601.9649278656531,
+    "midY": 644.7524515209332,
+    "endX": 644.7551450026341,
+    "endY": 724.2373830352786
+   }
+  ]
+ }
+}

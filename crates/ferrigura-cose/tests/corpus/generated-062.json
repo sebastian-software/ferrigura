@@ -1,0 +1,52 @@
+{
+ "name": "generated-062",
+ "group": "generated",
+ "source": "seed 20261017 index 62",
+ "text": "mindmap\n  {{Ember compass}}\n    {{meadow orbit doorway pattern workflow landscape delta}}\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 152.59375,
+    "height": 44
+   },
+   {
+    "id": "1",
+    "width": 210,
+    "height": 140
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 354.7913514436083,
+    "y": 85
+   },
+   {
+    "id": "1",
+    "x": 120,
+    "y": 85
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 339.7913514436083,
+    "startY": 85,
+    "midX": 237.39567572180414,
+    "midY": 85,
+    "endX": 135,
+    "endY": 85
+   }
+  ]
+ }
+}

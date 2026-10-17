@@ -1,0 +1,52 @@
+{
+ "name": "generated-038",
+ "group": "generated",
+ "source": "seed 20261017 index 38",
+ "text": "mindmap\n  ))Balance archive velvet tunnel yonder((\n    ))Anchor v2 marble umbrella interdisciplinary infrastructure keystone kernel telescope ledger((\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 312.5,
+    "height": 110
+   },
+   {
+    "id": "1",
+    "width": 312.5,
+    "height": 170
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 537.2444764436083,
+    "y": 100
+   },
+   {
+    "id": "1",
+    "x": 171.25,
+    "y": 100
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 522.2444764436083,
+    "startY": 100,
+    "midX": 354.24723822180414,
+    "midY": 100,
+    "endX": 186.25,
+    "endY": 100
+   }
+  ]
+ }
+}

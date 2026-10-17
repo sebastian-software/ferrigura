@@ -1,0 +1,100 @@
+{
+ "name": "generated-282",
+ "group": "generated",
+ "source": "seed 20261017 index 282",
+ "text": "mindmap\n  [ember characterisation ledger engine]\n    [saddle 3d]\n    [ripple ladder reproducibility quartz archive keystone multiplication glacier delta junction nectar]\n    [island willow validation reproducibility overview doorway nectar engine archive junction]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 161.40625,
+    "height": 92
+   },
+   {
+    "id": "1",
+    "width": 108.28125,
+    "height": 44
+   },
+   {
+    "id": "2",
+    "width": 160,
+    "height": 188
+   },
+   {
+    "id": "3",
+    "width": 160,
+    "height": 188
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   },
+   {
+    "id": "edge_0_3",
+    "source": "0",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 95.703125,
+    "y": 302.9217647233173
+   },
+   {
+    "id": "1",
+    "x": 284.4053868675303,
+    "y": 289.28107412615384
+   },
+   {
+    "id": "2",
+    "x": 118.02222314987398,
+    "y": 496.5299645788556
+   },
+   {
+    "id": "3",
+    "x": 97.77578462149154,
+    "y": 109
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 110.66408751654257,
+    "startY": 301.84028398904195,
+    "midX": 190.05425593376515,
+    "midY": 296.1014194247356,
+    "endX": 269.44442435098773,
+    "endY": 290.3625548604292
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 97.42094399870152,
+    "startY": 317.8230766752127,
+    "midX": 106.86267407493699,
+    "midY": 399.72586465108645,
+    "endX": 116.30440415117246,
+    "endY": 481.6286526269602
+   },
+   {
+    "id": "edge_0_3",
+    "startX": 95.86343768448273,
+    "startY": 287.9226214196751,
+    "midX": 96.73945481074577,
+    "midY": 205.96088236165866,
+    "endX": 97.6154719370088,
+    "endY": 123.99914330364217
+   }
+  ]
+ }
+}

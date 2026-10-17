@@ -1,0 +1,124 @@
+{
+ "name": "generated-045",
+ "group": "generated",
+ "source": "seed 20261017 index 45",
+ "text": "mindmap\n  ((Yonder ember gradient saddle))\n    )doorway marble landscape forest anchor(\n      ))Meadow tunnel glacier landscape delta archive doorway roadmap evidence((\n      (ledger 3d yonder 2026 hypothesis gradient ripple summit river anchor balance)\n    )Scaffolding velvet tunnel roadmap doorway glacier circuit saddle portfolio glacier(\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 225.6793670654297,
+    "height": 225.6793670654297
+   },
+   {
+    "id": "1",
+    "width": 262.5205993652344,
+    "height": 158.9372100830078
+   },
+   {
+    "id": "2",
+    "width": 312.5,
+    "height": 140
+   },
+   {
+    "id": "3",
+    "width": 150,
+    "height": 174
+   },
+   {
+    "id": "4",
+    "width": 283.080322265625,
+    "height": 206.9372100830078
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_1_3",
+    "source": "1",
+    "target": "3"
+   },
+   {
+    "id": "edge_0_4",
+    "source": "0",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 621.9162161274056,
+    "y": 560.200294435281
+   },
+   {
+    "id": "1",
+    "x": 512.0916733127666,
+    "y": 319.2461201161304
+   },
+   {
+    "id": "2",
+    "x": 171.25,
+    "y": 294.2307600900601
+   },
+   {
+    "id": "3",
+    "x": 584.3333954451867,
+    "y": 102
+   },
+   {
+    "id": "4",
+    "x": 762.2560304637144,
+    "y": 823.7089024662519
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 615.695095203718,
+    "startY": 546.5512045589246,
+    "midX": 567.0039447200861,
+    "midY": 439.7232072757057,
+    "endX": 518.3127942364542,
+    "endY": 332.8952099924868
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 497.13190972201244,
+    "startY": 318.1481796310647,
+    "midX": 341.6708366563833,
+    "midY": 306.73844010309523,
+    "endX": 186.20976359075416,
+    "endY": 295.32870057512577
+   },
+   {
+    "id": "edge_1_3",
+    "startX": 516.8248489294014,
+    "startY": 305.01246111424007,
+    "midX": 548.2125343789767,
+    "midY": 210.62306005806522,
+    "endX": 579.600219828552,
+    "endY": 116.23365900189035
+   },
+   {
+    "id": "edge_0_4",
+    "startX": 628.967289097014,
+    "startY": 573.4397192708717,
+    "midX": 692.08612329556,
+    "midY": 691.9545984507664,
+    "endX": 755.204957494106,
+    "endY": 810.4694776306611
+   }
+  ]
+ }
+}

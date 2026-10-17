@@ -1,0 +1,52 @@
+{
+ "name": "generated-216",
+ "group": "generated",
+ "source": "seed 20261017 index 216",
+ "text": "mindmap\n  Journey\n    oasis journey cipher orbit ledger saddle\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 96.53125,
+    "height": 34
+   },
+   {
+    "id": "1",
+    "width": 240,
+    "height": 58
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 356.7601014436084,
+    "y": 44
+   },
+   {
+    "id": "1",
+    "x": 135,
+    "y": 44
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 341.7601014436084,
+    "startY": 44,
+    "midX": 245.8800507218042,
+    "midY": 44,
+    "endX": 150,
+    "endY": 44
+   }
+  ]
+ }
+}

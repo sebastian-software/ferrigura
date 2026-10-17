@@ -1,0 +1,100 @@
+{
+ "name": "generated-197",
+ "group": "generated",
+ "source": "seed 20261017 index 197",
+ "text": "mindmap\n  ))Glacier garden marble telescope hypothesis delta kernel balance quartz keystone migration glacier((\n    ))marble marble oasis umbrella river zephyr willow oasis multiplication horizon summit engine((\n    ))Glacier tunnel junction v2 validation inventory telescope pixel((\n    ))Interdisciplinary firmware anchor kernel ledger anchor horizon standard responsibilities((\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 312.5,
+    "height": 170
+   },
+   {
+    "id": "1",
+    "width": 312.5,
+    "height": 170
+   },
+   {
+    "id": "2",
+    "width": 312.5,
+    "height": 140
+   },
+   {
+    "id": "3",
+    "width": 312.5,
+    "height": 170
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   },
+   {
+    "id": "edge_0_3",
+    "source": "0",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 218.78812834333667,
+    "y": 322.3712138323974
+   },
+   {
+    "id": "1",
+    "x": 584.8186074124953,
+    "y": 288.16700846663446
+   },
+   {
+    "id": "2",
+    "x": 222.41351943252675,
+    "y": 530.9590370312447
+   },
+   {
+    "id": "3",
+    "x": 171.25,
+    "y": 100
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 233.72306253508594,
+    "startY": 320.97559902589865,
+    "midX": 401.803367877916,
+    "midY": 305.26911114951594,
+    "endX": 569.883673220746,
+    "endY": 289.5626232731332
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 219.04879866192084,
+    "startY": 337.3689486942027,
+    "midX": 220.6008238879317,
+    "midY": 426.6651254318211,
+    "endX": 222.15284911394258,
+    "endY": 515.9613021694395
+   },
+   {
+    "id": "edge_0_3",
+    "startX": 215.6523093906702,
+    "startY": 307.70265427475516,
+    "midX": 195.01906417166833,
+    "midY": 211.1856069161987,
+    "endX": 174.38581895266645,
+    "endY": 114.66855955764225
+   }
+  ]
+ }
+}

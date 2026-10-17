@@ -1,0 +1,52 @@
+{
+ "name": "generated-016",
+ "group": "generated",
+ "source": "seed 20261017 index 16",
+ "text": "mindmap\n  Glacier evidence zephyr inventory 2026 anchor kernel quartz oasis tunnel validation\n    Signal signal v2 lantern circuit garden\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 106
+   },
+   {
+    "id": "1",
+    "width": 240,
+    "height": 58
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 428.4944764436084,
+    "y": 68
+   },
+   {
+    "id": "1",
+    "x": 135,
+    "y": 68
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 413.4944764436084,
+    "startY": 68,
+    "midX": 281.7472382218042,
+    "midY": 68,
+    "endX": 150,
+    "endY": 68
+   }
+  ]
+ }
+}

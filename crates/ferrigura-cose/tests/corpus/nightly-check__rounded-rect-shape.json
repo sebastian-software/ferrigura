@@ -1,0 +1,26 @@
+{
+ "name": "nightly-check__rounded-rect-shape",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/rounded-rect-shape.mmd",
+ "text": "---\ndescription: >-\n  A root using the rounded-rectangle shape (`((...))`) with its label split\n  across multiple source lines.\n---\nmindmap\n    root((\n      The root\n    ))\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 85.8424072265625,
+    "height": 85.8424072265625
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 57.92120361328125,
+    "y": 57.92120361328125
+   }
+  ],
+  "edgePoints": []
+ }
+}

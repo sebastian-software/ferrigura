@@ -1,0 +1,100 @@
+{
+ "name": "generated-108",
+ "group": "generated",
+ "source": "seed 20261017 index 108",
+ "text": "mindmap\n  Pattern quartz\n    [yonder compass circuit anchor evidence harbour portfolio interdisciplinary ledger]\n      (tunnel nectar keystone pixel yonder willow)\n      (Journey doorway forest)\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 144,
+    "height": 34
+   },
+   {
+    "id": "1",
+    "width": 161.3125,
+    "height": 188
+   },
+   {
+    "id": "2",
+    "width": 150,
+    "height": 102
+   },
+   {
+    "id": "3",
+    "width": 150,
+    "height": 78
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_1_3",
+    "source": "1",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 388.21693706881433,
+    "y": 392.10892635975426
+   },
+   {
+    "id": "1",
+    "x": 299.0046497484725,
+    "y": 234.58523729060823
+   },
+   {
+    "id": "2",
+    "x": 90,
+    "y": 220.09199343376815
+   },
+   {
+    "id": "3",
+    "x": 391.98565003812223,
+    "y": 54
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 380.8249559247131,
+    "startY": 379.0567765458251,
+    "midX": 343.6107934086434,
+    "midY": 313.34708182518125,
+    "endX": 306.39663089257374,
+    "endY": 247.6373871045374
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 284.04058475632877,
+    "startY": 233.54756734746704,
+    "midX": 194.50232487423625,
+    "midY": 227.3386153621882,
+    "endX": 104.96406499214373,
+    "endY": 221.12966337690935
+   },
+   {
+    "id": "edge_1_3",
+    "startX": 305.87121121388236,
+    "startY": 221.24918338993174,
+    "midX": 345.49514989329737,
+    "midY": 144.29261864530412,
+    "endX": 385.11908857271237,
+    "endY": 67.33605390067649
+   }
+  ]
+ }
+}
