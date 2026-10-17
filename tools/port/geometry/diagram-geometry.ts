@@ -260,8 +260,11 @@ interface Options {
 }
 
 function parseOptions(argv: string[]): Options {
-  const name = (argv[0] ?? '').toLowerCase();
-  if (argv[0] === undefined || argv[0].startsWith('--') || !(name in TYPE_FOLDERS)) {
+  // The type names are camelCase (`quadrantChart`, `xychart`), and the argument matches them
+  // without regard to case, so an all-lower-case argument still names the camelCase type.
+  const given = (argv[0] ?? '').toLowerCase();
+  const name = Object.keys(TYPE_FOLDERS).find((key) => key.toLowerCase() === given);
+  if (argv[0] === undefined || argv[0].startsWith('--') || name === undefined) {
     throw new Error(
       `usage: pnpm port:geometry <type> [--filter PATTERN] [--images DIR] [--capture] [--self] (types: ${Object.keys(TYPE_FOLDERS).join(', ')})`
     );

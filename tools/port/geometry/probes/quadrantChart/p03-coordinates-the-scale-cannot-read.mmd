@@ -1,0 +1,15 @@
+%% Coordinates that `Number()` reads as NaN: the reference drops `cx` (or `cy`) and writes
+%% `translate(undefined, …)` (or `NaN`) for the label. The other points are drawn.
+quadrantChart
+  title Coordinates that are not numbers
+  x-axis Low --> High
+  y-axis Low --> High
+  quadrant-1 A
+  quadrant-2 B
+  quadrant-3 C
+  quadrant-4 D
+  Comma x: [0,5, 0.5]
+  Letter y: [0.5, 0a5]
+  Minus x: [0-5, 0.25]
+  Space y: [0.5, 0 5]
+  Normal: [0.5, 0.5]
