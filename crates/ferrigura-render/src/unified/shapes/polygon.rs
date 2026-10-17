@@ -7,6 +7,7 @@ use super::rough;
 use super::util::{self, Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::svg::number;
+use crate::unified::data::Node;
 use crate::unified::geom::{BBox, Point};
 use crate::unified::label::LabelLayout;
 
@@ -49,17 +50,19 @@ pub(super) fn question(input: &ShapeInput<'_>) -> Part {
 
 /// `hexagon.ts`: a hexagon whose sides are `m` long, with the label in it. The neo look pads the
 /// height by 70 and the width by 32; the classic look pads both by the padding.
+///
+/// A node that already has a width or a height (a block of a block diagram, in its placed pass) is
+/// narrowed first, and the label wraps at the narrowed width (`hexagon.ts` 40-41): the reference
+/// writes the node's own width and height, so the label's wrap, the height and the width below all
+/// read the narrowed values.
 pub(super) fn hexagon(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
-    let (factor, pad_height, pad_width) = if node.is_neo() {
-        (3.5, 70.0, 32.0)
-    } else {
-        (4.0, node.padding, node.padding)
-    };
+    let pads = HexagonPads::of(node);
+    let (preset_width, preset_height) = pads.preset(node);
     let label = label_helper(input, false);
-    let height = label.bbox.height + pad_height;
-    let m = height / factor;
-    let width = label.bbox.width + 2.0 * m + pad_width;
+    let height = nonzero(preset_height).unwrap_or(label.bbox.height) + pads.height;
+    let m = height / pads.factor;
+    let width = nonzero(preset_width).unwrap_or(label.bbox.width) + 2.0 * m + pads.width;
     let points = [
         Point::new(m, 0.0),
         Point::new(width - m, 0.0),
@@ -71,6 +74,68 @@ pub(super) fn hexagon(input: &ShapeInput<'_>) -> Part {
     polygon_part(input, label, &points, width, height)
 }
 
+/// The width at which a hexagon's label wraps, when the node has a width or a height to narrow it
+/// (`hexagon.ts` 40-41, then `labelHelper`'s `node.width`); `None` for a node with neither.
+#[must_use]
+pub(super) fn hexagon_wrap_width(node: &Node) -> Option<f64> {
+    let pads = HexagonPads::of(node);
+    if !has_preset(node) {
+        return None;
+    }
+    nonzero(pads.preset(node).0)
+}
+
+/// The paddings of a hexagon, as `hexagon.ts` reads them: the factor of the side, the padding of
+/// the height and the padding of the width.
+struct HexagonPads {
+    factor: f64,
+    height: f64,
+    width: f64,
+}
+
+impl HexagonPads {
+    fn of(node: &Node) -> Self {
+        if node.is_neo() {
+            Self {
+                factor: 3.5,
+                height: 70.0,
+                width: 32.0,
+            }
+        } else {
+            Self {
+                factor: 4.0,
+                height: node.padding,
+                width: node.padding,
+            }
+        }
+    }
+
+    /// The width and the height the reference writes into the node before it lays out the label,
+    /// when the node has either of them; the node's own otherwise (`hexagon.ts` 40-45). The
+    /// arithmetic is in the reference's order, since the label's wrap compares against it.
+    fn preset(&self, node: &Node) -> (Option<f64>, Option<f64>) {
+        if !has_preset(node) {
+            return (node.width, node.height);
+        }
+        let original_height = node.height.unwrap_or(0.0);
+        let m = original_height / self.factor;
+        (
+            Some(node.width.unwrap_or(0.0) - 2.0 * m - self.width),
+            Some(node.height.unwrap_or(0.0) - self.height),
+        )
+    }
+}
+
+/// Whether the node has a width or a height that is not zero (JavaScript's truthiness, `hexagon.ts` 40).
+fn has_preset(node: &Node) -> bool {
+    nonzero(node.width).is_some() || nonzero(node.height).is_some()
+}
+
+/// The value when it is truthy in JavaScript: not zero and not NaN.
+fn nonzero(value: Option<f64>) -> Option<f64> {
+    value.filter(|value| *value != 0.0 && !value.is_nan())
+}
+
 /// `leanRight.ts`: a parallelogram leaning right, with the label in it.
 pub(super) fn lean_right(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
@@ -80,8 +145,7 @@ pub(super) fn lean_right(input: &ShapeInput<'_>) -> Part {
         node.padding
     };
     let label = label_helper(input, false);
-    let height = label.bbox.height + node.padding;
-    let width = label.bbox.width + pad_x;
+    let (width, height) = slanted_size(&label, node, pad_x, node.padding);
     let points = [
         Point::new(-3.0 * height / 6.0, 0.0),
         Point::new(width, 0.0),
@@ -100,8 +164,7 @@ pub(super) fn lean_left(input: &ShapeInput<'_>) -> Part {
         node.padding
     };
     let label = label_helper(input, false);
-    let height = label.bbox.height + node.padding;
-    let width = label.bbox.width + pad_x;
+    let (width, height) = slanted_size(&label, node, pad_x, node.padding);
     let points = [
         Point::new(0.0, 0.0),
         Point::new(width + 3.0 * height / 6.0, 0.0),
@@ -120,8 +183,7 @@ pub(super) fn trapezoid(input: &ShapeInput<'_>) -> Part {
         node.padding
     };
     let label = label_helper(input, false);
-    let height = label.bbox.height + node.padding;
-    let width = label.bbox.width + pad_x;
+    let (width, height) = slanted_size(&label, node, pad_x, node.padding);
     let points = [
         Point::new(-3.0 * height / 6.0, 0.0),
         Point::new(width + 3.0 * height / 6.0, 0.0),
@@ -140,8 +202,7 @@ pub(super) fn inv_trapezoid(input: &ShapeInput<'_>) -> Part {
         node.padding
     };
     let label = label_helper(input, false);
-    let height = label.bbox.height + 2.0 * node.padding;
-    let width = label.bbox.width + 2.0 * pad_x;
+    let (width, height) = slanted_size(&label, node, 2.0 * pad_x, 2.0 * node.padding);
     let points = [
         Point::new(0.0, 0.0),
         Point::new(width, 0.0),
@@ -371,6 +432,25 @@ fn polygon_part(
         },
         label,
     )
+}
+
+/// The width and the height of a slanted shape (`leanRight.ts` 16-17, `trapezoid.ts`, `invertedTrapezoid.ts`):
+/// the label's box with the paddings, and at least the node's own height, and its width less the height,
+/// since a block that is placed takes the size its layout gave it. A node with neither size gets the
+/// label's box, as the reference computes it with no node size.
+fn slanted_size(label: &LabelLayout, node: &Node, pad_x: f64, pad_y: f64) -> (f64, f64) {
+    let height = js_max(label.bbox.height + pad_y, node.height.unwrap_or(0.0));
+    let width = js_max(label.bbox.width + pad_x, node.width.unwrap_or(0.0) - height);
+    (width, height)
+}
+
+/// `Math.max` for two numbers: a NaN in either makes the result NaN, where `f64::max` keeps the other.
+fn js_max(a: f64, b: f64) -> f64 {
+    if a.is_nan() || b.is_nan() {
+        f64::NAN
+    } else {
+        a.max(b)
+    }
 }
 
 /// The ` style="…"` of a declaration list, when there is one.

@@ -13,10 +13,12 @@
 //! geometry with plain elements.
 
 mod arcs;
+mod block_arrow;
 mod braces;
 mod circle;
 mod class_box;
 mod collapsed_group;
+mod composite;
 mod containers;
 mod cylinder;
 mod decorated;
@@ -50,6 +52,7 @@ use crate::RenderError;
 use crate::common::decode_entities;
 use crate::svg::{escape, number};
 use registry::Kind;
+pub(crate) use util::styles_from_array;
 
 /// Stands for the diagram's id in a shape's markup, for the inline filter of a small shape. The
 /// id is not known when a shape is drawn, so `node_svg` replaces it. It is not a valid identifier
@@ -99,6 +102,9 @@ pub struct ShapeOutput {
     pub intersect: Intersect,
     /// The box the shape's elements cover, when it is larger than `bbox` (a class box).
     pub extent: Option<BBox>,
+    /// The box of the shape's own outline or elements, without its label: what `updateNodeBounds`
+    /// reads from the element, which `intersect` uses as the node's size (a block's rectangle).
+    pub element: BBox,
 }
 
 /// How an edge meets a node's outline: the reference's `node.intersect`.
@@ -195,6 +201,16 @@ pub fn node_label(
             icon::label_width(node, default_width)
         }
         Some(Kind::ImageSquare) => icon::image_label_width(node, default_width)?,
+        // The hexagon and the cylinder narrow the node's own width before they lay out the label, and
+        // the label wraps at the narrowed width (`hexagon.ts` 40-41, `cylinder.ts` 65-71).
+        Some(Kind::Hexagon) => polygon::hexagon_wrap_width(node)
+            .or(width)
+            .or_else(|| node.width.filter(|width| *width != 0.0))
+            .unwrap_or(default_width),
+        Some(Kind::Cylinder) => cylinder::narrowed_width(node)
+            .or(width)
+            .or_else(|| node.width.filter(|width| *width != 0.0))
+            .unwrap_or(default_width),
         _ => width
             .or_else(|| node.width.filter(|width| *width != 0.0))
             .unwrap_or(default_width),
@@ -411,6 +427,8 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::ImageSquare => icon::image_square(input)?,
         // The entity draws its own labels and their group box, so it returns its output whole.
         Kind::ErBox => return er_box::er_box(input),
+        Kind::Composite => composite::composite(input),
+        Kind::BlockArrow => block_arrow::block_arrow(input),
         Kind::ClassBox => {
             let class_box::ClassBox {
                 part,
@@ -434,6 +452,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         bbox = bbox.union(text.translate(offset.x, offset.y));
     }
     Ok(ShapeOutput {
+        element: part.bbox,
         svg: part.svg,
         after_label: part.after_label,
         label_offset: part.label_offset,

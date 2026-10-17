@@ -4,6 +4,7 @@
 use super::util::{Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::svg::number;
+use crate::unified::data::Node;
 use crate::unified::geom::{BBox, Point};
 
 /// The cylinder's outline: the top ellipse's near half, the side, and the bottom's near half
@@ -23,16 +24,44 @@ fn path_data(width: f64, height: f64, rx: f64, ry: f64) -> String {
 /// `cylinder.ts`: the cylinder around the label, its cap's radii, and the label moved to sit under
 /// the cap. The neo look pads the cylinder by 24 in both directions; the classic look by the
 /// padding.
+/// `MIN_WIDTH` and `MIN_HEIGHT` of `cylinder.ts`.
+const MIN_SIZE: f64 = 8.0;
+
+/// The padding of a cylinder: 24 in the neo look, else the node's padding (`cylinder.ts` 32-34).
+fn cylinder_padding(node: &Node) -> f64 {
+    if node.is_neo() { 24.0 } else { node.padding }
+}
+
+/// The width a cylinder's label wraps at, when the node has a width: the node's own width less the
+/// padding, at least `MIN_SIZE` (`cylinder.ts` 65-71 sets `node.width` before `labelHelper` lays out the
+/// label). `None` for a node without a width.
+#[must_use]
+pub(super) fn narrowed_width(node: &Node) -> Option<f64> {
+    node.width
+        .filter(|width| *width != 0.0)
+        .map(|width| (width - cylinder_padding(node)).max(MIN_SIZE))
+}
+
 pub(super) fn cylinder(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
     let styles = styles2string(node);
-    let pad = if node.is_neo() { 24.0 } else { node.padding };
+    let pad = cylinder_padding(node);
+    // A node with a size (a block in its placed pass) is narrowed and shortened first, as `cylinder.ts`
+    // 59-80 writes its `node.width` and `node.height`; a node without one keeps the label's box.
+    let original_width = node.width.unwrap_or(0.0);
+    let node_width = narrowed_width(node).or(node.width);
+    let mut node_height = node.height;
+    if node.height.is_some_and(|height| height != 0.0) {
+        let rx = original_width / 2.0;
+        let ry = rx / (2.5 + original_width / 50.0);
+        node_height = Some((node.height.unwrap_or(0.0) - pad - ry * 3.0).max(MIN_SIZE));
+    }
     let label = label_helper(input, false);
 
-    let width = label.bbox.width.max(0.0) + pad;
+    let width = node_width.unwrap_or(0.0).max(label.bbox.width) + pad;
     let rx = width / 2.0;
     let ry = rx / (2.5 + width / 50.0);
-    let height = label.bbox.height.max(0.0) + pad + ry;
+    let height = node_height.unwrap_or(0.0).max(label.bbox.height) + pad + ry;
 
     // The outline is drawn from its top-left corner; its box is `(0, 0, w, h + 2ry)`, and the
     // transform centres it on the node.

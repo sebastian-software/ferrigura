@@ -79,6 +79,9 @@ pub(super) enum Kind {
     ImageSquare,
     // The ER entity (`erBox.ts`), which draws its own labels.
     ErBox,
+    // The block diagram's composite (`composite.ts`) and block arrow (`blockArrow.ts`).
+    Composite,
+    BlockArrow,
 }
 
 /// The shape a name stands for, with `rect` taken as `roundedRect` when it has both radii
@@ -164,6 +167,8 @@ pub(super) fn resolve_with_radii(name: &str, rounded: bool) -> Option<Kind> {
         "iconSquare" => Kind::IconSquare,
         "imageSquare" => Kind::ImageSquare,
         "erBox" => Kind::ErBox,
+        "composite" => Kind::Composite,
+        "block_arrow" => Kind::BlockArrow,
         _ => return None,
     })
 }
@@ -220,6 +225,8 @@ impl Kind {
                 "icon-shape default".to_owned()
             }
             Self::ImageSquare => "image-shape default".to_owned(),
+            // `composite.ts` 14 writes the node's classes twice: its own `cssClasses` and its `class`.
+            Self::Composite => format!("node {0} {0}", node.css_classes),
             _ => util::node_classes(node),
         }
     }

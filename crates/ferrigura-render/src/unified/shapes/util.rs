@@ -106,6 +106,25 @@ pub(super) fn centred_label_offset(label: &LabelLayout) -> Point {
     Point::new(x, -label.bbox.height / 2.0)
 }
 
+/// `getStylesFromArray` (`utils.ts` 423-439): the declarations of a list that are not label styles,
+/// each followed by `;`, as `style`; the `color:` and `text-align:` ones, as `labelStyle`. A block
+/// composite and a block arrow write `style` as it is, not as `styles2String` writes it.
+#[must_use]
+pub(crate) fn styles_from_array(styles: &[String]) -> (String, String) {
+    let mut style = String::new();
+    let mut label_style = String::new();
+    for element in styles {
+        if element.starts_with("color:") || element.starts_with("text-align:") {
+            label_style.push_str(element);
+            label_style.push(';');
+        } else {
+            style.push_str(element);
+            style.push(';');
+        }
+    }
+    (style, label_style)
+}
+
 /// The node's declarations as `compileStyles` and `styles2String` split them.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub(super) struct Styles {

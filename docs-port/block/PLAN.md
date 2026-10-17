@@ -1,6 +1,6 @@
 # Block diagram parser: plan
 
-Status: ported. Reference: the TypeScript tree of this worktree (`block.jison`, `blockDB.ts`). The research and the probes behind it are in [NOTES.md](./NOTES.md); this page says what the port does, which quirks it keeps, and what the differential checks. Quirk ids `B1`-`B22` are the rows of section 8; the code comments name the reference's functions and lines instead.
+Status: parser and renderer ported. Reference: the TypeScript tree of this worktree (`block.jison`, `blockDB.ts`, and the renderer's `blockRenderer.ts`, `renderHelpers.ts`, `layout.ts`, `styles.ts`). The research and the probes behind it are in [NOTES.md](./NOTES.md); this page says what the port does, which quirks it keeps, and what the differential checks. Quirk ids `B1`-`B22` are the rows of section 8; the code comments name the reference's functions and lines instead.
 
 ## 1. Sources
 
@@ -11,7 +11,7 @@ Status: ported. Reference: the TypeScript tree of this worktree (`block.jison`, 
 | `diagrams/common/common.ts` (`sanitizeText`, 56-83)                                            | Labels: `sanitizeMore`, then DOMPurify with `FORBID_TAGS: ['style']`                   |
 | `Diagram.ts` (`fromText`)                                                                      | Order of `clear`, `yy` assignment, `encodeEntities`, `+ "\n"`                          |
 | `preprocess.ts`, `diagram-api/comments.ts`                                                     | Line breaks, attribute quotes, front matter, directives, comment lines                 |
-| `diagrams/block/blockTypes.ts`, `layout.ts` (not ported here)                                  | The field names; the layout is the renderer stage's                                    |
+| `diagrams/block/blockTypes.ts`, `layout.ts` (the layout is in the renderer, section 9)         | The field names; the layout is the renderer's                                          |
 
 The Rust code: `crates/ferrigura-syntax/src/block/` (`mod.rs` entry point and preprocessing, `scanner.rs` lexer, `grammar.rs` parser and the statements, `db.rs` DB and model), the model in `crates/ferrigura-model/src/block.rs`, and the exporter `tools/port/export-block.ts`.
 
@@ -127,8 +127,8 @@ The differential replaces the generated ids on both sides by placeholders, in tr
 | ---------------------------------------- | --------------------------------------------------------- | -----------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `diagrams/block/parser/block.spec.ts`    | `crates/ferrigura-syntax/tests/block_spec.rs`             | 26 (25 pass) | The DB is read from the model. The `dompurifyConfig` test is ignored: the sanitiser runs DOMPurify's default configuration. The warning test uses `parse_with_warnings`. |
 | `diagrams/block/blockDB.spec.ts`         | `crates/ferrigura-syntax/tests/block_db_spec.rs`          |     4 (pass) | The `getConfig` spy has no Rust form: the last test checks that sanitising happens during each parse.                                                                    |
-| `diagrams/block/layout.spec.ts`          | `crates/ferrigura-syntax/tests/block_layout_spec.rs`      |  2 (ignored) | The layout is the renderer stage's.                                                                                                                                      |
-| `diagrams/block/blockColorIndex.spec.ts` | `crates/ferrigura-syntax/tests/block_color_index_spec.rs` |  8 (ignored) | The colour slots and palette rules are the renderer stage's. The `colorIndex` values are in the model and the differential compares them.                                |
+| `diagrams/block/layout.spec.ts`          | `crates/ferrigura-render/tests/block_layout_spec.rs`      |   2 (3 pass) | The layout is the renderer's. The file also has the grid-of-zero-columns error.                                                                                          |
+| `diagrams/block/blockColorIndex.spec.ts` | `crates/ferrigura-render/tests/block_color_index_spec.rs` |   8 (8 pass) | The colour slots are the renderer's: the `colorIndex` values from the parser, and the palette rules of the style sheet.                                                  |
 
 ## 10. Differential
 
@@ -140,4 +140,5 @@ Beyond the committed inputs, the port was also checked on about 12,000 generated
 
 1. The `dompurifyConfig` of a site configuration is not read by the sanitiser; the one spec that tests it is ignored. The configuration port (M2) owns the setting.
 2. The sanitiser runs DOMPurify once where the reference's `sanitizeMore` runs `removeScript` first; the flowchart port makes the same choice, and the differential shows no difference on the block inputs.
-3. The renderer is not in this plan: the layout, the colour slots, the shapes, the edges and the text placement come with the renderer stage.
+3. The renderer (`crates/ferrigura-render/src/block/`) is checked by `pnpm port:geometry block` (58 of 58 within tolerance). Its own pieces are `layout.rs` (the arithmetic of `layout.ts`), `nodes.rs` (`getNodeFromBlock`, the measure and placed passes, `insertEdges`), `style.rs` (`styles.ts`), and the shared shapes it adds under `unified/shapes/` (`composite.rs`, `block_arrow.rs`, with the sixteen point tables of `blockArrow.spec.ts`). Behaviour the geometry comparison does not state is in `tests/block_render_spec.rs`. The shapes that read the node's own width or height (the hexagon, the lean and trapezoid shapes, the double circle, the cylinder) take it now; the flowchart never sets one, so its output is unchanged (298 of 298).
+4. Quirks that the renderer reproduces: the `undefined` block and the edge with no start of a chained link (B2, Q2); `height="NaN"` for a drawing of only spaces without `useMaxWidth` (a named exception: the attribute is written as the reference writes it); a hexagon label that wraps at equality (Q4); the repeated classes of a composite; `style="undefined;;;undefined"` on every edge. Not reproduced: the production default of HTML labels (decision 0004 draws SVG text, Q-B), and the generated ids, which are the port's own (section 7).

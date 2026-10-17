@@ -115,6 +115,9 @@ pub struct Node {
     /// The alias and attributes of an ER entity; `None` for every other node.
     #[serde(flatten)]
     pub entity: Option<EntityFields>,
+    /// The fields that only a block of a block diagram carries; `None` for every other node.
+    #[serde(skip)]
+    pub block: Option<BlockFields>,
     /// The corner radius of a rounded shape. A `rect` with both radii is a rounded rectangle
     /// (`nodes.ts` 22-29). Only the state diagram sets them; a flowchart node has none.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -165,6 +168,19 @@ impl Node {
     pub fn is_neo(&self) -> bool {
         self.look == "neo"
     }
+}
+
+/// The fields that only a block of a block diagram carries (`Block` in
+/// `diagrams/block/blockTypes.ts`), which its shapes read: a block arrow reads its directions, and
+/// its span and whether it is placed decide whether it spans its columns.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct BlockFields {
+    /// The directions of a block arrow, as the grammar gives them (blanks kept).
+    pub directions: Vec<String>,
+    /// The span of the block, `widthInColumns`.
+    pub width_in_columns: f64,
+    /// Whether the node is in its placed pass, with the width its layout gave it.
+    pub positioned: bool,
 }
 
 /// What a class node carries beyond the common node fields (`classDb.ts` `getData`, which spreads
