@@ -154,6 +154,16 @@ fn last_line_break_in_run(text: &[char], from: usize) -> Option<usize> {
 /// Port of `matchFrontMatter` in `packages/mermaid/src/diagram-api/regexes.ts`, which follows the
 /// backtracking of `frontMatterRegex`: the longest opening that still leaves a closing fence, and
 /// the first closing fence after the body.
+/// The text after a front matter block at its start, as `detectType` strips it
+/// (`detectType.ts` 15-18, `matchFrontMatter`): the block is only located, its YAML is not read.
+pub(crate) fn strip_front_matter(text: &str) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    match match_front_matter(&chars) {
+        Some(front_matter) => chars[front_matter.length..].iter().collect(),
+        None => text.to_owned(),
+    }
+}
+
 fn match_front_matter(text: &[char]) -> Option<FrontMatter> {
     let n = text.len();
     let mut cursor = 0;

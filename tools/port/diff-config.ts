@@ -109,25 +109,9 @@ const p2Groups: [group: string, scope: string][] = [
   ['ishikawa', 'ishikawa'],
   ['eventmodeling', 'eventmodeling'],
 ];
-/**
- * The P2 inputs left out of the run, by source, each with its reason. Its outputs differ, and the
- * difference is not one this registry task changes.
- */
-const EXCLUDED_P2_INPUTS: Record<string, string> = {
-  'e2e/diagrams/requirement/visual-check/with-a-theme-default.mmd':
-    'a blank line comes before the front matter. The reference strips the front matter when it ' +
-    'detects the type (`cleanupComments` trims the text first), so it detects requirement; ' +
-    'ferrigura detects no type, and it does not for "\\n---\\ntitle: x\\n---\\npie" either. The gap ' +
-    'is in the shared detection of the P1 types, not in the P2 detectors.',
-};
 const p2Inputs: ConfigInput[] = [];
 for (const [group, scope] of p2Groups) {
   for (const input of await collectInputs(group)) {
-    const excluded = EXCLUDED_P2_INPUTS[input.source];
-    if (excluded !== undefined) {
-      console.log(`excluded ${input.source}: ${excluded}`);
-      continue;
-    }
     p2Inputs.push({
       id: 0,
       source: input.source,

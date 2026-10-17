@@ -142,3 +142,20 @@ fn parse_dispatches_on_the_detected_type() {
     let error = parse("radar-beta\n  axis a").expect_err("no diagram type matches");
     assert_eq!((error.line, error.column), (1, 1));
 }
+
+#[test]
+fn front_matter_after_blank_lines_or_comments_is_skipped_as_the_reference_does() {
+    // `cleanupComments` trims the start before `detectType` strips the front matter.
+    assert_eq!(
+        detect("\n---\ntitle: x\n---\npie\n\"a\": 1"),
+        Some(DiagramType::Pie)
+    );
+    assert_eq!(
+        detect("%% a comment\n---\ntitle: x\n---\nflowchart LR\n  a-->b"),
+        Some(DiagramType::Flowchart)
+    );
+    assert_eq!(
+        detect("\n---\n  theme: forest\n---\n  requirementDiagram"),
+        Some(DiagramType::Requirement)
+    );
+}

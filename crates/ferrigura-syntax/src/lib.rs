@@ -228,7 +228,12 @@ pub enum Diagram {
 #[must_use]
 pub fn detect(text: &str) -> Option<DiagramType> {
     let prepared = preprocess::prepare(text).ok()?;
-    let rest = skip_hidden_prefix(&prepared.text);
+    // `preprocessDiagram` removes the directives and the comment lines and trims the start
+    // (`preprocess.ts` 58-65); `detectType` then strips a front matter block once more
+    // (`detectType.ts` 15-18), which finds one that blank lines or comments kept from the start.
+    let cleaned = preprocess::cleanup_comments(&preprocess::remove_directives(&prepared.text));
+    let body = preprocess::strip_front_matter(&cleaned);
+    let rest = skip_hidden_prefix(&body);
     if rest.starts_with("mindmap") {
         Some(DiagramType::Mindmap)
     } else if rest.starts_with("architecture") {
