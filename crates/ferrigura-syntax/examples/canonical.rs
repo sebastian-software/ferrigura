@@ -91,6 +91,29 @@ fn sequence_wrap(text: &str) -> bool {
 /// The model keeps the key order of a JavaScript object, but `serde_json::Value` sorts the keys of
 /// an object and the differential run compares objects without regard to their order, so the order
 /// is compared as a list (`docs-port/canonical-model.md`, Sequence).
+/// The C4 diagram. The top-level `wrap` configuration is what the DB reads (`init`), so the
+/// example resolves it from the text's directives and front matter, as the sequence arm does.
+fn c4_outcome(text: &str) -> Outcome {
+    match c4::parse_with(
+        text,
+        c4::Options {
+            wrap: c4_wrap(text),
+        },
+    ) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
+/// The top-level `wrap` of the effective configuration, `true` only when it is set to `true`.
+fn c4_wrap(text: &str) -> bool {
+    let Ok(directive) = config::read(text) else {
+        return false;
+    };
+    let resolved = effective(None, Some("c4"), &directive);
+    matches!(resolved.get("wrap"), Some(Config::Bool(true)))
+}
+
 fn sequence_outcome(text: &str) -> Outcome {
     match sequence::parse_with(
         text,
@@ -297,10 +320,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
-            "c4" => match c4::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
+            "c4" => c4_outcome(text),
             "kanban" => match kanban::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),

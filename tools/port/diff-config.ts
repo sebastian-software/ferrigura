@@ -279,7 +279,6 @@ const NOT_PORTED_SECTIONS = new Set([
   'packet',
   'sankey',
   'quadrantChart',
-  'c4',
   'architecture',
   'treemap',
   'ishikawa',

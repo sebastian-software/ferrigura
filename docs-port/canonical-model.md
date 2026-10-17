@@ -159,6 +159,16 @@ The sequence model is the DB state after parsing (`sequenceDb.ts`), with the fie
 - **Texts** are what the DB holds, with the entity placeholders kept. Ids, descriptions, and the icon and classes of a decoration are sanitised; the label, icon, assignee and ticket of the shape data are not, as the YAML gives them.
 - **Values.** A label or a priority from the shape data keeps its number, boolean, array or object. A non-finite number is its sentinel string, as the other models write it.
 
+## C4
+
+The C4 model is the DB state after parsing (`c4Db.ts`), with the field list and the exclusions in [c4/PLAN.md](./c4/PLAN.md), section 6. Its own rules:
+
+- **Text fields are strings or absent.** A `{ text }` field is its string. A field that holds a bare string (a style statement wrote it) or nothing is left out. A label may also be the object of a named argument (`Person(a, $sprite="x")`), which the reference keeps as the text.
+- **Texts keep the entity placeholders** that the DB keeps (`ﬂ°name¶ß`), as the flowchart's texts do; no sanitising is applied to them except where the DB sanitises (the title and the accessibility description).
+- **Relation offsets are strings:** the `String()` of the DB value, so a positional offset is its `parseInt` result and a named one is its raw text.
+- **The global boundary's `tags` and `link` are `null`**, and an absent value is left out.
+- **The title** is the grammar's last `title` or `accTitle` line. The front matter title does not reach a C4 diagram.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
