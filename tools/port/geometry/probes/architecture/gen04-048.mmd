@@ -1,0 +1,24 @@
+architecture-beta
+    group g1(cloud)[Group 1]
+    group g2[Group 2]
+    group g3(cloud)[Group 3]
+    group g4(cloud)[Group 4]
+    group g5(cloud)[Group 5]
+    group g6(cloud)[Group 6]
+    group g7(cloud)[Group 7]
+    service s1(database)[Service 1] in g3
+    service s2(disk)[Service 2] in g4
+    service s3(database)[Service 3] in g1
+    service s4[Service 4] in g2
+    service s5(server)[Service 5] in g4
+    service s6(internet)[Service 6] in g5
+    service s7(internet)[Service 7] in g5
+    service s8(disk)[Service 8] in g5
+    service s9[Service 9]
+    service s10(disk)[Service 10] in g1
+    service s11(disk)[Service 11] in g7
+    s2{group}:L <-- R:s9
+    s7:L -- T:s4
+    s3:L -- R:s10
+    align row s3 s10
+    align row s2 s5

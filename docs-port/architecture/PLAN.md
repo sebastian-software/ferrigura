@@ -77,11 +77,19 @@ The `architecture` section of the configuration is compared by `pnpm port:diff c
 
 ## 8. The renderer stage
 
-Not in this task, and listed so that the renderer's task can find them:
+The renderer is `crates/ferrigura-render/src/architecture/`: [`scene.rs`](../../crates/ferrigura-render/src/architecture/scene.rs) (the cytoscape state and the functions the renderer reaches: label boxes, compound sizes, endpoints, bends, the element bounds), [`layout.rs`](../../crates/ferrigura-render/src/architecture/layout.rs) (the two runs of fcose through `ferrigura-cose`, and the segment handler between them), [`constraints.rs`](../../crates/ferrigura-render/src/architecture/constraints.rs) (`getAlignments` and `getRelativeConstraints`), [`draw.rs`](../../crates/ferrigura-render/src/architecture/draw.rs) (the SVG, and the boxes that set the viewBox), with [`icons.rs`](../../crates/ferrigura-render/src/architecture/icons.rs) and [`style.rs`](../../crates/ferrigura-render/src/architecture/style.rs).
 
-- The layout is fcose (cose-base 2.2.0, layout-base 2.0.1) run twice, once in `draw` and once in the renderer's `layoutstop` handler, with the random draws of the seeded generator (NOTES.md sections 6.5 to 6.7 and E).
-- The icons are drawn from the names in the model; the unknown icon is a fallback (section 6.9).
-- The text is measured by cytoscape in `Helvetica Neue` (NOTES.md Q1, section 8).
+Checked with `pnpm port:geometry architecture`: the 20 fixtures and the probes under [`tools/port/geometry/probes/architecture`](../../tools/port/geometry/probes/architecture) (the hand-written ones `p01` to `p13`, and twelve generated diagrams `gen01` to `gen12`), 45 of 45 within 0.05 px. A further run of 60 random generated diagrams, added for the check and then removed, was within tolerance too (104 of 104 with the 44 above). The specs that test what the renderer builds (the ids of `svgDraw.spec.ts`, the seed of `architectureSeed.spec.ts`) are in [`crates/ferrigura-render/tests/architecture_render.rs`](../../crates/ferrigura-render/tests/architecture_render.rs).
+
+Reproduced quirks of the renderer (each one measured against the harness):
+
+- A group with children draws its title, but the title does not count in the bounds of the group or of its parent: the group's box is its body, as the reference's rectangles show. A service's title counts. A childless group's title counts too, placed on its centre line (no padding offset).
+- The SVG text takes the theme's `fontSize` (14 px in `redux-color`), while cytoscape measures the node labels at the configuration's `fontSize` (16 px) and the edge labels at 16 px: two sizes, one per use.
+- The XY edge label uses the `dominant-baseline` `auto` after its turn, and the alphabetic baseline for the group titles (`start` is not a `dominant-baseline` value).
+- The unknown icon's question mark keeps the reference's font list, `ArialMT, Arial`. In the harness that name is the machine's Arial, as it is for the flowchart's fallback icon, whose baseline (298 of 298) would move if `ArialMT` were mapped onto the bundled face. The glyph lies inside the 80-unit square in Arial's metrics, so the square bounds it.
+- Icons: the unknown icon for a name that is not in the pack, or another prefix.
+
+The fcose corpus in `crates/ferrigura-cose/tests/fcose-corpus` was captured through the e2e viewer, where `Helvetica Neue` is the Mac's system font, so 19 of its 419 renders differ in a label's width by a pixel (for example `Link 5`: 42.99 px in the system font, 43.15 px in the bundled face). The geometry harness maps `Helvetica Neue` to the bundled face, as the task asks, and the renderer matches it; the corpus engine tests are unaffected, because they take the captured inputs.
 
 ## 9. Reproduced quirks
 
@@ -123,7 +131,7 @@ Derived block (section 6): the group alignment overwrite; the adjacency overwrit
 
 ## 10. Specs and the differential run
 
-- **Specs.** `architecture_spec.rs` ports `architecture.spec.ts` (26 passing; the parser and DB tests, through the public parse, with the DB-level calls written as the statements that make them), and keeps the configuration and renderer tests ignored with their reasons (13 ignored, including the seeded generator and the SVG drawing of `architectureSeed.spec.ts` and `svgDraw.spec.ts`). `architecture_grammar.rs` (51 passing) pins the quirks above. `architecture_db_spec.rs` (20 passing) pins the order, the header texts and the derived block. The alignment check that no statement reaches is a unit test in `architecture/db.rs`.
+- **Specs.** `architecture_spec.rs` ports `architecture.spec.ts` (26 passing; the parser and DB tests, through the public parse, with the DB-level calls written as the statements that make them), and keeps the configuration tests and the stylesheet warnings ignored with their reasons (5 ignored). The renderer's specs (the seed of `architectureSeed.spec.ts` and the ids of `svgDraw.spec.ts`) are in `crates/ferrigura-render/tests/architecture_render.rs`. `architecture_grammar.rs` (51 passing) pins the quirks above. `architecture_db_spec.rs` (20 passing) pins the order, the header texts and the derived block. The alignment check that no statement reaches is a unit test in `architecture/db.rs`.
 - **Differential.** `pnpm port:diff architecture`: 281 inputs (the e2e fixtures, the spec literals, the docs, and the explicit cases), 170 accepted by the reference, 0 differences, 0 named exceptions. The explicit cases are the probes of section 9, and an `undetectedCases` entry for the capitalised header.
 - **Random checks, not committed.** Beyond the committed inputs, a seeded generator of mostly valid diagrams (groups and nested groups, junctions, edges with every side, arrow form and `{group}` mark, alignments, and rare invalid statements) produced 6000 diagrams, 1092 of the first 1500 accepted, with 966 of those having edges and 131 having group alignments. A mutator that edits valid diagrams with lexer-sensitive pieces produced 15000 mutants, 909 of them accepted. The two sides agreed on every one. The header texts (sanitising, entity placeholders, front matter precedence) were checked on 39 further inputs. None of these random inputs is committed.
 

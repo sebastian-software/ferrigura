@@ -1,0 +1,26 @@
+architecture-beta
+  group dc1(cloud)[DC 1]
+  group dc2(cloud)[DC 2]
+  service w1(server)[Web 1] in dc1
+  service w2(server)[Web 2] in dc1
+  service w3(server)[Web 3] in dc1
+  service db1(database)[DB 1] in dc1
+  service w4(server)[Web 4] in dc2
+  service w5(server)[Web 5] in dc2
+  service db2(database)[DB 2] in dc2
+  service lb(internet)[Load balancer]
+  service fw(disk)[Firewall]
+  service cdn(internet)[CDN]
+  junction jx
+  w1:R -- L:w2
+  w2:R -- L:w3
+  w3:B -- T:db1
+  w4:R -- L:w5
+  w5:B -- T:db2
+  db1:R -- L:db2
+  lb:R -- L:fw
+  fw:R -- L:cdn
+  lb:B -- T:jx
+  jx:R -- L:w1
+  jx:B -- T:w4
+  cdn:B -- T:fw

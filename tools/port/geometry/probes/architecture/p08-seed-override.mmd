@@ -1,0 +1,13 @@
+---
+config:
+  architecture:
+    seed: 7
+---
+architecture-beta
+  group g1(cloud)[Group One]
+  service a(server)[A] in g1
+  service b(database)[B]
+  service c(disk)[C] in g1
+  a:R -- L:b
+  b:R -- L:c
+  c:T -- B:a
