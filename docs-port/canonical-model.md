@@ -99,6 +99,17 @@ The model is the DB state after parsing, as [timeline/PLAN.md](./timeline/PLAN.m
 - **Sanitising.** The title and the accessibility texts go through the sanitiser of the flowchart (`sanitize.rs`, with the full HTML5 names of `entities.rs`), before the entities are read. The task names, the people and the sections are not sanitised.
 - **Scores** are `Number()` of the text, as a number or one of the sentinel strings above.
 
+## XyChart
+
+The xychart model is the DB state after the parse, before the chart builder runs, with the field list in [xychart/PLAN.md](./xychart/PLAN.md), section 7. Its own rules:
+
+- **Orientation** is the header keyword when it is given, else the configuration's `chartOrientation`. The keyword is compared as typed, so `HORIZONTAL` is `vertical`.
+- **Title** is the DB's `getDiagramTitle()`, so a grammar title replaces the front matter title even when it is blank. The DB's `getXYChartData().title` is not used: only `getDrawableElem` sets it.
+- **Absent values are `null`.** A category without a value is `[category, null]`. The other fields keep `""` and `[]` as the rule above says.
+- **Non-finite numbers** (the range of a chart with no plot, or a number beyond the double range) are the sentinel strings, as in the other models.
+- **X values are strings** as the DB stores them: the category, or the JavaScript string of the linear position (`1.6666666666666667`, `1e-7`).
+- **Colours** are the palette entries of the theme the configuration resolves to, one per plot in declaration order. The exporter applies ferrigura's rule for themes it does not ship.
+
 ## ER
 
 The ER model is the DB state after parsing (`erDb.ts`), with the DB's names in camelCase, as the flowchart's model is. The full field list and the exclusions are in [er/PLAN.md](./er/PLAN.md), sections 4 and 5; the rules here are the ones the other diagrams do not share.
