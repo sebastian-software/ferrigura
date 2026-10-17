@@ -98,7 +98,7 @@ const suites: Record<string, string[]> = {
   requirement: ['requirement_spec', 'requirement_db_spec'],
   c4: [
     'c4_diagram_spec',
-    'c4_label_spec',
+    'render:c4_label_spec',
     'c4_boundary_spec',
     'c4_component_spec',
     'c4_container_spec',

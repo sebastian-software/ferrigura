@@ -2,7 +2,7 @@
 
 Status: parser, DB and model ported; the differential (`pnpm port:diff c4`) shows no difference on the 176 collected inputs, and `pnpm port:diff config` agrees on the C4 section. The research is in [NOTES.md](./NOTES.md), which cites every rule; this page says what the port does and which quirks it keeps. The quirks are listed by their ids `P1`-`P32` of NOTES section 2.4, and the code comments name them.
 
-The renderer (the grid, the boundaries, the relations and the label) is not ported. Its inputs are part of the 32 fixtures and are checked with the geometry harness in the renderer task.
+The renderer is ported in `crates/ferrigura-render/src/c4/`: the grid, the boundaries, the relations, the element label and the shapes. `pnpm port:geometry c4` gives the 32 fixtures within tolerance, and the renderer takes the screen width of the harness page (1200 px, `grid.rs`).
 
 ## 1. Sources
 
@@ -155,5 +155,5 @@ Also reproduced: a deployment node's sprite argument is not stored (`c4Db.ts:476
 
 - `pnpm port:diff c4`: 176 inputs (32 fixtures, 30 C4 literals of the specs, 6 C4 blocks of the docs, and 108 explicit cases, of which 34 are the named-attribute texts that the spec builds from its tables), 153 accepted by the reference, 0 differences, 0 named exceptions.
 - `pnpm port:diff config`: the C4 section is compared (126 of 126 accepted by the reference in its group).
-- The specs: 169 cases in eight Rust files, listed in `tools/port/status.ts`. The label helper's two cases stay ignored in `c4_label_spec.rs`, because they test the renderer's label layout.
+- The specs: 169 cases in eight Rust files, listed in `tools/port/status.ts`. The label helper's two cases are render tests in `crates/ferrigura-render/tests/c4_label_spec.rs`, which check the wrap of the element label through the renderer.
 - The parser's unit tests (scanner, DB helpers) and the model's tests run with the crate.
