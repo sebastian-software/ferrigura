@@ -20,6 +20,8 @@ import { fileURLToPath } from 'node:url';
 import { JSON_SCHEMA, load } from 'js-yaml';
 import { chromium, type Page } from 'playwright';
 
+import { ensureTidyTreeBundle, TIDY_TREE_DIR, TIDY_TREE_URL } from './tidy-tree-bundle.js';
+
 export const root = fileURLToPath(new URL('../../../', import.meta.url));
 export const distDir = join(root, 'packages/mermaid/dist');
 export const fontDir = join(root, 'crates/ferrigura-text/fonts');
@@ -348,6 +350,8 @@ export interface ReferenceRender {
   svg: string | null;
   error: string | null;
   elk: { input: JsonValue; output: JsonValue }[];
+  /** The tidy tree layout's input and result, one per layout call (`tidy-tree-bundle.ts`). */
+  tidyTree: { input: JsonValue; output: JsonValue }[];
 }
 
 export type JsonValue =
@@ -417,6 +421,11 @@ window.__elkCalls = [];
 window.__mermaidElkCapture = function (input, output) {
   window.__elkCalls.push({ input: input, output: JSON.parse(JSON.stringify(output)) });
 };
+// The tidy tree's layout call (render.ts of the reference bundle, one per render of the layout).
+window.__tidyTreeCalls = [];
+window.__mermaidTidyTreeCapture = function (input, result) {
+  window.__tidyTreeCalls.push({ input: input, output: result });
+};
 </script>
 </head>
 <body><div id="stage"></div>
@@ -477,9 +486,16 @@ ${measure}
 // The clock and the random numbers of a render are fixed when a clock is given: the today marker of
 // a gantt and the generated ids (gitGraph commits, rough.js strokes) read them, and two renders of
 // the same text would otherwise differ. Both get the same time and seed, so they are equal.
-window.renderReference = async function (id, text, clock, site) {
+window.renderReference = async function (id, text, clock, site, tidyTree) {
   mermaid.initialize({ startOnLoad: false, ...(site ?? {}) });
   window.__elkCalls = [];
+  window.__tidyTreeCalls = [];
+  // The tidy tree is registered only for the fixtures that ask for it (layout tidy-tree), so no
+  // other diagram's reference is affected: the registry is shared by the page.
+  if (tidyTree) {
+    const tidy = await import(${JSON.stringify(TIDY_TREE_URL)});
+    mermaid.registerLayoutLoaders(tidy.default);
+  }
   const RealDate = Date;
   const realRandom = Math.random;
   if (clock) {
@@ -503,9 +519,9 @@ window.renderReference = async function (id, text, clock, site) {
   }
   try {
     const result = await mermaid.render(id, text);
-    return { ok: true, svg: result.svg, error: null, elk: window.__elkCalls };
+    return { ok: true, svg: result.svg, error: null, elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
   } catch (error) {
-    return { ok: false, svg: null, error: String((error && error.message) || error), elk: window.__elkCalls };
+    return { ok: false, svg: null, error: String((error && error.message) || error), elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
   } finally {
     window.Date = RealDate;
     Math.random = realRandom;
@@ -580,6 +596,7 @@ export function serve(html: string): Promise<{ server: Server; port: number }> {
       const mapping: [string, string][] = [
         ['/dist/', distDir],
         ['/fonts/', fontDir],
+        ['/tidy-tree/', TIDY_TREE_DIR],
       ];
       const match = mapping.find(([prefix]) => url.pathname.startsWith(prefix));
       if (!match) {
@@ -648,26 +665,31 @@ export interface RenderClock {
   seed: number;
 }
 
-export function renderReference(
+export async function renderReference(
   page: Page,
   id: string,
   text: string,
   clock?: RenderClock
 ): Promise<ReferenceRender> {
-  return page.evaluate(
-    ([svgId, source, fixed, site]) =>
+  // A fixture that asks for the tidy tree gets the removed package registered in the page; the
+  // bundle is built on first use (`tidy-tree-bundle.ts`).
+  const tidyTree = effectiveSettings(text).layout === 'tidy-tree';
+  if (tidyTree) await ensureTidyTreeBundle();
+  return (await page.evaluate(
+    ([svgId, source, fixed, site, withTidyTree]) =>
       (
         window as unknown as {
           renderReference: (
             id: string,
             text: string,
             clock?: RenderClock,
-            site?: Record<string, unknown>
+            site?: Record<string, unknown>,
+            tidyTree?: boolean
           ) => Promise<ReferenceRender>;
         }
-      ).renderReference(svgId, source, fixed ?? undefined, site),
-    [id, text, clock ?? null, forcedSiteConfig(text)] as const
-  ) as Promise<ReferenceRender>;
+      ).renderReference(svgId, source, fixed ?? undefined, site, withTidyTree),
+    [id, text, clock ?? null, forcedSiteConfig(text), tidyTree] as const
+  )) as ReferenceRender;
 }
 
 /**

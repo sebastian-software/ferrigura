@@ -69,6 +69,7 @@
     "port:text-label-fixture": "tsx tools/port/text/label-fixture.ts",
     "port:geometry-pie": "tsx tools/port/geometry/pie-geometry.ts",
     "port:geometry-flowchart": "tsx tools/port/geometry/flowchart-geometry.ts",
+    "port:tidy-tree": "tsx tools/port/geometry/tidy-tree-capture.ts",
     "port:geometry": "tsx tools/port/geometry/diagram-geometry.ts",
     "port:scope-pie": "tsx tools/port/geometry/pie-scope.ts",
     "port:styles-flowchart": "tsx tools/port/flowchart-styles.ts",

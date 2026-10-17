@@ -22,3 +22,5 @@ crates/ferrigura-render/tests/data/
 crates/ferrigura-render/tests/fixtures/
 # Generated from the Chromium probes by tools/port/text/ (the extents rows are one line each)
 crates/ferrigura-text/tests/fixtures/
+# Vendored from non-layered-tidy-tree-layout 2.0.2 (MIT): kept as published, not reformatted
+tools/port/vendor/

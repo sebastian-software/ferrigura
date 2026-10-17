@@ -21,3 +21,4 @@ pub mod path;
 pub mod pipeline;
 pub mod shapes;
 pub mod terminal;
+pub mod tidy_tree;
