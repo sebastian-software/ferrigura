@@ -76,6 +76,7 @@ function same(a: unknown, b: unknown): boolean {
 }
 
 const pieInputs = await collectInputs('pie');
+const undetectedPie = new Set(undetectedCases.pie ?? []);
 const flowchartInputs = await collectInputs('flowchart');
 const timelineInputs = await collectInputs('timeline');
 const undetectedTimeline = new Set(undetectedCases.timeline ?? []);
@@ -127,7 +128,7 @@ const inputs: ConfigInput[] = [
     source: input.source,
     text: input.text,
     group: 'pie',
-    expectedScope: 'pie',
+    expectedScope: undetectedPie.has(input.text) ? null : 'pie',
   })),
   ...flowchartInputs.map((input) => ({
     id: 0,

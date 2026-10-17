@@ -16,6 +16,32 @@ export const undetectedCases: Record<string, string[]> = {
   // Detection is case-sensitive (`eventmodeling/detector.ts`): a capitalised keyword is not a
   // diagram of this type.
   eventmodeling: ['EventModeling\ntf 01 ui A'],
+  // No type is detected in these texts. The reference's `detectInit` calls `detectType` when the
+  // init directive has truthy arguments (or there are several): `detectType` throws, so
+  // `preprocessDiagram` rejects the text, in the config run and in the parser run. A text with no
+  // arguments to read (a bare init, a wrap, a front matter alone) has no such call, so the reference
+  // accepts it with no scope; the same goes for an init whose JSON does not parse.
+  pie: [
+    '%%{init: {"theme": "forest"}}%%\nfoo bar',
+    '%%{init: {"theme": "forest"}}%%',
+    '%%{init: {"theme": "forest"}}%%\n',
+    '%%{init: theme}%%\nfoo',
+    '%%{init: 0}%%\nfoo',
+    '%%{init: null}%%\nfoo',
+    '%%{init: {}}%%\nfoo',
+    '%%{init: {"theme": "forest"}}%%\n%%{init: {"look": "neo"}}%%\nfoo',
+    '%%{init: {"config": {"x": 1}}}%%\nfoo',
+    '%%{init: {"theme": "forest"}}%%\n%%{wrap}%%\nfoo',
+    '%%{init: {"theme": "forest"}}%%\n%% comment\nfoo',
+    '%%{init: {"theme": "forest"}}%%\r\nfoo bar',
+    '%%{init: {"theme": "forest"}}%%\n\n\n',
+    '---\nconfig:\n  theme: dark\n---\n%%{init: {"theme": "forest"}}%%\nfoo',
+    'foo\n%%{init: {"theme": "forest"}}%%',
+    '%%{init}%%\nfoo',
+    '%%{wrap}%%\nfoo',
+    '%%{init: {"theme": x}}%%\nfoo',
+    '---\nconfig:\n  theme: dark\n---\nfoo',
+  ],
   // Detection is case-sensitive (`kanban/detector.ts`, `/^\s*kanban/`): a capitalised keyword is
   // not a kanban board, although the grammar accepts it.
   kanban: ['KANBAN\n  a\n', 'Kanban\n  a\n'],

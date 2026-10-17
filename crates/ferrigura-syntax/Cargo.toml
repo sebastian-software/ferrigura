@@ -14,7 +14,6 @@ indexmap.workspace = true
 logos.workspace = true
 regex = "1"
 url = "2"
-saphyr-parser = "0.2"
 serde_json.workspace = true
 
 [dev-dependencies]

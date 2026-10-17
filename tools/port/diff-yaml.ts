@@ -84,6 +84,29 @@ function same(a: unknown, b: unknown): boolean {
   );
 }
 
+/**
+ * The reference's canonical value with every string and key made well-formed: a lone surrogate
+ * (a `\u` escape of one) becomes U+FFFD, which the reader does too, since a Rust string cannot
+ * hold a surrogate and the reference's UTF-8 output writes U+FFFD for it.
+ */
+function wellFormed(value: unknown): unknown {
+  if (typeof value === 'string') return value.toWellFormed();
+  if (Array.isArray(value)) return value.map(wellFormed);
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value)) {
+      Object.defineProperty(out, key.toWellFormed(), {
+        value: wellFormed((value as Record<string, unknown>)[key]),
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
+    return out;
+  }
+  return value;
+}
+
 const inputs: YamlInput[] = [];
 const fixtures = await filesUnder(join(root, 'e2e'), '.mmd');
 const flowchartSpecs = await filesUnder(
@@ -144,7 +167,7 @@ for (const input of numbered) {
     jsOutput !== undefined &&
     rsOutput !== undefined &&
     jsOutput.ok === rsOutput.ok &&
-    (!jsOutput.ok || same(jsOutput.value, rsOutput.value));
+    (!jsOutput.ok || same(wellFormed(jsOutput.value), rsOutput.value));
   if (agree) continue;
   differences += 1;
   console.log(`\n✗ ${input.source}`);
