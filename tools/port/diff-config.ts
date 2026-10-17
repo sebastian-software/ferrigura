@@ -274,7 +274,6 @@ const UNPORTED_SECTIONS = [
  * scope, but the section is not compared, not even for those inputs, until the type is ported.
  */
 const NOT_PORTED_SECTIONS = new Set([
-  'packet',
   'sankey',
   'quadrantChart',
   'architecture',

@@ -119,6 +119,16 @@ The block model is the DB state after parsing (`blockDB.ts`), with the field lis
 - **Texts** are the sanitised labels, with the entity placeholders kept, as the DB keeps them. Blanks in directions and styles are kept as written.
 - **Left out**: the layout, the palette slots and the shapes (renderer concerns), and the edge's `type`, which is always `edge`.
 
+## Packet
+
+The packet model is the DB state after the parse, with the rows of blocks and the header texts, as [packet/PLAN.md](./packet/PLAN.md), section 6, says. Its own rules:
+
+- **Numbers.** A bit number is a double, as the DB holds it, and a non-finite one is its sentinel string (`"Infinity"`). The `bits` of a piece split at a row boundary is one less than its width, as the DB gives it (quirk 1).
+- **Labels** are the DB's strings: the grammar's value with the escapes resolved and the entity placeholders kept, and the markup raw.
+- **Texts.** The title and the accessibility texts are sanitised as the DB sanitises them. The title follows the precedence of the section above.
+- **Rows** depend on `bitsPerRow`, which is read from the effective configuration (quirk 9), and not stored in the model. No row is empty.
+- **Left out**: the configuration and the styles, which only the renderer reads.
+
 ## ER
 
 The ER model is the DB state after parsing (`erDb.ts`), with the DB's names in camelCase, as the flowchart's model is. The full field list and the exclusions are in [er/PLAN.md](./er/PLAN.md), sections 4 and 5; the rules here are the ones the other diagrams do not share.
