@@ -5,6 +5,7 @@
 //! ([`decode_entities`]), which the unified renderer's labels use as well. The element they write
 //! is [`element::Element`].
 
+pub mod d3;
 pub mod draw;
 pub mod element;
 pub mod style;

@@ -1,8 +1,8 @@
 # xychart parser and DB: plan
 
-Status: ported. Reference: this worktree's `packages/mermaid/src/diagrams/xychart/` (`xychartDb.ts`, `parser/xychart.jison`). Research and probes are in [NOTES.md](./NOTES.md); this page says what the port does, which quirks it keeps and which it does not. Quirk ids are the notes' ids: `P1`–`P13` for the lexer and grammar (NOTES 2.2), `D1`–`D17` for the DB (NOTES 3.6), and `D18` for a quirk the port's tests found. The renderer quirks `R1`–`R22` (NOTES 6.8) belong to the chart builder and are not in this port.
+Status: parser, DB and renderer ported. Reference: this worktree's `packages/mermaid/src/diagrams/xychart/` (`xychartDb.ts`, `parser/xychart.jison`, `xychartRenderer.ts`, `chartBuilder/`). Research and probes are in [NOTES.md](./NOTES.md); this page says what the port does, which quirks it keeps and which it does not. Quirk ids are the notes' ids: `P1`–`P13` for the lexer and grammar (NOTES 2.2), `D1`–`D17` for the DB (NOTES 3.6), and `D18` for a quirk the port's tests found. The renderer quirks `R1`–`R22` (NOTES 6.8) are section 12.
 
-Scope: the parser, the DB, the model and the configuration that the DB reads. The chart builder and the renderer are not ported.
+Scope: the parser, the DB, the model and the configuration that the DB reads (sections 1 to 11), and the renderer with its chart builder (section 12).
 
 ## 1. Sources
 
@@ -180,3 +180,46 @@ Fuzzing (not committed; the generator and its inputs were in the scratchpad): 11
 3. **The garbled rule 25 (P4).** Reproduced as a deviation in section 8. Recommendation: accept it; it is not reachable from any text a reader writes.
 4. **The theme of the reference side (section 6).** The exporter sets the reference's theme to the shipped theme that ferrigura resolves it to. This is the rule the geometry harness uses (`forcedDirective`), applied to the parser's model. Recommendation: accept it, and keep it named here.
 5. **The `$ref` defaults (section 6).** Kept because the reference's `getConfig()` carries them; they are unused by any reader. Recommendation: accept.
+
+## 12. Renderer
+
+The Rust code: `crates/ferrigura-render/src/xychart/` (`mod.rs` the SVG and the data labels, `config.rs` the reading of the configuration, the theme and the model, `builder/` the chart builder: `axis.rs`, `title.rs`, `legend.rs`, `plot.rs`, `mod.rs` the orchestrator, `text.rs` the measurement). The d3 subset is in `crates/ferrigura-render/src/common/d3/` (number text, band and linear scales, ticks, the linear line), shared with the other renderers.
+
+**Status.** `pnpm port:geometry xychart`: 47 of 47 within tolerance. The render spec is `crates/ferrigura-render/tests/xychart_render_spec.rs`.
+
+**Measurement on the screen.** The reference divides each text box by the scale of the SVG on the screen (`textDimensionCalculator.ts` 31-42). In the harness the SVG is laid out in a 1200 px container, so the scale is `min(1, 1200 / width)`, and each text is laid out at `fontSize * scale` and its box divided by the scale again (`builder/text.rs`, `config.rs` `screen_scale`). The title of the fixture `should-keep-legend-inside-a-wide-chart-scaled-to-fit` (width 4000) is the case that needs it: its height is 8 screen pixels over 0.3, not 25.
+
+**Quirks.**
+
+| Id  | Status                                                                                                            |
+| --- | ----------------------------------------------------------------------------------------------------------------- |
+| R1  | reproduced: labels from `plots[0]`; a missing value or a short first plot fails the render, as the reference does |
+| R2  | reproduced: the font size is `${n}px`, the smallest candidate floored, with no upper bound                        |
+| R3  | reproduced: `#131300` unless the configuration sets `dataLabelColor`                                              |
+| R4  | reproduced: candidates start at the bar size and drop by 1; `Math.floor` of the minimum, negative allowed         |
+| R5  | reproduced: data labels only for rectangles; a legend marker is a rectangle, so it takes labels too (probed)      |
+| R6  | reproduced: no `y`, `height="NaN"` (probed)                                                                       |
+| R7  | reproduced: negative width below the axis minimum (probed)                                                        |
+| R8  | reproduced: duplicate categories share their first place (probed)                                                 |
+| R9  | reproduced: a plot before a band axis at the range start (probed)                                                 |
+| R10 | reproduced: a zero-width domain maps to the middle                                                                |
+| R11 | reproduced: a single-point line is closed with `Z`                                                                |
+| R12 | reproduced: lines to three digits; the axes and the bars are not rounded                                          |
+| R13 | reproduced: bars from the plot's bottom, with the outer padding at both ends                                      |
+| R14 | reproduced: `axisl-line` on the left axis                                                                         |
+| R15 | reproduced: the outer padding is set before the fit check (not probed; read)                                      |
+| R16 | reproduced: bar width from the tick distance (probed)                                                             |
+| R17 | reproduced: the text is escaped, then the placeholders are decoded on the markup (probed)                         |
+| R18 | reproduced: the empty group before `main` and the empty measurement group last                                    |
+| R19 | reproduced: `width="100%"` always                                                                                 |
+| R20 | not reproduced: see deviation 2 below                                                                             |
+| R21 | reproduced: the colour follows the plot's position, bars included                                                 |
+| R22 | reproduced: an inverted y range puts 0 at the top                                                                 |
+
+Probes of the quirks the fixtures do not cover were run through the harness's own reference render and measurement, in a scratch file outside the repository (not committed): R1, R6, R7, R8, R9, R16, R17 and R22 matched the reference, and so did the legend markers with labels and the negative values.
+
+**Deviations.**
+
+1. A text with a character that the bundled faces do not cover (`♥`, a symbol) is measured with the glyph that the face has (`.notdef`), while the reference measures it in a system fallback font. The harness excludes such texts for this reason; no fixture has one.
+2. R20 (a `titlePadding` given as a string concatenates in the reference): the typed configuration reads `"5"` as 5, as the other renderers do.
+3. The chart builder's unit specs (`chartBuilder/*.spec.ts`, 14 tests) use the reference's measurement without a DOM group, a fallback ferrigura never takes; they are not ported. The layout is checked by the 47 fixtures.
