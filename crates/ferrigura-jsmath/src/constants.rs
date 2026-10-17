@@ -129,3 +129,46 @@ pub(crate) const ATAN2_PI_O_4: f64 = 7.8539816339744827900E-01;
 pub(crate) const ATAN2_PI_O_2: f64 = 1.5707963267948965580E+00;
 pub(crate) const ATAN2_PI: f64 = 3.1415926535897931160E+00;
 pub(crate) const ATAN2_PI_LO: f64 = 1.2246467991473531772E-16;
+
+// The constants of the correctly rounded functions (`correct.rs`), from mpmath:
+// floor(2/pi * 2^1408), floor(pi/2 * 2^256) and floor(ln 2 * 2^256), in little-endian limbs.
+pub(crate) const CR_TWO_OVER_PI: [u64; 22] = [
+    0x6599855f14a06840,
+    0xa9e391615ee61b08,
+    0xf0cfbc209af4361d,
+    0x56033046fc7b6bab,
+    0x6bfb5fb11f8d5d08,
+    0x3d0739f78a5292ea,
+    0x7527bac7ebe5f17b,
+    0x4f463f669e5fea2d,
+    0x6d367ecf27cb09b7,
+    0xef2f118b5a0a6d1f,
+    0x1ff897ffde05980f,
+    0x9c845f8bbdf9283b,
+    0x3991d639835339f4,
+    0xe99c7026b45f7e41,
+    0xe88235f52ebb4484,
+    0xfe1deb1cb129a73e,
+    0x06492eea09d1921c,
+    0xb7246e3a424dd2e0,
+    0xfe5163abdebbc561,
+    0xdb6295993c439041,
+    0xfc2757d1f534ddc0,
+    0xa2f9836e4e441529,
+];
+pub(crate) const CR_PI_OVER_2: [u64; 6] = [
+    0x04177d4c76273644,
+    0x52049c1114cf98e8,
+    0x898cc51701b839a2,
+    0x921fb54442d18469,
+    0x0000000000000001,
+    0x0000000000000000,
+];
+pub(crate) const CR_LN2: [u64; 6] = [
+    0x8a0d175b8baafa2b,
+    0x40f343267298b62d,
+    0xc9e3b39803f2f6af,
+    0xb17217f7d1cf79ab,
+    0x0000000000000000,
+    0x0000000000000000,
+];

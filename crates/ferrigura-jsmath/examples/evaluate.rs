@@ -1,12 +1,13 @@
 //! Evaluates the crate's functions on the inputs the V8 probe wrote, and writes the results as bit
 //! patterns, for `tools/port/jsmath-probe.ts --compare`.
 //!
-//! Usage: `cargo run --release -p ferrigura-jsmath --example evaluate -- <dir> [--std]`
+//! Usage: `cargo run --release -p ferrigura-jsmath --example evaluate -- <dir> [--node | --std]`
 //!
 //! For each function `f`, it reads `<dir>/f.in` (little-endian `u64` bit patterns: one per input for
-//! the unary functions, two (`x`, `y`) for the binary ones) and writes `<dir>/f.rs` (one `u64` per
-//! input), with NaN written as the canonical quiet NaN, as the probe does. With `--std` it writes
-//! `<dir>/f.std` instead, from the platform's own functions (the `f64` methods), for comparison.
+//! the unary functions, two (`x`, `y`) for the binary ones) and writes one `u64` per input, with NaN
+//! written as the canonical quiet NaN, as the probe does. The functions are the crate's defaults
+//! (Chromium's), written to `f.rs`; with `--node` they are the `node` module's (Node's), written to
+//! `f.node`; with `--std` they are the platform's own (the `f64` methods), written to `f.std`.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -30,6 +31,23 @@ const BINARY: [(&str, BinaryFn); 3] = [
     ("atan2", jsmath::atan2),
     ("pow", jsmath::pow),
     ("hypot", jsmath::hypot),
+];
+
+/// The fdlibm functions of Node's V8 (the `node` module).
+const NODE_UNARY: [(&str, UnaryFn); 7] = [
+    ("sin", jsmath::node::sin),
+    ("cos", jsmath::node::cos),
+    ("tan", jsmath::node::tan),
+    ("asin", jsmath::node::asin),
+    ("acos", jsmath::node::acos),
+    ("atan", jsmath::node::atan),
+    ("log", jsmath::node::log),
+];
+
+const NODE_BINARY: [(&str, BinaryFn); 3] = [
+    ("atan2", jsmath::node::atan2),
+    ("pow", jsmath::node::pow),
+    ("hypot", jsmath::node::hypot),
 ];
 
 /// The platform's functions, for the comparison with `--std`.
@@ -90,23 +108,23 @@ fn evaluate_binary(dir: &Path, name: &str, function: BinaryFn, extension: &str) 
     write_results(&dir.join(format!("{name}.{extension}")), results);
 }
 
+fn run(dir: &Path, extension: &str, unary: &[(&str, UnaryFn)], binary: &[(&str, BinaryFn)]) {
+    for (name, function) in unary {
+        evaluate_unary(dir, name, *function, extension);
+    }
+    for (name, function) in binary {
+        evaluate_binary(dir, name, *function, extension);
+    }
+}
+
 fn main() {
     let arguments: Vec<String> = std::env::args().collect();
     let dir = PathBuf::from(arguments.get(1).expect("usage: evaluate <dir> [--std]"));
-    let extension = if arguments.iter().any(|arg| arg == "--std") {
-        "std"
+    if arguments.iter().any(|arg| arg == "--std") {
+        run(&dir, "std", &STD_UNARY, &STD_BINARY);
+    } else if arguments.iter().any(|arg| arg == "--node") {
+        run(&dir, "node", &NODE_UNARY, &NODE_BINARY);
     } else {
-        "rs"
-    };
-    let (unary, binary) = if extension == "std" {
-        (&STD_UNARY[..], &STD_BINARY[..])
-    } else {
-        (&UNARY[..], &BINARY[..])
-    };
-    for (name, function) in unary {
-        evaluate_unary(&dir, name, *function, extension);
-    }
-    for (name, function) in binary {
-        evaluate_binary(&dir, name, *function, extension);
+        run(&dir, "rs", &UNARY, &BINARY);
     }
 }
