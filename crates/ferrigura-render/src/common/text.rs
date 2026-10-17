@@ -13,8 +13,10 @@
 //!   width and the height of one text line;
 //! - a line that is only white space has no glyphs, and `getBBox` returns an empty box, which the
 //!   reference reports as `svg element not in render tree`; that is an error here too;
-//! - the width of a line is its advance snapped to Chromium's 1/64 px layout unit ([`layout_width`]),
-//!   rounded to a whole pixel (`Math.round`); the height of a line is its text box, a whole number of
+//! - the width of a line is the box `getBBox` gives it ([`measure_box`]): its advance snapped to
+//!   Chromium's 1/64 px layout unit ([`layout_width`]), and the glyph outlines where they reach past
+//!   the advance (a leading `j`, an italic `f`), rounded to a whole pixel (`Math.round`); the height
+//!   of a line is its text box, a whole number of
 //!   pixels, rounded the same way; the block is the widest line, the sum of the line heights, and the
 //!   height of one line;
 //! - the reference also measures in `sans-serif` and keeps those values only when they are larger in
@@ -34,7 +36,8 @@
 use std::collections::HashMap;
 
 use ferrigura_text::{
-    Face, FontFamily, FontStyle, FontWeight, TextError, face, layout_width, measure, text_box,
+    Extent, Face, FontFamily, FontStyle, FontWeight, TextError, face, layout_width, measure,
+    measure_box, text_box,
 };
 
 use super::is_js_whitespace;
@@ -206,10 +209,10 @@ pub fn collapse_white_space(text: &str) -> String {
     out
 }
 
-/// The width of a text in an SVG `<text>` as Chromium reports it (`getComputedTextLength`, and the
-/// width of `getBoundingClientRect`): the advance of the text with its white space collapsed
-/// ([`collapse_white_space`]), snapped to the 1/64 px layout unit. A text with no glyph left
-/// measures 0.
+/// The width of a text in an SVG `<text>` as Chromium reports it through `getComputedTextLength`: the
+/// advance of the text with its white space collapsed ([`collapse_white_space`]), snapped to the
+/// 1/64 px layout unit. A text with no glyph left measures 0. The advance is what Mermaid's wrapping
+/// compares; a box that `getBBox` or `getBoundingClientRect` gives is [`collapsed_box`].
 ///
 /// # Errors
 ///
@@ -222,7 +225,24 @@ pub fn collapsed_width(face: &Face, text: &str, size: f64) -> Result<f64, TextEr
     Ok(layout_width(measure(face, &collapsed, size)?))
 }
 
-/// The width and the height of one line, before rounding: the snapped advance, and the text box.
+/// The box of a text in an SVG `<text>` as Chromium reports it through `getBBox` and through
+/// `getBoundingClientRect` (the two agree on SVG text): [`collapsed_width`]'s advance, and the glyph
+/// outlines where they reach past it, relative to the start of the text. A text with no glyph left
+/// has the empty box at the origin.
+///
+/// # Errors
+///
+/// Returns an error if the bundled font cannot be read.
+pub fn collapsed_box(face: &'static Face, text: &str, size: f64) -> Result<Extent, TextError> {
+    let collapsed = collapse_white_space(text);
+    if collapsed.is_empty() {
+        return Ok(Extent::default());
+    }
+    measure_box(face, &collapsed, size)
+}
+
+/// The width and the height of one line, before rounding: the width of the box `getBBox` gives it,
+/// and the text box.
 fn line_metrics(line: &str, style: &TextStyle) -> Result<(f64, f64), MeasureError> {
     let face = face_of(style);
     let size = style.font_size;
@@ -234,7 +254,7 @@ fn line_metrics(line: &str, style: &TextStyle) -> Result<(f64, f64), MeasureErro
     if shown.is_empty() {
         return Err(MeasureError::NotInRenderTree);
     }
-    let width = layout_width(measure(face, &shown, laid_out_size(size))?);
+    let width = measure_box(face, &shown, laid_out_size(size))?.width();
     Ok((width, text_box(face, size)?.height))
 }
 

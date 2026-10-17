@@ -12,7 +12,7 @@ use ferrigura_text::Face;
 
 use super::Context;
 use crate::RenderError;
-use crate::common::text::{collapse_white_space, collapsed_width};
+use crate::common::text::{collapse_white_space, collapsed_box, collapsed_width};
 use crate::common::{is_js_whitespace, js_trim};
 
 /// The token `wrap` splits the text at, besides the blanks.
@@ -32,11 +32,14 @@ pub(super) struct Tspan {
 }
 
 /// The box `getBBox` gives a wrapped text, relative to the text's origin: the lines are centred on
-/// `x = 0`, so the box is symmetric around it.
+/// `x = 0`, and the box is the glyphs' box of the lines, which is not symmetric where a glyph's
+/// outline reaches past its advance.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(super) struct Extent {
-    /// Half the width of the widest line.
-    pub half_width: f64,
+    /// The left edge, relative to `x = 0`: negative, for a centred line.
+    pub left: f64,
+    /// The right edge, relative to `x = 0`.
+    pub right: f64,
     /// The top of the first line with text.
     pub top: f64,
     /// The bottom of the last line with text.
@@ -154,17 +157,24 @@ fn extent(
         let em = if tspan.first { 1.0 } else { LINE_HEIGHT_EM };
         y += em * cx.text_size;
         let baseline = y + cx.middle;
-        let half_width = collapsed_width(face, &shown, cx.text_size)? / 2.0;
+        // `text-anchor: middle` centres the line on its advance, and the box is the glyphs' box
+        // moved by the same shift.
+        let shift = collapsed_width(face, &shown, cx.text_size)? / 2.0;
+        let ink = collapsed_box(face, &shown, cx.text_size)?;
+        let left = ink.left - shift;
+        let right = ink.right - shift;
         let top = baseline - cx.ascent;
         let bottom = baseline + cx.descent;
         extent = Some(match extent {
             None => Extent {
-                half_width,
+                left,
+                right,
                 top,
                 bottom,
             },
             Some(so_far) => Extent {
-                half_width: so_far.half_width.max(half_width),
+                left: so_far.left.min(left),
+                right: so_far.right.max(right),
                 top: so_far.top,
                 bottom,
             },

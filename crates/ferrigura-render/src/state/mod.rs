@@ -8,7 +8,8 @@ pub mod style;
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::state::{Link, StateDiagram};
 use ferrigura_text::{
-    FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, text_box,
+    FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
+    text_box,
 };
 
 use crate::RenderError;
@@ -69,12 +70,19 @@ pub fn render(input: &StateInput<'_>) -> Result<String, RenderError> {
     if !title.is_empty() {
         let drawn = bounds.unwrap_or_default();
         let width = measure_text(sans, title, TITLE_FONT_SIZE)?;
+        let ink = measure_box(sans, title, TITLE_FONT_SIZE)?;
         let text_box = text_box(sans, TITLE_FONT_SIZE)?;
         let baseline = -(config.state.title_top_margin as f64);
+        // The title is start-anchored at x, so its box is the glyphs' box from there.
         let x = drawn.x + drawn.width / 2.0 - width / 2.0;
         cover(
             &mut bounds,
-            BBox::new(x, baseline - text_box.top, width, text_box.height),
+            BBox::new(
+                x + ink.left,
+                baseline - text_box.top,
+                ink.width(),
+                text_box.height,
+            ),
         );
         title_svg = format!(
             "<text text-anchor=\"start\" x=\"{}\" y=\"{}\" class=\"statediagramTitleText\">{}</text>",

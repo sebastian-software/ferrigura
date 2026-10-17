@@ -98,10 +98,12 @@ pub fn render(input: &GitGraphInput<'_>) -> Result<String, RenderError> {
     let title = diagram.title.as_str();
     if !title.is_empty() {
         let drawn = root.local_box().unwrap_or_default();
+        // The title is centred by the browser on its advance, and its box is the glyphs' box.
         let width = text::width(text::regular(), title, TITLE_FONT_SIZE)?;
+        let extent = text::extent(text::regular(), title, TITLE_FONT_SIZE)?;
         let x = drawn.x + drawn.width / 2.0;
         let y = -(config.title_top_margin as f64);
-        let bounds = text::line_box(text::regular(), TITLE_FONT_SIZE, x - width / 2.0, y, width)?;
+        let bounds = text::line_box(text::regular(), TITLE_FONT_SIZE, x - width / 2.0, y, extent)?;
         root.push(
             Element::text(title, bounds)
                 .attr("x", number(x))

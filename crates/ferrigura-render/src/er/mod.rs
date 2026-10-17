@@ -13,7 +13,8 @@ pub mod style;
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::er::ErDiagram;
 use ferrigura_text::{
-    FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, text_box,
+    FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
+    text_box,
 };
 
 use crate::RenderError;
@@ -79,15 +80,16 @@ pub fn render(input: &ErInput<'_>) -> Result<String, RenderError> {
     if !title.is_empty() {
         let drawn = bounds.unwrap_or_default();
         let width = measure_text(sans, title, font_size)?;
+        let ink = measure_box(sans, title, font_size)?;
         let text_box = text_box(sans, font_size)?;
         let baseline = -(config.er.title_top_margin as f64);
         let centre = drawn.x + drawn.width / 2.0;
         cover(
             &mut bounds,
             BBox::new(
-                centre - width / 2.0,
+                centre - width / 2.0 + ink.left,
                 baseline - text_box.top,
-                width,
+                ink.width(),
                 text_box.height,
             ),
         );

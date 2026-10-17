@@ -147,9 +147,9 @@ pub(super) fn draw(
 /// The box of the text of a node, given the translation of its text group.
 fn text_extent_box(extent: Extent, x: f64, y: f64) -> BBox {
     BBox {
-        x: x - extent.half_width,
+        x: x + extent.left,
         y: y + extent.top,
-        width: extent.half_width * 2.0,
+        width: extent.right - extent.left,
         height: extent.bottom - extent.top,
     }
 }

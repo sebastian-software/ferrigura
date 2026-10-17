@@ -515,7 +515,8 @@ impl<'a> Layout<'a> {
             return Ok(());
         }
         let size = self.palette.commit_label_font_size;
-        let width = text::width(text::bold(), &commit.id, size)?;
+        let extent = text::extent(text::bold(), &commit.id, size)?;
+        let width = extent.width();
         let height = text::line_height(text::bold(), size)?;
         let vertical = self.vertical();
         let (bkg_x, bkg_y, text_x, text_y) = if vertical {
@@ -538,7 +539,7 @@ impl<'a> Layout<'a> {
         let mut bkg = Element::rect(bkg_x, bkg_y, width + 2.0 * PY, height + 2.0 * PY)
             .class("commit-label-bkg")
             .attr("fill", "transparent");
-        let text_box = text::line_box(text::bold(), size, text_x, text_y, width)?;
+        let text_box = text::line_box(text::bold(), size, text_x, text_y, extent)?;
         let mut label = Element::text(&commit.id, text_box)
             .attr("x", crate::svg::number(text_x))
             .attr("y", crate::svg::number(text_y))
@@ -577,18 +578,19 @@ impl<'a> Layout<'a> {
         }
         let face: &'static Face = text::regular();
         let size = self.palette.tag_label_font_size;
-        let mut widths = Vec::with_capacity(commit.tags.len());
+        let mut extents = Vec::with_capacity(commit.tags.len());
         let mut max_width = 0.0_f64;
         let mut max_height = 0.0_f64;
         for tag in commit.tags.iter().rev() {
-            let width = text::width(face, tag, size)?;
-            max_width = max_width.max(width);
+            let extent = text::extent(face, tag, size)?;
+            max_width = max_width.max(extent.width());
             max_height = max_height.max(text::line_height(face, size)?);
-            widths.push(width);
+            extents.push(extent);
         }
         let half_height = max_height / 2.0;
         let vertical = self.vertical();
-        for (slot, (tag, width)) in commit.tags.iter().rev().zip(widths).enumerate() {
+        for (slot, (tag, extent)) in commit.tags.iter().rev().zip(extents).enumerate() {
+            let width = extent.width();
             let y_offset = 20.0 * slot as f64;
             let ly = at.y - 19.2 - y_offset;
             let text_baseline = at.y - 16.0 - y_offset;
@@ -653,7 +655,7 @@ impl<'a> Layout<'a> {
             let mut hole = Element::circle(hole_x, hole_y, 1.5)
                 .class("tag-hole")
                 .attr("fill", self.palette.text_color());
-            let box_of_text = text::line_box(face, size, text_x, text_y, width)?;
+            let box_of_text = text::line_box(face, size, text_x, text_y, extent)?;
             let mut label = Element::text(tag, box_of_text)
                 .attr("x", crate::svg::number(text_x))
                 .attr("y", crate::svg::number(text_y))
