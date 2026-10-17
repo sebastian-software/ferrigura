@@ -1,20 +1,25 @@
 /**
- * The journey's labels in the geometry harness (`diagram-geometry.ts`, journey mode).
+ * The labels in the geometry harness (`diagram-geometry.ts`, label mode: the journey and the
+ * eventmodeling).
  *
- * The reference draws a label of the default `textPlacement` (`fo`) as HTML in a `foreignObject`,
- * inside a `switch` that also holds an SVG `text` fallback which Chromium does not draw. ferrigura
- * draws the label as SVG text, in the lines the browser breaks the HTML into (decision 0004). The
- * element structure cannot pair the two, so in journey mode the harness leaves each `switch` out of
+ * The reference draws a journey label of the default `textPlacement` (`fo`) as HTML in a
+ * `foreignObject`, inside a `switch` that also holds an SVG `text` fallback which Chromium does not
+ * draw. The eventmodeling draws its box text as HTML in a `foreignObject` of the box. ferrigura
+ * draws every such label as SVG text, in the lines the browser breaks the HTML into (decision 0004).
+ * The element structure cannot pair the two, so in label mode the harness leaves each label out of
  * the element comparison and compares what the browser lays out instead: each line of the label,
- * its text, and its box.
+ * its text, and its box. A label is a `switch` on ferrigura's side and a `foreignObject` on the
+ * reference's, and both are keyed `label[n]` under their parent.
  *
  * A line is found from the characters: a `Range` over each character of the label's text gives its
  * box, the characters with the same top form a line, and the box of a line is the union of the
  * boxes of its characters that are not blanks. The reference's label is the `div.label` of the
- * `foreignObject`; ferrigura's is the `text` of the `switch`. The boxes are in viewBox units, as the
+ * `foreignObject` (or the `foreignObject` itself, the eventmodeling's box text, which has no
+ * `.label`); ferrigura's is the `text` of the `switch`. The boxes are in viewBox units, as the
  * generic harness's boxes are.
  *
- * Everything else in a journey is compared by the generic rule (`diagram-compare.ts`).
+ * Everything else in a journey or an eventmodeling is compared by the generic rule
+ * (`diagram-compare.ts`).
  */
 import { PIXEL_TOLERANCE } from './common.js';
 
@@ -52,7 +57,10 @@ export const JOURNEY_SETTINGS: Record<string, unknown> = {
  */
 export const LABEL_LINES = `
 const labelLines = (svg, element) => {
-  const root = element.querySelector('foreignObject .label') || element.querySelector('text');
+  const root =
+    element.tagName === 'foreignObject'
+      ? element
+      : element.querySelector('foreignObject .label') || element.querySelector('text');
   if (!root) return [];
   const inverse = svg.getScreenCTM().inverse();
   const lines = [];
@@ -66,7 +74,9 @@ const labelLines = (svg, element) => {
       // A blank the browser collapses has no width (its box has a height, but no width): it is not
       // part of the drawn text, so a run of blanks reads as one blank, as SVG and HTML both draw it.
       if (rect.width === 0) continue;
-      const character = node.data[index];
+      // A line feed of a data block is a blank in the layout: both sides read it as one, since the
+      // reference keeps the feed in its DOM text and ferrigura writes the blank it draws.
+      const character = /[\\t\\n\\r\\f]/.test(node.data[index]) ? ' ' : node.data[index];
       let line = lines[lines.length - 1];
       if (!line || Math.abs(line.top - rect.top) > 0.5) {
         line = { top: rect.top, text: '', rects: [] };

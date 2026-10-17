@@ -144,8 +144,10 @@ const TYPE_FOLDERS: Record<string, string[]> = {
 /**
  * The page-side measurement of one SVG, as source text for the page (`pageHtml` in `common.ts`).
  * `record` gives one element its entry; `walk` visits the children of an element, in document
- * order, with the structural key of the parent. In journey mode (`labels`) every `switch` is a
- * label: it is recorded with its lines, and left out of the elements (`journey-labels.ts`).
+ * order, with the structural key of the parent. In label mode (`labels`, the journey and the
+ * eventmodeling) a label is recorded with its lines and left out of the elements: a `switch` (the
+ * journey's `fo` label, which ferrigura draws) or a `foreignObject` (the reference's box text of
+ * eventmodeling). Both get the key `label[n]`, so the two sides pair (`journey-labels.ts`).
  */
 function measureSource(labels: boolean): string {
   return `
@@ -215,17 +217,19 @@ const measure = (svg) => {
       if (SKIPPED.has(child.tagName)) continue;
       // The pie's \`pie-slot-<n>\` classes are ferrigura's own: they carry the colour slots of
       // decision 0007, which the reference has no class for, so they are not part of the key.
-      const signature =
-        child.tagName +
-        [...child.classList]
-          .filter((name) => !/^pie-slot-[0-9]+$/.test(name))
-          .sort()
-          .map((name) => '.' + name)
-          .join('');
+      const isLabel = ${labels} && (child.tagName === 'switch' || child.tagName === 'foreignObject');
+      const signature = isLabel
+        ? 'label'
+        : child.tagName +
+          [...child.classList]
+            .filter((name) => !/^pie-slot-[0-9]+$/.test(name))
+            .sort()
+            .map((name) => '.' + name)
+            .join('');
       const index = seen.get(signature) ?? 0;
       seen.set(signature, index + 1);
       const key = parentKey + '/' + signature + '[' + index + ']';
-      if (${labels} && child.tagName === 'switch') {
+      if (isLabel) {
         labelsFound.push({ key: key, lines: labelLines(svg, child) });
         continue;
       }
@@ -247,7 +251,7 @@ const measure = (svg) => {
 
 /** A measured SVG in the generic harness: the reference's and ferrigura's alike. */
 interface MeasuredSvg extends DiagramGeometry {
-  /** The journey's labels; null for the other types. */
+  /** The labels of a journey or an eventmodeling; null for the other types. */
   labels: LabelGeometry[] | null;
 }
 
@@ -335,14 +339,15 @@ async function main(): Promise<void> {
   );
 
   const results: DiagramResult[] = [];
-  // Journey mode: the labels are compared by their lines, and the settings pin the title font.
-  const journey = options.type === 'journey';
-  await withPage(measureSource(journey), async (page) => {
+  // Journey and eventmodeling: the labels are compared by their lines, and the journey's settings
+  // pin its title font.
+  const labelled = options.type === 'journey' || options.type === 'eventmodeling';
+  await withPage(measureSource(labelled), async (page) => {
     for (const file of selected) {
       const slug = slugOf(file);
       const id = `ref-${slug}`;
       const source = await decodeFixtureEntities(page, await readFile(pathOf(file), 'utf8'));
-      const text = patchText(source, journey ? JOURNEY_SETTINGS : {});
+      const text = patchText(source, options.type === 'journey' ? JOURNEY_SETTINGS : {});
       const result: DiagramResult = {
         fixture: file,
         id,
