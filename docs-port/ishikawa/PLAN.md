@@ -1,6 +1,6 @@
 # ishikawa: parser, DB and model (P2)
 
-The parser and DB of the ishikawa (fishbone) diagram: `packages/mermaid/src/diagrams/ishikawa/parser/ishikawa.jison` and `ishikawaDb.ts`, ported by hand in `crates/ferrigura-syntax/src/ishikawa/` (decision 0002). The model is `crates/ferrigura-model/src/ishikawa.rs`, the exporter `tools/port/export-ishikawa.ts`. The research and every rule with its reference line are in [NOTES.md](./NOTES.md); this file records what the port does, the quirks it reproduces, and the corrections the parser trace made to the notes. The renderer is not part of this task.
+The parser, the DB and (section 10) the renderer of the ishikawa (fishbone) diagram: `packages/mermaid/src/diagrams/ishikawa/parser/ishikawa.jison` and `ishikawaDb.ts`, ported by hand in `crates/ferrigura-syntax/src/ishikawa/` (decision 0002). The model is `crates/ferrigura-model/src/ishikawa.rs`, the exporter `tools/port/export-ishikawa.ts`. The research and every rule with its reference line are in [NOTES.md](./NOTES.md); this file records what the port does, the quirks it reproduces, and the corrections the parser trace made to the notes. The renderer is section 10.
 
 Status: the differential (`pnpm port:diff ishikawa`) shows no difference on 81 inputs (74 accepted by the reference), the three spec files pass (3, 26 and 11 tests), and `pnpm port:diff config` compares the ishikawa section with no difference.
 
@@ -92,7 +92,7 @@ Two ways the reference rejects a text were checked. `%%{ bad\nishikawa\nP` is re
 ## 7. Not reproduced
 
 - **Configuration-dependent sanitising.** The DB sanitises with the default configuration (strict). A directive that sets `securityLevel` or `htmlLabels` changes the reference's first pass (`sanitizeMore`). The exporter, like the journey's, runs without directives, and so does the port's DB; the flowchart and journey DBs have the same limit.
-- **Rendering.** The layout, the text measurement and `look: handDrawn` are the renderer's task (`NOTES.md` sections 6 and 8).
+- **Rendering.** The layout, the text measurement and `look: handDrawn` are the renderer, which is section 10 (`NOTES.md` sections 6 and 8).
 
 ## 8. Files
 
@@ -103,4 +103,33 @@ Shared, and small: `tools/port/cases.ts` (the ishikawa entries of `explicitCases
 ## 9. Open points
 
 1. The sankey `useMaxWidth` value (section 6), for the sankey task.
-2. The renderer, with the text measurement and the handDrawn look (`NOTES.md` section 8.3, questions 1 and 4), is a separate task.
+2. The renderer is done (section 10). The handDrawn look is drawn classic, and roughjs is not ported (`NOTES.md` section 8.3, question 1).
+
+## 10. Renderer
+
+The renderer is `ishikawaRenderer.ts` (`draw`) and `ishikawaStyles.ts`. Its files: `crates/ferrigura-render/src/ishikawa/` (`mod.rs` for the document, the spine and the head; `bones.rs` for a cause, its label and its descendants; `text.rs` for the label boxes and the wrapping; `style.rs` for the style sheet). The research and every rule with its line are in [NOTES.md](./NOTES.md) section 6.
+
+Checks, at the time of writing:
+
+- `pnpm port:geometry ishikawa`: 28 of 28 within tolerance, 0.1% of the 0.05 px tolerance at worst. The 12 comparable fixtures and 16 probes under `tools/port/geometry/probes/ishikawa/` (many causes, deep nesting, a long head, long and wrapped texts, `<br>`, a wide cause, unbalanced sides, dark theme, padding and width, a header with no statement, empty lines and empty causes). `pr-check/6` (handDrawn) is excluded.
+- `crates/ferrigura-render/tests/ishikawa_render.rs`: the reference's numbers for fixture one (the viewBox, the head's shape, the spine) and the structure of the markup; the unit tests of `text.rs` and `mod.rs` cover the wrapping, the baselines, the empty lines and the side lengths.
+
+Quirks reproduced, numbered here (the code comments name the reference's lines):
+
+1. `I-R1` The head is wrapped at `max(6, floor(110 / (fontSize * 0.6)))` characters, which is 11 at the configured 16 px, and it is set in the bold face: the weight 600 maps to 700 (`ishikawaRenderer.ts` 173, `ishikawaStyles.ts` 39).
+2. `I-R2` The layout spaces the lines and the sub-causes with the configured font size (16), and draws the labels at the theme's size (14 in the redux themes). The two sizes are kept apart (`Context::font_size`, `Context::label_size`).
+3. `I-R3` A cause's label is not wrapped; a sub-cause is wrapped at 15 characters. A `<br>` splits a label in both (`splitLines`).
+4. `I-R4` The root's box takes the tight bounds of the head's curve: the extreme of the quadratic is 1.2 times the width, not the control point's 2.4 times (`NOTES.md` 6.3).
+5. `I-R5` The text's box comes from the stylesheet's baseline: the alphabetic ascent (the rounded one), the middle baseline at the x-height's half, and the hanging baseline at 0.8 of the rounded ascent, each on the 1/64 px grid. `dominant-baseline: baseline`, which the `up` labels declare, is not a keyword, so Chromium uses the alphabetic baseline; the port writes the declaration as the reference does.
+6. `I-R6` The spine starts at the leftmost text of the last pair, not of all the pairs: each pair's text sets `spineX` for the next (`ishikawaRenderer.ts` 136-139).
+7. `I-R7` The upper side reads its children in reverse at every depth, so the upper side mirrors the lower one (`flattenTree`, the `direction` argument).
+8. `I-R8` A header with no statement draws no `g.ishikawa` and no viewBox: the reference returns before the layout (`if (!root) return`). The probe `p14` checks it.
+9. `I-R9` `ishikawa.useMaxWidth` is true by default (section 6.7), so the root takes `width="100%"` and a `max-width`.
+10. `I-R10` `look: handDrawn` draws the classic geometry, as the other ported types do: roughjs is not ported (section 8.3, question 1).
+11. `I-R11` A line without characters makes no `tspan` fragment: it takes no line step (its `dy` is never applied, so the next line follows the last one with characters) and adds no box. A label of empty lines only has the zero box at the origin, which is why an empty head is 40 px tall (`probes/ishikawa/p15`, `p16`).
+
+Not covered:
+
+- `look: handDrawn` is drawn classic, as above; its fixture is excluded by the harness.
+- The label size of the default theme (16 px). Only the redux themes ship, and the harness forces one of them, so the 16 px labels are not compared. The formulas take the size from the theme's `fontSize` and are the same at any size; the 14 px values are the measured ones.
+- `accTitle` and `accDescr`: the reference's renderer does not write them, and neither does the port.
