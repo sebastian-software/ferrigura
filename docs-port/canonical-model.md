@@ -124,6 +124,15 @@ The sequence model is the DB state after parsing (`sequenceDb.ts`), with the fie
 
 - **Links keep the key order of a JavaScript object.** The reference lists an actor's links in its menu with `for…in`, so their order is part of the model: the array indices (the canonical integers from 0 to 2^32 − 2) first, ascending, then the other keys in insertion order; a repeated key keeps its place and takes the new value. The model holds them in a `JsObject` ([`js_object.rs`](../crates/ferrigura-model/src/js_object.rs)), which serde writes as a JSON object in that order. The differential run cannot compare that order as an object: `serde_json::Value` sorts the keys, and `same` in [`diff.ts`](../tools/port/diff.ts) ignores their order. The exporter ([`export-sequence.ts`](../tools/port/export-sequence.ts), `Object.entries`) and the canonical example ([`canonical.rs`](../crates/ferrigura-syntax/examples/canonical.rs)) therefore both write `links` as a list of `[key, value]` pairs, which is compared in order. `properties` stay an object, as no output depends on their order.
 
+## Mindmap
+
+The mindmap model is the DB state after the parse (`mindmapDb.ts`): the tree from the first node, with the fields and the exclusions in [mindmap/PLAN.md](./mindmap/PLAN.md), sections 5 and 6. Its own rules:
+
+- **Texts are the DB's values.** `nodeId`, `descr`, `icon` and `class` are the sanitised texts of the DB ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), and the entity placeholders stay as the DB keeps them (`ﬂ°°35¶ß`), which the renderer decodes.
+- **Configuration values keep their type.** `width` and `padding` are the configuration's values as the reference holds them: a number, unless the text gave another type (a string or a boolean), and the doubling of the rounded, rectangle and hexagon shapes turns the value into a number. An array or an object does not replace the default number.
+- **Empty and absent are `""`.** `icon` and `class` are `""` when the DB has none, and `root` is `null` when the text has no node.
+- **The renderer's data is left out.** `getData`, the sections, the layout and the shape names are the renderer stage.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
