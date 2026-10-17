@@ -249,3 +249,15 @@ fn an_empty_label_still_embeds_its_face() {
     let empty = subset_face(regular(), "").expect("face subsets");
     assert!(empty.len() < regular().data().len() / 4);
 }
+
+#[test]
+fn a_line_break_brings_the_space_glyph_along() {
+    // SVG text draws a line break or a tab as a space, so the subset of a text with one needs the
+    // space glyph even when the text has no space of its own (the sankey labels, "name\nvalue").
+    for text in ["a\nb", "a\r\nb", "a\tb"] {
+        let subset = subset_face(regular(), text).expect("face subsets");
+        let with_subset = measure_data(&subset, "a b", 16.0).expect("measures");
+        let with_full = measure(regular(), "a b", 16.0).expect("measures");
+        assert_eq!(with_subset, with_full, "{text:?}");
+    }
+}

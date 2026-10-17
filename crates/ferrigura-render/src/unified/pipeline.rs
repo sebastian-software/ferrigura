@@ -164,7 +164,11 @@ pub fn measure(
 /// origin (`state/styles.js` and `class/styles.js` have no text-anchor for them).
 #[must_use]
 pub fn node_anchor(diagram_type: &str) -> Anchor {
-    if diagram_type == crate::state::DIAGRAM_TYPE || diagram_type == crate::unified::markers::CLASS
+    // The mindmap's stylesheet does not centre its labels either: its `centerLabel` offsets the label
+    // by half its width instead (`labelHelper`, `util.ts` 149-151).
+    if diagram_type == crate::state::DIAGRAM_TYPE
+        || diagram_type == crate::unified::markers::CLASS
+        || diagram_type == crate::mindmap::data::DIAGRAM_TYPE
     {
         Anchor::Start
     } else {

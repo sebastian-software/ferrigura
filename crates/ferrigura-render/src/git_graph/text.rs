@@ -1,9 +1,12 @@
 //! The text of a gitGraph: the faces it is set in, the rows of a label, and the box that `getBBox`
 //! gives a line or a multi-line label. The reference measures every label in the browser, so the
-//! widths come from `ferrigura-text`, which measures as Chromium does (`measure::layout_width`).
+//! widths come from `ferrigura-text`, which measures as Chromium does: the advance
+//! (`measure::layout_width`) where the reference centres a label by the browser, and the box of its
+//! glyphs (`bbox::measure_box`) where the reference reads `getBBox`.
 
 use ferrigura_text::{
-    Face, FontFamily, FontStyle, FontWeight, face, layout_width, measure, text_box,
+    Extent, Face, FontFamily, FontStyle, FontWeight, face, layout_width, measure, measure_box,
+    text_box,
 };
 
 use super::tree::Element;
@@ -24,14 +27,25 @@ pub fn bold() -> &'static Face {
     face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal)
 }
 
-/// The advance of a line of text in a face at a size, snapped to the browser's layout unit: the
-/// width `getBBox` reports for a single run.
+/// The advance of a line of text in a face at a size, snapped to the browser's layout unit. A
+/// `text-anchor: middle` label is shifted left by half of it, so this is the width to centre by.
 ///
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn width(face: &'static Face, text: &str, size: f64) -> Result<f64, RenderError> {
     Ok(layout_width(measure(face, text, size)?))
+}
+
+/// The box `getBBox` reports for a single line of text: its advance, and the glyph outlines where
+/// they reach past it, relative to the start of the text. The reference sizes its label backgrounds
+/// and places its tags by this box (`gitGraphRenderer.ts` 351-358 and 424-432).
+///
+/// # Errors
+///
+/// Returns an error if the bundled font cannot be read.
+pub fn extent(face: &'static Face, text: &str, size: f64) -> Result<Extent, RenderError> {
+    Ok(measure_box(face, text, size)?)
 }
 
 /// The rows of a label. The reference splits a string on a backslash followed by `n`, on a line
@@ -102,10 +116,11 @@ pub fn draw_text(
     for (line, row) in rows.iter().enumerate() {
         tspans.push(Element::tspan(row));
         let baseline = size * (line as f64 + 1.0);
+        let ink = extent(face, row, size)?;
         let row_box = BBox::new(
-            0.0,
+            ink.left,
             baseline - metrics.ascent,
-            width(face, row, size)?,
+            ink.width(),
             metrics.height,
         );
         bounds = Some(match bounds {
@@ -131,9 +146,9 @@ fn union_nonempty(a: BBox, b: BBox) -> BBox {
     }
 }
 
-/// The box of a single line set at `x` with its baseline at `baseline`, `width` wide, as
-/// `getBBox` gives a `text` element: from the rounded ascent above the baseline to the rounded
-/// descent below it.
+/// The box of a single line set at `x` with its baseline at `baseline`, as `getBBox` gives a `text`
+/// element: horizontally the `extent` of the line from `x`, and vertically from the rounded ascent
+/// above the baseline to the rounded descent below it.
 ///
 /// # Errors
 ///
@@ -143,13 +158,13 @@ pub fn line_box(
     size: f64,
     x: f64,
     baseline: f64,
-    width: f64,
+    extent: Extent,
 ) -> Result<BBox, RenderError> {
     let metrics = text_box(face, size)?;
     Ok(BBox::new(
-        x,
+        x + extent.left,
         baseline - metrics.ascent,
-        width,
+        extent.width(),
         metrics.height,
     ))
 }

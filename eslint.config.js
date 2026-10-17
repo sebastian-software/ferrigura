@@ -24,6 +24,8 @@ export default tseslint.config(
       '.claude/',
       '**/generated/',
       '**/coverage/',
+      // Vendored from non-layered-tidy-tree-layout 2.0.2 (MIT), kept as published.
+      'tools/port/vendor/',
       'packages/mermaid/src/config.type.ts',
     ],
   },

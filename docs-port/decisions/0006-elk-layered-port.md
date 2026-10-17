@@ -5,4 +5,4 @@ The P1 diagrams that use the shared layout (flowchart, class, state, ER, require
 ## Consequences
 
 - The other ELK algorithms (`elk.stress`, `elk.force`, `elk.mrtree`, `elk.radial`, `elk.box`, `elk.rectpacking`, `elk.sporeOverlap`) are not ported and fall back to Layered with a warning.
-- Mindmaps do not use ELK; their layout is decided when P2 starts.
+- Mindmaps do not use ELK by default; their layouts are in [0008](./0008-force-directed-layouts.md).

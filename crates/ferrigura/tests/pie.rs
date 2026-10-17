@@ -48,12 +48,6 @@ fn should_escape_the_title_and_the_labels() {
 }
 
 #[test]
-fn should_not_render_a_diagram_type_that_is_not_ported() {
-    // Every P1 type renders since M6; mindmap is P2 and not detected yet.
-    assert!(render("mindmap\n  root", &Value::empty_object()).is_err());
-}
-
-#[test]
 fn should_embed_the_font_as_a_subset_family() {
     let out = svg("pie\n  \"A\" : 1\n");
     assert!(out.contains("@font-face{font-family:\"fg-"), "{out}");

@@ -286,14 +286,18 @@ fn flood_colour(config: &MermaidConfig) -> &'static str {
 }
 
 /// One rule: the selector and its declarations, in braces.
-fn rule(selector: &str, declarations: &str) -> String {
+pub(crate) fn rule(selector: &str, declarations: &str) -> String {
     format!("{selector}{{{declarations}}}")
 }
 
 /// The custom properties of the colours, declared on the diagram's id. With one set of variables they
 /// are written as they are; with a light and a dark set, the dark set applies under
 /// `prefers-color-scheme: dark`, so one SVG follows the viewer's scheme.
-fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -> String {
+pub(crate) fn custom_properties(
+    svg_id: &str,
+    themes: Themes<'_>,
+    config: &MermaidConfig,
+) -> String {
     let id = format!("#{svg_id}");
     match themes {
         Themes::Single(variables) => {

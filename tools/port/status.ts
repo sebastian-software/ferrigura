@@ -87,6 +87,42 @@ const suites: Record<string, string[]> = {
     'render:state_data_note_spec',
     'render:state_data_style_spec',
   ],
+  // The P2 types have no suites until their parser tasks add them. Their rows of the P2 table are
+  // left as written while the list is empty.
+  mindmap: ['mindmap_spec', 'mindmap_colors_spec', 'mindmap_get_data_spec', 'mindmap_layout_spec'],
+  block: [
+    'block_spec',
+    'block_db_spec',
+    'render:block_layout_spec',
+    'render:block_color_index_spec',
+  ],
+  packet: ['packet_spec', 'packet_grammar', 'packet_db_spec', 'render:packet_render_spec'],
+  xychart: ['xychart_parser_spec', 'xychart_db_spec'],
+  sankey: ['sankey_spec', 'sankey_grammar'],
+  quadrantChart: ['quadrant_chart_parser_spec', 'quadrant_chart_db_spec'],
+  requirement: ['requirement_spec', 'requirement_db_spec'],
+  c4: [
+    'c4_diagram_spec',
+    'render:c4_label_spec',
+    'c4_boundary_spec',
+    'c4_component_spec',
+    'c4_container_spec',
+    'c4_named_attributes_spec',
+    'c4_person_spec',
+    'c4_person_ext_spec',
+    'c4_system_spec',
+  ],
+  kanban: [
+    'kanban_spec',
+    'kanban_db_spec',
+    'kanban_quirks_spec',
+    'render:kanban_render',
+    'render:kanban_data_spec',
+  ],
+  architecture: ['architecture_spec', 'architecture_grammar', 'architecture_db_spec'],
+  treemap: ['treemap_spec', 'treemap_db_spec', 'treemap_grammar'],
+  ishikawa: ['ishikawa_spec', 'ishikawa_grammar', 'ishikawa_db_spec'],
+  eventmodeling: ['event_modeling_spec', 'event_modeling_grammar', 'event_modeling_validator'],
 };
 
 interface Counts {
@@ -113,7 +149,8 @@ function countSuite(suite: string): Counts {
   return { ported: passing + failing + ignored, ignored, passing };
 }
 
-async function differentialCell(type: string): Promise<string> {
+/** The differential cell of a type, or null when this checkout has no summary of a run. */
+async function differentialCell(type: string): Promise<string | null> {
   try {
     const summary = JSON.parse(
       await readFile(`${root}target/port/${type}-summary.json`, 'utf8')
@@ -123,7 +160,7 @@ async function differentialCell(type: string): Promise<string> {
       ? `${summary.inputs} inputs, no difference${notYet}`
       : `${summary.differences} of ${summary.inputs} differ${notYet}`;
   } catch {
-    return '—';
+    return null;
   }
 }
 
@@ -140,15 +177,15 @@ for (const [type, files] of Object.entries(suites)) {
 }
 
 const status = await readFile(statusPath, 'utf8');
-const differential: Record<string, string> = {};
+const differential: Record<string, string | null> = {};
 for (const type of Object.keys(suites)) {
   differential[type] = await differentialCell(type);
 }
 
-/** The name of a type's row in the P1 table, where it is not the type itself. */
-const rowNames: Record<string, string> = { er: 'ER', gitgraph: 'gitGraph' };
+/** The name of a type's row in the status tables, where it is not the type itself. */
+const rowNames: Record<string, string> = { er: 'ER', gitgraph: 'gitGraph', c4: 'C4' };
 
-/** Rewrites the parser, specs and differential cells of one P1 row. */
+/** Rewrites the parser, specs and differential cells of one row of a type with suites. */
 function rewriteRow(line: string, type: string): string {
   const cells = line.split('|');
   const { ported, ignored, passing } = counts[type];
@@ -156,7 +193,9 @@ function rewriteRow(line: string, type: string): string {
   // Specs ported / passing, Differential parse, Layout, Render, Parity, and empty.
   cells[6] = ' ferrigura-syntax ';
   cells[7] = ` ${passing} / ${ported}${ignored > 0 ? ` (${ignored} ignored)` : ''} `;
-  cells[8] = ` ${differential[type]} `;
+  // Without a summary of a run here, the cell keeps what an earlier run wrote.
+  const cell = differential[type];
+  if (cell !== null) cells[8] = ` ${cell} `;
   return cells.join('|');
 }
 
@@ -164,7 +203,7 @@ const rewritten = status
   .split('\n')
   .map((line) => {
     for (const type of Object.keys(suites)) {
-      if (line.startsWith(`| ${rowNames[type] ?? type} `)) {
+      if (suites[type].length > 0 && line.startsWith(`| ${rowNames[type] ?? type} `)) {
         return rewriteRow(line, type);
       }
     }
@@ -178,6 +217,6 @@ spawnSync('pnpm', ['exec', 'prettier', '--write', statusPath], { cwd: root, stdi
 for (const [type, count] of Object.entries(counts)) {
   console.log(
     `${type}: ${count.passing} passing of ${count.ported} ported, ${count.ignored} ignored; ` +
-      `differential: ${differential[type]}`
+      `differential: ${differential[type] ?? 'no summary here, cell kept'}`
   );
 }

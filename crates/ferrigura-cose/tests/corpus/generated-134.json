@@ -1,0 +1,52 @@
+{
+ "name": "generated-134",
+ "group": "generated",
+ "source": "seed 20261017 index 134",
+ "text": "mindmap\n  ((2026 river forest kernel engine kernel multiplication ledger canvas infrastructure interdisciplinary))\n    (Harbour garden inventory quartz marble)\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 253.2380828857422,
+    "height": 253.2380828857422
+   },
+   {
+    "id": "1",
+    "width": 150,
+    "height": 102
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 345.11351788647937,
+    "y": 141.6190414428711
+   },
+   {
+    "id": "1",
+    "x": 90,
+    "y": 141.6190414428711
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 330.11351788647937,
+    "startY": 141.6190414428711,
+    "midX": 217.55675894323969,
+    "midY": 141.6190414428711,
+    "endX": 105,
+    "endY": 141.6190414428711
+   }
+  ]
+ }
+}

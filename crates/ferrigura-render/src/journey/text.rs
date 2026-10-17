@@ -11,7 +11,7 @@ use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, face, text_box};
 
 use crate::RenderError;
 use crate::common::Element;
-use crate::common::text::{collapse_white_space, collapsed_width};
+use crate::common::text::{collapse_white_space, collapsed_box, collapsed_width};
 use crate::svg::number;
 
 /// The regular face: the legend, the sections, the tasks and their labels.
@@ -26,16 +26,16 @@ pub fn bold() -> &'static Face {
     face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal)
 }
 
-/// The width of a text as `getBoundingClientRect().width` reports it for an SVG text in the
-/// regular face ([`collapsed_width`]). The reference measures the legend this way
-/// (`journeyRenderer.ts` 38-40 and 105). Text with no glyphs measures as 0, not as an error, as
-/// `getBoundingClientRect` gives it.
+/// The width of a text as `getBoundingClientRect().width` reports it for an SVG `text` in the
+/// regular face ([`collapsed_box`]): the box of the glyphs, which is wider than the advance where a
+/// glyph's outline reaches past it. The reference measures the legend this way (`journeyRenderer.ts`
+/// 38-40, 57-73 and 105). Text with no glyphs measures as 0, not as an error.
 ///
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn width(text: &str, size: f64) -> Result<f64, RenderError> {
-    Ok(collapsed_width(regular(), text, size)?)
+pub fn svg_width(text: &str, size: f64) -> Result<f64, RenderError> {
+    Ok(collapsed_box(regular(), text, size)?.width())
 }
 
 /// One line of a laid-out label: its text without the blank that ends it, and its width.
@@ -79,10 +79,10 @@ fn pieces(collapsed: &str) -> Vec<String> {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-fn min_content_width(text: &str, size: f64) -> Result<f64, RenderError> {
+pub(crate) fn min_content_width_in(face: &Face, text: &str, size: f64) -> Result<f64, RenderError> {
     let mut widest: f64 = 0.0;
     for piece in pieces(&collapse_white_space(text)) {
-        widest = widest.max(width(piece.trim_end(), size)?);
+        widest = widest.max(collapsed_width(face, piece.trim_end(), size)?);
     }
     Ok(widest)
 }
@@ -91,18 +91,33 @@ fn min_content_width(text: &str, size: f64) -> Result<f64, RenderError> {
 ///
 /// A line takes the next piece while its text, without the blank at its end (the blank hangs), is
 /// no wider than the cell. The first piece of a line always goes on it; the cell is never narrower
-/// than its widest piece ([`min_content_width`]), so every piece fits on a line of its own.
+/// than its widest piece ([`min_content_width_in`]), so every piece fits on a line of its own.
 ///
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn break_lines(text: &str, cell_width: f64, size: f64) -> Result<Vec<Line>, RenderError> {
+    break_lines_in(regular(), text, cell_width, size)
+}
+
+/// [`break_lines`] in the face given, for the labels a renderer sets in another face (the bold
+/// names of the eventmodeling boxes, the mono code of their data).
+///
+/// # Errors
+///
+/// Returns an error if the bundled font cannot be read.
+pub(crate) fn break_lines_in(
+    face: &Face,
+    text: &str,
+    cell_width: f64,
+    size: f64,
+) -> Result<Vec<Line>, RenderError> {
     let collapsed = collapse_white_space(text);
     let mut texts = Vec::new();
     let mut current = String::new();
     for piece in pieces(&collapsed) {
         let candidate = format!("{current}{piece}");
-        if current.is_empty() || width(candidate.trim_end(), size)? <= cell_width {
+        if current.is_empty() || collapsed_width(face, candidate.trim_end(), size)? <= cell_width {
             current = candidate;
         } else {
             texts.push(current.trim_end().to_owned());
@@ -114,7 +129,7 @@ pub fn break_lines(text: &str, cell_width: f64, size: f64) -> Result<Vec<Line>, 
     }
     let mut lines = Vec::with_capacity(texts.len());
     for text in texts {
-        let line_width = width(&text, size)?;
+        let line_width = collapsed_width(face, &text, size)?;
         lines.push(Line {
             text,
             width: line_width,
@@ -210,9 +225,11 @@ fn fo_label(label: &Label<'_>) -> Result<Element, RenderError> {
     // piece wider than the foreignObject widens the cell, and the lines are broken and centred in
     // the widened cell. Measured in Chromium, with the word `reallyvery…` of 270.797 px in a 150 px
     // cell, the line `A` starts at 550 + (270.797 - 8.766) / 2 = 681.016, as the reference puts it.
-    let width = cell
-        .width
-        .max(min_content_width(label.text, label.font_size)?);
+    let width = cell.width.max(min_content_width_in(
+        regular(),
+        label.text,
+        label.font_size,
+    )?);
     let lines = break_lines(label.text, width, label.font_size)?;
     let metrics = text_box(regular(), label.font_size)?;
     let block = lines.len() as f64 * metrics.height;
@@ -385,7 +402,7 @@ mod tests {
     #[test]
     fn a_long_word_is_the_least_width_of_its_cell() {
         let text = "A reallyveryveryveryveryverylongunbrokenword in a cell";
-        let widest = min_content_width(text, 14.0).expect("measures");
+        let widest = min_content_width_in(regular(), text, 14.0).expect("measures");
         assert_eq!(widest, 270.796875);
         let lines = break_lines(text, widest, 14.0).expect("measures");
         let texts: Vec<&str> = lines.iter().map(|line| line.text.as_str()).collect();

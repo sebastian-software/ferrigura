@@ -15,7 +15,8 @@ use ferrigura_model::config::PieDiagramConfig;
 use ferrigura_model::pie::{PieDiagram, PieSection};
 use ferrigura_model::value::Value;
 use ferrigura_text::{
-    EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, layout_width, measure,
+    EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, layout_width,
+    measure, measure_box,
 };
 
 use crate::RenderError;
@@ -108,10 +109,10 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
             }
         })
         .collect();
+    // The legend's widths are the boxes its `getBoundingClientRect` gives (`pieRenderer.ts` 183-188).
     let mut longest_text_width: f64 = 0.0;
     for label in &legend_labels {
-        longest_text_width =
-            longest_text_width.max(layout_width(measure(sans, label, legend_size)?));
+        longest_text_width = longest_text_width.max(measure_box(sans, label, legend_size)?.width());
     }
 
     let legend_height = LEGEND_RECT_SIZE + LEGEND_SPACING;
@@ -164,10 +165,16 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
     }
 
     let title = input.diagram.title.as_str();
-    let title_width = if title.is_empty() {
+    // The title is centred by `text-anchor: middle` on its advance, and the view box takes its box.
+    let title_advance = if title.is_empty() {
         0.0
     } else {
         layout_width(measure(sans, title, title_size)?)
+    };
+    let title_width = if title.is_empty() {
+        0.0
+    } else {
+        measure_box(sans, title, title_size)?.width()
     };
     let title_left = PIE_WIDTH / 2.0 - title_width / 2.0;
     let title_right = PIE_WIDTH / 2.0 + title_width / 2.0;
@@ -243,7 +250,7 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
     }
     body.push_str("</g>");
 
-    let title_x = -title_width / 2.0;
+    let title_x = -title_advance / 2.0;
     body.push_str(&format!(
         "<text class=\"pieTitleText\"{} x=\"{}\" y=\"{}\">{}</text>",
         attribute(variables, "fill", "pieTitleTextColor"),

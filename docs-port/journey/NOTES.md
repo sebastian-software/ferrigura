@@ -249,7 +249,7 @@ Observed: front matter `FM title` + `title <script>alert(1)</script>` gives no t
 | title `A & B` (no `<` in the text) | `A & B` (DOMPurify returns text without `<` unchanged)                                      |
 | title `<b>bold</b> text`           | `<b>bold</b> text` shown as text (the tag is kept by DOMPurify and then escaped in the SVG) |
 
-`sanitizeText` (common.ts:71-83) runs `sanitizeMore` first (common.ts:56-69: under the default `htmlLabels` and `strict` it runs `removeScript`, which is DOMPurify with its default configuration; with `htmlLabels: false` it does nothing), then DOMPurify with `FORBID_TAGS: ['style']` (79). Under the default config DOMPurify therefore runs twice [S]. `ferrigura-syntax/src/sanitize.rs` implements the second pass only (its header, lines 1-30) [S].
+`sanitizeText` (common.ts:71-83) runs `sanitizeMore` first (common.ts:56-69: under the default `htmlLabels` and `strict` it runs `removeScript`, which is DOMPurify with its default configuration; with `htmlLabels: false` it does nothing), then DOMPurify with `FORBID_TAGS: ['style']` (79). Under the default config DOMPurify therefore runs twice [S]. `ferrigura-syntax/src/sanitize.rs` implements both passes and the anchor hooks of `setupDompurifyHooks` (`sanitize_text`; its header) [S].
 
 Named references: the sanitiser decodes only the 39 names in its table (`sanitize.rs:137-180`), and any other name stays as written. A full HTML5 table is needed to decode every `#name;` the reference would decode [S; only the `foo` case was run].
 

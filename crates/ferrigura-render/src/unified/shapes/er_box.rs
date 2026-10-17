@@ -14,7 +14,7 @@ use ferrigura_model::er::ErAttribute;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_syntax::class::parse_generic_types;
 use ferrigura_syntax::sanitize::sanitize_text;
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, measure};
+use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, measure_box};
 
 use super::rough::{self, Fill};
 use super::util::{self, attribute};
@@ -127,6 +127,7 @@ fn plain_box(
         label: None,
         texts: vec![label],
         group_attributes: colour,
+        element: rect,
         bbox: rect.union(text_box),
         intersect: Intersect::Rect,
         extent: None,
@@ -367,6 +368,7 @@ fn attribute_table(
         label: None,
         texts,
         group_attributes: colour,
+        element: bbox,
         bbox,
         intersect: Intersect::Rect,
         extent: None,
@@ -526,12 +528,12 @@ fn vertical_line(x: f64, y1: f64, y2: f64) -> [Point; 4] {
 }
 
 /// `calculateTextWidth` (`utils.ts` 649-731) for SVG text: the widest line of the text at
-/// `font_size`, rounded to a whole pixel. Lines are split at the `<br>` tags (`lineBreakRegex`).
+/// `font_size`, as the box `getBBox` gives it, rounded to a whole pixel. Lines are split at the `<br>` tags (`lineBreakRegex`).
 ///
 /// The reference measures in both `sans-serif` and the configured family and keeps the second unless
 /// the first is larger in every dimension (`utils.ts` 712-720). ferrigura has only the bundled
 /// family, which the second measure is, so the result is the bundled family's width.
-fn calculate_text_width(text: &str, font_size: f64) -> Result<f64, RenderError> {
+pub(super) fn calculate_text_width(text: &str, font_size: f64) -> Result<f64, RenderError> {
     if text.is_empty() {
         return Ok(0.0);
     }
@@ -542,7 +544,7 @@ fn calculate_text_width(text: &str, font_size: f64) -> Result<f64, RenderError> 
         let measured = if line.is_empty() {
             0.0
         } else {
-            measure(bundled, line, font_size)?
+            measure_box(bundled, line, font_size)?.width()
         };
         width = width.max(measured);
     }

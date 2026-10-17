@@ -1,0 +1,90 @@
+{
+ "name": "should-render-an-architecture-diagram-with-the-fallback-icon",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/nightly-check/should-render-an-architecture-diagram-with-the-fallback-icon.mmd",
+ "text": "---\ndescription: >-\n  A single service declared with a nonexistent icon name\n  (`iconnamedoesntexist`), verifying that architecture-beta falls back to a\n  default/placeholder icon instead of failing to render.\n---\narchitecture-beta\n  service unknown(iconnamedoesntexist)[Unknown Icon]\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "unknown",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -55,
+    "y1": -41,
+    "w": 110,
+    "h": 100
+   },
+   "output": [
+    {
+     "id": "unknown",
+     "x": 0,
+     "y": 9
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "unknown",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 9
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -55,
+    "y1": -32,
+    "w": 110,
+    "h": 100
+   },
+   "output": [
+    {
+     "id": "unknown",
+     "x": 0,
+     "y": 18
+    }
+   ]
+  }
+ ]
+}

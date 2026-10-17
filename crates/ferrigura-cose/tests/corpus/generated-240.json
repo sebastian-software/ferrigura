@@ -1,0 +1,76 @@
+{
+ "name": "generated-240",
+ "group": "generated",
+ "source": "seed 20261017 index 240",
+ "text": "mindmap\n  (tunnel roadmap)\n    Overview hypothesis canvas zephyr roadmap velvet nectar orbit journey validation meadow\n      )validation nectar(\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 143.5625,
+    "height": 54
+   },
+   {
+    "id": "1",
+    "width": 240,
+    "height": 106
+   },
+   {
+    "id": "2",
+    "width": 165.33203125,
+    "height": 97.57390594482422
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 122.7051697012721,
+    "y": 352.1376057377378
+   },
+   {
+    "id": "1",
+    "x": 135,
+    "y": 218.86943878168677
+   },
+   {
+    "id": "2",
+    "x": 121.78119095297461,
+    "y": 63.78695297241211
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 124.08316267981112,
+    "startY": 337.20103533650115,
+    "midX": 128.85258485063605,
+    "midY": 285.50352225971227,
+    "endX": 133.62200702146097,
+    "endY": 233.80600918292336
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 133.72606028258923,
+    "startY": 203.92363409955595,
+    "midX": 128.3905954764873,
+    "midY": 141.32819587704944,
+    "endX": 123.05513067038537,
+    "endY": 78.73275765454292
+   }
+  ]
+ }
+}

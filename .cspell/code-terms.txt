@@ -65,6 +65,7 @@ EMPTYSTR
 enddate
 ERDIAGRAM
 eslint
+fdlibm
 ferrigura
 flatmap
 forwardable
@@ -84,6 +85,7 @@ INVTRAPEND
 INVTRAPSTART
 JDBC
 jison
+jsmath
 Kaufmann
 keepentrynodeontop
 keyify
@@ -157,6 +159,7 @@ STYLEOPTS
 subcomponent
 subcomponents
 subconfig
+subnormals
 SUBROUTINEEND
 SUBROUTINESTART
 Subschemas
@@ -179,6 +182,7 @@ ts-nocheck
 tsdoc
 typeof
 typestr
+ulps
 unrouted
 unshift
 urlsafe

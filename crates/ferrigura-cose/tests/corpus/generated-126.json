@@ -1,0 +1,124 @@
+{
+ "name": "generated-126",
+ "group": "generated",
+ "source": "seed 20261017 index 126",
+ "text": "mindmap\n  [balance]\n    [ember]\n      [glacier ripple nectar]\n        [Lantern oasis inventory multiplication telescope oasis quartz pattern junction keystone]\n          [canvas standard horizon horizon willow umbrella archive standard evidence oasis]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 95.84375,
+    "height": 44
+   },
+   {
+    "id": "1",
+    "width": 85.875,
+    "height": 44
+   },
+   {
+    "id": "2",
+    "width": 160,
+    "height": 68
+   },
+   {
+    "id": "3",
+    "width": 160,
+    "height": 188
+   },
+   {
+    "id": "4",
+    "width": 160,
+    "height": 164
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_3_4",
+    "source": "3",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 107.92543726255462,
+    "y": 714.1442127687393
+   },
+   {
+    "id": "1",
+    "x": 99.2508410580242,
+    "y": 616.8574136044969
+   },
+   {
+    "id": "2",
+    "x": 113.97276000992997,
+    "y": 507.82993492621233
+   },
+   {
+    "id": "3",
+    "x": 105.10701038576849,
+    "y": 326.4175424402772
+   },
+   {
+    "id": "4",
+    "x": 95,
+    "y": 97
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 106.59324463945451,
+    "startY": 699.2034877925222,
+    "midX": 103.58813916028942,
+    "midY": 665.5008131866181,
+    "endX": 100.58303368112432,
+    "endY": 631.798138580714
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 101.2580664376117,
+    "startY": 601.9923187082125,
+    "midX": 106.61180053397709,
+    "midY": 562.3436742653546,
+    "endX": 111.96553463034247,
+    "endY": 522.6950298224967
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 113.24057342695964,
+    "startY": 492.8478154897735,
+    "midX": 109.53988519784923,
+    "midY": 417.12373868324477,
+    "endX": 105.83919696873882,
+    "endY": 341.39966187671604
+   },
+   {
+    "id": "edge_3_4",
+    "startX": 104.44682439265551,
+    "startY": 311.43207766755506,
+    "midX": 100.05350519288424,
+    "midY": 211.7087712201386,
+    "endX": 95.66018599311298,
+    "endY": 111.98546477272217
+   }
+  ]
+ }
+}

@@ -20,6 +20,8 @@ import { fileURLToPath } from 'node:url';
 import { JSON_SCHEMA, load } from 'js-yaml';
 import { chromium, type Page } from 'playwright';
 
+import { ensureTidyTreeBundle, TIDY_TREE_DIR, TIDY_TREE_URL } from './tidy-tree-bundle.js';
+
 export const root = fileURLToPath(new URL('../../../', import.meta.url));
 export const distDir = join(root, 'packages/mermaid/dist');
 export const fontDir = join(root, 'crates/ferrigura-text/fonts');
@@ -182,12 +184,36 @@ const UNCOVERED_SYMBOLS =
   /[\u2190-\u21FF\u2600-\u26FF\u2700-\u27BF\u3000-\u303F\u3040-\u30FF\u3300-\u33FF\u{1F000}-\u{1FAFF}]/u;
 
 /**
- * The exclusion of a fixture whose text has a symbol or script the bundled faces do not cover, or
- * null. It is separate from `exclusionReason`, which the flowchart harness shares, so that the
- * flowchart's comparison is the same as before.
+ * The text of a fixture that a diagram can draw: the body, and the front matter's `title`. The
+ * rest of the front matter (a `description`, the `config`) is never drawn, so a symbol there does
+ * not exclude the fixture.
+ */
+function drawnText(source: string): string {
+  const frontMatter = FRONT_MATTER.exec(source);
+  if (!frontMatter) {
+    return source;
+  }
+  const body = source.slice(frontMatter[0].length);
+  const yaml = frontMatter[0].replace(/^---[^\n]*\n/, '').replace(/\n---[^\n]*\n?$/, '');
+  let title = '';
+  try {
+    const data: unknown = load(yaml, { schema: JSON_SCHEMA });
+    if (typeof data === 'object' && data !== null && 'title' in data) {
+      title = String((data as { title: unknown }).title);
+    }
+  } catch {
+    // Front matter that is not YAML is the reference's error; the body decides then.
+  }
+  return `${title}\n${body}`;
+}
+
+/**
+ * The exclusion of a fixture whose drawn text (`drawnText`) has a symbol or script the bundled
+ * faces do not cover, or null. It is separate from `exclusionReason`, which the flowchart harness
+ * shares, so that the flowchart's comparison is the same as before.
  */
 export function uncoveredScriptReason(source: string): string | null {
-  if (UNCOVERED_SYMBOLS.test(source)) {
+  if (UNCOVERED_SYMBOLS.test(drawnText(source))) {
     return 'text the bundled faces do not cover (arrows, symbols, kana, emoji): needs a fallback font, which ferrigura does not have yet';
   }
   return null;
@@ -348,6 +374,8 @@ export interface ReferenceRender {
   svg: string | null;
   error: string | null;
   elk: { input: JsonValue; output: JsonValue }[];
+  /** The tidy tree layout's input and result, one per layout call (`tidy-tree-bundle.ts`). */
+  tidyTree: { input: JsonValue; output: JsonValue }[];
 }
 
 export type JsonValue =
@@ -363,6 +391,53 @@ export type JsonValue =
  * `const measure = (svg) => ...`, using the helpers of this page (`numbers`, `mapPoint`,
  * `userMatrix`, `boxOf`), which map every box into the viewBox coordinates of the root svg.
  */
+/**
+ * The font families the reference names in its own code instead of the configured font:
+ * eventmodeling measures in `"trebuchet ms", verdana, arial` (the classic default), cytoscape (the
+ * architecture labels) in `Helvetica Neue, Helvetica`, and C4 in `"Open Sans"`. ferrigura ships one
+ * face and measures with it (decision 0005), so the page maps these names onto the same Lexica files:
+ * the reference then measures the same text in the same font, and what it computes is unchanged
+ * (P2-PLAN, hard-coded fonts).
+ */
+export const MAPPED_FAMILIES: readonly string[] = [
+  'trebuchet ms',
+  'verdana',
+  'arial',
+  'Helvetica Neue',
+  'Helvetica',
+  'Open Sans',
+];
+
+const LEXICA_FACES: readonly { file: string; weight: number; style: string }[] = [
+  { file: 'LexicaUltralegible-Regular.ttf', weight: 400, style: 'normal' },
+  { file: 'LexicaUltralegible-Bold.ttf', weight: 700, style: 'normal' },
+  { file: 'LexicaUltralegible-Italic.ttf', weight: 400, style: 'italic' },
+  { file: 'LexicaUltralegible-BoldItalic.ttf', weight: 700, style: 'italic' },
+];
+
+/** The `@font-face` rules of a family name that the page maps onto the bundled faces. */
+function mappedFaces(family: string): string {
+  return LEXICA_FACES.map(
+    (face) =>
+      `@font-face { font-family: "${family}"; src: url(/fonts/${face.file}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; }`
+  ).join('\n');
+}
+
+/** The bundled mono face, which code takes in ferrigura (decision 0005). */
+const MONO_FAMILY = 'Atkinson Hyperlegible Mono';
+
+const MONO_FACES: string = [
+  { file: 'AtkinsonHyperlegibleMono-Regular.ttf', weight: 400, style: 'normal' },
+  { file: 'AtkinsonHyperlegibleMono-Bold.ttf', weight: 700, style: 'normal' },
+  { file: 'AtkinsonHyperlegibleMono-Italic.ttf', weight: 400, style: 'italic' },
+  { file: 'AtkinsonHyperlegibleMono-BoldItalic.ttf', weight: 700, style: 'italic' },
+]
+  .map(
+    (face) =>
+      `@font-face { font-family: "${MONO_FAMILY}"; src: url(/fonts/${face.file}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; }`
+  )
+  .join('\n');
+
 export function pageHtml(measure: string): string {
   return `<!doctype html>
 <html><head><meta charset="utf-8">
@@ -371,6 +446,12 @@ export function pageHtml(measure: string): string {
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Bold.ttf) format("truetype"); font-weight: 700; font-style: normal; }
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Italic.ttf) format("truetype"); font-weight: 400; font-style: italic; }
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-BoldItalic.ttf) format("truetype"); font-weight: 700; font-style: italic; }
+${MAPPED_FAMILIES.map(mappedFaces).join('\n')}
+${MONO_FACES}
+/* The eventmodeling box text's code: the reference's code element takes the UA's monospace, which is
+   the machine's own face. ferrigura draws code in the bundled mono face (decision 0005), so the page
+   pins the reference's code of that diagram to it (eventmodeling db.ts 349-378). */
+[aria-roledescription="eventmodeling"] foreignObject code { font-family: "${MONO_FAMILY}"; }
 /* No body margin: a block the reference appends to the body (its diagram container) is then the
    1200 px viewport wide, which is the width the gantt renderer takes from the container when a
    diagram sets no useWidth (ganttRenderer.js:98). ferrigura uses the same 1200 px. */
@@ -384,6 +465,17 @@ window.__elkCalls = [];
 window.__mermaidElkCapture = function (input, output) {
   window.__elkCalls.push({ input: input, output: JSON.parse(JSON.stringify(output)) });
 };
+// The fcose layout's records (architectureRenderer.ts, layoutArchitecture): the input before each of
+// the two runs and the positions after each run. Each record is already a plain JSON copy.
+window.__fcoseCalls = [];
+window.__mermaidFcoseCapture = function (record) {
+  window.__fcoseCalls.push(record);
+};
+// The tidy tree's layout call (render.ts of the reference bundle, one per render of the layout).
+window.__tidyTreeCalls = [];
+window.__mermaidTidyTreeCapture = function (input, result) {
+  window.__tidyTreeCalls.push({ input: input, output: result });
+};
 </script>
 </head>
 <body><div id="stage"></div>
@@ -396,6 +488,14 @@ await Promise.all([
   'italic 400 16px "Lexica Ultralegible"',
   'bold 16px "Lexica Ultralegible"',
   'italic bold 16px "Lexica Ultralegible"',
+  '400 16px "${MONO_FAMILY}"',
+  'bold 16px "${MONO_FAMILY}"',
+  ...${JSON.stringify(MAPPED_FAMILIES)}.flatMap((family) => [
+    '400 16px "' + family + '"',
+    'italic 400 16px "' + family + '"',
+    'bold 16px "' + family + '"',
+    'italic bold 16px "' + family + '"',
+  ]),
 ].map((face) => document.fonts.load(face)));
 await document.fonts.ready;
 
@@ -438,9 +538,16 @@ ${measure}
 // The clock and the random numbers of a render are fixed when a clock is given: the today marker of
 // a gantt and the generated ids (gitGraph commits, rough.js strokes) read them, and two renders of
 // the same text would otherwise differ. Both get the same time and seed, so they are equal.
-window.renderReference = async function (id, text, clock, site) {
+window.renderReference = async function (id, text, clock, site, tidyTree) {
   mermaid.initialize({ startOnLoad: false, ...(site ?? {}) });
   window.__elkCalls = [];
+  window.__tidyTreeCalls = [];
+  // The tidy tree is registered only for the fixtures that ask for it (layout tidy-tree), so no
+  // other diagram's reference is affected: the registry is shared by the page.
+  if (tidyTree) {
+    const tidy = await import(${JSON.stringify(TIDY_TREE_URL)});
+    mermaid.registerLayoutLoaders(tidy.default);
+  }
   const RealDate = Date;
   const realRandom = Math.random;
   if (clock) {
@@ -464,9 +571,9 @@ window.renderReference = async function (id, text, clock, site) {
   }
   try {
     const result = await mermaid.render(id, text);
-    return { ok: true, svg: result.svg, error: null, elk: window.__elkCalls };
+    return { ok: true, svg: result.svg, error: null, elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
   } catch (error) {
-    return { ok: false, svg: null, error: String((error && error.message) || error), elk: window.__elkCalls };
+    return { ok: false, svg: null, error: String((error && error.message) || error), elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
   } finally {
     window.Date = RealDate;
     Math.random = realRandom;
@@ -541,6 +648,7 @@ export function serve(html: string): Promise<{ server: Server; port: number }> {
       const mapping: [string, string][] = [
         ['/dist/', distDir],
         ['/fonts/', fontDir],
+        ['/tidy-tree/', TIDY_TREE_DIR],
       ];
       const match = mapping.find(([prefix]) => url.pathname.startsWith(prefix));
       if (!match) {
@@ -578,8 +686,11 @@ export async function withPage<T>(measure: string, run: (page: Page) => Promise<
   try {
     // The reference reads dates in the browser's time zone and ferrigura in UTC (M6-PLAN, gantt
     // time), so the page runs in UTC.
+    // The screen is the viewport, so a renderer that reads the screen (C4's `screen.availWidth`)
+    // sees the 1200 px that ferrigura takes (P2-PLAN, screen and container sizes).
     const page = await browser.newPage({
       viewport: { width: 1200, height: 900 },
+      screen: { width: 1200, height: 900 },
       timezoneId: 'UTC',
     });
     page.on('pageerror', (error) => console.error('page error:', error.message));
@@ -606,26 +717,31 @@ export interface RenderClock {
   seed: number;
 }
 
-export function renderReference(
+export async function renderReference(
   page: Page,
   id: string,
   text: string,
   clock?: RenderClock
 ): Promise<ReferenceRender> {
-  return page.evaluate(
-    ([svgId, source, fixed, site]) =>
+  // A fixture that asks for the tidy tree gets the removed package registered in the page; the
+  // bundle is built on first use (`tidy-tree-bundle.ts`).
+  const tidyTree = effectiveSettings(text).layout === 'tidy-tree';
+  if (tidyTree) await ensureTidyTreeBundle();
+  return (await page.evaluate(
+    ([svgId, source, fixed, site, withTidyTree]) =>
       (
         window as unknown as {
           renderReference: (
             id: string,
             text: string,
             clock?: RenderClock,
-            site?: Record<string, unknown>
+            site?: Record<string, unknown>,
+            tidyTree?: boolean
           ) => Promise<ReferenceRender>;
         }
-      ).renderReference(svgId, source, fixed ?? undefined, site),
-    [id, text, clock ?? null, forcedSiteConfig(text)] as const
-  ) as Promise<ReferenceRender>;
+      ).renderReference(svgId, source, fixed ?? undefined, site, withTidyTree),
+    [id, text, clock ?? null, forcedSiteConfig(text), tidyTree] as const
+  )) as ReferenceRender;
 }
 
 /**

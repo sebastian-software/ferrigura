@@ -15,7 +15,7 @@ mod face;
 mod legend;
 mod style;
 mod tasks;
-mod text;
+pub(crate) mod text;
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::journey::JourneyDiagram;

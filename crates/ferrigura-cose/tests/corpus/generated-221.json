@@ -1,0 +1,124 @@
+{
+ "name": "generated-221",
+ "group": "generated",
+ "source": "seed 20261017 index 221",
+ "text": "mindmap\n  standard roadmap balance river zephyr ledger velvet ember\n    [Cipher inventory]\n      (Horizon junction compass anchor engine beacon photographs pixel delta harbour willow)\n        ((engine doorway saddle v2 circuit zephyr willow portfolio 3d overview evidence zephyr))\n          )Forest photographs quotient reproducibility yonder pixel roadmap(\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 82
+   },
+   {
+    "id": "1",
+    "width": 159.203125,
+    "height": 44
+   },
+   {
+    "id": "2",
+    "width": 150,
+    "height": 198
+   },
+   {
+    "id": "3",
+    "width": 241.84678649902344,
+    "height": 241.84678649902344
+   },
+   {
+    "id": "4",
+    "width": 267.2347106933594,
+    "height": 182.9372100830078
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_3_4",
+    "source": "3",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 161.8553316704224,
+    "y": 936.1433728927343
+   },
+   {
+    "id": "1",
+    "x": 151.45831352973437,
+    "y": 819.8605004302676
+   },
+   {
+    "id": "2",
+    "x": 169.35498277575562,
+    "y": 645.6376320696845
+   },
+   {
+    "id": "3",
+    "x": 158.39999412470593,
+    "y": 372.2888177242757
+   },
+   {
+    "id": "4",
+    "x": 148.6173553466797,
+    "y": 106.4686050415039
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 160.51948919382372,
+    "startY": 921.2029738057716,
+    "midX": 156.65682260007839,
+    "midY": 878.001936661501,
+    "endX": 152.79415600633305,
+    "endY": 834.8008995172303
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 152.9910905540542,
+    "startY": 804.9390194517013,
+    "midX": 160.406648152745,
+    "midY": 732.7490662499761,
+    "endX": 167.82220575143577,
+    "endY": 660.5591130482509
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 168.75431061726013,
+    "startY": 630.6496637964992,
+    "midX": 163.87748845023077,
+    "midY": 508.96322489698014,
+    "endX": 159.0006662832014,
+    "endY": 387.276785997461
+   },
+   {
+    "id": "edge_3_4",
+    "startX": 157.8483418953069,
+    "startY": 357.2989651626993,
+    "midX": 153.5086747356928,
+    "midY": 239.3787113828898,
+    "endX": 149.1690075760787,
+    "endY": 121.45845760308032
+   }
+  ]
+ }
+}

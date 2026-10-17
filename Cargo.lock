@@ -12,12 +12,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arraydeque"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d902e3d592a523def97af8f317b08ce16b7ab854c1985a0c671e6f15cebc236"
-
-[[package]]
 name = "base64"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -141,6 +135,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrigura-cose"
+version = "0.0.0"
+dependencies = [
+ "ferrigura-jsmath",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ferrigura-elk"
 version = "0.0.0"
 dependencies = [
@@ -148,6 +151,10 @@ dependencies = [
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "ferrigura-jsmath"
+version = "0.0.0"
 
 [[package]]
 name = "ferrigura-model"
@@ -172,11 +179,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrigura-path"
+version = "0.0.0"
+dependencies = [
+ "ferrigura-jsmath",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ferrigura-render"
 version = "0.0.0"
 dependencies = [
+ "base64",
+ "ferrigura-cose",
  "ferrigura-elk",
+ "ferrigura-jsmath",
  "ferrigura-model",
+ "ferrigura-path",
  "ferrigura-syntax",
  "ferrigura-text",
  "ferromark",
@@ -190,9 +210,9 @@ name = "ferrigura-syntax"
 version = "0.0.0"
 dependencies = [
  "ferrigura-model",
+ "indexmap",
  "logos",
  "regex",
- "saphyr-parser",
  "serde_json",
  "url",
 ]
@@ -735,16 +755,6 @@ name = "ryu"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
-
-[[package]]
-name = "saphyr-parser"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c6220586c3dacac54bfddec87af86ddb31862d29666e7e35cf4baf70a25d387"
-dependencies = [
- "arraydeque",
- "thiserror",
-]
 
 [[package]]
 name = "semver"

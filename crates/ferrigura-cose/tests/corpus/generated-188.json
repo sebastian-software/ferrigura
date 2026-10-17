@@ -1,0 +1,26 @@
+{
+ "name": "generated-188",
+ "group": "generated",
+ "source": "seed 20261017 index 188",
+ "text": "mindmap\n  )river multiplication saddle canvas orbit harbour beacon(\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 267.2347106933594,
+    "height": 182.9372100830078
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 148.6173553466797,
+    "y": 106.4686050415039
+   }
+  ],
+  "edgePoints": []
+ }
+}

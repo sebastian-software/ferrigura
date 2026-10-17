@@ -1,0 +1,21 @@
+%% Styles: a class defined after its point applies (Q15), a point's own style wins over its class
+%% (Q16), a class defined twice takes the second (Q17), a class with no definition has no style
+%% (Q14), a radius of 0 is kept (Q20), and `color` without `#` is written as given (Q22).
+quadrantChart
+  title Classes and point styles
+  x-axis Low --> High
+  y-axis Low --> High
+  quadrant-1 A
+  quadrant-2 B
+  quadrant-3 C
+  quadrant-4 D
+  Late class:::late: [0.2, 0.8]
+  Own wins:::first: [0.4, 0.8] color: #00ff00
+  Zero radius:::first: [0.6, 0.8] radius: 0
+  Undefined class:::nothing: [0.8, 0.8]
+  Without hash:::first: [0.3, 0.3] color: abcdef
+  Short hex:::first: [0.5, 0.3] color: #abc, stroke-color: #123
+  Stroke only:::late: [0.7, 0.3] stroke-width: 4px
+  classDef first color: #ff0000, radius: 8
+  classDef first color: #0000ff, stroke-color: #00ff00
+  classDef late radius: 12, stroke-width: 2px, stroke-color: #101010

@@ -64,16 +64,19 @@
     "port:diff": "tsx tools/port/diff.ts",
     "port:status": "tsx tools/port/status.ts",
     "port:check-header": "tsx tools/port/check-header.ts",
+    "port:jsmath": "tsx tools/port/jsmath-probe.ts",
     "port:text-fixture": "tsx tools/port/text/chromium-fixture.ts",
     "port:text-label-fixture": "tsx tools/port/text/label-fixture.ts",
     "port:geometry-pie": "tsx tools/port/geometry/pie-geometry.ts",
     "port:geometry-flowchart": "tsx tools/port/geometry/flowchart-geometry.ts",
+    "port:tidy-tree": "tsx tools/port/geometry/tidy-tree-capture.ts",
     "port:geometry": "tsx tools/port/geometry/diagram-geometry.ts",
     "port:scope-pie": "tsx tools/port/geometry/pie-scope.ts",
     "port:styles-flowchart": "tsx tools/port/flowchart-styles.ts",
     "port:edge-paths": "tsx tools/port/export-flowchart-edges.ts",
     "prepare": "husky && pnpm build",
-    "pre-commit": "lint-staged"
+    "pre-commit": "lint-staged",
+    "port:path-bounds": "tsx tools/port/path-bounds.ts"
   },
   "repository": {
     "type": "git",

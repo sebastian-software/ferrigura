@@ -1,0 +1,124 @@
+{
+ "name": "generated-185",
+ "group": "generated",
+ "source": "seed 20261017 index 185",
+ "text": "mindmap\n  2026 zephyr standard landscape 2026 forest\n    [Zephyr roadmap ladder circuit ledger forest 2026 landscape lantern delta kernel]\n      (Responsibilities)\n        ((velvet island journey notebook))\n      (photographs marble pattern inventory oasis glacier nectar inventory doorway summit)\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 58
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 188
+   },
+   {
+    "id": "2",
+    "width": 140.015625,
+    "height": 54
+   },
+   {
+    "id": "3",
+    "width": 225.6793670654297,
+    "height": 225.6793670654297
+   },
+   {
+    "id": "4",
+    "width": 150,
+    "height": 174
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_1_4",
+    "source": "1",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 714.6690155101027,
+    "y": 471.1932639336592
+   },
+   {
+    "id": "1",
+    "x": 567.4217653952263,
+    "y": 325.2717638848718
+   },
+   {
+    "id": "2",
+    "x": 364.0540713274735,
+    "y": 311.4227735148128
+   },
+   {
+    "id": "3",
+    "x": 127.83968353271484,
+    "y": 296.17830890987227
+   },
+   {
+    "id": "4",
+    "x": 740.9181517666938,
+    "y": 102
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 704.0145581967195,
+    "startY": 460.63473471045313,
+    "midX": 641.0453904526645,
+    "midY": 398.23251390926555,
+    "endX": 578.0762227086095,
+    "endY": 335.83029310807785
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 552.456425212782,
+    "startY": 324.25264994437407,
+    "midX": 465.7379183613499,
+    "midY": 318.3472686998423,
+    "endX": 379.0194115099178,
+    "endY": 312.4418874553105
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 349.08521134753664,
+    "startY": 310.4567347469341,
+    "midX": 245.94687743009416,
+    "midY": 303.8005412123425,
+    "endX": 142.8085435126517,
+    "endY": 297.14434767775094
+   },
+   {
+    "id": "edge_1_4",
+    "startX": 576.6256039332663,
+    "startY": 313.42738310047923,
+    "midX": 654.16995858096,
+    "midY": 213.6358819424359,
+    "endX": 731.7143132286537,
+    "endY": 113.8443807843926
+   }
+  ]
+ }
+}

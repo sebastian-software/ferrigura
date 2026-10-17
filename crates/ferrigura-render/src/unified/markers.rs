@@ -19,6 +19,9 @@ pub const FLOWCHART: &str = "flowchart-v2";
 /// The diagram type of an ER diagram, in its marker ids and classes (`erDetector.ts`).
 pub const ER: &str = "er";
 
+/// The diagram type of a requirement diagram, in its marker ids (`requirementRenderer.ts` 19).
+pub const REQUIREMENT: &str = "requirement";
+
 /// The marker kinds an edge end can use: the flowchart's three in the order `markers.js` writes
 /// them, and the four cardinalities of ER diagrams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -39,6 +42,10 @@ pub enum Kind {
     ZeroOrMore,
     /// `arrow_barb` and `arrow_barb_neo`: the barb of the state diagram (`markers.js` `barb`).
     Barb,
+    /// `requirement_arrow`: the open arrow of a requirement relationship (`markers.js` 869-958).
+    RequirementArrow,
+    /// `requirement_contains`: the circle with a cross of a `contains` relationship.
+    RequirementContains,
 }
 
 impl Kind {
@@ -55,6 +62,9 @@ impl Kind {
             "one_or_more" => Some(Self::OneOrMore),
             "zero_or_more" => Some(Self::ZeroOrMore),
             "arrow_barb" | "arrow_barb_neo" => Some(Self::Barb),
+            // `edgeMarker.ts` 55-56: the requirement arrows of a requirement diagram.
+            "requirement_arrow" => Some(Self::RequirementArrow),
+            "requirement_contains" => Some(Self::RequirementContains),
             _ => None,
         }
     }
@@ -71,6 +81,8 @@ impl Kind {
             Self::OneOrMore => "oneOrMore",
             Self::ZeroOrMore => "zeroOrMore",
             Self::Barb => "barb",
+            Self::RequirementArrow => "requirement_arrow",
+            Self::RequirementContains => "requirement_contains",
         }
     }
 
@@ -370,6 +382,21 @@ pub fn markers(svg_id: &str, diagram_type: &str, config: &MermaidConfig) -> Stri
         .collect()
 }
 
+/// The four `point` markers of a diagram, as `insertMarkers(element, ['point'], type, id)` writes them
+/// (`markers.js` 323-390): the first four definitions of [`markers`], under the diagram type's own name
+/// (`<svgId>_<type>-pointEnd`, and so on). The mindmap appends them to its root group.
+#[must_use]
+pub fn point_markers(svg_id: &str, diagram_type: &str) -> String {
+    DEFINITIONS
+        .iter()
+        .take(4)
+        .map(|definition| {
+            let id = format!("{svg_id}_{diagram_type}-{}", definition.name);
+            definition_xml(&id, diagram_type, definition, None)
+        })
+        .collect()
+}
+
 /// The barb markers of the state diagram, as `insertMarkers` writes them for the look: `barb` (the
 /// classic look) or `barbNeo` (the neo look, with its margin variant), each in its own `defs` as
 /// `markers.js` 534-578 writes them. The margin variant's fill is the theme's `transitionColor`.
@@ -620,6 +647,58 @@ pub fn er_markers(svg_id: &str, neo: bool, stroke_width: &str, background: &str)
     out
 }
 
+/// The requirement markers of a diagram on the `neo` look or the `classic` one, as `insertMarkers`
+/// writes them for `data4Layout.markers` (`requirementRenderer.ts` 19-24, `markers.js` 869-958):
+/// `requirement_arrow` and `requirement_contains`, each in its own `<defs>`, under the diagram's id.
+/// The reference writes the neo set with the theme's stroke width and `markerUnits` set to
+/// `userSpaceOnUse`; the arrow has a `viewBox` and a miter join, and the contains marker's circle and
+/// lines take the stroke width. The classic set has neither.
+///
+/// The arrow's path keeps the line breaks and indentation of the reference's template literal, which
+/// the attribute holds.
+#[must_use]
+pub fn requirement_markers(svg_id: &str, neo: bool, stroke_width: &str) -> String {
+    let units = if neo {
+        " markerUnits=\"userSpaceOnUse\""
+    } else {
+        ""
+    };
+    let stroke = if neo {
+        format!(" stroke-width=\"{}\"", escape(stroke_width))
+    } else {
+        String::new()
+    };
+    let arrow_id = marker_id(svg_id, REQUIREMENT, Kind::RequirementArrow, false, false);
+    let contains_id = marker_id(svg_id, REQUIREMENT, Kind::RequirementContains, true, false);
+    // The neo arrow takes the theme's stroke width and a viewBox, then a miter join on its path.
+    let arrow_neo = if neo {
+        format!(
+            " stroke-width=\"{}\" viewBox=\"0 0 25 20\"",
+            escape(stroke_width)
+        )
+    } else {
+        String::new()
+    };
+    let arrow_join = if neo {
+        " stroke-linejoin=\"miter\""
+    } else {
+        ""
+    };
+    // The reference's template literal: the line breaks and the six spaces of its indentation.
+    let arrow_path = "M0,0\n      L20,10\n      M20,10\n      L0,20";
+    let contains_children = format!(
+        "<circle cx=\"10\" cy=\"10\" r=\"9\" fill=\"none\"{stroke}/>\
+         <line x1=\"1\" x2=\"19\" y1=\"10\" y2=\"10\"{stroke}/>\
+         <line y1=\"1\" y2=\"19\" x1=\"10\" x2=\"10\"{stroke}/>"
+    );
+    format!(
+        "<defs><marker id=\"{}\" refX=\"20\" refY=\"10\" markerWidth=\"20\" markerHeight=\"20\" orient=\"auto\"{units}{arrow_neo}><path d=\"{arrow_path}\"{arrow_join}/></marker></defs>\
+         <defs><marker id=\"{}\" refX=\"0\" refY=\"10\" markerWidth=\"20\" markerHeight=\"20\" orient=\"auto\"{units}><g>{contains_children}</g></marker></defs>",
+        escape(&arrow_id),
+        escape(&contains_id),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -658,6 +737,32 @@ mod tests {
         assert!(svg.contains(
             "<marker id=\"svg_flowchart-v2-pointStart-margin\" class=\"marker flowchart-v2\" viewBox=\"0 0 11.5 14\" refX=\"1\" refY=\"7\" markerUnits=\"userSpaceOnUse\" markerWidth=\"11.5\" markerHeight=\"14\" orient=\"auto\"><polygon points=\"0,7 11.5,14 11.5,0\" class=\"arrowMarkerPath\" style=\"stroke-width: 0; stroke-dasharray: 1, 0;\"/></marker>"
         ));
+    }
+
+    #[test]
+    fn the_requirement_markers_are_two_with_the_ids_the_edges_use() {
+        let classic = requirement_markers("svg", false, "2");
+        assert_eq!(classic.matches("<defs><marker ").count(), 2);
+        assert!(classic.contains("id=\"svg_requirement-requirement_arrowEnd\""));
+        assert!(classic.contains("id=\"svg_requirement-requirement_containsStart\""));
+        // The classic set has no marker units and no stroke width.
+        assert!(!classic.contains("markerUnits"));
+        let neo = requirement_markers("svg", true, "2");
+        assert!(neo.contains("markerUnits=\"userSpaceOnUse\""));
+        assert!(neo.contains("viewBox=\"0 0 25 20\""));
+        assert!(neo.contains("stroke-width=\"2\""));
+    }
+
+    #[test]
+    fn the_requirement_arrow_types_have_their_kinds() {
+        assert_eq!(
+            Kind::from_arrow("requirement_arrow"),
+            Some(Kind::RequirementArrow)
+        );
+        assert_eq!(
+            Kind::from_arrow("requirement_contains"),
+            Some(Kind::RequirementContains)
+        );
     }
 
     #[test]

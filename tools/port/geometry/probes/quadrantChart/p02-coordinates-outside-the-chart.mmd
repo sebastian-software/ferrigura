@@ -1,0 +1,15 @@
+%% Coordinates the reference reads with `Number()`: `0x5` is 5, `0o7` is 7, `0b1` is 1, `0e5` is 0.
+%% A value above 1 is drawn outside the quadrants, where the scale puts it.
+quadrantChart
+  title Coordinates read as numbers
+  x-axis Low --> High
+  y-axis Low --> High
+  quadrant-1 A
+  quadrant-2 B
+  quadrant-3 C
+  quadrant-4 D
+  Hex x: [0x5, 0.5]
+  Octal x: [0o7, 0.25]
+  Binary x: [0b1, 0.75]
+  Exponent: [0e5, 0.5]
+  Hex y: [0.5, 0x3]

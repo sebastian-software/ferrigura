@@ -1,7 +1,7 @@
 //! Parses inputs with a ferrigura parser and writes the canonical JSON of each result. The
 //! differential harness (`pnpm port:diff`) runs this against the JS exporters of `tools/port/`.
 //!
-//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt> <inputs.json> <outputs.json>`
+//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
 //! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
@@ -19,8 +19,9 @@ use ferrigura_syntax::flowchart::{self, FlowchartError};
 use ferrigura_syntax::gantt;
 use ferrigura_syntax::sequence::{self, Options};
 use ferrigura_syntax::{
-    DiagramType, ParseError, class, config, detect, er, git_graph, info, journey, pie, state,
-    timeline,
+    DiagramType, ParseError, architecture, block, c4, class, config, detect, er, event_modeling,
+    git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie, quadrant_chart, requirement,
+    sankey, state, timeline, treemap, xychart,
 };
 use serde_json::{Value, json};
 
@@ -58,6 +59,22 @@ fn timeline_outcome(text: &str) -> Outcome {
     }
 }
 
+/// The architecture diagram. The text must first be detected as one, as `detectType` does before
+/// the parser runs, so that a text of another type is a rejection.
+fn architecture_outcome(text: &str) -> Outcome {
+    if detect(text) != Some(DiagramType::Architecture) {
+        return Outcome::Rejected(ParseError {
+            line: 1,
+            column: 1,
+            message: "no architecture diagram detected".to_owned(),
+        });
+    }
+    match architecture::parse(text) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
 /// The clock of the gantt differential run: 1010-10-10T00:00Z, the instant the reference runs with
 /// (`tools/port/export-gantt.ts`).
 const GANTT_NOW_MS: i64 = -30_270_326_400_000;
@@ -90,6 +107,29 @@ fn sequence_wrap(text: &str) -> bool {
 /// The model keeps the key order of a JavaScript object, but `serde_json::Value` sorts the keys of
 /// an object and the differential run compares objects without regard to their order, so the order
 /// is compared as a list (`docs-port/canonical-model.md`, Sequence).
+/// The C4 diagram. The top-level `wrap` configuration is what the DB reads (`init`), so the
+/// example resolves it from the text's directives and front matter, as the sequence arm does.
+fn c4_outcome(text: &str) -> Outcome {
+    match c4::parse_with(
+        text,
+        c4::Options {
+            wrap: c4_wrap(text),
+        },
+    ) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
+/// The top-level `wrap` of the effective configuration, `true` only when it is set to `true`.
+fn c4_wrap(text: &str) -> bool {
+    let Ok(directive) = config::read(text) else {
+        return false;
+    };
+    let resolved = effective(None, Some("c4"), &directive);
+    matches!(resolved.get("wrap"), Some(Config::Bool(true)))
+}
+
 fn sequence_outcome(text: &str) -> Outcome {
     match sequence::parse_with(
         text,
@@ -157,11 +197,65 @@ fn normalise_auto_ids(mut model: Value) -> Value {
     model
 }
 
+/// The placeholders of the generated block ids, numbered in the order the tree gives them.
+#[derive(Default)]
+struct BlockNames(std::collections::HashMap<String, String>);
+
+impl BlockNames {
+    /// The placeholder of a base id: `$genK` for the k-th base first seen.
+    fn placeholder(&mut self, base: &str) -> String {
+        let next = self.0.len() + 1;
+        self.0
+            .entry(base.to_owned())
+            .or_insert_with(|| format!("$gen{next}"))
+            .clone()
+    }
+}
+
+/// The generated ids of a block diagram, as `normaliseGenerated` in `tools/port/export-block.ts`
+/// replaces them: a generated id `id-<random>-<n>` becomes the placeholder of its base, with the
+/// cell suffix `-<j>` of a space kept; the label of a space cell is its base and takes the same
+/// placeholder. The blocks are visited in tree order, id before label before children.
+fn normalise_block_ids(mut model: Value) -> Value {
+    let generated = regex::Regex::new(r"^(id-[0-9a-z]*-[0-9]+)(-[0-9]+)?$").expect("a pattern");
+    let base = regex::Regex::new(r"^id-[0-9a-z]*-[0-9]+$").expect("a pattern");
+    let mut names = BlockNames::default();
+    if let Some(blocks) = model.get_mut("blocks").and_then(Value::as_array_mut) {
+        visit_blocks(blocks, &mut names, &generated, &base);
+    }
+    model
+}
+
+fn visit_blocks(
+    blocks: &mut [Value],
+    names: &mut BlockNames,
+    generated: &regex::Regex,
+    base: &regex::Regex,
+) {
+    for block in blocks {
+        if let Some(caps) = block["id"].as_str().and_then(|id| generated.captures(id)) {
+            let name = names.placeholder(&caps[1]);
+            let suffix = caps.get(2).map_or("", |m| m.as_str());
+            block["id"] = json!(format!("{name}{suffix}"));
+        }
+        let space_label = (block["type"] == json!("space"))
+            .then(|| block["label"].as_str().filter(|label| base.is_match(label)))
+            .flatten()
+            .map(str::to_owned);
+        if let Some(label) = space_label {
+            block["label"] = json!(names.placeholder(&label));
+        }
+        if let Some(children) = block.get_mut("children").and_then(Value::as_array_mut) {
+            visit_blocks(children, names, generated, base);
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
         return Err(
-            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt> <inputs.json> <outputs.json>".into(),
+            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling> <inputs.json> <outputs.json>".into(),
         );
     };
 
@@ -212,6 +306,54 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => Outcome::Rejected(error),
             },
             "gantt" => gantt_outcome(text),
+            "mindmap" => match mindmap::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "block" => match block::parse(text) {
+                Ok(model) => Outcome::Model(normalise_block_ids(
+                    serde_json::to_value(model).unwrap_or_default(),
+                )),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "packet" => match packet::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "xychart" => match xychart::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "sankey" => match sankey::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "quadrantChart" => match quadrant_chart::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "requirement" => match requirement::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "c4" => c4_outcome(text),
+            "kanban" => match kanban::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "architecture" => architecture_outcome(text),
+            "treemap" => match treemap::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "ishikawa" => match ishikawa::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "eventmodeling" => match event_modeling::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
             other => return Err(format!("unknown diagram type {other}").into()),
         };
         results.push(match outcome {

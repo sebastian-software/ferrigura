@@ -2,10 +2,12 @@
  * Differential run for one diagram type: every collected input goes through the TypeScript
  * reference (`export-<type>.ts`) and through ferrigura (`cargo run --example canonical`), and the
  * canonical models are compared. A rejection on both sides counts as agreement; any other
- * difference is reported with both results.
+ * difference is reported with both results. A type without an exporter is not ported yet: the run
+ * says so and ends without a difference.
  *
- * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | flowchart-data | er-data | state-data | class-data | config | yaml | theme>`
+ * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme>`
  */
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +15,22 @@ import { fileURLToPath } from 'node:url';
 import { collectInputs } from './inputs.ts';
 import { exceptions } from './exceptions.ts';
 import type { PortInput, PortOutput } from './reference.ts';
+
+/** The P2 types, whose parsers are not ported yet: each one's parser task writes its exporter. */
+const p2Types = [
+  'mindmap',
+  'block',
+  'packet',
+  'xychart',
+  'sankey',
+  'quadrantChart',
+  'requirement',
+  'c4',
+  'architecture',
+  'treemap',
+  'ishikawa',
+  'eventmodeling',
+];
 
 const type = process.argv[2];
 if (
@@ -22,7 +40,9 @@ if (
   type === 'flowchart-data' ||
   type === 'er-data' ||
   type === 'state-data' ||
-  type === 'class-data'
+  type === 'class-data' ||
+  type === 'requirement-data' ||
+  type === 'kanban-data'
 ) {
   const subRun = spawnSync(
     'pnpm',
@@ -42,12 +62,20 @@ if (
   type !== 'class' &&
   type !== 'sequence' &&
   type !== 'state' &&
-  type !== 'gantt'
+  type !== 'gantt' &&
+  type !== 'kanban' &&
+  !p2Types.includes(type)
 ) {
   console.error(
-    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | flowchart-data | er-data | state-data | class-data | config | yaml | theme'
+    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme'
   );
   process.exit(2);
+}
+if (!existsSync(fileURLToPath(new URL(`./export-${type}.ts`, import.meta.url)))) {
+  console.log(
+    `${type}: not ported yet, the parser and the exporter tools/port/export-${type}.ts do not exist`
+  );
+  process.exit(0);
 }
 
 const root = fileURLToPath(new URL('../../', import.meta.url));

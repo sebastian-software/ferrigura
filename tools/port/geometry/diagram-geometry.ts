@@ -9,6 +9,11 @@
  * the specialised harnesses (`pie-geometry.ts`, `flowchart-geometry.ts`). Ferrigura renders none of
  * the others yet, so their fixtures are "not rendered" until it does.
  *
+ * A type may have probes too, under `tools/port/geometry/probes/<type>`: texts the e2e fixtures do not
+ * cover (the kanban items, which no kanban fixture draws). They are compared like the fixtures, under
+ * the keys `probes/<type>/<file>`. They are not in `e2e/diagrams`, where every `.mmd` is an image
+ * snapshot test.
+ *
  * Both sides get the patched text (`patchText` in `common.ts`): the forced directive, and the
  * fallback theme. Each SVG is measured at scale 1. Excluded fixtures are those with `handDrawn`, a
  * non-layered layout, or text the bundled faces do not cover (CJK, arrows, symbols, emoji); they are
@@ -56,7 +61,7 @@
  * not render a fixture the reference renders (every P1 type is ported since M6, so that is a
  * regression); for `--self`, whenever the two reference renders differ.
  */
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import {
@@ -93,6 +98,21 @@ import {
 
 const fixtureRoot = join(root, 'e2e/diagrams');
 
+/**
+ * The probe inputs of a type, under `tools/port/geometry/probes/<type>`: texts that the e2e fixtures
+ * do not cover, such as kanban items (the fixtures are flat lists of sections). They are compared
+ * with the fixtures, under the key `probes/<type>/<file>`, and not added to `e2e/diagrams`, whose
+ * every `.mmd` is an image snapshot test.
+ */
+const probeRoot = join(root, 'tools/port/geometry/probes');
+
+/** The file of a fixture key (`folder/file`, or `probes/<type>/file`) on disk. */
+function pathOf(key: string): string {
+  return key.startsWith('probes/')
+    ? join(probeRoot, key.slice('probes/'.length))
+    : join(fixtureRoot, key);
+}
+
 /** The fixture folders of each type, under `e2e/diagrams`. */
 const TYPE_FOLDERS: Record<string, string[]> = {
   sequence: ['sequence'],
@@ -106,13 +126,28 @@ const TYPE_FOLDERS: Record<string, string[]> = {
   info: ['info'],
   pie: ['pie'],
   flowchart: ['flowchart'],
+  mindmap: ['mindmap'],
+  block: ['block'],
+  packet: ['packet'],
+  xychart: ['xychart'],
+  sankey: ['sankey'],
+  quadrantChart: ['quadrant-chart'],
+  requirement: ['requirement'],
+  c4: ['c4'],
+  kanban: ['kanban'],
+  architecture: ['architecture'],
+  treemap: ['treemap'],
+  ishikawa: ['ishikawa'],
+  eventmodeling: ['eventmodeling'],
 };
 
 /**
  * The page-side measurement of one SVG, as source text for the page (`pageHtml` in `common.ts`).
  * `record` gives one element its entry; `walk` visits the children of an element, in document
- * order, with the structural key of the parent. In journey mode (`labels`) every `switch` is a
- * label: it is recorded with its lines, and left out of the elements (`journey-labels.ts`).
+ * order, with the structural key of the parent. In label mode (`labels`, the journey and the
+ * eventmodeling) a label is recorded with its lines and left out of the elements: a `switch` (the
+ * journey's `fo` label, which ferrigura draws) or a `foreignObject` (the reference's box text of
+ * eventmodeling). Both get the key `label[n]`, so the two sides pair (`journey-labels.ts`).
  */
 function measureSource(labels: boolean): string {
   return `
@@ -182,17 +217,19 @@ const measure = (svg) => {
       if (SKIPPED.has(child.tagName)) continue;
       // The pie's \`pie-slot-<n>\` classes are ferrigura's own: they carry the colour slots of
       // decision 0007, which the reference has no class for, so they are not part of the key.
-      const signature =
-        child.tagName +
-        [...child.classList]
-          .filter((name) => !/^pie-slot-[0-9]+$/.test(name))
-          .sort()
-          .map((name) => '.' + name)
-          .join('');
+      const isLabel = ${labels} && (child.tagName === 'switch' || child.tagName === 'foreignObject');
+      const signature = isLabel
+        ? 'label'
+        : child.tagName +
+          [...child.classList]
+            .filter((name) => !/^pie-slot-[0-9]+$/.test(name))
+            .sort()
+            .map((name) => '.' + name)
+            .join('');
       const index = seen.get(signature) ?? 0;
       seen.set(signature, index + 1);
       const key = parentKey + '/' + signature + '[' + index + ']';
-      if (${labels} && child.tagName === 'switch') {
+      if (isLabel) {
         labelsFound.push({ key: key, lines: labelLines(svg, child) });
         continue;
       }
@@ -214,7 +251,7 @@ const measure = (svg) => {
 
 /** A measured SVG in the generic harness: the reference's and ferrigura's alike. */
 interface MeasuredSvg extends DiagramGeometry {
-  /** The journey's labels; null for the other types. */
+  /** The labels of a journey or an eventmodeling; null for the other types. */
   labels: LabelGeometry[] | null;
 }
 
@@ -227,8 +264,11 @@ interface Options {
 }
 
 function parseOptions(argv: string[]): Options {
-  const name = (argv[0] ?? '').toLowerCase();
-  if (argv[0] === undefined || argv[0].startsWith('--') || !(name in TYPE_FOLDERS)) {
+  // The type names are camelCase (`quadrantChart`, `xychart`), and the argument matches them
+  // without regard to case, so an all-lower-case argument still names the camelCase type.
+  const given = (argv[0] ?? '').toLowerCase();
+  const name = Object.keys(TYPE_FOLDERS).find((key) => key.toLowerCase() === given);
+  if (argv[0] === undefined || argv[0].startsWith('--') || name === undefined) {
     throw new Error(
       `usage: pnpm port:geometry <type> [--filter PATTERN] [--images DIR] [--capture] [--self] (types: ${Object.keys(TYPE_FOLDERS).join(', ')})`
     );
@@ -252,11 +292,26 @@ interface DiagramResult extends FixtureResult {
   elkCalls: number;
 }
 
-/** The fixtures of a type, as paths under `e2e/diagrams` (folder first). */
+/** The folders of a type's fixtures: under `e2e/diagrams`, then its probes, when it has some. */
+async function foldersOf(type: string): Promise<string[]> {
+  const folders = [...TYPE_FOLDERS[type]];
+  if (await isDirectory(join(probeRoot, type))) folders.push(`probes/${type}`);
+  return folders;
+}
+
+async function isDirectory(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/** The fixtures of a type, as keys (folder first): `pathOf` gives each one's file. */
 async function fixturesOf(type: string): Promise<string[]> {
   const files: string[] = [];
-  for (const folder of TYPE_FOLDERS[type]) {
-    for (const file of await mmdFiles(join(fixtureRoot, folder))) {
+  for (const folder of await foldersOf(type)) {
+    for (const file of await mmdFiles(pathOf(folder))) {
       files.push(`${folder}/${file}`);
     }
   }
@@ -287,17 +342,15 @@ async function main(): Promise<void> {
   );
 
   const results: DiagramResult[] = [];
-  // Journey mode: the labels are compared by their lines, and the settings pin the title font.
-  const journey = options.type === 'journey';
-  await withPage(measureSource(journey), async (page) => {
+  // Journey and eventmodeling: the labels are compared by their lines, and the journey's settings
+  // pin its title font.
+  const labelled = options.type === 'journey' || options.type === 'eventmodeling';
+  await withPage(measureSource(labelled), async (page) => {
     for (const file of selected) {
       const slug = slugOf(file);
       const id = `ref-${slug}`;
-      const source = await decodeFixtureEntities(
-        page,
-        await readFile(join(fixtureRoot, file), 'utf8')
-      );
-      const text = patchText(source, journey ? JOURNEY_SETTINGS : {});
+      const source = await decodeFixtureEntities(page, await readFile(pathOf(file), 'utf8'));
+      const text = patchText(source, options.type === 'journey' ? JOURNEY_SETTINGS : {});
       const result: DiagramResult = {
         fixture: file,
         id,
@@ -434,7 +487,8 @@ async function main(): Promise<void> {
     }
   }
   const byFolder: Record<string, Record<FixtureClass, number>> = {};
-  for (const folder of TYPE_FOLDERS[options.type]) {
+  const folders = await foldersOf(options.type);
+  for (const folder of folders) {
     byFolder[folder] = countClasses(
       results.filter((result) => result.fixture.startsWith(`${folder}/`))
     );
@@ -452,7 +506,7 @@ async function main(): Promise<void> {
   await writeJson(join(workDir, outputName), {
     type: options.type,
     mode,
-    folders: TYPE_FOLDERS[options.type],
+    folders,
     tolerances: { pixels: PIXEL_TOLERANCE },
     summary,
     results,

@@ -17,6 +17,14 @@ generated/
 packages/mermaid/src/docs/config/setup
 # Generated from elkjs output by crates/ferrigura-elk/tools/capture-corpus.ts
 crates/ferrigura-elk/tests/corpus/
+# Generated from Chromium captures by crates/ferrigura-cose/tools/capture-corpus.ts
+crates/ferrigura-cose/tests/corpus/
+# Generated from Chromium captures by crates/ferrigura-cose/tools/capture-fcose-corpus.ts
+crates/ferrigura-cose/tests/fcose-corpus/
 # Generated from reference captures by the M5 port tools (tools/port/)
 crates/ferrigura-render/tests/data/
 crates/ferrigura-render/tests/fixtures/
+# Generated from the Chromium probes by tools/port/text/ (the extents rows are one line each)
+crates/ferrigura-text/tests/fixtures/
+# Vendored from non-layered-tidy-tree-layout 2.0.2 (MIT): kept as published, not reformatted
+tools/port/vendor/

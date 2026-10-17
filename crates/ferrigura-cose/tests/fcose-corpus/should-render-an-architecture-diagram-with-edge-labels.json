@@ -1,0 +1,382 @@
+{
+ "name": "should-render-an-architecture-diagram-with-edge-labels",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/pr-check/should-render-an-architecture-diagram-with-edge-labels.mmd",
+ "text": "---\ndescription: >-\n  Five ungrouped servers arranged in a plus/star pattern (one center, four\n  around it) connected by undirected edges each carrying an inline\n  `-[Label]-` edge label, verifying label rendering across every\n  compass-port combination.\n---\narchitecture-beta\n  service servC(server)[Server 1]\n  service servL(server)[Server 2]\n  service servR(server)[Server 3]\n  service servT(server)[Server 4]\n  service servB(server)[Server 5]\n\n  servC:L -[Label]- R:servL\n  servC:R -[Label]- L:servR\n  servC:T -[Label]- B:servT\n  servC:B -[Label]- T:servB\n\n  servL:T -[Label]- L:servT\n  servL:B -[Label]- L:servB\n  servR:T -[Label]- R:servT\n  servR:B -[Label]- R:servB\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "servC",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "servL",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "servR",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "servT",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "servB",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "servC-servL",
+     "source": "servC",
+     "target": "servL",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servC-servR",
+     "source": "servC",
+     "target": "servR",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servC-servT",
+     "source": "servC",
+     "target": "servT",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servC-servB",
+     "source": "servC",
+     "target": "servB",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servL-servT",
+     "source": "servL",
+     "target": "servT",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servL-servB",
+     "source": "servL",
+     "target": "servB",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servR-servT",
+     "source": "servR",
+     "target": "servT",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servR-servB",
+     "source": "servR",
+     "target": "servB",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "servC",
+      "servL",
+      "servR"
+     ]
+    ],
+    "vertical": [
+     [
+      "servC",
+      "servT",
+      "servB"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "servL",
+     "right": "servC",
+     "gap": 120
+    },
+    {
+     "right": "servR",
+     "left": "servC",
+     "gap": 120
+    },
+    {
+     "top": "servT",
+     "bottom": "servC",
+     "gap": 120
+    },
+    {
+     "bottom": "servB",
+     "top": "servC",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -41,
+    "y1": -41,
+    "w": 123.5,
+    "h": 132.35355339059328
+   },
+   "output": [
+    {
+     "id": "servC",
+     "x": 20.75,
+     "y": 25.17677669529664
+    },
+    {
+     "id": "servL",
+     "x": -156.42119140792983,
+     "y": 25.17677669529664
+    },
+    {
+     "id": "servR",
+     "x": 197.92119140792983,
+     "y": 25.17677669529664
+    },
+    {
+     "id": "servT",
+     "x": 20.75,
+     "y": -151.9944147126332
+    },
+    {
+     "id": "servB",
+     "x": 20.75,
+     "y": 202.34796810322646
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "servC",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 20.75,
+     "y": 25.17677669529664
+    },
+    {
+     "id": "servL",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -156.42119140792983,
+     "y": 25.17677669529664
+    },
+    {
+     "id": "servR",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 197.92119140792983,
+     "y": 25.17677669529664
+    },
+    {
+     "id": "servT",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 20.75,
+     "y": -151.9944147126332
+    },
+    {
+     "id": "servB",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 20.75,
+     "y": 202.34796810322646
+    }
+   ],
+   "edges": [
+    {
+     "id": "servC-servL",
+     "source": "servC",
+     "target": "servL",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servC-servR",
+     "source": "servC",
+     "target": "servR",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servC-servT",
+     "source": "servC",
+     "target": "servT",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servC-servB",
+     "source": "servC",
+     "target": "servB",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servL-servT",
+     "source": "servL",
+     "target": "servT",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servL-servB",
+     "source": "servL",
+     "target": "servB",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servR-servT",
+     "source": "servR",
+     "target": "servT",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "servR-servB",
+     "source": "servR",
+     "target": "servB",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "servC",
+      "servL",
+      "servR"
+     ]
+    ],
+    "vertical": [
+     [
+      "servC",
+      "servT",
+      "servB"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "servL",
+     "right": "servC",
+     "gap": 120
+    },
+    {
+     "right": "servR",
+     "left": "servC",
+     "gap": 120
+    },
+    {
+     "top": "servT",
+     "bottom": "servC",
+     "gap": 120
+    },
+    {
+     "bottom": "servB",
+     "top": "servC",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -197.42119140792983,
+    "y1": -192.9944147126332,
+    "w": 458.3423828158596,
+    "h": 454.34238281585965
+   },
+   "output": [
+    {
+     "id": "servC",
+     "x": 31.749999999999975,
+     "y": 34.17677669529664
+    },
+    {
+     "id": "servL",
+     "x": -145.42119140792985,
+     "y": 34.17677669529664
+    },
+    {
+     "id": "servR",
+     "x": 208.9211914079298,
+     "y": 34.17677669529664
+    },
+    {
+     "id": "servT",
+     "x": 31.749999999999975,
+     "y": -142.9944147126332
+    },
+    {
+     "id": "servB",
+     "x": 31.749999999999975,
+     "y": 211.34796810322646
+    }
+   ]
+  }
+ ]
+}

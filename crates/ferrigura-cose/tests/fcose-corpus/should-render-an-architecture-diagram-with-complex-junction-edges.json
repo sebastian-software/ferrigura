@@ -1,0 +1,532 @@
+{
+ "name": "should-render-an-architecture-diagram-with-complex-junction-edges",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/pr-check/should-render-an-architecture-diagram-with-complex-junction-edges.mmd",
+ "text": "---\ndescription: >-\n  Two groups (left, right) each containing a junction that fans in/out to\n  multiple disk or gateway services, then the two group-level junctions\n  themselves are connected via a `{group}`-scoped directed edge\n  (`juncC{group}:R --> L:juncR{group}`) — exercising junction-to-junction\n  edges at the group boundary rather than the service level.\n---\narchitecture-beta\n  group left\n  group right\n  service left_disk(disk)[Disk] in left\n  service top_disk(disk)[Disk] in left\n  service bottom_disk(disk)[Disk] in left\n  service top_gateway(internet)[Gateway] in right\n  service bottom_gateway(internet)[Gateway] in right\n  junction juncC in left\n  junction juncR in right\n\n  left_disk:R -- L:juncC\n  top_disk:B -- T:juncC\n  bottom_disk:T -- B:juncC\n\n  top_gateway:B --> T:juncR\n  bottom_gateway:T --> B:juncR\n\n  juncC{group}:R --> L:juncR{group}\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "left",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "right",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "left_disk",
+     "parent": "left",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "top_disk",
+     "parent": "left",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "bottom_disk",
+     "parent": "left",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "top_gateway",
+     "parent": "right",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "bottom_gateway",
+     "parent": "right",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "juncC",
+     "parent": "left",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "juncR",
+     "parent": "right",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "left_disk-juncC",
+     "source": "left_disk",
+     "target": "juncC",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "top_disk-juncC",
+     "source": "top_disk",
+     "target": "juncC",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "bottom_disk-juncC",
+     "source": "bottom_disk",
+     "target": "juncC",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "top_gateway-juncR",
+     "source": "top_gateway",
+     "target": "juncR",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "bottom_gateway-juncR",
+     "source": "bottom_gateway",
+     "target": "juncR",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "juncC-juncR",
+     "source": "juncC",
+     "target": "juncR",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "left_disk",
+      "juncC",
+      "juncR"
+     ],
+     [
+      "top_disk",
+      "top_gateway"
+     ],
+     [
+      "bottom_disk",
+      "bottom_gateway"
+     ]
+    ],
+    "vertical": [
+     [
+      "juncC",
+      "top_disk",
+      "bottom_disk"
+     ],
+     [
+      "juncR",
+      "top_gateway",
+      "bottom_gateway"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "juncC",
+     "left": "left_disk",
+     "gap": 120
+    },
+    {
+     "right": "juncR",
+     "left": "juncC",
+     "gap": 120
+    },
+    {
+     "top": "top_disk",
+     "bottom": "juncC",
+     "gap": 120
+    },
+    {
+     "bottom": "bottom_disk",
+     "top": "juncC",
+     "gap": 120
+    },
+    {
+     "top": "top_gateway",
+     "bottom": "juncR",
+     "gap": 120
+    },
+    {
+     "bottom": "bottom_gateway",
+     "top": "juncR",
+     "gap": 120
+    },
+    {
+     "right": "top_gateway",
+     "left": "top_disk",
+     "gap": 120
+    },
+    {
+     "right": "bottom_gateway",
+     "left": "bottom_disk",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "left",
+     "x": -150.148620374776,
+     "y": 16.99999999999997
+    },
+    {
+     "id": "right",
+     "x": 250.71725973418626,
+     "y": 16.99999999999997
+    },
+    {
+     "id": "left_disk",
+     "x": -250.71725973418626,
+     "y": 8.499999999999964
+    },
+    {
+     "id": "top_disk",
+     "x": -49.579981015365746,
+     "y": -192.3057440588858
+    },
+    {
+     "id": "bottom_disk",
+     "x": -49.579981015365746,
+     "y": 209.30574405888575
+    },
+    {
+     "id": "top_gateway",
+     "x": 250.71725973418626,
+     "y": -192.3057440588858
+    },
+    {
+     "id": "bottom_gateway",
+     "x": 250.71725973418626,
+     "y": 209.30574405888575
+    },
+    {
+     "id": "juncC",
+     "x": -49.579981015365746,
+     "y": 8.499999999999964
+    },
+    {
+     "id": "juncR",
+     "x": 250.71725973418626,
+     "y": 8.499999999999964
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "left",
+     "parent": null,
+     "width": 364.13727871882054,
+     "height": 581.6114881177716,
+     "padding": 40,
+     "x": -150.148620374776,
+     "y": 16.99999999999997
+    },
+    {
+     "id": "right",
+     "parent": null,
+     "width": 163,
+     "height": 581.6114881177716,
+     "padding": 40,
+     "x": 250.71725973418626,
+     "y": 16.99999999999997
+    },
+    {
+     "id": "left_disk",
+     "parent": "left",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -250.71725973418626,
+     "y": 8.499999999999964
+    },
+    {
+     "id": "top_disk",
+     "parent": "left",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -49.579981015365746,
+     "y": -192.3057440588858
+    },
+    {
+     "id": "bottom_disk",
+     "parent": "left",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -49.579981015365746,
+     "y": 209.30574405888575
+    },
+    {
+     "id": "top_gateway",
+     "parent": "right",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 250.71725973418626,
+     "y": -192.3057440588858
+    },
+    {
+     "id": "bottom_gateway",
+     "parent": "right",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 250.71725973418626,
+     "y": 209.30574405888575
+    },
+    {
+     "id": "juncC",
+     "parent": "left",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -49.579981015365746,
+     "y": 8.499999999999964
+    },
+    {
+     "id": "juncR",
+     "parent": "right",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 250.71725973418626,
+     "y": 8.499999999999964
+    }
+   ],
+   "edges": [
+    {
+     "id": "left_disk-juncC",
+     "source": "left_disk",
+     "target": "juncC",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "top_disk-juncC",
+     "source": "top_disk",
+     "target": "juncC",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "bottom_disk-juncC",
+     "source": "bottom_disk",
+     "target": "juncC",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "top_gateway-juncR",
+     "source": "top_gateway",
+     "target": "juncR",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "bottom_gateway-juncR",
+     "source": "bottom_gateway",
+     "target": "juncR",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "juncC-juncR",
+     "source": "juncC",
+     "target": "juncR",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "left_disk",
+      "juncC",
+      "juncR"
+     ],
+     [
+      "top_disk",
+      "top_gateway"
+     ],
+     [
+      "bottom_disk",
+      "bottom_gateway"
+     ]
+    ],
+    "vertical": [
+     [
+      "juncC",
+      "top_disk",
+      "bottom_disk"
+     ],
+     [
+      "juncR",
+      "top_gateway",
+      "bottom_gateway"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "juncC",
+     "left": "left_disk",
+     "gap": 120
+    },
+    {
+     "right": "juncR",
+     "left": "juncC",
+     "gap": 120
+    },
+    {
+     "top": "top_disk",
+     "bottom": "juncC",
+     "gap": 120
+    },
+    {
+     "bottom": "bottom_disk",
+     "top": "juncC",
+     "gap": 120
+    },
+    {
+     "top": "top_gateway",
+     "bottom": "juncR",
+     "gap": 120
+    },
+    {
+     "bottom": "bottom_gateway",
+     "top": "juncR",
+     "gap": 120
+    },
+    {
+     "right": "top_gateway",
+     "left": "top_disk",
+     "gap": 120
+    },
+    {
+     "right": "bottom_gateway",
+     "left": "bottom_disk",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -333.21725973418626,
+    "y1": -274.8057440588858,
+    "w": 666.4345194683725,
+    "h": 583.6114881177716
+   },
+   "output": [
+    {
+     "id": "left",
+     "x": -150.148620374776,
+     "y": 25.500000000000014
+    },
+    {
+     "id": "right",
+     "x": 250.71725973418626,
+     "y": 25.500000000000014
+    },
+    {
+     "id": "left_disk",
+     "x": -250.71725973418626,
+     "y": 16.999999999999993
+    },
+    {
+     "id": "top_disk",
+     "x": -49.579981015365746,
+     "y": -183.80574405888578
+    },
+    {
+     "id": "bottom_disk",
+     "x": -49.579981015365746,
+     "y": 217.80574405888578
+    },
+    {
+     "id": "top_gateway",
+     "x": 250.71725973418626,
+     "y": -183.80574405888578
+    },
+    {
+     "id": "bottom_gateway",
+     "x": 250.71725973418626,
+     "y": 217.80574405888578
+    },
+    {
+     "id": "juncC",
+     "x": -49.579981015365746,
+     "y": 16.999999999999993
+    },
+    {
+     "id": "juncR",
+     "x": 250.71725973418626,
+     "y": 16.999999999999993
+    }
+   ]
+  }
+ ]
+}

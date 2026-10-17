@@ -1,0 +1,76 @@
+{
+ "name": "generated-209",
+ "group": "generated",
+ "source": "seed 20261017 index 209",
+ "text": "mindmap\n  )garden 2026 forest hypothesis telescope responsibilities tunnel standard reproducibility quartz(\n    (marble scaffolding hypothesis circuit umbrella river gradient evidence multiplication)\n    ))willow ember quotient landscape((\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 324.8608093261719,
+    "height": 230.9372100830078
+   },
+   {
+    "id": "1",
+    "width": 150,
+    "height": 198
+   },
+   {
+    "id": "2",
+    "width": 312.5,
+    "height": 110
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 543.424881106694,
+    "y": 130.4686050415039
+   },
+   {
+    "id": "1",
+    "x": 834.3497622133885,
+    "y": 130.4686050415039
+   },
+   {
+    "id": "2",
+    "x": 171.25,
+    "y": 130.4686050415039
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 558.424881106694,
+    "startY": 130.4686050415039,
+    "midX": 688.8873216600413,
+    "midY": 130.4686050415039,
+    "endX": 819.3497622133885,
+    "endY": 130.4686050415039
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 528.424881106694,
+    "startY": 130.4686050415039,
+    "midX": 357.337440553347,
+    "midY": 130.4686050415039,
+    "endX": 186.25,
+    "endY": 130.4686050415039
+   }
+  ]
+ }
+}

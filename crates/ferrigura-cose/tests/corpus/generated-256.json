@@ -1,0 +1,52 @@
+{
+ "name": "generated-256",
+ "group": "generated",
+ "source": "seed 20261017 index 256",
+ "text": "mindmap\n  (inventory workflow junction balance willow pixel ember balance keystone infrastructure pixel saddle)\n    ((ripple landscape zephyr island nectar yonder telescope 2026 cipher orbit engine beacon))\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 150,
+    "height": 246
+   },
+   {
+    "id": "1",
+    "width": 241.84678649902344,
+    "height": 241.84678649902344
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 385.34126294263183,
+    "y": 138
+   },
+   {
+    "id": "1",
+    "x": 135.92339324951172,
+    "y": 138
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 370.34126294263183,
+    "startY": 138,
+    "midX": 260.6323280960718,
+    "midY": 138,
+    "endX": 150.92339324951175,
+    "endY": 138
+   }
+  ]
+ }
+}

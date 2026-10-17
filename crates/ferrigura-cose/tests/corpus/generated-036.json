@@ -1,0 +1,26 @@
+{
+ "name": "generated-036",
+ "group": "generated",
+ "source": "seed 20261017 index 36",
+ "text": "mindmap\n  nectar 2026 quartz pixel willow firmware photographs beacon zephyr meadow firmware\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 106
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 135,
+    "y": 68
+   }
+  ],
+  "edgePoints": []
+ }
+}

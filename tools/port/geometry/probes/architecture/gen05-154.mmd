@@ -1,0 +1,42 @@
+architecture-beta
+    group g1(cloud)[Group 1]
+    group g2(cloud)[Group 2] in g1
+    group g3(cloud)[Group 3] in g2
+    group g4[Group 4] in g2
+    group g5(cloud)[Group 5] in g1
+    group g6(cloud)[Group 6] in g5
+    group g7(cloud)[Group 7] in g2
+    service s1(disk)[Service 1] in g4
+    service s2[Service 2] in g4
+    service s3[Service 3] in g1
+    service s4(disk)[Service 4]
+    service s5[Service 5] in g5
+    service s6(disk)[Service 6] in g3
+    service s7[Service 7]
+    service s8(disk)[Service 8] in g7
+    service s9(server) in g5
+    service s10(disk)[Service 10] in g5
+    service s11(internet)[Service 11] in g4
+    service s12(server)[Service 12]
+    service s13(disk)[Service 13]
+    service s14(internet)[Service 14] in g3
+    service s15(internet)[Service 15] in g2
+    service s16(database)[Service 16] in g6
+    junction j1 in g7
+    junction j2 in g4
+    junction j3 in g4
+    s5:T -- T:s13
+    s2{group}:L -- R:s13
+    s12:L <-- L:s2
+    s5:B -- L:s15
+    s16:B -- T:j3
+    s2:T -- B:j1
+    s14:T -[Link 7]- B:s6
+    j1:R <-- L:s8
+    s12:L -[Link 9]- B:s10
+    s3:B -[Link 10]- T:s2
+    s15:R --> T:j3
+    s5:T -- B:s2{group}
+    s11:L -[Link 14]- T:s8
+    align row s5 s9
+    align row s2 s11 s1

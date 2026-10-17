@@ -1,0 +1,212 @@
+{
+ "name": "spec-architecture-10",
+ "group": "spec",
+ "source": "packages/mermaid/src/diagrams/architecture/architecture.spec.ts:219",
+ "text": "architecture-beta\n      group __proto__(cloud)[P]\n      group myPrototypePollutionKey(cloud)[Real]\n      service a(server)[A] in __proto__\n      service b(server)[B] in myPrototypePollutionKey\n      a:R -- L:b",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "__proto__",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "myPrototypePollutionKey",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "a",
+     "parent": "__proto__",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "b",
+     "parent": "myPrototypePollutionKey",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "a-b",
+     "source": "a",
+     "target": "b",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "a",
+      "b"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "b",
+     "left": "a",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "__proto__",
+     "x": -141.6056092172484,
+     "y": 17
+    },
+    {
+     "id": "myPrototypePollutionKey",
+     "x": 101.6056092172484,
+     "y": 17
+    },
+    {
+     "id": "a",
+     "x": -141.6056092172484,
+     "y": 8.5
+    },
+    {
+     "id": "b",
+     "x": 101.6056092172484,
+     "y": 8.5
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "__proto__",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": -141.6056092172484,
+     "y": 17
+    },
+    {
+     "id": "myPrototypePollutionKey",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 101.6056092172484,
+     "y": 17
+    },
+    {
+     "id": "a",
+     "parent": "__proto__",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -141.6056092172484,
+     "y": 8.5
+    },
+    {
+     "id": "b",
+     "parent": "myPrototypePollutionKey",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 101.6056092172484,
+     "y": 8.5
+    }
+   ],
+   "edges": [
+    {
+     "id": "a-b",
+     "source": "a",
+     "target": "b",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "a",
+      "b"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "b",
+     "left": "a",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -224.1056092172484,
+    "y1": -74,
+    "w": 408.2112184344968,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "__proto__",
+     "x": -161.6056092172484,
+     "y": 25.5
+    },
+    {
+     "id": "myPrototypePollutionKey",
+     "x": 81.60560921724839,
+     "y": 25.5
+    },
+    {
+     "id": "a",
+     "x": -161.6056092172484,
+     "y": 17
+    },
+    {
+     "id": "b",
+     "x": 81.60560921724839,
+     "y": 17
+    }
+   ]
+  }
+ ]
+}

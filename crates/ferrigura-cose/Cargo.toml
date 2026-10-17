@@ -1,0 +1,16 @@
+[package]
+name = "ferrigura-cose"
+version = "0.0.0"
+description = "Force-directed layouts ported from the JavaScript sources: cytoscape-cose-bilkent 4.1.0 (the tree path Mermaid's mindmaps use) and cytoscape-fcose 2.2.0 (architecture diagrams)"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+ferrigura-jsmath = { path = "../ferrigura-jsmath" }
+
+[dev-dependencies]
+serde.workspace = true
+serde_json.workspace = true

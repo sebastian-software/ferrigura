@@ -9,21 +9,34 @@
 
 #![warn(missing_docs)]
 
+pub mod architecture;
+pub mod block;
+pub mod c4;
 pub mod class;
 pub mod config;
 pub mod er;
+pub mod event_modeling;
 pub mod flowchart;
 pub mod gantt;
 pub mod git_graph;
 pub mod info;
+pub mod ishikawa;
 pub mod journey;
 pub mod js_object;
+pub mod kanban;
+pub mod mindmap;
+pub mod packet;
 pub mod pie;
+pub mod quadrant_chart;
+pub mod requirement;
+pub mod sankey;
 pub mod sequence;
 pub mod state;
 pub mod theme;
 pub mod timeline;
+pub mod treemap;
 pub mod value;
+pub mod xychart;
 
 /// Version of the canonical model, written as `"version"` into every model. It is bumped when a
 /// field is added, removed or changes meaning; see `docs-port/canonical-model.md`.

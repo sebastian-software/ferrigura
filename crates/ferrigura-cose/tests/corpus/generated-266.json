@@ -1,0 +1,172 @@
+{
+ "name": "generated-266",
+ "group": "generated",
+ "source": "seed 20261017 index 266",
+ "text": "mindmap\n  (workflow saddle hypothesis gradient willow willow tunnel ladder tunnel)\n    ))Umbrella quartz characterisation journey infrastructure inventory junction quotient validation roadmap anchor((\n      (Harbour tunnel cipher firmware gradient island ember anchor landscape workflow engine overview)\n        (Pattern balance engine garden anchor reproducibility forest infrastructure)\n          (standard meadow pixel notebook)\n            (Lantern keystone lantern photographs glacier landscape)\n              {{anchor tunnel}}\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 150,
+    "height": 174
+   },
+   {
+    "id": "1",
+    "width": 312.5,
+    "height": 200
+   },
+   {
+    "id": "2",
+    "width": 150,
+    "height": 198
+   },
+   {
+    "id": "3",
+    "width": 150,
+    "height": 174
+   },
+   {
+    "id": "4",
+    "width": 150,
+    "height": 102
+   },
+   {
+    "id": "5",
+    "width": 150,
+    "height": 174
+   },
+   {
+    "id": "6",
+    "width": 141.453125,
+    "height": 44
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_3_4",
+    "source": "3",
+    "target": "4"
+   },
+   {
+    "id": "edge_4_5",
+    "source": "4",
+    "target": "5"
+   },
+   {
+    "id": "edge_5_6",
+    "source": "5",
+    "target": "6"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 155.89015307957493,
+    "y": 1314.137943254472
+   },
+   {
+    "id": "1",
+    "x": 171.25,
+    "y": 1073.7596718865757
+   },
+   {
+    "id": "2",
+    "x": 152.7729222111684,
+    "y": 821.3990353368415
+   },
+   {
+    "id": "3",
+    "x": 169.36259439291916,
+    "y": 582.0208645528792
+   },
+   {
+    "id": "4",
+    "x": 154.15920629040306,
+    "y": 390.6757650406669
+   },
+   {
+    "id": "5",
+    "x": 169.47069354666337,
+    "y": 199.33813165958634
+   },
+   {
+    "id": "6",
+    "x": 156.99043193304874,
+    "y": 37
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 156.84668204023754,
+    "startY": 1299.1684725775438,
+    "midX": 163.57007653978746,
+    "midY": 1193.948807570524,
+    "endX": 170.2934710393374,
+    "endY": 1088.729142563504
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 170.15467758592308,
+    "startY": 1058.7997163783123,
+    "midX": 162.0114611055842,
+    "midY": 947.5793536117086,
+    "endX": 153.86824462524532,
+    "endY": 836.3589908451049
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 153.8099826618519,
+    "startY": 806.4349280924507,
+    "midX": 161.06775830204379,
+    "midY": 701.7099499448605,
+    "endX": 168.32553394223567,
+    "endY": 596.98497179727
+   },
+   {
+    "id": "edge_3_4",
+    "startX": 168.1745088174267,
+    "startY": 567.0679901581246,
+    "midX": 161.7609003416611,
+    "midY": 486.348314796773,
+    "endX": 155.34729186589553,
+    "endY": 405.6286394354214
+   },
+   {
+    "id": "edge_4_5",
+    "startX": 155.35573222532653,
+    "startY": 375.72356367474566,
+    "midX": 161.81494991853322,
+    "midY": 295.0069483501266,
+    "endX": 168.2741676117399,
+    "endY": 214.29033302550755
+   },
+   {
+    "id": "edge_5_6",
+    "startX": 168.32091344915958,
+    "startY": 184.3822630546746,
+    "midX": 163.23056273985605,
+    "midY": 118.16906582979317,
+    "endX": 158.14021203055253,
+    "endY": 51.95586860491173
+   }
+  ]
+ }
+}

@@ -1,7 +1,9 @@
 //! The DOM step of the reference's `sanitizeText` (`packages/mermaid/src/diagrams/common/common.ts`):
-//! DOMPurify 3.4.12, which the package pins, run with `{ FORBID_TAGS: ['style'] }`. The flowchart DB
-//! runs it on the text of a node, an edge and a subgraph title (`flowDb.ts`), and the node label
-//! runs it again when it is drawn (`shapes/util.ts`).
+//! DOMPurify 3.4.12, which the package pins. On the strict path, which a diagram takes by default,
+//! the reference runs it twice: `removeScript` with DOMPurify's defaults, then again on that output
+//! with `{ FORBID_TAGS: ['style'] }`, so a `style` is kept by the first pass and removed by the
+//! second. The flowchart DB runs it on the text of a node, an edge and a subgraph title
+//! (`flowDb.ts`), and the node label runs it again when it is drawn (`shapes/util.ts`).
 //!
 //! The text is HTML to DOMPurify, so the output is HTML too: `<` that does not start a tag becomes
 //! `&lt;`, `&` becomes `&amp;`, `>` becomes `&gt;`, an entity is written as its character, an
@@ -22,14 +24,22 @@
 //!   DOMPurify keeps it.
 //! - Elements: the namespace of the HTML, SVG and MathML elements is the parser's (an `<svg>` opens
 //!   the SVG namespace; there are no integration points). An element outside DOMPurify's allowed
-//!   list, or `style`, is removed and its children are kept, unless DOMPurify forbids the content
-//!   (`FORBID_CONTENTS`, such as `script` and `title`); an element in the wrong namespace is removed
-//!   with its content (`_checkValidNamespace`).
+//!   list, or a `style` in the second pass, is removed and its children are kept, unless DOMPurify
+//!   forbids the content (`FORBID_CONTENTS`, such as `script` and `title`); an element in the wrong
+//!   namespace is removed with its content (`_checkValidNamespace`).
 //! - Attributes: a name must be in DOMPurify's allowed list, or `data-*` or `aria-*`; a value that
 //!   is not one of the URI-safe attributes must match `IS_ALLOWED_URI` after the whitespace is
 //!   removed (a `data:` URI is allowed for `img`, `audio`, `video`, `source`, `image` and `track`),
 //!   and a value that is not empty must do so. The value is trimmed unless the name is `value`. Values
 //!   with `-->` or `</style` and the like are removed, as is `for` outside `label` and `output`.
+//! - The anchor hooks (`setupDompurifyHooks`): on an HTML `a`, a `target` is copied to
+//!   `data-temp-href-target` before DOMPurify checks the attributes, and read back after it. The
+//!   `target` is then appended with the value that survived, the temporary attribute is removed,
+//!   and `rel="noopener"` is set when the value is `_blank`, in place if `rel` was kept and
+//!   appended otherwise. A `target` whose value DOMPurify refuses is lost, with no `rel`. An `a`
+//!   in `svg` or `math` has the tag name `a`, not `A`, so the hooks do not reach it. A
+//!   `data-temp-href-target` written in the source is read back as a `target` when the element has
+//!   none, so `<a data-temp-href-target="_blank">` gets `rel="noopener"` too.
 //! - Serialisation: `&`, no-break space and `<`, `>` in text; `&`, no-break space and `"` in
 //!   attribute values; a HTML void element has no end tag; the content of a raw-text element is
 //!   written as it is.
@@ -37,10 +47,12 @@
 //! Not reproduced, and where the result can differ: the element-level implied end tags (`p`, `li`,
 //! table parts), the adoption agency for misnested formatting elements, foster parenting, the
 //! breakout of `<b>` and other HTML tags out of `<svg>`, the case adjustment of SVG and MathML
-//! element and attribute names, the DOM-clobbering check of `id` and `name`, the mXSS checks, the
-//! `rel="noopener"` hook that the reference installs for `target="_blank"`, and `dompurifyConfig`.
-//! The named character references are the full HTML5 table (`entities.rs`). The corpus in the tests
-//! holds DOMPurify's own output for the cases the subset covers.
+//! element and attribute names, the DOM-clobbering check of `id` and `name`, the mXSS checks,
+//! `dompurifyConfig`, and the `loose` and `htmlLabels: false` paths of `sanitizeMore`, which run one
+//! pass and reach the anchor hooks only when an earlier strict call in the process has installed
+//! them. The named character references are the full HTML5 table (`entities.rs`). The corpora in
+//! the tests hold the reference's output for the cases the subset covers: `DOMPURIFY_CORPUS` for
+//! the cases without an anchor, `HOOKED_CORPUS` for the anchors.
 
 use crate::entities;
 use crate::text::js_trim;
@@ -83,10 +95,18 @@ const BODY: Parent<'static> = Parent {
     name: "body",
 };
 
-/// `sanitizeText` with DOMPurify's `{ FORBID_TAGS: ['style'] }`, on the subset described in the
-/// module documentation. Text without `<` is returned as it is.
+/// `sanitizeText` on the strict path of `sanitizeMore`, on the subset described in the module
+/// documentation: DOMPurify with its defaults (`removeScript`), then DOMPurify with
+/// `{ FORBID_TAGS: ['style'] }` on that output. Text without `<` is returned as it is.
 #[must_use]
 pub fn sanitize_text(text: &str) -> String {
+    dompurify(&dompurify(text, false), true)
+}
+
+/// One DOMPurify pass over `text` on the subset: `forbid_style` is the `FORBID_TAGS: ['style']` of
+/// the second pass. The pass runs the anchor hooks, as the reference installs them before its first
+/// pass. Text without `<` is returned as it is, which is DOMPurify's own exit.
+fn dompurify(text: &str, forbid_style: bool) -> String {
     if !text.contains('<') {
         return text.to_owned();
     }
@@ -96,7 +116,7 @@ pub fn sanitize_text(text: &str) -> String {
         .chars()
         .collect();
     let body = parse(&normalized);
-    let kept = sanitize_children(body, BODY);
+    let kept = sanitize_children(body, BODY, forbid_style);
     let mut out = String::with_capacity(text.len());
     serialize(&kept, false, &mut out);
     out
@@ -106,7 +126,7 @@ pub fn sanitize_text(text: &str) -> String {
 /// reference takes the escape branch of `sanitizeMore`, which turns `<br>` into a placeholder,
 /// escapes `<`, `>` and `=`, puts the breaks back as `<br/>`, and then runs DOMPurify. The
 /// result is therefore not the DOMPurify output alone: `a=b` gives `a&equals;b`. The empty text
-/// is returned as it is.
+/// is returned as it is. The escape branch runs one pass, with `{ FORBID_TAGS: ['style'] }`.
 #[must_use]
 pub fn sanitize_section(text: &str) -> String {
     if text.is_empty() {
@@ -117,7 +137,7 @@ pub fn sanitize_section(text: &str) -> String {
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('=', "&equals;");
-    sanitize_text(&escaped.replace("#br#", "<br/>"))
+    dompurify(&escaped.replace("#br#", "<br/>"), true)
 }
 
 /// `replace(/<\/?br\s*\/?>/gi, '#br#')`: a line break tag, in any case and with JavaScript blanks,
@@ -684,8 +704,10 @@ fn decode_attribute(chars: &[char]) -> String {
     out
 }
 
-/// The text with its character references decoded, as the HTML parser reads the text state.
-pub(crate) fn decode_references(text: &str) -> String {
+/// The text with its character references decoded, as the HTML parser reads the text state. A
+/// reference the parser does not know is left as it is.
+#[must_use]
+pub fn decode_references(text: &str) -> String {
     let chars: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());
     let mut index = 0;
@@ -788,8 +810,9 @@ fn numeric_character(value: u32) -> char {
 }
 
 /// DOMPurify's `_sanitizeElements` and `_sanitizeAttributes` over a list of nodes, whose parent is
-/// `parent`: the nodes that are kept, with their attributes filtered.
-fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>) -> Vec<Node> {
+/// `parent`: the nodes that are kept, with their attributes filtered. `forbid_style` is the
+/// `FORBID_TAGS: ['style']` of the second pass.
+fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>, forbid_style: bool) -> Vec<Node> {
     let mut kept = Vec::with_capacity(nodes.len());
     for node in nodes {
         let element = match node {
@@ -799,24 +822,29 @@ fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>) -> Vec<Node> {
             }
             Node::Element(element) => element,
         };
-        let forbidden = element.name == "style";
+        let forbidden = forbid_style && element.name == "style";
         if forbidden || !is_allowed_element(&element.name) {
             // `_sanitizeDisallowedNode`: the children move up unless the content is forbidden.
             if !FORBID_CONTENTS.contains(&element.name.as_str()) {
-                kept.extend(sanitize_children(element.children, parent));
+                kept.extend(sanitize_children(element.children, parent, forbid_style));
             }
             continue;
         }
         if !namespace_allowed(element.namespace, &element.name, parent) {
             continue;
         }
-        let attributes = sanitize_attributes(&element.name, element.attributes);
+        let attributes = if element.namespace == Namespace::Html && element.name == "a" {
+            sanitize_anchor_attributes(element.attributes)
+        } else {
+            sanitize_attributes(&element.name, element.attributes)
+        };
         let children = sanitize_children(
             element.children,
             Parent {
                 namespace: element.namespace,
                 name: &element.name,
             },
+            forbid_style,
         );
         kept.push(Node::Element(Element {
             name: element.name,
@@ -826,6 +854,48 @@ fn sanitize_children(nodes: Vec<Node>, parent: Parent<'_>) -> Vec<Node> {
         }));
     }
     kept
+}
+
+/// The attribute that `setupDompurifyHooks` (`common.ts`) keeps a `target` in while DOMPurify runs.
+const TEMPORARY_ATTRIBUTE: &str = "data-temp-href-target";
+
+/// The two anchor hooks of `setupDompurifyHooks` for an HTML `a`, around `_sanitizeAttributes`.
+/// `beforeSanitizeAttributes` copies the `target` (the first one: the parser keeps it) to the
+/// temporary attribute, which replaces one already there in place. DOMPurify then checks that as a
+/// data attribute, and drops the `target` itself, which is not allowed. `afterSanitizeAttributes`
+/// reads the temporary attribute back if it survived, appends `target` with its value, removes the
+/// temporary attribute, and sets `rel` to `noopener` for `_blank`, in place when `rel` was kept.
+fn sanitize_anchor_attributes(mut attributes: Vec<(String, String)>) -> Vec<(String, String)> {
+    if let Some(target) = attributes
+        .iter()
+        .find(|(name, _)| name == "target")
+        .map(|(_, value)| value.clone())
+    {
+        set_attribute(&mut attributes, TEMPORARY_ATTRIBUTE, target);
+    }
+    let mut kept = sanitize_attributes("a", attributes);
+    let Some(position) = kept
+        .iter()
+        .position(|(name, _)| name == TEMPORARY_ATTRIBUTE)
+    else {
+        return kept;
+    };
+    let (_, target) = kept.remove(position);
+    let blank = target == "_blank";
+    kept.push(("target".to_owned(), target));
+    if blank {
+        set_attribute(&mut kept, "rel", "noopener".to_owned());
+    }
+    kept
+}
+
+/// `setAttribute`: the value of an attribute that is there is replaced in place, and one that is
+/// not is appended.
+fn set_attribute(attributes: &mut Vec<(String, String)>, name: &str, value: String) {
+    match attributes.iter_mut().find(|(existing, _)| existing == name) {
+        Some(entry) => entry.1 = value,
+        None => attributes.push((name.to_owned(), value)),
+    }
 }
 
 /// `ALLOWED_TAGS`: the union of the HTML, SVG and MathML lists.
@@ -1770,10 +1840,13 @@ const URI_SAFE_ATTRIBUTES: &[&str] = &[
 
 #[cfg(test)]
 mod tests {
-    use super::sanitize_text;
+    use super::{dompurify, sanitize_text};
 
-    /// DOMPurify 3.4.12 run with jsdom and `{ FORBID_TAGS: ["style"] }` on each input, in this order:
-    /// the outputs the port must give, for the cases the subset covers (inputs with a `<`).
+    /// The reference's `sanitizeText` on the strict path (DOMPurify run twice, see the module
+    /// documentation), with jsdom, for each input in this order: the outputs the port must give, for
+    /// the cases the subset covers that have no anchor with a `target` (inputs with a `<`). One pass
+    /// with `{ FORBID_TAGS: ["style"] }` gives the same outputs for these. The anchors are in
+    /// `HOOKED_CORPUS`.
     const DOMPURIFY_CORPUS: &[(&str, &str)] = &[
         ("<11", "&lt;11"),
         ("5 > 3 && 2 < 4", "5 &gt; 3 &amp;&amp; 2 &lt; 4"),
@@ -1852,10 +1925,6 @@ mod tests {
         (
             "<select><option>a</option></select>",
             "<select><option>a</option></select>",
-        ),
-        (
-            "<a target=\"_blank\" href=\"x\">t</a>",
-            "<a href=\"x\">t</a>",
         ),
         ("<b title='it&apos;s'>x</b>", "<b title=\"it's\">x</b>"),
         ("<b title='a\"b'>x</b>", "<b title=\"a&quot;b\">x</b>"),
@@ -1946,6 +2015,284 @@ mod tests {
         ("<template>a</template><b>t</b>", "<b>t</b>"),
     ];
 
+    /// The reference's `sanitizeText` on the strict path, with its anchor hooks: the first pass
+    /// installs them, so every strict call has them. The inputs are the anchors (an HTML `a` with a
+    /// `target`, and the values, names and namespaces that the hooks leave alone), in this order.
+    const HOOKED_CORPUS: &[(&str, &str)] = &[
+        (
+            "<a target=\"_blank\" href=\"x\">t</a>",
+            "<a href=\"x\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a href=\"x\" target=\"_blank\">t</a>",
+            "<a href=\"x\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" rel=\"nofollow\" href=\"x\">t</a>",
+            "<a rel=\"noopener\" href=\"x\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a rel=\"nofollow\" target=\"_blank\" href=\"x\">t</a>",
+            "<a rel=\"noopener\" href=\"x\" target=\"_blank\">t</a>",
+        ),
+        ("<a target=\"_self\">t</a>", "<a target=\"_self\">t</a>"),
+        ("<a target=\"_top\">t</a>", "<a target=\"_top\">t</a>"),
+        ("<a target=\"frame1\">t</a>", "<a target=\"frame1\">t</a>"),
+        ("<a target=\"\">t</a>", "<a target=\"\">t</a>"),
+        (
+            "<a target=\"  _blank  \">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        ("<a target=\"_BLANK\">t</a>", "<a target=\"_BLANK\">t</a>"),
+        (
+            "<A TARGET=\"_blank\">t</A>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a Target=\"_blank\">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" target=\"_self\">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        ("<a target=\"a&amp;b\">t</a>", "<a target=\"a&amp;b\">t</a>"),
+        (
+            "<a target=\"a&quot;b\">t</a>",
+            "<a target=\"a&quot;b\">t</a>",
+        ),
+        ("<a target='a\"b'>t</a>", "<a target=\"a&quot;b\">t</a>"),
+        ("<a target=\"a&#39;b\">t</a>", "<a target=\"a'b\">t</a>"),
+        ("<b target=\"_blank\">x</b>", "<b>x</b>"),
+        ("<span target=\"_blank\">x</span>", "<span>x</span>"),
+        (
+            "<svg><a target=\"_blank\" href=\"x\">t</a></svg>",
+            "<svg><a href=\"x\">t</a></svg>",
+        ),
+        (
+            "<svg><a href=\"x\" target=\"_blank\">t</a></svg>",
+            "<svg><a href=\"x\">t</a></svg>",
+        ),
+        (
+            "<a target=\"_blank\" class=\"c\" href=\"x\" title=\"t\" id=\"i\">t</a>",
+            "<a class=\"c\" href=\"x\" title=\"t\" id=\"i\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" href=\"javascript:alert(1)\">x</a>",
+            "<a rel=\"noopener\" target=\"_blank\">x</a>",
+        ),
+        (
+            "<a target=\"_blank\" onclick=\"x()\">x</a>",
+            "<a rel=\"noopener\" target=\"_blank\">x</a>",
+        ),
+        (
+            "<a target=\"_blank\" data-x=\"1\">x</a>",
+            "<a data-x=\"1\" rel=\"noopener\" target=\"_blank\">x</a>",
+        ),
+        ("<a target=\"x-->y\">t</a>", "<a>t</a>"),
+        ("<a target=\"</style>\">t</a>", "<a>t</a>"),
+        (
+            "<a target=\"_blank\">unclosed",
+            "<a rel=\"noopener\" target=\"_blank\">unclosed</a>",
+        ),
+        (
+            "<a target=\"_blank\" rel=\"\">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" aria-label=\"q\">t</a>",
+            "<a aria-label=\"q\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" href=\"x\" rel=\"noopener\">t</a>",
+            "<a href=\"x\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" style=\"color:red\">t</a>",
+            "<a style=\"color:red\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" href=\"x\">a</a> and <a target=\"_self\" href=\"y\">b</a>",
+            "<a href=\"x\" rel=\"noopener\" target=\"_blank\">a</a> and <a href=\"y\" target=\"_self\">b</a>",
+        ),
+        (
+            "<a target=\"_blank \">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=_blank>t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        ("<a target>t</a>", "<a target=\"\">t</a>"),
+        ("<a target=\" \">t</a>", "<a target=\"\">t</a>"),
+        ("<math><a target=\"_blank\">x</a></math>", "<math></math>"),
+        (
+            "<a target=\"_blank\"><svg><a target=\"_blank\">x</a></svg></a>",
+            "<a rel=\"noopener\" target=\"_blank\"><svg><a>x</a></svg></a>",
+        ),
+        (
+            "<a target=\"_blank\" href=\"x\" rel>t</a>",
+            "<a href=\"x\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" REL=\"x\" href=\"x\">t</a>",
+            "<a rel=\"noopener\" href=\"x\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a rel=\"javascript:x\" target=\"_blank\">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a data-temp-href-target=\"zz\">x</a>",
+            "<a target=\"zz\">x</a>",
+        ),
+        (
+            "<a data-temp-href-target=\"_blank\">x</a>",
+            "<a rel=\"noopener\" target=\"_blank\">x</a>",
+        ),
+        (
+            "<a target=\"_blank\" data-temp-href-target=\"zz\">x</a>",
+            "<a rel=\"noopener\" target=\"_blank\">x</a>",
+        ),
+        (
+            "<a DATA-TEMP-HREF-TARGET=\"_blank\">x</a>",
+            "<a rel=\"noopener\" target=\"_blank\">x</a>",
+        ),
+        (
+            "<b data-temp-href-target=\"_blank\">x</b>",
+            "<b data-temp-href-target=\"_blank\">x</b>",
+        ),
+        (
+            "<a target=\"_blank\" href=\"  https://x  \">t</a>",
+            "<a href=\"https://x\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\"><img src=\"x.png\"></a>",
+            "<a rel=\"noopener\" target=\"_blank\"><img src=\"x.png\"></a>",
+        ),
+        (
+            "<a target=\"_blank\" id=\"i\" name=\"n\">t</a>",
+            "<a id=\"i\" name=\"n\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" href=\"x\" target=\"\">t</a>",
+            "<a href=\"x\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" value=\" v \">t</a>",
+            "<a value=\" v \" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\"></a>",
+            "<a rel=\"noopener\" target=\"_blank\"></a>",
+        ),
+        (
+            "<a target=\"_blank\" style=\"x\" href=\"javascript:1\" class=\"c\" target=\"_self\">t</a>",
+            "<a style=\"x\" class=\"c\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        ("x<style>p{color:red}</style>y", "xy"),
+        (
+            "x<style>p{color:red}</style>y <a target=\"_blank\">z</a>",
+            "xy <a rel=\"noopener\" target=\"_blank\">z</a>",
+        ),
+        (
+            "<a target=\"_blank\"><style>q</style></a>",
+            "<a rel=\"noopener\" target=\"_blank\"></a>",
+        ),
+        (
+            "<svg><style>x</style><a target=\"_blank\">t</a></svg>",
+            "<svg><a>t</a></svg>",
+        ),
+        (
+            "<a rel=\"x\" target=\"_blank\" href=\"javascript:1\" class=\"c\">t</a>",
+            "<a rel=\"noopener\" class=\"c\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a data-temp-href-target=\"a&amp;b\">x</a>",
+            "<a target=\"a&amp;b\">x</a>",
+        ),
+        (
+            "<a target=\"_blank\" aria-label=\"x\" data-x=\"1\" title=\"t\">t</a>",
+            "<a aria-label=\"x\" data-x=\"1\" title=\"t\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<b><a target=\"_blank\">t</a></b>",
+            "<b><a rel=\"noopener\" target=\"_blank\">t</a></b>",
+        ),
+        (
+            "<a target=\"_blank\" rel=\"a b\">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"  _blank  \" rel=\"nofollow\">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a data-temp-href-target=\"_blank\" target=\"_self\">x</a>",
+            "<a target=\"_self\">x</a>",
+        ),
+        (
+            "<a data-temp-href-target=\" _blank \">x</a>",
+            "<a rel=\"noopener\" target=\"_blank\">x</a>",
+        ),
+        (
+            "<a target=\"_blank\" data-temp-href-target=\"x-->y\">x</a>",
+            "<a rel=\"noopener\" target=\"_blank\">x</a>",
+        ),
+        ("<a data-temp-href-target=\"x-->y\">x</a>", "<a>x</a>"),
+        ("<a target=\"x&lt;y\">t</a>", "<a target=\"x<y\">t</a>"),
+        (
+            "<a target=\"&nbsp;_blank\">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank&nbsp;\">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\n\">t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target='_blank'>t</a>",
+            "<a rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" href=\"x\"><img src=\"y.png\" alt=\"i\"></a> after",
+            "<a href=\"x\" rel=\"noopener\" target=\"_blank\"><img src=\"y.png\" alt=\"i\"></a> after",
+        ),
+        (
+            "text <a target=\"_blank\" href=\"https://e.x/?a=1&amp;b=2\">link</a> more",
+            "text <a href=\"https://e.x/?a=1&amp;b=2\" rel=\"noopener\" target=\"_blank\">link</a> more",
+        ),
+        (
+            "<a target=\"_blank\" href=\"x\" rel=\"noopener\"><b>bold</b></a>",
+            "<a href=\"x\" rel=\"noopener\" target=\"_blank\"><b>bold</b></a>",
+        ),
+        (
+            "<a href=\"x\"></a><a target=\"_blank\" class=\"k\"></a>",
+            "<a href=\"x\"></a><a class=\"k\" rel=\"noopener\" target=\"_blank\"></a>",
+        ),
+        (
+            "<a target=\"_blank\" class=\"a\"/>x",
+            "<a class=\"a\" rel=\"noopener\" target=\"_blank\">x</a>",
+        ),
+        (
+            "<a target=\"_blank\" title=\"a'b\">t</a>",
+            "<a title=\"a'b\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" data-foo=\"x\" style=\"c\" href=\"https://q\" id=\"z\">t</a>",
+            "<a data-foo=\"x\" style=\"c\" href=\"https://q\" id=\"z\" rel=\"noopener\" target=\"_blank\">t</a>",
+        ),
+        (
+            "<a target=\"_blank\" rel=\"noopener\" data-x=\"1\">t</a>",
+            "<a rel=\"noopener\" data-x=\"1\" target=\"_blank\">t</a>",
+        ),
+        ("<a target=\"_BLANK \">t</a>", "<a target=\"_BLANK\">t</a>"),
+        ("<a target=\"blank\">t</a>", "<a target=\"blank\">t</a>"),
+    ];
+
     #[test]
     fn the_subset_matches_dompurify_on_the_corpus() {
         for (input, expected) in DOMPURIFY_CORPUS {
@@ -1955,6 +2302,54 @@ mod tests {
 
     /// A `<` that starts no tag is text, and DOMPurify writes it as `&lt;`: the `<11` label of
     /// `nightly-check/v2/03-should-render-raw-strings`, which the reference draws as `<11`.
+    #[test]
+    fn the_anchor_hooks_match_the_reference_on_the_hooked_corpus() {
+        for (input, expected) in HOOKED_CORPUS {
+            assert_eq!(sanitize_text(input), *expected, "input {input:?}");
+        }
+    }
+
+    /// The hooks append `target`, then `rel` for `_blank`, to a first pass; the second pass finds
+    /// `rel` before `target` and sets it in place, which is the order the reference gives.
+    #[test]
+    fn a_blank_target_is_written_after_the_attributes_with_rel_noopener_before_it() {
+        assert_eq!(
+            sanitize_text("<a target=\"_blank\" href=\"x\">t</a>"),
+            "<a href=\"x\" rel=\"noopener\" target=\"_blank\">t</a>"
+        );
+        assert_eq!(
+            sanitize_text("<a target=\"_top\" href=\"x\">t</a>"),
+            "<a href=\"x\" target=\"_top\">t</a>"
+        );
+    }
+
+    /// A `target` whose value DOMPurify refuses leaves the temporary attribute out, so the hooks set
+    /// neither `target` nor `rel`.
+    #[test]
+    fn a_target_that_dompurify_refuses_is_lost_with_its_rel() {
+        assert_eq!(sanitize_text("<a target=\"x-->y\">t</a>"), "<a>t</a>");
+    }
+
+    /// `common.spec.ts`, `should detect unsecured target attribute, if value is _blank then generate
+    /// a secured link`: `removeScript` is the first pass alone, which appends `target`, then `rel`.
+    /// The strict `sanitizeText` runs the second pass on that, and `rel` comes first.
+    #[test]
+    fn the_first_pass_alone_appends_target_and_then_rel() {
+        assert_eq!(
+            dompurify(
+                "<a href=\"https://mermaid.js.org/\" target=\"_blank\">note about mermaid</a>",
+                false
+            ),
+            "<a href=\"https://mermaid.js.org/\" target=\"_blank\" rel=\"noopener\">note about mermaid</a>"
+        );
+        assert_eq!(
+            sanitize_text(
+                "<a href=\"https://mermaid.js.org/\" target=\"_blank\">note about mermaid</a>"
+            ),
+            "<a href=\"https://mermaid.js.org/\" rel=\"noopener\" target=\"_blank\">note about mermaid</a>"
+        );
+    }
+
     #[test]
     fn a_less_than_that_starts_no_tag_is_written_as_an_entity() {
         assert_eq!(sanitize_text("<11"), "&lt;11");

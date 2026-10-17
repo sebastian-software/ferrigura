@@ -372,6 +372,100 @@ function getRelativeConstraints(
   return relativeConstraints;
 }
 
+/**
+ * The page's capture hook for the fcose differential corpus: the geometry harness installs
+ * `globalThis.__mermaidFcoseCapture` (tools/port/geometry/common.ts) and the corpus tool does the
+ * same (crates/ferrigura-cose/tools/capture-fcose-corpus.ts). Without the hook the helpers below
+ * are never called, so a normal render runs exactly the same layout.
+ */
+type FcoseCapture = (record: unknown) => void;
+
+function fcoseCapture(): FcoseCapture | undefined {
+  const hook = (globalThis as { __mermaidFcoseCapture?: unknown }).__mermaidFcoseCapture;
+  return typeof hook === 'function' ? (hook as FcoseCapture) : undefined;
+}
+
+/** A JSON copy: no cytoscape objects, and no value that a later run can still change. */
+function plainCopy<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+// cspell:ignore eles
+/**
+ * The fields of the layout options object that cytoscape keeps on the layout (`layout.options`).
+ * fcose reads the same fields at the start of each run (cytoscape-fcose index.js, run()).
+ */
+interface FcoseLayoutOptions {
+  quality: string;
+  randomize: boolean;
+  nodeSeparation: number;
+  numIter: number;
+  nodeDimensionsIncludeLabels: boolean;
+  eles: cytoscape.CollectionReturnValue;
+  idealEdgeLength(edge: cytoscape.EdgeSingular): number;
+  edgeElasticity(edge: cytoscape.EdgeSingular): number;
+}
+
+/** The constraint objects as cy.layout receives them. */
+interface FcoseConstraints {
+  alignmentConstraint?: unknown;
+  relativePlacementConstraint?: unknown;
+}
+
+/**
+ * The input of one fcose run, read at the moment of the call. Only called when a hook is installed.
+ * The dimensions are the ones fcose lays out with (cytoscape-fcose cose.js, layoutDimensions call).
+ * The bounds are those of `options.eles`, from which fcose takes the component centre
+ * (index.js, run(): boundingBox.x1 + w / 2).
+ */
+function fcoseRunInput(
+  cy: cytoscape.Core,
+  layout: cytoscape.Layouts,
+  seed: number,
+  constraints: FcoseConstraints
+) {
+  const options = (layout as unknown as { options: FcoseLayoutOptions }).options;
+  const bounds = options.eles.boundingBox();
+  return {
+    seed,
+    options: {
+      quality: options.quality,
+      randomize: options.randomize,
+      nodeSeparation: options.nodeSeparation,
+      numIter: options.numIter,
+      nodeDimensionsIncludeLabels: options.nodeDimensionsIncludeLabels,
+    },
+    nodes: cy.nodes().map((node) => {
+      const parent = node.parent();
+      const { w, h } = node.layoutDimensions({ nodeDimensionsIncludeLabels: false });
+      return {
+        id: node.id(),
+        parent: parent.nonempty() ? parent.first().id() : null,
+        width: w,
+        height: h,
+        padding: Number.parseInt(String(node.css('padding')), 10),
+        x: node.position().x,
+        y: node.position().y,
+      };
+    }),
+    edges: cy.edges().map((edge) => ({
+      id: edge.id(),
+      source: edge.source().id(),
+      target: edge.target().id(),
+      idealLength: options.idealEdgeLength(edge),
+      elasticity: options.edgeElasticity(edge),
+    })),
+    alignmentConstraint: constraints.alignmentConstraint,
+    relativePlacementConstraint: constraints.relativePlacementConstraint,
+    bounds: { x1: bounds.x1, y1: bounds.y1, w: bounds.w, h: bounds.h },
+  };
+}
+
+/** The positions of every node after a run, in cy.nodes() order. Only called when a hook is set. */
+function fcosePositions(cy: cytoscape.Core) {
+  return cy.nodes().map((node) => ({ id: node.id(), x: node.position().x, y: node.position().y }));
+}
+
 function layoutArchitecture(
   services: ArchitectureService[],
   junctions: ArchitectureJunction[],
@@ -474,6 +568,13 @@ function layoutArchitecture(
     // Create the relative constraints for fcose by using an inverse of the spatial map and performing BFS on it
     const relativePlacementConstraint = getRelativeConstraints(spatialMaps, db, layoutHints);
 
+    // fcose sanitises these objects in place during run 1, so run 2 is given a copy taken here,
+    // before cy.layout receives them. Taken only when a hook is set; otherwise nothing reads it.
+    const capture = fcoseCapture();
+    const constraintsAsGiven: FcoseConstraints = capture
+      ? plainCopy({ alignmentConstraint, relativePlacementConstraint })
+      : {};
+
     const iconSize = db.getConfigField('iconSize');
     const sameGroupIdealLength = db.getConfigField('idealEdgeLengthMultiplier') * iconSize;
     const crossGroupIdealLength = 0.5 * iconSize;
@@ -511,6 +612,11 @@ function layoutArchitecture(
 
     // Once the diagram has been generated and the service's position cords are set, adjust the XY edges to have a 90deg bend
     layout.one('layoutstop', () => {
+      // Run 1's positions, read before the segment weights below are set (they change edge styles
+      // only, but the record should be the layout's output and nothing else).
+      if (capture) {
+        capture(plainCopy({ stage: 'output', run: 1, positions: fcosePositions(cy) }));
+      }
       function getSegmentWeights(
         source: Position,
         target: Position,
@@ -577,9 +683,31 @@ function layoutArchitecture(
         }
       }
       cy.endBatch();
+      // Run 2 reads the segment weights that the loop above has just set, so its input comes after it.
+      if (capture) {
+        capture(
+          plainCopy({
+            stage: 'input',
+            run: 2,
+            ...fcoseRunInput(cy, layout, seed, constraintsAsGiven),
+          })
+        );
+      }
       withSeededRandom(seed, () => layout.run());
+      if (capture) {
+        capture(plainCopy({ stage: 'output', run: 2, positions: fcosePositions(cy) }));
+      }
     });
     try {
+      if (capture) {
+        capture(
+          plainCopy({
+            stage: 'input',
+            run: 1,
+            ...fcoseRunInput(cy, layout, seed, constraintsAsGiven),
+          })
+        );
+      }
       withSeededRandom(seed, () => layout.run());
     } catch (err) {
       // fcose throws a raw `RangeError: Invalid array length` from inside

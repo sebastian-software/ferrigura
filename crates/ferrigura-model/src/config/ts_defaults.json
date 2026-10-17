@@ -1,4 +1,7 @@
 {
+  "ishikawa": {
+    "useMaxWidth": true
+  },
   "pie": {
     "useWidth": 984
   },
@@ -13,5 +16,16 @@
     "valueFontSize": 12,
     "labelFontSize": 14,
     "valueFormat": ","
+  },
+  "xyChart": {
+    "xAxis": {
+      "$ref": "#/$defs/XYChartAxisConfig"
+    },
+    "yAxis": {
+      "$ref": "#/$defs/XYChartAxisConfig"
+    }
+  },
+  "sankey": {
+    "useMaxWidth": true
   }
 }

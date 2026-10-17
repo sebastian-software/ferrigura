@@ -99,6 +99,45 @@ The model is the DB state after parsing, as [timeline/PLAN.md](./timeline/PLAN.m
 - **Sanitising.** The title and the accessibility texts go through the sanitiser of the flowchart (`sanitize.rs`, with the full HTML5 names of `entities.rs`), before the entities are read. The task names, the people and the sections are not sanitised.
 - **Scores** are `Number()` of the text, as a number or one of the sentinel strings above.
 
+## XyChart
+
+The xychart model is the DB state after the parse, before the chart builder runs, with the field list in [xychart/PLAN.md](./xychart/PLAN.md), section 7. Its own rules:
+
+- **Orientation** is the header keyword when it is given, else the configuration's `chartOrientation`. The keyword is compared as typed, so `HORIZONTAL` is `vertical`.
+- **Title** is the DB's `getDiagramTitle()`, so a grammar title replaces the front matter title even when it is blank. The DB's `getXYChartData().title` is not used: only `getDrawableElem` sets it.
+- **Absent values are `null`.** A category without a value is `[category, null]`. The other fields keep `""` and `[]` as the rule above says.
+- **Non-finite numbers** (the range of a chart with no plot, or a number beyond the double range) are the sentinel strings, as in the other models.
+- **X values are strings** as the DB stores them: the category, or the JavaScript string of the linear position (`1.6666666666666667`, `1e-7`).
+- **Colours** are the palette entries of the theme the configuration resolves to, one per plot in declaration order. The exporter applies ferrigura's rule for themes it does not ship.
+
+## QuadrantChart
+
+The quadrant model is the DB state after the parse, before the chart builder lays it out, with the field list in [quadrant/PLAN.md](./quadrant/PLAN.md), section 7. Its own rules:
+
+- **Coordinates** are `Number(text)` of the token the grammar read, the value the scale reads: `0x5` is 5, and `0,5` is `"NaN"`.
+- **Entities** keep the placeholders the DB holds (`ﬂ°°35¶ß`); the renderer decodes them.
+- **Styles are present only when set**: a point or class without a `radius` has no `radius` key.
+- **Order**: the points are in the DB's order, the last source line first, and the classes are a list of `[name, styles]` pairs in the order of their first definition.
+
+## Block
+
+The block model is the DB state after parsing (`blockDB.ts`), with the field list and the quirks in [block/PLAN.md](./block/PLAN.md), sections 6 and 8. Its own rules:
+
+- **Generated ids are placeholders.** The ids the reference draws at random (of space cells and anonymous composites) are deterministic in the port, and the differential replaces them by `$genK` on both sides, in tree order. A space cell's label is its generated id, so it takes the same placeholder. The counter itself is not compared (section 7 of the plan).
+- **Undefined is absent**, with one exception: the first block of a chained link (`A --> B --> C`) is an empty object, as the reference's DB holds it (quirk B2).
+- **Texts** are the sanitised labels, with the entity placeholders kept, as the DB keeps them. Blanks in directions and styles are kept as written.
+- **Left out**: the layout, the palette slots and the shapes (renderer concerns), and the edge's `type`, which is always `edge`.
+
+## Packet
+
+The packet model is the DB state after the parse, with the rows of blocks and the header texts, as [packet/PLAN.md](./packet/PLAN.md), section 6, says. Its own rules:
+
+- **Numbers.** A bit number is a double, as the DB holds it, and a non-finite one is its sentinel string (`"Infinity"`). The `bits` of a piece split at a row boundary is one less than its width, as the DB gives it (quirk 1).
+- **Labels** are the DB's strings: the grammar's value with the escapes resolved and the entity placeholders kept, and the markup raw.
+- **Texts.** The title and the accessibility texts are sanitised as the DB sanitises them. The title follows the precedence of the section above.
+- **Rows** depend on `bitsPerRow`, which is read from the effective configuration (quirk 9), and not stored in the model. No row is empty.
+- **Left out**: the configuration and the styles, which only the renderer reads.
+
 ## ER
 
 The ER model is the DB state after parsing (`erDb.ts`), with the DB's names in camelCase, as the flowchart's model is. The full field list and the exclusions are in [er/PLAN.md](./er/PLAN.md), sections 4 and 5; the rules here are the ones the other diagrams do not share.
@@ -108,6 +147,15 @@ The ER model is the DB state after parsing (`erDb.ts`), with the DB's names in c
 - **Members.** A subgraph's `nodes` are the values the grammar gives inside it, in order: entity names, nested subgraph ids, and the strings of the `classDef`, `class`, `style`, `accTitle` and `accDescr` statements. Empty and repeated strings are dropped. These are the DB's members, not what the renderer draws.
 - **Cardinalities** are the DB's strings (`ZERO_OR_ONE`, `ONLY_ONE`, `MD_PARENT`, and the rest); `cardA` is the end on the right of the line, `cardB` the end on the left.
 - **Classes.** An entity's `classes` are the names given by `:::` and `class`, without the `default` that the DB starts with. A class keeps its `textStyles`, which the DB derives from its styles.
+
+## Requirement
+
+The requirement model is the DB state after parsing (`requirementDb.ts`), with the field list in [requirement/PLAN.md](./requirement/PLAN.md), section 6. Its own rules:
+
+- **Texts keep the placeholders.** The DB keeps the entities as placeholders (`ﬂ°name¶ß`), and the requirement, element, relationship and class texts are not sanitised, so the model holds them as the DB does. The renderer decodes them when it draws. This differs from the journey, which decodes its texts in the model.
+- **Header texts are sanitised.** The title and the accessibility texts go through the sanitiser of the flowchart, with the DB's whitespace rules (`setAccTitle`, `setAccDescription`).
+- **Blanks are kept.** Unlike the single-line header values of the general rules above, a header value keeps its inner blanks: the requirement DB removes only the leading blanks of `accTitle`, and the blanks after each line break of `accDescr`.
+- **Values are kept as written.** The kinds, risks and methods are the DB's display strings (`Functional Requirement`, `Medium`, `Analysis`); an unset risk, method, type or document reference is `""`.
 
 ## Gantt
 
@@ -123,6 +171,76 @@ The gantt model is the DB state after `getTasks()` (`ganttDb.js`), with the fiel
 The sequence model is the DB state after parsing (`sequenceDb.ts`), with the field list and the exclusions in [sequence/PLAN.md](./sequence/PLAN.md), section 7. Its own rule:
 
 - **Links keep the key order of a JavaScript object.** The reference lists an actor's links in its menu with `for…in`, so their order is part of the model: the array indices (the canonical integers from 0 to 2^32 − 2) first, ascending, then the other keys in insertion order; a repeated key keeps its place and takes the new value. The model holds them in a `JsObject` ([`js_object.rs`](../crates/ferrigura-model/src/js_object.rs)), which serde writes as a JSON object in that order. The differential run cannot compare that order as an object: `serde_json::Value` sorts the keys, and `same` in [`diff.ts`](../tools/port/diff.ts) ignores their order. The exporter ([`export-sequence.ts`](../tools/port/export-sequence.ts), `Object.entries`) and the canonical example ([`canonical.rs`](../crates/ferrigura-syntax/examples/canonical.rs)) therefore both write `links` as a list of `[key, value]` pairs, which is compared in order. `properties` stay an object, as no output depends on their order.
+
+## Kanban
+
+- **The DB state.** The model holds the nodes that the kanban DB holds, in the order the grammar added them, sections and items alike (`isSection` marks a section), with the shape-data and decoration fields the DB keeps. The shape is not in it, because the DB never stores one (quirk K7). Width and padding are left out: the configuration sets them, and no field the renderer reads depends on them. The rules are in [kanban/PLAN.md](./kanban/PLAN.md), sections 5 and 6.
+- **Texts** are what the DB holds, with the entity placeholders kept. Ids, descriptions, and the icon and classes of a decoration are sanitised; the label, icon, assignee and ticket of the shape data are not, as the YAML gives them.
+- **Values.** A label or a priority from the shape data keeps its number, boolean, array or object. A non-finite number is its sentinel string, as the other models write it.
+
+## C4
+
+The C4 model is the DB state after parsing (`c4Db.ts`), with the field list and the exclusions in [c4/PLAN.md](./c4/PLAN.md), section 6. Its own rules:
+
+- **Text fields are strings or absent.** A `{ text }` field is its string. A field that holds a bare string (a style statement wrote it) or nothing is left out. A label may also be the object of a named argument (`Person(a, $sprite="x")`), which the reference keeps as the text.
+- **Texts keep the entity placeholders** that the DB keeps (`ﬂ°name¶ß`), as the flowchart's texts do; no sanitising is applied to them except where the DB sanitises (the title and the accessibility description).
+- **Relation offsets are strings:** the `String()` of the DB value, so a positional offset is its `parseInt` result and a named one is its raw text.
+- **The global boundary's `tags` and `link` are `null`**, and an absent value is left out.
+- **The title** is the grammar's last `title` or `accTitle` line. The front matter title does not reach a C4 diagram.
+
+## Mindmap
+
+The mindmap model is the DB state after the parse (`mindmapDb.ts`): the tree from the first node, with the fields and the exclusions in [mindmap/PLAN.md](./mindmap/PLAN.md), sections 5 and 6. Its own rules:
+
+- **Texts are the DB's values.** `nodeId`, `descr`, `icon` and `class` are the sanitised texts of the DB ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), and the entity placeholders stay as the DB keeps them (`ﬂ°°35¶ß`), which the renderer decodes.
+- **Configuration values keep their type.** `width` and `padding` are the configuration's values as the reference holds them: a number, unless the text gave another type (a string or a boolean), and the doubling of the rounded, rectangle and hexagon shapes turns the value into a number. An array or an object does not replace the default number.
+- **Empty and absent are `""`.** `icon` and `class` are `""` when the DB has none, and `root` is `null` when the text has no node.
+- **The renderer's data is left out.** `getData`, the sections, the layout and the shape names are the renderer stage.
+
+## Ishikawa
+
+The ishikawa model is the DB state after the parse (`ishikawaDb.ts`), with the quirks in [ishikawa/PLAN.md](./ishikawa/PLAN.md), sections 3 and 4. Its own rules:
+
+- **The title is the common DB's.** It is the head's text, sanitised twice, or the front matter title when no statement was read. A head replaces the front matter title even when its text sanitises to nothing.
+- **The head is `root`, or `null` when no statement was read.** A header followed by a line break is accepted with no root. A node is `{ text, children }`, with the children in source order.
+- **Texts are the DB's**, sanitised, with the entity placeholders kept.
+- **The header texts are always empty.** `accTitle` and `accDescr` are in the model, as the DB holds them, but no rule of the grammar sets them.
+- **Left out:** the stack and the base level (the parse state), and the layout, which is the renderer's.
+
+## Treemap
+
+The treemap model is the DB state after parsing and `buildHierarchy` (`treemap/db.ts`, `utils.ts`), with the field list and the quirks in [treemap/PLAN.md](./treemap/PLAN.md), sections 5 and 6. Its own rules:
+
+- **Header texts are sanitised.** `title`, `accTitle` and `accDescr` go through the DB's setters, which sanitise and apply the blank rules of the common DB. The grammar's title replaces the front matter's only when it is non-empty.
+- **Names are the DB's names.** The quoted text without its quotes, nothing sanitised, and the entity placeholders kept as the DB keeps them.
+- **Non-finite values are sentinel strings.** A value of only separators is `"NaN"`, and a digit run that overflows is `"Infinity"`.
+- **The tree keeps the DB's distinction.** A leaf has no `children`; a section has them, empty when it has no rows.
+- **Left out**: the indentation levels, the renderer's layout and value formats, and the configuration.
+
+## Sankey
+
+- **The DB state.** The model is the DB state after the parse (`sankeyDB.ts`), with the field list in [sankey/PLAN.md](./sankey/PLAN.md), section 6. The `title` is the front matter's, sanitised, or `""`, although nothing draws it. `accTitle` and `accDescr` are always `""`, since the grammar has no statement for them.
+- **Names are the DB's ids.** A node id and a link end are the name as the DB sanitises it ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)); two names that sanitise alike are one node. An entity in a name is a parse error, so no name holds a placeholder.
+- **Values** are `parseFloat` of the field. A value that is not finite is its sentinel string.
+- **Left out**: the layout (`x0`, `y0`, `layer`, `width`, the node values, which the layout sums) and the configuration.
+
+## Event modeling
+
+The event modeling model is the DB state after parsing, without the geometry and the measured box texts, with the fields and the quirks in [eventmodeling/PLAN.md](./eventmodeling/PLAN.md), sections 2 and 5. Its own rules:
+
+- **Frames are the boxes, in text order**, each with its name as written (`01` and `1` are different frames), its kind (`time` or `reset`), its entity, its lane index, and its inline data and data reference as written. The entity name and namespace are the DB's split of the qualified name, and `null` when the name has no namespace.
+- **The data text is the DB's cut.** `data` is the referenced block's text, or else the inline data's, cut and sanitised as `calculateTextProps` cuts it, before the line breaks and the `&nbsp;` joins that measurement needs. `null` means no data, and `""` a quoted inline value, which the reference shows as an empty code block.
+- **Lanes and relations are indices.** A lane is its index and label; a relation joins two frame indices, in the order the DB creates them. The box sizes and positions are not in the model.
+- **Header texts are sanitised** with the flowchart's subset, as the common setters do, and `accTitle` loses its leading blanks, `accDescr` the blanks after each line break.
+
+## Architecture
+
+The architecture model is the DB state after the parse (`architectureDb.ts`), with the field list and the exclusions in [architecture/PLAN.md](./architecture/PLAN.md), section 3. Its own rules:
+
+- **The enclosing id is `in`.** A group, service or junction names the group it sits in under `in`, which is the DB's own name, and `""` at the top.
+- **The lists are in the DB's order.** Groups are in text order. Services and junctions are two lists, each in text order, because the DB adds every service before any junction. Edges and alignments are in text order.
+- **The derived block is the reference's `getDataStructures`.** `derived.groupAlignments` is a list of `[key, axis]` pairs in the order the DB first set each key. `derived.spatialMaps` is a list of maps, each a list of `{id, x, y}` in the order the breadth-first search placed them, and the search's quirks (a node placed again, the last placement wins) are part of the value.
+- **Texts.** The header texts are sanitised, as the common setters sanitise them. The other texts are the grammar's values as written, with the entity placeholders kept; an absent icon, title or parent is `""`, and an absent arrow head or `{group}` mark is `false`.
 
 ## Left out, and why
 

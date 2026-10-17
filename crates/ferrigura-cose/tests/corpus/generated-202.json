@@ -1,0 +1,100 @@
+{
+ "name": "generated-202",
+ "group": "generated",
+ "source": "seed 20261017 index 202",
+ "text": "mindmap\n  meadow canvas umbrella telescope multiplication oasis circuit forest reproducibility\n    )Velvet firmware zephyr canvas canvas 2026 junction ember summit notebook compass ladder(\n    [Circuit v2 2026 lantern compass]\n    {{infrastructure ledger hypothesis delta hypothesis interdisciplinary ember journey responsibilities standard forest island}}\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 106
+   },
+   {
+    "id": "1",
+    "width": 283.080322265625,
+    "height": 206.9372100830078
+   },
+   {
+    "id": "2",
+    "width": 160,
+    "height": 68
+   },
+   {
+    "id": "3",
+    "width": 271.3125,
+    "height": 260
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   },
+   {
+    "id": "edge_0_3",
+    "source": "0",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 216.34287187433074,
+    "y": 379.64998665528674
+   },
+   {
+    "id": "1",
+    "x": 531.5127597684732,
+    "y": 362.99962201453525
+   },
+   {
+    "id": "2",
+    "x": 206.86919560951992,
+    "y": 520.1490038368567
+   },
+   {
+    "id": "3",
+    "x": 150.65625,
+    "y": 145
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 231.32198317472785,
+    "startY": 378.8586430824205,
+    "midX": 373.92781582140196,
+    "midY": 371.32480433491094,
+    "endX": 516.5336484680761,
+    "endY": 363.7909655874015
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 215.33373178328947,
+    "startY": 394.6160027008699,
+    "midX": 211.60603374192533,
+    "midY": 449.8994952460717,
+    "endX": 207.8783357005612,
+    "endY": 505.1829877912735
+   },
+   {
+    "id": "edge_0_3",
+    "startX": 212.29930061829242,
+    "startY": 365.20528065283236,
+    "midX": 183.49956093716537,
+    "midY": 262.32499332764337,
+    "endX": 154.69982125603832,
+    "endY": 159.44470600245435
+   }
+  ]
+ }
+}

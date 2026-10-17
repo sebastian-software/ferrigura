@@ -31,7 +31,7 @@ Hand-written, as ADR 0002 says. The lexer runs over the whole prepared text firs
 - `preprocessDiagram` (front matter, directives, `cleanupComments`, CRLF, attribute quotes): `preprocess::prepare`, the same as the flowchart. No `encodeEntities`, no closing-brace rewrite and no trailing line break: the class parser is the Jison parser alone.
 - The title is `Diagram.ts`'s `setDiagramTitle`, which sanitises: the model title is the sanitised front matter title (`commonDb.ts:28–30`). The flowchart keeps the raw title; the class port does not (its exporter reads the real setter).
 - `Options { html_labels: bool (true), security_level: SecurityLevel (Strict) }`. `sanitizeText(text, config)` (`common.ts:56–83`) runs on every DB text:
-  - `htmlLabels` and `strict` / `antiscript` / `sandbox`: DOMPurify (`removeScript`), then DOMPurify with `FORBID_TAGS: ['style']`. The port applies one `sanitize_text` (FORBID style): the second pass removes `style`, and the first pass changes nothing the second does not, on the corpus. [approximation, see §9]
+  - `htmlLabels` and `strict` / `antiscript` / `sandbox`: DOMPurify (`removeScript`), then DOMPurify with `FORBID_TAGS: ['style']`. The port runs both passes in `sanitize_text` (`crates/ferrigura-syntax/src/sanitize.rs`), with the anchor hooks of `setupDompurifyHooks` in each pass.
   - `htmlLabels` and `loose`: no change, then DOMPurify.
   - `htmlLabels` and any other level: `<br>` becomes `#br#`, `<` and `>` become `&lt;` and `&gt;`, `=` becomes `&equals;`, `#br#` becomes `<br/>`, then DOMPurify.
   - `htmlLabels: false`: DOMPurify only.

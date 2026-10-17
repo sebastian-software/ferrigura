@@ -13,7 +13,7 @@ use std::fmt::Write as _;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_text::{
     Face, FontFamily, FontStyle, FontWeight, Run, TextError, Word, face, fit_line, layout_width,
-    measure, measure_words, text_box,
+    measure, measure_box, measure_words, text_box,
 };
 
 use super::geom::{BBox, Point};
@@ -351,9 +351,10 @@ pub fn layout_inheriting(
 /// Places the lines at `size` pixels, anchored on `x = 0` as `anchor` says, and returns them with the
 /// box of their text. Each run is as wide as Chromium lays it out ([`layout_width`]), so every run
 /// starts on the 1/64 px grid where the run before it ends, and a line's width is the sum of its
-/// runs. A centred line starts at minus half its width, a start-anchored line at zero. The box is the union of the runs' boxes, each
-/// from the run's ascent to its descent, as `getBBox` takes it; a line without words has no box, so
-/// an empty line adds no height.
+/// runs. A centred line starts at minus half its width, a start-anchored line at zero. The box is the
+/// union of the runs' boxes, each from the run's ascent to its descent horizontally from its
+/// [`measure_box`] (the advance, and the glyph outlines where they reach past it), as `getBBox` takes
+/// it; a line without words has no box, so an empty line adds no height.
 fn place(
     pieces: &[Vec<(String, &'static Face)>],
     size: f64,
@@ -378,7 +379,13 @@ fn place(
         let mut runs = Vec::with_capacity(line.len());
         for ((text, face), run_width) in line.iter().zip(widths) {
             let metrics = text_box(face, size)?;
-            let run_box = BBox::new(x, baseline - metrics.ascent, run_width, metrics.height);
+            let ink = measure_box(face, text, size)?;
+            let run_box = BBox::new(
+                x + ink.left,
+                baseline - metrics.ascent,
+                ink.width(),
+                metrics.height,
+            );
             if !blank {
                 bbox = Some(bbox.map_or(run_box, |so_far| so_far.union(run_box)));
             }

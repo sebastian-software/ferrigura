@@ -1,0 +1,53 @@
+architecture-beta
+    group g1(cloud)[Group 1]
+    group g2(cloud)[Group 2]
+    group g3(cloud)[Group 3]
+    group g4(cloud)[Group 4]
+    service s1(database) in g4
+    service s2(database)[Service 2] in g2
+    service s3(server)[Service 3] in g2
+    service s4(disk)[Service 4] in g4
+    service s5[Service 5] in g1
+    service s6(server)[Service 6] in g2
+    service s7(server)[Service 7] in g4
+    service s8(database)[Service 8] in g3
+    service s9(disk)[Service 9] in g4
+    service s10[Service 10] in g3
+    service s11(server)[Service 11]
+    service s12(internet)[Service 12] in g3
+    service s13(disk)[Service 13] in g2
+    service s14(disk)[Service 14] in g2
+    service s15(disk)[Service 15] in g2
+    service s16(disk)[Service 16] in g1
+    service s17[Service 17]
+    service s18(database)[Service 18] in g3
+    service s19(internet)[Service 19]
+    service s20(disk)[Service 20] in g2
+    service s21(server)[Service 21] in g2
+    service s22(server)[Service 22] in g4
+    service s23(database)[Service 23] in g2
+    s15:T -[Link 0]- B:s14
+    s5:L -- R:s17
+    s1:T --> B:s14{group}
+    s13:B -[Link 3]- L:s6
+    s9:R <-- T:s5{group}
+    s23:T -- T:s12
+    s17:B -- L:s23
+    s4{group}:T --> R:s11
+    s18:B -- T:s14
+    s5:R -[Link 9]- T:s11
+    s20{group}:L -- R:s22
+    s20:L <-- T:s2
+    s15:T <-- L:s19
+    s13:L -- T:s5
+    s11:L -- R:s20
+    s19:L -- R:s11
+    s9:T -- B:s2
+    s14:R -- B:s8
+    s18:R <-- B:s12
+    s9:T -- B:s18
+    s16{group}:R -- L:s17
+    s10:T -- B:s15{group}
+    s21:L -- R:s14
+    s1:R <-- T:s10
+    align column s6 s21 s23

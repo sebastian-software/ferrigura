@@ -1,0 +1,13 @@
+architecture-beta
+  group a1(cloud)[Alpha]
+  group b1(cloud)[Beta]
+  service s1(server)[S1] in a1
+  service s2(server)[S2] in b1
+  service s3(database)[S3] in a1
+  service s4(disk)[S4] in b1
+  service s5(internet)[S5]
+  s1{group}:R <-- L:s2{group}
+  s1:B <--> T:s3
+  s2{group}:B --> T:s5
+  s3:R --> L:s5
+  s5:T <-- B:s4

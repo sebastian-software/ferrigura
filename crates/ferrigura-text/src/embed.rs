@@ -88,11 +88,21 @@ fn same_face(a: &Face, b: &Face) -> bool {
     a.family() == b.family() && a.weight() == b.weight() && a.style() == b.style()
 }
 
+/// The white space that SVG text collapses: the browser draws each run of it as one space, so a
+/// text with a line break or a tab needs the space glyph even when it has no space of its own.
+const COLLAPSED_WHITE_SPACE: [char; 3] = ['\n', '\r', '\t'];
+
 fn subset_characters(face: &Face, characters: &BTreeSet<char>) -> Result<Vec<u8>, TextError> {
     let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
     let mut unicodes = IntSet::empty();
     for character in characters {
         unicodes.insert(u32::from(*character));
+    }
+    if COLLAPSED_WHITE_SPACE
+        .iter()
+        .any(|character| characters.contains(character))
+    {
+        unicodes.insert(u32::from(' '));
     }
     // Every script and the default layout features, so kerning and ligatures are kept.
     let mut scripts = IntSet::empty();

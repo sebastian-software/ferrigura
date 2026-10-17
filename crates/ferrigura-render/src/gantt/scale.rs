@@ -6,6 +6,7 @@
 //! writes them.
 
 use super::time::{TickCount, ticks};
+use crate::common::d3::{js_round, normalize};
 
 /// A time scale with a domain of two times and a range from 0 to `range_max`.
 #[derive(Debug, Clone, Copy)]
@@ -48,30 +49,10 @@ impl TimeScale {
     }
 }
 
-/// `normalize(a, b)(x)` of d3-scale: the position of `x` between `a` and `b`. A zero-length domain
-/// maps every time to the middle, and NaN stays NaN.
-fn normalize(a: f64, b: f64, x: f64) -> f64 {
-    let span = b - a;
-    if span == 0.0 || span.is_nan() {
-        return if span.is_nan() { f64::NAN } else { 0.5 };
-    }
-    (x - a) / span
-}
-
 /// `interpolateRound(a, b)(t)`: `Math.round(a * (1 - t) + b * t)`, with JavaScript's rounding (a tie
 /// goes towards plus infinity).
 fn round_interpolate(a: f64, b: f64, t: f64) -> f64 {
     js_round(a * (1.0 - t) + b * t)
-}
-
-/// `Math.round`: the nearest integer, a tie going up.
-pub(crate) fn js_round(value: f64) -> f64 {
-    let floor = value.floor();
-    if value - floor >= 0.5 {
-        floor + 1.0
-    } else {
-        floor
-    }
 }
 
 #[cfg(test)]

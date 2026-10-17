@@ -1,0 +1,326 @@
+{
+ "name": "should-render-an-architecture-diagram-with-split-directioning",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/pr-check/should-render-an-architecture-diagram-with-split-directioning.mmd",
+ "text": "---\ndescription: >-\n  Five ungrouped services where a single storage node (s3) receives edges\n  from three different sides (L from db, T from serv1, B from serv2) and\n  serv1 also connects on a fourth port to a disk — checking that layout\n  correctly splits/directs multiple edges converging on different ports of\n  the same node.\n---\narchitecture-beta\n  service db(database)[Database]\n  service s3(disk)[Storage]\n  service serv1(server)[Server 1]\n  service serv2(server)[Server 2]\n  service disk(disk)[Disk]\n\n  db:L -- R:s3\n  serv1:L -- T:s3\n  serv2:L -- B:s3\n  serv1:T -- B:disk\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "db",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s3",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "serv1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "serv2",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "disk",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "db-s3",
+     "source": "db",
+     "target": "s3",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "serv1-s3",
+     "source": "serv1",
+     "target": "s3",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "serv2-s3",
+     "source": "serv2",
+     "target": "s3",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "serv1-disk",
+     "source": "serv1",
+     "target": "disk",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "db",
+      "s3"
+     ]
+    ],
+    "vertical": [
+     [
+      "db",
+      "serv1",
+      "serv2",
+      "disk"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "s3",
+     "right": "db",
+     "gap": 120
+    },
+    {
+     "top": "serv1",
+     "bottom": "db",
+     "gap": 120
+    },
+    {
+     "bottom": "serv2",
+     "top": "db",
+     "gap": 120
+    },
+    {
+     "top": "disk",
+     "bottom": "serv1",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -41,
+    "y1": -41,
+    "w": 123.5,
+    "h": 123.5
+   },
+   "output": [
+    {
+     "id": "db",
+     "x": 114.16932624918648,
+     "y": 120.95761469007213
+    },
+    {
+     "id": "s3",
+     "x": -72.66932624918648,
+     "y": 120.95761469007213
+    },
+    {
+     "id": "serv1",
+     "x": 114.16932624918648,
+     "y": -5.666647527389145
+    },
+    {
+     "id": "serv2",
+     "x": 114.16932624918648,
+     "y": 247.7515798240965
+    },
+    {
+     "id": "disk",
+     "x": 114.16932624918648,
+     "y": -206.2515798240965
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "db",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 114.16932624918648,
+     "y": 120.95761469007213
+    },
+    {
+     "id": "s3",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -72.66932624918648,
+     "y": 120.95761469007213
+    },
+    {
+     "id": "serv1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 114.16932624918648,
+     "y": -5.666647527389145
+    },
+    {
+     "id": "serv2",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 114.16932624918648,
+     "y": 247.7515798240965
+    },
+    {
+     "id": "disk",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 114.16932624918648,
+     "y": -206.2515798240965
+    }
+   ],
+   "edges": [
+    {
+     "id": "db-s3",
+     "source": "db",
+     "target": "s3",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "serv1-s3",
+     "source": "serv1",
+     "target": "s3",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "serv2-s3",
+     "source": "serv2",
+     "target": "s3",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "serv1-disk",
+     "source": "serv1",
+     "target": "disk",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "db",
+      "s3"
+     ]
+    ],
+    "vertical": [
+     [
+      "db",
+      "serv1",
+      "serv2",
+      "disk"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "s3",
+     "right": "db",
+     "gap": 120
+    },
+    {
+     "top": "serv1",
+     "bottom": "db",
+     "gap": 120
+    },
+    {
+     "bottom": "serv2",
+     "top": "db",
+     "gap": 120
+    },
+    {
+     "top": "disk",
+     "bottom": "serv1",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -113.66932624918648,
+    "y1": -247.2515798240965,
+    "w": 270.338652498373,
+    "h": 554.003159648193
+   },
+   "output": [
+    {
+     "id": "db",
+     "x": 114.9193262491865,
+     "y": 129.95761469007215
+    },
+    {
+     "id": "s3",
+     "x": -71.91932624918647,
+     "y": 129.95761469007215
+    },
+    {
+     "id": "serv1",
+     "x": 114.9193262491865,
+     "y": 3.3333524726108408
+    },
+    {
+     "id": "serv2",
+     "x": 114.9193262491865,
+     "y": 256.7515798240965
+    },
+    {
+     "id": "disk",
+     "x": 114.9193262491865,
+     "y": -197.2515798240965
+    }
+   ]
+  }
+ ]
+}
