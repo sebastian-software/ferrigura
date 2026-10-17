@@ -194,6 +194,7 @@ name = "ferrigura-syntax"
 version = "0.0.0"
 dependencies = [
  "ferrigura-model",
+ "indexmap",
  "logos",
  "regex",
  "saphyr-parser",
