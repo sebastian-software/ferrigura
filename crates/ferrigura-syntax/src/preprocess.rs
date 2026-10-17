@@ -336,6 +336,16 @@ pub(crate) fn encode_entities(text: &str) -> String {
     encode_hash_entities(&text)
 }
 
+/// `decodeEntities` (`utils.ts:904-906`): the placeholders that [`encode_entities`] writes become
+/// `&#`, `&` and `;` again. The reference decodes them in labels and in the whole SVG string once
+/// it is rendered (`mermaidAPI.ts:359`), so a placeholder the user typed is decoded as well.
+#[must_use]
+pub fn decode_entities(text: &str) -> String {
+    text.replace("ﬂ°°", "&#")
+        .replace("ﬂ°", "&")
+        .replace("¶ß", ";")
+}
+
 /// `<word>.*:\S*#.*;` with the semicolon removed: the last semicolon of the line, when a colon
 /// followed by non-blank text and a `#` come after the word on that line.
 fn drop_colour_semicolons(text: &str, word: &str) -> String {
@@ -429,5 +439,12 @@ mod tests {
         assert_eq!(loose_directive_len("%%{init: {}}%%\npie"), Some(14));
         assert_eq!(loose_directive_len("%%{init: a b}%%"), Some(11));
         assert_eq!(loose_directive_len("%%{ }%%"), None);
+    }
+
+    #[test]
+    fn decoding_restores_the_references_the_encoding_replaced() {
+        let encoded = encode_entities("a #9829; b #amp; c #x;y");
+        assert_eq!(encoded, "a ﬂ°°9829¶ß b ﬂ°amp¶ß c ﬂ°x¶ßy");
+        assert_eq!(decode_entities(&encoded), "a &#9829; b &amp; c &x;y");
     }
 }

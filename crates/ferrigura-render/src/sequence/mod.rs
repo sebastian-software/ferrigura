@@ -37,6 +37,7 @@ use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
 use crate::common::TextMemo;
+use crate::common::decode_entities;
 use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::svg::number;
 use crate::theme::Themes;
@@ -623,14 +624,6 @@ fn is_sequence_line(line_type: LineType) -> bool {
             | L::BidirectionalSolid
             | L::BidirectionalDotted
     )
-}
-
-/// `decodeEntities` (`utils.ts:904`): the placeholders of the parser's entities become `&#`, `&`
-/// and `;` again, in the whole document.
-fn decode_entities(text: &str) -> String {
-    text.replace("\u{fb02}\u{b0}\u{b0}", "&#")
-        .replace("\u{fb02}\u{b0}", "&")
-        .replace("\u{b6}\u{df}", ";")
 }
 
 /// JavaScript's truthiness of a number.

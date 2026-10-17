@@ -24,7 +24,7 @@ mod lexer;
 mod preprocess;
 mod scan;
 mod text;
-mod url;
+pub mod url;
 
 pub mod class;
 pub mod config;
@@ -51,6 +51,7 @@ use ferrigura_model::state::StateDiagram;
 use ferrigura_model::timeline::TimelineDiagram;
 
 pub use error::ParseError;
+pub use preprocess::decode_entities;
 
 /// A diagram type this crate can parse.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

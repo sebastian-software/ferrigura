@@ -20,6 +20,7 @@ use super::rough::{self, Fill};
 use super::util::{self, attribute};
 use super::{Intersect, ShapeInput, ShapeOutput};
 use crate::RenderError;
+use crate::common::decode_entities;
 use crate::svg::number;
 use crate::unified::geom::{BBox, Point};
 use crate::unified::label::{self, Anchor, LabelLayout, LabelSpec};
@@ -84,7 +85,7 @@ fn plain_box(
         < min_width)
         .then_some(min_width);
 
-    let text = sanitize_text(&label::decode_entities(label_text));
+    let text = sanitize_text(&decode_entities(label_text));
     let label = label_layout(
         input,
         &text,

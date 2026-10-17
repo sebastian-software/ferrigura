@@ -12,9 +12,9 @@ use std::collections::{BTreeMap, HashMap};
 use ferrigura_model::gantt::{GanttDiagram, GanttTask};
 
 use super::date::{self, Time, Unit};
-use super::url::sanitize_url;
 use crate::sanitize::sanitize_text;
 use crate::text::{is_js_space, js_trim, newline_then_space_to_newline, strip_leading_space};
+use crate::url::sanitize_url;
 
 /// A rejection of the diagram by the DB, with the offset of the statement it comes from.
 #[derive(Debug, Clone, PartialEq, Eq)]

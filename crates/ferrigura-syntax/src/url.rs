@@ -1,5 +1,9 @@
 //! `sanitizeUrl` of `@braintree/sanitize-url` 7.1.2 and `formatUrl` of the reference (`utils.ts`).
 //!
+//! The one port of `sanitizeUrl`: the class DB (`formatUrl`) and the gantt DB (`setLink`) call it,
+//! and so do the renderers for the `href` of an image (`drawImage`, `drawEmbeddedImage`) and of a
+//! sequence actor's menu link.
+//!
 //! The reference is `index.js` and `constants.js` of the package. Each regular expression of
 //! `constants.js` is a function that finds its match at a position, and each global `replace` is a
 //! left-to-right scan with that function. The text is handled as `char`s. The JavaScript `\w` is
@@ -34,7 +38,8 @@ pub(crate) fn format_url(link: &str, loose: bool) -> Option<String> {
 /// `http:` or `https:` scheme gives the WHATWG serialisation of the URL. An empty URL, a
 /// `javascript`, `data` or `vbscript` scheme, and an `http(s)` URL that does not parse give
 /// `about:blank`.
-pub(crate) fn sanitize_url(url: &str) -> String {
+#[must_use]
+pub fn sanitize_url(url: &str) -> String {
     if url.is_empty() {
         return BLANK_URL.to_owned();
     }
@@ -837,6 +842,32 @@ mod tests {
         ("%5c \u{9}\u{2028}", "\\"),
         ("%E2%80%8B0&newline;0o152", "00o152"),
         ("httpsdata/", "httpsdata/"),
+        // the image links of the renderers' Chromium probe and the gantt click links
+        (
+            "https://example.com/a.png?x=1&y=2",
+            "https://example.com/a.png?x=1&y=2",
+        ),
+        ("data:image/png;base64,AAAA", "about:blank"),
+        ("pics/a b.png", "pics/a b.png"),
+        (
+            " https://example.com/space.png ",
+            "https://example.com/space.png",
+        ),
+        ("HTTPS://EXAMPLE.COM/UPPER", "https://example.com/UPPER"),
+        ("mailto:someone@example.com", "mailto:someone@example.com"),
+        ("java&Tab;script:alert(1)", "about:blank"),
+        ("https://example.org/x y", "https://example.org/x%20y"),
+        (
+            "HTTPS://Example.ORG:443/a?b=1#c",
+            "HTTPS://Example.ORG:443/a?b=1#c",
+        ),
+        ("https://example.org", "https://example.org/"),
+        ("http://", "about:blank"),
+        ("/relative/path", "/relative/path"),
+        ("#fragment", "#fragment"),
+        ("  DATA:text/html,x", "about:blank"),
+        // JavaScript's `i` flag without `u` does not fold `ſ` to `s`
+        ("javaſcript:alert(1)", "javaſcript:alert(1)"),
     ];
 
     /// `(link, loose, formatUrl(link, config))`, where `None` is `undefined`.

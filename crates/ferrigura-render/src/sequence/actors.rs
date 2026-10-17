@@ -1188,7 +1188,7 @@ impl Renderer<'_> {
         for (key, value) in &actor.links {
             let target = super::model::value_text(value);
             let mut link = Element::new("a")
-                .with("xlink:href", crate::common::url::sanitize_url(&target))
+                .with("xlink:href", ferrigura_syntax::url::sanitize_url(&target))
                 .with("target", "_blank");
             for element in draw_menu_item_text(
                 key,

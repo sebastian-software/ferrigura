@@ -7,13 +7,11 @@
 //! opportunities of the text, each line centred in the cell, and the line box of the font.
 
 use ferrigura_model::config::JourneyDiagramConfig;
-use ferrigura_text::{
-    Face, FontFamily, FontStyle, FontWeight, face, layout_width, measure, text_box,
-};
+use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, face, text_box};
 
 use crate::RenderError;
 use crate::common::Element;
-use crate::common::text::collapse_white_space;
+use crate::common::text::{collapse_white_space, collapsed_width};
 use crate::svg::number;
 
 /// The regular face: the legend, the sections, the tasks and their labels.
@@ -29,19 +27,15 @@ pub fn bold() -> &'static Face {
 }
 
 /// The width of a text as `getBoundingClientRect().width` reports it for an SVG text in the
-/// regular face. The reference measures the legend this way (`journeyRenderer.ts` 38-40 and
-/// 105): the white space collapses, the ends are dropped, and the width is snapped to the layout
-/// unit. Text with no glyphs measures as 0, not as an error, as `getBoundingClientRect` gives it.
+/// regular face ([`collapsed_width`]). The reference measures the legend this way
+/// (`journeyRenderer.ts` 38-40 and 105). Text with no glyphs measures as 0, not as an error, as
+/// `getBoundingClientRect` gives it.
 ///
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn width(text: &str, size: f64) -> Result<f64, RenderError> {
-    let collapsed = collapse_white_space(text);
-    if collapsed.is_empty() {
-        return Ok(0.0);
-    }
-    Ok(layout_width(measure(regular(), &collapsed, size)?))
+    Ok(collapsed_width(regular(), text, size)?)
 }
 
 /// One line of a laid-out label: its text without the blank that ends it, and its width.

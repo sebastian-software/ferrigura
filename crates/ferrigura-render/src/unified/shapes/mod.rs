@@ -47,6 +47,7 @@ use super::data::Node;
 use super::geom::{BBox, CenterBox, Point};
 use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::RenderError;
+use crate::common::decode_entities;
 use crate::svg::{escape, number};
 use registry::Kind;
 
@@ -208,7 +209,7 @@ pub fn node_label(
         .collect();
     // `labelHelper` sanitises the decoded label again when it draws it (`shapes/util.ts`), so the
     // label of an `@{ label }` node, which the DB did not sanitise, is sanitised here.
-    let text = sanitize_text(&label::decode_entities(&node.label));
+    let text = sanitize_text(&decode_entities(&node.label));
     let spec = LabelSpec {
         text: if kind.is_some_and(Kind::empties_label) {
             ""
