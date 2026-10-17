@@ -382,6 +382,21 @@ pub fn markers(svg_id: &str, diagram_type: &str, config: &MermaidConfig) -> Stri
         .collect()
 }
 
+/// The four `point` markers of a diagram, as `insertMarkers(element, ['point'], type, id)` writes them
+/// (`markers.js` 323-390): the first four definitions of [`markers`], under the diagram type's own name
+/// (`<svgId>_<type>-pointEnd`, and so on). The mindmap appends them to its root group.
+#[must_use]
+pub fn point_markers(svg_id: &str, diagram_type: &str) -> String {
+    DEFINITIONS
+        .iter()
+        .take(4)
+        .map(|definition| {
+            let id = format!("{svg_id}_{diagram_type}-{}", definition.name);
+            definition_xml(&id, diagram_type, definition, None)
+        })
+        .collect()
+}
+
 /// The barb markers of the state diagram, as `insertMarkers` writes them for the look: `barb` (the
 /// classic look) or `barbNeo` (the neo look, with its margin variant), each in its own `defs` as
 /// `markers.js` 534-578 writes them. The margin variant's fill is the theme's `transitionColor`.

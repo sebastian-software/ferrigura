@@ -9,6 +9,8 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+base64 = "0.23.1"
+ferrigura-cose = { path = "../ferrigura-cose" }
 ferrigura-elk = { path = "../ferrigura-elk" }
 ferrigura-jsmath = { path = "../ferrigura-jsmath" }
 ferrigura-model.workspace = true

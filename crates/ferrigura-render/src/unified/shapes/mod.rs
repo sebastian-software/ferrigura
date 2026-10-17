@@ -251,6 +251,12 @@ pub fn node_label(
     // 135-140), before `withMinWidth` widens it. That box is a float32 value. Group titles are
     // measured through the same `labelHelper` (createGraph.ts `measureGroupLabel`).
     label::layout(&spec).map(|mut label| {
+        // A label with a background is measured as its group, which holds the background rectangle
+        // (`createText.ts` 186-196, `labelHelper` 135-140): the box is the background's, two pixels
+        // around the text on each side, not the text's.
+        if let Some(background) = label.background {
+            label.bbox = background;
+        }
         label.bbox = label.bbox.browser();
         Some(label)
     })
@@ -365,6 +371,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::LabelRect => rect::label_rect(input),
         Kind::Stadium => stadium::stadium(input),
         Kind::Circle => circle::circle(input),
+        Kind::MindmapCircle => circle::mindmap_circle(input),
         Kind::DoubleCircle => circle::double_circle(input),
         Kind::Question => polygon::question(input),
         Kind::Hexagon => polygon::hexagon(input),

@@ -15,8 +15,8 @@ use super::{Intersect, ShapeInput};
 use crate::svg::number;
 use crate::unified::geom::{BBox, Point};
 
-/// The number of points an elliptical arc is sampled at for its box. The box is then within a
-/// thousandth of a pixel of the exact one for every arc these shapes draw.
+/// The number of points an elliptical arc is sampled at for a rough outline (`arc_points`). The boxes
+/// of the arcs do not use it: they are the arcs' exact extents (`arc_extreme_points`).
 const ARC_SAMPLES: usize = 512;
 
 /// One arc of a path written with relative coordinates: `a rx,ry rotation 0,sweep dx,dy`. Every
@@ -48,7 +48,7 @@ fn relative_arc_path(arcs: &[RelativeArc]) -> (String, BBox) {
             number(arc.dy),
         ));
         let target = Point::new(current.x + arc.dx, current.y + arc.dy);
-        points.extend(arc_points(
+        points.extend(arc_extreme_points(
             current,
             target,
             arc.rx,
@@ -60,7 +60,7 @@ fn relative_arc_path(arcs: &[RelativeArc]) -> (String, BBox) {
         current = target;
     }
     d.push_str(" H0 V0 Z");
-    (d, BBox::from_points(points).unwrap_or_default())
+    (d, exact_box(&points))
 }
 
 /// `bang.ts`: a burst of small arcs around the label. The burst is the label's box padded by half
@@ -418,56 +418,165 @@ pub(super) fn arc_points(
     large: bool,
     sweep: bool,
 ) -> Vec<Point> {
-    let (mut rx, mut ry) = (rx.abs(), ry.abs());
-    if rx == 0.0 || ry == 0.0 {
+    let Some(ellipse) = Ellipse::of(from, to, rx, ry, rotation, large, sweep) else {
         return vec![from, to];
-    }
-    let (sin, cos) = rotation.to_radians().sin_cos();
-    let dx2 = (from.x - to.x) / 2.0;
-    let dy2 = (from.y - to.y) / 2.0;
-    let x1 = cos * dx2 + sin * dy2;
-    let y1 = -sin * dx2 + cos * dy2;
-    let lambda = x1 * x1 / (rx * rx) + y1 * y1 / (ry * ry);
-    if lambda > 1.0 {
-        rx *= lambda.sqrt();
-        ry *= lambda.sqrt();
-    }
-    let numerator = rx * rx * ry * ry - rx * rx * y1 * y1 - ry * ry * x1 * x1;
-    let denominator = rx * rx * y1 * y1 + ry * ry * x1 * x1;
-    let sign = if large != sweep { 1.0 } else { -1.0 };
-    let factor = sign * (numerator / denominator).max(0.0).sqrt();
-    let cxp = factor * rx * y1 / ry;
-    let cyp = factor * -ry * x1 / rx;
-    let centre_x = cos * cxp - sin * cyp + (from.x + to.x) / 2.0;
-    let centre_y = sin * cxp + cos * cyp + (from.y + to.y) / 2.0;
-    let angle = |ux: f64, uy: f64, vx: f64, vy: f64| {
-        let sign = if ux * vy - uy * vx < 0.0 { -1.0 } else { 1.0 };
-        let cosine = ((ux * vx + uy * vy)
-            / ((ux * ux + uy * uy).sqrt() * (vx * vx + vy * vy).sqrt()))
-        .clamp(-1.0, 1.0);
-        sign * cosine.acos()
     };
-    let theta1 = angle(1.0, 0.0, (x1 - cxp) / rx, (y1 - cyp) / ry);
-    let mut delta = angle(
-        (x1 - cxp) / rx,
-        (y1 - cyp) / ry,
-        (-x1 - cxp) / rx,
-        (-y1 - cyp) / ry,
-    );
-    if !sweep && delta > 0.0 {
-        delta -= 2.0 * PI;
-    } else if sweep && delta < 0.0 {
-        delta += 2.0 * PI;
-    }
     (0..=ARC_SAMPLES)
-        .map(|step| {
-            let theta = theta1 + delta * step as f64 / ARC_SAMPLES as f64;
-            Point::new(
-                centre_x + rx * cos * theta.cos() - ry * sin * theta.sin(),
-                centre_y + rx * sin * theta.cos() + ry * cos * theta.sin(),
-            )
-        })
+        .map(|step| ellipse.at(ellipse.theta1 + ellipse.delta * step as f64 / ARC_SAMPLES as f64))
         .collect()
+}
+
+/// The points that bound the box of an arc: its two ends, and the points where its x or its y is
+/// extreme when they lie within its sweep. Chromium's `getBBox` of an arc is the arc's own extent, not
+/// a sampled one, so the box of a path made of arcs is exact to the ellipse (`mindmap/NOTES.md` 8,
+/// risk 2). The sampled points of [`arc_points`] would be a thousandth of a pixel off, which moves
+/// the layout of a mindmap's cloud and bang nodes.
+#[must_use]
+pub(super) fn arc_extreme_points(
+    from: Point,
+    to: Point,
+    rx: f64,
+    ry: f64,
+    rotation: f64,
+    large: bool,
+    sweep: bool,
+) -> Vec<Point> {
+    let Some(ellipse) = Ellipse::of(from, to, rx, ry, rotation, large, sweep) else {
+        return vec![from, to];
+    };
+    // x(θ) = cx + rx cosφ cosθ − ry sinφ sinθ and y(θ) = cy + rx sinφ cosθ + ry cosφ sinθ are extreme
+    // where their derivatives vanish: tan θ = −ry sinφ / (rx cosφ) for x and ry cosφ / (rx sinφ) for y,
+    // and the second extreme of each is half a turn after the first.
+    let x_axis = (-ellipse.ry * ellipse.sin).atan2(ellipse.rx * ellipse.cos);
+    let y_axis = (ellipse.ry * ellipse.cos).atan2(ellipse.rx * ellipse.sin);
+    let mut points = vec![from, to];
+    for theta in [x_axis, x_axis + PI, y_axis, y_axis + PI] {
+        if ellipse.covers(theta) {
+            points.push(ellipse.at(theta));
+        }
+    }
+    points
+}
+
+/// The centre form of an elliptical arc (SVG's appendix F.6.5): the centre, the radii after any
+/// growth, the sine and cosine of the rotation, and the start angle and the sweep of the arc.
+#[derive(Debug, Clone, Copy)]
+struct Ellipse {
+    centre_x: f64,
+    centre_y: f64,
+    rx: f64,
+    ry: f64,
+    sin: f64,
+    cos: f64,
+    theta1: f64,
+    delta: f64,
+}
+
+impl Ellipse {
+    /// The ellipse of an arc from `from` to `to`, or `None` when a radius is zero (a straight line).
+    /// The radii grow when they are too small for the chord.
+    fn of(
+        from: Point,
+        to: Point,
+        rx: f64,
+        ry: f64,
+        rotation: f64,
+        large: bool,
+        sweep: bool,
+    ) -> Option<Self> {
+        let (mut rx, mut ry) = (rx.abs(), ry.abs());
+        if rx == 0.0 || ry == 0.0 {
+            return None;
+        }
+        let (sin, cos) = rotation.to_radians().sin_cos();
+        let dx2 = (from.x - to.x) / 2.0;
+        let dy2 = (from.y - to.y) / 2.0;
+        let x1 = cos * dx2 + sin * dy2;
+        let y1 = -sin * dx2 + cos * dy2;
+        let lambda = x1 * x1 / (rx * rx) + y1 * y1 / (ry * ry);
+        if lambda > 1.0 {
+            rx *= lambda.sqrt();
+            ry *= lambda.sqrt();
+        }
+        let numerator = rx * rx * ry * ry - rx * rx * y1 * y1 - ry * ry * x1 * x1;
+        let denominator = rx * rx * y1 * y1 + ry * ry * x1 * x1;
+        let sign = if large != sweep { 1.0 } else { -1.0 };
+        let factor = sign * (numerator / denominator).max(0.0).sqrt();
+        let cxp = factor * rx * y1 / ry;
+        let cyp = factor * -ry * x1 / rx;
+        let centre_x = cos * cxp - sin * cyp + (from.x + to.x) / 2.0;
+        let centre_y = sin * cxp + cos * cyp + (from.y + to.y) / 2.0;
+        let angle = |ux: f64, uy: f64, vx: f64, vy: f64| {
+            let sign = if ux * vy - uy * vx < 0.0 { -1.0 } else { 1.0 };
+            let cosine = ((ux * vx + uy * vy)
+                / ((ux * ux + uy * uy).sqrt() * (vx * vx + vy * vy).sqrt()))
+            .clamp(-1.0, 1.0);
+            sign * cosine.acos()
+        };
+        let theta1 = angle(1.0, 0.0, (x1 - cxp) / rx, (y1 - cyp) / ry);
+        let mut delta = angle(
+            (x1 - cxp) / rx,
+            (y1 - cyp) / ry,
+            (-x1 - cxp) / rx,
+            (-y1 - cyp) / ry,
+        );
+        if !sweep && delta > 0.0 {
+            delta -= 2.0 * PI;
+        } else if sweep && delta < 0.0 {
+            delta += 2.0 * PI;
+        }
+        Some(Self {
+            centre_x,
+            centre_y,
+            rx,
+            ry,
+            sin,
+            cos,
+            theta1,
+            delta,
+        })
+    }
+
+    /// The point of the ellipse at the angle `theta`.
+    fn at(&self, theta: f64) -> Point {
+        Point::new(
+            self.centre_x + self.rx * self.cos * theta.cos() - self.ry * self.sin * theta.sin(),
+            self.centre_y + self.rx * self.sin * theta.cos() + self.ry * self.cos * theta.sin(),
+        )
+    }
+
+    /// Whether the sweep of the arc passes the angle `theta`, which is taken modulo a turn.
+    fn covers(&self, theta: f64) -> bool {
+        let turn = 2.0 * PI;
+        let mut offset = (theta - self.theta1) % turn;
+        if offset < 0.0 {
+            offset += turn;
+        }
+        if self.delta >= 0.0 {
+            offset <= self.delta
+        } else {
+            offset == 0.0 || offset >= turn + self.delta
+        }
+    }
+}
+
+/// The box of the points, in double precision and with no rounding of the points: an arc's extremes
+/// are not coordinates the `d` string holds, and Chromium's `getBBox` of an arc is the rounding of its
+/// exact extent to a float32 (`mindmap/NOTES.md` 8, risk 2). Rounding each extreme first moves the box
+/// by a few millionths, which the layout of a mindmap then amplifies.
+fn exact_box(points: &[Point]) -> BBox {
+    let mut iter = points.iter();
+    let Some(first) = iter.next() else {
+        return BBox::default();
+    };
+    let (mut left, mut top, mut right, mut bottom) = (first.x, first.y, first.x, first.y);
+    for point in iter {
+        left = left.min(point.x);
+        top = top.min(point.y);
+        right = right.max(point.x);
+        bottom = bottom.max(point.y);
+    }
+    BBox::new(left, top, right - left, bottom - top)
 }
 
 #[cfg(test)]
