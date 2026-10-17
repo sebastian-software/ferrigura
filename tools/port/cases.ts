@@ -1477,6 +1477,7 @@ export const explicitCases: Record<string, string[]> = {
     'ishikawa\nP\n  c\n  a\n  b\n',
     'ishikawa\nP & <b>x</b>\n  <script>x</script>y\n',
   ],
+  // cspell:ignore tfoo Größe ngwt
   eventmodeling: [
     // Section 2.2: the token order, titles and accessibility keywords at the start of a line.
     'eventmodeling\ntitle Foo\ntf 01 ui A',
