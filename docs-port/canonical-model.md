@@ -205,6 +205,15 @@ The treemap model is the DB state after parsing and `buildHierarchy` (`treemap/d
 - **Values** are `parseFloat` of the field. A value that is not finite is its sentinel string.
 - **Left out**: the layout (`x0`, `y0`, `layer`, `width`, the node values, which the layout sums) and the configuration.
 
+## Event modeling
+
+The event modeling model is the DB state after parsing, without the geometry and the measured box texts, with the fields and the quirks in [eventmodeling/PLAN.md](./eventmodeling/PLAN.md), sections 2 and 5. Its own rules:
+
+- **Frames are the boxes, in text order**, each with its name as written (`01` and `1` are different frames), its kind (`time` or `reset`), its entity, its lane index, and its inline data and data reference as written. The entity name and namespace are the DB's split of the qualified name, and `null` when the name has no namespace.
+- **The data text is the DB's cut.** `data` is the referenced block's text, or else the inline data's, cut and sanitised as `calculateTextProps` cuts it, before the line breaks and the `&nbsp;` joins that measurement needs. `null` means no data, and `""` a quoted inline value, which the reference shows as an empty code block.
+- **Lanes and relations are indices.** A lane is its index and label; a relation joins two frame indices, in the order the DB creates them. The box sizes and positions are not in the model.
+- **Header texts are sanitised** with the flowchart's subset, as the common setters do, and `accTitle` loses its leading blanks, `accDescr` the blanks after each line break.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

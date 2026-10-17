@@ -111,7 +111,7 @@ const suites: Record<string, string[]> = {
   architecture: [],
   treemap: ['treemap_spec', 'treemap_db_spec', 'treemap_grammar'],
   ishikawa: ['ishikawa_spec', 'ishikawa_grammar', 'ishikawa_db_spec'],
-  eventmodeling: [],
+  eventmodeling: ['event_modeling_spec', 'event_modeling_grammar', 'event_modeling_validator'],
 };
 
 interface Counts {

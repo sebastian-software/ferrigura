@@ -258,7 +258,6 @@ const UNPORTED_SECTIONS = [
   'packet',
   'treeView',
   'architecture',
-  'eventmodeling',
   'radar',
   'usecase',
   'venn',
@@ -272,7 +271,7 @@ const UNPORTED_SECTIONS = [
  * The sections of the P2 types, whose parsers are not ported yet. Their inputs are run in their own
  * scope, but the section is not compared, not even for those inputs, until the type is ported.
  */
-const NOT_PORTED_SECTIONS = new Set(['packet', 'quadrantChart', 'architecture', 'eventmodeling']);
+const NOT_PORTED_SECTIONS = new Set(['packet', 'quadrantChart', 'architecture']);
 
 /**
  * The output with the sections that are not compared removed: the sections of diagram types that
