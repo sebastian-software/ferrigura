@@ -97,7 +97,7 @@ const suites: Record<string, string[]> = {
   quadrantChart: [],
   requirement: [],
   c4: [],
-  kanban: [],
+  kanban: ['kanban_spec', 'kanban_db_spec', 'kanban_quirks_spec'],
   architecture: [],
   treemap: [],
   ishikawa: [],
