@@ -1,6 +1,6 @@
 # P2 kanban parser: plan
 
-Status: the parser and the DB are ported, with the model, the exporter, the specs and the differential. Reference: the TypeScript reference of this branch (`packages/mermaid/src`, `diagrams/kanban/`). The research and the probes behind it are in [NOTES.md](./NOTES.md). This page says what the port does and which quirks it keeps. Quirk ids `K1`-`K14` are used in the code comments and in `tests/kanban_quirks_spec.rs`.
+Status: the parser, the DB and the renderer are ported (section 10 covers the renderer), with the model, the exporter, the specs and the differentials. Reference: the TypeScript reference of this branch (`packages/mermaid/src`, `diagrams/kanban/`). The research and the probes behind it are in [NOTES.md](./NOTES.md). This page says what the port does and which quirks it keeps. Quirk ids `K1`-`K14` are used in the code comments and in `tests/kanban_quirks_spec.rs`.
 
 One correction to the research: NOTES.md section 2.2 says the keyword `kanban` has no word boundary. The generated lexer says otherwise: `^(?:kanban\b)` with the case-insensitive flag (the reference's `kanban.jison` is compiled by Jison, which adds `\b` to a literal that ends in a word character). The probes agree with the boundary, not with NOTES' stated reason. `kanbanX` is rejected because `KANBAN` is not matched, and `kanban-x` is a section because `-` ends the word. Quirk K1 records the behaviour as the probes show it.
 
@@ -138,3 +138,33 @@ Differential, at the time of writing: 337 inputs, 264 accepted by the reference,
 - **`dompurifyConfig`.** The sanitiser of the port takes no configuration (section 7). A kanban text that sets it is not reproduced.
 - **The renderer's data.** `getData` (section 6) is the renderer stage's input. Its duplicate-child behaviour and its dropped section fields belong to that stage.
 - **Front matter and directives** change the configuration, which `ferrigura-syntax`'s `config` module reads (checked by `pnpm port:diff config`). The model does not read the configuration, apart from the sanitiser (above).
+
+## 10. Renderer
+
+The renderer is `kanbanRenderer.ts` (`draw`) with `getData` (`kanbanDb.ts:54-97`), the `kanbanSection` and `kanbanItem` shapes and `styles.ts`. Its files: `crates/ferrigura-render/src/kanban/` (`mod.rs` for the layout, `data.rs` for `getData`, `style.rs` for the rules) and `crates/ferrigura-render/src/unified/shapes/kanban_section.rs` and `kanban_item.rs`. The labels are `unified::label`, Markdown and start-anchored, as the kanban stylesheet does not centre `.label text`.
+
+Checks, at the time of writing:
+
+- `pnpm port:geometry kanban`: 29 of 29 within tolerance. The 11 fixtures, and 18 probes under `tools/port/geometry/probes/kanban/` (items, priorities, tickets, assignees, markdown and HTML in labels, special characters, blank and wrapped titles, duplicate section ids, an empty board, the section width, the `neo` look, the dark theme and a ticket base URL). The probes are not e2e fixtures: every `.mmd` under `e2e/diagrams` is an image snapshot test.
+- `pnpm port:diff kanban-data`: `getData` on 354 inputs (the fixtures, the probes, the specs, the docs and the explicit cases), 281 accepted by the reference, 0 differences.
+- `pnpm port:geometry-flowchart`: 298 of 298, unchanged.
+- Specs: `crates/ferrigura-render/tests/kanban_render.rs` (the reference's numbers for a few fixtures and probes, and the markup of the link, the icon background and the priority bars) and `kanban_data_spec.rs` (what `getData` keeps and drops).
+
+Quirks reproduced, numbered here (the code comments name the reference's lines):
+
+1. `R1` A section's class is `section-N`, numbered from 1, and its colour is `cScale<N+1>`: the rules number the slots from `i - 1` (`styles.ts` 24-26).
+2. `R2` Classes are dropped: a section's group is `cluster undefined section-N`, an item's is `node undefined`, and no item has a `data-look`.
+3. `R3` A repeated section id lists its children under each copy, so the items are drawn once per copy (`kanbanRenderer.ts` 66-67).
+4. `R4` A section's rectangle is `sectionWidth` wide whatever its title, and its title is laid out at that width.
+5. `R5` An item is placed from the box of its group, which a long ticket can take beyond the rectangle (`kanbanRenderer.ts` 81-84).
+6. `R6` An item with an icon gives its title a background, which makes the item 4 px taller. The icon itself is not drawn (`labelHelper`'s `addBackground`).
+7. `R7` A priority draws a bar. `Medium`, a value that is not a name, and a number have no stroke colour (`colorFromPriority`).
+8. `R8` The ticket link replaces the first `#TICKET#` as `String.replace` does, expanding its `$` patterns. The link has no `target` in the reference's output.
+9. `R9` The sections' and items' labels are start-anchored; a section's title is centred over its rectangle by its group's translation (`clusters.js` 391-396).
+
+Not covered:
+
+- `look: handDrawn`: the harness excludes it, and the port draws the classic geometry (as `unified/shapes/mod.rs` does for the other types).
+- `kanban.padding`: the reference reads it only as a fallback that the defaults never reach (section 6.3).
+- The link's URL is written as configured. The reference's output goes through its sanitiser, which may change an unsafe URL; not probed.
+- `dompurifyConfig` in the sanitiser, as in the parser (section 9).
