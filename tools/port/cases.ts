@@ -42,6 +42,7 @@ export const undetectedCases: Record<string, string[]> = {
 
 export const explicitCases: Record<string, string[]> = {
   // The P2 types whose parsers are not ported yet: each gets its cases with its parser task.
+  // cspell:ignore nmindmapper
   mindmap: [
     'mindmap\n  root',
     'mindmap',
