@@ -150,7 +150,6 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 
 - Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release. The repository is public as `sebastian-software/ferrigura` since 2026-10-16; the local folder is still called `ferraid`.
 - Open `help wanted` issues for every P3 diagram type and for math in labels once the GitHub repository exists.
-- Decide the mindmap layout when P2 starts.
 - Pie geometry on Linux Chromium: with `--font-render-hinting=none` the redux themes match, but the classic themes (default, dark, forest, neutral), the hovered-slice and the bottom-legend fixtures differ by up to 0.7 px. CI runs the comparison on macOS, where all 24 match; investigate Linux with the Playwright Docker image.
 - Fallback fonts for scripts the bundled faces do not cover (CJK, Arabic, emoji); one flowchart fixture is excluded for it.
 - Flowchart: images are not read (an image shape needs `assetWidth` and `assetHeight`); icon packs are not supported.
