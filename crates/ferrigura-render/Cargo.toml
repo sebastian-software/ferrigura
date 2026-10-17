@@ -10,6 +10,7 @@ publish.workspace = true
 
 [dependencies]
 ferrigura-elk = { path = "../ferrigura-elk" }
+ferrigura-jsmath = { path = "../ferrigura-jsmath" }
 ferrigura-model.workspace = true
 ferrigura-syntax = { path = "../ferrigura-syntax" }
 ferrigura-text = { path = "../ferrigura-text" }

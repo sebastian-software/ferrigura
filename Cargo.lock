@@ -183,6 +183,7 @@ name = "ferrigura-render"
 version = "0.0.0"
 dependencies = [
  "ferrigura-elk",
+ "ferrigura-jsmath",
  "ferrigura-model",
  "ferrigura-syntax",
  "ferrigura-text",
