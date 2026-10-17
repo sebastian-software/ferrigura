@@ -93,7 +93,7 @@ const suites: Record<string, string[]> = {
   block: ['block_spec', 'block_db_spec', 'block_layout_spec', 'block_color_index_spec'],
   packet: [],
   xychart: ['xychart_parser_spec', 'xychart_db_spec'],
-  sankey: [],
+  sankey: ['sankey_spec', 'sankey_grammar'],
   quadrantChart: [],
   requirement: ['requirement_spec', 'requirement_db_spec'],
   c4: [

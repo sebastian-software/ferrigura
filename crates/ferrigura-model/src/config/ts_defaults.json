@@ -21,5 +21,8 @@
     "yAxis": {
       "$ref": "#/$defs/XYChartAxisConfig"
     }
+  },
+  "sankey": {
+    "useMaxWidth": true
   }
 }
