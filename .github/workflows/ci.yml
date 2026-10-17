@@ -140,7 +140,7 @@ jobs:
         # Every type runs, so one failing type does not hide the others.
         run: |
           status=0
-          for type in sequence class state er gantt timeline gitgraph journey info requirement xychart kanban c4 block quadrantChart packet ishikawa sankey treemap eventmodeling; do
+          for type in sequence class state er gantt timeline gitgraph journey info requirement xychart kanban c4 block quadrantChart packet ishikawa sankey treemap eventmodeling mindmap; do
             pnpm port:geometry "$type" || status=1
           done
           exit $status
