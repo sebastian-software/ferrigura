@@ -86,6 +86,10 @@ fn sequence_wrap(text: &str) -> bool {
     )
 }
 
+/// A sequence model, with the links of each actor written as `[key, value]` pairs in their order.
+/// The model keeps the key order of a JavaScript object, but `serde_json::Value` sorts the keys of
+/// an object and the differential run compares objects without regard to their order, so the order
+/// is compared as a list (`docs-port/canonical-model.md`, Sequence).
 fn sequence_outcome(text: &str) -> Outcome {
     match sequence::parse_with(
         text,
@@ -93,7 +97,19 @@ fn sequence_outcome(text: &str) -> Outcome {
             wrap: sequence_wrap(text),
         },
     ) {
-        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Ok(model) => {
+            let mut value = serde_json::to_value(&model).unwrap_or_default();
+            if let Some(actors) = value.get_mut("actors").and_then(Value::as_array_mut) {
+                for (actor, record) in actors.iter_mut().zip(&model.actors) {
+                    actor["links"] = record
+                        .links
+                        .iter()
+                        .map(|(key, link)| json!([key, link]))
+                        .collect();
+                }
+            }
+            Outcome::Model(value)
+        }
         Err(error) => Outcome::Rejected(error),
     }
 }

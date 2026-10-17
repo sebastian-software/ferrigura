@@ -11,6 +11,7 @@ use ferrigura_model::sequence::{
 };
 
 use crate::common::draw::RectData;
+use ferrigura_model::js_object::JsObject;
 use ferrigura_model::value::Value;
 
 /// A participant, with the layout the renderer gives it: `width`, `height`, `margin`, `x`,
@@ -34,8 +35,8 @@ pub struct Actor {
     pub prev_actor: Option<String>,
     /// The actor declared after this one.
     pub next_actor: Option<String>,
-    /// The links (the popup menu's entries).
-    pub links: BTreeMap<String, Value>,
+    /// The links (the popup menu's entries), in the key order the reference lists them in.
+    pub links: JsObject,
     /// The properties (`class`, `icon`).
     pub properties: BTreeMap<String, Value>,
     /// `actor.width`.

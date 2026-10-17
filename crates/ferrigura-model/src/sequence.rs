@@ -11,6 +11,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::CANONICAL_VERSION;
+use crate::js_object::JsObject;
 use crate::value::Value;
 
 /// The kind of a message or control item, by the name of its `LINETYPE` value in `sequenceDb.ts`.
@@ -196,8 +197,9 @@ pub struct SequenceActor {
     pub prev_actor: Option<String>,
     /// The actor declared after this one, `None` until one is declared.
     pub next_actor: Option<String>,
-    /// The links of the actor, as the DB holds them.
-    pub links: BTreeMap<String, Value>,
+    /// The links of the actor, as the DB holds them, in the key order of a JavaScript object: the
+    /// order the reference lists them in the actor's menu.
+    pub links: JsObject,
     /// The properties of the actor, as the DB holds them.
     pub properties: BTreeMap<String, Value>,
 }

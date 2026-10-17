@@ -479,6 +479,14 @@ export const explicitCases: Record<string, string[]> = {
     'sequenceDiagram\nparticipant A\nlink A: Dash@https://dash.test\nA->>B: x',
     'sequenceDiagram\nparticipant A\nproperties A: {"role": "api", "rank": 2}\nA->>B: x',
     'sequenceDiagram\nparticipant A\ndetails A: missing\nA->>B: x',
+    // The links keep the key order of a JavaScript object, the order of the actor's menu: the array
+    // indices (canonical integers up to 2^32 - 2) first, ascending, then the other keys in insertion
+    // order. A repeated key keeps its place and takes the new value, within one object, across
+    // `link` statements, and from `link` to `links`.
+    'sequenceDiagram\nparticipant A\nlinks A: {"Zulu": "https://z.test", "Alpha": "https://a.test", "Mike": "https://m.test"}\nA->>B: x',
+    'sequenceDiagram\nparticipant A\nlink A: Zulu @ https://z.test\nlink A: Alpha @ https://a.test\nlink A: Zulu @ https://z2.test\nA->>B: x',
+    'sequenceDiagram\nparticipant A\nlinks A: {"b": "https://b.test", "10": "https://10.test", "a": "https://a.test", "2": "https://2.test", "01": "https://01.test", "4294967295": "https://max.test", "4294967294": "https://last.test"}\nA->>B: x',
+    'sequenceDiagram\nparticipant A\nlinks A: {"Zulu": "https://z.test", "Alpha": "https://a.test", "Zulu": "https://z2.test"}\nlink A: 3 @ https://3.test\nlinks A: {"Alpha": "https://a2.test", "Bravo": "https://b.test"}\nA->>B: x',
     // Autonumber: the bare form, the start and step, and `off`.
     'sequenceDiagram\nautonumber\nA->>B: one',
     'sequenceDiagram\nautonumber 10 2\nA->>B: one\nautonumber off\nA->>B: two',

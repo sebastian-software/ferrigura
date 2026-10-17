@@ -17,6 +17,7 @@ pub mod gantt;
 pub mod git_graph;
 pub mod info;
 pub mod journey;
+pub mod js_object;
 pub mod pie;
 pub mod sequence;
 pub mod state;

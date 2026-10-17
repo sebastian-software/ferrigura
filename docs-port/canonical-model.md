@@ -10,6 +10,7 @@ The model is ours, not a dump of the JS DB: where the DB holds something that th
 - Keys are camelCase (`showData`, `accTitle`, `accDescr`), as serde writes them with `rename_all = "camelCase"`.
 - Strings are always present. An absent header text is `""`, not `null`, because the DB defaults to `''` and the JS exporters read it that way.
 - Numbers are JSON numbers. The differential run compares them with `===`, so `-0` and `0` agree.
+- Objects are compared without regard to their key order. Where the order is part of the model, the differential run writes the object as a list of `[key, value]` pairs on both sides (the links of a sequence actor, see [Sequence](#sequence)).
 
 ## Text
 
@@ -116,6 +117,12 @@ The gantt model is the DB state after `getTasks()` (`ganttDb.js`), with the fiel
 - **Sanitised texts.** `title`, `accTitle` and `accDescr` are the DB values after the sanitiser of the flowchart ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), with the DB's whitespace rules. A `title` statement overrides the front matter title even when it sanitises to empty. Task texts and section names are raw.
 - **Links** map a task id to the URL of its `click … href` statement after `sanitizeUrl`, for the tasks that exist when the line is read. Callbacks are not in the model (decision 0001).
 - **Statements are raw.** `dateFormat`, `axisFormat`, `tickInterval` and `todayMarker` keep the text after their keyword, blanks included; `includes` and `excludes` are lower case and de-duplicated in first-seen order.
+
+## Sequence
+
+The sequence model is the DB state after parsing (`sequenceDb.ts`), with the field list and the exclusions in [sequence/PLAN.md](./sequence/PLAN.md), section 7. Its own rule:
+
+- **Links keep the key order of a JavaScript object.** The reference lists an actor's links in its menu with `for…in`, so their order is part of the model: the array indices (the canonical integers from 0 to 2^32 − 2) first, ascending, then the other keys in insertion order; a repeated key keeps its place and takes the new value. The model holds them in a `JsObject` ([`js_object.rs`](../crates/ferrigura-model/src/js_object.rs)), which serde writes as a JSON object in that order. The differential run cannot compare that order as an object: `serde_json::Value` sorts the keys, and `same` in [`diff.ts`](../tools/port/diff.ts) ignores their order. The exporter ([`export-sequence.ts`](../tools/port/export-sequence.ts), `Object.entries`) and the canonical example ([`canonical.rs`](../crates/ferrigura-syntax/examples/canonical.rs)) therefore both write `links` as a list of `[key, value]` pairs, which is compared in order. `properties` stay an object, as no output depends on their order.
 
 ## Left out, and why
 
