@@ -1,4 +1,7 @@
 {
+  "ishikawa": {
+    "useMaxWidth": true
+  },
   "pie": {
     "useWidth": 984
   },

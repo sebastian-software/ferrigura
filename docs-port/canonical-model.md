@@ -178,6 +178,16 @@ The mindmap model is the DB state after the parse (`mindmapDb.ts`): the tree fro
 - **Empty and absent are `""`.** `icon` and `class` are `""` when the DB has none, and `root` is `null` when the text has no node.
 - **The renderer's data is left out.** `getData`, the sections, the layout and the shape names are the renderer stage.
 
+## Ishikawa
+
+The ishikawa model is the DB state after the parse (`ishikawaDb.ts`), with the quirks in [ishikawa/PLAN.md](./ishikawa/PLAN.md), sections 3 and 4. Its own rules:
+
+- **The title is the common DB's.** It is the head's text, sanitised twice, or the front matter title when no statement was read. A head replaces the front matter title even when its text sanitises to nothing.
+- **The head is `root`, or `null` when no statement was read.** A header followed by a line break is accepted with no root. A node is `{ text, children }`, with the children in source order.
+- **Texts are the DB's**, sanitised, with the entity placeholders kept.
+- **The header texts are always empty.** `accTitle` and `accDescr` are in the model, as the DB holds them, but no rule of the grammar sets them.
+- **Left out:** the stack and the base level (the parse state), and the layout, which is the renderer's.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

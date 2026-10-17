@@ -23,6 +23,9 @@ export const undetectedCases: Record<string, string[]> = {
   xychart: ['XYCHART\n  TITLE "Up"\n  X-AXIS Q [a, b]\n  Y-AXIS 0 --> 5\n  LINE [1, 2]\n'],
   // The same for a mindmap: the grammar takes `MindMap`, the detector does not.
   mindmap: ['MindMap\n  root'],
+  // The ishikawa header must start the text: a glued word, or a directive that the reference's loose
+  // directive pattern takes up to the header, leaves no type detected (`ishikawa/PLAN.md`, I3).
+  ishikawa: ['ishikawaEffect\nCause\n', '%%{ bad\nishikawa\nP\n', '%%{init}\nishikawa\n  P\n'],
   // The closing fence of its front matter is indented, which the reference's front matter match
   // does not accept (the fences need the same indent), so no type is detected.
   requirement: [
@@ -1044,7 +1047,91 @@ export const explicitCases: Record<string, string[]> = {
   ],
   architecture: [],
   treemap: [],
-  ishikawa: [],
+  // The quirks of `docs-port/ishikawa/PLAN.md`, section 2 (I1 to I26), and the DB's title and
+  // sanitising cases (section 3).
+  // cspell:ignore betafoo
+  ishikawa: [
+    // I1, I2: a bare header is an error; a header followed by a line break is accepted with no root.
+    'ishikawa',
+    'ishikawa\n',
+    'ishikawa\n\n\n',
+    'ishikawa ',
+    'ishikawa\n  ',
+    'ishikawa\n\nP\n',
+    // I3, I4, I5: the header's word boundary, and the header line's own text.
+    'ishikawaEffect\nCause\n',
+    'ishikawa Effect\n  Cause A\n',
+    'ishikawa-betafoo\nP\n',
+    'ishikawa.x\n  a\n',
+    'ishikawa:x\n',
+    'ishikawa\u00e9\nP\n',
+    // I6, I7, I8, I9: blanks after the header, the case of the header, a second header, blank
+    // lines before the header.
+    'ishikawa  \nP\n  a\n',
+    'ISHIKAWA\nP\n  a\n',
+    'ishikawa\nP\nishikawa\nQ\n',
+    '\n\n  \nishikawa\nP\n  a\n',
+    '  ishikawa\nP\n  a\n',
+    // I10, I11, I12, I13, I14, I15: comments, the `%%` inside a text, tabs, the base level.
+    'ishikawa\nP\n%% comment\n  a\n',
+    'ishikawa\nP\n  %% c\n  a\n',
+    'ishikawa\nP\n%%{ x\n  a\n',
+    'ishikawa\nP\n  50%% done\n',
+    'ishikawa\nP\n\ta\n\t\tb\n',
+    'ishikawa\nP\n    a\n  b\n',
+    'ishikawa\nP\n  a\n    x\n  b\nQ\n',
+    'ishikawa\nP\n a\n        deep\n',
+    'ishikawa\n  a\n',
+    'ishikawa\nP\nQ\n',
+    'ishikawa\nP\n\n  a\n',
+    'ishikawa\nP\n   \n  a\n',
+    // I16, I17, I18, I19, I20, I21, I24: header words, breaks, entities, `;`, CRLF, no-break space,
+    // no final line break.
+    'ishikawa\nP\naccTitle: x\naccDescr: y\n',
+    'ishikawa\nP<br>Q\n  a<br/>b\n',
+    'ishikawa\nP & <b>x</b>\n  a\n',
+    'ishikawa\nP = Q\n  a=b\n',
+    'ishikawa\nP;x\n  a;b\n',
+    'ishikawa\r\nP\r\n  a\r\n',
+    'ishikawa\nP \n  a\n',
+    'ishikawa\nP\n  a',
+    // I25, I26: front matter and directives in front of the header.
+    '---\ntitle: X\n---\nishikawa\nP\n  a\n',
+    '%%{init: {"theme": "forest"}}%%\nishikawa\nP\n  a\n',
+    // The DB's title: the front matter title stands without a head, and a head replaces it, even
+    // with an empty text.
+    '---\ntitle: FM\n---\nishikawa\n',
+    '---\ntitle: FM\n---\nishikawa\nRoot D\n',
+    '---\ntitle: FM\n---\nishikawa\n<script></script>\n',
+    'ishikawa\n<script></script>\n  a\n',
+    'ishikawa\nP\n%%x\n',
+    // Detection and the comment rules: a directive-like line that is not a directive, a lone `%%`,
+    // and a comment after a line separator (U+2028 ends the reference's `.`, not the line).
+    '%%{ bad\nishikawa\nP\n',
+    '%%{init}\nishikawa\n  P\n',
+    'ishikawa\n  %%\n  a\n',
+    'ishikawa\nP\n%%{x Q\n',
+    'ishikawa\nP   a\n',
+    // Blanks: tabs, vertical tabs, form feeds and no-break spaces are indentation; the level counts
+    // them as one each.
+    'ishikawa\nP\n\ta\n  b\n',
+    'ishikawa\nP\n\u000ba\n\f\fb\n',
+    'ishikawa\nP\n  a\n',
+    'ishikawa\n中文效果\n  原因 A\n',
+    // The sanitiser: markup that DOMPurify keeps or drops, entities that the encoding keeps, and
+    // text without `<`, which DOMPurify returns unchanged.
+    'ishikawa\n<b>bold</b> text\n',
+    'ishikawa\nP\n  <a href="javascript:x">y</a>\n',
+    'ishikawa\n<img src=x onerror=alert(1)>\n',
+    'ishikawa\nA &amp; B\n',
+    'ishikawa\n&lt;b&gt;\n',
+    'ishikawa\n#quot;x #9829;\n',
+    // The tree: a node is popped by a lower level, and a dedent to a level below the base is level 1.
+    'ishikawa\nP\n  a\n    x\n      y\n  b\n    z\nQ\n    r\n',
+    'ishikawa\nP\n a\n  b\n c\n',
+    'ishikawa\nP\n  c\n  a\n  b\n',
+    'ishikawa\nP & <b>x</b>\n  <script>x</script>y\n',
+  ],
   eventmodeling: [],
   // State inputs that the reference's specs do not cover: the quirks of the grammar and the DB
   // (`docs-port/state/PLAN.md`, section 7), and the error paths.
