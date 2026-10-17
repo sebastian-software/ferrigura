@@ -28,6 +28,10 @@ export const undetectedCases: Record<string, string[]> = {
       ),
       'utf8'
     ),
+    // Q32: a hash line before the header: the detector does not skip comment lines.
+    '# comment\nrequirementDiagram',
+    // Q39: an empty input has no header to detect.
+    '',
   ],
 };
 
@@ -39,7 +43,150 @@ export const explicitCases: Record<string, string[]> = {
   xychart: [],
   sankey: [],
   quadrantChart: [],
-  requirement: [],
+  // The probes of `docs-port/requirement/NOTES.md`, section 2.5 (Q1-Q44), one input each, and the
+  // quirks of the lexer order that the section's rows do not show (`docs-port/requirement/PLAN.md`).
+  requirement: [
+    // Q1: a title in the body has no production.
+    'requirementDiagram\ntitle My Title\nrequirement a {\nid: 1\n}',
+    // Q2: the white space after `{` takes the line break with it.
+    'requirementDiagram\nrequirement a {   \nid: 1\n}',
+    // Q3: the body starts on the next line.
+    'requirementDiagram\nrequirement a {}',
+    // Q4: keywords need a word boundary.
+    'requirementDiagram\nrequirement idx {\nid: identity\n}',
+    // Q5: a risk is one of three words.
+    'requirementDiagram\nrequirement a {\nrisk: highly\n}',
+    // Q6: keywords are case-insensitive, names keep their case.
+    'requirementDiagram\nRequirement A {\nID: 1\nRISK: HIGH\nVerifyMethod: Test\n}',
+    // Q7: the first value of a repeated property wins.
+    'requirementDiagram\nrequirement a {\nid: 1\nid: 2\n}',
+    // Q8: a second block with a name that exists adds nothing.
+    'requirementDiagram\nrequirement a {\nid: 1\ntext: one\n}\nfunctionalRequirement a {\nid: 2\ntext: two\n}',
+    // Q9: a hyphen ends an unquoted value.
+    'requirementDiagram\nrequirement a {\nid: REQ-001\n}',
+    // Q10: a colon ends an unquoted text; a quoted one may hold it.
+    'requirementDiagram\nrequirement a {\ntext: note: x\n}',
+    'requirementDiagram\nrequirement a {\ntext: "note: x"\n}',
+    // Q11: a comma is a token of its own.
+    'requirementDiagram\nrequirement a {\ntext: a, b\n}',
+    // Q12: a hash inside a text is text; a hash where a value starts is a comment.
+    'requirementDiagram\nrequirement a {\ntext: issue #12\n}',
+    'requirementDiagram\nrequirement a {\ntext: #12\n}',
+    // Q13: the direction rule takes the rest of the line from the value's start.
+    'requirementDiagram\nrequirement a {\ntext: go direction TB here\n}',
+    // Q14: a relationship to a name that is not declared.
+    'requirementDiagram\nrequirement a {\n}\na - contains -> zz',
+    // Q15: a requirement and an element with the same name.
+    'requirementDiagram\nrequirement a {\n}\nelement a {\n}',
+    // Q16: a style stops at the first name that is missing.
+    'requirementDiagram\nrequirement a {\n}\nstyle zz,a fill:#f9f',
+    // Q17: and styles the names before it.
+    'requirementDiagram\nrequirement a {\n}\nstyle a,zz fill:#f9f',
+    // Q18: a percent sign is not a style component.
+    'requirementDiagram\nrequirement a {\n}\nstyle a width:50%',
+    // Q19: a parenthesis is a lexical error in a style.
+    'requirementDiagram\nrequirement a {\n}\nstyle a fill:rgb(1,2,3)',
+    // Q20: only a space is skipped in a style.
+    'requirementDiagram\nrequirement a {\n}\nstyle a\tfill:red',
+    // Q21: the values of a style are concatenated with no spaces.
+    'requirementDiagram\nrequirement a {\n}\nstyle a fill: red',
+    // Q22: a minus sign in a style value.
+    'requirementDiagram\nrequirement a {\n}\nstyle a stroke-width:-1px',
+    // Q23: a class without styles.
+    'requirementDiagram\nclassDef c',
+    // Q24: a class before its definition gets the styles when they are defined.
+    'requirementDiagram\nrequirement a:::c {\n}\nclassDef c fill:#f9f',
+    // Q25: the same through the class statement.
+    'requirementDiagram\nrequirement a {\n}\nclass a c\nclassDef c fill:#f9f',
+    // Q26: an empty quoted string is no token.
+    'requirementDiagram\nrequirement "" {\n}',
+    'requirementDiagram\nelement "" {\n}',
+    'requirementDiagram\nrequirement a {\ntext: ""\n}',
+    // Q27: an unquoted name takes spaces, trimmed.
+    'requirementDiagram\nrequirement my req {\n}',
+    // Q28: a hyphen is not a name character.
+    'requirementDiagram\nrequirement my-req {\n}',
+    // Q29: a quoted source of a relationship.
+    'requirementDiagram\n"x y" - contains -> z',
+    // Q30: the accessibility value is trimmed.
+    'requirementDiagram\naccTitle:   spaced title   ',
+    // Q31: the indentation of each line of a block goes.
+    'requirementDiagram\naccDescr {\n  line one\n  line two\n}',
+    // Q33: a hash line inside a block is a comment.
+    'requirementDiagram\nrequirement a {\n# comment\nid: 1\n}',
+    // Q34: a percent comment before the header.
+    '%% comment\nrequirementDiagram',
+    // Q35: the last direction wins.
+    'requirementDiagram\ndirection LR\ndirection BT',
+    // Q37: the front matter title.
+    '---\ntitle: Front matter title\n---\nrequirementDiagram',
+    // Q38: the header alone.
+    'requirementDiagram',
+    // Q40: a property outside a block.
+    'requirementDiagram\ndocref: x',
+    // Q41: a type with spaces.
+    'requirementDiagram\nelement e {\ntype: word doc\n}',
+    // Q42: an unknown property.
+    'requirementDiagram\nrequirement a {\nfoo: bar\n}',
+    // Q43: a non-ASCII letter is not a word character.
+    'requirementDiagram\nrequirement Ä {\n}',
+    // Q44: a line that starts with the keyword as a prefix.
+    'requirementDiagram\nclassy a',
+    // The header takes its line break directly; white space after it swallows the break.
+    'requirementDiagram  \nrequirement a {\n}',
+    // A single percent sign at a token start starts a comment, as `\%%` reads in the lexer (Q45).
+    'requirementDiagram\n%x\nrequirement a {\n%\n}',
+    // Entities in a quoted text keep their placeholders in the model.
+    'requirementDiagram\nrequirement a {\ntext: "a &amp; <b>x</b> #lt; #9829;"\n}',
+    // A value that starts with a title is a title token, as the rule takes it before the word.
+    'requirementDiagram\nrequirement a {\ntext: title x\n}',
+    // The blanks inside a header value are kept: the DB collapses none of them.
+    'requirementDiagram\naccTitle: a   b\t\tc\naccDescr: x   y',
+    // A value whose first word is `title` only when a space follows it: the words after it are text.
+    'requirementDiagram\nrequirement a {\ntext: my title x\n}',
+    // A value that starts with a keyword is that keyword's token.
+    'requirementDiagram\nrequirement a {\ntext: test\n}',
+    'requirementDiagram\nrequirement a {\ntext: identity x\n}',
+    // The accessibility value at the end of the input has no line break after it.
+    'requirementDiagram\naccTitle:',
+    'requirementDiagram\naccDescr {}',
+    'requirementDiagram\naccDescr {\n  never closed',
+    // A `}` is part of an unquoted value, so a block closes only on its own line.
+    'requirementDiagram\nrequirement a {\nid: 1}',
+    // Two relationships on one line: the second starts after the first name.
+    'requirementDiagram\na - contains -> b c - contains -> d',
+    // An unterminated quoted string.
+    'requirementDiagram\nrequirement "abc\n}',
+    // A style with a semicolon, and a colour in a class with its semicolon.
+    'requirementDiagram\nrequirement a {\n}\nstyle a fill:#f9f;\nclassDef c color:#fff;',
+    // Styles with a class list and a comma inside the style.
+    'requirementDiagram\nrequirement x {\n}\nclassDef a,b fill:red\nclass x a,b',
+    'requirementDiagram\nrequirement x {\n}\nstyle x,fill:red',
+    // Shorthand classes with a list, and a class defined after its use with a colour.
+    'requirementDiagram\nrequirement a:::c, d {\n}\nelement e:::c d {\n}\nclassDef c color:#fff,fill:#f00',
+    // Entities in a text and in the header texts.
+    'requirementDiagram\nrequirement a {\ntext: &amp; <b>x</b> #lt;\n}',
+    'requirementDiagram\naccTitle: AT&T #quot;x#quot; <b>bold</b>\naccDescr: a #9829; b',
+    // A direction whose keyword is on the next line.
+    'requirementDiagram\nrequirement a {\n}\ndirection\nTB',
+    // The first type of a repeated property wins for elements too.
+    'requirementDiagram\nelement e {\ntype: x\ntype: y\ndocref: r\n}',
+    // Relationships in both directions.
+    'requirementDiagram\nelement e {\n}\nrequirement r {\n}\nr - satisfies -> e\ne <- traces - r',
+    // A header with an indented line before it, and a comment between two blocks.
+    'requirementDiagram\n  requirement a {\n  id: 1\n  }\n%% between\nrequirement b {\n}',
+    // The texts of `requirementDb.spec.ts` (`tests/requirement_db_spec.rs`): the DB calls the spec makes.
+    'requirementDiagram\nrequirement "requirement" {\n}',
+    'requirementDiagram\nelement "element" {\n}',
+    'requirementDiagram\nsrc - contains -> dst',
+    'requirementDiagram\nrequirement "src" {\n}\nrequirement "dst" {\n}\nsrc - traces -> dst\nsrc - contains -> dst',
+    'requirementDiagram\nclassDef a stroke-width:8px',
+    'requirementDiagram\nclassDef a,b stroke-width:8px',
+    'requirementDiagram\ndirection TB',
+    'requirementDiagram\nrequirement "requirement" {\n}\nelement "element" {\n}\nstyle "requirement" color:red\nstyle "element" stroke-width:4px,stroke: yellow',
+    'requirementDiagram\nrequirement "requirement" {\n}\nelement "element" {\n}\nclass requirement,element myClass',
+    'requirementDiagram\nrequirement "requirement" {\n}\nelement "element" {\n}\nclassDef myClass color:red\nclassDef myClass2 stroke-width:4px,stroke:yellow\nclass requirement myClass\nclass element myClass2',
+  ],
   c4: [],
   // Kanban inputs that the reference's specs and fixtures do not cover: the start conditions of the
   // lexer, the DB's placement and its shape data, and the quirks of `docs-port/kanban/PLAN.md`.
