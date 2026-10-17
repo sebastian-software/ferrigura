@@ -5,7 +5,7 @@
 //! parsers are written by hand on one lexer base.
 //!
 //! The crate covers the pie, info, flowchart, timeline, journey, gitGraph, ER, class, sequence,
-//! state, gantt and C4 diagrams, and detects the P2 types whose parsers are not ported yet.
+//! state, gantt, C4 and mindmap diagrams, and detects the P2 types whose parsers are not ported yet.
 
 #![warn(missing_docs)]
 #![cfg_attr(

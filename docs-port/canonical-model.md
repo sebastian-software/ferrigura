@@ -169,6 +169,15 @@ The C4 model is the DB state after parsing (`c4Db.ts`), with the field list and 
 - **The global boundary's `tags` and `link` are `null`**, and an absent value is left out.
 - **The title** is the grammar's last `title` or `accTitle` line. The front matter title does not reach a C4 diagram.
 
+## Mindmap
+
+The mindmap model is the DB state after the parse (`mindmapDb.ts`): the tree from the first node, with the fields and the exclusions in [mindmap/PLAN.md](./mindmap/PLAN.md), sections 5 and 6. Its own rules:
+
+- **Texts are the DB's values.** `nodeId`, `descr`, `icon` and `class` are the sanitised texts of the DB ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), and the entity placeholders stay as the DB keeps them (`ﬂ°°35¶ß`), which the renderer decodes.
+- **Configuration values keep their type.** `width` and `padding` are the configuration's values as the reference holds them: a number, unless the text gave another type (a string or a boolean), and the doubling of the rounded, rectangle and hexagon shapes turns the value into a number. An array or an object does not replace the default number.
+- **Empty and absent are `""`.** `icon` and `class` are `""` when the DB has none, and `root` is `null` when the text has no node.
+- **The renderer's data is left out.** `getData`, the sections, the layout and the shape names are the renderer stage.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
