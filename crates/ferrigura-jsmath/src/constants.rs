@@ -1,0 +1,174 @@
+//! Constants of fdlibm as V8 has them in `src/base/ieee754.cc` (V8 13.6.233.17).
+//!
+//! The values are copied from the source by a script that checks every literal against the hex words
+//! in its comment, so they are exactly the constants of that file. Rust parses decimal literals as
+//! correctly rounded doubles, as C does.
+// The literals are V8's, kept as written so that they can be checked against its source. Some of
+// them are the values of the standard constants, which the lint would have us replace.
+#![allow(
+    clippy::unreadable_literal,
+    clippy::excessive_precision,
+    clippy::approx_constant
+)]
+
+pub(crate) const TWO_OVER_PI: [i32; 66] = [
+    0xA2F983, 0x6E4E44, 0x1529FC, 0x2757D1, 0xF534DD, 0xC0DB62, 0x95993C, 0x439041, 0xFE5163,
+    0xABDEBB, 0xC561B7, 0x246E3A, 0x424DD2, 0xE00649, 0x2EEA09, 0xD1921C, 0xFE1DEB, 0x1CB129,
+    0xA73EE8, 0x8235F5, 0x2EBB44, 0x84E99C, 0x7026B4, 0x5F7E41, 0x3991D6, 0x398353, 0x39F49C,
+    0x845F8B, 0xBDF928, 0x3B1FF8, 0x97FFDE, 0x05980F, 0xEF2F11, 0x8B5A0A, 0x6D1F6D, 0x367ECF,
+    0x27CB09, 0xB74F46, 0x3F669E, 0x5FEA2D, 0x7527BA, 0xC7EBE5, 0xF17B3D, 0x0739F7, 0x8A5292,
+    0xEA6BFB, 0x5FB11F, 0x8D5D08, 0x560330, 0x46FC7B, 0x6BABF0, 0xCFBC20, 0x9AF436, 0x1DA9E3,
+    0x91615E, 0xE61B08, 0x659985, 0x5F14A0, 0x68408D, 0xFFD880, 0x4D7327, 0x310606, 0x1556CA,
+    0x73A8C9, 0x60E27B, 0xC08C6B,
+];
+pub(crate) const NPIO2_HW: [i32; 32] = [
+    0x3FF921FB, 0x400921FB, 0x4012D97C, 0x401921FB, 0x401F6A7A, 0x4022D97C, 0x4025FDBB, 0x402921FB,
+    0x402C463A, 0x402F6A7A, 0x4031475C, 0x4032D97C, 0x40346B9C, 0x4035FDBB, 0x40378FDB, 0x403921FB,
+    0x403AB41B, 0x403C463A, 0x403DD85A, 0x403F6A7A, 0x40407E4C, 0x4041475C, 0x4042106C, 0x4042D97C,
+    0x4043A28C, 0x40446B9C, 0x404534AC, 0x4045FDBB, 0x4046C6CB, 0x40478FDB, 0x404858EB, 0x404921FB,
+];
+
+pub(crate) const COS_C1: f64 = 4.16666666666666019037e-02;
+pub(crate) const COS_C2: f64 = -1.38888888888741095749e-03;
+pub(crate) const COS_C3: f64 = 2.48015872894767294178e-05;
+pub(crate) const COS_C4: f64 = -2.75573143513906633035e-07;
+pub(crate) const COS_C5: f64 = 2.08757232129817482790e-09;
+pub(crate) const COS_C6: f64 = -1.13596475577881948265e-11;
+pub(crate) const SIN_S1: f64 = -1.66666666666666324348e-01;
+pub(crate) const SIN_S2: f64 = 8.33333333332248946124e-03;
+pub(crate) const SIN_S3: f64 = -1.98412698298579493134e-04;
+pub(crate) const SIN_S4: f64 = 2.75573137070700676789e-06;
+pub(crate) const SIN_S5: f64 = -2.50507602534068634195e-08;
+pub(crate) const SIN_S6: f64 = 1.58969099521155010221e-10;
+pub(crate) const REM_INVPIO2: f64 = 6.36619772367581382433e-01;
+pub(crate) const REM_PIO2_1: f64 = 1.57079632673412561417e+00;
+pub(crate) const REM_PIO2_1T: f64 = 6.07710050650619224932e-11;
+pub(crate) const REM_PIO2_2: f64 = 6.07710050630396597660e-11;
+pub(crate) const REM_PIO2_2T: f64 = 2.02226624879595063154e-21;
+pub(crate) const REM_PIO2_3: f64 = 2.02226624871116645580e-21;
+pub(crate) const REM_PIO2_3T: f64 = 8.47842766036889956997e-32;
+pub(crate) const PIO2_TERMS: [f64; 8] = [
+    1.57079625129699707031e+00,
+    7.54978941586159635335e-08,
+    5.39030252995776476554e-15,
+    3.28200341580791294123e-22,
+    1.27065575308067607349e-29,
+    1.22933308981111328932e-36,
+    2.73370053816464559624e-44,
+    2.16741683877804819444e-51,
+];
+pub(crate) const TWON24: f64 = 5.96046447753906250000e-08;
+pub(crate) const TWO24: f64 = 1.67772160000000000000e+07;
+pub(crate) const TAN_T: [f64; 13] = [
+    3.33333333333334091986e-01,
+    1.33333333333201242699e-01,
+    5.39682539762260521377e-02,
+    2.18694882948595424599e-02,
+    8.86323982359930005737e-03,
+    3.59207910759131235356e-03,
+    1.45620945432529025516e-03,
+    5.88041240820264096874e-04,
+    2.46463134818469906812e-04,
+    7.81794442939557092300e-05,
+    7.14072491382608190305e-05,
+    -1.85586374855275456654e-05,
+    2.59073051863633712884e-05,
+];
+pub(crate) const TAN_ONE: f64 = 1.00000000000000000000e+00;
+pub(crate) const TAN_PIO4: f64 = 7.85398163397448278999e-01;
+pub(crate) const TAN_PIO4LO: f64 = 3.06161699786838301793e-17;
+pub(crate) const ATAN_HI: [f64; 4] = [
+    4.63647609000806093515e-01,
+    7.85398163397448278999e-01,
+    9.82793723247329054082e-01,
+    1.57079632679489655800e+00,
+];
+pub(crate) const ATAN_LO: [f64; 4] = [
+    2.26987774529616870924e-17,
+    3.06161699786838301793e-17,
+    1.39033110312309984516e-17,
+    6.12323399573676603587e-17,
+];
+pub(crate) const ATAN_T: [f64; 11] = [
+    3.33333333333329318027e-01,
+    -1.99999999998764832476e-01,
+    1.42857142725034663711e-01,
+    -1.11111104054623557880e-01,
+    9.09088713343650656196e-02,
+    -7.69187620504482999495e-02,
+    6.66107313738753120669e-02,
+    -5.83357013379057348645e-02,
+    4.97687799461593236017e-02,
+    -3.65315727442169155270e-02,
+    1.62858201153657823623e-02,
+];
+pub(crate) const ASIN_PS0: f64 = 1.66666666666666657415e-01;
+pub(crate) const ASIN_PS1: f64 = -3.25565818622400915405e-01;
+pub(crate) const ASIN_PS2: f64 = 2.01212532134862925881e-01;
+pub(crate) const ASIN_PS3: f64 = -4.00555345006794114027e-02;
+pub(crate) const ASIN_PS4: f64 = 7.91534994289814532176e-04;
+pub(crate) const ASIN_PS5: f64 = 3.47933107596021167570e-05;
+pub(crate) const ASIN_QS1: f64 = -2.40339491173441421878e+00;
+pub(crate) const ASIN_QS2: f64 = 2.02094576023350569471e+00;
+pub(crate) const ASIN_QS3: f64 = -6.88283971605453293030e-01;
+pub(crate) const ASIN_QS4: f64 = 7.70381505559019352791e-02;
+pub(crate) const ASIN_PIO2_HI: f64 = 1.57079632679489655800e+00;
+pub(crate) const ASIN_PIO2_LO: f64 = 6.12323399573676603587e-17;
+pub(crate) const PI_ASIN_ACOS: f64 = 3.14159265358979311600e+00;
+pub(crate) const ASIN_PIO4_HI: f64 = 7.85398163397448278999e-01;
+pub(crate) const LOG_LN2_HI: f64 = 6.93147180369123816490e-01;
+pub(crate) const LOG_LN2_LO: f64 = 1.90821492927058770002e-10;
+pub(crate) const LOG_LG1: f64 = 6.666666666666735130e-01;
+pub(crate) const LOG_LG2: f64 = 3.999999999940941908e-01;
+pub(crate) const LOG_LG3: f64 = 2.857142874366239149e-01;
+pub(crate) const LOG_LG4: f64 = 2.222219843214978396e-01;
+pub(crate) const LOG_LG5: f64 = 1.818357216161805012e-01;
+pub(crate) const LOG_LG6: f64 = 1.531383769920937332e-01;
+pub(crate) const LOG_LG7: f64 = 1.479819860511658591e-01;
+pub(crate) const ATAN2_PI_O_4: f64 = 7.8539816339744827900E-01;
+pub(crate) const ATAN2_PI_O_2: f64 = 1.5707963267948965580E+00;
+pub(crate) const ATAN2_PI: f64 = 3.1415926535897931160E+00;
+pub(crate) const ATAN2_PI_LO: f64 = 1.2246467991473531772E-16;
+
+// The constants of the correctly rounded functions (`correct.rs`), from mpmath:
+// floor(2/pi * 2^1408), floor(pi/2 * 2^256) and floor(ln 2 * 2^256), in little-endian limbs.
+pub(crate) const CR_TWO_OVER_PI: [u64; 22] = [
+    0x6599855f14a06840,
+    0xa9e391615ee61b08,
+    0xf0cfbc209af4361d,
+    0x56033046fc7b6bab,
+    0x6bfb5fb11f8d5d08,
+    0x3d0739f78a5292ea,
+    0x7527bac7ebe5f17b,
+    0x4f463f669e5fea2d,
+    0x6d367ecf27cb09b7,
+    0xef2f118b5a0a6d1f,
+    0x1ff897ffde05980f,
+    0x9c845f8bbdf9283b,
+    0x3991d639835339f4,
+    0xe99c7026b45f7e41,
+    0xe88235f52ebb4484,
+    0xfe1deb1cb129a73e,
+    0x06492eea09d1921c,
+    0xb7246e3a424dd2e0,
+    0xfe5163abdebbc561,
+    0xdb6295993c439041,
+    0xfc2757d1f534ddc0,
+    0xa2f9836e4e441529,
+];
+pub(crate) const CR_PI_OVER_2: [u64; 6] = [
+    0x04177d4c76273644,
+    0x52049c1114cf98e8,
+    0x898cc51701b839a2,
+    0x921fb54442d18469,
+    0x0000000000000001,
+    0x0000000000000000,
+];
+pub(crate) const CR_LN2: [u64; 6] = [
+    0x8a0d175b8baafa2b,
+    0x40f343267298b62d,
+    0xc9e3b39803f2f6af,
+    0xb17217f7d1cf79ab,
+    0x0000000000000000,
+    0x0000000000000000,
+];
