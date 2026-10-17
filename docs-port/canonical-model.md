@@ -124,6 +124,16 @@ The sequence model is the DB state after parsing (`sequenceDb.ts`), with the fie
 
 - **Links keep the key order of a JavaScript object.** The reference lists an actor's links in its menu with `for…in`, so their order is part of the model: the array indices (the canonical integers from 0 to 2^32 − 2) first, ascending, then the other keys in insertion order; a repeated key keeps its place and takes the new value. The model holds them in a `JsObject` ([`js_object.rs`](../crates/ferrigura-model/src/js_object.rs)), which serde writes as a JSON object in that order. The differential run cannot compare that order as an object: `serde_json::Value` sorts the keys, and `same` in [`diff.ts`](../tools/port/diff.ts) ignores their order. The exporter ([`export-sequence.ts`](../tools/port/export-sequence.ts), `Object.entries`) and the canonical example ([`canonical.rs`](../crates/ferrigura-syntax/examples/canonical.rs)) therefore both write `links` as a list of `[key, value]` pairs, which is compared in order. `properties` stay an object, as no output depends on their order.
 
+## C4
+
+The C4 model is the DB state after parsing (`c4Db.ts`), with the field list and the exclusions in [c4/PLAN.md](./c4/PLAN.md), section 6. Its own rules:
+
+- **Text fields are strings or absent.** A `{ text }` field is its string. A field that holds a bare string (a style statement wrote it) or nothing is left out. A label may also be the object of a named argument (`Person(a, $sprite="x")`), which the reference keeps as the text.
+- **Texts keep the entity placeholders** that the DB keeps (`ﬂ°name¶ß`), as the flowchart's texts do; no sanitising is applied to them except where the DB sanitises (the title and the accessibility description).
+- **Relation offsets are strings:** the `String()` of the DB value, so a positional offset is its `parseInt` result and a named one is its raw text.
+- **The global boundary's `tags` and `link` are `null`**, and an absent value is left out.
+- **The title** is the grammar's last `title` or `accTitle` line. The front matter title does not reach a C4 diagram.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

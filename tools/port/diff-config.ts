@@ -284,7 +284,6 @@ const NOT_PORTED_SECTIONS = new Set([
   'sankey',
   'quadrantChart',
   'requirement',
-  'c4',
   'kanban',
   'architecture',
   'treemap',
