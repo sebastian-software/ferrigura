@@ -15,8 +15,8 @@ use super::{Intersect, ShapeInput};
 use crate::svg::number;
 use crate::unified::geom::{BBox, Point};
 
-/// The number of points an elliptical arc is sampled at for a rough outline (`arc_points`). The boxes
-/// of the arcs do not use it: they are the arcs' exact extents (`arc_extreme_points`).
+/// The number of points an elliptical arc is sampled at for a rough outline (`arc_points`). The boxes of
+/// the paths of these shapes are not sampled: `ferrigura-path` computes them as Chromium does.
 const ARC_SAMPLES: usize = 512;
 
 /// One arc of a path written with relative coordinates: `a rx,ry rotation 0,sweep dx,dy`. Every
@@ -35,8 +35,6 @@ struct RelativeArc {
 /// Returns the path data and the path's own box, as `getBBox` gives it, in the path's coordinates.
 fn relative_arc_path(arcs: &[RelativeArc]) -> (String, BBox) {
     let mut d = String::from("M0 0");
-    let mut current = Point::default();
-    let mut points = vec![current];
     for arc in arcs {
         d.push_str(&format!(
             " a{},{} {} 0,{} {},{}",
@@ -47,20 +45,18 @@ fn relative_arc_path(arcs: &[RelativeArc]) -> (String, BBox) {
             number(arc.dx),
             number(arc.dy),
         ));
-        let target = Point::new(current.x + arc.dx, current.y + arc.dy);
-        points.extend(arc_extreme_points(
-            current,
-            target,
-            arc.rx,
-            arc.ry,
-            arc.rotation,
-            false,
-            arc.sweep,
-        ));
-        current = target;
     }
     d.push_str(" H0 V0 Z");
-    (d, exact_box(&points))
+    // The box of the path as the browser computes it: the arcs are conics of Skia, and their extremes are
+    // read in float (`ferrigura-path`, checked against Chromium 151 on its corpus).
+    let rect = ferrigura_path::bounding_box(&d);
+    let bbox = BBox::new(
+        rect.x as f64,
+        rect.y as f64,
+        rect.width as f64,
+        rect.height as f64,
+    );
+    (d, bbox)
 }
 
 /// `bang.ts`: a burst of small arcs around the label. The burst is the label's box padded by half
@@ -426,38 +422,6 @@ pub(super) fn arc_points(
         .collect()
 }
 
-/// The points that bound the box of an arc: its two ends, and the points where its x or its y is
-/// extreme when they lie within its sweep. Chromium's `getBBox` of an arc is the arc's own extent, not
-/// a sampled one, so the box of a path made of arcs is exact to the ellipse (`mindmap/NOTES.md` 8,
-/// risk 2). The sampled points of [`arc_points`] would be a thousandth of a pixel off, which moves
-/// the layout of a mindmap's cloud and bang nodes.
-#[must_use]
-pub(super) fn arc_extreme_points(
-    from: Point,
-    to: Point,
-    rx: f64,
-    ry: f64,
-    rotation: f64,
-    large: bool,
-    sweep: bool,
-) -> Vec<Point> {
-    let Some(ellipse) = Ellipse::of(from, to, rx, ry, rotation, large, sweep) else {
-        return vec![from, to];
-    };
-    // x(θ) = cx + rx cosφ cosθ − ry sinφ sinθ and y(θ) = cy + rx sinφ cosθ + ry cosφ sinθ are extreme
-    // where their derivatives vanish: tan θ = −ry sinφ / (rx cosφ) for x and ry cosφ / (rx sinφ) for y,
-    // and the second extreme of each is half a turn after the first.
-    let x_axis = (-ellipse.ry * ellipse.sin).atan2(ellipse.rx * ellipse.cos);
-    let y_axis = (ellipse.ry * ellipse.cos).atan2(ellipse.rx * ellipse.sin);
-    let mut points = vec![from, to];
-    for theta in [x_axis, x_axis + PI, y_axis, y_axis + PI] {
-        if ellipse.covers(theta) {
-            points.push(ellipse.at(theta));
-        }
-    }
-    points
-}
-
 /// The centre form of an elliptical arc (SVG's appendix F.6.5): the centre, the radii after any
 /// growth, the sine and cosine of the rotation, and the start angle and the sweep of the arc.
 #[derive(Debug, Clone, Copy)]
@@ -544,39 +508,6 @@ impl Ellipse {
             self.centre_y + self.rx * self.sin * theta.cos() + self.ry * self.cos * theta.sin(),
         )
     }
-
-    /// Whether the sweep of the arc passes the angle `theta`, which is taken modulo a turn.
-    fn covers(&self, theta: f64) -> bool {
-        let turn = 2.0 * PI;
-        let mut offset = (theta - self.theta1) % turn;
-        if offset < 0.0 {
-            offset += turn;
-        }
-        if self.delta >= 0.0 {
-            offset <= self.delta
-        } else {
-            offset == 0.0 || offset >= turn + self.delta
-        }
-    }
-}
-
-/// The box of the points, in double precision and with no rounding of the points: an arc's extremes
-/// are not coordinates the `d` string holds, and Chromium's `getBBox` of an arc is the rounding of its
-/// exact extent to a float32 (`mindmap/NOTES.md` 8, risk 2). Rounding each extreme first moves the box
-/// by a few millionths, which the layout of a mindmap then amplifies.
-fn exact_box(points: &[Point]) -> BBox {
-    let mut iter = points.iter();
-    let Some(first) = iter.next() else {
-        return BBox::default();
-    };
-    let (mut left, mut top, mut right, mut bottom) = (first.x, first.y, first.x, first.y);
-    for point in iter {
-        left = left.min(point.x);
-        top = top.min(point.y);
-        right = right.max(point.x);
-        bottom = bottom.max(point.y);
-    }
-    BBox::new(left, top, right - left, bottom - top)
 }
 
 #[cfg(test)]

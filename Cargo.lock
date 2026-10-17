@@ -179,6 +179,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrigura-path"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ferrigura-render"
 version = "0.0.0"
 dependencies = [
@@ -187,6 +195,7 @@ dependencies = [
  "ferrigura-elk",
  "ferrigura-jsmath",
  "ferrigura-model",
+ "ferrigura-path",
  "ferrigura-syntax",
  "ferrigura-text",
  "ferromark",

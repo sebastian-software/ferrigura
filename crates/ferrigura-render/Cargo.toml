@@ -14,6 +14,7 @@ ferrigura-cose = { path = "../ferrigura-cose" }
 ferrigura-elk = { path = "../ferrigura-elk" }
 ferrigura-jsmath = { path = "../ferrigura-jsmath" }
 ferrigura-model.workspace = true
+ferrigura-path = { path = "../ferrigura-path" }
 ferrigura-syntax = { path = "../ferrigura-syntax" }
 ferrigura-text = { path = "../ferrigura-text" }
 ferromark = "3.1.0"
