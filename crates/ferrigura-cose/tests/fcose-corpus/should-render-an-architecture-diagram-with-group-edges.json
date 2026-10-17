@@ -1,0 +1,470 @@
+{
+ "name": "should-render-an-architecture-diagram-with-group-edges",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/pr-check/should-render-an-architecture-diagram-with-group-edges.mmd",
+ "text": "---\ndescription: >-\n  Five cloud groups (left, right, top, bottom, center), each holding a single\n  disk service, connected via directed `{group}`-scoped edges\n  (e.g. `left_disk{group}:R --> L:center_disk{group}`) from each outer group\n  into the center one — exercising group-to-group edges drawn at the group\n  boundary rather than between individual services.\n---\narchitecture-beta\n  group left_group(cloud)[Left]\n  group right_group(cloud)[Right]\n  group top_group(cloud)[Top]\n  group bottom_group(cloud)[Bottom]\n  group center_group(cloud)[Center]\n\n  service left_disk(disk)[Disk] in left_group\n  service right_disk(disk)[Disk] in right_group\n  service top_disk(disk)[Disk] in top_group\n  service bottom_disk(disk)[Disk] in bottom_group\n  service center_disk(disk)[Disk] in center_group\n\n  left_disk{group}:R --> L:center_disk{group}\n  right_disk{group}:L --> R:center_disk{group}\n  top_disk{group}:B --> T:center_disk{group}\n  bottom_disk{group}:T --> B:center_disk{group}\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "left_group",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "right_group",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "top_group",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "bottom_group",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "center_group",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "left_disk",
+     "parent": "left_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "right_disk",
+     "parent": "right_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "top_disk",
+     "parent": "top_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "bottom_disk",
+     "parent": "bottom_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "center_disk",
+     "parent": "center_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "left_disk-center_disk",
+     "source": "left_disk",
+     "target": "center_disk",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "right_disk-center_disk",
+     "source": "right_disk",
+     "target": "center_disk",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "top_disk-center_disk",
+     "source": "top_disk",
+     "target": "center_disk",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "bottom_disk-center_disk",
+     "source": "bottom_disk",
+     "target": "center_disk",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "left_disk",
+      "center_disk",
+      "center_disk",
+      "right_disk"
+     ]
+    ],
+    "vertical": [
+     [
+      "center_disk",
+      "top_disk",
+      "center_disk",
+      "bottom_disk"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "center_disk",
+     "left": "left_disk",
+     "gap": 120
+    },
+    {
+     "right": "right_disk",
+     "left": "center_disk",
+     "gap": 120
+    },
+    {
+     "top": "top_disk",
+     "bottom": "center_disk",
+     "gap": 120
+    },
+    {
+     "bottom": "bottom_disk",
+     "top": "center_disk",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "left_group",
+     "x": -242.16849406942924,
+     "y": 17.80826605140595
+    },
+    {
+     "id": "right_group",
+     "x": 242.16849406942924,
+     "y": 17.80826605140595
+    },
+    {
+     "id": "top_group",
+     "x": 0.8082660514059512,
+     "y": -225.16849406942924
+    },
+    {
+     "id": "bottom_group",
+     "x": 0.8082660514059512,
+     "y": 259.16849406942924
+    },
+    {
+     "id": "center_group",
+     "x": 0.8082660514059512,
+     "y": 17.80826605140595
+    },
+    {
+     "id": "left_disk",
+     "x": -242.16849406942924,
+     "y": 9.308266051405951
+    },
+    {
+     "id": "right_disk",
+     "x": 242.16849406942922,
+     "y": 9.308266051405951
+    },
+    {
+     "id": "top_disk",
+     "x": 0.8082660514059512,
+     "y": -233.66849406942924
+    },
+    {
+     "id": "bottom_disk",
+     "x": 0.8082660514059512,
+     "y": 250.66849406942922
+    },
+    {
+     "id": "center_disk",
+     "x": 0.8082660514059512,
+     "y": 9.308266051405951
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "left_group",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": -242.16849406942924,
+     "y": 17.80826605140595
+    },
+    {
+     "id": "right_group",
+     "parent": null,
+     "width": 163.00000000000003,
+     "height": 180,
+     "padding": 40,
+     "x": 242.16849406942924,
+     "y": 17.80826605140595
+    },
+    {
+     "id": "top_group",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0.8082660514059512,
+     "y": -225.16849406942924
+    },
+    {
+     "id": "bottom_group",
+     "parent": null,
+     "width": 163,
+     "height": 180.00000000000003,
+     "padding": 40,
+     "x": 0.8082660514059512,
+     "y": 259.16849406942924
+    },
+    {
+     "id": "center_group",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0.8082660514059512,
+     "y": 17.80826605140595
+    },
+    {
+     "id": "left_disk",
+     "parent": "left_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -242.16849406942924,
+     "y": 9.308266051405951
+    },
+    {
+     "id": "right_disk",
+     "parent": "right_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 242.16849406942922,
+     "y": 9.308266051405951
+    },
+    {
+     "id": "top_disk",
+     "parent": "top_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0.8082660514059512,
+     "y": -233.66849406942924
+    },
+    {
+     "id": "bottom_disk",
+     "parent": "bottom_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0.8082660514059512,
+     "y": 250.66849406942922
+    },
+    {
+     "id": "center_disk",
+     "parent": "center_group",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0.8082660514059512,
+     "y": 9.308266051405951
+    }
+   ],
+   "edges": [
+    {
+     "id": "left_disk-center_disk",
+     "source": "left_disk",
+     "target": "center_disk",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "right_disk-center_disk",
+     "source": "right_disk",
+     "target": "center_disk",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "top_disk-center_disk",
+     "source": "top_disk",
+     "target": "center_disk",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "bottom_disk-center_disk",
+     "source": "bottom_disk",
+     "target": "center_disk",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "left_disk",
+      "center_disk",
+      "center_disk",
+      "right_disk"
+     ]
+    ],
+    "vertical": [
+     [
+      "center_disk",
+      "top_disk",
+      "center_disk",
+      "bottom_disk"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "center_disk",
+     "left": "left_disk",
+     "gap": 120
+    },
+    {
+     "right": "right_disk",
+     "left": "center_disk",
+     "gap": 120
+    },
+    {
+     "top": "top_disk",
+     "bottom": "center_disk",
+     "gap": 120
+    },
+    {
+     "bottom": "bottom_disk",
+     "top": "center_disk",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -324.66849406942924,
+    "y1": -316.16849406942924,
+    "w": 649.3369881388585,
+    "h": 666.3369881388585
+   },
+   "output": [
+    {
+     "id": "left_group",
+     "x": -242.16849406942924,
+     "y": 26.308266051405948
+    },
+    {
+     "id": "right_group",
+     "x": 242.16849406942924,
+     "y": 26.308266051405948
+    },
+    {
+     "id": "top_group",
+     "x": 0.8082660514059512,
+     "y": -216.6684940694292
+    },
+    {
+     "id": "bottom_group",
+     "x": 0.8082660514059512,
+     "y": 267.6684940694292
+    },
+    {
+     "id": "center_group",
+     "x": 0.8082660514059512,
+     "y": 26.308266051405948
+    },
+    {
+     "id": "left_disk",
+     "x": -242.16849406942924,
+     "y": 17.808266051405944
+    },
+    {
+     "id": "right_disk",
+     "x": 242.16849406942924,
+     "y": 17.808266051405944
+    },
+    {
+     "id": "top_disk",
+     "x": 0.8082660514059512,
+     "y": -225.1684940694292
+    },
+    {
+     "id": "bottom_disk",
+     "x": 0.8082660514059512,
+     "y": 259.1684940694292
+    },
+    {
+     "id": "center_disk",
+     "x": 0.8082660514059512,
+     "y": 17.808266051405944
+    }
+   ]
+  }
+ ]
+}

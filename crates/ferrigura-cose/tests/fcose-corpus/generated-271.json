@@ -1,0 +1,260 @@
+{
+ "name": "generated-271",
+ "group": "generated",
+ "source": "seed 20261017 index 271",
+ "text": "architecture-beta\n    group g1[Group 1]\n    group g2(cloud)[Group 2] in g1\n    group g3(cloud)[Group 3]\n    service s1(database)[Service 1]\n    service s2[Service 2] in g1\n    service s3(server)[Service 3] in g1\n    s2:R <-- B:s1\n    s3:B --> B:s2",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 7,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 200,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "g1",
+     "parent": null,
+     "width": 193,
+     "height": 195,
+     "padding": 40,
+     "x": 0,
+     "y": 1
+    },
+    {
+     "id": "g2",
+     "parent": "g1",
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "g3",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s2",
+     "parent": "g1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s3",
+     "parent": "g1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "s2-s1",
+     "source": "s2",
+     "target": "s1",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "s3-s2",
+     "source": "s3",
+     "target": "s2",
+     "idealLength": 160,
+     "elasticity": 0.2
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -97.5,
+    "y1": -97.5,
+    "w": 195,
+    "h": 197
+   },
+   "output": [
+    {
+     "id": "g1",
+     "x": 139.52613295373828,
+     "y": 140.52613295373828
+    },
+    {
+     "id": "g2",
+     "x": 302.78137579812903,
+     "y": 303.78137579812903
+    },
+    {
+     "id": "g3",
+     "x": -226.18893872582896,
+     "y": -225.18893872582896
+    },
+    {
+     "id": "s1",
+     "x": -357.78137579812903,
+     "y": -356.78137579812903
+    },
+    {
+     "id": "s2",
+     "x": 152.87514315284164,
+     "y": 153.87514315284164
+    },
+    {
+     "id": "s3",
+     "x": -38.72910989065247,
+     "y": -37.72910989065247
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 7,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 200,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "g1",
+     "parent": null,
+     "width": 519.5104856887815,
+     "height": 519.5104856887815,
+     "padding": 40,
+     "x": 139.52613295373828,
+     "y": 140.52613295373828
+    },
+    {
+     "id": "g2",
+     "parent": "g1",
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 302.78137579812903,
+     "y": 303.78137579812903
+    },
+    {
+     "id": "g3",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": -226.18893872582896,
+     "y": -225.18893872582896
+    },
+    {
+     "id": "s1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -357.78137579812903,
+     "y": -356.78137579812903
+    },
+    {
+     "id": "s2",
+     "parent": "g1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 152.87514315284164,
+     "y": 153.87514315284164
+    },
+    {
+     "id": "s3",
+     "parent": "g1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -38.72910989065247,
+     "y": -37.72910989065247
+    }
+   ],
+   "edges": [
+    {
+     "id": "s2-s1",
+     "source": "s2",
+     "target": "s1",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "s3-s2",
+     "source": "s3",
+     "target": "s2",
+     "idealLength": 160,
+     "elasticity": 0.2
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -398.78137579812903,
+    "y1": -397.78137579812903,
+    "w": 799.0627515962581,
+    "h": 799.0627515962581
+   },
+   "output": [
+    {
+     "id": "g1",
+     "x": 151.48143117030378,
+     "y": 152.48143117030378
+    },
+    {
+     "id": "g2",
+     "x": 325.48415704123744,
+     "y": 326.48415704123744
+    },
+    {
+     "id": "g3",
+     "x": -239.17275723296876,
+     "y": -238.17275723296876
+    },
+    {
+     "id": "s1",
+     "x": -378.98415704123744,
+     "y": -377.98415704123744
+    },
+    {
+     "id": "s2",
+     "x": 154.74808375920637,
+     "y": 155.74808375920637
+    },
+    {
+     "id": "s3",
+     "x": -37.521294700629895,
+     "y": -36.521294700629895
+    }
+   ]
+  }
+ ]
+}

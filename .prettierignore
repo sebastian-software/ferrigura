@@ -19,6 +19,8 @@ packages/mermaid/src/docs/config/setup
 crates/ferrigura-elk/tests/corpus/
 # Generated from Chromium captures by crates/ferrigura-cose/tools/capture-corpus.ts
 crates/ferrigura-cose/tests/corpus/
+# Generated from Chromium captures by crates/ferrigura-cose/tools/capture-fcose-corpus.ts
+crates/ferrigura-cose/tests/fcose-corpus/
 # Generated from reference captures by the M5 port tools (tools/port/)
 crates/ferrigura-render/tests/data/
 crates/ferrigura-render/tests/fixtures/
