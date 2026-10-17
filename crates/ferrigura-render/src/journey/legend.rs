@@ -11,7 +11,7 @@ use std::collections::HashMap;
 
 use ferrigura_model::config::JourneyDiagramConfig;
 
-use super::text::width;
+use super::text::svg_width;
 use crate::RenderError;
 use crate::common::Element;
 use crate::common::draw::{TextData, draw_text};
@@ -159,7 +159,7 @@ pub fn draw(
         let lines = wrap(&actor.name, max_label_width, size)?;
         for (index, line) in lines.iter().enumerate() {
             let shown = split_line_breaks(line).join(" ");
-            let line_width = width(&shown, size)?;
+            let line_width = svg_width(&shown, size)?;
             texts.push(shown);
             elements.push(draw_text(&TextData {
                 x: 40.0,
@@ -214,7 +214,7 @@ pub fn actor_circle(
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn wrap(name: &str, max_width: f64, size: f64) -> Result<Vec<String>, RenderError> {
-    if width(name, size)? <= max_width {
+    if svg_width(name, size)? <= max_width {
         return Ok(vec![name.to_owned()]);
     }
     let mut lines = Vec::new();
@@ -225,7 +225,7 @@ pub fn wrap(name: &str, max_width: f64, size: f64) -> Result<Vec<String>, Render
         } else {
             format!("{current} {word}")
         };
-        if width(&test, size)? <= max_width {
+        if svg_width(&test, size)? <= max_width {
             current = test;
             continue;
         }
@@ -233,11 +233,11 @@ pub fn wrap(name: &str, max_width: f64, size: f64) -> Result<Vec<String>, Render
             lines.push(std::mem::take(&mut current));
         }
         current = word.to_owned();
-        if width(word, size)? > max_width {
+        if svg_width(word, size)? > max_width {
             let mut broken = String::new();
             for character in word.chars() {
                 broken.push(character);
-                if width(&format!("{broken}-"), size)? > max_width {
+                if svg_width(&format!("{broken}-"), size)? > max_width {
                     // `brokenWord.slice(0, -1) + '-'`: the piece without the character that
                     // overflowed, then the hyphen.
                     broken.pop();

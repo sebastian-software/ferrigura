@@ -15,6 +15,7 @@
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
 
+pub mod bbox;
 pub mod embed;
 mod error;
 pub mod fonts;
@@ -22,6 +23,7 @@ pub mod measure;
 pub mod metrics;
 pub mod wrap;
 
+pub use bbox::{Extent, measure_box, measure_line_box};
 pub use embed::{EmbeddedFamily, embed_runs, subset_face};
 pub use error::TextError;
 pub use fonts::{Face, FontFamily, FontStyle, FontWeight, face};

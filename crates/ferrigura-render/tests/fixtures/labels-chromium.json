@@ -4818,6 +4818,768 @@
         "height": 69
       },
       "background": null
+    },
+    {
+      "id": "ink-leading-j",
+      "text": "jump over the fence",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "jump",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -48.2265625,
+            "y": 16
+          },
+          {
+            "text": " over",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -13.0703125,
+            "y": 16
+          },
+          {
+            "text": " the",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 21.3671875,
+            "y": 16
+          }
+        ],
+        [
+          {
+            "text": "fence",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -19.2265625,
+            "y": 33.599998474121094
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        96.453125,
+        38.453125
+      ],
+      "bbox": {
+        "x": -49.154563903808594,
+        "y": 1,
+        "width": 97.3811264038086,
+        "height": 37.599998474121094
+      },
+      "background": null
+    },
+    {
+      "id": "ink-leading-j-alone",
+      "text": "j",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "j",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -2.0390625,
+            "y": 16
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        4.078125
+      ],
+      "bbox": {
+        "x": -2.967062473297119,
+        "y": 1,
+        "width": 5.006124973297119,
+        "height": 20
+      },
+      "background": null
+    },
+    {
+      "id": "ink-trailing-q",
+      "text": "a q",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "a",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -11.0625,
+            "y": 16
+          },
+          {
+            "text": " q",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -2.640625,
+            "y": 16
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        22.125
+      ],
+      "bbox": {
+        "x": -11.0625,
+        "y": 1,
+        "width": 22.949871063232422,
+        "height": 20
+      },
+      "background": null
+    },
+    {
+      "id": "ink-trailing-q-14",
+      "text": "the quiz q",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 14,
+      "lines": [
+        [
+          {
+            "text": "the",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 14,
+            "x": -30.6953125,
+            "y": 14.000000953674316
+          },
+          {
+            "text": " quiz",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 14,
+            "x": -11.1171875,
+            "y": 14.000000953674316
+          },
+          {
+            "text": " q",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 14,
+            "x": 18.7109375,
+            "y": 14.000000953674316
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        61.390625
+      ],
+      "bbox": {
+        "x": -30.6953125,
+        "y": 1.0000009536743164,
+        "width": 62.118247985839844,
+        "height": 17
+      },
+      "background": null
+    },
+    {
+      "id": "ink-leading-j-14",
+      "text": "jun",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 14,
+      "lines": [
+        [
+          {
+            "text": "jun",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 14,
+            "x": -9.359375,
+            "y": 14.000000953674316
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        18.71875
+      ],
+      "bbox": {
+        "x": -10.171375274658203,
+        "y": 1.0000009536743164,
+        "width": 19.530750274658203,
+        "height": 17
+      },
+      "background": null
+    },
+    {
+      "id": "ink-md-italic-f",
+      "text": "an *of*",
+      "labelType": "markdown",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "an",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -17.7578125,
+            "y": 16
+          },
+          {
+            "text": " of",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 16,
+            "x": -0.6015625,
+            "y": 16
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        35.515625
+      ],
+      "bbox": {
+        "x": -17.7578125,
+        "y": 1,
+        "width": 36.37224578857422,
+        "height": 20
+      },
+      "background": null
+    },
+    {
+      "id": "ink-md-italic-j",
+      "text": "*jam* jelly",
+      "labelType": "markdown",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "jam",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 16,
+            "x": -28.9375,
+            "y": 16
+          },
+          {
+            "text": " jelly",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -2.9375,
+            "y": 16
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        57.875
+      ],
+      "bbox": {
+        "x": -31.401500701904297,
+        "y": 1,
+        "width": 60.3390007019043,
+        "height": 20
+      },
+      "background": null
+    },
+    {
+      "id": "ink-md-italic-capitals",
+      "text": "*Jj* and *Yj*",
+      "labelType": "markdown",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "Jj",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 16,
+            "x": -30.4765625,
+            "y": 16
+          },
+          {
+            "text": " and",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -18.1953125,
+            "y": 16
+          },
+          {
+            "text": " Yj",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 16,
+            "x": 12.2890625,
+            "y": 16
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        60.953125
+      ],
+      "bbox": {
+        "x": -30.620561599731445,
+        "y": 1,
+        "width": 61.34161376953125,
+        "height": 20
+      },
+      "background": null
+    },
+    {
+      "id": "ink-md-bold-j",
+      "text": "**jun** and more",
+      "labelType": "markdown",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "jun",
+            "weight": 700,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -46.78125,
+            "y": 16
+          },
+          {
+            "text": " and",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -24.359375,
+            "y": 16
+          },
+          {
+            "text": " more",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 6.125,
+            "y": 16
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        93.5625
+      ],
+      "bbox": {
+        "x": -47.901248931884766,
+        "y": 1,
+        "width": 94.68250274658203,
+        "height": 20
+      },
+      "background": null
+    },
+    {
+      "id": "ink-wrap-120",
+      "text": "a long line that wraps and ends with the trailing q of the quiz",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "middle",
+      "width": 120,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "a",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -52.3359375,
+            "y": 16
+          },
+          {
+            "text": " long",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -43.9140625,
+            "y": 16
+          },
+          {
+            "text": " line",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -9.3046875,
+            "y": 16
+          },
+          {
+            "text": " that",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 20.3359375,
+            "y": 16
+          }
+        ],
+        [
+          {
+            "text": "wraps",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -54.703125,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " and",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -14.015625,
+            "y": 33.599998474121094
+          },
+          {
+            "text": " ends",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 16.46875,
+            "y": 33.599998474121094
+          }
+        ],
+        [
+          {
+            "text": "with",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -54.4375,
+            "y": 51.19999694824219
+          },
+          {
+            "text": " the",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -25.59375,
+            "y": 51.19999694824219
+          },
+          {
+            "text": " trailing",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 1.265625,
+            "y": 51.19999694824219
+          }
+        ],
+        [
+          {
+            "text": "q",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -44.234375,
+            "y": 68.80000305175781
+          },
+          {
+            "text": " of",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -35.015625,
+            "y": 68.80000305175781
+          },
+          {
+            "text": " the",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -16.71875,
+            "y": 68.80000305175781
+          },
+          {
+            "text": " quiz",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 10.140625,
+            "y": 68.80000305175781
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        104.671875,
+        109.40625,
+        108.875,
+        88.46875
+      ],
+      "bbox": {
+        "x": -54.703125,
+        "y": 1,
+        "width": 109.40625,
+        "height": 72.80000305175781
+      },
+      "background": null
+    },
+    {
+      "id": "ink-edge-j",
+      "text": "just in time",
+      "labelType": "text",
+      "isNode": false,
+      "anchor": "middle",
+      "width": null,
+      "style": "",
+      "addBackground": true,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "just",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -39.5390625,
+            "y": 16
+          },
+          {
+            "text": " in",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -14.1640625,
+            "y": 16
+          },
+          {
+            "text": " time",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 3.5078125,
+            "y": 16
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        79.078125
+      ],
+      "bbox": {
+        "x": -40.467063903808594,
+        "y": 1,
+        "width": 80.0061264038086,
+        "height": 20
+      },
+      "background": {
+        "x": -42.467063903808594,
+        "y": -1,
+        "width": 84.0061264038086,
+        "height": 24
+      }
+    },
+    {
+      "id": "ink-edge-md-italic-f",
+      "text": "an *of* edge",
+      "labelType": "markdown",
+      "isNode": false,
+      "anchor": "middle",
+      "width": null,
+      "style": "",
+      "addBackground": true,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "an",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -37.6171875,
+            "y": 16
+          },
+          {
+            "text": " of",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 16,
+            "x": -20.4609375,
+            "y": 16
+          },
+          {
+            "text": " edge",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": -2.1015625,
+            "y": 16
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        75.234375
+      ],
+      "bbox": {
+        "x": -37.6171875,
+        "y": 1,
+        "width": 75.234375,
+        "height": 20
+      },
+      "background": {
+        "x": -39.6171875,
+        "y": -1,
+        "width": 79.234375,
+        "height": 24
+      }
+    },
+    {
+      "id": "ink-cluster-start",
+      "text": "Jq and fjord<br/>quit",
+      "labelType": "text",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "Jq",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 16
+          },
+          {
+            "text": " and",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 17.390625,
+            "y": 16
+          },
+          {
+            "text": " fjord",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 47.875,
+            "y": 16
+          }
+        ],
+        [
+          {
+            "text": "quit",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 0,
+            "y": 33.599998474121094
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        84.703125,
+        27.4375
+      ],
+      "bbox": {
+        "x": 0,
+        "y": 1,
+        "width": 84.703125,
+        "height": 37.599998474121094
+      },
+      "background": null
+    },
+    {
+      "id": "ink-cluster-md",
+      "text": "*Jj* title<br/>*fjord*",
+      "labelType": "markdown",
+      "isNode": true,
+      "anchor": "start",
+      "width": 1000000000,
+      "style": "",
+      "addBackground": false,
+      "fontSize": 16,
+      "lines": [
+        [
+          {
+            "text": "Jj",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 16,
+            "x": 0,
+            "y": 16
+          },
+          {
+            "text": " title",
+            "weight": 400,
+            "style": "normal",
+            "fontSize": 16,
+            "x": 12.28125,
+            "y": 16
+          }
+        ],
+        [
+          {
+            "text": "fjord",
+            "weight": 400,
+            "style": "italic",
+            "fontSize": 16,
+            "x": 0,
+            "y": 33.599998474121094
+          }
+        ]
+      ],
+      "lineTextLengths": [
+        44.03125,
+        32.53125
+      ],
+      "bbox": {
+        "x": -0.14399999380111694,
+        "y": 1,
+        "width": 44.17525100708008,
+        "height": 37.599998474121094
+      },
+      "background": null
     }
   ]
 }

@@ -142,6 +142,15 @@ const TEXTS: string[] = [
   'ÅÄÖ åäö',
   '&amp; &lt;',
   'it&#39;s',
+  // Ink past the advance: `getBBox` takes the glyph outlines of a leading `j` and a trailing `q`
+  // into the box, so these widths are the boxes, not the advances.
+  'j',
+  'jun',
+  'jul',
+  'jq',
+  'Jj gq',
+  'fjord',
+  'quit',
 ];
 const SIZES = [10, 12, 12.5, 14, 16, 16.25, 20, 24, 32];
 const WEIGHTS = [300, 400, 600, 700];

@@ -284,6 +284,30 @@ const requests: Request[] = [
     'markdown',
     { anchor: 'start', width: 200, style: 'font-size:20px;' }
   ),
+
+  // Ink past the advance: a glyph whose outline reaches past its advance widens the box `getBBox`
+  // gives the text. The leading `j` reaches left of the origin, the trailing `q` and the italic `f`
+  // and capitals reach past the end of their advance (`extents` in `chromium.json`).
+  node('ink-leading-j', 'jump over the fence', 'text'),
+  node('ink-leading-j-alone', 'j', 'text'),
+  node('ink-trailing-q', 'a q', 'text'),
+  node('ink-trailing-q-14', 'the quiz q', 'text', { fontSize: 14 }),
+  node('ink-leading-j-14', 'jun', 'text', { fontSize: 14 }),
+  node('ink-md-italic-f', 'an *of*', 'markdown'),
+  node('ink-md-italic-j', '*jam* jelly', 'markdown'),
+  node('ink-md-italic-capitals', '*Jj* and *Yj*', 'markdown'),
+  node('ink-md-bold-j', '**jun** and more', 'markdown'),
+  node('ink-wrap-120', 'a long line that wraps and ends with the trailing q of the quiz', 'text'),
+  edge('ink-edge-j', 'just in time', 'text'),
+  edge('ink-edge-md-italic-f', 'an *of* edge', 'markdown'),
+  node('ink-cluster-start', 'Jq and fjord<br/>quit', 'text', {
+    anchor: 'start',
+    width: NO_WRAP,
+  }),
+  node('ink-cluster-md', '*Jj* title<br/>*fjord*', 'markdown', {
+    anchor: 'start',
+    width: NO_WRAP,
+  }),
 ];
 
 /** The fonts of the page: Lexica Ultralegible in its four styles, as data URLs. */

@@ -74,17 +74,48 @@ pub fn measure_line(runs: &[Run<'_>], size: f64) -> Result<f64, TextError> {
 }
 
 fn advance(font: &Font, text: &str, size: f64) -> Result<f64, TextError> {
+    let shaped = shape_run(font, text)?;
+    Ok(shaped.advance as f64 * size / f64::from(font.units_per_em()))
+}
+
+/// One glyph of a shaped run, with the pen position its outline is drawn from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PlacedGlyph {
+    /// The glyph id in the font the run was shaped in.
+    pub(crate) glyph: u32,
+    /// The x of the glyph's origin from the start of the run, in font units: the pen position plus
+    /// the glyph's own offset.
+    pub(crate) x: i64,
+}
+
+/// A shaped run: its glyphs in order and its advance, both in font units.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ShapedRun {
+    pub(crate) glyphs: Vec<PlacedGlyph>,
+    /// The sum of the glyph advances, in font units.
+    pub(crate) advance: i64,
+}
+
+/// Shapes `text` with the font's default features, and reports where each glyph is drawn.
+pub(crate) fn shape_run(font: &Font, text: &str) -> Result<ShapedRun, TextError> {
     let shaper = ShaperFont::new(font);
     let mut buffer = Buffer::new();
     buffer.push_str(text);
     buffer.guess_segment_properties();
     shape(&shaper, &mut buffer, ShapeOptions::new()).map_err(TextError::Shape)?;
-    let units: i64 = buffer
-        .glyph_positions()
-        .iter()
-        .map(|position| i64::from(position.x_advance))
-        .sum();
-    Ok(units as f64 * size / f64::from(font.units_per_em()))
+    let mut pen: i64 = 0;
+    let mut glyphs = Vec::with_capacity(buffer.len());
+    for (info, position) in buffer.glyph_infos().iter().zip(buffer.glyph_positions()) {
+        glyphs.push(PlacedGlyph {
+            glyph: info.glyph_id,
+            x: pen + i64::from(position.x_offset),
+        });
+        pen += i64::from(position.x_advance);
+    }
+    Ok(ShapedRun {
+        glyphs,
+        advance: pen,
+    })
 }
 
 #[cfg(test)]

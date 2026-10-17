@@ -11,7 +11,7 @@ use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, face, text_box};
 
 use crate::RenderError;
 use crate::common::Element;
-use crate::common::text::{collapse_white_space, collapsed_width};
+use crate::common::text::{collapse_white_space, collapsed_box, collapsed_width};
 use crate::svg::number;
 
 /// The regular face: the legend, the sections, the tasks and their labels.
@@ -26,16 +26,27 @@ pub fn bold() -> &'static Face {
     face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal)
 }
 
-/// The width of a text as `getBoundingClientRect().width` reports it for an SVG text in the
-/// regular face ([`collapsed_width`]). The reference measures the legend this way
-/// (`journeyRenderer.ts` 38-40 and 105). Text with no glyphs measures as 0, not as an error, as
-/// `getBoundingClientRect` gives it.
+/// The width of a text as a browser lays it out in a table cell of the `fo` label, in the regular
+/// face: its advance, with the white space collapsed ([`collapsed_width`]). A cell is HTML, so the
+/// browser breaks it by advances, and the glyph outlines do not count here.
 ///
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn width(text: &str, size: f64) -> Result<f64, RenderError> {
     Ok(collapsed_width(regular(), text, size)?)
+}
+
+/// The width of a text as `getBoundingClientRect().width` reports it for an SVG `text` in the
+/// regular face ([`collapsed_box`]): the box of the glyphs, which is wider than the advance where a
+/// glyph's outline reaches past it. The reference measures the legend this way (`journeyRenderer.ts`
+/// 38-40, 57-73 and 105). Text with no glyphs measures as 0, not as an error.
+///
+/// # Errors
+///
+/// Returns an error if the bundled font cannot be read.
+pub fn svg_width(text: &str, size: f64) -> Result<f64, RenderError> {
+    Ok(collapsed_box(regular(), text, size)?.width())
 }
 
 /// One line of a laid-out label: its text without the blank that ends it, and its width.

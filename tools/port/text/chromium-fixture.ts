@@ -16,6 +16,14 @@
  * here, in Chromium: WebKit reports widths without kerning through them, and its box heights differ
  * by up to 0.38 px (`docs-port/spikes/text-measurement.md`).
  *
+ * The `extents` section is the box `getBBox` gives a line of SVG text: the union of the advance of
+ * each run and the outline of each glyph, horizontally (`ferrigura_text::measure_line_box`). Each
+ * request is a line of styled runs at a size and an anchor, and the entry records the box's `x` and
+ * `width` and the line's `getComputedTextLength`, which is the advance the anchor shifts it by. The
+ * requests are built below: every printable ASCII glyph and some other glyphs in the four styles
+ * (glyphs with ink past their advance, the leading `j`, the italic `f`, the trailing `q`), words
+ * that overhang at either end, and lines whose runs change style.
+ *
  * Usage: `pnpm exec tsx tools/port/text/chromium-fixture.ts [--check]`
  */
 import { readFile, writeFile } from 'node:fs/promises';
@@ -43,6 +51,9 @@ const FACES: Record<string, string> = {
 /** The tolerance of widths, in pixels: Chromium lays text out in units of 1/64 px. */
 const WIDTH_TOLERANCE = 0.02;
 
+/** The tolerance of the `extents` boxes, in pixels: float32 values read from Chromium. */
+const EXTENT_TOLERANCE = 0.001;
+
 interface Fixture {
   widths: { text: string; style: string; size: number; width: number }[];
   runs: { runs: { text: string; style: string }[]; size: number; width: number }[];
@@ -54,6 +65,139 @@ interface Fixture {
     lines: string[];
   }[];
   boxes: { style: string; size: number; ascent: number; descent: number }[];
+  extents: ExtentEntry[];
+}
+
+/** A line of styled runs at a size, anchored as `text-anchor` says, with the box Chromium gives it. */
+interface ExtentEntry {
+  parts: { text: string; style: string }[];
+  size: number;
+  anchor: 'start' | 'middle' | 'end';
+  /** The box's left edge relative to the anchor point, as `getBBox().x`. */
+  x: number;
+  /** The box's width, as `getBBox().width`. */
+  width: number;
+  /** The advance of the line, as `getComputedTextLength`. */
+  computedLength: number;
+}
+
+// cspell:ignore Åßſÿ
+/** The glyphs of the Lexica faces: printable ASCII and some other glyphs, at 14 px in four styles. */
+const GLYPHS: string[] = [
+  ...Array.from({ length: 0x7e - 0x21 + 1 }, (_, index) => String.fromCharCode(0x21 + index)),
+  ...'éÅßſÿ“’',
+];
+
+/** The words that overhang at either end, and plain words for comparison. */
+const WORDS: string[] = [
+  'j',
+  'jun',
+  'jul',
+  'jq',
+  'junk',
+  'quit',
+  'Jj gq',
+  'fj',
+  'ay',
+  'may',
+  'Sales Revenue',
+  '1',
+  'x.',
+  '(j)',
+  'Yj',
+  'Fjord',
+];
+
+/** The lines whose runs change style: a leading `j` or a trailing italic `f` reach past the box. */
+const MIXED: { parts: { text: string; style: string }[] }[] = [
+  {
+    parts: [
+      { text: 'j', style: 'sans-regular' },
+      { text: ' un', style: 'sans-italic' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'Hel', style: 'sans-regular' },
+      { text: 'lo f', style: 'sans-italic' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'j', style: 'sans-italic' },
+      { text: ' gq', style: 'sans-regular' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'x ', style: 'sans-regular' },
+      { text: 'f', style: 'sans-italic' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'q', style: 'sans-bold' },
+      { text: ' fox', style: 'sans-regular' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'An', style: 'sans-italic' },
+      { text: 'jf', style: 'sans-bold' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'fj', style: 'sans-bolditalic' },
+      { text: ' ', style: 'sans-regular' },
+      { text: 'y', style: 'sans-italic' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'Jj', style: 'sans-regular' },
+      { text: ' gq', style: 'sans-bolditalic' },
+      { text: 'f', style: 'sans-bold' },
+    ],
+  },
+  { parts: [{ text: 'f', style: 'sans-bolditalic' }] },
+  { parts: [{ text: 'jun', style: 'sans-italic' }] },
+  { parts: [{ text: 'j', style: 'sans-italic' }] },
+];
+
+const STYLES = ['sans-regular', 'sans-italic', 'sans-bold', 'sans-bolditalic'];
+
+/** A request of the `extents` section: the line and its anchor, without the measured box. */
+type RequestOf = Omit<ExtentEntry, 'x' | 'width' | 'computedLength'>;
+
+/** The requests of the `extents` section, in the order the fixture keeps them. */
+function extentRequests(): RequestOf[] {
+  const requests: RequestOf[] = [];
+  for (const glyph of GLYPHS) {
+    for (const style of STYLES) {
+      requests.push({ parts: [{ text: glyph, style }], size: 14, anchor: 'start' });
+    }
+  }
+  for (const word of WORDS) {
+    for (const style of STYLES) {
+      for (const size of [10, 12, 14, 16, 18.5]) {
+        requests.push({ parts: [{ text: word, style }], size, anchor: 'start' });
+      }
+      for (const size of [12, 14, 18.5]) {
+        for (const anchor of ['middle', 'end'] as const) {
+          requests.push({ parts: [{ text: word, style }], size, anchor });
+        }
+      }
+    }
+  }
+  for (const line of MIXED) {
+    for (const size of [12, 14, 16]) {
+      for (const anchor of ['start', 'middle', 'end'] as const) {
+        requests.push({ parts: line.parts, size, anchor });
+      }
+    }
+  }
+  return requests;
 }
 
 /** The page's functions, declared for TypeScript; `pageScript` defines them in the page. */
@@ -64,6 +208,11 @@ declare function drawnExtent(
 ): number;
 declare function wrapText(text: string, size: number, style: string, wrapWidth: number): string[];
 declare function boxMetrics(style: string, size: number): { ascent: number; descent: number };
+declare function lineBox(
+  parts: { text: string; style: string | null }[],
+  size: number,
+  anchor: string
+): { x: number; width: number; computedLength: number };
 
 /** The page script: measurement and Mermaid's line splitting, as plain JavaScript. */
 const pageScript = `
@@ -96,6 +245,16 @@ function drawnExtent(parts, size, style) {
   const width = text.getEndPositionOfChar(count - 1).x - text.getStartPositionOfChar(0).x;
   svg.remove();
   return width;
+}
+
+/** The box and the advance of a line of styled runs, as getBBox and getComputedTextLength give them. */
+function lineBox(parts, size, anchor) {
+  const { svg, text } = svgText(parts, size, null);
+  text.setAttribute('text-anchor', anchor);
+  const box = text.getBBox();
+  const computedLength = text.getComputedTextLength();
+  svg.remove();
+  return { x: box.x, width: box.width, computedLength };
 }
 
 /** The width of a line of words, each word after the first in its own tspan with a leading space. */
@@ -194,6 +353,17 @@ function boxMetrics(style, size) {
 }
 `;
 
+/**
+ * The fixture as JSON, with one line per `extents` entry: the entries are many and each is short,
+ * and one line each keeps the file reviewable.
+ */
+function formatFixture(fixture: Fixture): string {
+  const { extents, ...rest } = fixture;
+  const body = JSON.stringify(rest, null, 2);
+  const lines = extents.map((entry) => `    ${JSON.stringify(entry)}`).join(',\n');
+  return body.replace(/\n}$/, `,\n  "extents": [\n${lines}\n  ]\n}`) + '\n';
+}
+
 async function main(): Promise<void> {
   const check = process.argv.includes('--check');
   const committed = JSON.parse(await readFile(fixturePath, 'utf8')) as Fixture;
@@ -224,32 +394,40 @@ async function main(): Promise<void> {
     // A script tag keeps the page's functions as globals for the evaluations below.
     await page.addScriptTag({ content: pageScript });
 
-    const measured: Fixture = await page.evaluate((fixture: Fixture) => {
-      const widths = fixture.widths.map((request) => ({
-        text: request.text,
-        style: request.style,
-        size: request.size,
-        width: drawnExtent([{ text: request.text, style: null }], request.size, request.style),
-      }));
-      const runs = fixture.runs.map((request) => ({
-        runs: request.runs,
-        size: request.size,
-        width: drawnExtent(request.runs, request.size, null),
-      }));
-      const wraps = fixture.wraps.map((request) => ({
-        text: request.text,
-        style: request.style,
-        size: request.size,
-        wrapWidth: request.wrapWidth,
-        lines: wrapText(request.text, request.size, request.style, request.wrapWidth),
-      }));
-      const boxes = fixture.boxes.map((request) => ({
-        style: request.style,
-        size: request.size,
-        ...boxMetrics(request.style, request.size),
-      }));
-      return { widths, runs, wraps, boxes };
-    }, committed);
+    const requests = extentRequests();
+    const measured: Fixture = await page.evaluate(
+      ([fixture, requests]: [Fixture, RequestOf[]]) => {
+        const widths = fixture.widths.map((request) => ({
+          text: request.text,
+          style: request.style,
+          size: request.size,
+          width: drawnExtent([{ text: request.text, style: null }], request.size, request.style),
+        }));
+        const runs = fixture.runs.map((request) => ({
+          runs: request.runs,
+          size: request.size,
+          width: drawnExtent(request.runs, request.size, null),
+        }));
+        const wraps = fixture.wraps.map((request) => ({
+          text: request.text,
+          style: request.style,
+          size: request.size,
+          wrapWidth: request.wrapWidth,
+          lines: wrapText(request.text, request.size, request.style, request.wrapWidth),
+        }));
+        const boxes = fixture.boxes.map((request) => ({
+          style: request.style,
+          size: request.size,
+          ...boxMetrics(request.style, request.size),
+        }));
+        const extents = requests.map((request) => ({
+          ...request,
+          ...lineBox(request.parts, request.size, request.anchor),
+        }));
+        return { widths, runs, wraps, boxes, extents };
+      },
+      [committed, requests]
+    );
 
     if (check) {
       const problems: string[] = [];
@@ -277,6 +455,23 @@ async function main(): Promise<void> {
           problems.push(`box ${entry.style} ${entry.size}: ${entry.ascent}/${entry.descent}`);
         }
       });
+      measured.extents.forEach((entry, index) => {
+        const was = committed.extents?.[index];
+        if (was === undefined || JSON.stringify(entry.parts) !== JSON.stringify(was.parts)) {
+          problems.push(`extent ${index}: the requests differ from the committed fixture`);
+          return;
+        }
+        const differs =
+          Math.abs(entry.x - was.x) > EXTENT_TOLERANCE ||
+          Math.abs(entry.width - was.width) > EXTENT_TOLERANCE ||
+          Math.abs(entry.computedLength - was.computedLength) > EXTENT_TOLERANCE;
+        if (differs) {
+          problems.push(
+            `extent ${JSON.stringify(entry.parts)} ${entry.size} ${entry.anchor}: ` +
+              `${entry.x}/${entry.width} vs ${was.x}/${was.width}`
+          );
+        }
+      });
       if (problems.length > 0) {
         console.error(problems.join('\n'));
         console.error(`${problems.length} differences from ${fixturePath}`);
@@ -284,12 +479,12 @@ async function main(): Promise<void> {
       }
       console.log(
         `chromium fixture: ${measured.widths.length} widths, ${measured.runs.length} runs, ` +
-          `${measured.wraps.length} wraps and ${measured.boxes.length} boxes agree with the committed values`
+          `${measured.wraps.length} wraps, ${measured.boxes.length} boxes and ${measured.extents.length} extents agree with the committed values`
       );
       return;
     }
 
-    await writeFile(fixturePath, `${JSON.stringify(measured, null, 2)}\n`);
+    await writeFile(fixturePath, formatFixture(measured));
     console.log(`wrote ${fixturePath}`);
   } finally {
     await browser.close();

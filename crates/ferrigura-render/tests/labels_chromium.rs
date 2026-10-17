@@ -9,8 +9,9 @@ use ferrigura_render::unified::label::{Anchor, LabelLayout, LabelSpec, layout};
 use ferrigura_text::TextError;
 use serde_json::Value;
 
-/// The largest difference allowed in pixels. Widths, starts and boxes are on Chromium's 1/64 px
-/// grid and agree exactly, so the tolerance is a thousandth of a pixel.
+/// The largest difference allowed in pixels. Widths and starts are on Chromium's 1/64 px grid and
+/// the boxes add the glyph outlines past the advances (`ferrigura_text::measure_box`), which Chromium
+/// reads as float32 values, so the tolerance is a thousandth of a pixel.
 const TOLERANCE: f64 = 0.001;
 
 const FIXTURE: &str = include_str!("fixtures/labels-chromium.json");
