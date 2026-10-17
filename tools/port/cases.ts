@@ -15,9 +15,34 @@ import { readFileSync } from 'node:fs';
 export const undetectedCases: Record<string, string[]> = {
   // Detection is case-sensitive: a capitalised keyword is not a timeline.
   timeline: ['Timeline\nsection A\n  t: e'],
+  // The closing fence of its front matter is indented, which the reference's front matter match
+  // does not accept (the fences need the same indent), so no type is detected.
+  requirement: [
+    readFileSync(
+      new URL(
+        '../../e2e/diagrams/requirement/visual-check/with-a-title-default.mmd',
+        import.meta.url
+      ),
+      'utf8'
+    ),
+  ],
 };
 
 export const explicitCases: Record<string, string[]> = {
+  // The P2 types whose parsers are not ported yet: each gets its cases with its parser task.
+  mindmap: [],
+  block: [],
+  packet: [],
+  xychart: [],
+  sankey: [],
+  quadrantChart: [],
+  requirement: [],
+  c4: [],
+  kanban: [],
+  architecture: [],
+  treemap: [],
+  ishikawa: [],
+  eventmodeling: [],
   // State inputs that the reference's specs do not cover: the quirks of the grammar and the DB
   // (`docs-port/state/PLAN.md`, section 7), and the error paths.
   state: [

@@ -49,7 +49,7 @@ fn should_escape_the_title_and_the_labels() {
 
 #[test]
 fn should_not_render_a_diagram_type_that_is_not_ported() {
-    // Every P1 type renders since M6; mindmap is P2 and not detected yet.
+    // Every P1 type renders since M6; mindmap is P2 and detected, but not rendered yet.
     assert!(render("mindmap\n  root", &Value::empty_object()).is_err());
 }
 

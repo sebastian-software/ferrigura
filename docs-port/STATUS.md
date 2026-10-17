@@ -140,6 +140,26 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 | journey   | `diagrams/user-journey/parser/journey.jison`     |          2 |       8 |       18 | ferrigura-syntax | 16 / 16                  | 131 inputs, no difference | —                                      | 18 fixtures  | 18 of 18 within tolerance                             |
 | info      | `packages/parser/…/info/info.langium`            |          1 |       4 |        2 | ferrigura-syntax | 6 / 6                    | 18 inputs, no difference  | —                                      | 2 fixtures   | 2 of 2 within tolerance                               |
 
+## P2 diagram types
+
+The P2 types are registered: detection, the models, the parser and renderer stubs, and the `tools/port` lists (see [P2-PLAN.md](./P2-PLAN.md)). None has a parser or a renderer yet, and each row fills in as its tasks land. Baseline counts, as in the P1 table, from the reference in this repository at commit `aa5c4338f`: the spec files under `packages/mermaid/src/diagrams/<type>/` with their `it` and `test` calls, and the `.mmd` fixtures under `e2e/diagrams/`. The parser tests in `packages/parser/tests/` are not counted, as for pie, info and gitGraph: `architecture.test.ts` (11 tests), `treemap.test.ts` (17), `eventmodeling.test.ts` (31), and `packet.test.ts` (no test calls).
+
+| Type          | Grammar (JS)                                             | Spec files | ≈ Tests | Fixtures | Parser | Specs ported / passing | Differential parse | Layout | Render | Parity |
+| ------------- | -------------------------------------------------------- | ---------: | ------: | -------: | ------ | ---------------------- | ------------------ | ------ | ------ | ------ |
+| mindmap       | `diagrams/mindmap/parser/mindmap.jison`                  |          3 |      35 |       28 | —      | —                      | —                  | —      | —      | —      |
+| block         | `diagrams/block/parser/block.jison`                      |          4 |      40 |       58 | —      | —                      | —                  | —      | —      | —      |
+| packet        | `packages/parser/…/packet/packet.langium`                |          2 |      23 |        5 | —      | —                      | —                  | —      | —      | —      |
+| xychart       | `diagrams/xychart/parser/xychart.jison`                  |          5 |      78 |       47 | —      | —                      | —                  | —      | —      | —      |
+| sankey        | `diagrams/sankey/parser/sankey.jison`                    |          1 |       5 |       18 | —      | —                      | —                  | —      | —      | —      |
+| quadrantChart | `diagrams/quadrant-chart/parser/quadrant.jison`          |          2 |      29 |       14 | —      | —                      | —                  | —      | —      | —      |
+| requirement   | `diagrams/requirement/parser/requirementDiagram.jison`   |          2 |      47 |      172 | —      | —                      | —                  | —      | —      | —      |
+| C4            | `diagrams/c4/parser/c4Diagram.jison`                     |          8 |      50 |       32 | —      | —                      | —                  | —      | —      | —      |
+| kanban        | `diagrams/kanban/parser/kanban.jison`                    |          1 |      30 |       11 | —      | —                      | —                  | —      | —      | —      |
+| architecture  | `packages/parser/…/architecture/architecture.langium`    |          3 |      36 |       20 | —      | —                      | —                  | —      | —      | —      |
+| treemap       | `packages/parser/…/treemap/treemap.langium`              |          0 |       0 |       26 | —      | —                      | —                  | —      | —      | —      |
+| ishikawa      | `diagrams/ishikawa/parser/ishikawa.jison`                |          1 |       3 |       13 | —      | —                      | —                  | —      | —      | —      |
+| eventmodeling | `packages/parser/…/eventmodeling/event-modeling.langium` |          1 |      10 |        6 | —      | —                      | —                  | —      | —      | —      |
+
 ## Spikes
 
 | Spike                                                     | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |

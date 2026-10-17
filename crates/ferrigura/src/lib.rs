@@ -16,13 +16,19 @@ use ferrigura_render::flowchart::{self, FlowchartInput};
 use ferrigura_render::pie::{PieInput, render as render_pie};
 use ferrigura_render::theme::Themes;
 use ferrigura_render::{
-    class as class_render, er as er_render, gantt as gantt_render, git_graph as git_graph_render,
-    info as info_render, journey as journey_render, sequence as sequence_render,
-    state as state_render, timeline as timeline_render,
+    architecture as architecture_render, block as block_render, c4 as c4_render,
+    class as class_render, er as er_render, event_modeling as event_modeling_render,
+    gantt as gantt_render, git_graph as git_graph_render, info as info_render,
+    ishikawa as ishikawa_render, journey as journey_render, kanban as kanban_render,
+    mindmap as mindmap_render, packet as packet_render, quadrant_chart as quadrant_chart_render,
+    requirement as requirement_render, sankey as sankey_render, sequence as sequence_render,
+    state as state_render, timeline as timeline_render, treemap as treemap_render,
+    xychart as xychart_render,
 };
 use ferrigura_syntax::{
-    DiagramType, ParseError, class, config, detect, er, gantt, git_graph, info, journey, pie,
-    sequence, state, timeline,
+    DiagramType, ParseError, architecture, block, c4, class, config, detect, er, event_modeling,
+    gantt, git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie, quadrant_chart,
+    requirement, sankey, sequence, state, timeline, treemap, xychart,
 };
 
 pub use ferrigura_render::RenderError as Error;
@@ -168,6 +174,92 @@ pub fn render_with(
                 themes,
                 id,
                 now,
+            })
+        }
+        DiagramType::Mindmap => mindmap_render::render(&mindmap_render::MindmapInput {
+            diagram: &mindmap::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Block => block_render::render(&block_render::BlockInput {
+            diagram: &block::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Packet => packet_render::render(&packet_render::PacketInput {
+            diagram: &packet::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::XyChart => xychart_render::render(&xychart_render::XyChartInput {
+            diagram: &xychart::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Sankey => sankey_render::render(&sankey_render::SankeyInput {
+            diagram: &sankey::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::QuadrantChart => {
+            quadrant_chart_render::render(&quadrant_chart_render::QuadrantChartInput {
+                diagram: &quadrant_chart::parse(text)?,
+                config: typed_config,
+                themes,
+                id,
+            })
+        }
+        DiagramType::Requirement => {
+            requirement_render::render(&requirement_render::RequirementInput {
+                diagram: &requirement::parse(text)?,
+                config: typed_config,
+                themes,
+                id,
+            })
+        }
+        DiagramType::C4 => c4_render::render(&c4_render::C4Input {
+            diagram: &c4::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Kanban => kanban_render::render(&kanban_render::KanbanInput {
+            diagram: &kanban::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Architecture => {
+            architecture_render::render(&architecture_render::ArchitectureInput {
+                diagram: &architecture::parse(text)?,
+                config: typed_config,
+                themes,
+                id,
+            })
+        }
+        DiagramType::Treemap => treemap_render::render(&treemap_render::TreemapInput {
+            diagram: &treemap::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Ishikawa => ishikawa_render::render(&ishikawa_render::IshikawaInput {
+            diagram: &ishikawa::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::EventModeling => {
+            event_modeling_render::render(&event_modeling_render::EventModelingInput {
+                diagram: &event_modeling::parse(text)?,
+                config: typed_config,
+                themes,
+                id,
             })
         }
         DiagramType::Flowchart => with_flowchart(text, &prepared, flowchart::render),

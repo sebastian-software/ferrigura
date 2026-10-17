@@ -62,9 +62,10 @@ export type PortOutput =
   | { id: number; ok: false; error: string };
 
 /**
- * Registers the detectors of the diagram types the port covers. The reference's directive
- * handling calls `detectType`, which throws unless the detectors of the diagrams are registered,
- * as `mermaidAPI` does when it loads the diagrams.
+ * Registers the detectors of the diagram types the port covers: the P1 types, and the P2 types
+ * whose parsers are not ported yet. The reference's directive handling calls `detectType`, which
+ * throws unless the detectors of the diagrams are registered, as `mermaidAPI` does when it loads
+ * the diagrams.
  */
 export async function registerDetectors(reference: Reference): Promise<void> {
   const [
@@ -115,6 +116,65 @@ export async function registerDetectors(reference: Reference): Promise<void> {
     sequence.default,
     state.default,
     gantt.default
+  );
+
+  // The P2 detectors, in the order the reference registers them (`diagram-orchestration.ts`). No
+  // two of these types match the same text, so the order decides nothing between them.
+  const [
+    mindmap,
+    architecture,
+    c4,
+    kanban,
+    requirement,
+    quadrantChart,
+    sankey,
+    packet,
+    xychart,
+    block,
+    eventmodeling,
+    ishikawa,
+    treemap,
+  ] = await Promise.all([
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/mindmap/detector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/architecture/architectureDetector.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/c4/c4Detector.ts'),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/kanban/detector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/requirement/requirementDetector.ts'
+    ),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/quadrant-chart/quadrantDetector.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/sankey/sankeyDetector.ts'),
+    reference.load<{ packet: unknown }>('/packages/mermaid/src/diagrams/packet/detector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/xychart/xychartDetector.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/block/blockDetector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/eventmodeling/detector.ts'
+    ),
+    reference.load<{ ishikawa: unknown }>(
+      '/packages/mermaid/src/diagrams/ishikawa/ishikawaDetector.ts'
+    ),
+    reference.load<{ treemap: unknown }>('/packages/mermaid/src/diagrams/treemap/detector.ts'),
+  ]);
+  detectType.registerLazyLoadedDiagrams(
+    mindmap.default,
+    architecture.default,
+    c4.default,
+    kanban.default,
+    requirement.default,
+    quadrantChart.default,
+    sankey.default,
+    packet.packet,
+    xychart.default,
+    block.default,
+    eventmodeling.default,
+    ishikawa.ishikawa,
+    treemap.treemap
   );
 }
 
