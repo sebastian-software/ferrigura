@@ -5,10 +5,15 @@
 //! linear line of `d3-shape` ([`line`]), and the `Math.max` and `Math.min` of two arguments
 //! ([`math`]).
 //!
+//! The treemap's pieces of `d3-hierarchy` ([`hierarchy`], [`treemap`]), `d3-format` ([`format`]),
+//! and the ordinal scale of `d3-scale` ([`ordinal`]), see `docs-port/treemap/NOTES.md` (section 6).
+//!
 //! The scales and the line keep the reference's order of operations, and the path numbers are
 //! rounded to three digits as `d3-path` rounds them.
 
 pub mod array;
+pub mod format;
+pub mod hierarchy;
 pub mod line;
 pub mod math;
 pub mod number;
@@ -16,6 +21,7 @@ pub mod ordinal;
 pub mod scale;
 pub mod sort;
 pub mod ticks;
+pub mod treemap;
 
 pub use array::{max_by, min_by, sum_by};
 pub use line::{linear_path, link_horizontal};

@@ -388,7 +388,7 @@ fn link_paint(value: Option<&Value>) -> LinkPaint {
 /// `nodeColors[nodeId] ?? colorScheme(nodeId)` (`sankeyRenderer.ts` 149-151). The lookup is on a
 /// plain object, so a name of `Object.prototype` gives the member, which is written as the text of
 /// that member (see [`object_prototype_member`]).
-fn node_colour(custom: Option<&Value>, name: &str, scale: &mut OrdinalScale) -> String {
+fn node_colour(custom: Option<&Value>, name: &str, scale: &mut OrdinalScale<'_>) -> String {
     custom_colour(custom, name)
         .or_else(|| object_prototype_member(name).map(str::to_owned))
         .unwrap_or_else(|| scale.apply(name).to_owned())
