@@ -188,6 +188,16 @@ The ishikawa model is the DB state after the parse (`ishikawaDb.ts`), with the q
 - **The header texts are always empty.** `accTitle` and `accDescr` are in the model, as the DB holds them, but no rule of the grammar sets them.
 - **Left out:** the stack and the base level (the parse state), and the layout, which is the renderer's.
 
+## Treemap
+
+The treemap model is the DB state after parsing and `buildHierarchy` (`treemap/db.ts`, `utils.ts`), with the field list and the quirks in [treemap/PLAN.md](./treemap/PLAN.md), sections 5 and 6. Its own rules:
+
+- **Header texts are sanitised.** `title`, `accTitle` and `accDescr` go through the DB's setters, which sanitise and apply the blank rules of the common DB. The grammar's title replaces the front matter's only when it is non-empty.
+- **Names are the DB's names.** The quoted text without its quotes, nothing sanitised, and the entity placeholders kept as the DB keeps them.
+- **Non-finite values are sentinel strings.** A value of only separators is `"NaN"`, and a digit run that overflows is `"Infinity"`.
+- **The tree keeps the DB's distinction.** A leaf has no `children`; a section has them, empty when it has no rows.
+- **Left out**: the indentation levels, the renderer's layout and value formats, and the configuration.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

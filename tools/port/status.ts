@@ -109,7 +109,7 @@ const suites: Record<string, string[]> = {
   ],
   kanban: ['kanban_spec', 'kanban_db_spec', 'kanban_quirks_spec'],
   architecture: [],
-  treemap: [],
+  treemap: ['treemap_spec', 'treemap_db_spec', 'treemap_grammar'],
   ishikawa: ['ishikawa_spec', 'ishikawa_grammar', 'ishikawa_db_spec'],
   eventmodeling: [],
 };
