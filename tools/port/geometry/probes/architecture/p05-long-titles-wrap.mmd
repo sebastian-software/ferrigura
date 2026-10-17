@@ -1,0 +1,11 @@
+architecture-beta
+  group production(cloud)[Production environment with a very long group title that must wrap onto several lines] 
+  service api(server)[A public API gateway that serves requests from many different client applications] in production
+  service store(database)[Customer order history database with replicas] in production
+  service cache(disk)[Cache] in production
+  service queue(disk)[Message queue for background processing of asynchronous jobs and notifications]
+  service worker(server)[Worker]
+  api:B -- T:store
+  api:R -- L:cache
+  store:R -- L:queue
+  queue:B -- T:worker

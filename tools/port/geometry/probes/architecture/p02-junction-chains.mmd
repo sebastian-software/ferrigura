@@ -1,0 +1,18 @@
+architecture-beta
+  group net(cloud)[Network]
+  junction j1 in net
+  junction j2 in net
+  junction j3
+  service a(server)[A] in net
+  service b(server)[B]
+  service c(database)[C]
+  service d(disk)[D] in net
+  a:R -- L:j1
+  j1:R -- L:j2
+  j1:B -- T:j3
+  j2:R -- L:b
+  j2:B -- T:d
+  j3:R -- L:c
+  j3:L -- R:a
+  a{group}:B -- T:c
+  c:T -- B:b

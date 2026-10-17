@@ -383,42 +383,6 @@ mod add_junction_validation {
     }
 }
 
-// The renderer's specs: the seeded random generator of the layout and the SVG drawing. They are
-// ported with the renderer stage (`docs-port/architecture/PLAN.md`, section 8), and listed here so
-// that the count of the spec files matches the reference's.
-
-mod seed_spec {
-    #[test]
-    #[ignore = "port: withSeededRandom is the renderer's layout seed (docs-port/architecture/NOTES.md, section 6.12)"]
-    fn produces_identical_math_random_sequences_for_the_same_seed() {}
-
-    #[test]
-    #[ignore = "port: withSeededRandom is the renderer's layout seed (docs-port/architecture/NOTES.md, section 6.12)"]
-    fn produces_different_sequences_for_different_seeds() {}
-
-    #[test]
-    #[ignore = "port: withSeededRandom is the renderer's layout seed (docs-port/architecture/NOTES.md, section 6.12)"]
-    fn returns_math_random_values_in_0_1() {}
-
-    #[test]
-    #[ignore = "port: withSeededRandom is the renderer's layout seed (docs-port/architecture/NOTES.md, section 6.12)"]
-    fn restores_the_original_math_random_after_the_callback_returns() {}
-
-    #[test]
-    #[ignore = "port: withSeededRandom is the renderer's layout seed (docs-port/architecture/NOTES.md, section 6.12)"]
-    fn restores_the_original_math_random_even_when_the_callback_throws() {}
-
-    #[test]
-    #[ignore = "port: withSeededRandom is the renderer's layout seed (docs-port/architecture/NOTES.md, section 6.12)"]
-    fn returns_the_callback_result() {}
-
-    #[test]
-    #[ignore = "port: withSeededRandom is the renderer's layout seed (docs-port/architecture/NOTES.md, section 6.12)"]
-    fn does_not_stub_math_random_when_seed_is_0() {}
-}
-
-mod svg_draw_spec {
-    #[test]
-    #[ignore = "port: the SVG drawing is the renderer stage; the reference's spec needs a canvas (docs-port/architecture/NOTES.md, section 5)"]
-    fn should_add_ids() {}
-}
+// The renderer's specs (the seeded random generator of the layout and the SVG drawing of
+// `architectureSeed.spec.ts` and `svgDraw.spec.ts`) are ported to `crates/ferrigura-render/tests/
+// architecture_render.rs`, where the renderer is, so they are not repeated here.
