@@ -29,6 +29,7 @@ mod rect;
 mod rect_with_title;
 mod rects;
 mod registry;
+mod requirement_box;
 mod rough;
 mod stadium;
 mod state;
@@ -411,6 +412,8 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::ImageSquare => icon::image_square(input)?,
         // The entity draws its own labels and their group box, so it returns its output whole.
         Kind::ErBox => return er_box::er_box(input),
+        // The requirement's box draws its own labels as well (`requirementBox.ts`).
+        Kind::RequirementBox => return requirement_box::requirement_box(input),
         Kind::ClassBox => {
             let class_box::ClassBox {
                 part,

@@ -1,7 +1,7 @@
 //! Port of `packages/mermaid/src/diagrams/requirement/requirementDb.spec.ts`. The DB has no public
 //! surface, so each test drives `parse` with the text that makes the DB call of the spec, as the
 //! journey and flowchart specs do. The reference's `getData` (the edge ids) is the renderer's stage,
-//! not part of the model: that test stays ignored.
+//! not part of the model: its test is in `ferrigura-render`.
 
 use ferrigura_model::requirement::{Direction, RelationshipKind, RequirementDiagram};
 use ferrigura_syntax::requirement::parse;
@@ -44,8 +44,9 @@ fn should_add_a_relationship() {
 }
 
 #[test]
-#[ignore = "the edge ids are made by getData, the renderer's stage; the model keeps the relationships in order"]
-fn should_create_unique_edge_ids_for_parallel_relationships() {
+fn should_keep_parallel_relationships_in_order() {
+    // The edge ids of the spec are `getData`'s, the renderer's stage, and are checked there
+    // (`crates/ferrigura-render/tests/requirement_get_data_spec.rs`).
     let diagram = parses(
         "requirementDiagram\nrequirement \"src\" {\n}\nrequirement \"dst\" {\n}\nsrc - traces -> dst\nsrc - contains -> dst",
     );
