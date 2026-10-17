@@ -24,6 +24,7 @@ const fixtureFolders: Record<string, string[]> = {
   gitgraph: ['e2e/diagrams/git/'],
   er: ['e2e/diagrams/er-diagram/'],
   class: ['e2e/diagrams/class-diagram/'],
+  quadrantChart: ['e2e/diagrams/quadrant-chart/'],
   state: [
     'e2e/diagrams/state-diagram/',
     'e2e/diagrams/state-diagram-v2/',
@@ -31,6 +32,7 @@ const fixtureFolders: Record<string, string[]> = {
   ],
 };
 
+/** The detectors of the reference, as its files write them (`packages/mermaid/src/diagrams/`). */
 const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
@@ -43,6 +45,19 @@ const detectors: Record<string, RegExp> = {
   sequence: /^\s*sequenceDiagram/,
   state: /^\s*stateDiagram/,
   gantt: /^\s*gantt/,
+  mindmap: /^\s*mindmap/,
+  block: /^\s*block(?![\w-])/,
+  packet: /^\s*packet(?![\w-])/,
+  xychart: /^\s*xychart(?![\w-])/,
+  sankey: /^\s*sankey(?![\w-])/,
+  quadrantChart: /^\s*quadrantChart/,
+  requirement: /^\s*requirementDiagram/,
+  c4: /^\s*(?:C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)/,
+  kanban: /^\s*kanban/,
+  architecture: /^\s*architecture/,
+  treemap: /^\s*treemap/,
+  ishikawa: /^\s*ishikawa(-beta)?\b/i,
+  eventmodeling: /^\s*eventmodeling/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */

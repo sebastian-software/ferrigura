@@ -106,6 +106,19 @@ const TYPE_FOLDERS: Record<string, string[]> = {
   info: ['info'],
   pie: ['pie'],
   flowchart: ['flowchart'],
+  mindmap: ['mindmap'],
+  block: ['block'],
+  packet: ['packet'],
+  xychart: ['xychart'],
+  sankey: ['sankey'],
+  quadrantChart: ['quadrant-chart'],
+  requirement: ['requirement'],
+  c4: ['c4'],
+  kanban: ['kanban'],
+  architecture: ['architecture'],
+  treemap: ['treemap'],
+  ishikawa: ['ishikawa'],
+  eventmodeling: ['eventmodeling'],
 };
 
 /**

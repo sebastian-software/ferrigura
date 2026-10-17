@@ -87,6 +87,21 @@ const suites: Record<string, string[]> = {
     'render:state_data_note_spec',
     'render:state_data_style_spec',
   ],
+  // The P2 types have no suites until their parser tasks add them. Their rows of the P2 table are
+  // left as written while the list is empty.
+  mindmap: [],
+  block: [],
+  packet: [],
+  xychart: [],
+  sankey: [],
+  quadrantChart: [],
+  requirement: [],
+  c4: [],
+  kanban: [],
+  architecture: [],
+  treemap: [],
+  ishikawa: [],
+  eventmodeling: [],
 };
 
 interface Counts {
@@ -145,10 +160,10 @@ for (const type of Object.keys(suites)) {
   differential[type] = await differentialCell(type);
 }
 
-/** The name of a type's row in the P1 table, where it is not the type itself. */
-const rowNames: Record<string, string> = { er: 'ER', gitgraph: 'gitGraph' };
+/** The name of a type's row in the status tables, where it is not the type itself. */
+const rowNames: Record<string, string> = { er: 'ER', gitgraph: 'gitGraph', c4: 'C4' };
 
-/** Rewrites the parser, specs and differential cells of one P1 row. */
+/** Rewrites the parser, specs and differential cells of one row of a type with suites. */
 function rewriteRow(line: string, type: string): string {
   const cells = line.split('|');
   const { ported, ignored, passing } = counts[type];
@@ -164,7 +179,7 @@ const rewritten = status
   .split('\n')
   .map((line) => {
     for (const type of Object.keys(suites)) {
-      if (line.startsWith(`| ${rowNames[type] ?? type} `)) {
+      if (suites[type].length > 0 && line.startsWith(`| ${rowNames[type] ?? type} `)) {
         return rewriteRow(line, type);
       }
     }
