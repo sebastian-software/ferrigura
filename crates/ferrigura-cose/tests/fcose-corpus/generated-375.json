@@ -1,0 +1,286 @@
+{
+ "name": "generated-375",
+ "group": "generated",
+ "source": "seed 20261017 index 375",
+ "text": "architecture-beta\n    group g1(cloud)[Group 1]\n    group g2(cloud)[Group 2]\n    group g3(cloud)[Group 3]\n    group g4(cloud)[Group 4] in g2\n    group g5[Group 5] in g1\n    group g6(cloud)[Group 6]\n    service s1(server)[Service 1] in g4\n    service s2(database)[Service 2] in g5",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 9,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 150,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "g1",
+     "parent": null,
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "g2",
+     "parent": null,
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "g3",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "g4",
+     "parent": "g2",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "g5",
+     "parent": "g1",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "g6",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s1",
+     "parent": "g4",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s2",
+     "parent": "g5",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -124,
+    "y1": -124,
+    "w": 248,
+    "h": 265
+   },
+   "output": [
+    {
+     "id": "g1",
+     "x": 295.9398699968185,
+     "y": 312.9398699968185
+    },
+    {
+     "id": "g2",
+     "x": 10.145644672490022,
+     "y": 27.14564467249002
+    },
+    {
+     "id": "g3",
+     "x": -205.00635140503834,
+     "y": -196.50635140503832
+    },
+    {
+     "id": "g4",
+     "x": 10.145644672490022,
+     "y": 27.14564467249002
+    },
+    {
+     "id": "g5",
+     "x": 295.9398699968185,
+     "y": 312.9398699968185
+    },
+    {
+     "id": "g6",
+     "x": -360.9398699968185,
+     "y": -352.4398699968185
+    },
+    {
+     "id": "s1",
+     "x": 10.145644672490022,
+     "y": 18.64564467249002
+    },
+    {
+     "id": "s2",
+     "x": 295.9398699968185,
+     "y": 304.4398699968185
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 9,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 150,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "g1",
+     "parent": null,
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": 295.9398699968185,
+     "y": 312.9398699968185
+    },
+    {
+     "id": "g2",
+     "parent": null,
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": 10.145644672490022,
+     "y": 27.14564467249002
+    },
+    {
+     "id": "g3",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": -205.00635140503834,
+     "y": -196.50635140503832
+    },
+    {
+     "id": "g4",
+     "parent": "g2",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 10.145644672490022,
+     "y": 27.14564467249002
+    },
+    {
+     "id": "g5",
+     "parent": "g1",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 295.9398699968185,
+     "y": 312.9398699968185
+    },
+    {
+     "id": "g6",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": -360.9398699968185,
+     "y": -352.4398699968185
+    },
+    {
+     "id": "s1",
+     "parent": "g4",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 10.145644672490022,
+     "y": 18.64564467249002
+    },
+    {
+     "id": "s2",
+     "parent": "g5",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 295.9398699968185,
+     "y": 304.4398699968185
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -416.9398699968185,
+    "y1": -408.4398699968185,
+    "w": 836.879739993637,
+    "h": 853.879739993637
+   },
+   "output": [
+    {
+     "id": "g1",
+     "x": 314.9167882407793,
+     "y": 340.4167882407793
+    },
+    {
+     "id": "g2",
+     "x": 16.91655384120628,
+     "y": 42.41655384120627
+    },
+    {
+     "id": "g3",
+     "x": -208.88092857765184,
+     "y": -191.8809285776517
+    },
+    {
+     "id": "g4",
+     "x": 16.91655384120628,
+     "y": 42.416553841206266
+    },
+    {
+     "id": "g5",
+     "x": 314.9167882407793,
+     "y": 340.4167882407793
+    },
+    {
+     "id": "g6",
+     "x": -376.9167882407793,
+     "y": -359.9167882407793
+    },
+    {
+     "id": "s1",
+     "x": 16.916553841206284,
+     "y": 33.916553841206266
+    },
+    {
+     "id": "s2",
+     "x": 314.9167882407793,
+     "y": 331.9167882407793
+    }
+   ]
+  }
+ ]
+}

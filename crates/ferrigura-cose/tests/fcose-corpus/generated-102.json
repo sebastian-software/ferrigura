@@ -1,0 +1,146 @@
+{
+ "name": "generated-102",
+ "group": "generated",
+ "source": "seed 20261017 index 102",
+ "text": "architecture-beta\n    group g1(cloud)[Group 1]\n    service s1(database)[Service 1]\n    service s2(internet)[Service 2] in g1",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 3,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "g1",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "s1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s2",
+     "parent": "g1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "g1",
+     "x": 72.7587134436161,
+     "y": 89.7587134436161
+    },
+    {
+     "id": "s1",
+     "x": -112.7587134436161,
+     "y": -104.2587134436161
+    },
+    {
+     "id": "s2",
+     "x": 72.7587134436161,
+     "y": 81.2587134436161
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 3,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "g1",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 72.7587134436161,
+     "y": 89.7587134436161
+    },
+    {
+     "id": "s1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -112.7587134436161,
+     "y": -104.2587134436161
+    },
+    {
+     "id": "s2",
+     "parent": "g1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 72.7587134436161,
+     "y": 81.2587134436161
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -153.7587134436161,
+    "y1": -145.2587134436161,
+    "w": 309.0174268872322,
+    "h": 326.0174268872322
+   },
+   "output": [
+    {
+     "id": "g1",
+     "x": 82.09534347605619,
+     "y": 107.5953434760562
+    },
+    {
+     "id": "s1",
+     "x": -120.5953434760562,
+     "y": -103.5953434760562
+    },
+    {
+     "id": "s2",
+     "x": 82.09534347605619,
+     "y": 99.09534347605619
+    }
+   ]
+  }
+ ]
+}

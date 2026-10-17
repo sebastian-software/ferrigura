@@ -1,0 +1,294 @@
+{
+ "name": "should-render-a-deterministic-layout-with-an-explicit-seed-override",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/pr-check/should-render-a-deterministic-layout-with-an-explicit-seed-override.mmd",
+ "text": "---\ndescription: >-\n  A small architecture-beta diagram (one VM in a nested group, a web app and\n  database in a sibling subscription group) rendered with an explicit\n  `seed: 42` override, verifying that setting a custom seed still produces a\n  deterministic layout.\nconfig:\n  architecture:\n    seed: 42\n---\narchitecture-beta\n  group sub1(cloud)[Subscription A]\n  group vnet1(cloud)[VNet A] in sub1\n  service vm1(server)[VM] in vnet1\n\n  group sub2(cloud)[Subscription B]\n  service web(server)[Web App] in sub2\n  service db(database)[Registry] in sub2\n\n  vm1:R --> L:web\n  web:R --> L:db\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 42,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "sub1",
+     "parent": null,
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "vnet1",
+     "parent": "sub1",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "sub2",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "vm1",
+     "parent": "vnet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "web",
+     "parent": "sub2",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "db",
+     "parent": "sub2",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "vm1-web",
+     "source": "vm1",
+     "target": "web",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "web-db",
+     "source": "web",
+     "target": "db",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "vm1",
+      "web",
+      "db"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "web",
+     "left": "vm1",
+     "gap": 120
+    },
+    {
+     "right": "db",
+     "left": "web",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -124,
+    "y1": -124,
+    "w": 248,
+    "h": 265
+   },
+   "output": [
+    {
+     "id": "sub1",
+     "x": -233.3364735870614,
+     "y": 17
+    },
+    {
+     "id": "vnet1",
+     "x": -233.3364735870614,
+     "y": 17
+    },
+    {
+     "id": "sub2",
+     "x": 172.9604911350804,
+     "y": 17
+    },
+    {
+     "id": "vm1",
+     "x": -233.3364735870614,
+     "y": 8.5
+    },
+    {
+     "id": "web",
+     "x": 72.58450868309939,
+     "y": 8.5
+    },
+    {
+     "id": "db",
+     "x": 273.3364735870614,
+     "y": 8.5
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 42,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "sub1",
+     "parent": null,
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": -233.3364735870614,
+     "y": 17
+    },
+    {
+     "id": "vnet1",
+     "parent": "sub1",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": -233.3364735870614,
+     "y": 17
+    },
+    {
+     "id": "sub2",
+     "parent": null,
+     "width": 363.751964903962,
+     "height": 180,
+     "padding": 40,
+     "x": 172.9604911350804,
+     "y": 17
+    },
+    {
+     "id": "vm1",
+     "parent": "vnet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -233.3364735870614,
+     "y": 8.5
+    },
+    {
+     "id": "web",
+     "parent": "sub2",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 72.58450868309939,
+     "y": 8.5
+    },
+    {
+     "id": "db",
+     "parent": "sub2",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 273.3364735870614,
+     "y": 8.5
+    }
+   ],
+   "edges": [
+    {
+     "id": "vm1-web",
+     "source": "vm1",
+     "target": "web",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "web-db",
+     "source": "web",
+     "target": "db",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "vm1",
+      "web",
+      "db"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "web",
+     "left": "vm1",
+     "gap": 120
+    },
+    {
+     "right": "db",
+     "left": "web",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -357.3364735870614,
+    "y1": -115.5,
+    "w": 713.1729471741228,
+    "h": 265
+   },
+   "output": [
+    {
+     "id": "sub1",
+     "x": -234.0864735870614,
+     "y": 25.5
+    },
+    {
+     "id": "vnet1",
+     "x": -234.0864735870614,
+     "y": 25.5
+    },
+    {
+     "id": "sub2",
+     "x": 172.2104911350804,
+     "y": 25.5
+    },
+    {
+     "id": "vm1",
+     "x": -234.0864735870614,
+     "y": 17
+    },
+    {
+     "id": "web",
+     "x": 71.83450868309939,
+     "y": 17
+    },
+    {
+     "id": "db",
+     "x": 272.5864735870614,
+     "y": 17
+    }
+   ]
+  }
+ ]
+}

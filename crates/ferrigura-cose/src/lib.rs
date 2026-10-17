@@ -28,6 +28,12 @@
 //! start sets every centre, so the initial position has no effect. Self loops and parallel edges
 //! are dropped, as cytoscape-cose-bilkent's adapter drops them.
 //!
+//! **Second engine.** [`fcose`] is cytoscape-fcose 2.2.0 on cose-base 2.2.0 and layout-base 2.0.1, the
+//! layout of Mermaid's architecture diagrams. It shares only `geometry.rs` with the engine above
+//! (the functions the two layout-base versions have in common); its graph model, force phase and
+//! constraint handler are its own, because the versions differ. Its module docs say what is ported
+//! and what is not.
+//!
 //! Licences and sources are in `NOTICE.md`: the crate is MIT, as its sources are.
 
 #![forbid(unsafe_code)]
@@ -35,6 +41,7 @@
 mod constants;
 mod engine;
 mod error;
+pub mod fcose;
 mod forces;
 mod forest;
 mod geometry;

@@ -1,0 +1,300 @@
+{
+ "name": "spec-architecture-18",
+ "group": "spec",
+ "source": "packages/mermaid/src/diagrams/architecture/architecture.spec.ts:358",
+ "text": "architecture-beta\n  group app_env(cloud)[App Env]\n  service app(server)[Web App] in app_env\n  service db(database)[DB] in app_env\n  service api(server)[API] in app_env\n  junction mid in app_env\n  app:B -- T:mid\n  mid:R -- L:db\n  mid:B -- T:api",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "app_env",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "app",
+     "parent": "app_env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "db",
+     "parent": "app_env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "api",
+     "parent": "app_env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "mid",
+     "parent": "app_env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "app-mid",
+     "source": "app",
+     "target": "mid",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "mid-db",
+     "source": "mid",
+     "target": "db",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "mid-api",
+     "source": "mid",
+     "target": "api",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "mid",
+      "db"
+     ]
+    ],
+    "vertical": [
+     [
+      "app",
+      "mid",
+      "api"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "bottom": "mid",
+     "top": "app",
+     "gap": 120
+    },
+    {
+     "right": "db",
+     "left": "mid",
+     "gap": 120
+    },
+    {
+     "bottom": "api",
+     "top": "mid",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "app_env",
+     "x": -2.842170943040401e-14,
+     "y": 17.000000000000014
+    },
+    {
+     "id": "app",
+     "x": -100.58184381200334,
+     "y": -192.42479825275095
+    },
+    {
+     "id": "db",
+     "x": 100.58184381200329,
+     "y": 8.5
+    },
+    {
+     "id": "api",
+     "x": -100.58184381200334,
+     "y": 209.42479825275095
+    },
+    {
+     "id": "mid",
+     "x": -100.58184381200334,
+     "y": 8.5
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "app_env",
+     "parent": null,
+     "width": 364.1636876240066,
+     "height": 581.849596505502,
+     "padding": 40,
+     "x": -2.842170943040401e-14,
+     "y": 17.000000000000014
+    },
+    {
+     "id": "app",
+     "parent": "app_env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -100.58184381200334,
+     "y": -192.42479825275095
+    },
+    {
+     "id": "db",
+     "parent": "app_env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 100.58184381200329,
+     "y": 8.5
+    },
+    {
+     "id": "api",
+     "parent": "app_env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -100.58184381200334,
+     "y": 209.42479825275095
+    },
+    {
+     "id": "mid",
+     "parent": "app_env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -100.58184381200334,
+     "y": 8.5
+    }
+   ],
+   "edges": [
+    {
+     "id": "app-mid",
+     "source": "app",
+     "target": "mid",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "mid-db",
+     "source": "mid",
+     "target": "db",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "mid-api",
+     "source": "mid",
+     "target": "api",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "mid",
+      "db"
+     ]
+    ],
+    "vertical": [
+     [
+      "app",
+      "mid",
+      "api"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "bottom": "mid",
+     "top": "app",
+     "gap": 120
+    },
+    {
+     "right": "db",
+     "left": "mid",
+     "gap": 120
+    },
+    {
+     "bottom": "api",
+     "top": "mid",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -183.08184381200334,
+    "y1": -274.924798252751,
+    "w": 366.1636876240066,
+    "h": 583.849596505502
+   },
+   "output": [
+    {
+     "id": "app_env",
+     "x": -2.842170943040401e-14,
+     "y": 25.500000000000014
+    },
+    {
+     "id": "app",
+     "x": -100.58184381200334,
+     "y": -183.92479825275095
+    },
+    {
+     "id": "db",
+     "x": 100.58184381200329,
+     "y": 17.000000000000007
+    },
+    {
+     "id": "api",
+     "x": -100.58184381200334,
+     "y": 217.92479825275095
+    },
+    {
+     "id": "mid",
+     "x": -100.58184381200334,
+     "y": 17.000000000000007
+    }
+   ]
+  }
+ ]
+}

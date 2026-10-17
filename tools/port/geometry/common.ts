@@ -465,6 +465,12 @@ window.__elkCalls = [];
 window.__mermaidElkCapture = function (input, output) {
   window.__elkCalls.push({ input: input, output: JSON.parse(JSON.stringify(output)) });
 };
+// The fcose layout's records (architectureRenderer.ts, layoutArchitecture): the input before each of
+// the two runs and the positions after each run. Each record is already a plain JSON copy.
+window.__fcoseCalls = [];
+window.__mermaidFcoseCapture = function (record) {
+  window.__fcoseCalls.push(record);
+};
 // The tidy tree's layout call (render.ts of the reference bundle, one per render of the layout).
 window.__tidyTreeCalls = [];
 window.__mermaidTidyTreeCapture = function (input, result) {
