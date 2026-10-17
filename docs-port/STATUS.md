@@ -153,7 +153,7 @@ The P2 types are registered: detection, the models, the parser and renderer stub
 | sankey        | `diagrams/sankey/parser/sankey.jison`                    |          1 |       5 |       18 | ferrigura-syntax | 53 / 53                | 178 inputs, no difference | —      | —      | —      |
 | quadrantChart | `diagrams/quadrant-chart/parser/quadrant.jison`          |          2 |      29 |       14 | ferrigura-syntax | 28 / 29 (1 ignored)    | 340 inputs, no difference | —      | —      | —      |
 | requirement   | `diagrams/requirement/parser/requirementDiagram.jison`   |          2 |      47 |      172 | ferrigura-syntax | 52 / 53 (1 ignored)    | 266 inputs, no difference | —      | —      | —      |
-| C4            | `diagrams/c4/parser/c4Diagram.jison`                     |          8 |      50 |       32 | ferrigura-syntax | 169 / 171 (2 ignored)  | 176 inputs, no difference | —      | —      | —      |
+| C4            | `diagrams/c4/parser/c4Diagram.jison`                     |          9 |      50 |       32 | ferrigura-syntax | 171 / 171              | 176 inputs, no difference | —      | 32/32  | —      |
 | kanban        | `diagrams/kanban/parser/kanban.jison`                    |          1 |      30 |       11 | ferrigura-syntax | 48 / 48                | 337 inputs, no difference | —      | —      | —      |
 | architecture  | `packages/parser/…/architecture/architecture.langium`    |          3 |      36 |       20 | ferrigura-syntax | 97 / 110 (13 ignored)  | 281 inputs, no difference | —      | —      | —      |
 | treemap       | `packages/parser/…/treemap/treemap.langium`              |          0 |       0 |       26 | ferrigura-syntax | 45 / 45                | 211 inputs, no difference | —      | —      | —      |
