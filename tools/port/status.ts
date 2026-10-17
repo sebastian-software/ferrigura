@@ -138,7 +138,8 @@ function countSuite(suite: string): Counts {
   return { ported: passing + failing + ignored, ignored, passing };
 }
 
-async function differentialCell(type: string): Promise<string> {
+/** The differential cell of a type, or null when this checkout has no summary of a run. */
+async function differentialCell(type: string): Promise<string | null> {
   try {
     const summary = JSON.parse(
       await readFile(`${root}target/port/${type}-summary.json`, 'utf8')
@@ -148,7 +149,7 @@ async function differentialCell(type: string): Promise<string> {
       ? `${summary.inputs} inputs, no difference${notYet}`
       : `${summary.differences} of ${summary.inputs} differ${notYet}`;
   } catch {
-    return '—';
+    return null;
   }
 }
 
@@ -165,7 +166,7 @@ for (const [type, files] of Object.entries(suites)) {
 }
 
 const status = await readFile(statusPath, 'utf8');
-const differential: Record<string, string> = {};
+const differential: Record<string, string | null> = {};
 for (const type of Object.keys(suites)) {
   differential[type] = await differentialCell(type);
 }
@@ -181,7 +182,9 @@ function rewriteRow(line: string, type: string): string {
   // Specs ported / passing, Differential parse, Layout, Render, Parity, and empty.
   cells[6] = ' ferrigura-syntax ';
   cells[7] = ` ${passing} / ${ported}${ignored > 0 ? ` (${ignored} ignored)` : ''} `;
-  cells[8] = ` ${differential[type]} `;
+  // Without a summary of a run here, the cell keeps what an earlier run wrote.
+  const cell = differential[type];
+  if (cell !== null) cells[8] = ` ${cell} `;
   return cells.join('|');
 }
 
@@ -203,6 +206,6 @@ spawnSync('pnpm', ['exec', 'prettier', '--write', statusPath], { cwd: root, stdi
 for (const [type, count] of Object.entries(counts)) {
   console.log(
     `${type}: ${count.passing} passing of ${count.ported} ported, ${count.ignored} ignored; ` +
-      `differential: ${differential[type]}`
+      `differential: ${differential[type] ?? 'no summary here, cell kept'}`
   );
 }
