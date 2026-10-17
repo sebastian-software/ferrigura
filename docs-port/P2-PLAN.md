@@ -27,3 +27,5 @@ The decisions of [M6-PLAN.md](./M6-PLAN.md) carry over unchanged: only the two r
 3. **Parsers**, one task per type: model, parser and DB, specs, differential.
 4. **Layout engines and shared code**: the V8 math functions, `ferrigura-cose` (cose-bilkent first, then fcose) and the tidy tree, each checked against the JavaScript engine on captured inputs; the text-box check above.
 5. **Renderers**: requirement and mindmap on the unified renderer, the others as custom renderers on `ferrigura-render/src/common/`, each checked with `pnpm port:geometry <type>`. The working rules are those of [M6-RENDERERS.md](./M6-RENDERERS.md).
+
+**Status (2026-10-17)**: all five stages are done on `sebastian/port-p2`; the results and the known gaps are in the P2 handover of [STATUS.md](./STATUS.md).

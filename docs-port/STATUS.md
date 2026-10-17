@@ -1,25 +1,27 @@
 # Port status
 
-Last updated: 2026-10-16. M1 to M4 are merged into `main`: pie, info and flowchart parse and match the reference on every collected input; pie renders to SVG through `ferrigura`, its CLI and its Node addon; and `ferrigura-elk` lays out every ELK graph Mermaid's options reach exactly as elkjs does (165 of 169 corpus cases, the rest named out of scope; 1,200 random flat and 900 random compound graphs). M5, flowchart rendering, is done on its branch and in review: all 298 comparable flowchart fixtures match the reference within 0.05 px.
+Last updated: 2026-10-17. M1 to M6 are merged into `main`: every P1 diagram type parses and matches the reference on every collected input, and renders to SVG through `ferrigura`, its CLI and its Node addon within 0.05 px of the reference on every comparable fixture. P2, the thirteen second-tier types, is done on the branch `sebastian/port-p2` and in review; see the P2 handover.
 
 Each session updates its section when it stops: what changed, what is next, what blocks it. Test counts and the differential column are written by `pnpm port:status`, which reads the Rust specs and the last `pnpm port:diff` run; run it after both.
 
 ## Milestones
 
-| Milestone                          | Status | Strand | Notes                                                                                                                                                                                                                                |
-| ---------------------------------- | ------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| M1 Parser foundation: pie and info | done   | main   | Merged on 2026-10-16; see M1 handover                                                                                                                                                                                                |
-| M2 First slice: pie to SVG         | done   | main   | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
-| M3 Flowchart parser                | done   | main   | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
-| M4 ELK Layered port                | done   | main   | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
-| M5 Flowchart rendering             | done   | main   | Merged on 2026-10-16; 298 of 298 comparable fixtures within tolerance, 54 excluded with reasons; see M5 handover and [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md)                                                          |
-| M6 Remaining P1 diagrams           | done   | main   | Merged on 2026-10-16; see M6 handover                                                                                                                                                                                                |
+| Milestone                          | Status | Strand            | Notes                                                                                                                                                                                                                                |
+| ---------------------------------- | ------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M1 Parser foundation: pie and info | done   | main              | Merged on 2026-10-16; see M1 handover                                                                                                                                                                                                |
+| M2 First slice: pie to SVG         | done   | main              | Merged on 2026-10-16; see M2 handover. Open: rendering `info`, fallback fonts                                                                                                                                                        |
+| M3 Flowchart parser                | done   | main              | Merged on 2026-10-16; 558 inputs without a difference; see [flowchart/PLAN.md](./flowchart/PLAN.md)                                                                                                                                  |
+| M4 ELK Layered port                | done   | main              | Merged on 2026-10-16. 165 of 169 corpus cases pass and all 165 match elkjs exactly in coordinates, edge sections, label boxes and trace; random flat graphs 1200 of 1200, compound 900 of 900; see M4 handover and `elk/PLAN.md` §10 |
+| M5 Flowchart rendering             | done   | main              | Merged on 2026-10-16; 298 of 298 comparable fixtures within tolerance, 54 excluded with reasons; see M5 handover and [flowchart/RENDER-PLAN.md](./flowchart/RENDER-PLAN.md)                                                          |
+| M6 Remaining P1 diagrams           | done   | main              | Merged on 2026-10-16; see M6 handover                                                                                                                                                                                                |
+| P2 Second-tier diagrams            | done   | sebastian/port-p2 | Done on 2026-10-17, in review; see P2 handover                                                                                                                                                                                       |
 
 ## Strands
 
-| Strand | Session | Worktree | Working on               | Next | Blocked by |
-| ------ | ------- | -------- | ------------------------ | ---- | ---------- |
-| main   | —       | —        | M1 to M6 done and merged | —    | —          |
+| Strand            | Session | Worktree                    | Working on               | Next                               | Blocked by |
+| ----------------- | ------- | --------------------------- | ------------------------ | ---------------------------------- | ---------- |
+| main              | —       | —                           | M1 to M6 done and merged | —                                  | —          |
+| sebastian/port-p2 | —       | `.claude/worktrees/port-p2` | P2 done, in review       | Merge into `main` on the user's OK | —          |
 
 ## M1 handover
 
@@ -122,6 +124,41 @@ How the harness changed in M6: both sides get the forced settings also as the si
 
 Known gaps: `htmlLabels: true` is drawn as SVG text, as in every renderer since M2 (decision 0004); the reference measures text in `sans-serif` and the configured font and keeps the larger, which on macOS is always the configured font (probed) and is not checked on other systems; the text memo lives for one render, where the reference's lives for the page; the order of a sequence actor's menu links follows the model's sorted map, where the reference keeps insertion order; fallback fonts for scripts the bundled faces do not cover; images, icon packs and KaTeX are not supported. `sanitizeUrl`, the entity decoding and a text-width helper exist in more than one crate or module and could be shared. The branch is local; it is ready for review and for the merge into `main`, which the user decides.
 
+## P2 handover
+
+Done, for review on the branch `sebastian/port-p2` (not pushed): the thirteen P2 diagram types parse and render to SVG through `ferrigura`, its CLI and its Node addon: mindmap, block, packet, xychart, sankey, quadrantChart, requirement, C4, kanban, architecture, treemap, ishikawa and eventmodeling. The decisions are in [P2-PLAN.md](./P2-PLAN.md) and decision [0008](./decisions/0008-force-directed-layouts.md), the working rules of the renderer tasks in [P2-RENDERERS.md](./P2-RENDERERS.md) and [P2-PARSERS.md](./P2-PARSERS.md), and the research, decisions and reproduced quirks of each type in `<type>/NOTES.md` and `<type>/PLAN.md`.
+
+What is where:
+
+- **Parsers**: `crates/ferrigura-syntax/src/<type>/`, hand-written for the Jison and Langium grammars alike (decision 0002), each with its DB rules and its canonical model in `ferrigura-model`. The YAML front matter is a state-by-state port of js-yaml 4's loader (`yaml.rs`); detection follows the reference's order, front matter after blank lines included.
+- **Layout engines**: `ferrigura-cose` holds cose-bilkent 4.1.0 (mindmaps, on cose-base 1.0.3 and layout-base 1.0.2) and fcose 2.2.0 (architecture, on cose-base 2.2.0 and layout-base 2.0.1, with the spectral start and the two runs Mermaid makes, drawn from the mulberry32 of `architectureSeed.ts`); `unified/tidy_tree.rs` is Mermaid's removed tidy-tree package (`layout: tidy-tree`), vendored as its reference under `tools/port/vendor/`. Each is exact on its captured corpus.
+- **Browser arithmetic**: `ferrigura-jsmath` gives Chromium's `Math` functions bit for bit (correctly rounded `sin`, `cos`, `tan`, `asin`, `acos` and `log`; `atan` and `atan2` from llvm-libc; `pow` and `hypot` from V8), and `ferrigura-path` gives Chromium's `getBBox()` of an SVG path (Blink's parser and builder, Skia's conic arcs and tight bounds in float), which sizes the mindmap's cloud and bang nodes, where the force layout amplifies a one-unit difference into tens of pixels.
+- **Renderers**: requirement and mindmap on the unified renderer (new shapes: the requirement box, the block composite and arrow, the mindmap circle, cloud and bang); block on the unified shapes with its own layout; the others in their own folders on `common/`, whose d3 part grew by the ordinal scale, the d3-array reductions, V8's `Array.prototype.sort` (TimSort, since NaN comparators make the order depend on the algorithm), d3-hierarchy's treemap, d3-format, and d3-sankey's layout (in `sankey/`).
+- **Sanitising**: `sanitize.rs` runs DOMPurify twice on the strict path, as the reference does, with Mermaid's anchor hooks (`rel="noopener"` for `target="_blank"`, in the reference's attribute order).
+
+Verified on this branch:
+
+- `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace --no-fail-fast` (4622 passed, 102 ignored) pass; prettier and eslint pass on `tools/port`.
+- Parsers: every P2 type without a difference or a named exception (inputs in the table below), with the layout data of requirement (266 inputs) and kanban (355); the configuration (6452 inputs, every type in its own scope), YAML (4447 inputs) and the theme (110).
+- Geometry, all comparable fixtures and probes within 0.05 px: mindmap 56 of 56 (33 fixtures and 23 probes; the emoji fixture excluded), block 58 of 58, packet 29 of 29, xychart 47 of 47, sankey 48 of 48 (3 more probes fail in the reference), quadrantChart 30 of 30, requirement 146 of 146 (24 handDrawn excluded, 2 fail in the reference), C4 32 of 32, kanban 29 of 29, architecture 45 of 45, treemap 113 of 113 (the emoji fixture excluded), ishikawa 28 of 28 (one handDrawn excluded) and eventmodeling 39 of 39, counting fixtures and probes. The P1 types and flowchart are unchanged (flowchart 298 of 298 with the ELK input equal in all 298).
+- CI runs every differential above and the geometry of every M6 and P2 type.
+
+How the harness changed in P2: the page maps the fonts the reference names itself (`trebuchet ms`, `verdana`, `arial`, `Helvetica Neue`, `Helvetica`, `Open Sans`) onto the bundled face, and its viewport and screen are 1200 by 900 px with no body margin; a type may have probe inputs under `tools/port/geometry/probes/<type>`; the eventmodeling box text is compared line by line like the journey's labels, with its code pinned to the bundled mono face; the same non-finite number on both sides agrees; a fixture is excluded for uncovered symbols only when they are in the text a diagram draws (the body and the front matter's `title`); the reference page installs no-op capture hooks for cose-bilkent, fcose and the tidy tree, whose corpora their capture tools write.
+
+Known gaps:
+
+- eventmodeling: `sub`, `sup`, `small`, `big`, `kbd`, `p` and `div` in data are drawn as plain runs, where the reference changes the line, the size or the face (`eventmodeling/PLAN.md` 8.4).
+- treemap: the label truncation counts characters, the reference UTF-16 units, so an astral character may be cut differently (not probed).
+- mindmap: `layout: elk` lays the mindmap out with ELK, where the reference crashes for every mindmap (a named exception); `swimlane` falls back to cose-bilkent; the classic themes' default node is not ported (redux themes only, as M6 decided).
+- architecture: the unknown icon's question mark keeps the reference's `ArialMT, Arial`, which ferrigura does not ship; the fcose corpus was captured on a page that measured labels in the system's Helvetica Neue, so 19 of its run-1 bounds differ by half a pixel from the harness's mapped face (the engine tests replay the captured input and are unaffected; a recapture through the harness page would align them).
+- ferrigura-path: two generated corpus paths differ by 0.002 and 0.011 px, because Chromium on macOS takes the rotation's sine and cosine from `__sincosf_stret`, which is not correctly rounded for about 0.03 percent of inputs; the port takes the correctly rounded values, the same on every host.
+- block: an edge path's `data-id` is the doubled id where the reference writes the prefixed one, and `data-points` is not written (neither is in the geometry key).
+- sankey: the dark custom properties are written but not compared (the harness forces redux-color); the schema says `useMaxWidth: false` where the built default is true, which the port follows.
+- Code to share: `Math.max` exists in more than one module (`common/d3/math.rs`, `unified/tidy_tree.rs`, `unified/shapes/polygon.rs`), and eventmodeling borrows journey's text helpers, which belong in `common/`.
+- As in M6: `htmlLabels: true` is drawn as SVG text (decision 0004), fallback fonts for uncovered scripts, images and icon packs.
+
+The branch is local; it is ready for review and for the merge into `main`, which the user decides.
+
 ## P1 diagram types
 
 Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec files under `packages/mermaid/src/diagrams/<type>/`, an approximate count of their test cases, and the e2e fixtures under `e2e/diagrams/`. pie, info and gitGraph also have parser tests in `packages/parser/tests/`.
@@ -142,7 +179,7 @@ Baseline from the JS reference at commit `5a220b30e`: the grammar, the spec file
 
 ## P2 diagram types
 
-The P2 types are registered: detection, the models, the parser and renderer stubs, and the `tools/port` lists (see [P2-PLAN.md](./P2-PLAN.md)). Every type has its parser; the Render and Parity cells fill in as the renderer tasks land, from `pnpm port:geometry <type>`. Baseline counts, as in the P1 table, from the reference in this repository at commit `aa5c4338f`: the spec files under `packages/mermaid/src/diagrams/<type>/` with their `it` and `test` calls, and the `.mmd` fixtures under `e2e/diagrams/`. The parser tests in `packages/parser/tests/` are not counted, as for pie, info and gitGraph: `architecture.test.ts` (11 tests), `treemap.test.ts` (17), `eventmodeling.test.ts` (31), and `packet.test.ts` (no test calls).
+Every P2 type parses and renders (see the P2 handover and [P2-PLAN.md](./P2-PLAN.md)); the Render and Parity cells are from `pnpm port:geometry <type>`, counting fixtures and probes. Baseline counts, as in the P1 table, from the reference in this repository at commit `aa5c4338f`: the spec files under `packages/mermaid/src/diagrams/<type>/` with their `it` and `test` calls, and the `.mmd` fixtures under `e2e/diagrams/`. The parser tests in `packages/parser/tests/` are not counted, as for pie, info and gitGraph: `architecture.test.ts` (11 tests), `treemap.test.ts` (17), `eventmodeling.test.ts` (31), and `packet.test.ts` (no test calls).
 
 | Type          | Grammar (JS)                                             | Spec files | ≈ Tests | Fixtures | Parser           | Specs ported / passing | Differential parse        | Layout                  | Render                 | Parity                                        |
 | ------------- | -------------------------------------------------------- | ---------: | ------: | -------: | ---------------- | ---------------------- | ------------------------- | ----------------------- | ---------------------- | --------------------------------------------- |
