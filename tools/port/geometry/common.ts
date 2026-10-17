@@ -363,6 +363,38 @@ export type JsonValue =
  * `const measure = (svg) => ...`, using the helpers of this page (`numbers`, `mapPoint`,
  * `userMatrix`, `boxOf`), which map every box into the viewBox coordinates of the root svg.
  */
+/**
+ * The font families the reference names in its own code instead of the configured font:
+ * eventmodeling measures in `"trebuchet ms", verdana, arial` (the classic default), cytoscape (the
+ * architecture labels) in `Helvetica Neue, Helvetica`, and C4 in `"Open Sans"`. ferrigura ships one
+ * face and measures with it (decision 0005), so the page maps these names onto the same Lexica files:
+ * the reference then measures the same text in the same font, and what it computes is unchanged
+ * (P2-PLAN, hard-coded fonts).
+ */
+export const MAPPED_FAMILIES: readonly string[] = [
+  'trebuchet ms',
+  'verdana',
+  'arial',
+  'Helvetica Neue',
+  'Helvetica',
+  'Open Sans',
+];
+
+const LEXICA_FACES: readonly { file: string; weight: number; style: string }[] = [
+  { file: 'LexicaUltralegible-Regular.ttf', weight: 400, style: 'normal' },
+  { file: 'LexicaUltralegible-Bold.ttf', weight: 700, style: 'normal' },
+  { file: 'LexicaUltralegible-Italic.ttf', weight: 400, style: 'italic' },
+  { file: 'LexicaUltralegible-BoldItalic.ttf', weight: 700, style: 'italic' },
+];
+
+/** The `@font-face` rules of a family name that the page maps onto the bundled faces. */
+function mappedFaces(family: string): string {
+  return LEXICA_FACES.map(
+    (face) =>
+      `@font-face { font-family: "${family}"; src: url(/fonts/${face.file}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; }`
+  ).join('\n');
+}
+
 export function pageHtml(measure: string): string {
   return `<!doctype html>
 <html><head><meta charset="utf-8">
@@ -371,6 +403,7 @@ export function pageHtml(measure: string): string {
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Bold.ttf) format("truetype"); font-weight: 700; font-style: normal; }
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Italic.ttf) format("truetype"); font-weight: 400; font-style: italic; }
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-BoldItalic.ttf) format("truetype"); font-weight: 700; font-style: italic; }
+${MAPPED_FAMILIES.map(mappedFaces).join('\n')}
 /* No body margin: a block the reference appends to the body (its diagram container) is then the
    1200 px viewport wide, which is the width the gantt renderer takes from the container when a
    diagram sets no useWidth (ganttRenderer.js:98). ferrigura uses the same 1200 px. */
@@ -396,6 +429,12 @@ await Promise.all([
   'italic 400 16px "Lexica Ultralegible"',
   'bold 16px "Lexica Ultralegible"',
   'italic bold 16px "Lexica Ultralegible"',
+  ...${JSON.stringify(MAPPED_FAMILIES)}.flatMap((family) => [
+    '400 16px "' + family + '"',
+    'italic 400 16px "' + family + '"',
+    'bold 16px "' + family + '"',
+    'italic bold 16px "' + family + '"',
+  ]),
 ].map((face) => document.fonts.load(face)));
 await document.fonts.ready;
 
@@ -578,8 +617,11 @@ export async function withPage<T>(measure: string, run: (page: Page) => Promise<
   try {
     // The reference reads dates in the browser's time zone and ferrigura in UTC (M6-PLAN, gantt
     // time), so the page runs in UTC.
+    // The screen is the viewport, so a renderer that reads the screen (C4's `screen.availWidth`)
+    // sees the 1200 px that ferrigura takes (P2-PLAN, screen and container sizes).
     const page = await browser.newPage({
       viewport: { width: 1200, height: 900 },
+      screen: { width: 1200, height: 900 },
       timezoneId: 'UTC',
     });
     page.on('pageerror', (error) => console.error('page error:', error.message));
