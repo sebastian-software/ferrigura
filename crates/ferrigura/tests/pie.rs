@@ -51,7 +51,13 @@ fn should_escape_the_title_and_the_labels() {
 fn should_not_render_a_diagram_type_that_is_not_ported() {
     // Every P1 type renders since M6, and every P2 type but architecture since its renderer task:
     // architecture is detected, but not rendered yet. The architecture renderer removes this test.
-    assert!(render("architecture-beta\nservice a(server)[A]\n", &Value::empty_object()).is_err());
+    assert!(
+        render(
+            "architecture-beta\nservice a(server)[A]\n",
+            &Value::empty_object()
+        )
+        .is_err()
+    );
 }
 
 #[test]
