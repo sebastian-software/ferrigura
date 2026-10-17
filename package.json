@@ -76,7 +76,8 @@
     "port:edge-paths": "tsx tools/port/export-flowchart-edges.ts",
     "prepare": "husky && pnpm build",
     "pre-commit": "lint-staged",
-    "port:path-bounds": "tsx tools/port/path-bounds.ts"
+    "port:path-bounds": "tsx tools/port/path-bounds.ts",
+    "port:compare-bench": "tsx tools/port/compare-bench.ts"
   },
   "repository": {
     "type": "git",
