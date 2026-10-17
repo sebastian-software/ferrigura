@@ -12,27 +12,21 @@ const NEARLY_ZERO: f32 = 1.0 / 4096.0;
 /// `SK_ScalarSinCosNearlyZero`: the sine and cosine below it snap to zero.
 const SIN_COS_NEARLY_ZERO: f32 = 1.0 / 65536.0;
 
-/// The sine and the cosine of one angle, as the corpus (Chromium's boxes on macOS) has them. `SkMatrix::setRotate`
-/// and the arc loop take `SkScalarSinSnapToZero` and `SkScalarCosSnapToZero` of the same radians. On macOS those
-/// two come from one `__sincosf_stret` call, and the corpus matches bit for bit only with that call: its sine
-/// and cosine can differ in the last bit from separate `sinf` and `cosf` calls. Elsewhere the two are separate.
-#[cfg(target_os = "macos")]
+/// The sine and the cosine of one angle, each the float nearest to the exact value. `SkMatrix::setRotate`
+/// and the arc loop take `SkScalarSinSnapToZero` and `SkScalarCosSnapToZero` of the same radians, which
+/// Chromium on macOS computes with one `__sincosf_stret` call. That call is not correctly rounded: on 5.9
+/// million floats in [-8, 8] it is off the nearest float in 0.03 percent of them (measured), and its
+/// algorithm is not published, so the port takes the correctly rounded values, the same on every host
+/// (`ferrigura_jsmath`'s correctly rounded `sin` and `cos` in double, rounded to float; no input of that
+/// measurement lies near a midpoint, so the double rounding does not change a result). Two boxes of the
+/// corpus differ for it (`tests/corpus/known-differences.json`). The separate `sinf` and `cosf` of the
+/// macOS libm differ from that call more often: with them, 85 boxes of the corpus differed.
 fn sin_cos(radians: f32) -> (f32, f32) {
-    #[repr(C)]
-    struct SinCos {
-        sin: f32,
-        cos: f32,
-    }
-    unsafe extern "C" {
-        fn __sincosf_stret(x: f32) -> SinCos;
-    }
-    let r = unsafe { __sincosf_stret(radians) };
-    (r.sin, r.cos)
-}
-
-#[cfg(not(target_os = "macos"))]
-fn sin_cos(radians: f32) -> (f32, f32) {
-    (radians.sin(), radians.cos())
+    let x = f64::from(radians);
+    (
+        ferrigura_jsmath::sin(x) as f32,
+        ferrigura_jsmath::cos(x) as f32,
+    )
 }
 
 /// `SkScalarSinSnapToZero` and `SkScalarCosSnapToZero` (`SkScalar.h` 114-122): a sine or cosine of
