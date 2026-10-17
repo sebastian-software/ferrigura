@@ -110,7 +110,7 @@ const suites: Record<string, string[]> = {
   kanban: ['kanban_spec', 'kanban_db_spec', 'kanban_quirks_spec'],
   architecture: [],
   treemap: [],
-  ishikawa: [],
+  ishikawa: ['ishikawa_spec', 'ishikawa_grammar', 'ishikawa_db_spec'],
   eventmodeling: [],
 };
 
