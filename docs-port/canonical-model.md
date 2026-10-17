@@ -178,6 +178,15 @@ The mindmap model is the DB state after the parse (`mindmapDb.ts`): the tree fro
 - **Empty and absent are `""`.** `icon` and `class` are `""` when the DB has none, and `root` is `null` when the text has no node.
 - **The renderer's data is left out.** `getData`, the sections, the layout and the shape names are the renderer stage.
 
+## Architecture
+
+The architecture model is the DB state after the parse (`architectureDb.ts`), with the field list and the exclusions in [architecture/PLAN.md](./architecture/PLAN.md), section 3. Its own rules:
+
+- **The enclosing id is `in`.** A group, service or junction names the group it sits in under `in`, which is the DB's own name, and `""` at the top.
+- **The lists are in the DB's order.** Groups are in text order. Services and junctions are two lists, each in text order, because the DB adds every service before any junction. Edges and alignments are in text order.
+- **The derived block is the reference's `getDataStructures`.** `derived.groupAlignments` is a list of `[key, axis]` pairs in the order the DB first set each key. `derived.spatialMaps` is a list of maps, each a list of `{id, x, y}` in the order the breadth-first search placed them, and the search's quirks (a node placed again, the last placement wins) are part of the value.
+- **Texts.** The header texts are sanitised, as the common setters sanitise them. The other texts are the grammar's values as written, with the entity placeholders kept; an absent icon, title or parent is `""`, and an absent arrow head or `{group}` mark is `false`.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

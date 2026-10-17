@@ -155,7 +155,7 @@ The P2 types are registered: detection, the models, the parser and renderer stub
 | requirement   | `diagrams/requirement/parser/requirementDiagram.jison`   |          2 |      47 |      172 | ferrigura-syntax | 52 / 53 (1 ignored)    | 266 inputs, no difference | —      | —      | —      |
 | C4            | `diagrams/c4/parser/c4Diagram.jison`                     |          8 |      50 |       32 | ferrigura-syntax | 169 / 171 (2 ignored)  | 176 inputs, no difference | —      | —      | —      |
 | kanban        | `diagrams/kanban/parser/kanban.jison`                    |          1 |      30 |       11 | ferrigura-syntax | 48 / 48                | 337 inputs, no difference | —      | —      | —      |
-| architecture  | `packages/parser/…/architecture/architecture.langium`    |          3 |      36 |       20 | —                | —                      | —                         | —      | —      | —      |
+| architecture  | `packages/parser/…/architecture/architecture.langium`    |          3 |      36 |       20 | ferrigura-syntax | 97 / 110 (13 ignored)  | 281 inputs, no difference | —      | —      | —      |
 | treemap       | `packages/parser/…/treemap/treemap.langium`              |          0 |       0 |       26 | —                | —                      | —                         | —      | —      | —      |
 | ishikawa      | `diagrams/ishikawa/parser/ishikawa.jison`                |          1 |       3 |       13 | —                | —                      | —                         | —      | —      | —      |
 | eventmodeling | `packages/parser/…/eventmodeling/event-modeling.langium` |          1 |      10 |        6 | —                | —                      | —                         | —      | —      | —      |

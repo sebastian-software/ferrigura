@@ -108,7 +108,7 @@ const suites: Record<string, string[]> = {
     'c4_system_spec',
   ],
   kanban: ['kanban_spec', 'kanban_db_spec', 'kanban_quirks_spec'],
-  architecture: [],
+  architecture: ['architecture_spec', 'architecture_grammar', 'architecture_db_spec'],
   treemap: [],
   ishikawa: [],
   eventmodeling: [],

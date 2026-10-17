@@ -10,6 +10,7 @@ publish.workspace = true
 
 [dependencies]
 ferrigura-model.workspace = true
+indexmap.workspace = true
 logos.workspace = true
 regex = "1"
 url = "2"
