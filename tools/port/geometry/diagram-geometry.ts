@@ -9,6 +9,11 @@
  * the specialised harnesses (`pie-geometry.ts`, `flowchart-geometry.ts`). Ferrigura renders none of
  * the others yet, so their fixtures are "not rendered" until it does.
  *
+ * A type may have probes too, under `tools/port/geometry/probes/<type>`: texts the e2e fixtures do not
+ * cover (the kanban items, which no kanban fixture draws). They are compared like the fixtures, under
+ * the keys `probes/<type>/<file>`. They are not in `e2e/diagrams`, where every `.mmd` is an image
+ * snapshot test.
+ *
  * Both sides get the patched text (`patchText` in `common.ts`): the forced directive, and the
  * fallback theme. Each SVG is measured at scale 1. Excluded fixtures are those with `handDrawn`, a
  * non-layered layout, or text the bundled faces do not cover (CJK, arrows, symbols, emoji); they are
@@ -56,7 +61,7 @@
  * not render a fixture the reference renders (every P1 type is ported since M6, so that is a
  * regression); for `--self`, whenever the two reference renders differ.
  */
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import {
@@ -92,6 +97,21 @@ import {
 } from './journey-labels.js';
 
 const fixtureRoot = join(root, 'e2e/diagrams');
+
+/**
+ * The probe inputs of a type, under `tools/port/geometry/probes/<type>`: texts that the e2e fixtures
+ * do not cover, such as kanban items (the fixtures are flat lists of sections). They are compared
+ * with the fixtures, under the key `probes/<type>/<file>`, and not added to `e2e/diagrams`, whose
+ * every `.mmd` is an image snapshot test.
+ */
+const probeRoot = join(root, 'tools/port/geometry/probes');
+
+/** The file of a fixture key (`folder/file`, or `probes/<type>/file`) on disk. */
+function pathOf(key: string): string {
+  return key.startsWith('probes/')
+    ? join(probeRoot, key.slice('probes/'.length))
+    : join(fixtureRoot, key);
+}
 
 /** The fixture folders of each type, under `e2e/diagrams`. */
 const TYPE_FOLDERS: Record<string, string[]> = {
@@ -265,11 +285,26 @@ interface DiagramResult extends FixtureResult {
   elkCalls: number;
 }
 
-/** The fixtures of a type, as paths under `e2e/diagrams` (folder first). */
+/** The folders of a type's fixtures: under `e2e/diagrams`, then its probes, when it has some. */
+async function foldersOf(type: string): Promise<string[]> {
+  const folders = [...TYPE_FOLDERS[type]];
+  if (await isDirectory(join(probeRoot, type))) folders.push(`probes/${type}`);
+  return folders;
+}
+
+async function isDirectory(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/** The fixtures of a type, as keys (folder first): `pathOf` gives each one's file. */
 async function fixturesOf(type: string): Promise<string[]> {
   const files: string[] = [];
-  for (const folder of TYPE_FOLDERS[type]) {
-    for (const file of await mmdFiles(join(fixtureRoot, folder))) {
+  for (const folder of await foldersOf(type)) {
+    for (const file of await mmdFiles(pathOf(folder))) {
       files.push(`${folder}/${file}`);
     }
   }
@@ -306,10 +341,7 @@ async function main(): Promise<void> {
     for (const file of selected) {
       const slug = slugOf(file);
       const id = `ref-${slug}`;
-      const source = await decodeFixtureEntities(
-        page,
-        await readFile(join(fixtureRoot, file), 'utf8')
-      );
+      const source = await decodeFixtureEntities(page, await readFile(pathOf(file), 'utf8'));
       const text = patchText(source, journey ? JOURNEY_SETTINGS : {});
       const result: DiagramResult = {
         fixture: file,
@@ -447,7 +479,8 @@ async function main(): Promise<void> {
     }
   }
   const byFolder: Record<string, Record<FixtureClass, number>> = {};
-  for (const folder of TYPE_FOLDERS[options.type]) {
+  const folders = await foldersOf(options.type);
+  for (const folder of folders) {
     byFolder[folder] = countClasses(
       results.filter((result) => result.fixture.startsWith(`${folder}/`))
     );
@@ -465,7 +498,7 @@ async function main(): Promise<void> {
   await writeJson(join(workDir, outputName), {
     type: options.type,
     mode,
-    folders: TYPE_FOLDERS[options.type],
+    folders,
     tolerances: { pixels: PIXEL_TOLERANCE },
     summary,
     results,

@@ -5,7 +5,7 @@
  * difference is reported with both results. A type without an exporter is not ported yet: the run
  * says so and ends without a difference.
  *
- * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | flowchart-data | er-data | state-data | class-data | requirement-data | config | yaml | theme>`
+ * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme>`
  */
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -41,7 +41,8 @@ if (
   type === 'er-data' ||
   type === 'state-data' ||
   type === 'class-data' ||
-  type === 'requirement-data'
+  type === 'requirement-data' ||
+  type === 'kanban-data'
 ) {
   const subRun = spawnSync(
     'pnpm',
@@ -66,7 +67,7 @@ if (
   !p2Types.includes(type)
 ) {
   console.error(
-    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | flowchart-data | er-data | state-data | class-data | requirement-data | config | yaml | theme'
+    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme'
   );
   process.exit(2);
 }

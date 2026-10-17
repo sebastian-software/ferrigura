@@ -23,6 +23,8 @@ mod decorated;
 mod er_box;
 mod icon;
 mod intersect;
+pub mod kanban_item;
+pub mod kanban_section;
 mod person;
 mod polygon;
 mod rect;

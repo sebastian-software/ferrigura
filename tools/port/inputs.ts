@@ -30,6 +30,8 @@ const fixtureFolders: Record<string, string[]> = {
     'e2e/diagrams/state-diagram-v2/',
     'e2e/platform/dev-diagrams/',
   ],
+  // The kanban probes are not e2e fixtures: each one is an image snapshot test there.
+  kanban: ['e2e/diagrams/kanban/', 'tools/port/geometry/probes/kanban/'],
 };
 
 /** The detectors of the reference, as its files write them (`packages/mermaid/src/diagrams/`). */
