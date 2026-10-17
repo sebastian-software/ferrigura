@@ -95,7 +95,7 @@ const suites: Record<string, string[]> = {
   xychart: [],
   sankey: [],
   quadrantChart: [],
-  requirement: [],
+  requirement: ['requirement_spec', 'requirement_db_spec'],
   c4: [],
   kanban: [],
   architecture: [],

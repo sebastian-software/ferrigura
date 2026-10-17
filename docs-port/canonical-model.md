@@ -109,6 +109,15 @@ The ER model is the DB state after parsing (`erDb.ts`), with the DB's names in c
 - **Cardinalities** are the DB's strings (`ZERO_OR_ONE`, `ONLY_ONE`, `MD_PARENT`, and the rest); `cardA` is the end on the right of the line, `cardB` the end on the left.
 - **Classes.** An entity's `classes` are the names given by `:::` and `class`, without the `default` that the DB starts with. A class keeps its `textStyles`, which the DB derives from its styles.
 
+## Requirement
+
+The requirement model is the DB state after parsing (`requirementDb.ts`), with the field list in [requirement/PLAN.md](./requirement/PLAN.md), section 6. Its own rules:
+
+- **Texts keep the placeholders.** The DB keeps the entities as placeholders (`ﬂ°name¶ß`), and the requirement, element, relationship and class texts are not sanitised, so the model holds them as the DB does. The renderer decodes them when it draws. This differs from the journey, which decodes its texts in the model.
+- **Header texts are sanitised.** The title and the accessibility texts go through the sanitiser of the flowchart, with the DB's whitespace rules (`setAccTitle`, `setAccDescription`).
+- **Blanks are kept.** Unlike the single-line header values of the general rules above, a header value keeps its inner blanks: the requirement DB removes only the leading blanks of `accTitle`, and the blanks after each line break of `accDescr`.
+- **Values are kept as written.** The kinds, risks and methods are the DB's display strings (`Functional Requirement`, `Medium`, `Analysis`); an unset risk, method, type or document reference is `""`.
+
 ## Gantt
 
 The gantt model is the DB state after `getTasks()` (`ganttDb.js`), with the field list and the exclusions in [gantt/PLAN.md](./gantt/PLAN.md), section 6. Its own rules:
