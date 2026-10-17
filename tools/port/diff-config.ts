@@ -238,10 +238,9 @@ if (missingInRust.length > 0 || extraInRust.length > 0) {
  * The diagram sections whose defaults the port does not own yet. The reference fills them with its
  * own generator (`.build/jsonSchema.ts`), which applies a section's own defaults only, and the
  * TypeScript defaults replace some sections whole; ferrigura takes them from the schema. A section
- * is compared only for an input of its own diagram type, and only once that type is ported:
- * `pie`, `flowchart`, `timeline`, `journey`, `gitGraph`, `er`, `class`, `sequence`, `state`, `gantt`,
- * `requirement`, `kanban`, `c4`, `block`, `xyChart`, `mindmap`, `ishikawa` and `treemap` are ported, and `info` has no section. Every other section is left out, the P2
- * sections included.
+ * is compared only for an input of its own diagram type, and only once that type is ported (a
+ * ported type is not in `NOT_PORTED_SECTIONS`); `info` has no section. Every other section is left
+ * out.
  */
 const UNPORTED_SECTIONS = [
   'flowchart',
@@ -273,13 +272,7 @@ const UNPORTED_SECTIONS = [
  * The sections of the P2 types, whose parsers are not ported yet. Their inputs are run in their own
  * scope, but the section is not compared, not even for those inputs, until the type is ported.
  */
-const NOT_PORTED_SECTIONS = new Set([
-  'packet',
-  'sankey',
-  'quadrantChart',
-  'architecture',
-  'eventmodeling',
-]);
+const NOT_PORTED_SECTIONS = new Set(['packet', 'quadrantChart', 'architecture', 'eventmodeling']);
 
 /**
  * The output with the sections that are not compared removed: the sections of diagram types that

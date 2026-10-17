@@ -203,6 +203,56 @@ pub fn js_number(text: &str) -> f64 {
     }
 }
 
+/// `parseFloat(text)`: the longest prefix of the text that is a decimal literal, with its sign,
+/// `Infinity`, digits and a fraction, and an exponent when digits follow the `e`; read as the
+/// nearest double. Leading white space is skipped, and NaN is the result when no prefix is a number.
+/// `10abc` is 10, `.5` is 0.5, `5.` is 5, `1e` is 1, and `0x10` is 0.
+#[must_use]
+pub fn js_parse_float(text: &str) -> f64 {
+    let text = text.trim_start_matches(is_js_space);
+    let bytes = text.as_bytes();
+    let digits_at = |start: usize| {
+        bytes[start.min(bytes.len())..]
+            .iter()
+            .take_while(|b| b.is_ascii_digit())
+            .count()
+    };
+
+    let mut end = usize::from(matches!(bytes.first(), Some(b'+' | b'-')));
+    if text[end..].starts_with("Infinity") {
+        return if bytes.first() == Some(&b'-') {
+            f64::NEG_INFINITY
+        } else {
+            f64::INFINITY
+        };
+    }
+    let whole = digits_at(end);
+    end += whole;
+    let fraction = if bytes.get(end) == Some(&b'.') {
+        digits_at(end + 1)
+    } else {
+        0
+    };
+    // A dot counts when a digit comes before or after it, so `5.` takes the dot and `.` does not.
+    if whole == 0 && fraction == 0 {
+        return f64::NAN;
+    }
+    if bytes.get(end) == Some(&b'.') {
+        end += 1 + fraction;
+    }
+    if matches!(bytes.get(end), Some(b'e' | b'E')) {
+        let mut exponent = end + 1;
+        if matches!(bytes.get(exponent), Some(b'+' | b'-')) {
+            exponent += 1;
+        }
+        let exponent_digits = digits_at(exponent);
+        if exponent_digits > 0 {
+            end = exponent + exponent_digits;
+        }
+    }
+    text[..end].parse().unwrap_or(f64::NAN)
+}
+
 /// Whether `text` is a `StrDecimalLiteral` without `Infinity`: an optional sign, digits with an
 /// optional fraction (at least one digit in all), and an optional exponent with digits.
 fn is_decimal_literal(text: &str) -> bool {
@@ -264,6 +314,39 @@ fn radix_number(digits: &str, radix: u32) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_float_reads_the_longest_decimal_prefix() {
+        assert_eq!(js_parse_float("10abc"), 10.0);
+        assert_eq!(js_parse_float("1e2"), 100.0);
+        assert_eq!(js_parse_float("1e"), 1.0);
+        assert_eq!(js_parse_float("1e+"), 1.0);
+        assert_eq!(js_parse_float("1E-2x"), 0.01);
+        assert_eq!(js_parse_float(".5"), 0.5);
+        assert_eq!(js_parse_float("-.5e1"), -5.0);
+        assert_eq!(js_parse_float("5."), 5.0);
+        assert_eq!(js_parse_float("+3"), 3.0);
+        assert_eq!(js_parse_float("1.2.3"), 1.2);
+        assert_eq!(js_parse_float("1_000"), 1.0);
+        assert_eq!(js_parse_float("  5  "), 5.0);
+        assert_eq!(js_parse_float("0x10"), 0.0);
+        assert_eq!(js_parse_float("-3"), -3.0);
+    }
+
+    #[test]
+    fn parse_float_reads_infinity_and_nothing_else_as_non_finite() {
+        assert_eq!(js_parse_float("Infinity"), f64::INFINITY);
+        assert_eq!(js_parse_float("+Infinity"), f64::INFINITY);
+        assert_eq!(js_parse_float("-Infinity"), f64::NEG_INFINITY);
+        assert_eq!(js_parse_float("Infinityx"), f64::INFINITY);
+        assert!(js_parse_float("infinity").is_nan());
+        assert!(js_parse_float("NaN").is_nan());
+        assert!(js_parse_float("").is_nan());
+        assert!(js_parse_float(".").is_nan());
+        assert!(js_parse_float("-").is_nan());
+        assert!(js_parse_float("e5").is_nan());
+        assert_eq!(js_parse_float("2e308"), f64::INFINITY);
+    }
 
     #[test]
     fn strips_whitespace_around_line_breaks_like_the_js_regexes() {

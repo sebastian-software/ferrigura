@@ -198,6 +198,13 @@ The treemap model is the DB state after parsing and `buildHierarchy` (`treemap/d
 - **The tree keeps the DB's distinction.** A leaf has no `children`; a section has them, empty when it has no rows.
 - **Left out**: the indentation levels, the renderer's layout and value formats, and the configuration.
 
+## Sankey
+
+- **The DB state.** The model is the DB state after the parse (`sankeyDB.ts`), with the field list in [sankey/PLAN.md](./sankey/PLAN.md), section 6. The `title` is the front matter's, sanitised, or `""`, although nothing draws it. `accTitle` and `accDescr` are always `""`, since the grammar has no statement for them.
+- **Names are the DB's ids.** A node id and a link end are the name as the DB sanitises it ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)); two names that sanitise alike are one node. An entity in a name is a parse error, so no name holds a placeholder.
+- **Values** are `parseFloat` of the field. A value that is not finite is its sentinel string.
+- **Left out**: the layout (`x0`, `y0`, `layer`, `width`, the node values, which the layout sums) and the configuration.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
