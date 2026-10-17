@@ -95,9 +95,15 @@ export const undetectedCases: Record<string, string[]> = {
 };
 
 export const explicitCases: Record<string, string[]> = {
+  class: [
+    // An anchor with a `target` in a label: the hooks of `sanitizeText` reach it.
+    "classDiagram\nclass Animal[\"<a target='_blank' href='x'>an</a>\"]",
+  ],
   // The P2 types whose parsers are not ported yet: each gets its cases with its parser task.
   // cspell:ignore nmindmapper
   mindmap: [
+    // An anchor with a `target` in a label: the hooks of `sanitizeText` reach it.
+    "mindmap\n  root((<a target='_blank' href='x'>r</a>))",
     'mindmap\n  root',
     'mindmap',
     'mindmap\n',
@@ -271,6 +277,8 @@ export const explicitCases: Record<string, string[]> = {
   // The quirks of `docs-port/block/PLAN.md`, section 8, one input each where the corpus does not
   // reach them. Accepted and rejected inputs both count.
   block: [
+    // An anchor with a `target` in a label: the hooks of `sanitizeText` reach it.
+    "block\nA[\"<a target='_blank' href='x'>A</a>\"]",
     // B1-B3: the chained link, the bare `block`, and the directions of a block arrow.
     'block\nA --> B --> C',
     'block\nA -- "x" --> B -- "y" --> C',
@@ -1234,6 +1242,8 @@ export const explicitCases: Record<string, string[]> = {
     'requirementDiagram\nrequirement "requirement" {\n}\nelement "element" {\n}\nclassDef myClass color:red\nclassDef myClass2 stroke-width:4px,stroke:yellow\nclass requirement myClass\nclass element myClass2',
   ],
   c4: [
+    // An anchor with a `target` in a title: the hooks of `sanitizeText` reach it.
+    "C4Context\ntitle <a target='_blank' href='x'>t</a>\nPerson(a, \"A\")",
     // The probes of `docs-port/c4/NOTES.md`: section 2.4 (P1-P32), the parser probes, and the
     // layout, style and entity probes of its section 12 (the inputs the renderer work uses).
     'C4Context\nPerson(a, "A")',
@@ -1352,6 +1362,8 @@ export const explicitCases: Record<string, string[]> = {
   // Kanban inputs that the reference's specs and fixtures do not cover: the start conditions of the
   // lexer, the DB's placement and its shape data, and the quirks of `docs-port/kanban/PLAN.md`.
   kanban: [
+    // An anchor with a `target` in a label: the hooks of `sanitizeText` reach it.
+    "kanban\n  Todo\n    t1[<a target='_blank' href='x'>Task</a>]",
     // Hierarchy and placement.
     'kanban\n    root\n      child1\n        leaf1\n      child2',
     'kanban\n  a\n    b\n      c\n',
@@ -2336,6 +2348,8 @@ export const explicitCases: Record<string, string[]> = {
   // State inputs that the reference's specs do not cover: the quirks of the grammar and the DB
   // (`docs-port/state/PLAN.md`, section 7), and the error paths.
   state: [
+    // An anchor with a `target` in a label: the hooks of `sanitizeText` reach it.
+    "stateDiagram-v2\nstate \"<a target='_blank' href='x'>S</a>\" as S1\nS1 --> [*]",
     'stateDiagram-v2\n        state invalid syntax { Y }',
     'stateDiagram\nclassDef default fill:#f00\nA --> B',
     'stateDiagram\nA --> B; B --> C',
@@ -2463,6 +2477,10 @@ export const explicitCases: Record<string, string[]> = {
     '---\ntitle: Only front matter\n---\ninfo',
   ],
   flowchart: [
+    // An anchor with a `target` in a label: the hooks of `sanitizeText` reach it.
+    "graph TD\nA[\"<a href='https://x.y' target='_blank'>link</a>\"] --> B",
+    // An anchor with a `target` in a label: the hooks of `sanitizeText` reach it.
+    'graph TD\nA -->|<a target="_self" href="x">e</a>| B',
     // A subgraph without an id or a title: the reference reads the text of an undefined id.
     'graph TD\nsubgraph\nA\nend',
     // A node named like an edge id: the DB returns before it makes the vertex.
@@ -2711,6 +2729,8 @@ export const explicitCases: Record<string, string[]> = {
     '%%{init: {"gitGraph": {"mainBranchName": "trunk"}}}%%\ngitGraph\ncommit',
   ],
   er: [
+    // An anchor with a `target` in a title: the hooks of `sanitizeText` reach it.
+    "erDiagram\naccTitle: <a target='_blank'>t</a>\nA ||--o{ B : x",
     // Value states at the end of the input: the value is empty, so the end marker follows without `EOF`.
     'erDiagram\naccTitle:',
     'erDiagram\naccTitle: foo',
@@ -2759,6 +2779,8 @@ export const explicitCases: Record<string, string[]> = {
     ...erCharacterCases(),
   ],
   sequence: [
+    // An anchor with a `target` in a title: the hooks of `sanitizeText` reach it.
+    "sequenceDiagram\ntitle: <a target='_blank' href='x'>t</a>\nAlice->>Bob: hi",
     // Header texts: the last title wins; a blank title is kept; the body title beats the front matter.
     'sequenceDiagram\ntitle First\ntitle Second\nA->>B: x',
     'sequenceDiagram\ntitle   \nA->>B: x',
