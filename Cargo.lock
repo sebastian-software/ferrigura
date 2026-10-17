@@ -150,6 +150,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrigura-jsmath"
+version = "0.0.0"
+
+[[package]]
 name = "ferrigura-model"
 version = "0.0.0"
 dependencies = [
