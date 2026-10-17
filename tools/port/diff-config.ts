@@ -280,7 +280,6 @@ const NOT_PORTED_SECTIONS = new Set([
   'mindmap',
   'block',
   'packet',
-  'xyChart',
   'sankey',
   'quadrantChart',
   'requirement',

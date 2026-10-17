@@ -92,7 +92,7 @@ const suites: Record<string, string[]> = {
   mindmap: [],
   block: [],
   packet: [],
-  xychart: [],
+  xychart: ['xychart_parser_spec', 'xychart_db_spec'],
   sankey: [],
   quadrantChart: [],
   requirement: [],

@@ -13,5 +13,13 @@
     "valueFontSize": 12,
     "labelFontSize": 14,
     "valueFormat": ","
+  },
+  "xyChart": {
+    "xAxis": {
+      "$ref": "#/$defs/XYChartAxisConfig"
+    },
+    "yAxis": {
+      "$ref": "#/$defs/XYChartAxisConfig"
+    }
   }
 }
