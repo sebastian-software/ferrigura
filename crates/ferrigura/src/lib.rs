@@ -245,6 +245,7 @@ pub fn render_with(
         DiagramType::Treemap => treemap_render::render(&treemap_render::TreemapInput {
             diagram: &treemap::parse(text)?,
             config: typed_config,
+            settings: &treemap_render::TreemapSettings::of(&prepared.effective),
             themes,
             id,
         }),

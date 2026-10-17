@@ -62,6 +62,18 @@ pub fn js_round(value: f64) -> f64 {
     }
 }
 
+/// `Math.max(a, b)`: NaN when either argument is NaN, where Rust's `f64::max` takes the other.
+#[must_use]
+pub fn js_max(a: f64, b: f64) -> f64 {
+    if a.is_nan() || b.is_nan() {
+        f64::NAN
+    } else if a >= b {
+        a
+    } else {
+        b
+    }
+}
+
 /// A coordinate as `d3-path` writes it with three digits: `Math.round(v * 1000) / 1000`.
 #[must_use]
 pub fn d3_number(value: f64) -> String {

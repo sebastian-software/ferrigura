@@ -1,6 +1,6 @@
 # P2 treemap parser: plan
 
-Status: the parser, the DB and the model are ported, with the exporter, the specs and the differential (sections 7 and 8). Reference: the TypeScript reference of this branch (`packages/mermaid/src`, `packages/parser/src/language/treemap/`). The research and the probes behind it are in [NOTES.md](./NOTES.md); this page says what the port does and which quirks it keeps. The renderer stage (`renderer.ts`, the layout, the value formatting, the style sheet) is not in this page.
+Status: the parser, the DB and the model are ported, with the exporter, the specs and the differential (sections 7 and 8); the renderer is ported (section 9). Reference: the TypeScript reference of this branch (`packages/mermaid/src`, `packages/parser/src/language/treemap/`). The research and the probes behind it are in [NOTES.md](./NOTES.md); this page says what the port does and which quirks it keeps.
 
 ## 1. Sources
 
@@ -103,3 +103,21 @@ Each quirk is probed on the reference (`NOTES.md`, sections 2.5 and 2.8). The ex
 2. **Multiple roots** are kept as the reference parses them (quirk 13). The validator stays out of the port.
 3. **`$xyz` and the value formats** (`valueFormat`) are the renderer's (`NOTES.md` 6.5).
 4. **The three keys the renderer does not read** (`borderWidth`, `valueFontSize`, `labelFontSize`) are left to the configuration, as the reference defines them; the model holds no configuration, and `pnpm port:diff config` passes with them as they are.
+
+## 9. Renderer
+
+The renderer is `crates/ferrigura-render/src/treemap/` (`mod.rs` for `draw`, `config.rs` for the `treemap` section, `style.rs` for the colours, the class declarations and the inline style, `text.rs` for the measured text). The d3 pieces are in `crates/ferrigura-render/src/common/d3/`: `hierarchy.rs` (`sum`, `sort`, the traversals), `treemap.rs` (the paddings, `squarify` with the golden ratio, `dice`, `slice`, the rounding), `format.rs` (`format(specifier)` in the default locale, with `toFixed`, `toExponential` and `toPrecision` rounded on the exact binary value) and `ordinal.rs` (`scaleOrdinal`). The facade passes `TreemapSettings::of(&prepared.effective)`, since the typed configuration has no treemap section.
+
+Checked with `pnpm port:geometry treemap`: the 25 comparable fixtures and the 88 probes under `tools/port/geometry/probes/treemap/` are within tolerance; fixture 19 is excluded (emoji). `tests/treemap_render.rs` holds the rules the markup and the errors show, and `d3-format` was checked against the library on 6000 generated specifiers and values.
+
+What the port keeps on purpose, each probed:
+
+- A `valueFormat` with a `$` and an invalid specifier after it (`$xyz`) fails the whole render, but only when a value is written; an invalid specifier without a `$` falls back to `,` (`renderer.ts` 52-77).
+- The layout measures the names as they are, with the entity placeholders in them (`#quot;` is `ﬂ°quot¶ß`), and the SVG carries them decoded: the reference decodes the whole SVG string after the layout (`mermaidAPI.ts` 359). The font subset is built from the decoded characters.
+- A class's declarations go into the inline style with the reference's rules: a property given again moves to the place of the later declaration, and an `!important` one keeps its value (`font-size:20px !important` on a leaf sets its label to 20 px). A d3 `style(name, value)` replaces the value and clears the flag.
+- A label's and a value's font is the one its inline style gives, so a class's `font-weight` and `font-style` change the measured text and the embedded face.
+- The text boxes of the viewBox follow Chromium's baselines: `middle` is half the x-height and `hanging` is 0.8 of the rounded ascent, both on Chromium's 1/64 px grid (`text.rs`).
+- A NaN or infinite value (`"A": .` or a 400-digit number) gives NaN coordinates, which the browser reads as zero in the box, and a NaN room cuts no label (`Math.max` keeps NaN, and `length > NaN` is false).
+- An empty treemap draws its root as a leaf.
+
+Not reproduced, or not probed: the `.treemapNode.section` and `.treemapNode.leaf` rules of `styles.ts` (no element carries those classes, so the sheet leaves them out); a `font-family` in a class that is not one of the families the harness maps (the reference measures it in that font, and ferrigura in the bundled face); names with characters outside the bundled faces (fixture 19).
