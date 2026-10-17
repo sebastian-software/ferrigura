@@ -12,9 +12,37 @@ const NEARLY_ZERO: f32 = 1.0 / 4096.0;
 /// `SK_ScalarSinCosNearlyZero`: the sine and cosine below it snap to zero.
 const SIN_COS_NEARLY_ZERO: f32 = 1.0 / 65536.0;
 
-/// `SkScalarSinSnapToZero` (`SkScalar.h` 112-117): `sinf`, with a value nearly zero taken as zero.
-fn sin_snap(radians: f32) -> f32 {
-    let v = radians.sin();
+/// The sine and the cosine of one angle, as the corpus (Chromium's boxes on macOS) has them. `SkMatrix::setRotate`
+/// and the arc loop take `SkScalarSinSnapToZero` and `SkScalarCosSnapToZero` of the same radians. On macOS those
+/// two come from one `__sincosf_stret` call, and the corpus matches bit for bit only with that call: its sine
+/// and cosine can differ in the last bit from separate `sinf` and `cosf` calls. Elsewhere the two are separate.
+#[cfg(target_os = "macos")]
+fn sin_cos(radians: f32) -> (f32, f32) {
+    #[repr(C)]
+    struct SinCos {
+        sin: f32,
+        cos: f32,
+    }
+    unsafe extern "C" {
+        fn __sincosf_stret(x: f32) -> SinCos;
+    }
+    let r = unsafe { __sincosf_stret(radians) };
+    (r.sin, r.cos)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn sin_cos(radians: f32) -> (f32, f32) {
+    (radians.sin(), radians.cos())
+}
+
+/// `SkScalarSinSnapToZero` and `SkScalarCosSnapToZero` (`SkScalar.h` 114-122): a sine or cosine of
+/// magnitude at most `SK_ScalarSinCosNearlyZero` is zero.
+fn sin_cos_snap(radians: f32) -> (f32, f32) {
+    let (sin, cos) = sin_cos(radians);
+    (snap(sin), snap(cos))
+}
+
+fn snap(v: f32) -> f32 {
     if v.abs() <= SIN_COS_NEARLY_ZERO {
         0.0
     } else {
@@ -22,14 +50,10 @@ fn sin_snap(radians: f32) -> f32 {
     }
 }
 
-/// `SkScalarCosSnapToZero`: `cosf`, with a value nearly zero taken as zero.
-fn cos_snap(radians: f32) -> f32 {
-    let v = radians.cos();
-    if v.abs() <= SIN_COS_NEARLY_ZERO {
-        0.0
-    } else {
-        v
-    }
+/// `SkScalarRoundToScalar` (`sk_float_round`, `SkFloatingPoint.h` 38 and 126): the rounding is in double,
+/// `(float)std::floor((double)x + 0.5)`.
+fn round_scalar(x: f32) -> f32 {
+    (f64::from(x) + 0.5).floor() as f32
 }
 
 /// `muladdmul` (`SkMatrix.cpp` 603-605): `a * b + c * d` in double, rounded to float once.
@@ -67,7 +91,8 @@ impl Matrix {
     /// `setRotate(degrees)` (`SkMatrix.cpp` 461-464): the radians are `degrees * (π / 180)`.
     fn set_rotate(&mut self, degrees: f32) {
         let radians = degrees * (PI / 180.0);
-        self.set_sin_cos(sin_snap(radians), cos_snap(radians));
+        let (sin, cos) = sin_cos_snap(radians);
+        self.set_sin_cos(sin, cos);
     }
 
     /// `preScale(sx, sy)` (`SkMatrix.cpp` 329-345): the columns are scaled, the translation is not.
@@ -262,8 +287,7 @@ pub(crate) fn arc_to(
     let mut verbs = Vec::with_capacity(segments as usize);
     for _ in 0..segments {
         let end_theta = start_theta + theta_width;
-        let sin_end = sin_snap(end_theta);
-        let cos_end = cos_snap(end_theta);
+        let (sin_end, cos_end) = sin_cos_snap(end_theta);
         let mut on_circle = Point {
             x: cos_end,
             y: sin_end,
@@ -277,8 +301,8 @@ pub(crate) fn arc_to(
         let mut mapped = [transform.map(control), transform.map(on_circle)];
         if expect_integers {
             for point in &mut mapped {
-                point.x = (point.x + 0.5).floor();
-                point.y = (point.y + 0.5).floor();
+                point.x = round_scalar(point.x);
+                point.y = round_scalar(point.y);
             }
         }
         verbs.push(conic_verb(mapped[0], mapped[1], w));

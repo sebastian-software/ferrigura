@@ -2,10 +2,11 @@
 //! `tools/port/path-bounds.ts`. The boxes are floats in the browser, so a box that differs is a difference
 //! in the arithmetic, not in rounding.
 //!
-//! The port matches every box of the corpus except the ones that `tests/corpus/known-differences.json`
-//! lists: arc paths whose boxes differ from Chromium's by one or two float units, where the arc's
-//! parameters make Skia's scale factor (`sqrt(1/d - 1/4)`) sensitive to the last bit. The list is checked
-//! exactly, so a new difference, or a difference that goes away, fails the test.
+//! The port matches every box of the corpus bit for bit. The corpus is Chromium's on macOS, so the check
+//! runs there: the sine and cosine of a rotation are the macOS `__sincosf_stret` (`skia.rs`), and another
+//! libm can differ from it by an ulp, which the arcs whose scale factor (`sqrt(1/d - 1/4)`) is sensitive
+//! to the last bit amplify. `tests/corpus/known-differences.json` lists the boxes that still differ (none),
+//! and it is checked exactly, so a new difference, or a difference that goes away, fails the test.
 
 use std::collections::BTreeSet;
 use std::path::PathBuf;
@@ -25,7 +26,11 @@ fn cases() -> Vec<Value> {
 }
 
 #[test]
-fn every_box_matches_chromium_bit_for_bit_but_the_known_differences() {
+#[cfg_attr(
+    not(target_os = "macos"),
+    ignore = "the corpus is Chromium's on macOS; another libm differs from it by an ulp"
+)]
+fn every_box_matches_chromium_bit_for_bit() {
     let cases = cases();
     assert!(cases.len() >= 3000, "the corpus is the floor of the cases");
     let mut differing = BTreeSet::new();
