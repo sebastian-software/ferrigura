@@ -114,7 +114,9 @@ pub(crate) fn parse_number(s: &[u8], pos: &mut usize) -> Option<f32> {
             return None;
         }
         if exponent != 0.0 {
-            number *= 10.0f64.powf(f64::from(exponent)) as f32;
+            // `pow(10, exponent)` of an integer exponent up to 38: V8's `pow` (`ferrigura_jsmath`),
+            // the same on every host, where the system's `pow` is the libm's.
+            number *= ferrigura_jsmath::pow(10.0, f64::from(exponent)) as f32;
         }
         p += count;
     }

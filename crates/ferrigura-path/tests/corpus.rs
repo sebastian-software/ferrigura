@@ -2,11 +2,12 @@
 //! `tools/port/path-bounds.ts`. The boxes are floats in the browser, so a box that differs is a difference
 //! in the arithmetic, not in rounding.
 //!
-//! The corpus is Chromium's on macOS. The port matches every box of it bit for bit but two: the sine and
-//! cosine of a rotation are correctly rounded in the port, the same on every host, and Chromium's
-//! `__sincosf_stret` is not for a few inputs (`skia.rs`, `sin_cos`), which the arcs whose scale factor
-//! (`sqrt(1/d - 1/4)`) is sensitive to the last bit amplify. `tests/corpus/known-differences.json` lists
-//! those two, and it is checked exactly, so a new difference, or a difference that goes away, fails the
+//! The corpus is Chromium's on macOS. The port matches 2930 of its 3011 boxes bit for bit, on every host:
+//! the float `sin`, `cos`, `tan` and `atan2` of the arcs are correctly rounded in the port (`skia.rs`),
+//! where Chromium takes the macOS libm's, which are not for a few inputs; the arcs whose scale factor
+//! (`sqrt(1/d - 1/4)`) is sensitive to the last bit amplify that. The 81 boxes that differ for it are
+//! within 0.05 px but one (0.094 px on a path 293,000 px across). `tests/corpus/known-differences.json`
+//! lists them, and it is checked exactly, so a new difference, or a difference that goes away, fails the
 //! test.
 
 use std::collections::BTreeSet;

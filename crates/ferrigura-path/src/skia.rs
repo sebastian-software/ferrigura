@@ -18,15 +18,30 @@ const SIN_COS_NEARLY_ZERO: f32 = 1.0 / 65536.0;
 /// million floats in [-8, 8] it is off the nearest float in 0.03 percent of them (measured), and its
 /// algorithm is not published, so the port takes the correctly rounded values, the same on every host
 /// (`ferrigura_jsmath`'s correctly rounded `sin` and `cos` in double, rounded to float; no input of that
-/// measurement lies near a midpoint, so the double rounding does not change a result). Two boxes of the
-/// corpus differ for it (`tests/corpus/known-differences.json`). The separate `sinf` and `cosf` of the
-/// macOS libm differ from that call more often: with them, 85 boxes of the corpus differed.
+/// measurement lies near a midpoint, so the double rounding does not change a result). With
+/// [`atan2f`], [`tanf`] and [`cosf`] below, 81 boxes of the corpus differ from Chromium's
+/// (`tests/corpus/known-differences.json`), where glibc's float functions would give 344.
 fn sin_cos(radians: f32) -> (f32, f32) {
     let x = f64::from(radians);
     (
         ferrigura_jsmath::sin(x) as f32,
         ferrigura_jsmath::cos(x) as f32,
     )
+}
+
+/// `atan2f`, `tanf` and `cosf` (`SkScalarATan2`, `SkScalarTan`, `SkScalarCos`), correctly rounded as
+/// `sin_cos` is, so the result is the same on every host: the system's float functions differ
+/// between libms (glibc and macOS's give different boxes for hundreds of the corpus's arcs).
+fn atan2f(y: f32, x: f32) -> f32 {
+    ferrigura_jsmath::atan2(f64::from(y), f64::from(x)) as f32
+}
+
+fn tanf(x: f32) -> f32 {
+    ferrigura_jsmath::tan(f64::from(x)) as f32
+}
+
+fn cosf(x: f32) -> f32 {
+    ferrigura_jsmath::cos(f64::from(x)) as f32
 }
 
 /// `SkScalarSinSnapToZero` and `SkScalarCosSnapToZero` (`SkScalar.h` 114-122): a sine or cosine of
@@ -245,8 +260,8 @@ pub(crate) fn arc_to(
         point.y -= centre.y;
     }
 
-    let theta1 = unit[0].y.atan2(unit[0].x);
-    let theta2 = unit[1].y.atan2(unit[1].x);
+    let theta1 = atan2f(unit[0].y, unit[0].x);
+    let theta2 = atan2f(unit[1].y, unit[1].x);
     let mut theta_arc = theta2 - theta1;
     if theta_arc < 0.0 && sweep {
         theta_arc += PI * 2.0;
@@ -264,12 +279,12 @@ pub(crate) fn arc_to(
     // At most a third of a turn per conic, so a quarter circle is at most two.
     let segments = (theta_arc / (2.0 * PI / 3.0)).abs().ceil() as i32;
     let theta_width = theta_arc / segments as f32;
-    let t = (0.5 * theta_width).tan();
+    let t = tanf(0.5 * theta_width);
     if !t.is_finite() {
         return Vec::new();
     }
     let mut start_theta = theta1;
-    let w = (0.5 + theta_width.cos() * 0.5).sqrt();
+    let w = (0.5 + cosf(theta_width) * 0.5).sqrt();
     // The conics of an arc on whole numbers are placed on whole numbers too (the rounding of the
     // arc's own arithmetic would move them off the marks).
     let expect_integers = (PI / 2.0 - theta_width.abs()).abs() <= NEARLY_ZERO
