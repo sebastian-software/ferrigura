@@ -577,7 +577,7 @@ function hex(bits: bigint): string {
   return `0x${bits.toString(16).padStart(16, '0')}`;
 }
 
-async function compare(dir: string): Promise<boolean> {
+async function compare(dir: string, extension: 'rs' | 'node'): Promise<boolean> {
   const segmentsFile = JSON.parse(await readFile(join(dir, 'segments.json'), 'utf8')) as {
     runtime: string;
     total: number;
@@ -588,7 +588,7 @@ async function compare(dir: string): Promise<boolean> {
   for (const name of [...UNARY, ...BINARY] as FunctionName[]) {
     const inputs = await readWords(join(dir, `${name}.in`));
     const expected = await readWords(join(dir, `${name}.v8`));
-    const actual = await readWords(join(dir, `${name}.rs`));
+    const actual = await readWords(join(dir, `${name}.${extension}`));
     const binary = isBinary(name);
     const count = expected.length;
     if (actual.length !== count) {
@@ -672,7 +672,7 @@ async function main(): Promise<void> {
     return;
   }
   if (command === 'compare' && args[1]) {
-    const clean = await compare(args[1]);
+    const clean = await compare(args[1], args.includes('--node') ? 'node' : 'rs');
     console.log(clean ? '\nall functions agree bit for bit' : '\nsome results differ');
     process.exitCode = clean ? 0 : 1;
     return;
@@ -682,7 +682,7 @@ async function main(): Promise<void> {
     return;
   }
   console.error(
-    'usage: jsmath-probe.ts generate <dir> [--runtime node|chromium] [--count N] | compare <dir> | sample <dir> <out-dir> [--per-segment K]'
+    'usage: jsmath-probe.ts generate <dir> [--runtime node|chromium] [--count N] | compare <dir> [--node] | sample <dir> <out-dir> [--per-segment K]'
   );
   process.exitCode = 2;
 }
