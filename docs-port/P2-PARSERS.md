@@ -21,6 +21,7 @@ Each parser task ports one P2 diagram type's parser and DB, in its own worktree 
 - A rejection on both sides counts as agreement; the error text is ferrigura's own, with the position (decision 0002).
 - Texts are what the DB holds: sanitised where the DB sanitises, with the entity placeholders where the DB keeps them.
 - Ids that the reference draws at random are generated deterministically in the reference's format, and the differential replaces them by placeholders in order on both sides (as gitGraph does, `normalise_auto_ids` in `canonical.rs`).
+- Non-finite numbers in a model are the sentinel strings the xychart and kanban models write (`docs-port/canonical-model.md`).
 - A named exception in `tools/port/exceptions.ts` only where the reference's output is garbage (NaN, a crash, a random value); every other difference is fixed.
 
 ## Gates before the report
@@ -29,7 +30,7 @@ Each parser task ports one P2 diagram type's parser and DB, in its own worktree 
 
 ## Rules of the branch
 
-Work only in the worktree you were given; commit there with the trailer `Co-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>`; do not merge, rebase, push or use `git stash`. Own files: your type's model, parser, tests, exporter and docs. A change to a shared file (`lib.rs` of a crate, `preprocess.rs`, `tools/port/*.ts` beyond your type's entries) is allowed when the task needs it; keep it small and name it in the report. If something blocks you, stop and say so.
+Work only in the worktree you were given; commit there with the trailer `Co-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>`, with the repository's hooks enabled (never `core.hooksPath=/dev/null` or `--no-verify`; if the hook fails, fix what it reports); do not merge, rebase, push or use `git stash`. Own files: your type's model, parser, tests, exporter and docs. A change to a shared file (`lib.rs` of a crate, `preprocess.rs`, `tools/port/*.ts` beyond your type's entries) is allowed when the task needs it; keep it small and name it in the report. If something blocks you, stop and say so.
 
 ## The report
 
