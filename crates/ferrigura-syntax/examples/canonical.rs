@@ -158,6 +158,60 @@ fn normalise_auto_ids(mut model: Value) -> Value {
     model
 }
 
+/// The placeholders of the generated block ids, numbered in the order the tree gives them.
+#[derive(Default)]
+struct BlockNames(std::collections::HashMap<String, String>);
+
+impl BlockNames {
+    /// The placeholder of a base id: `$genK` for the k-th base first seen.
+    fn placeholder(&mut self, base: &str) -> String {
+        let next = self.0.len() + 1;
+        self.0
+            .entry(base.to_owned())
+            .or_insert_with(|| format!("$gen{next}"))
+            .clone()
+    }
+}
+
+/// The generated ids of a block diagram, as `normaliseGenerated` in `tools/port/export-block.ts`
+/// replaces them: a generated id `id-<random>-<n>` becomes the placeholder of its base, with the
+/// cell suffix `-<j>` of a space kept; the label of a space cell is its base and takes the same
+/// placeholder. The blocks are visited in tree order, id before label before children.
+fn normalise_block_ids(mut model: Value) -> Value {
+    let generated = regex::Regex::new(r"^(id-[0-9a-z]*-[0-9]+)(-[0-9]+)?$").expect("a pattern");
+    let base = regex::Regex::new(r"^id-[0-9a-z]*-[0-9]+$").expect("a pattern");
+    let mut names = BlockNames::default();
+    if let Some(blocks) = model.get_mut("blocks").and_then(Value::as_array_mut) {
+        visit_blocks(blocks, &mut names, &generated, &base);
+    }
+    model
+}
+
+fn visit_blocks(
+    blocks: &mut [Value],
+    names: &mut BlockNames,
+    generated: &regex::Regex,
+    base: &regex::Regex,
+) {
+    for block in blocks {
+        if let Some(caps) = block["id"].as_str().and_then(|id| generated.captures(id)) {
+            let name = names.placeholder(&caps[1]);
+            let suffix = caps.get(2).map_or("", |m| m.as_str());
+            block["id"] = json!(format!("{name}{suffix}"));
+        }
+        let space_label = (block["type"] == json!("space"))
+            .then(|| block["label"].as_str().filter(|label| base.is_match(label)))
+            .flatten()
+            .map(str::to_owned);
+        if let Some(label) = space_label {
+            block["label"] = json!(names.placeholder(&label));
+        }
+        if let Some(children) = block.get_mut("children").and_then(Value::as_array_mut) {
+            visit_blocks(children, names, generated, base);
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
@@ -218,7 +272,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => Outcome::Rejected(error),
             },
             "block" => match block::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Ok(model) => Outcome::Model(normalise_block_ids(
+                    serde_json::to_value(model).unwrap_or_default(),
+                )),
                 Err(error) => Outcome::Rejected(error),
             },
             "packet" => match packet::parse(text) {
