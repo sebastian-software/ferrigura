@@ -399,6 +399,21 @@ function mappedFaces(family: string): string {
   ).join('\n');
 }
 
+/** The bundled mono face, which code takes in ferrigura (decision 0005). */
+const MONO_FAMILY = 'Atkinson Hyperlegible Mono';
+
+const MONO_FACES: string = [
+  { file: 'AtkinsonHyperlegibleMono-Regular.ttf', weight: 400, style: 'normal' },
+  { file: 'AtkinsonHyperlegibleMono-Bold.ttf', weight: 700, style: 'normal' },
+  { file: 'AtkinsonHyperlegibleMono-Italic.ttf', weight: 400, style: 'italic' },
+  { file: 'AtkinsonHyperlegibleMono-BoldItalic.ttf', weight: 700, style: 'italic' },
+]
+  .map(
+    (face) =>
+      `@font-face { font-family: "${MONO_FAMILY}"; src: url(/fonts/${face.file}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; }`
+  )
+  .join('\n');
+
 export function pageHtml(measure: string): string {
   return `<!doctype html>
 <html><head><meta charset="utf-8">
@@ -408,6 +423,11 @@ export function pageHtml(measure: string): string {
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Italic.ttf) format("truetype"); font-weight: 400; font-style: italic; }
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-BoldItalic.ttf) format("truetype"); font-weight: 700; font-style: italic; }
 ${MAPPED_FAMILIES.map(mappedFaces).join('\n')}
+${MONO_FACES}
+/* The eventmodeling box text's code: the reference's code element takes the UA's monospace, which is
+   the machine's own face. ferrigura draws code in the bundled mono face (decision 0005), so the page
+   pins the reference's code of that diagram to it (eventmodeling db.ts 349-378). */
+[aria-roledescription="eventmodeling"] foreignObject code { font-family: "${MONO_FAMILY}"; }
 /* No body margin: a block the reference appends to the body (its diagram container) is then the
    1200 px viewport wide, which is the width the gantt renderer takes from the container when a
    diagram sets no useWidth (ganttRenderer.js:98). ferrigura uses the same 1200 px. */
@@ -438,6 +458,8 @@ await Promise.all([
   'italic 400 16px "Lexica Ultralegible"',
   'bold 16px "Lexica Ultralegible"',
   'italic bold 16px "Lexica Ultralegible"',
+  '400 16px "${MONO_FAMILY}"',
+  'bold 16px "${MONO_FAMILY}"',
   ...${JSON.stringify(MAPPED_FAMILIES)}.flatMap((family) => [
     '400 16px "' + family + '"',
     'italic 400 16px "' + family + '"',
