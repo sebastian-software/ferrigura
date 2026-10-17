@@ -94,7 +94,7 @@ const suites: Record<string, string[]> = {
   packet: ['packet_spec', 'packet_grammar', 'packet_db_spec', 'render:packet_render_spec'],
   xychart: ['xychart_parser_spec', 'xychart_db_spec'],
   sankey: ['sankey_spec', 'sankey_grammar'],
-  quadrantChart: [],
+  quadrantChart: ['quadrant_chart_parser_spec', 'quadrant_chart_db_spec'],
   requirement: ['requirement_spec', 'requirement_db_spec'],
   c4: [
     'c4_diagram_spec',

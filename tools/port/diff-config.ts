@@ -271,7 +271,7 @@ const UNPORTED_SECTIONS = [
  * The sections of the P2 types, whose parsers are not ported yet. Their inputs are run in their own
  * scope, but the section is not compared, not even for those inputs, until the type is ported.
  */
-const NOT_PORTED_SECTIONS = new Set(['quadrantChart']);
+const NOT_PORTED_SECTIONS = new Set<string>();
 
 /**
  * The output with the sections that are not compared removed: the sections of diagram types that
