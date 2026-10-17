@@ -1,10 +1,10 @@
 /**
  * The reference of `layout: tidy-tree`: the package `@mermaid-js/layout-tidy-tree` 1.0.1, which the
- * fork removed in `2d85261d6`. Its four sources are read from the parent commit (`git show`), and
- * bundled with esbuild into one ESM file under `target/geometry/tidy-tree/`, with the library
- * `non-layered-tidy-tree-layout` 2.0.2 from `tools/port/vendor/` (MIT, Copyright (c) 2019 Michael
- * Wong). Nothing of the package is vendored; the library is, so that no dependency enters the lock
- * file.
+ * fork removed in `2d85261d6`. Its sources are vendored under
+ * `tools/port/vendor/mermaid-layout-tidy-tree/` (copies of the parent commit's files, MIT, Mermaid's
+ * licence), so a shallow clone can build it, and bundled with esbuild into one ESM file under
+ * `target/geometry/tidy-tree/`, with the library `non-layered-tidy-tree-layout` 2.0.2 from
+ * `tools/port/vendor/` (MIT, Copyright (c) 2019 Michael Wong); no dependency enters the lock file.
  *
  * The bundle exports the package's layouts, which the page registers with
  * `mermaid.registerLayoutLoaders`, and sets `globalThis.__tidyTree` to `{ executeTidyTreeLayout }`,
@@ -15,7 +15,7 @@
  *
  * The bundle is built once per process, when a fixture that asks for the layout is rendered.
  */
-import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,8 +31,7 @@ export const TIDY_TREE_BUNDLE = join(TIDY_TREE_DIR, 'tidy-tree.mjs');
 export const TIDY_TREE_URL = '/tidy-tree/tidy-tree.mjs';
 
 /** The removed package's last commit: its parent is the one that deleted the sources. */
-const REMOVED_IN = '2d85261d6';
-const PACKAGE_SOURCES = 'packages/mermaid-layout-tidy-tree/src';
+const PACKAGE_SOURCES = join(root, 'tools/port/vendor/mermaid-layout-tidy-tree/src');
 const SOURCE_FILES = ['layout.ts', 'render.ts', 'layouts.ts', 'types.ts'];
 
 /** The vendored library: its `index.js` exports `layout`, `Tree`, `BoundingBox` and `Layout`. */
@@ -61,13 +60,9 @@ import { executeTidyTreeLayout } from './src/layout.ts';
 export default tidyTreeLayouts;
 `;
 
-/** The package's source at the commit before the removal. */
+/** The package's source as it was at the commit before its removal (`2d85261d6^`). */
 function sourceAtRemoval(file: string): string {
-  return execFileSync('git', ['show', `${REMOVED_IN}^:${PACKAGE_SOURCES}/${file}`], {
-    cwd: root,
-    encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
-  });
+  return readFileSync(join(PACKAGE_SOURCES, file), 'utf8');
 }
 
 /** `render.ts` with the capture hook after its layout call, checked to match exactly once. */
