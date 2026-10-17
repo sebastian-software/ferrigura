@@ -88,13 +88,15 @@ pub fn render(input: &EventModelingInput<'_>) -> Result<String, RenderError> {
     }
     for lines in &boxed_labels {
         for line in lines {
-            runs.push(Run {
-                text: &line.text,
-                face: match line.kind {
-                    LineKind::Name => bold_face(),
-                    LineKind::Code => label::mono(),
-                },
-            });
+            for run in &line.runs {
+                runs.push(Run {
+                    text: &run.text,
+                    face: match line.kind {
+                        LineKind::Name => bold_face(),
+                        LineKind::Code => label::code_face(run.style),
+                    },
+                });
+            }
         }
     }
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
@@ -246,19 +248,30 @@ fn box_group(
     let mut text = Element::new("text")
         .with("class", "label")
         .with("fill", "#000000");
+    // The first run of a line is placed at the line's start; the others follow it, each in its own
+    // weight and slant (`tspan`s without a position continue the text).
     for line in lines {
-        let mut tspan = Element::new("tspan")
-            .with("x", number(line.x))
-            .with("y", number(line.y));
-        match line.kind {
-            LineKind::Name => tspan.set("font-weight", "bold"),
-            LineKind::Code => {
-                if let Some(family) = mono_family {
-                    tspan.set("font-family", family);
+        for (index, run) in line.runs.iter().enumerate() {
+            let mut tspan = Element::new("tspan");
+            if index == 0 {
+                tspan = tspan.with("x", number(line.x)).with("y", number(line.y));
+            }
+            match line.kind {
+                LineKind::Name => tspan.set("font-weight", "bold"),
+                LineKind::Code => {
+                    if let Some(family) = mono_family {
+                        tspan.set("font-family", family);
+                    }
+                    if run.style.bold {
+                        tspan.set("font-weight", "bold");
+                    }
+                    if run.style.italic {
+                        tspan.set("font-style", "italic");
+                    }
                 }
             }
+            text = text.child(tspan.text(run.text.as_str()));
         }
-        text = text.child(tspan.text(line.text.as_str()));
     }
     Element::new("g")
         .with("class", "em-box")

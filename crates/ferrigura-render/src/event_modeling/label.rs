@@ -7,8 +7,10 @@
 //! - the name lines are bold, 14 px, centred in the cell, one line for each `<br/>` of the name;
 //! - the second `<br/>` leaves an empty line, the height of the cell's own font;
 //! - the `code` block is in the mono face, left aligned at the cell's left edge, at most 430 px wide.
-//!   It breaks only where its text has a break opportunity: the blanks of the data's newlines
-//!   (`&nbsp;` does not break), and the `<br/>` of the wrapped data;
+//!   Its runs are drawn in the weight and slant of their tags: `b` and `strong` are bold, `i` and
+//!   `em` italic, and nested tags add up. It breaks only where its text has a break opportunity: the
+//!   blanks of the data's newlines (`&nbsp;` does not break), and the `<br/>` of the wrapped data.
+//!   A line is measured in the faces its runs are drawn in;
 //! - the lines are one block, centred vertically in the cell when it is taller than they are.
 //!
 //! The line boxes are the font's text boxes (`ferrigura_text::text_box`), which is what the browser
@@ -16,7 +18,9 @@
 //! browser decodes them, so the drawn text is the text the reader sees; the measured text keeps them.
 
 use ferrigura_syntax::decode_entities;
-use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, face, text_box};
+use ferrigura_text::{
+    Face, FontFamily, FontStyle, FontWeight, TextBox, face, layout_width, measure, text_box,
+};
 
 use super::layout::BoxText;
 use crate::RenderError;
@@ -26,11 +30,39 @@ use crate::journey::text::{bold, regular, split_br};
 /// The widest a code block is: `max-width` of the `code` element (`db.ts` 376-378).
 const CODE_MAX_WIDTH: f64 = 430.0;
 
-/// The mono face: the face of the `code` element, which the reference takes from the UA's
-/// `monospace` and the harness pins to this face (`tools/port/geometry/common.ts`).
+/// The weight and slant of a run of a box's text. The data is HTML: `b` and `strong` make a run
+/// bold, `i` and `em` italic, and nested tags add up (`db.ts` 349-378 builds the data as HTML, and
+/// the reference's browser draws its tags). A tag of any other name draws nothing of its own.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Style {
+    /// Bold: `b` or `strong`.
+    pub bold: bool,
+    /// Italic: `i` or `em`.
+    pub italic: bool,
+}
+
+/// The mono face of a style: the `code` element's family, in the weight and slant of the run.
+#[must_use]
+pub fn code_face(style: Style) -> &'static Face {
+    face(
+        FontFamily::Mono,
+        if style.bold {
+            FontWeight::Bold
+        } else {
+            FontWeight::Normal
+        },
+        if style.italic {
+            FontStyle::Italic
+        } else {
+            FontStyle::Normal
+        },
+    )
+}
+
+/// The mono face of the code block itself, which is the strut of its lines.
 #[must_use]
 pub fn mono() -> &'static Face {
-    face(FontFamily::Mono, FontWeight::Normal, FontStyle::Normal)
+    code_face(Style::default())
 }
 
 /// The cell of a box's text: the `foreignObject` of the reference (`renderer.ts` 30-33).
@@ -46,7 +78,8 @@ pub struct Cell {
     pub height: f64,
 }
 
-/// Which face a line of the label is set in.
+/// Which face a line of the label is set in: the bold name in the sans face, or the code in the mono
+/// face, in the weight and slant of each run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LineKind {
     /// A line of the name: bold.
@@ -55,13 +88,22 @@ pub enum LineKind {
     Code,
 }
 
-/// One line of a box's text, as it is drawn: its text, and the position of its first glyph.
+/// A run of a line: its text as the reader sees it (a run of blanks is one blank), and its style.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LineRun {
+    /// The text of the run.
+    pub text: String,
+    /// The style the run is drawn in.
+    pub style: Style,
+}
+
+/// One line of a box's text, as it is drawn: its face, its runs, and the position of its first glyph.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LabelLine {
     /// The face of the line.
     pub kind: LineKind,
-    /// The text the reader sees, with the non-breaking spaces of the data.
-    pub text: String,
+    /// The runs of the line, in order.
+    pub runs: Vec<LineRun>,
     /// The start of the line.
     pub x: f64,
     /// The baseline of the line.
@@ -69,19 +111,23 @@ pub struct LabelLine {
 }
 
 /// A line of the browser's layout, before it has its place: its kind (`None` for an empty line,
-/// which has no glyphs), its text, and the distances of its baseline from its top and its height.
+/// which has no glyphs), its runs, and the distances of its baseline from its top and its height.
 struct Entry {
     kind: Option<LineKind>,
-    text: String,
+    runs: Vec<LineRun>,
     ascent: f64,
     height: f64,
 }
 
-/// The browser's rule for a line with runs of two faces: the line box is as tall as the taller
-/// ascent plus the taller descent of its runs, and the baseline is at the taller ascent.
-fn merged(first: ferrigura_text::TextBox, second: ferrigura_text::TextBox) -> (f64, f64) {
-    let ascent = first.ascent.max(second.ascent);
-    let descent = first.descent.max(second.descent);
+/// A character of a box's text with the style it is drawn in.
+type Glyph = (char, Style);
+
+/// The ascent and the height of a line that holds the given boxes: the tallest ascent and the deepest
+/// descent of its strut and its runs, as the browser sets the baseline of a line with runs in several
+/// faces.
+fn line_box(boxes: &[TextBox]) -> (f64, f64) {
+    let ascent = boxes.iter().map(|text| text.ascent).fold(0.0, f64::max);
+    let descent = boxes.iter().map(|text| text.descent).fold(0.0, f64::max);
     (ascent, ascent + descent)
 }
 
@@ -92,6 +138,187 @@ fn merged(first: ferrigura_text::TextBox, second: ferrigura_text::TextBox) -> (f
 pub fn visible(html: &str) -> String {
     // The tags are read before the entities are decoded, so an escaped `&lt;b&gt;` stays text.
     html_entities(&decode_entities(&strip_tags(html)))
+}
+
+/// The characters of a piece of the reference's HTML with the style of each. The weight and slant
+/// of a tag apply to the text up to its end tag, a `<` that starts no tag stays, and the entities are
+/// decoded in each run of text (`visible`).
+#[must_use]
+pub fn styled(html: &str) -> Vec<Glyph> {
+    let mut out = Vec::new();
+    let mut bold = 0_usize;
+    let mut italic = 0_usize;
+    let mut rest = html;
+    loop {
+        let style = Style {
+            bold: bold > 0,
+            italic: italic > 0,
+        };
+        let Some(start) = rest.find('<') else {
+            push_text(rest, style, &mut out);
+            return out;
+        };
+        let after = &rest[start + 1..];
+        let is_tag = after
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_alphabetic() || c == '/');
+        match after.find('>').filter(|_| is_tag) {
+            Some(end) => {
+                push_text(&rest[..start], style, &mut out);
+                apply_tag(&after[..end], &mut bold, &mut italic);
+                rest = &after[end + 1..];
+            }
+            None => {
+                push_text(&rest[..=start], style, &mut out);
+                rest = after;
+            }
+        }
+    }
+}
+
+/// The text of a run, decoded, with its style.
+fn push_text(text: &str, style: Style, out: &mut Vec<Glyph>) {
+    out.extend(
+        html_entities(&decode_entities(text))
+            .chars()
+            .map(|character| (character, style)),
+    );
+}
+
+/// Counts a tag that changes the weight or the slant: an opening tag adds one, its end tag takes one
+/// away. The other tags are not counted.
+fn apply_tag(tag: &str, bold: &mut usize, italic: &mut usize) {
+    let closing = tag.starts_with('/');
+    let name = tag
+        .trim_start_matches('/')
+        .chars()
+        .take_while(|c| c.is_ascii_alphanumeric())
+        .collect::<String>()
+        .to_ascii_lowercase();
+    let counter = match name.as_str() {
+        "b" | "strong" => bold,
+        "i" | "em" => italic,
+        _ => return,
+    };
+    if closing {
+        *counter = counter.saturating_sub(1);
+    } else {
+        *counter += 1;
+    }
+}
+
+/// Whether a character is white space that a browser collapses in a line of text: the blank, the tab,
+/// the line feed, the return and the form feed (CSS `white-space: normal`). A non-breaking space is
+/// not one of them.
+fn is_collapsible(character: char) -> bool {
+    matches!(character, ' ' | '\t' | '\n' | '\r' | '\u{c}')
+}
+
+/// The runs of a line as the browser draws them: a run of collapsible white space is one blank, in
+/// the style of its first character, and the blanks at the ends are not drawn. Characters of one
+/// style next to each other form one run.
+#[must_use]
+pub fn grouped(glyphs: &[Glyph]) -> Vec<LineRun> {
+    let mut runs: Vec<LineRun> = Vec::new();
+    let mut started = false;
+    let mut blank: Option<Style> = None;
+    for &(character, style) in glyphs {
+        if is_collapsible(character) {
+            blank.get_or_insert(style);
+            continue;
+        }
+        if let Some(blank_style) = blank.take().filter(|_| started) {
+            push_glyph(&mut runs, ' ', blank_style);
+        }
+        started = true;
+        push_glyph(&mut runs, character, style);
+    }
+    runs
+}
+
+fn push_glyph(runs: &mut Vec<LineRun>, character: char, style: Style) {
+    match runs.last_mut() {
+        Some(run) if run.style == style => run.text.push(character),
+        _ => runs.push(LineRun {
+            text: character.to_string(),
+            style,
+        }),
+    }
+}
+
+/// The width of a line of glyphs as the browser lays its runs out: each run is measured in the mono
+/// face of its style, its advance is snapped to the layout unit, and the runs are summed.
+///
+/// # Errors
+///
+/// Returns an error if the mono faces cannot be read.
+pub fn line_width(glyphs: &[Glyph], size: f64) -> Result<f64, RenderError> {
+    let mut total = 0.0;
+    for run in grouped(glyphs) {
+        total += layout_width(measure(code_face(run.style), &run.text, size)?);
+    }
+    Ok(total)
+}
+
+/// The pieces of a code line the browser can break between: a piece ends after a run of collapsible
+/// white space, and after a hyphen that is followed by a letter (UAX 14, as `journey::text` breaks a
+/// label). The pieces keep their characters as written, so a newline stays in the line it is in.
+fn pieces(glyphs: &[Glyph]) -> Vec<Vec<Glyph>> {
+    let mut pieces = Vec::new();
+    let mut current: Vec<Glyph> = Vec::new();
+    for (index, &glyph) in glyphs.iter().enumerate() {
+        current.push(glyph);
+        let next = glyphs.get(index + 1).map(|&(character, _)| character);
+        let ends_run = is_collapsible(glyph.0) && !next.is_some_and(is_collapsible);
+        let hyphen = glyph.0 == '-' && next.is_some_and(char::is_alphabetic);
+        if ends_run || hyphen {
+            pieces.push(std::mem::take(&mut current));
+        }
+    }
+    if !current.is_empty() {
+        pieces.push(current);
+    }
+    pieces
+}
+
+/// The lines a code text breaks into in a cell `width` wide, at the font size `size`: each line takes
+/// the next piece while it fits, and the first piece always goes on a line. The width of a line is
+/// measured in the faces its runs are drawn in.
+///
+/// # Errors
+///
+/// Returns an error if the mono faces cannot be read.
+fn break_code(glyphs: &[Glyph], width: f64, size: f64) -> Result<Vec<Vec<Glyph>>, RenderError> {
+    let mut lines = Vec::new();
+    let mut current: Vec<Glyph> = Vec::new();
+    for piece in pieces(glyphs) {
+        let candidate: Vec<Glyph> = current.iter().chain(&piece).copied().collect();
+        if current.is_empty() || line_width(&candidate, size)? <= width {
+            current = candidate;
+        } else {
+            lines.push(current);
+            current = piece;
+        }
+    }
+    if !current.is_empty() {
+        lines.push(current);
+    }
+    Ok(lines)
+}
+
+/// The widest piece of a code text: the least width its cell can take, since a piece has no break
+/// inside it.
+///
+/// # Errors
+///
+/// Returns an error if the mono faces cannot be read.
+fn widest_piece(glyphs: &[Glyph], size: f64) -> Result<f64, RenderError> {
+    let mut widest = 0.0_f64;
+    for piece in pieces(glyphs) {
+        widest = widest.max(line_width(&piece, size)?);
+    }
+    Ok(widest)
 }
 
 /// The HTML entities of the text the reference writes: the ones the sanitiser and the blank join
@@ -162,194 +389,113 @@ fn strip_tags(text: &str) -> String {
     out
 }
 
-/// Whether a character is white space that a browser collapses in a line of text: the blank, the
-/// tab, the line feed, the return and the form feed (CSS `white-space: normal`). A non-breaking
-/// space is not one of them.
-fn is_collapsible(character: char) -> bool {
-    matches!(character, ' ' | '\t' | '\n' | '\r' | '\u{c}')
-}
-
-/// The pieces of a code text, as the browser can break it, in the text as written: a piece ends
-/// after a run of collapsible white space, and after a hyphen that is followed by a letter (UAX 14,
-/// as `journey::text` breaks a label). The pieces keep the characters the reference's HTML keeps,
-/// so a newline stays in the line it is in.
-fn raw_pieces(text: &str) -> Vec<String> {
-    let characters: Vec<char> = text.chars().collect();
-    let mut pieces = Vec::new();
-    let mut current = String::new();
-    for (index, &character) in characters.iter().enumerate() {
-        current.push(character);
-        let next = characters.get(index + 1).copied();
-        let ends_run = is_collapsible(character) && !next.is_some_and(is_collapsible);
-        let hyphen = character == '-' && next.is_some_and(char::is_alphabetic);
-        if ends_run || hyphen {
-            pieces.push(std::mem::take(&mut current));
-        }
-    }
-    if !current.is_empty() {
-        pieces.push(current);
-    }
-    pieces
-}
-
-/// The text of a line without the white space at its ends: a line break's white space hangs, and
-/// the browser draws none of it.
-fn trim_collapsible(text: &str) -> &str {
-    text.trim_matches(is_collapsible)
-}
-
-/// The text of a line as it is drawn: a run of collapsible white space is one blank, as the browser
-/// lays it out (the reference's HTML collapses the newline of a data block to a blank). SVG text
-/// draws a line feed with a glyph of its own, so the blank is written instead.
-#[must_use]
-pub fn drawn(line: &str) -> String {
-    let mut out = String::with_capacity(line.len());
-    let mut in_run = false;
-    for character in line.chars() {
-        if is_collapsible(character) {
-            if !in_run {
-                out.push(' ');
-            }
-            in_run = true;
-        } else {
-            out.push(character);
-            in_run = false;
-        }
-    }
-    out
-}
-
-/// The lines a code text breaks into in a cell `width` wide, in the mono face at `size`: each line
-/// takes the next piece while it fits, the first piece always goes on a line, and the text of a line
-/// is as written (`raw_pieces`), so a newline inside a line stays in the line's text.
-///
-/// # Errors
-///
-/// Returns an error if the mono face cannot be read.
-fn break_code(text: &str, width: f64, size: f64) -> Result<Vec<String>, RenderError> {
-    let mut lines = Vec::new();
-    let mut current = String::new();
-    for piece in raw_pieces(text) {
-        let candidate = format!("{current}{piece}");
-        if current.is_empty()
-            || collapsed_width(mono(), trim_collapsible(&candidate), size)? <= width
-        {
-            current = candidate;
-        } else {
-            lines.push(trim_collapsible(&current).to_owned());
-            current = piece;
-        }
-    }
-    if !current.is_empty() {
-        lines.push(trim_collapsible(&current).to_owned());
-    }
-    Ok(lines.iter().map(|line| drawn(line)).collect())
-}
-
-/// The widest piece of a code text, in the mono face: the least width its cell can take, since a
-/// piece has no break inside it.
-fn widest_piece(text: &str, size: f64) -> Result<f64, RenderError> {
-    let mut widest = 0.0_f64;
-    for piece in raw_pieces(text) {
-        widest = widest.max(collapsed_width(mono(), trim_collapsible(&piece), size)?);
-    }
-    Ok(widest)
-}
-
 /// A position rounded down to the layout unit of 1/64 px, as Chromium keeps it.
 fn floor_layout_unit(length: f64) -> f64 {
     (length * 64.0 + 1e-6).floor() / 64.0
 }
 
-/// The lines of a box's text in its cell, at the font size `size` (the root's, 14 px in the
-/// redux theme).
+/// The lines of a box's text in its cell, at the font size `size` (the root's, 14 px in the redux
+/// theme).
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or shaped.
 pub fn lines_of(text: &BoxText, cell: Cell, size: f64) -> Result<Vec<LabelLine>, RenderError> {
-    let bold = bold();
-    let mono = mono();
-    // The strut of a line is the span's font, the regular face; the code block's is the mono face.
+    let bold_face = bold();
+    // The strut of a name line is the span's font, the regular face; the strut of a code line is the
+    // code block's, the mono face.
     let strut = text_box(regular(), size)?;
-    let name_metrics = text_box(bold, size)?;
-    let mono_metrics = text_box(mono, size)?;
-    let (name_ascent, name_height) = merged(strut, name_metrics);
+    let mono_strut = text_box(mono(), size)?;
+    let name_box = text_box(bold_face, size)?;
+    let (name_ascent, name_height) = line_box(&[strut, name_box]);
+    let blank = |text: TextBox| Entry {
+        kind: None,
+        runs: Vec::new(),
+        ascent: text.ascent,
+        height: text.height,
+    };
 
     // The name's lines: each `<br/>` ends one, and `visible` decodes the placeholders.
     let name_pieces: Vec<String> = split_br(&text.name)
         .iter()
         .map(|piece| visible(piece))
         .collect();
-    let mut entries = Vec::new();
-    for piece in &name_pieces {
-        entries.push(Entry {
+    let mut entries: Vec<Entry> = name_pieces
+        .iter()
+        .map(|piece| Entry {
             kind: Some(LineKind::Name),
-            text: piece.clone(),
+            runs: vec![LineRun {
+                text: piece.clone(),
+                style: Style {
+                    bold: true,
+                    italic: false,
+                },
+            }],
             ascent: name_ascent,
             height: name_height,
-        });
-    }
+        })
+        .collect();
 
-    // The data: the `<br/>` that ends the name is followed by an empty line, the strut's height,
-    // and the code block's lines follow. A trailing `<br/>` ends the last line and adds none.
-    let mut code_segments: Vec<String> = Vec::new();
+    // The data: the `<br/>` that ends the name is followed by an empty line, the strut's height, and
+    // the code block's lines follow. A trailing `<br/>` ends the last line and adds none. Each segment
+    // is kept with whether its source is empty: an empty source is a line of its own.
+    let mut segments: Vec<(bool, Vec<Glyph>)> = Vec::new();
     if let Some(html) = &text.data {
-        entries.push(Entry {
-            kind: None,
-            text: String::new(),
-            ascent: strut.ascent,
-            height: strut.height,
-        });
+        entries.push(blank(strut));
         if !html.is_empty() {
-            let mut segments = split_br(html);
-            if segments.len() > 1 && segments.last().is_some_and(String::is_empty) {
-                segments.pop();
+            let mut pieces = split_br(html);
+            if pieces.len() > 1 && pieces.last().is_some_and(String::is_empty) {
+                pieces.pop();
             }
-            code_segments = segments.iter().map(|segment| visible(segment)).collect();
+            segments = pieces
+                .iter()
+                .map(|piece| (piece.is_empty(), styled(piece)))
+                .collect();
         }
     }
 
-    // The min-content width of the table cell: its widest unbreakable piece. A code block is
-    // capped at 430 px, its own max-width, and the cell grows to hold the widest of its lines.
+    // The min-content width of the table cell: its widest unbreakable piece. A code block is capped
+    // at 430 px, its own max-width, and the cell grows to hold the widest of its lines.
     let mut name_widest = 0.0_f64;
     for piece in &name_pieces {
-        name_widest = name_widest.max(collapsed_width(bold, piece, size)?);
+        name_widest = name_widest.max(collapsed_width(bold_face, piece, size)?);
     }
     let mut code_widest = 0.0_f64;
-    for segment in &code_segments {
-        code_widest = code_widest.max(widest_piece(segment, size)?);
+    for (_, glyphs) in &segments {
+        code_widest = code_widest.max(widest_piece(glyphs, size)?);
     }
     let cell_width = cell
         .width
         .max(name_widest.max(code_widest.min(CODE_MAX_WIDTH)));
     let break_width = cell_width.min(CODE_MAX_WIDTH);
 
-    for segment in &code_segments {
-        if segment.is_empty() {
-            entries.push(Entry {
-                kind: None,
-                text: String::new(),
-                ascent: mono_metrics.ascent,
-                height: mono_metrics.height,
-            });
+    for (empty_source, glyphs) in &segments {
+        let lines = if *empty_source {
+            Vec::new()
+        } else {
+            break_code(glyphs, break_width, size)?
+        };
+        if lines.is_empty() {
+            entries.push(blank(mono_strut));
             continue;
         }
-        let lines = break_code(segment, break_width, size)?;
-        if lines.is_empty() {
-            entries.push(Entry {
-                kind: None,
-                text: String::new(),
-                ascent: mono_metrics.ascent,
-                height: mono_metrics.height,
-            });
-        }
         for line in lines {
+            let runs = grouped(&line);
+            if runs.is_empty() {
+                entries.push(blank(mono_strut));
+                continue;
+            }
+            // A line is as tall as its strut and its runs' faces: a bold or italic run may be taller.
+            let mut boxes = vec![mono_strut];
+            for run in &runs {
+                boxes.push(text_box(code_face(run.style), size)?);
+            }
+            let (ascent, height) = line_box(&boxes);
             entries.push(Entry {
                 kind: Some(LineKind::Code),
-                text: line,
-                ascent: mono_metrics.ascent,
-                height: mono_metrics.height,
+                runs,
+                ascent,
+                height,
             });
         }
     }
@@ -371,14 +517,14 @@ pub fn lines_of(text: &BoxText, cell: Cell, size: f64) -> Result<Vec<LabelLine>,
         if let Some(kind) = entry.kind {
             let x = match kind {
                 LineKind::Name => {
-                    let width = collapsed_width(bold, &entry.text, size)?;
+                    let width = collapsed_width(bold_face, &entry.runs[0].text, size)?;
                     left + floor_layout_unit((cell_width - width) / 2.0)
                 }
                 LineKind::Code => left,
             };
             lines.push(LabelLine {
                 kind,
-                text: entry.text,
+                runs: entry.runs,
                 x,
                 y: baseline,
             });
@@ -391,6 +537,20 @@ pub fn lines_of(text: &BoxText, cell: Cell, size: f64) -> Result<Vec<LabelLine>,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn bold_style() -> Style {
+        Style {
+            bold: true,
+            italic: false,
+        }
+    }
+
+    fn italic_style() -> Style {
+        Style {
+            bold: false,
+            italic: true,
+        }
+    }
 
     #[test]
     fn html_entities_decode_as_the_browser_decodes_them() {
@@ -408,20 +568,92 @@ mod tests {
     }
 
     #[test]
-    fn a_run_of_white_space_is_one_piece_and_one_blank_when_drawn() {
-        assert_eq!(raw_pieces("a\n\nb c"), ["a\n\n", "b ", "c"]);
-        assert_eq!(drawn("7,\n\u{a0}q"), "7, \u{a0}q");
-        assert_eq!(drawn("a\n\t b"), "a b");
-        assert_eq!(drawn("x\u{a0}y"), "x\u{a0}y");
+    fn b_and_strong_are_bold_i_and_em_are_italic_and_nesting_adds_up() {
+        let glyphs = styled("<b>x</b>y<strong>z</strong>");
+        assert_eq!(
+            glyphs,
+            [
+                ('x', bold_style()),
+                ('y', Style::default()),
+                ('z', bold_style())
+            ]
+        );
+        let nested = styled("<i><b>x</b>y</i>z");
+        assert_eq!(
+            nested,
+            [
+                (
+                    'x',
+                    Style {
+                        bold: true,
+                        italic: true
+                    }
+                ),
+                ('y', italic_style()),
+                ('z', Style::default())
+            ]
+        );
+        // An unknown tag draws nothing of its own, and a stray `<` stays.
+        assert_eq!(
+            styled("<u>a</u> < b"),
+            [
+                ('a', Style::default()),
+                (' ', Style::default()),
+                ('<', Style::default()),
+                (' ', Style::default()),
+                ('b', Style::default())
+            ]
+        );
+    }
+
+    #[test]
+    fn a_run_of_white_space_is_one_blank_in_the_style_of_its_first_character() {
+        let runs = grouped(&styled("a\n\nb c"));
+        assert_eq!(
+            runs,
+            [LineRun {
+                text: "a b c".to_owned(),
+                style: Style::default(),
+            }]
+        );
+        // The collapsed newline is in the bold run, so its blank is bold too.
+        let runs = grouped(&styled("<b>a\n</b>\u{a0}q"));
+        assert_eq!(
+            runs,
+            [
+                LineRun {
+                    text: "a ".to_owned(),
+                    style: bold_style(),
+                },
+                LineRun {
+                    text: "\u{a0}q".to_owned(),
+                    style: Style::default(),
+                }
+            ]
+        );
     }
 
     #[test]
     fn a_code_line_breaks_at_a_newline_only_when_it_does_not_fit() {
         // The blank joins, `&nbsp;`, do not break; the newline is a blank that does.
-        let text = "productId:\u{a0}7,\n\u{a0}quantity:\u{a0}1";
-        assert_eq!(break_code(text, 500.0, 14.0).unwrap().len(), 1);
-        let lines = break_code(text, 60.0, 14.0).unwrap();
-        assert_eq!(lines, ["productId:\u{a0}7,", "\u{a0}quantity:\u{a0}1"]);
+        let text = styled("productId:&nbsp;7,\n&nbsp;quantity:&nbsp;1");
+        assert_eq!(break_code(&text, 500.0, 14.0).unwrap().len(), 1);
+        let lines = break_code(&text, 60.0, 14.0).unwrap();
+        let texts: Vec<String> = lines
+            .iter()
+            .map(|line| grouped(line).iter().map(|run| run.text.clone()).collect())
+            .collect();
+        assert_eq!(texts, ["productId:\u{a0}7,", "\u{a0}quantity:\u{a0}1"]);
+    }
+
+    #[test]
+    fn a_bold_run_is_measured_in_the_bold_face() {
+        // The width of a line is the sum of its runs, each in its own face and snapped.
+        let plain_width = line_width(&styled("abc"), 14.0).unwrap();
+        let bold_width = line_width(&styled("<b>abc</b>"), 14.0).unwrap();
+        let sum = layout_width(measure(code_face(bold_style()), "abc", 14.0).unwrap());
+        assert_eq!(bold_width, sum);
+        assert!(plain_width > 0.0);
     }
 
     #[test]
