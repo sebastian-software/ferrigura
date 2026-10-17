@@ -1,0 +1,76 @@
+{
+ "name": "generated-018",
+ "group": "generated",
+ "source": "seed 20261017 index 18",
+ "text": "mindmap\n  ((Roadmap lantern interdisciplinary cipher archive pattern keystone pixel notebook kernel oasis))\n    ((Marble saddle interdisciplinary firmware landscape velvet))\n      ((Cipher gradient standard delta river pixel junction circuit circuit))\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 241.84678649902344,
+    "height": 241.84678649902344
+   },
+   {
+    "id": "1",
+    "width": 232.56527709960938,
+    "height": 232.56527709960938
+   },
+   {
+    "id": "2",
+    "width": 232.56527709960938,
+    "height": 232.56527709960938
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 151.91790250999884,
+    "y": 707.741624197937
+   },
+   {
+    "id": "1",
+    "x": 131.2826385498047,
+    "y": 417.19038266435444
+   },
+   {
+    "id": "2",
+    "x": 151.83870261784614,
+    "y": 131.2826385498047
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 150.85526286204066,
+    "startY": 692.7793116434357,
+    "midX": 141.60027052990176,
+    "midY": 562.4660034311457,
+    "endX": 132.34527819776287,
+    "endY": 432.15269521885574
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 132.35832501528492,
+    "startY": 402.2290024262888,
+    "midX": 141.5606705838254,
+    "midY": 274.2365106070796,
+    "endX": 150.7630161523659,
+    "endY": 146.24401878787035
+   }
+  ]
+ }
+}

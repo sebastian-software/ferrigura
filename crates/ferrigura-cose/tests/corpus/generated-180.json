@@ -1,0 +1,100 @@
+{
+ "name": "generated-180",
+ "group": "generated",
+ "source": "seed 20261017 index 180",
+ "text": "mindmap\n  {{Interdisciplinary ladder}}\n    [island migration junction photographs ember roadmap hypothesis forest summit]\n      {{quartz 2026 canvas standard tunnel junction}}\n    ))Balance ledger junction landscape characterisation velvet roadmap pixel quartz marble doorway delta((\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 175.203125,
+    "height": 68
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 188
+   },
+   {
+    "id": "2",
+    "width": 186,
+    "height": 92
+   },
+   {
+    "id": "3",
+    "width": 312.5,
+    "height": 200
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_0_3",
+    "source": "0",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 185.78401004437433,
+    "y": 435.5647842659903
+   },
+   {
+    "id": "1",
+    "x": 167.76234088494107,
+    "y": 254.32789673596517
+   },
+   {
+    "id": "2",
+    "x": 182.59152271674657,
+    "y": 61
+   },
+   {
+    "id": "3",
+    "x": 171.25,
+    "y": 622.8896826597799
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 184.29977347568246,
+    "startY": 420.6383968327177,
+    "midX": 176.7731754646577,
+    "midY": 344.9463405009777,
+    "endX": 169.24657745363294,
+    "endY": 269.25428416923774
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 168.90954330159576,
+    "startY": 239.37183018706196,
+    "midX": 175.17693180084382,
+    "midY": 157.66394836798258,
+    "endX": 181.44432030009187,
+    "endY": 75.95606654890321
+   },
+   {
+    "id": "edge_0_3",
+    "startX": 184.62368958070897,
+    "startY": 450.51983881024387,
+    "midX": 178.51700502218716,
+    "midY": 529.2272334628851,
+    "endX": 172.41032046366536,
+    "endY": 607.9346281155263
+   }
+  ]
+ }
+}

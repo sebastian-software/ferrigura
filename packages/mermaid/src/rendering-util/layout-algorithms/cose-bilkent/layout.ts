@@ -8,6 +8,9 @@ import {
   extractPositionedEdges,
 } from './cytoscape-setup.js';
 
+/** Receives the layout input (copied before layout) and the positioned result. Dev tooling only. */
+type CoseCaptureHook = (input: unknown, output: unknown) => void;
+
 /**
  * Execute the cose-bilkent layout algorithm on generic layout data
  *
@@ -36,6 +39,35 @@ export async function executeCoseBilkentLayout(
     const positionedEdges = extractPositionedEdges(cy);
 
     log.debug(`Layout completed: ${positionedNodes.length} nodes, ${positionedEdges.length} edges`);
+
+    // Cose capture hook (dev / test tooling; crates/ferrigura-cose/tools/capture-corpus.ts
+    // installs it). The page's corpus needs the sizes the engine was given and the positions it
+    // returned. Both are copied as JSON, so the hook cannot change the result returned below.
+    const coseCapture = (
+      globalThis as typeof globalThis & { __mermaidCoseCapture?: CoseCaptureHook }
+    ).__mermaidCoseCapture;
+    if (typeof coseCapture === 'function') {
+      const captureInput = {
+        nodes: data.nodes.map((n) => ({ id: n.id, width: n.width, height: n.height })),
+        edges: data.edges.map((e) => ({ id: e.id, source: e.start, target: e.end })),
+      };
+      const captureOutput = {
+        nodes: positionedNodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
+        edges: positionedEdges.map((e) => ({
+          id: e.id,
+          startX: e.startX,
+          startY: e.startY,
+          midX: e.midX,
+          midY: e.midY,
+          endX: e.endX,
+          endY: e.endY,
+        })),
+      };
+      coseCapture(
+        JSON.parse(JSON.stringify(captureInput)),
+        JSON.parse(JSON.stringify(captureOutput))
+      );
+    }
 
     return {
       nodes: positionedNodes,

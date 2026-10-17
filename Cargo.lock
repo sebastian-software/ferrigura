@@ -135,6 +135,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrigura-cose"
+version = "0.0.0"
+dependencies = [
+ "ferrigura-jsmath",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ferrigura-elk"
 version = "0.0.0"
 dependencies = [

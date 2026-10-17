@@ -1,0 +1,100 @@
+{
+ "name": "generated-096",
+ "group": "generated",
+ "source": "seed 20261017 index 96",
+ "text": "mindmap\n  notebook oasis marble landscape summit kernel cipher journey characterisation landscape yonder notebook\n    [inventory migration journey velvet saddle beacon portfolio telescope gradient]\n      (compass roadmap journey kernel journey canvas multiplication characterisation garden circuit)\n        ((Engine summit marble firmware))\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 130
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 188
+   },
+   {
+    "id": "2",
+    "width": 151.40625,
+    "height": 198
+   },
+   {
+    "id": "3",
+    "width": 225.6793670654297,
+    "height": 225.6793670654297
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 135,
+    "y": 851.7858879861406
+   },
+   {
+    "id": "1",
+    "x": 153.76507079090402,
+    "y": 639.5005157185183
+   },
+   {
+    "id": "2",
+    "x": 141.29380016921027,
+    "y": 393.0995487697414
+   },
+   {
+    "id": "3",
+    "x": 130.52953176209485,
+    "y": 127.83968353271484
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 136.32078234137876,
+    "startY": 836.844150001331,
+    "midX": 144.382535395452,
+    "midY": 745.6432018523294,
+    "endX": 152.44428844952526,
+    "endY": 654.4422537033279
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 153.00683550866793,
+    "startY": 624.5196920009528,
+    "midX": 147.52943548005715,
+    "midY": 516.3000322441299,
+    "endX": 142.05203545144636,
+    "endY": 408.0803724873068
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 140.68559943361214,
+    "startY": 378.1118841129238,
+    "midX": 135.91166596565256,
+    "midY": 260.4696161512281,
+    "endX": 131.13773249769298,
+    "endY": 142.8273481895324
+   }
+  ]
+ }
+}

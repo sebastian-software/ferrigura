@@ -1,0 +1,26 @@
+{
+ "name": "generated-030",
+ "group": "generated",
+ "source": "seed 20261017 index 30",
+ "text": "mindmap\n  ((junction willow island saddle 3d infrastructure engine pattern ember))\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 232.56527709960938,
+    "height": 232.56527709960938
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 131.2826385498047,
+    "y": 131.2826385498047
+   }
+  ],
+  "edgePoints": []
+ }
+}

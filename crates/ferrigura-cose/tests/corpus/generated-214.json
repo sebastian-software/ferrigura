@@ -1,0 +1,172 @@
+{
+ "name": "generated-214",
+ "group": "generated",
+ "source": "seed 20261017 index 214",
+ "text": "mindmap\n  landscape velvet firmware harbour characterisation firmware\n    [Harbour oasis horizon characterisation workflow marble umbrella 2026]\n      (Quartz interdisciplinary cipher)\n      (firmware scaffolding quartz)\n    [roadmap circuit pixel ladder]\n      (Horizon cipher signal interdisciplinary)\n      (Signal journey ember roadmap 3d portfolio tunnel)\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 82
+   },
+   {
+    "id": "1",
+    "width": 161.40625,
+    "height": 164
+   },
+   {
+    "id": "2",
+    "width": 151.3125,
+    "height": 102
+   },
+   {
+    "id": "3",
+    "width": 150,
+    "height": 102
+   },
+   {
+    "id": "4",
+    "width": 160,
+    "height": 68
+   },
+   {
+    "id": "5",
+    "width": 150,
+    "height": 102
+   },
+   {
+    "id": "6",
+    "width": 150,
+    "height": 126
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_1_3",
+    "source": "1",
+    "target": "3"
+   },
+   {
+    "id": "edge_0_4",
+    "source": "0",
+    "target": "4"
+   },
+   {
+    "id": "edge_4_5",
+    "source": "4",
+    "target": "5"
+   },
+   {
+    "id": "edge_4_6",
+    "source": "4",
+    "target": "6"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 135,
+    "y": 321.3934172150471
+   },
+   {
+    "id": "1",
+    "x": 268.5523322031979,
+    "y": 485.92747460993945
+   },
+   {
+    "id": "2",
+    "x": 435.5545397413955,
+    "y": 657.2316880928599
+   },
+   {
+    "id": "3",
+    "x": 95.97332887850303,
+    "y": 651.2324430651645
+   },
+   {
+    "id": "4",
+    "x": 270.5225301713342,
+    "y": 212.97576274174907
+   },
+   {
+    "id": "5",
+    "x": 93.48992108585242,
+    "y": 105.9717040220873
+   },
+   {
+    "id": "6",
+    "x": 404.4337412558573,
+    "y": 78
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 144.45327775965524,
+    "startY": 333.0396844109691,
+    "midX": 201.77616610159896,
+    "midY": 403.6604459124933,
+    "endX": 259.0990544435427,
+    "endY": 474.2812074140175
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 279.0232106327371,
+    "startY": 496.6680846910201,
+    "midX": 352.0534359722967,
+    "midY": 571.5795813513997,
+    "endX": 425.0836613118563,
+    "endY": 646.4910780117793
+   },
+   {
+    "id": "edge_1_3",
+    "startX": 257.7198993343244,
+    "startY": 496.303331111518,
+    "midX": 182.26283054085047,
+    "midY": 568.579958837552,
+    "endX": 106.80576174737652,
+    "endY": 640.856586563586
+   },
+   {
+    "id": "edge_0_4",
+    "startX": 146.71304772679545,
+    "startY": 312.0230109832015,
+    "midX": 202.7612650856671,
+    "midY": 267.1845899783981,
+    "endX": 258.80948244453873,
+    "endY": 222.3461689735947
+   },
+   {
+    "id": "edge_4_5",
+    "startX": 257.6853011689268,
+    "startY": 205.2165390988999,
+    "midX": 182.0062256285933,
+    "midY": 159.47373338191818,
+    "endX": 106.32715008825983,
+    "endY": 113.73092766493647
+   },
+   {
+    "id": "edge_4_6",
+    "startX": 281.08705644683334,
+    "startY": 202.3272518329746,
+    "midX": 337.47813571359575,
+    "midY": 145.48788137087453,
+    "endX": 393.86921498035815,
+    "endY": 88.64851090877445
+   }
+  ]
+ }
+}

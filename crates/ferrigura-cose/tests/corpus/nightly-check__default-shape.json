@@ -1,0 +1,26 @@
+{
+ "name": "nightly-check__default-shape",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/default-shape.mmd",
+ "text": "---\ndescription: >-\n  A root with no explicit shape syntax at all — just plain text, exercising the\n  default shape.\n---\nmindmap\n  The root\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 101.3125,
+    "height": 34
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 65.65625,
+    "y": 32
+   }
+  ],
+  "edgePoints": []
+ }
+}

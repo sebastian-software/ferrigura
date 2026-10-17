@@ -1,0 +1,26 @@
+{
+ "name": "nightly-check__a-root-with-wrapping-text-and-long-words-that-exceed-width",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/a-root-with-wrapping-text-and-long-words-that-exceed-width.mmd",
+ "text": "---\ndescription: >-\n  A square-shaped root whose label mixes normal words with one very long\n  unbroken word, verifying wrapping does not exceed the configured width even\n  when a single word is wider than the wrap limit.\n---\nmindmap\nroot[A few smaller words but then averylongsetofcharacterswithoutwhitespacetoseparate that we expect to wrapontonextlinesandnotexceedwidthparameters]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 438.5,
+    "height": 116
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 234.25,
+    "y": 73
+   }
+  ],
+  "edgePoints": []
+ }
+}

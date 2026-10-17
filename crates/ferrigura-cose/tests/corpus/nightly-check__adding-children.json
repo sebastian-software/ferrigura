@@ -1,0 +1,76 @@
+{
+ "name": "nightly-check__adding-children",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/adding-children.mmd",
+ "text": "---\ndescription: A default-shape root with two direct children and no grandchildren.\n---\nmindmap\n  The root\n    child1\n    child2\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 101.3125,
+    "height": 34
+   },
+   {
+    "id": "1",
+    "width": 83.25,
+    "height": 34
+   },
+   {
+    "id": "2",
+    "width": 83.25,
+    "height": 34
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 202.40072644360816,
+    "y": 32
+   },
+   {
+    "id": "1",
+    "x": 348.17645288721656,
+    "y": 32
+   },
+   {
+    "id": "2",
+    "x": 56.625,
+    "y": 32
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 217.40072644360816,
+    "startY": 32,
+    "midX": 275.28858966541236,
+    "midY": 32,
+    "endX": 333.17645288721656,
+    "endY": 32
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 187.40072644360816,
+    "startY": 32,
+    "midX": 129.51286322180408,
+    "midY": 32,
+    "endX": 71.625,
+    "endY": 32
+   }
+  ]
+ }
+}

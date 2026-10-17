@@ -1,0 +1,52 @@
+{
+ "name": "generated-121",
+ "group": "generated",
+ "source": "seed 20261017 index 121",
+ "text": "mindmap\n  {{notebook cipher oasis reproducibility}}\n    {{ember migration ripple engine reproducibility}}\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 186,
+    "height": 92
+   },
+   {
+    "id": "1",
+    "width": 198,
+    "height": 116
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 359.4944764436083,
+    "y": 73
+   },
+   {
+    "id": "1",
+    "x": 114,
+    "y": 73
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 344.4944764436083,
+    "startY": 73,
+    "midX": 236.74723822180414,
+    "midY": 73,
+    "endX": 129,
+    "endY": 73
+   }
+  ]
+ }
+}
