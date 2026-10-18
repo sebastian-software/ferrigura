@@ -19,7 +19,7 @@ The parser task of P3 for railroad. It ports the four syntaxes (`railroad-beta`,
 
 The shared code that the port reuses: `preprocess.rs` (`prepare`, `remove_directives`, `cleanup_comments`, `encode_entities`, `strip_front_matter`), `lexer.rs` (`directive_len` and `yaml_len`, the directive and YAML block rules of the other grammars), `common.rs` (`plain_text` and `descr_block_text`, the header converter), `sanitize.rs` (`sanitize_text`, the strict path of `sanitizeText`), `text.rs`, and `skip_hidden_prefix` of `lib.rs`, the same function `detect` uses.
 
-No shared file was changed.
+The shared files changed: `crates/ferrigura-model/build.rs` (the sixteen railroad keys without a default, section 8) and `tools/port/diff-config.ts` (the railroad section compared on its inputs). Neither `lib.rs` nor the other shared helpers changed.
 
 ## 2. The scanner
 
@@ -82,7 +82,7 @@ Each has its probe in `tests/railroad_grammar.rs` under the same id, and its inp
 - **Q3** (escapes): the reference's rule is kept for IR, EBNF and PEG, and the canonical text rule 3 is recorded as a deviation in [canonical-model.md](../canonical-model.md), Railroad.
 - **Q4** (sanitised values): recorded in the same section.
 - **Q5** (max): the model keeps `min` and `max`; the renderer reads `min` only.
-- **Q6** (inert configuration keys): the renderer's typed view. The configuration differential does not compare the railroad section yet: its defaults are the schema's, and the reference's are not (`pnpm port:diff config` keeps the section in its not-ported list, as before).
+- **Q6** (inert configuration keys): the renderer's typed view. The configuration differential compares the railroad section on its own inputs (`pnpm port:diff config`): the sixteen colour and typography keys that the reference's `defaultConfig.ts` leaves `undefined` have no default in `build.rs` (`RAILROAD_KEYS_WITHOUT_DEFAULT`), as the class keys have none (section 8).
 - **Q7** (default configuration): the renderer's.
 - **Q8** (front matter title): dropped, as the reference does (probed above).
 - **Q9** (one model and one DB): done. The exporter reads the same DB for the four detector ids.
@@ -93,5 +93,13 @@ Each has its probe in `tests/railroad_grammar.rs` under the same id, and its inp
 
 - `pnpm port:diff railroad`: 418 inputs (the collected fixtures, specs and docs, the 212 probes, the 79 edge cases and the 11 front matter cases), 339 accepted by the reference, 0 differences.
 - Fuzzing, not committed: a random-token fuzz of 3,000 texts (189 accepted by the reference), two structured fuzzes of the four grammars with the escapes, the repeats, the comments and the header variants (2,500 texts with 1,272 accepted, and 3,000 with 1,532), and the 79 edge cases above (59 accepted): 0 differences.
-- `pnpm port:diff config`: 0 differences (the railroad section is not compared, as above).
+- `pnpm port:diff config`: 0 differences, with the railroad section compared on its 418 inputs and every other group's counts unchanged.
 - The gates: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace --no-fail-fast`, `pnpm exec prettier --check tools/port`, `pnpm exec eslint tools/port`.
+
+## 8. The configuration section
+
+The reference's `railroad` section, as `getConfig().railroad` holds it after `Diagram.fromText` (probed for `railroad`, `railroadEbnf` and `railroadPeg`), has nine keys: `useMaxWidth` true, `compactMode` false, `padding` 10, `verticalSeparation` 8, `horizontalSeparation` 10, `arcRadius` 10, `strokeWidth` 2, `showMarkers` true and `markerRadius` 5. Its sixteen colour and typography keys are present with the value `undefined` (`defaultConfig.ts`, 295 to 314: `fontSize`, `fontFamily`, the terminal, non-terminal, line, marker, comment, special and rule-name colours), so the theme supplies them. The schema gives them defaults (`fontFamily` `monospace`, `fontSize` 14, and the colours), which the reference's section does not hold.
+
+ferrigura takes the same route as the class section: `RAILROAD_KEYS_WITHOUT_DEFAULT` in `crates/ferrigura-model/build.rs` makes those sixteen fields `Option`s without a default, so the effective section holds the same nine keys. `ts_defaults.json` holds defaults that the reference adds in TypeScript, not defaults it removes, so it is not used here.
+
+`pnpm port:diff config` compares the section on the railroad inputs and finds no difference.

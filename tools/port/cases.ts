@@ -13,6 +13,9 @@ import { readFileSync } from 'node:fs';
  * leave them undetected, so the configuration run expects no diagram scope for them.
  */
 export const undetectedCases: Record<string, string[]> = {
+  // A block comment before the header: the detector reads the text after the directives and the `%%`
+  // comment lines only, so `/* … */` leaves the text undetected (`docs-port/railroad/PLAN.md`, section 2).
+  railroad: ['/* c */ railroad-beta\nr = terminal("a") ;'],
   // Detection is case-sensitive (`eventmodeling/detector.ts`): a capitalised keyword is not a
   // diagram of this type.
   eventmodeling: ['EventModeling\ntf 01 ui A'],
@@ -99,7 +102,7 @@ export const explicitCases: Record<string, string[]> = {
   agentflow: [],
   cynefin: [],
   radar: [],
-  // The probes of `docs-port/railroad/NOTES.md`, sections 2.8 and 6 (R, E, A, P and X ids), run through
+  // The probes of `docs-port/railroad/NOTES.md`, section 2.8 (the R, E, A, P and X ids), run through
   // the reference's parser. Each is a text of one of the four syntaxes, with its header.
   railroad: [
     // R-01
@@ -618,7 +621,6 @@ export const explicitCases: Record<string, string[]> = {
     'railroad-beta\nr = terminal("value<script>alert(1)</script>") ;',
     'railroad-beta\naccDescr {\n    line one\n    line two\n}\nr = terminal("a") ;',
     '%%{init: {"theme": "forest"}}%%\nrailroad-beta\nr = terminal("a") ;',
-    '/* c */ railroad-beta\nr = terminal("a") ;',
   ],
   swimlanes: [],
   treeView: [],

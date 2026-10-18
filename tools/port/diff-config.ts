@@ -109,6 +109,8 @@ const p2Groups: [group: string, scope: string][] = [
   ['treemap', 'treemap'],
   ['ishikawa', 'ishikawa'],
   ['eventmodeling', 'eventmodeling'],
+  // railroad is a P3 type whose parser is ported: its section is compared like a P2 section.
+  ['railroad', 'railroad'],
 ];
 const p2Inputs: ConfigInput[] = [];
 for (const [group, scope] of p2Groups) {
@@ -131,7 +133,6 @@ const p3Groups: [group: string, scope: string][] = [
   ['swimlanes', 'swimlane'],
   ['treeView', 'treeView'],
   ['radar', 'radar'],
-  ['railroad', 'railroad'],
   ['venn', 'venn'],
   ['wardley', 'wardley-beta'],
   ['cynefin', 'cynefin'],
@@ -304,7 +305,6 @@ const NOT_PORTED_SECTIONS = new Set<string>([
   'swimlane',
   'treeView',
   'radar',
-  'railroad',
   'venn',
   'wardley-beta',
   'cynefin',

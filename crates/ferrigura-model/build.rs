@@ -47,6 +47,40 @@ const CLASS_KEYS_WITHOUT_DEFAULT: &[&str] = &[
     "useMaxWidth",
 ];
 
+/// Keys of the railroad section that the reference's `defaultConfig.ts` leaves undefined: its
+/// `railroad` object sets the colours, the typography and the marker and comment colours to
+/// `undefined` (`railroad` keeps the schema's other defaults), so the theme supplies them, and the
+/// configuration has no value for them unless a directive gives one (`docs-port/railroad/PLAN.md`,
+/// section 4). They are fields without a default here, as the class keys are.
+const RAILROAD_KEYS_WITHOUT_DEFAULT: &[&str] = &[
+    "commentFill",
+    "commentStroke",
+    "commentTextColor",
+    "fontFamily",
+    "fontSize",
+    "lineColor",
+    "markerFill",
+    "nonTerminalFill",
+    "nonTerminalStroke",
+    "nonTerminalTextColor",
+    "ruleNameColor",
+    "specialFill",
+    "specialStroke",
+    "terminalFill",
+    "terminalStroke",
+    "terminalTextColor",
+];
+
+/// Whether the reference's `defaultConfig.ts` leaves the key of a section undefined, so that the
+/// schema's default for it is not in the reference's configuration (see the two lists above).
+fn without_reference_default(parent: &str, key: &str) -> bool {
+    match parent {
+        "ClassDiagramConfig" => CLASS_KEYS_WITHOUT_DEFAULT.contains(&key),
+        "RailroadDiagramConfig" => RAILROAD_KEYS_WITHOUT_DEFAULT.contains(&key),
+        _ => false,
+    }
+}
+
 /// Rust keywords and reserved words; a field with one of these names gets a trailing `_`.
 const KEYWORDS: &[&str] = &[
     "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "crate",
@@ -253,12 +287,11 @@ impl Generator<'_> {
             None => format!("{parent}{}", pascal(key)),
         };
         let kind = self.kind(&flat, &hint, def);
-        let default: Option<&Value> =
-            if parent == "ClassDiagramConfig" && CLASS_KEYS_WITHOUT_DEFAULT.contains(&key) {
-                None
-            } else {
-                flat.get("default")
-            };
+        let default: Option<&Value> = if without_reference_default(parent, key) {
+            None
+        } else {
+            flat.get("default")
+        };
         let (ty, option, expr, carries) = match &kind {
             Kind::Object { name, has_defaults } => {
                 let literal = default
