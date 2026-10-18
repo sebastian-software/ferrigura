@@ -281,12 +281,15 @@ The tree view model is the DB state after the parse (`db.ts`), with the field li
 - **Names keep the entity placeholders**, as the DB keeps them, and a directory's trailing `/` is removed once. The class, the description and the icon are `""` when absent.
 - **Texts are sanitised as the common setters sanitise them**: the title, the accessible title and description, and a node's description. Names are not sanitised.
 
-## Left out, and why
+## Venn
 
-- **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
-- **Escaped text.** Escaping for SVG belongs to rendering. Sanitising is in the model for the flowchart DB only (see Sanitisation above).
-- **Configuration and directives.** `%%{init: …}%%` and the front matter `config` block are read by `ferrigura-syntax`'s `config` module and resolved by `ferrigura-model`'s `config` module (the effective configuration, checked by `pnpm port:diff config`). The grammar treats directives and comments as hidden, so they never reach a model.
-- **Source positions.** Errors carry them; models do not.
+The venn model is the DB state after the parse (`vennDB.ts`), with the grammar's quirks in [venn/PLAN.md](./venn/PLAN.md), sections 3 to 5. Its own rules:
+
+- **Subsets keep the order they were given in, duplicates included.** A subset is `{ sets, size, label }`, with `sets` sorted as JavaScript's default sort sorts strings, so `"10"` comes before `"2"`. The layout's `Object.keys` order is the layout's to apply, not the model's.
+- **Sizes are numbers, and a size that is not finite is its sentinel string.** A negative size is kept as a number, as the reference keeps it; the renderer draws it as the reference does.
+- **Texts are the DB's values.** The title is sanitised. Labels and text ids are not, so markup stays raw and an entity placeholder (`ﬂ°name¶ß`) stays as the DB holds it. An absent label is `""`.
+- **Styles are ordered pairs.** `styles` is a list of `[key, value]` pairs in the order the DB's object holds them: a repeated key keeps its first place and takes its last value, and `__proto__` is dropped.
+- **Left out:** the layout and the geometry, which are the renderer's, the parser's indent mode, and the configuration.
 
 ## Use case
 
@@ -296,3 +299,10 @@ The use case model is the DB state after the parse, with the names of [usecase/P
 - **The AST is in the model.** `ast` is the graph AST of the parse (`usecaseAst.ts`). Its spans are UTF-16 code units, and its `nodes`, `groups` and `classDefs` drop the key `__proto__`, as the reference's plain objects do.
 - **JSON tables.** `value` writes a non-finite number as its sentinel string; `propertyOrder` lists each object's keys in the text order, keyed by JSON pointer; `rows` is the display of `getData`, with the numbers written as JavaScript writes them (`String(number)`).
 - **Ids** are the grammar's, and a quoted name's id is `label.replace(/\W/g, '_')`.
+
+## Left out, and why
+
+- **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
+- **Escaped text.** Escaping for SVG belongs to rendering. Sanitising is in the model for the flowchart DB only (see Sanitisation above).
+- **Configuration and directives.** `%%{init: …}%%` and the front matter `config` block are read by `ferrigura-syntax`'s `config` module and resolved by `ferrigura-model`'s `config` module (the effective configuration, checked by `pnpm port:diff config`). The grammar treats directives and comments as hidden, so they never reach a model.
+- **Source positions.** Errors carry them; models do not.

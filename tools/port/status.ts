@@ -147,7 +147,7 @@ const suites: Record<string, string[]> = {
     'use_case_docs_spec',
     'use_case_render_spec',
   ],
-  venn: [],
+  venn: ['venn_spec', 'venn_quirks_spec', 'venn_renderer_spec'],
   wardley: ['wardley_spec', 'wardley_grammar', 'wardley_db_spec'],
 };
 
