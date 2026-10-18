@@ -13,8 +13,8 @@ use indexmap::IndexSet;
 use crate::math::{js_max, js_min};
 use crate::model::{LayoutData, Point};
 
-use super::js_sort::sort_by_js;
 use super::{EPS, Geo, Orientation, Router, TRACK_SPACING};
+use crate::js::js_sort_by;
 
 /// A segment of a pipe, with the track that holds it (`SegmentInfo`, lines 2013-2019).
 #[derive(Clone, Copy, Debug)]
@@ -175,7 +175,7 @@ impl Router {
                     });
                 }
             }
-            sort_by_js(&mut segments, |a, b| a.from - b.from);
+            js_sort_by(&mut segments, |a, b| a.from - b.from);
 
             // The clusters: a segment that starts before the end of the cluster joins it.
             let mut clusters: Vec<Vec<SegmentInfo>> = Vec::new();
@@ -237,8 +237,8 @@ impl Router {
             .filter(|&t| score(t).abs() <= 1.0)
             .collect();
 
-        sort_by_js(&mut left_tracks, |a, b| score(b) - score(a));
-        sort_by_js(&mut right_tracks, |a, b| score(a) - score(b));
+        js_sort_by(&mut left_tracks, |a, b| score(b) - score(a));
+        js_sort_by(&mut right_tracks, |a, b| score(a) - score(b));
 
         let mut left_count = 0;
         for &track in &left_tracks {
@@ -250,7 +250,7 @@ impl Router {
         // Without a neutral track, the track nearest the centre becomes the neutral one.
         if neutral_tracks.is_empty() && !used_tracks.is_empty() {
             let mut ordered: Vec<usize> = used_tracks.iter().copied().collect();
-            sort_by_js(&mut ordered, |a, b| score(a).abs() - score(b).abs());
+            js_sort_by(&mut ordered, |a, b| score(a).abs() - score(b).abs());
             let best_track = ordered[0];
             if let Some(index) = left_tracks.iter().position(|&t| t == best_track) {
                 left_tracks.remove(index);

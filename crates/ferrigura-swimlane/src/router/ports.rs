@@ -13,12 +13,12 @@ use indexmap::IndexMap;
 use crate::math::{js_max, js_min};
 use crate::model::Point;
 
-use super::js_sort::sort_by_js;
 use super::setup::{determine_side, orthogonal_port, port_for_side};
 use super::{
     Geo, MAX_PORT_SPACING, MIN_PORT_SPACING, PortEntry, PortKey, Role, Router, Side, SideInfo,
     js_sign,
 };
+use crate::js::js_sort_by;
 
 /// The two ports of an edge and the sides they sit on (the result of `portsForEdge`).
 #[derive(Clone, Copy, Debug)]
@@ -171,7 +171,7 @@ impl Router {
                 continue;
             }
             // The strongest first; the edge index breaks a tie, and a strength within 1e-9 counts as a tie.
-            sort_by_js(&mut group, |a, b| {
+            js_sort_by(&mut group, |a, b| {
                 let strength_a = preference_strength(&self.side_info[&a]);
                 let strength_b = preference_strength(&self.side_info[&b]);
                 if (strength_a - strength_b).abs() > 1e-9 {
@@ -292,7 +292,7 @@ impl Router {
     fn build_port_offsets(&mut self) {
         for group in self.port_groups.values_mut() {
             if group.len() >= 2 {
-                sort_by_js(group, |a, b| a.opposite_coord - b.opposite_coord);
+                js_sort_by(group, |a, b| a.opposite_coord - b.opposite_coord);
             }
         }
 
