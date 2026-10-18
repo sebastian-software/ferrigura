@@ -41,6 +41,7 @@ pub use model::{
 /// is a stable interface.
 #[doc(hidden)]
 pub mod testing {
+    pub use crate::direction::geometry::orthogonalize_and_simplify_edges;
     pub use crate::helpers::{
         Coordinates, EdgeOrigin, EdgeRef, Graph, GraphNode, Layering, NodeId, OrderedLayers,
         to_graph_view, write_back_to_layout_data,
