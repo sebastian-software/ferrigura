@@ -25,6 +25,7 @@ mod rebuild;
 mod search;
 mod setup;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use indexmap::{IndexMap, IndexSet};
@@ -239,7 +240,7 @@ pub(super) struct Router {
     /// `portOffsets`: the offset of the port of an edge along its side, by edge and role.
     pub(super) port_offsets: HashMap<(usize, Role), f64>,
     /// `destInfoCache`: the destinations of the edges, computed on first use and kept.
-    pub(super) dest_info_cache: HashMap<usize, DestInfo>,
+    pub(super) dest_info_cache: RefCell<HashMap<usize, DestInfo>>,
 }
 
 impl Router {
@@ -279,7 +280,7 @@ impl Router {
             incident_totals: HashMap::new(),
             port_groups: IndexMap::new(),
             port_offsets: HashMap::new(),
-            dest_info_cache: HashMap::new(),
+            dest_info_cache: RefCell::new(HashMap::new()),
         }
     }
 

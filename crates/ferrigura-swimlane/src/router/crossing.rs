@@ -218,9 +218,10 @@ impl Router {
 
     /// `getDestInfo(edgeIdx)` (`router.ts:1798-1824`): the destination of the edge, from its first horizontal
     /// segment after the first. The result is cached, and the cache is never cleared.
-    pub(super) fn dest_info(&mut self, edge: usize) -> DestInfo {
-        if let Some(info) = self.dest_info_cache.get(&edge) {
-            return *info;
+    pub(super) fn dest_info(&self, edge: usize) -> DestInfo {
+        let cached = self.dest_info_cache.borrow().get(&edge).copied();
+        if let Some(info) = cached {
+            return info;
         }
         let indices = self.edge_segments[edge].clone();
         let info = if indices.is_empty() {
@@ -251,7 +252,7 @@ impl Router {
                 delta: dest - base,
             }
         };
-        self.dest_info_cache.insert(edge, info);
+        self.dest_info_cache.borrow_mut().insert(edge, info);
         info
     }
 
@@ -271,7 +272,7 @@ impl Router {
 
     /// The comparator of the sources (`router.ts:1859-1901`): the edges that stay near the centre come first, then
     /// the longer spans, the fewer segments, and the shorter first segment.
-    fn compare_sources(&mut self, a: usize, b: usize) -> f64 {
+    fn compare_sources(&self, a: usize, b: usize) -> f64 {
         let info_a = self.dest_info(a);
         let info_b = self.dest_info(b);
         if (info_a.deviation - info_b.deviation).abs() > 1.0 {
