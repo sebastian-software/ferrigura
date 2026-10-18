@@ -13,11 +13,12 @@ use serde_json::Value;
 
 // The geometry of `geometry.ts` that the passes call. The functions are in `direction/geometry.rs`.
 pub(super) use crate::direction::geometry::{
-    EPS, OrthogonalSegment, RectEntry, RectSide, collect_node_rect_entries, count_orthogonal_bends,
+    EPS, NodeBoundsInfo, OrthogonalSegment, RectEntry, RectSide, build_orthogonal_port_path,
+    build_same_side_track_path, collect_node_rect_entries, count_orthogonal_bends,
     dedupe_consecutive_points, is_horizontal_segment, is_vertical_segment, js_sign_value,
     orthogonal_segments_for_points, orthogonal_segments_strictly_cross, overlap_length,
-    rect_of_node_bounds, same_axis_segment_overlap_length, same_point, same_x, same_y,
-    segment_hits_any_rect, simplify_polyline, truthy_text,
+    port_for_rect_side, rect_of_node_bounds, same_axis_segment_overlap_length, same_point, same_x,
+    same_y, segment_hits_any_rect, simplify_polyline, truthy_text,
 };
 use crate::math::{js_max, js_min, js_sign_order};
 use crate::model::{Direction, Edge, Extra, LayoutData, Node, Point, Rect};
