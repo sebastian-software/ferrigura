@@ -7,7 +7,7 @@
 //! grammars do.
 
 use crate::ParseError;
-use crate::text::{is_cr_lf, is_js_space, is_word};
+use crate::text::{is_cr_lf, is_js_space, is_line_term, is_word};
 use crate::yaml::{self, Yaml};
 
 /// Text prepared for the lexer.
@@ -304,16 +304,18 @@ pub(crate) fn remove_directives(text: &str) -> String {
 pub(crate) fn cleanup_comments(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut copied = 0;
-    let mut line_start = 0;
-    while line_start <= text.len() {
-        if let Some(end) = comment_match_end(text, line_start) {
-            out.push_str(&text[copied..line_start]);
+    let mut at = 0;
+    loop {
+        if let Some(end) = comment_match_end(text, at) {
+            out.push_str(&text[copied..at]);
             copied = end;
-            line_start = end;
+            at = end;
             continue;
         }
-        match text[line_start..].find('\n') {
-            Some(newline) => line_start += newline + 1,
+        // The next position where `^` matches with the multi-line flag: after the next line
+        // terminator, which is U+2028 and U+2029 as well as the line breaks.
+        match text[at..].char_indices().find(|&(_, c)| is_line_term(c)) {
+            Some((index, c)) => at += index + c.len_utf8(),
             None => break,
         }
     }

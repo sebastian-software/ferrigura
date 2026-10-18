@@ -271,6 +271,16 @@ The radar model is the DB state after the parse (`radar/db.ts`), with the field 
 - **Entries are the text's numbers, or the values in axis order.** A list of numbers is kept whatever its length, since the DB does not check it against the axes.
 - **Texts.** The title and the accessibility texts are sanitised. The labels are the grammar's strings with their markup kept as text, and an entity keeps its placeholder.
 
+## Tree view
+
+The tree view model is the DB state after the parse (`db.ts`), with the field list and the quirks in [tree-view/PLAN.md](./tree-view/PLAN.md), sections 5 and 10. Its own rules:
+
+- **The root is always there.** The DB's synthetic root `/` (id 0, level -1, a directory) is the model's `root`, even when the diagram has no node, and the renderer draws it. The user's top-level nodes are its children.
+- **The count is `getCount()`**: the nodes plus one, because the counter starts at 1 and the root takes no number.
+- **Icons keep the three states of the DB.** `""` when the input gave none, `none` when `icon()` or `icon(none)` suppressed it, and the name as written otherwise. The built-in icons and the defaults of `showIcons` and the maps are resolved at render time, so they are not in the model.
+- **Names keep the entity placeholders**, as the DB keeps them, and a directory's trailing `/` is removed once. The class, the description and the icon are `""` when absent.
+- **Texts are sanitised as the common setters sanitise them**: the title, the accessible title and description, and a node's description. Names are not sanitised.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
