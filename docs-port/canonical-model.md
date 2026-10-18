@@ -300,6 +300,15 @@ The use case model is the DB state after the parse, with the names of [usecase/P
 - **JSON tables.** `value` writes a non-finite number as its sentinel string; `propertyOrder` lists each object's keys in the text order, keyed by JSON pointer; `rows` is the display of `getData`, with the numbers written as JavaScript writes them (`String(number)`).
 - **Ids** are the grammar's, and a quoted name's id is `label.replace(/\W/g, '_')`.
 
+## Agentflow
+
+The agentflow model is the DB state after the parse (`agentflowDb.ts`), with the fields and the quirks in [agentflow/PLAN.md](./agentflow/PLAN.md), sections 1 and 3. Its own rules:
+
+- **Lists are in the DB's order.** Vertices are in creation order, connectors are vertices too and also in `connectors`, edges are in creation order, containers in completion order (a repeated id merges into its first record).
+- **Optional keys are absent, not null.** A key the reference leaves `undefined` (a vertex's `link`, a container's `dir`, a metadata block that is not there) is left out of the JSON; a metadata block that is there is an object, empty or not.
+- **Metadata is the YAML as js-yaml reads it.** A number that is not finite (`.nan`, `.inf`) is its sentinel string inside the metadata, as in the other models. The prototype keys are gone at every depth.
+- **The diagnostics are not in the model.** The reference raises them when the layout data is read, not during the parse, so after the parse there are none; the layout's shape diagnostics are read by `agentflow::semantic::diagnostics`.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

@@ -46,7 +46,7 @@ pub(crate) fn parse_text(
     options: Options,
 ) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
     let source = Source::new(text, line_offset);
-    let tokens = super::scanner::tokenize(text)
+    let tokens = super::scanner::tokenize(text, &super::scanner::FLOWCHART)
         .map_err(|error| FlowchartError::Syntax(source.error(error.offset, "unrecognized text")))?;
     let mut parser = Parser {
         source,
