@@ -6,9 +6,9 @@
 //! - [`locale_compare`] and [`try_locale_compare`]: `a.localeCompare(b)` in V8 with the default locale (en-US),
 //!   for printable ASCII. It is ICU's root collation at tertiary strength, written as a table of the 95
 //!   characters in ICU order.
-//! - Sorting: the layout sorts with [`slice::sort_by`] and passes the comparator unchanged, with no wrapper.
-//!   Rust's `sort_by` is stable, and so is `Array.prototype.sort` since ES2019: equal elements keep their
-//!   input order in both, which the layout relies on.
+//! - [`js_sort_by`]: `Array.prototype.sort(compare)` as V8 runs it, TimSort with the same comparisons in the
+//!   same order, so that a comparator that is not a total order (a threshold, or a NaN key) gives V8's order and
+//!   does not panic. The layout's numeric sorts use it.
 //!
 //! `Math.hypot` is not here: the port calls `ferrigura_jsmath::hypot`.
 //!
@@ -16,7 +16,6 @@
 //! `tools/js-semantics.ts`; `tests/js_semantics.rs` checks them.
 
 use std::cmp::Ordering;
-
 use std::marker::PhantomData;
 
 use crate::Error;
@@ -231,7 +230,6 @@ pub fn try_locale_compare(a: &str, b: &str) -> Result<Ordering, Error> {
     Ok(Ordering::Equal)
 }
 
-/// `Array.prototype.sort(compare)` on `items`, as V8 runs it: TimSort (`third_party/v8/builtins/array-sort.tq`).
 /// `kMinGallopWins`: the number of wins in a row that starts galloping, and the initial `minGallop`.
 const MIN_GALLOP_WINS: usize = 7;
 
@@ -257,9 +255,16 @@ struct Sorter<T, F> {
     marker: PhantomData<T>,
 }
 
-/// Sorts `items` in place as `Array.prototype.sort` does with the comparator `compare`. The comparator returns
-/// the number that the JavaScript comparator returns: a negative result puts its first argument first.
-pub fn js_sort_by<T: Copy>(items: &mut [T], compare: impl FnMut(T, T) -> f64) {
+/// `Array.prototype.sort(compare)` on `items`, as V8 runs it (`src/builtins/array-sort.tq`): TimSort, a port of
+/// CPython's `listsort`, with the same comparisons in the same order. `compare` returns the number that the
+/// JavaScript comparator returns, and a NaN counts as `+0`, as V8 converts it. A negative result puts the first
+/// argument first.
+///
+/// Arrays of fewer than 64 elements take a run and a binary insertion sort, and longer ones merge runs with
+/// galloping. The comparators of the layout are not always total orders (a threshold on a difference, or a NaN
+/// key), and `slice::sort_by` may panic on such a comparator, while V8's order is the one the reference gives.
+/// With a consistent comparator every stable sort gives the same order.
+pub fn js_sort_by<T: Copy>(items: &mut [T], compare: impl Fn(T, T) -> f64) {
     if items.len() < 2 {
         return;
     }
@@ -282,7 +287,7 @@ fn compute_min_run_length(mut n: usize) -> usize {
     n + r
 }
 
-impl<T: Copy, F: FnMut(T, T) -> f64> Sorter<T, F> {
+impl<T: Copy, F: Fn(T, T) -> f64> Sorter<T, F> {
     /// The comparator's result as V8 reads it: NaN is zero.
     fn order(&mut self, a: T, b: T) -> f64 {
         let value = (self.compare)(a, b);
@@ -849,7 +854,72 @@ impl<T: Copy, F: FnMut(T, T) -> f64> Sorter<T, F> {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
+
+    #[test]
+    fn a_consistent_order_is_the_stable_sort() {
+        // Pairs of (key, index): the key orders them, and equal keys keep the index order.
+        let mut items: Vec<(u32, usize)> = (0..500)
+            .map(|index| (((index * 7919) % 97) as u32, index))
+            .collect();
+        let mut expected = items.clone();
+        expected.sort_by_key(|&(key, _)| key);
+        js_sort_by(&mut items, |a, b| f64::from(a.0) - f64::from(b.0));
+        assert_eq!(items, expected);
+    }
+
+    #[test]
+    fn a_comparator_that_is_nan_is_equal() {
+        let mut items = vec![3.0, 1.0, 2.0];
+        js_sort_by(&mut items, |a, b| (a - b) * f64::NAN);
+        assert_eq!(items, vec![3.0, 1.0, 2.0]);
+    }
+
+    #[test]
+    fn short_runs_and_descending_runs_are_sorted() {
+        let mut items = vec![5, 4, 3, 2, 1];
+        js_sort_by(&mut items, |a, b| f64::from(a - b));
+        assert_eq!(items, vec![1, 2, 3, 4, 5]);
+        let mut items = vec![2, 1];
+        js_sort_by(&mut items, |a, b| f64::from(a - b));
+        assert_eq!(items, vec![1, 2]);
+    }
+    /// The indices of `keys`, sorted with the comparator `|a - b| > 1 ? a - b : index order`, which is not a total
+    /// order. Each expected order below is V8's, from node 24, for the same comparator.
+    fn sorted_by_threshold(keys: &[f64]) -> Vec<usize> {
+        let mut items: Vec<(f64, usize)> = keys.iter().enumerate().map(|(i, &k)| (k, i)).collect();
+        js_sort_by(&mut items, |a, b| {
+            if (a.0 - b.0).abs() > 1.0 {
+                a.0 - b.0
+            } else {
+                a.1 as f64 - b.1 as f64
+            }
+        });
+        items.iter().map(|item| item.1).collect()
+    }
+
+    #[test]
+    fn a_threshold_comparator_sorts_as_v8_sorts_it() {
+        let small = [3.5, 0.0, 0.5, 4.25, 2.0, 2.2, 6.0, 1.0, 1.5, 5.5, 0.25, 3.0];
+        assert_eq!(
+            sorted_by_threshold(&small),
+            vec![1, 2, 10, 4, 7, 5, 8, 0, 11, 3, 6, 9]
+        );
+        // Seventy keys, which is more than a binary insertion sort takes: the merges run.
+        let large: Vec<f64> = (0..70)
+            .map(|i| ((i * 37) % 23) as f64 / 4.0 + (i % 5) as f64 * 0.7)
+            .collect();
+        assert_eq!(
+            sorted_by_threshold(&large),
+            vec![
+                0, 5, 10, 15, 20, 25, 30, 46, 35, 51, 2, 7, 23, 61, 38, 40, 56, 12, 28, 33, 66, 43,
+                45, 1, 17, 48, 50, 4, 6, 22, 37, 53, 55, 42, 58, 60, 65, 69, 27, 32, 9, 11, 14, 16,
+                47, 63, 21, 68, 26, 3, 19, 8, 24, 13, 29, 31, 18, 34, 36, 52, 57, 67, 39, 41, 62,
+                44, 49, 54, 59, 64
+            ]
+        );
+    }
 
     fn fixed(x: f64, digits: u32) -> String {
         to_fixed(x, digits)
@@ -1018,74 +1088,5 @@ mod tests {
     #[should_panic(expected = "localeCompare")]
     fn locale_compare_panics_outside_printable_ascii() {
         let _ = locale_compare("\n", "a");
-    }
-}
-
-#[cfg(test)]
-mod sort_tests {
-    use super::*;
-
-    #[test]
-    fn a_consistent_order_is_the_stable_sort() {
-        // Pairs of (key, index): the key orders them, and equal keys keep the index order.
-        let mut items: Vec<(u32, usize)> = (0..500)
-            .map(|index| (((index * 7919) % 97) as u32, index))
-            .collect();
-        let mut expected = items.clone();
-        expected.sort_by_key(|&(key, _)| key);
-        js_sort_by(&mut items, |a, b| f64::from(a.0) - f64::from(b.0));
-        assert_eq!(items, expected);
-    }
-
-    #[test]
-    fn a_comparator_that_is_nan_is_equal() {
-        let mut items = vec![3.0, 1.0, 2.0];
-        js_sort_by(&mut items, |a, b| (a - b) * f64::NAN);
-        assert_eq!(items, vec![3.0, 1.0, 2.0]);
-    }
-
-    #[test]
-    fn short_runs_and_descending_runs_are_sorted() {
-        let mut items = vec![5, 4, 3, 2, 1];
-        js_sort_by(&mut items, |a, b| f64::from(a - b));
-        assert_eq!(items, vec![1, 2, 3, 4, 5]);
-        let mut items = vec![2, 1];
-        js_sort_by(&mut items, |a, b| f64::from(a - b));
-        assert_eq!(items, vec![1, 2]);
-    }
-    /// The indices of `keys`, sorted with the comparator `|a - b| > 1 ? a - b : index order`, which is not a total
-    /// order. Each expected order below is V8's, from node 24, for the same comparator.
-    fn sorted_by_threshold(keys: &[f64]) -> Vec<usize> {
-        let mut items: Vec<(f64, usize)> = keys.iter().enumerate().map(|(i, &k)| (k, i)).collect();
-        js_sort_by(&mut items, |a, b| {
-            if (a.0 - b.0).abs() > 1.0 {
-                a.0 - b.0
-            } else {
-                a.1 as f64 - b.1 as f64
-            }
-        });
-        items.iter().map(|item| item.1).collect()
-    }
-
-    #[test]
-    fn a_threshold_comparator_sorts_as_v8_sorts_it() {
-        let small = [3.5, 0.0, 0.5, 4.25, 2.0, 2.2, 6.0, 1.0, 1.5, 5.5, 0.25, 3.0];
-        assert_eq!(
-            sorted_by_threshold(&small),
-            vec![1, 2, 10, 4, 7, 5, 8, 0, 11, 3, 6, 9]
-        );
-        // Seventy keys, which is more than a binary insertion sort takes: the merges run.
-        let large: Vec<f64> = (0..70)
-            .map(|i| ((i * 37) % 23) as f64 / 4.0 + (i % 5) as f64 * 0.7)
-            .collect();
-        assert_eq!(
-            sorted_by_threshold(&large),
-            vec![
-                0, 5, 10, 15, 20, 25, 30, 46, 35, 51, 2, 7, 23, 61, 38, 40, 56, 12, 28, 33, 66, 43,
-                45, 1, 17, 48, 50, 4, 6, 22, 37, 53, 55, 42, 58, 60, 65, 69, 27, 32, 9, 11, 14, 16,
-                47, 63, 21, 68, 26, 3, 19, 8, 24, 13, 29, 31, 18, 34, 36, 52, 57, 67, 39, 41, 62,
-                44, 49, 54, 59, 64
-            ]
-        );
     }
 }

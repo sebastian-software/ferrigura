@@ -189,7 +189,6 @@ fn sugiyama_and_writeback_stages_match_the_reference() {
 }
 
 #[test]
-#[ignore = "port: the router and the post-processing are not ported; run with --ignored once they land"]
 fn output_matches_the_reference_after_routing() {
     let cases = load_cases();
     let mut failures = Vec::new();
