@@ -15,11 +15,11 @@
 use indexmap::IndexMap;
 
 use crate::direction::geometry::{
-    EPS, dedupe_consecutive_points, inflate_rect, js_sign_value, rect_contains_rect,
+    EPS, dedupe_consecutive_points, inflate_rect, js_sign_value, js_sort_by, rect_contains_rect,
     rect_from_center_size, rect_of_node_bounds, rects_overlap, segment_bounds_overlap_rect,
     truthy_text,
 };
-use crate::math::{js_max, js_min, js_sign_order};
+use crate::math::{js_max, js_min};
 use crate::model::{LayoutData, Node, Point, Rect};
 
 /// `MARKER_CLEARANCE_LENGTH` (`labelAnchoring.ts:15`): the length of the marker's clearance along the segment.
@@ -236,28 +236,20 @@ fn label_clears_terminal_endpoints(
 /// long enough for the label, then the longest. The sort is stable.
 fn rank_segments(pool: &[SegmentCandidate], frame: &LabelFrame<'_>) -> Vec<SegmentCandidate> {
     let mut ranked = pool.to_vec();
-    ranked.sort_by(|a, b| {
+    js_sort_by(&mut ranked, |a, b| {
         let a_long_axis = a.horizontal == frame.long_axis_horizontal;
         let b_long_axis = b.horizontal == frame.long_axis_horizontal;
         if a_long_axis != b_long_axis {
-            return if a_long_axis {
-                std::cmp::Ordering::Less
-            } else {
-                std::cmp::Ordering::Greater
-            };
+            return if a_long_axis { -1.0 } else { 1.0 };
         }
         let a_extent = if a.horizontal { frame.lw } else { frame.lh };
         let b_extent = if b.horizontal { frame.lw } else { frame.lh };
         let a_fits = a.length >= a_extent + 2.0;
         let b_fits = b.length >= b_extent + 2.0;
         if a_fits != b_fits {
-            return if a_fits {
-                std::cmp::Ordering::Less
-            } else {
-                std::cmp::Ordering::Greater
-            };
+            return if a_fits { -1.0 } else { 1.0 };
         }
-        js_sign_order(b.length - a.length)
+        b.length - a.length
     });
     ranked
 }

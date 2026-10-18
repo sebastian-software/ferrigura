@@ -11,8 +11,8 @@
 
 use indexmap::IndexMap;
 
-use crate::direction::geometry::truthy_text;
-use crate::math::{js_max, js_min, js_sign_order};
+use crate::direction::geometry::{js_sort_by, truthy_text};
+use crate::math::{js_max, js_min};
 use crate::model::{Direction, LayoutData, Node, Point, Rect};
 
 /// `titleBandSize` of `applyLrDirectionTransform` (`lrTransform.ts:175`).
@@ -369,7 +369,7 @@ pub fn apply_lr_direction_transform(layout: &mut LayoutData, direction: Directio
     let center_x = lane_left + lane_width / 2.0;
     let vertical_margin = js_max(max_pad, TITLE_BAND_SIZE);
 
-    lane_bounds.sort_by(|a, b| js_sign_order(a.center_y - b.center_y));
+    js_sort_by(&mut lane_bounds, |a, b| a.center_y - b.center_y);
 
     let count = lane_bounds.len();
     for (index, curr) in lane_bounds.iter().enumerate() {

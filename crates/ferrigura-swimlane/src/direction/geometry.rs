@@ -861,3 +861,619 @@ pub fn orthogonalize_and_simplify_edges(layout: &mut LayoutData) {
         edge.points = Some(cleaned);
     }
 }
+
+/// `Array.prototype.sort(compare)` on `items`, in the order V8 gives for fewer than 64 elements: a first run
+/// (`CountAndMakeRun`), then a binary insertion of the rest (`BinaryInsertionSort`). `compare` returns the number
+/// the JavaScript comparator returns, and a NaN counts as `+0`, as the specification and V8 give it.
+///
+/// This is not `slice::sort_by`: that sort may panic on a comparator that is not a total order, and `a - b` is
+/// not one when a key is NaN. For 64 elements or more V8 runs TimSort. With a consistent comparator every stable
+/// sort gives the same order, which this one gives too; with a NaN key at that length the order can differ from
+/// V8's.
+pub(crate) fn js_sort_by<T: Copy>(items: &mut [T], compare: impl Fn(T, T) -> f64) {
+    // `SortCompareUserFn`: a NaN result is `+0`, that is "equal".
+    let compare = |a: T, b: T| {
+        let order = compare(a, b);
+        if order.is_nan() { 0.0 } else { order }
+    };
+    let len = items.len();
+    if len < 2 {
+        return;
+    }
+
+    // CountAndMakeRun: the first run is ascending, or strictly descending and then reversed.
+    let is_descending = compare(items[1], items[0]) < 0.0;
+    let mut run = 2;
+    let mut previous = items[1];
+    while run < len {
+        let current = items[run];
+        let order = compare(current, previous);
+        let ends_run = if is_descending {
+            order >= 0.0
+        } else {
+            order < 0.0
+        };
+        if ends_run {
+            break;
+        }
+        previous = current;
+        run += 1;
+    }
+    if is_descending {
+        items[..run].reverse();
+    }
+
+    // BinaryInsertionSort: each following element goes to its place among the sorted elements before it.
+    for start in run..len {
+        let pivot = items[start];
+        let (mut left, mut right) = (0, start);
+        while left < right {
+            let mid = left + ((right - left) >> 1);
+            if compare(pivot, items[mid]) < 0.0 {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+        items[left..=start].rotate_right(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::js_sort_by;
+
+    /// The keys of arrays of fewer than 64 items, with NaN and infinite keys, and the indices of the items in the
+    /// order that `Array.prototype.sort((a, b) => a.k - b.k)` leaves them in V8 (Node v24.21.0).
+    #[rustfmt::skip]
+    const V8_NAN_ORDERS: &[(&[f64], &[usize])] = &[
+        (
+            &[
+                0.0, 3.0, 7.0, 3.0, 3.0, f64::NEG_INFINITY, 2.5, -1.0, 2.5, -1.0, 0.0, -1.0, f64::NEG_INFINITY, 2.0, f64::INFINITY, f64::INFINITY,
+                -1.0, 2.5, 2.5, f64::NEG_INFINITY, 1.0, -1.0, 0.0, f64::INFINITY, 0.0, 7.0, 2.5, 1.0, 1.0, 2.5, f64::NEG_INFINITY, f64::NEG_INFINITY,
+                0.0, 0.0, 2.0, 7.0, 1.0, -1.0, f64::INFINITY, 1.0, 2.5, 2.5,
+            ],
+            &[
+                5, 12, 19, 30, 31, 7, 9, 11, 16, 21, 37, 0, 10, 22, 24, 32, 33, 20, 27, 28, 36, 39, 13, 34,
+                6, 8, 17, 18, 26, 29, 40, 41, 1, 3, 4, 2, 25, 35, 14, 15, 23, 38,
+            ],
+        ),
+        (
+            &[
+                2.0, 2.5, -1.0, f64::NEG_INFINITY, 2.0, f64::NAN, 3.0, 0.0, 3.0, f64::INFINITY, 0.0, 1.0, 1.0, 7.0, 1.0, f64::NAN,
+                f64::INFINITY, f64::NEG_INFINITY, 3.0, f64::NAN, f64::INFINITY,
+            ],
+            &[
+                3, 17, 2, 7, 10, 11, 12, 14, 0, 4, 1, 5, 6, 8, 18, 13, 9, 15, 16, 19, 20,
+            ],
+        ),
+        (
+            &[
+                1.0, f64::INFINITY, 2.5, 1.0, 2.0, 2.5, 3.0, 3.0, f64::NAN, 2.0, 1.0, 2.0, 3.0, f64::INFINITY, 1.0, 7.0,
+                f64::INFINITY, 2.0, 7.0,
+            ],
+            &[
+                0, 3, 10, 14, 4, 9, 11, 17, 2, 5, 6, 7, 15, 1, 8, 12, 18, 13, 16,
+            ],
+        ),
+        (
+            &[
+                f64::NAN, 3.0, 3.0, 0.0, 2.5, 3.0, f64::INFINITY, -1.0, 7.0, 1.0, f64::NEG_INFINITY, 2.0, 3.0, 2.5, 2.0, 3.0,
+                f64::NAN, 7.0, f64::NAN, f64::INFINITY, 1.0, 2.5, 0.0, 2.5, f64::INFINITY, 2.5, 1.0, 1.0, f64::NAN, 0.0, -1.0, 2.5,
+                -1.0, 7.0, 2.0, 2.5, 0.0, f64::NAN, f64::INFINITY,
+            ],
+            &[
+                0, 10, 7, 30, 32, 3, 22, 29, 36, 9, 20, 26, 27, 11, 14, 34, 4, 13, 21, 23, 25, 31, 35, 1,
+                2, 5, 12, 15, 8, 17, 6, 16, 18, 33, 19, 24, 28, 37, 38,
+            ],
+        ),
+        (
+            &[
+                3.0, 3.0, 3.0, 1.0, 3.0, 7.0, 3.0, f64::NEG_INFINITY, 2.0, f64::INFINITY, 3.0, 1.0, 0.0, 3.0, 0.0, 0.0,
+                f64::INFINITY, 0.0, f64::NEG_INFINITY, 2.0, 7.0, -1.0, 2.0, 2.5, 2.5, 0.0, 1.0, 1.0, f64::NEG_INFINITY, 2.5, 0.0, f64::NAN,
+                3.0, 0.0,
+            ],
+            &[
+                7, 18, 28, 21, 12, 14, 15, 17, 25, 30, 33, 3, 11, 26, 27, 8, 19, 22, 23, 24, 29, 0, 1, 2,
+                4, 6, 10, 13, 32, 5, 20, 9, 16, 31,
+            ],
+        ),
+        (
+            &[
+                f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY, -1.0, -1.0, -1.0, 0.0, f64::INFINITY,
+            ],
+            &[
+                0, 1, 2, 3, 4, 5, 6, 7,
+            ],
+        ),
+        (
+            &[
+                7.0, 0.0, f64::NAN, 2.5, 0.0, 7.0, f64::INFINITY, f64::INFINITY, 2.0, 7.0, f64::INFINITY, -1.0, 0.0, 2.5, f64::INFINITY, 2.0,
+                -1.0, 2.0, 3.0, 3.0, f64::INFINITY, f64::NEG_INFINITY, -1.0, f64::NAN, f64::NEG_INFINITY, 1.0, 1.0, 0.0, 3.0, 3.0, 2.0,
+            ],
+            &[
+                21, 24, 11, 16, 22, 1, 4, 12, 27, 25, 26, 3, 0, 2, 8, 15, 17, 30, 13, 18, 19, 28, 29, 5,
+                9, 6, 7, 10, 14, 20, 23,
+            ],
+        ),
+        (
+            &[
+                1.0, 1.0, 2.0, 0.0, 7.0, 7.0, 3.0, 1.0, 2.5, f64::INFINITY, f64::NAN, 1.0, 0.0, 7.0, 7.0, f64::NAN,
+                1.0, 0.0, f64::NEG_INFINITY, 2.5, f64::INFINITY, 7.0, -1.0,
+            ],
+            &[
+                18, 22, 3, 12, 17, 0, 1, 7, 11, 16, 2, 8, 19, 6, 4, 5, 14, 21, 9, 10, 13, 15, 20,
+            ],
+        ),
+        (
+            &[
+                -1.0, 1.0, 3.0, 2.5, 0.0, -1.0, 2.0, 3.0, 2.0, f64::NAN, 7.0, -1.0, f64::NAN, 3.0, f64::INFINITY, 2.5,
+                -1.0, 7.0, 2.0, 2.5, f64::INFINITY, f64::NEG_INFINITY, f64::INFINITY, 7.0, -1.0, f64::INFINITY, 0.0, 2.5, -1.0, 3.0, -1.0, f64::NEG_INFINITY,
+                2.5, 2.5, -1.0, f64::INFINITY, f64::NEG_INFINITY, f64::NAN, f64::INFINITY, 0.0, 1.0, 1.0, f64::NAN, 0.0, 3.0, 7.0, f64::NEG_INFINITY, f64::NAN,
+                f64::INFINITY, -1.0, 1.0, 3.0, 2.0, f64::NEG_INFINITY, 2.5, 1.0, 3.0, 3.0, 0.0, f64::NEG_INFINITY, 2.0, 2.0, -1.0,
+            ],
+            &[
+                21, 31, 36, 46, 53, 59, 0, 5, 11, 16, 24, 28, 30, 34, 49, 62, 4, 26, 39, 43, 58, 1, 40, 41,
+                50, 55, 6, 8, 18, 52, 60, 61, 3, 15, 19, 33, 2, 7, 9, 10, 12, 27, 32, 54, 13, 29, 44, 51,
+                56, 57, 17, 23, 45, 14, 20, 22, 25, 35, 37, 38, 42, 47, 48,
+            ],
+        ),
+        (
+            &[
+                f64::NAN, 7.0, -1.0, -1.0, f64::INFINITY, f64::NEG_INFINITY, 3.0, 7.0, 1.0, 1.0, 7.0, 3.0, 1.0, 3.0, 2.0, 2.0,
+                -1.0, -1.0, f64::INFINITY, f64::INFINITY, f64::NAN, f64::NEG_INFINITY, 2.5, 1.0, 0.0, f64::NAN, f64::NEG_INFINITY, 7.0,
+            ],
+            &[
+                0, 5, 21, 26, 2, 3, 16, 17, 24, 8, 9, 12, 23, 14, 15, 22, 6, 11, 13, 1, 7, 10, 27, 4,
+                18, 19, 20, 25,
+            ],
+        ),
+        (
+            &[
+                2.0, 7.0, -1.0, -1.0, 2.5, 7.0, 3.0, 3.0, f64::NEG_INFINITY, -1.0, 0.0, 3.0, 1.0, 7.0, 1.0, f64::NAN,
+                3.0, f64::NEG_INFINITY, f64::NEG_INFINITY, 7.0, 1.0, 1.0, f64::NAN, 7.0, 1.0, 3.0, 7.0, -1.0, -1.0, 0.0, f64::INFINITY, -1.0,
+                f64::NAN, f64::NAN, 2.5, 1.0, 2.5, 3.0, f64::INFINITY, f64::NEG_INFINITY, f64::NAN, 2.0, 2.0, 3.0, f64::NAN, f64::INFINITY, f64::INFINITY, f64::NAN,
+                f64::NEG_INFINITY, f64::NEG_INFINITY, f64::INFINITY,
+            ],
+            &[
+                8, 17, 18, 39, 48, 49, 2, 3, 9, 27, 28, 31, 10, 29, 12, 14, 20, 21, 24, 35, 0, 41, 42, 4,
+                6, 7, 11, 16, 25, 37, 43, 1, 5, 13, 15, 19, 22, 34, 36, 23, 26, 30, 32, 33, 38, 40, 44, 45,
+                46, 47, 50,
+            ],
+        ),
+        (
+            &[
+                f64::NEG_INFINITY, 1.0, 7.0, f64::NAN, -1.0, 3.0, 1.0, f64::NAN, f64::NEG_INFINITY, f64::NEG_INFINITY, 3.0, 2.5, 3.0, f64::INFINITY, 1.0, f64::INFINITY,
+                -1.0, f64::NAN, f64::INFINITY, 0.0, 0.0, 1.0, 1.0, f64::NAN, f64::NAN, 2.5, f64::NAN, 2.0, 7.0, 2.5, f64::NEG_INFINITY, f64::NAN,
+                f64::INFINITY, 7.0, -1.0, 0.0, 7.0, 0.0, f64::NAN, 0.0, 3.0, 1.0, 1.0, 1.0, 3.0, 2.0, f64::NAN, 2.0,
+                2.5, -1.0, 2.5, 0.0, 1.0, f64::NEG_INFINITY,
+            ],
+            &[
+                0, 8, 30, 1, 2, 3, 9, 53, 4, 16, 34, 49, 19, 20, 35, 37, 39, 51, 6, 14, 21, 22, 41, 42,
+                43, 52, 27, 47, 11, 5, 7, 45, 25, 29, 48, 50, 10, 12, 40, 44, 28, 33, 36, 13, 15, 17, 18, 23,
+                24, 26, 31, 32, 38, 46,
+            ],
+        ),
+        (
+            &[
+                0.0, 1.0, 2.5, 1.0, 1.0, 2.5, 7.0, 1.0, 0.0, 1.0, 2.5, 2.0, 7.0, 7.0, 7.0, f64::NEG_INFINITY,
+                2.0, -1.0, f64::INFINITY, 1.0, f64::NEG_INFINITY, 2.5, f64::INFINITY, f64::NAN, f64::NEG_INFINITY, 2.5, f64::NEG_INFINITY, f64::NAN, -1.0, f64::INFINITY, 2.5, f64::INFINITY,
+                7.0, 0.0, f64::INFINITY,
+            ],
+            &[
+                15, 20, 24, 26, 17, 28, 0, 8, 33, 1, 3, 4, 7, 9, 19, 11, 16, 2, 5, 10, 21, 25, 30, 6,
+                12, 13, 14, 18, 22, 23, 27, 32, 29, 31, 34,
+            ],
+        ),
+        (
+            &[
+                f64::INFINITY, 0.0, -1.0, 1.0, -1.0, 3.0, 3.0, 7.0, -1.0, 0.0, -1.0, f64::NAN, 2.0, f64::INFINITY, 1.0, f64::NAN,
+                7.0, 2.0, -1.0, 2.5, 1.0, -1.0, 2.0, f64::NAN, 7.0, f64::NEG_INFINITY, f64::NAN, 0.0,
+            ],
+            &[
+                25, 2, 4, 8, 10, 18, 21, 1, 9, 27, 3, 14, 20, 12, 17, 22, 19, 5, 6, 7, 16, 0, 11, 24,
+                13, 15, 23, 26,
+            ],
+        ),
+        (
+            &[
+                f64::NEG_INFINITY, 0.0, 1.0, 2.0, -1.0, 2.0, f64::NAN, 2.5, f64::NAN, 2.0, f64::NAN, 0.0, 0.0, f64::NAN, f64::NEG_INFINITY, 0.0,
+                7.0, 2.0, 2.5, 1.0, 2.5, f64::NAN, -1.0, 1.0, 1.0,
+            ],
+            &[
+                0, 14, 4, 1, 11, 12, 15, 2, 19, 24, 3, 5, 6, 9, 7, 8, 10, 13, 22, 23, 17, 18, 20, 16,
+                21,
+            ],
+        ),
+        (
+            &[
+                -1.0, 7.0, 0.0, 3.0, f64::NEG_INFINITY, 3.0, 1.0, 2.0, f64::NAN, 0.0, 0.0, 2.5, f64::INFINITY, f64::NEG_INFINITY, 2.0, 2.5,
+                2.5, 3.0, 2.5, f64::NEG_INFINITY,
+            ],
+            &[
+                4, 13, 19, 0, 2, 9, 10, 6, 7, 14, 11, 15, 16, 18, 3, 5, 1, 8, 17, 12,
+            ],
+        ),
+        (
+            &[
+                f64::NEG_INFINITY, 3.0, -1.0, f64::NEG_INFINITY, 2.0, 1.0, 2.5, 3.0, f64::INFINITY, 2.5, f64::INFINITY, 7.0, 3.0, 2.5, -1.0, f64::NAN,
+                2.5, 7.0, -1.0, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY, 0.0, 2.5, 0.0, -1.0, f64::INFINITY, f64::INFINITY, 3.0, 2.0, 1.0,
+                1.0, 1.0, f64::INFINITY, f64::INFINITY, 7.0, -1.0, 0.0, f64::NEG_INFINITY, 3.0, 2.5, 1.0, -1.0, f64::NAN, 0.0, 1.0, 7.0,
+                2.5, 2.5, f64::NEG_INFINITY, 3.0,
+            ],
+            &[
+                0, 3, 20, 21, 22, 39, 50, 2, 14, 18, 26, 37, 43, 23, 25, 38, 45, 5, 31, 32, 33, 42, 46, 4,
+                30, 6, 9, 13, 16, 24, 41, 48, 49, 1, 7, 12, 29, 40, 51, 11, 17, 47, 8, 10, 15, 36, 19, 27,
+                28, 34, 35, 44,
+            ],
+        ),
+        (
+            &[
+                1.0, 7.0, 7.0, 7.0, f64::NAN, 7.0, f64::NEG_INFINITY, 3.0, -1.0, 2.5, 3.0, 0.0, f64::INFINITY, 7.0, 3.0, -1.0,
+                -1.0, f64::INFINITY, 0.0, -1.0, 7.0, 3.0, 0.0, 1.0, 2.5, 2.5, -1.0, 2.0, f64::NEG_INFINITY, 7.0,
+            ],
+            &[
+                6, 28, 8, 15, 16, 19, 26, 11, 18, 22, 0, 23, 27, 9, 24, 25, 7, 10, 14, 21, 1, 2, 3, 4,
+                5, 13, 20, 29, 12, 17,
+            ],
+        ),
+        (
+            &[
+                1.0, 1.0, f64::NEG_INFINITY, 3.0, 7.0, 7.0, f64::INFINITY, -1.0, -1.0, f64::NAN, f64::INFINITY, 2.0, 3.0, 1.0, f64::NAN, 2.0,
+                1.0, 0.0, f64::INFINITY, 2.0, 7.0, f64::NAN, 3.0, 2.5, f64::NEG_INFINITY, 3.0, 7.0, -1.0, -1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 2.5, f64::NEG_INFINITY, 7.0, f64::INFINITY, 2.5, -1.0, 2.0,
+            ],
+            &[
+                2, 24, 35, 7, 8, 27, 28, 39, 17, 29, 30, 31, 32, 0, 1, 13, 16, 33, 11, 15, 19, 40, 23, 38,
+                3, 12, 4, 5, 20, 6, 9, 34, 26, 10, 14, 22, 18, 21, 25, 36, 37,
+            ],
+        ),
+        (
+            &[
+                2.0, 7.0, 2.5, 0.0, f64::INFINITY, f64::NAN, f64::NAN, f64::NEG_INFINITY, -1.0, f64::INFINITY, -1.0, 0.0, 3.0, f64::INFINITY, -1.0, 2.0,
+                7.0, f64::INFINITY, 3.0, 1.0, f64::INFINITY, f64::NAN, 7.0, -1.0, -1.0, 1.0, 7.0, 2.5, 2.5, -1.0, 2.0, 2.5,
+                3.0, -1.0, 2.5, f64::NAN, f64::NAN, 1.0, 1.0, f64::NAN, 2.0, f64::INFINITY, f64::NEG_INFINITY, -1.0, f64::INFINITY, 2.5, f64::NEG_INFINITY, 2.0,
+                0.0,
+            ],
+            &[
+                7, 42, 46, 8, 10, 14, 23, 24, 29, 33, 43, 3, 11, 48, 19, 25, 37, 38, 0, 15, 30, 40, 47, 2,
+                27, 28, 31, 34, 45, 18, 32, 1, 4, 5, 6, 12, 16, 22, 26, 9, 13, 17, 20, 21, 35, 36, 39, 41,
+                44,
+            ],
+        ),
+        (
+            &[
+                0.0, -1.0, f64::NAN, f64::INFINITY, 1.0, f64::INFINITY, 2.0, 3.0, 2.0, f64::NEG_INFINITY, f64::INFINITY, 2.0,
+            ],
+            &[
+                1, 0, 2, 9, 4, 6, 8, 11, 7, 3, 5, 10,
+            ],
+        ),
+        (
+            &[
+                1.0, 0.0, f64::INFINITY, f64::INFINITY, 2.0, 2.5, f64::NEG_INFINITY, 2.0, 7.0, 2.0, 2.0, f64::NEG_INFINITY, 2.0, f64::NAN, 7.0, f64::NAN,
+                f64::INFINITY, f64::NAN, 2.5, f64::NAN, 0.0, 3.0, f64::NAN, 2.0, -1.0, f64::NEG_INFINITY, 3.0, 2.5, f64::NEG_INFINITY, 1.0, 2.0, f64::NAN,
+                2.0, 2.0, 2.5, -1.0, f64::NEG_INFINITY, f64::NAN,
+            ],
+            &[
+                6, 11, 25, 28, 36, 24, 35, 1, 20, 0, 29, 4, 7, 9, 10, 12, 23, 30, 32, 33, 5, 34, 8, 14,
+                2, 3, 13, 15, 18, 16, 17, 19, 27, 21, 22, 26, 31, 37,
+            ],
+        ),
+        (
+            &[
+                2.5, f64::NEG_INFINITY, 2.0, -1.0, 3.0, 3.0, -1.0, 2.5, 2.0, f64::NAN, 2.0, f64::NEG_INFINITY, f64::NAN, f64::NEG_INFINITY, 1.0, f64::INFINITY,
+                -1.0, f64::NAN, f64::NAN, f64::NAN, f64::NAN, 2.0, 1.0,
+            ],
+            &[
+                1, 11, 13, 3, 6, 16, 14, 22, 2, 8, 10, 21, 0, 7, 4, 5, 9, 12, 15, 17, 18, 19, 20,
+            ],
+        ),
+        (
+            &[
+                2.5, 1.0, 3.0, f64::INFINITY, f64::NAN, -1.0, f64::NEG_INFINITY, 0.0, f64::NEG_INFINITY, -1.0, 7.0, f64::INFINITY, f64::NAN, f64::NAN, f64::INFINITY, 2.5,
+                1.0, f64::NEG_INFINITY, 1.0, 3.0, 2.5, 1.0, 7.0, 0.0, 2.0, f64::INFINITY, f64::NEG_INFINITY, 1.0, 1.0, f64::NAN, 3.0, 2.5,
+                f64::INFINITY, 2.0, 7.0, 0.0, f64::INFINITY, -1.0, f64::INFINITY, 2.0, 0.0, 3.0, f64::NEG_INFINITY, 3.0, 2.5, f64::INFINITY, f64::NEG_INFINITY,
+            ],
+            &[
+                6, 8, 17, 26, 42, 46, 5, 9, 37, 7, 23, 35, 40, 1, 16, 18, 21, 27, 28, 24, 33, 39, 0, 15,
+                20, 31, 44, 2, 30, 41, 10, 3, 4, 43, 22, 34, 11, 12, 13, 19, 14, 25, 29, 32, 36, 38, 45,
+            ],
+        ),
+        (
+            &[
+                1.0, 0.0, 7.0, -1.0,
+            ],
+            &[
+                3, 1, 0, 2,
+            ],
+        ),
+        (
+            &[
+                0.0, f64::NEG_INFINITY, f64::NEG_INFINITY, -1.0, 7.0, 2.5, 3.0, f64::INFINITY, 3.0, 1.0, -1.0, 3.0, f64::NAN, 2.0, 2.5, 2.0,
+                1.0, 7.0, f64::INFINITY, 0.0, f64::NEG_INFINITY, f64::NAN, -1.0, f64::NEG_INFINITY, -1.0, 3.0, 7.0, 3.0, 0.0, f64::NAN, f64::NEG_INFINITY, f64::NEG_INFINITY,
+                f64::NEG_INFINITY, f64::NEG_INFINITY, 2.0, 1.0, 0.0, -1.0, f64::INFINITY, 3.0, 2.0, f64::NEG_INFINITY, f64::NAN, f64::INFINITY, 2.0, f64::NAN, 2.5, f64::INFINITY,
+                2.5, f64::NAN, f64::NAN, 2.5, 3.0, 1.0, f64::INFINITY, 7.0, -1.0, 7.0, 7.0,
+            ],
+            &[
+                1, 2, 20, 23, 30, 31, 32, 33, 41, 3, 10, 22, 24, 37, 56, 0, 19, 28, 36, 9, 16, 35, 53, 13,
+                15, 34, 40, 44, 5, 14, 46, 48, 51, 6, 8, 11, 25, 27, 39, 52, 4, 17, 55, 57, 58, 7, 12, 18,
+                21, 26, 29, 38, 42, 43, 45, 47, 49, 50, 54,
+            ],
+        ),
+        (
+            &[
+                7.0, -1.0, -1.0, -1.0, f64::NAN, 2.0, f64::INFINITY, 3.0, f64::NAN, 2.0, f64::INFINITY, 7.0, f64::NEG_INFINITY, 2.0, 3.0, -1.0,
+                7.0, 2.5, 0.0, 1.0, 0.0, 3.0, 2.0, 7.0, 2.5, 1.0, f64::NEG_INFINITY, 0.0, 3.0, f64::NAN, -1.0, f64::INFINITY,
+                7.0, 7.0, 3.0, f64::NAN, 2.5, 7.0,
+            ],
+            &[
+                26, 1, 2, 3, 30, 18, 20, 27, 25, 9, 7, 0, 4, 12, 15, 19, 5, 13, 22, 17, 24, 36, 14, 21,
+                28, 34, 11, 33, 37, 6, 8, 16, 23, 10, 29, 32, 31, 35,
+            ],
+        ),
+        (
+            &[
+                2.0, 3.0, 2.0, 0.0, 1.0, 2.0, f64::NEG_INFINITY, f64::NAN,
+            ],
+            &[
+                6, 3, 4, 0, 2, 5, 1, 7,
+            ],
+        ),
+        (
+            &[
+                7.0, f64::NEG_INFINITY, 3.0, 2.0, 3.0, 3.0, 1.0, -1.0, 3.0, f64::NAN, 3.0, 3.0, 1.0, 1.0,
+            ],
+            &[
+                1, 7, 6, 12, 13, 3, 2, 4, 5, 8, 10, 0, 9, 11,
+            ],
+        ),
+        (
+            &[
+                3.0, 1.0, 3.0, f64::NAN, f64::INFINITY, 0.0, 2.5, 1.0, f64::NAN, 3.0, f64::NAN, 2.0, 7.0, 2.5, 1.0, f64::INFINITY,
+                0.0, 2.5, 3.0, 2.0, 2.0, 1.0, 3.0, -1.0, 2.0, 2.0, 1.0, f64::NAN, 7.0, 0.0, f64::INFINITY, 7.0,
+                2.0, f64::INFINITY, 0.0, -1.0, 2.0, 2.0, 0.0, 2.0, 2.5, 3.0, -1.0, 1.0, 2.0, -1.0, f64::INFINITY, f64::INFINITY,
+                f64::NEG_INFINITY, 0.0, 7.0, 2.0, f64::INFINITY, f64::NAN, 7.0, 0.0, f64::NAN, 2.5,
+            ],
+            &[
+                48, 23, 35, 42, 45, 5, 16, 29, 34, 38, 49, 55, 1, 7, 14, 21, 26, 43, 11, 19, 20, 24, 25, 32,
+                36, 37, 39, 44, 51, 6, 13, 17, 40, 0, 2, 3, 9, 18, 22, 41, 12, 4, 8, 10, 57, 31, 15, 27,
+                28, 50, 54, 30, 33, 46, 47, 52, 53, 56,
+            ],
+        ),
+        (
+            &[
+                2.5, 7.0, 1.0, f64::NEG_INFINITY, 2.0, 7.0, 2.0, -1.0, 1.0, f64::NEG_INFINITY, 2.5, 1.0, 3.0, 3.0, f64::INFINITY, f64::NEG_INFINITY,
+                f64::NAN, f64::INFINITY, 2.5, 0.0, 2.5, f64::NAN, 7.0, 1.0, 0.0, f64::NAN, 2.0, f64::NAN, 0.0, f64::NAN, f64::NEG_INFINITY, 2.0,
+                7.0, -1.0, f64::INFINITY, 3.0, f64::NAN, 2.0, 2.5, f64::INFINITY, -1.0,
+            ],
+            &[
+                3, 9, 15, 30, 7, 33, 40, 19, 24, 28, 2, 8, 11, 23, 4, 6, 26, 31, 37, 0, 10, 18, 20, 12,
+                13, 35, 1, 5, 32, 14, 16, 22, 17, 21, 25, 27, 29, 38, 34, 36, 39,
+            ],
+        ),
+        (
+            &[
+                f64::NAN, 1.0, f64::INFINITY, f64::INFINITY, f64::INFINITY, 0.0, 3.0, 7.0, f64::INFINITY, 7.0, 7.0, 2.5, 1.0, f64::INFINITY, -1.0, 1.0,
+                2.0, 2.5, 2.0, -1.0, 0.0, f64::NEG_INFINITY, f64::NEG_INFINITY, 1.0, -1.0, f64::INFINITY, -1.0, 2.5, f64::NAN, 3.0, 1.0, 2.5,
+                2.5, 2.0, f64::NAN, 1.0, f64::NEG_INFINITY, 1.0, 3.0, 7.0, 2.0, 0.0, 0.0, 1.0,
+            ],
+            &[
+                0, 21, 22, 36, 14, 19, 24, 26, 5, 20, 41, 42, 1, 12, 15, 23, 30, 35, 37, 43, 16, 18, 33, 40,
+                11, 17, 27, 31, 32, 6, 29, 38, 7, 9, 10, 39, 2, 3, 4, 8, 13, 25, 28, 34,
+            ],
+        ),
+        (
+            &[
+                7.0, -1.0, 1.0, 1.0, f64::NEG_INFINITY, 1.0, f64::NEG_INFINITY, 2.5, 7.0, f64::NAN, 2.0, 2.5, 7.0, f64::INFINITY, 7.0, 2.5,
+                3.0, 0.0, f64::NAN, f64::INFINITY, 7.0, f64::INFINITY, f64::NAN, 2.0, f64::NEG_INFINITY, 0.0,
+            ],
+            &[
+                4, 6, 24, 1, 17, 25, 2, 3, 5, 10, 23, 7, 11, 0, 8, 9, 15, 16, 12, 14, 13, 18, 20, 19,
+                21, 22,
+            ],
+        ),
+        (
+            &[
+                2.0, 2.5, 0.0, f64::NAN, 2.0, f64::INFINITY, 7.0, 7.0, -1.0, 2.0, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NEG_INFINITY, 1.0,
+                -1.0, f64::NEG_INFINITY, 3.0, f64::NAN, 3.0, 7.0, 2.5, 3.0, f64::NAN, f64::INFINITY, 1.0, 7.0, 3.0, -1.0, f64::INFINITY, 0.0,
+                f64::NAN, 2.0, 2.0, f64::INFINITY, 7.0, f64::NEG_INFINITY, f64::INFINITY, 1.0, 1.0, 3.0, f64::NEG_INFINITY, f64::NEG_INFINITY, 2.0, 2.0, 3.0, f64::NAN,
+                7.0, 2.5, 0.0, 3.0, f64::NAN, 2.0, f64::INFINITY, 2.5, f64::NAN, 3.0,
+            ],
+            &[
+                14, 17, 37, 42, 43, 16, 29, 2, 31, 50, 15, 26, 39, 40, 0, 4, 1, 3, 8, 9, 33, 34, 44, 45,
+                53, 22, 49, 55, 28, 6, 7, 5, 10, 11, 12, 13, 18, 19, 20, 23, 51, 21, 24, 41, 46, 27, 36, 48,
+                25, 30, 32, 35, 38, 47, 52, 54, 56, 57,
+            ],
+        ),
+        (
+            &[
+                f64::INFINITY, 1.0, 3.0, f64::NAN, 7.0, f64::INFINITY, -1.0, 3.0, 2.5, 7.0, f64::NEG_INFINITY, 1.0, 2.0, -1.0, 0.0, -1.0,
+                3.0, -1.0, 1.0, f64::INFINITY, 1.0, f64::NAN, 2.5, 7.0, 3.0, f64::INFINITY, 2.5, f64::NEG_INFINITY, f64::NEG_INFINITY, 2.0, 7.0, -1.0,
+                2.5, 0.0, -1.0, f64::NEG_INFINITY, f64::NAN, f64::NAN, f64::NAN, -1.0, f64::NEG_INFINITY, 2.0, f64::NEG_INFINITY, f64::NAN, f64::NAN, -1.0, 2.5, f64::INFINITY,
+                2.5, -1.0, f64::NAN, -1.0, f64::NEG_INFINITY, f64::NAN, 3.0, f64::NAN, 3.0, 0.0, f64::NAN, 7.0, f64::NAN, 1.0,
+            ],
+            &[
+                10, 27, 28, 35, 40, 42, 52, 6, 13, 15, 17, 31, 34, 39, 45, 49, 51, 14, 33, 57, 1, 11, 18, 20,
+                61, 12, 29, 41, 8, 26, 32, 46, 48, 2, 7, 16, 54, 56, 4, 0, 3, 22, 24, 9, 23, 30, 5, 19,
+                21, 25, 36, 37, 38, 43, 44, 47, 50, 53, 55, 58, 59, 60,
+            ],
+        ),
+        (
+            &[
+                f64::NAN, 7.0, 2.5, 3.0, 2.0, 1.0, 1.0, 1.0, 2.0, f64::NAN, f64::NEG_INFINITY, 1.0, 0.0,
+            ],
+            &[
+                0, 10, 12, 5, 6, 7, 11, 4, 8, 2, 3, 1, 9,
+            ],
+        ),
+        (
+            &[
+                f64::INFINITY, 0.0, 1.0, f64::NEG_INFINITY, 1.0, 3.0, f64::NEG_INFINITY, 2.5, f64::NAN,
+            ],
+            &[
+                3, 6, 1, 2, 4, 7, 5, 0, 8,
+            ],
+        ),
+        (
+            &[
+                7.0, f64::INFINITY, 2.5, f64::INFINITY, -1.0, f64::NEG_INFINITY, f64::NAN, -1.0, 7.0, 2.0, 2.5, 2.5, 1.0, f64::NEG_INFINITY, f64::NEG_INFINITY, 7.0,
+                2.5, -1.0, f64::NAN, 7.0, 0.0, f64::INFINITY, 7.0, 7.0, -1.0, 7.0, -1.0, -1.0, 0.0, 0.0, 7.0, f64::NEG_INFINITY,
+                2.0, f64::NEG_INFINITY, 1.0, 1.0, f64::INFINITY, 3.0, f64::NEG_INFINITY, 3.0, 0.0, 2.0, 1.0, f64::NAN, 3.0, 1.0, 2.0, 0.0,
+                f64::NEG_INFINITY, 1.0, f64::INFINITY, 3.0, 7.0, f64::NEG_INFINITY,
+            ],
+            &[
+                5, 13, 14, 31, 33, 38, 48, 53, 4, 7, 17, 24, 26, 27, 20, 28, 29, 40, 47, 12, 34, 35, 42, 45,
+                49, 9, 32, 41, 46, 2, 10, 11, 16, 37, 39, 44, 51, 0, 8, 15, 22, 23, 25, 1, 3, 6, 18, 19,
+                30, 52, 21, 36, 43, 50,
+            ],
+        ),
+        (
+            &[
+                3.0, 1.0, 7.0, 0.0, f64::NEG_INFINITY, 2.5, f64::NAN, f64::NEG_INFINITY, 7.0, f64::NEG_INFINITY, 1.0,
+            ],
+            &[
+                4, 7, 9, 3, 1, 10, 5, 0, 2, 6, 8,
+            ],
+        ),
+        (
+            &[
+                -1.0, f64::NAN, 2.5, f64::NAN, f64::NEG_INFINITY, 3.0, 3.0, 0.0, 1.0, f64::NEG_INFINITY, 7.0, f64::NEG_INFINITY, -1.0, 3.0, 2.5, 0.0,
+                1.0, f64::NAN, -1.0, f64::INFINITY, -1.0, f64::NAN, -1.0, 3.0, 2.5, 0.0, 1.0, 2.0, 2.5, 2.5, -1.0, -1.0,
+                0.0, 1.0, 3.0, f64::NAN, f64::NEG_INFINITY, 3.0, -1.0, 3.0, 3.0, 3.0, 2.0, 1.0, 0.0, 7.0, -1.0, -1.0,
+                -1.0, f64::INFINITY, -1.0, -1.0, 2.5, 1.0, f64::INFINITY, f64::INFINITY, 7.0,
+            ],
+            &[
+                0, 1, 2, 3, 4, 9, 11, 36, 12, 18, 20, 22, 30, 31, 38, 46, 47, 48, 50, 51, 7, 15, 25, 32,
+                44, 8, 16, 26, 33, 43, 53, 27, 42, 14, 24, 28, 29, 52, 5, 6, 13, 41, 10, 17, 19, 21, 23, 34,
+                35, 37, 39, 40, 45, 56, 49, 54, 55,
+            ],
+        ),
+        (
+            &[
+                7.0, 2.0, -1.0, f64::NAN, 3.0, 2.5, 0.0, 2.5, f64::NAN, f64::INFINITY, 7.0, -1.0, 0.0, -1.0,
+            ],
+            &[
+                2, 11, 13, 6, 12, 1, 5, 7, 4, 0, 3, 8, 10, 9,
+            ],
+        ),
+        (
+            &[
+                f64::INFINITY, f64::NAN, 0.0, f64::NAN, 1.0, f64::INFINITY, f64::INFINITY, -1.0, 2.5, 2.5, -1.0, f64::NEG_INFINITY, 2.0, 7.0, 0.0, 1.0,
+                f64::NAN, 3.0, 3.0, 3.0, 0.0, 2.5, 7.0, 7.0, 2.5, -1.0, -1.0, 2.0, 1.0, 2.0, 1.0,
+            ],
+            &[
+                0, 1, 11, 10, 2, 3, 7, 25, 26, 14, 20, 4, 15, 28, 30, 12, 27, 29, 8, 9, 21, 24, 17, 18,
+                19, 13, 22, 23, 5, 6, 16,
+            ],
+        ),
+        (
+            &[
+                f64::INFINITY, 2.0, 3.0, 2.0, 1.0, f64::INFINITY, 2.5, 0.0, 2.5, -1.0, -1.0, -1.0, 0.0, f64::NAN, f64::NAN, f64::NEG_INFINITY,
+                f64::INFINITY, f64::INFINITY, 3.0, 0.0, f64::NEG_INFINITY, -1.0, 3.0, 1.0, f64::INFINITY, 0.0, 7.0, f64::INFINITY, 3.0, 2.0, 0.0, -1.0,
+                0.0, 7.0, f64::NAN, -1.0, 0.0, 3.0, f64::NAN, 3.0,
+            ],
+            &[
+                15, 20, 9, 10, 11, 21, 31, 35, 7, 12, 19, 25, 30, 32, 36, 4, 23, 1, 3, 29, 6, 8, 2, 0,
+                5, 13, 14, 18, 22, 28, 37, 39, 26, 33, 16, 17, 24, 27, 34, 38,
+            ],
+        ),
+        (
+            &[
+                f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, -1.0, f64::INFINITY, 2.0, 7.0, 0.0, 7.0, 0.0, 0.0, 3.0, f64::INFINITY, 2.5, 1.0, f64::NEG_INFINITY,
+                f64::NEG_INFINITY, f64::NEG_INFINITY, 0.0, 2.5, f64::INFINITY, 1.0, 2.5, 0.0, f64::NEG_INFINITY, f64::NAN,
+            ],
+            &[
+                2, 15, 16, 17, 24, 3, 7, 9, 10, 18, 23, 14, 21, 5, 13, 19, 22, 11, 6, 8, 0, 1, 4, 12,
+                20, 25,
+            ],
+        ),
+        (
+            &[
+                0.0, 7.0, 2.5, 0.0, 2.5, f64::NEG_INFINITY, -1.0, 1.0, 0.0, 0.0, -1.0, f64::NEG_INFINITY, f64::NEG_INFINITY, f64::INFINITY, f64::NAN, f64::NEG_INFINITY,
+                2.5, -1.0, 1.0, 0.0, f64::NEG_INFINITY, 2.5, 0.0, f64::NEG_INFINITY, 3.0, f64::NEG_INFINITY, 2.5, 0.0, f64::INFINITY, -1.0, 0.0, f64::NAN,
+                -1.0, 2.5, f64::NAN, 2.0, f64::INFINITY, 2.0, 0.0, 7.0, 1.0, 2.0, f64::NAN, 1.0, 2.5, 7.0, f64::NAN, f64::NEG_INFINITY,
+                f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY, f64::INFINITY, 7.0, 3.0, f64::NAN, f64::NEG_INFINITY, 3.0, 3.0, 2.5,
+            ],
+            &[
+                5, 11, 12, 15, 20, 23, 25, 47, 48, 49, 50, 55, 6, 10, 17, 29, 32, 0, 3, 8, 9, 19, 22, 27,
+                30, 38, 7, 18, 40, 43, 35, 37, 41, 2, 4, 16, 21, 26, 33, 58, 24, 53, 56, 57, 1, 13, 14, 28,
+                31, 34, 44, 39, 45, 36, 42, 46, 52, 51, 54,
+            ],
+        ),
+        (
+            &[
+                f64::NAN, 2.5, 7.0, 1.0, -1.0, -1.0, 7.0, 3.0, f64::NEG_INFINITY, f64::INFINITY, f64::INFINITY, 2.5, 1.0, f64::NEG_INFINITY, 7.0, 3.0,
+                1.0, 0.0, 1.0, 2.5, 3.0, 3.0, 3.0, 3.0, f64::NEG_INFINITY, f64::INFINITY, f64::NEG_INFINITY, 2.5, 7.0, -1.0, 7.0, 0.0,
+                1.0, 0.0, f64::NAN, 7.0, -1.0, f64::NAN, 3.0, f64::NEG_INFINITY, 3.0, 7.0, 7.0, 1.0, f64::NEG_INFINITY, 1.0, f64::INFINITY, f64::NAN,
+                -1.0,
+            ],
+            &[
+                0, 8, 13, 24, 26, 39, 44, 4, 5, 29, 36, 48, 17, 31, 33, 3, 12, 16, 18, 32, 43, 45, 1, 11,
+                19, 27, 7, 15, 20, 21, 22, 23, 38, 40, 2, 6, 14, 28, 30, 35, 41, 42, 9, 10, 25, 34, 37, 46,
+                47,
+            ],
+        ),
+        (
+            &[
+                f64::INFINITY, f64::NEG_INFINITY, -1.0, 2.5, f64::NEG_INFINITY, 3.0, f64::NAN, 2.5, 0.0, 1.0, 7.0, -1.0, f64::NEG_INFINITY, -1.0,
+            ],
+            &[
+                1, 4, 12, 2, 11, 13, 8, 9, 3, 7, 5, 10, 0, 6,
+            ],
+        ),
+        (
+            &[
+                1.0, 2.5, f64::NEG_INFINITY, f64::NEG_INFINITY, f64::INFINITY, 7.0, 0.0, f64::NAN, f64::NEG_INFINITY, 3.0, -1.0, 0.0, f64::NEG_INFINITY, f64::NAN, 7.0, 2.5,
+                2.0, f64::NAN, 1.0, 0.0, f64::NAN, 2.5, f64::NAN, 2.0, 0.0, 0.0, f64::NEG_INFINITY, 0.0, -1.0, 2.5,
+            ],
+            &[
+                2, 3, 8, 12, 26, 10, 28, 6, 11, 19, 24, 25, 27, 0, 18, 16, 23, 1, 15, 21, 29, 9, 5, 14,
+                4, 7, 13, 17, 20, 22,
+            ],
+        ),
+    ];
+
+    #[test]
+    fn js_sort_by_orders_nan_keys_as_v8_does() {
+        for (keys, expected) in V8_NAN_ORDERS {
+            let mut items: Vec<(f64, usize)> = keys.iter().copied().zip(0..).collect();
+            js_sort_by(&mut items, |a, b| a.0 - b.0);
+            let ids: Vec<usize> = items.iter().map(|item| item.1).collect();
+            assert_eq!(&ids, expected, "keys {keys:?}");
+        }
+    }
+
+    /// With a consistent comparator, the order is the stable order, as `slice::sort_by` gives it.
+    #[test]
+    fn js_sort_by_is_stable_for_a_consistent_comparator() {
+        let items: Vec<(f64, usize)> = (0..90).map(|i| (((i * 37) % 11) as f64, i)).collect();
+        let mut expected = items.clone();
+        expected.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let mut actual = items;
+        js_sort_by(&mut actual, |a, b| a.0 - b.0);
+        assert_eq!(actual, expected);
+    }
+
+    /// A NaN key makes the comparator inconsistent, and the sort still returns a permutation without a panic.
+    #[test]
+    fn js_sort_by_returns_a_permutation_on_long_nan_input() {
+        let items: Vec<(f64, usize)> = (0..300)
+            .map(|i| {
+                (
+                    if i % 7 == 3 {
+                        f64::NAN
+                    } else {
+                        (i % 13) as f64
+                    },
+                    i,
+                )
+            })
+            .collect();
+        let mut actual = items.clone();
+        js_sort_by(&mut actual, |a, b| a.0 - b.0);
+        let mut ids: Vec<usize> = actual.iter().map(|item| item.1).collect();
+        ids.sort_unstable();
+        assert_eq!(ids, (0..300).collect::<Vec<usize>>());
+    }
+}
