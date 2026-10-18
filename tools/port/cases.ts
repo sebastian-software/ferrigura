@@ -102,7 +102,219 @@ export const explicitCases: Record<string, string[]> = {
   railroad: [],
   swimlanes: [],
   treeView: [],
-  usecase: [],
+  usecase: [
+    // The probes of the research (`docs-port/usecase/NOTES.md` section 2.4), one input each.
+    // P01
+    'usecase-beta\nA --> B\n',
+    // P02
+    'usecase-beta\nactor end\n',
+    // P03
+    'usecase-beta\nactor A\nA %% c\n',
+    // P04
+    'usecase-beta\n%% whole\nactor A\n',
+    // P05
+    'usecase-beta\nA --oz B\n',
+    // P06
+    'usecase-beta\nA <-- lbl -- B\n',
+    // P07
+    'usecase-beta\nA <--- lbl -- B\n',
+    // P08
+    'usecase-beta\nA -- lbl --> B\n',
+    // P09
+    'usecase-beta\nUC1 ..>:include UC2\n',
+    // P10
+    'usecase-beta\nUC1 ..>:Include UC2\n',
+    // P11
+    'usecase-beta\nA @{ type: actor }\n',
+    // P12
+    'usecase-beta\nA @{ x: 1.5 }\n',
+    // P13
+    'usecase-beta\nA @{ icon: 1mg }\n',
+    // P14
+    'usecase-beta\nactor A @{ type: "hollow" }\n',
+    // P15
+    'usecase-beta %% c\nactor A\n',
+    // P16
+    'usecase-beta\nactor café\n',
+    // P17
+    'usecase-beta\npackage X\n',
+    // P18
+    'usecase-beta\npackageX --> Y\n',
+    // P19
+    'usecase-beta\nsystemBoundary B\n  A --> C\nend\n',
+    // P20
+    'usecase-beta\nUC1<<  >>\n',
+    // P21
+    'usecase-beta\nUC1 << no end\n',
+    // P22
+    'usecase-beta\nA --> B accTitle: x\n',
+    // P23
+    'usecase-beta\nA "oops\n',
+    // P24
+    'usecase-beta\nA @ B\n',
+    // P25
+    'usecase-beta\ndirection lr\n',
+    // P26
+    'usecase-beta\ndirection TD\nA --> B\n',
+    // P27
+    'usecase-beta\naccDescr {\n line one\n line two\n}\nA --> B\n',
+    // P28
+    'usecase-beta\njson j @{ "a": 1\n',
+    // P29
+    'usecase-beta\njson j @{ "a": [1, "x", null], "b": 1.0e400, "c": -0, "d": 12345678901234567890 }\n',
+    // P30
+    'usecase-beta\nUC1:::cls\nclass UC1 other\n',
+    // P31
+    'usecase-beta\nUC1\nUC2\nclass UC1,UC2 cls1,cls2\n',
+    // P32
+    'usecase-beta\nx --> y\nx-- y\n',
+    // P33
+    'usecase-beta\no-- p\n',
+    // P34
+    'usecase-beta\nUC1\nstyle UC1 fill:#f9f,stroke:1px\n',
+    // P35
+    'usecase-beta\nactor A\nnote for A "hi there"\nnote for A plain words\n',
+    // P36
+    'usecase-beta\n\t%% tabbed comment\nactor A\n',
+    // P37
+    'usecase-beta\nUC1 --> UC2 : x\n',
+    // P38
+    'usecase-beta\nactor A\fB\n',
+    // P39
+    'usecase-beta\nactor "Good Guy":::cls\n',
+    // P40
+    'usecase-beta\nUC1 @{ business: true }\nUC1 @{ type: "rect" }\n',
+    // P07b
+    'usecase-beta\nA <--- B\n',
+    // P41
+    'usecase-beta\nactor A\nA @{ type: "hollow" } --> B\n',
+    // P42
+    'usecase-beta\nUC1\nUC1 @{ business: true }\nUC1 --> UC2\n',
+    // P43
+    'usecase-beta\nUC1 @{ business: true } --> UC2\n',
+    // P44
+    'usecase-beta\njson j @{ "a": 1e400, "b": -0, "c": 0.1 }\n',
+    // P45
+    'usecase-beta\nUC1 e1@--> UC2\nUC1 e1@{ animate: true }\n',
+    // P47
+    'usecase-beta\nA o-- lbl -- B\n',
+    // P48
+    'usecase-beta\nA -- lbl --o B\n',
+    // P49
+    'usecase-beta\nUC1 ..> UC2\n',
+    // P50
+    'usecase-beta\nactor A\nactor B\nA --|> B\n',
+    // P51
+    'usecase-beta\nactor A\nUC1\nA --|> UC1\n',
+    // P52
+    'usecase-beta\nactor A\nUC1 ..>:include A\n',
+    // Q01
+    'usecase-beta\nUC1 e1@--> UC2\n',
+    // Q02
+    'usecase-beta\nUC1 e1@--> UC2\ne1@{ animate: true, animation: "slow" }\n',
+    // Q03
+    'usecase-beta\nUC1 e1@--> UC2\ne1@{ business: true }\n',
+    // Q04
+    'usecase-beta\nx-->y\n',
+    // Q05
+    'usecase-beta\nx --> y\n',
+    // Q06
+    'usecase-beta\nsystemBoundary B [Title] @{ type: "package" }\n  UC1\nend\n',
+    // Q07
+    'usecase-beta\nsystemBoundary B\n  UC1\nend\nB @{ type: "hollow" }\n',
+    // Q08
+    'usecase-beta\nsystemBoundary B1\n  UC1\nend\nsystemBoundary B2\n  UC1\nend\n',
+    // Q09
+    'usecase-beta\nactor A @{ icon: "fa:user", type: "hollow" }\n',
+    // Q10
+    'usecase-beta\nactor A @{ type: "awesome", business: true }\n',
+    // Q11
+    'usecase-beta\nUC1[Rect] @{ business: true }\n',
+    // Q12
+    'usecase-beta\nUC1[Rect]\n',
+    // Q13
+    'usecase-beta\nUC1(Label text)\n',
+    // Q14
+    'usecase-beta\nUC1(One)\nUC1(Two)\n',
+    // Q15
+    'usecase-beta\nUC1(One)\nUC1(One)\n',
+    // Q16
+    'usecase-beta\nclassDef a,b fill:#f9f, stroke:#333\nUC1\nclass UC1 a\nstyle UC1 stroke:#f00\n',
+    // Q17
+    'usecase-beta\nclass ZZ a\n',
+    // Q18
+    'usecase-beta\nstyle ZZ fill:#fff\n',
+    // Q19
+    'usecase-beta\nactor "Hello World!"\nactor Hello_World_\n',
+    // Q20
+    'usecase-beta\nactor "A-B"\nactor "A_B"\n',
+    // Q21
+    'usecase-beta\nUC1(end for class)\n',
+    // Q22
+    'usecase-beta\nUC1 e1@--> UC2\nnote for e1 hi\n',
+    // Q23
+    'usecase-beta\nsystemBoundary B\nend\nnote for B hi\n',
+    // Q24
+    'usecase-beta\njson j @{ "a": 1 }\nUC1 --> j\n',
+    // Q25
+    'usecase-beta\njson j @{ "a": 1 }\nUC1 --|> j\n',
+    // Q26
+    'usecase-beta\njson j @{ "a": 1 }\nUC1 ..>:include j\n',
+    // Q27
+    'usecase-beta\njson j @{ "a": 1, "b": 2, "a": 3 }\n',
+    // Q28
+    'usecase-beta\njson j @{ "a": 1 } :::cls\n',
+    // Q29
+    'usecase-beta\naccTitle: My title\naccDescr: desc here\nactor A\n',
+    // Q30
+    'usecase-beta\nsystemBoundary B1\nsystemBoundary B2\nend\nend\n',
+    // Q31
+    'usecase-beta\nsystemBoundary B1\nend\n',
+    // Q32
+    'usecase-beta\nsystemBoundary B1\n  actor X, Y\nend\n',
+    // Q33
+    'usecase-beta\n',
+    // Q34
+    'usecase-beta',
+    // Q35
+    'usecase-beta\nactor "Café"\n',
+    // Q36
+    'usecase-beta\nUC1 --> "`x`"\n',
+    // Q37
+    'usecase-beta\nactor "`abc"\n',
+    // L01
+    'usecase-beta\nA -- lbl -- B\n',
+    // L02
+    'usecase-beta\nA --- lbl --- B\n',
+    // L04
+    'usecase-beta\nA -- lbl --x B\n',
+    // L05
+    'usecase-beta\nA ---> B\n',
+    // L06
+    'usecase-beta\nA <-- lbl --> B\n',
+    // L07
+    'usecase-beta\nA o-- lbl --o B\n',
+    // L08
+    'usecase-beta\nA x-- lbl -- B\n',
+    // L09
+    'usecase-beta\nA x-- B\n',
+    // L10
+    'usecase-beta\nA -- a-b c --> B\n',
+    // L11
+    'usecase-beta\nA -- a:b --> B\n',
+    // L12
+    'usecase-beta\nA -- (x) --> B\n',
+    // L13
+    'usecase-beta\nA --first second--> B\n',
+    // L14
+    'usecase-beta\nA -- "`x y`" --> B\n',
+    // L15
+    'usecase-beta\nA -- "q, r" --> B\n',
+    // L16
+    'usecase-beta\nA -- 1.5px --> B\n',
+    // L17
+    'usecase-beta\nA <--  B\n',
+  ],
   venn: [],
   wardley: [],
   class: [

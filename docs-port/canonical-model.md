@@ -248,3 +248,12 @@ The architecture model is the DB state after the parse (`architectureDb.ts`), wi
 - **Escaped text.** Escaping for SVG belongs to rendering. Sanitising is in the model for the flowchart DB only (see Sanitisation above).
 - **Configuration and directives.** `%%{init: …}%%` and the front matter `config` block are read by `ferrigura-syntax`'s `config` module and resolved by `ferrigura-model`'s `config` module (the effective configuration, checked by `pnpm port:diff config`). The grammar treats directives and comments as hidden, so they never reach a model.
 - **Source positions.** Errors carry them; models do not.
+
+## Use case
+
+The use case model is the DB state after the parse, with the names of [usecase/PLAN.md](./usecase/PLAN.md). Its own rules:
+
+- **Labels are raw.** The DB sanitises labels only in `getData`, the renderer's input, so the model holds the labels as the grammar gave them, with the entity placeholders. The header texts (`accTitle`, `accDescr`) are sanitised as the common DB sanitises them, and `title` is always `""`: the front matter title is set and then cleared by the parser.
+- **The AST is in the model.** `ast` is the graph AST of the parse (`usecaseAst.ts`). Its spans are UTF-16 code units, and its `nodes`, `groups` and `classDefs` drop the key `__proto__`, as the reference's plain objects do.
+- **JSON tables.** `value` writes a non-finite number as its sentinel string; `propertyOrder` lists each object's keys in the text order, keyed by JSON pointer; `rows` is the display of `getData`, with the numbers written as JavaScript writes them (`String(number)`).
+- **Ids** are the grammar's, and a quoted name's id is `label.replace(/\W/g, '_')`.

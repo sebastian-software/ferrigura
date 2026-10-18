@@ -131,7 +131,16 @@ const suites: Record<string, string[]> = {
   railroad: [],
   swimlanes: [],
   treeView: [],
-  usecase: [],
+  usecase: [
+    'use_case_lexer_spec',
+    'use_case_parser_spec',
+    'use_case_publication_spec',
+    'use_case_spec',
+    'use_case_db_spec',
+    'use_case_json_spec',
+    'use_case_docs_spec',
+    'use_case_render_spec',
+  ],
   venn: [],
   wardley: [],
 };
