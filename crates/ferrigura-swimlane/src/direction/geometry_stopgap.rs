@@ -156,6 +156,14 @@ fn node_bounds_info_for(node: &Node) -> Option<(String, NodeBounds)> {
     measured_node_rect(node).map(|bounds| (node.id.clone(), bounds))
 }
 
+/// `pointInsideRect(point, rect, buffer)`: whether the point lies strictly inside the rectangle shrunk by `buffer`.
+pub(crate) fn point_inside_rect(point: Point, rect: Rect, buffer: f64) -> bool {
+    point.x > rect.left + buffer
+        && point.x < rect.right - buffer
+        && point.y > rect.top + buffer
+        && point.y < rect.bottom - buffer
+}
+
 /// `rectOfNodeBounds(node)`.
 pub(crate) fn rect_of_node_bounds(node: &Node) -> Option<Rect> {
     measured_node_rect(node).map(|bounds| bounds.rect)

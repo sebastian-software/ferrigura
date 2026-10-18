@@ -19,7 +19,9 @@ pub(crate) fn post_process_swimlane_layout(
 /// doc-hidden `testing` module. The driver runs the same functions in its order.
 #[doc(hidden)]
 pub mod passes {
-    use crate::direction::{port_swap, shared_track_nudging, sibling_shared_face_routing};
+    use crate::direction::{
+        port_swap, shared_track_nudging, sibling_shared_face_routing, terminal_stub,
+    };
     use crate::model::LayoutData;
 
     /// `nudgeSharedInteriorSubpaths(edges, nodeByIdMap)`.
@@ -35,5 +37,10 @@ pub mod passes {
     /// `portSwapToLShape(edges, nodes)`.
     pub fn port_swap_to_l_shape(data: &mut LayoutData) {
         port_swap::port_swap_to_l_shape(data);
+    }
+
+    /// `collapseShortTerminalStub(edges, nodeByIdMap)`.
+    pub fn collapse_short_terminal_stub(data: &mut LayoutData) {
+        terminal_stub::collapse_short_terminal_stub(data);
     }
 }

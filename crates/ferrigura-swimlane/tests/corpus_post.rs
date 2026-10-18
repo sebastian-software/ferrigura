@@ -95,3 +95,14 @@ fn port_swap_to_l_shape_matches_every_stage() {
     let checked = check_pass(&cases, "portSwapToLShape", passes::port_swap_to_l_shape);
     assert_eq!(checked, 40, "the corpus has 40 stages of this pass");
 }
+
+#[test]
+fn collapse_short_terminal_stub_matches_every_stage() {
+    let cases = load_cases();
+    let checked = check_pass(
+        &cases,
+        "collapseShortTerminalStub",
+        passes::collapse_short_terminal_stub,
+    );
+    assert_eq!(checked, 2, "the corpus has 2 stages of this pass");
+}
