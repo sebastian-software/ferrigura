@@ -50,6 +50,13 @@ pub mod testing {
     pub use crate::direction::lr_transform::{
         apply_bt_direction_transform, apply_lr_direction_transform,
     };
+    pub use crate::direction::materialized::{
+        collapse_redundant_rectangular_doglegs, lift_obstacle_hugging_same_side_rails,
+        lift_top_lane_title_bands_above_rails, reassign_crossing_external_rail_channels,
+        resolve_rendered_orthogonal_crossings, separate_shared_rendered_terminal_lanes,
+        shift_left_lane_title_bands_left_of_rails, shortcut_redundant_orthogonal_jogs,
+        swap_destination_terminal_tails_to_reduce_crossings,
+    };
     pub use crate::helpers::{
         Coordinates, EdgeOrigin, EdgeRef, Graph, GraphNode, Layering, NodeId, OrderedLayers,
         to_graph_view, write_back_to_layout_data,

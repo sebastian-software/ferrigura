@@ -28,3 +28,16 @@ pub(crate) fn js_min(a: f64, b: f64) -> f64 {
     }
     if a < b { a } else { b }
 }
+
+/// The order that a comparator returning `diff` gives its elements: a negative difference sorts the first
+/// element first, a positive one the second, and zero or NaN counts as equal. Used by the sorts that the port
+/// has not moved to `js::js_sort_by` yet.
+pub(crate) fn js_sign_order(diff: f64) -> std::cmp::Ordering {
+    if diff < 0.0 {
+        std::cmp::Ordering::Less
+    } else if diff > 0.0 {
+        std::cmp::Ordering::Greater
+    } else {
+        std::cmp::Ordering::Equal
+    }
+}
