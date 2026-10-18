@@ -5,8 +5,9 @@
 
 mod support;
 
-use ferrigura_swimlane::LayoutData;
 use ferrigura_swimlane::testing::{layout_data_from_json, layout_data_to_json, passes};
+use ferrigura_swimlane::{Direction, LayoutData};
+use serde_json::{Value, json};
 use support::corpus::{Case, compare_snapshot, load_cases};
 
 /// The core's curve rule (`layoutCore.ts:55`): an edge without a curve, or with `basis`, is rounded.
@@ -105,4 +106,52 @@ fn collapse_short_terminal_stub_matches_every_stage() {
         passes::collapse_short_terminal_stub,
     );
     assert_eq!(checked, 2, "the corpus has 2 stages of this pass");
+}
+
+/// The direction, the nodes and the edges of a snapshot: the parts the post-processing gives back.
+fn project(snapshot: &Value) -> Value {
+    json!({
+        "direction": snapshot["direction"].clone(),
+        "nodes": snapshot["nodes"].clone(),
+        "edges": snapshot["edges"].clone(),
+    })
+}
+
+#[test]
+fn the_whole_chain_matches_the_output_of_every_case() {
+    let cases = load_cases();
+    let mut matched = 0;
+    let mut failures = Vec::new();
+    for case in &cases {
+        let routed = case
+            .stages
+            .iter()
+            .find(|(name, _)| name == "routed")
+            .map(|(_, data)| data)
+            .expect("every case has a routed stage");
+        let mut layout =
+            layout_data_from_json(routed).unwrap_or_else(|error| panic!("{}: {error}", case.name));
+        apply_curve_rule(&mut layout);
+        let direction = Direction::parse(layout.direction.as_deref().unwrap_or("TB"))
+            .unwrap_or_else(|| panic!("{}: a direction of the four", case.name));
+        if let Err(error) = passes::post_process(&mut layout, direction) {
+            failures.push(format!("{}: {error}", case.name));
+            continue;
+        }
+        match compare_snapshot(
+            &project(&case.output),
+            &project(&layout_data_to_json(&layout)),
+        ) {
+            Ok(()) => matched += 1,
+            Err(difference) => failures.push(format!("{}: {difference}", case.name)),
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{matched} of {} cases match; the first differences: {:#?}",
+        cases.len(),
+        failures.iter().take(5).collect::<Vec<_>>()
+    );
+    eprintln!("the whole chain: {matched} of {} cases match", cases.len());
+    assert_eq!(matched, 131);
 }
