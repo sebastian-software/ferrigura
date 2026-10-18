@@ -8,8 +8,8 @@
 
 use indexmap::IndexMap;
 
-use super::js_sort::sort_by_js;
 use super::{DestInfo, Orientation, Router, SegmentRef};
+use crate::js::js_sort_by;
 
 /// Which segments move when a conflict is resolved by a move: the whole chain of the edge on the pipe, or only the
 /// segment itself (`moveSegmentChainToTrack` and `moveSegmentToTrack`).
@@ -321,7 +321,7 @@ impl Router {
         }
 
         for mut group in by_source.into_values() {
-            sort_by_js(&mut group, |a, b| self.compare_sources(a, b));
+            js_sort_by(&mut group, |a, b| self.compare_sources(a, b));
             let handles: Vec<usize> = group
                 .iter()
                 .map(|&edge| self.edge_segments[edge][0])
@@ -357,7 +357,7 @@ impl Router {
         }
 
         for mut group in by_target.into_values() {
-            sort_by_js(&mut group, |a, b| {
+            js_sort_by(&mut group, |a, b| {
                 let score_a = self.target_distance(a);
                 let score_b = self.target_distance(b);
                 if (score_a - score_b).abs() > 0.1 {
@@ -399,7 +399,7 @@ impl Router {
                 }
             }
 
-            sort_by_js(&mut pipe_segments, |a, b| {
+            js_sort_by(&mut pipe_segments, |a, b| {
                 let (seg_a, seg_b) = (self.segments[a], self.segments[b]);
                 let by_edge = seg_a.edge as f64 - seg_b.edge as f64;
                 if by_edge != 0.0 {

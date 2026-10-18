@@ -13,7 +13,6 @@
 //!   simplification of a long path (1329-1493);
 //! - `crossing`: the crossing reduction, phase 2 (1618-2004);
 //! - `rebuild`: the geometry rebuild, phase 3 (2006-2205), and the write-back to the layout (2210-2282);
-//! - `js_sort`: the sort of `Array.prototype.sort` in V8, which the comparators of the reference need.
 //!
 //! The port keeps the operand order and the order of accumulation of the reference, uses `js_max` and `js_min`
 //! for `Math.max` and `Math.min`, `ferrigura_jsmath::hypot` for `Math.hypot`, and the key `to_fixed(x, 1)` for
@@ -21,7 +20,6 @@
 
 mod crossing;
 mod initial;
-mod js_sort;
 mod ports;
 mod rebuild;
 mod search;

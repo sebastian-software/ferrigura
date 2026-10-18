@@ -9,13 +9,13 @@
 use crate::math::{js_max, js_min};
 use crate::model::Point;
 
-use super::js_sort::sort_by_js;
 use super::ports::EdgePorts;
 use super::search::Endpoints;
 use super::{
     ANCHOR_OFFSET, EPS, Geo, HORIZONTAL_PIPE_MARGIN, Obstacle, Orientation, ROUTING_MARGIN, Role,
     RoutedSegment, Router, SegmentRef, VERTICAL_PIPE_MARGIN, js_sign,
 };
+use crate::js::js_sort_by;
 
 /// An entry of the routing order: the edge, whether it crosses lanes, and the distance between its nodes.
 #[derive(Clone, Copy)]
@@ -114,7 +114,7 @@ impl Router {
                 }
             })
             .collect();
-        sort_by_js(&mut entries, |a, b| {
+        js_sort_by(&mut entries, |a, b| {
             if a.cross_lane != b.cross_lane {
                 return b.cross_lane - a.cross_lane;
             }

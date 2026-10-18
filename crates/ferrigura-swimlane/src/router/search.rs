@@ -10,11 +10,11 @@ use crate::js::to_fixed;
 use crate::math::{js_max, js_min};
 use crate::model::Point;
 
-use super::js_sort::sort_by_js;
 use super::{
     CROSSING_PENALTY, EPS, HORIZONTAL_PIPE_MARGIN, Obstacle, Orientation, Router,
     VERTICAL_PIPE_MARGIN,
 };
+use crate::js::js_sort_by;
 
 /// The edge that a search routes, and the ids of its two nodes (`e.start`, `e.end`).
 #[derive(Clone, Copy)]
@@ -194,7 +194,7 @@ impl Router {
 
         let mut found: Vec<Point> = Vec::new();
         while !open_list.is_empty() {
-            sort_by_js(&mut open_list, |a, b| a.f - b.f);
+            js_sort_by(&mut open_list, |a, b| a.f - b.f);
             let current = open_list.remove(0);
             open_set.remove(&current.key);
 
@@ -213,12 +213,12 @@ impl Router {
             let cy = current.point.y;
 
             // The pipes next to the vertex, along its horizontal and vertical pipes (lines 1217-1221).
-            sort_by_js(v_pipes, |a, b| self.pipes[a].coord - self.pipes[b].coord);
+            js_sort_by(v_pipes, |a, b| self.pipes[a].coord - self.pipes[b].coord);
             let v_idx = v_pipes
                 .iter()
                 .position(|&p| (self.pipes[p].coord - cx).abs() < 1.0)
                 .map_or(-1, |index| index as isize);
-            sort_by_js(h_pipes, |a, b| self.pipes[a].coord - self.pipes[b].coord);
+            js_sort_by(h_pipes, |a, b| self.pipes[a].coord - self.pipes[b].coord);
             let h_idx = h_pipes
                 .iter()
                 .position(|&p| (self.pipes[p].coord - cy).abs() < 1.0)
