@@ -3,6 +3,7 @@
 //! count of crossings goes down, or stays and the route gets shorter with fewer bends. The candidate paths are
 //! in [`super::candidates`].
 
+use crate::js::js_sort_by;
 use indexmap::IndexMap;
 use std::collections::{HashMap, HashSet};
 
@@ -616,12 +617,22 @@ fn pair_candidates_for(
     }
 
     scored.retain(|candidate| candidate.crossings <= current.count);
-    scored.sort_by(|a, b| {
-        order_by_difference(js_or(
+    // The reference sorts the candidates with a comparator on their numbers, which is not a total order when a
+    // number is NaN. The sort is over the indices, as V8's is over the elements; the candidates are then taken in
+    // the order it gives.
+    let mut order: Vec<usize> = (0..scored.len()).collect();
+    js_sort_by(&mut order, |i, j| {
+        let (a, b) = (&scored[i], &scored[j]);
+        js_or(
             js_or(a.crossings - b.crossings, || a.bends - b.bends),
             || a.length - b.length,
-        ))
+        )
     });
+    let mut slots: Vec<Option<Scored>> = scored.into_iter().map(Some).collect();
+    scored = order
+        .into_iter()
+        .map(|index| slots[index].take().expect("each index is taken once"))
+        .collect();
     scored.truncate(MAX_PAIR_CANDIDATES_PER_EDGE);
 
     scored

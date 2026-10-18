@@ -4,6 +4,7 @@
 
 use ferrigura_swimlane::testing::{
     LayoutOptions, layout_data_from_json, layout_data_to_json, sugiyama_layout, to_graph_view,
+    write_back_to_layout_data,
 };
 use ferrigura_swimlane::{Direction, Error, LayoutData, run_swimlane_layout_core};
 use serde_json::{Value, json};
@@ -62,10 +63,27 @@ fn node<'a>(data: &'a LayoutData, id: &str) -> &'a ferrigura_swimlane::Node {
 }
 
 #[test]
-fn two_lanes_are_written_back_and_then_post_processing_is_reported_missing() {
+fn two_lanes_are_written_back_as_the_reference_writes_them() {
+    // The phases and the write-back only, as the corpus test runs them: the post-processing changes the title
+    // bands, which this test does not follow.
     let mut data = load(&two_lanes());
-    let error = run_swimlane_layout_core(&mut data).expect_err("the post-processing is not ported");
-    assert_eq!(error, Error::NotPorted("post-processing"));
+    let opts = LayoutOptions {
+        node_gap: 40.0,
+        layer_gap: 100.0,
+        ignore_cross_lane_edges: true,
+        automatic_lane_ordering: false,
+        direction: Direction::TB,
+    };
+    let g = to_graph_view(&data);
+    let result = sugiyama_layout(&g, &opts).expect("the default path");
+    write_back_to_layout_data(
+        &g,
+        &mut data,
+        &result.ordered,
+        &result.coordinates,
+        opts.layer_gap,
+        opts.node_gap,
+    );
 
     // The lanes are columns in the reverse of their source order: `B` on the left, `A` on the right.
     // The columns are 100 wide, with a lane gap of 2 * 40, so `b` sits at -90 and `a` at 90.
@@ -108,7 +126,7 @@ fn the_edge_points_are_deleted_before_the_routing() {
     let mut input = two_lanes();
     input["edges"][0]["points"] = json!([{"x": 1, "y": 2}]);
     let mut data = load(&input);
-    run_swimlane_layout_core(&mut data).expect_err("the post-processing is not ported");
+    run_swimlane_layout_core(&mut data).expect("the whole layout runs");
     // The router writes its own points, so the points of the input are gone.
     assert_ne!(
         data.edges[0].points,
