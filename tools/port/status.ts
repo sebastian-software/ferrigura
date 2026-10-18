@@ -127,7 +127,7 @@ const suites: Record<string, string[]> = {
   // left as written while the list is empty.
   agentflow: [],
   cynefin: ['cynefin_db_spec', 'cynefin_grammar', 'cynefin_boundary_spec'],
-  radar: [],
+  radar: ['radar_spec', 'radar_grammar', 'radar_db_spec'],
   railroad: [],
   swimlanes: [],
   treeView: [],

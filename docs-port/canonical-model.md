@@ -262,6 +262,15 @@ The wardley model is the DB state after the parse (`getWardleyData`), with no la
 - **Texts keep the placeholders.** The node, note, annotation, accelerator and link texts are as the DB holds them. The header texts are sanitised; an absent header is `""`.
 - **Non-finite numbers** are the sentinel strings: only an integer or a decimal of more than 308 digits is one, in a label offset, the annotation number, the size or a stage boundary.
 
+## Radar
+
+The radar model is the DB state after the parse (`radar/db.ts`), with the field list in [radar/PLAN.md](./radar/PLAN.md), section 3. Its own rules:
+
+- **Options are the DB's.** Each option takes its default when the text gives none, the last option of a name wins, and `ticks` is clamped to 32. `max` is the one nullable field: `null` when no `max` is written, and `0` when `max 0` is written.
+- **A label defaults to the name only when it is absent.** An axis or curve label is the name unless the text writes one, and an empty label `[""]` is kept as empty.
+- **Entries are the text's numbers, or the values in axis order.** A list of numbers is kept whatever its length, since the DB does not check it against the axes.
+- **Texts.** The title and the accessibility texts are sanitised. The labels are the grammar's strings with their markup kept as text, and an entity keeps its placeholder.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

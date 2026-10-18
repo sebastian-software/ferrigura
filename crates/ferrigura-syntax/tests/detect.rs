@@ -142,7 +142,7 @@ fn parse_dispatches_on_the_detected_type() {
     let error = parse("unknown diagram\n  x").expect_err("no diagram type matches");
     assert_eq!((error.line, error.column), (1, 1));
     // A P3 header is detected, and its parser is not ported yet.
-    let error = parse("radar-beta\n  axis a").expect_err("the radar parser is not ported yet");
+    let error = parse("venn-beta\n  set a").expect_err("the venn parser is not ported yet");
     assert_eq!((error.line, error.column), (1, 1));
     assert!(
         error.message.contains("not ported yet"),

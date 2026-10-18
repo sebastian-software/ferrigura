@@ -302,7 +302,6 @@ const NOT_PORTED_SECTIONS = new Set<string>([
   'agentflow',
   'swimlane',
   'treeView',
-  'radar',
   'railroad',
   'venn',
   'usecase',
