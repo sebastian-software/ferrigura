@@ -242,6 +242,15 @@ The architecture model is the DB state after the parse (`architectureDb.ts`), wi
 - **The derived block is the reference's `getDataStructures`.** `derived.groupAlignments` is a list of `[key, axis]` pairs in the order the DB first set each key. `derived.spatialMaps` is a list of maps, each a list of `{id, x, y}` in the order the breadth-first search placed them, and the search's quirks (a node placed again, the last placement wins) are part of the value.
 - **Texts.** The header texts are sanitised, as the common setters sanitise them. The other texts are the grammar's values as written, with the entity placeholders kept; an absent icon, title or parent is `""`, and an absent arrow head or `{group}` mark is `false`.
 
+## Agentflow
+
+The agentflow model is the DB state after the parse (`agentflowDb.ts`), with the fields and the quirks in [agentflow/PLAN.md](./agentflow/PLAN.md), sections 1 and 3. Its own rules:
+
+- **Lists are in the DB's order.** Vertices are in creation order, connectors are vertices too and also in `connectors`, edges are in creation order, containers in completion order (a repeated id merges into its first record).
+- **Optional keys are absent, not null.** A key the reference leaves `undefined` (a vertex's `link`, a container's `dir`, a metadata block that is not there) is left out of the JSON; a metadata block that is there is an object, empty or not.
+- **Metadata is the YAML as js-yaml reads it.** A number that is not finite (`.nan`, `.inf`) is its sentinel string inside the metadata, as in the other models. The prototype keys are gone at every depth.
+- **The diagnostics are not in the model.** The reference raises them when the layout data is read, not during the parse, so after the parse there are none; the layout's shape diagnostics are read by `agentflow::semantic::diagnostics`.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

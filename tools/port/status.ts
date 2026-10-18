@@ -125,7 +125,21 @@ const suites: Record<string, string[]> = {
   eventmodeling: ['event_modeling_spec', 'event_modeling_grammar', 'event_modeling_validator'],
   // The P3 types have no suites until their parser tasks add them. Their rows of the P3 table are
   // left as written while the list is empty.
-  agentflow: [],
+  agentflow: [
+    'agentflow_parser_spec',
+    'agentflow_comments_spec',
+    'agentflow_metadata_spec',
+    'agentflow_mappings_spec',
+    'agentflow_containers_spec',
+    'agentflow_edges_spec',
+    'agentflow_tools_spec',
+    'agentflow_semantic_spec',
+    'agentflow_shapes_spec',
+    'agentflow_diagnostics_spec',
+    'agentflow_link_style_spec',
+    'agentflow_conformance_spec',
+    'agentflow_render_spec',
+  ],
   cynefin: [],
   radar: [],
   railroad: [],
