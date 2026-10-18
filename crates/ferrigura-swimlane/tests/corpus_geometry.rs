@@ -13,7 +13,8 @@ mod support;
 use std::collections::BTreeMap;
 
 use ferrigura_swimlane::testing::{
-    layout_data_from_json, layout_data_to_json, orthogonalize_and_simplify_edges,
+    apply_bt_direction_transform, apply_lr_direction_transform, layout_data_from_json,
+    layout_data_to_json, orthogonalize_and_simplify_edges,
 };
 use ferrigura_swimlane::{Direction, LayoutData};
 use support::corpus::{Case, compare_snapshot, load_cases};
@@ -22,14 +23,28 @@ use support::corpus::{Case, compare_snapshot, load_cases};
 type PassFn = fn(&mut LayoutData, Direction);
 
 /// The passes of this file, by the name of their stage (without `post:` and the `#k` of a repeat).
-const PORTED: &[&str] = &["orthogonalizePolyline+simplifyPolyline"];
+const PORTED: &[&str] = &[
+    "applyLrDirectionTransform",
+    "applyBtDirectionTransform",
+    "orthogonalizePolyline+simplifyPolyline",
+];
 
 /// The runner of a ported pass, or `None` for a pass that this file does not check.
 fn ported(name: &str) -> Option<PassFn> {
     match name {
+        "applyLrDirectionTransform" => Some(run_lr_direction_transform),
+        "applyBtDirectionTransform" => Some(run_bt_direction_transform),
         "orthogonalizePolyline+simplifyPolyline" => Some(run_orthogonalize_and_simplify),
         _ => None,
     }
+}
+
+fn run_lr_direction_transform(layout: &mut LayoutData, direction: Direction) {
+    apply_lr_direction_transform(layout, direction);
+}
+
+fn run_bt_direction_transform(layout: &mut LayoutData, _direction: Direction) {
+    apply_bt_direction_transform(layout);
 }
 
 fn run_orthogonalize_and_simplify(layout: &mut LayoutData, _direction: Direction) {
