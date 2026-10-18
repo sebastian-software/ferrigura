@@ -1,0 +1,283 @@
+{
+ "name": "generated-242-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 242, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set Rust\n  set Go-lang:6.5\n  union Go-lang, Rust\n  union Go-lang, Rust:6.5\n  union Go-lang, Rust:4.15",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Go-lang"
+    ],
+    "size": 6.5
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 6.5
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 4.15
+   }
+  ],
+  "width": 640,
+  "height": 360,
+  "chartPadding": 15,
+  "layoutPadding": 15
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Go-lang"
+    ],
+    "size": 6.5
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 6.5
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 4.15
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Go-lang",
+    "x": 1.2530368830663232,
+    "y": 0,
+    "radius": 1.438406847937898
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Rust",
+    "x": 0.0012247055208301706,
+    "y": 0.0003962852379794181,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Go-lang",
+    "x": 1.1726997520366924,
+    "y": 0.00010876977534975281,
+    "radius": 1.438406847937898
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Go-lang",
+    "x": 1.1714750817983637,
+    "y": 1.9548165169913645e-16,
+    "radius": 1.438406847937898
+   }
+  ],
+  "circles": [
+   {
+    "id": "Rust",
+    "x": 281.81598634093876,
+    "y": 180,
+    "radius": 165
+   },
+   {
+    "id": "Go-lang",
+    "x": 390.1567608121352,
+    "y": 180.00000000000003,
+    "radius": 133.02725284692605
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Rust",
+    "x": 186.9727471530741,
+    "y": 179.99999385641647,
+    "disjoint": false
+   },
+   {
+    "key": "Go-lang",
+    "x": 484.99999999999966,
+    "y": 180.00000955707551,
+    "disjoint": false
+   },
+   {
+    "key": "Go-lang,Rust",
+    "x": 351.97274715307395,
+    "y": 180.00000031321704,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Rust"
+   ],
+   "text": {
+    "x": 186.9727471530741,
+    "y": 179.99999385641647,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 281.81598634093876,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Go-lang"
+   ],
+   "text": {
+    "x": 484.99999999999966,
+    "y": 180.00000955707551,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Go-lang",
+     "x": 390.1567608121352,
+     "y": 180.00000000000003,
+     "radius": 133.02725284692605
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Go-lang",
+    "Rust"
+   ],
+   "text": {
+    "x": 351.97274715307395,
+    "y": 180.00000031321704,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Go-lang",
+     "x": 390.1567608121352,
+     "y": 180.00000000000003,
+     "radius": 133.02725284692605
+    },
+    {
+     "set": "Rust",
+     "x": 281.81598634093876,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Go-lang",
+    "Rust"
+   ],
+   "text": {
+    "x": 351.97274715307395,
+    "y": 180.00000031321704,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Go-lang",
+     "x": 390.1567608121352,
+     "y": 180.00000000000003,
+     "radius": 133.02725284692605
+    },
+    {
+     "set": "Rust",
+     "x": 281.81598634093876,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Go-lang",
+    "Rust"
+   ],
+   "text": {
+    "x": 351.97274715307395,
+    "y": 180.00000031321704,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Go-lang",
+     "x": 390.1567608121352,
+     "y": 180.00000000000003,
+     "radius": 133.02725284692605
+    },
+    {
+     "set": "Rust",
+     "x": 281.81598634093876,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

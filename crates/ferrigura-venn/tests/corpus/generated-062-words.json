@@ -1,0 +1,283 @@
+{
+ "name": "generated-062-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 62, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set Rust:25\n  set TypeScript:0.5\n  union Rust, TypeScript:0.5\n  union Rust, TypeScript:0.5\n  union Rust, TypeScript",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 25
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 0.5
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 0.5
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 0.5
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 640,
+  "height": 360,
+  "chartPadding": 15,
+  "layoutPadding": 15
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 25
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 0.5
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 0.5
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 0.5
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 2.5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.4220056373373486,
+    "y": 0,
+    "radius": 0.3989422804014327
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0.000125,
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.4220056373373486,
+    "y": 0.0000625,
+    "radius": 0.3989422804014327
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.4220056381437565,
+    "y": -5.986151244835591e-17,
+    "radius": 0.3989422804014327
+   }
+  ],
+  "circles": [
+   {
+    "id": "Rust",
+    "x": 319.99999997641623,
+    "y": 180,
+    "radius": 165
+   },
+   {
+    "id": "TypeScript",
+    "x": 461.66547624442774,
+    "y": 180,
+    "radius": 23.33452377915607
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Rust",
+    "x": 296.665476220844,
+    "y": 180.00000247069772,
+    "disjoint": false
+   },
+   {
+    "key": "TypeScript",
+    "x": 485,
+    "y": 179.99999944431457,
+    "disjoint": false
+   },
+   {
+    "key": "Rust,TypeScript",
+    "x": 461.66547622084255,
+    "y": 180.0000000000308,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Rust"
+   ],
+   "text": {
+    "x": 296.665476220844,
+    "y": 180.00000247069772,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 319.99999997641623,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "TypeScript"
+   ],
+   "text": {
+    "x": 485,
+    "y": 179.99999944431457,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "TypeScript",
+     "x": 461.66547624442774,
+     "y": 180,
+     "radius": 23.33452377915607
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Rust",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 461.66547622084255,
+    "y": 180.0000000000308,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 319.99999997641623,
+     "y": 180,
+     "radius": 165
+    },
+    {
+     "set": "TypeScript",
+     "x": 461.66547624442774,
+     "y": 180,
+     "radius": 23.33452377915607
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Rust",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 461.66547622084255,
+    "y": 180.0000000000308,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 319.99999997641623,
+     "y": 180,
+     "radius": 165
+    },
+    {
+     "set": "TypeScript",
+     "x": 461.66547624442774,
+     "y": 180,
+     "radius": 23.33452377915607
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Rust",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 461.66547622084255,
+    "y": 180.0000000000308,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 319.99999997641623,
+     "y": 180,
+     "radius": 165
+    },
+    {
+     "set": "TypeScript",
+     "x": 461.66547624442774,
+     "y": 180,
+     "radius": 23.33452377915607
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

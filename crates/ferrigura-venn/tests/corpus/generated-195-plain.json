@@ -1,0 +1,241 @@
+{
+ "name": "generated-195-plain",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 195, 3 sets, plain ids",
+ "description": "A generated set system (plain ids, 3 sets).",
+ "text": "venn-beta\n  set Frontend\n  set C\n  set node-2:3.25",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Frontend"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "C"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "node-2"
+    ],
+    "size": 3.25
+   }
+  ],
+  "width": 320,
+  "height": 240,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Frontend"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "C"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "node-2"
+    ],
+    "size": 3.25
+   },
+   {
+    "sets": [
+     "C",
+     "Frontend"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C",
+     "node-2"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "Frontend",
+     "node-2"
+    ],
+    "size": 0
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Frontend",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "C",
+    "x": 3.5682482323055424,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "node-2",
+    "x": 6.369479584740368,
+    "y": 0,
+    "radius": 1.0171072362820548
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Frontend",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "C",
+    "x": 3.5682482323055424,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "node-2",
+    "x": 6.369479584740368,
+    "y": 0,
+    "radius": 1.0171072362820548
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Frontend",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "C",
+    "x": 3.6396131969516534,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "node-2",
+    "x": 0,
+    "y": 2.8725963170809368,
+    "radius": 1.0171072362820548
+   }
+  ],
+  "circles": [
+   {
+    "id": "Frontend",
+    "x": 92.64522506857539,
+    "y": 81.03409307002411,
+    "radius": 66.03409307002413
+   },
+   {
+    "id": "C",
+    "x": 227.35477493142463,
+    "y": 81.03409307002411,
+    "radius": 66.03409307002413
+   },
+   {
+    "id": "node-2",
+    "x": 92.64522506857539,
+    "y": 187.35477493142463,
+    "radius": 37.6452250685754
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Frontend",
+    "x": 92.64522506857539,
+    "y": 81.03409307002411,
+    "disjoint": false
+   },
+   {
+    "key": "C",
+    "x": 227.35477493142463,
+    "y": 81.03409307002411,
+    "disjoint": false
+   },
+   {
+    "key": "node-2",
+    "x": 92.64522506857539,
+    "y": 187.35477493142463,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Frontend"
+   ],
+   "text": {
+    "x": 88.15490673981375,
+    "y": 78.43636594135906,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Frontend",
+     "x": 88.15490673981375,
+     "y": 78.43636594135906,
+     "radius": 70.43636594135907
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C"
+   ],
+   "text": {
+    "x": 231.84509326018627,
+    "y": 78.43636594135906,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "C",
+     "x": 231.84509326018627,
+     "y": 78.43636594135906,
+     "radius": 70.43636594135907
+    }
+   ]
+  },
+  {
+   "sets": [
+    "node-2"
+   ],
+   "text": {
+    "x": 88.15490673981375,
+    "y": 191.84509326018627,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "node-2",
+     "x": 88.15490673981375,
+     "y": 191.84509326018627,
+     "radius": 40.154906739813754
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

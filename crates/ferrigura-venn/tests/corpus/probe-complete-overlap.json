@@ -1,0 +1,205 @@
+{
+ "name": "probe-complete-overlap",
+ "group": "probe",
+ "source": "probe: complete-overlap",
+ "description": "The overlap equals the smaller set: the smaller circle lies inside the larger.",
+ "text": "venn-beta\n  set A:10\n  set B:4\n  union A, B:4",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "A",
+     "B"
+    ],
+    "size": 4
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "A",
+     "B"
+    ],
+    "size": 4
+   }
+  ],
+  "greedy": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "B",
+    "x": 0.6557449490572587,
+    "y": 0,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "B",
+    "x": 0.6557449490572587,
+    "y": 0,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "normalized": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "B",
+    "x": 0.6557449490572587,
+    "y": 0,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "circles": [
+   {
+    "id": "A",
+    "x": 400,
+    "y": 225,
+    "radius": 210
+   },
+   {
+    "id": "B",
+    "x": 477.1843382729281,
+    "y": 225,
+    "radius": 132.81566172707193
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "A",
+    "x": 267.1843382729297,
+    "y": 225.00002303195194,
+    "disjoint": false
+   },
+   {
+    "key": "B",
+    "x": 477.1843382729281,
+    "y": 225,
+    "disjoint": false
+   },
+   {
+    "key": "A,B",
+    "x": 477.1843382729281,
+    "y": 225,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "A"
+   ],
+   "text": {
+    "x": 262.7571495486943,
+    "y": 225.00002582377402,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "A",
+     "x": 400,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B"
+   ],
+   "text": {
+    "x": 479.7571495486924,
+    "y": 225,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 479.7571495486924,
+     "y": 225,
+     "radius": 137.24285045130765
+    }
+   ]
+  },
+  {
+   "sets": [
+    "A",
+    "B"
+   ],
+   "text": {
+    "x": 479.7571495486924,
+    "y": 225,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "A",
+     "x": 400,
+     "y": 225,
+     "radius": 217
+    },
+    {
+     "set": "B",
+     "x": 479.7571495486924,
+     "y": 225,
+     "radius": 137.24285045130765
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

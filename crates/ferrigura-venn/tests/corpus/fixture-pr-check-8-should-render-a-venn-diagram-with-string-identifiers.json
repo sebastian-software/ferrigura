@@ -1,0 +1,279 @@
+{
+ "name": "fixture-pr-check-8-should-render-a-venn-diagram-with-string-identifiers",
+ "group": "fixture",
+ "source": "e2e/diagrams/venn/pr-check/8-should-render-a-venn-diagram-with-string-identifiers.mmd",
+ "description": "A fixture of e2e/diagrams/venn, as the renderer lays it out.",
+ "text": "---\ndescription: >-\n  Three sets declared with quoted string identifiers (\"JavaScript\",\n  \"Python\", \"TypeScript\") instead of bare identifiers, with a union only\n  between \"JavaScript\" and \"TypeScript\" (leaving \"Python\" un-overlapped) —\n  tests quoted-string set ids as opposed to plain identifier syntax.\n---\nvenn-beta\n  title Programming Languages\n  set \"JavaScript\"\n  set \"Python\"\n  set \"TypeScript\"\n  union \"JavaScript\", \"TypeScript\"\n",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "TypeScript"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 800,
+  "height": 426,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "TypeScript"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "Python",
+     "TypeScript"
+    ],
+    "size": 0
+   }
+  ],
+  "greedy": [
+   {
+    "id": "JavaScript",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Python",
+    "x": -3.5682482323055424,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.264783545440907,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "JavaScript",
+    "x": 4.435984490254389e-8,
+    "y": 0.000045602365968922194,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Python",
+    "x": -3.6512000916648724,
+    "y": 0.00009158660412107158,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.264783589849097,
+    "y": 0.00004897112082923178,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "JavaScript",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.2647835454917575,
+    "y": 1.7078725315488458e-16,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Python",
+    "x": 5.9496924133532465,
+    "y": 2.220446049250313e-16,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "JavaScript",
+    "x": 159.3353788998699,
+    "y": 213,
+    "radius": 144.3353788998699
+   },
+   {
+    "id": "TypeScript",
+    "x": 342.55603502195373,
+    "y": 213.00000000000003,
+    "radius": 144.3353788998699
+   },
+   {
+    "id": "Python",
+    "x": 640.66462110013,
+    "y": 213.00000000000003,
+    "radius": 144.3353788998699
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "JavaScript",
+    "x": 106.610328061042,
+    "y": 212.9999960331385,
+    "disjoint": false
+   },
+   {
+    "key": "Python",
+    "x": 640.66462110013,
+    "y": 213.00000000000003,
+    "disjoint": false
+   },
+   {
+    "key": "TypeScript",
+    "x": 395.28108586078173,
+    "y": 213.0000002422728,
+    "disjoint": false
+   },
+   {
+    "key": "JavaScript,TypeScript",
+    "x": 250.94570696091182,
+    "y": 212.99999934429604,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "JavaScript"
+   ],
+   "text": {
+    "x": 101.27597038942449,
+    "y": 213.0000001204267,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 154.95965851623117,
+     "y": 213,
+     "radius": 146.95965851623117
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python"
+   ],
+   "text": {
+    "x": 645.0403414837688,
+    "y": 213.00000000000003,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 645.0403414837688,
+     "y": 213.00000000000003,
+     "radius": 146.95965851623117
+    }
+   ]
+  },
+  {
+   "sets": [
+    "TypeScript"
+   ],
+   "text": {
+    "x": 395.1952874218868,
+    "y": 213.0000026232943,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "TypeScript",
+     "x": 341.51159929508015,
+     "y": 213.00000000000003,
+     "radius": 146.95965851623117
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 248.23562890565566,
+    "y": 212.99999976696,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 154.95965851623117,
+     "y": 213,
+     "radius": 146.95965851623117
+    },
+    {
+     "set": "TypeScript",
+     "x": 341.51159929508015,
+     "y": 213.00000000000003,
+     "radius": 146.95965851623117
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

@@ -1,0 +1,110 @@
+{
+ "name": "probe-all-zero-sizes",
+ "group": "probe",
+ "source": "probe: all-zero-sizes",
+ "description": "Every set and every overlap of size zero: nothing is drawn by the chart.",
+ "text": "venn-beta\n  set A:0\n  set B:0\n  union A, B:0",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "A",
+     "B"
+    ],
+    "size": 0
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": null,
+ "chart": {
+  "venn": [],
+  "normalized": [],
+  "circles": [],
+  "textCentres": []
+ },
+ "layout": [
+  {
+   "sets": [
+    "A"
+   ],
+   "text": {
+    "x": 0,
+    "y": 0,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "A",
+     "x": 0,
+     "y": 0,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B"
+   ],
+   "text": {
+    "x": 0,
+    "y": 0,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 0,
+     "y": 0,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "sets": [
+    "A",
+    "B"
+   ],
+   "text": {
+    "x": 0,
+    "y": 0,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "A",
+     "x": 0,
+     "y": 0,
+     "radius": 0
+    },
+    {
+     "set": "B",
+     "x": 0,
+     "y": 0,
+     "radius": 0
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}
