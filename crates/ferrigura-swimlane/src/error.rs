@@ -11,6 +11,9 @@ pub enum Error {
     /// A node or edge id outside ASCII. The collation of the layout is ICU's root order for ASCII
     /// only; ids outside it need an ICU collator, which is not ported.
     NonAsciiId(String),
+    /// A string with a byte outside printable ASCII (0x20 to 0x7E), such as a control character. The
+    /// collation of [`crate::js::locale_compare`] is ported for printable ASCII only.
+    NotPrintableAscii(String),
 }
 
 impl fmt::Display for Error {
@@ -23,6 +26,10 @@ impl fmt::Display for Error {
             Error::NonAsciiId(id) => write!(
                 f,
                 "the id {id:?} is not ASCII; the layout collates ASCII ids only"
+            ),
+            Error::NotPrintableAscii(text) => write!(
+                f,
+                "the string {text:?} has a character outside printable ASCII; the collation is ported for printable ASCII only"
             ),
         }
     }
