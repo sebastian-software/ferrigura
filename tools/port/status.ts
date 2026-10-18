@@ -123,6 +123,17 @@ const suites: Record<string, string[]> = {
   treemap: ['treemap_spec', 'treemap_db_spec', 'treemap_grammar'],
   ishikawa: ['ishikawa_spec', 'ishikawa_grammar', 'ishikawa_db_spec'],
   eventmodeling: ['event_modeling_spec', 'event_modeling_grammar', 'event_modeling_validator'],
+  // The P3 types have no suites until their parser tasks add them. Their rows of the P3 table are
+  // left as written while the list is empty.
+  agentflow: [],
+  cynefin: [],
+  radar: [],
+  railroad: [],
+  swimlanes: [],
+  treeView: [],
+  usecase: [],
+  venn: [],
+  wardley: [],
 };
 
 interface Counts {

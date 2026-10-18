@@ -25,6 +25,7 @@ const fixtureFolders: Record<string, string[]> = {
   er: ['e2e/diagrams/er-diagram/'],
   class: ['e2e/diagrams/class-diagram/'],
   quadrantChart: ['e2e/diagrams/quadrant-chart/'],
+  treeView: ['e2e/diagrams/tree-view/'],
   state: [
     'e2e/diagrams/state-diagram/',
     'e2e/diagrams/state-diagram-v2/',
@@ -60,6 +61,15 @@ const detectors: Record<string, RegExp> = {
   treemap: /^\s*treemap/,
   ishikawa: /^\s*ishikawa(-beta)?\b/i,
   eventmodeling: /^\s*eventmodeling/,
+  agentflow: /^\s*agentflow-beta\b/,
+  swimlanes: /^\s*swimlane-beta\b/,
+  treeView: /^\s*treeView-beta/,
+  radar: /^\s*radar-beta/,
+  railroad: /^\s*railroad-(?:ebnf-|abnf-|peg-)?beta/i,
+  venn: /^\s*venn-beta/,
+  wardley: /^\s*wardley-beta/i,
+  cynefin: /^\s*cynefin-beta(?:[\s:]|$)/,
+  usecase: /^\s*usecase-beta(?:\s|$)/,
 };
 
 /** Front matter and directive lines in front of the keyword do not count for detection. */

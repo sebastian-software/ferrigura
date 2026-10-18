@@ -67,8 +67,8 @@ export type PortOutput =
   | { id: number; ok: false; error: string };
 
 /**
- * Registers the detectors of the diagram types the port covers: the P1 types, and the P2 types
- * whose parsers are not ported yet. The reference's directive handling calls `detectType`, which
+ * Registers the detectors of the diagram types the port covers: the P1 types, and the P2 and P3
+ * types whose parsers are not ported yet. The reference's directive handling calls `detectType`, which
  * throws unless the detectors of the diagrams are registered, as `mermaidAPI` does when it loads
  * the diagrams.
  */
@@ -180,6 +180,64 @@ export async function registerDetectors(reference: Reference): Promise<void> {
     eventmodeling.default,
     ishikawa.ishikawa,
     treemap.treemap
+  );
+
+  // The P3 detectors, in the order the reference registers them (`diagram-orchestration.ts`). No
+  // two of these detectors match the same text, so the order decides nothing between them.
+  const [
+    agentflow,
+    swimlanes,
+    treeView,
+    radar,
+    railroad,
+    railroadEbnf,
+    railroadAbnf,
+    railroadPeg,
+    venn,
+    wardley,
+    cynefin,
+    usecase,
+  ] = await Promise.all([
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/agentflow/afDetector.ts'),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/swimlanes/detector.ts'),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/treeView/detector.ts'),
+    reference.load<{ radar: unknown }>('/packages/mermaid/src/diagrams/radar/detector.ts'),
+    reference.load<{ railroad: unknown }>(
+      '/packages/mermaid/src/diagrams/railroad/railroadDetector.ts'
+    ),
+    reference.load<{ railroadEbnf: unknown }>(
+      '/packages/mermaid/src/diagrams/railroad/ebnfDetector.ts'
+    ),
+    reference.load<{ railroadAbnf: unknown }>(
+      '/packages/mermaid/src/diagrams/railroad/abnfDetector.ts'
+    ),
+    reference.load<{ railroadPeg: unknown }>(
+      '/packages/mermaid/src/diagrams/railroad/pegDetector.ts'
+    ),
+    reference.load<{ default: unknown }>('/packages/mermaid/src/diagrams/venn/vennDetector.ts'),
+    reference.load<{ default: unknown }>(
+      '/packages/mermaid/src/diagrams/wardley/wardleyDetector.ts'
+    ),
+    reference.load<{ cynefin: unknown }>(
+      '/packages/mermaid/src/diagrams/cynefin/cynefinDetector.ts'
+    ),
+    reference.load<{ usecase: unknown }>(
+      '/packages/mermaid/src/diagrams/usecase/usecaseDetector.ts'
+    ),
+  ]);
+  detectType.registerLazyLoadedDiagrams(
+    agentflow.default,
+    swimlanes.default,
+    treeView.default,
+    radar.radar,
+    railroad.railroad,
+    railroadEbnf.railroadEbnf,
+    railroadAbnf.railroadAbnf,
+    railroadPeg.railroadPeg,
+    venn.default,
+    wardley.default,
+    cynefin.cynefin,
+    usecase.usecase
   );
 }
 

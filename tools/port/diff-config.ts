@@ -1,5 +1,5 @@
 /**
- * Differential run for the configuration. The pie, flowchart, timeline, journey, gitGraph, ER, class, sequence and state inputs of `inputs.ts`, the inputs of the P2 types, and every
+ * Differential run for the configuration. The pie, flowchart, timeline, journey, gitGraph, ER, class, sequence and state inputs of `inputs.ts`, the inputs of the P2 and P3 types, and every
  * explicit case of `config-cases.ts` go through the TypeScript reference (`export-config.ts`) and
  * through ferrigura (`cargo run --example config`). Each side detects the diagram type from the
  * text, as a render does, so each input gets its own diagram scope: the reference through
@@ -122,6 +122,33 @@ for (const [group, scope] of p2Groups) {
     });
   }
 }
+/**
+ * The P3 types, with the same meaning as `p2Groups`: their inputs must be detected in their own
+ * scope on both sides, and their sections are not compared until their parsers are ported.
+ */
+const p3Groups: [group: string, scope: string][] = [
+  ['agentflow', 'agentflow'],
+  ['swimlanes', 'swimlane'],
+  ['treeView', 'treeView'],
+  ['radar', 'radar'],
+  ['railroad', 'railroad'],
+  ['venn', 'venn'],
+  ['wardley', 'wardley-beta'],
+  ['cynefin', 'cynefin'],
+  ['usecase', 'usecase'],
+];
+const p3Inputs: ConfigInput[] = [];
+for (const [group, scope] of p3Groups) {
+  for (const input of await collectInputs(group)) {
+    p3Inputs.push({
+      id: 0,
+      source: input.source,
+      text: input.text,
+      group,
+      expectedScope: (undetectedCases[group] ?? []).includes(input.text) ? null : scope,
+    });
+  }
+}
 const inputs: ConfigInput[] = [
   ...pieInputs.map((input) => ({
     id: 0,
@@ -194,6 +221,7 @@ const inputs: ConfigInput[] = [
     expectedScope: 'gantt',
   })),
   ...p2Inputs,
+  ...p3Inputs,
   ...configCases.map((testCase) => ({
     id: 0,
     source: testCase.source,
@@ -268,10 +296,20 @@ const UNPORTED_SECTIONS = [
 ];
 
 /**
- * The sections of the P2 types, whose parsers are not ported yet. Their inputs are run in their own
+ * The sections of the P3 types, whose parsers are not ported yet. Their inputs are run in their own
  * scope, but the section is not compared, not even for those inputs, until the type is ported.
  */
-const NOT_PORTED_SECTIONS = new Set<string>();
+const NOT_PORTED_SECTIONS = new Set<string>([
+  'agentflow',
+  'swimlane',
+  'treeView',
+  'radar',
+  'railroad',
+  'venn',
+  'wardley-beta',
+  'cynefin',
+  'usecase',
+]);
 
 /**
  * The output with the sections that are not compared removed: the sections of diagram types that
