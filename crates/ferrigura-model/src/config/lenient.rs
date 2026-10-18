@@ -110,61 +110,127 @@ pub enum Outcome {
     Dropped,
 }
 
-/// Makes every option of `value` have the type `field_types` gives it, parents before children, and
-/// returns each change. `defaults` is the configuration's defaults, which replace a value that
-/// cannot be read. An option below an absent parent is not visited. A parent of the wrong type is
-/// replaced when it is visited, before its options, so the options are read from the defaults.
+/// The options of a schema, as a tree that [`read_types`] walks. It is built once from the flat list
+/// of the schema's option paths (`FIELD_TYPES`), so that reading a configuration looks up each
+/// option once, in its parent, and allocates nothing for a value that has its type.
+pub(super) struct Schema {
+    nodes: Vec<Node>,
+}
+
+/// A key of the schema: an option with a type, or a key that is only the parent of options with types.
+struct Node {
+    /// The key of the option in its parent.
+    key: &'static str,
+    /// The path of the option from the top of the configuration. It names the option in the warnings
+    /// and finds its default.
+    path: &'static [&'static str],
+    /// The place of the option in the list, which orders the warnings as the list does. Unused by a
+    /// key that has no type of its own.
+    position: usize,
+    /// The type of the option; `None` for a key that is only the parent of options with types.
+    field_type: Option<FieldType>,
+    children: Vec<Node>,
+}
+
+impl Schema {
+    /// The schema of a list of option paths, parents first, as `FIELD_TYPES` gives them.
+    #[must_use]
+    pub(super) fn new(field_types: &'static [(&'static [&'static str], FieldType)]) -> Self {
+        let mut nodes = Vec::new();
+        for (position, (path, field_type)) in field_types.iter().enumerate() {
+            if !path.is_empty() {
+                insert(&mut nodes, path, 0, position, *field_type);
+            }
+        }
+        Self { nodes }
+    }
+}
+
+/// Puts the option at `path` into the tree, below its parents at `depth` and deeper, and creates the
+/// keys on the way that are not there yet.
+fn insert(
+    nodes: &mut Vec<Node>,
+    path: &'static [&'static str],
+    depth: usize,
+    position: usize,
+    field_type: FieldType,
+) {
+    let key = path[depth];
+    let index = match nodes.iter().position(|node| node.key == key) {
+        Some(index) => index,
+        None => {
+            nodes.push(Node {
+                key,
+                path: &path[..=depth],
+                position: usize::MAX,
+                field_type: None,
+                children: Vec::new(),
+            });
+            nodes.len() - 1
+        }
+    };
+    let node = &mut nodes[index];
+    if depth + 1 == path.len() {
+        node.position = position;
+        node.field_type = Some(field_type);
+    } else {
+        insert(&mut node.children, path, depth + 1, position, field_type);
+    }
+}
+
+/// Makes every option of `value` have the type the schema gives it, parents before children, and
+/// returns each change in the order of the schema's list. `defaults` is the configuration's defaults,
+/// which replace a value that cannot be read. An option below an absent parent is not visited. A
+/// parent of the wrong type is replaced when it is visited, before its options, so the options are
+/// read from the defaults.
 pub(super) fn read_types(
     value: &mut Value,
     defaults: &Value,
-    field_types: &[(&[&str], FieldType)],
+    schema: &Schema,
 ) -> Vec<ConfigWarning> {
-    let mut warnings = Vec::new();
-    for (path, field_type) in field_types {
-        read_option(value, defaults, path, *field_type, &mut warnings);
-    }
-    warnings
+    let mut found = Vec::new();
+    visit(value, &schema.nodes, defaults, &mut found);
+    // A stable sort by position: each option's changes are in the order they were made, and the
+    // options are in the order of the list.
+    found.sort_by_key(|(position, _)| *position);
+    found.into_iter().map(|(_, warning)| warning).collect()
 }
 
-fn read_option(
-    root: &mut Value,
+/// Reads the options below `parent` that `nodes` describe, each with its children.
+fn visit(
+    parent: &mut Value,
+    nodes: &[Node],
     defaults: &Value,
-    path: &[&str],
-    field_type: FieldType,
-    warnings: &mut Vec<ConfigWarning>,
+    found: &mut Vec<(usize, ConfigWarning)>,
 ) {
-    let Some((key, parents)) = path.split_last() else {
-        return;
-    };
-    let mut parent = root;
-    for segment in parents {
-        let Some(child) = parent.get_mut(segment) else {
-            return;
+    for node in nodes {
+        let Some(slot) = parent.get_mut(node.key) else {
+            continue;
         };
-        parent = child;
-    }
-    let Some(slot) = parent.get_mut(key) else {
-        return;
-    };
-
-    let option = path.join(".");
-    if !read_value(slot, field_type, &option, warnings) {
-        return;
-    }
-    let default = default_at(defaults, path).cloned();
-    warnings.push(ConfigWarning {
-        path: option,
-        expected: field_type.expected(),
-        found: slot.clone(),
-        outcome: Outcome::Replaced(default.clone()),
-    });
-    match default {
-        Some(default) => *slot = default,
-        None => {
-            if let Some(map) = parent.as_object_mut() {
-                map.remove(*key);
+        if let Some(field_type) = node.field_type
+            && read_value(slot, field_type, node, found)
+        {
+            let default = default_at(defaults, node.path).cloned();
+            found.push((
+                node.position,
+                ConfigWarning {
+                    path: node.path.join("."),
+                    expected: field_type.expected(),
+                    found: slot.clone(),
+                    outcome: Outcome::Replaced(default.clone()),
+                },
+            ));
+            match default {
+                Some(default) => *slot = default,
+                None => {
+                    if let Some(map) = parent.as_object_mut() {
+                        map.remove(node.key);
+                    }
+                    continue;
+                }
             }
         }
+        visit(slot, &node.children, defaults, found);
     }
 }
 
@@ -173,20 +239,23 @@ fn read_option(
 fn read_value(
     slot: &mut Value,
     field_type: FieldType,
-    option: &str,
-    warnings: &mut Vec<ConfigWarning>,
+    node: &Node,
+    found: &mut Vec<(usize, ConfigWarning)>,
 ) -> bool {
     match field_type {
         FieldType::Object => !slot.is_object(),
         FieldType::Scalars(scalars) => match read_scalars(slot, scalars) {
             Reading::Kept => false,
             Reading::Read(number) => {
-                warnings.push(ConfigWarning {
-                    path: option.to_owned(),
-                    expected: field_type.expected(),
-                    found: slot.clone(),
-                    outcome: Outcome::Read(number),
-                });
+                found.push((
+                    node.position,
+                    ConfigWarning {
+                        path: node.path.join("."),
+                        expected: field_type.expected(),
+                        found: slot.clone(),
+                        outcome: Outcome::Read(number),
+                    },
+                ));
                 *slot = Value::Number(number);
                 false
             }
@@ -195,7 +264,7 @@ fn read_value(
         FieldType::Array(items) => match slot {
             Value::Array(list) => {
                 if !items.is_empty() {
-                    read_items(list, items, option, warnings);
+                    read_items(list, items, node, found);
                 }
                 false
             }
@@ -204,35 +273,52 @@ fn read_value(
     }
 }
 
+/// Reads the items of an array option in place: a read item is replaced by its number, and an item
+/// of the wrong type is dropped. The items keep their order.
 fn read_items(
     list: &mut Vec<Value>,
     items: &[Scalar],
-    option: &str,
-    warnings: &mut Vec<ConfigWarning>,
+    node: &Node,
+    found: &mut Vec<(usize, ConfigWarning)>,
 ) {
-    let expected = scalar_names(items);
-    let found = std::mem::take(list);
-    for (index, item) in found.into_iter().enumerate() {
-        let path = format!("{option}[{index}]");
-        match read_scalars(&item, items) {
-            Reading::Kept => list.push(item),
+    let mut index = 0;
+    list.retain_mut(|item| {
+        let position = index;
+        index += 1;
+        match read_scalars(item, items) {
+            Reading::Kept => true,
             Reading::Read(number) => {
-                warnings.push(ConfigWarning {
-                    path,
-                    expected: expected.clone(),
-                    found: item,
-                    outcome: Outcome::Read(number),
-                });
-                list.push(Value::Number(number));
+                found.push((
+                    node.position,
+                    ConfigWarning {
+                        path: item_path(node, position),
+                        expected: scalar_names(items),
+                        found: item.clone(),
+                        outcome: Outcome::Read(number),
+                    },
+                ));
+                *item = Value::Number(number);
+                true
             }
-            Reading::Refused => warnings.push(ConfigWarning {
-                path,
-                expected: expected.clone(),
-                found: item,
-                outcome: Outcome::Dropped,
-            }),
+            Reading::Refused => {
+                found.push((
+                    node.position,
+                    ConfigWarning {
+                        path: item_path(node, position),
+                        expected: scalar_names(items),
+                        found: item.clone(),
+                        outcome: Outcome::Dropped,
+                    },
+                ));
+                false
+            }
         }
-    }
+    });
+}
+
+/// The path of an item of an array option, as the warnings name it: `option[index]`.
+fn item_path(node: &Node, index: usize) -> String {
+    format!("{}[{index}]", node.path.join("."))
 }
 
 /// What reading a value against a set of scalar types gives.
@@ -584,7 +670,7 @@ mod tests {
 
     fn read(value: Value) -> (Value, Vec<ConfigWarning>) {
         let mut value = value;
-        let warnings = read_types(&mut value, &defaults(), FIELDS);
+        let warnings = read_types(&mut value, &defaults(), &Schema::new(FIELDS));
         (value, warnings)
     }
 

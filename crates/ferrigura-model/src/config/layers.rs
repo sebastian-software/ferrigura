@@ -7,7 +7,7 @@ use std::collections::BTreeMap as Map;
 
 use regex::Regex;
 
-use super::{CONFIG_KEYS, defaults};
+use super::{CONFIG_KEYS, cached_defaults};
 use crate::theme::Theme;
 use crate::value::Value;
 
@@ -43,11 +43,11 @@ const LOOKS: [&str; 3] = ["classic", "handDrawn", "neo"];
 /// the overrides applied, as `updateCurrentConfig` computes them.
 #[must_use]
 pub fn effective(site: Option<&Value>, diagram_key: Option<&str>, directive: &Value) -> Value {
-    let defaults = defaults();
+    let defaults = cached_defaults();
     let site_delta = site.cloned().unwrap_or_else(|| Value::Object(Map::new()));
 
     let mut site_config = Value::Object(Map::new());
-    assign_with_depth(&mut site_config, &defaults, 2);
+    assign_with_depth(&mut site_config, defaults, 2);
     assign_with_depth(&mut site_config, &site_delta, 2);
 
     let mut directives = vec![directive.clone()];
@@ -71,7 +71,7 @@ pub fn effective(site: Option<&Value>, diagram_key: Option<&str>, directive: &Va
         &sum,
         &directives,
         &site_delta,
-        &defaults,
+        defaults,
         diagram_key,
     );
     let variables = theme_variables(&site_config, &site_delta, &sum, &config);
