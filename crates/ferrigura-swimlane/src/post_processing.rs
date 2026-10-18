@@ -14,3 +14,16 @@ pub(crate) fn post_process_swimlane_layout(
 ) -> Result<(), Error> {
     Err(Error::NotPorted("post-processing"))
 }
+
+/// The passes of the post-processing, each on its own, for the corpus tests (`tests/corpus_post.rs`), through the
+/// doc-hidden `testing` module. The driver runs the same functions in its order.
+#[doc(hidden)]
+pub mod passes {
+    use crate::direction::shared_track_nudging;
+    use crate::model::LayoutData;
+
+    /// `nudgeSharedInteriorSubpaths(edges, nodeByIdMap)`.
+    pub fn nudge_shared_interior_subpaths(data: &mut LayoutData) {
+        shared_track_nudging::nudge_shared_interior_subpaths(data);
+    }
+}
