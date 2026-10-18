@@ -13,7 +13,7 @@
 //! `Math.hypot` is not here: the port calls `ferrigura_jsmath::hypot`.
 //!
 //! The data files in `tests/data` hold V8's results for these functions (Node v24.21.0, ICU 78.3), written by
-//! `tools/js-semantics.mjs`; `tests/js_semantics.rs` checks them.
+//! `tools/js-semantics.ts`; `tests/js_semantics.rs` checks them.
 
 use std::cmp::Ordering;
 

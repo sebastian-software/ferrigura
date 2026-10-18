@@ -1,6 +1,6 @@
 //! The JavaScript semantics of `src/js.rs` against V8 (Node v24.21.0, V8 13.6, ICU 78.3, locale en-US).
 //!
-//! The expected values are in `tests/data`, written by `tools/js-semantics.mjs` (see its first comment for
+//! The expected values are in `tests/data`, written by `tools/js-semantics.ts` (see its first comment for
 //! the command). Lines starting with `#` are comments. Each test reports every mismatch, not just the first.
 
 use std::cmp::Ordering;
