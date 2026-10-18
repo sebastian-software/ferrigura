@@ -128,7 +128,12 @@ const suites: Record<string, string[]> = {
   agentflow: [],
   cynefin: [],
   radar: [],
-  railroad: [],
+  railroad: [
+    'railroad_spec',
+    'railroad_grammar',
+    'railroad_db_spec',
+    'render:railroad_render_spec',
+  ],
   swimlanes: [],
   treeView: [],
   usecase: [],

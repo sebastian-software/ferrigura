@@ -131,6 +131,22 @@ fn c4_wrap(text: &str) -> bool {
     matches!(resolved.get("wrap"), Some(Config::Bool(true)))
 }
 
+/// The railroad diagram, of any of its four syntaxes. The text must first be detected as one, as
+/// `detectType` does before the parser runs, so that a text of another type is a rejection.
+fn railroad_outcome(text: &str) -> Outcome {
+    if detect(text) != Some(DiagramType::Railroad) {
+        return Outcome::Rejected(ParseError {
+            line: 1,
+            column: 1,
+            message: "no railroad diagram detected".to_owned(),
+        });
+    }
+    match railroad::parse(text) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
 fn sequence_outcome(text: &str) -> Outcome {
     match sequence::parse_with(
         text,
@@ -367,10 +383,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
-            "railroad" => match railroad::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
+            "railroad" => railroad_outcome(text),
             "swimlanes" => match swimlanes::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
