@@ -6,6 +6,7 @@
 
 #![warn(missing_docs)]
 
+use std::borrow::Cow;
 use std::hash::Hasher;
 
 use ferrigura_model::config::{MermaidConfig, effective, typed, user_theme_variables};
@@ -269,14 +270,14 @@ pub fn render_with(
 }
 
 /// What every renderer needs besides its diagram: the id, the effective configuration in the
-/// diagram's scope, and the theme variables of each scheme.
+/// diagram's scope, and the theme variables of each scheme that the render draws.
 struct Prepared {
     id: String,
     effective: Value,
     config: MermaidConfig,
     configured: Value,
-    light: Value,
-    dark: Value,
+    light: Cow<'static, Value>,
+    dark: Cow<'static, Value>,
     scheme: Option<ColorScheme>,
 }
 
@@ -329,15 +330,34 @@ fn prepare(
         .cloned()
         .unwrap_or_else(Value::empty_object);
     let overrides = user_theme_variables(Some(site), &directive);
+    let scheme = options.color_scheme;
     Ok(Prepared {
         id,
         config: typed_config,
         configured,
-        light: Theme::ReduxColor.variables(Some(&overrides)),
-        dark: Theme::ReduxDarkColor.variables(Some(&overrides)),
-        scheme: options.color_scheme,
+        light: scheme_variables(
+            Theme::ReduxColor,
+            matches!(scheme, Some(ColorScheme::Light | ColorScheme::Auto)),
+            &overrides,
+        ),
+        dark: scheme_variables(
+            Theme::ReduxDarkColor,
+            matches!(scheme, Some(ColorScheme::Dark | ColorScheme::Auto)),
+            &overrides,
+        ),
+        scheme,
         effective: effective_config,
     })
+}
+
+/// The variables of a colour scheme, when the render draws it. A scheme that is not drawn is not
+/// computed: the configured theme decides the colours then, and the scheme gives no variables.
+fn scheme_variables(theme: Theme, drawn: bool, overrides: &Value) -> Cow<'static, Value> {
+    if drawn {
+        theme.variables_shared(Some(overrides))
+    } else {
+        Cow::Owned(Value::empty_object())
+    }
 }
 
 /// `autoWrap()` of the sequence diagram after `init`: a truthy top-level `wrap` is copied into

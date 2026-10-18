@@ -20,21 +20,37 @@ pub use layers::{
 };
 pub use lenient::{ConfigWarning, Outcome};
 
+use std::sync::LazyLock;
+
 use crate::value::Value;
 
 /// The reference's defaults that its schema does not hold, as a JSON object. See `ts_defaults.json`.
 const TS_DEFAULTS: &str = include_str!("ts_defaults.json");
 
-/// The defaults of every key: the schema's defaults, with the reference's TypeScript-only defaults
-/// on top.
-#[must_use]
-pub fn defaults() -> Value {
+/// The defaults of every key, computed once per process. See [`defaults`].
+static DEFAULTS: LazyLock<Value> = LazyLock::new(|| {
     let mut value = Value::from(serde_json::to_value(MermaidConfig::default()).unwrap_or_default());
     let overrides =
         Value::from(serde_json::from_str::<serde_json::Value>(TS_DEFAULTS).unwrap_or_default());
     layers::assign_with_depth(&mut value, &overrides, 2);
     value
+});
+
+/// The defaults of every key: the schema's defaults, with the reference's TypeScript-only defaults
+/// on top. This is a copy of the defaults that [`cached_defaults`] shares.
+#[must_use]
+pub fn defaults() -> Value {
+    cached_defaults().clone()
 }
+
+/// The defaults of every key, borrowed. They are computed once per process, so that reading the
+/// configuration does not rebuild them on every render.
+pub(crate) fn cached_defaults() -> &'static Value {
+    &DEFAULTS
+}
+
+/// The options of the schema, as the lenient reader walks them. Built once per process.
+static SCHEMA: LazyLock<lenient::Schema> = LazyLock::new(|| lenient::Schema::new(FIELD_TYPES));
 
 /// The typed view of a configuration, and the values of the wrong type that it read or replaced.
 /// See [`typed_with_warnings`].
@@ -69,7 +85,7 @@ pub fn typed(value: &Value) -> Result<MermaidConfig, serde_json::Error> {
 /// Returns an error only when the configuration is not an object, which [`effective`] never returns.
 pub fn typed_with_warnings(value: &Value) -> Result<TypedConfig, serde_json::Error> {
     let mut read = value.clone();
-    let warnings = lenient::read_types(&mut read, &defaults(), FIELD_TYPES);
+    let warnings = lenient::read_types(&mut read, cached_defaults(), &SCHEMA);
     let config: MermaidConfig = serde::Deserialize::deserialize(read)?;
     Ok(TypedConfig { config, warnings })
 }
@@ -90,6 +106,27 @@ mod tests {
         assert!(serde_json::from_str::<serde_json::Value>(TS_DEFAULTS).is_ok());
         let config = typed(&defaults()).expect("the defaults read back into the types");
         assert_eq!(config.pie.text_position, 0.75);
+    }
+
+    #[test]
+    fn the_field_types_list_each_option_once_and_its_parents_first() {
+        // The reader's schema is a tree with one node per path, and it visits an option after the
+        // options above it, as the list does: a path is listed once, and a parent that is listed comes
+        // before the options below it.
+        for (index, (path, _)) in FIELD_TYPES.iter().enumerate() {
+            assert!(
+                FIELD_TYPES[..index]
+                    .iter()
+                    .all(|(earlier, _)| earlier != path),
+                "{path:?} is listed twice"
+            );
+            for depth in 1..path.len() {
+                let parent = &path[..depth];
+                if let Some(at) = FIELD_TYPES.iter().position(|(listed, _)| listed == &parent) {
+                    assert!(at < index, "{parent:?} comes after {path:?}");
+                }
+            }
+        }
     }
 
     #[test]
