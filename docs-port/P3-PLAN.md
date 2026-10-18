@@ -1,6 +1,6 @@
 # P3: the remaining diagram types
 
-P3 ports the nine diagram families that Mermaid 12.2.0 has and ferrigura does not yet: agentflow, cynefin, radar, railroad, swimlanes, tree view, use case, venn and wardley. With them, ferrigura covers all 33 families. For each: the parser and its DB, the canonical model, the specs and the renderer. The research per type is in `<type>/NOTES.md`, the parser decisions and the quirks each port reproduces in `<type>/PLAN.md`.
+P3 ports eight of the nine diagram families that Mermaid 12.2.0 has and ferrigura does not yet: agentflow, cynefin, radar, railroad, tree view, use case, venn and wardley. Swimlanes, the ninth, is a milestone of its own beside P3 (decision 2 below). With all nine, ferrigura covers the 33 families. For each: the parser and its DB, the canonical model, the specs and the renderer. The research per type is in `<type>/NOTES.md`, the parser decisions and the quirks each port reproduces in `<type>/PLAN.md`.
 
 **Done when** each type passes its ported specs, `pnpm port:diff <type>` shows no difference on every collected input, and `pnpm port:geometry <type>` is within tolerance on every comparable fixture. Fixtures are excluded only with a named reason, as in M5, M6 and P2.
 
@@ -33,11 +33,11 @@ Together about 28,000 to 35,000 lines of Rust, of which swimlanes is a third.
 | Agentflow layouts         | ELK Layered; the other ELK algorithms fall back to it, as decision 0006 says                                                                                                                                                                                                                                                                         | [0006](./decisions/0006-elk-layered-port.md)                                                                            |
 | handDrawn                 | Excluded, as before                                                                                                                                                                                                                                                                                                                                  | M5                                                                                                                      |
 
-### Open, for Sebastian
+### Decided by Sebastian on 2026-10-18
 
-1. **Symbol and fallback glyphs.** Cynefin draws `→` (U+2192) in 11 of its 12 fixtures, in text the renderer writes, and the bundled faces have no arrow. The unknown icon's `?` in `ArialMT` reaches tree view (5 fixtures), architecture and flowchart. Bundle a small symbol face (OFL) for these code points, embedded like the others and mapped in the harness, or exclude the fixtures with a named reason until fallback fonts exist.
-2. **Swimlanes.** Its layout is a port the size of ELK Layered (8,000 to 10,000 lines for the default path, about 1,200 more for two options two fixtures use). Keep it in P3, or make it a milestone of its own that runs beside the other eight.
-3. **Collation.** The swimlane layout sorts with `localeCompare` (ICU) in 18 places. An ICU4X collator crate gives V8's order; a comparison of our own covers the ASCII ids the fixtures use.
+1. **Symbol and fallback glyphs.** A small symbol face under the SIL Open Font License is bundled for the code points the bundled faces lack and the reference draws (the arrows of cynefin's subtitles first), embedded as a subset like the other faces and mapped in the harness on both sides. The unknown icon's `?` stays in `ArialMT, Arial`, as the reference writes it: the harness draws it with the machine's Arial on both sides.
+2. **Swimlanes is a milestone of its own**, running beside P3: its layout is a port the size of ELK Layered. P3 is the other eight types.
+3. **Collation.** The swimlane layout's `localeCompare` is a comparison of our own that gives ICU's root order exactly for ASCII; an ICU4X collator follows when ids outside ASCII need it.
 
 ## Stages
 
