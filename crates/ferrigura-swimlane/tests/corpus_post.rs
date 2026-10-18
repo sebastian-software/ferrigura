@@ -77,3 +77,14 @@ fn nudge_shared_interior_subpaths_matches_every_stage() {
     );
     assert_eq!(checked, 16, "11 runs with #1 and 5 with #2 in the corpus");
 }
+
+#[test]
+fn straighten_collinear_sibling_detours_matches_every_stage() {
+    let cases = load_cases();
+    let checked = check_pass(
+        &cases,
+        "straightenCollinearSiblingDetours",
+        passes::straighten_collinear_sibling_detours,
+    );
+    assert_eq!(checked, 52, "the corpus has 52 stages of this pass");
+}

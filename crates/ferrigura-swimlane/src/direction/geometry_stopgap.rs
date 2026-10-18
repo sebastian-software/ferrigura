@@ -8,8 +8,10 @@
 //! The TypeScript default tolerance is [`EPS`]. Every function takes its tolerance as an argument, and the callers
 //! pass the value the TypeScript passes.
 
+use indexmap::IndexMap;
+
 use crate::math::{js_max, js_min};
-use crate::model::{Node, Point, Rect};
+use crate::model::{Edge, Node, Point, Rect};
 
 /// `EPS` of `geometry.ts`: the default tolerance of the helpers.
 pub(crate) const EPS: f64 = 1e-3;
@@ -243,4 +245,206 @@ pub(crate) fn orthogonal_segments_strictly_cross(
         && v_x < h_x_max - epsilon
         && h_y > v_y_min + epsilon
         && h_y < v_y_max - epsilon
+}
+
+/// `collectRealNodeBounds(nodes)`: the bounds of the measured nodes that are not edge labels and not groups, by id
+/// (`nodeInfoById`, a `Map`: a repeated id keeps its first position and its last value), and their rectangles in
+/// the order of `nodes`.
+pub(crate) fn collect_real_node_bounds(
+    nodes: &[Node],
+) -> (IndexMap<String, NodeBounds>, Vec<RectEntry>) {
+    let mut node_info_by_id = IndexMap::new();
+    let mut real_node_rects = Vec::new();
+    for node in nodes {
+        if node.is_edge_label == Some(true) {
+            continue;
+        }
+        let Some((id, bounds)) = node_bounds_info_for(node) else {
+            continue;
+        };
+        node_info_by_id.insert(id.clone(), bounds);
+        real_node_rects.push(RectEntry {
+            id,
+            rect: bounds.rect,
+        });
+    }
+    (node_info_by_id, real_node_rects)
+}
+
+/// `NodePairGeometry` without the ids: the bounds of both ends of an edge, and whether their centres share a column
+/// (`collinear_x`) or a row (`collinear_y`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct NodePairGeometry {
+    pub(crate) src: NodeBounds,
+    pub(crate) dst: NodeBounds,
+    pub(crate) collinear_x: bool,
+    pub(crate) collinear_y: bool,
+}
+
+/// `getNodePairGeometry(edge, nodeInfoById, epsilon)`: absent when an end is missing, or is not a measured node.
+pub(crate) fn get_node_pair_geometry(
+    edge: &Edge,
+    node_info_by_id: &IndexMap<String, NodeBounds>,
+    epsilon: f64,
+) -> Option<NodePairGeometry> {
+    let src_id = non_empty(edge.start.as_deref())?;
+    let dst_id = non_empty(edge.end.as_deref())?;
+    let src = *node_info_by_id.get(src_id)?;
+    let dst = *node_info_by_id.get(dst_id)?;
+    Some(NodePairGeometry {
+        src,
+        dst,
+        collinear_x: (src.cx - dst.cx).abs() < epsilon,
+        collinear_y: (src.cy - dst.cy).abs() < epsilon,
+    })
+}
+
+/// The kind of a three-segment route: `HVH` starts horizontal, `VHV` vertical.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RouteKind {
+    Hvh,
+    Vhv,
+}
+
+/// `ThreeSegmentRoute`: a four-point polyline whose segments alternate between the two axes.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct ThreeSegmentRoute {
+    pub(crate) kind: RouteKind,
+    pub(crate) p0: Point,
+    pub(crate) p1: Point,
+    pub(crate) p2: Point,
+    pub(crate) p3: Point,
+}
+
+/// `classifyThreeSegmentRoute(points, epsilon)`: the route of a four-point polyline that alternates its axes, and
+/// `None` for any other polyline, or for an absent one.
+pub(crate) fn classify_three_segment_route(
+    points: Option<&[Point]>,
+    epsilon: f64,
+) -> Option<ThreeSegmentRoute> {
+    let points = points?;
+    if points.len() != 4 {
+        return None;
+    }
+    let (p0, p1, p2, p3) = (points[0], points[1], points[2], points[3]);
+    let is_hvh = is_horizontal_segment(p0, p1, epsilon)
+        && is_vertical_segment(p1, p2, epsilon)
+        && is_horizontal_segment(p2, p3, epsilon);
+    if is_hvh {
+        return Some(ThreeSegmentRoute {
+            kind: RouteKind::Hvh,
+            p0,
+            p1,
+            p2,
+            p3,
+        });
+    }
+    let is_vhv = is_vertical_segment(p0, p1, epsilon)
+        && is_horizontal_segment(p1, p2, epsilon)
+        && is_vertical_segment(p2, p3, epsilon);
+    is_vhv.then_some(ThreeSegmentRoute {
+        kind: RouteKind::Vhv,
+        p0,
+        p1,
+        p2,
+        p3,
+    })
+}
+
+/// `orthogonalSegmentsCross(a1, b1, a2, b2, epsilon, endpointTolerance)`: whether two axis-aligned segments on
+/// different axes meet, except where they meet at an endpoint of both.
+pub(crate) fn orthogonal_segments_cross(
+    a1: Point,
+    b1: Point,
+    a2: Point,
+    b2: Point,
+    epsilon: f64,
+    endpoint_tolerance: f64,
+) -> bool {
+    let s1h = same_y(a1, b1, epsilon);
+    let s1v = same_x(a1, b1, epsilon);
+    let s2h = same_y(a2, b2, epsilon);
+    let s2v = same_x(a2, b2, epsilon);
+    if (s1h && s2h) || (s1v && s2v) {
+        return false;
+    }
+    if !(s1h || s1v) || !(s2h || s2v) {
+        return false;
+    }
+
+    let horiz = if s1h { (a1, b1) } else { (a2, b2) };
+    let vert = if s1v { (a1, b1) } else { (a2, b2) };
+    let h_y = horiz.0.y;
+    let h_x1 = js_min(horiz.0.x, horiz.1.x);
+    let h_x2 = js_max(horiz.0.x, horiz.1.x);
+    let v_x = vert.0.x;
+    let v_y1 = js_min(vert.0.y, vert.1.y);
+    let v_y2 = js_max(vert.0.y, vert.1.y);
+    if v_x < h_x1 || v_x > h_x2 || h_y < v_y1 || h_y > v_y2 {
+        return false;
+    }
+
+    // Whether the crossing is at the point `p`, within the tolerance.
+    let at =
+        |p: Point| (v_x - p.x).abs() < endpoint_tolerance && (h_y - p.y).abs() < endpoint_tolerance;
+    let matches_horiz_endpoint = at(horiz.0) || at(horiz.1);
+    let matches_vert_endpoint = at(vert.0) || at(vert.1);
+    !(matches_horiz_endpoint && matches_vert_endpoint)
+}
+
+/// `sameAxisSegmentsOverlap(a1, b1, a2, b2, epsilon)`: whether two segments on the same line share more than
+/// `epsilon` of their length.
+pub(crate) fn same_axis_segments_overlap(
+    a1: Point,
+    b1: Point,
+    a2: Point,
+    b2: Point,
+    epsilon: f64,
+) -> bool {
+    let s1h = same_y(a1, b1, epsilon);
+    let s1v = same_x(a1, b1, epsilon);
+    let s2h = same_y(a2, b2, epsilon);
+    let s2v = same_x(a2, b2, epsilon);
+    if s1v && s2v && same_x(a1, a2, epsilon) {
+        return overlap_length(a1.y, b1.y, a2.y, b2.y) > epsilon;
+    }
+    if s1h && s2h && same_y(a1, a2, epsilon) {
+        return overlap_length(a1.x, b1.x, a2.x, b2.x) > epsilon;
+    }
+    false
+}
+
+/// `segmentConflictsWithAnyEdge(a, b, edges, excludeEdge, { epsilon, skipDegenerateOther })`: whether the segment
+/// crosses or overlaps a segment of another routed edge. `exclude` is the index of the edge the segment belongs to.
+pub(crate) fn segment_conflicts_with_any_edge(
+    a: Point,
+    b: Point,
+    edges: &[Edge],
+    exclude: Option<usize>,
+    epsilon: f64,
+    skip_degenerate_other: bool,
+) -> bool {
+    for (index, other) in edges.iter().enumerate() {
+        if Some(index) == exclude || other.is_layout_only == Some(true) {
+            continue;
+        }
+        let Some(points) = other.points.as_deref() else {
+            continue;
+        };
+        if points.len() < 2 {
+            continue;
+        }
+        for pair in points.windows(2) {
+            let (oa, ob) = (pair[0], pair[1]);
+            if skip_degenerate_other && same_point(oa, ob, epsilon) {
+                continue;
+            }
+            if orthogonal_segments_cross(a, b, oa, ob, epsilon, 1e-6)
+                || same_axis_segments_overlap(a, b, oa, ob, epsilon)
+            {
+                return true;
+            }
+        }
+    }
+    false
 }
