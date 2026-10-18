@@ -47,4 +47,5 @@ pub mod testing {
     };
     pub use crate::model::{layout_data_from_json, layout_data_to_json};
     pub use crate::pipeline::{LayoutOptions, LayoutResult, sugiyama_layout};
+    pub use crate::router::route_edges_orthogonal;
 }

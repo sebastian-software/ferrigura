@@ -17,9 +17,11 @@
 //! for `Math.max` and `Math.min`, `ferrigura_jsmath::hypot` for `Math.hypot`, and the key `to_fixed(x, 1)` for
 //! `toFixed(1)`. Maps keep their insertion order (`indexmap`).
 
+mod crossing;
 mod initial;
 mod js_sort;
 mod ports;
+mod rebuild;
 mod search;
 mod setup;
 
@@ -42,6 +44,8 @@ const VERTICAL_PIPE_MARGIN: f64 = 15.0;
 const ROUTING_MARGIN: f64 = 25.0;
 /// `ANCHOR_OFFSET` (`router.ts:23`): the distance of an anchor from its port.
 const ANCHOR_OFFSET: f64 = 20.0;
+/// `TRACK_SPACING` (`router.ts:24`): the distance between two tracks of a pipe.
+const TRACK_SPACING: f64 = 10.0;
 /// `CROSSING_PENALTY` (`router.ts:276`): the cost of a step that crosses a routed segment.
 const CROSSING_PENALTY: f64 = 1000.0;
 /// `MIN_PORT_SPACING` (`router.ts:635`).
@@ -124,6 +128,8 @@ pub(super) struct RouteEdge {
     pub(super) label_node_id: Option<String>,
     /// `points`: set by the fast path or by the rebuild, and copied back to the layout at the end.
     pub(super) points: Option<Vec<Point>>,
+    /// The index of the edge in `LayoutData::edges`, which the routed points are written to.
+    pub(super) origin: usize,
 }
 
 /// An obstacle (`ObstacleRect`): the inflated box of a node that edges route around, with the index of the node.
@@ -138,22 +144,47 @@ pub(super) struct Obstacle {
     pub(super) visual_x_half_extent: f64,
 }
 
-/// A pipe (`Pipe`): a line that segments run along, at a constant `coord`.
-#[derive(Clone, Copy, Debug)]
+/// A pipe (`Pipe`): a line that segments run along, at a constant `coord`, with the tracks that share it.
+#[derive(Clone, Debug)]
 pub(super) struct Pipe {
     pub(super) orientation: Orientation,
     pub(super) coord: f64,
+    /// `tracks`: the segments on each track. A track's index is its position in this list.
+    pub(super) tracks: Vec<Vec<SegmentRef>>,
+}
+
+/// A segment as a track holds it (`SegmentRef`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct SegmentRef {
+    pub(super) edge: usize,
+    pub(super) segment: usize,
+    pub(super) from: f64,
+    pub(super) to: f64,
 }
 
 /// A routed segment (`RoutedSegment`), in the global list of the router.
 #[derive(Clone, Copy, Debug)]
 pub(super) struct RoutedSegment {
     pub(super) edge: usize,
+    /// `segmentIndex`: the position of the segment in the route of its edge.
+    pub(super) segment: usize,
     pub(super) orientation: Orientation,
+    /// The pipe of the segment, or `None` for the straight fast path, whose pipe is not in the list of pipes.
+    pub(super) pipe: Option<usize>,
     /// `pipe.coord` of the pipe the segment runs on. The coordinate of a pipe never changes, so it is copied.
     pub(super) pipe_coord: f64,
+    /// `trackIndex`: the track of the pipe that holds the segment.
+    pub(super) track: usize,
     pub(super) from: f64,
     pub(super) to: f64,
+}
+
+/// The destination of the first change of direction of an edge (`DestInfo`), cached by edge.
+#[derive(Clone, Copy, Debug)]
+pub(super) struct DestInfo {
+    pub(super) dest: f64,
+    pub(super) deviation: f64,
+    pub(super) delta: f64,
 }
 
 /// The side that an edge leaves or enters a node by (`EdgeSideInfo`), keyed by the edge's index.
@@ -207,6 +238,8 @@ pub(super) struct Router {
     pub(super) port_groups: IndexMap<PortKey, Vec<PortEntry>>,
     /// `portOffsets`: the offset of the port of an edge along its side, by edge and role.
     pub(super) port_offsets: HashMap<(usize, Role), f64>,
+    /// `destInfoCache`: the destinations of the edges, computed on first use and kept.
+    pub(super) dest_info_cache: HashMap<usize, DestInfo>,
 }
 
 impl Router {
@@ -222,11 +255,12 @@ impl Router {
             .iter()
             .enumerate()
             .filter(|(_, edge)| edge.is_layout_only != Some(true))
-            .map(|(_, edge)| RouteEdge {
+            .map(|(origin, edge)| RouteEdge {
                 start: non_empty(&edge.start),
                 end: non_empty(&edge.end),
                 label_node_id: non_empty(&edge.label_node_id),
                 points: edge.points.clone(),
+                origin,
             })
             .collect();
         let edge_count = edges.len();
@@ -245,6 +279,7 @@ impl Router {
             incident_totals: HashMap::new(),
             port_groups: IndexMap::new(),
             port_offsets: HashMap::new(),
+            dest_info_cache: HashMap::new(),
         }
     }
 
@@ -265,13 +300,9 @@ fn non_empty(value: &Option<String>) -> Option<String> {
 
 /// `routeEdgesOrthogonal(data, direction)`: routes the edges of the layout and writes their points.
 ///
-/// The routing is not finished: the search and the first routing are ported, and the crossing reduction and
-/// the rebuild are not. Until they are, the function returns [`Error::NotPorted`]`("router")` and leaves the
-/// layout unchanged.
-pub(crate) fn route_edges_orthogonal(
-    data: &mut LayoutData,
-    direction: Direction,
-) -> Result<(), Error> {
+/// The steps run in the order of the reference: the lanes, the obstacles, the routing order, the ports, the
+/// routing of each edge, the crossing reduction, the rebuild of the geometry, and the write-back.
+pub fn route_edges_orthogonal(data: &mut LayoutData, direction: Direction) -> Result<(), Error> {
     let mut router = Router::new(data, direction == Direction::LR);
     router.assign_lanes();
     router.build_obstacles();
@@ -280,5 +311,8 @@ pub(crate) fn route_edges_orthogonal(
     for edge in order {
         router.route_edge(edge);
     }
-    Err(Error::NotPorted("router"))
+    router.reduce_crossings();
+    router.rebuild_geometry();
+    router.write_back(data);
+    Ok(())
 }

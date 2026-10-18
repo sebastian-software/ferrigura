@@ -149,7 +149,11 @@ impl Router {
         {
             return index;
         }
-        self.pipes.push(Pipe { orientation, coord });
+        self.pipes.push(Pipe {
+            orientation,
+            coord,
+            tracks: Vec::new(),
+        });
         self.pipes.len() - 1
     }
 

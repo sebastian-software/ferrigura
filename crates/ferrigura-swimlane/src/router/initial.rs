@@ -14,7 +14,7 @@ use super::ports::EdgePorts;
 use super::search::Endpoints;
 use super::{
     ANCHOR_OFFSET, EPS, Geo, HORIZONTAL_PIPE_MARGIN, Obstacle, Orientation, ROUTING_MARGIN, Role,
-    RoutedSegment, Router, VERTICAL_PIPE_MARGIN, js_sign,
+    RoutedSegment, Router, SegmentRef, VERTICAL_PIPE_MARGIN, js_sign,
 };
 
 /// An entry of the routing order: the edge, whether it crosses lanes, and the distance between its nodes.
@@ -441,8 +441,11 @@ impl Router {
         };
         self.segments.push(RoutedSegment {
             edge: index,
+            segment: 0,
             orientation,
+            pipe: None,
             pipe_coord: coord,
+            track: 0,
             from,
             to,
         });
@@ -474,13 +477,27 @@ impl Router {
 
             self.segments.push(RoutedSegment {
                 edge: index,
+                segment: k,
                 orientation,
+                pipe: Some(pipe),
                 pipe_coord: self.pipes[pipe].coord,
+                track: 0,
                 from,
                 to,
             });
             let segment_index = self.segments.len() - 1;
             self.edge_segments[index].push(segment_index);
+
+            // The first track of the pipe holds the segments of the route, in the order they were routed.
+            if self.pipes[pipe].tracks.is_empty() {
+                self.pipes[pipe].tracks.push(Vec::new());
+            }
+            self.pipes[pipe].tracks[0].push(SegmentRef {
+                edge: index,
+                segment: k,
+                from,
+                to,
+            });
         }
     }
 }

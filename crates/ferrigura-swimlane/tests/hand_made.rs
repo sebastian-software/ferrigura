@@ -62,10 +62,10 @@ fn node<'a>(data: &'a LayoutData, id: &str) -> &'a ferrigura_swimlane::Node {
 }
 
 #[test]
-fn two_lanes_are_written_back_and_then_routing_is_reported_missing() {
+fn two_lanes_are_written_back_and_then_post_processing_is_reported_missing() {
     let mut data = load(&two_lanes());
-    let error = run_swimlane_layout_core(&mut data).expect_err("the router is not ported");
-    assert_eq!(error, Error::NotPorted("router"));
+    let error = run_swimlane_layout_core(&mut data).expect_err("the post-processing is not ported");
+    assert_eq!(error, Error::NotPorted("post-processing"));
 
     // The lanes are columns in the reverse of their source order: `B` on the left, `A` on the right.
     // The columns are 100 wide, with a lane gap of 2 * 40, so `b` sits at -90 and `a` at 90.
@@ -108,8 +108,12 @@ fn the_edge_points_are_deleted_before_the_routing() {
     let mut input = two_lanes();
     input["edges"][0]["points"] = json!([{"x": 1, "y": 2}]);
     let mut data = load(&input);
-    run_swimlane_layout_core(&mut data).expect_err("the router is not ported");
-    assert_eq!(data.edges[0].points, None);
+    run_swimlane_layout_core(&mut data).expect_err("the post-processing is not ported");
+    // The router writes its own points, so the points of the input are gone.
+    assert_ne!(
+        data.edges[0].points,
+        Some(vec![ferrigura_swimlane::Point { x: 1.0, y: 2.0 }])
+    );
 }
 
 #[test]
