@@ -1,120 +1,44 @@
-//! The reference corpus of `runSwimlaneLayoutCore`: for each case in `tests/corpus/manifest.json`, the stages
-//! of the port must equal the stages the reference recorded (`tests/corpus/<name>.json`).
+//! The reference corpus of `runSwimlaneLayoutCore`, for the stages that the ported phases produce: for each
+//! case, the stages of the port must equal the stages the reference recorded. The cases and the comparison
+//! are the shared harness's (`tests/support/corpus.rs`).
 //!
 //! The `sugiyama` stage is the `LayoutResult` of `sugiyamaLayout`: the acyclic edges (`id`, `src`, `dst`),
 //! the reversed edges, the layering with its ranks and dummy nodes, the ordering, and the coordinates. The
-//! `writeback` stage is the layout data after `writeBackToLayoutData`. Numbers are compared with `==` on
-//! `f64`, so `-0` equals `0`; strings, booleans and key sets are compared exactly; every key of the
-//! reference's snapshot must be present, and every key of the port's must be in the reference.
+//! `writeback` stage is the layout data after `writeBackToLayoutData`, compared on every key. A failure
+//! names the case, the stage, the path of the first difference, and the id of the node or edge.
 //!
 //! The `output` stage (the layout after routing and post-processing) needs the router and the geometry
 //! passes, which are not ported yet; its test is ignored until they land.
 
-use std::path::PathBuf;
+mod support;
 
 use ferrigura_swimlane::testing::{
     LayoutOptions, LayoutResult, layout_data_from_json, layout_data_to_json, sugiyama_layout,
     to_graph_view, write_back_to_layout_data,
 };
-use ferrigura_swimlane::{Direction, LayoutData, run_swimlane_layout_core};
+use ferrigura_swimlane::{Direction, run_swimlane_layout_core};
 use serde_json::{Value, json};
+use support::corpus::{Case, compare_snapshot, compare_values, load_cases};
 
-fn corpus_dir() -> PathBuf {
-    [env!("CARGO_MANIFEST_DIR"), "tests", "corpus"]
-        .iter()
-        .collect()
-}
-
-fn load(name: &str) -> Value {
-    let path = corpus_dir().join(format!("{name}.json"));
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
-    serde_json::from_str(&text).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
-}
-
-fn case_names() -> Vec<String> {
-    let manifest = load("manifest");
-    manifest["cases"]
-        .as_array()
-        .expect("the manifest lists its cases")
-        .iter()
-        .map(|case| case["name"].as_str().expect("a case name").to_owned())
-        .collect()
-}
-
-/// The stage of the case with the given name.
-fn stage<'a>(case: &'a Value, name: &str) -> &'a Value {
-    case["stages"]
-        .as_array()
-        .expect("the stages of a case")
-        .iter()
-        .find(|stage| stage["stage"] == name)
-        .map(|stage| &stage["data"])
-        .unwrap_or_else(|| panic!("no stage {name}"))
-}
-
-/// How a list item is named in a message: its id when it has one, its text when it is a string, and its
-/// index otherwise.
-fn item_label(index: usize, item: &Value) -> String {
-    if let Some(id) = item.get("id").and_then(Value::as_str) {
-        return format!("[{id}]");
-    }
-    if let Some(text) = item.as_str() {
-        return format!("[{text}]");
-    }
-    format!("[{index}]")
-}
-
-/// The first difference between the reference's value and the port's, with the path to it.
-fn first_difference(path: &str, expected: &Value, actual: &Value) -> Option<String> {
-    match (expected, actual) {
-        (Value::Number(_), Value::Number(_)) => {
-            if expected.as_f64() == actual.as_f64() {
-                None
-            } else {
-                Some(format!("{path}: expected {expected}, got {actual}"))
-            }
-        }
-        (Value::Array(expected_items), Value::Array(actual_items)) => {
-            if expected_items.len() != actual_items.len() {
-                return Some(format!(
-                    "{path}: expected {} items, got {}",
-                    expected_items.len(),
-                    actual_items.len()
-                ));
-            }
-            expected_items
-                .iter()
-                .zip(actual_items)
-                .enumerate()
-                .find_map(|(index, (x, y))| {
-                    first_difference(&format!("{path}{}", item_label(index, x)), x, y)
-                })
-        }
-        (Value::Object(expected_map), Value::Object(actual_map)) => {
-            for (key, x) in expected_map {
-                match actual_map.get(key) {
-                    None => return Some(format!("{path}.{key}: missing")),
-                    Some(y) => {
-                        if let Some(message) = first_difference(&format!("{path}.{key}"), x, y) {
-                            return Some(message);
-                        }
-                    }
-                }
-            }
-            actual_map
-                .keys()
-                .find(|key| !expected_map.contains_key(*key))
-                .map(|key| format!("{path}.{key}: not in the reference"))
-        }
-        _ => {
-            if expected == actual {
-                None
-            } else {
-                Some(format!("{path}: expected {expected}, got {actual}"))
-            }
+/// Adds the id of the node or edge that a harness path names (`nodes[3]`, `edges[0]`) to the message.
+fn with_id(message: String, snapshot: &Value) -> String {
+    for list in ["nodes", "edges"] {
+        let marker = format!(".{list}[");
+        let Some(start) = message.find(&marker) else {
+            continue;
+        };
+        let rest = &message[start + marker.len()..];
+        let Some(end) = rest.find(']') else {
+            continue;
+        };
+        let Ok(index) = rest[..end].parse::<usize>() else {
+            continue;
+        };
+        if let Some(id) = snapshot[list][index]["id"].as_str() {
+            return format!("{message} ({list} id {id})");
         }
     }
+    message
 }
 
 /// The edge fields that the `sugiyama` stage compares: `id`, `src` and `dst`.
@@ -132,17 +56,12 @@ fn edge_ids(edges: &Value) -> Value {
 
 /// The `sugiyama` stage of the port, in the shape of the reference's stage.
 fn sugiyama_actual(result: &LayoutResult) -> Value {
-    let acyclic_edges: Vec<Value> = result
-        .acyclic
-        .edges
-        .iter()
-        .map(|edge| json!({"id": edge.id, "src": edge.src, "dst": edge.dst}))
-        .collect();
-    let reversed: Vec<Value> = result
-        .reversed
-        .iter()
-        .map(|edge| json!({"id": edge.id, "src": edge.src, "dst": edge.dst}))
-        .collect();
+    let edges = |edges: &[ferrigura_swimlane::testing::EdgeRef]| -> Vec<Value> {
+        edges
+            .iter()
+            .map(|edge| json!({"id": edge.id, "src": edge.src, "dst": edge.dst}))
+            .collect()
+    };
     let rank_of: serde_json::Map<String, Value> = result
         .layering
         .rank_of
@@ -155,8 +74,8 @@ fn sugiyama_actual(result: &LayoutResult) -> Value {
             .collect()
     };
     json!({
-        "acyclic": {"nodes": result.acyclic.nodes, "edges": acyclic_edges},
-        "reversed": reversed,
+        "acyclic": {"nodes": result.acyclic.nodes, "edges": edges(&result.acyclic.edges)},
+        "reversed": edges(&result.reversed),
         "layering": {
             "layers": result.layering.layers,
             "rankOf": rank_of,
@@ -170,7 +89,8 @@ fn sugiyama_actual(result: &LayoutResult) -> Value {
     })
 }
 
-/// The `sugiyama` stage of the reference, with the edge fields the port compares.
+/// The `sugiyama` stage of the reference, with the parts the port compares. `acyclic.layout`,
+/// `acyclic.nodeById` and the `ref` of each edge are the reference's objects, which the port does not hold.
 fn sugiyama_expected(stage: &Value) -> Value {
     json!({
         "acyclic": {"nodes": stage["acyclic"]["nodes"], "edges": edge_ids(&stage["acyclic"]["edges"])},
@@ -203,22 +123,27 @@ fn options(input: &Value) -> LayoutOptions {
 }
 
 /// Runs the phases on a case, and returns the first difference of each compared stage.
-fn compare_case(name: &str) -> Vec<String> {
-    let case = load(name);
-    let input = &case["input"];
+fn compare_case(case: &Case) -> Vec<String> {
+    let name = &case.name;
     let mut failures = Vec::new();
 
-    let mut data: LayoutData = layout_data_from_json(input)
+    let mut data = layout_data_from_json(&case.input)
         .unwrap_or_else(|error| panic!("{name}: the input does not read: {error}"));
-    let opts = options(input);
+    let opts = options(&case.input);
     let g = to_graph_view(&data);
     let result = match sugiyama_layout(&g, &opts) {
         Ok(result) => result,
         Err(error) => return vec![format!("{name}: sugiyama: {error}")],
     };
 
-    let expected = sugiyama_expected(stage(&case, "sugiyama"));
-    if let Some(message) = first_difference("sugiyama", &expected, &sugiyama_actual(&result)) {
+    let reference = case
+        .stage("sugiyama")
+        .expect("every case has a sugiyama stage");
+    if let Err(message) = compare_values(
+        &sugiyama_expected(reference),
+        &sugiyama_actual(&result),
+        "sugiyama",
+    ) {
         failures.push(format!("{name}: {message}"));
     }
 
@@ -230,9 +155,14 @@ fn compare_case(name: &str) -> Vec<String> {
         opts.layer_gap,
         opts.node_gap,
     );
-    let actual = layout_data_to_json(&data);
-    if let Some(message) = first_difference("writeback", stage(&case, "writeback"), &actual) {
-        failures.push(format!("{name}: {message}"));
+    let reference = case
+        .stage("writeback")
+        .expect("every case has a writeback stage");
+    if let Err(message) = compare_snapshot(reference, &layout_data_to_json(&data)) {
+        failures.push(format!(
+            "{name}: writeback: {}",
+            with_id(message, reference)
+        ));
     }
     failures
 }
@@ -244,7 +174,7 @@ fn assert_no_failures(stage: &str, failures: &[String], cases: usize) {
     }
     let shown: Vec<&str> = failures.iter().take(25).map(String::as_str).collect();
     panic!(
-        "{stage}: {} of {cases} cases differ from the reference\n{}",
+        "{stage}: {} failures in {cases} cases\n{}",
         failures.len(),
         shown.join("\n")
     );
@@ -252,35 +182,38 @@ fn assert_no_failures(stage: &str, failures: &[String], cases: usize) {
 
 #[test]
 fn sugiyama_and_writeback_stages_match_the_reference() {
-    let names = case_names();
-    let failures: Vec<String> = names.iter().flat_map(|name| compare_case(name)).collect();
-    assert_no_failures("sugiyama and writeback", &failures, names.len());
+    let cases = load_cases();
+    assert_eq!(cases.len(), 131, "the corpus has 131 cases");
+    let failures: Vec<String> = cases.iter().flat_map(compare_case).collect();
+    assert_no_failures("sugiyama and writeback", &failures, cases.len());
 }
 
 #[test]
 #[ignore = "port: the router and the post-processing are not ported; run with --ignored once they land"]
 fn output_matches_the_reference_after_routing() {
+    let cases = load_cases();
     let mut failures = Vec::new();
-    let names = case_names();
-    for name in &names {
-        let case = load(name);
-        let mut data = layout_data_from_json(&case["input"]).expect("the input reads");
+    for case in &cases {
+        let name = &case.name;
+        let mut data = layout_data_from_json(&case.input).expect("the input reads");
         match run_swimlane_layout_core(&mut data) {
             Ok(direction) => {
-                let expected_direction = case["returnedDirection"].as_str().unwrap_or("");
-                if direction.as_str() != expected_direction {
+                if direction.as_str() != case.returned_direction {
                     failures.push(format!(
-                        "{name}: returnedDirection: expected {expected_direction}, got {}",
+                        "{name}: returnedDirection: expected {}, got {}",
+                        case.returned_direction,
                         direction.as_str()
                     ));
                 }
-                let actual = layout_data_to_json(&data);
-                if let Some(message) = first_difference("output", &case["output"], &actual) {
-                    failures.push(format!("{name}: {message}"));
+                if let Err(message) = compare_snapshot(&case.output, &layout_data_to_json(&data)) {
+                    failures.push(format!(
+                        "{name}: output: {}",
+                        with_id(message, &case.output)
+                    ));
                 }
             }
             Err(error) => failures.push(format!("{name}: {error}")),
         }
     }
-    assert_no_failures("output", &failures, names.len());
+    assert_no_failures("output", &failures, cases.len());
 }
