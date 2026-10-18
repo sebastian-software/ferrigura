@@ -81,7 +81,7 @@ pub fn render(input: &GanttInput<'_>) -> Result<String, RenderError> {
     let families = embed_runs(&runs)?;
     let family = families
         .first()
-        .map(|family: &EmbeddedFamily| family.name.clone())
+        .map(|family: &EmbeddedFamily| family.css_family.clone())
         .unwrap_or_default();
     let faces = if families.is_empty() {
         String::new()

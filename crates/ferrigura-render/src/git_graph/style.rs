@@ -50,8 +50,8 @@ fn rules(id: &str, palette: &Palette, family: &str) -> String {
     let stroke = &palette.stroke_width;
     let weight = &palette.note_font_weight;
     let mut css = format!(
-        "#{id}{{font-family:\"{family}\";font-size:{}px;fill:var(--textColor);}}\
-#{id} .commit-id,#{id} .commit-msg,#{id} .branch-label{{fill:lightgrey;color:lightgrey;font-family:\"{family}\";}}",
+        "#{id}{{font-family:{family};font-size:{}px;fill:var(--textColor);}}\
+#{id} .commit-id,#{id} .commit-msg,#{id} .branch-label{{fill:lightgrey;color:lightgrey;font-family:{family};}}",
         number(palette.font_size)
     );
     for index in 0..palette.colour_limit {

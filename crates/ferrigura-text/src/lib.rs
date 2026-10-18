@@ -6,8 +6,10 @@
 //! `docs-port/decisions/0005-text-measurement-and-fonts.md` for the choices behind it.
 //!
 //! The registry in [`fonts`] maps every (family, weight, style) choice to exactly one bundled
-//! face. Lexica Ultralegible covers Latin scripts only; other scripts need fallback fonts that
-//! are not part of this crate yet.
+//! face. Lexica Ultralegible covers Latin scripts only, so the arrows (U+2190-21FF) are set in
+//! the bundled symbol face, Noto Sans Math, character by character, as a browser does with a
+//! font-family list ([`fallback_runs`]). Other scripts need fallback fonts that are not part of
+//! this crate yet.
 
 #![warn(missing_docs)]
 #![cfg_attr(
@@ -27,7 +29,7 @@ pub use bbox::{Extent, measure_box, measure_line_box};
 pub use embed::{EmbeddedFamily, embed_runs, subset_face};
 pub use error::TextError;
 pub use fonts::{Face, FontFamily, FontStyle, FontWeight, face};
-pub use measure::{Run, layout_width, measure, measure_data, measure_line};
+pub use measure::{Run, fallback_runs, layout_width, measure, measure_data, measure_line};
 pub use metrics::{FontMetrics, TextBox, font_metrics, text_box, x_height};
 pub use wrap::{
     Word, fit_line, measure_words, split_line_to_fit_width, split_line_to_words,

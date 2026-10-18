@@ -128,9 +128,10 @@ pub fn render(input: &GitGraphInput<'_>) -> Result<String, RenderError> {
         },
     ];
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
-    let family = families
-        .first()
-        .map_or_else(|| "sans-serif".to_owned(), |family| family.name.clone());
+    let family = families.first().map_or_else(
+        || "\"sans-serif\"".to_owned(),
+        |family| family.css_family.clone(),
+    );
     let dark_palette = &dark;
     let style = style::style_element(id, themes, &light, dark_palette, &family, &families);
 

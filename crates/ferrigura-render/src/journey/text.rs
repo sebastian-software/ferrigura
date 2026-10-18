@@ -79,7 +79,11 @@ fn pieces(collapsed: &str) -> Vec<String> {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub(crate) fn min_content_width_in(face: &Face, text: &str, size: f64) -> Result<f64, RenderError> {
+pub(crate) fn min_content_width_in(
+    face: &'static Face,
+    text: &str,
+    size: f64,
+) -> Result<f64, RenderError> {
     let mut widest: f64 = 0.0;
     for piece in pieces(&collapse_white_space(text)) {
         widest = widest.max(collapsed_width(face, piece.trim_end(), size)?);
@@ -107,7 +111,7 @@ pub fn break_lines(text: &str, cell_width: f64, size: f64) -> Result<Vec<Line>, 
 ///
 /// Returns an error if the bundled font cannot be read.
 pub(crate) fn break_lines_in(
-    face: &Face,
+    face: &'static Face,
     text: &str,
     cell_width: f64,
     size: f64,

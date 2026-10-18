@@ -1,6 +1,6 @@
 # Port status
 
-Last updated: 2026-10-17. M1 to M6 are merged into `main`: every P1 diagram type parses and matches the reference on every collected input, and renders to SVG through `ferrigura`, its CLI and its Node addon within 0.05 px of the reference on every comparable fixture. P2 is merged too: the thirteen second-tier types parse and render to the same standard; see the P2 handover.
+Last updated: 2026-10-18. M1 to M6 are merged into `main`: every P1 diagram type parses and matches the reference on every collected input, and renders to SVG through `ferrigura`, its CLI and its Node addon within 0.05 px of the reference on every comparable fixture. P2 is merged too: the thirteen second-tier types parse and render to the same standard; see the P2 handover.
 
 Each session updates its section when it stops: what changed, what is next, what blocks it. Test counts and the differential column are written by `pnpm port:status`, which reads the Rust specs and the last `pnpm port:diff` run; run it after both.
 
@@ -206,7 +206,8 @@ Every P2 type parses and renders (see the P2 handover and [P2-PLAN.md](./P2-PLAN
 - Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release. The repository is public as `sebastian-software/ferrigura` since 2026-10-16; the local folder is still called `ferraid`.
 - Open `help wanted` issues for every P3 diagram type and for math in labels once the GitHub repository exists.
 - Pie geometry on Linux Chromium: with `--font-render-hinting=none` the redux themes match, but the classic themes (default, dark, forest, neutral), the hovered-slice and the bottom-legend fixtures differ by up to 0.7 px. CI runs the comparison on macOS, where all 24 match; investigate Linux with the Playwright Docker image.
-- Fallback fonts for scripts the bundled faces do not cover (CJK, Arabic, emoji); one flowchart fixture is excluded for it.
+- Fallback fonts for scripts the bundled faces do not cover: CJK, Arabic, emoji, and the miscellaneous symbols and dingbats (U+2600-27BF). The arrows are set in the bundled Noto Sans Math subset since decision 0005's symbol face, so their fixtures are compared again; the fixtures with the others are excluded in the geometry harness (`UNCOVERED_SYMBOLS`, `exclusionReason`) until a face covers those blocks.
+- Arrows in eventmodeling's HTML box labels (the reference draws them in `foreignObject`): the arrow probe of the harness is 0.5 to 1.5 px off in the line positions, with the horizontal geometry equal. The probable cause is the reference's line box taking the metrics of the fallback face (Noto Sans Math ascent 1069 and descent 423 per 1000 em, Lexica 950 and 290); not confirmed, and not in the e2e fixtures, which have arrows only in comments. Left open with the HTML label emulation.
 - Flowchart: images are not read (an image shape needs `assetWidth` and `assetHeight`); icon packs are not supported.
 - Replace the inherited changesets setup with release-please when the first crate is published.
 - The text measurement of the custom renderers takes the configured font, which the reference keeps over `sans-serif` on macOS for every probed text; probe Linux and Windows, where the system `sans-serif` may be larger.

@@ -66,7 +66,7 @@ pub fn style_sheet_with_fonts(
     let id = format!("#{svg_id}");
     let font = families.first().map_or_else(
         || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
-        |family| format!("\"{}\"", family.name),
+        |family| family.css_family.clone(),
     );
     let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
     let stroke_width = format!(
@@ -654,6 +654,7 @@ mod tests {
         let family = ferrigura_text::EmbeddedFamily {
             family: ferrigura_text::FontFamily::Sans,
             name: "fg-0123456789abcdef-sans".to_owned(),
+            css_family: "\"fg-0123456789abcdef-sans\"".to_owned(),
             css: "@font-face{font-family:\"fg-0123456789abcdef-sans\";src:url(data:font/ttf;base64,AA==)}".to_owned(),
         };
         let sheet = style_sheet_with_fonts(
