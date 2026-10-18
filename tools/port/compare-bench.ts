@@ -1,7 +1,8 @@
 /**
- * The render times of `docs-port/comparisons/`: ferrigura through its Node addon, Pele in Node and in
- * Chromium, and Mermaid in Chromium, on the `pr-check` fixtures of the types all three render. Each
- * time is the median of many renders of one fixture after a warm-up; a render that throws is null.
+ * The render times of `docs-port/comparisons/`: ferrigura through its Node addon, both as `render` and
+ * through a `Renderer` that resolves the configuration once, Pele in Node and in Chromium, and Mermaid
+ * in Chromium, on the `pr-check` fixtures of the types all three render. Each time is the median of
+ * many renders of one fixture after a warm-up; a render that throws is null.
  *
  * Pele and Mermaid are installed outside the repository, so the lock file stays as it is, and the
  * addon is the release build:
@@ -62,6 +63,7 @@ interface Result {
   type: string;
   file: string;
   ferrigura: number | null;
+  ferriguraRenderer: number | null;
   peleNode: number | null;
   peleBrowser: number | null;
   mermaid: number | null;
@@ -111,15 +113,27 @@ function timeSync(render: Render, text: string, runs: number): number | null {
   }
 }
 
-/** The addon's `render`, loaded as Node loads a `.node` file. */
-function ferriguraRender(): Render {
+/**
+ * The addon, loaded as Node loads a `.node` file: its `render` with the defaults, and the `render` of a
+ * `Renderer` made with the defaults, which resolves the configuration once.
+ */
+function ferriguraAddon(): { render: Render; renderer: Render } {
   const library =
     { darwin: 'libferrigura_node.dylib', win32: 'ferrigura_node.dll' }[
       process.platform as string
     ] ?? 'libferrigura_node.so';
-  const addon = { exports: {} as { render: Render } };
+  const addon = {
+    exports: {} as {
+      render: Render;
+      Renderer: new () => { render: Render };
+    },
+  };
   process.dlopen(addon, join(root, 'target/release', library));
-  return addon.exports.render;
+  const renderer = new addon.exports.Renderer();
+  return {
+    render: addon.exports.render,
+    renderer: (text) => renderer.render(text),
+  };
 }
 
 /** Serves the installed packages and an empty page, for the browser runs. */
@@ -188,7 +202,7 @@ const PAGE_SETUP = `(async () => {
 })()`;
 
 const all = fixtures();
-const ferrigura = ferriguraRender();
+const ferrigura = ferriguraAddon();
 // Pele in Node has no canvas, so its built-in width table measures the labels.
 const peleModule = (await import(
   pathToFileURL(join(packages, 'node_modules/pele/dist/pele.js')).href
@@ -196,7 +210,8 @@ const peleModule = (await import(
 const results: Result[] = all.map((fixture) => ({
   type: fixture.type,
   file: fixture.file,
-  ferrigura: timeSync(ferrigura, fixture.text, 30),
+  ferrigura: timeSync(ferrigura.render, fixture.text, 30),
+  ferriguraRenderer: timeSync(ferrigura.renderer, fixture.text, 30),
   peleNode: timeSync(peleModule.render, fixture.text, 30),
   peleBrowser: null,
   mermaid: null,

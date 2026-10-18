@@ -170,3 +170,56 @@ fn help_and_version_print_and_succeed() {
         stdout(&version)
     );
 }
+
+#[test]
+fn several_files_render_through_one_renderer_to_standard_output_in_order() {
+    let first = scratch("several-first.mmd", PIE);
+    let second = scratch("several-second.mmd", "pie title Sports\n  \"Bandy\" : 40\n");
+    let single = |path: &PathBuf| {
+        let output = run(&[path.to_str().expect("a UTF-8 path")], "");
+        assert!(output.status.success(), "{}", stderr(&output));
+        stdout(&output)
+    };
+    let output = run(
+        &[
+            first.to_str().expect("a UTF-8 path"),
+            second.to_str().expect("a UTF-8 path"),
+        ],
+        "",
+    );
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert_eq!(
+        stdout(&output),
+        format!("{}{}", single(&first), single(&second))
+    );
+}
+
+#[test]
+fn output_dir_writes_each_svg_named_after_its_input() {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("output-dir");
+    let input = scratch("output-dir-pets.mmd", PIE);
+    let path = input.to_str().expect("a UTF-8 path");
+    let output = run(
+        &["--output-dir", dir.to_str().expect("a UTF-8 path"), path],
+        "",
+    );
+    assert!(output.status.success(), "{}", stderr(&output));
+    let written = fs::read_to_string(dir.join("output-dir-pets.svg")).expect("the SVG is written");
+    let printed = stdout(&run(&[path], ""));
+    assert_eq!(written, printed);
+}
+
+#[test]
+fn output_takes_one_input_and_output_dir_takes_files() {
+    let input = scratch("output-two.mmd", PIE);
+    let path = input.to_str().expect("a UTF-8 path");
+    let output = run(&["-o", "unused.svg", path, path], "");
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        stderr(&output).contains("--output takes one input"),
+        "{}",
+        stderr(&output)
+    );
+    let output = run(&["--output-dir", "unused", "-"], PIE);
+    assert_eq!(output.status.code(), Some(2));
+}

@@ -1,33 +1,40 @@
-//! `ferrigura`: renders a Mermaid diagram to SVG on the command line.
+//! `ferrigura`: renders Mermaid diagrams to SVG on the command line.
 //!
-//! The diagram text comes from a file or from standard input, and the SVG goes to standard output
-//! or to the file given with `--output`. The options are the ones `ferrigura::render_with` takes,
-//! and `--config` is the configuration that `initialize` takes, as a JSON object.
+//! The diagram texts come from files or from standard input. Each SVG goes to standard output, to the
+//! file given with `--output` (one input), or to a file in the directory given with `--output-dir`,
+//! named after its input. The options are the ones `ferrigura::RenderOptions` takes, and `--config` is
+//! the configuration that `initialize` takes, as a JSON object. Several inputs are rendered through one
+//! `ferrigura::Renderer`, so the configuration is resolved once.
 
+use std::collections::HashSet;
 use std::fs;
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ferrigura::{ColorScheme, RenderOptions};
+use ferrigura::{ColorScheme, RenderOptions, Renderer};
 use ferrigura_model::value::Value;
 
 const USAGE: &str = "\
-Renders a Mermaid diagram to SVG.
+Renders Mermaid diagrams to SVG.
 
-Usage: ferrigura [OPTIONS] [FILE]
+Usage: ferrigura [OPTIONS] [FILE]...
 
 Arguments:
-  [FILE]  The diagram text. Standard input is read when FILE is omitted or is `-`.
+  [FILE]...  The diagram texts. Standard input is read when no FILE is given, or for `-`. Several
+             files are rendered through one renderer, in the order given. Without --output or
+             --output-dir, their SVGs follow each other on standard output.
 
 Options:
-  -c, --config <FILE>    The configuration as a JSON object, what `initialize` takes
-      --id <ID>          The id of the SVG element, which scopes its styles
-      --scheme <SCHEME>  The colours: `light`, `dark`, or `auto` to follow the viewer's
-                         colour scheme. By default the configured theme decides.
-  -o, --output <FILE>    Write the SVG to FILE instead of standard output
-  -h, --help             Print this help
-  -V, --version          Print the version
+  -c, --config <FILE>     The configuration as a JSON object, what `initialize` takes
+      --id <ID>           The id of the SVG element, which scopes its styles
+      --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
+                          colour scheme. By default the configured theme decides.
+  -o, --output <FILE>     Write the SVG to FILE instead of standard output (one input only)
+      --output-dir <DIR>  Write each SVG to DIR/<name>.svg, named after its input file
+                          (file inputs only)
+  -h, --help              Print this help
+  -V, --version           Print the version
 ";
 
 /// What the command line asks for.
@@ -38,21 +45,32 @@ enum Command {
     Render(Job),
 }
 
-/// A render: where the text comes from, the options, and where the SVG goes.
+/// A render: the inputs, the options, and where the SVGs go.
 #[derive(Debug, Default, PartialEq, Eq)]
 struct Job {
-    input: Input,
+    /// The inputs in the order given; standard input when none is.
+    inputs: Vec<Input>,
     config: Option<PathBuf>,
     id: Option<String>,
     scheme: Option<ColorScheme>,
     output: Option<PathBuf>,
+    output_dir: Option<PathBuf>,
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum Input {
-    #[default]
     Stdin,
     File(PathBuf),
+}
+
+impl Input {
+    /// The name of the input in messages.
+    fn name(&self) -> String {
+        match self {
+            Self::Stdin => "-".to_owned(),
+            Self::File(path) => path.display().to_string(),
+        }
+    }
 }
 
 fn main() -> ExitCode {
@@ -82,7 +100,6 @@ fn main() -> ExitCode {
 /// Reads the command line. Help and version end the parse at the option that asks for them.
 fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String> {
     let mut job = Job::default();
-    let mut inputs = 0;
     let mut args = args.into_iter();
     while let Some(argument) = args.next() {
         match argument.as_str() {
@@ -92,21 +109,49 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
             "--id" => job.id = Some(value(&mut args, &argument)?),
             "--scheme" => job.scheme = Some(scheme(&value(&mut args, &argument)?)?),
             "-o" | "--output" => job.output = Some(value(&mut args, &argument)?.into()),
-            "-" => {
-                inputs += 1;
-                job.input = Input::Stdin;
-            }
+            "--output-dir" => job.output_dir = Some(value(&mut args, &argument)?.into()),
+            "-" => job.inputs.push(Input::Stdin),
             other if other.starts_with('-') => return Err(format!("unknown option {other}")),
-            file => {
-                inputs += 1;
-                job.input = Input::File(file.into());
-            }
-        }
-        if inputs > 1 {
-            return Err("only one input can be given".to_owned());
+            file => job.inputs.push(Input::File(file.into())),
         }
     }
-    Ok(Command::Render(job))
+    job.settle()
+}
+
+impl Job {
+    /// Checks what the options mean together, before anything is read or written: the inputs default
+    /// to standard input, standard input is given once, and the SVGs of several inputs have different
+    /// names.
+    fn settle(mut self) -> Result<Command, String> {
+        if self.inputs.is_empty() {
+            self.inputs.push(Input::Stdin);
+        }
+        if self
+            .inputs
+            .iter()
+            .filter(|input| **input == Input::Stdin)
+            .count()
+            > 1
+        {
+            return Err("standard input can be given only once".to_owned());
+        }
+        if self.output.is_some() && self.output_dir.is_some() {
+            return Err("--output and --output-dir cannot be given together".to_owned());
+        }
+        if self.output.is_some() && self.inputs.len() > 1 {
+            return Err("--output takes one input; use --output-dir for several".to_owned());
+        }
+        if let Some(dir) = &self.output_dir {
+            let mut targets = HashSet::new();
+            for input in &self.inputs {
+                let target = svg_path(dir, input)?;
+                if !targets.insert(target.clone()) {
+                    return Err(format!("{} would be written twice", target.display()));
+                }
+            }
+        }
+        Ok(Command::Render(self))
+    }
 }
 
 fn value(args: &mut impl Iterator<Item = String>, option: &str) -> Result<String, String> {
@@ -125,7 +170,42 @@ fn scheme(name: &str) -> Result<ColorScheme, String> {
 }
 
 fn run(job: &Job) -> Result<(), String> {
-    let text = match &job.input {
+    let config = match &job.config {
+        Some(path) => read_config(path)?,
+        None => Value::empty_object(),
+    };
+    let renderer = Renderer::new(&config);
+    let options = RenderOptions {
+        id: job.id.clone(),
+        color_scheme: job.scheme,
+        now: None,
+        git_graph_seed: None,
+    };
+    if let Some(dir) = &job.output_dir {
+        fs::create_dir_all(dir)
+            .map_err(|error| format!("cannot create {}: {error}", dir.display()))?;
+    }
+    let several = job.inputs.len() > 1;
+    for input in &job.inputs {
+        render_input(&renderer, input, &options, job).map_err(|message| {
+            if several {
+                format!("{}: {message}", input.name())
+            } else {
+                message
+            }
+        })?;
+    }
+    Ok(())
+}
+
+/// Renders one input, and writes its SVG where the job says.
+fn render_input(
+    renderer: &Renderer,
+    input: &Input,
+    options: &RenderOptions,
+    job: &Job,
+) -> Result<(), String> {
+    let text = match input {
         Input::Stdin => {
             let mut text = String::new();
             io::stdin()
@@ -135,30 +215,39 @@ fn run(job: &Job) -> Result<(), String> {
         }
         Input::File(path) => read(path)?,
     };
-    let config = match &job.config {
-        Some(path) => read_config(path)?,
-        None => Value::empty_object(),
-    };
-    let options = RenderOptions {
-        id: job.id.clone(),
-        color_scheme: job.scheme,
-        now: None,
-        git_graph_seed: None,
-    };
-    let svg =
-        ferrigura::render_with(&text, &config, &options).map_err(|error| error.to_string())?;
+    let svg = renderer
+        .render_with(&text, options)
+        .map_err(|error| error.to_string())?;
+    write_svg(job, input, &svg)
+}
 
-    match &job.output {
-        Some(path) => fs::write(path, format!("{svg}\n"))
-            .map_err(|error| format!("cannot write {}: {error}", path.display())),
-        None => {
-            let mut stdout = io::stdout().lock();
-            stdout
-                .write_all(svg.as_bytes())
-                .and_then(|()| stdout.write_all(b"\n"))
-                .map_err(|error| format!("cannot write standard output: {error}"))
-        }
+/// Writes an SVG to `--output`, into `--output-dir`, or to standard output.
+fn write_svg(job: &Job, input: &Input, svg: &str) -> Result<(), String> {
+    if let Some(path) = &job.output {
+        return fs::write(path, format!("{svg}\n"))
+            .map_err(|error| format!("cannot write {}: {error}", path.display()));
     }
+    if let Some(dir) = &job.output_dir {
+        let path = svg_path(dir, input)?;
+        return fs::write(&path, format!("{svg}\n"))
+            .map_err(|error| format!("cannot write {}: {error}", path.display()));
+    }
+    let mut stdout = io::stdout().lock();
+    stdout
+        .write_all(svg.as_bytes())
+        .and_then(|()| stdout.write_all(b"\n"))
+        .map_err(|error| format!("cannot write standard output: {error}"))
+}
+
+/// The file of an input's SVG in the output directory: the input's name, with the extension `svg`.
+fn svg_path(dir: &Path, input: &Input) -> Result<PathBuf, String> {
+    let Input::File(path) = input else {
+        return Err("--output-dir needs file inputs, as standard input has no name".to_owned());
+    };
+    let name = path
+        .file_name()
+        .ok_or_else(|| format!("{} has no name for its SVG", path.display()))?;
+    Ok(dir.join(Path::new(name).with_extension("svg")))
 }
 
 fn read(path: &Path) -> Result<String, String> {
@@ -194,19 +283,37 @@ mod tests {
 
     #[test]
     fn no_arguments_render_standard_input_with_the_defaults() {
-        assert_eq!(job(&[]), Job::default());
+        assert_eq!(
+            job(&[]),
+            Job {
+                inputs: vec![Input::Stdin],
+                ..Job::default()
+            }
+        );
     }
 
     #[test]
     fn a_dash_is_standard_input() {
-        assert_eq!(job(&["-"]).input, Input::Stdin);
+        assert_eq!(job(&["-"]).inputs, vec![Input::Stdin]);
     }
 
     #[test]
     fn a_file_is_the_input() {
         assert_eq!(
-            job(&["pets.mmd"]).input,
-            Input::File(PathBuf::from("pets.mmd"))
+            job(&["pets.mmd"]).inputs,
+            vec![Input::File(PathBuf::from("pets.mmd"))]
+        );
+    }
+
+    #[test]
+    fn several_inputs_are_rendered_in_the_order_given() {
+        assert_eq!(
+            job(&["b.mmd", "-", "a.mmd"]).inputs,
+            vec![
+                Input::File(PathBuf::from("b.mmd")),
+                Input::Stdin,
+                Input::File(PathBuf::from("a.mmd")),
+            ]
         );
     }
 
@@ -258,11 +365,49 @@ mod tests {
     }
 
     #[test]
-    fn only_one_input_is_accepted() {
+    fn output_takes_one_input() {
         assert_eq!(
-            parse_args(args(&["a.mmd", "b.mmd"])).unwrap_err(),
-            "only one input can be given"
+            parse_args(args(&["-o", "out.svg", "a.mmd", "b.mmd"])).unwrap_err(),
+            "--output takes one input; use --output-dir for several"
         );
-        assert!(parse_args(args(&["-", "a.mmd"])).is_err());
+    }
+
+    #[test]
+    fn output_and_output_dir_are_not_given_together() {
+        assert_eq!(
+            parse_args(args(&["-o", "out.svg", "--output-dir", "out", "a.mmd"])).unwrap_err(),
+            "--output and --output-dir cannot be given together"
+        );
+    }
+
+    #[test]
+    fn standard_input_is_given_once() {
+        assert_eq!(
+            parse_args(args(&["-", "-"])).unwrap_err(),
+            "standard input can be given only once"
+        );
+    }
+
+    #[test]
+    fn each_svg_of_an_output_dir_is_named_after_its_input() {
+        let job = job(&["--output-dir", "out", "pets/cats.mmd", "dogs.mmd"]);
+        let dir = Path::new("out");
+        assert_eq!(
+            svg_path(dir, &job.inputs[0]),
+            Ok(PathBuf::from("out/cats.svg"))
+        );
+        assert_eq!(
+            svg_path(dir, &job.inputs[1]),
+            Ok(PathBuf::from("out/dogs.svg"))
+        );
+    }
+
+    #[test]
+    fn an_output_dir_needs_file_inputs_with_distinct_names() {
+        assert!(parse_args(args(&["--output-dir", "out"])).is_err());
+        assert_eq!(
+            parse_args(args(&["--output-dir", "out", "a/pets.mmd", "b/pets.mmd"])).unwrap_err(),
+            "out/pets.svg would be written twice"
+        );
     }
 }
