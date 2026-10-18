@@ -1,8 +1,9 @@
 //! The swimlane layout of Mermaid 12.2.0 (`packages/mermaid/src/rendering-util/layout-algorithms/swimlanes/`),
 //! ported from the TypeScript sources, on the default path. Ported: the data model ([`model`]), the graph view
-//! and write-back (`helpers.ts`), the Sugiyama phases (`phase0` to `phase4`, `pipeline.ts`) and the seam
-//! ([`run_swimlane_layout_core`], `layoutCore.ts`). Not yet ported: the orthogonal router and the geometry
-//! passes, which are stubs that return [`Error::NotPorted`]. The two non-default options (`ignoreCrossLaneEdges:
+//! and write-back (`helpers.ts`), the Sugiyama phases (`phase0` to `phase4`, `pipeline.ts`), the orthogonal
+//! router, the geometry passes of the post-processing, and the seam ([`run_swimlane_layout_core`],
+//! `layoutCore.ts`). Not ported: `validateSwimlanesLayout`, which only logs, and the preparation before the seam
+//! (`prepareLayoutForSwimlanes`, `createEdgeLabelNodes`). The two non-default options (`ignoreCrossLaneEdges:
 //! false`, `automaticLaneOrdering: true`) are refused with [`Error::NonDefaultOption`].
 //!
 //! The corpus in `tests/corpus` holds the input and output of the seam, and the stages between them, captured
