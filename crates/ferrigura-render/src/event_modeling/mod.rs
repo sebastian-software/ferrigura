@@ -102,12 +102,12 @@ pub fn render(input: &EventModelingInput<'_>) -> Result<String, RenderError> {
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
         || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
-        |family| format!("\"{}\"", family.name),
+        |family| family.css_family.clone(),
     );
     let mono_family = families
         .iter()
         .find(|family| family.family == FontFamily::Mono)
-        .map(|family| family.name.clone());
+        .map(|family| family.css_family.clone());
     let sheet = base_style_sheet_with(
         id,
         input.themes,

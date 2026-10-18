@@ -57,10 +57,14 @@ export function buildRenderExample(): void {
 // Settings both sides get
 // ---------------------------------------------------------------------------------------------
 
-/** The settings of the directive every fixture gets (the brief's exact text). */
+/**
+ * The settings of the directive every fixture gets (the brief's exact text). The font family is the
+ * bundled text face and the symbol face after it: a browser sets each character the first family
+ * lacks in the second, which is the fallback ferrigura measures and embeds (decision 0005).
+ */
 export const FORCED_SETTINGS: Record<string, unknown> = {
   htmlLabels: false,
-  fontFamily: '"Lexica Ultralegible"',
+  fontFamily: '"Lexica Ultralegible", "Noto Sans Math"',
   securityLevel: 'strict',
 };
 
@@ -174,14 +178,15 @@ export const NON_LAYERED_LAYOUTS: readonly string[] = [
 export const EXCLUDED_LOOK = 'handDrawn';
 
 /**
- * Symbols and scripts that the bundled faces do not draw: arrows, miscellaneous symbols and dingbats,
- * kana, CJK symbols and compatibility characters, and emoji. The bundled Lexica faces cover Latin
- * letters such as Ø, ζ and ẽ (the ER notes, section 6.1), and not these. The reference draws them in
- * a system font, which ferrigura does not have, so their fixtures are excluded until fallback fonts
- * exist (M6-PLAN, decisions: scripts).
+ * Symbols and scripts that the bundled faces do not draw: miscellaneous symbols and dingbats, kana,
+ * CJK symbols and compatibility characters, and emoji. The bundled Lexica faces cover Latin letters
+ * such as Ø, ζ and ẽ (the ER notes, section 6.1), and not these. The reference draws them in a
+ * system font, which ferrigura does not have, so their fixtures are excluded until fallback fonts
+ * exist (M6-PLAN, decisions: scripts). The arrows (U+2190-21FF) are not in this list: the symbol face
+ * Noto Sans Math covers that block completely, and both sides set them in it (decision 0005).
  */
 const UNCOVERED_SYMBOLS =
-  /[\u2190-\u21FF\u2600-\u26FF\u2700-\u27BF\u3000-\u303F\u3040-\u30FF\u3300-\u33FF\u{1F000}-\u{1FAFF}]/u;
+  /[\u2600-\u26FF\u2700-\u27BF\u3000-\u303F\u3040-\u30FF\u3300-\u33FF\u{1F000}-\u{1FAFF}]/u;
 
 /**
  * The text of a fixture that a diagram can draw: the body, and the front matter's `title`. The
@@ -214,7 +219,7 @@ function drawnText(source: string): string {
  */
 export function uncoveredScriptReason(source: string): string | null {
   if (UNCOVERED_SYMBOLS.test(drawnText(source))) {
-    return 'text the bundled faces do not cover (arrows, symbols, kana, emoji): needs a fallback font, which ferrigura does not have yet';
+    return 'text the bundled faces do not cover (symbols, kana, CJK, emoji): needs a fallback font, which ferrigura does not have yet';
   }
   return null;
 }
@@ -417,11 +422,31 @@ const LEXICA_FACES: readonly { file: string; weight: number; style: string }[] =
 
 /** The `@font-face` rules of a family name that the page maps onto the bundled faces. */
 function mappedFaces(family: string): string {
-  return LEXICA_FACES.map(
+  const own = LEXICA_FACES.map(
     (face) =>
       `@font-face { font-family: "${family}"; src: url(/fonts/${face.file}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; }`
+  );
+  return [...own, arrowFaces(family)].join('\n');
+}
+
+/**
+ * The arrows block of the symbol face under a family name that the page maps onto a bundled face.
+ * A reference text that names such a family (`"Helvetica Neue", Helvetica`) sets an arrow in the
+ * symbol face here, as ferrigura sets it in the family list of the labels (decision 0005). The
+ * rules come after the family's own faces, so the browser looks for an arrow in them first, and
+ * they cover the arrows only. The face has one design, so it is declared at each weight and style
+ * with the same outlines; the list of `FORCED_SETTINGS` has the symbol face at 400 only, and the
+ * browser draws its bold and italic arrows synthetically there.
+ */
+function arrowFaces(family: string): string {
+  return LEXICA_FACES.map(
+    (face) =>
+      `@font-face { font-family: "${family}"; src: url(/fonts/NotoSansMath-Regular-Arrows.ttf) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; unicode-range: U+2190-21FF; }`
   ).join('\n');
 }
+
+/** The bundled symbol face: the arrows block of Noto Sans Math, which the text faces fall back to. */
+const SYMBOL_FAMILY = 'Noto Sans Math';
 
 /** The bundled mono face, which code takes in ferrigura (decision 0005). */
 const MONO_FAMILY = 'Atkinson Hyperlegible Mono';
@@ -436,7 +461,14 @@ const MONO_FACES: string = [
     (face) =>
       `@font-face { font-family: "${MONO_FAMILY}"; src: url(/fonts/${face.file}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; }`
   )
-  .join('\n');
+  .join('\n')
+  .concat('\n', arrowFaces(MONO_FAMILY));
+
+/**
+ * The symbol face: the arrows block of Noto Sans Math, the subset ferrigura bundles (the same file,
+ * so both sides draw the same glyphs and cover the same characters).
+ */
+const SYMBOL_FACE = `@font-face { font-family: "${SYMBOL_FAMILY}"; src: url(/fonts/NotoSansMath-Regular-Arrows.ttf) format("truetype"); font-weight: 400; font-style: normal; }`;
 
 export function pageHtml(measure: string): string {
   return `<!doctype html>
@@ -448,6 +480,7 @@ export function pageHtml(measure: string): string {
 @font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-BoldItalic.ttf) format("truetype"); font-weight: 700; font-style: italic; }
 ${MAPPED_FAMILIES.map(mappedFaces).join('\n')}
 ${MONO_FACES}
+${SYMBOL_FACE}
 /* The eventmodeling box text's code: the reference's code element takes the UA's monospace, which is
    the machine's own face. ferrigura draws code in the bundled mono face (decision 0005), so the page
    pins the reference's code of that diagram to it (eventmodeling db.ts 349-378). */
@@ -490,13 +523,14 @@ await Promise.all([
   'italic bold 16px "Lexica Ultralegible"',
   '400 16px "${MONO_FAMILY}"',
   'bold 16px "${MONO_FAMILY}"',
+  '400 16px "${SYMBOL_FAMILY}"',
   ...${JSON.stringify(MAPPED_FAMILIES)}.flatMap((family) => [
     '400 16px "' + family + '"',
     'italic 400 16px "' + family + '"',
     'bold 16px "' + family + '"',
     'italic bold 16px "' + family + '"',
   ]),
-].map((face) => document.fonts.load(face)));
+].map((face) => document.fonts.load(face, '\\u2192')));
 await document.fonts.ready;
 
 const numbers = (text) => (text || '').trim().split(/[\\s,]+/).filter(Boolean).map(Number);

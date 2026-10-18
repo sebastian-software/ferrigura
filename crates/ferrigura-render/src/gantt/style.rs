@@ -161,10 +161,11 @@ pub(crate) fn style_element(id: &str, themes: Themes<'_>, family: &str, faces: &
             declarations(dark)
         ),
     };
+    // `family` is the quoted `font-family` list of the embedded faces, or empty.
     let font = if family.is_empty() {
         "sans-serif".to_owned()
     } else {
-        format!("\"{family}\"")
+        family.to_owned()
     };
     // `font-size` of the root is the theme's `fontSize`, as `getStyles` writes it (`styles.ts`).
     let size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());

@@ -17,6 +17,10 @@ pub enum FontFamily {
     Sans,
     /// Atkinson Hyperlegible Mono, for code.
     Mono,
+    /// Noto Sans Math, subset to the arrows block. It is never chosen for text directly: it is the
+    /// second family of every text's font-family list, which takes the characters the text's own
+    /// family lacks (see [`crate::fallback_runs`]).
+    Symbols,
 }
 
 impl FontFamily {
@@ -26,6 +30,7 @@ impl FontFamily {
         match self {
             Self::Sans => "sans",
             Self::Mono => "mono",
+            Self::Symbols => "symbols",
         }
     }
 }
@@ -99,6 +104,14 @@ impl Face {
             .get_or_init(|| Font::new(self.data, 0))
             .as_ref()
             .ok_or(TextError::InvalidFont)
+    }
+
+    /// Whether the face has a glyph for `character`, from its Unicode `cmap`. A character mapped to
+    /// glyph 0 counts as unmapped, as the `cmap` lookup reports it.
+    #[must_use]
+    pub fn covers(&self, character: char) -> bool {
+        self.font()
+            .is_ok_and(|font| font.charmap().map_unicode(character).is_some())
     }
 
     /// The family this face belongs to.
@@ -204,9 +217,21 @@ static ATKINSON_MONO_BOLD_ITALIC: Face = Face {
     data: include_bytes!("../fonts/AtkinsonHyperlegibleMono-BoldItalic.ttf"),
 };
 
-/// Every bundled face: the four Lexica Ultralegible styles, then the four Atkinson Hyperlegible
-/// Mono styles.
-pub static FACES: [&Face; 8] = [
+/// The arrows block of Noto Sans Math 3.000 (U+2190-21FF), the symbol face. It has one style, so
+/// every weight and style of the symbol family is this face; a browser synthesises the bold or the
+/// slant of it where the text asks for one, and the advances are the same (`tests/fallback.rs`).
+static NOTO_MATH_ARROWS: Face = Face {
+    family: FontFamily::Symbols,
+    weight: FontWeight::Normal,
+    style: FontStyle::Normal,
+    file_name: "NotoSansMath-Regular-Arrows.ttf",
+    font: OnceLock::new(),
+    data: include_bytes!("../fonts/NotoSansMath-Regular-Arrows.ttf"),
+};
+
+/// Every bundled face: the four Lexica Ultralegible styles, the four Atkinson Hyperlegible Mono
+/// styles, then the symbol face.
+pub static FACES: [&Face; 9] = [
     &LEXICA_REGULAR,
     &LEXICA_ITALIC,
     &LEXICA_BOLD,
@@ -215,11 +240,13 @@ pub static FACES: [&Face; 8] = [
     &ATKINSON_MONO_ITALIC,
     &ATKINSON_MONO_BOLD,
     &ATKINSON_MONO_BOLD_ITALIC,
+    &NOTO_MATH_ARROWS,
 ];
 
 /// The bundled face for one (family, weight, style) choice.
 ///
-/// Every combination has a face, so the choice never falls back to another face silently.
+/// Every combination has a face. The symbol family has one face for all its choices, as described
+/// on that face; the text families have a face for each of their styles.
 #[must_use]
 pub fn face(family: FontFamily, weight: FontWeight, style: FontStyle) -> &'static Face {
     match (family, weight, style) {
@@ -231,5 +258,6 @@ pub fn face(family: FontFamily, weight: FontWeight, style: FontStyle) -> &'stati
         (FontFamily::Mono, FontWeight::Normal, FontStyle::Italic) => &ATKINSON_MONO_ITALIC,
         (FontFamily::Mono, FontWeight::Bold, FontStyle::Normal) => &ATKINSON_MONO_BOLD,
         (FontFamily::Mono, FontWeight::Bold, FontStyle::Italic) => &ATKINSON_MONO_BOLD_ITALIC,
+        (FontFamily::Symbols, _, _) => &NOTO_MATH_ARROWS,
     }
 }

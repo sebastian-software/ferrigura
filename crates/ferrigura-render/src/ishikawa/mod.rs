@@ -187,7 +187,7 @@ pub fn render(input: &IshikawaInput<'_>) -> Result<String, RenderError> {
     let families: Vec<EmbeddedFamily> = embed_runs(&as_runs(&drawing.runs))?;
     let family = families.first().map_or_else(
         || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
-        |family| format!("\"{}\"", family.name),
+        |family| family.css_family.clone(),
     );
     let label_size_css = text_of(variables, "fontSize").unwrap_or_else(|| "14px".to_owned());
     let sheet = style::sheet(id, themes, &family, &label_size_css, &families);

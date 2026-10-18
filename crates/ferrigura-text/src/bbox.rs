@@ -17,7 +17,7 @@ use read_fonts::{FontRef, TableProvider};
 
 use crate::error::TextError;
 use crate::fonts::Face;
-use crate::measure::{Run, layout_width, shape_run};
+use crate::measure::{Run, fallback_runs, layout_width, shape_run};
 
 /// The horizontal extent of a line, relative to the start of its first run: the left edge and the
 /// right edge in pixels, as `getBBox` reports them (`x` and `x + width`).
@@ -61,23 +61,30 @@ pub fn measure_line_box(runs: &[Run<'_>], size: f64) -> Result<Extent, TextError
     let mut extent = Extent::default();
     let mut start = 0.0_f64;
     for run in runs {
-        let font = run.face.font()?;
-        let units_per_em = f64::from(font.units_per_em());
-        let shaped = shape_run(font, run.text)?;
-        let advance = layout_width(shaped.advance as f64 * size / units_per_em);
-        if !shaped.glyphs.is_empty() {
-            let outlines = Outlines::of(run.face)?;
-            for placed in &shaped.glyphs {
-                let Some((x_min, x_max)) = outlines.bounds(placed.glyph)? else {
-                    continue;
-                };
-                let scale = size / units_per_em;
-                let left = start + placed.x as f64 * scale + x_min * scale;
-                let right = start + placed.x as f64 * scale + x_max * scale;
-                extent.left = extent.left.min(left);
-                extent.right = extent.right.max(right);
+        // A run is one `tspan` and is snapped once, as a whole, whatever faces its characters fall
+        // back to (`fallback_runs`): the stretches' advances are summed unsnapped, and the glyphs of
+        // a later stretch start where the earlier ones end.
+        let mut offset = 0.0_f64;
+        for stretch in fallback_runs(*run) {
+            let font = stretch.face.font()?;
+            let units_per_em = f64::from(font.units_per_em());
+            let shaped = shape_run(font, stretch.text)?;
+            if !shaped.glyphs.is_empty() {
+                let outlines = Outlines::of(stretch.face)?;
+                for placed in &shaped.glyphs {
+                    let Some((x_min, x_max)) = outlines.bounds(placed.glyph)? else {
+                        continue;
+                    };
+                    let scale = size / units_per_em;
+                    let left = start + offset + placed.x as f64 * scale + x_min * scale;
+                    let right = start + offset + placed.x as f64 * scale + x_max * scale;
+                    extent.left = extent.left.min(left);
+                    extent.right = extent.right.max(right);
+                }
             }
+            offset += shaped.advance as f64 * size / units_per_em;
         }
+        let advance = layout_width(offset);
         extent.right = extent.right.max(start + advance);
         start += advance;
     }

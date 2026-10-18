@@ -24,6 +24,12 @@
  * (glyphs with ink past their advance, the leading `j`, the italic `f`, the trailing `q`), words
  * that overhang at either end, and lines whose runs change style.
  *
+ * The `fallback` section is the same box for lines that mix a face with the symbol face: the arrows
+ * the text faces lack are set in Noto Sans Math, in a font-family list of the text's own face and
+ * `ft-symbols` (`ferrigura_text::fallback_runs`). Its entries carry the ascent and descent of the
+ * line too, which are the text face's: the arrows do not change the box. `fallbackWraps` are
+ * Mermaid's wrapped lines of such strings.
+ *
  * Usage: `pnpm exec tsx tools/port/text/chromium-fixture.ts [--check]`
  */
 import { readFile, writeFile } from 'node:fs/promises';
@@ -46,6 +52,7 @@ const FACES: Record<string, string> = {
   'mono-italic': 'AtkinsonHyperlegibleMono-Italic.ttf',
   'mono-bold': 'AtkinsonHyperlegibleMono-Bold.ttf',
   'mono-bolditalic': 'AtkinsonHyperlegibleMono-BoldItalic.ttf',
+  symbols: 'NotoSansMath-Regular-Arrows.ttf',
 };
 
 /** The tolerance of widths, in pixels: Chromium lays text out in units of 1/64 px. */
@@ -66,6 +73,33 @@ interface Fixture {
   }[];
   boxes: { style: string; size: number; ascent: number; descent: number }[];
   extents: ExtentEntry[];
+  fallback: FallbackEntry[];
+  fallbackWraps: WrapEntry[];
+}
+
+/** A wrapped line of a string whose characters fall back to the symbol face. */
+type WrapEntry = {
+  text: string;
+  style: string;
+  size: number;
+  wrapWidth: number;
+  lines: string[];
+};
+
+/** A line of styled runs whose characters fall back to the symbol face, with its box. */
+interface FallbackEntry {
+  parts: { text: string; style: string }[];
+  size: number;
+  anchor: 'start' | 'middle' | 'end';
+  /** The box's left edge relative to the anchor point, as `getBBox().x`. */
+  x: number;
+  /** The box's width, as `getBBox().width`. */
+  width: number;
+  /** The advance of the line, as `getComputedTextLength`. */
+  computedLength: number;
+  /** The ascent and descent of the line's box, from its baseline: the text faces' own. */
+  ascent: number;
+  descent: number;
 }
 
 /** A line of styled runs at a size, anchored as `text-anchor` says, with the box Chromium gives it. */
@@ -200,13 +234,134 @@ function extentRequests(): RequestOf[] {
   return requests;
 }
 
+/**
+ * The strings of the `fallback` section: arrows the text faces lack, alone and in words, in every
+ * style. The fallback is the arrows block of the symbol face and nothing else.
+ */
+const FALLBACK_WORDS: string[] = [
+  '→',
+  '→→',
+  'a→b',
+  'Hello → world',
+  'j→',
+  '→j',
+  'x ⇔ yj',
+  'Fjord ⇒ Oslo',
+  '(↑)',
+  'ab↕',
+  '↔ f',
+  'q↺ gq',
+];
+const FALLBACK_STYLES: string[] = [
+  ...STYLES,
+  'mono-regular',
+  'mono-italic',
+  'mono-bold',
+  'mono-bolditalic',
+];
+
+/** The lines of styled runs that mix faces with arrows; the arrows fall back in each run. */
+const FALLBACK_MIXED: { parts: { text: string; style: string }[] }[] = [
+  {
+    parts: [
+      { text: 'Ab ', style: 'sans-regular' },
+      { text: '→ ', style: 'sans-bold' },
+      { text: 'Cd', style: 'sans-italic' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'j', style: 'sans-italic' },
+      { text: ' → j', style: 'sans-regular' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'x', style: 'sans-bold' },
+      { text: '↔', style: 'sans-bolditalic' },
+      { text: 'y', style: 'sans-regular' },
+    ],
+  },
+  {
+    parts: [
+      { text: '↑', style: 'sans-regular' },
+      { text: ' fj', style: 'sans-bold' },
+    ],
+  },
+  {
+    parts: [
+      { text: 'Hel', style: 'mono-regular' },
+      { text: 'lo→', style: 'mono-bold' },
+    ],
+  },
+];
+
+/** The wrapped strings of the `fallbackWraps` section, at three widths in two styles. */
+const FALLBACK_WRAP_TEXTS: string[] = [
+  'Hello → world again',
+  'Fjord ⇒ Oslo to Bergen',
+  '→→→→→→→→→→→→',
+  'a→b c→d e→f',
+];
+
+/** A request of the `fallback` section, without the measured box. */
+type FallbackRequest = Omit<FallbackEntry, 'x' | 'width' | 'computedLength' | 'ascent' | 'descent'>;
+/** A request of the `fallbackWraps` section, without the wrapped lines. */
+type WrapRequest = Omit<WrapEntry, 'lines'>;
+
+/** The requests of the `fallback` section, in the order the fixture keeps them. */
+function fallbackRequests(): FallbackRequest[] {
+  const requests: FallbackRequest[] = [];
+  for (const word of FALLBACK_WORDS) {
+    for (const style of FALLBACK_STYLES) {
+      for (const size of [12, 14, 18.5]) {
+        for (const anchor of ['start', 'middle', 'end'] as const) {
+          requests.push({ parts: [{ text: word, style }], size, anchor });
+        }
+      }
+    }
+  }
+  for (const line of FALLBACK_MIXED) {
+    for (const size of [12, 14, 16]) {
+      for (const anchor of ['start', 'middle', 'end'] as const) {
+        requests.push({ parts: line.parts, size, anchor });
+      }
+    }
+  }
+  return requests;
+}
+
+/** The requests of the `fallbackWraps` section: each text in two styles at three widths. */
+function fallbackWrapRequests(): WrapRequest[] {
+  const requests: WrapRequest[] = [];
+  for (const text of FALLBACK_WRAP_TEXTS) {
+    for (const style of ['sans-regular', 'sans-bold']) {
+      for (const wrapWidth of [40, 80, 120]) {
+        requests.push({ text, style, size: 14, wrapWidth });
+      }
+    }
+  }
+  return requests;
+}
+
 /** The page's functions, declared for TypeScript; `pageScript` defines them in the page. */
 declare function drawnExtent(
   parts: { text: string; style: string | null }[],
   size: number,
   style: string | null
 ): number;
-declare function wrapText(text: string, size: number, style: string, wrapWidth: number): string[];
+declare function wrapText(
+  text: string,
+  size: number,
+  style: string,
+  wrapWidth: number,
+  fallback?: boolean
+): string[];
+declare function fallbackBox(
+  parts: { text: string; style: string }[],
+  size: number,
+  anchor: string
+): { x: number; width: number; computedLength: number; ascent: number; descent: number };
 declare function boxMetrics(style: string, size: number): { ascent: number; descent: number };
 declare function lineBox(
   parts: { text: string; style: string | null }[],
@@ -218,7 +373,10 @@ declare function lineBox(
 const pageScript = `
 const svgNS = 'http://www.w3.org/2000/svg';
 
-function svgText(parts, size, style) {
+/** The font-family list of a style: its own face, then the symbol face when the text falls back. */
+const familyOf = (style, fallback) => (fallback ? '"ft-' + style + '", "ft-symbols"' : 'ft-' + style);
+
+function svgText(parts, size, style, fallback = false) {
   const svg = document.createElementNS(svgNS, 'svg');
   svg.setAttribute('width', '4000');
   svg.setAttribute('height', '200');
@@ -228,11 +386,11 @@ function svgText(parts, size, style) {
   text.setAttribute('y', '100');
   text.setAttribute('font-size', String(size));
   text.style.whiteSpace = 'pre';
-  if (style) text.style.fontFamily = 'ft-' + style;
+  if (style) text.style.fontFamily = familyOf(style, fallback);
   for (const part of parts) {
     const tspan = document.createElementNS(svgNS, 'tspan');
     tspan.textContent = part.text;
-    if (part.style) tspan.style.fontFamily = 'ft-' + part.style;
+    if (part.style) tspan.style.fontFamily = familyOf(part.style, fallback);
     text.appendChild(tspan);
   }
   svg.appendChild(text);
@@ -258,12 +416,23 @@ function lineBox(parts, size, anchor) {
 }
 
 /** The width of a line of words, each word after the first in its own tspan with a leading space. */
-function lineWidth(words, size, style) {
+function lineWidth(words, size, style, fallback = false) {
   const parts = words.map((word, index) => ({ text: (index === 0 ? '' : ' ') + word.content, style: null }));
-  const { svg, text } = svgText(parts, size, style);
+  const { svg, text } = svgText(parts, size, style, fallback);
   const width = text.getComputedTextLength();
   svg.remove();
   return width;
+}
+
+/** The box and the advance of a line of runs whose faces fall back to the symbol face. */
+function fallbackBox(parts, size, anchor) {
+  const { svg, text } = svgText(parts, size, null, true);
+  text.setAttribute('text-anchor', anchor);
+  const box = text.getBBox();
+  const computedLength = text.getComputedTextLength();
+  svg.remove();
+  const ascent = 100 - box.y;
+  return { x: box.x, width: box.width, computedLength, ascent, descent: box.height - ascent };
 }
 
 const segmentChars = (text) => [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)].map((s) => s.segment);
@@ -329,9 +498,9 @@ function splitLineToFitWidth(line, checkFit) {
  * The words of a label are the non-empty pieces of its text split at single spaces, as
  * \`markdownToLines\` makes them (handle-markdown-text.ts); the lines are joined with one space.
  */
-function wrapText(text, size, style, wrapWidth) {
+function wrapText(text, size, style, wrapWidth, fallback = false) {
   const words = text.split(' ').filter((word) => word !== '').map((word) => ({ content: word, type: 'normal' }));
-  const checkFit = (line) => lineWidth(line, size, style) <= wrapWidth;
+  const checkFit = (line) => lineWidth(line, size, style, fallback) <= wrapWidth;
   return splitLineToFitWidth(words, checkFit).map((line) => line.map((word) => word.content).join(' '));
 }
 
@@ -354,14 +523,21 @@ function boxMetrics(style, size) {
 `;
 
 /**
- * The fixture as JSON, with one line per `extents` entry: the entries are many and each is short,
- * and one line each keeps the file reviewable.
+ * The fixture as JSON, with one line per `extents` and `fallback` entry: the entries are many and
+ * each is short, and one line each keeps the file reviewable.
  */
 function formatFixture(fixture: Fixture): string {
-  const { extents, ...rest } = fixture;
-  const body = JSON.stringify(rest, null, 2);
-  const lines = extents.map((entry) => `    ${JSON.stringify(entry)}`).join(',\n');
-  return body.replace(/\n}$/, `,\n  "extents": [\n${lines}\n  ]\n}`) + '\n';
+  const { widths, runs, wraps, boxes, extents, fallback, fallbackWraps } = fixture;
+  const head = JSON.stringify({ widths, runs, wraps, boxes }, null, 2);
+  const lines = (items: unknown[]) =>
+    items.map((entry) => `    ${JSON.stringify(entry)}`).join(',\n');
+  const wrapLines = JSON.stringify(fallbackWraps, null, 2).replace(/\n/g, '\n  ');
+  return (
+    head.replace(
+      /\n}$/,
+      `,\n  "extents": [\n${lines(extents)}\n  ],\n  "fallback": [\n${lines(fallback)}\n  ],\n  "fallbackWraps": ${wrapLines}\n}`
+    ) + '\n'
+  );
 }
 
 async function main(): Promise<void> {
@@ -395,8 +571,15 @@ async function main(): Promise<void> {
     await page.addScriptTag({ content: pageScript });
 
     const requests = extentRequests();
+    const fallbackLines = fallbackRequests();
+    const wrapRequests = fallbackWrapRequests();
     const measured: Fixture = await page.evaluate(
-      ([fixture, requests]: [Fixture, RequestOf[]]) => {
+      ([fixture, requests, fallbackLines, fallbackWrapRequests]: [
+        Fixture,
+        RequestOf[],
+        FallbackRequest[],
+        WrapRequest[],
+      ]) => {
         const widths = fixture.widths.map((request) => ({
           text: request.text,
           style: request.style,
@@ -424,9 +607,17 @@ async function main(): Promise<void> {
           ...request,
           ...lineBox(request.parts, request.size, request.anchor),
         }));
-        return { widths, runs, wraps, boxes, extents };
+        const fallback = fallbackLines.map((request) => ({
+          ...request,
+          ...fallbackBox(request.parts, request.size, request.anchor),
+        }));
+        const fallbackWraps = fallbackWrapRequests.map((request) => ({
+          ...request,
+          lines: wrapText(request.text, request.size, request.style, request.wrapWidth, true),
+        }));
+        return { widths, runs, wraps, boxes, extents, fallback, fallbackWraps };
       },
-      [committed, requests]
+      [committed, requests, fallbackLines, wrapRequests]
     );
 
     if (check) {
@@ -472,6 +663,34 @@ async function main(): Promise<void> {
           );
         }
       });
+      measured.fallback.forEach((entry, index) => {
+        const was = committed.fallback[index];
+        if (was === undefined || JSON.stringify(entry.parts) !== JSON.stringify(was.parts)) {
+          problems.push(`fallback ${index}: the requests differ from the committed fixture`);
+          return;
+        }
+        const differs =
+          Math.abs(entry.x - was.x) > EXTENT_TOLERANCE ||
+          Math.abs(entry.width - was.width) > EXTENT_TOLERANCE ||
+          Math.abs(entry.computedLength - was.computedLength) > EXTENT_TOLERANCE ||
+          entry.ascent !== was.ascent ||
+          entry.descent !== was.descent;
+        if (differs) {
+          problems.push(
+            `fallback ${JSON.stringify(entry.parts)} ${entry.size} ${entry.anchor}: ` +
+              `${entry.x}/${entry.width}/${entry.ascent}/${entry.descent} vs ` +
+              `${was.x}/${was.width}/${was.ascent}/${was.descent}`
+          );
+        }
+      });
+      measured.fallbackWraps.forEach((entry, index) => {
+        const was = committed.fallbackWraps[index];
+        if (was === undefined || JSON.stringify(entry.lines) !== JSON.stringify(was.lines)) {
+          problems.push(
+            `fallback wrap ${entry.text} at ${entry.wrapWidth}: ${JSON.stringify(entry.lines)}`
+          );
+        }
+      });
       if (problems.length > 0) {
         console.error(problems.join('\n'));
         console.error(`${problems.length} differences from ${fixturePath}`);
@@ -479,7 +698,9 @@ async function main(): Promise<void> {
       }
       console.log(
         `chromium fixture: ${measured.widths.length} widths, ${measured.runs.length} runs, ` +
-          `${measured.wraps.length} wraps, ${measured.boxes.length} boxes and ${measured.extents.length} extents agree with the committed values`
+          `${measured.wraps.length} wraps, ${measured.boxes.length} boxes, ${measured.extents.length} extents, ` +
+          `${measured.fallback.length} fallback lines and ${measured.fallbackWraps.length} fallback wraps ` +
+          'agree with the committed values'
       );
       return;
     }

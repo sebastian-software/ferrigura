@@ -115,7 +115,7 @@ pub fn render(input: &XyChartInput<'_>) -> Result<String, RenderError> {
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
         || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
-        |family| format!("\"{}\"", family.name),
+        |family| family.css_family.clone(),
     );
     let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
     let style = base_style_sheet(input.id, input.themes, &font_family, &font_size, &families);

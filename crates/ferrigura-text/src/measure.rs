@@ -7,7 +7,7 @@ use harfrust::font::Font;
 use harfrust::{Buffer, ShapeOptions, ShaperFont, shape};
 
 use crate::error::TextError;
-use crate::fonts::Face;
+use crate::fonts::{Face, FontFamily, FontStyle, FontWeight, face};
 
 /// One run of text set in one face, for [`measure_line`].
 #[derive(Debug, Clone, Copy)]
@@ -16,6 +16,53 @@ pub struct Run<'a> {
     pub text: &'a str,
     /// The face the run is set in.
     pub face: &'static Face,
+}
+
+/// The stretches of a run as a browser sets them with the run's font-family list, which is the
+/// run's own face and then the symbol face.
+///
+/// A character the symbol face covers and the run's face lacks is set in the symbol face. Every
+/// other character stays in the run's face, where a character that neither face covers is drawn
+/// with the face's own missing glyph. Consecutive characters in one face form one stretch, so the
+/// stretches follow each other in the order of the text and cover all of it. A run without any
+/// such character comes back as itself, and so does an empty run, which keeps its place in the
+/// embedded subsets.
+///
+/// This is the per-character fallback that Chromium makes for a font-family list: a run of text is
+/// split where the first family lacks a character, and each part is shaped in the family that has
+/// it. Every measurement and every embedded subset goes through it, so a viewer draws the characters
+/// in the face they were measured in.
+#[must_use]
+pub fn fallback_runs(run: Run<'_>) -> Vec<Run<'_>> {
+    let symbols = face(FontFamily::Symbols, FontWeight::Normal, FontStyle::Normal);
+    if run.text.is_empty() || run.face.family() == FontFamily::Symbols {
+        return vec![run];
+    }
+    let mut stretches = Vec::new();
+    let mut start = 0;
+    let mut current: &'static Face = run.face;
+    for (index, character) in run.text.char_indices() {
+        let chosen = if symbols.covers(character) && !run.face.covers(character) {
+            symbols
+        } else {
+            run.face
+        };
+        if !std::ptr::eq(chosen, current) {
+            if index > start {
+                stretches.push(Run {
+                    text: &run.text[start..index],
+                    face: current,
+                });
+            }
+            start = index;
+            current = chosen;
+        }
+    }
+    stretches.push(Run {
+        text: &run.text[start..],
+        face: current,
+    });
+    stretches
 }
 
 /// The width of a text run as Chromium lays it out, in pixels: its advance, rounded up to a
@@ -32,13 +79,19 @@ pub fn layout_width(advance: f64) -> f64 {
     ((advance * UNITS_PER_PIXEL) - 1e-3).ceil() / UNITS_PER_PIXEL
 }
 
-/// The advance width, in pixels, of `text` set as one run in `face` at `size` pixels.
+/// The advance width, in pixels, of `text` set as one run in `face` at `size` pixels. The characters
+/// that `face` lacks and the symbol face has are set in the symbol face ([`fallback_runs`]), and the
+/// advances of the stretches are summed without any snapping: a caller snaps the whole run.
 ///
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be parsed or the shaper rejects the text.
-pub fn measure(face: &Face, text: &str, size: f64) -> Result<f64, TextError> {
-    advance(face.font()?, text, size)
+pub fn measure(face: &'static Face, text: &str, size: f64) -> Result<f64, TextError> {
+    let mut total = 0.0;
+    for stretch in fallback_runs(Run { text, face }) {
+        total += advance(stretch.face.font()?, stretch.text, size)?;
+    }
+    Ok(total)
 }
 
 /// As [`measure`], for font data that is not one of the bundled faces, such as a subset made by
@@ -54,9 +107,9 @@ pub fn measure_data(data: &[u8], text: &str, size: f64) -> Result<f64, TextError
 
 /// The advance width, in pixels, of a line made of runs at `size` pixels.
 ///
-/// Each run is measured in its own face and the widths are summed. No kerning or ligature is
-/// applied across two runs, which matches the reference: Mermaid puts each styled word in its own
-/// `tspan`, and a change of face starts a new shaping run in the browser too.
+/// Each run is measured in its own face, with the fallback of [`measure`], and the widths are summed.
+/// No kerning or ligature is applied across two runs, which matches the reference: Mermaid puts each
+/// styled word in its own `tspan`, and a change of face starts a new shaping run in the browser too.
 ///
 /// Mermaid draws every word after the first with a leading space in its own `tspan`, and that
 /// space takes the style of the word. To lay a line out the way Mermaid does, start each run with
