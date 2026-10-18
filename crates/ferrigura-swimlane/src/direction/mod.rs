@@ -7,7 +7,9 @@ use indexmap::IndexMap;
 
 use crate::model::Node;
 
+pub(crate) mod geometry;
 pub(crate) mod geometry_stopgap;
+pub(crate) mod lr_transform;
 pub(crate) mod port_swap;
 pub(crate) mod shared_track_nudging;
 pub(crate) mod sibling_shared_face_routing;
