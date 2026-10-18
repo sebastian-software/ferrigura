@@ -92,6 +92,22 @@ fn cynefin_outcome(text: &str) -> Outcome {
     }
 }
 
+/// The wardley map. The text must first be detected as one, as `detectType` does before the parser
+/// runs. The detector ignores case, and the parser then takes the header case-sensitively.
+fn wardley_outcome(text: &str) -> Outcome {
+    if detect(text) != Some(DiagramType::Wardley) {
+        return Outcome::Rejected(ParseError {
+            line: 1,
+            column: 1,
+            message: "no wardley map detected".to_owned(),
+        });
+    }
+    match wardley::parse(text) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
 /// The clock of the gantt differential run: 1010-10-10T00:00Z, the instant the reference runs with
 /// (`tools/port/export-gantt.ts`).
 const GANTT_NOW_MS: i64 = -30_270_326_400_000;
@@ -400,10 +416,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
-            "wardley" => match wardley::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
+            "wardley" => wardley_outcome(text),
             other => return Err(format!("unknown diagram type {other}").into()),
         };
         results.push(match outcome {

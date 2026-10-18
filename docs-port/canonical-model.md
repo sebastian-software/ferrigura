@@ -252,6 +252,16 @@ The cynefin model is the DB state after parsing (`cynefinDb.ts`), with the field
 - **Transitions** are the DB's list after the self-loops are dropped, in declaration order. A label that is absent or empty is `null`, since the DB stores `undefined` for both.
 - **Left out**: the configuration, which the configuration port owns, and the renderer's data (the positions, the boundary waves and the seed), which the renderer stage reads from the configuration and the model.
 
+## Wardley
+
+The wardley model is the DB state after the parse (`getWardleyData`), with no layout layer, and the fields and quirks in [wardley/PLAN.md](./wardley/PLAN.md), sections 3 and 4. Its own rules:
+
+- **Coordinates are the DB's.** `x` is the evolution and `y` the visibility, both percentages, as the DB stores them, though the statements write the visibility first. An annotation, an accelerator and the annotations box are `[visibility, evolution]` in the text and `x`, `y` in the model.
+- **Nodes are in the DB's order**: the first insertion of each id, with the last values. A pipeline component's id is `Parent_Name`, and its `label` is its name.
+- **`null` is the DB's `undefined`.** `inertia` is `false` for a component without the word, and `null` for an anchor or a pipeline component, whose calls give none. `size`, `axes.stages`, `axes.stageBoundaries` and `annotationsBox` are `null` when the text gives none.
+- **Texts keep the placeholders.** The node, note, annotation, accelerator and link texts are as the DB holds them. The header texts are sanitised; an absent header is `""`.
+- **Non-finite numbers** are the sentinel strings: only an integer or a decimal of more than 308 digits is one, in a label offset, the annotation number, the size or a stage boundary.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
