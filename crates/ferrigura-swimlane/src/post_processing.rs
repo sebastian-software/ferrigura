@@ -19,7 +19,7 @@ pub(crate) fn post_process_swimlane_layout(
 /// doc-hidden `testing` module. The driver runs the same functions in its order.
 #[doc(hidden)]
 pub mod passes {
-    use crate::direction::{shared_track_nudging, sibling_shared_face_routing};
+    use crate::direction::{port_swap, shared_track_nudging, sibling_shared_face_routing};
     use crate::model::LayoutData;
 
     /// `nudgeSharedInteriorSubpaths(edges, nodeByIdMap)`.
@@ -30,5 +30,10 @@ pub mod passes {
     /// `straightenCollinearSiblingDetours(edges, nodes)`.
     pub fn straighten_collinear_sibling_detours(data: &mut LayoutData) {
         sibling_shared_face_routing::straighten_collinear_sibling_detours(data);
+    }
+
+    /// `portSwapToLShape(edges, nodes)`.
+    pub fn port_swap_to_l_shape(data: &mut LayoutData) {
+        port_swap::port_swap_to_l_shape(data);
     }
 }

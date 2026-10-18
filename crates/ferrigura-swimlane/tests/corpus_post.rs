@@ -88,3 +88,10 @@ fn straighten_collinear_sibling_detours_matches_every_stage() {
     );
     assert_eq!(checked, 52, "the corpus has 52 stages of this pass");
 }
+
+#[test]
+fn port_swap_to_l_shape_matches_every_stage() {
+    let cases = load_cases();
+    let checked = check_pass(&cases, "portSwapToLShape", passes::port_swap_to_l_shape);
+    assert_eq!(checked, 40, "the corpus has 40 stages of this pass");
+}
