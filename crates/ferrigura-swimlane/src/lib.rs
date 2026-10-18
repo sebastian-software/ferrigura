@@ -45,6 +45,7 @@ pub mod testing {
         clip_edge_endpoints_to_node_boundaries, prepare_edge_endpoints_for_renderer,
     };
     pub use crate::direction::geometry::orthogonalize_and_simplify_edges;
+    pub use crate::direction::label_anchoring::anchor_labels_to_polyline;
     pub use crate::direction::lr_transform::{
         apply_bt_direction_transform, apply_lr_direction_transform,
     };
