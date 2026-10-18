@@ -1,0 +1,205 @@
+{
+ "name": "fixture-pr-check-6-should-render-a-venn-diagram-with-text-nodes",
+ "group": "fixture",
+ "source": "e2e/diagrams/venn/pr-check/6-should-render-a-venn-diagram-with-text-nodes.mmd",
+ "description": "A fixture of e2e/diagrams/venn, as the renderer lays it out.",
+ "text": "---\ndescription: >-\n  Two-set venn where set A has two inline quoted text children, set B has\n  one, and the A/B union region also has one — tests placing multiple\n  unnamed text nodes inside both plain sets and a union region.\n---\nvenn-beta\n  set A\n    text \"Item 1\"\n    text \"Item 2\"\n  set B\n    text \"Item 3\"\n  union A, B\n    text \"Shared\"\n",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "A",
+     "B"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "A",
+     "B"
+    ],
+    "size": 2.5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "B",
+    "x": 2.264783545440907,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "A",
+    "x": 5.498513452953555e-7,
+    "y": 0.00013953217746820302,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "B",
+    "x": 2.2647840953300813,
+    "y": 0.00013565956226830895,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "B",
+    "x": 2.2647835454820466,
+    "y": -1.6010616769000785e-17,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "A",
+    "x": 266.712035265571,
+    "y": 225,
+    "radius": 210
+   },
+   {
+    "id": "B",
+    "x": 533.287964734429,
+    "y": 225,
+    "radius": 210
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "A",
+    "x": 190,
+    "y": 225.00000090523622,
+    "disjoint": false
+   },
+   {
+    "key": "B",
+    "x": 609.9999999999999,
+    "y": 225.0000041625191,
+    "disjoint": false
+   },
+   {
+    "key": "A,B",
+    "x": 400,
+    "y": 225.0000005236435,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "A"
+   ],
+   "text": {
+    "x": 183.00000000000003,
+    "y": 225.00000125221294,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "A",
+     "x": 262.2691031077567,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B"
+   ],
+   "text": {
+    "x": 617,
+    "y": 225.0000007796085,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 537.7308968922433,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  },
+  {
+   "sets": [
+    "A",
+    "B"
+   ],
+   "text": {
+    "x": 400,
+    "y": 225.00000068975018,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "A",
+     "x": 262.2691031077567,
+     "y": 225,
+     "radius": 217
+    },
+    {
+     "set": "B",
+     "x": 537.7308968922433,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

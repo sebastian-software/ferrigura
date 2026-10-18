@@ -1,0 +1,205 @@
+{
+ "name": "fixture-nightly-check-10-should-render-a-venn-diagram-with-many-text-nodes",
+ "group": "fixture",
+ "source": "e2e/diagrams/venn/nightly-check/10-should-render-a-venn-diagram-with-many-text-nodes.mmd",
+ "description": "A fixture of e2e/diagrams/venn, as the renderer lays it out.",
+ "text": "---\ndescription: >-\n  Two-set venn (Fruits, Vegetables) with a title, where set Fruits has three\n  text children, set Vegetables has two, and their union has one — a denser\n  variant of the text-nodes fixture with more text children spread across\n  more regions.\n---\nvenn-beta\n  title Fruits and Vegetables\n  set Fruits\n    text \"Apple\"\n    text \"Banana\"\n    text \"Orange\"\n  set Vegetables\n    text \"Carrot\"\n    text \"Broccoli\"\n  union Fruits, Vegetables\n    text \"Tomato\"\n",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Fruits"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Vegetables"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Fruits",
+     "Vegetables"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 800,
+  "height": 426,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Fruits"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Vegetables"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Fruits",
+     "Vegetables"
+    ],
+    "size": 2.5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Fruits",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Vegetables",
+    "x": 2.264783545440907,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Fruits",
+    "x": 5.498513452953555e-7,
+    "y": 0.00013953217746820302,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Vegetables",
+    "x": 2.2647840953300813,
+    "y": 0.00013565956226830895,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Fruits",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Vegetables",
+    "x": 2.2647835454820466,
+    "y": -1.6010616769000785e-17,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "Fruits",
+    "x": 274.32849039325265,
+    "y": 213,
+    "radius": 198
+   },
+   {
+    "id": "Vegetables",
+    "x": 525.6715096067473,
+    "y": 213,
+    "radius": 198
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Fruits",
+    "x": 202,
+    "y": 213.00000069309303,
+    "disjoint": false
+   },
+   {
+    "key": "Vegetables",
+    "x": 598,
+    "y": 213.00000057599505,
+    "disjoint": false
+   },
+   {
+    "key": "Fruits,Vegetables",
+    "x": 400,
+    "y": 212.99999945372903,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Fruits"
+   ],
+   "text": {
+    "x": 195.00000000000003,
+    "y": 213.00000159390123,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Fruits",
+     "x": 269.88555823543834,
+     "y": 213,
+     "radius": 205
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Vegetables"
+   ],
+   "text": {
+    "x": 605,
+    "y": 213.00000075974793,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Vegetables",
+     "x": 530.1144417645617,
+     "y": 213,
+     "radius": 205
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Fruits",
+    "Vegetables"
+   ],
+   "text": {
+    "x": 400,
+    "y": 213.00000083382338,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Fruits",
+     "x": 269.88555823543834,
+     "y": 213,
+     "radius": 205
+    },
+    {
+     "set": "Vegetables",
+     "x": 530.1144417645617,
+     "y": 213,
+     "radius": 205
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

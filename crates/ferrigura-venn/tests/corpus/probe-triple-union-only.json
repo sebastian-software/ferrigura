@@ -1,0 +1,409 @@
+{
+ "name": "probe-triple-union-only",
+ "group": "probe",
+ "source": "probe: triple-union-only",
+ "description": "Three sets with only the triple union: seven areas, so the greedy layout alone.",
+ "text": "venn-beta\n  set Desirable\n  set Feasible\n  set Viable\n  union Desirable, Feasible, Viable",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Desirable"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Feasible"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Viable"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Desirable",
+     "Feasible",
+     "Viable"
+    ],
+    "size": 1.1111111111111112
+   },
+   {
+    "sets": [
+     "Desirable",
+     "Feasible"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Desirable",
+     "Viable"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Feasible",
+     "Viable"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Desirable"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Feasible"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Viable"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Desirable",
+     "Feasible",
+     "Viable"
+    ],
+    "size": 1.1111111111111112
+   },
+   {
+    "sets": [
+     "Desirable",
+     "Feasible"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Desirable",
+     "Viable"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Feasible",
+     "Viable"
+    ],
+    "size": 2.5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Desirable",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Feasible",
+    "x": 2.264783545440907,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Viable",
+    "x": 1.1323917727204535,
+    "y": 1.9613600844248142,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Desirable",
+    "x": 0.0006623646945116827,
+    "y": 0.0006101497403793196,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Feasible",
+    "x": 2.2543284346189667,
+    "y": -0.000035629204740279425,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Viable",
+    "x": 1.128061335972128,
+    "y": 1.9520469540688608,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Desirable",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Feasible",
+    "x": 2.2536661624471326,
+    "y": 2.3234452554302435e-16,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Viable",
+    "x": 1.1268397486509747,
+    "y": -1.9517597758396887,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "Desirable",
+    "x": 314.2628247249735,
+    "y": 299.25162288198464,
+    "radius": 135.7483771180154
+   },
+   {
+    "id": "Feasible",
+    "x": 485.7371752750265,
+    "y": 299.25162288198464,
+    "radius": 135.7483771180154
+   },
+   {
+    "id": "Viable",
+    "x": 400.00050730352336,
+    "y": 150.7483771180154,
+    "radius": 135.7483771180154
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Desirable",
+    "x": 268.5819947398185,
+    "y": 325.62253802950283,
+    "disjoint": false
+   },
+   {
+    "key": "Feasible",
+    "x": 531.4177539528605,
+    "y": 325.6232908153937,
+    "disjoint": false
+   },
+   {
+    "key": "Viable",
+    "x": 400.0000000000749,
+    "y": 98.00265053103041,
+    "disjoint": false
+   },
+   {
+    "key": "Desirable,Feasible,Viable",
+    "x": 399.99999999993577,
+    "y": 249.74984026806857,
+    "disjoint": false
+   },
+   {
+    "key": "Desirable,Feasible",
+    "x": 400.0000000000075,
+    "y": 330.8652421640398,
+    "disjoint": false
+   },
+   {
+    "key": "Desirable,Viable",
+    "x": 329.7528825433712,
+    "y": 209.1929822171096,
+    "disjoint": false
+   },
+   {
+    "key": "Feasible,Viable",
+    "x": 470.2475762042526,
+    "y": 209.19319730813373,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Desirable"
+   ],
+   "text": {
+    "x": 264.2013945646107,
+    "y": 328.9766226307229,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Desirable",
+     "x": 311.4049188824726,
+     "y": 301.7266769780507,
+     "radius": 140.27332302194927
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Feasible"
+   ],
+   "text": {
+    "x": 535.7983457513924,
+    "y": 328.97740050913654,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Feasible",
+     "x": 488.59508111752746,
+     "y": 301.72667697805076,
+     "radius": 140.27332302194927
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Viable"
+   ],
+   "text": {
+    "x": 400.000000000007,
+    "y": 93.76940554875308,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Viable",
+     "x": 400.0005242136408,
+     "y": 148.27332302194924,
+     "radius": 140.27332302194927
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Desirable",
+    "Feasible",
+    "Viable"
+   ],
+   "text": {
+    "x": 399.9999999999877,
+    "y": 250.5748349434947,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Desirable",
+     "x": 311.4049188824726,
+     "y": 301.7266769780507,
+     "radius": 140.27332302194927
+    },
+    {
+     "set": "Feasible",
+     "x": 488.59508111752746,
+     "y": 301.72667697805076,
+     "radius": 140.27332302194927
+    },
+    {
+     "set": "Viable",
+     "x": 400.0005242136408,
+     "y": 148.27332302194924,
+     "radius": 140.27332302194927
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Desirable",
+    "Feasible"
+   ],
+   "text": {
+    "x": 400.0000000000364,
+    "y": 334.39408356946706,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Desirable",
+     "x": 311.4049188824726,
+     "y": 301.7266769780507,
+     "radius": 140.27332302194927
+    },
+    {
+     "set": "Feasible",
+     "x": 488.59508111752746,
+     "y": 301.72667697805076,
+     "radius": 140.27332302194927
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Desirable",
+    "Viable"
+   ],
+   "text": {
+    "x": 327.4113119614358,
+    "y": 208.66608162434272,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Desirable",
+     "x": 311.4049188824726,
+     "y": 301.7266769780507,
+     "radius": 140.27332302194927
+    },
+    {
+     "set": "Viable",
+     "x": 400.0005242136408,
+     "y": 148.27332302194924,
+     "radius": 140.27332302194927
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Feasible",
+    "Viable"
+   ],
+   "text": {
+    "x": 472.5891620777967,
+    "y": 208.66630388509117,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Feasible",
+     "x": 488.59508111752746,
+     "y": 301.72667697805076,
+     "radius": 140.27332302194927
+    },
+    {
+     "set": "Viable",
+     "x": 400.0005242136408,
+     "y": 148.27332302194924,
+     "radius": 140.27332302194927
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

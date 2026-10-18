@@ -1,0 +1,30 @@
+{
+ "name": "probe-no-areas",
+ "group": "probe",
+ "source": "probe: no-areas (areas given directly)",
+ "description": "An empty list: the library has no set to start from.",
+ "text": null,
+ "input": {
+  "areas": [],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": null,
+ "chart": {
+  "venn": [],
+  "normalized": [],
+  "circles": [],
+  "textCentres": []
+ },
+ "layout": null,
+ "errors": {
+  "layout": "Cannot read properties of undefined (reading 'set')"
+ }
+}

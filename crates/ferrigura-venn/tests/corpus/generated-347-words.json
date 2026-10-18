@@ -1,0 +1,409 @@
+{
+ "name": "generated-347-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 347, 3 sets, words ids",
+ "description": "A generated set system (words ids, 3 sets).",
+ "text": "venn-beta\n  set Go-lang:0.5\n  set \"Front end\"\n  set TypeScript:100\n  union \"Front end\", TypeScript\n  union Go-lang, TypeScript, \"Front end\":0.19",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Go-lang"
+    ],
+    "size": 0.5
+   },
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 100
+   },
+   {
+    "sets": [
+     "Front end",
+     "TypeScript"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Front end",
+     "Go-lang",
+     "TypeScript"
+    ],
+    "size": 0.19
+   },
+   {
+    "sets": [
+     "Front end",
+     "Go-lang"
+    ],
+    "size": 0.125
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "TypeScript"
+    ],
+    "size": 0.125
+   }
+  ],
+  "width": 320,
+  "height": 240,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Go-lang"
+    ],
+    "size": 0.5
+   },
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 100
+   },
+   {
+    "sets": [
+     "Front end",
+     "TypeScript"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Front end",
+     "Go-lang",
+     "TypeScript"
+    ],
+    "size": 0.19
+   },
+   {
+    "sets": [
+     "Front end",
+     "Go-lang"
+    ],
+    "size": 0.125
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "TypeScript"
+    ],
+    "size": 0.125
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Go-lang",
+    "x": 0.7656093531797898,
+    "y": 1.7750780938223383,
+    "radius": 0.3989422804014327
+   },
+   {
+    "id": "Front end",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "TypeScript",
+    "x": 6.286418718797325,
+    "y": 0,
+    "radius": 5.641895835477563
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Go-lang",
+    "x": 0.8020861393679166,
+    "y": 1.6876585490424727,
+    "radius": 0.3989422804014327
+   },
+   {
+    "id": "Front end",
+    "x": 0.0003203546373632809,
+    "y": 0.0007231052523765978,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "TypeScript",
+    "x": 6.286121906884446,
+    "y": 0.000010871624986264884,
+    "radius": 5.641895835477563
+   }
+  ],
+  "normalized": [
+   {
+    "id": "TypeScript",
+    "x": 0,
+    "y": "-0",
+    "radius": 5.641895835477563
+   },
+   {
+    "id": "Front end",
+    "x": 6.285801592598082,
+    "y": 1.7913188293805504e-15,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Go-lang",
+    "x": 5.484226956837896,
+    "y": -1.687026279696261,
+    "radius": 0.3989422804014327
+   }
+  ],
+  "circles": [
+   {
+    "id": "TypeScript",
+    "x": 137.4062527802664,
+    "y": 120,
+    "radius": 105
+   },
+   {
+    "id": "Front end",
+    "x": 254.38983178796562,
+    "y": 120.00000000000003,
+    "radius": 33.20391543176798
+   },
+   {
+    "id": "Go-lang",
+    "x": 239.47191426358165,
+    "y": 88.60314962672233,
+    "radius": 7.4246212024587495
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Go-lang",
+    "x": 240.75124998499865,
+    "y": 85.40626875542063,
+    "disjoint": false
+   },
+   {
+    "key": "Front end",
+    "x": 264.99999999999994,
+    "y": 120.00000184756851,
+    "disjoint": false
+   },
+   {
+    "key": "TypeScript",
+    "x": 126.79608456823203,
+    "y": 119.99999999963651,
+    "disjoint": false
+   },
+   {
+    "key": "Front end,TypeScript",
+    "x": 231.79608456823203,
+    "y": 119.99999975107,
+    "disjoint": false
+   },
+   {
+    "key": "Front end,Go-lang,TypeScript",
+    "x": 237.19620617354218,
+    "y": 93.73449697475414,
+    "disjoint": false
+   },
+   {
+    "key": "Front end,Go-lang",
+    "x": 241.76157623881124,
+    "y": 92.47847067900653,
+    "disjoint": false
+   },
+   {
+    "key": "Go-lang,TypeScript",
+    "x": 234.98340515857606,
+    "y": 89.65728951167583,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Go-lang"
+   ],
+   "text": {
+    "x": 246.13466665055404,
+    "y": 83.10002000577475,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Go-lang",
+     "x": 244.77004188115376,
+     "y": 86.51002626850382,
+     "radius": 7.919595949289333
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end"
+   ],
+   "text": {
+    "x": 272,
+    "y": 119.9999998084115,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 260.68248724049664,
+     "y": 120.00000000000003,
+     "radius": 35.41750979388585
+    }
+   ]
+  },
+  {
+   "sets": [
+    "TypeScript"
+   ],
+   "text": {
+    "x": 124.58249020611416,
+    "y": 119.9999992420529,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "TypeScript",
+     "x": 135.9000029656175,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 236.58249020611413,
+    "y": 119.99999996356503,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 260.68248724049664,
+     "y": 120.00000000000003,
+     "radius": 35.41750979388585
+    },
+    {
+     "set": "TypeScript",
+     "x": 135.9000029656175,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end",
+    "Go-lang",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 242.3426199184633,
+    "y": 91.98346343970438,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 260.68248724049664,
+     "y": 120.00000000000003,
+     "radius": 35.41750979388585
+    },
+    {
+     "set": "Go-lang",
+     "x": 244.77004188115376,
+     "y": 86.51002626850382,
+     "radius": 7.919595949289333
+    },
+    {
+     "set": "TypeScript",
+     "x": 135.9000029656175,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end",
+    "Go-lang"
+   ],
+   "text": {
+    "x": 247.21234798761145,
+    "y": 90.64370205782285,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 260.68248724049664,
+     "y": 120.00000000000003,
+     "radius": 35.41750979388585
+    },
+    {
+     "set": "Go-lang",
+     "x": 244.77004188115376,
+     "y": 86.51002626850382,
+     "radius": 7.919595949289333
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Go-lang",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 239.98229883615286,
+    "y": 87.63444214689758,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Go-lang",
+     "x": 244.77004188115376,
+     "y": 86.51002626850382,
+     "radius": 7.919595949289333
+    },
+    {
+     "set": "TypeScript",
+     "x": 135.9000029656175,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}
