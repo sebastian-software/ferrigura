@@ -242,6 +242,16 @@ The architecture model is the DB state after the parse (`architectureDb.ts`), wi
 - **The derived block is the reference's `getDataStructures`.** `derived.groupAlignments` is a list of `[key, axis]` pairs in the order the DB first set each key. `derived.spatialMaps` is a list of maps, each a list of `{id, x, y}` in the order the breadth-first search placed them, and the search's quirks (a node placed again, the last placement wins) are part of the value.
 - **Texts.** The header texts are sanitised, as the common setters sanitise them. The other texts are the grammar's values as written, with the entity placeholders kept; an absent icon, title or parent is `""`, and an absent arrow head or `{group}` mark is `false`.
 
+## Cynefin
+
+The cynefin model is the DB state after parsing (`cynefinDb.ts`), with the field list and the quirks in [cynefin/PLAN.md](./cynefin/PLAN.md). Its own rules:
+
+- **Header texts are sanitised.** `title`, `accTitle` and `accDescr` are the DB's values after DOMPurify ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), with the DB's whitespace rules, and `""` when unset.
+- **Domains are the blocks.** A domain is in the model when it has a block, in order of first appearance; a repeated block replaces its items and keeps its place. A domain that only a transition names is not in `domains`.
+- **Items and labels are raw.** They keep the entity placeholders (`ﬂ°amp¶ß`) and are not sanitised, as the DB keeps them.
+- **Transitions** are the DB's list after the self-loops are dropped, in declaration order. A label that is absent or empty is `null`, since the DB stores `undefined` for both.
+- **Left out**: the configuration, which the configuration port owns, and the renderer's data (the positions, the boundary waves and the seed), which the renderer stage reads from the configuration and the model.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
