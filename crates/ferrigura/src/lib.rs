@@ -16,19 +16,22 @@ use ferrigura_render::flowchart::{self, FlowchartInput};
 use ferrigura_render::pie::{PieInput, render as render_pie};
 use ferrigura_render::theme::Themes;
 use ferrigura_render::{
-    architecture as architecture_render, block as block_render, c4 as c4_render,
-    class as class_render, er as er_render, event_modeling as event_modeling_render,
-    gantt as gantt_render, git_graph as git_graph_render, info as info_render,
-    ishikawa as ishikawa_render, journey as journey_render, kanban as kanban_render,
-    mindmap as mindmap_render, packet as packet_render, quadrant_chart as quadrant_chart_render,
+    agentflow as agentflow_render, architecture as architecture_render, block as block_render,
+    c4 as c4_render, class as class_render, cynefin as cynefin_render, er as er_render,
+    event_modeling as event_modeling_render, gantt as gantt_render, git_graph as git_graph_render,
+    info as info_render, ishikawa as ishikawa_render, journey as journey_render,
+    kanban as kanban_render, mindmap as mindmap_render, packet as packet_render,
+    quadrant_chart as quadrant_chart_render, radar as radar_render, railroad as railroad_render,
     requirement as requirement_render, sankey as sankey_render, sequence as sequence_render,
-    state as state_render, timeline as timeline_render, treemap as treemap_render,
-    xychart as xychart_render,
+    state as state_render, swimlanes as swimlanes_render, timeline as timeline_render,
+    tree_view as tree_view_render, treemap as treemap_render, use_case as use_case_render,
+    venn as venn_render, wardley as wardley_render, xychart as xychart_render,
 };
 use ferrigura_syntax::{
-    DiagramType, ParseError, architecture, block, c4, class, config, detect, er, event_modeling,
-    gantt, git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie, quadrant_chart,
-    requirement, sankey, sequence, state, timeline, treemap, xychart,
+    DiagramType, ParseError, agentflow, architecture, block, c4, class, config, cynefin, detect,
+    er, event_modeling, gantt, git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie,
+    quadrant_chart, radar, railroad, requirement, sankey, sequence, state, swimlanes, timeline,
+    tree_view, treemap, use_case, venn, wardley, xychart,
 };
 
 pub use ferrigura_render::RenderError as Error;
@@ -264,6 +267,60 @@ pub fn render_with(
                 id,
             })
         }
+        DiagramType::Agentflow => agentflow_render::render(&agentflow_render::AgentflowInput {
+            diagram: &agentflow::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Cynefin => cynefin_render::render(&cynefin_render::CynefinInput {
+            diagram: &cynefin::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Radar => radar_render::render(&radar_render::RadarInput {
+            diagram: &radar::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Railroad => railroad_render::render(&railroad_render::RailroadInput {
+            diagram: &railroad::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Swimlanes => swimlanes_render::render(&swimlanes_render::SwimlanesInput {
+            diagram: &swimlanes::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::TreeView => tree_view_render::render(&tree_view_render::TreeViewInput {
+            diagram: &tree_view::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::UseCase => use_case_render::render(&use_case_render::UseCaseInput {
+            diagram: &use_case::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Venn => venn_render::render(&venn_render::VennInput {
+            diagram: &venn::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
+        DiagramType::Wardley => wardley_render::render(&wardley_render::WardleyInput {
+            diagram: &wardley::parse(text)?,
+            config: typed_config,
+            themes,
+            id,
+        }),
         DiagramType::Flowchart => with_flowchart(text, &prepared, flowchart::render),
     }
 }
