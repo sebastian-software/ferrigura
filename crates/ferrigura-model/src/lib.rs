@@ -9,11 +9,13 @@
 
 #![warn(missing_docs)]
 
+pub mod agentflow;
 pub mod architecture;
 pub mod block;
 pub mod c4;
 pub mod class;
 pub mod config;
+pub mod cynefin;
 pub mod er;
 pub mod event_modeling;
 pub mod flowchart;
@@ -28,14 +30,21 @@ pub mod mindmap;
 pub mod packet;
 pub mod pie;
 pub mod quadrant_chart;
+pub mod radar;
+pub mod railroad;
 pub mod requirement;
 pub mod sankey;
 pub mod sequence;
 pub mod state;
+pub mod swimlanes;
 pub mod theme;
 pub mod timeline;
+pub mod tree_view;
 pub mod treemap;
+pub mod use_case;
 pub mod value;
+pub mod venn;
+pub mod wardley;
 pub mod xychart;
 
 /// Version of the canonical model, written as `"version"` into every model. It is bumped when a
