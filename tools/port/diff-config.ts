@@ -109,6 +109,8 @@ const p2Groups: [group: string, scope: string][] = [
   ['treemap', 'treemap'],
   ['ishikawa', 'ishikawa'],
   ['eventmodeling', 'eventmodeling'],
+  // railroad is a P3 type whose parser is ported: its section is compared like a P2 section.
+  ['railroad', 'railroad'],
 ];
 const p2Inputs: ConfigInput[] = [];
 for (const [group, scope] of p2Groups) {
@@ -131,7 +133,6 @@ const p3Groups: [group: string, scope: string][] = [
   ['swimlanes', 'swimlane'],
   ['treeView', 'treeView'],
   ['radar', 'radar'],
-  ['railroad', 'railroad'],
   ['venn', 'venn'],
   ['wardley', 'wardley-beta'],
   ['cynefin', 'cynefin'],
@@ -298,7 +299,7 @@ const UNPORTED_SECTIONS = [
  * The sections of the P3 types, whose parsers are not ported yet. Their inputs are run in their own
  * scope, but the section is not compared, not even for those inputs, until the type is ported.
  */
-const NOT_PORTED_SECTIONS = new Set<string>(['swimlane', 'railroad']);
+const NOT_PORTED_SECTIONS = new Set<string>(['swimlane']);
 
 /**
  * The output with the sections that are not compared removed: the sections of diagram types that

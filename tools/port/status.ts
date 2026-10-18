@@ -142,7 +142,12 @@ const suites: Record<string, string[]> = {
   ],
   cynefin: ['cynefin_db_spec', 'cynefin_grammar', 'cynefin_boundary_spec'],
   radar: ['radar_spec', 'radar_grammar', 'radar_db_spec'],
-  railroad: [],
+  railroad: [
+    'railroad_spec',
+    'railroad_grammar',
+    'railroad_db_spec',
+    'render:railroad_render_spec',
+  ],
   swimlanes: [],
   treeView: [
     'tree_view_parser_spec',

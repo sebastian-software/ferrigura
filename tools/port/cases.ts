@@ -28,6 +28,9 @@ export const undetectedCases: Record<string, string[]> = {
   ],
   // The detector is `/^\s*wardley-beta/i`: a blank in place of the dash is no wardley map.
   wardley: ['wardley beta\ncomponent A [0.5, 0.5]\n'],
+  // A block comment before the header: the detector reads the text after the directives and the `%%`
+  // comment lines only, so `/* … */` leaves the text undetected (`docs-port/railroad/PLAN.md`, section 2).
+  railroad: ['/* c */ railroad-beta\nr = terminal("a") ;'],
   // Detection is case-sensitive (`eventmodeling/detector.ts`): a capitalised keyword is not a
   // diagram of this type.
   eventmodeling: ['EventModeling\ntf 01 ui A'],
@@ -481,7 +484,526 @@ export const explicitCases: Record<string, string[]> = {
     'radar-beta\naxis A\ncurve c{' + '1'.repeat(310) + '}',
     'radar-beta\naxis A\ncurve c{' + Array(125000).fill('1').join(',') + '}',
   ],
-  railroad: [],
+  // The probes of `docs-port/railroad/NOTES.md`, section 2.8 (the R, E, A, P and X ids), run through
+  // the reference's parser. Each is a text of one of the four syntaxes, with its header.
+  railroad: [
+    // R-01
+    'railroad-beta\ndigit = terminal("0") ;',
+    // R-03
+    'railroad-beta\n',
+    // R-04
+    'railroad-beta',
+    // R-05
+    'railroad-beta\ntitles = terminal("a") ;',
+    // R-06
+    'railroad-beta\nsequence = terminal("a") ;',
+    // R-07
+    'railroad-beta\nsequenceX = terminal("a") ;',
+    // R-08
+    'railroad-beta\nr = terminal("a")',
+    // R-09
+    'railroad-beta\nr = terminal("a\\"b") ;',
+    // R-10
+    "railroad-beta\nr = terminal('x\\'y') ;",
+    // R-11
+    'railroad-beta\nr = terminal("a\\nb\\tc\\\\d") ;',
+    // R-12
+    'railroad-beta\nr = sequence(terminal("a")) ;',
+    // R-13
+    'railroad-beta\nr = choice(terminal("a")) ;',
+    // R-14
+    'railroad-beta\nr = terminal("a") ; junk',
+    // R-15
+    'railroad-beta\nr = nonterminal("x y") ;',
+    // R-16
+    'railroad-beta\nr = special("a b") ;',
+    // R-17
+    'railroad-beta\nr = terminal("") ;',
+    // R-18
+    'railroad-beta\nr = terminal("<b>x</b> & y") ;',
+    // R-19
+    'railroad-beta\nr = terminal("a") ;\nr = terminal("b") ;',
+    // R-20
+    'railroad-beta\ntitle Hello   <b>x</b>\nr = terminal("a") ;',
+    // R-21
+    'railroad-beta\ntitle "Quoted \\"t\\""\nr = terminal("a") ;',
+    // R-22
+    'railroad-beta\ntitle foo\ntitle bar\nr = terminal("a") ;',
+    // R-23
+    'railroad-beta\naccTitle: Acc  T\naccDescr: Desc\nr = terminal("a") ;',
+    // R-24
+    'railroad-beta\naccDescr {\n  line one\n\n   line two\n}\nr = terminal("a") ;',
+    // R-25
+    'railroad-beta\n/* c */ r = terminal("a") ;',
+    // R-26
+    'railroad-beta\nr = terminal("a") ; /* not */',
+    // R-27
+    'railroad-beta\nr = terminal("a") ; %% line comment',
+    // R-28
+    'railroad-beta\nr = terminal("a") ;\n%%{init: {"theme":"dark"}}%%\ns = terminal("b") ;',
+    // R-29
+    'railroad-beta r = terminal("a") ;',
+    // R-30
+    'RAILROAD-BETA\nr = terminal("a") ;',
+    // R-31
+    'railroad-beta\r\nr = terminal("a") ;\r\ns = terminal("b") ;\r\n',
+    // R-32
+    'railroad-beta\nr = choice(terminal("a"), terminal("b")) ;\nr2 = nonterminal("r") ;',
+    // R-33
+    'railroad-beta\nr = oneOrMore(sequence(terminal("a"), terminal("b"))) ;',
+    // R-34
+    'railroad-beta\nr = terminal("a"),',
+    // R-35
+    'railroad-beta\nr = sequence() ;',
+    // R-36
+    'railroad-beta\nr = _x = terminal("a") ;',
+    // R-37
+    'railroad-beta\n---\nfoo: 1\n---\nr = terminal("a") ;',
+    // R-38
+    'railroad-beta\n---\nr = terminal("a") ;',
+    // R-39
+    'railroad-beta\nr = terminal("a") ;;',
+    // R-40
+    'railroad-beta\nr-2 = terminal("a") ;\n_r = terminal("b") ;\nR_x9 = terminal("c") ;',
+    // R-41
+    'railroad-beta\n1r = terminal("a") ;',
+    // R-42
+    "railroad-beta\nr = terminal('a') ;",
+    // R-43
+    'railroad-beta\nr = terminal("é ✓") ;',
+    // R-44
+    'railroad-beta\nr = terminal("a\\\\") ;',
+    // R-45
+    'railroad-beta\ntitle\nr = terminal("a") ;',
+    // R-46
+    'railroad-beta\naccTitle:\nr = terminal("a") ;',
+    // R-47
+    'railroad-beta\nr = terminal("a") ;\ntitle Late\n',
+    // R-48
+    'railroad-beta\nr = Terminal("a") ;',
+    // R-49
+    'railroad-beta\nr = terminal ("a") ;',
+    // R-50
+    'railroad-beta\nr = terminal( "a" ) ;',
+    // R-51
+    'railroad-beta\nr = terminal("a")\n  ;',
+    // R-52
+    'railroad-beta\nr = nonterminal("a") ;\n\n\nq = nonterminal("r") ;',
+    // R-53
+    'railroad-beta\nr = optional(terminal("a")) ;\ns = zeroOrMore(nonterminal("r")) ;',
+    // R-54
+    'railroad-beta\nr = terminal("<script>x</script>") ;',
+    // R-55
+    'railroad-beta\nr = special("<i>x</i>") ;',
+    // R-56
+    'railroad-beta\nnonterminal = terminal("a") ;',
+    // R-57
+    'railroad-beta\nr = terminal("a") ; r = terminal("b") ; ',
+    // R-58
+    'railroad-beta\nr = terminal("a")  ;  ',
+    // R-59
+    'railroad-beta\nr = terminal("a\nb") ;',
+    // R-60
+    'railroad-beta\ntitle   Hello\n  world\nr = terminal("a") ;',
+    // E-01
+    'railroad-ebnf-beta\nrule = "a" ;',
+    // E-02
+    'railroad-ebnf-beta\nrule ::= "a" ;',
+    // E-03
+    'railroad-ebnf-beta\nrule = "a" , "b" ;',
+    // E-04
+    'railroad-ebnf-beta\nrule = "a" "b" ;',
+    // E-05
+    'railroad-ebnf-beta\nrule = [ "a" ] ;',
+    // E-06
+    'railroad-ebnf-beta\nrule = { "a" } ;',
+    // E-07
+    'railroad-ebnf-beta\nrule = ( "a" | "b" ) ;',
+    // E-08
+    'railroad-ebnf-beta\nrule = "a"? ;',
+    // E-09
+    'railroad-ebnf-beta\nrule = "a"* ;',
+    // E-10
+    'railroad-ebnf-beta\nrule = "a"+ ;',
+    // E-11
+    'railroad-ebnf-beta\nrule = "a" - "b" ;',
+    // E-12
+    'railroad-ebnf-beta\nrule = ? special ? ;',
+    // E-13
+    'railroad-ebnf-beta\nrule = ?a? ;',
+    // E-14
+    'railroad-ebnf-beta\nrule = ? ? ;',
+    // E-15
+    'railroad-ebnf-beta\nrule = (* iso comment *) "a" ;',
+    // E-16
+    'railroad-ebnf-beta\nrule = "a" (* unclosed ;',
+    // E-17
+    'railroad-ebnf-beta\nrule = "(*" ;',
+    // E-18
+    'railroad-ebnf-beta\nrule = a | b ;',
+    // E-19
+    'railroad-ebnf-beta\nrule = a b ;',
+    // E-20
+    'railroad-ebnf-beta\nrule = "a" | ;',
+    // E-21
+    'railroad-ebnf-beta\nrule = ;',
+    // E-22
+    'railroad-ebnf-beta\nrule = "a" ;\nrule2 = b',
+    // E-23
+    'railroad-ebnf-beta\nrule = {"a"}* ;',
+    // E-24
+    'railroad-ebnf-beta\nrule = [ "a" | "b" ] , "c" ;',
+    // E-25
+    'railroad-ebnf-beta\nrule = "a" - ;',
+    // E-26
+    'railroad-ebnf-beta\nrule = "a" - "b" - "c" ;',
+    // E-27
+    'railroad-ebnf-beta\nrule = "a" ? ;',
+    // E-28
+    'railroad-ebnf-beta\nrule = ? a\n b ? ;',
+    // E-29
+    'railroad-ebnf-beta\nrule = "a" ; (* c *)',
+    // E-30
+    'railroad-ebnf-beta\nrule-x = "a" ;',
+    // E-31
+    'railroad-ebnf-beta\nrule = ( "a" , ( "b" | "c" ) )* ;',
+    // E-32
+    'railroad-ebnf-beta\nrule = "a" ,, "b" ;',
+    // E-33
+    'railroad-ebnf-beta\nrule = "a" -"b" ;',
+    // E-34
+    'railroad-ebnf-beta\nrule = "a" "b" | "c" ;',
+    // E-35
+    'railroad-ebnf-beta\nrule = [ "a" ]? ;',
+    // E-36
+    'railroad-ebnf-beta\nrule = "a"?* ;',
+    // E-37
+    'railroad-ebnf-beta\nrule = "a" ; ? x ? ;',
+    // E-38
+    'railroad-ebnf-beta\nrule = "x" (*\n comment \n*) "y" ;',
+    // E-39
+    'railroad-ebnf-beta\nrule = ? ?x? ? ;',
+    // E-40
+    'railroad-ebnf-beta\nrule = a - ;',
+    // E-41
+    "railroad-ebnf-beta\nrule = 'a' ;",
+    // E-42
+    'railroad-ebnf-beta\ntitle "T"\nrule = "a" ;',
+    // E-43
+    'railroad-ebnf-beta\nrule = "a" ;\n---\nrule2 = "b" ;',
+    // E-44
+    'railroad-ebnf-beta\nrule = "a" ? "b" ;',
+    // A-01
+    'railroad-abnf-beta\nr = "a" ;',
+    // A-02
+    'railroad-abnf-beta\nr = "a" / "b" ;',
+    // A-03
+    'railroad-abnf-beta\nr = %x41-5A ;',
+    // A-04
+    'railroad-abnf-beta\nr = %x41.42 ;',
+    // A-05
+    'railroad-abnf-beta\nr = %d65 %b1010 ;',
+    // A-06
+    'railroad-abnf-beta\nr = 3DIGIT ;',
+    // A-07
+    'railroad-abnf-beta\nr = 1*3DIGIT ;',
+    // A-08
+    'railroad-abnf-beta\nr = *DIGIT ;',
+    // A-09
+    'railroad-abnf-beta\nr = 1*DIGIT ;',
+    // A-10
+    'railroad-abnf-beta\nr = *1DIGIT ;',
+    // A-11
+    'railroad-abnf-beta\nr = 0*1DIGIT ;',
+    // A-12
+    'railroad-abnf-beta\nr = 2 DIGIT ;',
+    // A-13
+    'railroad-abnf-beta\nr = [ "a" ] ;',
+    // A-14
+    'railroad-abnf-beta\nr = ( "a" / "b" ) "c" ;',
+    // A-15
+    'railroad-abnf-beta\nr = "a" ; comment',
+    // A-16
+    'railroad-abnf-beta\nr = "a" ;   ',
+    // A-17
+    'railroad-abnf-beta\nr = "a";',
+    // A-18
+    'railroad-abnf-beta\nr = "a";x',
+    // A-19
+    'railroad-abnf-beta\nr = "a"\n;',
+    // A-20
+    'railroad-abnf-beta\nr = "a" ;\nr2 = "b" ;',
+    // A-21
+    'railroad-abnf-beta\nr = "a" "b" ;',
+    // A-22
+    'railroad-abnf-beta\nr = a-b ;',
+    // A-23
+    'railroad-abnf-beta\nR-1 = "a" ;',
+    // A-24
+    'railroad-abnf-beta\nr = %x41 / %x42 ;',
+    // A-25
+    'railroad-abnf-beta\nr = %X4a ;',
+    // A-26
+    'railroad-abnf-beta\nr = %x41- ;',
+    // A-27
+    'railroad-abnf-beta\nr = ( "a" ) ;',
+    // A-28
+    'railroad-abnf-beta\nr = ( ) ;',
+    // A-29
+    'railroad-abnf-beta\nr = "a ;',
+    // A-30
+    'railroad-abnf-beta\nr = "a\'b" ;',
+    // A-31
+    'railroad-abnf-beta\nr = "a" / ;',
+    // A-32
+    'railroad-abnf-beta\ntitle "a\\nb"\nr = "a" ;',
+    // A-33
+    'railroad-abnf-beta\nr = 3*"a" ;',
+    // A-34
+    'railroad-abnf-beta\nr = *"a" ;',
+    // A-35
+    'railroad-abnf-beta\nr = 3 ;',
+    // A-36
+    'railroad-abnf-beta\nr = 1*2 DIGIT ;',
+    // A-37
+    'railroad-abnf-beta\nr = *0DIGIT ;',
+    // A-38
+    'railroad-abnf-beta\nr = 2*1DIGIT ;',
+    // A-39
+    'railroad-abnf-beta\nr = 1* DIGIT ;',
+    // A-40
+    'railroad-abnf-beta\nr = ALPHA ;\n; a line comment\nq = DIGIT ;',
+    // A-41
+    'railroad-abnf-beta\nr = "a" ;;',
+    // A-42
+    'railroad-abnf-beta\nr = "a" "b" / "c" "d" ;',
+    // A-43
+    'railroad-abnf-beta\nr = %x4 ;',
+    // A-44
+    'railroad-abnf-beta\nr = %b2 ;',
+    // A-45
+    'railroad-abnf-beta\nr = %x41-5A.61 ;',
+    // A-46
+    'railroad-abnf-beta\nr = "" ;',
+    // A-47
+    'railroad-abnf-beta\nr = 3(DIGIT) ;',
+    // A-48
+    'railroad-abnf-beta\nr = [ "a" "b" / "c" ] ;',
+    // P-01
+    'railroad-peg-beta\nR <- "a" ;',
+    // P-02
+    'railroad-peg-beta\nR <- "a" / "b" ;',
+    // P-03
+    'railroad-peg-beta\nR <- &"a" "b" ;',
+    // P-04
+    'railroad-peg-beta\nR <- !A B ;',
+    // P-05
+    'railroad-peg-beta\nR <- &(A B) ;',
+    // P-06
+    'railroad-peg-beta\nR <- . ;',
+    // P-07
+    'railroad-peg-beta\nR <- "a"? "b"* "c"+ ;',
+    // P-08
+    'railroad-peg-beta\nR <- ("a" / "b")* ;',
+    // P-09
+    'railroad-peg-beta\nR <- "a" # comment\n "b" ;',
+    // P-10
+    'railroad-peg-beta\nR <- &&"a" ;',
+    // P-11
+    'railroad-peg-beta\nR <- ! & "a" ;',
+    // P-12
+    'railroad-peg-beta\nR <- "a"?* ;',
+    // P-13
+    'railroad-peg-beta\nR <- A',
+    // P-14
+    'railroad-peg-beta\nR <- &"a"* ;',
+    // P-15
+    'railroad-peg-beta\nR <- !"x"? ;',
+    // P-16
+    'railroad-peg-beta\nR <- &A ;',
+    // P-17
+    'railroad-peg-beta\nR-x <- "a" ;',
+    // P-18
+    'railroad-peg-beta\nR <- "a" ; # after',
+    // P-19
+    'railroad-peg-beta\nR <- ( "a" ;',
+    // P-20
+    'railroad-peg-beta\nR <- "" ;',
+    // P-21
+    "railroad-peg-beta\nR <- 'a' ;",
+    // P-22
+    "railroad-peg-beta\nR <- 'a\\'b' ;",
+    // P-23
+    'railroad-peg-beta\nR <- . . ;',
+    // P-24
+    'railroad-peg-beta\nR <- "x" /;',
+    // P-25
+    'railroad-peg-beta\nR <- "a" "b";',
+    // P-26
+    'railroad-peg-beta\nR = "a" ;',
+    // P-27
+    'railroad-peg-beta\nR <- "a" "b" / "c" ;',
+    // P-28
+    'railroad-peg-beta\nR <- A ? ;',
+    // P-29
+    'railroad-peg-beta\nR <- "a" ;\nR <- "b" ;',
+    // P-30
+    'railroad-peg-beta\nR <- \'a\' ;\nS <- "\\n" ;',
+    // P-31
+    'railroad-peg-beta\nR <- &"a\\"" ;',
+    // P-32
+    'railroad-peg-beta\nR <- "a" ;\n# whole line comment\nS <- "b" ;',
+    // X-01
+    'railroad-ebnf-beta\nr = "a" ;',
+    // X-02
+    'railroad-beta\nr = terminal("a") ;',
+    // X-05
+    'railroad-betax\nr = terminal("a") ;',
+    // X-06
+    'railroad-beta%%c\nr = terminal("a") ;',
+    // X-07
+    'railroad-ebnf-beta%%c\nr = "a" ;',
+    // X-08
+    '  railroad-beta\n r = terminal("a") ;',
+    // X-09
+    '%%c\nrailroad-beta\nr = terminal("a") ;',
+    // X-10
+    'railroad-beta\n\n\n\nr = terminal("a") ;',
+    // X-11
+    'railroad-beta\ntitle Foo %% c\nr = terminal("a") ;',
+    // X-12
+    'railroad-beta\naccTitle: x %% c\nr = terminal("a") ;',
+    // X-13
+    'railroad-beta\ntitle \'it\'\nr = terminal("a") ;',
+    // X-14
+    'railroad-beta\ntitle\tTab  x\nr = terminal("a") ;',
+    // X-15
+    'railroad-beta\naccDescr: a %% c\nr = terminal("a") ;',
+    // X-16
+    'railroad-beta\naccDescr { a \n b }\nr = terminal("a") ;',
+    // X-17
+    'railroad-beta\nr = terminal("a") ;\naccTitle: late',
+    // X-18
+    'railroad-ebnf-beta\ntitle \'T\'\nrule = "a" ;',
+    // X-19
+    'railroad-abnf-beta\ntitle "T"\nr = "a" ;',
+    // X-20
+    'railroad-abnf-beta\ntitle T\nr = "a" ;',
+    // X-21
+    'railroad-peg-beta\naccDescr {\n  x\n}\nR <- "a" ;',
+    // X-22
+    'railroad-beta\nr = terminal("a") ;\ntitle "x" \n',
+    // X-23
+    'railroad-beta\nr = terminal("a\\bc\\fd\\ve\\0f") ;',
+    // X-24
+    'railroad-ebnf-beta\nrule = "a\\bc" ;',
+    // X-25
+    'railroad-peg-beta\nR <- "a\\bc" ;',
+    // X-26
+    'railroad-beta\nr = terminal("&lt;b&gt;") ;',
+    // X-27
+    'railroad-beta\nr = terminal("#amp;") ;',
+    // X-28
+    'railroad-beta\nr = nonterminal("AT&T <b>bold</b>") ;',
+    // X-29
+    'railroad-beta\ntitle foo\ntitle\nr = terminal("a") ;',
+    // X-30
+    'railroad-beta\naccTitle: foo\naccTitle:\nr = terminal("a") ;',
+    // X-31
+    'railroad-beta\ntitle foo\nr = terminal("a") ;\ntitle bar',
+    // Edge cases of the scanner and the four grammars (the U+2028 and CRLF cases, the escapes, the
+    // repeats with their bounds, the ABNF `;`, the PEG labels, the sanitising) and the front matter
+    // title cases of Q8, probed with the reference before the port was written.
+    'railroad-beta\ntitle a b\nr = terminal("x") ;',
+    'railroad-beta\ntitle a %% c  d\nr = terminal("x") ;',
+    'railroad-beta\naccTitle: q w\nr = terminal("x") ;',
+    'railroad-beta\naccDescr: q w\nr = terminal("x") ;',
+    'railroad-beta\naccDescr {\n  a \n  b\n}\nr = terminal("x") ;',
+    'railroad-beta\nr = terminal("a b") ;',
+    'railroad-beta\n%% c \nr = terminal("x") ;',
+    'railroad-peg-beta\nR <- "a" ; # c  x\n',
+    'railroad-abnf-beta\nr = "a" ; x\n',
+    'railroad-abnf-beta\nr = "a"; \n',
+    'railroad-abnf-beta\nr = "a";  \n',
+    'railroad-ebnf-beta\nr = ? a b ? ;',
+    'railroad-ebnf-beta\nr = "a" (* x  *) ;',
+    'railroad-beta\ntitle "a\\\nb"\nr = terminal("x") ;',
+    'railroad-beta\ntitle "a"\nr = terminal("x") ;',
+    'railroad-beta\ntitle "\nr = terminal("x") ;',
+    'railroad-beta\ntitle \'"\nr = terminal("x") ;',
+    'railroad-beta\ntitle "\nr = terminal("x") ;',
+    'railroad-abnf-beta\ntitle "\\n"\nr = "x" ;',
+    'railroad-abnf-beta\ntitle "a\nb"\nr = "x" ;',
+    'railroad-abnf-beta\nr = 0*0 "a" ;',
+    'railroad-abnf-beta\nr = 99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 "a" ;',
+    'railroad-abnf-beta\nr = 99999999999999999999*"a" ;',
+    'railroad-abnf-beta\nr = *99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 "a" ;',
+    'railroad-peg-beta\nR <- &"a" ;',
+    'railroad-peg-beta\nR <- &. !"x"? ;',
+    'railroad-peg-beta\nR <- &(A) (B / C) &(A?) ;',
+    'railroad-peg-beta\nR <- &(("a")) ;',
+    'railroad-ebnf-beta\nr = "a" ;\n---\nfoo: 1\n---\n',
+    'railroad-ebnf-beta\nr = "a" - "b" - "c" ;',
+    'railroad-ebnf-beta\nr = "a" ?? ;',
+    'railroad-ebnf-beta\nr = [ "a" ]? {"b"}* ;',
+    'railroad-ebnf-beta\nr = "a" , , "b" ;',
+    'railroad-ebnf-beta\nr = "a" "b" , "c" ;',
+    'railroad-ebnf-beta\nr = a ? ? ;',
+    'railroad-beta\n%%{init: x}%%\nr = terminal("a") ;\n%%{init: y}%%',
+    'railroad-beta\nr = terminal("a") ;\n/* unclosed',
+    'railroad-beta\nr = terminal("a") ;\n---\nx',
+    'railroad-beta\nr = terminal("a") ;\n#c',
+    "railroad-beta\nr = terminal('a\"b') ;",
+    "railroad-beta\nr = nonterminal('a\\'b') ;",
+    'railroad-beta\nr = special("x\\\\") ;',
+    'railroad-beta\nr = terminal("\\u0041") ;',
+    'railroad-beta\nr = choice() ;',
+    'railroad-beta\nr = choice(a) ;',
+    'railroad-beta\nTitle = terminal("a") ;',
+    'railroad-beta\nr = terminal("a") ;\nr = terminal("b") ;',
+    'railroad-beta\nr = optional(zeroOrMore(oneOrMore(terminal("a")))) ;',
+    'railroad-peg-beta\nR <- "a" "b"\n  / "c" ;',
+    'railroad-peg-beta\nR <- A ;\nA <- .;',
+    'railroad-abnf-beta\nr = "a" / "b" c ;\ns = ;',
+    'railroad-abnf-beta\nr = (3"a") ;',
+    'railroad-abnf-beta\nr = 1*2(%x41-5A) ;',
+    'railroad-abnf-beta\nr = %x41-5A.42 ;',
+    'railroad-abnf-beta\nr = %x41.5A ;',
+    'railroad-abnf-beta\nr = %x41-5A-;',
+    'railroad-abnf-beta\nr = %x41 - ;',
+    'railroad-abnf-beta\nr = a_b ;',
+    'railroad-abnf-beta\n_r = "a" ;',
+    'railroad-abnf-beta\nr = "a" ;\n; comment line\ns = "b" ;',
+    'RAILROAD-BETA\nr = terminal("a") ;',
+    'Railroad-Ebnf-Beta\nr = "a" ;',
+    '  railroad-peg-beta\n\tR <- "a" ;',
+    'railroad-beta\n  r = terminal("a") ;',
+    'railroad-beta \nr = terminal("a") ;',
+    'railroad-beta\rr = terminal("a") ;',
+    'railroad-beta\ntitle\ttab\t\tsep\nr = terminal("a") ;',
+    'railroad-beta\naccTitle:\tt  x\nr = terminal("a") ;',
+    'railroad-beta\naccDescr:   spaced   text  \nr = terminal("a") ;',
+    'railroad-beta\naccDescr  {\n\n\n  a\n\n\n  b  \n\n}\nr = terminal("a") ;',
+    'railroad-beta\naccDescr\n{x}\nr = terminal("a") ;',
+    'railroad-beta\naccDescr {unclosed\nr = terminal("a") ;',
+    'railroad-beta\naccDescr: a %% b\n%% c\nr = terminal("a") ;',
+    'railroad-beta\naccTitle: <script>x</script>  y\nr = terminal("a") ;',
+    'railroad-beta\naccDescr: <b>x</b>\n   y\nr = terminal("a") ;',
+    'railroad-beta\ntitle <script>alert(1)</script>T<b>x\nr = terminal("a") ;',
+    'railroad-beta\nr = terminal("<style>x</style>y") ;',
+    'railroad-beta\nr = terminal("<img src=x onerror=alert(1)>") ;',
+    "railroad-beta\nr = terminal(\"<a href='javascript:x' target='_blank'>l</a>\") ;",
+    '---\ntitle: FM\n---\nrailroad-beta\nr = terminal("a") ;',
+    '---\ntitle: FM\n---\nrailroad-beta\ntitle G\nr = terminal("a") ;',
+    '---\ntitle: FM\n---\nrailroad-beta\ntitle\nr = terminal("a") ;',
+    '---\ntitle: FME\n---\nrailroad-ebnf-beta\nr = "a" ;',
+    '---\ntitle: FMA\n---\nrailroad-abnf-beta\nr = "a" ;',
+    '---\ntitle: FMP\n---\nrailroad-peg-beta\nR <- "a" ;',
+    'railroad-beta\ntitle <script>alert(1)</script>Safe Title\nr = terminal("a") ;',
+    'railroad-beta\nr = terminal("value<script>alert(1)</script>") ;',
+    'railroad-beta\naccDescr {\n    line one\n    line two\n}\nr = terminal("a") ;',
+    '%%{init: {"theme": "forest"}}%%\nrailroad-beta\nr = terminal("a") ;',
+  ],
   swimlanes: [],
   treeView: [
     // cspell:ignore ntitlepage Ärger
