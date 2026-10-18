@@ -6,9 +6,10 @@
 //! - [`locale_compare`] and [`try_locale_compare`]: `a.localeCompare(b)` in V8 with the default locale (en-US),
 //!   for printable ASCII. It is ICU's root collation at tertiary strength, written as a table of the 95
 //!   characters in ICU order.
-//! - [`js_sort_by`]: `Array.prototype.sort(compare)` as V8 runs it, TimSort with the same comparisons in the
-//!   same order, so that a comparator that is not a total order (a threshold, or a NaN key) gives V8's order and
-//!   does not panic. The layout's numeric sorts use it.
+//! - [`js_sort_by`]: `Array.prototype.sort(compare)` as V8 in Chromium 151 runs it, with the same comparisons in
+//!   the same order, so that a comparator that is not a total order (a threshold, or a NaN key) gives the
+//!   reference's order and does not panic. Exact from 17 to 129 elements; its doc states the gap. The layout's
+//!   numeric sorts use it.
 //!
 //! `Math.hypot` is not here: the port calls `ferrigura_jsmath::hypot`.
 //!
@@ -247,34 +248,76 @@ enum Exit {
     CopyRemaining,
 }
 
-/// The sort state of one call (`SortState`): the comparator, the pending runs and `minGallop`.
+/// Arrays shorter than this are sorted by a binary insertion from the second element, with no run (Chromium 151).
+const SHORT_ARRAY: usize = 16;
+
+/// The longest array sorted by the rules of Chromium 151; see [`js_sort_by`].
+const CHROMIUM_EXACT_MAX: usize = 129;
+
+/// The sort state of one call (`SortState`): the comparator, the pending runs and `minGallop`, and whether the
+/// rules of Chromium 151 apply (arrays of up to [`CHROMIUM_EXACT_MAX`] elements) or those of V8 13.6.
 struct Sorter<T, F> {
     compare: F,
     runs: Vec<Run>,
     min_gallop: usize,
+    chromium: bool,
     marker: PhantomData<T>,
 }
 
-/// `Array.prototype.sort(compare)` on `items`, as V8 runs it (`src/builtins/array-sort.tq`): TimSort, a port of
-/// CPython's `listsort`, with the same comparisons in the same order. `compare` returns the number that the
-/// JavaScript comparator returns, and a NaN counts as `+0`, as V8 converts it. A negative result puts the first
-/// argument first.
+/// `Array.prototype.sort(compare)` on `items`, as V8 in Chromium 151 runs it, the browser of the reference.
+/// `compare` returns the number that the JavaScript comparator returns, and a NaN counts as `+0`, as V8 converts
+/// it. A negative result puts the first argument first. The comparators of the layout are not always total orders
+/// (a threshold on a difference, or a NaN key): `slice::sort_by` may panic on them, and the order then depends on
+/// the comparisons the sort makes, which this one makes as Chromium does, in the same order.
 ///
-/// Arrays of fewer than 64 elements take a run and a binary insertion sort, and longer ones merge runs with
-/// galloping. The comparators of the layout are not always total orders (a threshold on a difference, or a NaN
-/// key), and `slice::sort_by` may panic on such a comparator, while V8's order is the one the reference gives.
-/// With a consistent comparator every stable sort gives the same order.
+/// The sort is TimSort (`src/builtins/array-sort.tq`, a port of CPython's `listsort`). Chromium 151 differs from
+/// V8 13.6 (Node 24) in four places, found from its comparator calls (`tests/js_sort.rs`):
+///
+/// - Fewer than 16 elements: a binary insertion sort from the second element, with no run first (at the first
+///   call of a function; see the gap).
+/// - 64 elements and more: the minimum run length is `n` shifted right until it is below 64, not rounded up.
+/// - `MergeCollapse`: the invariant is `run[n - 2] >= run[n - 1] + run[n]`, a tie of `run[n - 1]` and
+///   `run[n + 1]` merges the lower pair, and the top two runs merge only if the lower one is strictly shorter.
+/// - A merge with a second run of one element is a binary search for it in the first run, then a rotation.
+///
+/// From 16 to 63 elements both sort alike. The sort is Chromium's exactly from 17 to 129 elements, at every call
+/// site. The gap has two parts, and the ignored tests in `tests/js_sort.rs` show both:
+///
+/// - Up to 16 elements Chromium's comparisons depend on the JIT state of the code that calls `sort`. The first
+///   call of a function sorts as above, but a call site that has run a few thousand sorts, or code made by
+///   `new Function`, makes other comparisons, and may repeat the first one. No single order is the reference's
+///   there; this sort takes the first call's.
+/// - From 130 elements on, Chromium sorts by rules that are not reproduced. This sort keeps V8 13.6's TimSort
+///   there: its call sequence differs from Chromium's, and so does its permutation for an inconsistent
+///   comparator.
+///
+/// For a consistent comparator every stable sort gives the same permutation, so the gap shows only in the
+/// comparator calls and with an inconsistent comparator.
 pub fn js_sort_by<T: Copy>(items: &mut [T], compare: impl Fn(T, T) -> f64) {
-    if items.len() < 2 {
+    let length = items.len();
+    if length < 2 {
         return;
     }
     let mut sorter = Sorter {
         compare,
         runs: Vec::new(),
         min_gallop: MIN_GALLOP_WINS,
+        chromium: length <= CHROMIUM_EXACT_MAX,
         marker: PhantomData,
     };
-    sorter.sort(items);
+    if length < SHORT_ARRAY {
+        sorter.binary_insertion_sort(items, 0, 1, length);
+    } else {
+        sorter.sort(items);
+    }
+}
+
+/// The minimum run length of Chromium 151: `n` shifted right until it is below 64, with no rounding up.
+fn chromium_min_run_length(mut n: usize) -> usize {
+    while n >= 64 {
+        n >>= 1;
+    }
+    n
 }
 
 /// `ComputeMinRunLength`: the length of the shortest run that the sort builds, for `n` elements.
@@ -299,7 +342,11 @@ impl<T: Copy, F: Fn(T, T) -> f64> Sorter<T, F> {
     fn sort(&mut self, work: &mut [T]) {
         let mut remaining = work.len();
         let mut low = 0;
-        let min_run = compute_min_run_length(remaining);
+        let min_run = if self.chromium {
+            chromium_min_run_length(remaining)
+        } else {
+            compute_min_run_length(remaining)
+        };
         while remaining != 0 {
             let mut current = self.count_and_make_run(work, low, low + remaining);
             if current < min_run {
@@ -379,27 +426,39 @@ impl<T: Copy, F: Fn(T, T) -> f64> Sorter<T, F> {
         }
     }
 
-    /// `RunInvariantEstablished`: the run `n` on the stack is longer than the sum of the two runs above it.
+    /// `RunInvariantEstablished`: the run `n - 2` on the stack is longer than the sum of the two runs above it
+    /// (at least as long, in Chromium).
     fn run_invariant_established(&self, n: usize) -> bool {
         if n < 2 {
             return true;
         }
-        self.runs[n - 2].length > self.runs[n - 1].length + self.runs[n].length
+        let below = self.runs[n - 2].length;
+        let above = self.runs[n - 1].length + self.runs[n].length;
+        if self.chromium {
+            below >= above
+        } else {
+            below > above
+        }
     }
 
-    /// `MergeCollapse`: merges the pending runs until the stack keeps its invariant.
+    /// `MergeCollapse`: merges the pending runs until the stack keeps its invariant. In Chromium a tie of the runs
+    /// around the top pair merges the lower pair, and the top pair merges only if its lower run is shorter.
     fn merge_collapse(&mut self, work: &mut [T]) {
         while self.runs.len() > 1 {
             let mut n = self.runs.len() - 2;
             if !self.run_invariant_established(n + 1) || !self.run_invariant_established(n) {
-                if self.runs[n - 1].length < self.runs[n + 1].length {
+                let (lower, upper) = (self.runs[n - 1].length, self.runs[n + 1].length);
+                if lower < upper || (self.chromium && lower == upper) {
                     n -= 1;
                 }
                 self.merge_at(work, n);
-            } else if self.runs[n].length <= self.runs[n + 1].length {
-                self.merge_at(work, n);
             } else {
-                break;
+                let (lower, upper) = (self.runs[n].length, self.runs[n + 1].length);
+                if lower < upper || (!self.chromium && lower == upper) {
+                    self.merge_at(work, n);
+                } else {
+                    break;
+                }
             }
         }
     }
@@ -433,6 +492,21 @@ impl<T: Copy, F: Fn(T, T) -> f64> Sorter<T, F> {
         self.runs.pop();
 
         let key_right = work[base_b];
+        if self.chromium && length_b == 1 {
+            // Chromium: a run of one element goes after the elements of the first run that it does not precede,
+            // found by a binary search, with no galloping.
+            let (mut left, mut right) = (0, length_a);
+            while left < right {
+                let mid = left + ((right - left) >> 1);
+                if self.order(key_right, work[base_a + mid]) < 0.0 {
+                    right = mid;
+                } else {
+                    left = mid + 1;
+                }
+            }
+            work[base_a + left..=base_b].rotate_right(1);
+            return;
+        }
         let k = self.gallop_right(work, key_right, base_a, length_a, 0);
         base_a += k;
         length_a -= k;
@@ -886,7 +960,7 @@ mod tests {
         assert_eq!(items, vec![1, 2]);
     }
     /// The indices of `keys`, sorted with the comparator `|a - b| > 1 ? a - b : index order`, which is not a total
-    /// order. Each expected order below is V8's, from node 24, for the same comparator.
+    /// order. Each expected order below is Chromium 151's for the same comparator (node 24 gives the same here).
     fn sorted_by_threshold(keys: &[f64]) -> Vec<usize> {
         let mut items: Vec<(f64, usize)> = keys.iter().enumerate().map(|(i, &k)| (k, i)).collect();
         js_sort_by(&mut items, |a, b| {
