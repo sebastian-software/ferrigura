@@ -51,7 +51,7 @@ const CLASS_KEYS_WITHOUT_DEFAULT: &[&str] = &[
 /// `railroad` object sets the colours, the typography and the marker and comment colours to
 /// `undefined` (`railroad` keeps the schema's other defaults), so the theme supplies them, and the
 /// configuration has no value for them unless a directive gives one (`docs-port/railroad/PLAN.md`,
-/// section 4). They are fields without a default here, as the class keys are.
+/// section 8). They are fields without a default here, as the class keys are.
 const RAILROAD_KEYS_WITHOUT_DEFAULT: &[&str] = &[
     "commentFill",
     "commentStroke",
