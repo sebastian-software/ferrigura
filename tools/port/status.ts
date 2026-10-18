@@ -228,7 +228,13 @@ for (const type of Object.keys(suites)) {
 }
 
 /** The name of a type's row in the status tables, where it is not the type itself. */
-const rowNames: Record<string, string> = { er: 'ER', gitgraph: 'gitGraph', c4: 'C4' };
+const rowNames: Record<string, string> = {
+  er: 'ER',
+  gitgraph: 'gitGraph',
+  c4: 'C4',
+  treeView: 'tree view',
+  usecase: 'use case',
+};
 
 /** Rewrites the parser, specs and differential cells of one row of a type with suites. */
 function rewriteRow(line: string, type: string): string {
