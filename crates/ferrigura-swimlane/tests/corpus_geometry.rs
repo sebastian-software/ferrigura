@@ -13,8 +13,9 @@ mod support;
 use std::collections::BTreeMap;
 
 use ferrigura_swimlane::testing::{
-    apply_bt_direction_transform, apply_lr_direction_transform, layout_data_from_json,
-    layout_data_to_json, orthogonalize_and_simplify_edges,
+    apply_bt_direction_transform, apply_lr_direction_transform,
+    clip_edge_endpoints_to_node_boundaries, layout_data_from_json, layout_data_to_json,
+    orthogonalize_and_simplify_edges, prepare_edge_endpoints_for_renderer,
 };
 use ferrigura_swimlane::{Direction, LayoutData};
 use support::corpus::{Case, compare_snapshot, load_cases};
@@ -27,6 +28,8 @@ const PORTED: &[&str] = &[
     "applyLrDirectionTransform",
     "applyBtDirectionTransform",
     "orthogonalizePolyline+simplifyPolyline",
+    "clipEdgeEndpointsToNodeBoundaries",
+    "prepareEdgeEndpointsForRenderer",
 ];
 
 /// The runner of a ported pass, or `None` for a pass that this file does not check.
@@ -35,6 +38,8 @@ fn ported(name: &str) -> Option<PassFn> {
         "applyLrDirectionTransform" => Some(run_lr_direction_transform),
         "applyBtDirectionTransform" => Some(run_bt_direction_transform),
         "orthogonalizePolyline+simplifyPolyline" => Some(run_orthogonalize_and_simplify),
+        "clipEdgeEndpointsToNodeBoundaries" => Some(run_clip_edge_endpoints),
+        "prepareEdgeEndpointsForRenderer" => Some(run_prepare_edge_endpoints),
         _ => None,
     }
 }
@@ -45,6 +50,14 @@ fn run_lr_direction_transform(layout: &mut LayoutData, direction: Direction) {
 
 fn run_bt_direction_transform(layout: &mut LayoutData, _direction: Direction) {
     apply_bt_direction_transform(layout);
+}
+
+fn run_clip_edge_endpoints(layout: &mut LayoutData, _direction: Direction) {
+    clip_edge_endpoints_to_node_boundaries(layout);
+}
+
+fn run_prepare_edge_endpoints(layout: &mut LayoutData, _direction: Direction) {
+    prepare_edge_endpoints_for_renderer(layout);
 }
 
 fn run_orthogonalize_and_simplify(layout: &mut LayoutData, _direction: Direction) {
