@@ -16,9 +16,9 @@ use std::collections::BTreeMap;
 use ferrigura_swimlane::testing::{
     collapse_redundant_rectangular_doglegs, layout_data_from_json, layout_data_to_json,
     lift_obstacle_hugging_same_side_rails, lift_top_lane_title_bands_above_rails,
-    reassign_crossing_external_rail_channels, separate_shared_rendered_terminal_lanes,
-    shift_left_lane_title_bands_left_of_rails, shortcut_redundant_orthogonal_jogs,
-    swap_destination_terminal_tails_to_reduce_crossings,
+    reassign_crossing_external_rail_channels, resolve_rendered_orthogonal_crossings,
+    separate_shared_rendered_terminal_lanes, shift_left_lane_title_bands_left_of_rails,
+    shortcut_redundant_orthogonal_jogs, swap_destination_terminal_tails_to_reduce_crossings,
 };
 use ferrigura_swimlane::{Direction, LayoutData};
 use support::corpus::{Case, compare_snapshot, load_cases};
@@ -34,6 +34,7 @@ const PORTED: &[&str] = &[
     "liftObstacleHuggingSameSideRails",
     "swapDestinationTerminalTailsToReduceCrossings",
     "reassignCrossingExternalRailChannels",
+    "resolveRenderedOrthogonalCrossings",
     "shortcutRedundantOrthogonalJogs",
     "liftTopLaneTitleBandsAboveRails",
     "shiftLeftLaneTitleBandsLeftOfRails",
@@ -51,6 +52,7 @@ fn ported(name: &str) -> Option<PassFn> {
         "reassignCrossingExternalRailChannels" => {
             Some(run_reassign_crossing_external_rail_channels)
         }
+        "resolveRenderedOrthogonalCrossings" => Some(run_resolve_rendered_orthogonal_crossings),
         "shortcutRedundantOrthogonalJogs" => Some(run_shortcut_redundant_orthogonal_jogs),
         "liftTopLaneTitleBandsAboveRails" => Some(run_lift_top_lane_title_bands_above_rails),
         "shiftLeftLaneTitleBandsLeftOfRails" => Some(run_shift_left_lane_title_bands_left_of_rails),
@@ -79,6 +81,10 @@ fn run_swap_destination_terminal_tails_to_reduce_crossings(
 
 fn run_reassign_crossing_external_rail_channels(layout: &mut LayoutData, _direction: Direction) {
     reassign_crossing_external_rail_channels(layout);
+}
+
+fn run_resolve_rendered_orthogonal_crossings(layout: &mut LayoutData, _direction: Direction) {
+    resolve_rendered_orthogonal_crossings(layout);
 }
 
 fn run_shortcut_redundant_orthogonal_jogs(layout: &mut LayoutData, _direction: Direction) {

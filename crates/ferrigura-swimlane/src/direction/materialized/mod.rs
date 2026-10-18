@@ -7,7 +7,9 @@
 
 #![allow(dead_code)]
 
+mod candidates;
 mod common;
+mod crossings;
 mod destination_tails;
 mod doglegs;
 mod external_rails;
@@ -16,6 +18,7 @@ mod rails;
 mod terminal_lanes;
 mod title_bands;
 
+pub use crossings::resolve_rendered_orthogonal_crossings;
 pub use destination_tails::swap_destination_terminal_tails_to_reduce_crossings;
 pub use doglegs::collapse_redundant_rectangular_doglegs;
 pub use external_rails::reassign_crossing_external_rail_channels;
