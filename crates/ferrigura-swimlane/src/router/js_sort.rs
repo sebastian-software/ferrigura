@@ -656,4 +656,39 @@ mod tests {
         sort_by_js(&mut items, |a, b| f64::from(a - b));
         assert_eq!(items, vec![1, 2]);
     }
+    /// The indices of `keys`, sorted with the comparator `|a - b| > 1 ? a - b : index order`, which is not a total
+    /// order. Each expected order below is V8's, from node 24, for the same comparator.
+    fn sorted_by_threshold(keys: &[f64]) -> Vec<usize> {
+        let mut items: Vec<(f64, usize)> = keys.iter().enumerate().map(|(i, &k)| (k, i)).collect();
+        sort_by_js(&mut items, |a, b| {
+            if (a.0 - b.0).abs() > 1.0 {
+                a.0 - b.0
+            } else {
+                a.1 as f64 - b.1 as f64
+            }
+        });
+        items.iter().map(|item| item.1).collect()
+    }
+
+    #[test]
+    fn a_threshold_comparator_sorts_as_v8_sorts_it() {
+        let small = [3.5, 0.0, 0.5, 4.25, 2.0, 2.2, 6.0, 1.0, 1.5, 5.5, 0.25, 3.0];
+        assert_eq!(
+            sorted_by_threshold(&small),
+            vec![1, 2, 10, 4, 7, 5, 8, 0, 11, 3, 6, 9]
+        );
+        // Seventy keys, which is more than a binary insertion sort takes: the merges run.
+        let large: Vec<f64> = (0..70)
+            .map(|i| ((i * 37) % 23) as f64 / 4.0 + (i % 5) as f64 * 0.7)
+            .collect();
+        assert_eq!(
+            sorted_by_threshold(&large),
+            vec![
+                0, 5, 10, 15, 20, 25, 30, 46, 35, 51, 2, 7, 23, 61, 38, 40, 56, 12, 28, 33, 66, 43,
+                45, 1, 17, 48, 50, 4, 6, 22, 37, 53, 55, 42, 58, 60, 65, 69, 27, 32, 9, 11, 14, 16,
+                47, 63, 21, 68, 26, 3, 19, 8, 24, 13, 29, 31, 18, 34, 36, 52, 57, 67, 39, 41, 62,
+                44, 49, 54, 59, 64
+            ]
+        );
+    }
 }
