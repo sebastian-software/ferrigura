@@ -11,6 +11,8 @@
 //!   fast path (937-1061), the pipes of the anchors and the search;
 //! - `search`: the crossing penalty (278-327), the L-shaped candidates and the A* search (1152-1324), and the
 //!   simplification of a long path (1329-1493);
+//! - `crossing`: the crossing reduction, phase 2 (1618-2004);
+//! - `rebuild`: the geometry rebuild, phase 3 (2006-2205), and the write-back to the layout (2210-2282);
 //! - `js_sort`: the sort of `Array.prototype.sort` in V8, which the comparators of the reference need.
 //!
 //! The port keeps the operand order and the order of accumulation of the reference, uses `js_max` and `js_min`
