@@ -23,4 +23,4 @@ Considered and not chosen:
 - The order of the work: the cache first, with no change to the API or the output; then the `Renderer`; then the typed sections and theme tokens, renderer by renderer, before the P3 renderers are written, so that they start on the new contract.
 - The theme tokens become a Rust type checked against the redux themes' variables, so a token a renderer reads exists at compile time rather than as a missing key at run time. `themeVariables` stay strings at the boundary and are parsed once per renderer.
 - The output does not change. Every differential and geometry check guards each step; a step that moves a single byte of an SVG is a bug.
-- Decided by Sebastian on 2026-10-18.
+- Decided by Sebastian on 2026-10-18. The steps are issues [#2](https://github.com/sebastian-software/ferrigura/issues/2) (the cache), [#3](https://github.com/sebastian-software/ferrigura/issues/3) (the `Renderer`) and [#4](https://github.com/sebastian-software/ferrigura/issues/4) (the typed views); [#5](https://github.com/sebastian-software/ferrigura/issues/5) measures the same change in the Mermaid fork.
