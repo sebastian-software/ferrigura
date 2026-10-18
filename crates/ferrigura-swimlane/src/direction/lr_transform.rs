@@ -11,7 +11,8 @@
 
 use indexmap::IndexMap;
 
-use crate::direction::geometry::{js_sort_by, truthy_text};
+use crate::direction::geometry::truthy_text;
+use crate::js::js_sort_by;
 use crate::math::{js_max, js_min};
 use crate::model::{Direction, LayoutData, Node, Point, Rect};
 

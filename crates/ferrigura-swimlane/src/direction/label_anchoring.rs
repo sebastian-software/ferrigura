@@ -15,10 +15,11 @@
 use indexmap::IndexMap;
 
 use crate::direction::geometry::{
-    EPS, dedupe_consecutive_points, inflate_rect, js_sign_value, js_sort_by, rect_contains_rect,
+    EPS, dedupe_consecutive_points, inflate_rect, js_sign_value, rect_contains_rect,
     rect_from_center_size, rect_of_node_bounds, rects_overlap, segment_bounds_overlap_rect,
     truthy_text,
 };
+use crate::js::js_sort_by;
 use crate::math::{js_max, js_min};
 use crate::model::{LayoutData, Node, Point, Rect};
 

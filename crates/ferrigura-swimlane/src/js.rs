@@ -229,6 +229,63 @@ pub fn try_locale_compare(a: &str, b: &str) -> Result<Ordering, Error> {
     Ok(Ordering::Equal)
 }
 
+/// `Array.prototype.sort(compare)` on `items`, in the order V8 gives for fewer than 64 elements: a first run
+/// (`CountAndMakeRun`), then a binary insertion of the rest (`BinaryInsertionSort`). `compare` returns the number
+/// the JavaScript comparator returns, and a NaN counts as `+0`, as the specification and V8 give it.
+///
+/// This is not `slice::sort_by`: that sort may panic on a comparator that is not a total order, and `a - b` is
+/// not one when a key is NaN. For 64 elements or more V8 runs TimSort. With a consistent comparator every stable
+/// sort gives the same order, which this one gives too; with a NaN key at that length the order can differ from
+/// V8's.
+pub fn js_sort_by<T: Copy>(items: &mut [T], compare: impl Fn(T, T) -> f64) {
+    // `SortCompareUserFn`: a NaN result is `+0`, that is "equal".
+    let compare = |a: T, b: T| {
+        let order = compare(a, b);
+        if order.is_nan() { 0.0 } else { order }
+    };
+    let len = items.len();
+    if len < 2 {
+        return;
+    }
+
+    // CountAndMakeRun: the first run is ascending, or strictly descending and then reversed.
+    let is_descending = compare(items[1], items[0]) < 0.0;
+    let mut run = 2;
+    let mut previous = items[1];
+    while run < len {
+        let current = items[run];
+        let order = compare(current, previous);
+        let ends_run = if is_descending {
+            order >= 0.0
+        } else {
+            order < 0.0
+        };
+        if ends_run {
+            break;
+        }
+        previous = current;
+        run += 1;
+    }
+    if is_descending {
+        items[..run].reverse();
+    }
+
+    // BinaryInsertionSort: each following element goes to its place among the sorted elements before it.
+    for start in run..len {
+        let pivot = items[start];
+        let (mut left, mut right) = (0, start);
+        while left < right {
+            let mid = left + ((right - left) >> 1);
+            if compare(pivot, items[mid]) < 0.0 {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+        items[left..=start].rotate_right(1);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

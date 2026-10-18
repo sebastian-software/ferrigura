@@ -11,7 +11,8 @@
 
 use indexmap::{IndexMap, IndexSet};
 
-use crate::math::{js_max, js_min, js_sign_order};
+use crate::js::js_sort_by;
+use crate::math::{js_max, js_min};
 use crate::model::{LayoutData, Node, Rect};
 
 /// A node id. Ids are ASCII (see the entry check of the core), so byte order is code-unit order.
@@ -404,7 +405,7 @@ pub fn write_back_to_layout_data(
     // The lane widths, from the centres of the lanes in order of x.
     let x_of = |index: usize| layout.nodes[index].x.unwrap_or(0.0);
     let mut sorted_lanes = top_level.clone();
-    sorted_lanes.sort_by(|&a, &b| js_sign_order(x_of(a) - x_of(b)));
+    js_sort_by(&mut sorted_lanes, |a, b| x_of(a) - x_of(b));
 
     let mut lane_ids: Vec<NodeId> = Vec::new();
     let mut centers: Vec<f64> = Vec::new();

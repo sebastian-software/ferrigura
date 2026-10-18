@@ -14,8 +14,8 @@ use std::collections::HashSet;
 use indexmap::IndexMap;
 
 use crate::helpers::{EdgeRef, Graph, Layering, NodeId, OrderedLayers};
+use crate::js::js_sort_by;
 use crate::js::locale_compare;
-use crate::math::js_sign_order;
 use crate::phase0::{build_layer_index, count_inversions};
 use crate::phase2_options::{build_top_lane_map, resolve_top_lane_order, top_lane_of};
 
@@ -34,7 +34,7 @@ fn median(values: &[f64]) -> f64 {
         return f64::INFINITY;
     }
     let mut a = values.to_vec();
-    a.sort_by(|x, y| js_sign_order(x - y));
+    js_sort_by(&mut a, |x, y| x - y);
     if n % 2 == 1 {
         return a[(n - 1) / 2];
     }
@@ -130,22 +130,33 @@ fn sort_by_heuristic(
     current: &IndexMap<NodeId, usize>,
 ) -> Vec<NodeId> {
     let positions = |id: &str| neighbor_positions.get(id).map_or(&[][..], Vec::as_slice);
-    let mut sorted = nodes.to_vec();
-    sorted.sort_by(|a, b| {
+    // The reference sorts the nodes themselves; the port sorts their indices, which is the same permutation.
+    let mut order: Vec<usize> = (0..nodes.len()).collect();
+    js_sort_by(&mut order, |i, j| {
+        let (a, b) = (nodes[i].as_str(), nodes[j].as_str());
         let sa = median(positions(a));
         let sb = median(positions(b));
         if sa == sb {
-            return current_order_tie_break(a, b, current);
+            return sign_value(current_order_tie_break(a, b, current));
         }
         if !sa.is_finite() {
-            return Ordering::Greater;
+            return 1.0;
         }
         if !sb.is_finite() {
-            return Ordering::Less;
+            return -1.0;
         }
-        js_sign_order(sa - sb)
+        sa - sb
     });
-    sorted
+    order.into_iter().map(|i| nodes[i].clone()).collect()
+}
+
+/// The sign of an ordering as the number a comparator returns: `-1`, `0` or `1`.
+fn sign_value(order: Ordering) -> f64 {
+    match order {
+        Ordering::Less => -1.0,
+        Ordering::Equal => 0.0,
+        Ordering::Greater => 1.0,
+    }
 }
 
 /// `reorderLayer`: the target layer in a new order. With lanes, the nodes of each lane keep together, in
