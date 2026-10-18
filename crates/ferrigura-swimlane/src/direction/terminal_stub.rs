@@ -11,12 +11,12 @@ use std::collections::HashSet;
 
 use indexmap::IndexMap;
 
-use super::geometry_stopgap::{
+use super::geometry::{
     RectEntry, collect_node_rect_entries, dedupe_consecutive_points, is_horizontal_segment,
-    is_vertical_segment, non_empty, orthogonal_segments_strictly_cross, point_inside_rect,
-    rect_of_node_bounds, same_x, same_y, segment_hits_any_rect,
+    is_vertical_segment, orthogonal_segments_strictly_cross, point_inside_rect,
+    rect_of_node_bounds, same_x, same_y, segment_hits_any_rect, truthy_text,
 };
-use super::node_by_id_map;
+use super::{node_by_id_map, nodes_by_id};
 use crate::js::to_fixed;
 use crate::model::{Edge, LayoutData, Node, Point};
 
@@ -124,8 +124,8 @@ fn collapsed(
         return None;
     }
 
-    let dst_id = non_empty(edge.end.as_deref());
-    let src_id = non_empty(edge.start.as_deref());
+    let dst_id = truthy_text(edge.end.as_deref());
+    let src_id = truthy_text(edge.start.as_deref());
     let dst = dst_id
         .and_then(|id| node_by_id.get(id))
         .map(|&node| &nodes[node])?;
@@ -214,7 +214,7 @@ fn collapsed(
     points.push(new_end);
 
     // The label moves to the middle of the longest axis-aligned segment that holds it, when the label has a size.
-    let label = non_empty(edge.label_node_id.as_deref())
+    let label = truthy_text(edge.label_node_id.as_deref())
         .and_then(|id| node_by_id.get(id))
         .and_then(|&label_index| {
             let label_node = &nodes[label_index];
@@ -250,7 +250,7 @@ pub(crate) fn collapse_short_terminal_stub(data: &mut LayoutData) {
     let LayoutData { nodes, edges, .. } = data;
     let node_by_id = node_by_id_map(nodes.as_slice());
     let (real_node_rects, label_rects) =
-        collect_node_rect_entries(node_by_id.values().map(|&index| &nodes[index]));
+        collect_node_rect_entries(&nodes_by_id(nodes, &node_by_id));
     for index in 0..edges.len() {
         let update = collapsed(
             edges,

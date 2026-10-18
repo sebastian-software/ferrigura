@@ -9,9 +9,9 @@ use std::collections::HashMap;
 
 use indexmap::IndexMap;
 
-use super::geometry_stopgap::{
-    NodeBounds, RectEntry, classify_three_segment_route, collect_real_node_bounds,
-    get_node_pair_geometry, non_empty, segment_conflicts_with_any_edge, segment_hits_any_rect,
+use super::geometry::{
+    NodeBoundsInfo, RectEntry, classify_three_segment_route, collect_real_node_bounds,
+    get_node_pair_geometry, segment_conflicts_with_any_edge, segment_hits_any_rect, truthy_text,
 };
 use crate::model::{Edge, LayoutData, Node, Point};
 
@@ -71,7 +71,7 @@ fn consider(
     axis: Axis,
     max_half: &mut f64,
 ) {
-    let Some(dim) = non_empty(label_id).and_then(|id| dims.get(id)) else {
+    let Some(dim) = truthy_text(label_id).and_then(|id| dims.get(id)) else {
         return;
     };
     let half = match axis {
@@ -106,8 +106,8 @@ fn label_clearance_for(
             continue;
         }
         let (Some(other_src), Some(other_dst)) = (
-            non_empty(other.start.as_deref()),
-            non_empty(other.end.as_deref()),
+            truthy_text(other.start.as_deref()),
+            truthy_text(other.end.as_deref()),
         ) else {
             continue;
         };
@@ -127,7 +127,7 @@ fn label_clearance_for(
 fn straightened(
     edges: &[Edge],
     index: usize,
-    node_info_by_id: &IndexMap<String, NodeBounds>,
+    node_info_by_id: &IndexMap<String, NodeBoundsInfo>,
     real_node_rects: &[RectEntry],
     dims: &HashMap<String, LabelDim>,
 ) -> Option<Vec<Point>> {
@@ -141,9 +141,9 @@ fn straightened(
     if pair.collinear_x == pair.collinear_y {
         return None;
     }
-    let src_id = non_empty(edge.start.as_deref())?;
-    let dst_id = non_empty(edge.end.as_deref())?;
-    let (src, dst) = (pair.src, pair.dst);
+    let src_id = truthy_text(edge.start.as_deref())?;
+    let dst_id = truthy_text(edge.end.as_deref())?;
+    let (src, dst) = (&pair.src_info, &pair.dst_info);
 
     let (target_src, target_dst) = if pair.collinear_x {
         let dst_below = dst.cy > src.cy;

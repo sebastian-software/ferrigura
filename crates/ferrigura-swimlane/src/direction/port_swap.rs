@@ -8,10 +8,10 @@
 
 use indexmap::IndexMap;
 
-use super::geometry_stopgap::{
-    NodeBounds, RectEntry, RouteKind, classify_three_segment_route, collect_real_node_bounds,
-    dedupe_consecutive_points, get_node_pair_geometry, non_empty, same_point,
-    segment_conflicts_with_any_edge, segment_hits_any_rect,
+use super::geometry::{
+    NodeBoundsInfo, RectEntry, RouteKind, classify_three_segment_route, collect_real_node_bounds,
+    dedupe_consecutive_points, get_node_pair_geometry, same_point, segment_conflicts_with_any_edge,
+    segment_hits_any_rect, truthy_text,
 };
 use crate::model::{Edge, LayoutData, Node, Point};
 
@@ -30,7 +30,7 @@ const TRY_DELTAS: [f64; 5] = [
 fn swapped(
     edges: &[Edge],
     index: usize,
-    node_info_by_id: &IndexMap<String, NodeBounds>,
+    node_info_by_id: &IndexMap<String, NodeBoundsInfo>,
     real_node_rects: &[RectEntry],
 ) -> Option<Vec<Point>> {
     let edge = &edges[index];
@@ -52,9 +52,9 @@ fn swapped(
     if pair.collinear_x || pair.collinear_y {
         return None;
     }
-    let src_id = non_empty(edge.start.as_deref())?;
-    let dst_id = non_empty(edge.end.as_deref())?;
-    let (src, dst) = (pair.src, pair.dst);
+    let src_id = truthy_text(edge.start.as_deref())?;
+    let dst_id = truthy_text(edge.end.as_deref())?;
+    let (src, dst) = (&pair.src_info, &pair.dst_info);
     let src_rect = src.rect;
 
     for delta in TRY_DELTAS {

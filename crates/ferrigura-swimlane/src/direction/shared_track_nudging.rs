@@ -8,12 +8,12 @@
 
 use indexmap::IndexMap;
 
-use super::geometry_stopgap::{
+use super::geometry::{
     EPS, OrthogonalSegment, RectEntry, collect_node_rect_entries, dedupe_consecutive_points,
-    non_empty, orthogonal_segments_for_points, orthogonal_segments_strictly_cross, overlap_length,
-    rect_of_node_bounds, segment_hits_any_rect,
+    orthogonal_segments_for_points, orthogonal_segments_strictly_cross, overlap_length,
+    rect_of_node_bounds, segment_hits_any_rect, truthy_text,
 };
-use super::node_by_id_map;
+use super::{node_by_id_map, nodes_by_id};
 use crate::model::{Edge, LayoutData, Node, Point, Rect};
 
 const EPS_LOCAL: f64 = 1e-3;
@@ -108,9 +108,9 @@ fn candidate_is_safe(
 
     let endpoint_ids: Vec<&str> = [edge.start.as_deref(), edge.end.as_deref()]
         .into_iter()
-        .filter_map(|id| non_empty(id))
+        .filter_map(|id| truthy_text(id))
         .collect();
-    let own_label_ids: Vec<&str> = non_empty(edge.label_node_id.as_deref())
+    let own_label_ids: Vec<&str> = truthy_text(edge.label_node_id.as_deref())
         .into_iter()
         .collect();
     for segment in &candidate_segments {
@@ -208,10 +208,10 @@ fn source_detour_context(
         return None;
     }
 
-    let source_node = non_empty(edge.start.as_deref())
+    let source_node = truthy_text(edge.start.as_deref())
         .and_then(|id| node_by_id.get(id))
         .map(|&index| &nodes[index]);
-    let target_node = non_empty(edge.end.as_deref())
+    let target_node = truthy_text(edge.end.as_deref())
         .and_then(|id| node_by_id.get(id))
         .map(|&index| &nodes[index]);
     let source_rect = source_node.and_then(rect_of_node_bounds);
@@ -385,7 +385,7 @@ pub(crate) fn nudge_shared_interior_subpaths(data: &mut LayoutData) {
     let LayoutData { nodes, edges, .. } = data;
     let nodes: &[Node] = nodes;
     let node_by_id = node_by_id_map(nodes);
-    let (real, labels) = collect_node_rect_entries(node_by_id.values().map(|&index| &nodes[index]));
+    let (real, labels) = collect_node_rect_entries(&nodes_by_id(nodes, &node_by_id));
     let rects = Rects { real, labels };
 
     for _ in 0..MAX_ITERATIONS {
