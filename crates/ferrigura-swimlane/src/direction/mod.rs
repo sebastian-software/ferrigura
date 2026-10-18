@@ -12,6 +12,7 @@ pub(crate) mod endpoint_clip;
 pub(crate) mod geometry;
 pub(crate) mod label_anchoring;
 pub(crate) mod lr_transform;
+pub(crate) mod materialized;
 pub(crate) mod port_swap;
 pub(crate) mod shared_track_nudging;
 pub(crate) mod sibling_shared_face_routing;
