@@ -7,6 +7,7 @@ use indexmap::IndexMap;
 
 use crate::model::Node;
 
+pub(crate) mod detour_simplification;
 pub(crate) mod endpoint_clip;
 pub(crate) mod geometry;
 pub(crate) mod label_anchoring;

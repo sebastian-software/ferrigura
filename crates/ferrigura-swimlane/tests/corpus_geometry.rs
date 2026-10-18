@@ -15,7 +15,7 @@ use std::collections::BTreeMap;
 use ferrigura_swimlane::testing::{
     anchor_labels_to_polyline, apply_bt_direction_transform, apply_lr_direction_transform,
     clip_edge_endpoints_to_node_boundaries, layout_data_from_json, layout_data_to_json,
-    orthogonalize_and_simplify_edges, prepare_edge_endpoints_for_renderer,
+    orthogonalize_and_simplify_edges, prepare_edge_endpoints_for_renderer, simplify_detoured_edges,
 };
 use ferrigura_swimlane::{Direction, LayoutData};
 use support::corpus::{Case, compare_snapshot, load_cases};
@@ -31,6 +31,7 @@ const PORTED: &[&str] = &[
     "clipEdgeEndpointsToNodeBoundaries",
     "prepareEdgeEndpointsForRenderer",
     "anchorLabelsToPolyline",
+    "simplifyDetouredEdges",
 ];
 
 /// The runner of a ported pass, or `None` for a pass that this file does not check.
@@ -42,6 +43,7 @@ fn ported(name: &str) -> Option<PassFn> {
         "clipEdgeEndpointsToNodeBoundaries" => Some(run_clip_edge_endpoints),
         "prepareEdgeEndpointsForRenderer" => Some(run_prepare_edge_endpoints),
         "anchorLabelsToPolyline" => Some(run_anchor_labels),
+        "simplifyDetouredEdges" => Some(run_simplify_detoured_edges),
         _ => None,
     }
 }
@@ -64,6 +66,10 @@ fn run_prepare_edge_endpoints(layout: &mut LayoutData, _direction: Direction) {
 
 fn run_anchor_labels(layout: &mut LayoutData, _direction: Direction) {
     anchor_labels_to_polyline(layout);
+}
+
+fn run_simplify_detoured_edges(layout: &mut LayoutData, _direction: Direction) {
+    simplify_detoured_edges(layout);
 }
 
 fn run_orthogonalize_and_simplify(layout: &mut LayoutData, _direction: Direction) {
