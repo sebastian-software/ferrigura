@@ -6,8 +6,8 @@
 
 mod db;
 mod grammar;
-mod scanner;
-mod shapes;
+pub(crate) mod scanner;
+pub(crate) mod shapes;
 pub(crate) mod unicode;
 
 use std::error::Error;
@@ -96,7 +96,7 @@ pub fn parse_with_warnings(
 
 /// `}\s*\n` becomes `}\n`: the blanks after a closing brace are dropped up to the last line
 /// break before the next text, as the parser wrapper of the reference does.
-fn close_braces(text: &str) -> String {
+pub(crate) fn close_braces(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     while let Some(index) = rest.find('}') {
