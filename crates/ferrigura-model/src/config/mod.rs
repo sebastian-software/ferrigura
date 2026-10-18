@@ -16,7 +16,7 @@ mod lenient;
 
 pub use generated::*;
 pub use layers::{
-    assign_with_depth, deep_merge, effective, sanitize_directive, user_theme_variables,
+    SiteConfig, assign_with_depth, deep_merge, effective, sanitize_directive, user_theme_variables,
 };
 pub use lenient::{ConfigWarning, Outcome};
 

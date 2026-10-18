@@ -26,7 +26,7 @@ A complete Rust implementation that renders Mermaid diagram text to SVG without 
 
 **Delivered as**
 
-- a Rust library with one entry point, `render(text, config) → svg`,
+- a Rust library whose entry point is a `Renderer` made once for a configuration, `render(text) → svg`, with `render(text, config) → svg` as a shorthand,
 - a command-line tool,
 - an npm package for Node.js, built with napi-rs as a native addon with prebuilt binaries per platform.
 
@@ -56,16 +56,16 @@ Diagram types are ported in tiers. Tier 3 is not ported by us: each type gets a 
 
 A Cargo workspace under `crates/`, next to the TypeScript packages. Diagram types are modules inside these crates, not crates of their own.
 
-| Crate              | Responsibility                                           | License |
-| ------------------ | -------------------------------------------------------- | ------- |
-| `ferrigura-syntax` | Shared lexer base and the parsers of all diagram types   | MIT     |
-| `ferrigura-model`  | Diagram models, configuration, themes                    | MIT     |
-| `ferrigura-text`   | Fonts, text measurement, line breaking                   | MIT     |
-| `ferrigura-elk`    | ELK Layered, ported from the Java sources                | EPL-2.0 |
-| `ferrigura-render` | Layout integration and SVG output                        | MIT     |
-| `ferrigura`        | Public facade: `render(text, config) → svg`              | MIT     |
-| `ferrigura-cli`    | Command-line tool                                        | MIT     |
-| `ferrigura-node`   | Node.js addon (napi-rs), published to npm as `ferrigura` | MIT     |
+| Crate              | Responsibility                                              | License |
+| ------------------ | ----------------------------------------------------------- | ------- |
+| `ferrigura-syntax` | Shared lexer base and the parsers of all diagram types      | MIT     |
+| `ferrigura-model`  | Diagram models, configuration, themes                       | MIT     |
+| `ferrigura-text`   | Fonts, text measurement, line breaking                      | MIT     |
+| `ferrigura-elk`    | ELK Layered, ported from the Java sources                   | EPL-2.0 |
+| `ferrigura-render` | Layout integration and SVG output                           | MIT     |
+| `ferrigura`        | Public facade: `Renderer`, and `render(text, config) → svg` | MIT     |
+| `ferrigura-cli`    | Command-line tool                                           | MIT     |
+| `ferrigura-node`   | Node.js addon (napi-rs), published to npm as `ferrigura`    | MIT     |
 
 **Building blocks**
 

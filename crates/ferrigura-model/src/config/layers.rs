@@ -43,42 +43,83 @@ const LOOKS: [&str; 3] = ["classic", "handDrawn", "neo"];
 /// the overrides applied, as `updateCurrentConfig` computes them.
 #[must_use]
 pub fn effective(site: Option<&Value>, diagram_key: Option<&str>, directive: &Value) -> Value {
-    let defaults = cached_defaults();
-    let site_delta = site.cloned().unwrap_or_else(|| Value::Object(Map::new()));
+    SiteConfig::new(site).effective(diagram_key, directive)
+}
 
-    let mut site_config = Value::Object(Map::new());
-    assign_with_depth(&mut site_config, defaults, 2);
-    assign_with_depth(&mut site_config, &site_delta, 2);
+/// The site configuration: what `initialize` gives, merged onto the defaults, with the values that
+/// the layers below read. A renderer resolves it once, so that a render merges only the diagram's own
+/// front matter and directives on top of it, with [`SiteConfig::effective`]. [`effective`] is the same
+/// merge in one call.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SiteConfig {
+    /// What the user passed to `initialize`, or an empty object: the reference's `site_delta`.
+    settings: Value,
+    /// The defaults with the settings on top: the reference's `site_config`.
+    merged: Value,
+    /// The keys that a diagram may not set, from the merged `secure` list.
+    secure: Vec<String>,
+}
 
-    let mut directives = vec![directive.clone()];
-    for item in &mut directives {
-        sanitize_directive(item);
-        add_font_family_variable(item);
+impl SiteConfig {
+    /// The site configuration of the settings given to `initialize`, or of the defaults when there are
+    /// none.
+    #[must_use]
+    pub fn new(site: Option<&Value>) -> Self {
+        let settings = site.cloned().unwrap_or_else(|| Value::Object(Map::new()));
+        let mut merged = Value::Object(Map::new());
+        assign_with_depth(&mut merged, cached_defaults(), 2);
+        assign_with_depth(&mut merged, &settings, 2);
+        let secure = secure_keys(&merged);
+        Self {
+            settings,
+            merged,
+            secure,
+        }
     }
 
-    let secure = secure_keys(&site_config);
-    let mut sum = Value::Object(Map::new());
-    for item in &mut directives {
-        sanitize(item, &secure);
-        assign_with_depth(&mut sum, item, 2);
+    /// The settings given to `initialize`, as they were given, or an empty object.
+    #[must_use]
+    pub fn settings(&self) -> &Value {
+        &self.settings
     }
 
-    let mut config = Value::Object(Map::new());
-    assign_with_depth(&mut config, &site_config, 2);
-    assign_with_depth(&mut config, &sum, 2);
-    resolve_appearance(
-        &mut config,
-        &sum,
-        &directives,
-        &site_delta,
-        defaults,
-        diagram_key,
-    );
-    let variables = theme_variables(&site_config, &site_delta, &sum, &config);
-    if let Value::Object(map) = &mut config {
-        map.insert("themeVariables".to_owned(), variables);
+    /// The configuration of one diagram, as [`effective`] gives it: the site configuration with the
+    /// diagram's directive merged on top.
+    #[must_use]
+    pub fn effective(&self, diagram_key: Option<&str>, directive: &Value) -> Value {
+        let defaults = cached_defaults();
+        let mut directive = directive.clone();
+        sanitize_directive(&mut directive);
+        add_font_family_variable(&mut directive);
+
+        sanitize(&mut directive, &self.secure);
+        let mut sum = Value::Object(Map::new());
+        assign_with_depth(&mut sum, &directive, 2);
+
+        let mut config = Value::Object(Map::new());
+        assign_with_depth(&mut config, &self.merged, 2);
+        assign_with_depth(&mut config, &sum, 2);
+        resolve_appearance(
+            &mut config,
+            &sum,
+            &directive,
+            &self.settings,
+            defaults,
+            diagram_key,
+        );
+        let variables = theme_variables(&self.merged, &self.settings, &sum, &config);
+        if let Value::Object(map) = &mut config {
+            map.insert("themeVariables".to_owned(), variables);
+        }
+        config
     }
-    config
+
+    /// The user's theme overrides of a diagram with the directive given, as
+    /// [`user_theme_variables`] gives them.
+    #[must_use]
+    pub fn user_theme_variables(&self, directive: &Value) -> Value {
+        theme_overrides(Some(&self.settings), directive)
+    }
 }
 
 /// The `themeVariables` of the configuration, as `updateCurrentConfig` computes them. When the theme
@@ -126,6 +167,11 @@ fn theme_name(config: &Value, fallback: &str) -> String {
 /// scheme can be rendered with another shipped theme and the same overrides.
 #[must_use]
 pub fn user_theme_variables(site: Option<&Value>, directive: &Value) -> Value {
+    theme_overrides(site, directive)
+}
+
+/// The overrides of [`user_theme_variables`]: the `initialize` overrides with the directive's on top.
+fn theme_overrides(site: Option<&Value>, directive: &Value) -> Value {
     let mut overrides = site
         .and_then(|site| site.get("themeVariables"))
         .cloned()
@@ -373,7 +419,7 @@ fn secure_keys(config: &Value) -> Vec<String> {
 fn resolve_appearance(
     config: &mut Value,
     sum: &Value,
-    directives: &[Value],
+    directive: &Value,
     site_delta: &Value,
     defaults: &Value,
     diagram_key: Option<&str>,
@@ -381,10 +427,7 @@ fn resolve_appearance(
     let Some(diagram_key) = diagram_key else {
         return;
     };
-    let layers: Vec<&Value> = std::iter::once(sum)
-        .chain(directives.iter().rev())
-        .chain([site_delta, defaults])
-        .collect();
+    let layers = [sum, directive, site_delta, defaults];
     for key in APPEARANCE_KEYS {
         let Some(value) = layers
             .iter()
@@ -599,5 +642,37 @@ mod tests {
         assert_eq!(config["theme"], json!("redux-color"));
         let classic = effective(None, Some("flowchart"), &json!({ "look": "classic" }));
         assert_eq!(classic["look"], json!("classic"));
+    }
+
+    #[test]
+    fn a_site_configuration_resolved_once_gives_the_effective_configuration_of_each_call() {
+        // A renderer keeps the site configuration and merges each diagram's directive on top of it;
+        // the result must be the one `effective` gives in one call, for every diagram section.
+        let site = json!({
+            "theme": "neutral",
+            "themeVariables": { "primaryColor": "#336699" },
+            "flowchart": { "curve": "basis" },
+            "secure": ["fontSize"],
+        });
+        let directives = [
+            json!({}),
+            json!({ "theme": "forest", "pie": { "theme": "dark" } }),
+            json!({ "fontSize": 40, "themeVariables": { "lineColor": "#ff00aa" } }),
+            json!({ "fontFamily": "Arial", "look": "handDrawn", "layout": "elk" }),
+        ];
+        let resolved = SiteConfig::new(Some(&site));
+        for key in [None, Some("pie"), Some("flowchart"), Some("mindmap")] {
+            for directive in &directives {
+                assert_eq!(
+                    resolved.effective(key, directive),
+                    effective(Some(&site), key, directive),
+                    "{key:?} with {directive:?}"
+                );
+                assert_eq!(
+                    resolved.user_theme_variables(directive),
+                    user_theme_variables(Some(&site), directive),
+                );
+            }
+        }
     }
 }

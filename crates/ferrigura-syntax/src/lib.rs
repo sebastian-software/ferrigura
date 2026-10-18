@@ -80,7 +80,7 @@ pub use error::ParseError;
 pub use preprocess::decode_entities;
 
 /// A diagram type this crate can parse.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DiagramType {
     /// The pie diagram.
     Pie,
