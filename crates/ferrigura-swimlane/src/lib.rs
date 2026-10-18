@@ -41,6 +41,7 @@ pub use model::{
 /// is a stable interface.
 #[doc(hidden)]
 pub mod testing {
+    pub use crate::direction::detour_simplification::simplify_detoured_edges;
     pub use crate::direction::endpoint_clip::{
         clip_edge_endpoints_to_node_boundaries, prepare_edge_endpoints_for_renderer,
     };
