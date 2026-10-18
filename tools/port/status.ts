@@ -132,7 +132,7 @@ const suites: Record<string, string[]> = {
   swimlanes: [],
   treeView: [],
   usecase: [],
-  venn: [],
+  venn: ['venn_spec', 'venn_quirks_spec', 'venn_renderer_spec'],
   wardley: [],
 };
 

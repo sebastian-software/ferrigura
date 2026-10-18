@@ -242,6 +242,16 @@ The architecture model is the DB state after the parse (`architectureDb.ts`), wi
 - **The derived block is the reference's `getDataStructures`.** `derived.groupAlignments` is a list of `[key, axis]` pairs in the order the DB first set each key. `derived.spatialMaps` is a list of maps, each a list of `{id, x, y}` in the order the breadth-first search placed them, and the search's quirks (a node placed again, the last placement wins) are part of the value.
 - **Texts.** The header texts are sanitised, as the common setters sanitise them. The other texts are the grammar's values as written, with the entity placeholders kept; an absent icon, title or parent is `""`, and an absent arrow head or `{group}` mark is `false`.
 
+## Venn
+
+The venn model is the DB state after the parse (`vennDB.ts`), with the grammar's quirks in [venn/PLAN.md](./venn/PLAN.md), sections 3 to 5. Its own rules:
+
+- **Subsets keep the order they were given in, duplicates included.** A subset is `{ sets, size, label }`, with `sets` sorted as JavaScript's default sort sorts strings, so `"10"` comes before `"2"`. The layout's `Object.keys` order is the layout's to apply, not the model's.
+- **Sizes are numbers, and a size that is not finite is its sentinel string.** A negative size is kept as a number, as the reference keeps it; the renderer draws it as the reference does.
+- **Texts are the DB's values.** The title is sanitised. Labels and text ids are not, so markup stays raw and an entity placeholder (`ﬂ°name¶ß`) stays as the DB holds it. An absent label is `""`.
+- **Styles are ordered pairs.** `styles` is a list of `[key, value]` pairs in the order the DB's object holds them: a repeated key keeps its first place and takes its last value, and `__proto__` is dropped.
+- **Left out:** the layout and the geometry, which are the renderer's, the parser's indent mode, and the configuration.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

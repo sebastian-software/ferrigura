@@ -305,7 +305,6 @@ const NOT_PORTED_SECTIONS = new Set<string>([
   'treeView',
   'radar',
   'railroad',
-  'venn',
   'wardley-beta',
   'cynefin',
   'usecase',
