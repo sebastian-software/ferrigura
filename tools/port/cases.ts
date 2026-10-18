@@ -44,6 +44,8 @@ export const undetectedCases: Record<string, string[]> = {
   ],
   // Detection is case-sensitive (`kanban/detector.ts`, `/^\s*kanban/`): a capitalised keyword is
   // not a kanban board, although the grammar accepts it.
+  // No `treeView-beta` keyword: the detector does not take the text, and the grammar is not reached.
+  treeView: ['a\nb'],
   kanban: ['KANBAN\n  a\n', 'Kanban\n  a\n'],
   // Detection is case-sensitive (`architecture/architectureDetector.ts`): a capitalised keyword is
   // not an architecture diagram, and the grammar is never reached.
@@ -101,7 +103,233 @@ export const explicitCases: Record<string, string[]> = {
   radar: [],
   railroad: [],
   swimlanes: [],
-  treeView: [],
+  treeView: [
+    // cspell:ignore ntitlepage Ärger
+    // The probes of docs-port/tree-view/NOTES.md, section 2 (the parser, the DB and the preprocessing),
+    // section 3 (the title and the header texts) and section 8.3, run through the reference.
+    // base-indent
+    'treeView-beta\nroot/\n    a.txt\n    sub/\n        b.md\n    c.js',
+    // title-after-node
+    'treeView-beta\na\ntitle X',
+    // title-before
+    'treeView-beta\ntitle My Tree\na',
+    // title-twice
+    'treeView-beta\ntitle A\ntitle B\na',
+    // title-empty
+    'treeView-beta\ntitle\na',
+    // title-prefix-bare
+    'treeView-beta\ntitlepage.md',
+    // title-dot-bare
+    'treeView-beta\ntitle.txt',
+    // title-prefix-nested
+    'treeView-beta\nsrc/\n    titles.ts',
+    // title-prefix-nested-only
+    'treeView-beta\nsrc/\n    title',
+    // title-prefix-after-title
+    'treeView-beta\ntitle T\ntitles.md',
+    // accTitle-accDescr
+    'treeView-beta\naccTitle: T1\naccDescr: D1\na',
+    // accDescr-block
+    'treeView-beta\naccDescr {\n  line one\n  line two\n}\na',
+    // accTitles-bare
+    'treeView-beta\naccTitles.md',
+    // accDescribe-bare
+    'treeView-beta\naccDescribed.md',
+    // trailing-spaces-quoted
+    'treeView-beta\n"a"  \n    b',
+    // trailing-spaces-bare
+    'treeView-beta\na  \n    b  ',
+    // ws-only-line-between
+    'treeView-beta\na\n   \nb',
+    // tab-only-line-between
+    'treeView-beta\na\n\t\nb',
+    // pct-pct-alone
+    'treeView-beta\na\n%%\nb',
+    // pct-pct-indented-alone
+    'treeView-beta\na\n    %%\n    b',
+    // indented-comment-content
+    'treeView-beta\na\n    %% note\n    b',
+    // inline-comment-name
+    'treeView-beta\na %% note\nb',
+    // keyword-line-comment
+    'treeView-beta %% c\na',
+    // keyword-with-text
+    'treeView-beta foo\na',
+    // keyword-glued
+    'treeView-betaX\na',
+    // keyword-as-name
+    'treeView-beta\na\n    treeView-beta',
+    // ann-class
+    'treeView-beta\na :::hl\nb icon(folder)\nc ## desc\nd :::x icon(a:b) ## desc2',
+    // ann-desc-then-class
+    'treeView-beta\ne ## desc :::cls',
+    // ann-two-classes
+    'treeView-beta\nf :::a :::b',
+    // ann-two-icons
+    'treeView-beta\nf icon(x) icon(y)',
+    // ann-icon-dot
+    'treeView-beta\ng icon(a.b)',
+    // ann-icon-empty
+    'treeView-beta\nh icon()',
+    // ann-icon-none
+    'treeView-beta\ni icon(none)',
+    // ann-class-digit
+    'treeView-beta\nj :::1cls',
+    // ann-class-only
+    'treeView-beta\nk :::',
+    // ann-icon-3part
+    'treeView-beta\nl icon(a:b:c)',
+    // start-class
+    'treeView-beta\n:::x',
+    // start-icon
+    'treeView-beta\nicon(x)',
+    // start-desc
+    'treeView-beta\n## x',
+    // name-hash-in-middle
+    'treeView-beta\na ## b ## c',
+    // quoted-inner-quote
+    'treeView-beta\n"a"b"',
+    // quoted-unterminated
+    'treeView-beta\n"abc',
+    // quoted-single
+    "treeView-beta\n'a b'",
+    // quoted-empty
+    'treeView-beta\n""',
+    // quoted-dir
+    'treeView-beta\n"src/"',
+    // quoted-desc
+    'treeView-beta\n"a" ## d :::c',
+    // bare-slash
+    'treeView-beta\n/',
+    // bare-double-slash
+    'treeView-beta\na//',
+    // bare-slash-trailing-space
+    'treeView-beta\na/   ',
+    // entity-in-name
+    'treeView-beta\nA #amp; B',
+    // entity-in-desc
+    'treeView-beta\na ## x #amp; y',
+    // desc-ampersand
+    'treeView-beta\na ## a & b',
+    // desc-tag
+    'treeView-beta\na ## <b>x</b>',
+    // desc-amp-entity-literal
+    'treeView-beta\na ## a &amp; b',
+    // name-html
+    'treeView-beta\na <b>x</b>',
+    // tab-indent
+    'treeView-beta\n\ta\n    b',
+    // tab-indent-2
+    'treeView-beta\n\ta\n\t\tb\n\tc',
+    // uneven-indent
+    'treeView-beta\na\n  b\n c',
+    // first-node-indented
+    'treeView-beta\n        a\n    b\nc',
+    // crlf
+    'treeView-beta\r\na\r\n    b\r\n',
+    // empty-tree
+    'treeView-beta',
+    // empty-tree-nl
+    'treeView-beta\n',
+    // only-comment
+    'treeView-beta\n%% only',
+    // no-keyword
+    'a\nb',
+    // blank-lines
+    'treeView-beta\n\na\n\n\n    b\n',
+    // class-hyphen
+    'treeView-beta\na :::my-cls1',
+    // name-colon-triple-no-class
+    'treeView-beta\na :::',
+    // unicode-name
+    'treeView-beta\n  Ärger 🙂.md\n    ÉÜ  double  space',
+    // dir-with-class-and-icon
+    'treeView-beta\nsrc/ :::hl icon(folder)',
+    // name-with-double-colon-only
+    'treeView-beta\na %%',
+    // keyword-trailing-spaces
+    'treeView-beta  \na',
+    // quoted-trailing-spaces-eof
+    'treeView-beta\n"a"  ',
+    // bare-trailing-spaces-eof
+    'treeView-beta\na   ',
+    // ws-only-line-first
+    'treeView-beta\n   \na',
+    // ws-only-line-before-title
+    'treeView-beta\n  \ntitle T\na',
+    // box-std
+    'treeView-beta\n.\n├── src\n│   ├── index.ts\n│   └── util\n│       └── a.ts\n└── README.md',
+    // box-heavy
+    'treeView-beta\n.\n┣━━ src\n┃   ┗━━ a.ts\n┗━━ README.md',
+    // box-all-col0
+    'treeView-beta\n.\n├── a\n└── b',
+    // box-seg3
+    'treeView-beta\n.\n├─ a\n│  └─ b',
+    // box-empty-node
+    'treeView-beta\n.\n├── a\n├── ',
+    // box-empty-node-2
+    'treeView-beta\n.\n└──',
+    // box-decoration-only
+    'treeView-beta\n.\n│\n├── a',
+    // box-no-branch-with-box-char
+    'treeView-beta\nSection ─ A.txt\n└── b',
+    // box-col2-branch
+    'treeView-beta\n.\n├── a\n  └── b',
+    // box-plain-indented-error
+    'treeView-beta\n.\n├── a\n    plain',
+    // box-plain-root-after
+    'treeView-beta\n.\n├── a\nroot2',
+    // box-title
+    'treeView-beta\ntitle T\n.\n└── a',
+    // box-tab
+    'treeView-beta\n.\n\t├── a\n\t│\t└── b',
+    // box-langium-error-remap
+    'treeView-beta\n.\n├── a :::\n└── b icon(a.b)',
+    // indent-with-box-char-in-name-then-plain-indented
+    'treeView-beta\nsrc\n    a ─ b.md\n    c.txt',
+    // indent-with-box-char-in-name-ok
+    'treeView-beta\nsrc\n    a ─ b.md\n        c.txt',
+    // indent-branch-char-in-name
+    'treeView-beta\nsrc\n    b ├ c',
+    // frontmatter-title
+    '---\ntitle: FM\n---\ntreeView-beta\na',
+    // frontmatter-config
+    '---\nconfig:\n  treeView:\n    rowIndent: 20\n---\ntreeView-beta\na',
+    // directive-config
+    '%%{init: {"treeView": {"showIcons": true, "paddingX": 7}}}%%\ntreeView-beta\na',
+    // no-config
+    'treeView-beta\na',
+    // theme-vars-treeview
+    '---\nconfig:\n  themeVariables:\n    treeView:\n      labelColor: red\n---\ntreeView-beta\na',
+    // defaultIconPack-filename
+    '---\nconfig:\n  treeView:\n    showIcons: true\n    defaultIconPack: mine\n    filenameIcons:\n      Dockerfile: docker\n    extensionIcons:\n      .ts: ts\n---\ntreeView-beta\nDockerfile\nx.ts\nNOTES.md\nsub/',
+    // q15-child-then-root
+    'treeView-beta\na\n    b\nc',
+    // q15-deeper-then-middle
+    'treeView-beta\na\n    b\n        c\n    d',
+    // fm-and-line
+    '---\ntitle: FM\n---\ntreeView-beta\ntitle Line\na',
+    // fm-and-empty-title-line
+    '---\ntitle: FM\n---\ntreeView-beta\ntitle\na',
+    // fm-and-titles-bare
+    '---\ntitle: FM\n---\ntreeView-beta\ntitles.md',
+    // title-sanitised
+    'treeView-beta\ntitle A & <b>B</b>\na',
+    // accTitle-sanitised
+    'treeView-beta\naccTitle: A <i>x</i>\na',
+    // A class followed by a blank-separated word (q10)
+    'treeView-beta\na :::cls extra',
+    // A quoted name that spans a line break (q8)
+    'treeView-beta\n"a\nb"',
+    // Consecutive spaces in names, without an emoji (q5)
+    'treeView-beta\nA   B  C\n    Name  with  runs.md',
+    // Tabs and spaces mixed in a name's indentation (q15d)
+    'treeView-beta\n\ta\n    b',
+    // Q20: a line separator (U+2028) before `%%` starts a comment: the multi-line caret matches after it
+    'treeView-beta\na %% note\nb',
+    // Q20: the same inside a box-drawing tree, with the separator after a name
+    'treeView-beta\n.\n├── a %% note\n└── b',
+  ],
   usecase: [],
   venn: [],
   wardley: [],
