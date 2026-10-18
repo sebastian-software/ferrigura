@@ -12,12 +12,6 @@
 //!   order `-0` before `+0`.
 //! - The `Node`, `Edge` and `Rect` of the model stand for the TypeScript objects: a missing `x`, `y`, `width`
 //!   or `height` is `0` where the TypeScript reads `?? 0`.
-//!
-//! The module allows dead code while the direction files that call these functions are not ported yet
-//! (`materializedGeometry.ts`, `portSwap.ts`, `terminalStub.ts`, `siblingSharedFaceRouting.ts`,
-//! `sharedTrackNudging.ts`, `validation.ts`). Remove the attribute as they land.
-
-#![allow(dead_code)]
 
 use indexmap::IndexMap;
 
@@ -62,13 +56,6 @@ pub(crate) struct NodePairGeometry {
     pub dst_info: NodeBoundsInfo,
     pub collinear_x: bool,
     pub collinear_y: bool,
-}
-
-/// `LayoutNodeRect`: the rectangle of a node of the layout, from its centre and size.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct LayoutNodeRect {
-    pub node_id: String,
-    pub rect: Rect,
 }
 
 /// The kind of a three-segment route: `HVH` starts and ends horizontal, `VHV` vertical.
@@ -537,30 +524,6 @@ pub(crate) fn collect_node_rect_entries(nodes: &[Node]) -> (Vec<RectEntry>, Vec<
         }
     }
     (real_node_rects, label_node_rects)
-}
-
-/// `collectLayoutNodeRects(nodes, { includeEdgeLabels })`: the rectangle of every node that is not a group,
-/// from its centre and size (a missing size is 0).
-pub(crate) fn collect_layout_node_rects(
-    nodes: &[Node],
-    include_edge_labels: bool,
-) -> Vec<LayoutNodeRect> {
-    let mut result = Vec::new();
-    for node in nodes {
-        if node.is_group == Some(true) || (!include_edge_labels && node.is_edge_label == Some(true))
-        {
-            continue;
-        }
-        let cx = node.x.unwrap_or(0.0);
-        let cy = node.y.unwrap_or(0.0);
-        let width = node.width.unwrap_or(0.0);
-        let height = node.height.unwrap_or(0.0);
-        result.push(LayoutNodeRect {
-            node_id: node.id.clone(),
-            rect: rect_from_center_size(cx, cy, width, height),
-        });
-    }
-    result
 }
 
 /// `getNodePairGeometry(edge, nodeInfoById, epsilon)`: the measured ends of an edge, or `None` when an end is

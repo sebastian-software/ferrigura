@@ -16,9 +16,6 @@ pub enum Error {
     NotPrintableAscii(String),
     /// The direction is not one of `TB`, `LR`, `BT` and `RL`, which `flowDb.ts` is the only producer of.
     UnknownDirection(String),
-    /// A stage the port does not implement yet: `"router"` (`routeEdgesOrthogonal`) or
-    /// `"post-processing"` (`postProcessSwimlaneLayout`). Removed when those stages land.
-    NotPorted(&'static str),
 }
 
 impl fmt::Display for Error {
@@ -39,7 +36,6 @@ impl fmt::Display for Error {
             Error::UnknownDirection(direction) => {
                 write!(f, "the direction {direction:?} is not TB, LR, BT or RL")
             }
-            Error::NotPorted(stage) => write!(f, "the {stage} stage is not ported yet"),
         }
     }
 }

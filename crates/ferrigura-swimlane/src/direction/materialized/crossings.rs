@@ -135,13 +135,6 @@ fn manhattan_length(points: &[Point]) -> f64 {
     sum
 }
 
-/// A single replacement, as a map.
-fn single(edge: usize, path: &[Point]) -> Replacements {
-    let mut replacements = Replacements::new();
-    replacements.insert(edge, path.to_vec());
-    replacements
-}
-
 impl<'v> Ctx<'v> {
     /// The context of an iteration, or `None` when the layout has no real node (the pass then returns).
     pub(super) fn new(view: &'v View<'v>, points: &'v Points) -> Option<Ctx<'v>> {

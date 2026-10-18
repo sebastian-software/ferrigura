@@ -1,9 +1,8 @@
 //! The seam of the swimlane layout: `runSwimlaneLayoutCore` (`layoutCore.ts`, lines 9-58).
 //!
 //! The core reads the configuration with the reference's fallbacks, refuses the non-default options and the
-//! ids outside printable ASCII, runs the Sugiyama phases, writes the result back, and routes and
-//! post-processes the edges. The routing and the post-processing are stubs in this port: they return
-//! [`Error::NotPorted`], which the core passes on.
+//! ids outside printable ASCII, runs the Sugiyama phases, writes the result back, routes the edges, and
+//! post-processes them.
 
 use crate::error::Error;
 use crate::helpers::{to_graph_view, write_back_to_layout_data};
@@ -32,7 +31,6 @@ const FALLBACK_RANK_SPACING: f64 = 100.0;
 /// [`Error::NonDefaultOption`] for `ignoreCrossLaneEdges: false` or `automaticLaneOrdering: true`;
 /// [`Error::UnknownDirection`] for a direction other than `TB`, `LR`, `BT` and `RL`;
 /// [`Error::NonAsciiId`] and [`Error::NotPrintableAscii`] for an id the collation is not ported for;
-/// [`Error::NotPorted`] for the routing and the post-processing, until those stages land.
 pub fn run_swimlane_layout_core(data: &mut LayoutData) -> Result<Direction, Error> {
     let node_gap = data
         .config

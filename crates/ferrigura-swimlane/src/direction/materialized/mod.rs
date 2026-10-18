@@ -1,11 +1,8 @@
 //! The materialized-geometry passes of `postProcessSwimlaneLayout` (`direction/materializedGeometry.ts`).
 //!
 //! Each pass is a `pub(crate)` function with the TypeScript name in snake_case. It edits the layout in place, in
-//! the order of `postProcessing.ts`, and its stage in the corpus is `post:<name>`. The module allows dead code
-//! until the post-processing driver calls the passes. The title-band passes take the layout direction, and the
-//! others take the layout data alone.
-
-#![allow(dead_code)]
+//! the order of `postProcessing.ts`, and its stage in the corpus is `post:<name>`. The title-band passes take the
+//! layout direction, and the others take the layout data alone.
 
 mod candidates;
 mod common;
