@@ -44,5 +44,5 @@ Together about 28,000 to 35,000 lines of Rust, of which swimlanes is a third.
 1. **Research**: done, the nine `<type>/NOTES.md`.
 2. **Registry scaffold**, one task, merged before the parsers.
 3. **Parsers**, one task per type: model, parser and DB, specs, differential. Done on 2026-10-18 for the eight types: every collected input without a difference (agentflow 287, cynefin 125, radar 208, railroad 418, tree view 176, use case 291, venn 277, wardley 222), and each type's configuration section compared. Venn's DB keeps the sets in declaration order; the `Object.keys` order is the layout library's, and its port applies it.
-4. **Layout engines and shared code**: the venn library, the swimlane layout, agentflow's `flowGroup` cluster.
+4. **Layout engines and shared code**: the venn library (done on 2026-10-18: `ferrigura-venn`, exact on 447 cases captured in Chromium), the swimlane layout (its own milestone, on `sebastian/port-swimlanes`), agentflow's `flowGroup` cluster.
 5. **Renderers**, after issue #4, each checked with `pnpm port:geometry <type>`.
