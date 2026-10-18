@@ -1,20 +1,31 @@
 //! The swimlane layout of Mermaid 12.2.0 (`packages/mermaid/src/rendering-util/layout-algorithms/swimlanes/`),
-//! ported from the TypeScript sources, on the default path. Ported: the data model ([`model`]), the graph view
-//! and write-back (`helpers.ts`), the Sugiyama phases (`phase0` to `phase4`, `pipeline.ts`), the orthogonal
-//! router, the geometry passes of the post-processing, and the seam ([`run_swimlane_layout_core`],
-//! `layoutCore.ts`). Not ported: `validateSwimlanesLayout`, which only logs, and the preparation before the seam
-//! (`prepareLayoutForSwimlanes`, `createEdgeLabelNodes`). The two non-default options (`ignoreCrossLaneEdges:
-//! false`, `automaticLaneOrdering: true`) are refused with [`Error::NonDefaultOption`].
+//! ported from the TypeScript sources, on the default path.
 //!
-//! The corpus in `tests/corpus` holds the input and output of the seam, and the stages between them, captured
-//! from the reference in Chromium and from the DDLT harness. See `NOTICE.md` for the sources.
+//! **Ported.** The data model ([`model`]), the graph view and the write-back (`helpers.ts`), the Sugiyama phases
+//! (`phase0` to `phase4`, `pipeline.ts`), the orthogonal router (`orthogonalRouter/router.ts`), the geometry passes
+//! of the post-processing (`direction/*.ts`, `postProcessing.ts`), and the seam, [`run_swimlane_layout_core`]
+//! (`layoutCore.ts`).
 //!
-//! Licence: MIT, as the sources are.
+//! **Not ported.** `validateSwimlanesLayout`, which only logs and which the core does not call; the preparation
+//! before the seam, `prepareLayoutForSwimlanes` and `createEdgeLabelNodes`, which the browser and the DDLT harness
+//! run first; and the two non-default options, `ignoreCrossLaneEdges: false` and `automaticLaneOrdering: true`,
+//! which are refused with [`Error::NonDefaultOption`].
+//!
+//! **Numbers.** Each expression keeps the operand order of its source, so the output agrees with the reference
+//! bit for bit. `toFixed`, `Math.round`, `localeCompare` and `Array.prototype.sort` are in [`js`]; `Math.hypot` is
+//! `ferrigura_jsmath::hypot`. The sort is exact from 17 to 129 elements as Chromium 151 runs it, with two gaps
+//! (2 to 16 elements, and 130 and more); see [`js::js_sort_by`].
+//!
+//! **Corpus.** `tests/corpus` holds 131 captured calls of the seam (44 fixtures, 27 DDLT inputs and 60 generated
+//! diagrams), each with its input, its stages and its output, captured from the reference in Chromium. The
+//! end-to-end test, `tests/corpus.rs`, compares every output exactly. `docs-port/swimlanes/PLAN.md` gives the
+//! exclusions and the tools.
+//!
+//! Licence: MIT, as the sources are. See `NOTICE.md`.
 
 #![forbid(unsafe_code)]
 
 mod direction;
-mod edge_label_nodes;
 mod error;
 mod helpers;
 pub mod js;
