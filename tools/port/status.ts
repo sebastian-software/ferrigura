@@ -126,7 +126,7 @@ const suites: Record<string, string[]> = {
   // The P3 types have no suites until their parser tasks add them. Their rows of the P3 table are
   // left as written while the list is empty.
   agentflow: [],
-  cynefin: [],
+  cynefin: ['cynefin_db_spec', 'cynefin_grammar', 'cynefin_boundary_spec'],
   radar: [],
   railroad: [],
   swimlanes: [],

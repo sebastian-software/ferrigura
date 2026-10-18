@@ -360,7 +360,7 @@ pub fn detect(text: &str) -> Option<DiagramType> {
         Some(DiagramType::Venn)
     } else if starts_with_ignore_ascii_case(rest, "wardley-beta") {
         Some(DiagramType::Wardley)
-    } else if keyword_followed_by(rest, "cynefin-beta", |c| text::is_js_space(c) || c == ':') {
+    } else if cynefin_header(rest) {
         Some(DiagramType::Cynefin)
     } else if keyword_followed_by(rest, "usecase-beta", text::is_js_space) {
         Some(DiagramType::UseCase)
@@ -427,6 +427,19 @@ fn is_railroad_header(text: &str) -> bool {
     ]
     .iter()
     .any(|keyword| starts_with_ignore_ascii_case(text, keyword))
+}
+
+/// `^\s*cynefin-beta(?:[\s:]|$)` on the text after `stripAnyComments`, as `detectType` matches it
+/// (`diagram-api/detectType.ts`, `diagram-api/regexes.ts`). That function replaces a `%%` comment
+/// that ends in a line break with a line break, so `cynefin-beta%%note` followed by a line is the
+/// header too, and the same comment without a line break after it is not.
+fn cynefin_header(text: &str) -> bool {
+    if keyword_followed_by(text, "cynefin-beta", |c| text::is_js_space(c) || c == ':') {
+        return true;
+    }
+    text.strip_prefix("cynefin-beta")
+        .and_then(|after| after.strip_prefix("%%"))
+        .is_some_and(|comment| comment.contains('\n'))
 }
 
 /// Whether `text` starts with `keyword`, and the character after it is absent or accepted by

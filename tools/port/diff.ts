@@ -32,7 +32,7 @@ const p2Types = [
   'eventmodeling',
 ];
 
-/** The P3 types, whose parsers are not ported yet: each one's parser task writes its exporter. */
+/** The P3 types: each one's parser task writes its exporter, and until then its inputs are only collected. */
 const p3Types = [
   'agentflow',
   'cynefin',

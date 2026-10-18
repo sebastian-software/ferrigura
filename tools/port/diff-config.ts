@@ -290,7 +290,6 @@ const UNPORTED_SECTIONS = [
   'usecase',
   'venn',
   'wardley-beta',
-  'cynefin',
   'railroad',
   'treemap',
 ];
@@ -307,7 +306,6 @@ const NOT_PORTED_SECTIONS = new Set<string>([
   'railroad',
   'venn',
   'wardley-beta',
-  'cynefin',
   'usecase',
 ]);
 

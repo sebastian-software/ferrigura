@@ -226,6 +226,12 @@ fn the_cynefin_and_use_case_headers_need_a_space_or_the_end_after_the_keyword() 
     assert_eq!(detect("cynefin-beta"), Some(DiagramType::Cynefin));
     assert_eq!(detect("cynefin-beta-x\n"), None);
     assert_eq!(detect("cynefin-betax\n"), None);
+    // `detectType` strips the comment first: a comment that ends a line is a boundary, one that does not is not.
+    assert_eq!(
+        detect("cynefin-beta%%note\ncomplex \"A\"\n"),
+        Some(DiagramType::Cynefin)
+    );
+    assert_eq!(detect("cynefin-beta%%note"), None);
     assert_eq!(detect("usecase-beta\n"), Some(DiagramType::UseCase));
     assert_eq!(detect("usecase-beta\u{a0}x\n"), Some(DiagramType::UseCase));
     assert_eq!(detect("usecase-beta"), Some(DiagramType::UseCase));
