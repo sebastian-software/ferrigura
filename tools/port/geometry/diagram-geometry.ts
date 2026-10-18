@@ -139,6 +139,15 @@ const TYPE_FOLDERS: Record<string, string[]> = {
   treemap: ['treemap'],
   ishikawa: ['ishikawa'],
   eventmodeling: ['eventmodeling'],
+  agentflow: ['agentflow'],
+  cynefin: ['cynefin'],
+  radar: ['radar'],
+  railroad: ['railroad'],
+  swimlanes: ['swimlanes'],
+  treeView: ['tree-view'],
+  usecase: ['usecase'],
+  venn: ['venn'],
+  wardley: ['wardley'],
 };
 
 /**

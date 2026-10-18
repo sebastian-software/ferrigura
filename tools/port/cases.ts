@@ -95,6 +95,16 @@ export const undetectedCases: Record<string, string[]> = {
 };
 
 export const explicitCases: Record<string, string[]> = {
+  // The P3 types whose parsers are not ported yet: each gets its cases with its parser task.
+  agentflow: [],
+  cynefin: [],
+  radar: [],
+  railroad: [],
+  swimlanes: [],
+  treeView: [],
+  usecase: [],
+  venn: [],
+  wardley: [],
   class: [
     // An anchor with a `target` in a label: the hooks of `sanitizeText` reach it.
     "classDiagram\nclass Animal[\"<a target='_blank' href='x'>an</a>\"]",
