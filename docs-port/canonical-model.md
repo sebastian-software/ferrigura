@@ -242,6 +242,16 @@ The architecture model is the DB state after the parse (`architectureDb.ts`), wi
 - **The derived block is the reference's `getDataStructures`.** `derived.groupAlignments` is a list of `[key, axis]` pairs in the order the DB first set each key. `derived.spatialMaps` is a list of maps, each a list of `{id, x, y}` in the order the breadth-first search placed them, and the search's quirks (a node placed again, the last placement wins) are part of the value.
 - **Texts.** The header texts are sanitised, as the common setters sanitise them. The other texts are the grammar's values as written, with the entity placeholders kept; an absent icon, title or parent is `""`, and an absent arrow head or `{group}` mark is `false`.
 
+## Wardley
+
+The wardley model is the DB state after the parse (`getWardleyData`), with no layout layer, and the fields and quirks in [wardley/PLAN.md](./wardley/PLAN.md), sections 3 and 4. Its own rules:
+
+- **Coordinates are the DB's.** `x` is the evolution and `y` the visibility, both percentages, as the DB stores them, though the statements write the visibility first. An annotation, an accelerator and the annotations box are `[visibility, evolution]` in the text and `x`, `y` in the model.
+- **Nodes are in the DB's order**: the first insertion of each id, with the last values. A pipeline component's id is `Parent_Name`, and its `label` is its name.
+- **`null` is the DB's `undefined`.** `inertia` is `false` for a component without the word, and `null` for an anchor or a pipeline component, whose calls give none. `size`, `axes.stages`, `axes.stageBoundaries` and `annotationsBox` are `null` when the text gives none.
+- **Texts keep the placeholders.** The node, note, annotation, accelerator and link texts are as the DB holds them. The header texts are sanitised; an absent header is `""`.
+- **Non-finite numbers** are the sentinel strings: only an integer or a decimal of more than 308 digits is one, in a label offset, the annotation number, the size or a stage boundary.
+
 ## Left out, and why
 
 - **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.

@@ -133,7 +133,7 @@ const suites: Record<string, string[]> = {
   treeView: [],
   usecase: [],
   venn: [],
-  wardley: [],
+  wardley: ['wardley_spec', 'wardley_grammar', 'wardley_db_spec'],
 };
 
 interface Counts {
