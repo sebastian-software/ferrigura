@@ -200,15 +200,15 @@ The P3 types are registered: detection, the models, the parser and renderer stub
 
 | Type      | Grammar (JS)                                                                                 | Spec files | ≈ Tests | Fixtures | Parser           | Specs ported / passing | Differential parse        | Layout | Render | Parity |
 | --------- | -------------------------------------------------------------------------------------------- | ---------: | ------: | -------: | ---------------- | ---------------------- | ------------------------- | ------ | ------ | ------ |
-| agentflow | `diagrams/agentflow/parser/agentflow.jison`                                                  |         33 |     245 |       39 | —                | —                      | —                         | —      | —      | —      |
-| cynefin   | `packages/parser/…/cynefin/cynefin.langium`                                                  |          2 |      42 |       12 | ferrigura-syntax | 66 / 66 (16 ignored)   | 125 inputs, no difference | —      | —      | —      |
-| radar     | `packages/parser/…/radar/radar.langium`                                                      |          1 |      20 |        6 | —                | —                      | —                         | —      | —      | —      |
-| railroad  | `packages/parser/…/railroad*/` (four Langium grammars: `railroad`, `-ebnf`, `-abnf`, `-peg`) |         11 |     135 |        9 | —                | —                      | —                         | —      | —      | —      |
+| agentflow | `diagrams/agentflow/parser/agentflow.jison`                                                  |         33 |     245 |       39 | ferrigura-syntax | 181 / 267 (86 ignored) | 287 inputs, no difference | —      | —      | —      |
+| cynefin   | `packages/parser/…/cynefin/cynefin.langium`                                                  |          2 |      42 |       12 | ferrigura-syntax | 66 / 82 (16 ignored)   | 125 inputs, no difference | —      | —      | —      |
+| radar     | `packages/parser/…/radar/radar.langium`                                                      |          1 |      20 |        6 | ferrigura-syntax | 73 / 77 (4 ignored)    | 208 inputs, no difference | —      | —      | —      |
+| railroad  | `packages/parser/…/railroad*/` (four Langium grammars: `railroad`, `-ebnf`, `-abnf`, `-peg`) |         11 |     135 |        9 | ferrigura-syntax | 122 / 147 (25 ignored) | 418 inputs, no difference | —      | —      | —      |
 | swimlanes | `diagrams/flowchart/parser/flow.jison` (the flowchart's grammar)                             |          2 |      12 |       46 | —                | —                      | —                         | —      | —      | —      |
 | tree view | `packages/parser/…/treeView/treeView.langium`                                                |          4 |     116 |       15 | —                | —                      | —                         | —      | —      | —      |
 | use case  | `diagrams/usecase/parser/usecase.chevrotain.ts` (Chevrotain)                                 |         10 |     138 |       32 | —                | —                      | —                         | —      | —      | —      |
-| venn      | `diagrams/venn/parser/venn.jison`                                                            |          3 |      36 |       21 | —                | —                      | —                         | —      | —      | —      |
-| wardley   | `packages/parser/…/wardley/wardley.langium`                                                  |          2 |      24 |       10 | —                | —                      | —                         | —      | —      | —      |
+| venn      | `diagrams/venn/parser/venn.jison`                                                            |          3 |      36 |       21 | ferrigura-syntax | 53 / 72 (19 ignored)   | 277 inputs, no difference | —      | —      | —      |
+| wardley   | `packages/parser/…/wardley/wardley.langium`                                                  |          2 |      24 |       10 | ferrigura-syntax | 77 / 77                | 222 inputs, no difference | —      | —      | —      |
 
 ## Spikes
 
