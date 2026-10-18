@@ -6,6 +6,11 @@
 //! keep the legacy `kern` table, and drop hinting. Each face becomes an `@font-face` rule with the
 //! subset as a base64 TTF data URL.
 //!
+//! A run whose characters the sans or mono face lacks and the symbol face has (the arrows) is cut
+//! the way [`crate::fallback_runs`] cuts it, so the symbol face gets a subset of its own. The text
+//! families name that subset second in their `css_family`, which is the font-family list a browser
+//! walks for each character.
+//!
 //! `@font-face` rules are global to the HTML page, so a family name has to be unique to its subset:
 //! two diagrams with different subsets under one name would break each other's labels. The name
 //! is `fg-` and a 64-bit FNV-1a hash of the subsets, then the family suffix, such as
@@ -23,7 +28,7 @@ use skera::{DEFAULT_LAYOUT_FEATURES, Plan, SubsetFlags, subset_font};
 
 use crate::error::TextError;
 use crate::fonts::{FACES, Face, FontFamily, FontStyle};
-use crate::measure::Run;
+use crate::measure::{Run, fallback_runs};
 
 /// The embedded subsets of one font family in one diagram.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,6 +37,11 @@ pub struct EmbeddedFamily {
     pub family: FontFamily,
     /// The family name the labels refer to, such as `fg-0123456789abcdef-sans`.
     pub name: String,
+    /// The `font-family` value of the text set in this family, quoted for CSS: the family name, then
+    /// the symbol face's family name when the diagram embeds a symbol face, such as
+    /// `"fg-0123456789abcdef-sans", "fg-fedcba9876543210-symbols"`. A browser then sets each
+    /// character the first family lacks in the second, as [`crate::fallback_runs`] measured it.
+    pub css_family: String,
     /// One `@font-face` rule for each face of the family the diagram uses. Each rule names
     /// [`EmbeddedFamily::name`] and holds the subset as a base64 TTF data URL.
     pub css: String,
@@ -48,15 +58,18 @@ pub struct EmbeddedFamily {
 ///
 /// Returns an error if a bundled face cannot be parsed or subsetting fails.
 pub fn embed_runs(runs: &[Run<'_>]) -> Result<Vec<EmbeddedFamily>, TextError> {
+    // The stretches each run is set in, after the fallback to the symbol face: a subset holds the
+    // characters drawn in its face, and no other.
+    let stretches: Vec<Run<'_>> = runs.iter().flat_map(|run| fallback_runs(*run)).collect();
     let mut embedded = Vec::new();
-    for family in [FontFamily::Sans, FontFamily::Mono] {
+    for family in [FontFamily::Sans, FontFamily::Mono, FontFamily::Symbols] {
         let mut subsets: Vec<(&'static Face, Vec<u8>)> = Vec::new();
         for face in FACES.iter().copied().filter(|f| f.family() == family) {
-            let used = runs.iter().any(|run| same_face(run.face, face));
+            let used = stretches.iter().any(|run| same_face(run.face, face));
             if !used {
                 continue;
             }
-            let characters: BTreeSet<char> = runs
+            let characters: BTreeSet<char> = stretches
                 .iter()
                 .filter(|run| same_face(run.face, face))
                 .flat_map(|run| run.text.chars())
@@ -68,7 +81,26 @@ pub fn embed_runs(runs: &[Run<'_>]) -> Result<Vec<EmbeddedFamily>, TextError> {
         }
         let name = family_name(family, &subsets);
         let css = font_face_rules(&name, &subsets);
-        embedded.push(EmbeddedFamily { family, name, css });
+        embedded.push(EmbeddedFamily {
+            family,
+            name,
+            css_family: String::new(),
+            css,
+        });
+    }
+    // The text of a text family is set in its own family and then in the symbol face, when the
+    // diagram embeds one; the symbol family is set in itself.
+    let symbols = embedded
+        .iter()
+        .find(|family| family.family == FontFamily::Symbols)
+        .map(|family| family.name.clone());
+    for family in &mut embedded {
+        family.css_family = match (&symbols, family.family) {
+            (Some(symbol_name), FontFamily::Sans | FontFamily::Mono) => {
+                format!("\"{}\", \"{}\"", family.name, symbol_name)
+            }
+            _ => format!("\"{}\"", family.name),
+        };
     }
     Ok(embedded)
 }

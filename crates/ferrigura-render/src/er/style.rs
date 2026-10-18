@@ -56,7 +56,7 @@ pub fn style_sheet(
     let id = format!("#{svg_id}");
     let font = families.first().map_or_else(
         || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
-        |family| format!("\"{}\"", family.name),
+        |family| family.css_family.clone(),
     );
     let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
     let stroke_width = format!(

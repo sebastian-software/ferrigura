@@ -153,7 +153,7 @@ pub fn render(input: &C4Input<'_>) -> Result<String, RenderError> {
                 text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned())
             )
         },
-        |family| format!("\"{}\"", family.name),
+        |family| family.css_family.clone(),
     );
     let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
     let person_border = text_of(variables, "personBorder").unwrap_or_default();

@@ -18,7 +18,7 @@ const library =
   }[process.platform] ?? 'libferrigura_node.so';
 const addon = { exports: {} };
 process.dlopen(addon, join(root, 'target/debug', library));
-const { render } = addon.exports;
+const { render, Renderer } = addon.exports;
 
 const PIE = 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85\n';
 
@@ -58,4 +58,34 @@ void test('a colour scheme that is not known is refused', () => {
 
 void test('text that is not a diagram throws', () => {
   assert.throws(() => render('not a diagram\n'), /no diagram type detected/);
+});
+
+const DIRECTED = '%%{init: {"theme": "forest"}}%%\n' + PIE;
+
+void test('a renderer gives the SVG of render with its configuration', () => {
+  const config = { themeVariables: { pie1: '#00ff00' } };
+  const renderer = new Renderer(config);
+  assert.equal(
+    renderer.render(PIE, { colorScheme: 'auto' }),
+    render(PIE, config, { colorScheme: 'auto' })
+  );
+  assert.equal(renderer.render(PIE), render(PIE, config));
+});
+
+void test('a renderer without a configuration gives the defaults', () => {
+  assert.equal(new Renderer().render(PIE), render(PIE, {}));
+});
+
+void test('a renderer serves many renders, and directives merge on top of its configuration', () => {
+  const renderer = new Renderer({ themeVariables: { pie1: '#00ff00' } });
+  const first = renderer.render(DIRECTED);
+  assert.equal(renderer.render(PIE), render(PIE, { themeVariables: { pie1: '#00ff00' } }));
+  assert.equal(first, renderer.render(DIRECTED));
+  assert.equal(first, render(DIRECTED, { themeVariables: { pie1: '#00ff00' } }));
+});
+
+void test('a renderer refuses a colour scheme that is not known, and text that is not a diagram', () => {
+  const renderer = new Renderer();
+  assert.throws(() => renderer.render(PIE, { colorScheme: 'blue' }), /unknown colour scheme blue/);
+  assert.throws(() => renderer.render('not a diagram\n'), /no diagram type detected/);
 });

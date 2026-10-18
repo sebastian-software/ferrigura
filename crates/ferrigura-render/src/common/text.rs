@@ -217,7 +217,7 @@ pub fn collapse_white_space(text: &str) -> String {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn collapsed_width(face: &Face, text: &str, size: f64) -> Result<f64, TextError> {
+pub fn collapsed_width(face: &'static Face, text: &str, size: f64) -> Result<f64, TextError> {
     let collapsed = collapse_white_space(text);
     if collapsed.is_empty() {
         return Ok(0.0);

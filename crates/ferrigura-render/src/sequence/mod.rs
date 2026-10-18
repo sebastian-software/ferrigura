@@ -583,7 +583,7 @@ impl<'a> Renderer<'a> {
             Ok(families) => {
                 let name = families.first().map_or_else(
                     || self.conf.message_font.family.clone(),
-                    |family| format!("\"{}\"", family.name),
+                    |family| family.css_family.clone(),
                 );
                 (families, name)
             }

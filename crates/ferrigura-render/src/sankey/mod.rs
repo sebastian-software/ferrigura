@@ -155,7 +155,7 @@ pub fn render(input: &SankeyInput<'_>) -> Result<String, RenderError> {
     let families = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
         || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
-        |family| format!("\"{}\"", family.name),
+        |family| family.css_family.clone(),
     );
     let text_size = px(variables, "fontSize").unwrap_or(16.0);
     let schemes = Schemes::new(themes);

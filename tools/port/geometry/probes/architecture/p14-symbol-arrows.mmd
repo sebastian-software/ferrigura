@@ -1,0 +1,7 @@
+architecture-beta
+  title Requests → responses
+  service api(server)[API → Gateway]
+  service db(database)[Store ⇒ Cache]
+  service q(server)[Queue ↔ Worker]
+  api:R -[Reads → writes]- L:db
+  db:T -[↑ sync ↓]- B:q

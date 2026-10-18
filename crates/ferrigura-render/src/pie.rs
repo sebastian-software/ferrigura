@@ -200,9 +200,10 @@ pub fn render(input: &PieInput<'_>) -> Result<String, RenderError> {
         });
     }
     let families = embed_runs(&runs)?;
-    let family_name = families
-        .first()
-        .map_or_else(|| "sans-serif".to_owned(), |family| family.name.clone());
+    let family_name = families.first().map_or_else(
+        || "\"sans-serif\"".to_owned(),
+        |family| family.css_family.clone(),
+    );
 
     let mut body = String::new();
     // `appendDivSvgG` leaves an empty group before the diagram's own elements (`mermaidAPI.ts:418`).
@@ -422,9 +423,9 @@ fn style_element(
 #{id} .pieCircle.highlighted{{scale: 1.05;opacity: 1;}}\
 #{id} .pieCircle.highlightedOnHover:hover{{transition-duration: 250ms;scale: 1.05;opacity: 1;}}\
 #{id} .pieOuterCircle{{stroke: var(--pieOuterStrokeColor);stroke-width: {outer_stroke_width};fill: none;}}\
-#{id} .pieTitleText{{text-anchor: start;font-size: {title_size};fill: var(--pieTitleTextColor);font-family: \"{family}\";}}\
-#{id} .slice{{font-family: \"{family}\";fill: var(--pieSectionTextColor);font-size: {section_size};}}\
-#{id} .legend text{{fill: var(--pieLegendTextColor);font-family: \"{family}\";font-size: {legend_size};}}\
+#{id} .pieTitleText{{text-anchor: start;font-size: {title_size};fill: var(--pieTitleTextColor);font-family: {family};}}\
+#{id} .slice{{font-family: {family};fill: var(--pieSectionTextColor);font-size: {section_size};}}\
+#{id} .legend text{{fill: var(--pieLegendTextColor);font-family: {family};font-size: {legend_size};}}\
 #{id} text{{white-space: pre;}}"
     );
     format!("<style>{}{tokens}{rules}{slots}</style>", css_text(&faces))

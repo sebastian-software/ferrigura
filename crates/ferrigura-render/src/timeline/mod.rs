@@ -83,7 +83,7 @@ pub fn render(input: &TimelineInput<'_>) -> Result<String, RenderError> {
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
         || text_of(input.themes.primary(), "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
-        |family| format!("\"{}\"", family.name),
+        |family| family.css_family.clone(),
     );
     let style = base_style_sheet_with(
         input.id,

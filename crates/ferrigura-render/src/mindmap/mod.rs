@@ -99,7 +99,7 @@ pub fn render(input: &MindmapInput<'_>) -> Result<String, RenderError> {
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
         || text_of(theme, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
-        |family| format!("\"{}\"", family.name),
+        |family| family.css_family.clone(),
     );
     let font_size = px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE);
     let style = crate::common::style::base_style_sheet_with(
