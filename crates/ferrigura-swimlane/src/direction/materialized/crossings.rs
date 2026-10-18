@@ -259,17 +259,19 @@ impl<'v> Ctx<'v> {
         }
     }
 
-    /// `crossingCountWithReplacements(current, replacements)`: the crossings after the replacements, computed
-    /// from the pairs of the snapshot that the replacements do not touch.
-    pub(super) fn count_with(&self, current: &Snapshot, replacements: &Replacements) -> f64 {
-        if replacements.is_empty() {
-            return current.count;
-        }
-        let changed = |edge: usize| replacements.contains_key(&edge);
-
+    /// `crossingCountWithSingleReplacement(current, edge, path)`: the crossings after `edge` takes the
+    /// segments `path_segments`, with the segments of the other edges taken from `base`. The pairs of the snapshot
+    /// that `edge` does not touch are kept, as `crossingCountWithReplacements` does.
+    fn count_with_single(
+        &self,
+        current: &Snapshot,
+        edge: usize,
+        path_segments: &[OrthogonalSegment],
+        base: &Base,
+    ) -> f64 {
         let mut current_affected = 0.0;
         for pair in &current.pairs {
-            if changed(pair.first) || changed(pair.second) {
+            if pair.first == edge || pair.second == edge {
                 current_affected += pair.count;
             }
         }
@@ -277,17 +279,22 @@ impl<'v> Ctx<'v> {
         let mut replacement_affected = 0.0;
         for i in 0..self.visible.len() {
             let first = self.visible[i];
-            let first_changed = changed(first);
-            let first_segments = segments_for(&self.pts(replacements, first));
+            let first_segments = if first == edge {
+                path_segments
+            } else {
+                &base.segments[first]
+            };
             for j in (i + 1)..self.visible.len() {
                 let second = self.visible[j];
-                if !first_changed && !changed(second) {
+                if first != edge && second != edge {
                     continue;
                 }
-                replacement_affected += crossings_between(
-                    &first_segments,
-                    &segments_for(&self.pts(replacements, second)),
-                );
+                let second_segments = if second == edge {
+                    path_segments
+                } else {
+                    &base.segments[second]
+                };
+                replacement_affected += crossings_between(first_segments, second_segments);
             }
         }
 
@@ -363,16 +370,21 @@ impl<'v> Ctx<'v> {
         })
     }
 
-    /// `pathHasSegmentConflict(edge, path)`: the path shares a track with a visible edge other than `edge`.
-    pub(super) fn path_has_segment_conflict(&self, edge: usize, path: &[Point]) -> bool {
-        let path_segments = segments_for(path);
+    /// `pathHasSegmentConflict(edge, path)`: the path shares a track with a visible edge other than `edge`, with
+    /// the segments of the other edges taken from `base`.
+    fn segments_conflict_with(
+        &self,
+        edge: usize,
+        path_segments: &[OrthogonalSegment],
+        base: &Base,
+    ) -> bool {
         for &other in &self.visible {
             if other == edge {
                 continue;
             }
-            for candidate_segment in &path_segments {
-                for other_segment in segments_for(&self.pts(&Replacements::new(), other)) {
-                    if same_axis_segment_overlap_length(candidate_segment, &other_segment, 0.5)
+            for candidate_segment in path_segments {
+                for other_segment in &base.segments[other] {
+                    if same_axis_segment_overlap_length(candidate_segment, other_segment, 0.5)
                         >= MIN_SHARED
                     {
                         return true;
@@ -428,16 +440,20 @@ impl<'v> Ctx<'v> {
         let mut best_crossings = current_crossings;
         let mut best_bends = f64::INFINITY;
 
+        let base = self.base();
         for &edge in &current.edges {
             let current_edge_bends = count_orthogonal_bends(&self.pts(&empty, edge), EPS) as f64;
             for candidate in candidate_paths_for(self, edge) {
                 let candidate_hits_node = self.path_hits_node(edge, &candidate);
-                let candidate_has_segment_conflict =
-                    !candidate_hits_node && self.path_has_segment_conflict(edge, &candidate);
+                let candidate_segments = segments_for(&candidate);
+                let candidate_has_segment_conflict = !candidate_hits_node
+                    && self.segments_conflict_with(edge, &candidate_segments, &base);
                 if candidate_hits_node || candidate_has_segment_conflict {
                     continue;
                 }
-                let candidate_crossings = self.count_with(&current, &single(edge, &candidate));
+                let counted_segments = segments_for(&dedupe_consecutive_points(&candidate, EPS));
+                let candidate_crossings =
+                    self.count_with_single(&current, edge, &counted_segments, &base);
                 let candidate_bends = count_orthogonal_bends(&candidate, EPS) as f64;
                 let improves_current_edge = candidate_crossings < current_crossings
                     || (candidate_crossings == current_crossings
