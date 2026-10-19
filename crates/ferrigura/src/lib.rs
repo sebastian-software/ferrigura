@@ -280,26 +280,27 @@ impl Renderer {
                     id,
                 })
             }
-            DiagramType::XyChart => xychart_render::render(&xychart_render::XyChartInput {
+            DiagramType::XyChart => xychart_render::render(&Context {
                 diagram: &xychart::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.xy_chart,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Sankey => sankey_render::render(&sankey_render::SankeyInput {
+            DiagramType::Sankey => sankey_render::render(&Context {
                 diagram: &sankey::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.sankey,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::QuadrantChart => {
-                quadrant_chart_render::render(&quadrant_chart_render::QuadrantChartInput {
-                    diagram: &quadrant_chart::parse(text)?,
-                    config: typed_config,
-                    themes,
-                    id,
-                })
-            }
+            DiagramType::QuadrantChart => quadrant_chart_render::render(&Context {
+                diagram: &quadrant_chart::parse(text)?,
+                section: &typed_config.quadrant_chart,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
             DiagramType::Requirement => {
                 requirement_render::render(&requirement_render::RequirementInput {
                     diagram: &requirement::parse(text)?,

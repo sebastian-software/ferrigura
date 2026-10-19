@@ -5,10 +5,10 @@
 //! compared by `pnpm port:geometry quadrantChart`; these tests pin the structure it relies on.
 
 use ferrigura_model::config::{defaults, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
-use ferrigura_render::quadrant_chart::{QuadrantChartInput, render};
-use ferrigura_render::theme::Themes;
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::quadrant_chart::render;
 use ferrigura_syntax::quadrant_chart::parse;
 
 /// The complete chart of `should-render-a-complete-quadrant-chart`, without the theme directive.
@@ -38,10 +38,16 @@ fn draw_with(text: &str, quadrant_chart: &[(&str, Value)]) -> String {
     }
     let config = typed(&value).expect("the configuration");
     let variables = Theme::ReduxColor.variables(None);
-    render(&QuadrantChartInput {
+    let tokens = ThemeTokens::from_value(&variables);
+    let globals = Globals::of(&config);
+    render(&Context {
         diagram: &diagram,
-        config: &config,
-        themes: Themes::Single(&variables),
+        section: &config.quadrant_chart,
+        globals: &globals,
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id: "chart",
     })
     .expect("the diagram renders")

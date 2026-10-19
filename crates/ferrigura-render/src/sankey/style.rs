@@ -3,10 +3,9 @@
 //! attributes (`docs-port/decisions/0007`). Every rule of `styles.js` is kept: each matches an
 //! element that the renderer draws.
 
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::ThemeTokens;
 
-use crate::theme::Themes;
-use crate::variables::text_of;
+use crate::context::ThemeView;
 
 /// The two colours a sankey takes from the theme.
 #[derive(Debug, Clone, PartialEq)]
@@ -18,15 +17,15 @@ pub(super) struct Palette {
 }
 
 impl Palette {
-    /// The palette of one set of theme variables (`styles.js` 10-21).
-    pub fn new(variables: &Value) -> Self {
-        let label_background = ["mainBkg", "background"]
-            .iter()
-            .find_map(|name| text_of(variables, name).filter(|text| !text.is_empty()))
+    /// The palette of one set of theme tokens (`styles.js` 10-21).
+    pub fn new(tokens: &ThemeTokens) -> Self {
+        let label_background = [&tokens.main_bkg, &tokens.background]
+            .into_iter()
+            .find_map(|token| token.text().filter(|text| !text.is_empty()))
             .unwrap_or_else(|| "#fff".to_owned());
         Self {
             label_background,
-            label_text: text_of(variables, "textColor").unwrap_or_default(),
+            label_text: tokens.text_color.text().unwrap_or_default(),
         }
     }
 }
@@ -40,16 +39,10 @@ pub(super) struct Schemes {
 }
 
 impl Schemes {
-    pub fn new(themes: Themes<'_>) -> Self {
-        match themes {
-            Themes::Single(variables) => Self {
-                primary: Palette::new(variables),
-                dark: None,
-            },
-            Themes::Schemes { light, dark } => Self {
-                primary: Palette::new(light),
-                dark: Some(Palette::new(dark)),
-            },
+    pub fn new(theme: ThemeView<'_>) -> Self {
+        Self {
+            primary: Palette::new(theme.light),
+            dark: theme.dark.map(Palette::new),
         }
     }
 }
