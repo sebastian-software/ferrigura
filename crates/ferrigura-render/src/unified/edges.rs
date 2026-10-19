@@ -7,6 +7,7 @@
 //! marker offsets. The other curves come from d3's line with the marker accessors, as the
 //! reference draws a straight fallback edge. Node clipping is off for ELK (`skipIntersect`).
 
+use base64::Engine as _;
 use ferrigura_model::value::Value;
 
 use super::Section;
@@ -194,6 +195,67 @@ fn label_style_text(edge: &Edge) -> String {
         .join(";")
 }
 
+/// The styles `createText` gives the background rectangle and the text of an edge label
+/// (`createText.ts` 391-409): the label style without its `stroke`, `stroke-width` and `fill`
+/// declarations, with `background:` read as `fill:` for the rectangle and `color:` read as `fill:`
+/// for the text.
+fn edge_label_styles(style: &str) -> (String, String) {
+    let stripped = ["stroke:", "stroke-width:", "fill:"]
+        .iter()
+        .fold(style.to_owned(), |style, name| {
+            without_declarations(&style, name)
+        });
+    (
+        stripped.replace("background:", "fill:"),
+        stripped.replace("color:", "fill:"),
+    )
+}
+
+/// `style.replace(/<name>[^;]+;?/g, '')`: every `name` followed by a value, with the semicolon
+/// after it, removed. A `name` without a value stays.
+fn without_declarations(style: &str, name: &str) -> String {
+    let mut out = String::with_capacity(style.len());
+    let mut rest = style;
+    while let Some(at) = rest.find(name) {
+        let after = &rest[at + name.len()..];
+        let value = after.find(';').unwrap_or(after.len());
+        if value == 0 {
+            // `[^;]+` needs a character: the name stays, and the search goes on after it.
+            out.push_str(&rest[..at + name.len()]);
+            rest = after;
+        } else {
+            out.push_str(&rest[..at]);
+            rest = after[value..].strip_prefix(';').unwrap_or(&after[value..]);
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The `data-points` of an edge's path: `btoa(JSON.stringify(points))` (`edges.js` 705), the
+/// points as `[{"x":…,"y":…},…]` in base64, with `null` for a number that JSON cannot hold.
+#[must_use]
+pub fn data_points(points: &[Point]) -> String {
+    let json_number = |value: f64| {
+        if value.is_finite() {
+            js_number(value)
+        } else {
+            "null".to_owned()
+        }
+    };
+    let items: Vec<String> = points
+        .iter()
+        .map(|point| {
+            format!(
+                "{{\"x\":{},\"y\":{}}}",
+                json_number(point.x),
+                json_number(point.y)
+            )
+        })
+        .collect();
+    base64::engine::general_purpose::STANDARD.encode(format!("[{}]", items.join(",")))
+}
+
 /// The declarations of a label style string, as the label layout reads them.
 fn declarations(style: &str) -> Vec<String> {
     style
@@ -344,8 +406,11 @@ fn jump_style(section: &Section<'_>) -> Option<JumpStyle> {
 /// What the paint of an edge holds before the line hops, and what the hops may change.
 struct Painted {
     id: String,
-    /// The path's `id`, when it is not the edge's id.
-    path_id: Option<String>,
+    /// The path's `id`: `<diagramId>-<edge id>` (`edges.js` 837 and 860), unless the diagram names
+    /// the path itself.
+    path_id: String,
+    /// The `data-points` of the path: its points before the marker offsets, as [`data_points`].
+    points: String,
     /// The attributes after the markers, each with its leading space.
     path_attributes: String,
     d: Option<String>,
@@ -540,7 +605,11 @@ fn paint_edge(
 
     Painted {
         id: edge.id.clone(),
-        path_id: edge.path_id.clone(),
+        path_id: edge
+            .path_id
+            .clone()
+            .unwrap_or_else(|| format!("{svg_id}-{}", edge.id)),
+        points: data_points(&edge.points),
         path_attributes: edge.path_attributes.clone(),
         d,
         style,
@@ -558,13 +627,13 @@ fn format_path(painted: &Painted) -> String {
     if let Some(d) = &painted.d {
         attributes.push_str(&format!(" d=\"{}\"", escape(d)));
     }
-    let path_id = painted.path_id.as_deref().unwrap_or(&painted.id);
-    attributes.push_str(&format!(" id=\"{}\"", escape(path_id)));
+    attributes.push_str(&format!(" id=\"{}\"", escape(&painted.path_id)));
     attributes.push_str(&format!(" class=\"{}\"", escape(&painted.class)));
     attributes.push_str(&format!(" style=\"{}\"", escape(&painted.style)));
     attributes.push_str(&format!(
-        " data-edge=\"true\" data-et=\"edge\" data-id=\"{}\"",
-        escape(&painted.id)
+        " data-edge=\"true\" data-et=\"edge\" data-id=\"{}\" data-points=\"{}\"",
+        escape(&painted.id),
+        painted.points
     ));
     if !painted.look.is_empty() {
         attributes.push_str(&format!(" data-look=\"{}\"", escape(&painted.look)));
@@ -595,8 +664,15 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
     let y = edge.y.unwrap_or(0.0) + margin / 2.0;
     let text = label.bbox;
     let (text_x, text_y) = (text.x + text.width / 2.0, text.y + text.height / 2.0);
-    let style = label_style_text(edge);
-    let inner = label.svg(&style);
+    let inner = match label.background {
+        // `createText` restyles the background and the text of a label that has a background,
+        // which an edge label with text has; without one it leaves both as they are.
+        Some(_) => {
+            let (background, text) = edge_label_styles(&label_style_text(edge));
+            label.svg_with_background(&text, &background)
+        }
+        None => label.svg(&label_style_text(edge)),
+    };
     let group = match label.background {
         Some(background) => text.union(background),
         None => text,
@@ -645,6 +721,55 @@ mod tests {
         assert_eq!(
             label_style_text(&edge),
             "color:blue !important;font-size:20px !important"
+        );
+    }
+
+    /// The pairs of `createText`'s replacements as Node 24 gives them for these styles.
+    #[test]
+    fn an_edge_label_restyles_its_background_and_text_as_create_text_does() {
+        let cases = [
+            (
+                "color:Sienna !important",
+                "color:Sienna !important",
+                "fill:Sienna !important",
+            ),
+            ("stroke: #333; stroke-width: 1.5px;fill:none;", " ", " "),
+            (
+                "background:yellow !important;color:red !important;fill:blue !important",
+                "fill:yellow !important;color:red !important;",
+                "background:yellow !important;fill:red !important;",
+            ),
+            (
+                "stroke:;fill:;color:x",
+                "stroke:;fill:;color:x",
+                "stroke:;fill:;fill:x",
+            ),
+            (
+                "font-size:20px !important;stroke-width:4px !important;background-color:pink !important",
+                "font-size:20px !important;background-color:pink !important",
+                "font-size:20px !important;background-fill:pink !important",
+            ),
+        ];
+        for (style, background, text) in cases {
+            assert_eq!(
+                edge_label_styles(style),
+                (background.to_owned(), text.to_owned()),
+                "{style}"
+            );
+        }
+    }
+
+    /// `btoa(JSON.stringify(points))` in Node 24 for the points of a reference edge, and with a
+    /// coordinate that JSON writes as `null`.
+    #[test]
+    fn the_data_points_are_the_points_as_json_in_base64() {
+        assert_eq!(
+            data_points(&[Point::new(502.3125, 694.5), Point::new(648.5625, 694.5)]),
+            "W3sieCI6NTAyLjMxMjUsInkiOjY5NC41fSx7IngiOjY0OC41NjI1LCJ5Ijo2OTQuNX1d"
+        );
+        assert_eq!(
+            data_points(&[Point::new(f64::NAN, 1e-7)]),
+            "W3sieCI6bnVsbCwieSI6MWUtN31d"
         );
     }
 

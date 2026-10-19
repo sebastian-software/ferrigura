@@ -278,8 +278,10 @@ pub(super) fn insert_edges(
         } else {
             "edge-pattern-solid"
         };
+        // `insertEdge` prefixes the id once more for the path (`renderHelpers.ts` 258-280), so
+        // the path is `<id>-<id>-<edge>` and its `data-id` `<id>-<edge>`.
         let edge = Edge {
-            id: format!("{}-{prefixed}", context.id),
+            id: prefixed,
             start: start.to_owned(),
             end: end.to_owned(),
             label: model.label.clone(),

@@ -173,13 +173,31 @@ impl LabelLayout {
         )
     }
 
+    /// [`LabelLayout::svg`] with the style of the background rectangle: `createText` gives an edge
+    /// label's background the edge's label style in place of `stroke: none` (`createText.ts`
+    /// 391-401).
+    #[must_use]
+    pub fn svg_with_background(&self, text_style: &str, background_style: &str) -> String {
+        format!(
+            "<g>{}{}</g>",
+            self.background_rect_with(background_style),
+            self.text_element_with(text_style, "", false)
+        )
+    }
+
     /// The background rectangle of the label, as `createFormattedText` inserts it in every label:
     /// sized to the text plus the padding when the label has a background, else empty.
     #[must_use]
     pub fn background_rect(&self) -> String {
+        self.background_rect_with("stroke: none")
+    }
+
+    /// [`LabelLayout::background_rect`] with the given style.
+    fn background_rect_with(&self, style: &str) -> String {
         if let Some(background) = self.background {
             format!(
-                r#"<rect class="background" style="stroke: none" x="{}" y="{}" width="{}" height="{}"></rect>"#,
+                r#"<rect class="background" style="{}" x="{}" y="{}" width="{}" height="{}"></rect>"#,
+                escape(style),
                 number(background.x),
                 number(background.y),
                 number(background.width),
@@ -187,7 +205,10 @@ impl LabelLayout {
             )
         } else {
             // An empty rectangle has no box.
-            r#"<rect class="background" style="stroke: none"></rect>"#.to_owned()
+            format!(
+                r#"<rect class="background" style="{}"></rect>"#,
+                escape(style)
+            )
         }
     }
 
