@@ -267,13 +267,19 @@ impl Renderer {
                 themes,
                 id,
             }),
-            DiagramType::Packet => packet_render::render(&packet_render::PacketInput {
-                diagram: &packet::parse_with(text, &prepared.view.effective)?,
-                config: typed_config,
-                themes,
-                id,
-                bits_per_row: packet::bits_per_row(&prepared.view.effective),
-            }),
+            DiagramType::Packet => {
+                let section = packet_render::PacketSection {
+                    config: typed_config.packet.clone(),
+                    bits_per_row: packet::bits_per_row(&prepared.view.effective),
+                };
+                packet_render::render(&Context {
+                    diagram: &packet::parse_with(text, &prepared.view.effective)?,
+                    section: &section,
+                    globals: &prepared.view.globals,
+                    theme: prepared.theme(),
+                    id,
+                })
+            }
             DiagramType::XyChart => xychart_render::render(&xychart_render::XyChartInput {
                 diagram: &xychart::parse(text)?,
                 config: typed_config,

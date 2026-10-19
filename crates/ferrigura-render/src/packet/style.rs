@@ -12,6 +12,8 @@
 //! carries its colour as a presentation attribute (`docs-port/decisions/0007`). The rules name the
 //! properties, and every selector starts with the id, as `compileCSS` writes them.
 
+use ferrigura_model::theme::Token;
+use ferrigura_model::theme::tokens::PacketTokens;
 use ferrigura_model::value::Value;
 
 /// The options of the packet styles after the merge with the defaults: `PacketStyleOptions`
@@ -42,25 +44,25 @@ pub(super) struct Options {
 
 impl Options {
     /// The options of the theme variables: the defaults of `defaultPacketStyleOptions`, with each
-    /// option that `themeVariables.packet` sets written in its place.
-    pub(super) fn of(variables: &Value) -> Self {
-        let packet = variables.get("packet").and_then(Value::as_object);
-        let read = |name: &str, default: &str| {
+    /// option that `themeVariables.packet` sets written in its place. `packet` is the group of the
+    /// theme's tokens; a theme without the group has the defaults.
+    pub(super) fn of(packet: Option<&PacketTokens>) -> Self {
+        let read = |token: fn(&PacketTokens) -> &Token, default: &str| {
             packet
-                .and_then(|options| options.get(name))
+                .and_then(|options| token(options).value())
                 .map_or_else(|| default.to_owned(), template_text)
         };
         Self {
-            byte_font_size: read("byteFontSize", "10px"),
-            start_byte_color: read("startByteColor", "black"),
-            end_byte_color: read("endByteColor", "black"),
-            label_color: read("labelColor", "black"),
-            label_font_size: read("labelFontSize", "12px"),
-            title_color: read("titleColor", "black"),
-            title_font_size: read("titleFontSize", "14px"),
-            block_stroke_color: read("blockStrokeColor", "black"),
-            block_stroke_width: read("blockStrokeWidth", "1"),
-            block_fill_color: read("blockFillColor", "#efefef"),
+            byte_font_size: read(|options| &options.byte_font_size, "10px"),
+            start_byte_color: read(|options| &options.start_byte_color, "black"),
+            end_byte_color: read(|options| &options.end_byte_color, "black"),
+            label_color: read(|options| &options.label_color, "black"),
+            label_font_size: read(|options| &options.label_font_size, "12px"),
+            title_color: read(|options| &options.title_color, "black"),
+            title_font_size: read(|options| &options.title_font_size, "14px"),
+            block_stroke_color: read(|options| &options.block_stroke_color, "black"),
+            block_stroke_width: read(|options| &options.block_stroke_width, "1"),
+            block_fill_color: read(|options| &options.block_fill_color, "#efefef"),
         }
     }
 }
@@ -121,7 +123,14 @@ pub(super) fn own_rules(id: &str, options: &Options) -> String {
 mod tests {
     use std::collections::BTreeMap;
 
+    use ferrigura_model::theme::ThemeTokens;
+
     use super::*;
+
+    /// The options of the theme whose variables are `variables`.
+    fn options_of(variables: &Value) -> Options {
+        Options::of(ThemeTokens::from_value(variables).packet.as_ref())
+    }
 
     fn variables_with_packet(packet: Value) -> Value {
         let mut variables = BTreeMap::new();
@@ -131,7 +140,7 @@ mod tests {
 
     #[test]
     fn without_a_packet_key_the_defaults_are_used() {
-        let options = Options::of(&Value::empty_object());
+        let options = options_of(&Value::empty_object());
         assert_eq!(options.block_fill_color, "#efefef");
         assert_eq!(options.block_stroke_width, "1");
         assert_eq!(options.title_font_size, "14px");
@@ -142,7 +151,7 @@ mod tests {
         let mut packet = BTreeMap::new();
         packet.insert("blockFillColor".to_owned(), Value::String("red".to_owned()));
         packet.insert("blockStrokeWidth".to_owned(), Value::Number(2.0));
-        let options = Options::of(&variables_with_packet(Value::Object(packet)));
+        let options = options_of(&variables_with_packet(Value::Object(packet)));
         assert_eq!(options.block_fill_color, "red");
         assert_eq!(options.block_stroke_width, "2");
         assert_eq!(options.label_color, "black");
@@ -150,13 +159,13 @@ mod tests {
 
     #[test]
     fn a_packet_key_that_is_not_an_object_merges_nothing() {
-        let options = Options::of(&variables_with_packet(Value::String("red".to_owned())));
+        let options = options_of(&variables_with_packet(Value::String("red".to_owned())));
         assert_eq!(options.block_fill_color, "#efefef");
     }
 
     #[test]
     fn own_rules_name_the_custom_properties_and_scope_them_to_the_id() {
-        let options = Options::of(&Value::empty_object());
+        let options = options_of(&Value::empty_object());
         let css = own_rules("packet-diagram", &options);
         assert!(css.starts_with("#packet-diagram{--packetStartByteColor:black;"));
         assert!(css.contains("#packet-diagram .packetBlock{stroke:var(--packetBlockStrokeColor);stroke-width:1;fill:var(--packetBlockFillColor);}"));
