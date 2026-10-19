@@ -5,6 +5,7 @@ use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value;
 
 use super::{ShapeInput, ShapeOutput, draw};
+use crate::unified::Fixture;
 use crate::unified::data::Node;
 use crate::unified::label::LabelLayout;
 
@@ -30,13 +31,12 @@ pub(super) fn node(shape: &str, look: &str) -> Node {
 
 /// Draws the node with a label of the given box, in the flowchart's default configuration.
 pub(super) fn draw_box(node: &Node, label: &LabelLayout) -> ShapeOutput {
-    let config = MermaidConfig::default();
-    let theme = theme();
+    let fixture = Fixture::new(MermaidConfig::default(), &theme());
+    let config = fixture.config();
     draw(&ShapeInput {
         node,
         label: Some(label),
         config: &config,
-        theme: &theme,
         dir: Some("TB"),
     })
     .expect("the shape is known")

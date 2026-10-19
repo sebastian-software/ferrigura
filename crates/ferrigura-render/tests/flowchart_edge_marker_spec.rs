@@ -4,6 +4,7 @@
 //! Ignored: the aggregation and composition markers, which only the class diagram draws.
 
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_render::unified::Section;
 use ferrigura_render::unified::data::Edge;
 use ferrigura_render::unified::edges::paint_paths;
 use ferrigura_render::unified::geom::Point;
@@ -24,7 +25,7 @@ fn painted_path(arrow_type_start: &str, arrow_type_end: &str) -> String {
         std::slice::from_ref(&edge),
         "svg",
         FLOWCHART,
-        &MermaidConfig::default(),
+        &Section::of(&MermaidConfig::default()),
     )
     .remove(0)
     .svg

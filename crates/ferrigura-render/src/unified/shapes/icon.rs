@@ -123,7 +123,7 @@ fn icon_element(input: &ShapeInput<'_>, styles: &Styles, at: Point) -> String {
         .iter()
         .find(|(key, _)| key == "stroke")
         .map(|(_, value)| value.clone())
-        .unwrap_or_else(|| match input.theme.get("nodeBorder") {
+        .unwrap_or_else(|| match input.config.theme.node_border.value() {
             Some(Value::String(text)) => text.clone(),
             _ => String::new(),
         });
@@ -464,7 +464,7 @@ pub(super) fn icon_circle(input: &ShapeInput<'_>) -> Part {
 pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> {
     let node = input.node;
     let styles = styles2string(node);
-    let default_width = input.config.flowchart.wrapping_width;
+    let default_width = input.config.section.flowchart.wrapping_width;
     let (image_width, image_height) = image_size(node, default_width)?;
     let top = label_on_top(node);
     let label = icon_label(input);
@@ -562,6 +562,7 @@ pub(super) fn image_square(input: &ShapeInput<'_>) -> Result<Part, RenderError> 
 mod tests {
     use super::super::test_support::{draw_box, node, theme};
     use super::*;
+    use crate::unified::Fixture;
     use crate::unified::shapes::draw;
     use ferrigura_model::config::MermaidConfig;
 
@@ -650,13 +651,12 @@ mod tests {
     fn an_image_without_its_asset_sizes_is_an_error_as_ferrigura_reads_no_images() {
         let mut image = node("imageSquare", "neo");
         image.img = Some("https://example.com/a.png".to_owned());
-        let config = MermaidConfig::default();
-        let theme = theme();
+        let fixture = Fixture::new(MermaidConfig::default(), &theme());
+        let config = fixture.config();
         let result = draw(&ShapeInput {
             node: &image,
             label: None,
             config: &config,
-            theme: &theme,
             dir: Some("TB"),
         });
         assert!(result.is_err());

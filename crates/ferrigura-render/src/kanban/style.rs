@@ -11,11 +11,10 @@
 //! 50, 59), so section `N` takes the colour of `cScale<N+1>` (`styles.ts` 24-26): the sheet keeps
 //! that offset.
 
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::theme::khroma::{darken, lighten};
-use ferrigura_model::value::Value;
 
-use crate::theme::Themes;
-use crate::variables::{text_of, truthy};
+use crate::context::ThemeView;
 
 /// `adjuster(color, 10)` of `genSections`: lightened, or darkened in the dark mode.
 const SECTION_SHADE: f64 = 10.0;
@@ -44,27 +43,27 @@ pub(super) struct Palette {
 
 impl Palette {
     /// The palette of one set of theme variables (`genSections`, `styles.ts` 6-16 and 19).
-    pub fn new(variables: &Value) -> Self {
-        let limit = limit_of(variables);
-        let dark_mode = truthy(variables, "darkMode");
+    pub fn new(tokens: &ThemeTokens) -> Self {
+        let limit = limit_of(tokens);
+        let dark_mode = tokens.dark_mode.truthy();
         let slots = (0..limit)
             .map(|index| {
-                let scale = text_of(variables, &format!("cScale{index}")).unwrap_or_default();
+                let scale = tokens.c_scale.get(index).text().unwrap_or_default();
                 let fill = if dark_mode {
                     darken(&scale, SECTION_SHADE)
                 } else {
                     lighten(&scale, SECTION_SHADE)
                 }
                 .unwrap_or(scale);
-                let label = text_of(variables, &format!("cScaleLabel{index}")).unwrap_or_default();
+                let label = tokens.c_scale_label.get(index).text().unwrap_or_default();
                 Slot { fill, label }
             })
             .collect();
         Self {
             slots,
-            background: text_of(variables, "background").unwrap_or_default(),
-            node_border: text_of(variables, "nodeBorder").unwrap_or_default(),
-            text_color: text_of(variables, "textColor").unwrap_or_default(),
+            background: tokens.background.text().unwrap_or_default(),
+            node_border: tokens.node_border.text().unwrap_or_default(),
+            text_color: tokens.text_color.text().unwrap_or_default(),
         }
     }
 
@@ -76,8 +75,10 @@ impl Palette {
 }
 
 /// `THEME_COLOR_LIMIT` of the theme: twelve in the redux themes.
-fn limit_of(variables: &Value) -> usize {
-    text_of(variables, "THEME_COLOR_LIMIT")
+fn limit_of(tokens: &ThemeTokens) -> usize {
+    tokens
+        .theme_color_limit
+        .text()
         .and_then(|text| text.trim().parse::<f64>().ok())
         .filter(|limit| limit.is_finite() && *limit >= 1.0)
         .map_or(12, |limit| limit.floor() as usize)
@@ -92,16 +93,10 @@ pub(super) struct Schemes {
 }
 
 impl Schemes {
-    pub fn new(themes: Themes<'_>) -> Self {
-        match themes {
-            Themes::Single(variables) => Self {
-                primary: Palette::new(variables),
-                dark: None,
-            },
-            Themes::Schemes { light, dark } => Self {
-                primary: Palette::new(light),
-                dark: Some(Palette::new(dark)),
-            },
+    pub fn new(theme: ThemeView<'_>) -> Self {
+        Self {
+            primary: Palette::new(theme.light),
+            dark: theme.dark.map(Palette::new),
         }
     }
 }

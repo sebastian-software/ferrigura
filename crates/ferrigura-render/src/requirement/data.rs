@@ -12,12 +12,12 @@
 //! layout fails on it inside ELK. The port keeps the empty name, and the render refuses it
 //! (`requirement/mod.rs`); the differential compares the empty name with the reference's `null`.
 
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::requirement::{
     Direction, Element, RelationshipKind, Requirement, RequirementDiagram, RequirementKind,
 };
 
+use crate::context::Globals;
 use crate::unified::data::RequirementFields;
 pub use crate::unified::data::{Edge, LayoutData, Node};
 
@@ -34,13 +34,13 @@ const CONTAINS: &str = "contains";
 /// The configuration is read as the reference reads it: `look` from the top level, which the
 /// requirement scope resolves to `neo` by default (`config.ts` 79-103).
 #[must_use]
-pub fn get_data(diagram: &RequirementDiagram, config: &MermaidConfig) -> LayoutData {
+pub fn get_data(diagram: &RequirementDiagram, globals: &Globals) -> LayoutData {
     let mut nodes = Vec::with_capacity(diagram.requirements.len() + diagram.elements.len());
     for requirement in &diagram.requirements {
-        nodes.push(requirement_node(requirement, nodes.len(), config));
+        nodes.push(requirement_node(requirement, nodes.len(), globals));
     }
     for element in &diagram.elements {
-        nodes.push(element_node(element, nodes.len(), config));
+        nodes.push(element_node(element, nodes.len(), globals));
     }
 
     let edges = diagram
@@ -64,7 +64,7 @@ pub fn get_data(diagram: &RequirementDiagram, config: &MermaidConfig) -> LayoutD
                 classes: "relationshipLine".to_owned(),
                 arrow_type_start: if contains { "requirement_contains" } else { "" }.to_owned(),
                 arrow_type_end: if contains { "" } else { "requirement_arrow" }.to_owned(),
-                look: config.look.clone(),
+                look: globals.look.clone(),
                 style: vec![
                     "fill:none".to_owned(),
                     if contains {
@@ -90,7 +90,7 @@ pub fn get_data(diagram: &RequirementDiagram, config: &MermaidConfig) -> LayoutD
 
 /// The node of a requirement (`getData`, lines 298-308): its id is its name, its classes and
 /// styles are its own, and its colour index is its place among the nodes.
-fn requirement_node(requirement: &Requirement, index: usize, config: &MermaidConfig) -> Node {
+fn requirement_node(requirement: &Requirement, index: usize, globals: &Globals) -> Node {
     Node {
         id: requirement.name.clone(),
         dom_id: requirement.name.clone(),
@@ -98,7 +98,7 @@ fn requirement_node(requirement: &Requirement, index: usize, config: &MermaidCon
         padding: 0.0,
         css_styles: requirement.css_styles.clone(),
         css_classes: requirement.classes.join(" "),
-        look: config.look.clone(),
+        look: globals.look.clone(),
         shape: SHAPE.to_owned(),
         color_index: Some(index as u32),
         requirement: Some(RequirementFields::Requirement {
@@ -115,7 +115,7 @@ fn requirement_node(requirement: &Requirement, index: usize, config: &MermaidCon
 
 /// The node of an element (`getData`, lines 310-316): the same as a requirement's, with the
 /// element's own fields.
-fn element_node(element: &Element, index: usize, config: &MermaidConfig) -> Node {
+fn element_node(element: &Element, index: usize, globals: &Globals) -> Node {
     Node {
         id: element.name.clone(),
         dom_id: element.name.clone(),
@@ -123,7 +123,7 @@ fn element_node(element: &Element, index: usize, config: &MermaidConfig) -> Node
         padding: 0.0,
         css_styles: element.css_styles.clone(),
         css_classes: element.classes.join(" "),
-        look: config.look.clone(),
+        look: globals.look.clone(),
         shape: SHAPE.to_owned(),
         color_index: Some(index as u32),
         requirement: Some(RequirementFields::Element {

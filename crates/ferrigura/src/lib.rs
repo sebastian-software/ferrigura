@@ -19,13 +19,18 @@ use std::hash::Hasher;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use ferrigura_model::config::{MermaidConfig, SiteConfig, typed};
+use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
+use ferrigura_render::block::BlockSection;
 use ferrigura_render::context::{Context, Globals, ThemeView};
-use ferrigura_render::flowchart::{self, FlowchartInput};
+use ferrigura_render::flowchart;
+use ferrigura_render::kanban::KanbanSections;
+use ferrigura_render::mindmap::MindmapSection;
 use ferrigura_render::pie::render as render_pie;
 use ferrigura_render::theme::Themes;
+use ferrigura_render::unified::Section;
 use ferrigura_render::{
     architecture as architecture_render, block as block_render, c4 as c4_render,
     class as class_render, er as er_render, event_modeling as event_modeling_render,
@@ -172,11 +177,8 @@ impl Renderer {
             }));
         };
         let prepared = self.prepare(text, options, kind)?;
-        let (typed_config, themes, id) = (
-            &prepared.view.config,
-            prepared.themes(),
-            prepared.id.as_str(),
-        );
+        let (typed_config, id) = (&prepared.view.config, prepared.id.as_str());
+        let section = Section::of(typed_config);
         match kind {
             DiagramType::Pie => render_pie(&Context {
                 diagram: &pie::parse(text)?,
@@ -219,16 +221,18 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Er => er_render::render(&er_render::ErInput {
+            DiagramType::Er => er_render::render(&Context {
                 diagram: &er::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Class => class_render::render(&class_render::ClassInput {
+            DiagramType::Class => class_render::render(&Context {
                 diagram: &class::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Sequence => sequence_render::render(&Context {
@@ -243,10 +247,11 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
-            DiagramType::State => state_render::render(&state_render::StateInput {
+            DiagramType::State => state_render::render(&Context {
                 diagram: &state::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Gantt => {
@@ -262,16 +267,24 @@ impl Renderer {
                     id,
                 })
             }
-            DiagramType::Mindmap => mindmap_render::render(&mindmap_render::MindmapInput {
+            DiagramType::Mindmap => mindmap_render::render(&Context {
                 diagram: &mindmap::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &MindmapSection {
+                    mindmap: &typed_config.mindmap,
+                    unified: section,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Block => block_render::render(&block_render::BlockInput {
+            DiagramType::Block => block_render::render(&Context {
                 diagram: &block::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &BlockSection {
+                    block: &typed_config.block,
+                    unified: section,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Packet => {
@@ -294,6 +307,13 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
+            DiagramType::Requirement => requirement_render::render(&Context {
+                diagram: &requirement::parse(text)?,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
             DiagramType::Sankey => sankey_render::render(&Context {
                 diagram: &sankey::parse(text)?,
                 section: &typed_config.sankey,
@@ -308,14 +328,6 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Requirement => {
-                requirement_render::render(&requirement_render::RequirementInput {
-                    diagram: &requirement::parse(text)?,
-                    config: typed_config,
-                    themes,
-                    id,
-                })
-            }
             DiagramType::C4 => c4_render::render(&Context {
                 diagram: &c4::parse(text)?,
                 section: &typed_config.c4,
@@ -323,10 +335,14 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Kanban => kanban_render::render(&kanban_render::KanbanInput {
+            DiagramType::Kanban => kanban_render::render(&Context {
                 diagram: &kanban::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &KanbanSections {
+                    kanban: &typed_config.kanban,
+                    mindmap: &typed_config.mindmap,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Architecture => architecture_render::render(&Context {
@@ -632,18 +648,20 @@ pub fn flowchart_elk_stages(
     }))
 }
 
-/// Parses a flowchart and hands it, with its configuration and theme, to `step`.
+/// Parses a flowchart and hands it, with its sections, globals and theme, to `step`.
 fn with_flowchart<T>(
     text: &str,
     prepared: &Prepared<'_>,
-    step: impl FnOnce(&FlowchartInput<'_>) -> Result<T, RenderError>,
+    step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
     let diagram = ferrigura_syntax::flowchart::parse(text)
         .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
-    step(&FlowchartInput {
+    let section = Section::of(&prepared.view.config);
+    step(&Context {
         diagram: &diagram,
-        config: &prepared.view.config,
-        themes: prepared.themes(),
+        section: &section,
+        globals: &prepared.view.globals,
+        theme: prepared.theme(),
         id: &prepared.id,
     })
 }

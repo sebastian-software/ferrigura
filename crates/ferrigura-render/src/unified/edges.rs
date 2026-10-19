@@ -7,10 +7,10 @@
 //! marker offsets. The other curves come from d3's line with the marker accessors, as the
 //! reference draws a straight fallback edge. Node clipping is off for ELK (`skipIntersect`).
 
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value;
 
+use super::Section;
 use super::data::{Edge, LayoutData};
 use super::geom::{BBox, Point};
 use super::label::{self, Anchor, LabelLayout, LabelSpec};
@@ -21,6 +21,7 @@ use super::path::{
     js_number, line_with_offset, marker_offset2, path_bounds, path_length,
 };
 use crate::RenderError;
+use crate::context::Globals;
 use crate::svg::escape;
 
 /// A painted edge path.
@@ -113,8 +114,7 @@ fn line_break_at(chars: &[char], start: usize) -> Option<usize> {
 /// read as a name. It is `None` here, and the paint then takes `flowchart.curve` (as
 /// `resolveEdgeCurveType` does for a function); the layout sets `rounded` or `linear` for every
 /// edge it routes.
-pub fn prepare(data: &mut LayoutData, config: &MermaidConfig) {
-    let _ = config;
+pub fn prepare(data: &mut LayoutData) {
     for edge in &mut data.edges {
         if edge.arrowhead.is_none() {
             let arrowhead = if edge.edge_type == "arrow_open" {
@@ -148,14 +148,14 @@ pub fn prepare(data: &mut LayoutData, config: &MermaidConfig) {
 
 /// The font size of the labels: the theme's `fontSize`, which the root rule of the reference's
 /// SVG sets and every label inherits (`redux-color` gives `14px`), else the configured size.
-fn theme_font_size(config: &MermaidConfig) -> f64 {
-    let variables = Theme::from_name(&config.theme).variables(config.theme_variables.as_ref());
+fn theme_font_size(globals: &Globals) -> f64 {
+    let variables = Theme::from_name(&globals.theme).variables(globals.theme_variables.as_ref());
     let from_theme = variables.get("fontSize").and_then(|value| match value {
         Value::Number(number) => Some(*number),
         Value::String(text) => text.trim().trim_end_matches("px").trim().parse().ok(),
         _ => None,
     });
-    from_theme.unwrap_or(config.font_size)
+    from_theme.unwrap_or(globals.font_size)
 }
 
 /// `isLabelStyle` of `shapes/handDrawnShapeStyles.ts`: the declarations that style the label.
@@ -225,12 +225,12 @@ fn declarations(style: &str) -> Vec<String> {
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read.
-pub fn label(edge: &Edge, config: &MermaidConfig) -> Result<Option<LabelLayout>, RenderError> {
-    label_with_font_size(edge, theme_font_size(config))
+pub fn label(edge: &Edge, globals: &Globals) -> Result<Option<LabelLayout>, RenderError> {
+    label_with_font_size(edge, theme_font_size(globals))
 }
 
 /// [`label`] with the font size given, for a caller that has the theme's variables at hand
-/// (`Themes`); `label` reads the size from the configuration.
+/// (the tokens of the render's theme); `label` reads the size from the globals.
 ///
 /// # Errors
 ///
@@ -340,8 +340,8 @@ fn stroke_colour(style: &str) -> Option<&str> {
 
 /// The line hops of the configuration: `None` when `elk.lineHops` is `false`; otherwise the style,
 /// `gap` for `'gap'` and `arc` for anything else (`elk/lineHops.ts`).
-fn jump_style(config: &MermaidConfig) -> Option<JumpStyle> {
-    match config.elk.line_hops.as_ref() {
+fn jump_style(section: &Section<'_>) -> Option<JumpStyle> {
+    match section.elk.line_hops.as_ref() {
         Some(Value::Bool(false)) => None,
         Some(value) if value.as_str() == Some("gap") => Some(JumpStyle::Gap),
         _ => Some(JumpStyle::Arc),
@@ -367,16 +367,16 @@ pub fn paint_paths(
     edges: &[Edge],
     svg_id: &str,
     diagram_type: &str,
-    config: &MermaidConfig,
+    section: &Section<'_>,
 ) -> Vec<EdgePath> {
-    let default_curve = config.flowchart.curve.clone();
+    let default_curve = section.flowchart.curve.clone();
     let mut created = std::collections::HashSet::new();
     let mut painted: Vec<Painted> = edges
         .iter()
         .map(|edge| paint_edge(edge, svg_id, diagram_type, &default_curve, &mut created))
         .collect();
 
-    if let Some(style) = jump_style(config) {
+    if let Some(style) = jump_style(section) {
         let indices: Vec<usize> = edges
             .iter()
             .enumerate()
@@ -574,8 +574,8 @@ fn format_path(painted: &Painted) -> String {
 /// outer group at the edge's centre (plus half the subgraph title margin), the inner group centred
 /// on its text.
 #[must_use]
-pub fn paint_label(edge: &Edge, label: &LabelLayout, config: &MermaidConfig) -> EdgeLabel {
-    let margin = config
+pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> EdgeLabel {
+    let margin = section
         .flowchart
         .sub_graph_title_margin
         .as_ref()
@@ -609,12 +609,14 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, config: &MermaidConfig) -> 
 
 /// The marker definitions the flowchart uses, as `insertMarkers` writes them for `flowchart-v2`.
 #[must_use]
-pub fn markers(svg_id: &str, config: &MermaidConfig) -> String {
-    markers::markers(svg_id, markers::FLOWCHART, config)
+pub fn markers(svg_id: &str) -> String {
+    markers::markers(svg_id, markers::FLOWCHART)
 }
 
 #[cfg(test)]
 mod tests {
+    use ferrigura_model::config::MermaidConfig;
+
     use super::*;
 
     #[test]
@@ -700,27 +702,30 @@ mod tests {
     #[test]
     fn the_jump_style_follows_the_configuration() {
         let mut config = MermaidConfig::default();
-        assert_eq!(jump_style(&config), Some(JumpStyle::Arc));
+        assert_eq!(jump_style(&Section::of(&config)), Some(JumpStyle::Arc));
         config.elk.line_hops = Some(Value::from(serde_json::json!("gap")));
-        assert_eq!(jump_style(&config), Some(JumpStyle::Gap));
+        assert_eq!(jump_style(&Section::of(&config)), Some(JumpStyle::Gap));
         config.elk.line_hops = Some(Value::from(serde_json::json!(false)));
-        assert_eq!(jump_style(&config), None);
+        assert_eq!(jump_style(&Section::of(&config)), None);
     }
 
     #[test]
     fn the_label_font_size_is_the_theme_font_size() {
         // `redux-color` sets `fontSize` to 14px; the labels inherit it from the root rule.
-        assert_eq!(theme_font_size(&MermaidConfig::default()), 14.0);
+        assert_eq!(
+            theme_font_size(&Globals::of(&MermaidConfig::default())),
+            14.0
+        );
         let config = MermaidConfig {
             theme_variables: Some(Value::from(serde_json::json!({"fontSize": "20px"}))),
             ..MermaidConfig::default()
         };
-        assert_eq!(theme_font_size(&config), 20.0);
+        assert_eq!(theme_font_size(&Globals::of(&config)), 20.0);
     }
 
     #[test]
     fn the_markers_of_the_diagram_are_twelve() {
-        let svg = markers("svg", &MermaidConfig::default());
+        let svg = markers("svg");
         assert_eq!(svg.matches("<marker ").count(), 12);
     }
 }

@@ -8,16 +8,18 @@
 //! `getData` gives (`crates/ferrigura-render/src/class/data.rs`), with the light theme.
 
 use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_render::class::data::get_data;
+use ferrigura_render::context::Globals;
+use ferrigura_render::unified::Section;
 use ferrigura_render::unified::data::{LayoutData, Node};
 use ferrigura_syntax::class::parse_grammar;
 
 /// The layout data of a class text under `config`.
 fn layout_with(text: &str, config: &MermaidConfig) -> LayoutData {
     let diagram = parse_grammar(text).unwrap_or_else(|error| panic!("{text:?}: {error:?}"));
-    let theme = Theme::ReduxColor.variables(None);
-    get_data(&diagram, config, &theme)
+    let theme = ThemeTokens::from_value(&Theme::ReduxColor.variables(None));
+    get_data(&diagram, &Section::of(config), &Globals::of(config), &theme)
 }
 
 /// The layout data of a class text under the default configuration.

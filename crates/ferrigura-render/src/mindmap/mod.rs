@@ -13,7 +13,9 @@ mod layout;
 mod paint;
 mod style;
 
-use ferrigura_model::config::MermaidConfig;
+use crate::context::Context;
+use crate::unified::{Config, Section};
+use ferrigura_model::config::MindmapDiagramConfig;
 use ferrigura_model::mindmap::MindmapDiagram;
 use ferrigura_text::{EmbeddedFamily, Run, embed_runs};
 
@@ -23,9 +25,7 @@ use crate::common::Element;
 use crate::common::viewbox::{BBox as ViewBox, setup_graph_viewbox};
 use crate::flowchart::style::look_defs;
 use crate::svg::{escape, number};
-use crate::theme::Themes;
 use crate::unified::pipeline;
-use crate::variables::{px, text_of};
 
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
@@ -33,18 +33,14 @@ const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 /// The font size when the theme has none (`createText`'s default, the reference's `fontSize` of 16).
 const DEFAULT_FONT_SIZE: f64 = 16.0;
 
-/// What the mindmap renderer draws.
+/// The configuration of the mindmap renderer: its own section, and the sections of the unified renderer
+/// that the nodes and the edges read.
 #[derive(Debug, Clone, Copy)]
-pub struct MindmapInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a MindmapDiagram,
-    /// The effective configuration, in the mindmap diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
+pub struct MindmapSection<'a> {
+    /// The `mindmap` section.
+    pub mindmap: &'a MindmapDiagramConfig,
+    /// The sections that the unified renderer reads.
+    pub unified: Section<'a>,
 }
 
 /// Renders the diagram to an SVG document.
@@ -53,10 +49,9 @@ pub struct MindmapInput<'a> {
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the layout fails (the
 /// tidy tree on a cycle; cose-bilkent on a graph that is not a forest).
-pub fn render(input: &MindmapInput<'_>) -> Result<String, RenderError> {
-    let config = input.config;
-    let theme = input.themes.primary();
-
+pub fn render(
+    input: &Context<'_, MindmapDiagram, MindmapSection<'_>>,
+) -> Result<String, RenderError> {
     // A tree without a root draws nothing: the reference returns after the placeholder `svg`
     // (`mindmapRenderer.ts` 53-56), which keeps no class, viewBox or style (`mindmap/NOTES.md` 6.6).
     if input.diagram.root.is_none() {
@@ -69,16 +64,21 @@ pub fn render(input: &MindmapInput<'_>) -> Result<String, RenderError> {
 
     // `getData` and the overrides of the shapes (`mindmapRenderer.ts` 58-74), then the measure step:
     // every node's shape and label, and the sizes of their groups.
-    let data = data::layout_data(input.diagram, config);
-    let mut measured = pipeline::measure(data, config, theme)?;
+    let data = data::layout_data(input.diagram, input.globals, input.section.mindmap);
+    let unified = Config {
+        section: input.section.unified,
+        globals: input.globals,
+        theme: input.theme.light,
+    };
+    let mut measured = pipeline::measure(data, &unified)?;
 
     // The layout: the name the configuration gives, or cose-bilkent for the names that are not
     // registered (`mindmapRenderer.ts` 47-49).
-    match layout::of(&config.layout) {
+    match layout::of(&input.globals.layout) {
         layout::Layout::CoseBilkent => layout::cose(&mut measured.data)?,
         layout::Layout::TidyTree => layout::tidy(&mut measured.data)?,
         layout::Layout::Elk => {
-            pipeline::lay_out(&mut measured, config)?;
+            pipeline::lay_out(&mut measured, &unified)?;
         }
     }
 
@@ -98,17 +98,29 @@ pub fn render(input: &MindmapInput<'_>) -> Result<String, RenderError> {
     }
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
-        || text_of(theme, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            input
+                .theme
+                .light
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE);
-    let style = crate::common::style::base_style_sheet_with(
+    let font_size = input
+        .theme
+        .light
+        .font_size
+        .px()
+        .unwrap_or(DEFAULT_FONT_SIZE);
+    let style = crate::common::style::base_style_sheet_tokens(
         input.id,
-        input.themes,
+        input.theme,
         &font_family,
         &format!("{}px", number(font_size)),
         &families,
-        &style::own_rules(input.id, input.themes, &config.look),
+        &style::own_rules(input.id, input.theme.light, &input.globals.look),
     );
 
     // `setupViewPortForSVG` (`mindmapRenderer.ts` 110-115): the class, the size and the viewBox from
@@ -126,15 +138,15 @@ pub fn render(input: &MindmapInput<'_>) -> Result<String, RenderError> {
             width: bounds.width,
             height: bounds.height,
         },
-        config.mindmap.padding,
-        config.mindmap.use_max_width,
+        input.section.mindmap.padding,
+        input.section.mindmap.use_max_width,
     );
     root.set("role", a11y::SVG_ROLE);
     root.set("aria-roledescription", "mindmap");
 
     // The root group is the one `mermaidAPI` appends (`mermaidAPI.ts` 419); the look's shadow and
     // gradient definitions come after it (`insertLookDefs`).
-    let defs = look_defs(input.id, input.themes, config);
+    let defs = look_defs(input.id, input.theme, input.globals);
     let root = root.raw_text(format!(
         "<style>{style}</style><g>{group}</g>{defs}",
         group = painted.root,

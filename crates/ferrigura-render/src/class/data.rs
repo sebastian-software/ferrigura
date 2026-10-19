@@ -19,10 +19,12 @@
 use ferrigura_model::class::{
     ClassDiagram, ClassNamespace, ClassNode, ClassNote, ClassRelation, LineType, RelationEnd,
 };
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
+use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_model::value::Value;
 
+use crate::context::Globals;
+use crate::unified::Section;
 use crate::unified::data::{ClassNodeData, Edge, LayoutData, Node};
 
 /// The padding of a namespace when the configuration gives none (`classDb.ts` 752).
@@ -45,9 +47,14 @@ const CLASS_DOM_ID_PREFIX: &str = "classId-";
 /// `theme` gives the note colours (`noteBkgColor` and `noteBorderColor`), which the note nodes carry
 /// as their CSS styles.
 #[must_use]
-pub fn get_data(diagram: &ClassDiagram, config: &MermaidConfig, theme: &Value) -> LayoutData {
-    let hierarchical = config.class.hierarchical_namespaces;
-    let look = config.look.clone();
+pub fn get_data(
+    diagram: &ClassDiagram,
+    section: &Section<'_>,
+    globals: &Globals,
+    theme: &ThemeTokens,
+) -> LayoutData {
+    let hierarchical = section.class.hierarchical_namespaces;
+    let look = globals.look.clone();
     let mut nodes = Vec::new();
     let mut edges = Vec::new();
 
@@ -55,7 +62,7 @@ pub fn get_data(diagram: &ClassDiagram, config: &MermaidConfig, theme: &Value) -
         if !hierarchical && !namespace.explicit {
             continue;
         }
-        nodes.push(namespace_node(namespace, hierarchical, config, &look));
+        nodes.push(namespace_node(namespace, hierarchical, section, &look));
     }
 
     // Only classes take a colour slot; namespaces and notes do not shift the cycle.
@@ -74,7 +81,7 @@ pub fn get_data(diagram: &ClassDiagram, config: &MermaidConfig, theme: &Value) -
         } else {
             resolve_explicit_ancestor(diagram, note.parent.as_deref())
         };
-        nodes.push(note_node(note, parent, config, theme, &look));
+        nodes.push(note_node(note, parent, section, theme, &look));
         // `classes.get(note.class)?.id`: a note on a class that exists gets a dotted edge to it.
         if let Some(class) = note.class.as_deref().and_then(|name| diagram.class(name)) {
             edges.push(note_edge(note, &class.id, &look));
@@ -113,7 +120,7 @@ pub fn get_data(diagram: &ClassDiagram, config: &MermaidConfig, theme: &Value) -
 fn namespace_node(
     namespace: &ClassNamespace,
     hierarchical: bool,
-    config: &MermaidConfig,
+    section: &Section<'_>,
     look: &str,
 ) -> Node {
     Node {
@@ -124,7 +131,7 @@ fn namespace_node(
         } else {
             namespace.id.clone()
         },
-        padding: config.class.padding.unwrap_or(NAMESPACE_PADDING),
+        padding: section.class.padding.unwrap_or(NAMESPACE_PADDING),
         css_classes: UNDEFINED_CLASSES.to_owned(),
         is_group: true,
         shape: "rect".to_owned(),
@@ -171,13 +178,14 @@ fn class_node(class: &ClassNode, parent: Option<String>, look: &str, index: usiz
 fn note_node(
     note: &ClassNote,
     parent: Option<String>,
-    config: &MermaidConfig,
-    theme: &Value,
+    section: &Section<'_>,
+    theme: &ThemeTokens,
     look: &str,
 ) -> Node {
-    let colour = |key: &str| {
-        theme
-            .get(key)
+    // Only a text is a colour here: a number or a list gives none (`Value::as_str`).
+    let colour = |token: &Token| {
+        token
+            .value()
             .and_then(Value::as_str)
             .unwrap_or_default()
             .to_owned()
@@ -187,13 +195,13 @@ fn note_node(
         dom_id: note.id.clone(),
         label: note.text.clone(),
         label_type: LabelType::Markdown,
-        padding: config.class.padding.unwrap_or(NOTE_PADDING),
+        padding: section.class.padding.unwrap_or(NOTE_PADDING),
         css_classes: UNDEFINED_CLASSES.to_owned(),
         css_styles: vec![
             "text-align: left".to_owned(),
             "white-space: nowrap".to_owned(),
-            format!("fill: {}", colour("noteBkgColor")),
-            format!("stroke: {}", colour("noteBorderColor")),
+            format!("fill: {}", colour(&theme.note_bkg_color)),
+            format!("stroke: {}", colour(&theme.note_border_color)),
         ],
         look: look.to_owned(),
         parent_id: parent,

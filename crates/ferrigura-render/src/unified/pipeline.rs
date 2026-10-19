@@ -10,17 +10,14 @@
 use std::collections::HashMap;
 
 use ferrigura_elk::json::JsonNode;
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
-use ferrigura_model::value::Value;
 
 use crate::RenderError;
 use crate::unified::data::{LayoutData, Node};
 use crate::unified::geom::BBox;
 use crate::unified::label::{Anchor, LabelLayout};
 use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
-use crate::unified::{clusters, edges, elk_apply, elk_build, terminal};
-use crate::variables::px;
+use crate::unified::{Config, clusters, edges, elk_apply, elk_build, terminal};
 
 /// The graph handed to ELK and the graph it returned, for the differential comparison with the
 /// reference's capture (`tools/port/geometry/flowchart-geometry.ts`).
@@ -93,17 +90,13 @@ fn node_dir(data: &LayoutData, index: usize) -> Option<&str> {
 }
 
 /// The edge render data and the measure step of `createGraphWithElements`, for the layout data
-/// of a diagram's `getData`. `theme` is the set of theme variables that gives the sizes.
+/// of a diagram's `getData`. `config` gives the sections and the globals, and the theme's tokens give the sizes.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or a shape is unknown.
-pub fn measure(
-    mut data: LayoutData,
-    config: &MermaidConfig,
-    theme: &Value,
-) -> Result<Measured, RenderError> {
-    edges::prepare(&mut data, config);
+pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, RenderError> {
+    edges::prepare(&mut data);
 
     let anchor = node_anchor(&data.diagram_type);
     let mut shapes = HashMap::new();
@@ -117,18 +110,17 @@ pub fn measure(
             let size = if node.label.is_empty() {
                 (0.0, 0.0)
             } else {
-                shapes::node_label(node, config, theme, width, anchor)?
+                shapes::node_label(node, config, width, anchor)?
                     .map_or((0.0, 0.0), |label| (label.bbox.width, label.bbox.height))
             };
             data.nodes[index].label_bbox = Some(size);
             continue;
         }
-        let label = shapes::node_label(node, config, theme, None, anchor)?;
+        let label = shapes::node_label(node, config, None, anchor)?;
         let shape = shapes::draw(&ShapeInput {
             node,
             label: label.as_ref(),
             config,
-            theme,
             dir: node_dir(&data, index),
         })?;
         let id = node.id.clone();
@@ -141,7 +133,7 @@ pub fn measure(
     }
 
     let mut edge_labels = HashMap::new();
-    let font_size = px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE);
+    let font_size = config.theme.font_size.px().unwrap_or(DEFAULT_FONT_SIZE);
     for edge in &mut data.edges {
         if let Some(label) = edges::label_with_font_size(edge, font_size)? {
             let (width, height) = edges::label_size(&label);
@@ -181,7 +173,7 @@ pub fn node_anchor(diagram_type: &str) -> Anchor {
 /// # Errors
 ///
 /// Returns an error if the layout fails.
-pub fn lay_out(measured: &mut Measured, config: &MermaidConfig) -> Result<ElkStages, RenderError> {
+pub fn lay_out(measured: &mut Measured, config: &Config<'_>) -> Result<ElkStages, RenderError> {
     let elk = elk_build::build(&measured.data, config);
     let layout = ferrigura_elk::layout(&elk.graph, false)
         .map_err(|error| RenderError::Layout(error.to_string()))?;
@@ -195,7 +187,7 @@ pub fn lay_out(measured: &mut Measured, config: &MermaidConfig) -> Result<ElkSta
         &layout.graph,
         &elk.state,
         &intersects,
-        config,
+        config.section.elk.straighten_edges,
     );
     Ok(ElkStages {
         input: elk.graph,
@@ -213,8 +205,7 @@ pub fn lay_out(measured: &mut Measured, config: &MermaidConfig) -> Result<ElkSta
 pub fn paint<'a>(
     measured: &'a Measured,
     id: &str,
-    config: &MermaidConfig,
-    theme: &Value,
+    config: &Config<'_>,
 ) -> Result<Painted<'a>, RenderError> {
     let data = &measured.data;
     let mut bounds: Option<BBox> = None;
@@ -228,7 +219,7 @@ pub fn paint<'a>(
             dom_id: format!("{id}-{}", node.dom_id),
             ..node.clone()
         };
-        let cluster = clusters::paint(&prefixed, config, theme)?;
+        let cluster = clusters::paint(&prefixed, config)?;
         // The frame of an empty subgraph has no height: an unrendered rect, which `getBBox` leaves
         // out of the drawing's box. Its title is text and counts.
         if !cluster.bbox.is_empty() {
@@ -264,7 +255,7 @@ pub fn paint<'a>(
 
     let mut edge_paths = String::new();
     let mut coloured_markers = String::new();
-    for path in edges::paint_paths(&data.edges, id, &data.diagram_type, config) {
+    for path in edges::paint_paths(&data.edges, id, &data.diagram_type, &config.section) {
         cover(&mut bounds, path.bbox);
         edge_paths.push_str(&path.svg);
         coloured_markers.push_str(&path.markers);
@@ -272,7 +263,7 @@ pub fn paint<'a>(
     let mut edge_labels = String::new();
     for edge in &data.edges {
         if let Some(label) = measured.edge_labels.get(&edge.id) {
-            let painted = edges::paint_label(edge, label, config);
+            let painted = edges::paint_label(edge, label, &config.section);
             cover(&mut bounds, painted.bbox);
             edge_labels.push_str(&painted.svg);
             labels.push(label);

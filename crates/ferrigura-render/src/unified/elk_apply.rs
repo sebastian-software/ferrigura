@@ -18,9 +18,6 @@
 
 use std::collections::{HashMap, HashSet};
 
-use ferrigura_elk::json::{JsonEdge, JsonEdgeSection, JsonNode, JsonPoint};
-use ferrigura_model::config::MermaidConfig;
-
 use super::data::{Edge, LayoutData, Node};
 use super::elk_build::ElkState;
 use super::elk_geometry::{
@@ -31,6 +28,7 @@ use super::elk_straighten::{project_label_onto_straightened_run, straighten_edge
 use super::geom::{CenterBox, Point};
 use super::shapes::Intersect;
 use super::terminal;
+use ferrigura_elk::json::{JsonEdge, JsonEdgeSection, JsonNode, JsonPoint};
 
 /// Padding between a subgraph frame and its children (`SUBGRAPH_PADDING`).
 const SUBGRAPH_PADDING: f64 = 24.0;
@@ -49,18 +47,19 @@ const OPPOSITE_LABEL_MIN_GAP: f64 = 4.0;
 /// Applies the elkjs result to the layout data.
 ///
 /// `intersects` holds the outline of every leaf node by id. Groups have none during layout, as in
-/// the reference, whose cluster intersect is set only when the cluster is painted.
+/// the reference, whose cluster intersect is set only when the cluster is painted. `straighten_edges`
+/// is `elk.straightenEdges`.
 pub fn apply(
     data: &mut LayoutData,
     output: &JsonNode,
     state: &ElkState,
     intersects: &HashMap<String, Intersect>,
-    config: &MermaidConfig,
+    straighten_edges: bool,
 ) {
     let crossing = |id: &str, node: CenterBox, probe: Point| {
         intersects.get(id).map(|shape| shape.intersect(node, probe))
     };
-    apply_with_crossing(data, output, state, &crossing, config.elk.straighten_edges);
+    apply_with_crossing(data, output, state, &crossing, straighten_edges);
 }
 
 /// The crossing of a leaf's outline: where the ray from the leaf's centre through a probe point

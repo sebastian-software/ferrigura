@@ -6,6 +6,7 @@
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::theme::ThemeTokens;
+use ferrigura_model::value::Value;
 
 /// What a renderer gets: its diagram, the section of its configuration, the globals, the theme and
 /// the id. `Section` is the configuration section of the diagram type (`()` for a diagram without
@@ -44,6 +45,10 @@ pub struct Globals {
     pub layout: String,
     /// `htmlLabels`, when the configuration sets it.
     pub html_labels: Option<bool>,
+    /// `themeVariables` as the user gives them: the overrides, before the theme computes its
+    /// variables. The unified edges compute the font size of the configured theme from them
+    /// (`unified::edges::label`), which is not the theme of the render's colour scheme.
+    pub theme_variables: Option<Value>,
 }
 
 impl Globals {
@@ -58,6 +63,7 @@ impl Globals {
             security_level: config.security_level.clone(),
             layout: config.layout.clone(),
             html_labels: config.html_labels,
+            theme_variables: config.theme_variables.clone(),
         }
     }
 }
@@ -78,7 +84,7 @@ mod tests {
     /// The renderers that take a [`Context`](super::Context). None of them reads a theme variable by
     /// name: they read the tokens, and the helpers of `variables` are for the renderers not yet moved.
     /// A renderer joins this list when it moves.
-    const MIGRATED: [(&str, &str); 33] = [
+    const MIGRATED: [(&str, &str); 59] = [
         ("pie", include_str!("pie.rs")),
         ("info", include_str!("info/mod.rs")),
         ("packet", include_str!("packet/mod.rs")),
@@ -118,6 +124,32 @@ mod tests {
         ("git_graph", include_str!("git_graph/mod.rs")),
         ("git_graph/palette", include_str!("git_graph/palette.rs")),
         ("git_graph/style", include_str!("git_graph/style.rs")),
+        ("flowchart", include_str!("flowchart/mod.rs")),
+        ("flowchart::style", include_str!("flowchart/style.rs")),
+        ("unified::clusters", include_str!("unified/clusters.rs")),
+        ("unified::palette", include_str!("unified/palette.rs")),
+        ("unified::pipeline", include_str!("unified/pipeline.rs")),
+        ("unified::shapes", include_str!("unified/shapes/mod.rs")),
+        ("class", include_str!("class/mod.rs")),
+        ("class::style", include_str!("class/style.rs")),
+        ("class::data", include_str!("class/data.rs")),
+        ("state", include_str!("state/mod.rs")),
+        ("state::style", include_str!("state/style.rs")),
+        ("state::data", include_str!("state/data.rs")),
+        ("er", include_str!("er/mod.rs")),
+        ("er::style", include_str!("er/style.rs")),
+        ("er::data", include_str!("er/data.rs")),
+        ("requirement", include_str!("requirement/mod.rs")),
+        ("requirement::style", include_str!("requirement/style.rs")),
+        ("requirement::data", include_str!("requirement/data.rs")),
+        ("mindmap", include_str!("mindmap/mod.rs")),
+        ("mindmap::style", include_str!("mindmap/style.rs")),
+        ("mindmap::data", include_str!("mindmap/data.rs")),
+        ("kanban", include_str!("kanban/mod.rs")),
+        ("kanban::style", include_str!("kanban/style.rs")),
+        ("block", include_str!("block/mod.rs")),
+        ("block::style", include_str!("block/style.rs")),
+        ("block::nodes", include_str!("block/nodes.rs")),
     ];
 
     /// The helpers of `variables`, as a call or a path to them.

@@ -23,7 +23,7 @@ pub(super) fn square_rect(input: &ShapeInput<'_>) -> Part {
 /// `roundedRect.ts`: a rectangle with corners of the theme's radius (5 when the theme has none).
 pub(super) fn rounded_rect(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
-    let radius = util::theme_number(input.theme, "radius").unwrap_or(5.0);
+    let radius = util::theme_number(&input.config.theme.radius).unwrap_or(5.0);
     let label = label_helper(input, false);
     draw_rect(input, label, node.padding, node.padding, Some(radius))
 }

@@ -5,9 +5,11 @@
 
 use std::collections::{HashMap, HashSet};
 
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::{FlowClass, FlowSubgraph, FlowVertex, FlowchartDiagram};
 use ferrigura_model::value::Value;
+
+use crate::context::Globals;
+use crate::unified::Section;
 
 pub use crate::unified::data::{Edge, LayoutData, Node};
 
@@ -25,10 +27,15 @@ const EDGE_CLASSES: &str = "edge-thickness-normal edge-pattern-solid flowchart-l
 /// 1119-1347): the nodes of the subgraphs and the vertices, the edges, and the collapsed subgraphs
 /// with the edges they redirect.
 ///
-/// The configuration is read as the reference reads it at this point: `look` from the top level,
-/// `flowchart.padding`, `flowchart.minNodeWidth`, `flowchart.curve` and `flowchart.inheritDir`.
+/// The configuration is read as the reference reads it at this point: `look` from the top level (the
+/// globals), and `flowchart.padding`, `flowchart.minNodeWidth`, `flowchart.curve` and `flowchart.inheritDir`
+/// from the flowchart section.
 #[must_use]
-pub fn get_data(diagram: &FlowchartDiagram, config: &MermaidConfig) -> LayoutData {
+pub fn get_data(
+    diagram: &FlowchartDiagram,
+    section: &Section<'_>,
+    globals: &Globals,
+) -> LayoutData {
     let classes: HashMap<&str, &FlowClass> = diagram
         .classes
         .iter()
@@ -41,9 +48,11 @@ pub fn get_data(diagram: &FlowchartDiagram, config: &MermaidConfig) -> LayoutDat
         .collect();
     let structure = Structure::new(diagram);
 
-    let mut nodes = subgraph_nodes(diagram, config, &structure, &classes);
-    vertex_nodes(diagram, config, &structure, &classes, &tooltips, &mut nodes);
-    let edges = edges(diagram, config, &structure, &classes);
+    let mut nodes = subgraph_nodes(diagram, section, globals, &structure, &classes);
+    vertex_nodes(
+        diagram, section, globals, &structure, &classes, &tooltips, &mut nodes,
+    );
+    let edges = edges(diagram, section, globals, &structure, &classes);
 
     LayoutData {
         nodes,
@@ -219,10 +228,10 @@ fn is_collapsed(subgraph: &FlowSubgraph) -> bool {
 fn subgraph_dir(
     subgraph: &FlowSubgraph,
     diagram: &FlowchartDiagram,
-    config: &MermaidConfig,
+    section: &Section<'_>,
 ) -> Option<String> {
     subgraph.dir.clone().or_else(|| {
-        config
+        section
             .flowchart
             .inherit_dir
             .then(|| diagram.direction.clone())
@@ -233,7 +242,8 @@ fn subgraph_dir(
 /// `collapsedGroup`, any other as an expanded group. Hidden subgraphs are skipped.
 fn subgraph_nodes(
     diagram: &FlowchartDiagram,
-    config: &MermaidConfig,
+    section: &Section<'_>,
+    globals: &Globals,
     structure: &Structure<'_>,
     classes: &HashMap<&str, &FlowClass>,
 ) -> Vec<Node> {
@@ -259,8 +269,8 @@ fn subgraph_nodes(
                 subgraph.classes.iter().map(String::as_str),
             ),
             css_classes: subgraph.classes.join(" "),
-            dir: subgraph_dir(subgraph, diagram, config),
-            look: config.look.clone(),
+            dir: subgraph_dir(subgraph, diagram, section),
+            look: globals.look.clone(),
             color_index: structure.declaration_index.get(id).copied(),
             ..Node::default()
         };
@@ -287,22 +297,23 @@ fn subgraph_nodes(
 /// styles and classes, as the reference does; a hidden vertex is skipped.
 fn vertex_nodes(
     diagram: &FlowchartDiagram,
-    config: &MermaidConfig,
+    section: &Section<'_>,
+    globals: &Globals,
     structure: &Structure<'_>,
     classes: &HashMap<&str, &FlowClass>,
     tooltips: &HashMap<&str, &str>,
     nodes: &mut Vec<Node>,
 ) {
-    let padding = if config.flowchart.padding == 0.0 || config.flowchart.padding.is_nan() {
+    let padding = if section.flowchart.padding == 0.0 || section.flowchart.padding.is_nan() {
         DEFAULT_PADDING
     } else {
-        config.flowchart.padding
+        section.flowchart.padding
     };
-    // `config.look || 'classic'`, passed to every vertex node (`flowDb.ts` 1287).
-    let look = if config.look.is_empty() {
+    // `globals.look || 'classic'`, passed to every vertex node (`flowDb.ts` 1287).
+    let look = if globals.look.is_empty() {
         String::from("classic")
     } else {
-        config.look.clone()
+        globals.look.clone()
     };
     let mut positions: HashMap<String, usize> = nodes
         .iter()
@@ -368,7 +379,7 @@ fn vertex_nodes(
             Node {
                 is_group: false,
                 shape: vertex_shape(vertex),
-                min_width: Some(config.flowchart.min_node_width),
+                min_width: Some(section.flowchart.min_node_width),
                 ..base
             }
         });
@@ -406,7 +417,8 @@ fn truthy(value: &Option<String>) -> bool {
 /// and without the edges that a collapsed subgraph hides inside itself.
 fn edges(
     diagram: &FlowchartDiagram,
-    config: &MermaidConfig,
+    section: &Section<'_>,
+    globals: &Globals,
     structure: &Structure<'_>,
     classes: &HashMap<&str, &FlowClass>,
 ) -> Vec<Edge> {
@@ -444,7 +456,7 @@ fn edges(
         let curve = [
             raw.interpolate.as_deref(),
             diagram.default_interpolate.as_deref(),
-            Some(config.flowchart.curve.as_str()),
+            Some(section.flowchart.curve.as_str()),
         ]
         .into_iter()
         .flatten()
@@ -482,7 +494,7 @@ fn edges(
             css_compiled_styles: compiled_styles(classes, raw.classes.iter().map(String::as_str)),
             label_style: styles.clone(),
             style: styles,
-            look: config.look.clone(),
+            look: globals.look.clone(),
             animate: raw.animate,
             animation: raw.animation.clone(),
             curve,
