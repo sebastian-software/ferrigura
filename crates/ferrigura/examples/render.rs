@@ -5,8 +5,8 @@
 //! `--config` is the `initialize` configuration as JSON; `--id` is the id of the SVG element, and
 //! `--scheme` the colour scheme, and `--now` the current time in milliseconds since the epoch (the
 //! harness passes the clock it gives the reference). `--seed` is the seed of the generated gitGraph
-//! ids, which the harness gives the same seed as the reference's random numbers. Without them the
-//! defaults apply.
+//! ids and of the venn layout's random numbers, which the harness gives the same seed as the
+//! reference's random numbers. Without them the defaults apply.
 
 use std::error::Error;
 use std::io::{Read, Write};
@@ -33,7 +33,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             "--id" => options.id = Some(value),
             "--now" => options.now = Some(value.parse()?),
-            "--seed" => options.git_graph_seed = Some(value.parse()?),
+            "--seed" => {
+                let seed = value.parse()?;
+                options.git_graph_seed = Some(seed);
+                options.random_seed = Some(seed);
+            }
             "--scheme" => {
                 options.color_scheme = Some(match value.as_str() {
                     "light" => ColorScheme::Light,

@@ -199,6 +199,7 @@ dependencies = [
  "ferrigura-path",
  "ferrigura-syntax",
  "ferrigura-text",
+ "ferrigura-venn",
  "ferromark",
  "regex",
  "serde",

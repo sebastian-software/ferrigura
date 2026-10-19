@@ -83,6 +83,12 @@ pub struct RenderOptions {
     /// reference's seed, so that the ids match the reference's; it is not part of the interface.
     #[doc(hidden)]
     pub git_graph_seed: Option<u32>,
+    /// The seed of the random numbers a venn layout draws when it has eight areas or more (the
+    /// reference draws them from `Math.random`). `None` gives the venn renderer's default seed. The
+    /// geometry harness gives the reference's seed, so that the draws match; it is not part of the
+    /// interface.
+    #[doc(hidden)]
+    pub random_seed: Option<u32>,
 }
 
 /// A renderer, with the site configuration resolved once.
@@ -428,7 +434,10 @@ impl Renderer {
             }),
             DiagramType::Venn => venn_render::render(&Context {
                 diagram: &venn::parse(text)?,
-                section: &typed_config.venn,
+                section: &venn_render::VennSection {
+                    config: &typed_config.venn,
+                    seed: options.random_seed.unwrap_or(venn_render::DEFAULT_SEED),
+                },
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,

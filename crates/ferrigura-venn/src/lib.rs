@@ -22,11 +22,15 @@
 //! random source the caller gives. Mermaid's page uses `Math.random`, which the geometry harness
 //! seeds; the tests use a port of that generator with the same draw order (`tests/corpus.rs`).
 //!
+//! **The paths.** [`intersection_path`] is the `d` of an area of the chart (`circlePath` and
+//! `intersectionAreaPath` with no rounding, `src/diagram.js` 661-706): the renderer writes the
+//! numbers as JavaScript writes them. The `path`, `arcs` and `distinctPath` of `layout()`, which
+//! Mermaid does not read, are not ported.
+//!
 //! **Not ported.** The options the renderer does not pass: `distinct`, `scaleToFit`,
 //! `symmetricalTextCentre`, `orientationOrder`, the logarithmic loss, a custom loss, layout or
-//! initial layout, the `weight` of an area, and the history options. The `path` strings, `arcs` and
-//! `distinctPath` of `layout()` (Mermaid reads none of them). The drawing (`VennDiagram`'s d3 code,
-//! `wrapText`, the hand-drawn look). The `console.log` warnings. A set named `__proto__` is refused
+//! initial layout, the `weight` of an area, and the history options. The drawing (`VennDiagram`'s
+//! d3 code, `wrapText`, the hand-drawn look). The `console.log` warnings. A set named `__proto__` is refused
 //! ([`Error::ReservedName`]): assigning that key in a plain object changes its prototype, so the
 //! library's output for it is not reproduced. Set ids that name other `Object.prototype` members
 //! (`constructor`, `toString`, ...) are reproduced: the library's `in` tests see them as present.
@@ -48,6 +52,7 @@ mod text;
 use std::f64::consts::PI;
 
 pub use error::Error;
+pub use geometry::Point;
 pub use placement::add_missing_areas;
 
 use js::JsObject;
@@ -126,6 +131,58 @@ fn to_centres(object: &JsObject<Centre>) -> Vec<(String, Centre)> {
         .iter()
         .map(|(key, centre)| (key.to_owned(), *centre))
         .collect()
+}
+
+/// The path of an intersection of circles: what `intersectionAreaPath` (`src/diagram.js:700-706`)
+/// returns, before the numbers are written.
+#[derive(Clone, Debug, PartialEq)]
+pub enum IntersectionPath {
+    /// No arc at all: the library's `M 0 0`.
+    Empty,
+    /// One arc: the circle of the arc, as `circlePath` draws it.
+    Circle(Circle),
+    /// Several arcs: a move to `start`, then one `A` command for each of `arcs`, in order.
+    Arcs { start: Point, arcs: Vec<ArcTo> },
+}
+
+/// One `A` command of an [`IntersectionPath::Arcs`]: the radius of its circle (not rounded), the
+/// flags of the arc, and the point the arc ends at.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ArcTo {
+    /// The radius of the circle the arc lies on.
+    pub radius: f64,
+    /// The large-arc flag: the arc is wider than half of its circle.
+    pub large: bool,
+    /// The sweep flag. The library sets it for every arc.
+    pub sweep: bool,
+    /// The point the arc ends at.
+    pub end: Point,
+}
+
+/// `intersectionAreaPath(circles)` with no rounding: the path of the intersection of the circles,
+/// in the order given. The chart gives the circles of an area in the order of its sets.
+#[must_use]
+pub fn intersection_path(circles: &[Circle]) -> IntersectionPath {
+    if circles.is_empty() {
+        return IntersectionPath::Empty;
+    }
+    let arcs = geometry::intersection_area(circles).arcs;
+    match arcs.as_slice() {
+        [] => IntersectionPath::Empty,
+        [only] => IntersectionPath::Circle(only.circle),
+        [first, ..] => IntersectionPath::Arcs {
+            start: first.p2,
+            arcs: arcs
+                .iter()
+                .map(|arc| ArcTo {
+                    radius: arc.circle.radius,
+                    large: arc.large,
+                    sweep: true,
+                    end: arc.p1,
+                })
+                .collect(),
+        },
+    }
 }
 
 /// `venn(areas)`: the circles of the diagram, before normalisation.
