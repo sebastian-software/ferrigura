@@ -132,14 +132,27 @@ The box-drawing spec (`tree_view_box_drawing_spec.rs`) ports `boxDrawingPreproce
 
 The parser tests in `packages/parser/tests/treeView.test.ts` and `treeViewValueConverter.test.ts` are not counted, as for P2 (`docs-port/STATUS.md`). Their inputs are collected by the differential run, and they agree.
 
-## 12. Open for the renderer stage
+## 12. The renderer stage
 
-These are not parser decisions. They are the renderer's, and they wait for issue #4 (NOTES sections 6 and 8):
+The renderer is `crates/ferrigura-render/src/tree_view/` (`mod.rs`: the rows, the phases and the elements; `icons.rs`: the icon of a node and its markup; `style.rs`: the options and the rules). The four questions the parser stage left for it are settled as follows.
 
-- The icons: the built-in `folder` and `file` bodies, the unknown icon's `?` in `ArialMT, Arial` (the harness draws it with the machine's Arial on both sides), and the defaults of `showIcons`, `filenameIcons` and `extensionIcons`.
-- The text measurement of labels and descriptions, bold for directories and italic for descriptions, with the placeholder measured and not the character (NOTES 6.3).
-- The first CSS rule of the sheet has no svg id (NOTES 6.7; the core's `compileCSS`). The probe above shows the rule as the reference compiles it.
-- The `themeVariables.treeView` keys (section 8): read from the effective configuration, in both forms.
+- **The icons.** The built-in `folder` and `file` bodies are drawn; the unknown icon is the reference's 80 by 80 fallback with its `?` in `ArialMT, Arial`. ferrigura registers no icon pack, so an icon name other than the two built-ins draws the unknown icon, which the reference draws for a pack it cannot load. The `showIcons`, `filenameIcons` and `extensionIcons` rules are `icons.ts` 40-100 (section 13 has the details).
+- **The labels.** The label's box is `ferrigura-text`'s box in the regular, bold (a directory, or the class `treeView-node-dir`) or italic (the class `treeView-node-description`) face, measured on the placeholder, not the character (NOTES 6.3).
+- **The first CSS rule.** NOTES 6.7 and R12 read the first rule of the sheet without the svg id. That came from calling `getStyles` directly. The sheet of a real render scopes every rule, as the captured SVGs of the fixtures show, so nothing is reproduced.
+- **The `themeVariables.treeView` keys.** Read from the effective configuration, in both forms (section 8). The probe `p09-theme-variables-in-a-directive.mmd` changes the label size on both sides, so the directive form is honoured.
+
+## 13. Renderer decisions and open questions
+
+Checked by `pnpm port:geometry treeView`: the 13 comparable fixtures and the 17 probes of `tools/port/geometry/probes/treeView` (p01 to p17, one per quirk and per branch of the arithmetic) are within tolerance, most of them exactly. The two emoji fixtures are excluded with the harness's reason (no fallback font). `pnpm port:diff treeView`, `config` and `theme` show no difference.
+
+- **The rows.** Each row is a text box with its padding, and the rows stack. The description column is the widest label's right edge plus 16 for every row. Each highlight is sized to the tree's width at its turn, from the reference's `totalWidth - BBox.x + 8`, and widens the tree to `x + width + 2`; the reference's own numbers for the class annotations fixture are the test.
+- **The icon of a file under a map.** `icon(none)`, an explicit icon, and the maps (`filenameIcons` first, then `extensionIcons` with the dot and then without it, the last dot only, and a dot that is not the first character) follow `getNodeIcon`. A falsy filename value falls through to the extension; a falsy extension value gives the default icon.
+- **Errors the reference raises.** A map value that is truthy and not text, and a file name that reads an `Object.prototype` member (`constructor`, `toString`, ...), fail the render, as `qualifyIcon` fails on them (`icons.ts` 58-66). The render fails; the message is the port's own (decision 0002).
+- **Open: the configuration layer.** The typed configuration reads a map entry that is not text as the schema's default before the renderer sees it, so a facade render of `extensionIcons: { .ts: 5 }` draws the default icon, where the reference fails. The renderer gets the typed section and cannot see the value; the test of the error builds the section directly. The config layer's owner decides.
+- **Open: sizes.** `labelFontSize` in a unit other than pixels (or without a unit, which CSS ignores) is `RenderError::Unsupported`, since the port measures pixels only. No fixture or probe uses another unit.
+- **Open: colours.** The colours are custom properties on the id and presentation attributes, as the packet renderer writes them (decision 0007). A colour value that holds a `;` or a `}` means something else in the reference, which writes the value into the rule as it is. No fixture has one.
+- **Open: names.** Tabs, and names that span lines (a quoted name across a line break, Q8), are not probed. A name with a `white-space: pre` line break is drawn by Chromium in a way the port has not measured.
+- **Open: the ignored tests of other crates.** `crates/ferrigura-syntax/tests/tree_view_icons_spec.rs` (23 ignored placeholders) and the `getConfig` case of `tree_view_db_spec.rs` are ported and pass in `crates/ferrigura-render/tests/tree_view_icons_spec.rs` and `tree_view_render_spec.rs`; the placeholders in the syntax crate are left for the coordinator to remove.
 
 ## Shared files changed
 
