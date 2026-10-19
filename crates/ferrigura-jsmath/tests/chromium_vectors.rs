@@ -1,8 +1,8 @@
 //! The crate's default functions against Chromium 151 (Playwright's), bit for bit, on the samples in
 //! `tests/data/chromium`, taken from a probe run of a million inputs per function.
 //!
-//! `sin`, `cos`, `tan`, `asin`, `acos` and `log` are correctly rounded in Chromium on every probed
-//! input, and so are they here (see `src/correct.rs`): their results do not depend on the target.
+//! `sin`, `cos`, `tan`, `asin`, `acos`, `log` and `log10` are correctly rounded in Chromium on every
+//! probed input, and so are they here (see `src/correct.rs`): their results do not depend on the target.
 //! `atan` and `atan2` are llvm-libc's, which fuse multiply-adds where the target has them, so their
 //! samples are checked on those targets only (see `CONTRACTS`). `pow` is the platform's `pow` in
 //! Chromium on macOS, where the samples were taken, so it is checked there only. `hypot` is V8's plain
@@ -41,6 +41,15 @@ fn acos_matches_chromium() {
 #[test]
 fn log_matches_chromium() {
     check_unary("log", include_str!("data/chromium/log.txt"), jsmath::log);
+}
+
+#[test]
+fn log10_matches_chromium() {
+    check_unary(
+        "log10",
+        include_str!("data/chromium/log10.txt"),
+        jsmath::log10,
+    );
 }
 
 #[cfg(any(target_arch = "aarch64", target_feature = "fma"))]

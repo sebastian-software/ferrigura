@@ -8,6 +8,7 @@
 //! icon actor always draws the fallback symbol). The reference's `usecaseShapes` checks of the shapes' `intersect`
 //! functions are not SVG output and are left to the geometry harness.
 
+use ferrigura_jsmath::{atan2, pow};
 use ferrigura_model::config::{MermaidConfig, defaults, typed};
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::theme::{Theme, ThemeTokens};
@@ -534,13 +535,13 @@ mod shapes {
             assert!(start_x > 0.0 && start_x < end_x, "{text}");
             assert!(start_y > end_y, "{text}");
             for (x, y) in [(start_x, start_y), (end_x, end_y)] {
-                let on_circle = (x / radius).powi(2) + ((y - centre_y) / radius).powi(2);
+                let on_circle = pow(x / radius, 2.0) + pow((y - centre_y) / radius, 2.0);
                 assert!(
                     (on_circle - 1.0).abs() < 1e-9,
                     "{text}: ({x}, {y}) is on the head"
                 );
             }
-            let angle = ((start_y - end_y).atan2(end_x - start_x)).to_degrees();
+            let angle = atan2(start_y - end_y, end_x - start_x).to_degrees();
             assert!(
                 (angle - 60.0).abs() < 1e-9,
                 "{text}: the chord is at {angle} degrees"

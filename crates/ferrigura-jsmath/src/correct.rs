@@ -1,4 +1,4 @@
-//! Correctly rounded `sin`, `cos`, `tan`, `asin`, `acos` and `log`.
+//! Correctly rounded `sin`, `cos`, `tan`, `asin`, `acos`, `log` and `log10`.
 //!
 //! The value is computed in 384-bit fixed point (256 fraction bits), with an absolute error bound of
 //! `(|v| + 1) * 2^-180`, and it is rounded only when the bounds on either side of it round to the same
@@ -7,15 +7,17 @@
 //! elementary functions need about 120 bits, so the test does not fail on them.
 //!
 //! Chromium's `sin`, `cos`, `tan`, `asin`, `acos` and `log` are correctly rounded on every input checked
-//! (about 270,000 against mpmath at 300 bits, and a million against this module), so these results are
-//! Chromium's. The results do not depend on the target's fused multiply-adds: nothing here is rounded
+//! (about 270,000 against mpmath at 300 bits, and a million against this module), and so is its `log10`
+//! (200,000 against Python's `decimal` at 80 digits, and a million against this module), so these results
+//! are Chromium's. The results do not depend on the target's fused multiply-adds: nothing here is rounded
 //! except by the final conversion, and Rust does not contract.
 //!
-//! The constants are in `constants.rs` (`CR_*`), computed with mpmath from `2/pi`, `pi/2` and `ln 2`.
+//! The constants are in `constants.rs` (`CR_*`), computed with mpmath from `2/pi`, `pi/2` and `ln 2`, and
+//! with Python's `decimal` from `1/ln 10`.
 //! CORE-MATH (MIT) has correctly rounded versions of these functions as well; this module is its own
 //! code, not a port of them, and the probe is the check of it.
 
-use crate::constants::{CR_LN2, CR_PI_OVER_2, CR_TWO_OVER_PI};
+use crate::constants::{CR_INV_LN10, CR_LN2, CR_PI_OVER_2, CR_TWO_OVER_PI};
 
 /// A signed fixed-point number: its value is `self.0` in two's complement divided by `2^256`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -578,18 +580,42 @@ pub fn acos(x: f64) -> f64 {
 /// `log(x)`, correctly rounded.
 #[must_use]
 pub fn log(x: f64) -> f64 {
+    match log_special(x) {
+        Some(value) => value,
+        None => round_value(ln_fx(x)),
+    }
+}
+
+/// `log10(x)`, correctly rounded: the natural logarithm times `1/ln 10`, rounded once. An exact power
+/// of ten gives its exponent exactly.
+#[must_use]
+pub fn log10(x: f64) -> f64 {
+    match log_special(x) {
+        Some(value) => value,
+        None => round_value(ln_fx(x).mul(Fx(CR_INV_LN10))),
+    }
+}
+
+/// The logarithm of the inputs whose logarithm in every base is the same: `NaN` for `NaN` and the
+/// negative numbers, `-Infinity` for zero, `Infinity` for `Infinity`, and `+0` for 1.
+fn log_special(x: f64) -> Option<f64> {
     if x.is_nan() || x < 0.0 {
-        return f64::NAN;
+        return Some(f64::NAN);
     }
     if x == 0.0 {
-        return f64::NEG_INFINITY;
+        return Some(f64::NEG_INFINITY);
     }
     if x.is_infinite() {
-        return f64::INFINITY;
+        return Some(f64::INFINITY);
     }
     if x == 1.0 {
-        return 0.0;
+        return Some(0.0);
     }
+    None
+}
+
+/// `ln x` for a finite positive `x`.
+fn ln_fx(x: f64) -> Fx {
     // x = 2^k * m with m in [1, 2), or [sqrt(1/2), sqrt(2)) after a halving
     let (scaled, extra) = if x < f64::MIN_POSITIVE {
         (x * 2f64.powi(54), -54)
@@ -621,8 +647,7 @@ pub fn log(x: f64) -> f64 {
         n += 1;
     }
     let ln_m = sum.add(sum);
-    let value = Fx(CR_LN2).mul_int(k).add(ln_m);
-    round_value(value)
+    Fx(CR_LN2).mul_int(k).add(ln_m)
 }
 
 #[cfg(test)]
@@ -642,6 +667,9 @@ mod tests {
         assert_eq!(sin(-0.0).to_bits(), (-0.0f64).to_bits());
         assert_eq!(cos(0.0), 1.0);
         assert_eq!(log(1.0).to_bits(), 0.0f64.to_bits());
+        assert_eq!(log10(1.0).to_bits(), 0.0f64.to_bits());
+        assert_eq!(log10(0.0), f64::NEG_INFINITY);
+        assert!(log10(-1.0).is_nan());
         assert_eq!(acos(1.0).to_bits(), 0.0f64.to_bits());
         assert_eq!(log(0.0), f64::NEG_INFINITY);
         assert!(log(-1.0).is_nan());
@@ -656,6 +684,14 @@ mod tests {
         assert_eq!(sin(1.0), 0.8414709848078965);
         assert_eq!(cos(1.0), 0.5403023058681398);
         assert_eq!(log(2.0), std::f64::consts::LN_2);
+        assert_eq!(log10(2.0), std::f64::consts::LOG10_2);
+        for exponent in 0..=22 {
+            assert_eq!(
+                log10(10f64.powi(exponent)),
+                f64::from(exponent),
+                "1e{exponent}"
+            );
+        }
         assert_eq!(asin(0.5), std::f64::consts::FRAC_PI_6);
         assert_eq!(tan(0.5), 0.5463024898437905);
     }

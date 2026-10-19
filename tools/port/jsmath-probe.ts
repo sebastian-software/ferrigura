@@ -31,11 +31,27 @@ import { endianness } from 'node:os';
 import { join } from 'node:path';
 import { chromium, type Browser, type Page } from 'playwright';
 
-const UNARY = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log'] as const;
+const UNARY = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'log10'] as const;
 const BINARY = ['atan2', 'pow', 'hypot'] as const;
 type UnaryName = (typeof UNARY)[number];
 type BinaryName = (typeof BINARY)[number];
 type FunctionName = UnaryName | BinaryName;
+
+/** The functions in the order they were added to the probe: the seed of each function's inputs is its
+ * position here, so that adding a function leaves the inputs of the others as they were. */
+const SEED_ORDER: readonly FunctionName[] = [
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'log',
+  'atan2',
+  'pow',
+  'hypot',
+  'log10',
+];
 
 const DEFAULT_COUNT = 1_000_000;
 const TWO_PI = 2 * Math.PI;
@@ -188,6 +204,8 @@ const ATAN_THRESHOLDS = [
   0x3e30_0000, 0x3e40_0000, 0x3fdc_0000, 0x3fe6_0000, 0x3ff3_0000, 0x4003_8000, 0x4410_0000,
 ];
 const LOG_THRESHOLDS = [0x3fe6_a09e, 0x3ff6_a09e, 0x0010_0000, 0x7ff0_0000];
+/** The high words of 1/2, 1 and 2, where fdlibm's `log10` changes how it splits off the exponent. */
+const LOG10_THRESHOLDS = [0x3fe0_0000, 0x3ff0_0000, 0x4000_0000, 0x0010_0000, 0x7ff0_0000];
 
 interface Segment {
   readonly name: string;
@@ -246,6 +264,36 @@ function logSegments(): Segment[] {
     { name: 'tiny normals', share: 0.05, make: (r) => withExponent(r, 1, 0x0ff) },
     { name: 'large exponents', share: 0.05, make: (r) => withExponent(r, 0x7e0, 0x7fe) },
     { name: 'thresholds', share: 0.1, make: (r) => nearThreshold(r, LOG_THRESHOLDS) },
+    { name: 'specials', share: 0.1, make: (_r, i) => special(i) },
+  ];
+}
+
+function log10Segments(): Segment[] {
+  return [
+    { name: 'random bits', share: 0.15, make: anyBits },
+    {
+      name: 'positive random bits',
+      share: 0.15,
+      make: (r) => fromWords(r() & 0x7fff_ffff, r()),
+    },
+    {
+      name: 'powers of ten +- 8 ulp',
+      share: 0.15,
+      make: (r) => stepUlps(10 ** uniformInt(r, -30, 30), uniformInt(r, -8, 8)),
+    },
+    {
+      name: 'tick steps: span / count',
+      share: 0.1,
+      make: (r) => uniform(r, 1e-3, 1e9) / uniformInt(r, 1, 20),
+    },
+    {
+      name: 'near 1: 1 + k 2^-52',
+      share: 0.1,
+      make: (r) => 1 + uniformInt(r, -4096, 4096) * 2 ** -52,
+    },
+    { name: 'uniform 0..1e6', share: 0.1, make: (r) => uniform(r, 0, 1e6) },
+    { name: 'subnormals', share: 0.05, make: (r) => fromWords(r() & 0x000f_ffff, r()) },
+    { name: 'thresholds', share: 0.1, make: (r) => nearThreshold(r, LOG10_THRESHOLDS) },
     { name: 'specials', share: 0.1, make: (_r, i) => special(i) },
   ];
 }
@@ -393,6 +441,7 @@ const PLANS: Record<FunctionName, Segment[]> = {
   acos: inverseSegments(),
   atan: atanSegments(),
   log: logSegments(),
+  log10: log10Segments(),
   atan2: atan2Segments(),
   pow: powSegments(),
   hypot: hypotSegments(),
@@ -536,7 +585,7 @@ async function generate(dir: string, runtime: 'node' | 'chromium', total: number
   }
   try {
     for (const name of names) {
-      const seed = 0x5eed_0000 + names.indexOf(name);
+      const seed = 0x5eed_0000 + SEED_ORDER.indexOf(name);
       const { words, segments } = buildInputs(name, total, seed);
       segmentsOut[name] = segments;
       const values =

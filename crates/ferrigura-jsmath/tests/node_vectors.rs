@@ -61,6 +61,12 @@ fn log_matches_node() {
 
 #[cfg(any(target_arch = "aarch64", target_feature = "fma"))]
 #[test]
+fn log10_matches_node() {
+    check_unary("log10", include_str!("data/node/log10.txt"), node::log10);
+}
+
+#[cfg(any(target_arch = "aarch64", target_feature = "fma"))]
+#[test]
 fn atan2_matches_node() {
     check_binary("atan2", include_str!("data/node/atan2.txt"), node::atan2);
 }

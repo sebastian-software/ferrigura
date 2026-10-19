@@ -14,6 +14,8 @@
 
 use std::f64::consts::PI;
 
+use ferrigura_jsmath::{acos, atan, atan2, cos, hypot, pow, sin};
+
 use super::geom::{BBox, Point};
 
 pub use crate::common::d3::number::{d3_number, js_number, js_round};
@@ -442,7 +444,7 @@ impl Renderer {
         if self.point != 0 {
             let x23 = self.x2 - x;
             let y23 = self.y2 - y;
-            self.l23_2a = (x23 * x23 + y23 * y23).powf(0.5);
+            self.l23_2a = pow(x23 * x23 + y23 * y23, 0.5);
             self.l23_a = self.l23_2a.sqrt();
         }
         match self.point {
@@ -783,13 +785,13 @@ pub fn apply_marker_offsets(points: &[Point], start: &str, end: &str) -> Vec<Poi
     if n >= 2 {
         if let Some(offset) = marker_offset(start).filter(|value| *value != 0.0) {
             let (p0, p1) = (points[0], points[1]);
-            let angle = (p1.y - p0.y).atan2(p1.x - p0.x);
-            out[0] = Point::new(p0.x + offset * angle.cos(), p0.y + offset * angle.sin());
+            let angle = atan2(p1.y - p0.y, p1.x - p0.x);
+            out[0] = Point::new(p0.x + offset * cos(angle), p0.y + offset * sin(angle));
         }
         if let Some(offset) = marker_offset(end).filter(|value| *value != 0.0) {
             let (p2, p1) = (points[n - 2], points[n - 1]);
-            let angle = (p1.y - p2.y).atan2(p1.x - p2.x);
-            out[n - 1] = Point::new(p1.x - offset * angle.cos(), p1.y - offset * angle.sin());
+            let angle = atan2(p1.y - p2.y, p1.x - p2.x);
+            out[n - 1] = Point::new(p1.x - offset * cos(angle), p1.y - offset * sin(angle));
         }
     }
     out
@@ -856,8 +858,8 @@ pub fn rounded_corner(prev: Point, curr: Point, next: Point, radius: f64) -> Opt
     let dy1 = curr.y - prev.y;
     let dx2 = next.x - curr.x;
     let dy2 = next.y - curr.y;
-    let len1 = dx1.hypot(dy1);
-    let len2 = dx2.hypot(dy2);
+    let len1 = hypot(dx1, dy1);
+    let len2 = hypot(dx2, dy2);
     if len1 < EPSILON || len2 < EPSILON {
         return None;
     }
@@ -866,11 +868,11 @@ pub fn rounded_corner(prev: Point, curr: Point, next: Point, radius: f64) -> Opt
     let nx2 = dx2 / len2;
     let ny2 = dy2 / len2;
     let dot = nx1 * nx2 + ny1 * ny2;
-    let angle = dot.clamp(-1.0, 1.0).acos();
+    let angle = acos(dot.clamp(-1.0, 1.0));
     if angle < EPSILON || (PI - angle).abs() < EPSILON {
         return None;
     }
-    let cut_len = js_min3(radius / (angle / 2.0).sin(), len1 / 2.0, len2 / 2.0);
+    let cut_len = js_min3(radius / sin(angle / 2.0), len1 / 2.0, len2 / 2.0);
     Some(RoundedCorner {
         start: Point::new(curr.x - nx1 * cut_len, curr.y - ny1 * cut_len),
         end: Point::new(curr.x + nx2 * cut_len, curr.y + ny2 * cut_len),
@@ -903,14 +905,14 @@ pub fn line_with_offset(points: &[Point], start: &str, end: &str) -> Vec<Point> 
             if i == 0 && start_height.is_some() {
                 let m = start_height.unwrap_or(0.0);
                 let (angle, dx, dy) = line_delta(Some(points[0]), points.get(1).copied());
-                offset_x = m * angle.cos() * sign_of(dx);
-                offset_y = m * angle.sin().abs() * sign_of(dy);
+                offset_x = m * cos(angle) * sign_of(dx);
+                offset_y = m * sin(angle).abs() * sign_of(dy);
             } else if i == n - 1 && end_height.is_some() {
                 let m = end_height.unwrap_or(0.0);
                 let (angle, dx, dy) =
                     line_delta(Some(points[n - 1]), n.checked_sub(2).map(|k| points[k]));
-                offset_x = m * angle.cos() * sign_of(dx);
-                offset_y = m * angle.sin().abs() * sign_of(dy);
+                offset_x = m * cos(angle) * sign_of(dx);
+                offset_y = m * sin(angle).abs() * sign_of(dy);
             }
             let mut x_offset = offset_x;
             let mut y_offset = offset_y;
@@ -960,7 +962,7 @@ fn line_delta(point1: Option<Point>, point2: Option<Point>) -> (f64, f64, f64) {
         (Some(a), Some(b)) => {
             let dx = b.x - a.x;
             let dy = b.y - a.y;
-            ((dy / dx).atan(), dx, dy)
+            (atan(dy / dx), dx, dy)
         }
         _ => (0.0, 0.0, 0.0),
     }
@@ -1147,7 +1149,7 @@ pub fn path_length(d: &str) -> f64 {
                 let d2 = Point::new(2.0 * (p1.x - c.x), 2.0 * (p1.y - c.y));
                 let dx = (1.0 - t) * d1.x + t * d2.x;
                 let dy = (1.0 - t) * d1.y + t * d2.y;
-                dx.hypot(dy)
+                hypot(dx, dy)
             }),
             Segment::Cubic(p0, c1, c2, p1) => simpson(2000, |t| {
                 let s = 1.0 - t;
@@ -1155,7 +1157,7 @@ pub fn path_length(d: &str) -> f64 {
                     * (s * s * (c1.x - p0.x) + 2.0 * s * t * (c2.x - c1.x) + t * t * (p1.x - c2.x));
                 let dy = 3.0
                     * (s * s * (c1.y - p0.y) + 2.0 * s * t * (c2.y - c1.y) + t * t * (p1.y - c2.y));
-                dx.hypot(dy)
+                hypot(dx, dy)
             }),
             Segment::Arc {
                 from,
@@ -1277,8 +1279,8 @@ fn arc_parameters(
     let cxp = coefficient * rx * y1p / ry;
     let cyp = -coefficient * ry * x1p / rx;
     let centre = Point::new(cxp + (from.x + to.x) / 2.0, cyp + (from.y + to.y) / 2.0);
-    let theta1 = ((y1p - cyp) / ry).atan2((x1p - cxp) / rx);
-    let theta2 = ((-y1p - cyp) / ry).atan2((-x1p - cxp) / rx);
+    let theta1 = atan2((y1p - cyp) / ry, (x1p - cxp) / rx);
+    let theta2 = atan2((-y1p - cyp) / ry, (-x1p - cxp) / rx);
     let mut delta = theta2 - theta1;
     if sweep && delta < 0.0 {
         delta += 2.0 * PI;
@@ -1313,8 +1315,8 @@ fn arc_extremes(
         };
         if on_arc {
             out.push(Point::new(
-                centre.x + rx * angle.cos(),
-                centre.y + ry * angle.sin(),
+                centre.x + rx * cos(angle),
+                centre.y + ry * sin(angle),
             ));
         }
     }
@@ -1341,7 +1343,7 @@ fn arc_length(
     }
     simpson(4000, |t| {
         let angle = theta1 + delta * t;
-        (rx * angle.sin()).hypot(ry * angle.cos()) * delta.abs()
+        hypot(rx * sin(angle), ry * cos(angle)) * delta.abs()
     })
 }
 

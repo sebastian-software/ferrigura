@@ -7,6 +7,7 @@
 
 use std::f64::consts::PI;
 
+use ferrigura_jsmath as jsmath;
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
@@ -311,7 +312,8 @@ fn arc_points(
     sweep: bool,
 ) -> Vec<Point> {
     let (mut rx, mut ry) = (rx.abs(), ry.abs());
-    let (sin, cos) = rotation.to_radians().sin_cos();
+    let radians = rotation.to_radians();
+    let (sin, cos) = (jsmath::sin(radians), jsmath::cos(radians));
     let dx2 = (from.x - to.x) / 2.0;
     let dy2 = (from.y - to.y) / 2.0;
     let x1 = cos * dx2 + sin * dy2;
@@ -333,7 +335,7 @@ fn arc_points(
         let sign = if ux * vy - uy * vx < 0.0 { -1.0 } else { 1.0 };
         let cos = ((ux * vx + uy * vy) / ((ux * ux + uy * uy).sqrt() * (vx * vx + vy * vy).sqrt()))
             .clamp(-1.0, 1.0);
-        sign * cos.acos()
+        sign * jsmath::acos(cos)
     };
     let theta1 = angle(1.0, 0.0, (x1 - cxp) / rx, (y1 - cyp) / ry);
     let mut delta = angle(
@@ -351,8 +353,8 @@ fn arc_points(
         .map(|step| {
             let theta = theta1 + delta * f64::from(step) / 256.0;
             Point::new(
-                cx + rx * cos * theta.cos() - ry * sin * theta.sin(),
-                cy + rx * sin * theta.cos() + ry * cos * theta.sin(),
+                cx + rx * cos * jsmath::cos(theta) - ry * sin * jsmath::sin(theta),
+                cy + rx * sin * jsmath::cos(theta) + ry * cos * jsmath::sin(theta),
             )
         })
         .collect()

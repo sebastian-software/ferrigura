@@ -383,9 +383,11 @@ mod tests {
         assert!((coordinates[0] - 1.4353828).abs() < 1e-6, "{marker}");
         assert!((coordinates[2] - 11.0353828).abs() < 1e-6, "{marker}");
         assert!(
-            ((coordinates[1] - coordinates[3])
-                .atan2(coordinates[2] - coordinates[0])
-                .to_degrees()
+            (ferrigura_jsmath::atan2(
+                coordinates[1] - coordinates[3],
+                coordinates[2] - coordinates[0]
+            )
+            .to_degrees()
                 - 60.0)
                 .abs()
                 < 1e-9,
