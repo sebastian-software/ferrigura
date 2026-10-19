@@ -13,7 +13,7 @@ use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, emb
 use crate::RenderError;
 use crate::a11y;
 use crate::common::d3::js_number;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::configure_svg_size;
 use crate::common::{Element, decode_entities};
 use crate::context::Context;
@@ -108,7 +108,7 @@ pub fn render(input: &Context<'_, XyChartDiagram, XYChartConfig>) -> Result<Stri
         |family| family.css_family.clone(),
     );
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
-    let style = base_style_sheet_tokens(
+    let style = base_style_sheet(
         input.id,
         input.theme,
         &font_family,

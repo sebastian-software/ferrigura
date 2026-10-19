@@ -1,14 +1,15 @@
-//! Reading theme variables by name, for the renderers not yet moved to the typed tokens: colour tokens as
-//! text, sizes in pixels, lists of colours, and the truthiness the reference's JavaScript gives a variable.
-//! The typed tokens of `ferrigura_model::theme::ThemeTokens` read the same (their test is below), and this
-//! module goes when the last renderer moves (`docs-port/typed-views.md`).
+//! The theme variables read by name, as the renderers read them before the typed tokens
+//! (`docs-port/typed-views.md`): colour tokens as text, sizes in pixels, lists of colours, and the
+//! truthiness the reference's JavaScript gives a variable. Only the tests compile it: it is the
+//! reference that the readings of `ferrigura_model::theme::ThemeTokens` are compared with below.
 
+use ferrigura_model::theme::tokens::leading_integer;
 use ferrigura_model::value::Value;
 
 use crate::svg::number;
 
 /// A variable as text: a string as it is, a number as JavaScript prints it.
-pub(crate) fn text_of(variables: &Value, name: &str) -> Option<String> {
+fn text_of(variables: &Value, name: &str) -> Option<String> {
     match variables.get(name)? {
         Value::String(text) => Some(text.clone()),
         Value::Number(number_value) => Some(number(*number_value)),
@@ -17,7 +18,7 @@ pub(crate) fn text_of(variables: &Value, name: &str) -> Option<String> {
 }
 
 /// The items of a list variable as text, in order; items that are not text or numbers are skipped.
-pub(crate) fn texts_of(variables: &Value, name: &str) -> Vec<String> {
+fn texts_of(variables: &Value, name: &str) -> Vec<String> {
     match variables.get(name) {
         Some(Value::Array(items)) => items
             .iter()
@@ -33,7 +34,7 @@ pub(crate) fn texts_of(variables: &Value, name: &str) -> Vec<String> {
 
 /// Whether a variable is truthy as JavaScript reads it: `true`, a non-empty string, a non-zero
 /// number. A missing variable is not truthy.
-pub(crate) fn truthy(variables: &Value, name: &str) -> bool {
+fn truthy(variables: &Value, name: &str) -> bool {
     match variables.get(name) {
         Some(Value::Bool(flag)) => *flag,
         Some(Value::String(text)) => !text.is_empty(),
@@ -44,13 +45,9 @@ pub(crate) fn truthy(variables: &Value, name: &str) -> bool {
 }
 
 /// The leading pixel count of a font size or stroke width, as `parseFontSize` reads it.
-pub(crate) fn px(variables: &Value, name: &str) -> Option<f64> {
+fn px(variables: &Value, name: &str) -> Option<f64> {
     leading_integer(&text_of(variables, name)?)
 }
-
-pub(crate) use ferrigura_model::theme::tokens::leading_integer;
-
-pub(crate) use crate::svg::css_text;
 
 #[cfg(test)]
 mod tests {

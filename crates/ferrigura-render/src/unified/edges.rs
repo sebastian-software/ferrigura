@@ -7,7 +7,6 @@
 //! marker offsets. The other curves come from d3's line with the marker accessors, as the
 //! reference draws a straight fallback edge. Node clipping is off for ELK (`skipIntersect`).
 
-use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value;
 
 use super::Section;
@@ -21,7 +20,6 @@ use super::path::{
     js_number, line_with_offset, marker_offset2, path_bounds, path_length,
 };
 use crate::RenderError;
-use crate::context::Globals;
 use crate::svg::escape;
 
 /// A painted edge path.
@@ -146,18 +144,6 @@ pub fn prepare(data: &mut LayoutData) {
     }
 }
 
-/// The font size of the labels: the theme's `fontSize`, which the root rule of the reference's
-/// SVG sets and every label inherits (`redux-color` gives `14px`), else the configured size.
-fn theme_font_size(globals: &Globals) -> f64 {
-    let variables = Theme::from_name(&globals.theme).variables(globals.theme_variables.as_ref());
-    let from_theme = variables.get("fontSize").and_then(|value| match value {
-        Value::Number(number) => Some(*number),
-        Value::String(text) => text.trim().trim_end_matches("px").trim().parse().ok(),
-        _ => None,
-    });
-    from_theme.unwrap_or(globals.font_size)
-}
-
 /// `isLabelStyle` of `shapes/handDrawnShapeStyles.ts`: the declarations that style the label.
 fn is_label_style(key: &str) -> bool {
     matches!(
@@ -219,26 +205,14 @@ fn declarations(style: &str) -> Vec<String> {
 }
 
 /// Lays out an edge's label as `insertEdgeLabel` does when it measures it: wrapped at 200 pixels,
-/// with a background, in the theme's font size. The caller stores the size on the edge before
-/// layout (see [`label_size`]). `None` for an edge without a label.
+/// with a background, in `font_size`, the theme's `fontSize` that the root rule of the reference's
+/// SVG sets and every label inherits. The caller stores the size on the edge before layout (see
+/// [`label_size`]). `None` for an edge without a label.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read.
-pub fn label(edge: &Edge, globals: &Globals) -> Result<Option<LabelLayout>, RenderError> {
-    label_with_font_size(edge, theme_font_size(globals))
-}
-
-/// [`label`] with the font size given, for a caller that has the theme's variables at hand
-/// (the tokens of the render's theme); `label` reads the size from the globals.
-///
-/// # Errors
-///
-/// Returns an error if a bundled font cannot be read.
-pub fn label_with_font_size(
-    edge: &Edge,
-    font_size: f64,
-) -> Result<Option<LabelLayout>, RenderError> {
+pub fn label(edge: &Edge, font_size: f64) -> Result<Option<LabelLayout>, RenderError> {
     if edge.label.is_empty() {
         return Ok(None);
     }
@@ -707,20 +681,6 @@ mod tests {
         assert_eq!(jump_style(&Section::of(&config)), Some(JumpStyle::Gap));
         config.elk.line_hops = Some(Value::from(serde_json::json!(false)));
         assert_eq!(jump_style(&Section::of(&config)), None);
-    }
-
-    #[test]
-    fn the_label_font_size_is_the_theme_font_size() {
-        // `redux-color` sets `fontSize` to 14px; the labels inherit it from the root rule.
-        assert_eq!(
-            theme_font_size(&Globals::of(&MermaidConfig::default())),
-            14.0
-        );
-        let config = MermaidConfig {
-            theme_variables: Some(Value::from(serde_json::json!({"fontSize": "20px"}))),
-            ..MermaidConfig::default()
-        };
-        assert_eq!(theme_font_size(&Globals::of(&config)), 20.0);
     }
 
     #[test]

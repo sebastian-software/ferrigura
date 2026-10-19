@@ -20,7 +20,7 @@ use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
 use crate::common::decode_entities;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::configure_svg_size;
 use crate::context::Context;
 use crate::svg::number;
@@ -161,7 +161,7 @@ pub fn render(input: &Context<'_, PacketDiagram, PacketSection>) -> Result<Strin
         |family| family.css_family.clone(),
     );
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
-    let style = base_style_sheet_tokens(
+    let style = base_style_sheet(
         id,
         input.theme,
         &font_family,

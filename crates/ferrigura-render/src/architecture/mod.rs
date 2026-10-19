@@ -25,7 +25,7 @@ use ferrigura_text::{Run, embed_runs};
 use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::{BBox as ViewBox, setup_graph_viewbox};
 use crate::context::Context;
 use crate::svg::number;
@@ -92,7 +92,7 @@ pub fn render(
     );
     let css_font_size = format!("{}px", number(text_size));
     let own_rules = style::own_rules(input.id, input.theme);
-    let style_sheet = base_style_sheet_tokens(
+    let style_sheet = base_style_sheet(
         input.id,
         input.theme,
         &font_family,

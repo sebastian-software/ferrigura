@@ -23,7 +23,7 @@ use self::label::{Cell, LabelLine, LineKind};
 use self::layout::{Boxed, Layout};
 use crate::RenderError;
 use crate::a11y;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::setup_graph_viewbox;
 use crate::common::{Element, TextMemo};
 use crate::context::Context;
@@ -100,7 +100,7 @@ pub fn render(
         .iter()
         .find(|family| family.family == FontFamily::Mono)
         .map(|family| family.css_family.clone());
-    let sheet = base_style_sheet_tokens(
+    let sheet = base_style_sheet(
         id,
         input.theme,
         &font_family,

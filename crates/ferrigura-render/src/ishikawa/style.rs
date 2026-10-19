@@ -10,7 +10,7 @@
 
 use ferrigura_text::EmbeddedFamily;
 
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::context::ThemeView;
 
 /// The background of the head and of the labels, in each scheme. Light only when the theme has no
@@ -66,5 +66,5 @@ pub fn sheet(
         background_token(id, theme),
         rules(id, family, label_size)
     );
-    base_style_sheet_tokens(id, theme, family, label_size, families, &own)
+    base_style_sheet(id, theme, family, label_size, families, &own)
 }

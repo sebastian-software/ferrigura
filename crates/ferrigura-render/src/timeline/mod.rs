@@ -24,7 +24,7 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::a11y;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::text::{collapse_white_space, collapsed_box};
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
 use crate::common::{Element, decode_entities};
@@ -80,7 +80,7 @@ pub fn render(
         },
         |family| family.css_family.clone(),
     );
-    let style = base_style_sheet_tokens(
+    let style = base_style_sheet(
         input.id,
         input.theme,
         &font_family,

@@ -2,7 +2,7 @@
 //!
 //! [`Renderer`] is the interface. It takes the configuration the user would pass to `initialize`
 //! once, when it is made, and resolves what its renders share: the configuration merged onto the
-//! defaults and typed, and the variables of both shipped themes. A render merges only the diagram's
+//! defaults and typed, and both shipped themes as typed tokens. A render merges only the diagram's
 //! own front matter and directives on top of that, and only when there are any. [`render`] and
 //! [`render_with`] take the configuration with each call. They are a shorthand over a small cache of
 //! renderers, so a configuration that is rendered again is resolved once. The output is the same
@@ -29,7 +29,6 @@ use ferrigura_render::flowchart;
 use ferrigura_render::kanban::KanbanSections;
 use ferrigura_render::mindmap::MindmapSection;
 use ferrigura_render::pie::render as render_pie;
-use ferrigura_render::theme::Themes;
 use ferrigura_render::unified::Section;
 use ferrigura_render::{
     architecture as architecture_render, block as block_render, c4 as c4_render,
@@ -86,8 +85,8 @@ pub struct RenderOptions {
 /// A renderer, with the site configuration resolved once.
 ///
 /// [`Renderer::new`] takes the configuration the user would pass to `initialize`. The renderer holds
-/// it merged onto the defaults and typed, and the variables of the light and the dark theme with the
-/// user's `themeVariables`. Its renders merge only the diagram's own front matter and directives on
+/// it merged onto the defaults and typed, and the light and the dark theme with the user's
+/// `themeVariables`, as typed tokens. Its renders merge only the diagram's own front matter and directives on
 /// top, and only when there are any: a text without them is drawn with the resolved configuration as
 /// it is. The typed view of a diagram type is resolved at its first render and kept after that.
 ///
@@ -117,13 +116,9 @@ pub struct Renderer {
     configuration: String,
     /// The user's theme overrides, which the two schemes below are computed with.
     overrides: Value,
-    /// The variables of `redux-color` with the overrides: the light scheme.
-    light: Cow<'static, Value>,
-    /// The variables of `redux-dark-color` with the overrides: the dark scheme.
-    dark: Cow<'static, Value>,
-    /// The tokens of `light`, built once with the renderer.
+    /// The tokens of `redux-color` with the overrides: the light scheme.
     light_tokens: ThemeTokens,
-    /// The tokens of `dark`, built once with the renderer.
+    /// The tokens of `redux-dark-color` with the overrides: the dark scheme.
     dark_tokens: ThemeTokens,
     /// The views of the diagram types, made at their first render. A view that cannot be resolved
     /// keeps its error, which the render reports as it always has.
@@ -140,13 +135,13 @@ impl Renderer {
     pub fn new(config: &Value) -> Self {
         let site = SiteConfig::new(Some(config));
         let overrides = site.user_theme_variables(&Value::empty_object());
-        let light = Theme::ReduxColor.variables_shared(Some(&overrides));
-        let dark = Theme::ReduxDarkColor.variables_shared(Some(&overrides));
         Self {
-            light_tokens: ThemeTokens::from_value(&light),
-            dark_tokens: ThemeTokens::from_value(&dark),
-            light,
-            dark,
+            light_tokens: ThemeTokens::from_value(
+                &Theme::ReduxColor.variables_shared(Some(&overrides)),
+            ),
+            dark_tokens: ThemeTokens::from_value(
+                &Theme::ReduxDarkColor.variables_shared(Some(&overrides)),
+            ),
             configuration: serde_json::to_string(config).unwrap_or_default(),
             overrides,
             site,
@@ -381,11 +376,11 @@ impl Renderer {
     }
 
     /// What a render needs besides its diagram, as `mermaidAPI` resolves it before it calls the
-    /// diagram's renderer: the id, the configuration in the diagram's scope, and the theme variables
-    /// of the schemes that the render draws.
+    /// diagram's renderer: the id, the configuration in the diagram's scope, and the tokens of the
+    /// schemes that the render draws.
     ///
-    /// A text without front matter or directives uses the view of its diagram type and the themes
-    /// of the renderer as they are. Otherwise the directive is merged on top here, and the themes are
+    /// A text without front matter or directives uses the view of its diagram type and the tokens
+    /// of the renderer as they are. Otherwise the directive is merged on top here, and the tokens are
     /// computed again only when the directive changes the user's overrides.
     fn prepare(
         &self,
@@ -404,8 +399,6 @@ impl Renderer {
             return Ok(Prepared {
                 id,
                 view: self.view(kind)?,
-                light: Cow::Borrowed(&*self.light),
-                dark: Cow::Borrowed(&*self.dark),
                 light_tokens: Cow::Borrowed(&self.light_tokens),
                 dark_tokens: Cow::Borrowed(&self.dark_tokens),
                 scheme,
@@ -413,33 +406,28 @@ impl Renderer {
         }
         let view = View::resolve(&self.site, kind, &directive).map_err(RenderError::Config)?;
         let overrides = self.site.user_theme_variables(&directive);
-        let (light, dark, light_tokens, dark_tokens) = if overrides == self.overrides {
+        let (light_tokens, dark_tokens) = if overrides == self.overrides {
             (
-                Cow::Borrowed(&*self.light),
-                Cow::Borrowed(&*self.dark),
                 Cow::Borrowed(&self.light_tokens),
                 Cow::Borrowed(&self.dark_tokens),
             )
         } else {
-            let light = scheme_variables(
-                Theme::ReduxColor,
-                matches!(scheme, Some(ColorScheme::Light | ColorScheme::Auto)),
-                &overrides,
-            );
-            let dark = scheme_variables(
-                Theme::ReduxDarkColor,
-                matches!(scheme, Some(ColorScheme::Dark | ColorScheme::Auto)),
-                &overrides,
-            );
-            let light_tokens = Cow::Owned(ThemeTokens::from_value(&light));
-            let dark_tokens = Cow::Owned(ThemeTokens::from_value(&dark));
-            (light, dark, light_tokens, dark_tokens)
+            (
+                Cow::Owned(scheme_tokens(
+                    Theme::ReduxColor,
+                    matches!(scheme, Some(ColorScheme::Light | ColorScheme::Auto)),
+                    &overrides,
+                )),
+                Cow::Owned(scheme_tokens(
+                    Theme::ReduxDarkColor,
+                    matches!(scheme, Some(ColorScheme::Dark | ColorScheme::Auto)),
+                    &overrides,
+                )),
+            )
         };
         Ok(Prepared {
             id,
             view: Arc::new(view),
-            light,
-            dark,
             light_tokens,
             dark_tokens,
             scheme,
@@ -489,17 +477,17 @@ pub fn render_with(
     shorthand(config).render_with(text, options)
 }
 
-/// The view of a diagram type, its configuration in the diagram's scope and typed, the variables of
-/// its configured theme with their tokens, and the globals the renderers read.
+/// The view of a diagram type, its configuration in the diagram's scope and typed, the tokens of its
+/// configured theme, and the globals the renderers read.
 #[derive(Debug)]
 struct View {
-    /// The configuration in the diagram's scope, as the renderers that read it untyped see it.
+    /// The configuration in the diagram's scope, untyped: the facade reads from it what the schema
+    /// does not type as the reference reads it (packet's `bitsPerRow`, the treemap's settings, the
+    /// sequence's `wrap`).
     effective: Value,
     /// The same configuration, typed.
     config: MermaidConfig,
-    /// The `themeVariables` of the configuration: the variables of the configured theme.
-    configured: Value,
-    /// The tokens of `configured`.
+    /// The tokens of the configured theme: the `themeVariables` of the configuration.
     configured_tokens: ThemeTokens,
     /// The global options of the configuration, as the view resolves them.
     globals: Globals,
@@ -521,16 +509,16 @@ impl View {
         {
             config.layout = "cose-bilkent".to_owned();
         }
-        let configured = effective
-            .get("themeVariables")
-            .cloned()
-            .unwrap_or_else(Value::empty_object);
+        let configured_tokens = ThemeTokens::from_value(
+            effective
+                .get("themeVariables")
+                .unwrap_or(&Value::empty_object()),
+        );
         Ok(Self {
             globals: Globals::of(&config),
-            configured_tokens: ThemeTokens::from_value(&configured),
+            configured_tokens,
             effective,
             config,
-            configured,
         })
     }
 }
@@ -539,16 +527,14 @@ impl View {
 struct Prepared<'a> {
     id: String,
     view: Arc<View>,
-    light: Cow<'a, Value>,
-    dark: Cow<'a, Value>,
     light_tokens: Cow<'a, ThemeTokens>,
     dark_tokens: Cow<'a, ThemeTokens>,
     scheme: Option<ColorScheme>,
 }
 
 impl Prepared<'_> {
-    /// The theme of the render as typed tokens: the scheme that the colour scheme chooses, as
-    /// `themes` gives it, with the light scheme as the primary one.
+    /// The theme of the render as typed tokens: the configured theme, or the scheme that the colour
+    /// scheme chooses, with the light scheme as the primary one when the render draws both.
     fn theme(&self) -> ThemeView<'_> {
         match self.scheme {
             None => ThemeView {
@@ -569,19 +555,6 @@ impl Prepared<'_> {
             },
         }
     }
-
-    /// The theme variables that the render draws with, as the colour scheme chooses them.
-    fn themes(&self) -> Themes<'_> {
-        match self.scheme {
-            None => Themes::Single(&self.view.configured),
-            Some(ColorScheme::Light) => Themes::Single(&self.light),
-            Some(ColorScheme::Dark) => Themes::Single(&self.dark),
-            Some(ColorScheme::Auto) => Themes::Schemes {
-                light: &self.light,
-                dark: &self.dark,
-            },
-        }
-    }
 }
 
 /// Whether the top-level `layout` is set by the user: in the site configuration (`initialize`) or in
@@ -592,13 +565,13 @@ fn user_sets_layout(site: Option<&Value>, directive: &Value) -> bool {
     site.is_some_and(set) || set(directive)
 }
 
-/// The variables of a colour scheme, when the render draws it. A scheme that is not drawn is not
-/// computed: the configured theme decides the colours then, and the scheme gives no variables.
-fn scheme_variables(theme: Theme, drawn: bool, overrides: &Value) -> Cow<'static, Value> {
+/// The tokens of a colour scheme, when the render draws it. A scheme that is not drawn is not
+/// computed: the configured theme decides the colours then, and the scheme gives no tokens.
+fn scheme_tokens(theme: Theme, drawn: bool, overrides: &Value) -> ThemeTokens {
     if drawn {
-        theme.variables_shared(Some(overrides))
+        ThemeTokens::from_value(&theme.variables_shared(Some(overrides)))
     } else {
-        Cow::Owned(Value::empty_object())
+        ThemeTokens::from_value(&Value::empty_object())
     }
 }
 

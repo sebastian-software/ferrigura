@@ -114,7 +114,7 @@ pub fn render(
         .font_size
         .px()
         .unwrap_or(DEFAULT_FONT_SIZE);
-    let style = crate::common::style::base_style_sheet_tokens(
+    let style = crate::common::style::base_style_sheet(
         input.id,
         input.theme,
         &font_family,

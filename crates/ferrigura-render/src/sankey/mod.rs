@@ -25,7 +25,7 @@ use crate::common::Element;
 use crate::common::d3::{
     OrdinalScale, SCHEME_TABLEAU10, js_number, js_round, link_horizontal, math_max,
 };
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::text::{collapse_white_space, collapsed_box, collapsed_width};
 use crate::common::viewbox::{BBox as ViewBox, setup_graph_viewbox};
 use crate::context::Context;
@@ -150,7 +150,7 @@ pub fn render(
     );
     let text_size = tokens.font_size.px().unwrap_or(16.0);
     let schemes = Schemes::new(input.theme);
-    let style = base_style_sheet_tokens(
+    let style = base_style_sheet(
         id,
         input.theme,
         &font_family,

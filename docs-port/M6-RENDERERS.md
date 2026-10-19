@@ -4,6 +4,8 @@ This is the working guide for the renderer tasks of M6 (stages 2 and 3 of [M6-PL
 
 ## What is already there
 
+> Since issue #4 (2026-10-19), the facade hands every renderer a `Context`: its diagram, its configuration section, the globals, the theme as typed tokens and the id, in place of the input struct, `MermaidConfig` and `Themes` below. See [typed-views.md](./typed-views.md).
+
 - **The facade** (`crates/ferrigura/src/lib.rs`) parses every P1 type and calls `ferrigura_render::<type>::render(&<Type>Input { diagram, config, themes, id })`. The configuration is the effective one in the type's scope (`DiagramType::config_key`), typed as `MermaidConfig`; the section of the type is `config.<type>` (for example `config.sequence`, `config.git_graph`). Gantt also gets `now`, the clock in milliseconds since the epoch. The facade does not need to change for a renderer task.
 - **The stub** `crates/ferrigura-render/src/<type>/mod.rs`: the input struct and a `render` that returns `RenderError::Unsupported`. The task replaces the body and adds the modules it needs under that folder.
 - **Themes** (`ferrigura_render::theme::Themes`): one set of theme variables or a light and a dark set; `themes.primary()` is the set that gives sizes and presentation attributes.

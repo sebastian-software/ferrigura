@@ -32,10 +32,10 @@ pub mod sankey;
 pub mod sequence;
 pub mod state;
 pub mod svg;
-pub mod theme;
 pub mod timeline;
 pub mod treemap;
 pub mod unified;
+#[cfg(test)]
 mod variables;
 pub mod xychart;
 

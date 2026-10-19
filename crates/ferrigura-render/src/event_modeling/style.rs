@@ -136,8 +136,8 @@ fn declarations(tokens: &ThemeTokens) -> String {
     out
 }
 
-/// The colour properties on the id, for each scheme (`Themes::Schemes` writes the dark one under the
-/// media query).
+/// The colour properties on the id, for each scheme of the theme (the dark one, when the render
+/// draws both, under the media query).
 #[must_use]
 pub fn tokens(svg_id: &str, theme: ThemeView<'_>) -> String {
     match theme.dark {

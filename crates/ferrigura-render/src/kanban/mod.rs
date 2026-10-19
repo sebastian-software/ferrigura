@@ -24,7 +24,7 @@ use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
 use crate::common::decode_entities;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::{BBox as ViewBox, setup_graph_viewbox};
 use crate::context::Context;
 use crate::svg::number;
@@ -219,7 +219,7 @@ pub fn render(
         |family| family.css_family.clone(),
     );
     let css_font_size = format!("{}px", number(text_size));
-    let style = base_style_sheet_tokens(
+    let style = base_style_sheet(
         id,
         input.theme,
         &font_family,

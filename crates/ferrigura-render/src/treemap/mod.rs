@@ -36,7 +36,7 @@ use crate::common::d3::math_max;
 use crate::common::d3::number::js_number;
 use crate::common::d3::treemap::{Padding, Treemap};
 use crate::common::decode_entities;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
 use crate::context::Context;
 use crate::svg::{escape, number};
@@ -534,7 +534,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
         |family| family.css_family.clone(),
     );
     let css_font_size = format!("{}px", number(tokens.font_size.px().unwrap_or(16.0)));
-    let style = base_style_sheet_tokens(
+    let style = base_style_sheet(
         id,
         input.theme,
         &font_family,

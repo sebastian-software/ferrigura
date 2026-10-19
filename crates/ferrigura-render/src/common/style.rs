@@ -12,82 +12,20 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::ThemeView;
-use crate::svg::font_faces;
-use crate::theme::Themes;
-use crate::variables::{css_text, text_of};
-
-/// The colour tokens of the base rules, each declared on the diagram's id.
-const TOKENS: [(&str, &str); 5] = [
-    ("textColor", "#333333"),
-    ("lineColor", "#333333"),
-    ("nodeBorder", "#9370DB"),
-    ("errorBkgColor", "#552222"),
-    ("errorTextColor", "#552222"),
-];
-
-/// The values of the base rules that a theme gives, and the colours of the rules: what [`sheet`] writes.
-struct Parts {
-    /// `strokeWidth`, as the edges and the neo nodes use it; the sheet writes `1` when it is absent.
-    stroke_width: Option<String>,
-    /// `dropShadow`; the sheet writes `none` when it is absent or empty.
-    drop_shadow: Option<String>,
-    /// `fontFamily` of the theme, which `:root` names; the sheet writes the configured family when it is absent.
-    root_font: Option<String>,
-    /// The custom properties of the colours, each scheme in its own block.
-    colours: String,
-}
+use crate::svg::{css_text, font_faces};
 
 /// The `<style>` text of the base rules for the diagram with the id `svg_id`, with the embedded
 /// `@font-face` rules first. The font family is `font_family` as CSS reads it (quoted when it is a
-/// name), and `font_size` is the CSS size. The result is escaped for an XML `<style>` element.
-#[must_use]
-pub fn base_style_sheet(
-    svg_id: &str,
-    themes: Themes<'_>,
-    font_family: &str,
-    font_size: &str,
-    families: &[EmbeddedFamily],
-) -> String {
-    base_style_sheet_with(svg_id, themes, font_family, font_size, families, "")
-}
-
-/// [`base_style_sheet`] with the diagram's own raw CSS, `own_rules`, placed after the base rules of
-/// `p` and before the `neo` look rules, as the reference's `getStyles` places a diagram's `styles.js`
+/// name), and `font_size` is the CSS size. The colours are custom properties on the id, one block
+/// per scheme of `theme`; the stroke width, the drop shadow and the font that `:root` names come from
+/// the light (or only) scheme. The result is escaped for an XML `<style>` element.
+///
+/// `own_rules` is the diagram's own raw CSS (`""` for none), placed after the base rules of `p` and
+/// before the `neo` look rules, as the reference's `getStyles` places a diagram's `styles.js`
 /// (`styles.ts` 40-45 and the rule order of `mermaidAPI`). The own rules are not escaped here: the
 /// caller writes them as CSS text, and the whole sheet is escaped once.
 #[must_use]
-pub fn base_style_sheet_with(
-    svg_id: &str,
-    themes: Themes<'_>,
-    font_family: &str,
-    font_size: &str,
-    families: &[EmbeddedFamily],
-    own_rules: &str,
-) -> String {
-    let variables = themes.primary();
-    let id = format!("#{svg_id}");
-    let tokens = declarations(variables);
-    let colours = match themes {
-        Themes::Single(_) => format!("{id}{{{tokens}}}"),
-        Themes::Schemes { light, dark } => format!(
-            "{id}{{{}}}@media (prefers-color-scheme: dark){{{id}{{{}}}}}",
-            declarations(light),
-            declarations(dark)
-        ),
-    };
-    let parts = Parts {
-        stroke_width: text_of(variables, "strokeWidth"),
-        drop_shadow: text_of(variables, "dropShadow"),
-        root_font: text_of(variables, "fontFamily"),
-        colours,
-    };
-    sheet(svg_id, parts, font_family, font_size, families, own_rules)
-}
-
-/// [`base_style_sheet_with`] for a theme given as typed tokens (`docs-port/typed-views.md`): the same
-/// sheet, byte for byte, with the colours and the values read from the tokens.
-#[must_use]
-pub fn base_style_sheet_tokens(
+pub fn base_style_sheet(
     svg_id: &str,
     theme: ThemeView<'_>,
     font_family: &str,
@@ -97,34 +35,16 @@ pub fn base_style_sheet_tokens(
 ) -> String {
     let id = format!("#{svg_id}");
     let colours = match theme.dark {
-        None => format!("{id}{{{}}}", token_declarations(theme.light)),
+        None => format!("{id}{{{}}}", declarations(theme.light)),
         Some(dark) => format!(
             "{id}{{{}}}@media (prefers-color-scheme: dark){{{id}{{{}}}}}",
-            token_declarations(theme.light),
-            token_declarations(dark)
+            declarations(theme.light),
+            declarations(dark)
         ),
     };
-    let parts = Parts {
-        stroke_width: theme.light.stroke_width.text(),
-        drop_shadow: theme.light.drop_shadow.text(),
-        root_font: theme.light.font_family.text(),
-        colours,
-    };
-    sheet(svg_id, parts, font_family, font_size, families, own_rules)
-}
-
-/// The sheet of the base rules: the faces, the colours, then the rules, escaped once.
-fn sheet(
-    svg_id: &str,
-    parts: Parts,
-    font_family: &str,
-    font_size: &str,
-    families: &[EmbeddedFamily],
-    own_rules: &str,
-) -> String {
-    let id = format!("#{svg_id}");
-    let stroke_width = parts.stroke_width.unwrap_or_else(|| "1".to_owned());
-    let shadow = match parts.drop_shadow {
+    let tokens = theme.light;
+    let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
+    let shadow = match tokens.drop_shadow.text() {
         Some(value) if !value.is_empty() => value.replacen(
             "url(#drop-shadow)",
             // `svgId` is the selector `#id` in styles.ts, so the reference names `url(#id-drop-shadow)`.
@@ -134,8 +54,10 @@ fn sheet(
         _ => "none".to_owned(),
     };
     // `:root` names the configured family (mermaidAPI.ts), not the embedded subset of this diagram.
-    let root_font = parts.root_font.unwrap_or_else(|| font_family.to_owned());
-    let colours = parts.colours;
+    let root_font = tokens
+        .font_family
+        .text()
+        .unwrap_or_else(|| font_family.to_owned());
     let faces = if families.is_empty() {
         String::new()
     } else {
@@ -175,21 +97,9 @@ fn sheet(
     css_text(&format!("{faces}{colours}{rules}"))
 }
 
-/// The custom properties of the base colours of a set of variables, as `--name:value;` pairs. A
-/// colour the variables do not give falls back to the default of [`TOKENS`].
-fn declarations(variables: &ferrigura_model::value::Value) -> String {
-    TOKENS
-        .iter()
-        .map(|(name, fallback)| {
-            let value = text_of(variables, name).unwrap_or_else(|| (*fallback).to_owned());
-            format!("--{name}:{value};")
-        })
-        .collect()
-}
-
-/// The custom properties of the base colours of a theme's tokens: [`declarations`] for the tokens,
-/// with the same names, order and defaults.
-fn token_declarations(tokens: &ThemeTokens) -> String {
+/// The custom properties of the base colours of a theme's tokens, as `--name:value;` pairs. A colour
+/// the theme does not give falls back to the default of `redux-color`.
+fn declarations(tokens: &ThemeTokens) -> String {
     let colour =
         |token: &Token, fallback: &str| token.text().unwrap_or_else(|| fallback.to_owned());
     format!(
@@ -206,76 +116,71 @@ fn token_declarations(tokens: &ThemeTokens) -> String {
 mod tests {
     use ferrigura_model::theme::{Theme, ThemeTokens};
     use ferrigura_model::value::Value;
-    use ferrigura_text::{FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 
     use super::*;
 
-    /// The sheet from the tokens is the sheet from the map, byte for byte, with one scheme and with
-    /// both, for the shipped themes and for overrides that change the values the sheet reads.
+    fn sheet(theme: ThemeView<'_>) -> String {
+        base_style_sheet(
+            "ferrigura-test",
+            theme,
+            "\"Recursive\", sans",
+            "16px",
+            &[],
+            "own{x:1}",
+        )
+    }
+
+    /// One scheme gives one block of colours; both give the dark one under the media query.
     #[test]
-    fn the_sheet_of_the_tokens_is_the_sheet_of_the_map() {
-        let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
-        let families = embed_runs(&[Run {
-            text: "v12.2.0",
-            face: sans,
-        }])
-        .expect("the bundled font");
-        let overrides = Value::from(serde_json::json!({
+    fn the_colours_are_declared_per_scheme() {
+        let light = ThemeTokens::from_value(&Theme::ReduxColor.variables(None));
+        let dark = ThemeTokens::from_value(&Theme::ReduxDarkColor.variables(None));
+        let single = sheet(ThemeView {
+            light: &light,
+            dark: None,
+        });
+        assert!(single.starts_with("#ferrigura-test{--textColor:"));
+        assert!(!single.contains("@media"));
+        let both = sheet(ThemeView {
+            light: &light,
+            dark: Some(&dark),
+        });
+        assert!(both.contains("@media (prefers-color-scheme: dark){#ferrigura-test{--textColor:"));
+        assert!(both.contains("own{x:1}#ferrigura-test .node .neo-node"));
+    }
+
+    /// The values the theme gives are written as they are; the shadow names the diagram's filter.
+    #[test]
+    fn the_sheet_takes_the_values_of_the_theme() {
+        let tokens = ThemeTokens::from_value(&Value::from(serde_json::json!({
             "dropShadow": "url(#drop-shadow) drop-shadow(1px 1px #000)",
             "strokeWidth": 3,
             "nodeBorder": 5,
-            "errorTextColor": "#123",
             "fontFamily": "Georgia, serif",
-        }));
-        let light = Theme::ReduxColor.variables(Some(&overrides));
-        let dark = Theme::ReduxDarkColor.variables(None);
-        let light_tokens = ThemeTokens::from_value(&light);
-        let dark_tokens = ThemeTokens::from_value(&dark);
-        for families in [&families[..], &[]] {
-            let single = base_style_sheet_with(
-                "ferrigura-test",
-                Themes::Single(&light),
-                "\"Recursive\", sans",
-                "16px",
-                families,
-                "own{x:1}",
-            );
-            let single_tokens = base_style_sheet_tokens(
-                "ferrigura-test",
-                ThemeView {
-                    light: &light_tokens,
-                    dark: None,
-                },
-                "\"Recursive\", sans",
-                "16px",
-                families,
-                "own{x:1}",
-            );
-            assert_eq!(single, single_tokens);
+        })));
+        let css = sheet(ThemeView {
+            light: &tokens,
+            dark: None,
+        });
+        assert!(css.contains("--nodeBorder:5;"));
+        assert!(css.contains(".edge-thickness-normal{stroke-width:3px;}"));
+        assert!(css.contains("filter:url(#ferrigura-test-drop-shadow) drop-shadow(1px 1px #000);"));
+        assert!(css.contains(":root{--mermaid-font-family:Georgia, serif;}"));
+    }
 
-            let both = base_style_sheet_with(
-                "ferrigura-test",
-                Themes::Schemes {
-                    light: &light,
-                    dark: &dark,
-                },
-                "\"Recursive\", sans",
-                "16px",
-                families,
-                "",
-            );
-            let both_tokens = base_style_sheet_tokens(
-                "ferrigura-test",
-                ThemeView {
-                    light: &light_tokens,
-                    dark: Some(&dark_tokens),
-                },
-                "\"Recursive\", sans",
-                "16px",
-                families,
-                "",
-            );
-            assert_eq!(both, both_tokens);
-        }
+    /// A theme without the values gives the defaults, and `:root` names the configured family.
+    #[test]
+    fn the_sheet_falls_back_without_the_values() {
+        let tokens = ThemeTokens::from_value(&Value::empty_object());
+        let css = sheet(ThemeView {
+            light: &tokens,
+            dark: None,
+        });
+        assert!(css.starts_with(
+            "#ferrigura-test{--textColor:#333333;--lineColor:#333333;--nodeBorder:#9370DB;"
+        ));
+        assert!(css.contains(".edge-thickness-normal{stroke-width:1px;}"));
+        assert!(css.contains("filter:none;"));
+        assert!(css.contains(":root{--mermaid-font-family:\"Recursive\", sans;}"));
     }
 }

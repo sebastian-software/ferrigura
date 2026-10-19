@@ -26,7 +26,7 @@ use ferrigura_text::{Run, embed_runs};
 use crate::RenderError;
 use crate::a11y;
 use crate::common::decode_entities;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::text::TextMemo;
 use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::context::Context;
@@ -154,7 +154,7 @@ pub fn render(input: &Context<'_, C4Diagram, C4DiagramConfig>) -> Result<String,
         &person_border,
         &person_background,
     );
-    let style_sheet = base_style_sheet_tokens(
+    let style_sheet = base_style_sheet(
         input.id,
         input.theme,
         &family_css,

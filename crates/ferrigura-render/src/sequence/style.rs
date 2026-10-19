@@ -6,7 +6,7 @@
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::context::ThemeView;
 use crate::svg::css_text;
 
@@ -45,7 +45,7 @@ fn declarations(tokens: &ThemeTokens) -> String {
 }
 
 /// The `<style>` text of a sequence diagram with the id `svg_id`, escaped for XML. The base rules
-/// come first, from [`base_style_sheet_tokens`], then the diagram's own.
+/// come first, from [`base_style_sheet`], then the diagram's own.
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
@@ -55,7 +55,7 @@ pub fn style_sheet(
     families: &[EmbeddedFamily],
     look_neo: bool,
 ) -> String {
-    let base = base_style_sheet_tokens(svg_id, theme, font_family, font_size, families, "");
+    let base = base_style_sheet(svg_id, theme, font_family, font_size, families, "");
     let id = format!("#{svg_id}");
     let shadow = if look_neo {
         format!("url(#{svg_id}-drop-shadow)")

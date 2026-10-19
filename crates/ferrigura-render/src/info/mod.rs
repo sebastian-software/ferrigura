@@ -12,7 +12,7 @@ use ferrigura_text::{FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::configure_svg_size;
 use crate::context::Context;
 
@@ -47,7 +47,7 @@ pub fn render(input: &Context<'_, InfoDiagram, ()>) -> Result<String, RenderErro
         |family| family.css_family.clone(),
     );
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
-    let style = base_style_sheet_tokens(
+    let style = base_style_sheet(
         input.id,
         input.theme,
         &font_family,

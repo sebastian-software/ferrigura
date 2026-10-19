@@ -22,7 +22,7 @@ use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, emb
 use crate::RenderError;
 use crate::a11y;
 use crate::common::d3::js_number;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::common::{Element, decode_entities};
 use crate::context::Context;
@@ -71,7 +71,7 @@ pub fn render(
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     // The diagram's own rules are none (`styles.ts` of the type is `() => ''`), so the sheet is
     // the base one.
-    let style = base_style_sheet_tokens(
+    let style = base_style_sheet(
         input.id,
         input.theme,
         &font_family,

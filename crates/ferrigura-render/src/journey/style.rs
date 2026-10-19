@@ -11,7 +11,7 @@ use ferrigura_model::theme::ThemeTokens;
 use ferrigura_text::EmbeddedFamily;
 
 use super::tasks::SECTION_TYPES;
-use crate::common::style::base_style_sheet_tokens;
+use crate::common::style::base_style_sheet;
 use crate::context::ThemeView;
 
 /// The face colour: `styles.js` 29 uses `faceColor` when a theme sets it, and no shipped theme does.
@@ -64,7 +64,7 @@ pub fn style_sheet(
     font_size: &str,
     families: &[EmbeddedFamily],
 ) -> String {
-    let base = base_style_sheet_tokens(svg_id, theme, font_family, font_size, families, "");
+    let base = base_style_sheet(svg_id, theme, font_family, font_size, families, "");
     format!("{base}{}{}", tokens(svg_id, theme), rules(svg_id))
 }
 
