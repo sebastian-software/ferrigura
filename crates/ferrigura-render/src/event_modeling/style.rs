@@ -7,10 +7,9 @@
 //! `prefers-color-scheme: dark` (decision 0007). The elements carry their colours as presentation
 //! attributes too, so a viewer without custom properties draws the same diagram.
 
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::{ThemeTokens, Token};
 
-use crate::theme::Themes;
-use crate::variables::text_of;
+use crate::context::ThemeView;
 
 /// The colours of one entity type: its fill and its stroke.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -52,31 +51,50 @@ pub struct EntityColours {
 
 /// The colours of the diagram in a theme's variables, with the reference's fallbacks.
 #[must_use]
-pub fn colours(variables: &Value) -> Colours {
-    let or = |name: &str, fallback: &str| {
-        text_of(variables, name).unwrap_or_else(|| fallback.to_owned())
-    };
+pub fn colours(tokens: &ThemeTokens) -> Colours {
+    let or = |token: &Token, fallback: &str| token.text().unwrap_or_else(|| fallback.to_owned());
     Colours {
-        swimlane_fill: or("emSwimlaneBackgroundOdd", "rgb(250,250,250)"),
-        swimlane_stroke: or("emSwimlaneBackgroundStroke", "rgb(240,240,240)"),
-        arrowhead: or("emArrowhead", "#000000"),
-        relation_stroke: or("emRelationStroke", "#000"),
+        swimlane_fill: or(&tokens.em_swimlane_background_odd, "rgb(250,250,250)"),
+        swimlane_stroke: or(&tokens.em_swimlane_background_stroke, "rgb(240,240,240)"),
+        arrowhead: or(&tokens.em_arrowhead, "#000000"),
+        relation_stroke: or(&tokens.em_relation_stroke, "#000"),
     }
 }
 
 /// The colours of the entity types in a theme's variables, with the reference's fallbacks.
 #[must_use]
-pub fn entity_colours(variables: &Value) -> EntityColours {
-    let visual = |fill: &str, fill_fallback: &str, stroke: &str, stroke_fallback: &str| Visual {
-        fill: text_of(variables, fill).unwrap_or_else(|| fill_fallback.to_owned()),
-        stroke: text_of(variables, stroke).unwrap_or_else(|| stroke_fallback.to_owned()),
-    };
+pub fn entity_colours(tokens: &ThemeTokens) -> EntityColours {
+    let visual =
+        |fill: &Token, fill_fallback: &str, stroke: &Token, stroke_fallback: &str| Visual {
+            fill: fill.text().unwrap_or_else(|| fill_fallback.to_owned()),
+            stroke: stroke.text().unwrap_or_else(|| stroke_fallback.to_owned()),
+        };
     EntityColours {
-        ui: visual("emUiFill", "white", "emUiStroke", "#dbdada"),
-        processor: visual("emProcessorFill", "#edb3f6", "emProcessorStroke", "#b88cbf"),
-        read_model: visual("emReadModelFill", "#d3f1a2", "emReadModelStroke", "#a3b732"),
-        command: visual("emCommandFill", "#bcd6fe", "emCommandStroke", "#679ac3"),
-        event: visual("emEventFill", "#ffb778", "emEventStroke", "#c19a0f"),
+        ui: visual(&tokens.em_ui_fill, "white", &tokens.em_ui_stroke, "#dbdada"),
+        processor: visual(
+            &tokens.em_processor_fill,
+            "#edb3f6",
+            &tokens.em_processor_stroke,
+            "#b88cbf",
+        ),
+        read_model: visual(
+            &tokens.em_read_model_fill,
+            "#d3f1a2",
+            &tokens.em_read_model_stroke,
+            "#a3b732",
+        ),
+        command: visual(
+            &tokens.em_command_fill,
+            "#bcd6fe",
+            &tokens.em_command_stroke,
+            "#679ac3",
+        ),
+        event: visual(
+            &tokens.em_event_fill,
+            "#ffb778",
+            &tokens.em_event_stroke,
+            "#c19a0f",
+        ),
     }
 }
 
@@ -96,9 +114,9 @@ impl EntityColours {
 }
 
 /// The custom properties of the colours of one scheme, as the rules use them.
-fn declarations(variables: &Value) -> String {
-    let colours = colours(variables);
-    let entities = entity_colours(variables);
+fn declarations(tokens: &ThemeTokens) -> String {
+    let colours = colours(tokens);
+    let entities = entity_colours(tokens);
     let mut out = format!(
         "--emSwimlaneFill:{};--emSwimlaneStroke:{};--emArrowhead:{};--emRelationStroke:{};",
         colours.swimlane_fill, colours.swimlane_stroke, colours.arrowhead, colours.relation_stroke
@@ -121,12 +139,12 @@ fn declarations(variables: &Value) -> String {
 /// The colour properties on the id, for each scheme (`Themes::Schemes` writes the dark one under the
 /// media query).
 #[must_use]
-pub fn tokens(svg_id: &str, themes: Themes<'_>) -> String {
-    match themes {
-        Themes::Single(variables) => format!("#{svg_id}{{{}}}", declarations(variables)),
-        Themes::Schemes { light, dark } => format!(
+pub fn tokens(svg_id: &str, theme: ThemeView<'_>) -> String {
+    match theme.dark {
+        None => format!("#{svg_id}{{{}}}", declarations(theme.light)),
+        Some(dark) => format!(
             "#{svg_id}{{{}}}@media (prefers-color-scheme: dark){{#{svg_id}{{{}}}}}",
-            declarations(light),
+            declarations(theme.light),
             declarations(dark)
         ),
     }
@@ -158,17 +176,19 @@ pub fn box_token(entity_type: &str) -> (&'static str, &'static str) {
 
 #[cfg(test)]
 mod tests {
+    use ferrigura_model::value::Value;
+
     use super::*;
 
     #[test]
     fn the_fallbacks_are_the_reference_colours_when_the_theme_has_none() {
-        let variables = Value::Object(Default::default());
-        let entities = entity_colours(&variables);
+        let tokens = ThemeTokens::from_value(&Value::Object(Default::default()));
+        let entities = entity_colours(&tokens);
         assert_eq!(entities.of("ui").fill, "white");
         assert_eq!(entities.of("pcr").stroke, "#b88cbf");
         assert_eq!(entities.of("command").fill, "#bcd6fe");
         assert_eq!(entities.of("evt").stroke, "#c19a0f");
-        assert_eq!(colours(&variables).swimlane_fill, "rgb(250,250,250)");
+        assert_eq!(colours(&tokens).swimlane_fill, "rgb(250,250,250)");
     }
 
     #[test]
@@ -178,6 +198,7 @@ mod tests {
                 .into_iter()
                 .collect(),
         );
-        assert_eq!(entity_colours(&variables).ui.fill, "#123456");
+        let tokens = ThemeTokens::from_value(&variables);
+        assert_eq!(entity_colours(&tokens).ui.fill, "#123456");
     }
 }

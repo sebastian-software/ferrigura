@@ -2,21 +2,32 @@
 //! (`archEdgeColor`, `archEdgeArrowColor`, `archEdgeWidth`, `archGroupBorderColor` and
 //! `archGroupBorderWidth`), each rule under the diagram's id.
 
-use crate::theme::Themes;
-use crate::variables::text_of;
+use crate::context::ThemeView;
 
 /// The rules of the diagram, selected under `#id` as the reference's stylis does (`styles.ts` 34-38).
 #[must_use]
-pub fn own_rules(id: &str, themes: Themes<'_>) -> String {
-    let variables = themes.primary();
-    let edge_color = text_of(variables, "archEdgeColor").unwrap_or_else(|| "#333333".to_owned());
-    let arrow_color =
-        text_of(variables, "archEdgeArrowColor").unwrap_or_else(|| edge_color.clone());
-    let edge_width = text_of(variables, "archEdgeWidth").unwrap_or_else(|| "3".to_owned());
-    let group_color =
-        text_of(variables, "archGroupBorderColor").unwrap_or_else(|| "#333333".to_owned());
-    let group_width =
-        text_of(variables, "archGroupBorderWidth").unwrap_or_else(|| "2px".to_owned());
+pub fn own_rules(id: &str, theme: ThemeView<'_>) -> String {
+    let tokens = theme.light;
+    let edge_color = tokens
+        .arch_edge_color
+        .text()
+        .unwrap_or_else(|| "#333333".to_owned());
+    let arrow_color = tokens
+        .arch_edge_arrow_color
+        .text()
+        .unwrap_or_else(|| edge_color.clone());
+    let edge_width = tokens
+        .arch_edge_width
+        .text()
+        .unwrap_or_else(|| "3".to_owned());
+    let group_color = tokens
+        .arch_group_border_color
+        .text()
+        .unwrap_or_else(|| "#333333".to_owned());
+    let group_width = tokens
+        .arch_group_border_width
+        .text()
+        .unwrap_or_else(|| "2px".to_owned());
     format!(
         "#{id} .edge{{stroke-width: {edge_width};stroke: {edge_color};fill: none;}}\
 #{id} .arrow{{fill: {arrow_color};}}\

@@ -2,7 +2,7 @@
 //! is the `C4DiagramConfig` of the schema (`config.schema.yaml:507`), with the element palette and
 //! the element fonts of `c4ShapeAdapter.ts` and `styles.js`.
 
-use ferrigura_model::config::{C4DiagramConfig, MermaidConfig};
+use ferrigura_model::config::C4DiagramConfig;
 use ferrigura_model::value::Value;
 
 /// The font size of the schema when a font size is not a number (`C4DiagramConfig`'s defaults).
@@ -73,10 +73,10 @@ pub struct Conf {
 }
 
 impl Conf {
-    /// The renderer's configuration of a diagram's effective configuration.
+    /// The renderer's configuration of the `c4` section of the configuration.
     #[must_use]
-    pub fn new(config: &MermaidConfig) -> Self {
-        let section = config.c4.clone();
+    pub fn new(section: &C4DiagramConfig) -> Self {
+        let section = section.clone();
         Self {
             diagram_margin_x: section.diagram_margin_x as f64,
             diagram_margin_y: section.diagram_margin_y as f64,

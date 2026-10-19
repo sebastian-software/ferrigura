@@ -19,36 +19,21 @@ mod scene;
 mod style;
 
 use ferrigura_model::architecture::ArchitectureDiagram;
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::ArchitectureDiagramConfig;
 use ferrigura_text::{Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
-use crate::common::style::base_style_sheet_with;
+use crate::common::style::base_style_sheet_tokens;
 use crate::common::viewbox::{BBox as ViewBox, setup_graph_viewbox};
+use crate::context::Context;
 use crate::svg::number;
-use crate::theme::Themes;
-use crate::variables::{px, text_of};
 use geometry::Box2;
 use scene::{Metrics, Scene};
 
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
-
-/// What the architecture renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct ArchitectureInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a ArchitectureDiagram,
-    /// The effective configuration, in the architecture diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
 
 /// Renders the diagram to an SVG document.
 ///
@@ -56,8 +41,10 @@ pub struct ArchitectureInput<'a> {
 ///
 /// Returns an error if the layout refuses the input (a seed of 0 is not reproducible), if a label
 /// cannot be measured or laid out, or if a bundled font cannot be read or subset.
-pub fn render(input: &ArchitectureInput<'_>) -> Result<String, RenderError> {
-    let config = &input.config.architecture;
+pub fn render(
+    input: &Context<'_, ArchitectureDiagram, ArchitectureDiagramConfig>,
+) -> Result<String, RenderError> {
+    let config = input.section;
     let metrics = Metrics {
         icon_size: config.icon_size,
         padding: config.padding,
@@ -84,8 +71,8 @@ pub fn render(input: &ArchitectureInput<'_>) -> Result<String, RenderError> {
 
     // The SVG text takes the theme's font size (the root style's `font-size`), while cytoscape measures
     // the node labels at the configuration's `fontSize` (`architectureRenderer.ts` 124-145).
-    let variables = input.themes.primary();
-    let text_size = px(variables, "fontSize").unwrap_or(16.0);
+    let tokens = input.theme.light;
+    let text_size = tokens.font_size.px().unwrap_or(16.0);
     let drawing = draw::draw(&scene, input.id, metrics, text_size)?;
 
     // The fonts: every glyph of every label.
@@ -95,14 +82,19 @@ pub fn render(input: &ArchitectureInput<'_>) -> Result<String, RenderError> {
     }
     let families = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
     let css_font_size = format!("{}px", number(text_size));
-    let own_rules = style::own_rules(input.id, input.themes);
-    let style_sheet = base_style_sheet_with(
+    let own_rules = style::own_rules(input.id, input.theme);
+    let style_sheet = base_style_sheet_tokens(
         input.id,
-        input.themes,
+        input.theme,
         &font_family,
         &css_font_size,
         &families,

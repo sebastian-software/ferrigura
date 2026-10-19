@@ -20,18 +20,17 @@ mod style;
 use std::collections::HashMap;
 
 use ferrigura_model::c4::C4Diagram;
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::C4DiagramConfig;
 use ferrigura_text::{Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
 use crate::common::decode_entities;
-use crate::common::style::base_style_sheet_with;
+use crate::common::style::base_style_sheet_tokens;
 use crate::common::text::TextMemo;
 use crate::common::viewbox::calculate_svg_size_attrs;
+use crate::context::Context;
 use crate::svg::{escape, number};
-use crate::theme::Themes;
-use crate::variables::text_of;
 
 use draw::{Draw, FAMILY, SCREEN_WIDTH};
 
@@ -41,31 +40,18 @@ const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 /// The height that the title adds to the view box (`extraVertForTitle`, `c4Renderer.ts:642`).
 const TITLE_HEIGHT: f64 = 60.0;
 
-/// What the C4 renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct C4Input<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a C4Diagram,
-    /// The effective configuration, in the C4 diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
-
 /// Renders the diagram to an SVG document.
 ///
 /// # Errors
 ///
 /// Returns an error for a shape or a label the renderer does not draw yet (the framed rectangle, a
 /// named label), for a relation whose ends are not drawn, or if a bundled font cannot be read.
-pub fn render(input: &C4Input<'_>) -> Result<String, RenderError> {
-    let conf = config::Conf::new(input.config);
-    let variables = input.themes.primary();
-    let radius = variables
-        .get("radius")
+pub fn render(input: &Context<'_, C4Diagram, C4DiagramConfig>) -> Result<String, RenderError> {
+    let conf = config::Conf::new(input.section);
+    let tokens = input.theme.light;
+    let radius = tokens
+        .radius
+        .value()
         .and_then(ferrigura_model::value::Value::as_f64)
         .unwrap_or(5.0);
     let diagram = input.diagram;
@@ -150,14 +136,17 @@ pub fn render(input: &C4Input<'_>) -> Result<String, RenderError> {
         || {
             format!(
                 "\"{}\"",
-                text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned())
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
             )
         },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
-    let person_border = text_of(variables, "personBorder").unwrap_or_default();
-    let person_background = text_of(variables, "personBkg").unwrap_or_default();
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
+    let person_border = tokens.person_border.text().unwrap_or_default();
+    let person_background = tokens.person_bkg.text().unwrap_or_default();
     let own = style::own_rules(
         input.id,
         &conf,
@@ -165,9 +154,9 @@ pub fn render(input: &C4Input<'_>) -> Result<String, RenderError> {
         &person_border,
         &person_background,
     );
-    let style_sheet = base_style_sheet_with(
+    let style_sheet = base_style_sheet_tokens(
         input.id,
-        input.themes,
+        input.theme,
         &family_css,
         &font_size,
         &families,

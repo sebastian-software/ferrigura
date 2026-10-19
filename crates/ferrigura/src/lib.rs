@@ -309,10 +309,11 @@ impl Renderer {
                     id,
                 })
             }
-            DiagramType::C4 => c4_render::render(&c4_render::C4Input {
+            DiagramType::C4 => c4_render::render(&Context {
                 diagram: &c4::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.c4,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Kanban => kanban_render::render(&kanban_render::KanbanInput {
@@ -321,14 +322,13 @@ impl Renderer {
                 themes,
                 id,
             }),
-            DiagramType::Architecture => {
-                architecture_render::render(&architecture_render::ArchitectureInput {
-                    diagram: &architecture::parse(text)?,
-                    config: typed_config,
-                    themes,
-                    id,
-                })
-            }
+            DiagramType::Architecture => architecture_render::render(&Context {
+                diagram: &architecture::parse(text)?,
+                section: &typed_config.architecture,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
             DiagramType::Treemap => {
                 let section = treemap_render::TreemapSettings::of(&prepared.view.effective);
                 treemap_render::render(&Context {
@@ -339,20 +339,20 @@ impl Renderer {
                     id,
                 })
             }
-            DiagramType::Ishikawa => ishikawa_render::render(&ishikawa_render::IshikawaInput {
+            DiagramType::Ishikawa => ishikawa_render::render(&Context {
                 diagram: &ishikawa::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.ishikawa,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::EventModeling => {
-                event_modeling_render::render(&event_modeling_render::EventModelingInput {
-                    diagram: &event_modeling::parse(text)?,
-                    config: typed_config,
-                    themes,
-                    id,
-                })
-            }
+            DiagramType::EventModeling => event_modeling_render::render(&Context {
+                diagram: &event_modeling::parse(text)?,
+                section: &typed_config.eventmodeling,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
             DiagramType::Flowchart => with_flowchart(text, &prepared, flowchart::render),
         }
     }
