@@ -281,6 +281,24 @@ token_struct! {
 }
 
 token_struct! {
+    /// The `wardley` group of the theme variables: the colours of the wardley map, which a user's
+    /// overrides may set (`wardley/theme.rs`). The redux themes give no group. The reference reads
+    /// `annotationStroke`, `annotationTextColor` and `annotationFill` too, but nothing it draws takes
+    /// them, so they are not tokens.
+    pub struct WardleyTokens {
+        background_color = "backgroundColor": token,
+        axis_color = "axisColor": token,
+        axis_text_color = "axisTextColor": token,
+        grid_color = "gridColor": token,
+        component_fill = "componentFill": token,
+        component_stroke = "componentStroke": token,
+        component_label_color = "componentLabelColor": token,
+        link_stroke = "linkStroke": token,
+        evolution_stroke = "evolutionStroke": token,
+    }
+}
+
+token_struct! {
     /// The `packet` group of the theme variables: the options of the packet diagram's styles
     /// (`packet/style.rs`, the defaults of `styles.ts`), which a user's overrides may set.
     pub struct PacketTokens {
@@ -491,6 +509,8 @@ token_struct! {
         packet = "packet": group(PacketTokens),
         row_even = "rowEven": token,
         row_odd = "rowOdd": token,
+        // The wardley block: the group of the wardley map (`wardley/theme.rs`).
+        wardley = "wardley": group(WardleyTokens),
     }
 }
 
