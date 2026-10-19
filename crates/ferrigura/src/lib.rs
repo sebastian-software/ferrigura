@@ -192,10 +192,11 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Timeline => timeline_render::render(&timeline_render::TimelineInput {
+            DiagramType::Timeline => timeline_render::render(&Context {
                 diagram: &timeline::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.timeline,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Journey => journey_render::render(&journey_render::JourneyInput {
