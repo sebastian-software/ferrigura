@@ -17,6 +17,7 @@ ferrigura-model.workspace = true
 ferrigura-path = { path = "../ferrigura-path" }
 ferrigura-syntax = { path = "../ferrigura-syntax" }
 ferrigura-text = { path = "../ferrigura-text" }
+ferrigura-venn = { path = "../ferrigura-venn" }
 ferromark = "3.1.0"
 serde.workspace = true
 serde_json.workspace = true

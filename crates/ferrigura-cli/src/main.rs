@@ -180,6 +180,7 @@ fn run(job: &Job) -> Result<(), String> {
         color_scheme: job.scheme,
         now: None,
         git_graph_seed: None,
+        random_seed: None,
     };
     if let Some(dir) = &job.output_dir {
         fs::create_dir_all(dir)
