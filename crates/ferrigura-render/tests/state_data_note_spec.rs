@@ -2,13 +2,19 @@
 //! the note nodes and the note edges of `getData()`. The texts and titles are the specs'.
 
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_render::context::Globals;
 use ferrigura_render::state::data::get_data;
+use ferrigura_render::unified::Section;
 use ferrigura_syntax::state::parse_grammar;
 
 /// The layout data of a text, read after the grammar and the DB have parsed it.
 fn layout(text: &str) -> ferrigura_render::unified::data::LayoutData {
     let diagram = parse_grammar(text).expect("parses");
-    get_data(&diagram, &MermaidConfig::default())
+    get_data(
+        &diagram,
+        &Section::of(&MermaidConfig::default()),
+        &Globals::of(&MermaidConfig::default()),
+    )
 }
 
 mod note_nodes {

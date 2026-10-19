@@ -7,6 +7,7 @@
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::er::{Cardinality, Identification, RelSpec};
+use ferrigura_render::context::Globals;
 use ferrigura_render::er::data::{LayoutData, Node, get_data};
 use ferrigura_syntax::er::{ErDb, Member};
 
@@ -31,7 +32,7 @@ fn fresh_db() -> ErDb {
 
 /// The layout data of the DB's state, with the default configuration.
 fn layout(db: ErDb) -> LayoutData {
-    get_data(&db.into_model(), &MermaidConfig::default())
+    get_data(&db.into_model(), &Globals::of(&MermaidConfig::default()))
 }
 
 /// The node with the label, as the spec finds its nodes by `label`.

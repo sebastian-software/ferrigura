@@ -5,8 +5,7 @@
 use std::collections::HashMap;
 
 use ferrigura_model::block::{ClassDef, Edge as ModelEdge};
-use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::value::Value;
+use ferrigura_model::config::BlockDiagramConfig;
 
 use super::{Anchor, Anchors, Block, Size, font_size};
 use crate::RenderError;
@@ -17,18 +16,20 @@ use crate::unified::label::{Anchor as TextAnchor, LabelLayout};
 use crate::unified::palette::Palette;
 use crate::unified::shapes::{self, LinkForm, ShapeInput, ShapeOutput, styles_from_array};
 
-/// What every block of one render reads: the configuration, the theme, the `classDef`s and the palette.
+/// What every block of one render reads: the `block` section, the unified configuration, the `classDef`s
+/// and the palette.
 pub(super) struct Context<'a> {
-    /// The effective configuration.
-    pub config: &'a MermaidConfig,
-    /// The theme variables that give the sizes.
-    pub theme: &'a Value,
+    /// The `block` section.
+    pub block: &'a BlockDiagramConfig,
     /// The `classDef`s of the diagram, in the order they were declared.
     pub class_defs: &'a [ClassDef],
     /// The diagram's id.
     pub id: &'a str,
     /// The palette of a colour theme, `None` for every other theme (`isColorTheme`).
     pub palette: Option<Palette>,
+    /// The configuration the unified renderer reads, for the shapes and the edges of the blocks: its
+    /// sections, the globals (the look) and the theme's tokens (the font size).
+    pub unified: crate::unified::Config<'a>,
 }
 
 /// What the placed pass has drawn so far: the groups of the blocks and the edges, the box they cover,
@@ -48,7 +49,7 @@ pub(super) struct Drawing {
 }
 
 /// A number that JavaScript reads as true: not zero and not NaN.
-fn truthy(value: f64) -> Option<f64> {
+fn truthy_number(value: f64) -> Option<f64> {
     (value != 0.0 && !value.is_nan()).then_some(value)
 }
 
@@ -99,7 +100,7 @@ fn node_of(block: &Block, context: &Context<'_>, placed: Option<Size>) -> Node {
     let (shape, radius) = shape_of(block.block_type.as_deref());
     let composite = block.block_type.as_deref() == Some("composite");
     let (_, label_style) = styles_from_array(&block.styles);
-    let width = placed.and_then(|size| truthy(size.width));
+    let width = placed.and_then(|size| truthy_number(size.width));
     let wrapping_width = width.unwrap_or(f64::INFINITY);
     Node {
         id: block.id.clone(),
@@ -109,18 +110,18 @@ fn node_of(block: &Block, context: &Context<'_>, placed: Option<Size>) -> Node {
         css_styles: block.styles.clone(),
         css_compiled_styles: compiled,
         css_classes: classes,
-        look: context.config.look.clone(),
+        look: context.unified.globals.look.clone(),
         shape: shape.to_owned(),
         // A composite has no padding of its own (`composite`, 'padding = 0' in `getNodeFromBlock`).
         padding: if composite {
             0.0
         } else {
-            context.config.block.padding
+            context.block.padding
         },
         rx: radius,
         ry: radius,
         width,
-        height: placed.and_then(|size| truthy(size.height)),
+        height: placed.and_then(|size| truthy_number(size.height)),
         wrapping_width: Some(wrapping_width),
         x: placed.map(|size| size.x),
         y: placed.map(|size| size.y),
@@ -142,18 +143,11 @@ fn draw_block(
     width: Option<f64>,
 ) -> Result<(Node, ShapeOutput), RenderError> {
     let node = node_of(block, context, placed);
-    let label = shapes::node_label(
-        &node,
-        context.config,
-        context.theme,
-        width,
-        TextAnchor::Middle,
-    )?;
+    let label = shapes::node_label(&node, &context.unified, width, TextAnchor::Middle)?;
     let shape = shapes::draw(&ShapeInput {
         node: &node,
         label: label.as_ref(),
-        config: context.config,
-        theme: context.theme,
+        config: &context.unified,
         dir: None,
     })?;
     Ok((node, shape))
@@ -246,7 +240,7 @@ pub(super) fn insert_edges(
     context: &Context<'_>,
     drawing: &mut Drawing,
 ) -> Result<(), RenderError> {
-    let font = font_size(context.theme);
+    let font = font_size(context.unified.theme);
     let mut built: Vec<(Edge, String, Option<LabelLayout>)> = Vec::new();
     for model in edges_model {
         let (Some(start), end) = (model.start.as_deref(), model.end.as_str()) else {
@@ -296,7 +290,7 @@ pub(super) fn insert_edges(
             arrow_type_end: model.arrow_type_end.clone(),
             // `edge.style` is undefined for a block edge, so the path's style reads `undefined;;;undefined`.
             style: vec!["undefined".to_owned()],
-            look: context.config.look.clone(),
+            look: context.unified.globals.look.clone(),
             points,
             x: Some(mid.x),
             y: Some(mid.y),
@@ -307,12 +301,12 @@ pub(super) fn insert_edges(
             ],
             ..Edge::default()
         };
-        let label = edges::label_with_font_size(&edge, font)?;
+        let label = edges::label(&edge, font)?;
         built.push((edge, model.id.clone(), label));
     }
 
     let paths: Vec<Edge> = built.iter().map(|(edge, _, _)| edge.clone()).collect();
-    for path in edges::paint_paths(&paths, context.id, "block", context.config) {
+    for path in edges::paint_paths(&paths, context.id, "block", &context.unified.section) {
         crate::unified::pipeline::cover(&mut drawing.bounds, path.bbox);
         drawing.body.push_str(&path.svg);
     }
@@ -325,7 +319,7 @@ pub(super) fn insert_edges(
             id: model_id.clone(),
             ..edge.clone()
         };
-        let painted = edges::paint_label(&labelled, label, context.config);
+        let painted = edges::paint_label(&labelled, label, &context.unified.section);
         crate::unified::pipeline::cover(&mut drawing.bounds, painted.bbox);
         drawing.body.push_str(&painted.svg);
         drawing.labels.push(label.clone());

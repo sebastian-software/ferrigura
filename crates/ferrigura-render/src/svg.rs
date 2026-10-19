@@ -21,18 +21,20 @@ pub fn escape(text: &str) -> String {
     out
 }
 
+/// Text for a `<style>` element: the characters that would end the element or start a reference
+/// are escaped, and the quotes of CSS are kept as they are.
+pub fn css_text(css: &str) -> String {
+    css.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
 /// A number as SVG writes it. Rust prints the shortest text that reads back to the same value,
-/// without an exponent for the sizes that diagrams use.
+/// without an exponent for the sizes that diagrams use. The text is written by
+/// [`ferrigura_model::value::number_text`], which the theme tokens read with.
 #[must_use]
 pub fn number(value: f64) -> String {
-    if value.abs() < 1e-10 {
-        return "0".to_owned();
-    }
-    // Rust writes `inf`; JavaScript, which the reference's attributes come from, writes `Infinity`.
-    if value.is_infinite() {
-        return if value > 0.0 { "Infinity" } else { "-Infinity" }.to_owned();
-    }
-    format!("{value}")
+    ferrigura_model::value::number_text(value)
 }
 
 /// The `@font-face` rules of the embedded families, in the order given.

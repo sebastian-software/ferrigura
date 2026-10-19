@@ -8,12 +8,14 @@
 use std::f64::consts::PI;
 
 use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
+use ferrigura_render::context::Globals;
 use ferrigura_render::unified::data::Node;
 use ferrigura_render::unified::geom::{BBox, Point};
 use ferrigura_render::unified::label::LabelLayout;
 use ferrigura_render::unified::shapes::{ShapeInput, ShapeOutput, draw};
+use ferrigura_render::unified::{Config, Section};
 
 /// The tolerance of every comparison, in pixels.
 const TOLERANCE: f64 = 0.05;
@@ -512,7 +514,13 @@ fn check_fixture(fixture_text: &str, stage: &str) {
     let cases = fixture["cases"].as_array().expect("the cases");
     assert!(!cases.is_empty(), "the fixture has cases");
     let config = MermaidConfig::default();
-    let theme = theme();
+    let globals = Globals::of(&config);
+    let tokens = ThemeTokens::from_value(&theme());
+    let unified = Config {
+        section: Section::of(&config),
+        globals: &globals,
+        theme: &tokens,
+    };
 
     let mut failures = Vec::new();
     let mut deviation = Deviation::default();
@@ -531,8 +539,7 @@ fn check_fixture(fixture_text: &str, stage: &str) {
         let shape = match draw(&ShapeInput {
             node: &node,
             label: layout.as_ref(),
-            config: &config,
-            theme: &theme,
+            config: &unified,
             dir: Some("TB"),
         }) {
             Ok(shape) => shape,

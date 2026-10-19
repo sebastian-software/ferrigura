@@ -26,7 +26,6 @@ use crate::unified::geom::{BBox, Point};
 use crate::unified::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::unified::markdown::br_tag_length;
 use crate::unified::palette;
-use crate::variables::text_of;
 
 /// The thickness of a divider line (`erBox.ts` 270). A divider is a polygon of this width.
 const DIVIDER_THICKNESS: f64 = 0.0001;
@@ -59,7 +58,7 @@ pub(super) fn er_box(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError>
 /// The `data-color-id` of the entity's group: `color-<colorIndex % borderColorArray.length>` in a
 /// colour theme (`erBox.ts` 68-71 and 241-244). An entity without a colour index has index 0.
 fn colour_group_attribute(input: &ShapeInput<'_>) -> String {
-    let Some(palette) = palette::palette(input.config, input.theme) else {
+    let Some(palette) = palette::palette(input.config.globals, input.config.theme) else {
         return String::new();
     };
     let slot = palette::palette_slot(Some(input.node.color_index.unwrap_or(0)), &palette);
@@ -75,13 +74,14 @@ fn plain_box(
     styles: &util::Styles,
     colour: String,
 ) -> Result<ShapeOutput, RenderError> {
-    let config = input.config;
+    let er = input.config.section.er;
     // Unscaled: the padding is scaled only on the attribute path (`erBox.ts` 82-85).
-    let padding = config.er.diagram_padding as f64;
-    let min_width = config.er.min_entity_width as f64;
+    let padding = er.diagram_padding as f64;
+    let min_width = er.min_entity_width as f64;
     // `calculateTextWidth(node.label) + 2 * labelPaddingX < minEntityWidth` widens the node
     // (`erBox.ts` 61-65).
-    let node_width = (calculate_text_width(label_text, config.font_size)? + padding * 2.0
+    let node_width = (calculate_text_width(label_text, input.config.globals.font_size)?
+        + padding * 2.0
         < min_width)
         .then_some(min_width);
 
@@ -90,7 +90,7 @@ fn plain_box(
         input,
         &text,
         styles,
-        node_width.unwrap_or(config.flowchart.wrapping_width),
+        node_width.unwrap_or(input.config.section.flowchart.wrapping_width),
         LabelType::Markdown,
     )?;
     // `drawRect` (`drawRect.ts` 25-35): the label padded by `labelPaddingX` on each side and by
@@ -154,16 +154,16 @@ fn attribute_table(
     styles: &util::Styles,
     colour: String,
 ) -> Result<ShapeOutput, RenderError> {
-    let config = input.config;
+    let er = input.config.section.er;
     // `htmlLabels` false scales both paddings by 1.25 (`erBox.ts` 82-85). The entity is drawn with
     // SVG text, so the scale is the one of the reference's SVG path.
-    let scale = if config.html_labels.unwrap_or(true) {
+    let scale = if input.config.globals.html_labels.unwrap_or(true) {
         1.0
     } else {
         1.25
     };
-    let padding = config.er.diagram_padding as f64 * scale;
-    let text_padding = config.er.entity_padding as f64 * scale;
+    let padding = er.diagram_padding as f64 * scale;
+    let text_padding = er.entity_padding as f64 * scale;
 
     let name = cell(input, label_text, styles)?;
     let name_width = name.label.bbox.width;
@@ -240,10 +240,10 @@ fn attribute_table(
     let x = -width / 2.0;
     let y = -height / 2.0;
 
-    let theme_fill = text_of(input.theme, "mainBkg").unwrap_or_default();
+    let theme_fill = input.config.theme.main_bkg.text().unwrap_or_default();
     let fill = style_value(styles, "fill").unwrap_or(theme_fill);
     let stroke = style_value(styles, "stroke")
-        .unwrap_or_else(|| text_of(input.theme, "nodeBorder").unwrap_or_default());
+        .unwrap_or_else(|| input.config.theme.node_border.text().unwrap_or_default());
     let stroke_width = util::stroke_width(styles);
     let path_style = (!styles.node.is_empty()).then_some(styles.node.as_str());
 
@@ -268,8 +268,8 @@ fn attribute_table(
     // The row rectangles, which the reference inserts before the first label (`erBox.ts` 248-266).
     // A row takes the odd or the even fill; the redux themes give neither, so such a row has no
     // fill path (roughjs writes none for an undefined fill).
-    let row_fill = text_of(input.theme, "rowOdd");
-    let even_fill = text_of(input.theme, "rowEven");
+    let row_fill = input.config.theme.row_odd.text();
+    let even_fill = input.config.theme.row_even.text();
     for (index, row) in rows.iter().enumerate() {
         let content_row = index + 1;
         let even = content_row % 2 == 0 && row.y_offset != 0.0;
@@ -395,7 +395,7 @@ fn cell(input: &ShapeInput<'_>, text: &str, styles: &util::Styles) -> Result<Cel
     } else {
         generic.replace('<', "&lt;").replace('>', "&gt;")
     };
-    let width = calculate_text_width(&parsed, input.config.font_size)? + CELL_WRAP_MARGIN;
+    let width = calculate_text_width(&parsed, input.config.globals.font_size)? + CELL_WRAP_MARGIN;
     let flat = parsed.contains("&lt;") || parsed.contains("&gt;");
     Ok(Cell {
         label: label_layout(input, &parsed, styles, width, LabelType::Markdown)?,
@@ -428,7 +428,8 @@ fn label_layout(
         wrap_in_style: true,
         add_background: false,
         styles: &declarations,
-        font_size: util::theme_number(input.theme, "fontSize").unwrap_or(input.config.font_size),
+        font_size: util::theme_number(&input.config.theme.font_size)
+            .unwrap_or(input.config.globals.font_size),
         title: false,
     })
 }

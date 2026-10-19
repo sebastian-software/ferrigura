@@ -10,17 +10,21 @@
 
 use ferrigura_text::EmbeddedFamily;
 
-use crate::theme::Themes;
-use crate::variables::text_of;
+use crate::common::style::base_style_sheet;
+use crate::context::ThemeView;
 
 /// The background of the head and of the labels, in each scheme. Light only when the theme has no
 /// dark set.
-fn background_token(id: &str, themes: Themes<'_>) -> String {
-    let light = text_of(themes.primary(), "mainBkg").unwrap_or_else(|| "#ffffff".to_owned());
-    match themes {
-        Themes::Single(_) => format!("#{id}{{--mainBkg:{light};}}"),
-        Themes::Schemes { dark, .. } => {
-            let dark = text_of(dark, "mainBkg").unwrap_or_else(|| "#ffffff".to_owned());
+fn background_token(id: &str, theme: ThemeView<'_>) -> String {
+    let light = theme
+        .light
+        .main_bkg
+        .text()
+        .unwrap_or_else(|| "#ffffff".to_owned());
+    match theme.dark {
+        None => format!("#{id}{{--mainBkg:{light};}}"),
+        Some(dark) => {
+            let dark = dark.main_bkg.text().unwrap_or_else(|| "#ffffff".to_owned());
             format!(
                 "#{id}{{--mainBkg:{light};}}@media (prefers-color-scheme: dark){{#{id}{{--mainBkg:{dark};}}}}"
             )
@@ -52,15 +56,15 @@ fn rules(id: &str, family: &str, label_size: &str) -> String {
 #[must_use]
 pub fn sheet(
     id: &str,
-    themes: Themes<'_>,
+    theme: ThemeView<'_>,
     family: &str,
     label_size: &str,
     families: &[EmbeddedFamily],
 ) -> String {
     let own = format!(
         "{}{}",
-        background_token(id, themes),
+        background_token(id, theme),
         rules(id, family, label_size)
     );
-    crate::common::style::base_style_sheet_with(id, themes, family, label_size, families, &own)
+    base_style_sheet(id, theme, family, label_size, families, &own)
 }

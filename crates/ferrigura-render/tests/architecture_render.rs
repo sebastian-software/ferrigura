@@ -4,11 +4,11 @@
 //! checked against Chromium by `pnpm port:geometry architecture`, over the fixtures and the probes.
 
 use ferrigura_model::config::{defaults, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
-use ferrigura_render::architecture::{ArchitectureInput, render};
-use ferrigura_render::theme::Themes;
+use ferrigura_render::architecture::render;
+use ferrigura_render::context::{Context, Globals, ThemeView};
 
 /// The diagram of `svgDraw.spec.ts` (`should add ids`).
 const SVG_DRAW: &str = "architecture-beta
@@ -79,10 +79,16 @@ fn draw(text: &str, id: &str, settings: &[(&str, Value)]) -> Result<String, Rend
     }
     let config = typed(&value).expect("the configuration is typed");
     let variables = Theme::ReduxColor.variables(None);
-    render(&ArchitectureInput {
+    let tokens = ThemeTokens::from_value(&variables);
+    let globals = Globals::of(&config);
+    render(&Context {
         diagram: &diagram,
-        config: &config,
-        themes: Themes::Single(&variables),
+        section: &config.architecture,
+        globals: &globals,
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id,
     })
 }

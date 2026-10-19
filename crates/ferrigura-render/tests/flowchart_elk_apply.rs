@@ -25,14 +25,16 @@ use std::path::{Path, PathBuf};
 use ferrigura_elk::json::JsonNode;
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value as ModelValue;
+use ferrigura_render::context::Globals;
 use ferrigura_render::unified::data::{Edge, LayoutData, Node};
 use ferrigura_render::unified::elk_apply::apply;
 use ferrigura_render::unified::elk_build::{ElkState, LabelData};
 use ferrigura_render::unified::geom::Point;
 use ferrigura_render::unified::label::Anchor;
 use ferrigura_render::unified::shapes::{self, Intersect, ShapeInput};
+use ferrigura_render::unified::{Config, Section};
 use serde_json::Value;
 
 /// The largest difference that counts as equal, in SVG user units.
@@ -113,6 +115,13 @@ fn build_scene(
     theme: &ModelValue,
     failures: &mut Vec<String>,
 ) -> Scene {
+    let globals = Globals::of(config);
+    let tokens = ThemeTokens::from_value(theme);
+    let unified = Config {
+        section: Section::of(config),
+        globals: &globals,
+        theme: &tokens,
+    };
     let mut nodes = Vec::new();
     let mut parent_by_id = HashMap::new();
     let mut label_data = HashMap::new();
@@ -135,14 +144,13 @@ fn build_scene(
             );
         } else {
             let drawn_node = leaf_node(node);
-            let label = shapes::node_label(&drawn_node, config, theme, None, Anchor::Middle)
+            let label = shapes::node_label(&drawn_node, &unified, None, Anchor::Middle)
                 .unwrap_or_else(|error| panic!("{name}: the label of {id}: {error}"));
             let dir = node["drawing"]["dir"].as_str();
             let drawn = shapes::draw(&ShapeInput {
                 node: &drawn_node,
                 label: label.as_ref(),
-                config,
-                theme,
+                config: &unified,
                 dir,
             })
             .unwrap_or_else(|error| panic!("{name}: the shape of {id}: {error}"));
@@ -270,7 +278,7 @@ fn check(
         &elk,
         &scene.state,
         &scene.intersects,
-        config,
+        config.elk.straighten_edges,
     );
 
     let index: HashMap<&str, usize> = scene

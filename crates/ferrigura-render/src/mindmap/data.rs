@@ -10,10 +10,11 @@
 
 use std::collections::BTreeMap;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::MindmapDiagramConfig;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::mindmap::{MindmapDiagram, MindmapNode};
 
+use crate::context::Globals;
 use crate::unified::data::{Edge, LayoutData, Node};
 
 /// The name of the diagram type, which the markers and the root's ids are built from.
@@ -34,11 +35,15 @@ const HEXAGON_TYPE: u8 = 6;
 /// The layout data of a mindmap tree, as `getData` returns it, without the layout choice (which is
 /// the caller's, see `layout.rs`).
 #[must_use]
-pub fn layout_data(diagram: &MindmapDiagram, config: &MermaidConfig) -> LayoutData {
-    let look = if config.look.is_empty() {
+pub fn layout_data(
+    diagram: &MindmapDiagram,
+    globals: &Globals,
+    mindmap: &MindmapDiagramConfig,
+) -> LayoutData {
+    let look = if globals.look.is_empty() {
         "classic".to_owned()
     } else {
-        config.look.clone()
+        globals.look.clone()
     };
     let mut data = LayoutData {
         direction: "TB".to_owned(),
@@ -49,7 +54,7 @@ pub fn layout_data(diagram: &MindmapDiagram, config: &MermaidConfig) -> LayoutDa
         // `getData` returns no nodes and no edges for a tree without a root (`mindmapDb.ts` 369-375).
         return data;
     };
-    let by_depth = config.mindmap.color_by == "depth";
+    let by_depth = mindmap.color_by == "depth";
 
     // `assignSections` (`mindmapDb.ts` 199-220) and `flattenNodes` (227-306), in pre-order.
     let mut placed = Vec::new();

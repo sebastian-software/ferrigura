@@ -22,9 +22,12 @@ use std::collections::{BTreeMap, HashMap};
 
 use ferrigura_elk::json::{JsonEdge, JsonLabel, JsonNode, LayoutOptions};
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::value::Value;
+use ferrigura_render::context::Globals;
 use ferrigura_render::unified::data::{Edge, LayoutData, Node};
 use ferrigura_render::unified::elk_build::{ElkInput, ElkState, build};
+use ferrigura_render::unified::{Config, Section};
 use serde::Deserialize;
 
 /// The captured reference inputs, one per fixture.
@@ -464,7 +467,17 @@ fn the_reference_elk_inputs_are_rebuilt_exactly() {
             continue;
         }
         let data = layout_data(&fixture.input);
-        let input = build(&data, &config_of(fixture));
+        let config = config_of(fixture);
+        let globals = Globals::of(&config);
+        let tokens = ThemeTokens::from_value(&Value::empty_object());
+        let input = build(
+            &data,
+            &Config {
+                section: Section::of(&config),
+                globals: &globals,
+                theme: &tokens,
+            },
+        );
         match same_graph(&input, &fixture.input) {
             Ok(()) => {
                 compared += 1;

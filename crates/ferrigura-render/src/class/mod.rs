@@ -6,7 +6,6 @@ pub mod member;
 pub mod style;
 
 use ferrigura_model::class::ClassDiagram;
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_text::{
     FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
     text_box,
@@ -14,25 +13,12 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::a11y;
+use crate::context::Context;
 use crate::svg::{escape, number};
-use crate::theme::Themes;
 use crate::unified::geom::BBox;
 use crate::unified::markers;
 use crate::unified::pipeline::{self, cover};
-
-/// What the class renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct ClassInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a ClassDiagram,
-    /// The effective configuration, in the class diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
+use crate::unified::{Config, Section};
 
 /// The padding of the viewBox around the drawing: `setupViewPortForSVG(svg, 8, ...)`
 /// (`classRenderer-v3-unified.ts` 75).
@@ -46,18 +32,17 @@ const TITLE_FONT_SIZE: f64 = 18.0;
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the layout fails.
-pub fn render(input: &ClassInput<'_>) -> Result<String, RenderError> {
-    let config = input.config;
-    let theme = input.themes.primary();
+pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, RenderError> {
+    let config = Config::of(input);
     let id = input.id;
     let diagram = input.diagram;
 
-    let mut data = data::get_data(diagram, config, theme);
+    let mut data = data::get_data(diagram, input.section, input.globals, input.theme.light);
     // `classRenderer-v3-unified.ts` 59: the diagram type names the markers and their class.
     data.diagram_type = markers::CLASS.to_owned();
-    let mut measured = pipeline::measure(data, config, theme)?;
-    pipeline::lay_out(&mut measured, config)?;
-    let painted = pipeline::paint(&measured, id, config, theme)?;
+    let mut measured = pipeline::measure(data, &config)?;
+    pipeline::lay_out(&mut measured, &config)?;
+    let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;
 
     // `utils.insertTitle` (`classRenderer-v3-unified.ts` 68-73): centred over what is drawn, the
@@ -70,7 +55,7 @@ pub fn render(input: &ClassInput<'_>) -> Result<String, RenderError> {
         let width = measure_text(sans, title, TITLE_FONT_SIZE)?;
         let ink = measure_box(sans, title, TITLE_FONT_SIZE)?;
         let text_box = text_box(sans, TITLE_FONT_SIZE)?;
-        let margin = config.state.title_top_margin as f64;
+        let margin = input.section.state.title_top_margin as f64;
         let centre = drawn.x + drawn.width / 2.0;
         let baseline = -margin;
         cover(
@@ -114,7 +99,7 @@ pub fn render(input: &ClassInput<'_>) -> Result<String, RenderError> {
         drawn.height + VIEWPORT_PADDING * 2.0,
     );
     // `conf.useMaxWidth ?? true` of the state section (`classRenderer-v3-unified.ts` 75).
-    let size_attributes = if config.state.use_max_width {
+    let size_attributes = if input.section.state.use_max_width {
         format!(
             "width=\"100%\" style=\"max-width: {}px;\"",
             number(view_width)
@@ -129,7 +114,7 @@ pub fn render(input: &ClassInput<'_>) -> Result<String, RenderError> {
     let accessibility = a11y::children(id, &diagram.acc_title, &diagram.acc_descr);
     let accessible_attributes =
         a11y::root_attributes(id, "classDiagram", &diagram.acc_title, &diagram.acc_descr);
-    let style = style::style_sheet(id, input.themes, config, &families);
+    let style = style::style_sheet(id, input.theme, input.globals, &families);
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"classDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
@@ -140,6 +125,6 @@ pub fn render(input: &ClassInput<'_>) -> Result<String, RenderError> {
         markers = markers::class_markers(id),
         root = painted.root,
         coloured_markers = painted.coloured_markers,
-        defs = style::defs(id, input.themes, config),
+        defs = style::defs(id, input.theme, input.globals),
     ))
 }

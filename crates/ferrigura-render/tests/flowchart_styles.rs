@@ -18,10 +18,10 @@ use std::collections::BTreeSet;
 
 use ferrigura_model::config::{defaults, typed};
 use ferrigura_model::flowchart::FlowClass;
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
+use ferrigura_render::context::{Globals, ThemeView};
 use ferrigura_render::flowchart::style::style_sheet;
-use ferrigura_render::pie::Themes;
 
 const REFERENCE: &str = include_str!("data/flowchart-styles.json");
 
@@ -494,10 +494,14 @@ fn the_style_sheet_matches_the_reference_rule_by_rule() {
                     .collect(),
             })
             .collect();
+        let tokens = ThemeTokens::from_value(&variables);
         let sheet = unescape(&style_sheet(
             &svg_id,
-            Themes::Single(&variables),
-            &config(theme, look),
+            ThemeView {
+                light: &tokens,
+                dark: None,
+            },
+            &Globals::of(&config(theme, look)),
             &classes,
         ));
         let actual_items = parse(&sheet);

@@ -37,7 +37,8 @@ pub(super) fn rect_with_title(
         .filter(|declaration| !declaration.is_empty())
         .map(str::to_owned)
         .collect();
-    let font_size = util::theme_number(input.theme, "fontSize").unwrap_or(input.config.font_size);
+    let font_size =
+        util::theme_number(&input.config.theme.font_size).unwrap_or(input.config.globals.font_size);
     // `createLabel`: plain text, never wrapped, with the title class.
     let text = |text: &str| -> Result<LabelLayout, RenderError> {
         label::layout(&LabelSpec {
@@ -147,6 +148,7 @@ pub(super) fn rect_with_title(
 mod tests {
     use super::super::test_support::{node, theme};
     use super::super::{ShapeInput, draw};
+    use crate::unified::Fixture;
     use ferrigura_model::config::MermaidConfig;
 
     #[test]
@@ -158,13 +160,12 @@ mod tests {
         let mut node = node("rectWithTitle", "classic");
         node.label = "Another Long state description".to_owned();
         node.description = Some(vec!["New line".to_owned()]);
-        let config = MermaidConfig::default();
-        let theme = theme();
+        let fixture = Fixture::new(MermaidConfig::default(), &theme());
+        let config = fixture.config();
         let shape = draw(&ShapeInput {
             node: &node,
             label: None,
             config: &config,
-            theme: &theme,
             dir: Some("TB"),
         })
         .expect("the shape is known");

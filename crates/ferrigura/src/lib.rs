@@ -2,7 +2,7 @@
 //!
 //! [`Renderer`] is the interface. It takes the configuration the user would pass to `initialize`
 //! once, when it is made, and resolves what its renders share: the configuration merged onto the
-//! defaults and typed, and the variables of both shipped themes. A render merges only the diagram's
+//! defaults and typed, and both shipped themes as typed tokens. A render merges only the diagram's
 //! own front matter and directives on top of that, and only when there are any. [`render`] and
 //! [`render_with`] take the configuration with each call. They are a shorthand over a small cache of
 //! renderers, so a configuration that is rendered again is resolved once. The output is the same
@@ -19,12 +19,17 @@ use std::hash::Hasher;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use ferrigura_model::config::{MermaidConfig, SiteConfig, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::flowchart::FlowchartDiagram;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
-use ferrigura_render::flowchart::{self, FlowchartInput};
-use ferrigura_render::pie::{PieInput, render as render_pie};
-use ferrigura_render::theme::Themes;
+use ferrigura_render::block::BlockSection;
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::flowchart;
+use ferrigura_render::kanban::KanbanSections;
+use ferrigura_render::mindmap::MindmapSection;
+use ferrigura_render::pie::render as render_pie;
+use ferrigura_render::unified::Section;
 use ferrigura_render::{
     architecture as architecture_render, block as block_render, c4 as c4_render,
     class as class_render, er as er_render, event_modeling as event_modeling_render,
@@ -80,8 +85,8 @@ pub struct RenderOptions {
 /// A renderer, with the site configuration resolved once.
 ///
 /// [`Renderer::new`] takes the configuration the user would pass to `initialize`. The renderer holds
-/// it merged onto the defaults and typed, and the variables of the light and the dark theme with the
-/// user's `themeVariables`. Its renders merge only the diagram's own front matter and directives on
+/// it merged onto the defaults and typed, and the light and the dark theme with the user's
+/// `themeVariables`, as typed tokens. Its renders merge only the diagram's own front matter and directives on
 /// top, and only when there are any: a text without them is drawn with the resolved configuration as
 /// it is. The typed view of a diagram type is resolved at its first render and kept after that.
 ///
@@ -111,10 +116,10 @@ pub struct Renderer {
     configuration: String,
     /// The user's theme overrides, which the two schemes below are computed with.
     overrides: Value,
-    /// The variables of `redux-color` with the overrides: the light scheme.
-    light: Cow<'static, Value>,
-    /// The variables of `redux-dark-color` with the overrides: the dark scheme.
-    dark: Cow<'static, Value>,
+    /// The tokens of `redux-color` with the overrides: the light scheme.
+    light_tokens: ThemeTokens,
+    /// The tokens of `redux-dark-color` with the overrides: the dark scheme.
+    dark_tokens: ThemeTokens,
     /// The views of the diagram types, made at their first render. A view that cannot be resolved
     /// keeps its error, which the render reports as it always has.
     views: Mutex<HashMap<DiagramType, Result<Arc<View>, String>>>,
@@ -131,8 +136,12 @@ impl Renderer {
         let site = SiteConfig::new(Some(config));
         let overrides = site.user_theme_variables(&Value::empty_object());
         Self {
-            light: Theme::ReduxColor.variables_shared(Some(&overrides)),
-            dark: Theme::ReduxDarkColor.variables_shared(Some(&overrides)),
+            light_tokens: ThemeTokens::from_value(
+                &Theme::ReduxColor.variables_shared(Some(&overrides)),
+            ),
+            dark_tokens: ThemeTokens::from_value(
+                &Theme::ReduxDarkColor.variables_shared(Some(&overrides)),
+            ),
             configuration: serde_json::to_string(config).unwrap_or_default(),
             overrides,
             site,
@@ -163,37 +172,38 @@ impl Renderer {
             }));
         };
         let prepared = self.prepare(text, options, kind)?;
-        let (typed_config, themes, id) = (
-            &prepared.view.config,
-            prepared.themes(),
-            prepared.id.as_str(),
-        );
+        let (typed_config, id) = (&prepared.view.config, prepared.id.as_str());
+        let section = Section::of(typed_config);
         match kind {
-            DiagramType::Pie => render_pie(&PieInput {
+            DiagramType::Pie => render_pie(&Context {
                 diagram: &pie::parse(text)?,
-                config: &typed_config.pie,
-                themes,
+                section: &typed_config.pie,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Info => info_render::render(&info_render::InfoInput {
+            DiagramType::Info => info_render::render(&Context {
                 diagram: &info::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &(),
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Timeline => timeline_render::render(&timeline_render::TimelineInput {
+            DiagramType::Timeline => timeline_render::render(&Context {
                 diagram: &timeline::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.timeline,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Journey => journey_render::render(&journey_render::JourneyInput {
+            DiagramType::Journey => journey_render::render(&Context {
                 diagram: &journey::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.journey,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::GitGraph => git_graph_render::render(&git_graph_render::GitGraphInput {
+            DiagramType::GitGraph => git_graph_render::render(&Context {
                 diagram: &git_graph::parse_with(
                     text,
                     &git_graph::Options {
@@ -201,147 +211,176 @@ impl Renderer {
                         ..git_graph::options_of(text)?
                     },
                 )?,
-                config: typed_config,
-                themes,
+                section: &typed_config.git_graph,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Er => er_render::render(&er_render::ErInput {
+            DiagramType::Er => er_render::render(&Context {
                 diagram: &er::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Class => class_render::render(&class_render::ClassInput {
+            DiagramType::Class => class_render::render(&Context {
                 diagram: &class::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Sequence => sequence_render::render(&sequence_render::SequenceInput {
+            DiagramType::Sequence => sequence_render::render(&Context {
                 diagram: &sequence::parse_with(
                     text,
                     sequence::Options {
                         wrap: sequence_wrap(&prepared.view.effective),
                     },
                 )?,
-                config: typed_config,
-                themes,
+                section: &typed_config.sequence,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::State => state_render::render(&state_render::StateInput {
+            DiagramType::State => state_render::render(&Context {
                 diagram: &state::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Gantt => {
                 let now = options.now.unwrap_or_else(|| gantt::Options::default().now);
-                gantt_render::render(&gantt_render::GanttInput {
+                gantt_render::render(&Context {
                     diagram: &gantt::parse_with(text, gantt::Options { now })?,
-                    config: typed_config,
-                    themes,
+                    section: &gantt_render::GanttSection {
+                        config: &typed_config.gantt,
+                        now,
+                    },
+                    globals: &prepared.view.globals,
+                    theme: prepared.theme(),
                     id,
-                    now,
                 })
             }
-            DiagramType::Mindmap => mindmap_render::render(&mindmap_render::MindmapInput {
+            DiagramType::Mindmap => mindmap_render::render(&Context {
                 diagram: &mindmap::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &MindmapSection {
+                    mindmap: &typed_config.mindmap,
+                    unified: section,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Block => block_render::render(&block_render::BlockInput {
+            DiagramType::Block => block_render::render(&Context {
                 diagram: &block::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &BlockSection {
+                    block: &typed_config.block,
+                    unified: section,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Packet => packet_render::render(&packet_render::PacketInput {
-                diagram: &packet::parse_with(text, &prepared.view.effective)?,
-                config: typed_config,
-                themes,
-                id,
-                bits_per_row: packet::bits_per_row(&prepared.view.effective),
-            }),
-            DiagramType::XyChart => xychart_render::render(&xychart_render::XyChartInput {
+            DiagramType::Packet => {
+                let section = packet_render::PacketSection {
+                    config: typed_config.packet.clone(),
+                    bits_per_row: packet::bits_per_row(&prepared.view.effective),
+                };
+                packet_render::render(&Context {
+                    diagram: &packet::parse_with(text, &prepared.view.effective)?,
+                    section: &section,
+                    globals: &prepared.view.globals,
+                    theme: prepared.theme(),
+                    id,
+                })
+            }
+            DiagramType::XyChart => xychart_render::render(&Context {
                 diagram: &xychart::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.xy_chart,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Sankey => sankey_render::render(&sankey_render::SankeyInput {
+            DiagramType::Requirement => requirement_render::render(&Context {
+                diagram: &requirement::parse(text)?,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Sankey => sankey_render::render(&Context {
                 diagram: &sankey::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.sankey,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::QuadrantChart => {
-                quadrant_chart_render::render(&quadrant_chart_render::QuadrantChartInput {
-                    diagram: &quadrant_chart::parse(text)?,
-                    config: typed_config,
-                    themes,
-                    id,
-                })
-            }
-            DiagramType::Requirement => {
-                requirement_render::render(&requirement_render::RequirementInput {
-                    diagram: &requirement::parse(text)?,
-                    config: typed_config,
-                    themes,
-                    id,
-                })
-            }
-            DiagramType::C4 => c4_render::render(&c4_render::C4Input {
+            DiagramType::QuadrantChart => quadrant_chart_render::render(&Context {
+                diagram: &quadrant_chart::parse(text)?,
+                section: &typed_config.quadrant_chart,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::C4 => c4_render::render(&Context {
                 diagram: &c4::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.c4,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Kanban => kanban_render::render(&kanban_render::KanbanInput {
+            DiagramType::Kanban => kanban_render::render(&Context {
                 diagram: &kanban::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &KanbanSections {
+                    kanban: &typed_config.kanban,
+                    mindmap: &typed_config.mindmap,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Architecture => {
-                architecture_render::render(&architecture_render::ArchitectureInput {
-                    diagram: &architecture::parse(text)?,
-                    config: typed_config,
-                    themes,
+            DiagramType::Architecture => architecture_render::render(&Context {
+                diagram: &architecture::parse(text)?,
+                section: &typed_config.architecture,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Treemap => {
+                let section = treemap_render::TreemapSettings::of(&prepared.view.effective);
+                treemap_render::render(&Context {
+                    diagram: &treemap::parse(text)?,
+                    section: &section,
+                    globals: &prepared.view.globals,
+                    theme: prepared.theme(),
                     id,
                 })
             }
-            DiagramType::Treemap => treemap_render::render(&treemap_render::TreemapInput {
-                diagram: &treemap::parse(text)?,
-                config: typed_config,
-                settings: &treemap_render::TreemapSettings::of(&prepared.view.effective),
-                themes,
-                id,
-            }),
-            DiagramType::Ishikawa => ishikawa_render::render(&ishikawa_render::IshikawaInput {
+            DiagramType::Ishikawa => ishikawa_render::render(&Context {
                 diagram: &ishikawa::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.ishikawa,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::EventModeling => {
-                event_modeling_render::render(&event_modeling_render::EventModelingInput {
-                    diagram: &event_modeling::parse(text)?,
-                    config: typed_config,
-                    themes,
-                    id,
-                })
-            }
+            DiagramType::EventModeling => event_modeling_render::render(&Context {
+                diagram: &event_modeling::parse(text)?,
+                section: &typed_config.eventmodeling,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
             DiagramType::Flowchart => with_flowchart(text, &prepared, flowchart::render),
         }
     }
 
     /// What a render needs besides its diagram, as `mermaidAPI` resolves it before it calls the
-    /// diagram's renderer: the id, the configuration in the diagram's scope, and the theme variables
-    /// of the schemes that the render draws.
+    /// diagram's renderer: the id, the configuration in the diagram's scope, and the tokens of the
+    /// schemes that the render draws.
     ///
-    /// A text without front matter or directives uses the view of its diagram type and the themes
-    /// of the renderer as they are. Otherwise the directive is merged on top here, and the themes are
+    /// A text without front matter or directives uses the view of its diagram type and the tokens
+    /// of the renderer as they are. Otherwise the directive is merged on top here, and the tokens are
     /// computed again only when the directive changes the user's overrides.
     fn prepare(
         &self,
@@ -360,34 +399,37 @@ impl Renderer {
             return Ok(Prepared {
                 id,
                 view: self.view(kind)?,
-                light: Cow::Borrowed(&*self.light),
-                dark: Cow::Borrowed(&*self.dark),
+                light_tokens: Cow::Borrowed(&self.light_tokens),
+                dark_tokens: Cow::Borrowed(&self.dark_tokens),
                 scheme,
             });
         }
         let view = View::resolve(&self.site, kind, &directive).map_err(RenderError::Config)?;
         let overrides = self.site.user_theme_variables(&directive);
-        let (light, dark) = if overrides == self.overrides {
-            (Cow::Borrowed(&*self.light), Cow::Borrowed(&*self.dark))
+        let (light_tokens, dark_tokens) = if overrides == self.overrides {
+            (
+                Cow::Borrowed(&self.light_tokens),
+                Cow::Borrowed(&self.dark_tokens),
+            )
         } else {
             (
-                scheme_variables(
+                Cow::Owned(scheme_tokens(
                     Theme::ReduxColor,
                     matches!(scheme, Some(ColorScheme::Light | ColorScheme::Auto)),
                     &overrides,
-                ),
-                scheme_variables(
+                )),
+                Cow::Owned(scheme_tokens(
                     Theme::ReduxDarkColor,
                     matches!(scheme, Some(ColorScheme::Dark | ColorScheme::Auto)),
                     &overrides,
-                ),
+                )),
             )
         };
         Ok(Prepared {
             id,
             view: Arc::new(view),
-            light,
-            dark,
+            light_tokens,
+            dark_tokens,
             scheme,
         })
     }
@@ -435,16 +477,20 @@ pub fn render_with(
     shorthand(config).render_with(text, options)
 }
 
-/// The view of a diagram type, its configuration in the diagram's scope and typed, and the variables
-/// of its configured theme.
+/// The view of a diagram type, its configuration in the diagram's scope and typed, the tokens of its
+/// configured theme, and the globals the renderers read.
 #[derive(Debug)]
 struct View {
-    /// The configuration in the diagram's scope, as the renderers that read it untyped see it.
+    /// The configuration in the diagram's scope, untyped: the facade reads from it what the schema
+    /// does not type as the reference reads it (packet's `bitsPerRow`, the treemap's settings, the
+    /// sequence's `wrap`).
     effective: Value,
     /// The same configuration, typed.
     config: MermaidConfig,
-    /// The `themeVariables` of the configuration: the variables of the configured theme.
-    configured: Value,
+    /// The tokens of the configured theme: the `themeVariables` of the configuration.
+    configured_tokens: ThemeTokens,
+    /// The global options of the configuration, as the view resolves them.
+    globals: Globals,
 }
 
 impl View {
@@ -463,14 +509,16 @@ impl View {
         {
             config.layout = "cose-bilkent".to_owned();
         }
-        let configured = effective
-            .get("themeVariables")
-            .cloned()
-            .unwrap_or_else(Value::empty_object);
+        let configured_tokens = ThemeTokens::from_value(
+            effective
+                .get("themeVariables")
+                .unwrap_or(&Value::empty_object()),
+        );
         Ok(Self {
+            globals: Globals::of(&config),
+            configured_tokens,
             effective,
             config,
-            configured,
         })
     }
 }
@@ -479,21 +527,31 @@ impl View {
 struct Prepared<'a> {
     id: String,
     view: Arc<View>,
-    light: Cow<'a, Value>,
-    dark: Cow<'a, Value>,
+    light_tokens: Cow<'a, ThemeTokens>,
+    dark_tokens: Cow<'a, ThemeTokens>,
     scheme: Option<ColorScheme>,
 }
 
 impl Prepared<'_> {
-    /// The theme variables that the render draws with, as the colour scheme chooses them.
-    fn themes(&self) -> Themes<'_> {
+    /// The theme of the render as typed tokens: the configured theme, or the scheme that the colour
+    /// scheme chooses, with the light scheme as the primary one when the render draws both.
+    fn theme(&self) -> ThemeView<'_> {
         match self.scheme {
-            None => Themes::Single(&self.view.configured),
-            Some(ColorScheme::Light) => Themes::Single(&self.light),
-            Some(ColorScheme::Dark) => Themes::Single(&self.dark),
-            Some(ColorScheme::Auto) => Themes::Schemes {
-                light: &self.light,
-                dark: &self.dark,
+            None => ThemeView {
+                light: &self.view.configured_tokens,
+                dark: None,
+            },
+            Some(ColorScheme::Light) => ThemeView {
+                light: &self.light_tokens,
+                dark: None,
+            },
+            Some(ColorScheme::Dark) => ThemeView {
+                light: &self.dark_tokens,
+                dark: None,
+            },
+            Some(ColorScheme::Auto) => ThemeView {
+                light: &self.light_tokens,
+                dark: Some(&self.dark_tokens),
             },
         }
     }
@@ -507,13 +565,13 @@ fn user_sets_layout(site: Option<&Value>, directive: &Value) -> bool {
     site.is_some_and(set) || set(directive)
 }
 
-/// The variables of a colour scheme, when the render draws it. A scheme that is not drawn is not
-/// computed: the configured theme decides the colours then, and the scheme gives no variables.
-fn scheme_variables(theme: Theme, drawn: bool, overrides: &Value) -> Cow<'static, Value> {
+/// The tokens of a colour scheme, when the render draws it. A scheme that is not drawn is not
+/// computed: the configured theme decides the colours then, and the scheme gives no tokens.
+fn scheme_tokens(theme: Theme, drawn: bool, overrides: &Value) -> ThemeTokens {
     if drawn {
-        theme.variables_shared(Some(overrides))
+        ThemeTokens::from_value(&theme.variables_shared(Some(overrides)))
     } else {
-        Cow::Owned(Value::empty_object())
+        ThemeTokens::from_value(&Value::empty_object())
     }
 }
 
@@ -563,18 +621,20 @@ pub fn flowchart_elk_stages(
     }))
 }
 
-/// Parses a flowchart and hands it, with its configuration and theme, to `step`.
+/// Parses a flowchart and hands it, with its sections, globals and theme, to `step`.
 fn with_flowchart<T>(
     text: &str,
     prepared: &Prepared<'_>,
-    step: impl FnOnce(&FlowchartInput<'_>) -> Result<T, RenderError>,
+    step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
     let diagram = ferrigura_syntax::flowchart::parse(text)
         .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
-    step(&FlowchartInput {
+    let section = Section::of(&prepared.view.config);
+    step(&Context {
         diagram: &diagram,
-        config: &prepared.view.config,
-        themes: prepared.themes(),
+        section: &section,
+        globals: &prepared.view.globals,
+        theme: prepared.theme(),
         id: &prepared.id,
     })
 }

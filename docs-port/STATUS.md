@@ -202,7 +202,7 @@ Every P2 type parses and renders (see the P2 handover and [P2-PLAN.md](./P2-PLAN
 
 ## Open items
 
-- Configuration and themes per [0009](./decisions/0009-configuration-resolved-once.md): the cache ([#2](https://github.com/sebastian-software/ferrigura/issues/2)), the `Renderer` ([#3](https://github.com/sebastian-software/ferrigura/issues/3)) and the typed views ([#4](https://github.com/sebastian-software/ferrigura/issues/4)), the last before the P3 renderers; the same measurement in the Mermaid fork ([#5](https://github.com/sebastian-software/ferrigura/issues/5)).
+- Configuration and themes per [0009](./decisions/0009-configuration-resolved-once.md): the cache ([#2](https://github.com/sebastian-software/ferrigura/issues/2)), the `Renderer` ([#3](https://github.com/sebastian-software/ferrigura/issues/3)) and the typed views ([#4](https://github.com/sebastian-software/ferrigura/issues/4), [typed-views.md](./typed-views.md)) are done; every renderer takes a read-only `Context`. Open: the same measurement in the Mermaid fork ([#5](https://github.com/sebastian-software/ferrigura/issues/5)).
 - Trademark check for `ferrigura` (DPMA, EUIPO, USPTO) before the first release. The repository is public as `sebastian-software/ferrigura` since 2026-10-16; the local folder is still called `ferraid`.
 - Open `help wanted` issues for every P3 diagram type and for math in labels once the GitHub repository exists.
 - Pie geometry on Linux Chromium: with `--font-render-hinting=none` the redux themes match, but the classic themes (default, dark, forest, neutral), the hovered-slice and the bottom-legend fixtures differ by up to 0.7 px. CI runs the comparison on macOS, where all 24 match; investigate Linux with the Playwright Docker image.

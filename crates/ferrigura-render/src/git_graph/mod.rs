@@ -12,7 +12,7 @@ mod style;
 mod text;
 mod tree;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::GitGraphDiagramConfig;
 use ferrigura_model::git_graph::GitGraphDiagram;
 use ferrigura_text::{EmbeddedFamily, Run, embed_runs};
 
@@ -21,46 +21,35 @@ use self::palette::Palette;
 use self::tree::Element;
 use crate::RenderError;
 use crate::a11y;
+use crate::context::{Context, ThemeView};
 use crate::svg::{escape, number};
-use crate::theme::Themes;
 
 /// The font size of the title: `.gitTitleText` in the reference's stylesheet.
 const TITLE_FONT_SIZE: f64 = 18.0;
 
-/// What the gitGraph renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct GitGraphInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a GitGraphDiagram,
-    /// The effective configuration, in the gitGraph diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
-
-/// Renders the diagram to an SVG document.
+/// Renders the diagram to an SVG document. The context carries the gitGraph section of the
+/// configuration as its section, and the theme's tokens.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read, or if the layout meets a state the reference
 /// reports as an error (a commit without a branch, for example).
-pub fn render(input: &GitGraphInput<'_>) -> Result<String, RenderError> {
+pub fn render(
+    input: &Context<'_, GitGraphDiagram, GitGraphDiagramConfig>,
+) -> Result<String, RenderError> {
     let diagram = input.diagram;
-    let config = &input.config.git_graph;
+    let config = input.section;
     let id = input.id;
-    let themes = input.themes;
-    let neo = input.config.look == "neo";
+    let theme: ThemeView<'_> = input.theme;
+    let neo = input.globals.look == "neo";
 
     // The dark variant is the theme's name, as the reference's `DARK_THEMES` takes it. With two
     // schemes the light set is the primary one and the dark set is dark.
-    let dark_name = matches!(themes, Themes::Single(_)) && input.config.theme.contains("dark");
-    let light = Palette::new(themes.primary(), dark_name);
-    let dark = match themes {
-        Themes::Schemes { dark, .. } => Palette::new(dark, true),
-        Themes::Single(_) => light.clone(),
+    let dark_name = theme.dark.is_none() && input.globals.theme.contains("dark");
+    let light = Palette::new(theme.light, dark_name);
+    let dark = match theme.dark {
+        Some(dark) => Palette::new(dark, true),
+        None => light.clone(),
     };
 
     let mut root = Element::container("svg");
@@ -133,7 +122,7 @@ pub fn render(input: &GitGraphInput<'_>) -> Result<String, RenderError> {
         |family| family.css_family.clone(),
     );
     let dark_palette = &dark;
-    let style = style::style_element(id, themes, &light, dark_palette, &family, &families);
+    let style = style::style_element(id, theme, &light, dark_palette, &family, &families);
 
     // `setupGraphViewbox`: the box of the root, with `diagramPadding` around it.
     let bounds = root.local_box().unwrap_or_default();

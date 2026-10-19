@@ -7,10 +7,11 @@
 //! The reference renders actor, note and message text at the top-level size (16 px by default),
 //! whatever the section says (`docs-port/sequence/NOTES.md` 5.2), and this module does the same.
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::SequenceDiagramConfig;
 use ferrigura_model::value::Value;
 
 use crate::common::TextStyle;
+use crate::context::Globals;
 
 /// The text style of one kind of text: its family as the CSS of the reference has it, its size in
 /// pixels and its weight.
@@ -104,20 +105,20 @@ pub struct Conf {
 }
 
 impl Conf {
-    /// The configuration of a render, from the effective configuration of the diagram.
+    /// The configuration of a render: the `sequence` section, and the global options it reads (the
+    /// look, the theme, the security level, and the font family and size).
     #[must_use]
-    pub fn new(config: &MermaidConfig) -> Self {
-        let section = &config.sequence;
+    pub fn new(section: &SequenceDiagramConfig, globals: &Globals) -> Self {
         // The top-level fontFamily and fontSize replace the section's three fonts (setConf).
-        let family = config.font_family.clone();
-        let size = config.font_size;
+        let family = globals.font_family.clone();
+        let size = globals.font_size;
         let font = |weight: Option<&Value>| Font {
             family: family.clone(),
             size,
             weight: weight.and_then(number_of).unwrap_or(400.0),
         };
         Self {
-            neo: config.look == "neo",
+            neo: globals.look == "neo",
             width: section.width as f64,
             height: section.height as f64,
             box_margin: section.box_margin as f64,
@@ -142,8 +143,8 @@ impl Conf {
             actor_font: font(section.actor_font_weight.as_ref()),
             note_font: font(section.note_font_weight.as_ref()),
             message_font: font(section.message_font_weight.as_ref()),
-            theme: config.theme.clone(),
-            sanitized: !matches!(config.security_level.as_str(), "loose" | "sandbox"),
+            theme: globals.theme.clone(),
+            sanitized: !matches!(globals.security_level.as_str(), "loose" | "sandbox"),
         }
     }
 }

@@ -10,7 +10,6 @@
 pub mod data;
 pub mod style;
 
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_text::{
     FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
@@ -19,34 +18,20 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::a11y;
+use crate::context::Context;
 use crate::svg::{escape, number};
-use crate::theme::Themes;
 use crate::unified::geom::BBox;
 use crate::unified::pipeline::{self, Measured, cover};
-use crate::unified::{edges, markers};
+use crate::unified::{Config, Section, edges, markers};
 
 pub use crate::unified::pipeline::ElkStages;
 
-/// What the flowchart renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct FlowchartInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a FlowchartDiagram,
-    /// The effective configuration, with the flowchart's `theme`, `look` and `layout` resolved.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
-
 /// `getData` and the measure step of the unified renderer.
-fn measure(input: &FlowchartInput<'_>) -> Result<Measured, RenderError> {
-    let mut data = data::get_data(input.diagram, input.config);
+fn measure(input: &Context<'_, FlowchartDiagram, Section<'_>>) -> Result<Measured, RenderError> {
+    let mut data = data::get_data(input.diagram, input.section, input.globals);
     // `flowRenderer-v3-unified.ts` sets the diagram type on the layout data after `getData`.
     data.diagram_type = markers::FLOWCHART.to_owned();
-    pipeline::measure(data, input.config, input.themes.primary())
+    pipeline::measure(data, &Config::of(input))
 }
 
 /// The graphs of the layout step, for the differential comparison.
@@ -54,23 +39,25 @@ fn measure(input: &FlowchartInput<'_>) -> Result<Measured, RenderError> {
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or the layout fails.
-pub fn elk_stages(input: &FlowchartInput<'_>) -> Result<ElkStages, RenderError> {
+pub fn elk_stages(
+    input: &Context<'_, FlowchartDiagram, Section<'_>>,
+) -> Result<ElkStages, RenderError> {
     let mut measured = measure(input)?;
-    pipeline::lay_out(&mut measured, input.config)
+    pipeline::lay_out(&mut measured, &Config::of(input))
 }
 
-/// Renders a flowchart as an SVG document.
+/// Renders a flowchart as an SVG document. The context's section is the flowchart's, with the elk
+/// options and the globals of the view; its theme is the one the colour scheme chooses.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the layout fails.
-pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
+pub fn render(input: &Context<'_, FlowchartDiagram, Section<'_>>) -> Result<String, RenderError> {
+    let config = Config::of(input);
     let mut measured = measure(input)?;
-    pipeline::lay_out(&mut measured, input.config)?;
-    let config = input.config;
-    let theme = input.themes.primary();
+    pipeline::lay_out(&mut measured, &config)?;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, config, theme)?;
+    let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;
 
     // `insertTitle`: centred over everything drawn so far, `titleTopMargin` above the origin.
@@ -82,7 +69,7 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
         let width = measure_text(sans, title, TITLE_FONT_SIZE)?;
         let ink = measure_box(sans, title, TITLE_FONT_SIZE)?;
         let text_box = text_box(sans, TITLE_FONT_SIZE)?;
-        let baseline = -(config.flowchart.title_top_margin as f64);
+        let baseline = -(config.section.flowchart.title_top_margin as f64);
         // `text-anchor: middle` at the centre (`utils.ts`, `insertTitle`): the title's box starts half
         // its advance left of the centre, and its glyphs' box is the box `getBBox` gives.
         let x = drawn.x + drawn.width / 2.0;
@@ -116,10 +103,10 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
     let families = embed_runs(&runs)?;
 
     // `setupViewPortForSVG`: the drawn box with `diagramPadding` around it.
-    let padding = config.flowchart.diagram_padding as f64;
+    let padding = config.section.flowchart.diagram_padding as f64;
     let drawn = bounds.unwrap_or_default();
     let (view_width, view_height) = (drawn.width + padding * 2.0, drawn.height + padding * 2.0);
-    let size_attributes = if config.flowchart.use_max_width {
+    let size_attributes = if config.section.flowchart.use_max_width {
         format!(
             "width=\"100%\" style=\"max-width: {}px;\"",
             number(view_width)
@@ -136,7 +123,7 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
     let accessible_attributes =
         a11y::root_attributes(id, "flowchart-v2", &diagram.acc_title, &diagram.acc_descr);
     let style =
-        style::style_sheet_with_fonts(id, input.themes, config, &diagram.classes, &families);
+        style::style_sheet_with_fonts(id, input.theme, input.globals, &diagram.classes, &families);
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
@@ -144,10 +131,10 @@ pub fn render(input: &FlowchartInput<'_>) -> Result<String, RenderError> {
         y = number(drawn.y - padding),
         w = number(view_width),
         h = number(view_height),
-        markers = edges::markers(id, config),
+        markers = edges::markers(id),
         root = painted.root,
         coloured_markers = painted.coloured_markers,
-        defs = style::look_defs(id, input.themes, config),
+        defs = style::look_defs(id, input.theme, input.globals),
     ))
 }
 

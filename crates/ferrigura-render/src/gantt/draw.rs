@@ -2,7 +2,7 @@
 //! order the reference sets them: the excluded days, the grids, the section rows, the bars and their
 //! labels, the section labels, the today marker and the title (`ganttRenderer.js:213-222`).
 
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::FontStyle;
 
 use super::axis::{Axis, Orient};
@@ -13,7 +13,6 @@ use super::time::{Base, Interval, TickCount};
 use super::{Chart, Texts, dayjs};
 use crate::RenderError;
 use crate::svg::{escape, number};
-use crate::variables::text_of;
 
 /// The units of the custom tick interval, as the reference's regular expression names them.
 const TICK_UNITS: [&str; 7] = [
@@ -55,14 +54,14 @@ fn estimated_ticks(min: f64, max: f64, every: f64, unit: &str) -> f64 {
 }
 
 impl Chart<'_> {
-    /// The variables of the theme, the set that gives the presentation attributes.
-    fn variables(&self) -> &Value {
-        self.input.themes.primary()
+    /// The tokens of the theme: the light scheme, which gives the presentation attributes.
+    fn tokens(&self) -> &ThemeTokens {
+        self.theme.light
     }
 
     /// The presentation attribute of a colour token.
-    fn colour(&self, name: &str, token: &str) -> String {
-        style::attribute(self.variables(), name, token)
+    fn colour(&self, name: &str, token: &Token) -> String {
+        style::attribute(name, token)
     }
 
     /// The `excludes` rectangles (`drawExcludeDays`, `ganttRenderer.js:543-616`): one per run of
@@ -115,7 +114,7 @@ impl Chart<'_> {
         let sp = self.conf.left_padding as f64;
         let gl = self.conf.grid_line_start_padding as f64;
         let tp = self.conf.top_padding as f64;
-        let fill = self.colour("fill", "excludeBkgColor");
+        let fill = self.colour("fill", &self.tokens().exclude_bkg_color);
         let mut out_group = String::from("<g>");
         for (index, (start, end)) in ranges.iter().copied().enumerate() {
             let x = scale.apply(dayjs::start_of_day(start)) + sp;
@@ -125,7 +124,7 @@ impl Chart<'_> {
             let row = index as f64 * self.gap + 0.5 * self.h;
             out_group.push_str(&format!(
                 "<rect id=\"{}-exclude-{}\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" transform-origin=\"{}px {}px\" class=\"exclude-range\"{fill}></rect>",
-                escape(self.input.id),
+                escape(self.id),
                 escape(&dayjs::format_date(start)),
                 number(x),
                 number(gl),
@@ -220,7 +219,7 @@ impl Chart<'_> {
         let tp = conf.top_padding as f64;
         let gl = conf.grid_line_start_padding as f64;
         let tick_size = -self.h + tp + gl;
-        let text_fill = text_of(self.variables(), "textColor").unwrap_or_default();
+        let text_fill = self.tokens().text_color.text().unwrap_or_default();
         let custom = self.custom_tick();
 
         let bottom_values = self.tick_values(custom)?;
@@ -341,7 +340,7 @@ impl Chart<'_> {
     /// The presentation fill of a section row (`.section0`, `.section1`, ...), if the rule names it.
     fn section_fill_attribute(&self, index: usize) -> String {
         let section = self.section_number(index);
-        style::section_token(section)
+        style::section_token(self.tokens(), section)
             .filter(|_| {
                 self.section_index(&self.model.tasks[index].section)
                     .is_some()
@@ -386,7 +385,7 @@ impl Chart<'_> {
         let origin = start + sp + 0.5 * (end - start);
         let section = self.section_number(index);
         let state = bar_state(task.active, task.done, task.crit);
-        let (fill, stroke) = style::bar_tokens(state, section, task.vert);
+        let (fill, stroke) = style::bar_tokens(self.tokens(), state, section, task.vert);
         let mut attributes = String::new();
         if let Some(token) = fill {
             attributes.push_str(&self.colour("fill", token));
@@ -397,7 +396,7 @@ impl Chart<'_> {
         let class = bar_class(task, section, state_classes(task));
         format!(
             "<rect id=\"{}-{}\" rx=\"3\" ry=\"3\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" transform-origin=\"{}px {}px\" class=\"{}\"{}></rect>",
-            escape(self.input.id),
+            escape(self.id),
             escape(&task.id),
             number(x),
             number(y),
@@ -458,7 +457,7 @@ impl Chart<'_> {
 
         let class = self.label_class(index, text_width);
         let class_tokens: Vec<&str> = class.split_whitespace().collect();
-        let fill = style::text_token(&class_tokens)
+        let fill = style::text_token(self.tokens(), &class_tokens)
             .map(|token| self.colour("fill", token))
             .unwrap_or_default();
         let style = if task.milestone {
@@ -469,7 +468,7 @@ impl Chart<'_> {
         texts.push(&text.plain, style);
         Ok(format!(
             "<text id=\"{}-{}-text\" font-size=\"{}\" x=\"{}\" y=\"{}\" class=\"{}\"{}>{}</text>",
-            escape(self.input.id),
+            escape(self.id),
             escape(&task.id),
             number(font),
             number(x),
@@ -557,7 +556,7 @@ impl Chart<'_> {
             // `.sectionTitle0` to `.sectionTitle3` colour the title; a later section has no rule.
             let fill = match self.section_index(name) {
                 Some(category) if category % styles < 4 => {
-                    self.colour("fill", style::title_token(self.variables()))
+                    self.colour("fill", style::title_token(self.tokens()))
                 }
                 _ => String::new(),
             };
@@ -593,7 +592,7 @@ impl Chart<'_> {
             return;
         }
         let sp = self.conf.left_padding as f64;
-        let x = self.scale.apply(self.input.now as f64) + sp;
+        let x = self.scale.apply(self.now as f64) + sp;
         let title_top = self.conf.title_top_margin as f64;
         let style = if marker.is_empty() {
             String::new()
@@ -604,7 +603,7 @@ impl Chart<'_> {
             "<g class=\"today\"><line x1=\"{x}\" x2=\"{x}\" y1=\"{}\" y2=\"{}\" class=\"today\"{}{style}></line></g>",
             number(title_top),
             number(self.h - title_top),
-            self.colour("stroke", "todayLineColor"),
+            self.colour("stroke", &self.tokens().today_line_color),
             x = number(x),
         ));
     }
@@ -614,7 +613,7 @@ impl Chart<'_> {
     pub(super) fn title(&self, out: &mut String, texts: &mut Texts) {
         let title = label(&self.model.title);
         texts.push(&title.plain, FontStyle::Normal);
-        let fill = self.colour("fill", style::title_token(self.variables()));
+        let fill = self.colour("fill", style::title_token(self.tokens()));
         out.push_str(&format!(
             "<text x=\"{}\" y=\"{}\" class=\"titleText\"{fill}>{}</text>",
             number(self.w / 2.0),

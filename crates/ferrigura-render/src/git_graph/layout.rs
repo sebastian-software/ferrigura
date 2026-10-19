@@ -1019,6 +1019,7 @@ mod tests {
     //! because its `dir` is shared state that the describe blocks set while they are collected;
     //! the LR block here checks the LR geometry instead.
 
+    use ferrigura_model::theme::ThemeTokens;
     use ferrigura_model::value::Value;
 
     use super::*;
@@ -1096,7 +1097,7 @@ mod tests {
     fn should_set_branch_positions_lr_with_two_branches() {
         let diagram = diagram(Direction::LR, Vec::new());
         let config = GitGraphDiagramConfig::default();
-        let palette = Palette::new(&Value::empty_object(), false);
+        let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
         let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
 
         let pos = layout.set_branch_position("main", 0.0, 0, 10.0, true);
@@ -1117,7 +1118,7 @@ mod tests {
     fn should_set_branch_positions_tb_with_two_branches() {
         let diagram = diagram(Direction::TB, Vec::new());
         let config = GitGraphDiagramConfig::default();
-        let palette = Palette::new(&Value::empty_object(), false);
+        let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
         let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
 
         let pos = layout.set_branch_position("main", 0.0, 0, 34.9921875, true);
@@ -1178,7 +1179,7 @@ mod tests {
     fn check_tb_position(index: usize) {
         let diagram = diagram(Direction::TB, fixture());
         let config = GitGraphDiagramConfig::default();
-        let palette = Palette::new(&Value::empty_object(), false);
+        let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
         let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
         lanes(
             &mut layout,
@@ -1223,7 +1224,7 @@ mod tests {
     fn check_lr_position(index: usize) {
         let diagram = diagram(Direction::LR, fixture());
         let config = GitGraphDiagramConfig::default();
-        let palette = Palette::new(&Value::empty_object(), false);
+        let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
         let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
         lanes(
             &mut layout,
@@ -1331,7 +1332,7 @@ mod tests {
     fn should_get_the_correct_commit_position_and_current_position() {
         let diagram = diagram(Direction::BT, parallel_fixture());
         let config = GitGraphDiagramConfig::default();
-        let palette = Palette::new(&Value::empty_object(), false);
+        let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
         let commits = parallel_fixture();
         let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
         lanes(
@@ -1369,7 +1370,7 @@ mod tests {
     fn should_get_the_correct_commit_position_after_parallel_commits() {
         let diagram = diagram(Direction::BT, parallel_fixture());
         let config = GitGraphDiagramConfig::default();
-        let palette = Palette::new(&Value::empty_object(), false);
+        let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
         let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
         lanes(
             &mut layout,
@@ -1401,7 +1402,7 @@ mod tests {
     fn add() {
         let diagram = diagram(Direction::LR, Vec::new());
         let config = GitGraphDiagramConfig::default();
-        let palette = Palette::new(&Value::empty_object(), false);
+        let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
         let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
         layout.commit_pos.insert("parent1", Point::new(1.0, 1.0));
         layout.commit_pos.insert("parent2", Point::new(2.0, 2.0));

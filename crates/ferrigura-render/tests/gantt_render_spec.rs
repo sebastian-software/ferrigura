@@ -4,10 +4,10 @@
 //! structure the comparison relies on.
 
 use ferrigura_model::config::{defaults, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
-use ferrigura_render::gantt::{GanttInput, render};
-use ferrigura_render::theme::Themes;
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::gantt::{GanttSection, render};
 use ferrigura_syntax::gantt::{Options, parse_with};
 
 /// 2014-01-01T00:00Z, the first day of the diagrams below.
@@ -26,12 +26,19 @@ fn draw(text: &str, now: i64, gantt: &[(&str, Value)]) -> String {
     }
     let config = typed(&value).expect("the configuration");
     let variables = Theme::ReduxColor.variables(None);
-    render(&GanttInput {
+    let tokens = ThemeTokens::from_value(&variables);
+    render(&Context {
         diagram: &diagram,
-        config: &config,
-        themes: Themes::Single(&variables),
+        section: &GanttSection {
+            config: &config.gantt,
+            now,
+        },
+        globals: &Globals::of(&config),
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id: "chart",
-        now,
     })
     .expect("the diagram renders")
 }

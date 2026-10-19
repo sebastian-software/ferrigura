@@ -9,10 +9,9 @@
 
 use ferrigura_model::config::QuadrantChartConfig;
 use ferrigura_model::quadrant_chart::{QuadrantChartDiagram, QuadrantStyle};
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::ThemeTokens;
 
 use crate::common::d3::LinearScale;
-use crate::variables::text_of;
 
 /// The colour of a point when its style gives no `strokeWidth` (`builder` 509).
 const DEFAULT_STROKE_WIDTH: &str = "0px";
@@ -83,30 +82,29 @@ pub struct Theme {
 }
 
 impl Theme {
-    /// The colours of a theme's variables (`getQuadrantData`, `quadrantDb.ts` 126-142).
+    /// The colours of a theme's tokens (`getQuadrantData`, `quadrantDb.ts` 126-142).
     #[must_use]
-    pub fn new(variables: &Value) -> Self {
-        let get = |name: &str| text_of(variables, name);
+    pub fn new(tokens: &ThemeTokens) -> Self {
         Self {
-            title_fill: get("quadrantTitleFill"),
+            title_fill: tokens.quadrant_title_fill.text(),
             quadrant_fills: [
-                get("quadrant1Fill"),
-                get("quadrant2Fill"),
-                get("quadrant3Fill"),
-                get("quadrant4Fill"),
+                tokens.quadrant1_fill.text(),
+                tokens.quadrant2_fill.text(),
+                tokens.quadrant3_fill.text(),
+                tokens.quadrant4_fill.text(),
             ],
             quadrant_text_fills: [
-                get("quadrant1TextFill"),
-                get("quadrant2TextFill"),
-                get("quadrant3TextFill"),
-                get("quadrant4TextFill"),
+                tokens.quadrant1_text_fill.text(),
+                tokens.quadrant2_text_fill.text(),
+                tokens.quadrant3_text_fill.text(),
+                tokens.quadrant4_text_fill.text(),
             ],
-            point_fill: get("quadrantPointFill"),
-            point_text_fill: get("quadrantPointTextFill"),
-            x_axis_text_fill: get("quadrantXAxisTextFill"),
-            y_axis_text_fill: get("quadrantYAxisTextFill"),
-            internal_border_fill: get("quadrantInternalBorderStrokeFill"),
-            external_border_fill: get("quadrantExternalBorderStrokeFill"),
+            point_fill: tokens.quadrant_point_fill.text(),
+            point_text_fill: tokens.quadrant_point_text_fill.text(),
+            x_axis_text_fill: tokens.quadrant_x_axis_text_fill.text(),
+            y_axis_text_fill: tokens.quadrant_y_axis_text_fill.text(),
+            internal_border_fill: tokens.quadrant_internal_border_stroke_fill.text(),
+            external_border_fill: tokens.quadrant_external_border_stroke_fill.text(),
         }
     }
 }
@@ -572,7 +570,9 @@ mod tests {
     }
 
     fn theme() -> Theme {
-        Theme::new(&ferrigura_model::theme::Theme::ReduxColor.variables(None))
+        Theme::new(&ThemeTokens::from_value(
+            &ferrigura_model::theme::Theme::ReduxColor.variables(None),
+        ))
     }
 
     fn diagram_with_points(points: Vec<QuadrantPoint>) -> QuadrantChartDiagram {

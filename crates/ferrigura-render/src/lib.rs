@@ -13,6 +13,7 @@ pub mod block;
 pub mod c4;
 pub mod class;
 pub mod common;
+pub mod context;
 pub mod er;
 pub mod event_modeling;
 pub mod flowchart;
@@ -31,10 +32,10 @@ pub mod sankey;
 pub mod sequence;
 pub mod state;
 pub mod svg;
-pub mod theme;
 pub mod timeline;
 pub mod treemap;
 pub mod unified;
+#[cfg(test)]
 mod variables;
 pub mod xychart;
 

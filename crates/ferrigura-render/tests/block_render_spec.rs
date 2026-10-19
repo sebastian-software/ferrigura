@@ -3,18 +3,28 @@
 //! glance), checked here as plain assertions on the SVG.
 
 use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_render::RenderError;
-use ferrigura_render::block::{BlockInput, render};
-use ferrigura_render::theme::Themes;
+use ferrigura_render::block::{BlockSection, render};
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::unified::Section;
 
 fn render_text(text: &str, config: &MermaidConfig) -> Result<String, RenderError> {
     let diagram = ferrigura_syntax::block::parse(text).expect("the text parses");
     let variables = Theme::ReduxColor.variables(None);
-    render(&BlockInput {
+    let tokens = ThemeTokens::from_value(&variables);
+    let sections = BlockSection {
+        block: &config.block,
+        unified: Section::of(config),
+    };
+    render(&Context {
         diagram: &diagram,
-        config,
-        themes: Themes::Single(&variables),
+        section: &sections,
+        globals: &Globals::of(config),
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id: "b1",
     })
 }
@@ -105,12 +115,20 @@ fn a_composite_takes_the_dark_cluster_colours_under_the_dark_scheme() {
         .expect("the text parses");
     let light = Theme::ReduxColor.variables(None);
     let dark = Theme::ReduxDarkColor.variables(None);
-    let svg = render(&BlockInput {
+    let config = MermaidConfig::default();
+    let light = ThemeTokens::from_value(&light);
+    let dark = ThemeTokens::from_value(&dark);
+    let sections = BlockSection {
+        block: &config.block,
+        unified: Section::of(&config),
+    };
+    let svg = render(&Context {
         diagram: &diagram,
-        config: &MermaidConfig::default(),
-        themes: Themes::Schemes {
+        section: &sections,
+        globals: &Globals::of(&config),
+        theme: ThemeView {
             light: &light,
-            dark: &dark,
+            dark: Some(&dark),
         },
         id: "b1",
     })
