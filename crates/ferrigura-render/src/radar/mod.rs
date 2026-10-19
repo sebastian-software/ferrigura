@@ -30,11 +30,11 @@ use style::{Options, Style};
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 
 /// The side of a legend box: the reference writes 12 whatever `legendBoxSize` says (`renderer.ts`
-/// 226-227; the theme's `legendBoxSize` is not read, `radar/NOTES.md` section 6.11, item 11).
+/// 232-233; the theme's `legendBoxSize` is not read, `radar/NOTES.md` section 6.11, item 11).
 const LEGEND_BOX: f64 = 12.0;
 /// The distance between two legend items (`renderer.ts` 222).
 const LEGEND_LINE_HEIGHT: f64 = 20.0;
-/// The offset of a legend text from the left of its box (`renderer.ts` 240).
+/// The offset of a legend text from the left of its box (`renderer.ts` 239).
 const LEGEND_TEXT_X: f64 = 16.0;
 /// The push of an axis label away from its axis end (`renderer.ts` 123).
 const LABEL_PAD: f64 = 4.0;
@@ -132,7 +132,7 @@ pub fn render(
         &style::own_rules(id, &style),
     );
 
-    // `draw`'s `viewBox` and `overflow`, after `configureSvgSize` (`renderer.ts` 13-20, `drawFrame`).
+    // `drawFrame`'s `viewBox` and `overflow`, after `configureSvgSize` (`renderer.ts` 50-62).
     let mut root = Element::new("svg")
         .with("id", id)
         .with("width", "100%")
@@ -180,7 +180,7 @@ fn max_value(diagram: &RadarDiagram) -> f64 {
     })
 }
 
-/// `drawGraticule` (`renderer.ts` 66-93): one circle or polygon for each tick, the first at the
+/// `drawGraticule` (`renderer.ts` 64-93): one circle or polygon for each tick, the first at the
 /// smallest radius.
 fn draw_graticule(group: &mut Element, diagram: &RadarDiagram, radius: f64, options: &Options) {
     let ticks = diagram.options.ticks;
@@ -216,7 +216,7 @@ fn graticule_paint(element: Element, options: &Options) -> Element {
         .with("stroke-width", options.graticule_stroke_width.as_str())
 }
 
-/// `drawAxes` (`renderer.ts` 101-130): for each axis, its line from the centre, and its label beyond
+/// `drawAxes` (`renderer.ts` 95-133): for each axis, its line from the centre, and its label beyond
 /// the end of the line, anchored by the side of the chart it is on.
 fn draw_axes(
     group: &mut Element,
@@ -274,7 +274,7 @@ fn draw_axes(
     }
 }
 
-/// `drawCurves` (`renderer.ts` 137-172): a curve is drawn only when it has one entry for each axis.
+/// `drawCurves` (`renderer.ts` 135-173): a curve is drawn only when it has one entry for each axis.
 /// Its index is kept, so a skipped curve leaves a gap in the numbering of the others.
 fn draw_curves(
     group: &mut Element,
@@ -339,7 +339,7 @@ fn curve_paint(element: Element, index: usize, style: &Style) -> Element {
     element
 }
 
-/// `drawLegend` (`renderer.ts` 214-244): one item for each curve, skipped or not, in a column at the
+/// `drawLegend` (`renderer.ts` 209-244): one item for each curve, skipped or not, in a column at the
 /// top right of the chart.
 fn draw_legend(
     group: &mut Element,
