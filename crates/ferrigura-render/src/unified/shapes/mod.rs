@@ -128,6 +128,10 @@ pub enum Intersect {
         /// The vertical radius.
         ry: f64,
     },
+    /// `question.ts`'s `calcIntersect`: `intersect-polygon.js` on the diamond rebuilt from the
+    /// width of the box it is given (`s = bounds.width`), not from the drawn size. The box is the
+    /// measured one, so its corners are the box's to the last digit, where the ELK port is.
+    Question,
     /// `intersect-polygon.js` with these points, in the shape's own coordinates as the handler
     /// passes them.
     Polygon {
@@ -159,6 +163,9 @@ impl Intersect {
             Self::Rect => intersect::rect(node, point),
             Self::Circle { radius } => intersect::circle(node, *radius, point),
             Self::Ellipse { rx, ry } => intersect::ellipse(node, *rx, *ry, point),
+            Self::Question => {
+                intersect::polygon(node, &polygon::question_points(node.width), point)
+            }
             Self::Polygon { points } => intersect::polygon(node, points, point),
             Self::Cylinder { rx, ry } => intersect::cylinder(node, *rx, *ry, point),
             Self::TiltedCylinder { rx, ry } => intersect::tilted_cylinder(node, *rx, *ry, point),
