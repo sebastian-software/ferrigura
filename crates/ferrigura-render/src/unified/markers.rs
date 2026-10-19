@@ -20,6 +20,10 @@ pub const ER: &str = "er";
 /// The diagram type of a requirement diagram, in its marker ids (`requirementRenderer.ts` 19).
 pub const REQUIREMENT: &str = "requirement";
 
+/// The diagram type of a use case diagram, in its marker ids and classes (`usecaseRenderer.ts`'s
+/// `USECASE_MARKERS`: point, circle, cross and extension).
+pub const USECASE: &str = "usecase";
+
 /// The marker kinds an edge end can use: the flowchart's three in the order `markers.js` writes
 /// them, and the four cardinalities of ER diagrams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1146,5 +1150,67 @@ pub fn class_markers(svg_id: &str) -> String {
             in_defs: true,
         });
     }
+    out
+}
+
+/// The id of a use case's extension marker: `<svgId>_usecase-extensionStart|End`, with `-margin` for the
+/// neo variant (`markers.js` 12-75, named by the use case diagram).
+#[must_use]
+pub fn usecase_extension_id(svg_id: &str, start: bool, margin: bool) -> String {
+    let position = if start { "Start" } else { "End" };
+    let suffix = if margin { "-margin" } else { "" };
+    format!("{svg_id}_{USECASE}-extension{position}{suffix}")
+}
+
+/// The markers of a use case diagram, in the order `insertMarkers` writes them for its marker set: the
+/// flowchart's point, circle and cross (twelve, under the use case's name), then the extension's four,
+/// each with its own `<defs>` but the start-margin marker, as `markers.js` 12-75 writes them.
+#[must_use]
+pub fn usecase_markers(svg_id: &str) -> String {
+    let mut out = markers(svg_id, USECASE);
+    let mut push = |id: String, ref_x: &str, ref_y: &str, child: &str, in_defs: bool| {
+        let marker = format!(
+            "<marker id=\"{}\" class=\"marker extension {USECASE}\" refX=\"{ref_x}\" refY=\"{ref_y}\" markerWidth=\"20\" markerHeight=\"28\" orient=\"auto\" markerUnits=\"userSpaceOnUse\"{}>{child}</marker>",
+            escape(&id),
+            if child.starts_with("<polygon") {
+                " viewBox=\"0 0 20 14\""
+            } else {
+                ""
+            },
+        );
+        if in_defs {
+            out.push_str(&format!("<defs>{marker}</defs>"));
+        } else {
+            out.push_str(&marker);
+        }
+    };
+    push(
+        usecase_extension_id(svg_id, true, false),
+        "18",
+        "7",
+        "<path d=\"M 1,7 L18,13 V 1 Z\"/>",
+        true,
+    );
+    push(
+        usecase_extension_id(svg_id, false, false),
+        "1",
+        "7",
+        "<path d=\"M 1,1 V 13 L18,7 Z\"/>",
+        true,
+    );
+    push(
+        usecase_extension_id(svg_id, true, true),
+        "18",
+        "7",
+        "<polygon points=\"10,7 18,13 18,1\" style=\"stroke-width: 2; stroke-dasharray: 0;\"/>",
+        false,
+    );
+    push(
+        usecase_extension_id(svg_id, false, true),
+        "9",
+        "7",
+        "<polygon points=\"10,1 10,13 18,7\" style=\"stroke-width: 2; stroke-dasharray: 0;\"/>",
+        true,
+    );
     out
 }

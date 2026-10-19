@@ -229,7 +229,26 @@ pub fn label(edge: &Edge, font_size: f64) -> Result<Option<LabelLayout>, RenderE
         font_size,
         title: false,
     };
-    label::layout(&spec).map(Some)
+    let measured = label::layout(&spec)?;
+    // A diagram whose stylesheet sets the edge labels' font size (the use case's `.edgeLabel`) gets the
+    // background measured at the theme's size, as the reference does before its class is applied, and the
+    // text drawn at the stylesheet's size, wrapped at the theme's size. The group's size is the background
+    // and the text's box centres the group (`positionRenderedEdgeLabel`).
+    let Some(drawn_size) = edge.font_size else {
+        return Ok(Some(measured));
+    };
+    let mut drawn_styles = styles.clone();
+    drawn_styles.push(format!("font-size: {}px", crate::svg::number(drawn_size)));
+    let drawn = label::layout(&LabelSpec {
+        styles: &drawn_styles,
+        ..spec
+    })?;
+    // The text's own box is the drawn one (it centres the group), and the background is the measured
+    // one, which holds the group's size.
+    Ok(Some(LabelLayout {
+        background: measured.background,
+        ..drawn
+    }))
 }
 
 /// The size `insertEdgeLabel` records for a label: the label group's box, which holds the text and
@@ -325,6 +344,10 @@ fn jump_style(section: &Section<'_>) -> Option<JumpStyle> {
 /// What the paint of an edge holds before the line hops, and what the hops may change.
 struct Painted {
     id: String,
+    /// The path's `id`, when it is not the edge's id.
+    path_id: Option<String>,
+    /// The attributes after the markers, each with its leading space.
+    path_attributes: String,
     d: Option<String>,
     style: String,
     class: String,
@@ -478,6 +501,14 @@ fn paint_edge(
         // A class relation's marker is named by its kind, and a class relation has no colour
         // (`edgeMarker.ts` names the marker after the diagram type, and the relation's style is
         // not a stroke colour of the class syntax).
+        // The use case's extension marker is its own, named by its diagram (`usecaseRenderer`'s
+        // marker set), not the class diagram's.
+        if diagram_type == markers::USECASE && arrow == "extension" {
+            return Some(format!(
+                "url(#{})",
+                markers::usecase_extension_id(svg_id, start, margin)
+            ));
+        }
         if let Some(class) = markers::ClassKind::from_arrow(arrow) {
             return Some(format!(
                 "url(#{})",
@@ -509,6 +540,8 @@ fn paint_edge(
 
     Painted {
         id: edge.id.clone(),
+        path_id: edge.path_id.clone(),
+        path_attributes: edge.path_attributes.clone(),
         d,
         style,
         class,
@@ -525,7 +558,8 @@ fn format_path(painted: &Painted) -> String {
     if let Some(d) = &painted.d {
         attributes.push_str(&format!(" d=\"{}\"", escape(d)));
     }
-    attributes.push_str(&format!(" id=\"{}\"", escape(&painted.id)));
+    let path_id = painted.path_id.as_deref().unwrap_or(&painted.id);
+    attributes.push_str(&format!(" id=\"{}\"", escape(path_id)));
     attributes.push_str(&format!(" class=\"{}\"", escape(&painted.class)));
     attributes.push_str(&format!(" style=\"{}\"", escape(&painted.style)));
     attributes.push_str(&format!(
@@ -541,6 +575,7 @@ fn format_path(painted: &Painted) -> String {
     if let Some(marker) = &painted.marker_end {
         attributes.push_str(&format!(" marker-end=\"{}\"", escape(marker)));
     }
+    attributes.push_str(&painted.path_attributes);
     format!("<path{attributes}/>")
 }
 
@@ -632,6 +667,7 @@ mod tests {
             font_size: 14.0,
             title: false,
             anchor: Anchor::Middle,
+            first_line_class: None,
         };
         assert_eq!(label_size(&layout), (24.0, 21.0));
         assert_eq!(label_size(&LabelLayout::of_box(text)), (20.0, 17.0));

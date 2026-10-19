@@ -845,6 +845,12 @@ fn add_vertices(
             label_data: label_data_of(node, section),
             width: node.width.unwrap_or(0.0),
             height: node.height.unwrap_or(0.0),
+            // `spreadPorts` (`elk/render.ts` 1050-1058): the centre alignment of the implicit ports.
+            layout_options: node.spread_ports.then(|| {
+                let mut options = LayoutOptions::default();
+                set(&mut options, "elk.portAlignment.default", text("CENTER"));
+                options
+            }),
             ..Work::default()
         });
         index.insert(node.id.clone(), position);
