@@ -6,6 +6,8 @@
 
 use std::f64::consts::FRAC_PI_4;
 
+use ferrigura_jsmath::{cos, sin};
+
 use super::rough;
 use super::util::{self, Part, label_helper, path_style, stroke_width, styles2string};
 use super::{Intersect, ShapeInput};
@@ -135,8 +137,8 @@ pub(super) fn crossed_circle(input: &ShapeInput<'_>) -> Part {
 
     // The diagonals of the circle, from quadrant II to IV and from I to III (`createLine`).
     let line_length = radius * 2.0;
-    let diagonal = line_length / 2.0 * FRAC_PI_4.cos();
-    let diagonal_y = line_length / 2.0 * FRAC_PI_4.sin();
+    let diagonal = line_length / 2.0 * cos(FRAC_PI_4);
+    let diagonal_y = line_length / 2.0 * sin(FRAC_PI_4);
     let q1 = Point::new(diagonal, diagonal_y);
     let q2 = Point::new(-diagonal, diagonal_y);
     let q3 = Point::new(-diagonal, -diagonal_y);

@@ -2,6 +2,8 @@
 //! Both size themselves from the label's diagonal, not from the minimum node width
 //! (`ignoreMinWidth`). See `docs-port/flowchart/render-notes/shapes-core.md` §2.1.
 
+use ferrigura_jsmath::pow;
+
 use super::util::{Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::svg::number;
@@ -13,7 +15,7 @@ pub(super) fn circle(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
     let styles = styles2string(node);
     let label = label_helper(input, true);
-    let label_radius = (label.bbox.width.powi(2) + label.bbox.height.powi(2)).sqrt() / 2.0;
+    let label_radius = (pow(label.bbox.width, 2.0) + pow(label.bbox.height, 2.0)).sqrt() / 2.0;
     let radius = if node.is_neo() {
         label_radius + 16.0
     } else {
@@ -36,7 +38,7 @@ pub(super) fn mindmap_circle(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
     let styles = styles2string(node);
     let label = label_helper(input, true);
-    let label_radius = (label.bbox.width.powi(2) + label.bbox.height.powi(2)).sqrt() / 2.0;
+    let label_radius = (pow(label.bbox.width, 2.0) + pow(label.bbox.height, 2.0)).sqrt() / 2.0;
     let radius = if node.is_neo() {
         label_radius + 16.0
     } else {
@@ -63,7 +65,7 @@ pub(super) fn double_circle(input: &ShapeInput<'_>) -> Part {
         (5.0, node.padding)
     };
     let label = label_helper(input, true);
-    let label_radius = (label.bbox.width.powi(2) + label.bbox.height.powi(2)).sqrt() / 2.0;
+    let label_radius = (pow(label.bbox.width, 2.0) + pow(label.bbox.height, 2.0)).sqrt() / 2.0;
     // A node with a width (a block in its placed pass) takes its inner ring from that width, as
     // `doubleCircle.ts` 26 reads `node.width`.
     let inner_radius = match node.width.filter(|width| *width != 0.0) {

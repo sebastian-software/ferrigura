@@ -12,6 +12,7 @@ use super::data::{Edge, Node, Terminal, TerminalKey};
 use super::geom::{BBox, Point};
 use super::label::{self, Anchor, LabelSpec};
 use crate::RenderError;
+use ferrigura_jsmath::{atan2, cos, hypot, sin};
 use ferrigura_model::flowchart::LabelType;
 
 /// The clearance a marker needs beside an end: its paths span 12 px (`TERMINAL_LABEL_MARKER_CLEARANCE`,
@@ -308,7 +309,7 @@ fn placed(edges: &[Edge]) -> Vec<Placed> {
                 points.len() - 2
             };
             let (from, to) = (points[segment], points[segment + 1]);
-            let length = (to.x - from.x).hypot(to.y - from.y);
+            let length = hypot(to.x - from.x, to.y - from.y);
             if length == 0.0 {
                 continue;
             }
@@ -469,19 +470,19 @@ fn calc_position(marker_size: f64, key: TerminalKey, points: &[Point]) -> Point 
     // Traverse 25 plus the marker size along the path to find the point the label is beside.
     let centre = calculate_point(&points, 25.0 + marker_size).unwrap_or(first);
     let d = 10.0 + marker_size * 0.5;
-    let angle = (first.y - centre.y).atan2(first.x - centre.x);
+    let angle = atan2(first.y - centre.y, first.x - centre.x);
     let mid = Point::new((first.x + centre.x) / 2.0, (first.y + centre.y) / 2.0);
     match key {
         TerminalKey::StartLeft => Point::new(
-            (angle + std::f64::consts::PI).sin() * d + mid.x,
-            -(angle + std::f64::consts::PI).cos() * d + mid.y,
+            sin(angle + std::f64::consts::PI) * d + mid.x,
+            -cos(angle + std::f64::consts::PI) * d + mid.y,
         ),
         TerminalKey::EndRight => Point::new(
-            (angle - std::f64::consts::PI).sin() * d + mid.x,
-            -(angle - std::f64::consts::PI).cos() * d + mid.y,
+            sin(angle - std::f64::consts::PI) * d + mid.x,
+            -cos(angle - std::f64::consts::PI) * d + mid.y,
         ),
         TerminalKey::EndLeft | TerminalKey::StartRight => {
-            Point::new(angle.sin() * d + mid.x, -angle.cos() * d + mid.y)
+            Point::new(sin(angle) * d + mid.x, -cos(angle) * d + mid.y)
         }
     }
 }
@@ -493,7 +494,7 @@ fn calculate_point(points: &[Point], distance: f64) -> Option<Point> {
     let mut remaining = distance;
     for &point in points {
         if let Some(prev) = previous {
-            let length = (point.x - prev.x).hypot(point.y - prev.y);
+            let length = hypot(point.x - prev.x, point.y - prev.y);
             if length == 0.0 {
                 return Some(prev);
             }

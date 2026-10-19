@@ -29,6 +29,7 @@ use super::geom::{CenterBox, Point};
 use super::shapes::Intersect;
 use super::terminal;
 use ferrigura_elk::json::{JsonEdge, JsonEdgeSection, JsonNode, JsonPoint};
+use ferrigura_jsmath::pow;
 
 /// Padding between a subgraph frame and its children (`SUBGRAPH_PADDING`).
 const SUBGRAPH_PADDING: f64 = 24.0;
@@ -812,7 +813,7 @@ impl<'a> Layout<'a> {
             let last = points[points.len() - 1];
             let second_last = points[points.len() - 2];
             let distance =
-                ((last.x - second_last.x).powi(2) + (last.y - second_last.y).powi(2)).sqrt();
+                (pow(last.x - second_last.x, 2.0) + pow(last.y - second_last.y, 2.0)).sqrt();
             if distance < 2.0 {
                 points.pop();
             }

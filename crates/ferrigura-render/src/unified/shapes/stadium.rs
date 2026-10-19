@@ -4,6 +4,8 @@
 
 use std::f64::consts::PI;
 
+use ferrigura_jsmath::cos;
+
 use super::rough;
 use super::util::{self, Part, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
@@ -18,7 +20,7 @@ fn dimensions(label_width: f64, label_height: f64, pad_x: f64, pad_y: f64) -> (f
     let h = label_height + pad_y;
     // The sampled arcs sit just inside the circles, so the inscribed diameter is the one that
     // clears the label.
-    let inscribed = h * (PI / (2.0 * (ARC_POINTS as f64 - 1.0))).cos();
+    let inscribed = h * cos(PI / (2.0 * (ARC_POINTS as f64 - 1.0)));
     let cap = (inscribed * inscribed - label_height * label_height)
         .max(0.0)
         .sqrt();

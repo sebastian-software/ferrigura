@@ -11,6 +11,7 @@
 
 use std::f64::consts::PI;
 
+use ferrigura_jsmath::{cos, sin};
 use ferrigura_model::config::PieDiagramConfig;
 use ferrigura_model::pie::{PieDiagram, PieSection};
 use ferrigura_model::theme::{ThemeTokens, Token};
@@ -215,7 +216,7 @@ pub fn render(input: &Context<'_, PieDiagram, PieDiagramConfig>) -> Result<Strin
     }
     for (arc, text) in visible.iter().zip(&slice_labels) {
         let middle = (arc.start + arc.end) / 2.0 - PI / 2.0;
-        let (cx, cy) = (label_radius * middle.cos(), label_radius * middle.sin());
+        let (cx, cy) = (label_radius * cos(middle), label_radius * sin(middle));
         let width = layout_width(measure(sans, text, section_size)?);
         body.push_str(&format!(
             "<text class=\"slice\"{} x=\"{}\" y=\"{}\">{}</text>",

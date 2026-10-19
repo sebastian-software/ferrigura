@@ -5,6 +5,8 @@
 //! JavaScript `Math.min` and `Math.max`, which are NaN as soon as one argument is (the reference
 //! reads them on positions that a degenerate edge can make NaN).
 
+use ferrigura_jsmath::{cos, sin};
+
 /// `Infinity`: the start of a box that holds nothing yet (`makeBoundingBox`).
 pub const INFINITY: f64 = f64::INFINITY;
 
@@ -179,7 +181,7 @@ impl Affine {
     #[must_use]
     pub fn rotate_about(degrees: f64, cx: f64, cy: f64) -> Self {
         let radians = degrees.to_radians();
-        let (sin, cos) = (radians.sin(), radians.cos());
+        let (sin, cos) = (sin(radians), cos(radians));
         let rotation = Self {
             m: [cos, sin, -sin, cos, 0.0, 0.0],
         };

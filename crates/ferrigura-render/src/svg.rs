@@ -2,6 +2,7 @@
 
 use std::f64::consts::PI;
 
+use ferrigura_jsmath::{cos, sin};
 use ferrigura_text::EmbeddedFamily;
 
 /// Escapes text for an XML element or attribute value.
@@ -60,7 +61,7 @@ pub fn arc_path(inner: f64, outer: f64, start: f64, end: f64) -> String {
     let a1 = end - half_pi;
     let da = (a1 - a0).abs();
     let clockwise = a1 > a0;
-    let point = |radius: f64, angle: f64| (radius * angle.cos(), radius * angle.sin());
+    let point = |radius: f64, angle: f64| (radius * cos(angle), radius * sin(angle));
 
     if outer.is_nan() || outer <= EPSILON {
         return "M0,0Z".to_owned();
