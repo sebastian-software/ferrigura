@@ -330,60 +330,8 @@ fn js_round(number: f64) -> f64 {
     }
 }
 
-/// `Number.prototype.toString` of JavaScript: the shortest digits that read back to the same
-/// number, in plain notation from 1e-7 up to 1e21 and in exponent notation outside that.
-#[must_use]
-pub fn js_number(value: f64) -> String {
-    if value.is_nan() {
-        return "NaN".to_owned();
-    }
-    if value.is_infinite() {
-        return if value > 0.0 { "Infinity" } else { "-Infinity" }.to_owned();
-    }
-    if value == 0.0 {
-        return "0".to_owned();
-    }
-
-    let sign = if value < 0.0 { "-" } else { "" };
-    let scientific = format!("{:e}", value.abs());
-    let (mantissa, exponent) = scientific
-        .split_once('e')
-        .unwrap_or((scientific.as_str(), "0"));
-    let digits: String = mantissa.chars().filter(char::is_ascii_digit).collect();
-    let exponent: i32 = exponent.parse().unwrap_or(0);
-
-    let count = i32::try_from(digits.len()).unwrap_or(i32::MAX);
-    let point = exponent + 1;
-    let body = if count <= point && point <= 21 {
-        format!(
-            "{digits}{}",
-            "0".repeat(usize::try_from(point - count).unwrap_or(0))
-        )
-    } else if 0 < point && point <= 21 {
-        let split = usize::try_from(point).unwrap_or(0);
-        format!(
-            "{}.{}",
-            digits.get(..split).unwrap_or(digits.as_str()),
-            digits.get(split..).unwrap_or("")
-        )
-    } else if -6 < point && point <= 0 {
-        format!(
-            "0.{}{digits}",
-            "0".repeat(usize::try_from(-point).unwrap_or(0))
-        )
-    } else {
-        let power = point - 1;
-        let power_sign = if power < 0 { "-" } else { "+" };
-        let head = digits.get(..1).unwrap_or("");
-        let tail = digits.get(1..).unwrap_or("");
-        if tail.is_empty() {
-            format!("{head}e{power_sign}{}", power.abs())
-        } else {
-            format!("{head}.{tail}e{power_sign}{}", power.abs())
-        }
-    };
-    format!("{sign}{body}")
-}
+/// `Number.prototype.toString` of JavaScript, which writes the channels of a colour.
+pub use crate::value::number_text as js_number;
 
 /// `hex` of `color/hex.ts`: `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`.
 fn parse_hex(color: &str) -> Option<Channels> {

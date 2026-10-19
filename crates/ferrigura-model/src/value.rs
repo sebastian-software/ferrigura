@@ -121,20 +121,78 @@ impl Value {
     }
 }
 
-/// The text of a number as the SVG writers write it in attributes and styles: `0` for a number too
-/// small to show, `Infinity` and `-Infinity` for the infinite ones, and otherwise the shortest
-/// decimal that reads back as the number. `NaN` is written as `NaN`. This is `svg::number` of
+/// The text of a number as JavaScript writes it (`String(number)`, ECMAScript's
+/// `Number::toString`), which the reference's attributes and styles come from: the shortest digits
+/// that read back as the number, in plain notation from `1e-6` up to `1e21` and in exponent
+/// notation outside that (`1.8369701987210297e-14`, `1e+21`). Both zeros are `0`, and the others
+/// that are not finite are `NaN`, `Infinity` and `-Infinity`. This is `svg::number` of
 /// `ferrigura-render`, which calls it.
 #[must_use]
 pub fn number_text(value: f64) -> String {
-    if value.abs() < 1e-10 {
-        return "0".to_owned();
+    if value.is_nan() {
+        return "NaN".to_owned();
     }
-    // Rust writes `inf`; JavaScript, which the reference's attributes come from, writes `Infinity`.
     if value.is_infinite() {
         return if value > 0.0 { "Infinity" } else { "-Infinity" }.to_owned();
     }
-    format!("{value}")
+    if value == 0.0 {
+        return "0".to_owned();
+    }
+
+    let sign = if value < 0.0 { "-" } else { "" };
+    // `{:e}` writes the shortest digits that read back as the number. When two of them are equally
+    // near, JavaScript takes the even one and Rust may take the other (`1708300000000000.25` is
+    // `…0.2` in JavaScript, `…0.3` in Rust), so the digits are rounded to the same length, with
+    // ties to even, and those are taken when they read back as the number. Only a number with
+    // sixteen digits or more can lie halfway between two candidates.
+    let mut scientific = format!("{:e}", value.abs());
+    let length = scientific.split_once('e').map_or(0, |(mantissa, _)| {
+        mantissa.chars().filter(char::is_ascii_digit).count()
+    });
+    if length >= 16 {
+        let nearest = format!("{:.*e}", length - 1, value.abs());
+        if nearest.parse::<f64>() == Ok(value.abs()) {
+            scientific = nearest;
+        }
+    }
+    let (mantissa, exponent) = scientific
+        .split_once('e')
+        .unwrap_or((scientific.as_str(), "0"));
+    let digits: String = mantissa.chars().filter(char::is_ascii_digit).collect();
+    let exponent: i32 = exponent.parse().unwrap_or(0);
+
+    // The specification's k (the number of digits) and n (the position of the decimal point).
+    let count = i32::try_from(digits.len()).unwrap_or(i32::MAX);
+    let point = exponent + 1;
+    let body = if count <= point && point <= 21 {
+        format!(
+            "{digits}{}",
+            "0".repeat(usize::try_from(point - count).unwrap_or(0))
+        )
+    } else if 0 < point && point <= 21 {
+        let split = usize::try_from(point).unwrap_or(0);
+        format!(
+            "{}.{}",
+            digits.get(..split).unwrap_or(digits.as_str()),
+            digits.get(split..).unwrap_or("")
+        )
+    } else if -6 < point && point <= 0 {
+        format!(
+            "0.{}{digits}",
+            "0".repeat(usize::try_from(-point).unwrap_or(0))
+        )
+    } else {
+        let power = point - 1;
+        let power_sign = if power < 0 { "-" } else { "+" };
+        let head = digits.get(..1).unwrap_or("");
+        let tail = digits.get(1..).unwrap_or("");
+        if tail.is_empty() {
+            format!("{head}e{power_sign}{}", power.abs())
+        } else {
+            format!("{head}.{tail}e{power_sign}{}", power.abs())
+        }
+    };
+    format!("{sign}{body}")
 }
 
 /// The value of a key of an object, or `null` when it has none, as `serde_json` indexes them.

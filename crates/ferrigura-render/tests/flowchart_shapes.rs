@@ -177,7 +177,7 @@ fn tags(markup: &str) -> Vec<Tag> {
 }
 
 /// The points of an SVG path's data, sampled along its curves and arcs. Commands are the ones the
-/// port writes: M, L, C, A, Z and their relative forms, and H and V.
+/// port writes: M, L, C, A, Z and their relative forms, and H and V; a number may have an exponent.
 fn path_points(d: &str) -> Vec<Point> {
     let mut numbers: Vec<f64> = Vec::new();
     let mut commands: Vec<(char, usize)> = Vec::new();
@@ -185,7 +185,10 @@ fn path_points(d: &str) -> Vec<Point> {
     let mut pieces: Vec<(Option<char>, String)> = Vec::new();
     let mut current = String::new();
     for c in chars {
-        if c.is_ascii_alphabetic() {
+        // An `e` inside a number is its exponent (`4.286263797015736e-16`), not a command.
+        let exponent =
+            matches!(c, 'e' | 'E') && !current.is_empty() && !current.contains(['e', 'E']);
+        if c.is_ascii_alphabetic() && !exponent {
             pieces.push((None, std::mem::take(&mut current)));
             pieces.push((Some(c), String::new()));
         } else if c == ',' || c.is_whitespace() {

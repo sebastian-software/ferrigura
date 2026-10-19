@@ -374,14 +374,15 @@ fn a_zero_width_gives_a_zero_radius() {
 }
 
 /// A tension of 0 draws straight segments: the control points of each segment are its end points
-/// (Q16). With the scale 0 to 4, the first point is at (0, -75) and the second at (150, 0).
+/// (Q16). With the scale 0 to 4, the first point is at (0, -75) and the second at (150, 0); the `x`
+/// of the first is `75 * cos(-π / 2)`, which JavaScript writes as `4.592425496802574e-15`.
 #[test]
 fn a_tension_of_0_draws_straight_segments() {
     let svg = draw(
         "---\nconfig:\n  radar:\n    curveTension: 0\n---\nradar-beta\n  axis A, B, C, D\n  curve c1{1, 2, 3, 4}\n  min 0\n  max 4\n",
     );
     assert!(
-        curve_path(&svg, 0).contains("C0,-75 150,0 150,0"),
+        curve_path(&svg, 0).contains("C4.592425496802574e-15,-75 150,0 150,0"),
         "{}",
         curve_path(&svg, 0)
     );

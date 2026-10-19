@@ -31,8 +31,7 @@ pub fn css_text(css: &str) -> String {
         .replace('>', "&gt;")
 }
 
-/// A number as SVG writes it. Rust prints the shortest text that reads back to the same value,
-/// without an exponent for the sizes that diagrams use. The text is written by
+/// A number as the reference writes it in an attribute: JavaScript's `String(number)`, written by
 /// [`ferrigura_model::value::number_text`], which the theme tokens read with.
 #[must_use]
 pub fn number(value: f64) -> String {
