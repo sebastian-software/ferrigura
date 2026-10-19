@@ -206,7 +206,7 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
-            DiagramType::GitGraph => git_graph_render::render(&git_graph_render::GitGraphInput {
+            DiagramType::GitGraph => git_graph_render::render(&Context {
                 diagram: &git_graph::parse_with(
                     text,
                     &git_graph::Options {
@@ -214,8 +214,9 @@ impl Renderer {
                         ..git_graph::options_of(text)?
                     },
                 )?,
-                config: typed_config,
-                themes,
+                section: &typed_config.git_graph,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Er => er_render::render(&er_render::ErInput {

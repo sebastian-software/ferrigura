@@ -78,7 +78,7 @@ mod tests {
     /// The renderers that take a [`Context`](super::Context). None of them reads a theme variable by
     /// name: they read the tokens, and the helpers of `variables` are for the renderers not yet moved.
     /// A renderer joins this list when it moves.
-    const MIGRATED: [(&str, &str); 12] = [
+    const MIGRATED: [(&str, &str); 15] = [
         ("pie", include_str!("pie.rs")),
         ("info", include_str!("info/mod.rs")),
         ("sequence", include_str!("sequence/mod.rs")),
@@ -91,6 +91,9 @@ mod tests {
         ("timeline", include_str!("timeline/mod.rs")),
         ("journey", include_str!("journey/mod.rs")),
         ("journey/style", include_str!("journey/style.rs")),
+        ("git_graph", include_str!("git_graph/mod.rs")),
+        ("git_graph/palette", include_str!("git_graph/palette.rs")),
+        ("git_graph/style", include_str!("git_graph/style.rs")),
     ];
 
     /// The helpers of `variables`, as a call or a path to them.
