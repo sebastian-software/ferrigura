@@ -5,35 +5,38 @@
 //! The rules are the reference's, in its order (`styles.js:1-290`): the order decides which rule
 //! wins for an element that two rules colour, and the attributes take the winner's colour.
 
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::{ThemeTokens, Token};
 
-use crate::theme::Themes;
-use crate::variables::{css_text, text_of};
+use crate::context::ThemeView;
+use crate::svg::css_text;
 
-/// The colour tokens of the gantt theme (`styles.js`): every colour a rule names.
-pub(crate) const COLOUR_TOKENS: [&str; 21] = [
-    "excludeBkgColor",
-    "sectionBkgColor",
-    "sectionBkgColor2",
-    "altSectionBkgColor",
-    "titleColor",
-    "gridColor",
-    "textColor",
-    "todayLineColor",
-    "taskTextDarkColor",
-    "taskTextOutsideColor",
-    "taskTextColor",
-    "taskBkgColor",
-    "taskBorderColor",
-    "activeTaskBkgColor",
-    "activeTaskBorderColor",
-    "doneTaskBkgColor",
-    "doneTaskBorderColor",
-    "critBkgColor",
-    "critBorderColor",
-    "vertLineColor",
-    "taskTextClickableColor",
-];
+/// The colour tokens of the gantt theme (`styles.js`): every colour a rule names, with its name, in
+/// the order the sheet declares them.
+fn colour_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 21] {
+    [
+        ("excludeBkgColor", &tokens.exclude_bkg_color),
+        ("sectionBkgColor", &tokens.section_bkg_color),
+        ("sectionBkgColor2", &tokens.section_bkg_color2),
+        ("altSectionBkgColor", &tokens.alt_section_bkg_color),
+        ("titleColor", &tokens.title_color),
+        ("gridColor", &tokens.grid_color),
+        ("textColor", &tokens.text_color),
+        ("todayLineColor", &tokens.today_line_color),
+        ("taskTextDarkColor", &tokens.task_text_dark_color),
+        ("taskTextOutsideColor", &tokens.task_text_outside_color),
+        ("taskTextColor", &tokens.task_text_color),
+        ("taskBkgColor", &tokens.task_bkg_color),
+        ("taskBorderColor", &tokens.task_border_color),
+        ("activeTaskBkgColor", &tokens.active_task_bkg_color),
+        ("activeTaskBorderColor", &tokens.active_task_border_color),
+        ("doneTaskBkgColor", &tokens.done_task_bkg_color),
+        ("doneTaskBorderColor", &tokens.done_task_border_color),
+        ("critBkgColor", &tokens.crit_bkg_color),
+        ("critBorderColor", &tokens.crit_border_color),
+        ("vertLineColor", &tokens.vert_line_color),
+        ("taskTextClickableColor", &tokens.task_text_clickable_color),
+    ]
+}
 
 /// The state of a task bar: the class `task`, `active`, `done`, `crit` and their combinations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,31 +53,57 @@ pub(crate) enum Bar {
 /// `3` only, so a section beyond them has no colour from them; `vert` sets the stroke of every
 /// vertical marker (`.vert`, which comes last in the sheet).
 pub(crate) fn bar_tokens(
+    tokens: &ThemeTokens,
     bar: Bar,
     section: usize,
     vert: bool,
-) -> (Option<&'static str>, Option<&'static str>) {
+) -> (Option<&Token>, Option<&Token>) {
     let (fill, stroke) = if section < 4 {
         match bar {
-            Bar::Task => (Some("taskBkgColor"), Some("taskBorderColor")),
-            Bar::Active => (Some("activeTaskBkgColor"), Some("activeTaskBorderColor")),
-            Bar::Done => (Some("doneTaskBkgColor"), Some("doneTaskBorderColor")),
-            Bar::Crit => (Some("critBkgColor"), Some("critBorderColor")),
-            Bar::ActiveCrit => (Some("activeTaskBkgColor"), Some("critBorderColor")),
-            Bar::DoneCrit => (Some("doneTaskBkgColor"), Some("critBorderColor")),
+            Bar::Task => (
+                Some(&tokens.task_bkg_color),
+                Some(&tokens.task_border_color),
+            ),
+            Bar::Active => (
+                Some(&tokens.active_task_bkg_color),
+                Some(&tokens.active_task_border_color),
+            ),
+            Bar::Done => (
+                Some(&tokens.done_task_bkg_color),
+                Some(&tokens.done_task_border_color),
+            ),
+            Bar::Crit => (
+                Some(&tokens.crit_bkg_color),
+                Some(&tokens.crit_border_color),
+            ),
+            Bar::ActiveCrit => (
+                Some(&tokens.active_task_bkg_color),
+                Some(&tokens.crit_border_color),
+            ),
+            Bar::DoneCrit => (
+                Some(&tokens.done_task_bkg_color),
+                Some(&tokens.crit_border_color),
+            ),
         }
     } else {
         (None, None)
     };
-    (fill, if vert { Some("vertLineColor") } else { stroke })
+    (
+        fill,
+        if vert {
+            Some(&tokens.vert_line_color)
+        } else {
+            stroke
+        },
+    )
 }
 
 /// The fill token of a section's background: `.section0`, `.section2`, and `.section1`/`.section3`.
-pub(crate) fn section_token(section: usize) -> Option<&'static str> {
+pub(crate) fn section_token(tokens: &ThemeTokens, section: usize) -> Option<&Token> {
     match section {
-        0 => Some("sectionBkgColor"),
-        1 | 3 => Some("altSectionBkgColor"),
-        2 => Some("sectionBkgColor2"),
+        0 => Some(&tokens.section_bkg_color),
+        1 | 3 => Some(&tokens.alt_section_bkg_color),
+        2 => Some(&tokens.section_bkg_color2),
         _ => None,
     }
 }
@@ -83,67 +112,68 @@ pub(crate) fn section_token(section: usize) -> Option<&'static str> {
 /// rule that is `!important` beats one that is not; among rules of the same kind the more specific
 /// (two classes) wins, and then the later one in the sheet. Returns `None` when no rule colours the
 /// text.
-pub(crate) fn text_token(classes: &[&str]) -> Option<&'static str> {
+pub(crate) fn text_token<'t>(tokens: &'t ThemeTokens, classes: &[&str]) -> Option<&'t Token> {
     let has = |class: &str| classes.contains(&class);
     let indexed = |prefix: &str| (0..4).any(|n| has(&format!("{prefix}{n}")));
     let outside = has("taskTextOutsideLeft") || has("taskTextOutsideRight");
     // (important, specificity, sheet order, token). The sheet order is the line order of styles.js.
-    let mut best: Option<(bool, u8, u8, &'static str)> = None;
-    let mut consider = |important: bool, specificity: u8, order: u8, token: &'static str| {
+    let mut best: Option<(bool, u8, u8, &'t Token)> = None;
+    let mut consider = |important: bool, specificity: u8, order: u8, token: &'t Token| {
         let candidate = (important, specificity, order, token);
         if best.is_none_or(|(i, s, o, _)| (important, specificity, order) >= (i, s, o)) {
             best = Some(candidate);
         }
     };
     if outside {
-        consider(false, 1, 1, "taskTextDarkColor");
+        consider(false, 1, 1, &tokens.task_text_dark_color);
     }
     if has("clickable") && (has("taskText") || outside) {
-        consider(true, 2, 2, "taskTextClickableColor");
+        consider(true, 2, 2, &tokens.task_text_clickable_color);
     }
     if has("taskText") {
-        consider(false, 1, 3, "taskTextColor");
+        consider(false, 1, 3, &tokens.task_text_color);
     }
     if indexed("taskTextOutside") {
-        consider(false, 1, 4, "taskTextOutsideColor");
+        consider(false, 1, 4, &tokens.task_text_outside_color);
     }
     if indexed("activeText") {
-        consider(true, 1, 10, "taskTextDarkColor");
+        consider(true, 1, 10, &tokens.task_text_dark_color);
     }
     if indexed("doneText") {
-        consider(true, 1, 11, "taskTextDarkColor");
+        consider(true, 1, 11, &tokens.task_text_dark_color);
         if outside {
-            consider(true, 2, 12, "taskTextOutsideColor");
+            consider(true, 2, 12, &tokens.task_text_outside_color);
         }
     }
     if indexed("doneCritText") {
-        consider(true, 1, 13, "taskTextDarkColor");
+        consider(true, 1, 13, &tokens.task_text_dark_color);
         if outside {
-            consider(true, 2, 14, "taskTextOutsideColor");
+            consider(true, 2, 14, &tokens.task_text_outside_color);
         }
     }
     if has("vertText") {
-        consider(true, 1, 15, "vertLineColor");
+        consider(true, 1, 15, &tokens.vert_line_color);
     }
     if indexed("activeCritText") {
-        consider(true, 1, 16, "taskTextDarkColor");
+        consider(true, 1, 16, &tokens.task_text_dark_color);
     }
     best.map(|(_, _, _, token)| token)
 }
 
 /// The token of the section titles and the diagram title: `titleColor`, or the text colour where
 /// the theme gives none (`options.titleColor || options.textColor`).
-pub(crate) fn title_token(variables: &Value) -> &'static str {
-    match text_of(variables, "titleColor") {
-        Some(colour) if !colour.is_empty() => "titleColor",
-        _ => "textColor",
+pub(crate) fn title_token(tokens: &ThemeTokens) -> &Token {
+    match tokens.title_color.text() {
+        Some(colour) if !colour.is_empty() => &tokens.title_color,
+        _ => &tokens.text_color,
     }
 }
 
 /// The presentation attribute of a colour token, with a leading space, or nothing when the theme
 /// does not give the token.
-pub(crate) fn attribute(variables: &Value, name: &str, token: &str) -> String {
-    text_of(variables, token)
+pub(crate) fn attribute(name: &str, token: &Token) -> String {
+    token
+        .text()
         .map(|colour| format!(" {name}=\"{}\"", crate::svg::escape(&colour)))
         .unwrap_or_default()
 }
@@ -151,13 +181,12 @@ pub(crate) fn attribute(variables: &Value, name: &str, token: &str) -> String {
 /// The `<style>` element of the chart: the colour tokens (one set, or a light and a dark set under
 /// `prefers-color-scheme`), the embedded font faces, and the rules of `styles.js` with every
 /// selector starting with the diagram's id.
-pub(crate) fn style_element(id: &str, themes: Themes<'_>, family: &str, faces: &str) -> String {
-    let variables = themes.primary();
-    let tokens = match themes {
-        Themes::Single(set) => format!("#{id}{{{}}}", declarations(set)),
-        Themes::Schemes { light, dark } => format!(
+pub(crate) fn style_element(id: &str, theme: ThemeView<'_>, family: &str, faces: &str) -> String {
+    let tokens = match theme.dark {
+        None => format!("#{id}{{{}}}", declarations(theme.light)),
+        Some(dark) => format!(
             "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            declarations(light),
+            declarations(theme.light),
             declarations(dark)
         ),
     };
@@ -168,7 +197,11 @@ pub(crate) fn style_element(id: &str, themes: Themes<'_>, family: &str, faces: &
         family.to_owned()
     };
     // `font-size` of the root is the theme's `fontSize`, as `getStyles` writes it (`styles.ts`).
-    let size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
+    let size = theme
+        .light
+        .font_size
+        .text()
+        .unwrap_or_else(|| "16px".to_owned());
     let root = format!("#{id}{{font-family: {font};font-size: {size};fill: var(--textColor);}}");
     let rules: String = rules(&font)
         .into_iter()
@@ -184,11 +217,13 @@ pub(crate) fn style_element(id: &str, themes: Themes<'_>, family: &str, faces: &
 }
 
 /// The custom property declarations of the colour tokens a set gives.
-fn declarations(variables: &Value) -> String {
-    COLOUR_TOKENS
-        .iter()
-        .filter_map(|token| {
-            text_of(variables, token).map(|colour| format!("--{token}: {};", css_text(&colour)))
+fn declarations(tokens: &ThemeTokens) -> String {
+    colour_tokens(tokens)
+        .into_iter()
+        .filter_map(|(name, token)| {
+            token
+                .text()
+                .map(|colour| format!("--{name}: {};", css_text(&colour)))
         })
         .collect()
 }

@@ -248,12 +248,15 @@ impl Renderer {
             }),
             DiagramType::Gantt => {
                 let now = options.now.unwrap_or_else(|| gantt::Options::default().now);
-                gantt_render::render(&gantt_render::GanttInput {
+                gantt_render::render(&Context {
                     diagram: &gantt::parse_with(text, gantt::Options { now })?,
-                    config: typed_config,
-                    themes,
+                    section: &gantt_render::GanttSection {
+                        config: &typed_config.gantt,
+                        now,
+                    },
+                    globals: &prepared.view.globals,
+                    theme: prepared.theme(),
                     id,
-                    now,
                 })
             }
             DiagramType::Mindmap => mindmap_render::render(&mindmap_render::MindmapInput {
