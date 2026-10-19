@@ -199,10 +199,11 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Journey => journey_render::render(&journey_render::JourneyInput {
+            DiagramType::Journey => journey_render::render(&Context {
                 diagram: &journey::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.journey,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::GitGraph => git_graph_render::render(&git_graph_render::GitGraphInput {
