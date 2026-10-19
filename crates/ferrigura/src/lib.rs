@@ -19,11 +19,12 @@ use std::hash::Hasher;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use ferrigura_model::config::{MermaidConfig, SiteConfig, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
+use ferrigura_render::context::{Context, Globals, ThemeView};
 use ferrigura_render::flowchart::{self, FlowchartInput};
-use ferrigura_render::pie::{PieInput, render as render_pie};
+use ferrigura_render::pie::render as render_pie;
 use ferrigura_render::theme::Themes;
 use ferrigura_render::{
     architecture as architecture_render, block as block_render, c4 as c4_render,
@@ -115,6 +116,10 @@ pub struct Renderer {
     light: Cow<'static, Value>,
     /// The variables of `redux-dark-color` with the overrides: the dark scheme.
     dark: Cow<'static, Value>,
+    /// The tokens of `light`, built once with the renderer.
+    light_tokens: ThemeTokens,
+    /// The tokens of `dark`, built once with the renderer.
+    dark_tokens: ThemeTokens,
     /// The views of the diagram types, made at their first render. A view that cannot be resolved
     /// keeps its error, which the render reports as it always has.
     views: Mutex<HashMap<DiagramType, Result<Arc<View>, String>>>,
@@ -130,9 +135,13 @@ impl Renderer {
     pub fn new(config: &Value) -> Self {
         let site = SiteConfig::new(Some(config));
         let overrides = site.user_theme_variables(&Value::empty_object());
+        let light = Theme::ReduxColor.variables_shared(Some(&overrides));
+        let dark = Theme::ReduxDarkColor.variables_shared(Some(&overrides));
         Self {
-            light: Theme::ReduxColor.variables_shared(Some(&overrides)),
-            dark: Theme::ReduxDarkColor.variables_shared(Some(&overrides)),
+            light_tokens: ThemeTokens::from_value(&light),
+            dark_tokens: ThemeTokens::from_value(&dark),
+            light,
+            dark,
             configuration: serde_json::to_string(config).unwrap_or_default(),
             overrides,
             site,
@@ -169,16 +178,18 @@ impl Renderer {
             prepared.id.as_str(),
         );
         match kind {
-            DiagramType::Pie => render_pie(&PieInput {
+            DiagramType::Pie => render_pie(&Context {
                 diagram: &pie::parse(text)?,
-                config: &typed_config.pie,
-                themes,
+                section: &typed_config.pie,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Info => info_render::render(&info_render::InfoInput {
+            DiagramType::Info => info_render::render(&Context {
                 diagram: &info::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &(),
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Timeline => timeline_render::render(&timeline_render::TimelineInput {
@@ -362,32 +373,42 @@ impl Renderer {
                 view: self.view(kind)?,
                 light: Cow::Borrowed(&*self.light),
                 dark: Cow::Borrowed(&*self.dark),
+                light_tokens: Cow::Borrowed(&self.light_tokens),
+                dark_tokens: Cow::Borrowed(&self.dark_tokens),
                 scheme,
             });
         }
         let view = View::resolve(&self.site, kind, &directive).map_err(RenderError::Config)?;
         let overrides = self.site.user_theme_variables(&directive);
-        let (light, dark) = if overrides == self.overrides {
-            (Cow::Borrowed(&*self.light), Cow::Borrowed(&*self.dark))
-        } else {
+        let (light, dark, light_tokens, dark_tokens) = if overrides == self.overrides {
             (
-                scheme_variables(
-                    Theme::ReduxColor,
-                    matches!(scheme, Some(ColorScheme::Light | ColorScheme::Auto)),
-                    &overrides,
-                ),
-                scheme_variables(
-                    Theme::ReduxDarkColor,
-                    matches!(scheme, Some(ColorScheme::Dark | ColorScheme::Auto)),
-                    &overrides,
-                ),
+                Cow::Borrowed(&*self.light),
+                Cow::Borrowed(&*self.dark),
+                Cow::Borrowed(&self.light_tokens),
+                Cow::Borrowed(&self.dark_tokens),
             )
+        } else {
+            let light = scheme_variables(
+                Theme::ReduxColor,
+                matches!(scheme, Some(ColorScheme::Light | ColorScheme::Auto)),
+                &overrides,
+            );
+            let dark = scheme_variables(
+                Theme::ReduxDarkColor,
+                matches!(scheme, Some(ColorScheme::Dark | ColorScheme::Auto)),
+                &overrides,
+            );
+            let light_tokens = Cow::Owned(ThemeTokens::from_value(&light));
+            let dark_tokens = Cow::Owned(ThemeTokens::from_value(&dark));
+            (light, dark, light_tokens, dark_tokens)
         };
         Ok(Prepared {
             id,
             view: Arc::new(view),
             light,
             dark,
+            light_tokens,
+            dark_tokens,
             scheme,
         })
     }
@@ -435,8 +456,8 @@ pub fn render_with(
     shorthand(config).render_with(text, options)
 }
 
-/// The view of a diagram type, its configuration in the diagram's scope and typed, and the variables
-/// of its configured theme.
+/// The view of a diagram type, its configuration in the diagram's scope and typed, the variables of
+/// its configured theme with their tokens, and the globals the renderers read.
 #[derive(Debug)]
 struct View {
     /// The configuration in the diagram's scope, as the renderers that read it untyped see it.
@@ -445,6 +466,10 @@ struct View {
     config: MermaidConfig,
     /// The `themeVariables` of the configuration: the variables of the configured theme.
     configured: Value,
+    /// The tokens of `configured`.
+    configured_tokens: ThemeTokens,
+    /// The global options of the configuration, as the view resolves them.
+    globals: Globals,
 }
 
 impl View {
@@ -468,6 +493,8 @@ impl View {
             .cloned()
             .unwrap_or_else(Value::empty_object);
         Ok(Self {
+            globals: Globals::of(&config),
+            configured_tokens: ThemeTokens::from_value(&configured),
             effective,
             config,
             configured,
@@ -481,10 +508,35 @@ struct Prepared<'a> {
     view: Arc<View>,
     light: Cow<'a, Value>,
     dark: Cow<'a, Value>,
+    light_tokens: Cow<'a, ThemeTokens>,
+    dark_tokens: Cow<'a, ThemeTokens>,
     scheme: Option<ColorScheme>,
 }
 
 impl Prepared<'_> {
+    /// The theme of the render as typed tokens: the scheme that the colour scheme chooses, as
+    /// `themes` gives it, with the light scheme as the primary one.
+    fn theme(&self) -> ThemeView<'_> {
+        match self.scheme {
+            None => ThemeView {
+                light: &self.view.configured_tokens,
+                dark: None,
+            },
+            Some(ColorScheme::Light) => ThemeView {
+                light: &self.light_tokens,
+                dark: None,
+            },
+            Some(ColorScheme::Dark) => ThemeView {
+                light: &self.dark_tokens,
+                dark: None,
+            },
+            Some(ColorScheme::Auto) => ThemeView {
+                light: &self.light_tokens,
+                dark: Some(&self.dark_tokens),
+            },
+        }
+    }
+
     /// The theme variables that the render draws with, as the colour scheme chooses them.
     fn themes(&self) -> Themes<'_> {
         match self.scheme {

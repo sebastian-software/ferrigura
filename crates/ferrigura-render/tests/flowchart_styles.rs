@@ -21,7 +21,7 @@ use ferrigura_model::flowchart::FlowClass;
 use ferrigura_model::theme::Theme;
 use ferrigura_model::value::Value;
 use ferrigura_render::flowchart::style::style_sheet;
-use ferrigura_render::pie::Themes;
+use ferrigura_render::theme::Themes;
 
 const REFERENCE: &str = include_str!("data/flowchart-styles.json");
 

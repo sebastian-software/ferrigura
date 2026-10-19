@@ -6,17 +6,15 @@
 //! (`infoDb.ts`), a build constant: [`MERMAID_VERSION`] is the version of the reference's
 //! `packages/mermaid/package.json`, and the text is the same for every diagram of that build.
 
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::info::InfoDiagram;
 use ferrigura_text::{FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 
 use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
-use crate::common::style::base_style_sheet;
+use crate::common::style::base_style_sheet_tokens;
 use crate::common::viewbox::configure_svg_size;
-use crate::theme::Themes;
-use crate::variables::text_of;
+use crate::context::Context;
 
 /// The version the reference writes: `packages/mermaid/package.json` at the commit of this port.
 pub const MERMAID_VERSION: &str = "12.2.0";
@@ -24,40 +22,39 @@ pub const MERMAID_VERSION: &str = "12.2.0";
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 
-/// What the info renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct InfoInput<'a> {
-    /// The parsed diagram. The info diagram has no content of its own: its title and accessibility
-    /// texts are not drawn by the reference.
-    pub diagram: &'a InfoDiagram,
-    /// The effective configuration, in the info diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
-
-/// Renders the diagram to an SVG document.
+/// Renders the diagram to an SVG document. The info diagram has no configuration section of its own,
+/// so its context has the unit section; its title and accessibility texts are not drawn by the
+/// reference, so the diagram is not read beyond its type.
 ///
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read or subset.
-pub fn render(input: &InfoInput<'_>) -> Result<String, RenderError> {
+pub fn render(input: &Context<'_, InfoDiagram, ()>) -> Result<String, RenderError> {
     let text = format!("v{MERMAID_VERSION}");
     let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
     let families = embed_runs(&[Run {
         text: &text,
         face: sans,
     }])?;
-    let variables = input.themes.primary();
+    let tokens = input.theme.light;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
-    let style = base_style_sheet(input.id, input.themes, &font_family, &font_size, &families);
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
+    let style = base_style_sheet_tokens(
+        input.id,
+        input.theme,
+        &font_family,
+        &font_size,
+        &families,
+        "",
+    );
 
     // The attributes in the order the reference sets them: `mermaidAPI` writes the id, the width and
     // the namespace, `infoRenderer` the size (which adds the style), and the accessibility roles.

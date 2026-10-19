@@ -11,10 +11,13 @@ use std::sync::LazyLock;
 
 use crate::value::Value;
 
+pub use tokens::{Family, ThemeTokens, Token};
+
 mod helpers;
 pub mod khroma;
 mod redux_color;
 mod redux_dark_color;
+pub mod tokens;
 
 /// The result of computing the variables of a theme.
 pub(crate) type Res<T> = Result<T, ThemeError>;

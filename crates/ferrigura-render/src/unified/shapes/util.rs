@@ -328,6 +328,10 @@ pub(super) fn create_path_from_points(points: &[Point]) -> String {
 
 /// `generateCirclePoints` (`shapes/util.ts:295-323`): `count` points over the arc from
 /// `start_degrees` to `end_degrees`. Both coordinates are negated, as the reference does.
+///
+/// `#[inline]` keeps the build that the outputs were compared with: without it the last digits of
+/// the points depend on whether the optimiser inlines the function (`docs-port/typed-views.md`).
+#[inline]
 #[must_use]
 pub(super) fn generate_circle_points(
     centre_x: f64,

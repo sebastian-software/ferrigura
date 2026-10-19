@@ -13,6 +13,7 @@ pub mod block;
 pub mod c4;
 pub mod class;
 pub mod common;
+pub mod context;
 pub mod er;
 pub mod event_modeling;
 pub mod flowchart;
