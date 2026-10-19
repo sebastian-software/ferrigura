@@ -7,6 +7,7 @@ use super::util::{Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::svg::number;
 use crate::unified::geom::{BBox, Point};
+use crate::unified::palette::{palette, palette_slot};
 
 /// The space under the title, where the separator is drawn.
 const SEPARATOR_GAP: f64 = 8.0;
@@ -20,6 +21,28 @@ const RADIUS: f64 = 8.0;
 const DOT_RADIUS: f64 = 2.5;
 /// The distance between the centres of two dots.
 const DOT_SPACING: f64 = 10.0;
+
+/// The colour attribute of a collapsed agentflow container: the `data-color-id` of its palette slot,
+/// written on the node's group after its look (`stampColorSlot`, `collapsedGroup.ts` 73-77). Only the
+/// `flow` containers take it here; the shared shape of the other diagrams does not stamp it yet, and its
+/// output stays as it is. Empty when the theme has no palette or the container has no slot.
+pub(super) fn colour_attribute(input: &ShapeInput<'_>) -> String {
+    let is_flow = input
+        .node
+        .metadata
+        .get("containerType")
+        .and_then(|value| value.as_str())
+        == Some("flow");
+    if !is_flow {
+        return String::new();
+    }
+    let Some(palette) = palette(input.config.globals, input.config.theme) else {
+        return String::new();
+    };
+    palette_slot(input.node.color_index, &palette).map_or_else(String::new, |slot| {
+        format!(" data-color-id=\"color-{slot}\"")
+    })
+}
 
 /// `collapsedGroup.ts`: the box around the title, the dashed separator under it, and three dots.
 /// The title is moved up by half the separator gap and the indicator row, so the title sits in

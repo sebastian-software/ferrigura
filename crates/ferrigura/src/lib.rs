@@ -23,6 +23,7 @@ use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
+use ferrigura_render::agentflow::AgentflowSection;
 use ferrigura_render::block::BlockSection;
 use ferrigura_render::context::{Context, Globals, ThemeView};
 use ferrigura_render::flowchart;
@@ -382,7 +383,10 @@ impl Renderer {
             }),
             DiagramType::Agentflow => agentflow_render::render(&Context {
                 diagram: &agentflow::parse(text)?,
-                section: &typed_config.agentflow,
+                section: &AgentflowSection {
+                    agentflow: &typed_config.agentflow,
+                    unified: section,
+                },
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,

@@ -360,6 +360,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
     // draws beside its label (its rows).
     let mut extent = None;
     let mut texts = Vec::new();
+    let mut group_attributes = String::new();
     let part = match kind {
         Kind::SquareRect => rect::square_rect(input),
         Kind::RoundedRect => rect::rounded_rect(input),
@@ -383,7 +384,10 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::StateStart => state::state_start(input),
         Kind::StateEnd => state::state_end(input),
         Kind::Anchor => state::anchor(input),
-        Kind::CollapsedGroup => collapsed_group::collapsed_group(input),
+        Kind::CollapsedGroup => {
+            group_attributes = collapsed_group::colour_attribute(input);
+            collapsed_group::collapsed_group(input)
+        }
         Kind::RectWithTitle => {
             // The title and the rows are labels of the shape, so the font subsets cover them.
             let (part, title_and_rows) = rect_with_title::rect_with_title(input)?;
@@ -465,7 +469,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         after_label: part.after_label,
         label_offset: part.label_offset,
         label: part.label,
-        group_attributes: String::new(),
+        group_attributes,
         bbox,
         intersect: part.intersect,
         extent,

@@ -85,6 +85,9 @@ pub(crate) struct Db {
     sub_count: usize,
     /// The most edges a diagram may have.
     max_edges: usize,
+    /// `vertexCounter`: the number of `addVertex` calls that reach a vertex record, and of connector
+    /// records created. A vertex's DOM id takes the counter of its first record.
+    vertex_counter: usize,
 }
 
 impl Db {
@@ -98,12 +101,14 @@ impl Db {
             global_nodes: HashSet::new(),
             sub_count: 0,
             max_edges,
+            vertex_counter: 0,
         }
     }
 
     /// The model the parse leaves. `title` is the front matter's title (`setDiagramTitle`).
     pub(crate) fn into_model(mut self, title: String) -> AgentflowDiagram {
         self.model.title = title;
+        self.model.default_interpolate = self.default_interpolate.take();
         self.model.connectors = self
             .connector_ids
             .iter()
@@ -247,12 +252,15 @@ impl Db {
                     link: None,
                     link_target: None,
                     is_connector: None,
+                    dom_id: dom_id(id, self.vertex_counter),
                 });
                 let pos = self.model.vertices.len() - 1;
                 self.index.insert(id.to_owned(), pos);
                 pos
             }
         };
+        // `this.vertexCounter++` (`agentflowDb.ts:480`): every call that reaches the record counts.
+        self.vertex_counter += 1;
         let vertex = &mut self.model.vertices[pos];
         if let Some(text) = text {
             let mut label = sanitize_text(js_trim(&text.text));
@@ -424,25 +432,31 @@ impl Db {
     }
 
     /// `updateLink(positions, style)` (`agentflowDb.ts:848-870`). The style array is shared by the
-    /// edges of one statement, and a style with no `fill` gets `fill:none` once.
+    /// positions of one statement: a style with no `fill` gets `fill:none` once, when it sets an edge,
+    /// and `default` keeps the same array (`defaultStyle`), so it has the `fill:none` too.
     pub(crate) fn update_link(
         &mut self,
         positions: &[Position],
         style: &[String],
     ) -> Result<(), DbError> {
         let mut style = style.to_vec();
+        let mut sets_edge = false;
         for position in positions {
             if let Position::Index(text) = position {
                 self.edge_index(text)?;
-                if !style.is_empty() && !style.iter().any(|s| s.starts_with("fill")) {
-                    style.push("fill:none".to_owned());
-                }
+                sets_edge = true;
             }
         }
+        if sets_edge && !style.is_empty() && !style.iter().any(|s| s.starts_with("fill")) {
+            style.push("fill:none".to_owned());
+        }
         for position in positions {
-            if let Position::Index(text) = position {
-                let pos = self.edge_index(text)?;
-                self.model.edges[pos].style = Some(style.clone());
+            match position {
+                Position::Default => self.model.default_style = Some(style.clone()),
+                Position::Index(text) => {
+                    let pos = self.edge_index(text)?;
+                    self.model.edges[pos].style = Some(style.clone());
+                }
             }
         }
         Ok(())
@@ -635,7 +649,9 @@ impl Db {
                 link: None,
                 link_target: None,
                 is_connector: Some(true),
+                dom_id: dom_id(&id, self.vertex_counter),
             };
+            self.vertex_counter += 1;
             match self.index.get(&id) {
                 Some(&pos) => self.model.vertices[pos] = vertex,
                 None => {
@@ -693,6 +709,12 @@ impl Db {
 }
 
 /// `sanitizeNodeLabelType(labelType)`: the three kinds are kept, anything else is `markdown`.
+/// The DOM id of a vertex record: `MERMAID_DOM_ID_PREFIX + id + '-' + vertexCounter`
+/// (`agentflowDb.ts:474`, `:1394`).
+fn dom_id(id: &str, counter: usize) -> String {
+    format!("agentflow-{id}-{counter}")
+}
+
 fn sanitize_label_type(kind: Option<&str>) -> &str {
     match kind {
         Some(kind @ ("markdown" | "string" | "text")) => kind,
