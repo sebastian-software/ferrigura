@@ -45,4 +45,17 @@ Together about 28,000 to 35,000 lines of Rust, of which swimlanes is a third.
 2. **Registry scaffold**, one task, merged before the parsers.
 3. **Parsers**, one task per type: model, parser and DB, specs, differential. Done on 2026-10-18 for the eight types: every collected input without a difference (agentflow 287, cynefin 125, radar 208, railroad 418, tree view 176, use case 291, venn 277, wardley 222), and each type's configuration section compared. Venn's DB keeps the sets in declaration order; the `Object.keys` order is the layout library's, and its port applies it.
 4. **Layout engines and shared code**: the venn library (done on 2026-10-18: `ferrigura-venn`, exact on 447 cases captured in Chromium), the swimlane layout (its own milestone, on `sebastian/port-swimlanes`), agentflow's `flowGroup` cluster.
-5. **Renderers**, after issue #4 (merged on 2026-10-19), each checked with `pnpm port:geometry <type>`. Started on 2026-10-19, one task per type, on the rules of [P3-RENDERERS.md](./P3-RENDERERS.md).
+5. **Renderers**, after issue #4 (merged on 2026-10-19), each checked with `pnpm port:geometry <type>`. Done on 2026-10-19 for the eight types, one task per type, on the rules of [P3-RENDERERS.md](./P3-RENDERERS.md): every comparable fixture and probe within tolerance (257 in all; 6 handDrawn fixtures and 2 with emoji and symbols not compared), every differential without a difference, and the 28 032 corpus renders of the 24 types ported before P3 unchanged. The results per type are in [STATUS.md](./STATUS.md).
+
+## Follow-ups
+
+Found by the renderer tasks and left out of them, because each changes output that the corpus comparison kept fixed, or is outside a renderer:
+
+- **Unified edges and clusters** (agentflow): the edge path ids lack the `<diagramId>-` prefix of `edges.js`, the edges write no `data-points`, the collapsed groups of the other types have no `data-color-id` and their label group no `style=""`, the label background has no `style="stroke: none"`. Geometry is equal; the markup differs.
+- **Numbers as text**: `svg::number` writes a magnitude below 1e-10 as `0` and never uses exponent notation, where JavaScript writes `1.8369701987210297e-14` (radar, wardley). Geometry is equal.
+- **quadrant chart**: its style sheet writes the `@font-face` rules twice (once from `base_style_sheet`, once of its own).
+- **Shared text helpers**: the shown text of a diagram string and the template text of a theme value are copied in packet, radar, tree view, wardley, quadrant chart, timeline and treemap; one helper in `common/` would do.
+- **Configuration layer**: the typed configuration replaces a value of the wrong type by the schema default before a renderer sees it, where the reference keeps it (tree view's `extensionIcons` with a number fails the reference's render; cynefin's `boundaryAmplitude: null`).
+- **Default theme**: railroad and radar keep the default theme's values that the reference merges under the active theme as tables of their own; shipping the default theme's variables would replace them.
+- **Harness**: the geometry harness compares geometry, not the style sheet's declarations; railroad's colour fallback was caught by a spec only.
+- **Not reproduced**: agentflow's `inheritDir` with a repeated container, a non-text edge interpolation, `animate` other than `true`, and its diagnostics in the render; use case's mutation check of the quirk tests was not run.
