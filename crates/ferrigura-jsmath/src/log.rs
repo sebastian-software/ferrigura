@@ -1,11 +1,13 @@
-//! The natural logarithm as fdlibm computes it in V8 (`ieee754::log`, fdlibm's `e_log.c`). The
-//! multiply-adds follow V8's compiler (see [`crate::fused`]).
+//! The natural and the decimal logarithm as fdlibm computes them in V8 (`ieee754::log` and
+//! `ieee754::log10`, fdlibm's `e_log.c` and `e_log10.c`). The multiply-adds follow V8's compiler (see
+//! [`crate::fused`]).
 
 use crate::constants::{
     LOG_LG1, LOG_LG2, LOG_LG3, LOG_LG4, LOG_LG5, LOG_LG6, LOG_LG7, LOG_LN2_HI, LOG_LN2_LO,
+    LOG10_2HI, LOG10_2LO, LOG10_IVLN10, LOG10_TWO54,
 };
 use crate::fused::{mul_add, mul_sub, sub_mul};
-use crate::words::{high_word, low_word, set_high_word};
+use crate::words::{from_words, high_word, low_word, set_high_word};
 
 /// `ln(x)` (V8's `ieee754::log`). Negative numbers give `NaN`, zero gives `-Infinity`.
 #[must_use]
@@ -81,6 +83,45 @@ pub fn log(x: f64) -> f64 {
     } else {
         mul_sub(dk, LOG_LN2_HI, mul_sub(s, f - r, dk * LOG_LN2_LO) - f)
     }
+}
+
+/// `log10(x)` (V8's `ieee754::log10`): with `x = 2^n * m`, `n` lowered by one for a negative `n`, the
+/// result is `n * log10_2hi + (n * log10_2lo + ivln10 * log(m))`. Negative numbers give `NaN`, zero
+/// gives `-Infinity`.
+#[must_use]
+pub fn log10(x: f64) -> f64 {
+    let mut x = x;
+    let mut hx = high_word(x);
+    let mut lx = low_word(x);
+    let mut k: i32 = 0;
+    if hx < 0x0010_0000 {
+        // x < 2^-1022: zero, negative, or subnormal.
+        if ((hx & 0x7FFF_FFFF) as u32 | lx) == 0 {
+            return f64::NEG_INFINITY;
+        }
+        if hx < 0 {
+            return f64::NAN;
+        }
+        // Scale subnormals up by 2^54.
+        k -= 54;
+        x *= LOG10_TWO54;
+        hx = high_word(x);
+        lx = low_word(x);
+    }
+    if hx >= 0x7FF0_0000 {
+        return x + x;
+    }
+    if hx == 0x3FF0_0000 && lx == 0 {
+        return 0.0;
+    }
+    k += (hx >> 20) - 1023;
+    // 1 when k is negative: m is then in [1/2, 1), and in [1, 2) otherwise
+    let i = ((k as u32) & 0x8000_0000) >> 31;
+    hx = (hx & 0x000F_FFFF) | ((0x3FF - i as i32) << 20);
+    let y = f64::from(k + i as i32);
+    x = from_words(hx, lx);
+    let z = mul_add(y, LOG10_2LO, LOG10_IVLN10 * log(x));
+    mul_add(y, LOG10_2HI, z)
 }
 
 #[cfg(test)]
