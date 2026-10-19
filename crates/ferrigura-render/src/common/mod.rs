@@ -38,3 +38,41 @@ pub fn is_js_whitespace(c: char) -> bool {
 pub fn js_trim(text: &str) -> &str {
     text.trim_matches(is_js_whitespace)
 }
+
+/// The text an SVG text node shows for a string of the diagram. The reference's text is the string
+/// itself; its markup escapes it, and `decodeEntities` (`utils.ts` 904-906) turns the placeholders of
+/// the entities the user typed into the references they stand for. The browser reads those
+/// references, so the shown text is the string with its placeholders read and its references decoded
+/// (`decode_references`), and the element that holds it escapes it again on output. A title that
+/// holds `&amp;` after sanitising therefore shows `&amp;`, as the reference's does.
+#[must_use]
+pub fn shown_text(text: &str) -> String {
+    let escaped = text
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;");
+    ferrigura_syntax::sanitize::decode_references(&decode_entities(&escaped))
+}
+
+/// `${value}`: the text that a template literal of the reference writes for a theme value. A number
+/// is written as JavaScript writes it, a list as its items joined with commas (`null` items empty), an
+/// object as `[object Object]`, and `null` as `null`. A theme value that is text is written as it is.
+#[must_use]
+pub fn template_text(value: &ferrigura_model::value::Value) -> String {
+    use ferrigura_model::value::Value;
+    match value {
+        Value::String(text) => text.clone(),
+        Value::Number(number) => crate::svg::number(*number),
+        Value::Bool(flag) => flag.to_string(),
+        Value::Null => "null".to_owned(),
+        Value::Array(items) => items
+            .iter()
+            .map(|item| match item {
+                Value::Null => String::new(),
+                other => template_text(other),
+            })
+            .collect::<Vec<_>>()
+            .join(","),
+        Value::Object(_) => "[object Object]".to_owned(),
+    }
+}
