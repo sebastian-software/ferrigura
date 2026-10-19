@@ -11,9 +11,9 @@
 //! (`packages/mermaid/src/themes/theme-redux-color.js` and `theme-redux-dark-color.js`) and the names
 //! that the renderers read, including the names built at run time. The indexed names (`pie1` to
 //! `pie12`, `cScale0` to `cScale11`, `fillType0` to `fillType7`, and the others the themes number)
-//! are [`Family`]s, read by index. The groups `xyChart`, `packet` and `treeView` are structs of their own. A name
-//! that only a user's overrides set, and that no renderer reads, is not a token: the map keeps it,
-//! and nothing reads it.
+//! are [`Family`]s, read by index. The groups of the diagram types (`xyChart`, `packet`, `treeView`,
+//! `radar`) are structs of their own. A name that only a user's overrides set, and that no renderer
+//! reads, is not a token: the map keeps it, and nothing reads it.
 
 use std::collections::BTreeMap;
 
@@ -313,6 +313,25 @@ token_struct! {
 }
 
 token_struct! {
+    /// The `radar` group of the theme variables: the options of the radar diagram's styles
+    /// (`radar/style.rs`, the merge of `styles.ts` 35-38 over the default theme's `radar` section,
+    /// `theme-default.js` 338-350). The redux themes give no group, so the defaults apply; a user's
+    /// `themeVariables.radar` sets any of these. `legendBoxSize` is not in the list: no reference code
+    /// reads it.
+    pub struct RadarTokens {
+        axis_color = "axisColor": token,
+        axis_stroke_width = "axisStrokeWidth": token,
+        axis_label_font_size = "axisLabelFontSize": token,
+        curve_opacity = "curveOpacity": token,
+        curve_stroke_width = "curveStrokeWidth": token,
+        graticule_color = "graticuleColor": token,
+        graticule_opacity = "graticuleOpacity": token,
+        graticule_stroke_width = "graticuleStrokeWidth": token,
+        legend_font_size = "legendFontSize": token,
+    }
+}
+
+token_struct! {
     /// The theme variables as typed tokens: one field per variable of the redux themes and of the
     /// renderers. Built once per resolved theme with [`ThemeTokens::from_value`].
     pub struct ThemeTokens {
@@ -509,6 +528,9 @@ token_struct! {
 
         // The tree view's group (P3, `treeView`): a block of its own, at the end of the list.
         tree_view = "treeView": group(TreeViewTokens),
+
+        // The radar diagram's block: its group of the theme variables, at the end of the list.
+        radar = "radar": group(RadarTokens),
     }
 }
 

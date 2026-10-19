@@ -82,7 +82,7 @@ DB:
 
 ## 8. The specs and the differential
 
-- `radar_spec.rs` ports the parser and DB tests of `radar.spec.ts` (9 pass). The four renderer tests (`relativeRadius`, `closedRoundCurve`, and the two `draw` calls) are ignored with the reason: the renderer is not ported yet.
+- `radar_spec.rs` ports the parser and DB tests of `radar.spec.ts` (9 pass). The renderer tests (`relativeRadius`, `closedRoundCurve`, and the two `draw` calls) are in `crates/ferrigura-render/tests/radar_render_spec.rs`, and the quirks of section 6.11 are pinned in `radar_quirks.rs`.
 - `radar_grammar.rs` (27 tests) and `radar_db_spec.rs` (35 tests) pin the probes of NOTES sections 2.5 and 3.
 - `pnpm port:diff radar` collects 203 inputs (the fixtures, the spec literals and the explicit cases, which include every text of the Rust tests and the probes): 135 accepted by the reference, 0 differences, and no named exception.
 - `pnpm port:diff config` has 0 differences, with the radar section compared on its 203 inputs.

@@ -121,6 +121,24 @@ mod tests {
             }
         }
 
+        // The radar group: an object, read by name; a theme without it gives none (the defaults apply).
+        match map.get("radar") {
+            Some(radar) if radar.is_object() => {
+                let group = tokens.radar.as_ref().expect("an object is the group");
+                for (name, token) in group.entries() {
+                    assert_token(radar, &name, token);
+                }
+            }
+            other => {
+                assert!(tokens.radar.is_none());
+                if let Some(radar) = other {
+                    for name in ferrigura_model::theme::tokens::RadarTokens::NAMES {
+                        assert_eq!(text_of(radar, name), None);
+                    }
+                }
+            }
+        }
+
         // The packet group: the renderer reads its options from the object by key, as a map of values.
         let packet = map.get("packet").and_then(Value::as_object);
         match &tokens.packet {
@@ -255,6 +273,11 @@ mod tests {
                 .iter()
                 .map(|name| (*name).to_owned()),
         );
+        names.extend(
+            ferrigura_model::theme::tokens::RadarTokens::NAMES
+                .iter()
+                .map(|name| (*name).to_owned()),
+        );
         for prefix in [
             "pie",
             "venn",
@@ -282,6 +305,7 @@ mod tests {
                 "xyChart",
                 "packet",
                 "treeView",
+                "radar",
             ]
             .map(str::to_owned),
         );
