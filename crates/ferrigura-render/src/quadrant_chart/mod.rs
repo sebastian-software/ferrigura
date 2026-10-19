@@ -26,7 +26,7 @@ use crate::common::style::base_style_sheet;
 use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::common::{Element, decode_entities};
 use crate::context::Context;
-use crate::svg::{escape, font_faces};
+use crate::svg::escape;
 use builder::{Chart, HorizontalPos, Line, Point, Quadrant, Text, Theme, VerticalPos};
 
 /// The XML namespace of the root element.
@@ -79,12 +79,6 @@ pub fn render(
         &families,
         "",
     );
-    let faces = if families.is_empty() {
-        String::new()
-    } else {
-        font_faces(&families)
-    };
-
     // The accessible texts keep the placeholders: the whole-SVG pass decodes them in `markup`.
     let title_text = &input.diagram.acc_title;
     let description = &input.diagram.acc_descr;
@@ -131,7 +125,7 @@ pub fn render(
                 .raw_text(markup(description)),
         );
     }
-    root.push_child(Element::new("style").raw_text(format!("{style}{faces}")));
+    root.push_child(Element::new("style").raw_text(style));
     // The empty group `mermaidAPI` appends before the renderer draws (`mermaidAPI.ts:419`).
     root.push_child(Element::new("g"));
     root.push_child(
