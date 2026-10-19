@@ -8,6 +8,7 @@
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
+use ferrigura_render::unified::Section;
 use ferrigura_render::unified::data::Edge;
 use ferrigura_render::unified::edges::paint_paths;
 use ferrigura_render::unified::geom::Point;
@@ -117,7 +118,12 @@ fn the_paths_match_the_reference() {
     let mut failures = Vec::new();
     for case in cases {
         let edge = edge_from(case);
-        let painted = paint_paths(std::slice::from_ref(&edge), "svg", FLOWCHART, &config);
+        let painted = paint_paths(
+            std::slice::from_ref(&edge),
+            "svg",
+            FLOWCHART,
+            &Section::of(&config),
+        );
         let actual = d_attribute(&painted[0].svg);
         let expected = case["d"].as_str().expect("d");
         let rounded = case["curve"].as_str() == Some("rounded");
@@ -237,7 +243,7 @@ fn a_neo_edge_matches_the_reference_svg() {
         std::slice::from_ref(&edge),
         "svg",
         FLOWCHART,
-        &MermaidConfig::default(),
+        &Section::of(&MermaidConfig::default()),
     );
     let svg = &painted[0].svg;
     assert!(svg.contains(" d=\"M280,53L280,150\""), "{svg}");

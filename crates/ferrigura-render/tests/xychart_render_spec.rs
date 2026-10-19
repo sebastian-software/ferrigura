@@ -5,11 +5,11 @@
 //! these tests pin the structure the comparison relies on.
 
 use ferrigura_model::config::{defaults, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
-use ferrigura_render::theme::Themes;
-use ferrigura_render::xychart::{XyChartInput, render};
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::xychart::render;
 use ferrigura_syntax::xychart::parse;
 
 /// Renders a chart with the given `xyChart` settings and the redux-color theme (or dark).
@@ -29,10 +29,16 @@ fn draw_with(text: &str, xy_chart: &[(&str, Value)], dark: bool) -> Result<Strin
     } else {
         Theme::ReduxColor.variables(None)
     };
-    render(&XyChartInput {
+    let tokens = ThemeTokens::from_value(&variables);
+    let globals = Globals::of(&config);
+    render(&Context {
         diagram: &diagram,
-        config: &config,
-        themes: Themes::Single(&variables),
+        section: &config.xy_chart,
+        globals: &globals,
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id: "chart",
     })
 }

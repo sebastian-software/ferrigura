@@ -4,10 +4,10 @@
 //! `pnpm port:geometry kanban`; the markup is the reference's, quirks included.
 
 use ferrigura_model::config::{defaults, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
-use ferrigura_render::kanban::{KanbanInput, render};
-use ferrigura_render::theme::Themes;
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::kanban::{KanbanSections, render};
 
 /// The first fixture of `e2e/diagrams/kanban/pr-check`: three sections, one duplicate id.
 const FIXTURE_ONE: &str = "kanban
@@ -40,10 +40,19 @@ fn draw(text: &str, id: &str, kanban: &[(&str, Value)]) -> String {
     }
     let config = typed(&value).expect("the configuration is typed");
     let variables = Theme::ReduxColor.variables(None);
-    render(&KanbanInput {
+    let tokens = ThemeTokens::from_value(&variables);
+    let sections = KanbanSections {
+        kanban: &config.kanban,
+        mindmap: &config.mindmap,
+    };
+    render(&Context {
         diagram: &diagram,
-        config: &config,
-        themes: Themes::Single(&variables),
+        section: &sections,
+        globals: &Globals::of(&config),
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id,
     })
     .expect("the kanban renders")

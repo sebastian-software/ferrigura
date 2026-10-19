@@ -6,7 +6,7 @@
 mod builder;
 mod config;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::XYChartConfig;
 use ferrigura_model::xychart::XyChartDiagram;
 use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 
@@ -16,9 +16,8 @@ use crate::common::d3::js_number;
 use crate::common::style::base_style_sheet;
 use crate::common::viewbox::configure_svg_size;
 use crate::common::{Element, decode_entities};
+use crate::context::Context;
 use crate::svg::{escape, font_faces};
-use crate::theme::Themes;
-use crate::variables::text_of;
 use builder::interfaces::{Drawable, HorizontalPos, PathElem, RectElem, TextElem, VerticalPos};
 
 /// The XML namespace of the root element.
@@ -31,31 +30,17 @@ const RIGHT_MARGIN: f64 = 10.0;
 /// The space between a vertical bar's top and its label (`yOffset`).
 const Y_OFFSET: f64 = 10.0;
 
-/// What the xychart renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct XyChartInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a XyChartDiagram,
-    /// The effective configuration, in the xychart diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
-
 /// Renders the diagram to an SVG document.
 ///
 /// # Errors
 ///
 /// Returns an error if the chart has no plot, if a bar's label has no value to read (R1), or if the
 /// bundled font cannot be read.
-pub fn render(input: &XyChartInput<'_>) -> Result<String, RenderError> {
+pub fn render(input: &Context<'_, XyChartDiagram, XYChartConfig>) -> Result<String, RenderError> {
     let diagram = input.diagram;
-    let variables = input.themes.primary();
-    let config = config::chart_config(input.config, diagram.orientation == "horizontal");
-    let theme = config::theme_config(variables);
+    let tokens = input.theme.light;
+    let config = config::chart_config(input.section, diagram.orientation == "horizontal");
+    let theme = config::theme_config(tokens.xy_chart.as_ref());
     let data = config::chart_data(diagram);
 
     // `labelData` is read before the chart is built (`xychartRenderer.ts` 17). With no plot, the
@@ -114,11 +99,23 @@ pub fn render(input: &XyChartInput<'_>) -> Result<String, RenderError> {
     }];
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
-    let style = base_style_sheet(input.id, input.themes, &font_family, &font_size, &families);
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
+    let style = base_style_sheet(
+        input.id,
+        input.theme,
+        &font_family,
+        &font_size,
+        &families,
+        "",
+    );
     let faces = if families.is_empty() {
         String::new()
     } else {

@@ -15,7 +15,7 @@
 
 pub mod builder;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::QuadrantChartConfig;
 use ferrigura_model::quadrant_chart::QuadrantChartDiagram;
 use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 
@@ -25,37 +25,24 @@ use crate::common::d3::js_number;
 use crate::common::style::base_style_sheet;
 use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::common::{Element, decode_entities};
+use crate::context::Context;
 use crate::svg::{escape, font_faces};
-use crate::theme::Themes;
-use crate::variables::text_of;
 use builder::{Chart, HorizontalPos, Line, Point, Quadrant, Text, Theme, VerticalPos};
 
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
-
-/// What the quadrant chart renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct QuadrantChartInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a QuadrantChartDiagram,
-    /// The effective configuration, in the quadrant chart diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
 
 /// Renders the diagram to an SVG document.
 ///
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read or subset.
-pub fn render(input: &QuadrantChartInput<'_>) -> Result<String, RenderError> {
-    let config = &input.config.quadrant_chart;
-    let variables = input.themes.primary();
-    let theme = Theme::new(variables);
+pub fn render(
+    input: &Context<'_, QuadrantChartDiagram, QuadrantChartConfig>,
+) -> Result<String, RenderError> {
+    let config = input.section;
+    let tokens = input.theme.light;
+    let theme = Theme::new(tokens);
     let chart = builder::build(config, input.diagram, &theme);
 
     // The groups of `g.main` (`quadrantRenderer.ts` 64-68), filled in the reference's order.
@@ -73,13 +60,25 @@ pub fn render(input: &QuadrantChartInput<'_>) -> Result<String, RenderError> {
     }];
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     // The diagram's own rules are none (`styles.ts` of the type is `() => ''`), so the sheet is
     // the base one.
-    let style = base_style_sheet(input.id, input.themes, &font_family, &font_size, &families);
+    let style = base_style_sheet(
+        input.id,
+        input.theme,
+        &font_family,
+        &font_size,
+        &families,
+        "",
+    );
     let faces = if families.is_empty() {
         String::new()
     } else {

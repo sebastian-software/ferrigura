@@ -14,7 +14,7 @@ mod style;
 
 use std::collections::HashMap;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::SankeyDiagramConfig;
 use ferrigura_model::sankey::SankeyDiagram;
 use ferrigura_model::value::Value;
 use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, text_box};
@@ -25,13 +25,12 @@ use crate::common::Element;
 use crate::common::d3::{
     OrdinalScale, SCHEME_TABLEAU10, js_number, js_round, link_horizontal, math_max,
 };
-use crate::common::style::base_style_sheet_with;
+use crate::common::style::base_style_sheet;
 use crate::common::text::{collapse_white_space, collapsed_box, collapsed_width};
 use crate::common::viewbox::{BBox as ViewBox, setup_graph_viewbox};
+use crate::context::Context;
 use crate::svg::number;
-use crate::theme::Themes;
 use crate::unified::geom::BBox;
-use crate::variables::{px, text_of};
 use layout::{Align, LinkSpec, Node, Settings, sankey};
 use style::{Schemes, own_rules};
 
@@ -46,20 +45,6 @@ const LABEL_GAP: f64 = 6.0;
 
 /// The padding a label gets for its values: `nodePadding + 15` (`sankeyRenderer.ts` 124).
 const VALUE_PADDING: f64 = 15.0;
-
-/// What the sankey renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct SankeyInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a SankeyDiagram,
-    /// The effective configuration, in the sankey diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
 
 /// How the links are painted (`sankeyRenderer.ts` 239-273): a gradient from the source colour to the
 /// target colour, the colour of one end, or a colour the configuration gives.
@@ -90,10 +75,11 @@ struct Label {
 ///
 /// Returns an error if the layout finds a cycle (`circular link`, the one error the reference
 /// throws from the layout), or if a bundled font cannot be read or subset.
-pub fn render(input: &SankeyInput<'_>) -> Result<String, RenderError> {
-    let config = &input.config.sankey;
-    let themes = input.themes;
-    let variables = themes.primary();
+pub fn render(
+    input: &Context<'_, SankeyDiagram, SankeyDiagramConfig>,
+) -> Result<String, RenderError> {
+    let config = input.section;
+    let tokens = input.theme.light;
     let id = input.id;
     let diagram = input.diagram;
     let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
@@ -154,14 +140,19 @@ pub fn render(input: &SankeyInput<'_>) -> Result<String, RenderError> {
     let runs: Vec<Run<'_>> = drawn.iter().map(|text| Run { text, face: sans }).collect();
     let families = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let text_size = px(variables, "fontSize").unwrap_or(16.0);
-    let schemes = Schemes::new(themes);
-    let style = base_style_sheet_with(
+    let text_size = tokens.font_size.px().unwrap_or(16.0);
+    let schemes = Schemes::new(input.theme);
+    let style = base_style_sheet(
         id,
-        themes,
+        input.theme,
         &font_family,
         &format!("{}px", number(text_size)),
         &families,

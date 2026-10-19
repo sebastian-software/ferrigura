@@ -9,10 +9,10 @@
 //! measurement. The constants of the reference (`+10`, `+20`) are kept.
 
 use ferrigura_model::config::{self, MermaidConfig};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
-use ferrigura_render::sequence::{self, SequenceInput};
-use ferrigura_render::theme::Themes;
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::sequence;
 use ferrigura_syntax::sequence::{Options, parse_with};
 
 /// The font of the geometry harness (`tools/port/geometry/common.ts`, `FORCED_SETTINGS`).
@@ -303,10 +303,15 @@ fn render_svg_with(text: &str, config: &MermaidConfig, variables: &Value) -> Str
         },
     )
     .expect("the diagram parses");
-    sequence::render(&SequenceInput {
+    let tokens = ThemeTokens::from_value(variables);
+    sequence::render(&Context {
         diagram: &diagram,
-        config,
-        themes: Themes::Single(variables),
+        section: &config.sequence,
+        globals: &Globals::of(config),
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id: "t",
     })
     .expect("the diagram renders")

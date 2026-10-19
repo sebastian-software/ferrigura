@@ -4,11 +4,11 @@
 //! the reference's and are checked there; these tests keep the port's own arithmetic in view.
 
 use ferrigura_model::config::{defaults, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
-use ferrigura_render::ishikawa::{IshikawaInput, render};
-use ferrigura_render::theme::Themes;
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::ishikawa::render;
 
 /// Fixture 1 (`pr-check/1-should-render-a-simple-ishikawa-diagram`): one pair of causes, each with a
 /// sub-cause.
@@ -39,10 +39,16 @@ fn draw(text: &str, id: &str, look: Option<&str>) -> Result<String, RenderError>
     }
     let config = typed(&value).expect("the configuration is typed");
     let variables = Theme::ReduxColor.variables(None);
-    render(&IshikawaInput {
+    let tokens = ThemeTokens::from_value(&variables);
+    let globals = Globals::of(&config);
+    render(&Context {
         diagram: &diagram,
-        config: &config,
-        themes: Themes::Single(&variables),
+        section: &config.ishikawa,
+        globals: &globals,
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id,
     })
 }

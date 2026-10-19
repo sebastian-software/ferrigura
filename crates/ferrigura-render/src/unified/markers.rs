@@ -9,8 +9,6 @@
 //! as a presentation attribute, as the reference writes it: the colour is the edge's own, not a
 //! theme token.
 
-use ferrigura_model::config::MermaidConfig;
-
 use crate::svg::{escape, number};
 
 /// The diagram type that the reference puts in every marker id and class.
@@ -371,8 +369,7 @@ fn definition_xml(
 /// The marker definitions of a flowchart, as `insertMarkers(element, ['point', 'circle', 'cross'])`
 /// writes them: twelve markers, each with its id under the SVG's id.
 #[must_use]
-pub fn markers(svg_id: &str, diagram_type: &str, config: &MermaidConfig) -> String {
-    let _ = config;
+pub fn markers(svg_id: &str, diagram_type: &str) -> String {
     DEFINITIONS
         .iter()
         .map(|definition| {
@@ -730,7 +727,7 @@ mod tests {
 
     #[test]
     fn there_are_twelve_markers_with_their_margin_variants() {
-        let svg = markers("svg", FLOWCHART, &MermaidConfig::default());
+        let svg = markers("svg", FLOWCHART);
         assert_eq!(svg.matches("<marker ").count(), 12);
         assert!(svg.contains("id=\"svg_flowchart-v2-pointEnd-margin\""));
         assert!(svg.contains("id=\"svg_flowchart-v2-crossStart-margin\""));

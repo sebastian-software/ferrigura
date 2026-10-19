@@ -9,24 +9,23 @@
 use ferrigura_text::EmbeddedFamily;
 
 use super::palette::Palette;
-use crate::svg::{font_faces, number};
-use crate::theme::Themes;
-use crate::variables::css_text;
+use crate::context::ThemeView;
+use crate::svg::{css_text, font_faces, number};
 
 /// The `<style>` element of the diagram: the embedded font faces, the colour properties of the
 /// themes and the rules.
 #[must_use]
 pub fn style_element(
     id: &str,
-    themes: Themes<'_>,
+    theme: ThemeView<'_>,
     light: &Palette,
     dark: &Palette,
     family: &str,
     families: &[EmbeddedFamily],
 ) -> String {
-    let tokens = match themes {
-        Themes::Single(_) => format!("#{id}{{{}}}", light.declarations()),
-        Themes::Schemes { .. } => format!(
+    let tokens = match theme.dark {
+        None => format!("#{id}{{{}}}", light.declarations()),
+        Some(_) => format!(
             "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
             light.declarations(),
             dark.declarations()

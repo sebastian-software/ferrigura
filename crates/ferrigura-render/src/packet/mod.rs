@@ -11,7 +11,7 @@
 
 mod style;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::PacketDiagramConfig;
 use ferrigura_model::packet::{PacketBlock, PacketDiagram};
 use ferrigura_syntax::sanitize::decode_references;
 use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
@@ -20,11 +20,10 @@ use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
 use crate::common::decode_entities;
-use crate::common::style::base_style_sheet_with;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::configure_svg_size;
+use crate::context::Context;
 use crate::svg::number;
-use crate::theme::Themes;
-use crate::variables::text_of;
 use style::Options;
 
 /// The XML namespace of the root element.
@@ -33,21 +32,18 @@ const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 /// The room `showBits` adds below the rows, to `paddingY` (`db.ts` 26-28).
 const BIT_NUMBER_SPACE: f64 = 10.0;
 
-/// What the packet renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct PacketInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a PacketDiagram,
-    /// The effective configuration, in the packet diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-    /// `bitsPerRow` as the reference's arithmetic reads it, from the effective configuration
-    /// (`ferrigura_syntax::packet::bits_per_row`). The typed configuration replaces a string that is
-    /// not a number by the default, where the reference computes `NaN` with it.
+/// The section of the packet diagram that the renderer reads: the `packet` section of the typed
+/// configuration, and `bitsPerRow` as the reference's arithmetic reads it. The schema names
+/// `bitsPerRow` as a number, but the reference multiplies and adds to the value it finds in the
+/// configuration, so a string that is not a number gives `NaN` there, where the typed value is the
+/// default. The facade reads the value from the effective configuration
+/// (`ferrigura_syntax::packet::bits_per_row`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct PacketSection {
+    /// The `packet` section of the typed configuration.
+    pub config: PacketDiagramConfig,
+    /// `bitsPerRow` as the reference's arithmetic reads it, from the effective configuration: the
+    /// number that `bitWidth * bitsPerRow` and `start % bitsPerRow` take.
     pub bits_per_row: f64,
 }
 
@@ -65,8 +61,8 @@ struct Geometry {
 }
 
 impl Geometry {
-    fn of(input: &PacketInput<'_>) -> Self {
-        let config = &input.config.packet;
+    fn of(section: &PacketSection) -> Self {
+        let config = &section.config;
         Self {
             row_height: config.row_height,
             padding_x: config.padding_x,
@@ -76,25 +72,26 @@ impl Geometry {
                 config.padding_y
             },
             bit_width: config.bit_width,
-            bits_per_row: input.bits_per_row,
+            bits_per_row: section.bits_per_row,
             show_bits: config.show_bits,
             descending: config.bit_order == "descending",
         }
     }
 }
 
-/// Renders the diagram to an SVG document.
+/// Renders the diagram to an SVG document. The section is the packet section of the configuration,
+/// and the theme's tokens give the colours and the sizes.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or subset.
-pub fn render(input: &PacketInput<'_>) -> Result<String, RenderError> {
+pub fn render(input: &Context<'_, PacketDiagram, PacketSection>) -> Result<String, RenderError> {
     let diagram = input.diagram;
     let id = input.id;
-    let config = &input.config.packet;
-    let variables = input.themes.primary();
-    let options = Options::of(variables);
-    let geometry = Geometry::of(input);
+    let config = &input.section.config;
+    let tokens = input.theme.light;
+    let options = Options::of(tokens.packet.as_ref());
+    let geometry = Geometry::of(input.section);
 
     // `draw` (`renderer.ts` 8-20): the height is one row for each row and one more, less the row
     // height when there is no title; the width is the bits of a row and two more.
@@ -155,13 +152,18 @@ pub fn render(input: &PacketInput<'_>) -> Result<String, RenderError> {
         face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
     }])?;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
-    let style = base_style_sheet_with(
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
+    let style = base_style_sheet(
         id,
-        input.themes,
+        input.theme,
         &font_family,
         &font_size,
         &families,

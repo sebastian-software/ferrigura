@@ -10,22 +10,20 @@
 //! The gradient (`genGradient`) is inactive: the redux themes have `useGradient` false
 //! (`theme-redux-color.js:32`).
 
-use crate::theme::Themes;
-use crate::variables::text_of;
+use ferrigura_model::theme::{ThemeTokens, Token};
 
 /// `THEME_COLOR_LIMIT` (`theme-base.js` 18): twelve slots, the section `-1` (the root) through `10`.
 const COLOUR_LIMIT: usize = 12;
 
 /// The rules of the mindmap, to append to the base style sheet of the diagram.
 #[must_use]
-pub fn own_rules(id: &str, themes: Themes<'_>, look: &str) -> String {
-    let variables = themes.primary();
+pub fn own_rules(id: &str, tokens: &ThemeTokens, look: &str) -> String {
     let neo = look == "neo";
-    let text = |name: &str| text_of(variables, name).unwrap_or_default();
-    let node_border = text("nodeBorder");
-    let main_bkg = text("mainBkg");
-    let stroke_width = text_of(variables, "strokeWidth").unwrap_or_else(|| "2".to_owned());
-    let drop_shadow = text_of(variables, "dropShadow").map_or_else(
+    let text = |token: &Token| token.text().unwrap_or_default();
+    let node_border = text(&tokens.node_border);
+    let main_bkg = text(&tokens.main_bkg);
+    let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "2".to_owned());
+    let drop_shadow = tokens.drop_shadow.text().map_or_else(
         || "none".to_owned(),
         |shadow| shadow.replace("url(#drop-shadow)", &format!("url(#{id}-drop-shadow)")),
     );
@@ -37,8 +35,8 @@ pub fn own_rules(id: &str, themes: Themes<'_>, look: &str) -> String {
     // `genSections` (styles.ts 19-72): the rules of section `i - 1` for each colour slot `i`.
     for index in 0..COLOUR_LIMIT {
         let section = index as i64 - 1;
-        let fill = text(&format!("cScale{index}"));
-        let label = text(&format!("cScaleLabel{index}"));
+        let fill = text(tokens.c_scale.get(index));
+        let label = text(tokens.c_scale_label.get(index));
         // The depth stroke: `17 - 3i` in the classic look, `max(10 - (i - 1) * 2, 2)` in the neo look
         // (styles.ts 20).
         let edge_width = if neo {
@@ -69,8 +67,8 @@ pub fn own_rules(id: &str, themes: Themes<'_>, look: &str) -> String {
         "#{id} .section-root rect,#{id} .section-root path,#{id} .section-root circle,#{id} .section-root polygon{{fill:{};}}\
          #{id} .section-root text{{fill:{};}}\
          #{id} .section-root span{{color:{};}}",
-        text("git0"),
-        text("gitBranchLabel0"),
+        text(tokens.git.get(0)),
+        text(tokens.git_branch_label.get(0)),
         node_border,
     ));
 

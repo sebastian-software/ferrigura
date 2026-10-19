@@ -121,6 +121,22 @@ impl Value {
     }
 }
 
+/// The text of a number as the SVG writers write it in attributes and styles: `0` for a number too
+/// small to show, `Infinity` and `-Infinity` for the infinite ones, and otherwise the shortest
+/// decimal that reads back as the number. `NaN` is written as `NaN`. This is `svg::number` of
+/// `ferrigura-render`, which calls it.
+#[must_use]
+pub fn number_text(value: f64) -> String {
+    if value.abs() < 1e-10 {
+        return "0".to_owned();
+    }
+    // Rust writes `inf`; JavaScript, which the reference's attributes come from, writes `Infinity`.
+    if value.is_infinite() {
+        return if value > 0.0 { "Infinity" } else { "-Infinity" }.to_owned();
+    }
+    format!("{value}")
+}
+
 /// The value of a key of an object, or `null` when it has none, as `serde_json` indexes them.
 static NULL: Value = Value::Null;
 

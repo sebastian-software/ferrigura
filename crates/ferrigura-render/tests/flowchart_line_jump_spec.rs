@@ -9,6 +9,7 @@
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::value::Value;
+use ferrigura_render::unified::Section;
 use ferrigura_render::unified::data::Edge;
 use ferrigura_render::unified::edges::paint_paths;
 use ferrigura_render::unified::geom::Point;
@@ -273,7 +274,12 @@ fn returns_plain_polylines_for_every_edge_when_disabled() {
         painted_edge("h", &[(0.0, 50.0), (100.0, 50.0)]),
         painted_edge("v", &[(50.0, 0.0), (50.0, 100.0)]),
     ];
-    let hopped = paint_paths(&edges, "svg", FLOWCHART, &MermaidConfig::default());
+    let hopped = paint_paths(
+        &edges,
+        "svg",
+        FLOWCHART,
+        &Section::of(&MermaidConfig::default()),
+    );
     assert!(
         d_attribute(&hopped[0].svg).contains("A6,6"),
         "{}",
@@ -282,7 +288,7 @@ fn returns_plain_polylines_for_every_edge_when_disabled() {
 
     let mut config = MermaidConfig::default();
     config.elk.line_hops = Some(Value::from(serde_json::json!(false)));
-    let plain = paint_paths(&edges, "svg", FLOWCHART, &config);
+    let plain = paint_paths(&edges, "svg", FLOWCHART, &Section::of(&config));
     assert!(
         !d_attribute(&plain[0].svg).contains('A'),
         "{}",

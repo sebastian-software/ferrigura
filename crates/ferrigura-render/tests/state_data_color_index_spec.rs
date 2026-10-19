@@ -8,14 +8,21 @@
 use std::collections::HashMap;
 
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_render::context::Globals;
 use ferrigura_render::state::data::get_data;
+use ferrigura_render::unified::Section;
 use ferrigura_render::unified::data::Node;
 use ferrigura_syntax::state::parse_grammar;
 
 /// The nodes of the text's layout data.
 fn nodes(text: &str) -> Vec<Node> {
     let diagram = parse_grammar(text).expect("parses");
-    get_data(&diagram, &MermaidConfig::default()).nodes
+    get_data(
+        &diagram,
+        &Section::of(&MermaidConfig::default()),
+        &Globals::of(&MermaidConfig::default()),
+    )
+    .nodes
 }
 
 /// The colour slot of each node, by id.

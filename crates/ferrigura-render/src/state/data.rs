@@ -14,7 +14,8 @@
 
 use std::collections::HashMap;
 
-use ferrigura_model::config::MermaidConfig;
+use crate::context::Globals;
+use crate::unified::Section;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::state::{
     ClassDef, Description, StateDiagram, StateEntry, StateStmt, Statement,
@@ -87,7 +88,7 @@ struct Fetcher<'a> {
     states: HashMap<&'a str, &'a StateEntry>,
     classes: HashMap<&'a str, &'a ClassDef>,
     look: String,
-    /// `config.flowchart.padding`, which the note nodes take (`dataFetcher.ts` 400).
+    /// `flowchart.padding`, which the note nodes take (`dataFetcher.ts` 400).
     note_padding: f64,
     node_db: HashMap<String, Entry>,
     graph_item_count: u64,
@@ -100,7 +101,7 @@ struct Fetcher<'a> {
 /// The layout data of a state diagram: its nodes and edges as `getData()` gives them, with the
 /// layout's direction (`stateDb.ts` 755-770). The configuration is read as `getData` reads it.
 #[must_use]
-pub fn get_data(diagram: &StateDiagram, config: &MermaidConfig) -> LayoutData {
+pub fn get_data(diagram: &StateDiagram, section: &Section<'_>, globals: &Globals) -> LayoutData {
     let mut fetcher = Fetcher {
         states: diagram
             .states
@@ -112,8 +113,8 @@ pub fn get_data(diagram: &StateDiagram, config: &MermaidConfig) -> LayoutData {
             .iter()
             .map(|class| (class.id.as_str(), class))
             .collect(),
-        look: config.look.clone(),
-        note_padding: config.flowchart.padding,
+        look: globals.look.clone(),
+        note_padding: section.flowchart.padding,
         node_db: HashMap::new(),
         graph_item_count: 0,
         next_color_index: 0,
@@ -129,9 +130,9 @@ pub fn get_data(diagram: &StateDiagram, config: &MermaidConfig) -> LayoutData {
     // `getData` writes the label's wrapping width on every node and the minimum width on the
     // non-groups (`stateDb.ts` 755-762).
     for node in &mut nodes {
-        node.wrapping_width = Some(config.state.wrapping_width);
+        node.wrapping_width = Some(section.state.wrapping_width);
         if !node.is_group {
-            node.min_width = Some(config.state.min_node_width);
+            node.min_width = Some(section.state.min_node_width);
         }
     }
 
@@ -178,7 +179,7 @@ fn get_dir(doc: &[Statement]) -> String {
 }
 
 /// Whether a description is truthy in the reference: a non-empty string, or any list.
-fn truthy(description: &Description) -> bool {
+fn description_is_truthy(description: &Description) -> bool {
     match description {
         Description::Text(text) => !text.is_empty(),
         Description::List(_) => true,
@@ -291,7 +292,11 @@ impl Fetcher<'_> {
                 .node_db
                 .remove(item_id)
                 .expect("the entry was inserted above");
-            if let Some(description) = item.description.as_ref().filter(|d| truthy(d)) {
+            if let Some(description) = item
+                .description
+                .as_ref()
+                .filter(|d| description_is_truthy(d))
+            {
                 add_description(&mut entry, item_id, description);
             }
             if label_len(&entry.description) == 1

@@ -8,13 +8,16 @@ use super::util::{Part, attribute, create_path_from_points, label_helper, styles
 use super::{Intersect, ShapeInput};
 use crate::svg::{escape, number};
 use crate::unified::geom::{BBox, Point};
-use crate::variables::text_of;
 
 /// The accent colour of the window and bucket outlines: the theme's node border, else its line
 /// colour, else the current colour (`themeVariables?.nodeBorder ?? lineColor ?? 'currentColor'`).
 fn accent(input: &ShapeInput<'_>) -> String {
-    text_of(input.theme, "nodeBorder")
-        .or_else(|| text_of(input.theme, "lineColor"))
+    input
+        .config
+        .theme
+        .node_border
+        .text()
+        .or_else(|| input.config.theme.line_color.text())
         .unwrap_or_else(|| "currentColor".to_owned())
 }
 

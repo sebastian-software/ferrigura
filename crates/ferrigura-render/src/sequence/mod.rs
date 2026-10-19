@@ -25,7 +25,7 @@ mod model;
 mod style;
 mod text;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::SequenceDiagramConfig;
 use ferrigura_model::sequence::{LineType, SequenceDiagram};
 use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 
@@ -39,32 +39,19 @@ use crate::common::Element;
 use crate::common::TextMemo;
 use crate::common::decode_entities;
 use crate::common::viewbox::calculate_svg_size_attrs;
+use crate::context::{Context, ThemeView};
 use crate::svg::number;
-use crate::theme::Themes;
 
 /// The namespace of the root element (`mermaidAPI` writes it on every SVG).
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
-
-/// What the sequence renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct SequenceInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a SequenceDiagram,
-    /// The effective configuration, in the sequence diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
 
 /// The state of one render (`sequenceRenderer.ts`'s module state, and the DB's sequence flag).
 pub(super) struct Renderer<'a> {
     /// The id of the diagram.
     pub(super) id: &'a str,
-    /// The themes the diagram draws with.
-    pub(super) themes: Themes<'a>,
+    /// The theme the diagram draws with: the tokens of its light scheme, and the dark ones when
+    /// both schemes are written.
+    pub(super) theme: ThemeView<'a>,
     /// The resolved configuration.
     pub(super) conf: Conf,
     /// The text measurements of this render.
@@ -102,11 +89,11 @@ pub(super) struct View {
 
 impl<'a> Renderer<'a> {
     /// The renderer of one diagram, with the configuration applied (`bounds.init`).
-    fn new(input: &SequenceInput<'a>) -> Self {
+    fn new(input: &Context<'a, SequenceDiagram, SequenceDiagramConfig>) -> Self {
         Self {
             id: input.id,
-            themes: input.themes,
-            conf: Conf::new(input.config),
+            theme: input.theme,
+            conf: Conf::new(input.section, input.globals),
             memo: TextMemo::new(),
             layout: Layout::new(input.diagram),
             bounds: Bounds::default(),
@@ -297,10 +284,10 @@ impl<'a> Renderer<'a> {
                 }
                 LineType::Autonumber => {
                     if let Some(number_item) = &msg.autonumber {
-                        if let Some(start) = number_item.start.filter(|value| truthy(*value)) {
+                        if let Some(start) = number_item.start.filter(|value| is_truthy(*value)) {
                             sequence_index = start;
                         }
-                        if let Some(step) = number_item.step.filter(|value| truthy(*value)) {
+                        if let Some(step) = number_item.step.filter(|value| is_truthy(*value)) {
                             sequence_step = step;
                         }
                         self.sequence_numbers = number_item.visible;
@@ -485,7 +472,7 @@ impl<'a> Renderer<'a> {
                 continue;
             };
             let stop = actor.stopy.unwrap_or(0.0);
-            if !mirror && actor.stopy.is_some_and(truthy) {
+            if !mirror && actor.stopy.is_some_and(is_truthy) {
                 self.set_lifeline_y2(cnt, stop + actor.height / 2.0);
             } else if mirror {
                 self.set_lifeline_y2(cnt, stop);
@@ -495,7 +482,7 @@ impl<'a> Renderer<'a> {
 
     /// The root element: its size and view box, its accessibility texts, its style, the empty group
     /// `mermaidAPI` appends, and the drawing (`mermaidAPI.ts`, `setupGraphViewbox.js`).
-    fn write(&self, input: &SequenceInput<'_>) -> String {
+    fn write(&self, input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>) -> String {
         let diagram = input.diagram;
         let view = self.view.unwrap_or(View {
             startx: 0.0,
@@ -520,11 +507,15 @@ impl<'a> Renderer<'a> {
         }
         let (families, font_family) = self.embedded_fonts(&text);
         // The root's font size is the theme's `fontSize` (the base styles read it), not the text's.
-        let font_size = crate::variables::text_of(input.themes.primary(), "fontSize")
+        let font_size = input
+            .theme
+            .light
+            .font_size
+            .text()
             .unwrap_or_else(|| "16px".to_owned());
         let style = style::style_sheet(
             input.id,
-            input.themes,
+            input.theme,
             &font_family,
             &font_size,
             &families,
@@ -627,7 +618,7 @@ fn is_sequence_line(line_type: LineType) -> bool {
 }
 
 /// JavaScript's truthiness of a number.
-fn truthy(value: f64) -> bool {
+fn is_truthy(value: f64) -> bool {
     value != 0.0 && !value.is_nan()
 }
 
@@ -636,13 +627,16 @@ fn stop_y(block: &Block) -> f64 {
     block.extent.stopy.unwrap_or(f64::NAN)
 }
 
-/// Renders the diagram to an SVG document.
+/// Renders the diagram to an SVG document. The context carries the sequence section of the
+/// configuration as its section, and the theme's tokens.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read, or if the layout meets a state the reference
 /// reports as an error (an activation that ends with none open, for example).
-pub fn render(input: &SequenceInput<'_>) -> Result<String, RenderError> {
+pub fn render(
+    input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
+) -> Result<String, RenderError> {
     let mut renderer = Renderer::new(input);
     renderer.draw(&input.diagram.title)?;
     Ok(renderer.write(input))

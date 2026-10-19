@@ -8,11 +8,11 @@
 //! written. Every colour is a custom property declared on the diagram's id, `--textColor` from the
 //! base sheet and `--titleColor` here (`docs-port/decisions/0007`).
 
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::ThemeTokens;
 
 use crate::common::is_js_whitespace;
-use crate::theme::Themes;
-use crate::variables::{css_text, text_of};
+use crate::context::ThemeView;
+use crate::svg::css_text;
 
 /// `isLabelStyle` (`handDrawnShapeStyles.ts` 53-74): the properties that style a label.
 const LABEL_STYLES: [&str; 18] = [
@@ -217,18 +217,18 @@ impl Inline {
 /// The `<style>` text of the treemap's own rules, with the title's colour as a custom property on
 /// the diagram's id, in both schemes when there are two.
 #[must_use]
-pub fn own_rules(id: &str, themes: Themes<'_>) -> String {
-    let tokens = |variables: &Value| {
+pub fn own_rules(id: &str, theme: ThemeView<'_>) -> String {
+    let tokens = |tokens: &ThemeTokens| {
         format!(
             "--titleColor:{};",
-            css_text(&text_of(variables, "titleColor").unwrap_or_default())
+            css_text(&tokens.title_color.text().unwrap_or_default())
         )
     };
-    let colours = match themes {
-        Themes::Single(variables) => format!("#{id}{{{}}}", tokens(variables)),
-        Themes::Schemes { light, dark } => format!(
+    let colours = match theme.dark {
+        None => format!("#{id}{{{}}}", tokens(theme.light)),
+        Some(dark) => format!(
             "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            tokens(light),
+            tokens(theme.light),
             tokens(dark)
         ),
     };

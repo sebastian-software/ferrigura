@@ -1,13 +1,13 @@
-//! The colours and sizes a gitGraph reads from one set of theme variables.
+//! The colours and sizes a gitGraph reads from one set of theme tokens.
 //!
 //! Only the redux themes ship (M6-PLAN, themes), so the colours are the ones `styles.js` writes for
 //! a colour theme (`redux-color`, `redux-dark-color`): the branch colours come from
 //! `borderColorArray`, and colour 0 is the node border. The reference chooses the dark variants by
 //! the theme's name (`DARK_THEMES`); ferrigura passes that choice in as `dark`.
 
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::ThemeTokens;
 
-use crate::variables::{px, text_of, texts_of, truthy};
+use crate::svg::css_text;
 
 /// The colours of one theme set, and the sizes the gitGraph uses from it.
 #[derive(Debug, Clone, PartialEq)]
@@ -45,34 +45,37 @@ pub struct Palette {
 }
 
 impl Palette {
-    /// The palette of a set of theme variables. `dark` is the theme's darkness, as the reference
-    /// takes it from the theme's name.
+    /// The palette of a set of theme tokens. `dark` is the theme's darkness, as the reference takes
+    /// it from the theme's name.
     #[must_use]
-    pub fn new(variables: &Value, dark: bool) -> Self {
-        let text = |name: &str| text_of(variables, name).unwrap_or_default();
+    pub fn new(tokens: &ThemeTokens, dark: bool) -> Self {
         Self {
             dark,
-            node_border: text("nodeBorder"),
-            main_bkg: text("mainBkg"),
-            text_color: text("textColor"),
-            line: text_of(variables, "commitLineColor")
-                .or_else(|| text_of(variables, "lineColor"))
+            node_border: tokens.node_border.text().unwrap_or_default(),
+            main_bkg: tokens.main_bkg.text().unwrap_or_default(),
+            text_color: tokens.text_color.text().unwrap_or_default(),
+            line: tokens
+                .commit_line_color
+                .text()
+                .or_else(|| tokens.line_color.text())
                 .unwrap_or_default(),
-            tag_label_color: text("tagLabelColor"),
-            borders: texts_of(variables, "borderColorArray"),
-            colour_limit: text_of(variables, "THEME_COLOR_LIMIT")
+            tag_label_color: tokens.tag_label_color.text().unwrap_or_default(),
+            borders: tokens.border_color_array.texts(),
+            colour_limit: tokens
+                .theme_color_limit
+                .text()
                 .and_then(|limit| limit.parse().ok())
                 .unwrap_or(12),
-            stroke_width: text("strokeWidth"),
-            note_font_weight: text("noteFontWeight"),
-            font_size: px(variables, "fontSize").unwrap_or(16.0),
-            commit_label_font_size: px(variables, "commitLabelFontSize").unwrap_or(10.0),
-            tag_label_font_size: px(variables, "tagLabelFontSize").unwrap_or(10.0),
-            drop_shadow: text("dropShadow"),
-            filter_color: text("filterColor"),
-            use_gradient: truthy(variables, "useGradient"),
-            gradient_start: text("gradientStart"),
-            gradient_stop: text("gradientStop"),
+            stroke_width: tokens.stroke_width.text().unwrap_or_default(),
+            note_font_weight: tokens.note_font_weight.text().unwrap_or_default(),
+            font_size: tokens.font_size.px().unwrap_or(16.0),
+            commit_label_font_size: tokens.commit_label_font_size.px().unwrap_or(10.0),
+            tag_label_font_size: tokens.tag_label_font_size.px().unwrap_or(10.0),
+            drop_shadow: tokens.drop_shadow.text().unwrap_or_default(),
+            filter_color: tokens.filter_color.text().unwrap_or_default(),
+            use_gradient: tokens.use_gradient.truthy(),
+            gradient_start: tokens.gradient_start.text().unwrap_or_default(),
+            gradient_stop: tokens.gradient_stop.text().unwrap_or_default(),
         }
     }
 
@@ -142,7 +145,7 @@ impl Palette {
     pub fn declarations(&self) -> String {
         let mut out = String::new();
         let mut push = |name: &str, value: &str| {
-            out.push_str(&format!("--{name}:{};", crate::variables::css_text(value)));
+            out.push_str(&format!("--{name}:{};", css_text(value)));
         };
         push("nodeBorder", &self.node_border);
         push("mainBkg", &self.main_bkg);

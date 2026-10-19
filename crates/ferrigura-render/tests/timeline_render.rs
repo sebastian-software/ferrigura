@@ -3,9 +3,9 @@
 //! `pnpm port:geometry timeline`; the markup is the reference's, quirks included.
 
 use ferrigura_model::config::{defaults, typed};
-use ferrigura_model::theme::Theme;
-use ferrigura_render::theme::Themes;
-use ferrigura_render::timeline::{TimelineInput, render};
+use ferrigura_model::theme::{Theme, ThemeTokens};
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::timeline::render;
 
 /// The first fixture of `e2e/diagrams/timeline/pr-check`: a horizontal timeline without sections.
 const SIMPLE: &str = "timeline
@@ -21,10 +21,15 @@ fn draw(text: &str, id: &str) -> String {
     let diagram = ferrigura_syntax::timeline::parse(text).expect("the timeline parses");
     let config = typed(&defaults()).expect("the default configuration is typed");
     let variables = Theme::ReduxColor.variables(None);
-    render(&TimelineInput {
+    let tokens = ThemeTokens::from_value(&variables);
+    render(&Context {
         diagram: &diagram,
-        config: &config,
-        themes: Themes::Single(&variables),
+        section: &config.timeline,
+        globals: &Globals::of(&config),
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id,
     })
     .expect("the timeline renders")

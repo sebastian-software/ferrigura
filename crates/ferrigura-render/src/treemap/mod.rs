@@ -21,7 +21,7 @@ pub use config::TreemapSettings;
 
 use std::cmp::Ordering;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::theme::{Family, ThemeTokens};
 use ferrigura_model::treemap::{TreemapDiagram, TreemapNode};
 use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 
@@ -36,11 +36,10 @@ use crate::common::d3::math_max;
 use crate::common::d3::number::js_number;
 use crate::common::d3::treemap::{Padding, Treemap};
 use crate::common::decode_entities;
-use crate::common::style::base_style_sheet_with;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
+use crate::context::Context;
 use crate::svg::{escape, number};
-use crate::theme::Themes;
-use crate::variables::{px, text_of};
 use style::{Inline, Styles, colour_as_fill, own_rules, styles_to_string};
 use text::{Anchor, Baseline, Font, advance, line_box};
 
@@ -67,22 +66,6 @@ const VALUE_SCALE_FACTOR: f64 = 0.6;
 
 /// The leaves above which the complex label layout is used (`renderer.ts` 314).
 const COMPLEX_LEAF_COUNT: usize = 20;
-
-/// What the treemap renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct TreemapInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a TreemapDiagram,
-    /// The effective configuration, in the treemap diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The `treemap` section of the configuration (see [`TreemapSettings`]).
-    pub settings: &'a TreemapSettings,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
 
 /// The sizes of a leaf's labels: the complex layout (more than twenty leaves) has smaller ones
 /// (`renderer.ts` 316-322).
@@ -207,10 +190,12 @@ struct Colours {
 }
 
 impl Colours {
-    fn of(variables: &ferrigura_model::value::Value) -> Self {
-        let named = |prefix: &str, count: usize| -> Vec<String> {
-            (0..count)
-                .map(|index| text_of(variables, &format!("{prefix}{index}")).unwrap_or_default())
+    /// The colours of the three scales of the theme, the twelve of each family in index order. A
+    /// colour that the theme does not set is the empty text.
+    fn of(tokens: &ThemeTokens) -> Self {
+        let named = |family: &Family<12>| -> Vec<String> {
+            (0..12)
+                .map(|index| family.get(index).text().unwrap_or_default())
                 .collect()
         };
         let with_transparent = |mut colours: Vec<String>| {
@@ -218,9 +203,9 @@ impl Colours {
             colours
         };
         Self {
-            fill: with_transparent(named("cScale", 12)),
-            peer: with_transparent(named("cScalePeer", 12)),
-            label: named("cScaleLabel", 12),
+            fill: with_transparent(named(&tokens.c_scale)),
+            peer: with_transparent(named(&tokens.c_scale_peer)),
+            label: named(&tokens.c_scale_label),
         }
     }
 }
@@ -257,9 +242,9 @@ struct Section {
 ///
 /// Returns an error if a bundled font cannot be read or subset, a label cannot be measured, or a
 /// `valueFormat` with a `$` names an invalid specifier and a value is formatted with it.
-pub fn render(input: &TreemapInput<'_>) -> Result<String, RenderError> {
-    let settings = input.settings;
-    let variables = input.themes.primary();
+pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<String, RenderError> {
+    let settings = input.section;
+    let tokens = input.theme.light;
     let id = input.id;
     let diagram = input.diagram;
     let title = diagram.title.as_str();
@@ -267,7 +252,7 @@ pub fn render(input: &TreemapInput<'_>) -> Result<String, RenderError> {
     let width = settings.layout_width();
     let height = settings.layout_height();
     let format = ValueFormat::of(&settings.value_format)?;
-    let colours = Colours::of(variables);
+    let colours = Colours::of(tokens);
 
     // `hierarchy(root).sum(value).sort(by value, descending)` (`renderer.ts` 144-146).
     let mut hierarchy = Hierarchy::new(&diagram.tree, children_of);
@@ -540,17 +525,22 @@ pub fn render(input: &TreemapInput<'_>) -> Result<String, RenderError> {
     let run_refs: Vec<Run<'_>> = runs.iter().map(|(text, face)| Run { text, face }).collect();
     let families: Vec<EmbeddedFamily> = embed_runs(&run_refs)?;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let css_font_size = format!("{}px", number(px(variables, "fontSize").unwrap_or(16.0)));
-    let style = base_style_sheet_with(
+    let css_font_size = format!("{}px", number(tokens.font_size.px().unwrap_or(16.0)));
+    let style = base_style_sheet(
         id,
-        input.themes,
+        input.theme,
         &font_family,
         &css_font_size,
         &families,
-        &own_rules(id, input.themes),
+        &own_rules(id, input.theme),
     );
 
     // The root: the viewBox and the size (`setupViewPortForSVG`, `renderer.ts` 525-526), then the
@@ -588,7 +578,7 @@ pub fn render(input: &TreemapInput<'_>) -> Result<String, RenderError> {
             .with("x", number(width / 2.0))
             .with("y", number(TITLE_Y))
             .with("class", "treemapTitle")
-            .with("fill", text_of(variables, "titleColor").unwrap_or_default())
+            .with("fill", tokens.title_color.text().unwrap_or_default())
             .with("text-anchor", "middle")
             .with("dominant-baseline", "middle")
             .raw_text(markup(title));

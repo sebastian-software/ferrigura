@@ -5,7 +5,6 @@
 pub mod data;
 pub mod style;
 
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::state::{Link, StateDiagram};
 use ferrigura_text::{
     FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
@@ -14,37 +13,27 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::a11y;
+use crate::context::Context;
 use crate::svg::{escape, number};
-use crate::theme::Themes;
 use crate::unified::data::LayoutData;
 use crate::unified::geom::BBox;
 use crate::unified::markers;
 use crate::unified::pipeline::{self, Measured, cover};
-
-/// What the state renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct StateInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a StateDiagram,
-    /// The effective configuration, in the state diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
+use crate::unified::{Config, Section};
 
 /// The diagram type the layout data names: the detector's id, for both headers
 /// (`stateDetector-V2.ts`). It names the markers and their ids (`stateRenderer-v3-unified.ts`).
 pub const DIAGRAM_TYPE: &str = "stateDiagram";
 
 /// `getData` and the measure step of the unified renderer.
-fn measure(input: &StateInput<'_>) -> Result<Measured, RenderError> {
-    let mut data = data::get_data(input.diagram, input.config);
+fn measure(
+    input: &Context<'_, StateDiagram, Section<'_>>,
+    unified: &Config<'_>,
+) -> Result<Measured, RenderError> {
+    let mut data = data::get_data(input.diagram, input.section, input.globals);
     // `stateRenderer-v3-unified.ts` 59 sets the diagram type on the layout data after `getData`.
     data.diagram_type = DIAGRAM_TYPE.to_owned();
-    pipeline::measure(data, input.config, input.themes.primary())
+    pipeline::measure(data, unified)
 }
 
 /// Renders a state diagram as an SVG document (`stateRenderer-v3-unified.ts`, `draw`): the layout
@@ -53,14 +42,13 @@ fn measure(input: &StateInput<'_>) -> Result<Measured, RenderError> {
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the layout fails.
-pub fn render(input: &StateInput<'_>) -> Result<String, RenderError> {
-    let mut measured = measure(input)?;
+pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, RenderError> {
+    let config = Config::of(input);
+    let mut measured = measure(input, &config)?;
     apply_links(&mut measured.data, &input.diagram.links);
-    pipeline::lay_out(&mut measured, input.config)?;
-    let config = input.config;
-    let theme = input.themes.primary();
+    pipeline::lay_out(&mut measured, &config)?;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, config, theme)?;
+    let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;
 
     // `insertTitle`: centred over everything drawn so far, `titleTopMargin` above the origin.
@@ -72,7 +60,7 @@ pub fn render(input: &StateInput<'_>) -> Result<String, RenderError> {
         let width = measure_text(sans, title, TITLE_FONT_SIZE)?;
         let ink = measure_box(sans, title, TITLE_FONT_SIZE)?;
         let text_box = text_box(sans, TITLE_FONT_SIZE)?;
-        let baseline = -(config.state.title_top_margin as f64);
+        let baseline = -(input.section.state.title_top_margin as f64);
         // The title is start-anchored at x, so its box is the glyphs' box from there.
         let x = drawn.x + drawn.width / 2.0 - width / 2.0;
         cover(
@@ -110,7 +98,7 @@ pub fn render(input: &StateInput<'_>) -> Result<String, RenderError> {
         drawn.width + VIEWPORT_PADDING * 2.0,
         drawn.height + VIEWPORT_PADDING * 2.0,
     );
-    let size_attributes = if config.state.use_max_width {
+    let size_attributes = if input.section.state.use_max_width {
         format!(
             "width=\"100%\" style=\"max-width: {}px;\"",
             number(view_width)
@@ -126,9 +114,14 @@ pub fn render(input: &StateInput<'_>) -> Result<String, RenderError> {
     let accessibility = a11y::children(id, &diagram.acc_title, &diagram.acc_descr);
     let accessible_attributes =
         a11y::root_attributes(id, "stateDiagram", &diagram.acc_title, &diagram.acc_descr);
-    let style = style::style_sheet(id, input.themes, config, &diagram.classes, &families);
-    let transition = crate::variables::text_of(theme, "transitionColor").unwrap_or_default();
-    let markers = markers::barb_markers(id, DIAGRAM_TYPE, config.look == "neo", &transition);
+    let style = style::style_sheet(id, input.theme, input.globals, &diagram.classes, &families);
+    let transition = input
+        .theme
+        .light
+        .transition_color
+        .text()
+        .unwrap_or_default();
+    let markers = markers::barb_markers(id, DIAGRAM_TYPE, input.globals.look == "neo", &transition);
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"statediagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
@@ -139,7 +132,7 @@ pub fn render(input: &StateInput<'_>) -> Result<String, RenderError> {
         root = painted.root,
         coloured_markers = painted.coloured_markers,
         // `insertLookDefs` is shared with the flowchart: the drop shadows and the gradient.
-        defs = crate::flowchart::style::look_defs(id, input.themes, config),
+        defs = crate::flowchart::style::look_defs(id, input.theme, input.globals),
     ))
 }
 
