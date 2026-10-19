@@ -13,6 +13,8 @@ pub mod style;
 
 use std::collections::HashSet;
 
+use crate::context::Globals;
+use crate::unified::{Bridge, Config};
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::requirement::RequirementDiagram;
 use ferrigura_text::{
@@ -52,11 +54,11 @@ const VIEWBOX_PADDING: f64 = 8.0;
 const DEFAULT_FONT_SIZE: f64 = 16.0;
 
 /// `getData` and the measure step of the unified renderer (`requirementRenderer.ts` 14-27).
-fn measure(input: &RequirementInput<'_>) -> Result<Measured, RenderError> {
+fn measure(input: &RequirementInput<'_>, unified: &Config<'_>) -> Result<Measured, RenderError> {
     let mut data = data::get_data(input.diagram, input.config);
     // `requirementRenderer.ts` 19: the diagram type of the layout data, which names the markers.
     data.diagram_type = markers::REQUIREMENT.to_owned();
-    pipeline::measure(data, input.config, input.themes.primary())
+    pipeline::measure(data, unified)
 }
 
 /// The two inputs that the reference cannot draw, which are named exceptions of the port
@@ -100,12 +102,14 @@ fn check_names(diagram: &RequirementDiagram) -> Result<(), RenderError> {
 /// be read, or if the layout fails.
 pub fn render(input: &RequirementInput<'_>) -> Result<String, RenderError> {
     check_names(input.diagram)?;
-    let mut measured = measure(input)?;
-    pipeline::lay_out(&mut measured, input.config)?;
-    let config = input.config;
     let theme = input.themes.primary();
+    let bridge = Bridge::new(input.config, input.themes);
+    let unified = bridge.config(input.config);
+    let mut measured = measure(input, &unified)?;
+    pipeline::lay_out(&mut measured, &unified)?;
+    let config = input.config;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, config, theme)?;
+    let painted = pipeline::paint(&measured, id, &unified)?;
     let mut bounds = painted.bounds;
 
     // `utils.insertTitle` (`requirementRenderer.ts` 31-36): centred over the drawing, at
@@ -192,7 +196,11 @@ pub fn render(input: &RequirementInput<'_>) -> Result<String, RenderError> {
         h = number(view_height),
         root = painted.root,
         coloured_markers = painted.coloured_markers,
-        defs = look_defs(id, input.themes, config),
+        defs = look_defs(
+            id,
+            Bridge::new(config, input.themes).view(),
+            &Globals::of(config)
+        ),
     ))
 }
 

@@ -22,3 +22,143 @@ pub mod pipeline;
 pub mod shapes;
 pub mod terminal;
 pub mod tidy_tree;
+
+use ferrigura_model::config::{
+    ClassDiagramConfig, ErDiagramConfig, FlowchartDiagramConfig, MermaidConfig, MermaidConfigElk,
+};
+use ferrigura_model::theme::ThemeTokens;
+
+use crate::context::{Context, Globals, ThemeView};
+
+/// The sections of the configuration that the unified renderer reads, borrowed from the view that the
+/// facade resolves. The `flowchart` section gives the layout's spacing, the curve and the title
+/// margins; the classes, states, entity relations and mindmaps read it as the flowchart does. The `elk`
+/// section gives the layout options. The `class` and `er` sections are read by the shapes of those two
+/// diagrams.
+#[derive(Debug, Clone, Copy)]
+pub struct Section<'a> {
+    /// The `flowchart` section.
+    pub flowchart: &'a FlowchartDiagramConfig,
+    /// The `elk` section.
+    pub elk: &'a MermaidConfigElk,
+    /// The `class` section.
+    pub class: &'a ClassDiagramConfig,
+    /// The `er` section.
+    pub er: &'a ErDiagramConfig,
+}
+
+impl<'a> Section<'a> {
+    /// The sections of a resolved configuration.
+    #[must_use]
+    pub fn of(config: &'a MermaidConfig) -> Self {
+        Self {
+            flowchart: &config.flowchart,
+            elk: &config.elk,
+            class: &config.class,
+            er: &config.er,
+        }
+    }
+}
+
+/// What the unified renderer reads besides its diagram: its sections, the global options and the
+/// light theme as tokens. A diagram makes it from its context, and the pipeline, the shapes and the
+/// clusters take it by reference.
+#[derive(Debug, Clone, Copy)]
+pub struct Config<'a> {
+    /// The configuration sections.
+    pub section: Section<'a>,
+    /// The global options.
+    pub globals: &'a Globals,
+    /// The tokens of the theme that the sizes and the colours come from.
+    pub theme: &'a ThemeTokens,
+}
+
+impl<'a> Config<'a> {
+    /// The configuration that a unified diagram reads from its context: its section, the globals and
+    /// the light scheme's tokens, which give the sizes and the colours of a render with one scheme.
+    #[must_use]
+    pub fn of<Model>(input: &Context<'a, Model, Section<'a>>) -> Self {
+        Self {
+            section: *input.section,
+            globals: input.globals,
+            theme: input.theme.light,
+        }
+    }
+}
+
+/// The configuration of a renderer that still takes the whole configuration and the `Themes` of its
+/// inputs: the globals and the tokens of its themes, made once per render. It stands for the inputs
+/// the renderers move to `Context`, and goes when the last renderer moves.
+pub(crate) struct Bridge {
+    /// The global options of the configuration.
+    pub(crate) globals: Globals,
+    /// The tokens of the light scheme, or of the one scheme.
+    pub(crate) light: ThemeTokens,
+    /// The tokens of the dark scheme, when the render has both.
+    pub(crate) dark: Option<ThemeTokens>,
+}
+
+impl Bridge {
+    /// The bridge of a configuration and the themes of a render.
+    pub(crate) fn new(config: &MermaidConfig, themes: crate::theme::Themes<'_>) -> Self {
+        let (light, dark) = match themes {
+            crate::theme::Themes::Single(set) => (ThemeTokens::from_value(set), None),
+            crate::theme::Themes::Schemes { light, dark } => (
+                ThemeTokens::from_value(light),
+                Some(ThemeTokens::from_value(dark)),
+            ),
+        };
+        Self {
+            globals: Globals::of(config),
+            light,
+            dark,
+        }
+    }
+
+    /// The configuration of the unified renderer, with the sections of `config`.
+    pub(crate) fn config<'a>(&'a self, config: &'a MermaidConfig) -> Config<'a> {
+        Config {
+            section: Section::of(config),
+            globals: &self.globals,
+            theme: &self.light,
+        }
+    }
+
+    /// The theme of the render, as the flowchart style reads it.
+    pub(crate) fn view(&self) -> ThemeView<'_> {
+        ThemeView {
+            light: &self.light,
+            dark: self.dark.as_ref(),
+        }
+    }
+}
+
+/// The configuration and theme that the tests of the unified renderer build from a resolved
+/// configuration, its theme variables and the globals.
+#[cfg(test)]
+pub(crate) struct Fixture {
+    config: MermaidConfig,
+    globals: Globals,
+    theme: ThemeTokens,
+}
+
+#[cfg(test)]
+impl Fixture {
+    /// The fixture of a configuration with the theme variables given.
+    pub(crate) fn new(config: MermaidConfig, variables: &ferrigura_model::value::Value) -> Self {
+        Self {
+            globals: Globals::of(&config),
+            theme: ThemeTokens::from_value(variables),
+            config,
+        }
+    }
+
+    /// The configuration of the fixture, as the renderer reads it.
+    pub(crate) fn config(&self) -> Config<'_> {
+        Config {
+            section: Section::of(&self.config),
+            globals: &self.globals,
+            theme: &self.theme,
+        }
+    }
+}

@@ -16,6 +16,7 @@ use crate::RenderError;
 use crate::a11y;
 use crate::svg::{escape, number};
 use crate::theme::Themes;
+use crate::unified::Bridge;
 use crate::unified::geom::BBox;
 use crate::unified::markers;
 use crate::unified::pipeline::{self, cover};
@@ -55,9 +56,11 @@ pub fn render(input: &ClassInput<'_>) -> Result<String, RenderError> {
     let mut data = data::get_data(diagram, config, theme);
     // `classRenderer-v3-unified.ts` 59: the diagram type names the markers and their class.
     data.diagram_type = markers::CLASS.to_owned();
-    let mut measured = pipeline::measure(data, config, theme)?;
-    pipeline::lay_out(&mut measured, config)?;
-    let painted = pipeline::paint(&measured, id, config, theme)?;
+    let bridge = Bridge::new(config, input.themes);
+    let unified = bridge.config(config);
+    let mut measured = pipeline::measure(data, &unified)?;
+    pipeline::lay_out(&mut measured, &unified)?;
+    let painted = pipeline::paint(&measured, id, &unified)?;
     let mut bounds = painted.bounds;
 
     // `utils.insertTitle` (`classRenderer-v3-unified.ts` 68-73): centred over what is drawn, the

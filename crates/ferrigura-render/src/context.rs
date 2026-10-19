@@ -6,6 +6,7 @@
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::theme::ThemeTokens;
+use ferrigura_model::value::Value;
 
 /// What a renderer gets: its diagram, the section of its configuration, the globals, the theme and
 /// the id. `Section` is the configuration section of the diagram type (`()` for a diagram without
@@ -44,6 +45,10 @@ pub struct Globals {
     pub layout: String,
     /// `htmlLabels`, when the configuration sets it.
     pub html_labels: Option<bool>,
+    /// `themeVariables` as the user gives them: the overrides, before the theme computes its
+    /// variables. The unified edges compute the font size of the configured theme from them
+    /// (`unified::edges::label`), which is not the theme of the render's colour scheme.
+    pub theme_variables: Option<Value>,
 }
 
 impl Globals {
@@ -58,6 +63,7 @@ impl Globals {
             security_level: config.security_level.clone(),
             layout: config.layout.clone(),
             html_labels: config.html_labels,
+            theme_variables: config.theme_variables.clone(),
         }
     }
 }
@@ -78,9 +84,51 @@ mod tests {
     /// The renderers that take a [`Context`](super::Context). None of them reads a theme variable by
     /// name: they read the tokens, and the helpers of `variables` are for the renderers not yet moved.
     /// A renderer joins this list when it moves.
-    const MIGRATED: [(&str, &str); 2] = [
+    const MIGRATED: [(&str, &str); 17] = [
         ("pie", include_str!("pie.rs")),
         ("info", include_str!("info/mod.rs")),
+        ("flowchart", include_str!("flowchart/mod.rs")),
+        ("flowchart::style", include_str!("flowchart/style.rs")),
+        ("unified::clusters", include_str!("unified/clusters.rs")),
+        ("unified::palette", include_str!("unified/palette.rs")),
+        ("unified::pipeline", include_str!("unified/pipeline.rs")),
+        ("unified::shapes", include_str!("unified/shapes/mod.rs")),
+        (
+            "unified::shapes::util",
+            include_str!("unified/shapes/util.rs"),
+        ),
+        (
+            "unified::shapes::class_box",
+            include_str!("unified/shapes/class_box.rs"),
+        ),
+        (
+            "unified::shapes::containers",
+            include_str!("unified/shapes/containers.rs"),
+        ),
+        (
+            "unified::shapes::er_box",
+            include_str!("unified/shapes/er_box.rs"),
+        ),
+        (
+            "unified::shapes::icon",
+            include_str!("unified/shapes/icon.rs"),
+        ),
+        (
+            "unified::shapes::rect",
+            include_str!("unified/shapes/rect.rs"),
+        ),
+        (
+            "unified::shapes::rect_with_title",
+            include_str!("unified/shapes/rect_with_title.rs"),
+        ),
+        (
+            "unified::shapes::requirement_box",
+            include_str!("unified/shapes/requirement_box.rs"),
+        ),
+        (
+            "unified::shapes::state",
+            include_str!("unified/shapes/state.rs"),
+        ),
     ];
 
     /// The helpers of `variables`, as a call or a path to them.

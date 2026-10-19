@@ -10,6 +10,8 @@
 pub mod data;
 pub mod style;
 
+use crate::context::Globals;
+use crate::unified::{Bridge, Config};
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::er::ErDiagram;
 use ferrigura_text::{
@@ -50,11 +52,11 @@ const VIEWBOX_PADDING: f64 = 8.0;
 const DEFAULT_FONT_SIZE: f64 = 16.0;
 
 /// `getData` and the measure step of the unified renderer (`erRenderer-unified.ts` 17-28).
-fn measure(input: &ErInput<'_>) -> Result<Measured, RenderError> {
+fn measure(input: &ErInput<'_>, unified: &Config<'_>) -> Result<Measured, RenderError> {
     let mut data = data::get_data(input.diagram, input.config);
     // `erRenderer-unified.ts` 22: the diagram type of the layout data, which names the markers.
     data.diagram_type = markers::ER.to_owned();
-    pipeline::measure(data, input.config, input.themes.primary())
+    pipeline::measure(data, unified)
 }
 
 /// Renders the diagram to an SVG document.
@@ -63,12 +65,14 @@ fn measure(input: &ErInput<'_>) -> Result<Measured, RenderError> {
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the layout fails.
 pub fn render(input: &ErInput<'_>) -> Result<String, RenderError> {
-    let mut measured = measure(input)?;
-    pipeline::lay_out(&mut measured, input.config)?;
-    let config = input.config;
     let theme = input.themes.primary();
+    let bridge = Bridge::new(input.config, input.themes);
+    let unified = bridge.config(input.config);
+    let mut measured = measure(input, &unified)?;
+    pipeline::lay_out(&mut measured, &unified)?;
+    let config = input.config;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, config, theme)?;
+    let painted = pipeline::paint(&measured, id, &unified)?;
     let mut bounds = painted.bounds;
 
     // `utils.insertTitle` (`erRenderer-unified.ts` 71-76): centred over the drawing, at
@@ -150,6 +154,10 @@ pub fn render(input: &ErInput<'_>) -> Result<String, RenderError> {
         h = number(view_height),
         root = painted.root,
         coloured_markers = painted.coloured_markers,
-        defs = look_defs(id, input.themes, config),
+        defs = look_defs(
+            id,
+            Bridge::new(config, input.themes).view(),
+            &Globals::of(config)
+        ),
     ))
 }

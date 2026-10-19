@@ -2,11 +2,10 @@
 //! palette of a colour theme (`diagrams/common/colorThemeGate.ts`) and the style declarations of a
 //! node as `styles2String` writes them (`shapes/handDrawnShapeStyles.ts`).
 
-use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::ThemeTokens;
 
 use super::data::Node;
-use crate::variables::texts_of;
+use crate::context::Globals;
 
 /// The colour themes that carry a palette (`COLOR_THEMES` in `diagrams/common/colorThemeGate.ts`).
 pub(crate) const COLOUR_THEMES: [&str; 2] = ["redux-color", "redux-dark-color"];
@@ -23,17 +22,17 @@ pub(crate) struct Palette {
 
 /// The palette of a configuration: only the colour themes have one, and only with border colours
 /// (`isColorTheme` in `colorThemeGate.ts`).
-pub(crate) fn palette(config: &MermaidConfig, variables: &Value) -> Option<Palette> {
-    if !COLOUR_THEMES.contains(&config.theme.as_str()) {
+pub(crate) fn palette(globals: &Globals, theme: &ThemeTokens) -> Option<Palette> {
+    if !COLOUR_THEMES.contains(&globals.theme.as_str()) {
         return None;
     }
-    let border = texts_of(variables, "borderColorArray");
+    let border = theme.border_color_array.texts();
     if border.is_empty() {
         return None;
     }
     Some(Palette {
         border,
-        background: texts_of(variables, "bkgColorArray"),
+        background: theme.bkg_color_array.texts(),
     })
 }
 

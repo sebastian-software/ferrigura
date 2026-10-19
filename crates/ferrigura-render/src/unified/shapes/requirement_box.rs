@@ -26,7 +26,6 @@ use crate::unified::data::RequirementFields;
 use crate::unified::geom::{BBox, Point};
 use crate::unified::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::unified::palette;
-use crate::variables::text_of;
 
 /// The padding of the outline around the texts, and the gap under the type and the name
 /// (`requirementBox.ts` 23-24).
@@ -88,7 +87,8 @@ pub(super) fn requirement_box(input: &ShapeInput<'_>) -> Result<ShapeOutput, Ren
     let styles = util::styles2string(node);
     let label_style = styles.label.clone();
     let node_style = styles.node.clone();
-    let font_size = util::theme_number(input.theme, "fontSize").unwrap_or(input.config.font_size);
+    let font_size =
+        util::theme_number(&input.config.theme.font_size).unwrap_or(input.config.globals.font_size);
     let mut texts: Vec<Text> = Vec::new();
 
     // The type, then the name, which is bold (`requirementBox.ts` 40-57). Their heights are the
@@ -161,16 +161,20 @@ pub(super) fn requirement_box(input: &ShapeInput<'_>) -> Result<ShapeOutput, Ren
 
     // The outline and the divider take the node's fill and stroke, else the theme's (`userNodeOverrides`,
     // `requirementBox.ts` 119-125): roughness 0 and a solid fill for every look but handDrawn.
-    let theme_fill = text_of(input.theme, "mainBkg").unwrap_or_default();
+    let theme_fill = input.config.theme.main_bkg.text().unwrap_or_default();
     let fill = style_value(&styles, "fill").unwrap_or(theme_fill);
     let stroke = style_value(&styles, "stroke")
-        .unwrap_or_else(|| text_of(input.theme, "nodeBorder").unwrap_or_default());
+        .unwrap_or_else(|| input.config.theme.node_border.text().unwrap_or_default());
     let stroke_width = util::stroke_width(&styles);
     // Every path takes the node's style when the node has one and the theme has an edge label
     // background or a border palette (`requirementBox.ts` 193-199).
-    let border = palette::palette(input.config, input.theme);
+    let border = palette::palette(input.config.globals, input.config.theme);
     let paths_styled = !node_style.is_empty()
-        && (text_of(input.theme, "requirementEdgeLabelBackground")
+        && (input
+            .config
+            .theme
+            .requirement_edge_label_background
+            .text()
             .is_some_and(|colour| !colour.is_empty())
             || border.is_some());
     let path_style = paths_styled.then_some(node_style.as_str());
@@ -291,7 +295,7 @@ impl Builder<'_, '_> {
         if raw.is_empty() {
             return Ok(0.0);
         }
-        let width = calculate_text_width(raw, self.input.config.font_size)? + WRAP_MARGIN;
+        let width = calculate_text_width(raw, self.input.config.globals.font_size)? + WRAP_MARGIN;
         let text = sanitize_text(&decode_entities(raw));
         let declarations: Vec<String> = style
             .split(';')
@@ -353,7 +357,7 @@ fn style_weight(style: &str) -> Option<FontWeight> {
 /// The `data-color-id` of the box: `color-<colorIndex % borderColorArray.length>` on a colour theme
 /// (`requirementBox.ts` 133-136).
 fn colour_group_attribute(input: &ShapeInput<'_>) -> String {
-    let Some(palette) = palette::palette(input.config, input.theme) else {
+    let Some(palette) = palette::palette(input.config.globals, input.config.theme) else {
         return String::new();
     };
     let slot = palette::palette_slot(Some(input.node.color_index.unwrap_or(0)), &palette);

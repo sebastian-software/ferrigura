@@ -13,6 +13,8 @@ mod layout;
 mod paint;
 mod style;
 
+use crate::context::Globals;
+use crate::unified::Bridge;
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::mindmap::MindmapDiagram;
 use ferrigura_text::{EmbeddedFamily, Run, embed_runs};
@@ -70,7 +72,9 @@ pub fn render(input: &MindmapInput<'_>) -> Result<String, RenderError> {
     // `getData` and the overrides of the shapes (`mindmapRenderer.ts` 58-74), then the measure step:
     // every node's shape and label, and the sizes of their groups.
     let data = data::layout_data(input.diagram, config);
-    let mut measured = pipeline::measure(data, config, theme)?;
+    let bridge = Bridge::new(config, input.themes);
+    let unified = bridge.config(config);
+    let mut measured = pipeline::measure(data, &unified)?;
 
     // The layout: the name the configuration gives, or cose-bilkent for the names that are not
     // registered (`mindmapRenderer.ts` 47-49).
@@ -78,7 +82,7 @@ pub fn render(input: &MindmapInput<'_>) -> Result<String, RenderError> {
         layout::Layout::CoseBilkent => layout::cose(&mut measured.data)?,
         layout::Layout::TidyTree => layout::tidy(&mut measured.data)?,
         layout::Layout::Elk => {
-            pipeline::lay_out(&mut measured, config)?;
+            pipeline::lay_out(&mut measured, &unified)?;
         }
     }
 
@@ -134,7 +138,11 @@ pub fn render(input: &MindmapInput<'_>) -> Result<String, RenderError> {
 
     // The root group is the one `mermaidAPI` appends (`mermaidAPI.ts` 419); the look's shadow and
     // gradient definitions come after it (`insertLookDefs`).
-    let defs = look_defs(input.id, input.themes, config);
+    let defs = look_defs(
+        input.id,
+        Bridge::new(config, input.themes).view(),
+        &Globals::of(config),
+    );
     let root = root.raw_text(format!(
         "<style>{style}</style><g>{group}</g>{defs}",
         group = painted.root,

@@ -9,7 +9,9 @@
 //! diagram's id, once for each set of variables, and the rules refer to it with `var(…)`. The
 //! palette's slots are `borderColor<i>` and `bkgColor<i>`, as the flowchart's are.
 
+use crate::context::Globals;
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::value::Value;
 use ferrigura_text::EmbeddedFamily;
 
@@ -66,7 +68,7 @@ pub fn style_sheet(
     // `look === 'neo' ? strokeWidth : '1px'` (`styles.ts` 117, 122).
     let neo = config.look == "neo";
     let entity_stroke = if neo { stroke_width.as_str() } else { "1px" };
-    let palette = palette(config, variables);
+    let palette = palette(&Globals::of(config), &ThemeTokens::from_value(variables));
     let shadow = match text_of(variables, "dropShadow") {
         Some(shadow) if !shadow.is_empty() => shadow.replacen(
             "url(#drop-shadow)",
@@ -317,14 +319,14 @@ fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -
     let id = format!("#{svg_id}");
     match themes {
         Themes::Single(variables) => {
-            let palette = palette(config, variables);
+            let palette = palette(&Globals::of(config), &ThemeTokens::from_value(variables));
             rule(
                 &id,
                 &declarations(variables, flood_colour(config), palette.as_ref()),
             )
         }
         Themes::Schemes { light, dark } => {
-            let palette = palette(config, light);
+            let palette = palette(&Globals::of(config), &ThemeTokens::from_value(light));
             format!(
                 "{}@media (prefers-color-scheme: dark){{{}}}",
                 rule(&id, &declarations(light, LIGHT_FLOOD, palette.as_ref())),

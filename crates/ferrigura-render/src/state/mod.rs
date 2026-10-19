@@ -14,12 +14,14 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::a11y;
+use crate::context::Globals;
 use crate::svg::{escape, number};
 use crate::theme::Themes;
 use crate::unified::data::LayoutData;
 use crate::unified::geom::BBox;
 use crate::unified::markers;
 use crate::unified::pipeline::{self, Measured, cover};
+use crate::unified::{Bridge, Config};
 
 /// What the state renderer draws.
 #[derive(Debug, Clone, Copy)]
@@ -40,11 +42,11 @@ pub struct StateInput<'a> {
 pub const DIAGRAM_TYPE: &str = "stateDiagram";
 
 /// `getData` and the measure step of the unified renderer.
-fn measure(input: &StateInput<'_>) -> Result<Measured, RenderError> {
+fn measure(input: &StateInput<'_>, unified: &Config<'_>) -> Result<Measured, RenderError> {
     let mut data = data::get_data(input.diagram, input.config);
     // `stateRenderer-v3-unified.ts` 59 sets the diagram type on the layout data after `getData`.
     data.diagram_type = DIAGRAM_TYPE.to_owned();
-    pipeline::measure(data, input.config, input.themes.primary())
+    pipeline::measure(data, unified)
 }
 
 /// Renders a state diagram as an SVG document (`stateRenderer-v3-unified.ts`, `draw`): the layout
@@ -54,13 +56,15 @@ fn measure(input: &StateInput<'_>) -> Result<Measured, RenderError> {
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the layout fails.
 pub fn render(input: &StateInput<'_>) -> Result<String, RenderError> {
-    let mut measured = measure(input)?;
-    apply_links(&mut measured.data, &input.diagram.links);
-    pipeline::lay_out(&mut measured, input.config)?;
-    let config = input.config;
     let theme = input.themes.primary();
+    let bridge = Bridge::new(input.config, input.themes);
+    let unified = bridge.config(input.config);
+    let mut measured = measure(input, &unified)?;
+    apply_links(&mut measured.data, &input.diagram.links);
+    pipeline::lay_out(&mut measured, &unified)?;
+    let config = input.config;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, config, theme)?;
+    let painted = pipeline::paint(&measured, id, &unified)?;
     let mut bounds = painted.bounds;
 
     // `insertTitle`: centred over everything drawn so far, `titleTopMargin` above the origin.
@@ -139,7 +143,11 @@ pub fn render(input: &StateInput<'_>) -> Result<String, RenderError> {
         root = painted.root,
         coloured_markers = painted.coloured_markers,
         // `insertLookDefs` is shared with the flowchart: the drop shadows and the gradient.
-        defs = crate::flowchart::style::look_defs(id, input.themes, config),
+        defs = crate::flowchart::style::look_defs(
+            id,
+            Bridge::new(config, input.themes).view(),
+            &Globals::of(config)
+        ),
     ))
 }
 

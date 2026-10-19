@@ -29,6 +29,8 @@ pub(super) struct Context<'a> {
     pub id: &'a str,
     /// The palette of a colour theme, `None` for every other theme (`isColorTheme`).
     pub palette: Option<Palette>,
+    /// The configuration the unified renderer reads, for the shapes and the edges of the blocks.
+    pub unified: crate::unified::Config<'a>,
 }
 
 /// What the placed pass has drawn so far: the groups of the blocks and the edges, the box they cover,
@@ -142,18 +144,11 @@ fn draw_block(
     width: Option<f64>,
 ) -> Result<(Node, ShapeOutput), RenderError> {
     let node = node_of(block, context, placed);
-    let label = shapes::node_label(
-        &node,
-        context.config,
-        context.theme,
-        width,
-        TextAnchor::Middle,
-    )?;
+    let label = shapes::node_label(&node, &context.unified, width, TextAnchor::Middle)?;
     let shape = shapes::draw(&ShapeInput {
         node: &node,
         label: label.as_ref(),
-        config: context.config,
-        theme: context.theme,
+        config: &context.unified,
         dir: None,
     })?;
     Ok((node, shape))
@@ -312,7 +307,7 @@ pub(super) fn insert_edges(
     }
 
     let paths: Vec<Edge> = built.iter().map(|(edge, _, _)| edge.clone()).collect();
-    for path in edges::paint_paths(&paths, context.id, "block", context.config) {
+    for path in edges::paint_paths(&paths, context.id, "block", &context.unified.section) {
         crate::unified::pipeline::cover(&mut drawing.bounds, path.bbox);
         drawing.body.push_str(&path.svg);
     }
@@ -325,7 +320,7 @@ pub(super) fn insert_edges(
             id: model_id.clone(),
             ..edge.clone()
         };
-        let painted = edges::paint_label(&labelled, label, context.config);
+        let painted = edges::paint_label(&labelled, label, &context.unified.section);
         crate::unified::pipeline::cover(&mut drawing.bounds, painted.bbox);
         drawing.body.push_str(&painted.svg);
         drawing.labels.push(label.clone());

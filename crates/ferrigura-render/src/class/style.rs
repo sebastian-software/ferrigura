@@ -9,12 +9,15 @@
 //! as the flowchart's do not (`flowchart/style.rs`).
 
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::value::Value;
 use ferrigura_text::EmbeddedFamily;
 
+use crate::context::Globals;
 use crate::flowchart::style::look_defs;
 use crate::svg::font_faces;
 use crate::theme::Themes;
+use crate::unified::Bridge;
 use crate::unified::palette::{Palette, palette};
 use crate::variables::{css_text, text_of, texts_of, truthy};
 
@@ -110,7 +113,8 @@ pub fn style_sheet(
 /// its title as the flowchart does.
 #[must_use]
 pub fn defs(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -> String {
-    look_defs(svg_id, themes, config)
+    let bridge = Bridge::new(config, themes);
+    look_defs(svg_id, bridge.view(), &bridge.globals)
 }
 
 /// The class rules of `styles.js` (lines 42-241) after the common ones, with the palette rules first
@@ -123,7 +127,11 @@ fn class_rules(
     config: &MermaidConfig,
 ) -> String {
     let id = format!("#{svg_id}");
-    let mut css = palette_rules(&id, look, palette(config, variables).as_ref());
+    let mut css = palette_rules(
+        &id,
+        look,
+        palette(&Globals::of(config), &ThemeTokens::from_value(variables)).as_ref(),
+    );
     css.push_str(&format!(
         "{id} g.classGroup text{{fill:var(--nodeBorder);stroke:none;font-family:{font};font-size:10px;}}\
          {id} g.classGroup text .title{{font-weight:bolder;}}\
@@ -208,13 +216,25 @@ fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -
             };
             format!(
                 "{id}{{{}}}",
-                declarations(variables, palette(config, variables), flood)
+                declarations(
+                    variables,
+                    palette(&Globals::of(config), &ThemeTokens::from_value(variables)),
+                    flood
+                )
             )
         }
         Themes::Schemes { light, dark } => format!(
             "{id}{{{}}}@media (prefers-color-scheme: dark){{{id}{{{}}}}}",
-            declarations(light, palette(config, light), LIGHT_FLOOD),
-            declarations(dark, palette(config, dark), DARK_FLOOD),
+            declarations(
+                light,
+                palette(&Globals::of(config), &ThemeTokens::from_value(light)),
+                LIGHT_FLOOD
+            ),
+            declarations(
+                dark,
+                palette(&Globals::of(config), &ThemeTokens::from_value(dark)),
+                DARK_FLOOD
+            ),
         ),
     }
 }

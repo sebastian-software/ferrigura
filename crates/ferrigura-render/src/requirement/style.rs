@@ -9,7 +9,9 @@
 //! unused rules (`.reqBox`, `.reqTitle`, `.reqLabel`, `.reqLabelBox`, `.req-title-line`,
 //! `.relationshipLabel`) are written too: the sheet of the reference has them, and they match nothing.
 
+use crate::context::Globals;
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::value::Value;
 use ferrigura_text::EmbeddedFamily;
 
@@ -71,7 +73,7 @@ pub fn style_sheet(
     };
     // `styles.js` 70-88: the box and title rules take the requirement's own border size.
     let border_size = text_of(variables, "requirementBorderSize").unwrap_or_else(|| "1".to_owned());
-    let palette = palette(config, variables);
+    let palette = palette(&Globals::of(config), &ThemeTokens::from_value(variables));
     let shadow = match text_of(variables, "dropShadow") {
         Some(shadow) if !shadow.is_empty() => shadow.replacen(
             "url(#drop-shadow)",
@@ -317,14 +319,14 @@ fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -
     let id = format!("#{svg_id}");
     match themes {
         Themes::Single(variables) => {
-            let palette = palette(config, variables);
+            let palette = palette(&Globals::of(config), &ThemeTokens::from_value(variables));
             rule(
                 &id,
                 &declarations(variables, flood_colour(config), palette.as_ref()),
             )
         }
         Themes::Schemes { light, dark } => {
-            let palette = palette(config, light);
+            let palette = palette(&Globals::of(config), &ThemeTokens::from_value(light));
             format!(
                 "{}@media (prefers-color-scheme: dark){{{}}}",
                 rule(&id, &declarations(light, LIGHT_FLOOD, palette.as_ref())),

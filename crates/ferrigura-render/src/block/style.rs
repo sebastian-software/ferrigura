@@ -8,8 +8,11 @@
 //! which the reference makes with `khroma`'s `fade`: an `rgba` with the alpha written in, since a custom
 //! property cannot carry one.
 
+use crate::context::Globals;
+use crate::unified::Bridge;
 use ferrigura_model::block::ClassDef;
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::value::Value;
 use ferrigura_text::EmbeddedFamily;
 
@@ -143,7 +146,7 @@ pub fn style_sheet_with_fonts(
         ),
         composite_cluster_colours(&id, themes, &stroke_width),
     ];
-    if let Some(palette) = palette(config, variables) {
+    if let Some(palette) = palette(&Globals::of(config), &ThemeTokens::from_value(variables)) {
         rules.push(palette_rules(&id, look, palette.border.len()));
     }
     rules.push(class_rules(&id, class_defs));
@@ -156,7 +159,11 @@ pub fn style_sheet_with_fonts(
     };
     css_text(&format!(
         "{faces}{}{}",
-        custom_properties(svg_id, themes, config),
+        custom_properties(
+            svg_id,
+            Bridge::new(config, themes).view(),
+            &Globals::of(config)
+        ),
         rules.concat()
     ))
 }

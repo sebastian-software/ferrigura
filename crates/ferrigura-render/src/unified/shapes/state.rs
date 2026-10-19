@@ -15,7 +15,9 @@ const STATE_DIAMETER: f64 = 14.0;
 /// Whether a small shape takes the small drop shadow: nodes under 25 wide, in a theme with node
 /// shadows, which the reference writes as an inline filter.
 fn small_shadow(input: &ShapeInput<'_>, width: f64) -> Option<String> {
-    (width < 25.0 && util::theme_flag(input.theme, "nodeShadow") && input.node.look != "handDrawn")
+    (width < 25.0
+        && util::theme_flag(&input.config.theme.node_shadow)
+        && input.node.look != "handDrawn")
         .then(|| format!("filter:url(#{SVG_ID_TOKEN}-drop-shadow-small)"))
 }
 
@@ -133,6 +135,7 @@ pub(super) fn anchor(input: &ShapeInput<'_>) -> Part {
 mod tests {
     use super::super::test_support::{draw_box, node, theme};
     use super::*;
+    use crate::unified::Fixture;
     use crate::unified::data::Node;
     use crate::unified::label::LabelLayout;
     use crate::unified::shapes::{ShapeInput, draw};
@@ -194,14 +197,13 @@ mod tests {
 
     #[test]
     fn a_fork_bar_is_seventy_by_ten_across_the_flow_and_turns_in_a_horizontal_flow() {
-        let config = MermaidConfig::default();
-        let theme = theme();
+        let fixture = Fixture::new(MermaidConfig::default(), &theme());
+        let config = fixture.config();
         let node = node("fork", "neo");
         let vertical = draw(&ShapeInput {
             node: &node,
             label: None,
             config: &config,
-            theme: &theme,
             dir: Some("TB"),
         })
         .expect("known");
@@ -210,7 +212,6 @@ mod tests {
             node: &node,
             label: None,
             config: &config,
-            theme: &theme,
             dir: Some("LR"),
         })
         .expect("known");
@@ -226,13 +227,13 @@ mod tests {
                 ferrigura_model::value::Value::Bool(false),
             );
         }
-        let config = MermaidConfig::default();
+        let fixture = Fixture::new(MermaidConfig::default(), &theme);
+        let config = fixture.config();
         let node: Node = node("stateStart", "neo");
         let shape = draw(&ShapeInput {
             node: &node,
             label: None,
             config: &config,
-            theme: &theme,
             dir: None,
         })
         .expect("known");

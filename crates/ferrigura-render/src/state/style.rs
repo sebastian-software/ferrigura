@@ -9,8 +9,10 @@
 //! the reference's `undefined` fallback does. The `//` comments and the nested `text` rule of
 //! `.state-note` are not CSS, and are not written (`docs-port/state/NOTES.md` 5.3).
 
+use crate::context::Globals;
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::state::ClassDef;
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::value::Value;
 use ferrigura_text::EmbeddedFamily;
 
@@ -442,7 +444,7 @@ fn state_rules(
 /// outline and the tint of its containers. A theme without a palette, or one that is not a colour
 /// theme, has none.
 fn palette_rules(id: &str, config: &MermaidConfig, variables: &Value) -> String {
-    let Some(palette) = palette(config, variables) else {
+    let Some(palette) = palette(&Globals::of(config), &ThemeTokens::from_value(variables)) else {
         return String::new();
     };
     let look = safe_look(&config.look);

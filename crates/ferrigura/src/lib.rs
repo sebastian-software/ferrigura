@@ -19,13 +19,15 @@ use std::hash::Hasher;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use ferrigura_model::config::{MermaidConfig, SiteConfig, typed};
+use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
 use ferrigura_render::context::{Context, Globals, ThemeView};
-use ferrigura_render::flowchart::{self, FlowchartInput};
+use ferrigura_render::flowchart;
 use ferrigura_render::pie::render as render_pie;
 use ferrigura_render::theme::Themes;
+use ferrigura_render::unified::Section;
 use ferrigura_render::{
     architecture as architecture_render, block as block_render, c4 as c4_render,
     class as class_render, er as er_render, event_modeling as event_modeling_render,
@@ -615,18 +617,20 @@ pub fn flowchart_elk_stages(
     }))
 }
 
-/// Parses a flowchart and hands it, with its configuration and theme, to `step`.
+/// Parses a flowchart and hands it, with its sections, globals and theme, to `step`.
 fn with_flowchart<T>(
     text: &str,
     prepared: &Prepared<'_>,
-    step: impl FnOnce(&FlowchartInput<'_>) -> Result<T, RenderError>,
+    step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
     let diagram = ferrigura_syntax::flowchart::parse(text)
         .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
-    step(&FlowchartInput {
+    let section = Section::of(&prepared.view.config);
+    step(&Context {
         diagram: &diagram,
-        config: &prepared.view.config,
-        themes: prepared.themes(),
+        section: &section,
+        globals: &prepared.view.globals,
+        theme: prepared.theme(),
         id: &prepared.id,
     })
 }

@@ -43,10 +43,9 @@ mod test_support;
 mod util;
 mod wave;
 
-use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::value::Value;
 use ferrigura_syntax::sanitize::sanitize_text;
 
+use super::Config;
 use super::clusters;
 use super::data::Node;
 use super::geom::{BBox, CenterBox, Point};
@@ -70,10 +69,8 @@ pub struct ShapeInput<'a> {
     /// The node's label, laid out at the node's wrapping width and before any minimum width is
     /// applied; `None` when the node has no label.
     pub label: Option<&'a LabelLayout>,
-    /// The effective configuration.
-    pub config: &'a MermaidConfig,
-    /// The theme variables (`radius`, `strokeWidth`, `nodeShadow`, ...).
-    pub theme: &'a Value,
+    /// The configuration the unified renderer reads: its sections, the globals and the theme's tokens.
+    pub config: &'a Config<'a>,
     /// The direction the node is laid out in: the nearest ancestor's `dir`, else the diagram's.
     pub dir: Option<&'a str>,
 }
@@ -175,8 +172,7 @@ impl Intersect {
 /// read.
 pub fn node_label(
     node: &Node,
-    config: &MermaidConfig,
-    theme: &Value,
+    config: &Config<'_>,
     width: Option<f64>,
     anchor: Anchor,
 ) -> Result<Option<LabelLayout>, RenderError> {
@@ -196,7 +192,7 @@ pub fn node_label(
     // `node.wrappingWidth` (the state diagram's `state.wrappingWidth`) before the flowchart's.
     let default_width = node
         .wrapping_width
-        .unwrap_or(config.flowchart.wrapping_width);
+        .unwrap_or(config.section.flowchart.wrapping_width);
     // The icon and image handlers set the node's width before they lay out the label: the icon
     // size or the image's width, at least the wrapping width.
     let wrapping_width = match kind {
@@ -244,7 +240,7 @@ pub fn node_label(
         anchor,
         wrap_in_style: true,
         styles: &declarations,
-        font_size: util::theme_number(theme, "fontSize").unwrap_or(config.font_size),
+        font_size: util::theme_number(&config.theme.font_size).unwrap_or(config.globals.font_size),
         title: false,
     };
     // The reference's `labelHelper` takes the label's box from `text.getBBox()` (shapes/util.ts
@@ -486,8 +482,11 @@ fn unknown_shape(name: &str) -> RenderError {
 
 #[cfg(test)]
 mod tests {
+    use ferrigura_model::config::MermaidConfig;
+
     use super::test_support::{draw_box, node, theme};
     use super::*;
+    use crate::unified::Fixture;
 
     fn group_of(node: &Node, shape: &ShapeOutput) -> String {
         node_svg(node, shape, "svg-id", LinkForm::Flowchart)
@@ -557,12 +556,12 @@ mod tests {
     fn the_label_of_a_shape_without_one_is_none_without_laying_it_out() {
         // `node_label` returns before the label layout for these shapes, so it runs without the
         // layout of `label` (task T2).
-        let config = MermaidConfig::default();
-        let theme = theme();
+        let fixture = Fixture::new(MermaidConfig::default(), &theme());
+        let config = fixture.config();
         for shape in ["f-circ", "fork", "sm-circ", "fr-circ", "anchor"] {
             let node = node(shape, "neo");
             assert_eq!(
-                node_label(&node, &config, &theme, None, Anchor::Middle).expect("known"),
+                node_label(&node, &config, None, Anchor::Middle).expect("known"),
                 None,
                 "{shape}"
             );
@@ -575,12 +574,12 @@ mod tests {
     /// node, which the DB leaves as it is): `nightly-check/v2/03-should-render-raw-strings`.
     #[test]
     fn a_node_label_is_sanitised_and_decoded_as_it_is_drawn() {
-        let config = MermaidConfig::default();
-        let theme = theme();
+        let fixture = Fixture::new(MermaidConfig::default(), &theme());
+        let config = fixture.config();
         for (text, shown_as) in [("<11", "<11"), ("&lt;11", "<11")] {
             let mut node = node("squareRect", "neo");
             node.label = text.to_owned();
-            let label = node_label(&node, &config, &theme, None, Anchor::Middle)
+            let label = node_label(&node, &config, None, Anchor::Middle)
                 .expect("known")
                 .expect("a label");
             let shown: String = label
@@ -595,10 +594,10 @@ mod tests {
 
     #[test]
     fn an_unknown_shape_is_an_error_as_no_such_shape_is_in_the_reference() {
-        let config = MermaidConfig::default();
-        let theme = theme();
+        let fixture = Fixture::new(MermaidConfig::default(), &theme());
+        let config = fixture.config();
         let node = node("no-such-shape", "neo");
-        let error = node_label(&node, &config, &theme, None, Anchor::Middle).expect_err("unknown");
+        let error = node_label(&node, &config, None, Anchor::Middle).expect_err("unknown");
         assert!(
             error.to_string().contains("No such shape: no-such-shape"),
             "{error}"

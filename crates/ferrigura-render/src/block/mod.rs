@@ -14,8 +14,11 @@ pub mod style;
 
 use std::collections::HashMap;
 
+use crate::context::Globals;
+use crate::unified::Bridge;
 use ferrigura_model::block::{Block as ModelBlock, BlockDiagram};
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::value::Value;
 use ferrigura_text::Run;
 
@@ -142,12 +145,17 @@ impl Block {
 pub fn render(input: &BlockInput<'_>) -> Result<String, RenderError> {
     let config = input.config;
     let theme = input.themes.primary();
+    let bridge = Bridge::new(config, input.themes);
     let context = nodes::Context {
         config,
         theme,
         class_defs: &input.diagram.class_defs,
         id: input.id,
-        palette: crate::unified::palette::palette(config, theme),
+        palette: crate::unified::palette::palette(
+            &Globals::of(config),
+            &ThemeTokens::from_value(theme),
+        ),
+        unified: bridge.config(config),
     };
 
     let mut root = Block::root(input.diagram);
@@ -206,8 +214,12 @@ pub fn render(input: &BlockInput<'_>) -> Result<String, RenderError> {
         y = number(bounds.y - 5.0),
         w = number(bounds.width + 10.0),
         h = number(bounds.height + 10.0),
-        defs = look_defs(input.id, input.themes, config),
-        markers = markers::markers(input.id, "block", config),
+        defs = look_defs(
+            input.id,
+            Bridge::new(config, input.themes).view(),
+            &Globals::of(config)
+        ),
+        markers = markers::markers(input.id, "block"),
         body = drawing.body,
     ))
 }

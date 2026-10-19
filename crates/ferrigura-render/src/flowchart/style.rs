@@ -9,28 +9,29 @@
 //! out, each for a stated reason; `docs-port/flowchart/render-notes/styles.md` lists them, and
 //! `tests/flowchart_styles.rs` checks every other rule against the reference's compiled CSS.
 
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::FlowClass;
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use crate::svg::{escape, font_faces};
-use crate::theme::Themes;
+use crate::context::{Globals, ThemeView};
+use crate::svg::{css_text, escape, font_faces};
 use crate::unified::palette::{Palette, palette};
-use crate::variables::{css_text, text_of, texts_of, truthy};
 
-/// The colour tokens of the rules, each declared as a custom property on the diagram's id.
-const COLOUR_TOKENS: [&str; 9] = [
-    "nodeBorder",
-    "mainBkg",
-    "clusterBkg",
-    "clusterBorder",
-    "lineColor",
-    "textColor",
-    "nodeTextColor",
-    "titleColor",
-    "edgeLabelBackground",
-];
+/// The colour tokens of the rules, each declared as a custom property on the diagram's id, in the order
+/// of the custom properties.
+fn colour_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 9] {
+    [
+        ("nodeBorder", &tokens.node_border),
+        ("mainBkg", &tokens.main_bkg),
+        ("clusterBkg", &tokens.cluster_bkg),
+        ("clusterBorder", &tokens.cluster_border),
+        ("lineColor", &tokens.line_color),
+        ("textColor", &tokens.text_color),
+        ("nodeTextColor", &tokens.node_text_color),
+        ("titleColor", &tokens.title_color),
+        ("edgeLabelBackground", &tokens.edge_label_background),
+    ]
+}
 
 /// The flood of the drop shadows in a light scheme (`insertLookDefs.ts:30`).
 const LIGHT_FLOOD: &str = "#000000";
@@ -39,16 +40,16 @@ const LIGHT_FLOOD: &str = "#000000";
 const DARK_FLOOD: &str = "#FFFFFF";
 
 /// The `<style>` element's content for a flowchart with the id `svg_id`, escaped for XML so that it can
-/// be written as the element's text. The look is read from `config.look`, the palette and the
-/// shadow from the theme, and the `classDef` rules come from `classes`.
+/// be written as the element's text. The look is read from the globals, the palette and the shadow from
+/// the theme, and the `classDef` rules come from `classes`.
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
-    themes: Themes<'_>,
-    config: &MermaidConfig,
+    theme: ThemeView<'_>,
+    globals: &Globals,
     classes: &[FlowClass],
 ) -> String {
-    style_sheet_with_fonts(svg_id, themes, config, classes, &[])
+    style_sheet_with_fonts(svg_id, theme, globals, classes, &[])
 }
 
 /// [`style_sheet`] for a diagram whose text is set in embedded font subsets. The rules name the first
@@ -57,35 +58,40 @@ pub fn style_sheet(
 #[must_use]
 pub fn style_sheet_with_fonts(
     svg_id: &str,
-    themes: Themes<'_>,
-    config: &MermaidConfig,
+    theme: ThemeView<'_>,
+    globals: &Globals,
     classes: &[FlowClass],
     families: &[EmbeddedFamily],
 ) -> String {
-    let variables = themes.primary();
+    let tokens = theme.light;
     let id = format!("#{svg_id}");
     let font = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     let stroke_width = format!(
         "{}px",
-        text_of(variables, "strokeWidth").unwrap_or_else(|| "1".to_owned())
+        tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned())
     );
-    let text_colour = if variables.get("nodeTextColor").is_some() {
-        "nodeTextColor"
-    } else {
+    let text_colour = if tokens.node_text_color.is_absent() {
         "textColor"
+    } else {
+        "nodeTextColor"
     };
-    let palette = palette(config, variables);
-    let look = safe_look(&config.look);
-    let neo_stroke = if truthy(variables, "useGradient") {
+    let palette = palette(globals, tokens);
+    let look = safe_look(&globals.look);
+    let neo_stroke = if tokens.use_gradient.truthy() {
         format!("url(#{svg_id}-gradient)")
     } else {
         "var(--nodeBorder)".to_owned()
     };
-    let shadow = match text_of(variables, "dropShadow") {
+    let shadow = match tokens.drop_shadow.text() {
         Some(shadow) if !shadow.is_empty() => shadow.replacen(
             "url(#drop-shadow)",
             &format!("url(#{svg_id}-drop-shadow)"),
@@ -231,7 +237,7 @@ pub fn style_sheet_with_fonts(
     };
     css_text(&format!(
         "{faces}{}{}",
-        custom_properties(svg_id, themes, config),
+        custom_properties(svg_id, theme, globals),
         rules.concat()
     ))
 }
@@ -240,11 +246,11 @@ pub fn style_sheet_with_fonts(
 /// shadows, always, and the gradient only when the theme uses one. The ids are scoped to `svg_id`.
 /// The shadows' flood is black, or white for a dark theme; the style sheet sets it per scheme.
 #[must_use]
-pub fn look_defs(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -> String {
-    let variables = themes.primary();
-    let flood = match themes {
-        Themes::Single(_) => flood_colour(config),
-        Themes::Schemes { .. } => LIGHT_FLOOD,
+pub fn look_defs(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
+    let tokens = theme.light;
+    let flood = match theme.dark {
+        None => flood_colour(globals),
+        Some(_) => LIGHT_FLOOD,
     };
     let shadow = |id: &str, size: &str, offset: &str| {
         format!(
@@ -254,9 +260,9 @@ pub fn look_defs(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -> St
     };
     let mut defs = shadow(&format!("{svg_id}-drop-shadow"), "130%", "4");
     defs.push_str(&shadow(&format!("{svg_id}-drop-shadow-small"), "150%", "2"));
-    if truthy(variables, "useGradient") {
-        let start = text_of(variables, "gradientStart").unwrap_or_default();
-        let stop = text_of(variables, "gradientStop").unwrap_or_default();
+    if tokens.use_gradient.truthy() {
+        let start = tokens.gradient_start.text().unwrap_or_default();
+        let stop = tokens.gradient_stop.text().unwrap_or_default();
         defs.push_str(&format!(
             "<linearGradient id=\"{}-gradient\" gradientUnits=\"objectBoundingBox\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"0%\"><stop offset=\"0%\" stop-color=\"{}\" stop-opacity=\"1\"/><stop offset=\"100%\" stop-color=\"{}\" stop-opacity=\"1\"/></linearGradient>",
             escape(svg_id),
@@ -277,8 +283,8 @@ fn safe_look(look: &str) -> &str {
 }
 
 /// The flood of the drop shadows for a configuration: white for a theme whose name says dark.
-fn flood_colour(config: &MermaidConfig) -> &'static str {
-    if config.theme.contains("dark") {
+fn flood_colour(globals: &Globals) -> &'static str {
+    if globals.theme.contains("dark") {
         DARK_FLOOD
     } else {
         LIGHT_FLOOD
@@ -293,25 +299,17 @@ pub(crate) fn rule(selector: &str, declarations: &str) -> String {
 /// The custom properties of the colours, declared on the diagram's id. With one set of variables they
 /// are written as they are; with a light and a dark set, the dark set applies under
 /// `prefers-color-scheme: dark`, so one SVG follows the viewer's scheme.
-pub(crate) fn custom_properties(
-    svg_id: &str,
-    themes: Themes<'_>,
-    config: &MermaidConfig,
-) -> String {
+pub(crate) fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
     let id = format!("#{svg_id}");
-    match themes {
-        Themes::Single(variables) => {
-            let slots = palette(config, variables).map(|palette| slot_counts(&palette));
-            rule(&id, &declarations(variables, flood_colour(config), slots))
-        }
-        Themes::Schemes { light, dark } => {
-            let slots = palette(config, light).map(|palette| slot_counts(&palette));
-            format!(
-                "{}@media (prefers-color-scheme: dark){{{}}}",
-                rule(&id, &declarations(light, LIGHT_FLOOD, slots)),
-                rule(&id, &declarations(dark, DARK_FLOOD, slots)),
-            )
-        }
+    let light = theme.light;
+    let slots = palette(globals, light).map(|palette| slot_counts(&palette));
+    match theme.dark {
+        None => rule(&id, &declarations(light, flood_colour(globals), slots)),
+        Some(dark) => format!(
+            "{}@media (prefers-color-scheme: dark){{{}}}",
+            rule(&id, &declarations(light, LIGHT_FLOOD, slots)),
+            rule(&id, &declarations(dark, DARK_FLOOD, slots)),
+        ),
     }
 }
 
@@ -323,16 +321,16 @@ fn slot_counts(palette: &Palette) -> (usize, usize) {
 /// The declarations of the custom properties of one set. A set without fills gives every fill slot its
 /// cluster background, so that a palette of the other scheme fills a cluster as this scheme's own rules
 /// would.
-fn declarations(variables: &Value, flood: &str, slots: Option<(usize, usize)>) -> String {
+fn declarations(tokens: &ThemeTokens, flood: &str, slots: Option<(usize, usize)>) -> String {
     let mut out = String::new();
-    for token in COLOUR_TOKENS {
-        if let Some(colour) = text_of(variables, token) {
-            out.push_str(&format!("--{token}:{};", css_text(&colour)));
+    for (name, token) in colour_tokens(tokens) {
+        if let Some(colour) = token.text() {
+            out.push_str(&format!("--{name}:{};", css_text(&colour)));
         }
     }
     if let Some((borders, fills)) = slots {
-        let border_list = texts_of(variables, "borderColorArray");
-        let fill_list = texts_of(variables, "bkgColorArray");
+        let border_list = tokens.border_color_array.texts();
+        let fill_list = tokens.bkg_color_array.texts();
         for index in 0..borders {
             if let Some(colour) = cyclic(&border_list, index) {
                 out.push_str(&format!("--borderColor{index}:{};", css_text(colour)));
@@ -341,7 +339,7 @@ fn declarations(variables: &Value, flood: &str, slots: Option<(usize, usize)>) -
         for index in 0..fills {
             let colour = cyclic(&fill_list, index)
                 .map(str::to_owned)
-                .or_else(|| text_of(variables, "clusterBkg"));
+                .or_else(|| tokens.cluster_bkg.text());
             if let Some(colour) = colour {
                 out.push_str(&format!("--bkgColor{index}:{};", css_text(&colour)));
             }
@@ -446,12 +444,18 @@ fn important(styles: &[String]) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use ferrigura_model::config::{defaults, typed};
+    use ferrigura_model::config::{MermaidConfig, defaults, typed};
     use ferrigura_model::theme::Theme;
+    use ferrigura_model::value::Value;
 
     use super::*;
     use crate::unified::data::Node;
     use crate::unified::palette::node_style;
+
+    /// The globals of a configuration with the given theme and look.
+    fn globals(theme: &str, look: &str) -> Globals {
+        Globals::of(&config(theme, look))
+    }
 
     /// A configuration with the given theme and look, from the defaults.
     fn config(theme: &str, look: &str) -> MermaidConfig {
@@ -475,8 +479,11 @@ mod tests {
     fn the_colours_are_custom_properties_on_the_diagram_id() {
         let sheet = style_sheet(
             "flowchart",
-            Themes::Single(&light()),
-            &config("redux-color", "neo"),
+            ThemeView {
+                light: &ThemeTokens::from_value(&light()),
+                dark: None,
+            },
+            &globals("redux-color", "neo"),
             &[],
         );
         assert!(
@@ -501,11 +508,11 @@ mod tests {
         let dark = dark();
         let sheet = style_sheet(
             "flowchart",
-            Themes::Schemes {
-                light: &light,
-                dark: &dark,
+            ThemeView {
+                light: &ThemeTokens::from_value(&light),
+                dark: Some(&ThemeTokens::from_value(&dark)),
             },
-            &config("redux-color", "neo"),
+            &globals("redux-color", "neo"),
             &[],
         );
         assert!(
@@ -521,8 +528,11 @@ mod tests {
     fn the_dark_theme_has_no_palette_fill() {
         let sheet = style_sheet(
             "flowchart",
-            Themes::Single(&dark()),
-            &config("redux-dark-color", "classic"),
+            ThemeView {
+                light: &ThemeTokens::from_value(&dark()),
+                dark: None,
+            },
+            &globals("redux-dark-color", "classic"),
             &[],
         );
         assert!(!sheet.contains("bkgColor0:"), "{sheet}");
@@ -533,8 +543,11 @@ mod tests {
     fn a_theme_without_palette_has_no_palette_rules() {
         let sheet = style_sheet(
             "flowchart",
-            Themes::Single(&light()),
-            &config("default", "neo"),
+            ThemeView {
+                light: &ThemeTokens::from_value(&light()),
+                dark: None,
+            },
+            &globals("default", "neo"),
             &[],
         );
         assert!(!sheet.contains("color-0"), "{sheet}");
@@ -556,8 +569,11 @@ mod tests {
         }];
         let sheet = style_sheet(
             "flowchart",
-            Themes::Single(&light()),
-            &config("redux-color", "neo"),
+            ThemeView {
+                light: &ThemeTokens::from_value(&light()),
+                dark: None,
+            },
+            &globals("redux-color", "neo"),
             &classes,
         );
         assert!(
@@ -582,8 +598,11 @@ mod tests {
         }];
         let sheet = style_sheet(
             "flowchart",
-            Themes::Single(&light()),
-            &config("redux-color", "neo"),
+            ThemeView {
+                light: &ThemeTokens::from_value(&light()),
+                dark: None,
+            },
+            &globals("redux-color", "neo"),
             &classes,
         );
         assert!(!sheet.contains(".bad"), "{sheet}");
@@ -616,8 +635,11 @@ mod tests {
     fn the_defs_are_the_two_shadows_and_a_gradient_only_with_use_gradient() {
         let defs = look_defs(
             "flowchart",
-            Themes::Single(&light()),
-            &config("redux-color", "neo"),
+            ThemeView {
+                light: &ThemeTokens::from_value(&light()),
+                dark: None,
+            },
+            &globals("redux-color", "neo"),
         );
         assert_eq!(defs.matches("<filter ").count(), 2, "{defs}");
         assert!(
@@ -638,8 +660,11 @@ mod tests {
         let gradient = Theme::ReduxColor.variables(Some(&overrides));
         let defs = look_defs(
             "flowchart",
-            Themes::Single(&gradient),
-            &config("redux-color", "neo"),
+            ThemeView {
+                light: &ThemeTokens::from_value(&gradient),
+                dark: None,
+            },
+            &globals("redux-color", "neo"),
         );
         assert!(
             defs.contains("<linearGradient id=\"flowchart-gradient\""),
@@ -659,8 +684,11 @@ mod tests {
         };
         let sheet = style_sheet_with_fonts(
             "flowchart",
-            Themes::Single(&light()),
-            &config("redux-color", "neo"),
+            ThemeView {
+                light: &ThemeTokens::from_value(&light()),
+                dark: None,
+            },
+            &globals("redux-color", "neo"),
             &[],
             std::slice::from_ref(&family),
         );
@@ -682,8 +710,11 @@ mod tests {
     fn the_flood_of_a_dark_theme_is_white() {
         let defs = look_defs(
             "flowchart",
-            Themes::Single(&dark()),
-            &config("redux-dark-color", "neo"),
+            ThemeView {
+                light: &ThemeTokens::from_value(&dark()),
+                dark: None,
+            },
+            &globals("redux-dark-color", "neo"),
         );
         assert!(defs.contains("flood-color=\"#FFFFFF\""), "{defs}");
     }
