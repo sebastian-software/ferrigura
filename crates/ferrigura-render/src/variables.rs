@@ -172,6 +172,22 @@ mod tests {
                 }
             }
         }
+
+        // The wardley group: the renderer reads its colours from the object by key, as a map of values.
+        let wardley = map.get("wardley").and_then(Value::as_object);
+        match &tokens.wardley {
+            Some(group) => {
+                assert!(wardley.is_some());
+                for (name, token) in group.entries() {
+                    assert_eq!(
+                        wardley.and_then(|colours| colours.get(&name)),
+                        token.value(),
+                        "wardley.{name}"
+                    );
+                }
+            }
+            None => assert!(wardley.is_none()),
+        }
     }
 
     /// A small deterministic generator, so that the generated maps are the same on every run.
@@ -278,6 +294,11 @@ mod tests {
                 .iter()
                 .map(|name| (*name).to_owned()),
         );
+        names.extend(
+            ferrigura_model::theme::tokens::WardleyTokens::NAMES
+                .iter()
+                .map(|name| (*name).to_owned()),
+        );
         for prefix in [
             "pie",
             "venn",
@@ -306,6 +327,7 @@ mod tests {
                 "packet",
                 "treeView",
                 "radar",
+                "wardley",
             ]
             .map(str::to_owned),
         );

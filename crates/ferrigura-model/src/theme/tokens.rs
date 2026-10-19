@@ -11,9 +11,9 @@
 //! (`packages/mermaid/src/themes/theme-redux-color.js` and `theme-redux-dark-color.js`) and the names
 //! that the renderers read, including the names built at run time. The indexed names (`pie1` to
 //! `pie12`, `cScale0` to `cScale11`, `fillType0` to `fillType7`, and the others the themes number)
-//! are [`Family`]s, read by index. The groups of the diagram types (`xyChart`, `packet`, `treeView`,
-//! `radar`) are structs of their own. A name that only a user's overrides set, and that no renderer
-//! reads, is not a token: the map keeps it, and nothing reads it.
+//! are [`Family`]s, read by index. The groups of the diagram types (`xyChart`, `wardley`, `packet`,
+//! `treeView`, `radar`) are structs of their own. A name that only a user's overrides set, and that
+//! no renderer reads, is not a token: the map keeps it, and nothing reads it.
 
 use std::collections::BTreeMap;
 
@@ -281,6 +281,24 @@ token_struct! {
 }
 
 token_struct! {
+    /// The `wardley` group of the theme variables: the colours of the wardley map, which a user's
+    /// overrides may set (`wardley/theme.rs`). The redux themes give no group. The reference reads
+    /// `annotationStroke`, `annotationTextColor` and `annotationFill` too, but nothing it draws takes
+    /// them, so they are not tokens.
+    pub struct WardleyTokens {
+        background_color = "backgroundColor": token,
+        axis_color = "axisColor": token,
+        axis_text_color = "axisTextColor": token,
+        grid_color = "gridColor": token,
+        component_fill = "componentFill": token,
+        component_stroke = "componentStroke": token,
+        component_label_color = "componentLabelColor": token,
+        link_stroke = "linkStroke": token,
+        evolution_stroke = "evolutionStroke": token,
+    }
+}
+
+token_struct! {
     /// The `packet` group of the theme variables: the options of the packet diagram's styles
     /// (`packet/style.rs`, the defaults of `styles.ts`), which a user's overrides may set.
     pub struct PacketTokens {
@@ -531,6 +549,9 @@ token_struct! {
 
         // The radar diagram's block: its group of the theme variables, at the end of the list.
         radar = "radar": group(RadarTokens),
+
+        // The wardley block: the group of the wardley map (`wardley/theme.rs`).
+        wardley = "wardley": group(WardleyTokens),
     }
 }
 
