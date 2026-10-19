@@ -104,7 +104,8 @@ fn elements<'a>(markup: &'a str, name: &str) -> Vec<(&'a str, &'a str)> {
                 .filter(|open_at| *open_at < next_close);
             match next_open {
                 Some(open_at) => {
-                    let nested_end = open_at + markup[open_at..].find('>').expect("a start tag ends");
+                    let nested_end =
+                        open_at + markup[open_at..].find('>').expect("a start tag ends");
                     if !markup[open_at..=nested_end].ends_with("/>") {
                         depth += 1;
                     }
@@ -221,7 +222,10 @@ fn the_groups_of_the_map_are_in_the_reference_order() {
         "<defs>",
     ];
     let positions: Vec<usize> = order.iter().map(|needle| at(&markup, needle)).collect();
-    assert!(positions.windows(2).all(|pair| pair[0] < pair[1]), "{order:?} {positions:?}");
+    assert!(
+        positions.windows(2).all(|pair| pair[0] < pair[1]),
+        "{order:?} {positions:?}"
+    );
 }
 
 /// The links, trends and nodes groups are written even when empty, and the groups that need a
@@ -229,7 +233,13 @@ fn the_groups_of_the_map_are_in_the_reference_order() {
 #[test]
 fn empty_groups_are_written_and_the_optional_ones_are_not() {
     let markup = draw(ONE);
-    for class in ["wardley-links", "wardley-trends", "wardley-nodes", "wardley-axes", "wardley-stages"] {
+    for class in [
+        "wardley-links",
+        "wardley-trends",
+        "wardley-nodes",
+        "wardley-axes",
+        "wardley-stages",
+    ] {
         assert!(markup.contains(&format!("class=\"{class}\"")), "{class}");
     }
     for class in [
@@ -259,7 +269,11 @@ fn default_stages_are_of_equal_width_with_black_dividers() {
         assert!(close(*x, expected), "{x} {expected}");
     }
     for (tag, _) in &labels {
-        assert_eq!(attr(tag, "font-size"), Some("10"), "the stage label is the axis size less two");
+        assert_eq!(
+            attr(tag, "font-size"),
+            Some("10"),
+            "the stage label is the axis size less two"
+        );
     }
     let dividers = plain(&markup, "line");
     let dividers: Vec<_> = dividers
@@ -278,7 +292,10 @@ fn default_stages_are_of_equal_width_with_black_dividers() {
 #[test]
 fn the_stage_dividers_stay_black_under_a_theme_group() {
     let setup = Setup {
-        group: Some(group(&[("axisColor", Value::from(serde_json::json!("#ff0000")))])),
+        group: Some(group(&[(
+            "axisColor",
+            Value::from(serde_json::json!("#ff0000")),
+        )])),
         ..Setup::default()
     };
     let markup = draw_with(
@@ -287,7 +304,10 @@ fn the_stage_dividers_stay_black_under_a_theme_group() {
     );
     let axes = with_class(&markup, "g", "wardley-axes");
     assert_eq!(axes.len(), 1);
-    assert!(markup.contains("stroke=\"#ff0000\""), "the axes take the axis colour");
+    assert!(
+        markup.contains("stroke=\"#ff0000\""),
+        "the axes take the axis colour"
+    );
     for (tag, _) in elements(&markup, "line") {
         if attr(tag, "stroke-dasharray") == Some("5 5") {
             assert_eq!(attr(tag, "stroke"), Some("#000"));
@@ -304,7 +324,10 @@ fn the_pipeline_parent_moves_and_its_trend_starts_at_the_moved_position() {
     let boxes = with_class(&markup, "rect", "wardley-pipeline-box");
     assert_eq!(boxes.len(), 1);
     let (box_tag, _) = boxes[0];
-    assert!(close(number(box_tag, "x"), 193.8), "the box is 15 px out at each side");
+    assert!(
+        close(number(box_tag, "x"), 193.8),
+        "the box is 15 px out at each side"
+    );
     assert!(close(number(box_tag, "width"), 351.6));
     assert!(close(number(box_tag, "y"), 288.0));
     assert!(close(number(box_tag, "height"), 24.0));
@@ -327,8 +350,14 @@ fn the_pipeline_parent_moves_and_its_trend_starts_at_the_moved_position() {
     let target_x = 48.0 + 0.8 * 804.0;
     let (dx, dy): (f64, f64) = (target_x - 369.6, 300.0 - 286.4);
     let distance = (dx * dx + dy * dy).sqrt();
-    assert!(close(number(trend, "x2"), target_x - dx / distance * 8.0), "{trend}");
-    assert!(close(number(trend, "y2"), 300.0 - dy / distance * 8.0), "{trend}");
+    assert!(
+        close(number(trend, "x2"), target_x - dx / distance * 8.0),
+        "{trend}"
+    );
+    assert!(
+        close(number(trend, "y2"), 300.0 - dy / distance * 8.0),
+        "{trend}"
+    );
     assert_eq!(attr(trend, "marker-end"), Some("url(#arrow-chart)"));
 }
 
@@ -388,10 +417,14 @@ fn a_trend_into_its_own_position_stays_finite() {
 /// takes it, and 180 degrees is 360 (NOTES 6.2, `wardleyRenderer.ts` 523-527).
 #[test]
 fn a_label_that_would_read_upside_down_is_turned_over() {
-    let markup = draw("wardley-beta\ncomponent A [0.5, 0.8]\ncomponent B [0.5, 0.2]\nA +'lbl'> B\n");
+    let markup =
+        draw("wardley-beta\ncomponent A [0.5, 0.8]\ncomponent B [0.5, 0.2]\nA +'lbl'> B\n");
     let labels = with_class(&markup, "text", "wardley-link-label");
     assert_eq!(labels.len(), 1);
-    assert_eq!(attr(labels[0].0, "transform").map(|t| t.starts_with("rotate(360 ")), Some(true));
+    assert_eq!(
+        attr(labels[0].0, "transform").map(|t| t.starts_with("rotate(360 ")),
+        Some(true)
+    );
 }
 
 /// A flow draws its arrow at the end or the start of the line, and a plain link has none (NOTES
@@ -435,7 +468,11 @@ fn the_marker_ids_carry_the_diagram_id() {
         id: "map-7",
     })
     .expect("the map renders");
-    for id in ["arrow-map-7", "link-arrow-end-map-7", "link-arrow-start-map-7"] {
+    for id in [
+        "arrow-map-7",
+        "link-arrow-end-map-7",
+        "link-arrow-start-map-7",
+    ] {
         assert!(markup.contains(&format!("<marker id=\"{id}\"")), "{id}");
     }
     assert!(markup.contains("url(#link-arrow-end-map-7)"));
@@ -513,13 +550,26 @@ fn an_anchor_is_centred_with_a_bold_black_label() {
 #[test]
 fn the_sourcing_overlays_keep_their_own_fills() {
     let fill_of = |decorator: &str, name: &str| {
-        let markup = draw(&format!("wardley-beta\ncomponent A [0.5, 0.5] ({decorator})\n"));
+        let markup = draw(&format!(
+            "wardley-beta\ncomponent A [0.5, 0.5] ({decorator})\n"
+        ));
         let circles = with_class(&markup, "circle", name);
         assert_eq!(circles.len(), 1, "{decorator}");
-        (attr(circles[0].0, "fill").map(str::to_owned), attr(circles[0].0, "stroke").map(str::to_owned))
+        (
+            attr(circles[0].0, "fill").map(str::to_owned),
+            attr(circles[0].0, "stroke").map(str::to_owned),
+        )
     };
-    assert_eq!(fill_of("outsource", "wardley-outsource-overlay").0.as_deref(), Some("#666"));
-    assert_eq!(fill_of("buy", "wardley-buy-overlay").0.as_deref(), Some("#ccc"));
+    assert_eq!(
+        fill_of("outsource", "wardley-outsource-overlay")
+            .0
+            .as_deref(),
+        Some("#666")
+    );
+    assert_eq!(
+        fill_of("buy", "wardley-buy-overlay").0.as_deref(),
+        Some("#ccc")
+    );
     let (fill, stroke) = fill_of("build", "wardley-build-overlay");
     assert_eq!(fill.as_deref(), Some("#eee"));
     assert_eq!(stroke.as_deref(), Some("#000"));
@@ -530,7 +580,10 @@ fn the_sourcing_overlays_keep_their_own_fills() {
 #[test]
 fn a_market_component_has_its_symbol_and_no_plain_circle() {
     let markup = draw("wardley-beta\ncomponent A [0.5, 0.5] (market)\n");
-    assert_eq!(with_class(&markup, "circle", "wardley-market-overlay").len(), 1);
+    assert_eq!(
+        with_class(&markup, "circle", "wardley-market-overlay").len(),
+        1
+    );
     assert_eq!(with_class(&markup, "line", "wardley-market-line").len(), 3);
     let dots = with_class(&markup, "circle", "wardley-market-dot");
     assert_eq!(dots.len(), 3);
@@ -595,7 +648,10 @@ fn an_accelerator_path_is_the_templates_bytes() {
         path,
         "\n        M 450 285\n        L 490 285\n        L 490 277\n        L 510 300\n        L 490 323\n        L 490 315\n        L 450 315\n        Z\n      "
     );
-    assert!(markup.contains(">Speed</text>"), "the arrow's name is below it");
+    assert!(
+        markup.contains(">Speed</text>"),
+        "the arrow's name is below it"
+    );
 }
 
 /// A deaccelerator is the accelerator's mirror image, pointing left (`wardleyRenderer.ts` 1037-1046).
@@ -618,8 +674,16 @@ fn a_deaccelerator_points_left() {
 #[test]
 fn the_redux_theme_falls_back_to_the_renderer_colours() {
     let variables = Theme::ReduxColor.variables(None);
-    let background = variables.get("background").and_then(Value::as_str).expect("a background").to_owned();
-    let text = variables.get("primaryTextColor").and_then(Value::as_str).expect("a text colour").to_owned();
+    let background = variables
+        .get("background")
+        .and_then(Value::as_str)
+        .expect("a background")
+        .to_owned();
+    let text = variables
+        .get("primaryTextColor")
+        .and_then(Value::as_str)
+        .expect("a text colour")
+        .to_owned();
     let markup = draw(&format!("{ONE}title T\n"));
     let rect = with_class(&markup, "rect", "wardley-background");
     assert_eq!(attr(rect[0].0, "fill"), Some(background.as_str()));
@@ -638,12 +702,18 @@ fn the_redux_theme_falls_back_to_the_renderer_colours() {
 #[test]
 fn a_wardley_group_of_the_theme_overrides_the_colours() {
     let setup = Setup {
-        group: Some(group(&[("componentFill", Value::from(serde_json::json!("#abcdef")))])),
+        group: Some(group(&[(
+            "componentFill",
+            Value::from(serde_json::json!("#abcdef")),
+        )])),
         ..Setup::default()
     };
     let markup = draw_with(ONE, &setup);
     let node = plain(&markup, "circle");
-    let node = node.iter().find(|(tag, _)| attr(tag, "r") == Some("6")).expect("a node circle");
+    let node = node
+        .iter()
+        .find(|(tag, _)| attr(tag, "r") == Some("6"))
+        .expect("a node circle");
     assert_eq!(attr(node.0, "fill"), Some("#abcdef"));
 }
 
@@ -662,7 +732,10 @@ fn a_colour_that_is_not_text_is_written_as_javascript_writes_it() {
     let axes = with_class(&markup, "g", "wardley-axes");
     assert!(axes[0].1.contains("stroke=\"true\""), "{}", axes[0].1);
     let node = plain(&markup, "circle");
-    let node = node.iter().find(|(tag, _)| attr(tag, "r") == Some("6")).expect("a node circle");
+    let node = node
+        .iter()
+        .find(|(tag, _)| attr(tag, "r") == Some("6"))
+        .expect("a node circle");
     assert_eq!(attr(node.0, "stroke"), Some("#000"));
 }
 
@@ -722,18 +795,30 @@ fn the_annotation_box_is_its_widest_line_plus_the_buffer() {
         face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
     }];
     let advance = layout_width(measure_line(&runs, 11.0).expect("the line measures"));
-    let markup = draw(&format!("wardley-beta\nannotations [0.1, 0.9]\nannotation 1,[0.5, 0.5] \"{text}\"\n"));
+    let markup = draw(&format!(
+        "wardley-beta\nannotations [0.1, 0.9]\nannotation 1,[0.5, 0.5] \"{text}\"\n"
+    ));
     let boxes = plain(&markup, "rect");
-    let rect = boxes.iter().find(|(tag, _)| attr(tag, "rx") == Some("4")).expect("the box is drawn");
+    let rect = boxes
+        .iter()
+        .find(|(tag, _)| attr(tag, "rx") == Some("4"))
+        .expect("the box is drawn");
     let expected = advance + 20.0 + 105.0;
-    assert!((number(rect.0, "width") - expected).abs() < 1e-6, "{} vs {expected}", number(rect.0, "width"));
+    assert!(
+        (number(rect.0, "width") - expected).abs() < 1e-6,
+        "{} vs {expected}",
+        number(rect.0, "width")
+    );
 }
 
 /// An annotation with no text gives the box group and no box (NOTES 6.4, `annotation-empty-text`).
 #[test]
 fn an_annotation_without_text_leaves_the_box_group_empty() {
     let markup = draw("wardley-beta\nannotations [0.5, 0.5]\nannotation 1,[0.5, 0.5] \"\"\n");
-    assert!(markup.contains("<g class=\"wardley-annotations-box\"/>"), "{markup}");
+    assert!(
+        markup.contains("<g class=\"wardley-annotations-box\"/>"),
+        "{markup}"
+    );
 }
 
 /// A number too large for a float is `Infinity`, and the reference writes it so in the circle
@@ -741,9 +826,14 @@ fn an_annotation_without_text_leaves_the_box_group_empty() {
 #[test]
 fn an_annotation_number_too_large_for_a_float_is_written_as_infinity() {
     let digits = "9".repeat(400);
-    let markup = draw(&format!("wardley-beta\nannotation {digits},[0.5, 0.5] \"Big\"\n"));
+    let markup = draw(&format!(
+        "wardley-beta\nannotation {digits},[0.5, 0.5] \"Big\"\n"
+    ));
     let numbers = plain(&markup, "text");
-    assert!(numbers.iter().any(|(_, text)| *text == "Infinity"), "{markup}");
+    assert!(
+        numbers.iter().any(|(_, text)| *text == "Infinity"),
+        "{markup}"
+    );
 }
 
 /// The label of a note is set in the reference's `#` placeholder as the markup's entity, which the
@@ -759,7 +849,10 @@ fn a_placeholder_in_a_label_is_written_as_the_entity() {
 fn a_note_is_bold_text_at_its_position() {
     let markup = draw("wardley-beta\nnote \"Watch\" [0.5, 0.5]\n");
     let notes = plain(&markup, "text");
-    let note = notes.iter().find(|(_, text)| *text == "Watch").expect("the note");
+    let note = notes
+        .iter()
+        .find(|(_, text)| *text == "Watch")
+        .expect("the note");
     assert_eq!(attr(note.0, "font-weight"), Some("bold"));
     assert!(close(number(note.0, "x"), 450.0));
     assert!(close(number(note.0, "y"), 300.0));
