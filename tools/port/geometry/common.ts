@@ -134,6 +134,7 @@ export function effectiveSettings(source: string): {
   look: unknown;
   layout: unknown;
   theme: unknown;
+  cynefin: unknown;
 } {
   const settings: Record<string, unknown> = {};
   const frontMatter = FRONT_MATTER.exec(source);
@@ -152,7 +153,12 @@ export function effectiveSettings(source: string): {
       // A directive that is not JSON is not read by the reference either.
     }
   }
-  return { look: settings.look, layout: settings.layout, theme: settings.theme };
+  return {
+    look: settings.look,
+    layout: settings.layout,
+    theme: settings.theme,
+    cynefin: settings.cynefin,
+  };
 }
 
 // ---------------------------------------------------------------------------------------------
