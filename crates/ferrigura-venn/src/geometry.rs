@@ -13,7 +13,7 @@ pub(crate) const SMALL: f64 = 1e-10;
 
 /// A point of the plane.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct Point {
+pub struct Point {
     pub x: f64,
     pub y: f64,
 }
@@ -95,11 +95,16 @@ struct InnerPoint {
     angle: f64,
 }
 
-/// An arc of the boundary of an intersection: the circle it lies on and where it starts.
+/// An arc of the boundary of an intersection: the circle it lies on, where it starts (`p1`), and the
+/// point the previous arc ended at (`p2`, the arc's other end, as the library's `arc` object has it).
+/// `large` is the flag of the arc's `A` command: the arc is wider than a half circle, by the
+/// library's test on the clamped width. The sweep flag is always set (`sweep: true`).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Arc {
     pub circle: Circle,
     pub p1: Point,
+    pub p2: Point,
+    pub large: bool,
 }
 
 /// The area of an intersection, with its arcs in order (`intersectionArea`'s `stats`).
@@ -188,6 +193,8 @@ pub(crate) fn intersection_area(circles: &[Circle]) -> IntersectionArea {
                 arcs.push(Arc {
                     circle,
                     p1: p1.point,
+                    p2: p2.point,
+                    large: width > circle.radius,
                 });
                 arc_area += circle_area(circle.radius, width);
                 p2 = p1;
@@ -215,12 +222,16 @@ pub(crate) fn intersection_area(circles: &[Circle]) -> IntersectionArea {
             polygon_area = 0.0;
         } else {
             arc_area = smallest.radius * smallest.radius * PI;
+            // The library's arc has no `p2` here. It is never read: one arc is drawn as its circle.
+            let p1 = Point {
+                x: smallest.x,
+                y: smallest.y + smallest.radius,
+            };
             arcs.push(Arc {
                 circle: smallest,
-                p1: Point {
-                    x: smallest.x,
-                    y: smallest.y + smallest.radius,
-                },
+                p1,
+                p2: p1,
+                large: false,
             });
         }
     }
