@@ -87,7 +87,7 @@ pub(super) fn image_label_width(node: &Node, default_width: f64) -> Result<f64, 
 
 /// The markup `getIconSVG` gives a name the registry does not know: iconify's rendering of
 /// `unknownIcon` at `size` (`iconToSVG` and `iconToHTML`).
-fn fallback_icon_svg(size: f64) -> String {
+pub(super) fn fallback_icon_svg(size: f64) -> String {
     let size = number(size);
     format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{size}\" height=\"{size}\" viewBox=\"0 0 80 80\"><g><rect width=\"80\" height=\"80\" style=\"fill: #087ebf; stroke-width: 0px;\"/><text transform=\"translate(21.16 64.67)\" style=\"fill: #fff; font-family: ArialMT, Arial; font-size: 67.75px;\"><tspan x=\"0\" y=\"0\">?</tspan></text></g></svg>"
