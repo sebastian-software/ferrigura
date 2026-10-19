@@ -92,6 +92,14 @@ jobs:
             treemap,
             ishikawa,
             eventmodeling,
+            agentflow,
+            cynefin,
+            radar,
+            railroad,
+            treeView,
+            usecase,
+            venn,
+            wardley,
             flowchart-data,
             class-data,
             state-data,
@@ -136,11 +144,11 @@ jobs:
         run: pnpm port:scope-pie
       - name: Flowchart geometry against the JS reference in Chromium
         run: pnpm port:geometry-flowchart
-      - name: Geometry of the M6 and P2 diagram types against the JS reference in Chromium
+      - name: Geometry of the M6, P2 and P3 diagram types against the JS reference in Chromium
         # Every type runs, so one failing type does not hide the others.
         run: |
           status=0
-          for type in sequence class state er gantt timeline gitgraph journey info requirement xychart kanban c4 block quadrantChart packet ishikawa sankey treemap eventmodeling mindmap architecture; do
+          for type in sequence class state er gantt timeline gitgraph journey info requirement xychart kanban c4 block quadrantChart packet ishikawa sankey treemap eventmodeling mindmap architecture agentflow cynefin radar railroad treeView usecase venn wardley; do
             pnpm port:geometry "$type" || status=1
           done
           exit $status
