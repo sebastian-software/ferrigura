@@ -8,6 +8,7 @@
 //! 14 pixels (`redux-color`), and the stylesheet's defaults are 12 pixels for the use cases and 10 for the
 //! edge labels.
 
+use ferrigura_jsmath::pow;
 use ferrigura_model::config::{MermaidConfig, defaults, typed};
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::theme::{Theme, ThemeTokens};
@@ -415,7 +416,7 @@ fn o_a_business_ellipses_stereotype_is_its_own_label_and_its_marker_is_a_chord_w
     assert_eq!(points.len(), 4, "a chord has two ends");
     for ends in [(points[0], points[1]), (points[2], points[3])] {
         let (x, y) = ends;
-        let on_ellipse = (x / radius_x).powi(2) + (y / radius_y).powi(2);
+        let on_ellipse = pow(x / radius_x, 2.0) + pow(y / radius_y, 2.0);
         assert!(
             (on_ellipse - 1.0).abs() < 1e-9,
             "the end ({x}, {y}) is on the ellipse"
