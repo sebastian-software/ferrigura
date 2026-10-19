@@ -2,6 +2,7 @@
 //! `styles2String` splits them, the node's classes, and the attribute and path strings that the
 //! handlers share. See `docs-port/flowchart/render-notes/shapes-core.md` §1.
 
+use ferrigura_model::theme::Token;
 use ferrigura_model::value::Value;
 
 use super::{Intersect, ShapeInput};
@@ -328,6 +329,10 @@ pub(super) fn create_path_from_points(points: &[Point]) -> String {
 
 /// `generateCirclePoints` (`shapes/util.ts:295-323`): `count` points over the arc from
 /// `start_degrees` to `end_degrees`. Both coordinates are negated, as the reference does.
+///
+/// `#[inline]` keeps the build that the outputs were compared with: without it the last digits of
+/// the points depend on whether the optimiser inlines the function (`docs-port/typed-views.md`).
+#[inline]
 #[must_use]
 pub(super) fn generate_circle_points(
     centre_x: f64,
@@ -402,21 +407,22 @@ pub(super) fn polygon_shape(
     (svg, bbox)
 }
 
-/// A style of a theme variable that is a number, or a text that starts with one, as `parseFloat`
-/// reads it (`fontSize` is `14px`).
+/// A theme variable that is a number, or a text that starts with one, as `parseFloat` reads it
+/// (`fontSize` is `14px`). `None` for an absent variable and for any other value.
 #[must_use]
-pub(super) fn theme_number(theme: &Value, key: &str) -> Option<f64> {
-    match theme.get(key)? {
+pub(super) fn theme_number(token: &Token) -> Option<f64> {
+    match token.value()? {
         Value::Number(number) => Some(*number),
         Value::String(text) => leading_number(text),
         _ => None,
     }
 }
 
-/// A theme variable read as a flag: a `true`, a non-zero number or a non-empty text.
+/// A theme variable read as a flag: a `true`, a non-zero number or a non-empty text. A list or an
+/// object is not a flag here, unlike the truthiness of `Token::truthy`.
 #[must_use]
-pub(super) fn theme_flag(theme: &Value, key: &str) -> bool {
-    match theme.get(key) {
+pub(super) fn theme_flag(token: &Token) -> bool {
+    match token.value() {
         Some(Value::Bool(flag)) => *flag,
         Some(Value::Number(number)) => *number != 0.0 && !number.is_nan(),
         Some(Value::String(text)) => !text.is_empty(),

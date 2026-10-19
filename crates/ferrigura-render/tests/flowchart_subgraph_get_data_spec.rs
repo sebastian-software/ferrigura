@@ -4,13 +4,16 @@
 //! `ferrigura-syntax/tests/flowchart_subgraph_spec.rs`.
 
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_render::context::Globals;
 use ferrigura_render::flowchart::data::{LayoutData, get_data};
+use ferrigura_render::unified::Section;
 use ferrigura_syntax::flowchart::parse;
 
 /// The layout data of a flowchart text, with the configuration the spec's DB has.
 fn layout(text: &str) -> LayoutData {
     let diagram = parse(text).expect("parses");
-    get_data(&diagram, &MermaidConfig::default())
+    let config = MermaidConfig::default();
+    get_data(&diagram, &Section::of(&config), &Globals::of(&config))
 }
 
 mod when_parsing_subgraphs {

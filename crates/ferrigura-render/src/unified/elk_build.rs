@@ -14,13 +14,14 @@
 use std::collections::{HashMap, HashSet};
 
 use ferrigura_elk::json::{JsonEdge, JsonLabel, JsonNode, LayoutOptions, js_number_string};
-use ferrigura_model::config::{MermaidConfig, MermaidConfigElk};
+use ferrigura_model::config::MermaidConfigElk;
 use ferrigura_model::value::Value;
 use serde_json::{Number, Value as Json};
 
 use super::data::{Edge, LayoutData, Node, Terminal};
 use super::elk_tree::{find_common_ancestor, find_subgraph_feedback_edges};
 use super::terminal;
+use super::{Config, Section};
 
 /// The measured title of a subgraph, as the reference keeps it in `labelData`.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -65,10 +66,11 @@ pub struct ElkInput {
 /// policy, the feedback edges (when `orientFeedbackEdges`) and the entry constraint (when
 /// `keepEntryNodeOnTop`).
 #[must_use]
-pub fn build(data: &LayoutData, config: &MermaidConfig) -> ElkInput {
+pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
+    let section = &config.section;
     let mut state = ElkState::default();
-    let algorithm = root_algorithm(&config.layout, &mut state.warnings);
-    let mut root_options = root_layout_options(config, algorithm);
+    let algorithm = root_algorithm(&config.globals.layout, &mut state.warnings);
+    let mut root_options = root_layout_options(section.elk, algorithm);
     set(
         &mut root_options,
         "elk.direction",
@@ -81,11 +83,11 @@ pub fn build(data: &LayoutData, config: &MermaidConfig) -> ElkInput {
 
     let mut arena: Vec<Work> = Vec::new();
     let mut index: HashMap<String, usize> = HashMap::new();
-    let root_children = add_vertices(data, None, config, &mut arena, &mut index);
+    let root_children = add_vertices(data, None, section, &mut arena, &mut index);
     let mut edges = add_edges(data);
     configure_subgraph_nodes(
         data,
-        config,
+        section,
         algorithm,
         &mut arena,
         &index,
@@ -93,10 +95,10 @@ pub fn build(data: &LayoutData, config: &MermaidConfig) -> ElkInput {
         &mut state.warnings,
     );
     configure_cross_hierarchy_edges(&edges, &mut arena, &index, &state.parent_by_id);
-    if config.elk.orient_feedback_edges {
+    if section.elk.orient_feedback_edges {
         reverse_subgraph_feedback_edges(&mut edges, &state.parent_by_id, &mut state.reversed_edges);
     }
-    if config.elk.keep_entry_node_on_top {
+    if section.elk.keep_entry_node_on_top {
         apply_cyclic_entry_constraint(data, &mut arena, &index);
     }
 
@@ -104,7 +106,7 @@ pub fn build(data: &LayoutData, config: &MermaidConfig) -> ElkInput {
         .nodes
         .iter()
         .filter(|node| node.is_group)
-        .map(|node| (node.id.clone(), label_data_of(node, config)))
+        .map(|node| (node.id.clone(), label_data_of(node, section)))
         .collect();
 
     let graph = JsonNode {
@@ -677,8 +679,7 @@ fn root_algorithm(layout: &str, warnings: &mut Vec<String>) -> &'static str {
 
 /// The options of the root graph, in the reference's order (`createRootElkGraph`). The direction is
 /// set by the caller, which replaces the placeholder `DOWN` in place.
-fn root_layout_options(config: &MermaidConfig, algorithm: &str) -> LayoutOptions {
-    let elk = &config.elk;
+fn root_layout_options(elk: &MermaidConfigElk, algorithm: &str) -> LayoutOptions {
     let preset = resolve_elk_preset(Some(elk.preset.as_str()));
     let mut options = LayoutOptions::default();
     set(
@@ -797,21 +798,21 @@ fn sub_graphs(data: &LayoutData) -> (HashMap<String, String>, HashMap<String, Ve
 }
 
 /// The measured title of a node (`getMeasuredLabelData`): the label box, with the height less 2.
-fn label_data_of(node: &Node, config: &MermaidConfig) -> LabelData {
+fn label_data_of(node: &Node, section: &Section<'_>) -> LabelData {
     match node.label_bbox {
         Some((width, height)) => LabelData {
             width,
             height: (height - 2.0).max(0.0),
             wrapping_width: node
                 .wrapping_width
-                .unwrap_or(config.flowchart.wrapping_width),
+                .unwrap_or(section.flowchart.wrapping_width),
         },
         None => LabelData {
             width: 0.0,
             height: 0.0,
             wrapping_width: node
                 .wrapping_width
-                .unwrap_or(config.flowchart.wrapping_width),
+                .unwrap_or(section.flowchart.wrapping_width),
         },
     }
 }
@@ -821,7 +822,7 @@ fn label_data_of(node: &Node, config: &MermaidConfig) -> LabelData {
 fn add_vertices(
     data: &LayoutData,
     parent: Option<&str>,
-    config: &MermaidConfig,
+    section: &Section<'_>,
     arena: &mut Vec<Work>,
     index: &mut HashMap<String, usize>,
 ) -> Vec<usize> {
@@ -841,7 +842,7 @@ fn add_vertices(
             shape: node.shape.clone(),
             dir: node.dir.clone(),
             raw_algorithm: node.metadata.get("algorithm").cloned(),
-            label_data: label_data_of(node, config),
+            label_data: label_data_of(node, section),
             width: node.width.unwrap_or(0.0),
             height: node.height.unwrap_or(0.0),
             ..Work::default()
@@ -849,7 +850,7 @@ fn add_vertices(
         index.insert(node.id.clone(), position);
         added.push(position);
         if node.is_group {
-            let children = add_vertices(data, Some(&node.id), config, arena, index);
+            let children = add_vertices(data, Some(&node.id), section, arena, index);
             arena[position].children = children;
         }
     }
@@ -913,7 +914,7 @@ fn edge_label_options() -> LayoutOptions {
 /// A subgraph without members is left as it is: it reaches ELK as an empty compound node.
 fn configure_subgraph_nodes(
     data: &LayoutData,
-    config: &MermaidConfig,
+    section: &Section<'_>,
     algorithm: &str,
     arena: &mut [Work],
     index: &HashMap<String, usize>,
@@ -945,7 +946,7 @@ fn configure_subgraph_nodes(
                 label_data: work.label_data,
                 metadata_algorithm: work.container_algorithm.as_ref(),
             },
-            Some(&config.elk),
+            Some(section.elk),
             algorithm,
             Some(&mut *warnings),
         );
@@ -1127,8 +1128,19 @@ fn js(value: f64) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::collections::BTreeMap;
+
+    use ferrigura_model::config::MermaidConfig;
+
+    use super::*;
+    use crate::unified::Fixture;
+
+    /// The layout of the data under the configuration, built as the renderer builds it: the globals and
+    /// the tokens of the configuration's theme are read from the fixture.
+    fn build(data: &LayoutData, config: &MermaidConfig) -> ElkInput {
+        let fixture = Fixture::new(config.clone(), &Value::empty_object());
+        super::build(data, &fixture.config())
+    }
 
     /// The configuration with the given `elk` settings.
     fn config(settings: impl FnOnce(&mut MermaidConfigElk)) -> MermaidConfig {

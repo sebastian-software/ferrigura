@@ -16,29 +16,24 @@ mod style;
 mod text;
 mod time;
 
-use ferrigura_model::config::{GanttDiagramConfig, MermaidConfig};
+use ferrigura_model::config::GanttDiagramConfig;
 use ferrigura_model::gantt::{GanttDiagram, GanttTask};
 use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 
 use crate::RenderError;
 use crate::a11y;
+use crate::context::{Context, ThemeView};
 use crate::svg::{escape, font_faces, number};
-use crate::theme::Themes;
 
 use scale::TimeScale;
 
-/// What the gantt renderer draws.
+/// What the gantt renderer reads besides its diagram and the globals: the gantt section of the
+/// configuration, and the time of the render. The time is the facade's `RenderOptions::now`, or the
+/// system clock: the today marker and the dates without a day read it, and it is not configuration.
 #[derive(Debug, Clone, Copy)]
-pub struct GanttInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a GanttDiagram,
-    /// The effective configuration, in the gantt diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
+pub struct GanttSection<'a> {
+    /// The gantt section of the configuration, in the diagram's scope.
+    pub config: &'a GanttDiagramConfig,
     /// The current time in milliseconds since the epoch, for the today marker.
     pub now: i64,
 }
@@ -57,14 +52,15 @@ const AXIS_OFFSET: f64 = 0.5;
 /// The most ticks a custom tick interval may give (`MAX_TICK_COUNT`, `ganttRenderer.js:31`).
 const MAX_TICK_COUNT: f64 = 10_000.0;
 
-/// Renders the diagram to an SVG document.
+/// Renders the diagram to an SVG document. The context carries the gantt section of the configuration
+/// and the time of the render as its section, and the theme's tokens.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or subset, or if the reference would throw
 /// while drawing (an excluded day that is not found, a custom tick interval with an unknown
 /// weekday).
-pub fn render(input: &GanttInput<'_>) -> Result<String, RenderError> {
+pub fn render(input: &Context<'_, GanttDiagram, GanttSection<'_>>) -> Result<String, RenderError> {
     let mut chart = Chart::new(input);
     let mut texts = Texts::default();
     let mut body = String::new();
@@ -88,7 +84,7 @@ pub fn render(input: &GanttInput<'_>) -> Result<String, RenderError> {
     } else {
         font_faces(&families)
     };
-    let style = style::style_element(input.id, input.themes, &family, &faces);
+    let style = style::style_element(input.id, input.theme, &family, &faces);
     let title = input.diagram.acc_title.as_str();
     let description = input.diagram.acc_descr.as_str();
     let accessibility = a11y::children(input.id, title, description);
@@ -145,7 +141,12 @@ impl Texts {
 
 /// The derived values of one chart: the dimensions, the time scale, the task order and the sections.
 pub(super) struct Chart<'a> {
-    pub(super) input: GanttInput<'a>,
+    /// The id of the SVG element.
+    pub(super) id: &'a str,
+    /// The theme the chart draws with.
+    pub(super) theme: ThemeView<'a>,
+    /// The time of the render, for the today marker.
+    pub(super) now: i64,
     pub(super) model: &'a GanttDiagram,
     pub(super) conf: &'a GanttDiagramConfig,
     /// `w`: the width of the chart.
@@ -178,10 +179,9 @@ pub(super) struct Chart<'a> {
 
 impl<'a> Chart<'a> {
     /// The chart's values, as `draw` computes them before it writes anything.
-    fn new(input: &GanttInput<'a>) -> Self {
+    fn new(input: &Context<'a, GanttDiagram, GanttSection<'a>>) -> Self {
         let model = input.diagram;
-        let conf = &input.config.gantt;
-        let input = *input;
+        let conf = input.section.config;
         let tasks: &[GanttTask] = &model.tasks;
         let starts: Vec<f64> = tasks.iter().map(|task| time_of(task.start_time)).collect();
         let ends: Vec<f64> = tasks.iter().map(|task| time_of(task.end_time)).collect();
@@ -256,7 +256,9 @@ impl<'a> Chart<'a> {
         sort_js(&mut array, |a, b| compare_start(starts[a], starts[b]));
 
         Self {
-            input,
+            id: input.id,
+            theme: input.theme,
+            now: input.section.now,
             model,
             conf,
             w: width,

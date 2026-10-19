@@ -2,11 +2,11 @@
 //! geometry of the fixtures and the probes is compared with Chromium by `pnpm port:geometry
 //! treemap`; these tests hold the reference's rules that the markup and the errors show.
 
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
-use ferrigura_render::theme::Themes;
-use ferrigura_render::treemap::{TreemapInput, TreemapSettings, render};
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::treemap::{TreemapSettings, render};
 
 /// Renders a treemap with the redux colour theme and the `treemap` section given as JSON.
 fn draw(text: &str, section: serde_json::Value) -> Result<String, RenderError> {
@@ -14,13 +14,18 @@ fn draw(text: &str, section: serde_json::Value) -> Result<String, RenderError> {
     let effective = Value::from(serde_json::json!({ "treemap": section }));
     let settings = TreemapSettings::of(&effective);
     let variables = Theme::ReduxColor.variables(None);
+    let tokens = ThemeTokens::from_value(&variables);
     let config = ferrigura_model::config::typed(&ferrigura_model::config::defaults())
         .expect("the defaults are typed");
-    render(&TreemapInput {
+    let globals = Globals::of(&config);
+    render(&Context {
         diagram: &diagram,
-        config: &config,
-        settings: &settings,
-        themes: Themes::Single(&variables),
+        section: &settings,
+        globals: &globals,
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id: "t",
     })
 }

@@ -7,13 +7,12 @@
 //! Every colour is a custom property declared on the diagram's id, for the light scheme and, when
 //! both schemes are written, for the dark one under `prefers-color-scheme: dark` (decision 0007).
 
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_text::EmbeddedFamily;
 
 use super::tasks::SECTION_TYPES;
 use crate::common::style::base_style_sheet;
-use crate::theme::Themes;
-use crate::variables::text_of;
+use crate::context::ThemeView;
 
 /// The face colour: `styles.js` 29 uses `faceColor` when a theme sets it, and no shipped theme does.
 const FACE_COLOUR: &str = "#FFF8DC";
@@ -32,16 +31,22 @@ const DEFAULT_FILL: &str = "#CCCCCC";
 
 /// The text colour of the theme: the colour the reference's `.label` takes (`styles.js` 4-7).
 #[must_use]
-pub fn text_colour(variables: &Value) -> String {
-    text_of(variables, "textColor").unwrap_or_else(|| DEFAULT_TEXT_COLOUR.to_owned())
+pub fn text_colour(tokens: &ThemeTokens) -> String {
+    tokens
+        .text_color
+        .text()
+        .unwrap_or_else(|| DEFAULT_TEXT_COLOUR.to_owned())
 }
 
 /// The fill of each colour type, `fillType0` to `fillType{SECTION_TYPES - 1}` of the theme.
 #[must_use]
-pub fn fills(variables: &Value) -> Vec<String> {
+pub fn fills(tokens: &ThemeTokens) -> Vec<String> {
     (0..SECTION_TYPES)
         .map(|number_type| {
-            text_of(variables, &format!("fillType{number_type}"))
+            tokens
+                .fill_type
+                .get(number_type)
+                .text()
                 .unwrap_or_else(|| DEFAULT_FILL.to_owned())
         })
         .collect()
@@ -54,34 +59,34 @@ pub fn fills(variables: &Value) -> Vec<String> {
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
-    themes: Themes<'_>,
+    theme: ThemeView<'_>,
     font_family: &str,
     font_size: &str,
     families: &[EmbeddedFamily],
 ) -> String {
-    let base = base_style_sheet(svg_id, themes, font_family, font_size, families);
-    format!("{base}{}{}", tokens(svg_id, themes), rules(svg_id))
+    let base = base_style_sheet(svg_id, theme, font_family, font_size, families, "");
+    format!("{base}{}{}", tokens(svg_id, theme), rules(svg_id))
 }
 
 /// The colour properties of the journey on the id, for each scheme.
-fn tokens(svg_id: &str, themes: Themes<'_>) -> String {
-    match themes {
-        Themes::Single(variables) => format!("#{svg_id}{{{}}}", declarations(variables)),
-        Themes::Schemes { light, dark } => format!(
+fn tokens(svg_id: &str, theme: ThemeView<'_>) -> String {
+    match theme.dark {
+        None => format!("#{svg_id}{{{}}}", declarations(theme.light)),
+        Some(dark) => format!(
             "#{svg_id}{{{}}}@media (prefers-color-scheme: dark){{#{svg_id}{{{}}}}}",
-            declarations(light),
+            declarations(theme.light),
             declarations(dark)
         ),
     }
 }
 
 /// The properties of one scheme: the text colour, the face colour and the fill of each type.
-fn declarations(variables: &Value) -> String {
+fn declarations(tokens: &ThemeTokens) -> String {
     let mut out = format!(
         "--textColor:{};--faceColor:{FACE_COLOUR};",
-        text_colour(variables)
+        text_colour(tokens)
     );
-    for (number_type, fill) in fills(variables).iter().enumerate() {
+    for (number_type, fill) in fills(tokens).iter().enumerate() {
         out.push_str(&format!("--fillType{number_type}:{fill};"));
     }
     out
@@ -106,6 +111,8 @@ fn rules(svg_id: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use ferrigura_model::value::Value;
+
     use super::*;
 
     #[test]
@@ -118,7 +125,7 @@ mod tests {
             .into_iter()
             .collect(),
         );
-        let fills = fills(&variables);
+        let fills = fills(&ThemeTokens::from_value(&variables));
         assert_eq!(fills.len(), SECTION_TYPES);
         assert_eq!(fills[0], "#111111");
         assert_eq!(fills[1], "#222222");

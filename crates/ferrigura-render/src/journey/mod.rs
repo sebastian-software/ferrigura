@@ -17,7 +17,7 @@ mod style;
 mod tasks;
 pub(crate) mod text;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::JourneyDiagramConfig;
 use ferrigura_model::journey::JourneyDiagram;
 use ferrigura_text::{Run, embed_runs};
 
@@ -29,41 +29,28 @@ use crate::a11y;
 use crate::common::Element;
 use crate::common::viewbox::configure_svg_size;
 use crate::svg::number;
-use crate::theme::Themes;
-use crate::variables::{px, text_of};
 
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 
-/// What the journey renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct JourneyInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a JourneyDiagram,
-    /// The effective configuration, in the journey diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
-
-/// Renders the diagram to an SVG document.
+/// Renders the diagram to an SVG document. The context carries the journey section of the
+/// configuration as its section, and the theme's tokens.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or subset.
-pub fn render(input: &JourneyInput<'_>) -> Result<String, RenderError> {
+pub fn render(
+    input: &crate::context::Context<'_, JourneyDiagram, JourneyDiagramConfig>,
+) -> Result<String, RenderError> {
     let diagram = input.diagram;
-    let config = &input.config.journey;
+    let config = input.section;
     let id = input.id;
-    let variables = input.themes.primary();
+    let tokens = input.theme.light;
     // The root's font size is the theme's, and the legend and labels are measured at it.
-    let font_size = px(variables, "fontSize").unwrap_or(16.0);
-    let font_size_css = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
-    let text_colour = style::text_colour(variables);
-    let fills = style::fills(variables);
+    let font_size = tokens.font_size.px().unwrap_or(16.0);
+    let font_size_css = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
+    let text_colour = style::text_colour(tokens);
+    let fills = style::fills(tokens);
     let placement = Placement::of(&config.text_placement);
 
     let actors = Actors::new(&diagram.actors, &config.actor_colours);
@@ -119,10 +106,15 @@ pub fn render(input: &JourneyInput<'_>) -> Result<String, RenderError> {
     }
     let families = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let style = style::style_sheet(id, input.themes, &font_family, &font_size_css, &families);
+    let style = style::style_sheet(id, input.theme, &font_family, &font_size_css, &families);
 
     // The root: the size, the view box and the roles, in the order `mermaidAPI` and the renderer
     // set them.

@@ -125,7 +125,7 @@ fn add_text(
     let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
     // `calculateTextWidth(textContent, config) + 50`: the width of the box `getBBox` gives the text,
     // rounded to a pixel.
-    let width = measure_box(sans, content, input.config.font_size)?
+    let width = measure_box(sans, content, input.config.globals.font_size)?
         .width()
         .round()
         + WRAP_SLACK;
@@ -203,12 +203,13 @@ pub(super) struct ClassBox {
 /// outline and rows, and its two dividers; the node's box is the outline's (`updateNodeBounds`).
 /// The second value is the drawing's box, the union of the parts, which the viewBox covers.
 pub(super) fn class_box(input: &ShapeInput<'_>) -> Result<ClassBox, RenderError> {
-    let config = input.config;
-    let padding = config.class.padding.unwrap_or(DEFAULT_PADDING);
+    let class = &input.config.section.class;
+    let padding = class.padding.unwrap_or(DEFAULT_PADDING);
     let gap = padding;
     let empty = ClassNodeData::default();
     let data = input.node.class.as_ref().unwrap_or(&empty);
-    let font_size = util::theme_number(input.theme, "fontSize").unwrap_or(config.font_size);
+    let font_size =
+        util::theme_number(&input.config.theme.font_size).unwrap_or(input.config.globals.font_size);
 
     // The style of the paths is the class's own declarations, joined (`classNode.styles`), and the
     // stroke width is read from them as `userNodeOverrides` reads them.
@@ -218,7 +219,7 @@ pub(super) fn class_box(input: &ShapeInput<'_>) -> Result<ClassBox, RenderError>
     let stroke_width = util::stroke_width(&util::styles2string(&styled));
 
     let no_members = data.members.is_empty() && data.methods.is_empty();
-    let render_extra = no_members && !config.class.hide_empty_members_box;
+    let render_extra = no_members && !class.hide_empty_members_box;
 
     // The rows, as `textHelper` lays them out.
     let mut annotation = Group {
@@ -321,7 +322,7 @@ pub(super) fn class_box(input: &ShapeInput<'_>) -> Result<ClassBox, RenderError>
     // offset of the box, and shifted up by four when the labels are not HTML. An empty box with
     // `hideEmptyMembersBox` keeps the translation instead, less a gap under an annotation (171-181).
     let offset = y + padding - rect_offset;
-    let hide_empty = no_members && config.class.hide_empty_members_box;
+    let hide_empty = no_members && input.config.section.class.hide_empty_members_box;
     let kept = |translate_y: f64| -> f64 {
         if data.annotations.is_empty() {
             translate_y

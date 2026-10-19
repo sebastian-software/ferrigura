@@ -6,6 +6,8 @@
 
 use std::collections::HashMap;
 
+use ferrigura_model::theme::ThemeTokens;
+
 use super::Renderer;
 use super::bounds::{get_max, js_round};
 use super::model::{Activation, Block};
@@ -25,19 +27,19 @@ pub enum BlockAction {
 
 /// The fill of a `rect` with no colour of its own: the theme's background, or grey
 /// (`sequenceRenderer.ts:1190-1193`).
-fn default_rect_fill(variables: &ferrigura_model::value::Value) -> String {
-    let theme = crate::variables::text_of(variables, "rectBkgColor")
+fn default_rect_fill(tokens: &ThemeTokens) -> String {
+    let theme = tokens
+        .rect_bkg_color
+        .text()
         .filter(|text| !text.is_empty())
-        .or_else(|| {
-            crate::variables::text_of(variables, "actorBkg").filter(|text| !text.is_empty())
-        });
+        .or_else(|| tokens.actor_bkg.text().filter(|text| !text.is_empty()));
     theme.unwrap_or_else(|| "rgba(128, 128, 128, 0.5)".to_owned())
 }
 
 impl Renderer<'_> {
     /// The theme's default fill of a `rect` (see [`default_rect_fill`]).
     pub(super) fn rect_default_fill(&self) -> String {
-        default_rect_fill(self.themes.primary())
+        default_rect_fill(self.theme.light)
     }
 
     /// `drawNote` (`:243-286`): a note with its text, in the note's place in the row.
@@ -334,7 +336,7 @@ impl Renderer<'_> {
                 .map_or(0, |index| self.place_of(index));
             let stroke = super::actors::palette_color(&border, place);
             let fill = super::actors::palette_color(&bkg, place)
-                .or_else(|| crate::variables::text_of(self.themes.primary(), "mainBkg"));
+                .or_else(|| self.theme.light.main_bkg.text());
             if let Some(style) = super::actors::style_text(&[("stroke", stroke), ("fill", fill)]) {
                 element.set("style", style);
             }

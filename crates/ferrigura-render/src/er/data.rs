@@ -11,10 +11,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::er::{Cardinality, ErClass, ErDiagram, Identification};
 use ferrigura_model::flowchart::LabelType;
 
+use crate::context::Globals;
 use crate::unified::data::EntityFields;
 pub use crate::unified::data::{Edge, LayoutData, Node};
 
@@ -26,7 +26,7 @@ const SUBGRAPH_PADDING: f64 = 8.0;
 /// The configuration is read as the reference reads it: `look` from the top level, which the
 /// ER scope resolves to `neo` by default (`config.ts` 79-103).
 #[must_use]
-pub fn get_data(diagram: &ErDiagram, config: &MermaidConfig) -> LayoutData {
+pub fn get_data(diagram: &ErDiagram, globals: &Globals) -> LayoutData {
     let classes: HashMap<&str, &ErClass> = diagram
         .classes
         .iter()
@@ -64,7 +64,7 @@ pub fn get_data(diagram: &ErDiagram, config: &MermaidConfig) -> LayoutData {
             ),
             css_classes: subgraph.classes.join(" "),
             dir: subgraph.dir.clone(),
-            look: config.look.clone(),
+            look: globals.look.clone(),
             is_group: true,
             shape: "rect".to_owned(),
             ..Node::default()
@@ -97,7 +97,7 @@ pub fn get_data(diagram: &ErDiagram, config: &MermaidConfig) -> LayoutData {
             css_compiled_styles: compiled_styles(&classes, css_classes.split(' ')),
             css_classes,
             dir: None,
-            look: config.look.clone(),
+            look: globals.look.clone(),
             is_group: false,
             shape: "erBox".to_owned(),
             color_index: Some(color_index),
@@ -135,7 +135,7 @@ pub fn get_data(diagram: &ErDiagram, config: &MermaidConfig) -> LayoutData {
             classes: "relationshipLine".to_owned(),
             arrow_type_start: cardinality_name(relationship.rel_spec.card_b),
             arrow_type_end: cardinality_name(relationship.rel_spec.card_a),
-            look: config.look.clone(),
+            look: globals.look.clone(),
             curve: Some("basis".to_owned()),
             ..Edge::default()
         })

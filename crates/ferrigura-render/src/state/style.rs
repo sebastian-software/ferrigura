@@ -9,43 +9,47 @@
 //! the reference's `undefined` fallback does. The `//` comments and the nested `text` rule of
 //! `.state-note` are not CSS, and are not written (`docs-port/state/NOTES.md` 5.3).
 
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::state::ClassDef;
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use crate::pie::Themes;
-use crate::svg::font_faces;
+use crate::context::{Globals, ThemeView};
+use crate::svg::{css_text, font_faces};
 use crate::unified::palette::{Palette, palette};
-use crate::variables::{css_text, text_of, truthy};
 
-/// The colour tokens that the rules name, each declared as a custom property on the diagram's id.
-const COLOUR_TOKENS: [&str; 24] = [
-    "mainBkg",
-    "stateBkg",
-    "nodeBorder",
-    "stateBorder",
-    "lineColor",
-    "transitionColor",
-    "textColor",
-    "stateLabelColor",
-    "background",
-    "noteBorderColor",
-    "noteBkgColor",
-    "noteTextColor",
-    "labelBackgroundColor",
-    "edgeLabelBackground",
-    "transitionLabelColor",
-    "tertiaryTextColor",
-    "specialStateColor",
-    "innerEndBackground",
-    "compositeBackground",
-    "altBackground",
-    "compositeTitleBackground",
-    "errorBkgColor",
-    "errorTextColor",
-    "clusterBkg",
-];
+/// The colour tokens that the rules name, each declared as a custom property on the diagram's id, in the
+/// order of the custom properties.
+fn colour_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 24] {
+    [
+        ("mainBkg", &tokens.main_bkg),
+        ("stateBkg", &tokens.state_bkg),
+        ("nodeBorder", &tokens.node_border),
+        ("stateBorder", &tokens.state_border),
+        ("lineColor", &tokens.line_color),
+        ("transitionColor", &tokens.transition_color),
+        ("textColor", &tokens.text_color),
+        ("stateLabelColor", &tokens.state_label_color),
+        ("background", &tokens.background),
+        ("noteBorderColor", &tokens.note_border_color),
+        ("noteBkgColor", &tokens.note_bkg_color),
+        ("noteTextColor", &tokens.note_text_color),
+        ("labelBackgroundColor", &tokens.label_background_color),
+        ("edgeLabelBackground", &tokens.edge_label_background),
+        ("transitionLabelColor", &tokens.transition_label_color),
+        ("tertiaryTextColor", &tokens.tertiary_text_color),
+        ("specialStateColor", &tokens.special_state_color),
+        ("innerEndBackground", &tokens.inner_end_background),
+        ("compositeBackground", &tokens.composite_background),
+        ("altBackground", &tokens.alt_background),
+        (
+            "compositeTitleBackground",
+            &tokens.composite_title_background,
+        ),
+        ("errorBkgColor", &tokens.error_bkg_color),
+        ("errorTextColor", &tokens.error_text_color),
+        ("clusterBkg", &tokens.cluster_bkg),
+    ]
+}
 
 /// The flood of the drop shadows in a light scheme, and in a dark one.
 const LIGHT_FLOOD: &str = "#000000";
@@ -60,20 +64,25 @@ const ALT_BACKGROUND: &str = "#efefef";
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
-    themes: Themes<'_>,
-    config: &MermaidConfig,
+    theme: ThemeView<'_>,
+    globals: &Globals,
     classes: &[ClassDef],
     families: &[EmbeddedFamily],
 ) -> String {
-    let variables = themes.primary();
+    let tokens = theme.light;
     let id = format!("#{svg_id}");
     let font = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
-    let stroke_width = text_of(variables, "strokeWidth").unwrap_or_else(|| "1".to_owned());
-    let shadow = match text_of(variables, "dropShadow") {
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
+    let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
+    let shadow = match tokens.drop_shadow.text() {
         Some(shadow) if !shadow.is_empty() => shadow.replacen(
             "url(#drop-shadow)",
             &format!("url(#{svg_id}-drop-shadow)"),
@@ -81,12 +90,12 @@ pub fn style_sheet(
         ),
         _ => "none".to_owned(),
     };
-    let stroke_neo = if truthy(variables, "useGradient") {
+    let stroke_neo = if tokens.use_gradient.truthy() {
         format!("url(#{svg_id}-gradient)")
     } else {
-        colour(variables, &["nodeBorder"])
+        colour(&[("nodeBorder", &tokens.node_border)])
     };
-    let radius = text_of(variables, "radius").unwrap_or_else(|| "5".to_owned());
+    let radius = tokens.radius.text().unwrap_or_else(|| "5".to_owned());
 
     let mut rules = String::new();
     // styles.ts: the global rules every diagram gets.
@@ -94,7 +103,7 @@ pub fn style_sheet(
         &id,
         &format!(
             "font-family:{font};font-size:{font_size};fill:{};",
-            colour(variables, &["textColor"])
+            colour(&[("textColor", &tokens.text_color)])
         ),
     ));
     rules.push_str("@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}");
@@ -109,15 +118,18 @@ pub fn style_sheet(
         ".edge-animation-fast",
         "stroke-dasharray:9,5 !important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;",
     ));
-    if text_of(variables, "errorBkgColor").is_some() {
+    if tokens.error_bkg_color.text().is_some() {
         rules.push_str(&scoped(
             &id,
             ".error-icon",
-            &format!("fill:{};", colour(variables, &["errorBkgColor"])),
+            &format!(
+                "fill:{};",
+                colour(&[("errorBkgColor", &tokens.error_bkg_color)])
+            ),
         ));
     }
-    if text_of(variables, "errorTextColor").is_some() {
-        let text = colour(variables, &["errorTextColor"]);
+    if tokens.error_text_color.text().is_some() {
+        let text = colour(&[("errorTextColor", &tokens.error_text_color)]);
         rules.push_str(&scoped(
             &id,
             ".error-text",
@@ -138,7 +150,7 @@ pub fn style_sheet(
     ));
     rules.push_str(&scoped(&id, ".edge-pattern-dashed", "stroke-dasharray:3;"));
     rules.push_str(&scoped(&id, ".edge-pattern-dotted", "stroke-dasharray:2;"));
-    let line = colour(variables, &["lineColor"]);
+    let line = colour(&[("lineColor", &tokens.line_color)]);
     rules.push_str(&scoped(
         &id,
         ".marker",
@@ -154,7 +166,7 @@ pub fn style_sheet(
     rules.push_str(&scoped(
         &id,
         ".node .neo-node",
-        &format!("stroke:{};", colour(variables, &["nodeBorder"])),
+        &format!("stroke:{};", colour(&[("nodeBorder", &tokens.node_border)])),
     ));
     rules.push_str(&scoped(
         &id,
@@ -179,7 +191,10 @@ pub fn style_sheet(
     rules.push_str(&scoped(
         &id,
         "[data-look=\"neo\"].node .neo-line path",
-        &format!("stroke:{};filter:none;", colour(variables, &["nodeBorder"])),
+        &format!(
+            "stroke:{};filter:none;",
+            colour(&[("nodeBorder", &tokens.node_border)])
+        ),
     ));
     rules.push_str(&scoped(
         &id,
@@ -203,14 +218,8 @@ pub fn style_sheet(
     ));
 
     // styles.js: the palette rules of each container slot, then the state rules.
-    rules.push_str(&palette_rules(&id, config, variables));
-    rules.push_str(&state_rules(
-        &id,
-        variables,
-        &stroke_width,
-        &radius,
-        &shadow,
-    ));
+    rules.push_str(&palette_rules(&id, globals, tokens));
+    rules.push_str(&state_rules(&id, tokens, &stroke_width, &radius, &shadow));
 
     // The diagram's `classDef` rules: the classes' declarations, on every state of the class.
     for class in classes {
@@ -236,42 +245,57 @@ pub fn style_sheet(
     };
     css_text(&format!(
         "{faces}{}{rules}",
-        custom_properties(svg_id, themes, config)
+        custom_properties(svg_id, theme, globals)
     ))
 }
 
 /// The state rules of `styles.js` `getStyles`, in the reference's order, after the palette rules.
 fn state_rules(
     id: &str,
-    variables: &Value,
+    tokens: &ThemeTokens,
     stroke_width: &str,
     radius: &str,
     shadow: &str,
 ) -> String {
-    let transition = colour(variables, &["transitionColor"]);
-    let main_bkg = colour(variables, &["mainBkg"]);
-    let state_border = colour(variables, &["stateBorder", "nodeBorder"]);
-    let text = colour(variables, &["textColor"]);
-    let state_label = colour(variables, &["stateLabelColor"]);
-    let line = colour(variables, &["lineColor"]);
-    let background = colour(variables, &["background"]);
-    let composite_background = colour(variables, &["compositeBackground", "background"]);
-    let alt_background = if text_of(variables, "altBackground").is_some() {
-        colour(variables, &["altBackground"])
+    let transition = colour(&[("transitionColor", &tokens.transition_color)]);
+    let main_bkg = colour(&[("mainBkg", &tokens.main_bkg)]);
+    let state_border = colour(&[
+        ("stateBorder", &tokens.state_border),
+        ("nodeBorder", &tokens.node_border),
+    ]);
+    let text = colour(&[("textColor", &tokens.text_color)]);
+    let state_label = colour(&[("stateLabelColor", &tokens.state_label_color)]);
+    let line = colour(&[("lineColor", &tokens.line_color)]);
+    let background = colour(&[("background", &tokens.background)]);
+    let composite_background = colour(&[
+        ("compositeBackground", &tokens.composite_background),
+        ("background", &tokens.background),
+    ]);
+    let alt_background = if tokens.alt_background.text().is_some() {
+        colour(&[("altBackground", &tokens.alt_background)])
     } else {
         ALT_BACKGROUND.to_owned()
     };
-    let special = colour(variables, &["specialStateColor"]);
-    let inner_end = colour(variables, &["innerEndBackground"]);
-    let edge_label = colour(variables, &["edgeLabelBackground"]);
-    let label_background = colour(variables, &["labelBackgroundColor"]);
-    let transition_label = colour(variables, &["transitionLabelColor", "tertiaryTextColor"]);
-    let note_border = colour(variables, &["noteBorderColor"]);
-    let note_bkg = colour(variables, &["noteBkgColor"]);
-    let note_text = colour(variables, &["noteTextColor"]);
-    let composite_title = colour(variables, &["compositeTitleBackground"]);
-    let node_border = colour(variables, &["nodeBorder"]);
-    let state_bkg = colour(variables, &["stateBkg", "mainBkg"]);
+    let special = colour(&[("specialStateColor", &tokens.special_state_color)]);
+    let inner_end = colour(&[("innerEndBackground", &tokens.inner_end_background)]);
+    let edge_label = colour(&[("edgeLabelBackground", &tokens.edge_label_background)]);
+    let label_background = colour(&[("labelBackgroundColor", &tokens.label_background_color)]);
+    let transition_label = colour(&[
+        ("transitionLabelColor", &tokens.transition_label_color),
+        ("tertiaryTextColor", &tokens.tertiary_text_color),
+    ]);
+    let note_border = colour(&[("noteBorderColor", &tokens.note_border_color)]);
+    let note_bkg = colour(&[("noteBkgColor", &tokens.note_bkg_color)]);
+    let note_text = colour(&[("noteTextColor", &tokens.note_text_color)]);
+    let composite_title = colour(&[(
+        "compositeTitleBackground",
+        &tokens.composite_title_background,
+    )]);
+    let node_border = colour(&[("nodeBorder", &tokens.node_border)]);
+    let state_bkg = colour(&[
+        ("stateBkg", &tokens.state_bkg),
+        ("mainBkg", &tokens.main_bkg),
+    ]);
     let stroke_px = format!("{stroke_width}px");
     let rounded = format!("{radius}px");
 
@@ -424,7 +448,7 @@ fn state_rules(
         "[data-look=\"neo\"].statediagram-cluster rect",
         &format!(
             "fill:{main_bkg};stroke:{};stroke-width:{stroke_width};",
-            if truthy(variables, "useGradient") {
+            if tokens.use_gradient.truthy() {
                 format!("url(#{}-gradient)", id.trim_start_matches('#'))
             } else {
                 state_border.clone()
@@ -441,11 +465,11 @@ fn state_rules(
 /// The palette rules of `genColor` (`styles.js` 21-99): for each slot of the border palette, the
 /// outline and the tint of its containers. A theme without a palette, or one that is not a colour
 /// theme, has none.
-fn palette_rules(id: &str, config: &MermaidConfig, variables: &Value) -> String {
-    let Some(palette) = palette(config, variables) else {
+fn palette_rules(id: &str, globals: &Globals, tokens: &ThemeTokens) -> String {
+    let Some(palette) = palette(globals, tokens) else {
         return String::new();
     };
-    let look = safe_look(&config.look);
+    let look = safe_look(&globals.look);
     let mut out = String::new();
     for index in 0..palette.border.len() {
         let slot = format!("[data-look=\"{look}\"][data-color-id=\"color-{index}\"]");
@@ -514,11 +538,11 @@ fn safe_look(look: &str) -> &str {
 
 /// A colour of the rules: `var(--name)` for the first of the names the theme gives, else for the
 /// first name (the reference's `a || b`).
-fn colour(variables: &Value, names: &[&str]) -> String {
+fn colour(names: &[(&str, &Token)]) -> String {
     let name = names
         .iter()
-        .find(|name| text_of(variables, name).is_some())
-        .unwrap_or(&names[0]);
+        .find(|(_, token)| token.text().is_some())
+        .map_or(names[0].0, |(name, _)| name);
     format!("var(--{name})")
 }
 
@@ -539,21 +563,21 @@ fn rule(selector: &str, declarations: &str) -> String {
 /// The custom properties of the colours, declared on the diagram's id. With one set of variables they
 /// are written as they are; with a light and a dark set, the dark set applies under
 /// `prefers-color-scheme: dark`, as the flowchart does.
-fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -> String {
+fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
     let id = format!("#{svg_id}");
-    match themes {
-        Themes::Single(variables) => rule(&id, &declarations(variables, flood(config))),
-        Themes::Schemes { light, dark } => format!(
+    match theme.dark {
+        None => rule(&id, &declarations(theme.light, flood(globals))),
+        Some(dark) => format!(
             "{}@media (prefers-color-scheme: dark){{{}}}",
-            rule(&id, &declarations(light, LIGHT_FLOOD)),
+            rule(&id, &declarations(theme.light, LIGHT_FLOOD)),
             rule(&id, &declarations(dark, DARK_FLOOD)),
         ),
     }
 }
 
 /// The flood of the drop shadows for a configuration: white for a theme whose name says dark.
-fn flood(config: &MermaidConfig) -> &'static str {
-    if config.theme.contains("dark") {
+fn flood(globals: &Globals) -> &'static str {
+    if globals.theme.contains("dark") {
         DARK_FLOOD
     } else {
         LIGHT_FLOOD
@@ -561,11 +585,11 @@ fn flood(config: &MermaidConfig) -> &'static str {
 }
 
 /// The declarations of the custom properties of one set of variables.
-fn declarations(variables: &Value, flood: &str) -> String {
+fn declarations(tokens: &ThemeTokens, flood: &str) -> String {
     let mut out = String::new();
-    for token in COLOUR_TOKENS {
-        if let Some(colour) = text_of(variables, token) {
-            out.push_str(&format!("--{token}:{};", css_text(&colour)));
+    for (name, token) in colour_tokens(tokens) {
+        if let Some(colour) = token.text() {
+            out.push_str(&format!("--{name}:{};", css_text(&colour)));
         }
     }
     out.push_str(&format!("--floodColor:{flood};"));

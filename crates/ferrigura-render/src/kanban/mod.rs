@@ -13,7 +13,7 @@
 pub mod data;
 mod style;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::{KanbanDiagramConfig, MindmapDiagramConfig};
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::kanban::KanbanDiagram;
 use ferrigura_model::value::Value;
@@ -24,15 +24,14 @@ use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
 use crate::common::decode_entities;
-use crate::common::style::base_style_sheet_with;
+use crate::common::style::base_style_sheet;
 use crate::common::viewbox::{BBox as ViewBox, setup_graph_viewbox};
+use crate::context::Context;
 use crate::svg::number;
-use crate::theme::Themes;
 use crate::unified::geom::BBox;
 use crate::unified::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::unified::shapes::kanban_item::{ItemPaint, KanbanItem, kanban_item};
 use crate::unified::shapes::kanban_section::{KanbanSection, SectionPaint, kanban_section};
-use crate::variables::{px, text_of};
 use data::DataNode;
 use style::Schemes;
 
@@ -63,18 +62,14 @@ const CORNER_RADIUS: f64 = 5.0;
 /// 29-30 and `kanbanDb.ts` 83).
 const ITEM_LABEL_STYLE: &str = "text-align:left !important";
 
-/// What the kanban renderer draws.
+/// The sections of the configuration that the kanban renderer reads: its own section, and the
+/// `mindmap` section that its viewBox takes (`kanbanRenderer.ts` 92-97).
 #[derive(Debug, Clone, Copy)]
-pub struct KanbanInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a KanbanDiagram,
-    /// The effective configuration, in the kanban diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
+pub struct KanbanSections<'a> {
+    /// The `kanban` section.
+    pub kanban: &'a KanbanDiagramConfig,
+    /// The `mindmap` section.
+    pub mindmap: &'a MindmapDiagramConfig,
 }
 
 /// The labels of an item: its title, its ticket and its assignee, each at the item's label width.
@@ -97,14 +92,14 @@ struct SectionLayout<'a> {
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or subset, or a label cannot be laid out.
-pub fn render(input: &KanbanInput<'_>) -> Result<String, RenderError> {
-    let config = input.config;
-    let variables = input.themes.primary();
+pub fn render(
+    input: &Context<'_, KanbanDiagram, KanbanSections<'_>>,
+) -> Result<String, RenderError> {
     let id = input.id;
-    let nodes = data::get_data(input.diagram, &config.look);
-    let width = section_width(config.kanban.section_width);
-    let text_size = px(variables, "fontSize").unwrap_or(16.0);
-    let schemes = Schemes::new(input.themes);
+    let nodes = data::get_data(input.diagram, &input.globals.look);
+    let width = section_width(input.section.kanban.section_width);
+    let text_size = input.theme.light.font_size.px().unwrap_or(16.0);
+    let schemes = Schemes::new(input.theme);
     let palette = &schemes.primary;
     let item_width = width - 1.5 * PADDING;
 
@@ -143,7 +138,7 @@ pub fn render(input: &KanbanInput<'_>) -> Result<String, RenderError> {
         }) {
             let labels = item_labels_of(item, item_width, text_size)?;
             let priority: Option<&Value> = item.priority.as_ref();
-            let link = ticket_link(item, &config.kanban.ticket_base_url);
+            let link = ticket_link(item, &input.section.kanban.ticket_base_url);
             let shape = kanban_item(&KanbanItem {
                 dom_id: &format!("{id}-{}", item.id),
                 title: &labels.title,
@@ -213,13 +208,20 @@ pub fn render(input: &KanbanInput<'_>) -> Result<String, RenderError> {
     }
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            input
+                .theme
+                .light
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
     let css_font_size = format!("{}px", number(text_size));
-    let style = base_style_sheet_with(
+    let style = base_style_sheet(
         id,
-        input.themes,
+        input.theme,
         &font_family,
         &css_font_size,
         &families,
@@ -240,8 +242,8 @@ pub fn render(input: &KanbanInput<'_>) -> Result<String, RenderError> {
             width: bounds.width,
             height: bounds.height,
         },
-        config.mindmap.padding,
-        config.mindmap.use_max_width,
+        input.section.mindmap.padding,
+        input.section.mindmap.use_max_width,
     );
     root.set("role", a11y::SVG_ROLE);
     root.set("aria-roledescription", "kanban");

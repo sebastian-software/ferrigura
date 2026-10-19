@@ -18,7 +18,7 @@ mod text;
 use std::f64::consts::PI;
 
 use ferrigura_jsmath::{cos, sin};
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::IshikawaDiagramConfig;
 use ferrigura_model::ishikawa::{IshikawaDiagram, IshikawaNode};
 use ferrigura_text::{EmbeddedFamily, Face, FontFamily, FontStyle, FontWeight, embed_runs, face};
 
@@ -27,9 +27,7 @@ use crate::a11y;
 use crate::common::Element;
 use crate::common::viewbox::{BBox as ViewBox, setup_graph_viewbox};
 use crate::svg::number;
-use crate::theme::Themes;
 use crate::unified::geom::BBox;
-use crate::variables::{px, text_of};
 use text::{Anchor, Baseline, Label, Style, as_runs, wrap_text};
 
 /// The XML namespace of the root element.
@@ -65,20 +63,6 @@ const LINE_STEP: f64 = 1.05;
 /// The diagram padding the reference uses when the configuration gives none
 /// (`ishikawaRenderer.ts` 49).
 const PADDING_DEFAULT: f64 = 20.0;
-
-/// What the ishikawa renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct IshikawaInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a IshikawaDiagram,
-    /// The effective configuration, in the ishikawa diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
 
 /// What the layout and the drawing read: the trigonometry of the causes, the sizes of the text and
 /// the colours.
@@ -144,18 +128,19 @@ pub(super) fn lerp(a: f64, b: f64, t: f64) -> f64 {
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or subset.
-pub fn render(input: &IshikawaInput<'_>) -> Result<String, RenderError> {
-    let config = input.config;
-    let themes = input.themes;
-    let variables = themes.primary();
+pub fn render(
+    input: &crate::context::Context<'_, IshikawaDiagram, IshikawaDiagramConfig>,
+) -> Result<String, RenderError> {
+    let config = input.section;
+    let tokens = input.theme.light;
     let id = input.id;
 
-    let font_size = if config.font_size.is_finite() {
-        config.font_size
+    let font_size = if input.globals.font_size.is_finite() {
+        input.globals.font_size
     } else {
         FONT_SIZE_DEFAULT
     };
-    let label_size = px(variables, "fontSize").unwrap_or(FONT_SIZE_DEFAULT);
+    let label_size = tokens.font_size.px().unwrap_or(FONT_SIZE_DEFAULT);
     let regular = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
     let bold = face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal);
     let context = Context {
@@ -165,13 +150,22 @@ pub fn render(input: &IshikawaInput<'_>) -> Result<String, RenderError> {
         label_size,
         regular,
         bold,
-        line: text_of(variables, "lineColor").unwrap_or_else(|| "#333333".to_owned()),
-        main: text_of(variables, "mainBkg").unwrap_or_else(|| "#ffffff".to_owned()),
-        text: text_of(variables, "textColor").unwrap_or_else(|| "#333333".to_owned()),
+        line: tokens
+            .line_color
+            .text()
+            .unwrap_or_else(|| "#333333".to_owned()),
+        main: tokens
+            .main_bkg
+            .text()
+            .unwrap_or_else(|| "#ffffff".to_owned()),
+        text: tokens
+            .text_color
+            .text()
+            .unwrap_or_else(|| "#333333".to_owned()),
         marker_id: format!("ishikawa-arrow-{id}"),
     };
 
-    let padding = config.ishikawa.diagram_padding as f64;
+    let padding = config.diagram_padding as f64;
     let padding = if padding.is_finite() {
         padding
     } else {
@@ -186,11 +180,16 @@ pub fn render(input: &IshikawaInput<'_>) -> Result<String, RenderError> {
     // The fonts: every line of every label, in the face each one is set in.
     let families: Vec<EmbeddedFamily> = embed_runs(&as_runs(&drawing.runs))?;
     let family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let label_size_css = text_of(variables, "fontSize").unwrap_or_else(|| "14px".to_owned());
-    let sheet = style::sheet(id, themes, &family, &label_size_css, &families);
+    let label_size_css = tokens.font_size.text().unwrap_or_else(|| "14px".to_owned());
+    let sheet = style::sheet(id, input.theme, &family, &label_size_css, &families);
 
     let mut root = Element::new("svg")
         .with("id", id)
@@ -209,7 +208,7 @@ pub fn render(input: &IshikawaInput<'_>) -> Result<String, RenderError> {
                 height: bounds.height,
             },
             padding,
-            config.ishikawa.use_max_width,
+            config.use_max_width,
         );
     }
     root.set("role", a11y::SVG_ROLE);

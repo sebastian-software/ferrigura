@@ -7,6 +7,7 @@
 
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
+use ferrigura_render::context::Globals;
 use ferrigura_render::mindmap::data::layout_data;
 use ferrigura_render::unified::data::{LayoutData, Node};
 use ferrigura_syntax::mindmap::parse;
@@ -16,7 +17,7 @@ fn data(text: &str, color_by: &str) -> LayoutData {
     let diagram = parse(text).expect("the text parses");
     let mut config = MermaidConfig::default();
     config.mindmap.color_by = color_by.to_owned();
-    layout_data(&diagram, &config)
+    layout_data(&diagram, &Globals::of(&config), &config.mindmap)
 }
 
 fn node<'a>(data: &'a LayoutData, id: &str) -> &'a Node {

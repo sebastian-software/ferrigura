@@ -5,9 +5,9 @@
 //! flat 7 px per character.
 
 use ferrigura_model::config::{MermaidConfig, defaults, typed};
-use ferrigura_model::theme::Theme;
-use ferrigura_render::c4::{C4Input, render};
-use ferrigura_render::theme::Themes;
+use ferrigura_model::theme::{Theme, ThemeTokens};
+use ferrigura_render::c4::render;
+use ferrigura_render::context::{Context, Globals, ThemeView};
 
 /// A `System(...)` element as the spec's node: the name, the stereotype and a long description.
 const SYSTEM: &str = "C4Context
@@ -18,10 +18,16 @@ const SYSTEM: &str = "C4Context
 fn draw(config: &MermaidConfig) -> String {
     let diagram = ferrigura_syntax::c4::parse(SYSTEM).expect("the C4 diagram parses");
     let variables = Theme::ReduxColor.variables(None);
-    render(&C4Input {
+    let tokens = ThemeTokens::from_value(&variables);
+    let globals = Globals::of(config);
+    render(&Context {
         diagram: &diagram,
-        config,
-        themes: Themes::Single(&variables),
+        section: &config.c4,
+        globals: &globals,
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id: "c4-label",
     })
     .expect("the C4 diagram renders")
