@@ -372,8 +372,8 @@ mod tests {
 
     #[test]
     fn the_business_marker_of_the_normal_figure_is_a_chord_across_its_head() {
-        // `usecaseActor.ts` 54: a circle of radius 12 at centre -24. The chord is level at its ends and
-        // starts left of the figure's axis, as the 60-degree direction gives it.
+        // `usecaseActor.ts` 54: a circle of radius 12 at centre -24. The chord rises to the right at 60 degrees
+        // (usecaseShapes.spec.ts), so its ends are not level; it starts left of the figure's axis.
         let marker = business_marker(Variant::Normal);
         let coordinates: Vec<f64> = marker
             .split(' ')
@@ -382,7 +382,15 @@ mod tests {
         assert_eq!(coordinates.len(), 4, "{marker}");
         assert!((coordinates[0] - 1.4353828).abs() < 1e-6, "{marker}");
         assert!((coordinates[2] - 11.0353828).abs() < 1e-6, "{marker}");
-        assert!((coordinates[1] - coordinates[3]).abs() < 1e-9, "{marker}");
+        assert!(
+            ((coordinates[1] - coordinates[3])
+                .atan2(coordinates[2] - coordinates[0])
+                .to_degrees()
+                - 60.0)
+                .abs()
+                < 1e-9,
+            "{marker}"
+        );
         assert!((coordinates[1] + 12.0861562).abs() < 1e-6, "{marker}");
     }
 }
