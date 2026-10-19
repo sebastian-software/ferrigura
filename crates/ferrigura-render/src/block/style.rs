@@ -8,44 +8,44 @@
 //! which the reference makes with `khroma`'s `fade`: an `rgba` with the alpha written in, since a custom
 //! property cannot carry one.
 
-use crate::context::Globals;
-use crate::unified::Bridge;
 use ferrigura_model::block::ClassDef;
-use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::theme::ThemeTokens;
-use ferrigura_model::value::Value;
 use ferrigura_text::EmbeddedFamily;
 
+use crate::context::{Globals, ThemeView};
 use crate::flowchart::style::{custom_properties, rule};
-use crate::svg::font_faces;
-use crate::theme::Themes;
+use crate::svg::{css_text, font_faces};
 use crate::unified::palette::palette;
-use crate::variables::{css_text, text_of};
 
 /// The style sheet's content for a block diagram `svg_id`, escaped for XML: the custom properties, then
 /// the rules. `families` are the embedded fonts of the labels, whose `@font-face` rules come first.
 #[must_use]
 pub fn style_sheet_with_fonts(
     svg_id: &str,
-    themes: Themes<'_>,
-    config: &MermaidConfig,
+    theme: ThemeView<'_>,
+    globals: &Globals,
     class_defs: &[ClassDef],
     families: &[EmbeddedFamily],
 ) -> String {
-    let variables = themes.primary();
+    let tokens = theme.light;
     let id = format!("#{svg_id}");
     let font = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
-    let stroke_width = text_of(variables, "strokeWidth").unwrap_or_else(|| "1".to_owned());
-    let text_colour = if variables.get("nodeTextColor").is_some() {
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
+    let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
+    let text_colour = if !tokens.node_text_color.is_absent() {
         "nodeTextColor"
     } else {
         "textColor"
     };
-    let look = safe_look(&config.look);
+    let look = safe_look(&globals.look);
 
     let mut rules = vec![
         rule(
@@ -144,9 +144,9 @@ pub fn style_sheet_with_fonts(
             &format!("{id} .flowchartTitleText"),
             "text-anchor:middle;font-size:18px;fill:var(--textColor);",
         ),
-        composite_cluster_colours(&id, themes, &stroke_width),
+        composite_cluster_colours(&id, theme, &stroke_width),
     ];
-    if let Some(palette) = palette(&Globals::of(config), &ThemeTokens::from_value(variables)) {
+    if let Some(palette) = palette(globals, tokens) {
         rules.push(palette_rules(&id, look, palette.border.len()));
     }
     rules.push(class_rules(&id, class_defs));
@@ -159,11 +159,7 @@ pub fn style_sheet_with_fonts(
     };
     css_text(&format!(
         "{faces}{}{}",
-        custom_properties(
-            svg_id,
-            Bridge::new(config, themes).view(),
-            &Globals::of(config)
-        ),
+        custom_properties(svg_id, theme, globals),
         rules.concat()
     ))
 }
@@ -171,12 +167,12 @@ pub fn style_sheet_with_fonts(
 /// The composite's cluster colours for the scheme or schemes of the theme. With a light and a dark set, the
 /// dark rule applies under `prefers-color-scheme: dark`, as the custom properties do, since the colours are
 /// written with their alpha and cannot follow a custom property.
-fn composite_cluster_colours(id: &str, themes: Themes<'_>, stroke_width: &str) -> String {
-    match themes {
-        Themes::Single(variables) => composite_cluster_rule(id, variables, stroke_width),
-        Themes::Schemes { light, dark } => format!(
+fn composite_cluster_colours(id: &str, theme: ThemeView<'_>, stroke_width: &str) -> String {
+    match theme.dark {
+        None => composite_cluster_rule(id, theme.light, stroke_width),
+        Some(dark) => format!(
             "{}@media (prefers-color-scheme: dark){{{}}}",
-            composite_cluster_rule(id, light, stroke_width),
+            composite_cluster_rule(id, theme.light, stroke_width),
             composite_cluster_rule(id, dark, stroke_width),
         ),
     }
@@ -184,11 +180,15 @@ fn composite_cluster_colours(id: &str, themes: Themes<'_>, stroke_width: &str) -
 
 /// `styles.ts` `.node .cluster`: a composite's fill and stroke are the cluster colours at half and a
 /// fifth of their opacity, with the shadow of a cluster.
-fn composite_cluster_rule(id: &str, variables: &Value, stroke_width: &str) -> String {
-    let fill =
-        text_of(variables, "clusterBkg").map_or_else(String::new, |colour| fade(&colour, 0.5));
-    let stroke =
-        text_of(variables, "clusterBorder").map_or_else(String::new, |colour| fade(&colour, 0.2));
+fn composite_cluster_rule(id: &str, tokens: &ThemeTokens, stroke_width: &str) -> String {
+    let fill = tokens
+        .cluster_bkg
+        .text()
+        .map_or_else(String::new, |colour| fade(&colour, 0.5));
+    let stroke = tokens
+        .cluster_border
+        .text()
+        .map_or_else(String::new, |colour| fade(&colour, 0.2));
     rule(
         &format!("{id} .node .cluster"),
         &format!(

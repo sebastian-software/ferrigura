@@ -13,9 +13,8 @@ pub mod style;
 
 use std::collections::HashSet;
 
-use crate::context::Globals;
-use crate::unified::{Bridge, Config};
-use ferrigura_model::config::MermaidConfig;
+use crate::context::Context;
+use crate::unified::{Config, Section};
 use ferrigura_model::requirement::RequirementDiagram;
 use ferrigura_text::{
     FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
@@ -26,25 +25,9 @@ use crate::RenderError;
 use crate::a11y;
 use crate::flowchart::style::look_defs;
 use crate::svg::{escape, number};
-use crate::theme::Themes;
 use crate::unified::geom::BBox;
 use crate::unified::markers;
 use crate::unified::pipeline::{self, Measured, cover};
-use crate::variables::{px, text_of};
-
-/// What the requirement renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct RequirementInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a RequirementDiagram,
-    /// The effective configuration, in the requirement diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
 
 /// The padding of the viewBox: `setupViewPortForSVG(svg, padding, …)` with `padding = 8`
 /// (`requirementRenderer.ts` 36).
@@ -54,11 +37,14 @@ const VIEWBOX_PADDING: f64 = 8.0;
 const DEFAULT_FONT_SIZE: f64 = 16.0;
 
 /// `getData` and the measure step of the unified renderer (`requirementRenderer.ts` 14-27).
-fn measure(input: &RequirementInput<'_>, unified: &Config<'_>) -> Result<Measured, RenderError> {
-    let mut data = data::get_data(input.diagram, input.config);
+fn measure(
+    input: &Context<'_, RequirementDiagram, Section<'_>>,
+    config: &Config<'_>,
+) -> Result<Measured, RenderError> {
+    let mut data = data::get_data(input.diagram, input.globals);
     // `requirementRenderer.ts` 19: the diagram type of the layout data, which names the markers.
     data.diagram_type = markers::REQUIREMENT.to_owned();
-    pipeline::measure(data, unified)
+    pipeline::measure(data, config)
 }
 
 /// The two inputs that the reference cannot draw, which are named exceptions of the port
@@ -100,30 +86,32 @@ fn check_names(diagram: &RequirementDiagram) -> Result<(), RenderError> {
 /// Returns an error if a relationship names no requirement or element, if a requirement and an
 /// element share a name (both are named exceptions, see [`check_names`]), if a bundled font cannot
 /// be read, or if the layout fails.
-pub fn render(input: &RequirementInput<'_>) -> Result<String, RenderError> {
+pub fn render(input: &Context<'_, RequirementDiagram, Section<'_>>) -> Result<String, RenderError> {
     check_names(input.diagram)?;
-    let theme = input.themes.primary();
-    let bridge = Bridge::new(input.config, input.themes);
-    let unified = bridge.config(input.config);
-    let mut measured = measure(input, &unified)?;
-    pipeline::lay_out(&mut measured, &unified)?;
-    let config = input.config;
+    let config = Config::of(input);
+    let mut measured = measure(input, &config)?;
+    pipeline::lay_out(&mut measured, &config)?;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, &unified)?;
+    let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;
 
     // `utils.insertTitle` (`requirementRenderer.ts` 31-36): centred over the drawing, at
     // `-titleTopMargin` of the state section, in the theme's font size.
     let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
     let title = &input.diagram.title;
-    let font_size = px(theme, "fontSize").unwrap_or(DEFAULT_FONT_SIZE);
+    let font_size = input
+        .theme
+        .light
+        .font_size
+        .px()
+        .unwrap_or(DEFAULT_FONT_SIZE);
     let mut title_svg = String::new();
     if !title.is_empty() {
         let drawn = bounds.unwrap_or_default();
         let width = measure_text(sans, title, font_size)?;
         let ink = measure_box(sans, title, font_size)?;
         let text_box = text_box(sans, font_size)?;
-        let baseline = -(config.state.title_top_margin as f64);
+        let baseline = -(input.section.state.title_top_margin as f64);
         let centre = drawn.x + drawn.width / 2.0;
         cover(
             &mut bounds,
@@ -166,7 +154,7 @@ pub fn render(input: &RequirementInput<'_>) -> Result<String, RenderError> {
         drawn.width + VIEWBOX_PADDING * 2.0,
         drawn.height + VIEWBOX_PADDING * 2.0,
     );
-    let size_attributes = if config.state.use_max_width {
+    let size_attributes = if input.section.state.use_max_width {
         format!(
             "width=\"100%\" style=\"max-width: {}px;\"",
             number(view_width)
@@ -182,11 +170,16 @@ pub fn render(input: &RequirementInput<'_>) -> Result<String, RenderError> {
     let accessibility = a11y::children(id, &diagram.acc_title, &diagram.acc_descr);
     let accessible_attributes =
         a11y::root_attributes(id, "requirement", &diagram.acc_title, &diagram.acc_descr);
-    let style = style::style_sheet(id, input.themes, config, &families);
+    let style = style::style_sheet(id, input.theme, input.globals, &families);
     // `insertMarkers` with `data4Layout.markers` (`requirementRenderer.ts` 24-27): the `neo` set for
     // the neo look, else the classic one.
-    let stroke_width = text_of(theme, "strokeWidth").unwrap_or_else(|| "1".to_owned());
-    let marker_defs = markers::requirement_markers(id, config.look == "neo", &stroke_width);
+    let stroke_width = input
+        .theme
+        .light
+        .stroke_width
+        .text()
+        .unwrap_or_else(|| "1".to_owned());
+    let marker_defs = markers::requirement_markers(id, input.globals.look == "neo", &stroke_width);
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"requirementDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{marker_defs}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
@@ -196,11 +189,7 @@ pub fn render(input: &RequirementInput<'_>) -> Result<String, RenderError> {
         h = number(view_height),
         root = painted.root,
         coloured_markers = painted.coloured_markers,
-        defs = look_defs(
-            id,
-            Bridge::new(config, input.themes).view(),
-            &Globals::of(config)
-        ),
+        defs = look_defs(id, input.theme, input.globals),
     ))
 }
 

@@ -15,8 +15,11 @@ use std::io::Read;
 use std::{fs, io};
 
 use ferrigura_model::config::{MermaidConfig, effective, typed};
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::value::Value;
 use ferrigura_render::class::data::get_data;
+use ferrigura_render::context::Globals;
+use ferrigura_render::unified::Section;
 use ferrigura_syntax::{DiagramType, class, config, detect};
 use serde_json::{Value as Json, json};
 
@@ -38,7 +41,10 @@ fn configuration(text: &str) -> Result<(MermaidConfig, Value), String> {
 fn layout(text: &str) -> Result<Json, String> {
     let diagram = class::parse(text).map_err(|error| error.to_string())?;
     let (config, theme) = configuration(text)?;
-    serde_json::to_value(get_data(&diagram, &config, &theme)).map_err(|error| error.to_string())
+    let tokens = ThemeTokens::from_value(&theme);
+    let globals = Globals::of(&config);
+    serde_json::to_value(get_data(&diagram, &Section::of(&config), &globals, &tokens))
+        .map_err(|error| error.to_string())
 }
 
 /// The outcome of one text as the differential run reads it.

@@ -3,13 +3,20 @@
 //! The other tests of that spec are the parser's, in `ferrigura-syntax/tests/state_style_spec.rs`.
 
 use ferrigura_model::config::MermaidConfig;
+use ferrigura_render::context::Globals;
 use ferrigura_render::state::data::get_data;
+use ferrigura_render::unified::Section;
 use ferrigura_syntax::state::parse_grammar;
 
 /// The nodes of a text's layout data, after the grammar and the DB have parsed it.
 fn nodes(text: &str) -> Vec<ferrigura_render::unified::data::Node> {
     let diagram = parse_grammar(text).expect("parses");
-    get_data(&diagram, &MermaidConfig::default()).nodes
+    get_data(
+        &diagram,
+        &Section::of(&MermaidConfig::default()),
+        &Globals::of(&MermaidConfig::default()),
+    )
+    .nodes
 }
 
 mod defining_style {

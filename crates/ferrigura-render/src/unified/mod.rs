@@ -25,16 +25,18 @@ pub mod tidy_tree;
 
 use ferrigura_model::config::{
     ClassDiagramConfig, ErDiagramConfig, FlowchartDiagramConfig, MermaidConfig, MermaidConfigElk,
+    StateDiagramConfig,
 };
 use ferrigura_model::theme::ThemeTokens;
 
-use crate::context::{Context, Globals, ThemeView};
+use crate::context::{Context, Globals};
 
 /// The sections of the configuration that the unified renderer reads, borrowed from the view that the
 /// facade resolves. The `flowchart` section gives the layout's spacing, the curve and the title
 /// margins; the classes, states, entity relations and mindmaps read it as the flowchart does. The `elk`
 /// section gives the layout options. The `class` and `er` sections are read by the shapes of those two
-/// diagrams.
+/// diagrams. The `state` section is read across types too: the class and requirement diagrams take
+/// their title margin and their `useMaxWidth` from it.
 #[derive(Debug, Clone, Copy)]
 pub struct Section<'a> {
     /// The `flowchart` section.
@@ -45,6 +47,8 @@ pub struct Section<'a> {
     pub class: &'a ClassDiagramConfig,
     /// The `er` section.
     pub er: &'a ErDiagramConfig,
+    /// The `state` section.
+    pub state: &'a StateDiagramConfig,
 }
 
 impl<'a> Section<'a> {
@@ -56,6 +60,7 @@ impl<'a> Section<'a> {
             elk: &config.elk,
             class: &config.class,
             er: &config.er,
+            state: &config.state,
         }
     }
 }
@@ -82,53 +87,6 @@ impl<'a> Config<'a> {
             section: *input.section,
             globals: input.globals,
             theme: input.theme.light,
-        }
-    }
-}
-
-/// The configuration of a renderer that still takes the whole configuration and the `Themes` of its
-/// inputs: the globals and the tokens of its themes, made once per render. It stands for the inputs
-/// the renderers move to `Context`, and goes when the last renderer moves.
-pub(crate) struct Bridge {
-    /// The global options of the configuration.
-    pub(crate) globals: Globals,
-    /// The tokens of the light scheme, or of the one scheme.
-    pub(crate) light: ThemeTokens,
-    /// The tokens of the dark scheme, when the render has both.
-    pub(crate) dark: Option<ThemeTokens>,
-}
-
-impl Bridge {
-    /// The bridge of a configuration and the themes of a render.
-    pub(crate) fn new(config: &MermaidConfig, themes: crate::theme::Themes<'_>) -> Self {
-        let (light, dark) = match themes {
-            crate::theme::Themes::Single(set) => (ThemeTokens::from_value(set), None),
-            crate::theme::Themes::Schemes { light, dark } => (
-                ThemeTokens::from_value(light),
-                Some(ThemeTokens::from_value(dark)),
-            ),
-        };
-        Self {
-            globals: Globals::of(config),
-            light,
-            dark,
-        }
-    }
-
-    /// The configuration of the unified renderer, with the sections of `config`.
-    pub(crate) fn config<'a>(&'a self, config: &'a MermaidConfig) -> Config<'a> {
-        Config {
-            section: Section::of(config),
-            globals: &self.globals,
-            theme: &self.light,
-        }
-    }
-
-    /// The theme of the render, as the flowchart style reads it.
-    pub(crate) fn view(&self) -> ThemeView<'_> {
-        ThemeView {
-            light: &self.light,
-            dark: self.dark.as_ref(),
         }
     }
 }

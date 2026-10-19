@@ -9,36 +9,37 @@
 //! unused rules (`.reqBox`, `.reqTitle`, `.reqLabel`, `.reqLabelBox`, `.req-title-line`,
 //! `.relationshipLabel`) are written too: the sheet of the reference has them, and they match nothing.
 
-use crate::context::Globals;
-use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::theme::ThemeTokens;
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use crate::svg::{escape, font_faces};
-use crate::theme::Themes;
+use crate::context::{Globals, ThemeView};
+use crate::svg::{css_text, escape, font_faces};
 use crate::unified::palette::{Palette, palette};
-use crate::variables::{css_text, text_of};
 
 /// The colour tokens of the requirement rules and the shared rules, each declared as a custom
 /// property on the diagram's id. A token the theme lacks is not declared.
-const COLOUR_TOKENS: [&str; 15] = [
-    "nodeBorder",
-    "mainBkg",
-    "lineColor",
-    "textColor",
-    "nodeTextColor",
-    "relationColor",
-    "requirementBackground",
-    "requirementBorderColor",
-    "requirementTextColor",
-    "relationLabelBackground",
-    "relationLabelColor",
-    "edgeLabelBackground",
-    "requirementEdgeLabelBackground",
-    "errorBkgColor",
-    "errorTextColor",
-];
+fn colour_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 15] {
+    [
+        ("nodeBorder", &tokens.node_border),
+        ("mainBkg", &tokens.main_bkg),
+        ("lineColor", &tokens.line_color),
+        ("textColor", &tokens.text_color),
+        ("nodeTextColor", &tokens.node_text_color),
+        ("relationColor", &tokens.relation_color),
+        ("requirementBackground", &tokens.requirement_background),
+        ("requirementBorderColor", &tokens.requirement_border_color),
+        ("requirementTextColor", &tokens.requirement_text_color),
+        ("relationLabelBackground", &tokens.relation_label_background),
+        ("relationLabelColor", &tokens.relation_label_color),
+        ("edgeLabelBackground", &tokens.edge_label_background),
+        (
+            "requirementEdgeLabelBackground",
+            &tokens.requirement_edge_label_background,
+        ),
+        ("errorBkgColor", &tokens.error_bkg_color),
+        ("errorTextColor", &tokens.error_text_color),
+    ]
+}
 
 /// The flood of the drop shadows in a light scheme (`insertLookDefs.ts:30`).
 const LIGHT_FLOOD: &str = "#000000";
@@ -52,29 +53,37 @@ const DARK_FLOOD: &str = "#FFFFFF";
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
-    themes: Themes<'_>,
-    config: &MermaidConfig,
+    theme: ThemeView<'_>,
+    globals: &Globals,
     families: &[EmbeddedFamily],
 ) -> String {
-    let variables = themes.primary();
+    let tokens = theme.light;
     let id = format!("#{svg_id}");
     let font = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
-    let stroke_width = text_of(variables, "strokeWidth").unwrap_or_else(|| "1".to_owned());
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
+    let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
     // `styles.js` 91: the relation line takes the theme's stroke width on the neo look, else `1px`.
-    let neo = config.look == "neo";
+    let neo = globals.look == "neo";
     let relation_stroke = if neo {
         stroke_width.clone()
     } else {
         "1px".to_owned()
     };
     // `styles.js` 70-88: the box and title rules take the requirement's own border size.
-    let border_size = text_of(variables, "requirementBorderSize").unwrap_or_else(|| "1".to_owned());
-    let palette = palette(&Globals::of(config), &ThemeTokens::from_value(variables));
-    let shadow = match text_of(variables, "dropShadow") {
+    let border_size = tokens
+        .requirement_border_size
+        .text()
+        .unwrap_or_else(|| "1".to_owned());
+    let palette = palette(globals, tokens);
+    let shadow = match tokens.drop_shadow.text() {
         Some(shadow) if !shadow.is_empty() => shadow.replacen(
             "url(#drop-shadow)",
             &format!("url(#{svg_id}-drop-shadow)"),
@@ -86,13 +95,13 @@ pub fn style_sheet(
     let colour = |name: &str| format!("var(--{name})");
     // `getStyles` of `styles.js` 117-118: the label background of a requirement is its own colour
     // when the theme has one, else the edge label background.
-    let label_background = if text_of(variables, "requirementEdgeLabelBackground").is_some() {
+    let label_background = if tokens.requirement_edge_label_background.text().is_some() {
         colour("requirementEdgeLabelBackground")
     } else {
         colour("edgeLabelBackground")
     };
     // `styles.js` 109-116: the label text takes the node's text colour, else the text colour.
-    let label_colour = if variables.get("nodeTextColor").is_some() {
+    let label_colour = if !tokens.node_text_color.is_absent() {
         colour("nodeTextColor")
     } else {
         colour("textColor")
@@ -162,7 +171,7 @@ pub fn style_sheet(
     // `genColor` (`styles.js` 4-48): one rule per slot of the border palette, for the path and the
     // rect of a node of that slot.
     if let Some(palette) = &palette {
-        rules.push(palette_rules(&id, &config.look, palette));
+        rules.push(palette_rules(&id, &globals.look, palette));
     }
 
     // `getStyles` (`styles.js` 54-120), in its order.
@@ -302,7 +311,7 @@ pub fn style_sheet(
     };
     css_text(&format!(
         "{faces}{}{}",
-        custom_properties(svg_id, themes, config),
+        custom_properties(svg_id, theme, globals),
         rules.concat()
     ))
 }
@@ -315,21 +324,24 @@ fn rule(selector: &str, declarations: &str) -> String {
 /// The custom properties of the colours, declared on the diagram's id. With one set of variables they
 /// are written as they are; with a light and a dark set, the dark set applies under
 /// `prefers-color-scheme: dark`, so one SVG follows the viewer's scheme.
-fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -> String {
+fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
     let id = format!("#{svg_id}");
-    match themes {
-        Themes::Single(variables) => {
-            let palette = palette(&Globals::of(config), &ThemeTokens::from_value(variables));
+    match theme.dark {
+        None => {
+            let palette = palette(globals, theme.light);
             rule(
                 &id,
-                &declarations(variables, flood_colour(config), palette.as_ref()),
+                &declarations(theme.light, flood_colour(globals), palette.as_ref()),
             )
         }
-        Themes::Schemes { light, dark } => {
-            let palette = palette(&Globals::of(config), &ThemeTokens::from_value(light));
+        Some(dark) => {
+            let palette = palette(globals, theme.light);
             format!(
                 "{}@media (prefers-color-scheme: dark){{{}}}",
-                rule(&id, &declarations(light, LIGHT_FLOOD, palette.as_ref())),
+                rule(
+                    &id,
+                    &declarations(theme.light, LIGHT_FLOOD, palette.as_ref())
+                ),
                 rule(&id, &declarations(dark, DARK_FLOOD, palette.as_ref())),
             )
         }
@@ -337,8 +349,8 @@ fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -
 }
 
 /// The flood of the drop shadows for a configuration: white for a theme whose name says dark.
-fn flood_colour(config: &MermaidConfig) -> &'static str {
-    if config.theme.contains("dark") {
+fn flood_colour(globals: &Globals) -> &'static str {
+    if globals.theme.contains("dark") {
         DARK_FLOOD
     } else {
         LIGHT_FLOOD
@@ -348,11 +360,11 @@ fn flood_colour(config: &MermaidConfig) -> &'static str {
 /// The declarations of the custom properties of one set: the colour tokens the set has, the slots of
 /// the palette (`borderColor<i>` and `bkgColor<i>`, the fills wrapped around the palette's length),
 /// and the shadow's flood.
-fn declarations(variables: &Value, flood: &str, palette: Option<&Palette>) -> String {
+fn declarations(tokens: &ThemeTokens, flood: &str, palette: Option<&Palette>) -> String {
     let mut out = String::new();
-    for token in COLOUR_TOKENS {
-        if let Some(colour) = text_of(variables, token) {
-            out.push_str(&format!("--{token}:{};", css_text(&colour)));
+    for (name, token) in colour_tokens(tokens) {
+        if let Some(colour) = token.text() {
+            out.push_str(&format!("--{name}:{};", css_text(&colour)));
         }
     }
     if let Some(palette) = palette {

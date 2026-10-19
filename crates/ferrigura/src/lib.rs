@@ -23,8 +23,11 @@ use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
+use ferrigura_render::block::BlockSection;
 use ferrigura_render::context::{Context, Globals, ThemeView};
 use ferrigura_render::flowchart;
+use ferrigura_render::kanban::KanbanSections;
+use ferrigura_render::mindmap::MindmapSection;
 use ferrigura_render::pie::render as render_pie;
 use ferrigura_render::theme::Themes;
 use ferrigura_render::unified::Section;
@@ -179,6 +182,7 @@ impl Renderer {
             prepared.themes(),
             prepared.id.as_str(),
         );
+        let section = Section::of(typed_config);
         match kind {
             DiagramType::Pie => render_pie(&Context {
                 diagram: &pie::parse(text)?,
@@ -218,16 +222,18 @@ impl Renderer {
                 themes,
                 id,
             }),
-            DiagramType::Er => er_render::render(&er_render::ErInput {
+            DiagramType::Er => er_render::render(&Context {
                 diagram: &er::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Class => class_render::render(&class_render::ClassInput {
+            DiagramType::Class => class_render::render(&Context {
                 diagram: &class::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Sequence => sequence_render::render(&sequence_render::SequenceInput {
@@ -241,10 +247,11 @@ impl Renderer {
                 themes,
                 id,
             }),
-            DiagramType::State => state_render::render(&state_render::StateInput {
+            DiagramType::State => state_render::render(&Context {
                 diagram: &state::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Gantt => {
@@ -257,16 +264,24 @@ impl Renderer {
                     now,
                 })
             }
-            DiagramType::Mindmap => mindmap_render::render(&mindmap_render::MindmapInput {
+            DiagramType::Mindmap => mindmap_render::render(&Context {
                 diagram: &mindmap::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &MindmapSection {
+                    mindmap: &typed_config.mindmap,
+                    unified: section,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Block => block_render::render(&block_render::BlockInput {
+            DiagramType::Block => block_render::render(&Context {
                 diagram: &block::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &BlockSection {
+                    block: &typed_config.block,
+                    unified: section,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Packet => packet_render::render(&packet_render::PacketInput {
@@ -296,24 +311,27 @@ impl Renderer {
                     id,
                 })
             }
-            DiagramType::Requirement => {
-                requirement_render::render(&requirement_render::RequirementInput {
-                    diagram: &requirement::parse(text)?,
-                    config: typed_config,
-                    themes,
-                    id,
-                })
-            }
+            DiagramType::Requirement => requirement_render::render(&Context {
+                diagram: &requirement::parse(text)?,
+                section: &section,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
             DiagramType::C4 => c4_render::render(&c4_render::C4Input {
                 diagram: &c4::parse(text)?,
                 config: typed_config,
                 themes,
                 id,
             }),
-            DiagramType::Kanban => kanban_render::render(&kanban_render::KanbanInput {
+            DiagramType::Kanban => kanban_render::render(&Context {
                 diagram: &kanban::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &KanbanSections {
+                    kanban: &typed_config.kanban,
+                    mindmap: &typed_config.mindmap,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Architecture => {

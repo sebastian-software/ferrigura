@@ -14,36 +14,29 @@ pub mod style;
 
 use std::collections::HashMap;
 
-use crate::context::Globals;
-use crate::unified::Bridge;
+use crate::context::Context;
+use crate::unified::{Config, Section};
 use ferrigura_model::block::{Block as ModelBlock, BlockDiagram};
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::BlockDiagramConfig;
 use ferrigura_model::theme::ThemeTokens;
-use ferrigura_model::value::Value;
 use ferrigura_text::Run;
 
 use crate::RenderError;
 use crate::a11y;
 use crate::flowchart::style::look_defs;
 use crate::svg::{escape, number};
-use crate::theme::Themes;
 use crate::unified::geom::{BBox, CenterBox, Point};
 use crate::unified::markers;
 use crate::unified::shapes::Intersect;
-use crate::variables::px;
 
-/// What the block renderer draws.
+/// The configuration of the block renderer: its own section, and the sections of the unified renderer
+/// that the blocks and the edges read.
 #[derive(Debug, Clone, Copy)]
-pub struct BlockInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a BlockDiagram,
-    /// The effective configuration, in the block diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
+pub struct BlockSection<'a> {
+    /// The `block` section.
+    pub block: &'a BlockDiagramConfig,
+    /// The sections that the unified renderer reads.
+    pub unified: Section<'a>,
 }
 
 /// The size of a block: its width and height, and the centre the layout gives it (`block.size`).
@@ -142,27 +135,25 @@ impl Block {
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the grid has zero columns
 /// (the reference throws for it: `Columns must be an integer !== 0.`).
-pub fn render(input: &BlockInput<'_>) -> Result<String, RenderError> {
-    let config = input.config;
-    let theme = input.themes.primary();
-    let bridge = Bridge::new(config, input.themes);
+pub fn render(input: &Context<'_, BlockDiagram, BlockSection<'_>>) -> Result<String, RenderError> {
+    let unified = Config {
+        section: input.section.unified,
+        globals: input.globals,
+        theme: input.theme.light,
+    };
     let context = nodes::Context {
-        config,
-        theme,
+        block: input.section.block,
         class_defs: &input.diagram.class_defs,
         id: input.id,
-        palette: crate::unified::palette::palette(
-            &Globals::of(config),
-            &ThemeTokens::from_value(theme),
-        ),
-        unified: bridge.config(config),
+        palette: crate::unified::palette::palette(input.globals, input.theme.light),
+        unified,
     };
 
     let mut root = Block::root(input.diagram);
     // `calculateBlockSizes`: every block is measured, in tree order, with nothing wrapping.
     nodes::measure_all(&mut root, &context)?;
     // `layout`: the sizes and positions of the blocks.
-    let layout_bounds = layout::layout(&mut root, config.block.padding)?;
+    let layout_bounds = layout::layout(&mut root, input.section.block.padding)?;
 
     // `insertBlocks` and `insertEdges`: the blocks, then the edges with their labels.
     let mut drawing = nodes::Drawing::default();
@@ -187,7 +178,7 @@ pub fn render(input: &BlockInput<'_>) -> Result<String, RenderError> {
     };
     let height = bounds.height + magic_factor(&bounds) + 10.0;
     let width = bounds.width + 10.0;
-    let size_attributes = if config.block.use_max_width {
+    let size_attributes = if input.section.block.use_max_width {
         format!("width=\"100%\" style=\"max-width: {}px;\"", number(width))
     } else {
         format!("height=\"{}\" width=\"{}\"", number(height), number(width))
@@ -201,8 +192,8 @@ pub fn render(input: &BlockInput<'_>) -> Result<String, RenderError> {
     let families = ferrigura_text::embed_runs(&texts)?;
     let style = style::style_sheet_with_fonts(
         input.id,
-        input.themes,
-        config,
+        input.theme,
+        input.globals,
         &input.diagram.class_defs,
         &families,
     );
@@ -214,11 +205,7 @@ pub fn render(input: &BlockInput<'_>) -> Result<String, RenderError> {
         y = number(bounds.y - 5.0),
         w = number(bounds.width + 10.0),
         h = number(bounds.height + 10.0),
-        defs = look_defs(
-            input.id,
-            Bridge::new(config, input.themes).view(),
-            &Globals::of(config)
-        ),
+        defs = look_defs(input.id, input.theme, input.globals),
         markers = markers::markers(input.id, "block"),
         body = drawing.body,
     ))
@@ -263,6 +250,6 @@ impl Anchor {
 pub(super) type Anchors = HashMap<String, Anchor>;
 
 /// `px` of the theme's `fontSize`, the size of the edge labels (`createText`'s font size).
-pub(super) fn font_size(theme: &Value) -> f64 {
-    px(theme, "fontSize").unwrap_or(16.0)
+pub(super) fn font_size(theme: &ThemeTokens) -> f64 {
+    theme.font_size.px().unwrap_or(16.0)
 }

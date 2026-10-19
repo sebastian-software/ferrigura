@@ -84,7 +84,7 @@ mod tests {
     /// The renderers that take a [`Context`](super::Context). None of them reads a theme variable by
     /// name: they read the tokens, and the helpers of `variables` are for the renderers not yet moved.
     /// A renderer joins this list when it moves.
-    const MIGRATED: [(&str, &str); 17] = [
+    const MIGRATED: [(&str, &str); 28] = [
         ("pie", include_str!("pie.rs")),
         ("info", include_str!("info/mod.rs")),
         ("flowchart", include_str!("flowchart/mod.rs")),
@@ -93,42 +93,26 @@ mod tests {
         ("unified::palette", include_str!("unified/palette.rs")),
         ("unified::pipeline", include_str!("unified/pipeline.rs")),
         ("unified::shapes", include_str!("unified/shapes/mod.rs")),
-        (
-            "unified::shapes::util",
-            include_str!("unified/shapes/util.rs"),
-        ),
-        (
-            "unified::shapes::class_box",
-            include_str!("unified/shapes/class_box.rs"),
-        ),
-        (
-            "unified::shapes::containers",
-            include_str!("unified/shapes/containers.rs"),
-        ),
-        (
-            "unified::shapes::er_box",
-            include_str!("unified/shapes/er_box.rs"),
-        ),
-        (
-            "unified::shapes::icon",
-            include_str!("unified/shapes/icon.rs"),
-        ),
-        (
-            "unified::shapes::rect",
-            include_str!("unified/shapes/rect.rs"),
-        ),
-        (
-            "unified::shapes::rect_with_title",
-            include_str!("unified/shapes/rect_with_title.rs"),
-        ),
-        (
-            "unified::shapes::requirement_box",
-            include_str!("unified/shapes/requirement_box.rs"),
-        ),
-        (
-            "unified::shapes::state",
-            include_str!("unified/shapes/state.rs"),
-        ),
+        ("class", include_str!("class/mod.rs")),
+        ("class::style", include_str!("class/style.rs")),
+        ("class::data", include_str!("class/data.rs")),
+        ("state", include_str!("state/mod.rs")),
+        ("state::style", include_str!("state/style.rs")),
+        ("state::data", include_str!("state/data.rs")),
+        ("er", include_str!("er/mod.rs")),
+        ("er::style", include_str!("er/style.rs")),
+        ("er::data", include_str!("er/data.rs")),
+        ("requirement", include_str!("requirement/mod.rs")),
+        ("requirement::style", include_str!("requirement/style.rs")),
+        ("requirement::data", include_str!("requirement/data.rs")),
+        ("mindmap", include_str!("mindmap/mod.rs")),
+        ("mindmap::style", include_str!("mindmap/style.rs")),
+        ("mindmap::data", include_str!("mindmap/data.rs")),
+        ("kanban", include_str!("kanban/mod.rs")),
+        ("kanban::style", include_str!("kanban/style.rs")),
+        ("block", include_str!("block/mod.rs")),
+        ("block::style", include_str!("block/style.rs")),
+        ("block::nodes", include_str!("block/nodes.rs")),
     ];
 
     /// The helpers of `variables`, as a call or a path to them.

@@ -9,34 +9,32 @@
 //! diagram's id, once for each set of variables, and the rules refer to it with `var(…)`. The
 //! palette's slots are `borderColor<i>` and `bkgColor<i>`, as the flowchart's are.
 
-use crate::context::Globals;
-use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::theme::ThemeTokens;
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use crate::svg::{escape, font_faces};
-use crate::theme::Themes;
+use crate::context::{Globals, ThemeView};
+use crate::svg::{css_text, escape, font_faces};
 use crate::unified::palette::{Palette, palette};
-use crate::variables::{css_text, text_of};
 
-/// The colour tokens of the entity, edge and cluster rules, each declared as a custom property on
-/// the diagram's id. A token the theme lacks is not declared (`genColor`, `getStyles` of `styles.ts`).
-const COLOUR_TOKENS: [&str; 13] = [
-    "nodeBorder",
-    "mainBkg",
-    "lineColor",
-    "textColor",
-    "nodeTextColor",
-    "tertiaryColor",
-    "edgeLabelBackground",
-    "erEdgeLabelBackground",
-    "clusterBkg",
-    "clusterBorder",
-    "titleColor",
-    "errorBkgColor",
-    "errorTextColor",
-];
+/// The colour tokens of the entity, edge and cluster rules, in the order of the custom properties. A
+/// token the theme lacks is not declared (`genColor`, `getStyles` of `styles.ts`).
+fn colour_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 13] {
+    [
+        ("nodeBorder", &tokens.node_border),
+        ("mainBkg", &tokens.main_bkg),
+        ("lineColor", &tokens.line_color),
+        ("textColor", &tokens.text_color),
+        ("nodeTextColor", &tokens.node_text_color),
+        ("tertiaryColor", &tokens.tertiary_color),
+        ("edgeLabelBackground", &tokens.edge_label_background),
+        ("erEdgeLabelBackground", &tokens.er_edge_label_background),
+        ("clusterBkg", &tokens.cluster_bkg),
+        ("clusterBorder", &tokens.cluster_border),
+        ("titleColor", &tokens.title_color),
+        ("errorBkgColor", &tokens.error_bkg_color),
+        ("errorTextColor", &tokens.error_text_color),
+    ]
+}
 
 /// The flood of the drop shadows in a light scheme (`insertLookDefs.ts:30`).
 const LIGHT_FLOOD: &str = "#000000";
@@ -50,26 +48,31 @@ const DARK_FLOOD: &str = "#FFFFFF";
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
-    themes: Themes<'_>,
-    config: &MermaidConfig,
+    theme: ThemeView<'_>,
+    globals: &Globals,
     families: &[EmbeddedFamily],
 ) -> String {
-    let variables = themes.primary();
+    let tokens = theme.light;
     let id = format!("#{svg_id}");
     let font = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     let stroke_width = format!(
         "{}px",
-        text_of(variables, "strokeWidth").unwrap_or_else(|| "1".to_owned())
+        tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned())
     );
     // `look === 'neo' ? strokeWidth : '1px'` (`styles.ts` 117, 122).
-    let neo = config.look == "neo";
+    let neo = globals.look == "neo";
     let entity_stroke = if neo { stroke_width.as_str() } else { "1px" };
-    let palette = palette(&Globals::of(config), &ThemeTokens::from_value(variables));
-    let shadow = match text_of(variables, "dropShadow") {
+    let palette = palette(globals, tokens);
+    let shadow = match tokens.drop_shadow.text() {
         Some(shadow) if !shadow.is_empty() => shadow.replacen(
             "url(#drop-shadow)",
             &format!("url(#{svg_id}-drop-shadow)"),
@@ -82,11 +85,11 @@ pub fn style_sheet(
     // `COLOR_THEMES.has(theme) && erEdgeLabelBackground ? erEdgeLabelBackground : …` (`styles.ts`
     // 96-108): the colour theme's ER edge label colour, else the tertiary colour faded for `.labelBkg`
     // and the edge label background for `.edgeLabel`.
-    let er_edge_label = text_of(variables, "erEdgeLabelBackground").is_some();
+    let er_edge_label = tokens.er_edge_label_background.text().is_some();
     let label_background = if er_edge_label {
         colour("erEdgeLabelBackground")
     } else {
-        format!("rgba({})", fade_channels(variables, "tertiaryColor", 0.5))
+        format!("rgba({})", fade_channels(&tokens.tertiary_color, 0.5))
     };
     let edge_label_background = if er_edge_label {
         colour("erEdgeLabelBackground")
@@ -151,7 +154,7 @@ pub fn style_sheet(
         rule(&format!("{id} p"), "margin:0;"),
     ];
     if let Some(palette) = &palette {
-        rules.push(palette_rules(&id, &config.look, palette));
+        rules.push(palette_rules(&id, &globals.look, palette));
     }
     rules.extend([
         // `.entityBox` (`styles.ts` 81-84).
@@ -199,7 +202,7 @@ pub fn style_sheet(
             &format!("{id} .label"),
             &format!(
                 "font-family:{font};color:{};",
-                if variables.get("nodeTextColor").is_some() {
+                if !tokens.node_text_color.is_absent() {
                     colour("nodeTextColor")
                 } else {
                     colour("textColor")
@@ -236,7 +239,7 @@ pub fn style_sheet(
             &format!("{id} [data-look=neo].labelBkg"),
             &format!(
                 "background-color:rgba({});",
-                fade_channels(variables, "tertiaryColor", 0.5)
+                fade_channels(&tokens.tertiary_color, 0.5)
             ),
         ),
         rule(
@@ -302,7 +305,7 @@ pub fn style_sheet(
     };
     css_text(&format!(
         "{faces}{}{}",
-        custom_properties(svg_id, themes, config),
+        custom_properties(svg_id, theme, globals),
         rules.concat()
     ))
 }
@@ -315,21 +318,24 @@ fn rule(selector: &str, declarations: &str) -> String {
 /// The custom properties of the colours, declared on the diagram's id. With one set of variables they
 /// are written as they are; with a light and a dark set, the dark set applies under
 /// `prefers-color-scheme: dark`, so one SVG follows the viewer's scheme.
-fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -> String {
+fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
     let id = format!("#{svg_id}");
-    match themes {
-        Themes::Single(variables) => {
-            let palette = palette(&Globals::of(config), &ThemeTokens::from_value(variables));
+    match theme.dark {
+        None => {
+            let palette = palette(globals, theme.light);
             rule(
                 &id,
-                &declarations(variables, flood_colour(config), palette.as_ref()),
+                &declarations(theme.light, flood_colour(globals), palette.as_ref()),
             )
         }
-        Themes::Schemes { light, dark } => {
-            let palette = palette(&Globals::of(config), &ThemeTokens::from_value(light));
+        Some(dark) => {
+            let palette = palette(globals, theme.light);
             format!(
                 "{}@media (prefers-color-scheme: dark){{{}}}",
-                rule(&id, &declarations(light, LIGHT_FLOOD, palette.as_ref())),
+                rule(
+                    &id,
+                    &declarations(theme.light, LIGHT_FLOOD, palette.as_ref())
+                ),
                 rule(&id, &declarations(dark, DARK_FLOOD, palette.as_ref())),
             )
         }
@@ -337,8 +343,8 @@ fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -
 }
 
 /// The flood of the drop shadows for a configuration: white for a theme whose name says dark.
-fn flood_colour(config: &MermaidConfig) -> &'static str {
-    if config.theme.contains("dark") {
+fn flood_colour(globals: &Globals) -> &'static str {
+    if globals.theme.contains("dark") {
         DARK_FLOOD
     } else {
         LIGHT_FLOOD
@@ -348,11 +354,11 @@ fn flood_colour(config: &MermaidConfig) -> &'static str {
 /// The declarations of the custom properties of one set: the colour tokens the set has, the slots of
 /// the palette (`borderColor<i>` and `bkgColor<i>`, the fills wrapped around the palette's length),
 /// and the shadow's flood.
-fn declarations(variables: &Value, flood: &str, palette: Option<&Palette>) -> String {
+fn declarations(tokens: &ThemeTokens, flood: &str, palette: Option<&Palette>) -> String {
     let mut out = String::new();
-    for token in COLOUR_TOKENS {
-        if let Some(colour) = text_of(variables, token) {
-            out.push_str(&format!("--{token}:{};", css_text(&colour)));
+    for (name, token) in colour_tokens(tokens) {
+        if let Some(colour) = token.text() {
+            out.push_str(&format!("--{name}:{};", css_text(&colour)));
         }
     }
     if let Some(palette) = palette {
@@ -362,7 +368,7 @@ fn declarations(variables: &Value, flood: &str, palette: Option<&Palette>) -> St
         let fills = palette.background.len();
         for index in 0..palette.border.len() {
             let colour = if fills == 0 {
-                text_of(variables, "clusterBkg")
+                tokens.cluster_bkg.text()
             } else {
                 palette.background.get(index % fills).cloned()
             };
@@ -408,8 +414,8 @@ fn palette_rules(id: &str, look: &str, palette: &Palette) -> String {
 /// channels of a hex colour, comma-separated, with the alpha left to the caller. A colour that is not
 /// a hex colour gives the channels of white (the reference's `fade` on a named colour is not reached by
 /// the shipped themes, whose tertiary colour is a hex colour).
-fn fade_channels(variables: &Value, token: &str, alpha: f64) -> String {
-    let colour = text_of(variables, token).unwrap_or_default();
+fn fade_channels(token: &Token, alpha: f64) -> String {
+    let colour = token.text().unwrap_or_default();
     let (red, green, blue) = hex_channels(&colour).unwrap_or((255, 255, 255));
     format!("{red}, {green}, {blue}, {}", crate::svg::number(alpha))
 }

@@ -8,32 +8,30 @@
 //! colour slot (`genColor`, `styles.js` 14-38). The elements carry no colour attribute of their own,
 //! as the flowchart's do not (`flowchart/style.rs`).
 
-use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::theme::ThemeTokens;
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use crate::context::Globals;
+use crate::context::{Globals, ThemeView};
 use crate::flowchart::style::look_defs;
-use crate::svg::font_faces;
-use crate::theme::Themes;
-use crate::unified::Bridge;
+use crate::svg::{css_text, font_faces};
 use crate::unified::palette::{Palette, palette};
-use crate::variables::{css_text, text_of, texts_of, truthy};
 
-/// The colour tokens of the class rules: the theme variables that `styles.js` reads.
-const COLOUR_TOKENS: [&str; 10] = [
-    "nodeBorder",
-    "mainBkg",
-    "classText",
-    "titleColor",
-    "clusterBkg",
-    "clusterBorder",
-    "noteTextColor",
-    "lineColor",
-    "textColor",
-    "edgeLabelBackground",
-];
+/// The colour tokens of the class rules, the theme variables that `styles.js` reads, in the order of the
+/// custom properties.
+fn colour_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 10] {
+    [
+        ("nodeBorder", &tokens.node_border),
+        ("mainBkg", &tokens.main_bkg),
+        ("classText", &tokens.class_text),
+        ("titleColor", &tokens.title_color),
+        ("clusterBkg", &tokens.cluster_bkg),
+        ("clusterBorder", &tokens.cluster_border),
+        ("noteTextColor", &tokens.note_text_color),
+        ("lineColor", &tokens.line_color),
+        ("textColor", &tokens.text_color),
+        ("edgeLabelBackground", &tokens.edge_label_background),
+    ]
+}
 
 /// The flood of the drop shadows in a light scheme (`insertLookDefs.ts:30`).
 const LIGHT_FLOOD: &str = "#000000";
@@ -46,19 +44,24 @@ const DARK_FLOOD: &str = "#FFFFFF";
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
-    themes: Themes<'_>,
-    config: &MermaidConfig,
+    theme: ThemeView<'_>,
+    globals: &Globals,
     families: &[EmbeddedFamily],
 ) -> String {
-    let variables = themes.primary();
+    let tokens = theme.light;
     let id = format!("#{svg_id}");
     let font = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
-    let stroke_width = text_of(variables, "strokeWidth").unwrap_or_else(|| "1".to_owned());
-    let shadow = match text_of(variables, "dropShadow") {
+    let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
+    let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
+    let shadow = match tokens.drop_shadow.text() {
         Some(shadow) if !shadow.is_empty() => shadow.replacen(
             "url(#drop-shadow)",
             &format!("url(#{svg_id}-drop-shadow)"),
@@ -66,19 +69,19 @@ pub fn style_sheet(
         ),
         _ => "none".to_owned(),
     };
-    let neo_stroke = if truthy(variables, "useGradient") {
+    let neo_stroke = if tokens.use_gradient.truthy() {
         format!("url(#{svg_id}-gradient)")
     } else {
         "var(--nodeBorder)".to_owned()
     };
-    let look = safe_look(&config.look);
+    let look = safe_look(&globals.look);
 
     let faces = if families.is_empty() {
         String::new()
     } else {
         font_faces(families)
     };
-    let mut css = custom_properties(svg_id, themes, config);
+    let mut css = custom_properties(svg_id, theme, globals);
     css.push_str(&format!(
         "{id}{{font-family:{font};font-size:{font_size};fill:var(--textColor);}}\
          @keyframes dash{{to{{stroke-dashoffset:0;}}}}\
@@ -105,16 +108,15 @@ pub fn style_sheet(
          {id} [data-look=\"neo\"].icon-shape .icon{{fill:{neo_stroke};filter:{shadow};}}\
          {id} [data-look=\"neo\"].icon-shape .icon-neo path{{stroke:{neo_stroke};filter:{shadow};}}"
     ));
-    css.push_str(&class_rules(svg_id, look, &font, variables, config));
+    css.push_str(&class_rules(svg_id, look, &font, tokens, globals));
     css_text(&format!("{faces}{css}"))
 }
 
 /// The `<defs>` of the look (the drop shadows and the gradient), which the class diagram writes after
 /// its title as the flowchart does.
 #[must_use]
-pub fn defs(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -> String {
-    let bridge = Bridge::new(config, themes);
-    look_defs(svg_id, bridge.view(), &bridge.globals)
+pub fn defs(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
+    look_defs(svg_id, theme, globals)
 }
 
 /// The class rules of `styles.js` (lines 42-241) after the common ones, with the palette rules first
@@ -123,15 +125,11 @@ fn class_rules(
     svg_id: &str,
     look: &str,
     font: &str,
-    variables: &Value,
-    config: &MermaidConfig,
+    tokens: &ThemeTokens,
+    globals: &Globals,
 ) -> String {
     let id = format!("#{svg_id}");
-    let mut css = palette_rules(
-        &id,
-        look,
-        palette(&Globals::of(config), &ThemeTokens::from_value(variables)).as_ref(),
-    );
+    let mut css = palette_rules(&id, look, palette(globals, tokens).as_ref());
     css.push_str(&format!(
         "{id} g.classGroup text{{fill:var(--nodeBorder);stroke:none;font-family:{font};font-size:10px;}}\
          {id} g.classGroup text .title{{font-weight:bolder;}}\
@@ -205,56 +203,44 @@ fn palette_rules(id: &str, look: &str, palette: Option<&Palette>) -> String {
 /// The custom properties of the colours, declared on the diagram's id. With one set they are
 /// written as they are; with a light and a dark set, the dark one applies under
 /// `prefers-color-scheme: dark` (decision 0007).
-fn custom_properties(svg_id: &str, themes: Themes<'_>, config: &MermaidConfig) -> String {
+fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
     let id = format!("#{svg_id}");
-    match themes {
-        Themes::Single(variables) => {
-            let flood = if config.theme.contains("dark") {
+    match theme.dark {
+        None => {
+            let flood = if globals.theme.contains("dark") {
                 DARK_FLOOD
             } else {
                 LIGHT_FLOOD
             };
             format!(
                 "{id}{{{}}}",
-                declarations(
-                    variables,
-                    palette(&Globals::of(config), &ThemeTokens::from_value(variables)),
-                    flood
-                )
+                declarations(theme.light, palette(globals, theme.light), flood)
             )
         }
-        Themes::Schemes { light, dark } => format!(
+        Some(dark) => format!(
             "{id}{{{}}}@media (prefers-color-scheme: dark){{{id}{{{}}}}}",
-            declarations(
-                light,
-                palette(&Globals::of(config), &ThemeTokens::from_value(light)),
-                LIGHT_FLOOD
-            ),
-            declarations(
-                dark,
-                palette(&Globals::of(config), &ThemeTokens::from_value(dark)),
-                DARK_FLOOD
-            ),
+            declarations(theme.light, palette(globals, theme.light), LIGHT_FLOOD),
+            declarations(dark, palette(globals, dark), DARK_FLOOD),
         ),
     }
 }
 
 /// The declarations of the custom properties of one set of variables.
-fn declarations(variables: &Value, palette: Option<Palette>, flood: &str) -> String {
+fn declarations(tokens: &ThemeTokens, palette: Option<Palette>, flood: &str) -> String {
     let mut out = String::new();
-    for token in COLOUR_TOKENS {
-        if let Some(colour) = text_of(variables, token) {
-            out.push_str(&format!("--{token}:{};", css_text(&colour)));
+    for (name, token) in colour_tokens(tokens) {
+        if let Some(colour) = token.text() {
+            out.push_str(&format!("--{name}:{};", css_text(&colour)));
         }
     }
     if let Some(palette) = palette {
         for (index, colour) in palette.border.iter().enumerate() {
             out.push_str(&format!("--borderColor{index}:{};", css_text(colour)));
         }
-        let fills = texts_of(variables, "bkgColorArray");
+        let fills = tokens.bkg_color_array.texts();
         for index in 0..palette.background.len() {
             let colour = if fills.is_empty() {
-                text_of(variables, "clusterBkg").unwrap_or_default()
+                tokens.cluster_bkg.text().unwrap_or_default()
             } else {
                 fills[index % fills.len()].clone()
             };

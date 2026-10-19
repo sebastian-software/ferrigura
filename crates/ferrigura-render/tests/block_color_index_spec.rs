@@ -6,10 +6,10 @@
 
 use ferrigura_model::block::Block;
 use ferrigura_model::config::MermaidConfig;
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::block::style::style_sheet_with_fonts;
-use ferrigura_render::theme::Themes;
+use ferrigura_render::context::{Globals, ThemeView};
 use ferrigura_syntax::block::parse;
 
 /// The `colorIndex` of the block with the id, anywhere in the tree.
@@ -130,7 +130,12 @@ fn palette_variables() -> Value {
 }
 
 fn style(config: &MermaidConfig, variables: &Value) -> String {
-    style_sheet_with_fonts("svg", Themes::Single(variables), config, &[], &[])
+    let tokens = ThemeTokens::from_value(variables);
+    let theme = ThemeView {
+        light: &tokens,
+        dark: None,
+    };
+    style_sheet_with_fonts("svg", theme, &Globals::of(config), &[], &[])
 }
 
 #[test]
