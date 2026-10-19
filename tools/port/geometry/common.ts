@@ -485,6 +485,9 @@ ${SYMBOL_FACE}
    the machine's own face. ferrigura draws code in the bundled mono face (decision 0005), so the page
    pins the reference's code of that diagram to it (eventmodeling db.ts 349-378). */
 [aria-roledescription="eventmodeling"] foreignObject code { font-family: "${MONO_FAMILY}"; }
+/* The wardley map's text: the reference sets no font, so its text takes the page's default face. The
+   page pins that default to the bundled face, which ferrigura writes for the map (wardley/mod.rs). */
+[aria-roledescription="wardley"] { font-family: "Lexica Ultralegible"; }
 /* No body margin: a block the reference appends to the body (its diagram container) is then the
    1200 px viewport wide, which is the width the gantt renderer takes from the container when a
    diagram sets no useWidth (ganttRenderer.js:98). ferrigura uses the same 1200 px. */
@@ -572,10 +575,19 @@ ${measure}
 // The clock and the random numbers of a render are fixed when a clock is given: the today marker of
 // a gantt and the generated ids (gitGraph commits, rough.js strokes) read them, and two renders of
 // the same text would otherwise differ. Both get the same time and seed, so they are equal.
-window.renderReference = async function (id, text, clock, site, tidyTree) {
+window.renderReference = async function (id, text, clock, site, tidyTree, pin) {
   mermaid.initialize({ startOnLoad: false, ...(site ?? {}) });
   window.__elkCalls = [];
   window.__tidyTreeCalls = [];
+  // A family the render's own SVG takes while it draws, when the caller gives one (pin). The
+  // reference measures some text during its draw, before the SVG has the role that the page's rule
+  // matches, so the rule for the SVG's id covers the draw. It is removed when the render is done.
+  let pinned = null;
+  if (pin) {
+    pinned = document.createElement('style');
+    pinned.textContent = '#' + id + ' { font-family: ' + pin + '; }';
+    document.head.appendChild(pinned);
+  }
   // The tidy tree is registered only for the fixtures that ask for it (layout tidy-tree), so no
   // other diagram's reference is affected: the registry is shared by the page.
   if (tidyTree) {
@@ -611,6 +623,7 @@ window.renderReference = async function (id, text, clock, site, tidyTree) {
   } finally {
     window.Date = RealDate;
     Math.random = realRandom;
+    if (pinned) pinned.remove();
   }
 };
 
@@ -755,14 +768,15 @@ export async function renderReference(
   page: Page,
   id: string,
   text: string,
-  clock?: RenderClock
+  clock?: RenderClock,
+  pinFamily: string | null = null
 ): Promise<ReferenceRender> {
   // A fixture that asks for the tidy tree gets the removed package registered in the page; the
   // bundle is built on first use (`tidy-tree-bundle.ts`).
   const tidyTree = effectiveSettings(text).layout === 'tidy-tree';
   if (tidyTree) await ensureTidyTreeBundle();
   return (await page.evaluate(
-    ([svgId, source, fixed, site, withTidyTree]) =>
+    ([svgId, source, fixed, site, withTidyTree, pin]) =>
       (
         window as unknown as {
           renderReference: (
@@ -770,13 +784,22 @@ export async function renderReference(
             text: string,
             clock?: RenderClock,
             site?: Record<string, unknown>,
-            tidyTree?: boolean
+            tidyTree?: boolean,
+            pin?: string | null
           ) => Promise<ReferenceRender>;
         }
-      ).renderReference(svgId, source, fixed ?? undefined, site, withTidyTree),
-    [id, text, clock ?? null, forcedSiteConfig(text), tidyTree] as const
+      ).renderReference(svgId, source, fixed ?? undefined, site, withTidyTree, pin),
+    [id, text, clock ?? null, forcedSiteConfig(text), tidyTree, pinFamily] as const
   )) as ReferenceRender;
 }
+
+/**
+ * The family the wardley reference's text takes while it draws, and in the page (`pinFamily` of
+ * `renderReference`, and the rule of `pageHtml`): the bundled face that ferrigura writes for the map
+ * (`crates/ferrigura-render/src/wardley/mod.rs`). The reference sets no font, so its text takes the
+ * page's default face, which is not the bundled one.
+ */
+export const WARDLEY_FAMILY = '"Lexica Ultralegible"';
 
 /**
  * The fixture text as the e2e viewer hands it to the reference: `mermaid.run` reads the element's

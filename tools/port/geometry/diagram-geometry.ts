@@ -81,6 +81,7 @@ import {
   renderReference,
   root,
   slugOf,
+  WARDLEY_FAMILY,
   withPage,
   workDir,
   writeJson,
@@ -354,6 +355,8 @@ async function main(): Promise<void> {
   // Journey and eventmodeling: the labels are compared by their lines, and the journey's settings
   // pin its title font.
   const labelled = options.type === 'journey' || options.type === 'eventmodeling';
+  // The wardley reference's text takes the bundled face while it draws (`WARDLEY_FAMILY`).
+  const pinFamily = options.type === 'wardley' ? WARDLEY_FAMILY : null;
   await withPage(measureSource(labelled), async (page) => {
     for (const file of selected) {
       const slug = slugOf(file);
@@ -375,7 +378,7 @@ async function main(): Promise<void> {
       results.push(result);
 
       const clock = { now: Date.now(), seed: 1 };
-      const reference = await renderReference(page, id, text, clock);
+      const reference = await renderReference(page, id, text, clock, pinFamily);
       result.elkCalls = reference.elk.length;
       if (!reference.ok || reference.svg === null) {
         result.reason = reference.error;
@@ -397,7 +400,7 @@ async function main(): Promise<void> {
         result.reason = excluded;
         console.log(`– ${file}  excluded: ${excluded}`);
       } else if (options.self) {
-        const second = await renderReference(page, `self-${slug}`, text, clock);
+        const second = await renderReference(page, `self-${slug}`, text, clock, pinFamily);
         if (!second.ok || second.svg === null) {
           result.class = 'outside';
           result.problems = [`the second reference render failed: ${second.error}`];

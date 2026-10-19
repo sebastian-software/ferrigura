@@ -1,0 +1,12 @@
+wardley-beta
+title Flows
+component A [0.5, 0.2]
+component B [0.5, 0.8]
+component C [0.8, 0.5]
+component D [0.2, 0.5]
+A +> B
+B +< C
+C +<> D
+A -.-> C
+D +'backup'> B
+A +'dashed'> D
