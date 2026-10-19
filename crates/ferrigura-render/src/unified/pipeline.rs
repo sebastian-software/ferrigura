@@ -158,7 +158,11 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
 pub fn node_anchor(diagram_type: &str) -> Anchor {
     // The mindmap's stylesheet does not centre its labels either: its `centerLabel` offsets the label
     // by half its width instead (`labelHelper`, `util.ts` 149-151).
-    if diagram_type == crate::state::DIAGRAM_TYPE
+    if diagram_type == crate::unified::markers::USECASE {
+        // The use case's stylesheet has no `text-anchor`, and its `labelHelper` offsets the label in y
+        // only (`usecaseRenderer.ts` styles, `shapes/util.ts` 146).
+        Anchor::Origin
+    } else if diagram_type == crate::state::DIAGRAM_TYPE
         || diagram_type == crate::unified::markers::CLASS
         || diagram_type == crate::mindmap::data::DIAGRAM_TYPE
     {

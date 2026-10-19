@@ -11,6 +11,7 @@ pub mod elk_build;
 pub mod elk_geometry;
 pub mod elk_straighten;
 pub mod elk_tree;
+pub mod flow_group;
 pub mod geom;
 pub mod label;
 pub mod line_jumps;

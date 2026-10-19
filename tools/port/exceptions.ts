@@ -37,4 +37,13 @@ export const exceptions: Record<string, PortException[]> = {
   treemap: [],
   ishikawa: [],
   eventmodeling: [],
+  agentflow: [],
+  cynefin: [],
+  radar: [],
+  railroad: [],
+  swimlanes: [],
+  treeView: [],
+  usecase: [],
+  venn: [],
+  wardley: [],
 };

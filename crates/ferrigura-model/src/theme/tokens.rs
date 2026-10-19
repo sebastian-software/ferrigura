@@ -11,9 +11,9 @@
 //! (`packages/mermaid/src/themes/theme-redux-color.js` and `theme-redux-dark-color.js`) and the names
 //! that the renderers read, including the names built at run time. The indexed names (`pie1` to
 //! `pie12`, `cScale0` to `cScale11`, `fillType0` to `fillType7`, and the others the themes number)
-//! are [`Family`]s, read by index. The groups `xyChart` and `packet` are structs of their own. A name
-//! that only a user's overrides set, and that no renderer reads, is not a token: the map keeps it,
-//! and nothing reads it.
+//! are [`Family`]s, read by index. The groups of the diagram types (`xyChart`, `wardley`, `packet`,
+//! `treeView`, `radar`, `cynefin`) are structs of their own. A name that only a user's overrides
+//! set, and that no renderer reads, is not a token: the map keeps it, and nothing reads it.
 
 use std::collections::BTreeMap;
 
@@ -281,6 +281,24 @@ token_struct! {
 }
 
 token_struct! {
+    /// The `wardley` group of the theme variables: the colours of the wardley map, which a user's
+    /// overrides may set (`wardley/theme.rs`). The redux themes give no group. The reference reads
+    /// `annotationStroke`, `annotationTextColor` and `annotationFill` too, but nothing it draws takes
+    /// them, so they are not tokens.
+    pub struct WardleyTokens {
+        background_color = "backgroundColor": token,
+        axis_color = "axisColor": token,
+        axis_text_color = "axisTextColor": token,
+        grid_color = "gridColor": token,
+        component_fill = "componentFill": token,
+        component_stroke = "componentStroke": token,
+        component_label_color = "componentLabelColor": token,
+        link_stroke = "linkStroke": token,
+        evolution_stroke = "evolutionStroke": token,
+    }
+}
+
+token_struct! {
     /// The `packet` group of the theme variables: the options of the packet diagram's styles
     /// (`packet/style.rs`, the defaults of `styles.ts`), which a user's overrides may set.
     pub struct PacketTokens {
@@ -294,6 +312,64 @@ token_struct! {
         block_stroke_color = "blockStrokeColor": token,
         block_stroke_width = "blockStrokeWidth": token,
         block_fill_color = "blockFillColor": token,
+    }
+}
+
+token_struct! {
+    /// The `treeView` group of the theme variables: the styles of the tree view (`styles.ts`, the
+    /// defaults of `defaultTreeViewDiagramStyles`), which a user's overrides may set. No shipped
+    /// theme sets the group.
+    pub struct TreeViewTokens {
+        label_font_size = "labelFontSize": token,
+        label_color = "labelColor": token,
+        line_color = "lineColor": token,
+        icon_color = "iconColor": token,
+        description_color = "descriptionColor": token,
+        highlight_bg = "highlightBg": token,
+        highlight_stroke = "highlightStroke": token,
+    }
+}
+
+token_struct! {
+    /// The `radar` group of the theme variables: the options of the radar diagram's styles
+    /// (`radar/style.rs`, the merge of `styles.ts` 35-38 over the default theme's `radar` section,
+    /// `theme-default.js` 338-350). The redux themes give no group, so the defaults apply; a user's
+    /// `themeVariables.radar` sets any of these. `legendBoxSize` is not in the list: no reference code
+    /// reads it.
+    pub struct RadarTokens {
+        axis_color = "axisColor": token,
+        axis_stroke_width = "axisStrokeWidth": token,
+        axis_label_font_size = "axisLabelFontSize": token,
+        curve_opacity = "curveOpacity": token,
+        curve_stroke_width = "curveStrokeWidth": token,
+        graticule_color = "graticuleColor": token,
+        graticule_opacity = "graticuleOpacity": token,
+        graticule_stroke_width = "graticuleStrokeWidth": token,
+        legend_font_size = "legendFontSize": token,
+    }
+}
+
+token_struct! {
+    /// The `cynefin` group of the theme variables: the colours and sizes of the Cynefin diagram. The
+    /// default theme computes the group (`theme-default.js`, the `cynefin` block), and a theme or a
+    /// user's override sets single keys of it; the renderer takes the defaults for the keys it does not
+    /// find (`cynefin/style.rs`).
+    pub struct CynefinTokens {
+        domain_font_size = "domainFontSize": token,
+        item_font_size = "itemFontSize": token,
+        boundary_color = "boundaryColor": token,
+        boundary_width = "boundaryWidth": token,
+        cliff_color = "cliffColor": token,
+        cliff_width = "cliffWidth": token,
+        arrow_color = "arrowColor": token,
+        arrow_width = "arrowWidth": token,
+        complex_bg = "complexBg": token,
+        complicated_bg = "complicatedBg": token,
+        chaotic_bg = "chaoticBg": token,
+        clear_bg = "clearBg": token,
+        confusion_bg = "confusionBg": token,
+        text_color = "textColor": token,
+        label_color = "labelColor": token,
     }
 }
 
@@ -491,6 +567,18 @@ token_struct! {
         packet = "packet": group(PacketTokens),
         row_even = "rowEven": token,
         row_odd = "rowOdd": token,
+
+        // The tree view's group (P3, `treeView`): a block of its own, at the end of the list.
+        tree_view = "treeView": group(TreeViewTokens),
+
+        // The radar diagram's block: its group of the theme variables, at the end of the list.
+        radar = "radar": group(RadarTokens),
+
+        // The wardley block: the group of the wardley map (`wardley/theme.rs`).
+        wardley = "wardley": group(WardleyTokens),
+
+        // cynefin (P3 renderer): the group of the Cynefin diagram's colours and sizes.
+        cynefin = "cynefin": group(CynefinTokens),
     }
 }
 

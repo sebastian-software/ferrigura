@@ -1,7 +1,7 @@
 //! Parses inputs with a ferrigura parser and writes the canonical JSON of each result. The
 //! differential harness (`pnpm port:diff`) runs this against the JS exporters of `tools/port/`.
 //!
-//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling> <inputs.json> <outputs.json>`
+//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling|agentflow|cynefin|radar|railroad|swimlanes|treeView|usecase|venn|wardley> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
 //! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
@@ -19,9 +19,10 @@ use ferrigura_syntax::flowchart::{self, FlowchartError};
 use ferrigura_syntax::gantt;
 use ferrigura_syntax::sequence::{self, Options};
 use ferrigura_syntax::{
-    DiagramType, ParseError, architecture, block, c4, class, config, detect, er, event_modeling,
-    git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie, quadrant_chart, requirement,
-    sankey, state, timeline, treemap, xychart,
+    DiagramType, ParseError, agentflow, architecture, block, c4, class, config, cynefin, detect,
+    er, event_modeling, git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie,
+    quadrant_chart, radar, railroad, requirement, sankey, state, swimlanes, timeline, tree_view,
+    treemap, use_case, venn, wardley, xychart,
 };
 use serde_json::{Value, json};
 
@@ -70,6 +71,38 @@ fn architecture_outcome(text: &str) -> Outcome {
         });
     }
     match architecture::parse(text) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
+/// The cynefin diagram. The text must first be detected as one, as `detectType` does before the
+/// parser runs, so that a text of another type is a rejection.
+fn cynefin_outcome(text: &str) -> Outcome {
+    if detect(text) != Some(DiagramType::Cynefin) {
+        return Outcome::Rejected(ParseError {
+            line: 1,
+            column: 1,
+            message: "no cynefin diagram detected".to_owned(),
+        });
+    }
+    match cynefin::parse(text) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
+/// The wardley map. The text must first be detected as one, as `detectType` does before the parser
+/// runs. The detector ignores case, and the parser then takes the header case-sensitively.
+fn wardley_outcome(text: &str) -> Outcome {
+    if detect(text) != Some(DiagramType::Wardley) {
+        return Outcome::Rejected(ParseError {
+            line: 1,
+            column: 1,
+            message: "no wardley map detected".to_owned(),
+        });
+    }
+    match wardley::parse(text) {
         Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
         Err(error) => Outcome::Rejected(error),
     }
@@ -128,6 +161,22 @@ fn c4_wrap(text: &str) -> bool {
     };
     let resolved = effective(None, Some("c4"), &directive);
     matches!(resolved.get("wrap"), Some(Config::Bool(true)))
+}
+
+/// The railroad diagram, of any of its four syntaxes. The text must first be detected as one, as
+/// `detectType` does before the parser runs, so that a text of another type is a rejection.
+fn railroad_outcome(text: &str) -> Outcome {
+    if detect(text) != Some(DiagramType::Railroad) {
+        return Outcome::Rejected(ParseError {
+            line: 1,
+            column: 1,
+            message: "no railroad diagram detected".to_owned(),
+        });
+    }
+    match railroad::parse(text) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
 }
 
 fn sequence_outcome(text: &str) -> Outcome {
@@ -255,7 +304,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
         return Err(
-            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling> <inputs.json> <outputs.json>".into(),
+            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling|agentflow|cynefin|radar|railroad|swimlanes|treeView|usecase|venn|wardley> <inputs.json> <outputs.json>".into(),
         );
     };
 
@@ -354,6 +403,33 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
             },
+            "agentflow" => match agentflow::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "cynefin" => cynefin_outcome(text),
+            "radar" => match radar::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "railroad" => railroad_outcome(text),
+            "swimlanes" => match swimlanes::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "treeView" => match tree_view::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "usecase" => match use_case::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "venn" => match venn::parse(text) {
+                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+                Err(error) => Outcome::Rejected(error),
+            },
+            "wardley" => wardley_outcome(text),
             other => return Err(format!("unknown diagram type {other}").into()),
         };
         results.push(match outcome {

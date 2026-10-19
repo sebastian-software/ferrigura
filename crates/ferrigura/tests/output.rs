@@ -19,6 +19,7 @@ fn svg_with(text: &str, scheme: Option<ColorScheme>, id: Option<&str>) -> String
         color_scheme: scheme,
         now: None,
         git_graph_seed: None,
+        random_seed: None,
     };
     render_with(text, &Value::empty_object(), &options).expect("the pie renders")
 }
@@ -209,6 +210,7 @@ fn an_id_that_is_not_a_css_identifier_is_refused() {
             color_scheme: None,
             now: None,
             git_graph_seed: None,
+            random_seed: None,
         };
         assert!(
             render_with(PIE, &Value::empty_object(), &options).is_err(),

@@ -123,6 +123,56 @@ const suites: Record<string, string[]> = {
   treemap: ['treemap_spec', 'treemap_db_spec', 'treemap_grammar'],
   ishikawa: ['ishikawa_spec', 'ishikawa_grammar', 'ishikawa_db_spec'],
   eventmodeling: ['event_modeling_spec', 'event_modeling_grammar', 'event_modeling_validator'],
+  // The P3 types have no suites until their parser tasks add them. Their rows of the P3 table are
+  // left as written while the list is empty.
+  agentflow: [
+    'agentflow_parser_spec',
+    'agentflow_comments_spec',
+    'agentflow_metadata_spec',
+    'agentflow_mappings_spec',
+    'agentflow_containers_spec',
+    'agentflow_edges_spec',
+    'agentflow_tools_spec',
+    'agentflow_semantic_spec',
+    'agentflow_shapes_spec',
+    'agentflow_diagnostics_spec',
+    'agentflow_link_style_spec',
+    'agentflow_conformance_spec',
+    'agentflow_render_spec',
+    'render:agentflow_colour_slots_spec',
+    'render:agentflow_get_data_spec',
+    'render:agentflow_render_spec',
+  ],
+  cynefin: ['cynefin_db_spec', 'cynefin_grammar', 'render:cynefin_boundary_spec'],
+  radar: ['radar_spec', 'radar_grammar', 'radar_db_spec', 'render:radar_render_spec'],
+  railroad: [
+    'railroad_spec',
+    'railroad_grammar',
+    'railroad_db_spec',
+    'render:railroad_render_spec',
+  ],
+  swimlanes: [],
+  treeView: [
+    'tree_view_parser_spec',
+    'tree_view_db_spec',
+    'tree_view_box_drawing_spec',
+    'tree_view_grammar',
+    'render:tree_view_icons_spec',
+    'render:tree_view_render_spec',
+  ],
+  usecase: [
+    'use_case_lexer_spec',
+    'use_case_parser_spec',
+    'use_case_publication_spec',
+    'use_case_spec',
+    'use_case_db_spec',
+    'use_case_json_spec',
+    'use_case_docs_spec',
+    'render:use_case_data_spec',
+    'render:use_case_render_spec',
+  ],
+  venn: ['venn_spec', 'venn_quirks_spec', 'render:venn_renderer_spec'],
+  wardley: ['wardley_spec', 'wardley_grammar', 'wardley_db_spec'],
 };
 
 interface Counts {
@@ -183,7 +233,13 @@ for (const type of Object.keys(suites)) {
 }
 
 /** The name of a type's row in the status tables, where it is not the type itself. */
-const rowNames: Record<string, string> = { er: 'ER', gitgraph: 'gitGraph', c4: 'C4' };
+const rowNames: Record<string, string> = {
+  er: 'ER',
+  gitgraph: 'gitGraph',
+  c4: 'C4',
+  treeView: 'tree view',
+  usecase: 'use case',
+};
 
 /** Rewrites the parser, specs and differential cells of one row of a type with suites. */
 function rewriteRow(line: string, type: string): string {

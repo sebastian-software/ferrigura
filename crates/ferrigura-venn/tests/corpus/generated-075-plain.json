@@ -1,0 +1,244 @@
+{
+ "name": "generated-075-plain",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 75, 2 sets, plain ids",
+ "description": "A generated set system (plain ids, 2 sets).",
+ "text": "venn-beta\n  set node-2\n  set Backend:8\n  union Backend, node-2:12\n  union Backend, node-2:0",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "node-2"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "Backend",
+     "node-2"
+    ],
+    "size": 12
+   },
+   {
+    "sets": [
+     "Backend",
+     "node-2"
+    ],
+    "size": 0
+   }
+  ],
+  "width": 320,
+  "height": 240,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "node-2"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "Backend",
+     "node-2"
+    ],
+    "size": 12
+   },
+   {
+    "sets": [
+     "Backend",
+     "node-2"
+    ],
+    "size": 0
+   }
+  ],
+  "greedy": [
+   {
+    "id": "node-2",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Backend",
+    "x": 0.1883549945470404,
+    "y": 0,
+    "radius": 1.5957691216057308
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "node-2",
+    "x": -0.042775085668039475,
+    "y": 0.011821871223030253,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Backend",
+    "x": 0.8321036703827277,
+    "y": -0.04233593702794655,
+    "radius": 1.5957691216057308
+   }
+  ],
+  "normalized": [
+   {
+    "id": "node-2",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Backend",
+    "x": 0.8765534244890538,
+    "y": -1.3877787807814457e-17,
+    "radius": 1.5957691216057308
+   }
+  ],
+  "circles": [
+   {
+    "id": "node-2",
+    "x": 139.7489326864399,
+    "y": 120,
+    "radius": 105
+   },
+   {
+    "id": "Backend",
+    "x": 191.33621225856896,
+    "y": 120,
+    "radius": 93.91485505499116
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "node-2",
+    "x": 66.08514494500915,
+    "y": 120.00000746934843,
+    "disjoint": false
+   },
+   {
+    "key": "Backend",
+    "x": 264.999999999998,
+    "y": 120.00001926369418,
+    "disjoint": false
+   },
+   {
+    "key": "Backend,node-2",
+    "x": 171.08514494500884,
+    "y": 120.00000017412562,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "node-2"
+   ],
+   "text": {
+    "x": 59.824154608009536,
+    "y": 120.00000473779502,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "node-2",
+     "x": 138.39886153220255,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend"
+   ],
+   "text": {
+    "x": 271.99999999999955,
+    "y": 120.00000947151676,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 193.42529307580688,
+     "y": 120,
+     "radius": 100.17584539199058
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend",
+    "node-2"
+   ],
+   "text": {
+    "x": 171.82415460800942,
+    "y": 120.00000014950432,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 193.42529307580688,
+     "y": 120,
+     "radius": 100.17584539199058
+    },
+    {
+     "set": "node-2",
+     "x": 138.39886153220255,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend",
+    "node-2"
+   ],
+   "text": {
+    "x": 171.82415460800942,
+    "y": 120.00000014950432,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 193.42529307580688,
+     "y": 120,
+     "radius": 100.17584539199058
+    },
+    {
+     "set": "node-2",
+     "x": 138.39886153220255,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

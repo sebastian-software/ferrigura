@@ -87,6 +87,7 @@ uninstrumented
 unocss
 unplugin
 unstub
+upsetjs
 vite
 vitest
 webtoolz

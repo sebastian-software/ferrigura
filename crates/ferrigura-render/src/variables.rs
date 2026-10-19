@@ -121,6 +121,42 @@ mod tests {
             }
         }
 
+        // The radar group: an object, read by name; a theme without it gives none (the defaults apply).
+        match map.get("radar") {
+            Some(radar) if radar.is_object() => {
+                let group = tokens.radar.as_ref().expect("an object is the group");
+                for (name, token) in group.entries() {
+                    assert_token(radar, &name, token);
+                }
+            }
+            other => {
+                assert!(tokens.radar.is_none());
+                if let Some(radar) = other {
+                    for name in ferrigura_model::theme::tokens::RadarTokens::NAMES {
+                        assert_eq!(text_of(radar, name), None);
+                    }
+                }
+            }
+        }
+
+        // The group of the Cynefin diagram: an object, read by name, or nothing for any other value.
+        match map.get("cynefin") {
+            Some(cynefin) if cynefin.is_object() => {
+                let group = tokens.cynefin.as_ref().expect("an object is the group");
+                for (name, token) in group.entries() {
+                    assert_token(cynefin, &name, token);
+                }
+            }
+            other => {
+                assert!(tokens.cynefin.is_none());
+                if let Some(cynefin) = other {
+                    for name in ferrigura_model::theme::tokens::CynefinTokens::NAMES {
+                        assert_eq!(text_of(cynefin, name), None);
+                    }
+                }
+            }
+        }
+
         // The packet group: the renderer reads its options from the object by key, as a map of values.
         let packet = map.get("packet").and_then(Value::as_object);
         match &tokens.packet {
@@ -135,6 +171,40 @@ mod tests {
                 }
             }
             None => assert!(packet.is_none()),
+        }
+
+        // The tree view group: an object, read by name like the XY chart's, or nothing for any other value.
+        match map.get("treeView") {
+            Some(tree_view) if tree_view.is_object() => {
+                let group = tokens.tree_view.as_ref().expect("an object is the group");
+                for (name, token) in group.entries() {
+                    assert_token(tree_view, &name, token);
+                }
+            }
+            other => {
+                assert!(tokens.tree_view.is_none());
+                if let Some(tree_view) = other {
+                    for name in ferrigura_model::theme::tokens::TreeViewTokens::NAMES {
+                        assert_eq!(text_of(tree_view, name), None);
+                    }
+                }
+            }
+        }
+
+        // The wardley group: the renderer reads its colours from the object by key, as a map of values.
+        let wardley = map.get("wardley").and_then(Value::as_object);
+        match &tokens.wardley {
+            Some(group) => {
+                assert!(wardley.is_some());
+                for (name, token) in group.entries() {
+                    assert_eq!(
+                        wardley.and_then(|colours| colours.get(&name)),
+                        token.value(),
+                        "wardley.{name}"
+                    );
+                }
+            }
+            None => assert!(wardley.is_none()),
         }
     }
 
@@ -232,6 +302,26 @@ mod tests {
                 .iter()
                 .map(|name| (*name).to_owned()),
         );
+        names.extend(
+            ferrigura_model::theme::tokens::TreeViewTokens::NAMES
+                .iter()
+                .map(|name| (*name).to_owned()),
+        );
+        names.extend(
+            ferrigura_model::theme::tokens::RadarTokens::NAMES
+                .iter()
+                .map(|name| (*name).to_owned()),
+        );
+        names.extend(
+            ferrigura_model::theme::tokens::WardleyTokens::NAMES
+                .iter()
+                .map(|name| (*name).to_owned()),
+        );
+        names.extend(
+            ferrigura_model::theme::tokens::CynefinTokens::NAMES
+                .iter()
+                .map(|name| (*name).to_owned()),
+        );
         for prefix in [
             "pie",
             "venn",
@@ -251,7 +341,20 @@ mod tests {
             names.push(prefix.to_owned());
             names.push(format!("{prefix}01"));
         }
-        names.extend(["cScale15", "pie13", "fillType9", "xyChart", "packet"].map(str::to_owned));
+        names.extend(
+            [
+                "cScale15",
+                "pie13",
+                "fillType9",
+                "xyChart",
+                "packet",
+                "treeView",
+                "radar",
+                "wardley",
+                "cynefin",
+            ]
+            .map(str::to_owned),
+        );
         names
     }
 

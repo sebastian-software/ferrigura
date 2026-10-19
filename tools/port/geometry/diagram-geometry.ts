@@ -67,6 +67,7 @@ import { join } from 'node:path';
 import {
   buildRenderExample,
   decodeFixtureEntities,
+  effectiveSettings,
   countClasses,
   exclusionReason,
   uncoveredScriptReason,
@@ -81,6 +82,7 @@ import {
   renderReference,
   root,
   slugOf,
+  WARDLEY_FAMILY,
   withPage,
   workDir,
   writeJson,
@@ -113,6 +115,18 @@ function pathOf(key: string): string {
     : join(fixtureRoot, key);
 }
 
+/**
+ * The settings of a cynefin fixture (cynefin only). The boundary waves are drawn from `cynefin.seed`,
+ * and a seed of 0 hashes the SVG id, which the reference and ferrigura share here; the e2e viewer
+ * still sets the seed to 1 under a fixture's own (`e2e/helpers/util.ts` 46), so the harness does the
+ * same: the fixture's own seed when it sets one, else 1. The `--self` pass then draws the same waves
+ * under both of its ids.
+ */
+function cynefinSettings(source: string): Record<string, unknown> {
+  const own = (effectiveSettings(source).cynefin as { seed?: unknown } | undefined)?.seed;
+  return { cynefin: { seed: own ?? 1 } };
+}
+
 /** The fixture folders of each type, under `e2e/diagrams`. */
 const TYPE_FOLDERS: Record<string, string[]> = {
   sequence: ['sequence'],
@@ -139,15 +153,26 @@ const TYPE_FOLDERS: Record<string, string[]> = {
   treemap: ['treemap'],
   ishikawa: ['ishikawa'],
   eventmodeling: ['eventmodeling'],
+  agentflow: ['agentflow'],
+  cynefin: ['cynefin'],
+  radar: ['radar'],
+  railroad: ['railroad'],
+  swimlanes: ['swimlanes'],
+  treeView: ['tree-view'],
+  usecase: ['usecase'],
+  venn: ['venn'],
+  wardley: ['wardley'],
 };
 
 /**
  * The page-side measurement of one SVG, as source text for the page (`pageHtml` in `common.ts`).
  * `record` gives one element its entry; `walk` visits the children of an element, in document
- * order, with the structural key of the parent. In label mode (`labels`, the journey and the
- * eventmodeling) a label is recorded with its lines and left out of the elements: a `switch` (the
- * journey's `fo` label, which ferrigura draws) or a `foreignObject` (the reference's box text of
- * eventmodeling). Both get the key `label[n]`, so the two sides pair (`journey-labels.ts`).
+ * order, with the structural key of the parent. In label mode (`labels`, the journey, the
+ * eventmodeling and the venn) a label is recorded with its lines and left out of the elements: a
+ * `switch` (the journey's `fo` label, which ferrigura draws), a `foreignObject` (the reference's box
+ * text of eventmodeling and venn), or the venn's `text.venn-text-node`, which ferrigura draws in
+ * place of the venn's `foreignObject`. Each gets the key `label[n]`, so the two sides pair
+ * (`journey-labels.ts`).
  */
 function measureSource(labels: boolean): string {
   return `
@@ -217,12 +242,12 @@ const measure = (svg) => {
       if (SKIPPED.has(child.tagName)) continue;
       // The pie's \`pie-slot-<n>\` classes are ferrigura's own: they carry the colour slots of
       // decision 0007, which the reference has no class for, so they are not part of the key.
-      const isLabel = ${labels} && (child.tagName === 'switch' || child.tagName === 'foreignObject');
+      const isLabel = ${labels} && (child.tagName === 'switch' || child.tagName === 'foreignObject' || (child.tagName === 'text' && child.classList.contains('venn-text-node')));
       const signature = isLabel
         ? 'label'
         : child.tagName +
           [...child.classList]
-            .filter((name) => !/^pie-slot-[0-9]+$/.test(name))
+            .filter((name) => !/^(pie-slot-[0-9]+|cynefin-fill-[a-z]+)$/.test(name))
             .sort()
             .map((name) => '.' + name)
             .join('');
@@ -342,15 +367,25 @@ async function main(): Promise<void> {
   );
 
   const results: DiagramResult[] = [];
-  // Journey and eventmodeling: the labels are compared by their lines, and the journey's settings
-  // pin its title font.
-  const labelled = options.type === 'journey' || options.type === 'eventmodeling';
+  // Journey, eventmodeling and venn: the labels are compared by their lines (the venn's text nodes
+  // are `foreignObject`s in the reference), and the journey's settings pin its title font.
+  const labelled =
+    options.type === 'journey' || options.type === 'eventmodeling' || options.type === 'venn';
+  // The wardley reference's text takes the bundled face while it draws (`WARDLEY_FAMILY`).
+  const pinFamily = options.type === 'wardley' ? WARDLEY_FAMILY : null;
   await withPage(measureSource(labelled), async (page) => {
     for (const file of selected) {
       const slug = slugOf(file);
       const id = `ref-${slug}`;
       const source = await decodeFixtureEntities(page, await readFile(pathOf(file), 'utf8'));
-      const text = patchText(source, options.type === 'journey' ? JOURNEY_SETTINGS : {});
+      const text = patchText(
+        source,
+        options.type === 'journey'
+          ? JOURNEY_SETTINGS
+          : options.type === 'cynefin'
+            ? cynefinSettings(source)
+            : {}
+      );
       const result: DiagramResult = {
         fixture: file,
         id,
@@ -366,7 +401,7 @@ async function main(): Promise<void> {
       results.push(result);
 
       const clock = { now: Date.now(), seed: 1 };
-      const reference = await renderReference(page, id, text, clock);
+      const reference = await renderReference(page, id, text, clock, pinFamily);
       result.elkCalls = reference.elk.length;
       if (!reference.ok || reference.svg === null) {
         result.reason = reference.error;
@@ -388,7 +423,7 @@ async function main(): Promise<void> {
         result.reason = excluded;
         console.log(`– ${file}  excluded: ${excluded}`);
       } else if (options.self) {
-        const second = await renderReference(page, `self-${slug}`, text, clock);
+        const second = await renderReference(page, `self-${slug}`, text, clock, pinFamily);
         if (!second.ok || second.svg === null) {
           result.class = 'outside';
           result.problems = [`the second reference render failed: ${second.error}`];

@@ -13,6 +13,24 @@ import { readFileSync } from 'node:fs';
  * leave them undetected, so the configuration run expects no diagram scope for them.
  */
 export const undetectedCases: Record<string, string[]> = {
+  // Detection is `/^\s*cynefin-beta(?:[\s:]|$)/` (`cynefinDetector.ts`): a capitalised keyword, a dash, a
+  // dot or a letter after the keyword is not a cynefin diagram, so both sides reject the text.
+  cynefin: [
+    '"A"\ncynefin-beta',
+    'cynefin_beta\ncomplex "A"',
+    'cynefin-betax\ncomplex "A"',
+    'cynefin-beta-x\ncomplex "A"',
+    'cynefin-beta.\ncomplex "A"',
+    'cynefin-beta%%x',
+    'CYNEFIN-BETA\ncomplex "A"',
+    'x cynefin-beta\ncomplex "A"',
+    'cynefin\ncomplex "A"',
+  ],
+  // The detector is `/^\s*wardley-beta/i`: a blank in place of the dash is no wardley map.
+  wardley: ['wardley beta\ncomponent A [0.5, 0.5]\n'],
+  // A block comment before the header: the detector reads the text after the directives and the `%%`
+  // comment lines only, so `/* … */` leaves the text undetected (`docs-port/railroad/PLAN.md`, section 2).
+  railroad: ['/* c */ railroad-beta\nr = terminal("a") ;'],
   // Detection is case-sensitive (`eventmodeling/detector.ts`): a capitalised keyword is not a
   // diagram of this type.
   eventmodeling: ['EventModeling\ntf 01 ui A'],
@@ -44,7 +62,11 @@ export const undetectedCases: Record<string, string[]> = {
   ],
   // Detection is case-sensitive (`kanban/detector.ts`, `/^\s*kanban/`): a capitalised keyword is
   // not a kanban board, although the grammar accepts it.
+  // No `treeView-beta` keyword: the detector does not take the text, and the grammar is not reached.
+  treeView: ['a\nb'],
   kanban: ['KANBAN\n  a\n', 'Kanban\n  a\n'],
+  // The empty text has no header to detect: the reference and ferrigura give no type for it.
+  radar: [''],
   // Detection is case-sensitive (`architecture/architectureDetector.ts`): a capitalised keyword is
   // not an architecture diagram, and the grammar is never reached.
   architecture: ['Architecture-beta\nservice a(server)[A]\n', 'arch\nservice a(server)[A]\n'],
@@ -92,9 +114,1744 @@ export const undetectedCases: Record<string, string[]> = {
     // Q39: an empty input has no header to detect.
     '',
   ],
+  // The detector is `/^\s*venn-beta/` (`vennDetector.ts`): case-sensitive, and the header must start
+  // the text. An empty text, a bare newline, a capitalised header and a title line before the header
+  // are not venn diagrams to the reference's detector, though the parser takes the capitalised header.
+  venn: [
+    '',
+    '\n',
+    'VENN-BETA\nset A',
+    'title foo\nvenn-beta\nset A',
+    'VENN-BETA\nSET A\nSET B\nUNION A,B',
+  ],
 };
 
 export const explicitCases: Record<string, string[]> = {
+  // The probes of `docs-port/agentflow/NOTES.md`, section 2.4, and the quirks of section 2.5: the
+  // header words, the shapes and their removal, the edge operators, the containers, the silent
+  // drops of `direction` and `click` lines, the metadata and the links.
+  agentflow: [
+    'agentflow-beta',
+    'agentflow-beta TD',
+    'agentflow-beta BR',
+    'agentflow-beta >',
+    'agentflow-beta ^',
+    'agentflow-beta v',
+    'agentflow-beta LR\ndirection TB',
+    'agentflow-beta TB\na[text] --> b\nb(round)\nc[square]',
+    'agentflow-beta TB\na{{hex}}\nb{dia}',
+    'agentflow-beta TB\na@{ shape: stadium }',
+    'agentflow-beta TB\na@{ shape: doc }\nb@{ shape: circle }\nc@{ shape: in-out }',
+    'agentflow-beta TB\na@{ shape: cloud }\nb@{ shape: rounded }\nc@{ shape: lined-process }',
+    'agentflow-beta TB\na@{ shape: tool }\nb@{ shape: rect }\nc@{ shape: round }',
+    'agentflow-beta TB\na@{ shape: subprocess }\nb@{ shape: framed-rectangle }\nc@{ shape: lined-document }',
+    'agentflow-beta TB\na@{ shape: Task }',
+    'agentflow-beta TB\na@{ shape: foo_bar }',
+    'agentflow-beta TB\na@{ shape: 123 }',
+    'agentflow-beta TB\na@{ shape: squareRect }',
+    'agentflow-beta TB\na@{ shape: roundedRect }',
+    'agentflow-beta TB\na@{ shape: collapsedGroup }',
+    'agentflow-beta TB\na@{ shape: connector }',
+    'agentflow-beta TB\na@{ shape: input }\nb@{ shape: refdoc }\nc@{ shape: action }\nd@{ shape: decision }\ne@{ shape: task }',
+    'agentflow-beta TB\na -- label --> b',
+    'agentflow-beta TB\na -- note -.- b',
+    'agentflow-beta TB\na -- x -.- b',
+    'agentflow-beta TB\na --x b',
+    'agentflow-beta TB\na -.- b',
+    'agentflow-beta TB\na ==> b',
+    'agentflow-beta TB\na -->|yes| b',
+    'agentflow-beta TB\na e1@--> b\ne1@{ instruction: "do it", animate: true, curve: linear }',
+    'agentflow-beta TB\na -------------------> b',
+    'agentflow-beta TB\na -...- b',
+    'agentflow-beta TB\na --> b\na --> b',
+    'agentflow-beta TB\nflow f["F"]\na --> b\nend',
+    'agentflow-beta TB\nflow outer\nflow inner\na --> b\nend\nend',
+    'agentflow-beta TB\nflow f["F"]\na --> b\nend\nf@{ view: "collapsed" }',
+    'agentflow-beta TB\nflow f["F"]\na --> b\nend\nflow f["F2"]\nc --> b\nend',
+    'agentflow-beta TB\nflow f["F"]\na --> b\nend\nflow g["G"]\na --> c\nend',
+    'agentflow-beta TB\nflow f["F"]\na --> b\n',
+    'agentflow-beta TB\nflow f["F"]\ndirection LR\na --> b\nend',
+    'agentflow-beta TB\nglobal\na --> b\nend',
+    'agentflow-beta TB\nconnector c1["Title"]\na --> c1',
+    'agentflow-beta TB\nconnector c2',
+    'agentflow-beta TB\nconnectors --> b',
+    'agentflow-beta TB\nflowers --> classroom\nstyled --> defaultX',
+    'agentflow-beta TB\nend --> b',
+    'agentflow-beta TB\ncall --> b',
+    'agentflow-beta TB\nclick --> b',
+    'agentflow-beta TB\na["go direction LR now"] --> b',
+    'agentflow-beta TB\na --> b %% direction TB',
+    'agentflow-beta TB\na --> b\nlinkStyle 0 stroke:red',
+    'agentflow-beta TB\na --> b\nlinkStyle 0,1 stroke:blue',
+    'agentflow-beta TB\na --> b\nlinkStyle 5 stroke:red',
+    'agentflow-beta TB\na --> b\nlinkStyle 0 interpolate linear stroke:red\nlinkStyle default stroke:red',
+    'agentflow-beta TB\na --> b\nclick a href "https://example.com" "tip"',
+    'agentflow-beta TB\na --> b\nclick a call fn()',
+    'agentflow-beta TB\na --> b\nclick a href "https://example.com" _blank',
+    'agentflow-beta TB\na["<b>bold</b> & <script>x</script>"] --> b',
+    'agentflow-beta TB\na["`**x**`"] --> b\na@{ label: "L", labelType: markdown }',
+    'agentflow-beta TB\na@{ shape: tool, }\nb@{}\nc@{\n}',
+    'agentflow-beta TB\na@{ __proto__: 1, label: "x" }',
+    'agentflow-beta TB\na@{ x: 1, x: 2 }',
+    'agentflow-beta TB\na@{ x: [1 }',
+    'agentflow-beta TB\na@{ shape: triangle }\nb@{ shape: input }',
+    'agentflow-beta TB\n%% a comment\na --> b %% trailing\n%%{init: {"theme": "forest"}}%%',
+    'agentflow-beta TB\naccTitle: A title\naccDescr: A description',
+    'agentflow-beta TB\naccDescr {\n  a block\n}',
+    'agentflow-beta TB\naccTitle:',
+    'agentflow-beta TB\nclassDef cls fill:#f9f\nclass a cls\na:::cls --> b',
+    'agentflow-beta TB\na[ "x" ] --> b\na -- "lbl" --> b\na -- `md` --> b',
+    'agentflow-beta TB\na & b --> c & d',
+    'agentflow-beta TB\na -->|label| b\n%% a trailing comment',
+    'agentflow-beta TB\na --> b\n\n\n',
+    'agentflow-beta TB\na(-ellipse-)\nb[[sub]]\nc[(cyl)]\nd((circ))\ne((( dc )))\nf([stadium])\ng[/trap/]\nh[\\inv\\]',
+    'agentflow-beta TB\na[|field: value| text]',
+    'agentflow-beta TB\n',
+    'agentflow-beta\n',
+    'agentflow-beta TB\na ---- b',
+    'agentflow-beta TB\na ~~~ b',
+  ],
+  cynefin: [
+    // The probes of docs-port/cynefin/NOTES.md, section 2.5: the lexer, the grammar and the DB.
+    'cynefin-beta complex "A"',
+    'cynefin-beta:\ncomplex "A"',
+    'cynefin-beta\ncomplex "A" "B"',
+    'cynefin-beta\ncomplex "A" complicated --> clear',
+    'cynefin-beta\ncomplex ""',
+    'cynefin-beta\ncomplex\n  \n  %% note\n  "A"',
+    'cynefin-beta\ncomplex "A"\nclear --> chaotic',
+    'cynefin-beta\ncomplex "A" complex "B"',
+    'cynefin-beta\ncomplex "A"\ncomplex "B"',
+    'cynefin-beta\ncomplex %% note',
+    'cynefin-beta %% note\ncomplex "A"',
+    'cynefin-beta\n%% comment\ncomplex "A"',
+    'cynefin-beta\n%%{init: {"theme": "dark"}}%%\ncomplex "A"',
+    '\n\n  cynefin-beta\n\tcomplex\t"A"\t',
+    'cynefin-beta\r\ncomplex "A"\r\n',
+    'cynefin-beta',
+    'cynefin-beta\n',
+    'cynefin-beta:',
+    'cynefin-beta\ncomplexity "A"',
+    'cynefin-beta\nclearly "A"',
+    'cynefin-beta\nComplex "A"',
+    'cynefin-beta\nsimple "A"',
+    'cynefin-beta\ncomplex "a\\"b\\\\c\\td"',
+    'cynefin-beta\ncomplex "a\\nb"',
+    "cynefin-beta\ncomplex 'it\\'s' 'say \"hi\"'",
+    'cynefin-beta\ncomplex "a\\qb\\u0041c\\x41d"',
+    'cynefin-beta\ncomplex "a\nb"',
+    'cynefin-beta\ncomplex "abc',
+    'cynefin-beta\ncomplex "Ü ζ → x"',
+    'cynefin-beta\ncomplex --> complicated : "x"',
+    "cynefin-beta\ncomplex --> complicated : 'x'",
+    'cynefin-beta\ncomplex --> complicated :"x"',
+    'cynefin-beta\ncomplex --> complicated : ""',
+    'cynefin-beta\ncomplex --> clear : x',
+    'cynefin-beta\ncomplex --> clear "x"',
+    'cynefin-beta\ncomplex --> clear : "x" "y"',
+    'cynefin-beta\ncomplex --> clear --> chaotic',
+    'cynefin-beta\ncomplex --> foo',
+    'cynefin-beta\ncomplex --> clear',
+    'cynefin-beta\ncomplex --> complex : "self"\ncomplex --> clear',
+    'cynefin-beta\ncomplex --> clear : "x"\n"A"',
+    'cynefin-beta\ncomplex\n--> clear',
+    'cynefin-beta\ncomplex --> ',
+    'cynefin-beta\ncomplex "A"\n\nclear --> chaotic : "x"\n\nconfusion "B"',
+    'cynefin-beta\ncomplex title x',
+    'cynefin-beta\ntitle x complex "A"',
+    'cynefin-beta\ncomplex complicated',
+    'cynefin-beta\ntitle',
+    'cynefin-beta\ntitle   Spaces   here   ',
+    'cynefin-beta\ntitle a %% comment',
+    'cynefin-beta\ntitle First\ntitle Second',
+    'cynefin-beta\ntitle First\ntitle',
+    'cynefin-beta\ntitleX',
+    'cynefin-beta\naccTitle:',
+    'cynefin-beta\naccTitle x',
+    'cynefin-beta\naccTitle:   A   &  B  ',
+    'cynefin-beta\naccDescr: A map',
+    'cynefin-beta\naccDescr {\n  line one\n    line two\n\n  line three\n}',
+    'cynefin-beta\naccDescr\n{ a }',
+    'cynefin-beta\naccDescr {\n  never closed',
+    'cynefin-beta\ntitle a < b',
+    'cynefin-beta\ntitle <b>x</b> & y',
+    'cynefin-beta\ntitle A<script>alert(1)</script>B',
+    'cynefin-beta\ntitle <img src=x onerror=alert(1)> T',
+    'cynefin-beta\naccTitle: A & B',
+    'cynefin-beta\naccDescr: a <i>b</i>',
+    'cynefin-beta\ncomplex "<b>x</b> & y"',
+    'cynefin-beta\ncomplex "a #amp; b"',
+    'cynefin-beta\ncomplex "a #35; b"',
+    'cynefin-beta\ntitle A #amp; B',
+    '---\ntitle: FM\n---\ncynefin-beta\ncomplex "A"',
+    '---\ntitle: FM\n---\ncynefin-beta\ntitle Body',
+    '---\ntitle: FM\n---\ncynefin-beta\ntitle',
+    '---\ntitle: FM\n---\ncynefin-beta\ntitle   ',
+    'cynefin-beta\ncynefin-beta\ncomplex "A"',
+    'cynefin-beta%%x\ncomplex "A"',
+    '%%{init: {"cynefin": {"width": "wide"}}}%%\ncynefin-beta\ncomplex "A"',
+    '---\nconfig:\n  cynefin:\n    width: 900\n    seed: 3\n---\ncynefin-beta\ncomplex "A"',
+    '%%{init: {"cynefin": {"boundaryAmplitude": 0, "showDomainDescriptions": false}}}%%\ncynefin-beta\ncomplex "A"',
+    'cynefin-beta\nfoo',
+    'cynefin-beta\n--> clear',
+    'cynefin-beta\n:',
+    'cynefin-beta\n%',
+    'cynefin-beta\ncomplex "A" -->',
+  ],
+  // cspell:ignore curvex ticksy
+  radar: [
+    // Names that begin with a keyword, a header and a trailing title line (NOTES section 2.5, verified).
+    'radar-beta\naxis radar-beta',
+    'radar-beta\naxis A\ncurve curvex{1}',
+    'radar-beta\naxis A\ncurve radar-beta{1}',
+    'radar-beta\naxis A title',
+    'radar-beta\naxis A\ncurve c{1} %% note',
+    // The inputs the notes probe (sections 2.5, 3.2, 3.3 and 3.6), each one as the research script ran it.
+    'radar-beta\naxis A\ncurve c{1}',
+    'radar-beta:\naxis A\ncurve c{1}',
+    'radar-beta :\naxis A\ncurve c{1}',
+    'radar-beta{\naxis A',
+    'radar-betaX\naxis A',
+    'radar-beta %% note\naxis A\ncurve c{1}',
+    'radar-beta%% note\naxis A\ncurve c{1}',
+    'radar-beta\n',
+    'radar-beta',
+    'radar-beta axis A curve c{1}',
+    '  radar-beta\naxis A\ncurve c{1}',
+    '%% c\nradar-beta\naxis A\ncurve c{1}',
+    '',
+    'radar-beta\naxis A, B, C',
+    'radar-beta\naxis A,B,C',
+    'radar-beta\naxis A B',
+    'radar-beta\naxis A["Label A"]',
+    'radar-beta\naxis A ["Label A"]',
+    "radar-beta\naxis A['x y']",
+    'radar-beta\naxis A["a\\"b"]',
+    'radar-beta\naxis A["a\\tb"]',
+    'radar-beta\naxis A "label"',
+    'radar-beta\naxis max',
+    'radar-beta\naxis min',
+    'radar-beta\naxis circle',
+    'radar-beta\naxis trueX',
+    'radar-beta\naxis falseAlarm',
+    'radar-beta\naxis true',
+    'radar-beta\naxis curve',
+    'radar-beta\naxis axis',
+    'radar-beta\naxis title1',
+    'radar-beta\naxis accTitle',
+    'radar-beta\naxis accDescr',
+    'radar-beta\naxis showLegend2',
+    'radar-beta\naxis 1A',
+    'radar-beta\naxis 12',
+    'radar-beta\naxis a-1',
+    'radar-beta\naxis A-',
+    'radar-beta\naxis _x_1',
+    'radar-beta\naxis a.b',
+    'radar-beta\naxis Äx',
+    'radar-beta\naxis A,',
+    'radar-beta\naxis',
+    'radar-beta\naxis A\naxis A',
+    'radar-beta\ncurve c{1,2,3}',
+    'radar-beta\ncurve c { 1, 2 }',
+    'radar-beta\ncurve c["Label"]{1,2}',
+    'radar-beta\ncurve c ["Label"] {1,2}',
+    'radar-beta\ncurve c{}',
+    'radar-beta\ncurve c{1,}',
+    'radar-beta\ncurve c{1 2}',
+    'radar-beta\ncurve c{\n1,\n2\n}',
+    'radar-beta\ncurve c{A 1, B 2}',
+    'radar-beta\ncurve c{A: 1, B: 2}',
+    'radar-beta\ncurve c{A 1, 2}',
+    'radar-beta\ncurve c{1, B 2}',
+    'radar-beta\ncurve c{-1}',
+    'radar-beta\ncurve c{.5}',
+    'radar-beta\ncurve c{1.}',
+    'radar-beta\ncurve c{01}',
+    'radar-beta\ncurve c{1e3}',
+    'radar-beta\ncurve c{1.5.2}',
+    'radar-beta\ncurve c{1 ,2}',
+    'radar-beta\ncurve c{123456789012345678901234567890}',
+    'radar-beta\ncurve c{0.0001}',
+    'radar-beta\ncurve c1{1,2} curve c2{3,4}',
+    'radar-beta\ncurve axis{1}',
+    'radar-beta\ncurve radar-beta{1}',
+    'radar-beta\nshowLegend true',
+    'radar-beta\nshowLegend false',
+    'radar-beta\nshowLegend 1',
+    'radar-beta\nshowLegend True',
+    'radar-beta\nticks 5',
+    'radar-beta\nticks 2.5',
+    'radar-beta\nticks 0',
+    'radar-beta\nmin -1',
+    'radar-beta\ngraticule polygon',
+    'radar-beta\ngraticule circle',
+    'radar-beta\ngraticule square',
+    'radar-beta\ngraticule polygonal',
+    'radar-beta\nshowLegend true, ticks 3',
+    'radar-beta\nticks 3 max 5',
+    'radar-beta\nticks 3\nticks 4',
+    'radar-beta\ntitle My Title\naxis A',
+    'radar-beta\ntitle    Spaced    Title\naxis A',
+    'radar-beta\ntitle\naxis A',
+    'radar-beta\ntitle Best [v2] (x), y',
+    'radar-beta\naccTitle: Hello there\naxis A',
+    'radar-beta\naccDescr: Line one\naxis A',
+    'radar-beta\naccDescr {\n  first line\n  second line\n}\naxis A',
+    'radar-beta\ntitle T %% c\naxis A',
+    'radar-beta\naxis A\n%% c\ncurve c{1}',
+    'radar-beta\n%%{init: {"theme":"base"}}%%\naxis A\ncurve c{1}',
+    'radar-beta\n---\nx\n---\naxis A',
+    'radar-beta\n---\naxis A',
+    'radar-beta\n\taxis\tA,\tB',
+    'radar-beta\r\naxis A\r\ncurve c{1}\r\n',
+    'radar-beta\raxis A',
+    'radar-beta\ntitle\taxis A',
+    'radar-beta\ncurve c\n{1,2}',
+    'radar-beta\naxis A\n["x"]',
+    'radar-beta\ncurve c{\n}',
+    '\n\nradar-beta\n\n\naxis A\n\n',
+    'radar-beta\naxis A,\nB',
+    'radar-beta\ncurve c{1,\n2}',
+    'radar-beta\ncurve c{1\n,2}',
+    'radar-beta\nshowLegend\ntrue',
+    'radar-beta\nticks 5,\nmax 3',
+    'radar-beta\naxis A, B,\n',
+    'radar-beta\n\n\n',
+    'radar-beta\ncurve ticks{1}',
+    'radar-beta\naxis curvex, ticksy',
+    'radar-beta\n  title Best Radar Ever\n  axis A, B, C\n  curve c1{1, 2, 3}',
+    'radar-beta\n  axis A["Alpha"], B\n  curve c{1,2}',
+    'radar-beta\n  axis A, B\n  curve c1["First one"]{1,2}\n  curve c2{2,1}',
+    'radar-beta\n  axis A, B, C\n  curve c{C 3, A 1, B 2}',
+    'radar-beta\n  curve c{A 1, B 2}\n  axis A, B',
+    'radar-beta\n  curve c{A 1}',
+    'radar-beta\n  axis A, B\n  curve c{A 1}',
+    'radar-beta\n  axis A, B["Bee"]\n  curve c{A 1}',
+    'radar-beta\n  axis A, B\n  curve c{A 1, B 2, Z 9}',
+    'radar-beta\n  axis A, B\n  curve c{A 1, A 5, B 2}',
+    'radar-beta\n  axis A, B, C\n  curve c{1,2}',
+    'radar-beta\n  axis A, A, B\n  curve c{1,2,3}',
+    'radar-beta\n  axis A',
+    'radar-beta\n  showLegend false, ticks 40, max 10, min 2\n  axis A',
+    'radar-beta\n  ticks 33\n  axis A',
+    'radar-beta\n  ticks 3\n  ticks 4\n  axis A',
+    'radar-beta\n  ticks 2.5\n  axis A',
+    'radar-beta\n  ticks 0\n  axis A',
+    'radar-beta\n  title Hello <b>bold</b> & more\n  axis A',
+    'radar-beta\n  title <img src=x onerror=alert(1)>T\n  axis A',
+    'radar-beta\n  accTitle: A <b>t</b>\n  accDescr: x<img src=x onerror=alert(1)>y\n  axis A',
+    'radar-beta\n  axis A["<b>x</b> & y"]\n  curve c["<i>k</i>"]{1}',
+    'radar-beta\n  axis A["a #35; b"]\n  curve c{1}',
+    'radar-beta\n  title a #35; b\n  axis A',
+    '---\ntitle: FM Title\n---\nradar-beta\n  axis A',
+    '---\ntitle: FM Title\n---\nradar-beta\n  title Body Title\n  axis A',
+    '---\ntitle: FM Title\n---\nradar-beta\n  title\n  axis A',
+    '---\nconfig:\n  radar:\n    marginTop: 100\n    width: 500\n---\nradar-beta\n  axis A',
+    '%%{init: {"radar": {"width": 420, "axisScaleFactor": 0.5}}}%%\nradar-beta\n  axis A',
+    'radar-beta\n  title First\n  axis A',
+    'radar-beta\n  max 0\n  min 0\n  axis A',
+    'radar-beta\n  curve c{1,2}',
+    'radar-beta\n  axis A,B curve c1{1,2} curve c2{3,4}',
+    'radar-beta\n  graticule polygon\n  showLegend true',
+    '---\nconfig:\n  radar:\n    width: 0\n---\nradar-beta\n  axis A',
+    '---\nconfig:\n  radar:\n    axisScaleFactor: -1\n---\nradar-beta\n  axis A',
+    '---\nconfig:\n  radar:\n    foo: 1\n---\nradar-beta\n  axis A',
+    '---\nconfig:\n  radar:\n    curveTension: 2\n---\nradar-beta\n  axis A',
+    '---\nconfig:\n  radar:\n    useMaxWidth: false\n---\nradar-beta\n  axis A',
+    'radar-beta\n  title Hello <b>bold</b> & more\n  axis A, B, C\n  curve c{1, 2, 3}\n',
+    'radar-beta\n  title a #35; b &amp; c\n  axis A, B, C\n  curve c{1, 2, 3}\n',
+    'radar-beta\n  axis A["x & y <i>"], B, C\n  curve c{1, 2, 3}\n',
+    'radar-beta\n  accTitle: Acc <b>t</b>\n  accDescr: Desc & more\n  axis A, B, C\n  curve c{1, 2, 3}\n',
+    // The edge cases of the notes (section 8.3, O9): a maximum below the minimum, and a number of
+    // four hundred digits, which the reference reads as Infinity.
+    'radar-beta\n  axis A, B\n  curve c{1, 2}\n  max 1\n  min 5',
+    'radar-beta\n  min ' + '1'.repeat(400) + '\n  axis A',
+    // The texts of the radar parser tests (tests/radar_*.rs), so the differential runs them too.
+    'radar-beta:',
+    'radar-beta :',
+    '',
+    'radar-beta\naxis A.b',
+    'radar-beta\n    ticks 10\n    showLegend false\n    graticule polygon\n    min 1\n    max 10\n    ',
+    'radar-beta\n  title T\n  title\n  axis A',
+    'radar-beta\n  title\taxis A',
+    'radar-beta\n  title   My  Title',
+    'radar-beta\n  axis A title\n',
+    'radar-beta\n  axis A title x\n',
+    'radar-beta\n  axis A["a\\"b"], B["c\\td"]',
+    // The long numbers and the long curve of the notes (O9): 309 digits is finite, 310 overflows,
+    // and a curve of 125,000 entries parses (the renderer is the one that cannot draw it).
+    'radar-beta\naxis A\ncurve c{' + '1'.repeat(309) + '}',
+    'radar-beta\naxis A\ncurve c{' + '1'.repeat(310) + '}',
+    'radar-beta\naxis A\ncurve c{' + Array(125000).fill('1').join(',') + '}',
+  ],
+  // The probes of `docs-port/railroad/NOTES.md`, section 2.8 (the R, E, A, P and X ids), run through
+  // the reference's parser. Each is a text of one of the four syntaxes, with its header.
+  railroad: [
+    // R-01
+    'railroad-beta\ndigit = terminal("0") ;',
+    // R-03
+    'railroad-beta\n',
+    // R-04
+    'railroad-beta',
+    // R-05
+    'railroad-beta\ntitles = terminal("a") ;',
+    // R-06
+    'railroad-beta\nsequence = terminal("a") ;',
+    // R-07
+    'railroad-beta\nsequenceX = terminal("a") ;',
+    // R-08
+    'railroad-beta\nr = terminal("a")',
+    // R-09
+    'railroad-beta\nr = terminal("a\\"b") ;',
+    // R-10
+    "railroad-beta\nr = terminal('x\\'y') ;",
+    // R-11
+    'railroad-beta\nr = terminal("a\\nb\\tc\\\\d") ;',
+    // R-12
+    'railroad-beta\nr = sequence(terminal("a")) ;',
+    // R-13
+    'railroad-beta\nr = choice(terminal("a")) ;',
+    // R-14
+    'railroad-beta\nr = terminal("a") ; junk',
+    // R-15
+    'railroad-beta\nr = nonterminal("x y") ;',
+    // R-16
+    'railroad-beta\nr = special("a b") ;',
+    // R-17
+    'railroad-beta\nr = terminal("") ;',
+    // R-18
+    'railroad-beta\nr = terminal("<b>x</b> & y") ;',
+    // R-19
+    'railroad-beta\nr = terminal("a") ;\nr = terminal("b") ;',
+    // R-20
+    'railroad-beta\ntitle Hello   <b>x</b>\nr = terminal("a") ;',
+    // R-21
+    'railroad-beta\ntitle "Quoted \\"t\\""\nr = terminal("a") ;',
+    // R-22
+    'railroad-beta\ntitle foo\ntitle bar\nr = terminal("a") ;',
+    // R-23
+    'railroad-beta\naccTitle: Acc  T\naccDescr: Desc\nr = terminal("a") ;',
+    // R-24
+    'railroad-beta\naccDescr {\n  line one\n\n   line two\n}\nr = terminal("a") ;',
+    // R-25
+    'railroad-beta\n/* c */ r = terminal("a") ;',
+    // R-26
+    'railroad-beta\nr = terminal("a") ; /* not */',
+    // R-27
+    'railroad-beta\nr = terminal("a") ; %% line comment',
+    // R-28
+    'railroad-beta\nr = terminal("a") ;\n%%{init: {"theme":"dark"}}%%\ns = terminal("b") ;',
+    // R-29
+    'railroad-beta r = terminal("a") ;',
+    // R-30
+    'RAILROAD-BETA\nr = terminal("a") ;',
+    // R-31
+    'railroad-beta\r\nr = terminal("a") ;\r\ns = terminal("b") ;\r\n',
+    // R-32
+    'railroad-beta\nr = choice(terminal("a"), terminal("b")) ;\nr2 = nonterminal("r") ;',
+    // R-33
+    'railroad-beta\nr = oneOrMore(sequence(terminal("a"), terminal("b"))) ;',
+    // R-34
+    'railroad-beta\nr = terminal("a"),',
+    // R-35
+    'railroad-beta\nr = sequence() ;',
+    // R-36
+    'railroad-beta\nr = _x = terminal("a") ;',
+    // R-37
+    'railroad-beta\n---\nfoo: 1\n---\nr = terminal("a") ;',
+    // R-38
+    'railroad-beta\n---\nr = terminal("a") ;',
+    // R-39
+    'railroad-beta\nr = terminal("a") ;;',
+    // R-40
+    'railroad-beta\nr-2 = terminal("a") ;\n_r = terminal("b") ;\nR_x9 = terminal("c") ;',
+    // R-41
+    'railroad-beta\n1r = terminal("a") ;',
+    // R-42
+    "railroad-beta\nr = terminal('a') ;",
+    // R-43
+    'railroad-beta\nr = terminal("é ✓") ;',
+    // R-44
+    'railroad-beta\nr = terminal("a\\\\") ;',
+    // R-45
+    'railroad-beta\ntitle\nr = terminal("a") ;',
+    // R-46
+    'railroad-beta\naccTitle:\nr = terminal("a") ;',
+    // R-47
+    'railroad-beta\nr = terminal("a") ;\ntitle Late\n',
+    // R-48
+    'railroad-beta\nr = Terminal("a") ;',
+    // R-49
+    'railroad-beta\nr = terminal ("a") ;',
+    // R-50
+    'railroad-beta\nr = terminal( "a" ) ;',
+    // R-51
+    'railroad-beta\nr = terminal("a")\n  ;',
+    // R-52
+    'railroad-beta\nr = nonterminal("a") ;\n\n\nq = nonterminal("r") ;',
+    // R-53
+    'railroad-beta\nr = optional(terminal("a")) ;\ns = zeroOrMore(nonterminal("r")) ;',
+    // R-54
+    'railroad-beta\nr = terminal("<script>x</script>") ;',
+    // R-55
+    'railroad-beta\nr = special("<i>x</i>") ;',
+    // R-56
+    'railroad-beta\nnonterminal = terminal("a") ;',
+    // R-57
+    'railroad-beta\nr = terminal("a") ; r = terminal("b") ; ',
+    // R-58
+    'railroad-beta\nr = terminal("a")  ;  ',
+    // R-59
+    'railroad-beta\nr = terminal("a\nb") ;',
+    // R-60
+    'railroad-beta\ntitle   Hello\n  world\nr = terminal("a") ;',
+    // E-01
+    'railroad-ebnf-beta\nrule = "a" ;',
+    // E-02
+    'railroad-ebnf-beta\nrule ::= "a" ;',
+    // E-03
+    'railroad-ebnf-beta\nrule = "a" , "b" ;',
+    // E-04
+    'railroad-ebnf-beta\nrule = "a" "b" ;',
+    // E-05
+    'railroad-ebnf-beta\nrule = [ "a" ] ;',
+    // E-06
+    'railroad-ebnf-beta\nrule = { "a" } ;',
+    // E-07
+    'railroad-ebnf-beta\nrule = ( "a" | "b" ) ;',
+    // E-08
+    'railroad-ebnf-beta\nrule = "a"? ;',
+    // E-09
+    'railroad-ebnf-beta\nrule = "a"* ;',
+    // E-10
+    'railroad-ebnf-beta\nrule = "a"+ ;',
+    // E-11
+    'railroad-ebnf-beta\nrule = "a" - "b" ;',
+    // E-12
+    'railroad-ebnf-beta\nrule = ? special ? ;',
+    // E-13
+    'railroad-ebnf-beta\nrule = ?a? ;',
+    // E-14
+    'railroad-ebnf-beta\nrule = ? ? ;',
+    // E-15
+    'railroad-ebnf-beta\nrule = (* iso comment *) "a" ;',
+    // E-16
+    'railroad-ebnf-beta\nrule = "a" (* unclosed ;',
+    // E-17
+    'railroad-ebnf-beta\nrule = "(*" ;',
+    // E-18
+    'railroad-ebnf-beta\nrule = a | b ;',
+    // E-19
+    'railroad-ebnf-beta\nrule = a b ;',
+    // E-20
+    'railroad-ebnf-beta\nrule = "a" | ;',
+    // E-21
+    'railroad-ebnf-beta\nrule = ;',
+    // E-22
+    'railroad-ebnf-beta\nrule = "a" ;\nrule2 = b',
+    // E-23
+    'railroad-ebnf-beta\nrule = {"a"}* ;',
+    // E-24
+    'railroad-ebnf-beta\nrule = [ "a" | "b" ] , "c" ;',
+    // E-25
+    'railroad-ebnf-beta\nrule = "a" - ;',
+    // E-26
+    'railroad-ebnf-beta\nrule = "a" - "b" - "c" ;',
+    // E-27
+    'railroad-ebnf-beta\nrule = "a" ? ;',
+    // E-28
+    'railroad-ebnf-beta\nrule = ? a\n b ? ;',
+    // E-29
+    'railroad-ebnf-beta\nrule = "a" ; (* c *)',
+    // E-30
+    'railroad-ebnf-beta\nrule-x = "a" ;',
+    // E-31
+    'railroad-ebnf-beta\nrule = ( "a" , ( "b" | "c" ) )* ;',
+    // E-32
+    'railroad-ebnf-beta\nrule = "a" ,, "b" ;',
+    // E-33
+    'railroad-ebnf-beta\nrule = "a" -"b" ;',
+    // E-34
+    'railroad-ebnf-beta\nrule = "a" "b" | "c" ;',
+    // E-35
+    'railroad-ebnf-beta\nrule = [ "a" ]? ;',
+    // E-36
+    'railroad-ebnf-beta\nrule = "a"?* ;',
+    // E-37
+    'railroad-ebnf-beta\nrule = "a" ; ? x ? ;',
+    // E-38
+    'railroad-ebnf-beta\nrule = "x" (*\n comment \n*) "y" ;',
+    // E-39
+    'railroad-ebnf-beta\nrule = ? ?x? ? ;',
+    // E-40
+    'railroad-ebnf-beta\nrule = a - ;',
+    // E-41
+    "railroad-ebnf-beta\nrule = 'a' ;",
+    // E-42
+    'railroad-ebnf-beta\ntitle "T"\nrule = "a" ;',
+    // E-43
+    'railroad-ebnf-beta\nrule = "a" ;\n---\nrule2 = "b" ;',
+    // E-44
+    'railroad-ebnf-beta\nrule = "a" ? "b" ;',
+    // A-01
+    'railroad-abnf-beta\nr = "a" ;',
+    // A-02
+    'railroad-abnf-beta\nr = "a" / "b" ;',
+    // A-03
+    'railroad-abnf-beta\nr = %x41-5A ;',
+    // A-04
+    'railroad-abnf-beta\nr = %x41.42 ;',
+    // A-05
+    'railroad-abnf-beta\nr = %d65 %b1010 ;',
+    // A-06
+    'railroad-abnf-beta\nr = 3DIGIT ;',
+    // A-07
+    'railroad-abnf-beta\nr = 1*3DIGIT ;',
+    // A-08
+    'railroad-abnf-beta\nr = *DIGIT ;',
+    // A-09
+    'railroad-abnf-beta\nr = 1*DIGIT ;',
+    // A-10
+    'railroad-abnf-beta\nr = *1DIGIT ;',
+    // A-11
+    'railroad-abnf-beta\nr = 0*1DIGIT ;',
+    // A-12
+    'railroad-abnf-beta\nr = 2 DIGIT ;',
+    // A-13
+    'railroad-abnf-beta\nr = [ "a" ] ;',
+    // A-14
+    'railroad-abnf-beta\nr = ( "a" / "b" ) "c" ;',
+    // A-15
+    'railroad-abnf-beta\nr = "a" ; comment',
+    // A-16
+    'railroad-abnf-beta\nr = "a" ;   ',
+    // A-17
+    'railroad-abnf-beta\nr = "a";',
+    // A-18
+    'railroad-abnf-beta\nr = "a";x',
+    // A-19
+    'railroad-abnf-beta\nr = "a"\n;',
+    // A-20
+    'railroad-abnf-beta\nr = "a" ;\nr2 = "b" ;',
+    // A-21
+    'railroad-abnf-beta\nr = "a" "b" ;',
+    // A-22
+    'railroad-abnf-beta\nr = a-b ;',
+    // A-23
+    'railroad-abnf-beta\nR-1 = "a" ;',
+    // A-24
+    'railroad-abnf-beta\nr = %x41 / %x42 ;',
+    // A-25
+    'railroad-abnf-beta\nr = %X4a ;',
+    // A-26
+    'railroad-abnf-beta\nr = %x41- ;',
+    // A-27
+    'railroad-abnf-beta\nr = ( "a" ) ;',
+    // A-28
+    'railroad-abnf-beta\nr = ( ) ;',
+    // A-29
+    'railroad-abnf-beta\nr = "a ;',
+    // A-30
+    'railroad-abnf-beta\nr = "a\'b" ;',
+    // A-31
+    'railroad-abnf-beta\nr = "a" / ;',
+    // A-32
+    'railroad-abnf-beta\ntitle "a\\nb"\nr = "a" ;',
+    // A-33
+    'railroad-abnf-beta\nr = 3*"a" ;',
+    // A-34
+    'railroad-abnf-beta\nr = *"a" ;',
+    // A-35
+    'railroad-abnf-beta\nr = 3 ;',
+    // A-36
+    'railroad-abnf-beta\nr = 1*2 DIGIT ;',
+    // A-37
+    'railroad-abnf-beta\nr = *0DIGIT ;',
+    // A-38
+    'railroad-abnf-beta\nr = 2*1DIGIT ;',
+    // A-39
+    'railroad-abnf-beta\nr = 1* DIGIT ;',
+    // A-40
+    'railroad-abnf-beta\nr = ALPHA ;\n; a line comment\nq = DIGIT ;',
+    // A-41
+    'railroad-abnf-beta\nr = "a" ;;',
+    // A-42
+    'railroad-abnf-beta\nr = "a" "b" / "c" "d" ;',
+    // A-43
+    'railroad-abnf-beta\nr = %x4 ;',
+    // A-44
+    'railroad-abnf-beta\nr = %b2 ;',
+    // A-45
+    'railroad-abnf-beta\nr = %x41-5A.61 ;',
+    // A-46
+    'railroad-abnf-beta\nr = "" ;',
+    // A-47
+    'railroad-abnf-beta\nr = 3(DIGIT) ;',
+    // A-48
+    'railroad-abnf-beta\nr = [ "a" "b" / "c" ] ;',
+    // P-01
+    'railroad-peg-beta\nR <- "a" ;',
+    // P-02
+    'railroad-peg-beta\nR <- "a" / "b" ;',
+    // P-03
+    'railroad-peg-beta\nR <- &"a" "b" ;',
+    // P-04
+    'railroad-peg-beta\nR <- !A B ;',
+    // P-05
+    'railroad-peg-beta\nR <- &(A B) ;',
+    // P-06
+    'railroad-peg-beta\nR <- . ;',
+    // P-07
+    'railroad-peg-beta\nR <- "a"? "b"* "c"+ ;',
+    // P-08
+    'railroad-peg-beta\nR <- ("a" / "b")* ;',
+    // P-09
+    'railroad-peg-beta\nR <- "a" # comment\n "b" ;',
+    // P-10
+    'railroad-peg-beta\nR <- &&"a" ;',
+    // P-11
+    'railroad-peg-beta\nR <- ! & "a" ;',
+    // P-12
+    'railroad-peg-beta\nR <- "a"?* ;',
+    // P-13
+    'railroad-peg-beta\nR <- A',
+    // P-14
+    'railroad-peg-beta\nR <- &"a"* ;',
+    // P-15
+    'railroad-peg-beta\nR <- !"x"? ;',
+    // P-16
+    'railroad-peg-beta\nR <- &A ;',
+    // P-17
+    'railroad-peg-beta\nR-x <- "a" ;',
+    // P-18
+    'railroad-peg-beta\nR <- "a" ; # after',
+    // P-19
+    'railroad-peg-beta\nR <- ( "a" ;',
+    // P-20
+    'railroad-peg-beta\nR <- "" ;',
+    // P-21
+    "railroad-peg-beta\nR <- 'a' ;",
+    // P-22
+    "railroad-peg-beta\nR <- 'a\\'b' ;",
+    // P-23
+    'railroad-peg-beta\nR <- . . ;',
+    // P-24
+    'railroad-peg-beta\nR <- "x" /;',
+    // P-25
+    'railroad-peg-beta\nR <- "a" "b";',
+    // P-26
+    'railroad-peg-beta\nR = "a" ;',
+    // P-27
+    'railroad-peg-beta\nR <- "a" "b" / "c" ;',
+    // P-28
+    'railroad-peg-beta\nR <- A ? ;',
+    // P-29
+    'railroad-peg-beta\nR <- "a" ;\nR <- "b" ;',
+    // P-30
+    'railroad-peg-beta\nR <- \'a\' ;\nS <- "\\n" ;',
+    // P-31
+    'railroad-peg-beta\nR <- &"a\\"" ;',
+    // P-32
+    'railroad-peg-beta\nR <- "a" ;\n# whole line comment\nS <- "b" ;',
+    // X-01
+    'railroad-ebnf-beta\nr = "a" ;',
+    // X-02
+    'railroad-beta\nr = terminal("a") ;',
+    // X-05
+    'railroad-betax\nr = terminal("a") ;',
+    // X-06
+    'railroad-beta%%c\nr = terminal("a") ;',
+    // X-07
+    'railroad-ebnf-beta%%c\nr = "a" ;',
+    // X-08
+    '  railroad-beta\n r = terminal("a") ;',
+    // X-09
+    '%%c\nrailroad-beta\nr = terminal("a") ;',
+    // X-10
+    'railroad-beta\n\n\n\nr = terminal("a") ;',
+    // X-11
+    'railroad-beta\ntitle Foo %% c\nr = terminal("a") ;',
+    // X-12
+    'railroad-beta\naccTitle: x %% c\nr = terminal("a") ;',
+    // X-13
+    'railroad-beta\ntitle \'it\'\nr = terminal("a") ;',
+    // X-14
+    'railroad-beta\ntitle\tTab  x\nr = terminal("a") ;',
+    // X-15
+    'railroad-beta\naccDescr: a %% c\nr = terminal("a") ;',
+    // X-16
+    'railroad-beta\naccDescr { a \n b }\nr = terminal("a") ;',
+    // X-17
+    'railroad-beta\nr = terminal("a") ;\naccTitle: late',
+    // X-18
+    'railroad-ebnf-beta\ntitle \'T\'\nrule = "a" ;',
+    // X-19
+    'railroad-abnf-beta\ntitle "T"\nr = "a" ;',
+    // X-20
+    'railroad-abnf-beta\ntitle T\nr = "a" ;',
+    // X-21
+    'railroad-peg-beta\naccDescr {\n  x\n}\nR <- "a" ;',
+    // X-22
+    'railroad-beta\nr = terminal("a") ;\ntitle "x" \n',
+    // X-23
+    'railroad-beta\nr = terminal("a\\bc\\fd\\ve\\0f") ;',
+    // X-24
+    'railroad-ebnf-beta\nrule = "a\\bc" ;',
+    // X-25
+    'railroad-peg-beta\nR <- "a\\bc" ;',
+    // X-26
+    'railroad-beta\nr = terminal("&lt;b&gt;") ;',
+    // X-27
+    'railroad-beta\nr = terminal("#amp;") ;',
+    // X-28
+    'railroad-beta\nr = nonterminal("AT&T <b>bold</b>") ;',
+    // X-29
+    'railroad-beta\ntitle foo\ntitle\nr = terminal("a") ;',
+    // X-30
+    'railroad-beta\naccTitle: foo\naccTitle:\nr = terminal("a") ;',
+    // X-31
+    'railroad-beta\ntitle foo\nr = terminal("a") ;\ntitle bar',
+    // Edge cases of the scanner and the four grammars (the U+2028 and CRLF cases, the escapes, the
+    // repeats with their bounds, the ABNF `;`, the PEG labels, the sanitising) and the front matter
+    // title cases of Q8, probed with the reference before the port was written.
+    'railroad-beta\ntitle a b\nr = terminal("x") ;',
+    'railroad-beta\ntitle a %% c  d\nr = terminal("x") ;',
+    'railroad-beta\naccTitle: q w\nr = terminal("x") ;',
+    'railroad-beta\naccDescr: q w\nr = terminal("x") ;',
+    'railroad-beta\naccDescr {\n  a \n  b\n}\nr = terminal("x") ;',
+    'railroad-beta\nr = terminal("a b") ;',
+    'railroad-beta\n%% c \nr = terminal("x") ;',
+    'railroad-peg-beta\nR <- "a" ; # c  x\n',
+    'railroad-abnf-beta\nr = "a" ; x\n',
+    'railroad-abnf-beta\nr = "a"; \n',
+    'railroad-abnf-beta\nr = "a";  \n',
+    'railroad-ebnf-beta\nr = ? a b ? ;',
+    'railroad-ebnf-beta\nr = "a" (* x  *) ;',
+    'railroad-beta\ntitle "a\\\nb"\nr = terminal("x") ;',
+    'railroad-beta\ntitle "a"\nr = terminal("x") ;',
+    'railroad-beta\ntitle "\nr = terminal("x") ;',
+    'railroad-beta\ntitle \'"\nr = terminal("x") ;',
+    'railroad-beta\ntitle "\nr = terminal("x") ;',
+    'railroad-abnf-beta\ntitle "\\n"\nr = "x" ;',
+    'railroad-abnf-beta\ntitle "a\nb"\nr = "x" ;',
+    'railroad-abnf-beta\nr = 0*0 "a" ;',
+    'railroad-abnf-beta\nr = 99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 "a" ;',
+    'railroad-abnf-beta\nr = 99999999999999999999*"a" ;',
+    'railroad-abnf-beta\nr = *99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 "a" ;',
+    'railroad-peg-beta\nR <- &"a" ;',
+    'railroad-peg-beta\nR <- &. !"x"? ;',
+    'railroad-peg-beta\nR <- &(A) (B / C) &(A?) ;',
+    'railroad-peg-beta\nR <- &(("a")) ;',
+    'railroad-ebnf-beta\nr = "a" ;\n---\nfoo: 1\n---\n',
+    'railroad-ebnf-beta\nr = "a" - "b" - "c" ;',
+    'railroad-ebnf-beta\nr = "a" ?? ;',
+    'railroad-ebnf-beta\nr = [ "a" ]? {"b"}* ;',
+    'railroad-ebnf-beta\nr = "a" , , "b" ;',
+    'railroad-ebnf-beta\nr = "a" "b" , "c" ;',
+    'railroad-ebnf-beta\nr = a ? ? ;',
+    'railroad-beta\n%%{init: x}%%\nr = terminal("a") ;\n%%{init: y}%%',
+    'railroad-beta\nr = terminal("a") ;\n/* unclosed',
+    'railroad-beta\nr = terminal("a") ;\n---\nx',
+    'railroad-beta\nr = terminal("a") ;\n#c',
+    "railroad-beta\nr = terminal('a\"b') ;",
+    "railroad-beta\nr = nonterminal('a\\'b') ;",
+    'railroad-beta\nr = special("x\\\\") ;',
+    'railroad-beta\nr = terminal("\\u0041") ;',
+    'railroad-beta\nr = choice() ;',
+    'railroad-beta\nr = choice(a) ;',
+    'railroad-beta\nTitle = terminal("a") ;',
+    'railroad-beta\nr = terminal("a") ;\nr = terminal("b") ;',
+    'railroad-beta\nr = optional(zeroOrMore(oneOrMore(terminal("a")))) ;',
+    'railroad-peg-beta\nR <- "a" "b"\n  / "c" ;',
+    'railroad-peg-beta\nR <- A ;\nA <- .;',
+    'railroad-abnf-beta\nr = "a" / "b" c ;\ns = ;',
+    'railroad-abnf-beta\nr = (3"a") ;',
+    'railroad-abnf-beta\nr = 1*2(%x41-5A) ;',
+    'railroad-abnf-beta\nr = %x41-5A.42 ;',
+    'railroad-abnf-beta\nr = %x41.5A ;',
+    'railroad-abnf-beta\nr = %x41-5A-;',
+    'railroad-abnf-beta\nr = %x41 - ;',
+    'railroad-abnf-beta\nr = a_b ;',
+    'railroad-abnf-beta\n_r = "a" ;',
+    'railroad-abnf-beta\nr = "a" ;\n; comment line\ns = "b" ;',
+    'RAILROAD-BETA\nr = terminal("a") ;',
+    'Railroad-Ebnf-Beta\nr = "a" ;',
+    '  railroad-peg-beta\n\tR <- "a" ;',
+    'railroad-beta\n  r = terminal("a") ;',
+    'railroad-beta \nr = terminal("a") ;',
+    'railroad-beta\rr = terminal("a") ;',
+    'railroad-beta\ntitle\ttab\t\tsep\nr = terminal("a") ;',
+    'railroad-beta\naccTitle:\tt  x\nr = terminal("a") ;',
+    'railroad-beta\naccDescr:   spaced   text  \nr = terminal("a") ;',
+    'railroad-beta\naccDescr  {\n\n\n  a\n\n\n  b  \n\n}\nr = terminal("a") ;',
+    'railroad-beta\naccDescr\n{x}\nr = terminal("a") ;',
+    'railroad-beta\naccDescr {unclosed\nr = terminal("a") ;',
+    'railroad-beta\naccDescr: a %% b\n%% c\nr = terminal("a") ;',
+    'railroad-beta\naccTitle: <script>x</script>  y\nr = terminal("a") ;',
+    'railroad-beta\naccDescr: <b>x</b>\n   y\nr = terminal("a") ;',
+    'railroad-beta\ntitle <script>alert(1)</script>T<b>x\nr = terminal("a") ;',
+    'railroad-beta\nr = terminal("<style>x</style>y") ;',
+    'railroad-beta\nr = terminal("<img src=x onerror=alert(1)>") ;',
+    "railroad-beta\nr = terminal(\"<a href='javascript:x' target='_blank'>l</a>\") ;",
+    '---\ntitle: FM\n---\nrailroad-beta\nr = terminal("a") ;',
+    '---\ntitle: FM\n---\nrailroad-beta\ntitle G\nr = terminal("a") ;',
+    '---\ntitle: FM\n---\nrailroad-beta\ntitle\nr = terminal("a") ;',
+    '---\ntitle: FME\n---\nrailroad-ebnf-beta\nr = "a" ;',
+    '---\ntitle: FMA\n---\nrailroad-abnf-beta\nr = "a" ;',
+    '---\ntitle: FMP\n---\nrailroad-peg-beta\nR <- "a" ;',
+    'railroad-beta\ntitle <script>alert(1)</script>Safe Title\nr = terminal("a") ;',
+    'railroad-beta\nr = terminal("value<script>alert(1)</script>") ;',
+    'railroad-beta\naccDescr {\n    line one\n    line two\n}\nr = terminal("a") ;',
+    '%%{init: {"theme": "forest"}}%%\nrailroad-beta\nr = terminal("a") ;',
+  ],
+  swimlanes: [],
+  treeView: [
+    // cspell:ignore ntitlepage Ärger
+    // The probes of docs-port/tree-view/NOTES.md, section 2 (the parser, the DB and the preprocessing),
+    // section 3 (the title and the header texts) and section 8.3, run through the reference.
+    // base-indent
+    'treeView-beta\nroot/\n    a.txt\n    sub/\n        b.md\n    c.js',
+    // title-after-node
+    'treeView-beta\na\ntitle X',
+    // title-before
+    'treeView-beta\ntitle My Tree\na',
+    // title-twice
+    'treeView-beta\ntitle A\ntitle B\na',
+    // title-empty
+    'treeView-beta\ntitle\na',
+    // title-prefix-bare
+    'treeView-beta\ntitlepage.md',
+    // title-dot-bare
+    'treeView-beta\ntitle.txt',
+    // title-prefix-nested
+    'treeView-beta\nsrc/\n    titles.ts',
+    // title-prefix-nested-only
+    'treeView-beta\nsrc/\n    title',
+    // title-prefix-after-title
+    'treeView-beta\ntitle T\ntitles.md',
+    // accTitle-accDescr
+    'treeView-beta\naccTitle: T1\naccDescr: D1\na',
+    // accDescr-block
+    'treeView-beta\naccDescr {\n  line one\n  line two\n}\na',
+    // accTitles-bare
+    'treeView-beta\naccTitles.md',
+    // accDescribe-bare
+    'treeView-beta\naccDescribed.md',
+    // trailing-spaces-quoted
+    'treeView-beta\n"a"  \n    b',
+    // trailing-spaces-bare
+    'treeView-beta\na  \n    b  ',
+    // ws-only-line-between
+    'treeView-beta\na\n   \nb',
+    // tab-only-line-between
+    'treeView-beta\na\n\t\nb',
+    // pct-pct-alone
+    'treeView-beta\na\n%%\nb',
+    // pct-pct-indented-alone
+    'treeView-beta\na\n    %%\n    b',
+    // indented-comment-content
+    'treeView-beta\na\n    %% note\n    b',
+    // inline-comment-name
+    'treeView-beta\na %% note\nb',
+    // keyword-line-comment
+    'treeView-beta %% c\na',
+    // keyword-with-text
+    'treeView-beta foo\na',
+    // keyword-glued
+    'treeView-betaX\na',
+    // keyword-as-name
+    'treeView-beta\na\n    treeView-beta',
+    // ann-class
+    'treeView-beta\na :::hl\nb icon(folder)\nc ## desc\nd :::x icon(a:b) ## desc2',
+    // ann-desc-then-class
+    'treeView-beta\ne ## desc :::cls',
+    // ann-two-classes
+    'treeView-beta\nf :::a :::b',
+    // ann-two-icons
+    'treeView-beta\nf icon(x) icon(y)',
+    // ann-icon-dot
+    'treeView-beta\ng icon(a.b)',
+    // ann-icon-empty
+    'treeView-beta\nh icon()',
+    // ann-icon-none
+    'treeView-beta\ni icon(none)',
+    // ann-class-digit
+    'treeView-beta\nj :::1cls',
+    // ann-class-only
+    'treeView-beta\nk :::',
+    // ann-icon-3part
+    'treeView-beta\nl icon(a:b:c)',
+    // start-class
+    'treeView-beta\n:::x',
+    // start-icon
+    'treeView-beta\nicon(x)',
+    // start-desc
+    'treeView-beta\n## x',
+    // name-hash-in-middle
+    'treeView-beta\na ## b ## c',
+    // quoted-inner-quote
+    'treeView-beta\n"a"b"',
+    // quoted-unterminated
+    'treeView-beta\n"abc',
+    // quoted-single
+    "treeView-beta\n'a b'",
+    // quoted-empty
+    'treeView-beta\n""',
+    // quoted-dir
+    'treeView-beta\n"src/"',
+    // quoted-desc
+    'treeView-beta\n"a" ## d :::c',
+    // bare-slash
+    'treeView-beta\n/',
+    // bare-double-slash
+    'treeView-beta\na//',
+    // bare-slash-trailing-space
+    'treeView-beta\na/   ',
+    // entity-in-name
+    'treeView-beta\nA #amp; B',
+    // entity-in-desc
+    'treeView-beta\na ## x #amp; y',
+    // desc-ampersand
+    'treeView-beta\na ## a & b',
+    // desc-tag
+    'treeView-beta\na ## <b>x</b>',
+    // desc-amp-entity-literal
+    'treeView-beta\na ## a &amp; b',
+    // name-html
+    'treeView-beta\na <b>x</b>',
+    // tab-indent
+    'treeView-beta\n\ta\n    b',
+    // tab-indent-2
+    'treeView-beta\n\ta\n\t\tb\n\tc',
+    // uneven-indent
+    'treeView-beta\na\n  b\n c',
+    // first-node-indented
+    'treeView-beta\n        a\n    b\nc',
+    // crlf
+    'treeView-beta\r\na\r\n    b\r\n',
+    // empty-tree
+    'treeView-beta',
+    // empty-tree-nl
+    'treeView-beta\n',
+    // only-comment
+    'treeView-beta\n%% only',
+    // no-keyword
+    'a\nb',
+    // blank-lines
+    'treeView-beta\n\na\n\n\n    b\n',
+    // class-hyphen
+    'treeView-beta\na :::my-cls1',
+    // name-colon-triple-no-class
+    'treeView-beta\na :::',
+    // unicode-name
+    'treeView-beta\n  Ärger 🙂.md\n    ÉÜ  double  space',
+    // dir-with-class-and-icon
+    'treeView-beta\nsrc/ :::hl icon(folder)',
+    // name-with-double-colon-only
+    'treeView-beta\na %%',
+    // keyword-trailing-spaces
+    'treeView-beta  \na',
+    // quoted-trailing-spaces-eof
+    'treeView-beta\n"a"  ',
+    // bare-trailing-spaces-eof
+    'treeView-beta\na   ',
+    // ws-only-line-first
+    'treeView-beta\n   \na',
+    // ws-only-line-before-title
+    'treeView-beta\n  \ntitle T\na',
+    // box-std
+    'treeView-beta\n.\n├── src\n│   ├── index.ts\n│   └── util\n│       └── a.ts\n└── README.md',
+    // box-heavy
+    'treeView-beta\n.\n┣━━ src\n┃   ┗━━ a.ts\n┗━━ README.md',
+    // box-all-col0
+    'treeView-beta\n.\n├── a\n└── b',
+    // box-seg3
+    'treeView-beta\n.\n├─ a\n│  └─ b',
+    // box-empty-node
+    'treeView-beta\n.\n├── a\n├── ',
+    // box-empty-node-2
+    'treeView-beta\n.\n└──',
+    // box-decoration-only
+    'treeView-beta\n.\n│\n├── a',
+    // box-no-branch-with-box-char
+    'treeView-beta\nSection ─ A.txt\n└── b',
+    // box-col2-branch
+    'treeView-beta\n.\n├── a\n  └── b',
+    // box-plain-indented-error
+    'treeView-beta\n.\n├── a\n    plain',
+    // box-plain-root-after
+    'treeView-beta\n.\n├── a\nroot2',
+    // box-title
+    'treeView-beta\ntitle T\n.\n└── a',
+    // box-tab
+    'treeView-beta\n.\n\t├── a\n\t│\t└── b',
+    // box-langium-error-remap
+    'treeView-beta\n.\n├── a :::\n└── b icon(a.b)',
+    // indent-with-box-char-in-name-then-plain-indented
+    'treeView-beta\nsrc\n    a ─ b.md\n    c.txt',
+    // indent-with-box-char-in-name-ok
+    'treeView-beta\nsrc\n    a ─ b.md\n        c.txt',
+    // indent-branch-char-in-name
+    'treeView-beta\nsrc\n    b ├ c',
+    // frontmatter-title
+    '---\ntitle: FM\n---\ntreeView-beta\na',
+    // frontmatter-config
+    '---\nconfig:\n  treeView:\n    rowIndent: 20\n---\ntreeView-beta\na',
+    // directive-config
+    '%%{init: {"treeView": {"showIcons": true, "paddingX": 7}}}%%\ntreeView-beta\na',
+    // no-config
+    'treeView-beta\na',
+    // theme-vars-treeview
+    '---\nconfig:\n  themeVariables:\n    treeView:\n      labelColor: red\n---\ntreeView-beta\na',
+    // defaultIconPack-filename
+    '---\nconfig:\n  treeView:\n    showIcons: true\n    defaultIconPack: mine\n    filenameIcons:\n      Dockerfile: docker\n    extensionIcons:\n      .ts: ts\n---\ntreeView-beta\nDockerfile\nx.ts\nNOTES.md\nsub/',
+    // q15-child-then-root
+    'treeView-beta\na\n    b\nc',
+    // q15-deeper-then-middle
+    'treeView-beta\na\n    b\n        c\n    d',
+    // fm-and-line
+    '---\ntitle: FM\n---\ntreeView-beta\ntitle Line\na',
+    // fm-and-empty-title-line
+    '---\ntitle: FM\n---\ntreeView-beta\ntitle\na',
+    // fm-and-titles-bare
+    '---\ntitle: FM\n---\ntreeView-beta\ntitles.md',
+    // title-sanitised
+    'treeView-beta\ntitle A & <b>B</b>\na',
+    // accTitle-sanitised
+    'treeView-beta\naccTitle: A <i>x</i>\na',
+    // A class followed by a blank-separated word (q10)
+    'treeView-beta\na :::cls extra',
+    // A quoted name that spans a line break (q8)
+    'treeView-beta\n"a\nb"',
+    // Consecutive spaces in names, without an emoji (q5)
+    'treeView-beta\nA   B  C\n    Name  with  runs.md',
+    // Tabs and spaces mixed in a name's indentation (q15d)
+    'treeView-beta\n\ta\n    b',
+    // Q20: a line separator (U+2028) before `%%` starts a comment: the multi-line caret matches after it
+    'treeView-beta\na %% note\nb',
+    // Q20: the same inside a box-drawing tree, with the separator after a name
+    'treeView-beta\n.\n├── a %% note\n└── b',
+  ],
+  usecase: [
+    // The probes of the research (`docs-port/usecase/NOTES.md` section 2.4), one input each.
+    // P01
+    'usecase-beta\nA --> B\n',
+    // P02
+    'usecase-beta\nactor end\n',
+    // P03
+    'usecase-beta\nactor A\nA %% c\n',
+    // P04
+    'usecase-beta\n%% whole\nactor A\n',
+    // P05
+    'usecase-beta\nA --oz B\n',
+    // P06
+    'usecase-beta\nA <-- lbl -- B\n',
+    // P07
+    'usecase-beta\nA <--- lbl -- B\n',
+    // P08
+    'usecase-beta\nA -- lbl --> B\n',
+    // P09
+    'usecase-beta\nUC1 ..>:include UC2\n',
+    // P10
+    'usecase-beta\nUC1 ..>:Include UC2\n',
+    // P11
+    'usecase-beta\nA @{ type: actor }\n',
+    // P12
+    'usecase-beta\nA @{ x: 1.5 }\n',
+    // P13
+    'usecase-beta\nA @{ icon: 1mg }\n',
+    // P14
+    'usecase-beta\nactor A @{ type: "hollow" }\n',
+    // P15
+    'usecase-beta %% c\nactor A\n',
+    // P16
+    'usecase-beta\nactor café\n',
+    // P17
+    'usecase-beta\npackage X\n',
+    // P18
+    'usecase-beta\npackageX --> Y\n',
+    // P19
+    'usecase-beta\nsystemBoundary B\n  A --> C\nend\n',
+    // P20
+    'usecase-beta\nUC1<<  >>\n',
+    // P21
+    'usecase-beta\nUC1 << no end\n',
+    // P22
+    'usecase-beta\nA --> B accTitle: x\n',
+    // P23
+    'usecase-beta\nA "oops\n',
+    // P24
+    'usecase-beta\nA @ B\n',
+    // P25
+    'usecase-beta\ndirection lr\n',
+    // P26
+    'usecase-beta\ndirection TD\nA --> B\n',
+    // P27
+    'usecase-beta\naccDescr {\n line one\n line two\n}\nA --> B\n',
+    // P28
+    'usecase-beta\njson j @{ "a": 1\n',
+    // P29
+    'usecase-beta\njson j @{ "a": [1, "x", null], "b": 1.0e400, "c": -0, "d": 12345678901234567890 }\n',
+    // P30
+    'usecase-beta\nUC1:::cls\nclass UC1 other\n',
+    // P31
+    'usecase-beta\nUC1\nUC2\nclass UC1,UC2 cls1,cls2\n',
+    // P32
+    'usecase-beta\nx --> y\nx-- y\n',
+    // P33
+    'usecase-beta\no-- p\n',
+    // P34
+    'usecase-beta\nUC1\nstyle UC1 fill:#f9f,stroke:1px\n',
+    // P35
+    'usecase-beta\nactor A\nnote for A "hi there"\nnote for A plain words\n',
+    // P36
+    'usecase-beta\n\t%% tabbed comment\nactor A\n',
+    // P37
+    'usecase-beta\nUC1 --> UC2 : x\n',
+    // P38
+    'usecase-beta\nactor A\fB\n',
+    // P39
+    'usecase-beta\nactor "Good Guy":::cls\n',
+    // P40
+    'usecase-beta\nUC1 @{ business: true }\nUC1 @{ type: "rect" }\n',
+    // P07b
+    'usecase-beta\nA <--- B\n',
+    // P41
+    'usecase-beta\nactor A\nA @{ type: "hollow" } --> B\n',
+    // P42
+    'usecase-beta\nUC1\nUC1 @{ business: true }\nUC1 --> UC2\n',
+    // P43
+    'usecase-beta\nUC1 @{ business: true } --> UC2\n',
+    // P44
+    'usecase-beta\njson j @{ "a": 1e400, "b": -0, "c": 0.1 }\n',
+    // P45
+    'usecase-beta\nUC1 e1@--> UC2\nUC1 e1@{ animate: true }\n',
+    // P47
+    'usecase-beta\nA o-- lbl -- B\n',
+    // P48
+    'usecase-beta\nA -- lbl --o B\n',
+    // P49
+    'usecase-beta\nUC1 ..> UC2\n',
+    // P50
+    'usecase-beta\nactor A\nactor B\nA --|> B\n',
+    // P51
+    'usecase-beta\nactor A\nUC1\nA --|> UC1\n',
+    // P52
+    'usecase-beta\nactor A\nUC1 ..>:include A\n',
+    // Q01
+    'usecase-beta\nUC1 e1@--> UC2\n',
+    // Q02
+    'usecase-beta\nUC1 e1@--> UC2\ne1@{ animate: true, animation: "slow" }\n',
+    // Q03
+    'usecase-beta\nUC1 e1@--> UC2\ne1@{ business: true }\n',
+    // Q04
+    'usecase-beta\nx-->y\n',
+    // Q05
+    'usecase-beta\nx --> y\n',
+    // Q06
+    'usecase-beta\nsystemBoundary B [Title] @{ type: "package" }\n  UC1\nend\n',
+    // Q07
+    'usecase-beta\nsystemBoundary B\n  UC1\nend\nB @{ type: "hollow" }\n',
+    // Q08
+    'usecase-beta\nsystemBoundary B1\n  UC1\nend\nsystemBoundary B2\n  UC1\nend\n',
+    // Q09
+    'usecase-beta\nactor A @{ icon: "fa:user", type: "hollow" }\n',
+    // Q10
+    'usecase-beta\nactor A @{ type: "awesome", business: true }\n',
+    // Q11
+    'usecase-beta\nUC1[Rect] @{ business: true }\n',
+    // Q12
+    'usecase-beta\nUC1[Rect]\n',
+    // Q13
+    'usecase-beta\nUC1(Label text)\n',
+    // Q14
+    'usecase-beta\nUC1(One)\nUC1(Two)\n',
+    // Q15
+    'usecase-beta\nUC1(One)\nUC1(One)\n',
+    // Q16
+    'usecase-beta\nclassDef a,b fill:#f9f, stroke:#333\nUC1\nclass UC1 a\nstyle UC1 stroke:#f00\n',
+    // Q17
+    'usecase-beta\nclass ZZ a\n',
+    // Q18
+    'usecase-beta\nstyle ZZ fill:#fff\n',
+    // Q19
+    'usecase-beta\nactor "Hello World!"\nactor Hello_World_\n',
+    // Q20
+    'usecase-beta\nactor "A-B"\nactor "A_B"\n',
+    // Q21
+    'usecase-beta\nUC1(end for class)\n',
+    // Q22
+    'usecase-beta\nUC1 e1@--> UC2\nnote for e1 hi\n',
+    // Q23
+    'usecase-beta\nsystemBoundary B\nend\nnote for B hi\n',
+    // Q24
+    'usecase-beta\njson j @{ "a": 1 }\nUC1 --> j\n',
+    // Q25
+    'usecase-beta\njson j @{ "a": 1 }\nUC1 --|> j\n',
+    // Q26
+    'usecase-beta\njson j @{ "a": 1 }\nUC1 ..>:include j\n',
+    // Q27
+    'usecase-beta\njson j @{ "a": 1, "b": 2, "a": 3 }\n',
+    // Q28
+    'usecase-beta\njson j @{ "a": 1 } :::cls\n',
+    // Q29
+    'usecase-beta\naccTitle: My title\naccDescr: desc here\nactor A\n',
+    // Q30
+    'usecase-beta\nsystemBoundary B1\nsystemBoundary B2\nend\nend\n',
+    // Q31
+    'usecase-beta\nsystemBoundary B1\nend\n',
+    // Q32
+    'usecase-beta\nsystemBoundary B1\n  actor X, Y\nend\n',
+    // Q33
+    'usecase-beta\n',
+    // Q34
+    'usecase-beta',
+    // Q35
+    'usecase-beta\nactor "Café"\n',
+    // Q36
+    'usecase-beta\nUC1 --> "`x`"\n',
+    // Q37
+    'usecase-beta\nactor "`abc"\n',
+    // L01
+    'usecase-beta\nA -- lbl -- B\n',
+    // L02
+    'usecase-beta\nA --- lbl --- B\n',
+    // L04
+    'usecase-beta\nA -- lbl --x B\n',
+    // L05
+    'usecase-beta\nA ---> B\n',
+    // L06
+    'usecase-beta\nA <-- lbl --> B\n',
+    // L07
+    'usecase-beta\nA o-- lbl --o B\n',
+    // L08
+    'usecase-beta\nA x-- lbl -- B\n',
+    // L09
+    'usecase-beta\nA x-- B\n',
+    // L10
+    'usecase-beta\nA -- a-b c --> B\n',
+    // L11
+    'usecase-beta\nA -- a:b --> B\n',
+    // L12
+    'usecase-beta\nA -- (x) --> B\n',
+    // L13
+    'usecase-beta\nA --first second--> B\n',
+    // L14
+    'usecase-beta\nA -- "`x y`" --> B\n',
+    // L15
+    'usecase-beta\nA -- "q, r" --> B\n',
+    // L16
+    'usecase-beta\nA -- 1.5px --> B\n',
+    // L17
+    'usecase-beta\nA <--  B\n',
+  ],
+  venn: [
+    'venn-beta\nset A\nstyleA fill:red',
+    'venn-beta\nset A\nstyle A fill:red\nstyleB fill:blue',
+    'venn-beta\ntitle foo bar\nset A\nset B\nunion A,B',
+    'venn-beta\nset A["Alpha"]\nset B[Beta]\nunion A,B[AB]',
+    'venn-beta\nset A:20\nset B:12\nunion A,B:3',
+    'venn-beta\ntitle foo bar\nset A["Alpha"]:20\nset B["Beta"]:12\nset C["Gamma"]:30\nunion A,B["AB"]:5.3\nunion C,A,B:1',
+    'venn-beta\nset A\n  text A1["foo bar"]\nset B\n  text B1["hello, world"]\nunion A,B\n  text AB1["shared note"]',
+    'venn-beta\nset A["Frontend"]\n  text A1\n  text A2\nset B["Backend"]\n  text B1\nunion A,B["APIs"]',
+    'venn-beta\nset A\nset B\nunion A,B\nstyle A fill:#ff6b6b',
+    'venn-beta\nset A\nset B\nunion A,B\nstyle A,B color:#333',
+    'venn-beta\nset A\n  text A1["React"]\nstyle A1 color:red',
+    'venn-beta\nset A\nset B\nunion A,B\nstyle A fill:#ff6b6b, color:#333',
+    'venn-beta\nset A\nset B\nstyle A fill:rgb(255, 0, 128)\nstyle B fill:rgba(255, 0, 128, 0.5)',
+    'venn-beta\nset A["Frontend"]:20\n  text A1["React"]\nset B["Backend"]:12\nunion A,B["Shared"]:3\n  text AB1["OpenAPI"]\nstyle A fill:#ff6b6b\nstyle A,B color:#333\nstyle A1 color:red',
+    'venn-beta\nset A,B',
+    'venn-beta\nunion A',
+    'venn-beta\nset Foo\nunion Foo,Buz',
+    'venn-beta\nset "Foo Bar"\nset Buz\nunion "Foo Bar",Buz',
+    'venn-beta\nset A:-5',
+    'venn-beta\nset A:0\nset B\nunion A,B',
+    'venn-beta\nset A:+3.5\nset B:.5\nset C:5.\nunion A,B:-0',
+    'venn-beta\nset A:1e3',
+    'venn-beta\nset A:9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
+    'venn-beta\nset A:-9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
+    'venn-beta\nset A\nset B\nunion A,B:9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
+    'venn-beta\nset A\nset B\nunion A,B:1.',
+    'venn-beta\nset A\nset B\nset C\nunion A,B,C',
+    'venn-beta\nset A\nset B\nunion A,B:01.50',
+    'venn-beta',
+    'venn-beta\n',
+    'venn-beta\nset A',
+    'venn-beta set A set B',
+    'venn-beta set A\nunion A,B',
+    'venn-beta\nset A set B\nunion A,B',
+    '',
+    '\n',
+    '  venn-beta\nset A',
+    'venn-betax\nset A',
+    'VENN-BETA\nset A',
+    'venn-beta\nSET A\nSET B\nUNION A,B',
+    'venn-beta\nset "2"\nset "10"\nset "a"\nunion "2","a"',
+    'venn-beta\nset my-set\nset B\nunion my-set,B',
+    'venn-beta\nset A\nset A\nset B\nset C\nunion A,A',
+    'venn-beta\nsetA',
+    'venn-beta\nsettings',
+    'venn-beta\nset A\nset B\nunionA,B',
+    'venn-beta\nset textbook',
+    'venn-beta\nset ""',
+    'venn-beta\nset " A "',
+    'venn-beta\nset "x\ny"',
+    'venn-beta\nset 2',
+    'venn-beta\nset #abc',
+    'venn-beta\nset A#',
+    'venn-beta\nset <b>A</b>',
+    'venn-beta\nset A;',
+    'venn-beta\nset A}%% c',
+    'venn-beta\n}%% c\nset A',
+    'venn-beta\nset é',
+    'venn-beta\nset Aé',
+    'venn-beta\nset A["  x  "]\nset B[ x ]\nset C[""]\nset D[ ]',
+    'venn-beta\nset A[]',
+    'venn-beta\nset A["a[b"]\nset B[a[b]',
+    'venn-beta\nset A[a"b]',
+    'venn-beta\nset A["a"b"]',
+    'venn-beta\nset A["<b>x</b> &amp; y"]\nset B["<script>x</script>y"]',
+    'venn-beta\nset A[multi\nline]',
+    'venn-beta\nset A["multi\nline"]',
+    'venn-beta\nset A[Set A label]:4',
+    'venn-beta\nset A ["x"]',
+    'venn-beta\nset A["x"] :4',
+    'venn-beta\nset A\ntext A "x"\ntext A,B 12',
+    'venn-beta\nset A\ntext A B',
+    'venn-beta\nset A\ntext A,C "Kept"',
+    'venn-beta\nset A\ntext A 12["x"]',
+    'venn-beta\nset A\ntext A B["x"]',
+    'venn-beta\nset A\ntext A "x" ["y"]',
+    'venn-beta\nset A\ntext A\n',
+    'venn-beta\nset A\ntext A,B "x"\n  text "y"',
+    'venn-beta\nset A\n  text "x"',
+    'venn-beta\n  text "x"',
+    'venn-beta\nset A\n  text A "x"',
+    'venn-beta\nset A\n  text 12',
+    'venn-beta\nset A\n  text 12["x"]',
+    'venn-beta\nset A\n  text\n',
+    'venn-beta\nset A\n  text-foo "x"',
+    'venn-beta\nset A\n  textual "x"',
+    'venn-beta\nset A\n  text "x" ["y"]',
+    'venn-beta\nset A\n  text A1["x"]',
+    'venn-beta\nset A\n\n  text B1',
+    'venn-beta\nset A\n  \n  text B1',
+    'venn-beta\nset A\n\ttext "x"',
+    'venn-beta\nset A\n%% c\n  text "x"',
+    'venn-beta\nset A\n  %% c\n  text "x"',
+    'venn-beta\nset A\nx%% c\n  text "y"',
+    'venn-beta\nset A\n  text B1\nset B\n  text B2\nunion A,B\n  text AB1',
+    'venn-beta\nset A\nstyle A fill:red\n  text "x"',
+    'venn-beta\nset A\nstyle A fill:red\ntext A "x"',
+    'venn-beta\nset A\ntitle foo\n  text "x"',
+    'venn-beta\nset A\n  text "x"\n  text "y"\n  text A1',
+    'venn-beta\nset A\nset B\n  text C1',
+    'venn-beta\nset A\n  text "q"["l"]',
+    'venn-beta\nset A\n  text "x"\nset A\n  text "y"',
+    'venn-beta\nset A\nstyle A fill:#ff0000 stroke-width:2',
+    'venn-beta\nset A\nstyle A fill:red,stroke-width:2',
+    'venn-beta\nset A\nstyle A color:"#ff0000"',
+    'venn-beta\nset A\nset B\nunion A,B\nstyle A fill:rgb(1,2,3),stroke:rgba(1,2,3,0.5)',
+    'venn-beta\nset A\nstyle A fill:red blue',
+    'venn-beta\nset A\nstyle A fill:1 2 3',
+    'venn-beta\nset A\nstyle A fill:,',
+    'venn-beta\nset A\nstyle A fill:',
+    'venn-beta\nset A\nstyle A',
+    'venn-beta\nset A\nstyle A fill:red,fill:blue',
+    'venn-beta\nset A\nstyle A __proto__:red,toString:x',
+    'venn-beta\nset A\nstyle A __proto__:red',
+    'venn-beta\nset A\nstyle A fill:""',
+    'venn-beta\nset A\nstyle A fill:"a  b"',
+    'venn-beta\nset A\nstyle A fill:"  a  "',
+    'venn-beta\nset A\nset B\nunion A,B\nstyle A,B,A fill:red',
+    'venn-beta\nset A\nstyle "A" fill:red',
+    'venn-beta\nset A\nstyle A fill:set',
+    'venn-beta\nset A\nstyle A fill:title',
+    'venn-beta\nset A\nstyle A fill:title x',
+    'venn-beta\nset A\nstyle A fill:rgb(1, 2, 3)',
+    'venn-beta\nset A\nstyle A fill:RGB(1,2,3)',
+    'venn-beta\nset A\nstyle A fill:rgba(1,2,3)',
+    'venn-beta\nset A\nstyle A fill:#abcdef12345',
+    'venn-beta\nset A\nstyle A fill:#ab',
+    'venn-beta\nset A\nstyle A fill:#abc',
+    'venn-beta\nset A\nstyle A fill:red;',
+    'venn-beta\nset A\nstyle A fill:#ff0000;',
+    'venn-beta\nset A\nstyle A:red',
+    'venn-beta\nset A\nstyle A fill red',
+    'venn-beta\ntitle  foo',
+    'venn-beta\ntitle\tfoo',
+    'venn-beta\nTITLE foo',
+    'venn-beta\ntitle foo#',
+    'venn-beta\ntitle foo;',
+    'venn-beta\ntitle\nset A',
+    'venn-beta\ntitle\r\nset A',
+    'venn-beta\ntitle foo %% c',
+    'venn-beta\ntitle <b>x</b> & y  ',
+    'venn-beta\ntitle <script>alert(1)</script>',
+    'venn-beta\ntitle <script>x</script>y',
+    'venn-beta\ntitle AT&T',
+    'venn-beta\ntitle #amp;',
+    'venn-beta\ntitle foo #quot; bar',
+    'venn-beta\ntitle foo #123; bar',
+    'venn-beta\ntitle  x',
+    'venn-beta\ntitle 😀',
+    'venn-beta\ntitle foo\ntitle bar',
+    'venn-beta\ntitle foo\nset A\ntitle',
+    'venn-beta\ntitle  x',
+    'venn-beta\ntitle foo bar\n',
+    'title foo\nvenn-beta\nset A',
+    '---\ntitle: fm title\n---\nvenn-beta\nset A',
+    '---\ntitle: fm title\n---\nvenn-beta\ntitle grammar\nset A',
+    '---\ntitle: <b>x</b>\n---\nvenn-beta\nset A',
+    '---\ntitle:\n---\nvenn-beta\nset A',
+    '%%{init: {"theme": "dark"}}%%\nvenn-beta\nset A',
+    '%% lead comment\nvenn-beta\n%% c\nset A\n%%{ x }%%\nset B',
+    'venn-beta\n%%{init: {"theme": "dark"}}%%\nset A',
+    'venn-beta\nset A\r\nset B\r\nunion A,B\r\n',
+    'venn-beta\r\nset A',
+    'venn-beta\n\n\nset A',
+    'venn-beta\n   \nset A',
+    'venn-beta\nset A\n\t\n',
+    'venn-beta %% c\nset A',
+    'venn-beta\n%% comment\nset A',
+    'venn-beta\n  %% comment\nset A',
+    'venn-beta\nset A %% c',
+    'venn-beta\nset A%% c',
+    'venn-beta\nset A\n%% c\nset B',
+    'venn-beta\nset A\n%%{ bad\nset B',
+    'venn-beta\nx%% c\nset A',
+    'venn-beta\n x%% c\nset A',
+    'venn-beta\nset A\n x%% c\n  text "y"',
+    'venn-beta\nset A\né%% c\n  text "y"',
+    'venn-beta\n😀%% c\nset A',
+    'venn-beta\n😀\nset A',
+    'venn-beta\nset "😀"\nset A["😀"]',
+    'venn-beta\nset A\n  text "😀"',
+    'venn-beta\nset A\nstyle A fill:red\n%% c\n  text "x"',
+    'venn-beta\nset A\n%% c\n%% d\n  text "x"',
+    'venn-beta\n%% c\n  %% d\nset A',
+    'venn-beta\nset A\n\n\n\n  text "x"',
+    'venn-beta\nset A\n  text "x"\n\t\n  text "y"',
+    'venn-beta\nset A\n  text "x"\n  %% c\n  text "y"',
+    'venn-beta\nset A\n\tset B',
+    'venn-beta\nset A\n  set B',
+    'venn-beta\nset A\n  union A,A',
+    'venn-beta\nset A\n  style A fill:red',
+    'venn-beta\nset A\n  title T',
+    'venn-beta\nset A\n  text "x"\n  @',
+    'venn-beta\nset A\n  ( x )',
+    'venn-beta\nset A{B}',
+    'venn-beta\nset A"B',
+    'venn-beta\nset A\n  text "x',
+    'venn-beta\nset [A]',
+    'venn-beta\nset A\n  text "x" x',
+    'venn-beta\nset A\nset B\nunion A,B\n  text "x"\n  text B\n  text "y" z',
+    '﻿venn-beta\nset A',
+    'venn-beta\n set A',
+    'venn-beta\nset Ä',
+    'venn-beta\ntitle x',
+    'venn-beta\ntitle\u000by',
+    'venn-beta\ntitle\fz',
+    'venn-beta\nset "2"\nset "10"\nunion "10","2"',
+    'venn-beta\nset "2"\nset "10"\nset "1"\nunion "2","10"',
+    'venn-beta\nset A\nset B\nunion A,B\n%%{ bad\n  text "x"',
+    'venn-beta\nset A\n%%{ bad\n  text "x"',
+    'venn-beta\nset A\n%%{init: {"x": 1}}%%\n  text "y"',
+    'venn-beta\n%%{ bad\nset A\n  text "x"',
+    'venn-beta\nset A\n  text "x"\n%%{ bad\n  text "y"',
+    'venn-beta\nset A\n}%% c\n  text "y"',
+    'venn-beta\nset A\n%%c\n  text "y"',
+    'venn-beta\nset A\n\n%% c\n  text "y"',
+    'venn-beta\nset A\nset B\n\n%% c\n  text "y"',
+    'venn-beta\nset A\n  text "x"\n%% c\ntext A "z"',
+    'venn-beta\nset A\n\tx%% c\n  text "y"',
+    'venn-beta\nset A\n  x%% c\n  text "y"',
+    'venn-beta\nset A\n  text "x"\n  x%% c\n  text "y"',
+    'venn-beta\nset A\ntext A "x"\n  text "y"',
+    'venn-beta\ntitle T   ',
+    'venn-beta\nunion A,B\nset A\nset B',
+    'venn-beta\nset A\nunion A,C',
+    'venn-beta\nset A\nset B\nunion A,B\n  text "x"\ntext B,A "y"',
+    'venn-beta\nset A\nstyle A fill:red,color:x,fill:blue',
+    'VENN-BETA\nSET A\nSET B\nUNION A,B',
+    'venn-beta\nset A["<b>x</b> &amp; y"]\nset B["#quot;"]',
+  ],
+  wardley: [
+    // The grammar's and the DB's quirks, probed on the reference (`docs-port/wardley/NOTES.md`,
+    // sections 2.5 and 3.5), and the features no fixture covers (section 7).
+    // cspell:ignore titlebar
+    'wardley-beta\ncomponent marketing [0.5, 0.5]\n',
+    'wardley-beta\ncomponent notes [0.5, 0.5]\n',
+    'wardley-beta\ncomponent 2fast [0.5, 0.5]\n',
+    'Wardley-Beta\ncomponent A [0.5, 0.5]\n',
+    'wardley-betax\ncomponent A [0.5, 0.5]\n',
+    'WARDLEY-BETA\ncomponent A [0.5, 0.5]\n',
+    'wardley-beta\ncomponent titlebar [0.2, 0.3]\n',
+    'wardley-beta\ncomponent Size [0.2, 0.3]\n',
+    'wardley-beta\ncomponent foo- [0.2, 0.3]\n',
+    'wardley-beta\ncomponent evolutionary [0.2, 0.3]\n',
+    'wardley-beta\ncomponent title [0.2, 0.3]\n',
+    'wardley-beta\ncomponent A [0.1, 0.1]\ncomponent B [0.2, 0.2]\nA .-. B\n',
+    'wardley-beta\ncomponent A [0.1, 0.1]\ncomponent B [0.2, 0.2]\nA -- B\n',
+    'wardley-beta\ncomponent A [0.1, 0.1]\ncomponent B [0.2, 0.2]\nA +> B ;\n',
+    'wardley-beta\ncomponent A [0.1, 0.1]\ncomponent B [0.2, 0.2]\nA +> B ; \n',
+    'wardley-beta\ncomponent A [0.1, 0.1]\ncomponent B [0.2, 0.2]\nA -> B ;  label; more  \n',
+    'wardley-beta\ncomponent A [0, 0.5]\n',
+    'wardley-beta\ncomponent A [1, 0.5]\n',
+    'wardley-beta\nsize [1200.5, 900]\n',
+    'wardley-beta\nsize [1200, 900]\nsize [300, 200]\n',
+    'wardley-beta\nevolution A@1 -> B\n',
+    'wardley-beta\nevolution A -> B\n',
+    'wardley-beta\nevolution A\n',
+    'wardley-beta\nevolution A@1.0 -> B@0.5 -> C\n',
+    'wardley-beta\ncomponent A [0.5,0.5] (inertia) (build)\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] (build) (inertia)\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] (build) label [1, 2]\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] inertia label [1, 2]\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] label [1, 2] (build) inertia\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] (inertia)\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] (build) (inertia)\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] (unknown)\n',
+    'wardley-beta\nannotations [1, 0]\nannotation 1,[1, 0] "x"\n',
+    'wardley-beta\ntitle One\ntitle Two\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ntitle \ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ntitle One\ntitle \ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ncomponent "A\\"B" [0.1, 0.2]\ncomponent \'Single\' [0.1, 0.2]\n',
+    'wardley-beta\ntitle 50%% done\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] %% comment\n',
+    'wardley-beta\ntitle %%x\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ncomponent A [0.2, 0.4] \n',
+    'wardley-beta component A [0.2, 0.4]\n',
+    'wardley-beta title Inline\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\r\ncomponent\tA [0.1, 0.2]\r\nA -> A',
+    'wardley-beta\rcomponent A [0.1, 0.2]\r',
+    'wardley-beta\naccTitle: My title\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\naccTitle:   spaced   title  \ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\naccDescr {\n  line one\n  line two\n}\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\naccDescr: one %% two\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\naccDescr {\n\n   a   b\n\n\n  c\n}\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\naccDescr { }\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\naccTitlex\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ncomponent accTitle [0.1, 0.2]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\n\n\n\n',
+    'wardley-beta\n',
+    'wardley-beta',
+    'wardley-beta\n\n\n  \n',
+    "wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA +'x'<> B\nA +< B\nA +> B\n",
+    'wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA -.-> B\nA --> B\nA > B\n',
+    "wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA +'a<b'> B\nA +'a<>b'> B\nA +'a<b'< B\n",
+    "wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA +'-.->'> B\nA +'.-.'> B\nA +'x'< B\n",
+    "wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA +''> B\nA +'x' B\nA +'x>B\n",
+    'wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA +<> B +>\nA +< B +<>\nA +>> B\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA -> B +<> ;a\nA -> B ;\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\n"A" -> \'B\'\nA-> B\nA ->B\nA->B\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA B\nA\nA -> \n',
+    'wardley-beta\ncomponent _x [0.1, 0.2]\ncomponent a-b_c [0.1, 0.2]\n_x -> a-b_c\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\n---\nfoo\n---\ncomponent B [0.3, 0.4]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\n---\nfoo\ncomponent B [0.3, 0.4]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\n-- B\n',
+    'wardley-beta\ncomponent D [0.3, 0.4]\ncomponent E [0.1, 0.1]\ncomponent D [0.5, 0.6]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] label [1, 2] (build) (inertia)\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\nanchor A [0.9, 0.9]\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n  component X [0.3]\n}\npipeline K {\n  component Y [0.6]\n}\n',
+    'wardley-beta\nX -> Y\n',
+    'wardley-beta\nevolve Nope 0.8\n',
+    'wardley-beta\nevolve A 0.8\ncomponent A [0.5, 0.5]\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n  component Queue [0.3]\n}\nQueue -> K\n',
+    'wardley-beta\npipeline Nope {\n  component X [0.3]\n}\n',
+    'wardley-beta\nannotations [0.10, 0.90]\nannotations [0.20, 0.30]\n',
+    'wardley-beta\ncomponent A [1.5, 1.0]\n',
+    'wardley-beta\ncomponent A [100.5, 100.5]\n',
+    'wardley-beta\ncomponent A [100.5, 0.5]\n',
+    'wardley-beta\ncomponent A [0.5, 100]\n',
+    'wardley-beta\ncomponent A [0.5, 0.5]\nevolve A 100.5\n',
+    "wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA +'a<b'> B\n",
+    "wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA +> B +< ;label\nA +'x'> B ;other\n",
+    "wardley-beta\ncomponent A [0.1, 0.2]\ncomponent B [0.1, 0.2]\nA +'a<>b'> B\n",
+    'wardley-beta\nanchor P [0.9, 0.9]\npipeline P {\n  component X [0.3]\n}\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n  component X [0.3] (build)\n}\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n  component X [0.3] inertia\n}\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K { component X [0.3]\n}\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n}\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n\n  component X [0.3]\n\n  component Y [0.4] label [-1, 2]\n\n}\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n  component X [0.3, 0.4]\n}\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n  component X [0.3]\n  }\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n  component X [0.3]\n}\nevolve K_X 0.7\nevolve X 0.4\n',
+    'wardley-beta\ncomponent Data Store [0.5, 0.5]\npipeline Data Store {\n  component real-time queue [0.3] label [-40, 20]\n  component batch-loader [0.7]\n}\n',
+    'wardley-beta\ncomponent K [0.5, 0.5]\npipeline K {\n  component X [0.3]\n}\npipeline K {\n  component Y [0.6]\n}\nY -> X\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] label [-1, -2]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] label [-0, -0]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] label [0, 5]\ncomponent A [0.3, 0.4] label [7, -8]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] label [1.5, 2]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] label [ - 1, 2]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] label [--1, 2]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] label [1,2]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] label [1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111, 0]\n',
+    'wardley-beta\nannotation 9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999,[0.1, 0.2] "x"\n',
+    'wardley-beta\nsize [9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999, 1]\n',
+    'wardley-beta\nevolution A@9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999.0 -> B\n',
+    'wardley-beta\nsize [0, 0]\n',
+    'wardley-beta\nsize [1, 2] label\n',
+    'wardley-beta\nannotations [0.1, 0.9]\nannotation 1,[0.6, 0.65] "Critical component"\nannotation 2,[0.5, 0.5] "Performance layer"\n',
+    'wardley-beta\nannotation 3,[0.2, 0.3] ""\n',
+    'wardley-beta\nannotation 3,[0.2, 0.3]\n',
+    'wardley-beta\nannotation 3 [0.2, 0.3] "x"\n',
+    'wardley-beta\nannotations [0.10, 0.90]\nannotation 1,[0.60, 0.65] "Critical component"\n',
+    'wardley-beta\nannotations [1, 0.5]\n',
+    'wardley-beta\nannotations [0.5]\n',
+    'wardley-beta\nnote "Critical decision point" [0.65, 0.55]\n',
+    'wardley-beta\nnote "" [0.1, 0.2]\n',
+    'wardley-beta\nnote "x" [1, 0]\n',
+    'wardley-beta\nnote "a <b>x</b> #35; &amp; \\"q\\"" [0.1, 0.2]\n',
+    'wardley-beta\naccelerator "Cloud Native" [0.20, 0.85]\ndeaccelerator "Legacy Data" [0.40, 0.35]\n',
+    'wardley-beta\naccelerator A [0.5, 0.6]\naccelerator "B" [0.2, 0.3]\n',
+    'wardley-beta\naccelerator A [1, 0.5]\n',
+    'wardley-beta\ndeaccelerator A [0.5, 0.6] extra\n',
+    'wardley-beta\ncomponent "R&amp;D" [0.1, 0.2]\n',
+    'wardley-beta\ncomponent "Cost #35; here" [0.1, 0.2]\n',
+    'wardley-beta\ncomponent "A\'B" [0.1, 0.2]\n',
+    'wardley-beta\ncomponent real-time processing [0.5, 0.5]\ncomponent end-user [0.8, 0.9]\nreal-time processing -> end-user\n',
+    'wardley-beta\ncomponent Café [0.1, 0.2]\n',
+    'wardley-beta\ncomponent A_1 [0.1, 0.2]\ncomponent A_1-x [0.2, 0.3]\n',
+    'wardley-beta\ncomponent "" [0.1, 0.2]\n',
+    'wardley-beta\ncomponent "Mobile App" [0.2, 0.4] (build) (inertia)\ncomponent API [0.3, 0.5]\n"Mobile App" +<> API; constraint\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ncomponent A (build) [0.1, 0.2]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2](build)\n',
+    'wardley-beta\ncomponent A [0.1,0.2]\n',
+    'wardley-beta\ncomponent A[0.1, 0.2]\n',
+    'wardley-beta\ncomponent A\t[0.1,\t0.2]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\nevolve A 0.5 extra\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\nevolve A\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\nevolve A .5\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\nevolve A 0.5\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\nevolution A -> B\nevolution X -> Y -> Z\n',
+    'wardley-beta\nevolution A / "" -> B / C\n',
+    'wardley-beta\nevolution "Genesis Stage" -> B / "C d" -> D@0.5 / E\n',
+    'wardley-beta\nevolution A@0.3 -> B -> C@0.6\n',
+    'wardley-beta\nevolution A / B -> C / \n',
+    'wardley-beta\nevolution A -> B -> C -> D\nsize [800, 600]\ncomponent X [0.5, 0.5]\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] (market)\ncomponent B [0.5, 0.5] (outsource)\ncomponent C [0.5, 0.5] (buy)\ncomponent D [0.5, 0.5] (build)\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] (Build)\n',
+    'wardley-beta\ncomponent A [0.5, 0.5] (builds)\n',
+    '---\ntitle: From front matter\n---\nwardley-beta\ncomponent A [0.1, 0.2]\n',
+    '---\ntitle: From front matter\n---\nwardley-beta\ntitle Grammar\ncomponent A [0.1, 0.2]\n',
+    '---\ntitle: From front matter\n---\nwardley-beta\ntitle Grammar\ntitle \ncomponent A [0.1, 0.2]\n',
+    '---\ntitle: \n---\nwardley-beta\ncomponent A [0.1, 0.2]\n',
+    '---\nconfig:\n  theme: forest\n---\nwardley-beta\ncomponent A [0.1, 0.2]\n',
+    '%%{init: {"theme": "forest"}}%%\nwardley-beta\ncomponent A [0.1, 0.2]\n',
+    '%% a comment\nwardley-beta\n%% another\ncomponent A [0.1, 0.2]\n',
+    '%%{init: {"theme": "forest"}}%%\n%% a comment\nwardley-beta\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ntitle <b>x</b> & y\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ntitle   wide   title\n',
+    'wardley-beta\naccTitle: <script>x</script>T\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\naccDescr: a<b>\n   line\ncomponent A [0.1, 0.2]\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\nnote "x" [0.1, 0.2]\nannotations [0.1, 0.2]\nannotation 1,[0.1, 0.2] "y"\naccelerator A [0.1, 0.2]\ndeaccelerator B [0.3, 0.4]\nevolve A 0.9\n',
+    'wardley-beta\ncomponent A [0.1, 0.2] (build)\n\n\nevolve A 0.9\n',
+    'wardley-beta\ncomponent A [0.1, 0.2]\nA -> A\n',
+    'wardley-beta\nanchor "x" [0.1, 0.2]\nanchor on-call engineer [0.9, 0.95]\n',
+    'wardley-beta\nanchor "x" [0.1, 0.2] (build)\n',
+  ],
   class: [
     // An anchor with a `target` in a label: the hooks of `sanitizeText` reach it.
     "classDiagram\nclass Animal[\"<a target='_blank' href='x'>an</a>\"]",

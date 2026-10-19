@@ -1,0 +1,205 @@
+{
+ "name": "fixture-nightly-check-5-should-render-a-venn-diagram-with-labels",
+ "group": "fixture",
+ "source": "e2e/diagrams/venn/nightly-check/5-should-render-a-venn-diagram-with-labels.mmd",
+ "description": "A fixture of e2e/diagrams/venn, as the renderer lays it out.",
+ "text": "---\ndescription: >-\n  Two-set venn where each set and the union has a custom display label\n  distinct from its id (`Frontend[\"Frontend\"]`, union labeled \"Fullstack\"),\n  plus a diagram title — tests custom label text separate from plain-id\n  rendering.\n---\nvenn-beta\n  title Team Skills\n  set Frontend[\"Frontend\"]\n  set Backend[\"Backend\"]\n  union Frontend, Backend[\"Fullstack\"]\n",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Frontend"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend",
+     "Frontend"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 800,
+  "height": 426,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Frontend"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend",
+     "Frontend"
+    ],
+    "size": 2.5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Frontend",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Backend",
+    "x": 2.264783545440907,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Frontend",
+    "x": 5.498513452953555e-7,
+    "y": 0.00013953217746820302,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Backend",
+    "x": 2.2647840953300813,
+    "y": 0.00013565956226830895,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Frontend",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Backend",
+    "x": 2.2647835454820466,
+    "y": -1.6010616769000785e-17,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "Frontend",
+    "x": 274.32849039325265,
+    "y": 213,
+    "radius": 198
+   },
+   {
+    "id": "Backend",
+    "x": 525.6715096067473,
+    "y": 213,
+    "radius": 198
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Frontend",
+    "x": 202,
+    "y": 213.00000069309303,
+    "disjoint": false
+   },
+   {
+    "key": "Backend",
+    "x": 598,
+    "y": 213.00000057599505,
+    "disjoint": false
+   },
+   {
+    "key": "Backend,Frontend",
+    "x": 400,
+    "y": 212.99999945372903,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Frontend"
+   ],
+   "text": {
+    "x": 195.00000000000003,
+    "y": 213.00000159390123,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Frontend",
+     "x": 269.88555823543834,
+     "y": 213,
+     "radius": 205
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend"
+   ],
+   "text": {
+    "x": 605,
+    "y": 213.00000075974793,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 530.1144417645617,
+     "y": 213,
+     "radius": 205
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend",
+    "Frontend"
+   ],
+   "text": {
+    "x": 400,
+    "y": 213.00000083382338,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 530.1144417645617,
+     "y": 213,
+     "radius": 205
+    },
+    {
+     "set": "Frontend",
+     "x": 269.88555823543834,
+     "y": 213,
+     "radius": 205
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

@@ -93,6 +93,7 @@ fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
                 .transpose()?,
             now: None,
             git_graph_seed: None,
+            random_seed: None,
         },
         None => RenderOptions::default(),
     })

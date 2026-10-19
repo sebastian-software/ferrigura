@@ -1,0 +1,77 @@
+{
+ "name": "probe-proto-set-name",
+ "group": "probe",
+ "source": "probe: proto-set-name",
+ "description": "A set named __proto__: the port refuses it (Error::ReservedName).",
+ "text": "venn-beta\n  set __proto__:8\n  set B:6\n  union __proto__, B:2",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "__proto__"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 6
+   },
+   {
+    "sets": [
+     "B",
+     "__proto__"
+    ],
+    "size": 2
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "__proto__"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 6
+   },
+   {
+    "sets": [
+     "B",
+     "__proto__"
+    ],
+    "size": 2
+   }
+  ],
+  "greedy": [
+   {
+    "id": "B",
+    "x": 0,
+    "y": 0,
+    "radius": 1.381976597885342
+   }
+  ],
+  "constrained": null
+ },
+ "chart": null,
+ "layout": null,
+ "errors": {
+  "chart": "Cannot read properties of undefined (reading 'radius')",
+  "layout": "Cannot read properties of undefined (reading 'radius')"
+ }
+}

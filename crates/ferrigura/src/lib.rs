@@ -23,6 +23,7 @@ use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
+use ferrigura_render::agentflow::AgentflowSection;
 use ferrigura_render::block::BlockSection;
 use ferrigura_render::context::{Context, Globals, ThemeView};
 use ferrigura_render::flowchart;
@@ -30,20 +31,24 @@ use ferrigura_render::kanban::KanbanSections;
 use ferrigura_render::mindmap::MindmapSection;
 use ferrigura_render::pie::render as render_pie;
 use ferrigura_render::unified::Section;
+use ferrigura_render::use_case::UseCaseSection;
 use ferrigura_render::{
-    architecture as architecture_render, block as block_render, c4 as c4_render,
-    class as class_render, er as er_render, event_modeling as event_modeling_render,
-    gantt as gantt_render, git_graph as git_graph_render, info as info_render,
-    ishikawa as ishikawa_render, journey as journey_render, kanban as kanban_render,
-    mindmap as mindmap_render, packet as packet_render, quadrant_chart as quadrant_chart_render,
+    agentflow as agentflow_render, architecture as architecture_render, block as block_render,
+    c4 as c4_render, class as class_render, cynefin as cynefin_render, er as er_render,
+    event_modeling as event_modeling_render, gantt as gantt_render, git_graph as git_graph_render,
+    info as info_render, ishikawa as ishikawa_render, journey as journey_render,
+    kanban as kanban_render, mindmap as mindmap_render, packet as packet_render,
+    quadrant_chart as quadrant_chart_render, radar as radar_render, railroad as railroad_render,
     requirement as requirement_render, sankey as sankey_render, sequence as sequence_render,
-    state as state_render, timeline as timeline_render, treemap as treemap_render,
-    xychart as xychart_render,
+    state as state_render, swimlanes as swimlanes_render, timeline as timeline_render,
+    tree_view as tree_view_render, treemap as treemap_render, use_case as use_case_render,
+    venn as venn_render, wardley as wardley_render, xychart as xychart_render,
 };
 use ferrigura_syntax::{
-    DiagramType, ParseError, architecture, block, c4, class, config, detect, er, event_modeling,
-    gantt, git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie, quadrant_chart,
-    requirement, sankey, sequence, state, timeline, treemap, xychart,
+    DiagramType, ParseError, agentflow, architecture, block, c4, class, config, cynefin, detect,
+    er, event_modeling, gantt, git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie,
+    quadrant_chart, radar, railroad, requirement, sankey, sequence, state, swimlanes, timeline,
+    tree_view, treemap, use_case, venn, wardley, xychart,
 };
 
 pub use ferrigura_render::RenderError as Error;
@@ -80,6 +85,12 @@ pub struct RenderOptions {
     /// reference's seed, so that the ids match the reference's; it is not part of the interface.
     #[doc(hidden)]
     pub git_graph_seed: Option<u32>,
+    /// The seed of the random numbers a venn layout draws when it has eight areas or more (the
+    /// reference draws them from `Math.random`). `None` gives the venn renderer's default seed. The
+    /// geometry harness gives the reference's seed, so that the draws match; it is not part of the
+    /// interface.
+    #[doc(hidden)]
+    pub random_seed: Option<u32>,
 }
 
 /// A renderer, with the site configuration resolved once.
@@ -367,6 +378,81 @@ impl Renderer {
             DiagramType::EventModeling => event_modeling_render::render(&Context {
                 diagram: &event_modeling::parse(text)?,
                 section: &typed_config.eventmodeling,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Agentflow => agentflow_render::render(&Context {
+                diagram: &agentflow::parse(text)?,
+                section: &AgentflowSection {
+                    agentflow: &typed_config.agentflow,
+                    unified: section,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Cynefin => cynefin_render::render(&Context {
+                diagram: &cynefin::parse(text)?,
+                section: &typed_config.cynefin,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Radar => radar_render::render(&Context {
+                diagram: &radar::parse(text)?,
+                section: &typed_config.radar,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Railroad => railroad_render::render(&Context {
+                diagram: &railroad::parse(text)?,
+                section: &railroad_render::RailroadSection {
+                    config: &typed_config.railroad,
+                    detector: railroad::detector_id(text),
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Swimlanes => swimlanes_render::render(&Context {
+                diagram: &swimlanes::parse(text)?,
+                section: &typed_config.swimlane,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::TreeView => tree_view_render::render(&Context {
+                diagram: &tree_view::parse(text)?,
+                section: &typed_config.tree_view,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::UseCase => use_case_render::render(&Context {
+                diagram: &use_case::parse(text)?,
+                section: &UseCaseSection {
+                    usecase: &typed_config.usecase,
+                    unified: section,
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Venn => venn_render::render(&Context {
+                diagram: &venn::parse(text)?,
+                section: &venn_render::VennSection {
+                    config: &typed_config.venn,
+                    seed: options.random_seed.unwrap_or(venn_render::DEFAULT_SEED),
+                },
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Wardley => wardley_render::render(&Context {
+                diagram: &wardley::parse(text)?,
+                section: &typed_config.wardley_beta,
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,

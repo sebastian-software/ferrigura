@@ -1,0 +1,244 @@
+{
+ "name": "generated-222-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 222, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set Rust:50\n  set Go-lang:2\n  union Rust, Go-lang:1.37\n  union Go-lang, Rust:2",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 50
+   },
+   {
+    "sets": [
+     "Go-lang"
+    ],
+    "size": 2
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 1.37
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 2
+   }
+  ],
+  "width": 640,
+  "height": 360,
+  "chartPadding": 15,
+  "layoutPadding": 15
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 50
+   },
+   {
+    "sets": [
+     "Go-lang"
+    ],
+    "size": 2
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 1.37
+   },
+   {
+    "sets": [
+     "Go-lang",
+     "Rust"
+    ],
+    "size": 2
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 3.989422804014327
+   },
+   {
+    "id": "Go-lang",
+    "x": 3.7292174053286087,
+    "y": 0,
+    "radius": 0.7978845608028654
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Rust",
+    "x": 0.0012478020534156683,
+    "y": 0.00045543730465162727,
+    "radius": 3.989422804014327
+   },
+   {
+    "id": "Go-lang",
+    "x": 3.516581758190718,
+    "y": 0.0000697203828732558,
+    "radius": 0.7978845608028654
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 3.989422804014327
+   },
+   {
+    "id": "Go-lang",
+    "x": 3.5153339772985275,
+    "y": 7.551468131361538e-17,
+    "radius": 0.7978845608028654
+   }
+  ],
+  "circles": [
+   {
+    "id": "Rust",
+    "x": 313.3040067762928,
+    "y": 180,
+    "radius": 165
+   },
+   {
+    "id": "Go-lang",
+    "x": 458.6959932237072,
+    "y": 180,
+    "radius": 33
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Rust",
+    "x": 287,
+    "y": 179.99999859293425,
+    "disjoint": false
+   },
+   {
+    "key": "Go-lang",
+    "x": 485,
+    "y": 180.0000001573793,
+    "disjoint": false
+   },
+   {
+    "key": "Go-lang,Rust",
+    "x": 452,
+    "y": 179.9999999194323,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Rust"
+   ],
+   "text": {
+    "x": 287,
+    "y": 179.99999859293425,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 313.3040067762928,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Go-lang"
+   ],
+   "text": {
+    "x": 485,
+    "y": 180.0000001573793,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Go-lang",
+     "x": 458.6959932237072,
+     "y": 180,
+     "radius": 33
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Go-lang",
+    "Rust"
+   ],
+   "text": {
+    "x": 452,
+    "y": 179.9999999194323,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Go-lang",
+     "x": 458.6959932237072,
+     "y": 180,
+     "radius": 33
+    },
+    {
+     "set": "Rust",
+     "x": 313.3040067762928,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Go-lang",
+    "Rust"
+   ],
+   "text": {
+    "x": 452,
+    "y": 179.9999999194323,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Go-lang",
+     "x": 458.6959932237072,
+     "y": 180,
+     "radius": 33
+    },
+    {
+     "set": "Rust",
+     "x": 313.3040067762928,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

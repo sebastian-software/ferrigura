@@ -1,0 +1,205 @@
+{
+ "name": "fixture-nightly-check-12-should-render-a-two-set-venn-with-asymmetric-sizes",
+ "group": "fixture",
+ "source": "e2e/diagrams/venn/nightly-check/12-should-render-a-two-set-venn-with-asymmetric-sizes.mmd",
+ "description": "A fixture of e2e/diagrams/venn, as the renderer lays it out.",
+ "text": "---\ndescription: >-\n  Two-set venn with explicit, markedly unequal sizes (A:30, B:10, overlap:5)\n  — tests that circle sizing scales proportionally for an asymmetric size\n  ratio rather than only equal-sized sets.\n---\nvenn-beta\n  set A:30\n  set B:10\n  union A, B:5\n",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 30
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "A",
+     "B"
+    ],
+    "size": 5
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 30
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "A",
+     "B"
+    ],
+    "size": 5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 3.0901936161855166
+   },
+   {
+    "id": "B",
+    "x": 2.911481957000308,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "A",
+    "x": 5.789650097726493e-7,
+    "y": 0.0001625794883611348,
+    "radius": 3.0901936161855166
+   },
+   {
+    "id": "B",
+    "x": 2.9114825358868157,
+    "y": 0.00016324060645444416,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 3.0901936161855166
+   },
+   {
+    "id": "B",
+    "x": 2.911481956921881,
+    "y": 4.986422609388574e-16,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "A",
+    "x": 345.4505675338761,
+    "y": 225,
+    "radius": 210.00000000000003
+   },
+   {
+    "id": "B",
+    "x": 543.3058759363025,
+    "y": 225.00000000000003,
+    "radius": 121.24355652982143
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "A",
+    "x": 278.75644347017874,
+    "y": 225.0000058477881,
+    "disjoint": false
+   },
+   {
+    "key": "B",
+    "x": 610,
+    "y": 225.00000287502644,
+    "disjoint": false
+   },
+   {
+    "key": "A,B",
+    "x": 488.7564434701786,
+    "y": 225.00000091435146,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "A"
+   ],
+   "text": {
+    "x": 274.7149915858513,
+    "y": 224.99999656484164,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "A",
+     "x": 343.6322531183386,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B"
+   ],
+   "text": {
+    "x": 617,
+    "y": 224.99999801820655,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 548.0827384675126,
+     "y": 225.00000000000003,
+     "radius": 125.28500841414879
+    }
+   ]
+  },
+  {
+   "sets": [
+    "A",
+    "B"
+   ],
+   "text": {
+    "x": 491.71499158585124,
+    "y": 224.9999985007731,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "A",
+     "x": 343.6322531183386,
+     "y": 225,
+     "radius": 217
+    },
+    {
+     "set": "B",
+     "x": 548.0827384675126,
+     "y": 225.00000000000003,
+     "radius": 125.28500841414879
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

@@ -1,0 +1,244 @@
+{
+ "name": "generated-164-mixed",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 164, 2 sets, mixed ids",
+ "description": "A generated set system (mixed ids, 2 sets).",
+ "text": "venn-beta\n  set Python:1\n  set TypeScript:20\n  union Python, TypeScript:0.02\n  union TypeScript, Python:1",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 20
+   },
+   {
+    "sets": [
+     "Python",
+     "TypeScript"
+    ],
+    "size": 0.02
+   },
+   {
+    "sets": [
+     "Python",
+     "TypeScript"
+    ],
+    "size": 1
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 20
+   },
+   {
+    "sets": [
+     "Python",
+     "TypeScript"
+    ],
+    "size": 0.02
+   },
+   {
+    "sets": [
+     "Python",
+     "TypeScript"
+    ],
+    "size": 1
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Python",
+    "x": 0,
+    "y": 0,
+    "radius": 0.5641895835477563
+   },
+   {
+    "id": "TypeScript",
+    "x": 3.0243510105249776,
+    "y": 0,
+    "radius": 2.5231325220201604
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Python",
+    "x": 0.002478548833109775,
+    "y": 0.0012055549734630365,
+    "radius": 0.5641895835477563
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.4955675229233427,
+    "y": 0.00023015172243934725,
+    "radius": 2.5231325220201604
+   }
+  ],
+  "normalized": [
+   {
+    "id": "TypeScript",
+    "x": 0,
+    "y": "-0",
+    "radius": 2.5231325220201604
+   },
+   {
+    "id": "Python",
+    "x": 2.493089164900003,
+    "y": 2.907830226606123e-16,
+    "radius": 0.5641895835477563
+   }
+  ],
+  "circles": [
+   {
+    "id": "TypeScript",
+    "x": 377.7715386388057,
+    "y": 225,
+    "radius": 210
+   },
+   {
+    "id": "Python",
+    "x": 585.2710338336988,
+    "y": 225.00000000000006,
+    "radius": 46.95742752749558
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Python",
+    "x": 610,
+    "y": 224.99999897193987,
+    "disjoint": false
+   },
+   {
+    "key": "TypeScript",
+    "x": 353.04257247250445,
+    "y": 224.99999916342375,
+    "disjoint": false
+   },
+   {
+    "key": "Python,TypeScript",
+    "x": 563.0425724725044,
+    "y": 225.00000008314393,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Python"
+   ],
+   "text": {
+    "x": 617,
+    "y": 224.99999982596478,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 591.4467349614887,
+     "y": 225.00000000000003,
+     "radius": 48.522675111745436
+    }
+   ]
+  },
+  {
+   "sets": [
+    "TypeScript"
+   ],
+   "text": {
+    "x": 351.47732488825454,
+    "y": 224.9999996193276,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "TypeScript",
+     "x": 377.03058992676586,
+     "y": 225,
+     "radius": 217.00000000000003
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 568.4773248882545,
+    "y": 225.00000026786967,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 591.4467349614887,
+     "y": 225.00000000000003,
+     "radius": 48.522675111745436
+    },
+    {
+     "set": "TypeScript",
+     "x": 377.03058992676586,
+     "y": 225,
+     "radius": 217.00000000000003
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 568.4773248882545,
+    "y": 225.00000026786967,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 591.4467349614887,
+     "y": 225.00000000000003,
+     "radius": 48.522675111745436
+    },
+    {
+     "set": "TypeScript",
+     "x": 377.03058992676586,
+     "y": 225,
+     "radius": 217.00000000000003
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

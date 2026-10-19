@@ -5,7 +5,7 @@
  * difference is reported with both results. A type without an exporter is not ported yet: the run
  * says so and ends without a difference.
  *
- * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme>`
+ * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | agentflow | cynefin | radar | railroad | swimlanes | treeView | usecase | venn | wardley | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme>`
  */
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -30,6 +30,19 @@ const p2Types = [
   'treemap',
   'ishikawa',
   'eventmodeling',
+];
+
+/** The P3 types: each one's parser task writes its exporter, and until then its inputs are only collected. */
+const p3Types = [
+  'agentflow',
+  'cynefin',
+  'radar',
+  'railroad',
+  'swimlanes',
+  'treeView',
+  'usecase',
+  'venn',
+  'wardley',
 ];
 
 const type = process.argv[2];
@@ -64,12 +77,26 @@ if (
   type !== 'state' &&
   type !== 'gantt' &&
   type !== 'kanban' &&
-  !p2Types.includes(type)
+  !p2Types.includes(type) &&
+  !p3Types.includes(type)
 ) {
   console.error(
-    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme'
+    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | agentflow | cynefin | radar | railroad | swimlanes | treeView | usecase | venn | wardley | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme'
   );
   process.exit(2);
+}
+// A P3 type has no exporter until its parser task writes one. Its inputs are still collected, so
+// the run shows how many inputs the parser task will have to reach, all as not yet ported.
+if (
+  p3Types.includes(type) &&
+  !existsSync(fileURLToPath(new URL(`./export-${type}.ts`, import.meta.url)))
+) {
+  const collected = await collectInputs(type);
+  console.log(
+    `${type}: ${collected.length} inputs, ${collected.length} not yet ported: the parser and the ` +
+      `exporter tools/port/export-${type}.ts do not exist, so the reference is not run on them`
+  );
+  process.exit(0);
 }
 if (!existsSync(fileURLToPath(new URL(`./export-${type}.ts`, import.meta.url)))) {
   console.log(
