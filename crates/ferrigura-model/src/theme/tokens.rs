@@ -11,7 +11,7 @@
 //! (`packages/mermaid/src/themes/theme-redux-color.js` and `theme-redux-dark-color.js`) and the names
 //! that the renderers read, including the names built at run time. The indexed names (`pie1` to
 //! `pie12`, `cScale0` to `cScale11`, `fillType0` to `fillType7`, and the others the themes number)
-//! are [`Family`]s, read by index. The groups `xyChart` and `packet` are structs of their own. A name
+//! are [`Family`]s, read by index. The groups `xyChart`, `packet` and `treeView` are structs of their own. A name
 //! that only a user's overrides set, and that no renderer reads, is not a token: the map keeps it,
 //! and nothing reads it.
 
@@ -298,6 +298,21 @@ token_struct! {
 }
 
 token_struct! {
+    /// The `treeView` group of the theme variables: the styles of the tree view (`styles.ts`, the
+    /// defaults of `defaultTreeViewDiagramStyles`), which a user's overrides may set. No shipped
+    /// theme sets the group.
+    pub struct TreeViewTokens {
+        label_font_size = "labelFontSize": token,
+        label_color = "labelColor": token,
+        line_color = "lineColor": token,
+        icon_color = "iconColor": token,
+        description_color = "descriptionColor": token,
+        highlight_bg = "highlightBg": token,
+        highlight_stroke = "highlightStroke": token,
+    }
+}
+
+token_struct! {
     /// The theme variables as typed tokens: one field per variable of the redux themes and of the
     /// renderers. Built once per resolved theme with [`ThemeTokens::from_value`].
     pub struct ThemeTokens {
@@ -491,6 +506,9 @@ token_struct! {
         packet = "packet": group(PacketTokens),
         row_even = "rowEven": token,
         row_odd = "rowOdd": token,
+
+        // The tree view's group (P3, `treeView`): a block of its own, at the end of the list.
+        tree_view = "treeView": group(TreeViewTokens),
     }
 }
 

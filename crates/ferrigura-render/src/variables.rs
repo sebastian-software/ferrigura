@@ -136,6 +136,24 @@ mod tests {
             }
             None => assert!(packet.is_none()),
         }
+
+        // The tree view group: an object, read by name like the XY chart's, or nothing for any other value.
+        match map.get("treeView") {
+            Some(tree_view) if tree_view.is_object() => {
+                let group = tokens.tree_view.as_ref().expect("an object is the group");
+                for (name, token) in group.entries() {
+                    assert_token(tree_view, &name, token);
+                }
+            }
+            other => {
+                assert!(tokens.tree_view.is_none());
+                if let Some(tree_view) = other {
+                    for name in ferrigura_model::theme::tokens::TreeViewTokens::NAMES {
+                        assert_eq!(text_of(tree_view, name), None);
+                    }
+                }
+            }
+        }
     }
 
     /// A small deterministic generator, so that the generated maps are the same on every run.
@@ -232,6 +250,11 @@ mod tests {
                 .iter()
                 .map(|name| (*name).to_owned()),
         );
+        names.extend(
+            ferrigura_model::theme::tokens::TreeViewTokens::NAMES
+                .iter()
+                .map(|name| (*name).to_owned()),
+        );
         for prefix in [
             "pie",
             "venn",
@@ -251,7 +274,17 @@ mod tests {
             names.push(prefix.to_owned());
             names.push(format!("{prefix}01"));
         }
-        names.extend(["cScale15", "pie13", "fillType9", "xyChart", "packet"].map(str::to_owned));
+        names.extend(
+            [
+                "cScale15",
+                "pie13",
+                "fillType9",
+                "xyChart",
+                "packet",
+                "treeView",
+            ]
+            .map(str::to_owned),
+        );
         names
     }
 
