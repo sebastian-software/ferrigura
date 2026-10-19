@@ -115,12 +115,6 @@ fn keeps_a_self_loop_alongside_a_normal_edge() {
 }
 
 #[test]
-#[ignore = "renderer: getData's redirect of a collapsed container's edges (issue #53) is not ported"]
-fn still_drops_collapse_induced_self_loops_issue_53_invariant() {
-    panic!("renderer: getData's redirect of a collapsed container's edges is not ported");
-}
-
-#[test]
 fn parses_a_flow_with_a_quoted_label() {
     let diagram = parses(
         r#"agentflow-beta TB
@@ -159,12 +153,6 @@ fn parses_nested_flows() {
     assert!(diagram.sub_graphs.len() >= 2);
     assert!(sub_graph(&diagram, "inner").is_some());
     assert!(sub_graph(&diagram, "outer").is_some());
-}
-
-#[test]
-#[ignore = "renderer: the group flag (isGroup) is getData's layout data, which is not ported"]
-fn exposes_flow_as_the_container_type_in_layout_data() {
-    panic!("renderer: the group flag (isGroup) is getData's layout data, which is not ported");
 }
 
 #[test]
