@@ -32,6 +32,17 @@ impl Syntax {
             Self::Peg => "railroad-peg-beta",
         }
     }
+
+    /// The id of the reference's detector for the syntax (`railroadDetector.ts` and the three
+    /// siblings, `railroadDiagram.ts` keys). The renderer names the SVG with it.
+    pub(crate) fn detector_id(self) -> &'static str {
+        match self {
+            Self::Ir => "railroad",
+            Self::Ebnf => "railroadEbnf",
+            Self::Abnf => "railroadAbnf",
+            Self::Peg => "railroadPeg",
+        }
+    }
 }
 
 /// The word keywords of the IR grammar, which call the expression forms.

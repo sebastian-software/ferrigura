@@ -397,7 +397,10 @@ impl Renderer {
             }),
             DiagramType::Railroad => railroad_render::render(&Context {
                 diagram: &railroad::parse(text)?,
-                section: &typed_config.railroad,
+                section: &railroad_render::RailroadSection {
+                    config: &typed_config.railroad,
+                    detector: railroad::detector_id(text),
+                },
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,
