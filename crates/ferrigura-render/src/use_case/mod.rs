@@ -106,13 +106,15 @@ pub fn render(
         .px()
         .unwrap_or(DEFAULT_FONT_SIZE);
     let rotate = input.section.usecase.color_scheme == "rotate";
+    // Under `colorScheme: auto` the dark set of the rules follows the light set, under the media query.
+    let rules = style::scheme_rules(id, input.theme, input.globals, rotate);
     let style = crate::common::style::base_style_sheet(
         id,
         input.theme,
         &font_family,
         &format!("{}px", number(font_size)),
         &families,
-        &style::own_rules(id, input.theme.light, input.globals, rotate),
+        &rules,
     );
 
     // `setupViewPortForSVG` (`usecaseRenderer.ts` 293): the drawn box with `diagramPadding` around it, and the

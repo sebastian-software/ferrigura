@@ -5,9 +5,8 @@
 //!
 //! A theme colour is written `var(--name, value)`. `name` is the custom property of the token, or of the
 //! palette slot (`borderColor<i>` and `bkgColor<i>`, as the flowchart and the ER name theirs), and `value`
-//! is what this scheme gives it. The base sheet declares only `textColor`, `lineColor`, `nodeBorder`,
-//! `errorBkgColor` and `errorTextColor` on the id, so those follow a dark scheme; the others use their
-//! value until a caller declares them per scheme, as `flowchart/style.rs` does for its own colours.
+//! is what the scheme gives it. Under `colorScheme: auto` the rules of the dark set follow the light ones in
+//! a media query, each colour resolved against its own scheme ([`scheme_rules`]).
 //!
 //! The `isHandDrawn ? '' : ...` splits of the reference are not ported. The handDrawn look is out of scope
 //! for ferrigura (the harness excludes fixtures with it), so the text the reference keeps for the other
@@ -15,8 +14,25 @@
 
 use ferrigura_model::theme::{ThemeTokens, Token};
 
-use crate::context::Globals;
+use crate::context::{Globals, ThemeView};
 use crate::unified::palette::{Palette, palette};
+
+/// The rules of the diagram for the colour schemes of `theme`. Under `colorScheme: auto` the rules of the
+/// dark set come after the light ones, inside `@media (prefers-color-scheme: dark)`, and each colour of them is
+/// resolved against the dark tokens. The rules are not made of custom properties, because a fallback chain
+/// (`usecaseActorBkg`, then `actorBkg`, then `mainBkg`) resolves per scheme: a property the light set declares
+/// would reach the dark set where the dark theme has no value for it.
+#[must_use]
+pub fn scheme_rules(id: &str, theme: ThemeView<'_>, globals: &Globals, rotate: bool) -> String {
+    let light = own_rules(id, theme.light, globals, rotate);
+    match theme.dark {
+        None => light,
+        Some(dark) => format!(
+            "{light}@media (prefers-color-scheme: dark){{{}}}",
+            own_rules(id, dark, globals, rotate)
+        ),
+    }
+}
 
 /// The rules of the use case diagram, to append to the base style sheet of the diagram. `rotate` is the
 /// reference's `usecase.colorScheme === 'rotate'`: actors and use cases take a palette slot only then,
@@ -700,5 +716,74 @@ mod tests {
         assert!(!css.contains("fill:var("), "{css}");
         assert!(!css.contains("stroke:var("), "{css}");
         assert!(css.contains("#usecase-test .usecase-actor-shape,"), "{css}");
+    }
+}
+
+#[cfg(test)]
+mod scheme_tests {
+    use ferrigura_model::theme::ThemeTokens;
+    use ferrigura_model::value::Value;
+
+    use super::{own_rules, scheme_rules};
+    use crate::context::{Globals, ThemeView};
+
+    fn tokens(map: serde_json::Value) -> ThemeTokens {
+        ThemeTokens::from_value(&Value::from(map))
+    }
+
+    fn globals() -> Globals {
+        Globals::of(&ferrigura_model::config::MermaidConfig::default())
+    }
+
+    #[test]
+    fn a_single_scheme_writes_the_light_rules_alone() {
+        let light = tokens(serde_json::json!({ "usecaseBkg": "#light-bkg" }));
+        let theme = ThemeView {
+            light: &light,
+            dark: None,
+        };
+        assert_eq!(
+            scheme_rules("u", theme, &globals(), false),
+            own_rules("u", &light, &globals(), false)
+        );
+    }
+
+    #[test]
+    fn the_dark_set_follows_the_light_rules_under_the_media_query() {
+        let light = tokens(serde_json::json!({ "usecaseBkg": "#light-bkg" }));
+        let dark = tokens(serde_json::json!({ "usecaseBkg": "#dark-bkg" }));
+        let theme = ThemeView {
+            light: &light,
+            dark: Some(&dark),
+        };
+        let css = scheme_rules("u", theme, &globals(), false);
+        let (before, after) = css
+            .split_once("@media (prefers-color-scheme: dark){")
+            .expect("a media block");
+        assert!(before.contains("var(--usecaseBkg, #light-bkg)"), "{css}");
+        assert!(!before.contains("#dark-bkg"), "{css}");
+        assert!(after.contains("var(--usecaseBkg, #dark-bkg)"), "{css}");
+    }
+
+    #[test]
+    fn a_role_falls_back_to_the_dark_theme_along_its_chain() {
+        // The dark theme has no `usecaseActorBkg`: its actor fill is the dark `mainBkg` (`roleColors`).
+        let light = tokens(serde_json::json!({
+            "usecaseActorBkg": "#light-actor",
+            "mainBkg": "#light-main",
+        }));
+        let dark = tokens(serde_json::json!({ "mainBkg": "#dark-main" }));
+        let theme = ThemeView {
+            light: &light,
+            dark: Some(&dark),
+        };
+        let css = scheme_rules("u", theme, &globals(), false);
+        let (_, after) = css
+            .split_once("@media (prefers-color-scheme: dark){")
+            .expect("a media block");
+        // The name is the first token of the chain that the scheme gives a value (`mainBkg`), and the
+        // light set's `usecaseActorBkg` does not reach the dark set.
+        assert!(after.contains("fill:var(--mainBkg, #dark-main)"), "{css}");
+        assert!(!after.contains("#light-actor"), "{css}");
     }
 }
