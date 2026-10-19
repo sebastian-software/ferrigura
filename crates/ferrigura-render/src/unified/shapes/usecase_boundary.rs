@@ -132,8 +132,18 @@ pub(crate) fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderE
         attribute("style", &styles.label)
     };
     let classes = node.css_classes.trim();
+    // `annotateUsecaseElements` (`usecaseRenderer.ts` 150-167) writes the same attributes on a boundary's group as
+    // on the other nodes: its id, its kind, the role and its accessible name.
+    let annotation = node.use_case.as_ref().map_or_else(String::new, |fields| {
+        format!(
+            " data-usecase-id=\"{}\" data-usecase-kind=\"{}\" role=\"img\" aria-label=\"{}\"",
+            escape(&node.id),
+            fields.kind.name(),
+            escape(&fields.accessible_name),
+        )
+    });
     let svg = format!(
-        "<g class=\"cluster usecase-system-boundary usecase-system-boundary-{boundary}{classes_sep}{classes}\" id=\"{id}\" data-look=\"{look}\" data-boundary-type=\"{boundary}\"{colour_id}>{body}<g class=\"cluster-label system-boundary-title\"{label_style} transform=\"translate({tx}, {ty})\">{title}</g></g>",
+        "<g class=\"cluster usecase-system-boundary usecase-system-boundary-{boundary}{classes_sep}{classes}\" id=\"{id}\" data-look=\"{look}\" data-boundary-type=\"{boundary}\"{colour_id}{annotation}>{body}<g class=\"cluster-label system-boundary-title\"{label_style} transform=\"translate({tx}, {ty})\">{title}</g></g>",
         boundary = if package { "package" } else { "rect" },
         classes_sep = if classes.is_empty() { "" } else { " " },
         id = escape(&node.dom_id),
