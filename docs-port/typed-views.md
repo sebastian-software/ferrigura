@@ -1,6 +1,6 @@
-# Typed views for the renderers (draft for issue #4)
+# Typed views for the renderers (issue #4)
 
-Step 3 of [decision 0009](./decisions/0009-configuration-resolved-once.md), issue [#4](https://github.com/sebastian-software/ferrigura/issues/4). This page proposes the contract between the facade and the renderers. It is a draft for review; nothing is implemented yet.
+Step 3 of [decision 0009](./decisions/0009-configuration-resolved-once.md), issue [#4](https://github.com/sebastian-software/ferrigura/issues/4). This page is the contract between the facade and the renderers. Decided by Sebastian on 2026-10-19, with the three choices below.
 
 ## Where we are
 
@@ -65,8 +65,8 @@ Nothing below the facade can write to any of these; a renderer's derived values 
 4. Remove `Themes`, `variables::{text_of, …}` and the whole-config fields from the inputs.
 5. The P3 renderers are written on `Context` from the start.
 
-## Open for Sebastian
+## Decided
 
-1. **One generic `Context<'a, Model, Section>`** for every renderer, or a struct per renderer as today (`PieInput` and so on). I would take the generic one: one shape for 33 types, and the P3 renderers learn one interface.
-2. **`ThemeTokens` replaces the `Value` map entirely** (step 4), rather than living as a typed view over the map. The renderers name every token they write, so nothing needs the map's iteration order; the map would stay only at the boundary where `themeVariables` arrive.
-3. **The cost.** Steps 1 and 2 are a few days of agent work and touch only the model and the facade; step 3 touches every renderer file that reads the theme (about 60), in parallel tasks that each keep the output identical.
+1. **One generic `Context<'a, Model, Section>`** for every renderer, in place of a struct per renderer: one shape for 33 types, which the P3 renderers learn once.
+2. **`ThemeTokens` replaces the `Value` map entirely** (step 4). The renderers name every token they write, so nothing needs the map's iteration order; the map stays only at the boundary where `themeVariables` arrive.
+3. **The order of the work** as above: the tokens and the globals first (model and facade), then the renderers in parallel tasks that each keep the output byte for byte the same, then the removal of `Themes` and the lookups by name.
