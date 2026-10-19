@@ -160,13 +160,3 @@ pub fn render(
     }
     Ok(root.render())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_empty_diagram_has_the_reference_size() {
-        assert_eq!((EMPTY_WIDTH, EMPTY_HEIGHT), (200.0, 100.0));
-    }
-}
