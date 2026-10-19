@@ -179,4 +179,46 @@ mod tests {
         assert_eq!(ensure_pairwise_subsets(&subsets), subsets);
         assert!(ensure_pairwise_subsets(&[]).is_empty());
     }
+
+    #[test]
+    fn partial_coverage_adds_only_the_missing_pairs() {
+        // `vennRenderer.spec.ts`: the pair A|B and B|C exist, so only A|C is added.
+        let subsets = vec![
+            set(&["A"], 10.0),
+            set(&["B"], 10.0),
+            set(&["C"], 10.0),
+            set(&["A", "B", "C"], 5.0),
+            set(&["A", "B"], 2.5),
+            set(&["B", "C"], 2.5),
+        ];
+        let all = ensure_pairwise_subsets(&subsets);
+        assert_eq!(all.len(), 7);
+        let added = &all[6];
+        assert_eq!(added.sets, ["A", "C"]);
+        assert_eq!(added.size, 2.5);
+    }
+
+    #[test]
+    fn sets_out_of_alphabetical_order_give_sorted_pairs() {
+        // The union is `B, A, C`: its pairs are added sorted, as A|B, A|C and B|C.
+        let subsets = vec![
+            set(&["A"], 10.0),
+            set(&["B"], 10.0),
+            set(&["C"], 10.0),
+            set(&["B", "A", "C"], 5.0),
+        ];
+        let all = ensure_pairwise_subsets(&subsets);
+        assert_eq!(all.len(), 7);
+        let keys: Vec<String> = all[4..].iter().map(Datum::key).collect();
+        assert_eq!(keys, ["A|B", "A|C", "B|C"]);
+    }
+
+    #[test]
+    fn a_pair_falls_back_to_size_two_and_a_half_without_single_sizes() {
+        // With no single-set subset of A, B or C, every pair takes the default of 2.5.
+        let subsets = vec![set(&["A", "B", "C"], 5.0)];
+        let all = ensure_pairwise_subsets(&subsets);
+        assert_eq!(all.len(), 4);
+        assert!(all[1..].iter().all(|pair| pair.size == 2.5));
+    }
 }
