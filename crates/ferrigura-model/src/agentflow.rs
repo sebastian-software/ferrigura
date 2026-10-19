@@ -39,6 +39,15 @@ pub struct AgentflowDiagram {
     pub classes: Vec<ClassDef>,
     /// The tooltips, by id.
     pub tooltips: BTreeMap<String, String>,
+    /// The `linkStyle default` styles, which the reference keeps on the edge array (`defaultStyle`) and
+    /// `getData` gives every edge, the ones made before the statement too. Not in the differential: the
+    /// renderer reads them.
+    #[serde(skip)]
+    pub default_style: Option<Vec<String>>,
+    /// The `linkStyle default interpolate` value (`defaultInterpolate`), which `getData` falls back to
+    /// for an edge with no interpolation of its own. Not in the differential: the renderer reads it.
+    #[serde(skip)]
+    pub default_interpolate: Option<String>,
 }
 
 impl AgentflowDiagram {
@@ -57,6 +66,8 @@ impl AgentflowDiagram {
             connectors: Vec::new(),
             classes: Vec::new(),
             tooltips: BTreeMap::new(),
+            default_style: None,
+            default_interpolate: None,
         }
     }
 }
@@ -103,6 +114,11 @@ pub struct Vertex {
     /// `true` for a connector.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_connector: Option<bool>,
+    /// The DOM id of the vertex, `agentflow-<id>-<n>`, where `n` counts the `addVertex` and
+    /// `addConnector` calls before the vertex's first record (`vertexCounter`). Not in the differential:
+    /// the renderer writes it as the node's id.
+    #[serde(skip)]
+    pub dom_id: String,
 }
 
 /// An edge: an arrow between two ids.
