@@ -267,33 +267,40 @@ impl Renderer {
                 themes,
                 id,
             }),
-            DiagramType::Packet => packet_render::render(&packet_render::PacketInput {
-                diagram: &packet::parse_with(text, &prepared.view.effective)?,
-                config: typed_config,
-                themes,
-                id,
-                bits_per_row: packet::bits_per_row(&prepared.view.effective),
-            }),
-            DiagramType::XyChart => xychart_render::render(&xychart_render::XyChartInput {
-                diagram: &xychart::parse(text)?,
-                config: typed_config,
-                themes,
-                id,
-            }),
-            DiagramType::Sankey => sankey_render::render(&sankey_render::SankeyInput {
-                diagram: &sankey::parse(text)?,
-                config: typed_config,
-                themes,
-                id,
-            }),
-            DiagramType::QuadrantChart => {
-                quadrant_chart_render::render(&quadrant_chart_render::QuadrantChartInput {
-                    diagram: &quadrant_chart::parse(text)?,
-                    config: typed_config,
-                    themes,
+            DiagramType::Packet => {
+                let section = packet_render::PacketSection {
+                    config: typed_config.packet.clone(),
+                    bits_per_row: packet::bits_per_row(&prepared.view.effective),
+                };
+                packet_render::render(&Context {
+                    diagram: &packet::parse_with(text, &prepared.view.effective)?,
+                    section: &section,
+                    globals: &prepared.view.globals,
+                    theme: prepared.theme(),
                     id,
                 })
             }
+            DiagramType::XyChart => xychart_render::render(&Context {
+                diagram: &xychart::parse(text)?,
+                section: &typed_config.xy_chart,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Sankey => sankey_render::render(&Context {
+                diagram: &sankey::parse(text)?,
+                section: &typed_config.sankey,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::QuadrantChart => quadrant_chart_render::render(&Context {
+                diagram: &quadrant_chart::parse(text)?,
+                section: &typed_config.quadrant_chart,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
             DiagramType::Requirement => {
                 requirement_render::render(&requirement_render::RequirementInput {
                     diagram: &requirement::parse(text)?,
@@ -302,10 +309,11 @@ impl Renderer {
                     id,
                 })
             }
-            DiagramType::C4 => c4_render::render(&c4_render::C4Input {
+            DiagramType::C4 => c4_render::render(&Context {
                 diagram: &c4::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.c4,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Kanban => kanban_render::render(&kanban_render::KanbanInput {
@@ -314,35 +322,37 @@ impl Renderer {
                 themes,
                 id,
             }),
-            DiagramType::Architecture => {
-                architecture_render::render(&architecture_render::ArchitectureInput {
-                    diagram: &architecture::parse(text)?,
-                    config: typed_config,
-                    themes,
+            DiagramType::Architecture => architecture_render::render(&Context {
+                diagram: &architecture::parse(text)?,
+                section: &typed_config.architecture,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
+            DiagramType::Treemap => {
+                let section = treemap_render::TreemapSettings::of(&prepared.view.effective);
+                treemap_render::render(&Context {
+                    diagram: &treemap::parse(text)?,
+                    section: &section,
+                    globals: &prepared.view.globals,
+                    theme: prepared.theme(),
                     id,
                 })
             }
-            DiagramType::Treemap => treemap_render::render(&treemap_render::TreemapInput {
-                diagram: &treemap::parse(text)?,
-                config: typed_config,
-                settings: &treemap_render::TreemapSettings::of(&prepared.view.effective),
-                themes,
-                id,
-            }),
-            DiagramType::Ishikawa => ishikawa_render::render(&ishikawa_render::IshikawaInput {
+            DiagramType::Ishikawa => ishikawa_render::render(&Context {
                 diagram: &ishikawa::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.ishikawa,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::EventModeling => {
-                event_modeling_render::render(&event_modeling_render::EventModelingInput {
-                    diagram: &event_modeling::parse(text)?,
-                    config: typed_config,
-                    themes,
-                    id,
-                })
-            }
+            DiagramType::EventModeling => event_modeling_render::render(&Context {
+                diagram: &event_modeling::parse(text)?,
+                section: &typed_config.eventmodeling,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
+                id,
+            }),
             DiagramType::Flowchart => with_flowchart(text, &prepared, flowchart::render),
         }
     }

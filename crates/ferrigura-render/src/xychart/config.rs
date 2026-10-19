@@ -6,7 +6,9 @@
 //! so the classic theme's value (its primary text colour, `#131300`) stands, unless the configuration
 //! sets it.
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::XYChartConfig;
+use ferrigura_model::theme::Token;
+use ferrigura_model::theme::tokens::XyChartTokens;
 use ferrigura_model::value::Value;
 use ferrigura_model::xychart::{Plot, XAxis, XyChartDiagram, YAxis};
 
@@ -34,10 +36,9 @@ fn screen_scale(width: f64) -> f64 {
     }
 }
 
-/// The chart's configuration. The orientation is the model's (the keyword of the header, else the
-/// configuration's `chartOrientation`).
-pub fn chart_config(config: &MermaidConfig, horizontal: bool) -> ChartConfig {
-    let xy = &config.xy_chart;
+/// The chart's configuration, from the `xyChart` section. The orientation is the model's (the keyword
+/// of the header, else the configuration's `chartOrientation`).
+pub fn chart_config(xy: &XYChartConfig, horizontal: bool) -> ChartConfig {
     ChartConfig {
         width: xy.width,
         screen_scale: screen_scale(xy.width),
@@ -74,33 +75,33 @@ fn axis_config(axis: &ferrigura_model::config::XYChartAxisConfig) -> AxisConfig 
     }
 }
 
-/// The colours of the chart, from the theme's `xyChart` object.
-pub fn theme_config(variables: &Value) -> ThemeConfig {
-    let xy = variables.get("xyChart");
-    let text = |key: &str| colour(xy, key, CLASSIC_TEXT_COLOUR);
+/// The colours of the chart, from the theme's `xyChart` group.
+pub fn theme_config(xy: Option<&XyChartTokens>) -> ThemeConfig {
+    let text = |token: Option<&Token>| colour(token, CLASSIC_TEXT_COLOUR);
     ThemeConfig {
-        background_color: colour(xy, "backgroundColor", CLASSIC_BACKGROUND),
-        title_color: text("titleColor"),
-        data_label_color: text("dataLabelColor"),
-        legend_text_color: text("legendTextColor"),
+        background_color: colour(xy.map(|xy| &xy.background_color), CLASSIC_BACKGROUND),
+        title_color: text(xy.map(|xy| &xy.title_color)),
+        data_label_color: text(xy.map(|xy| &xy.data_label_color)),
+        legend_text_color: text(xy.map(|xy| &xy.legend_text_color)),
         x_axis: AxisThemeConfig {
-            title_color: text("xAxisTitleColor"),
-            label_color: text("xAxisLabelColor"),
-            tick_color: text("xAxisTickColor"),
-            axis_line_color: text("xAxisLineColor"),
+            title_color: text(xy.map(|xy| &xy.x_axis_title_color)),
+            label_color: text(xy.map(|xy| &xy.x_axis_label_color)),
+            tick_color: text(xy.map(|xy| &xy.x_axis_tick_color)),
+            axis_line_color: text(xy.map(|xy| &xy.x_axis_line_color)),
         },
         y_axis: AxisThemeConfig {
-            title_color: text("yAxisTitleColor"),
-            label_color: text("yAxisLabelColor"),
-            tick_color: text("yAxisTickColor"),
-            axis_line_color: text("yAxisLineColor"),
+            title_color: text(xy.map(|xy| &xy.y_axis_title_color)),
+            label_color: text(xy.map(|xy| &xy.y_axis_label_color)),
+            tick_color: text(xy.map(|xy| &xy.y_axis_tick_color)),
+            axis_line_color: text(xy.map(|xy| &xy.y_axis_line_color)),
         },
     }
 }
 
-/// A colour of the `xyChart` object: its text when it is text, else the default.
-fn colour(xy: Option<&Value>, key: &str, default: &str) -> String {
-    match xy.and_then(|xy| xy.get(key)) {
+/// A colour of the `xyChart` group: its text when the theme gives text, else the default. A number
+/// is not a colour here, as the reference reads it.
+fn colour(token: Option<&Token>, default: &str) -> String {
+    match token.and_then(Token::value) {
         Some(Value::String(text)) => text.clone(),
         _ => default.to_owned(),
     }

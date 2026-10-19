@@ -6,10 +6,10 @@
 //! and the styles that `themeVariables.packet` sets.
 
 use ferrigura_model::config::{effective, typed};
-use ferrigura_model::theme::Theme;
+use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
-use ferrigura_render::packet::{PacketInput, render};
-use ferrigura_render::theme::Themes;
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::packet::{PacketSection, render};
 use regex::Regex;
 
 const ID: &str = "packet-diagram";
@@ -32,12 +32,21 @@ fn draw_configured(text: &str, site: Option<&Value>, variables: &Value) -> Strin
     let config = typed(&configured).expect("the configuration is typed");
     let diagram =
         ferrigura_syntax::packet::parse_with(text, &configured).expect("the packet parses");
-    render(&PacketInput {
-        diagram: &diagram,
-        config: &config,
-        themes: Themes::Single(variables),
-        id: ID,
+    let tokens = ThemeTokens::from_value(variables);
+    let globals = Globals::of(&config);
+    let section = PacketSection {
+        config: config.packet.clone(),
         bits_per_row: ferrigura_syntax::packet::bits_per_row(&configured),
+    };
+    render(&Context {
+        diagram: &diagram,
+        section: &section,
+        globals: &globals,
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
+        id: ID,
     })
     .expect("the packet renders")
 }

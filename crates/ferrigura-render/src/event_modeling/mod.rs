@@ -15,7 +15,7 @@ mod label;
 mod layout;
 mod style;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::EventModelingDiagramConfig;
 use ferrigura_model::event_modeling::EventModelingDiagram;
 use ferrigura_text::{EmbeddedFamily, FontFamily, Run, embed_runs, measure_box, text_box};
 
@@ -23,14 +23,13 @@ use self::label::{Cell, LabelLine, LineKind};
 use self::layout::{Boxed, Layout};
 use crate::RenderError;
 use crate::a11y;
-use crate::common::style::base_style_sheet_with;
+use crate::common::style::base_style_sheet_tokens;
 use crate::common::viewbox::setup_graph_viewbox;
 use crate::common::{Element, TextMemo};
+use crate::context::Context;
 use crate::journey::text::bold as bold_face;
 use crate::svg::number;
-use crate::theme::Themes;
 use crate::unified::geom::{BBox, Point};
-use crate::variables::{px, text_of};
 
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
@@ -44,34 +43,22 @@ const SWIMLANE_PADDING: f64 = 15.0;
 /// The inset of a box's text cell from the box's rectangle (`boxPadding`, `renderer.ts` 32-33).
 const BOX_PADDING: f64 = 10.0;
 
-/// What the event modeling renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct EventModelingInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a EventModelingDiagram,
-    /// The effective configuration, in the event modeling diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
-
 /// Renders the diagram to an SVG document.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or subset, or a text cannot be measured.
-pub fn render(input: &EventModelingInput<'_>) -> Result<String, RenderError> {
+pub fn render(
+    input: &Context<'_, EventModelingDiagram, EventModelingDiagramConfig>,
+) -> Result<String, RenderError> {
     let diagram = input.diagram;
-    let config = &input.config.eventmodeling;
+    let config = input.section;
     let id = input.id;
-    let variables = input.themes.primary();
+    let tokens = input.theme.light;
     // The root's font size is the theme's, and the labels are drawn at it (`fontSize`, 14px in the
     // redux themes).
-    let font_size = px(variables, "fontSize").unwrap_or(16.0);
-    let css_font_size = text_of(variables, "fontSize").unwrap_or_else(|| "16px".to_owned());
+    let font_size = tokens.font_size.px().unwrap_or(16.0);
+    let css_font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
 
     let mut memo = TextMemo::new();
     let layout = layout::lay_out(diagram, &mut memo)?;
@@ -101,20 +88,25 @@ pub fn render(input: &EventModelingInput<'_>) -> Result<String, RenderError> {
     }
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
-        || text_of(variables, "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            tokens
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
     let mono_family = families
         .iter()
         .find(|family| family.family == FontFamily::Mono)
         .map(|family| family.css_family.clone());
-    let sheet = base_style_sheet_with(
+    let sheet = base_style_sheet_tokens(
         id,
-        input.themes,
+        input.theme,
         &font_family,
         &css_font_size,
         &families,
-        &format!("{}{}", style::tokens(id, input.themes), style::rules(id)),
+        &format!("{}{}", style::tokens(id, input.theme), style::rules(id)),
     );
 
     let bounds = bounds_of(&layout, font_size)?;
@@ -156,8 +148,8 @@ pub fn render(input: &EventModelingInput<'_>) -> Result<String, RenderError> {
         );
     }
 
-    let colours = style::colours(variables);
-    let entities = style::entity_colours(variables);
+    let colours = style::colours(tokens);
+    let entities = style::entity_colours(tokens);
     root = root
         .child(Element::new("style").raw_text(sheet))
         // The empty group `mermaidAPI` appends before the diagram draws.

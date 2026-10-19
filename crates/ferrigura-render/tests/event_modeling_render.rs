@@ -5,9 +5,9 @@
 //! two box texts (the bold name and the code of the data).
 
 use ferrigura_model::config::{defaults, typed};
-use ferrigura_model::theme::Theme;
-use ferrigura_render::event_modeling::{EventModelingInput, render};
-use ferrigura_render::theme::Themes;
+use ferrigura_model::theme::{Theme, ThemeTokens};
+use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::event_modeling::render;
 
 /// The fixture `with-data-block-reference.mmd`, without its front matter.
 const FIXTURE: &str = "eventmodeling
@@ -28,10 +28,16 @@ fn draw(text: &str) -> String {
     let diagram = ferrigura_syntax::event_modeling::parse(text).expect("the diagram parses");
     let config = typed(&defaults()).expect("the configuration is typed");
     let variables = Theme::ReduxColor.variables(None);
-    render(&EventModelingInput {
+    let tokens = ThemeTokens::from_value(&variables);
+    let globals = Globals::of(&config);
+    render(&Context {
         diagram: &diagram,
-        config: &config,
-        themes: Themes::Single(&variables),
+        section: &config.eventmodeling,
+        globals: &globals,
+        theme: ThemeView {
+            light: &tokens,
+            dark: None,
+        },
         id: "fx",
     })
     .expect("the diagram renders")
