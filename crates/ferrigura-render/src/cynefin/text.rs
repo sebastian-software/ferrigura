@@ -20,46 +20,6 @@ pub(super) fn markup(text: &str) -> String {
     decode_entities(&escape(text))
 }
 
-/// The characters a text shows: the markup read as XML, so that `&amp;` shows `&` and `&#35;` shows
-/// `#`. The fonts of the diagram embed these characters. An `&` that starts no entity shows as itself.
-#[must_use]
-pub(super) fn shown(markup: &str) -> String {
-    let mut out = String::with_capacity(markup.len());
-    let mut rest = markup;
-    while let Some(start) = rest.find('&') {
-        out.push_str(&rest[..start]);
-        let after = &rest[start..];
-        let Some(end) = after.find(';') else {
-            out.push_str(after);
-            return out;
-        };
-        let name = &after[1..end];
-        let decoded = match name {
-            "amp" => Some('&'),
-            "lt" => Some('<'),
-            "gt" => Some('>'),
-            "quot" => Some('"'),
-            "apos" => Some('\''),
-            _ => name
-                .strip_prefix('#')
-                .and_then(|digits| digits.parse::<u32>().ok())
-                .and_then(char::from_u32),
-        };
-        match decoded {
-            Some(character) => {
-                out.push(character);
-                rest = &after[end + 1..];
-            }
-            None => {
-                out.push('&');
-                rest = &after[1..];
-            }
-        }
-    }
-    out.push_str(rest);
-    out
-}
-
 /// The width of a label's text as `getBBox().width` gives it, or the fallback of the reference when
 /// that is zero (`label.length * 7`, lines 277-284): the box of the collapsed text at `size` pixels,
 /// in the regular face. The label is measured as it is in the DB, with its placeholders.
@@ -112,18 +72,19 @@ pub(super) fn bold() -> &'static Face {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::common::shown_text;
 
     #[test]
     fn a_placeholder_is_written_as_its_entity_and_shown_as_its_character() {
         assert_eq!(markup("ﬂ°amp¶ß"), "&amp;");
-        assert_eq!(shown(&markup("ﬂ°amp¶ß")), "&");
-        assert_eq!(shown(&markup("a ﬂ°°35¶ß b")), "a # b");
+        assert_eq!(shown_text("ﬂ°amp¶ß"), "&");
+        assert_eq!(shown_text("a ﬂ°°35¶ß b"), "a # b");
     }
 
     #[test]
     fn a_markup_character_is_escaped_and_shown_as_itself() {
         assert_eq!(markup("a < b & c"), "a &lt; b &amp; c");
-        assert_eq!(shown(&markup("a < b & c")), "a < b & c");
-        assert_eq!(shown("x &y z"), "x &y z");
+        assert_eq!(shown_text("a < b & c"), "a < b & c");
+        assert_eq!(shown_text("x &y z"), "x &y z");
     }
 }

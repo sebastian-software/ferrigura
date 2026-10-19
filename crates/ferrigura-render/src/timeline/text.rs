@@ -149,7 +149,10 @@ fn extent(
     let mut y = 0.0;
     let mut extent: Option<Extent> = None;
     for tspan in tspans {
-        let shown = super::shown(&tspan.text);
+        // The boxes of `getBBox` are the glyphs', so they are measured on the text the reader
+        // sees, while the wrapping measured the encoded text, as the reference lays it out (NOTES
+        // 5.12, R11).
+        let shown = crate::common::shown_text(&tspan.text);
         if collapse_white_space(&shown).is_empty() {
             // No glyph: the `tspan` takes no position, and the next one moves from the last glyph.
             continue;

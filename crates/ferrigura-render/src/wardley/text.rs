@@ -10,7 +10,7 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::common::Element;
-use crate::common::decode_entities;
+use crate::common::{decode_entities, shown_text};
 use crate::svg::escape;
 
 /// The font size of the annotation lines (`wardleyRenderer.ts` 886, `fontSize`).
@@ -21,31 +21,6 @@ pub const ANNOTATION_FONT_SIZE: f64 = 11.0;
 #[must_use]
 pub fn markup(text: &str) -> String {
     decode_entities(&escape(text))
-}
-
-/// The characters a label shows: the placeholders decoded, and the numeric entities they stand for
-/// (`#35;` shows `#`) read as their characters. The font subset covers these characters.
-#[must_use]
-pub fn shown(text: &str) -> String {
-    let decoded = decode_entities(text);
-    let mut out = String::with_capacity(decoded.len());
-    let mut rest = decoded.as_str();
-    while let Some(start) = rest.find("&#") {
-        out.push_str(&rest[..start]);
-        let after = &rest[start + 2..];
-        match after.find(';') {
-            Some(end) if end > 0 && after[..end].bytes().all(|byte| byte.is_ascii_digit()) => {
-                out.extend(after[..end].parse::<u32>().ok().and_then(char::from_u32));
-                rest = &after[end + 1..];
-            }
-            _ => {
-                out.push_str("&#");
-                rest = after;
-            }
-        }
-    }
-    out.push_str(rest);
-    out
 }
 
 /// The characters the map shows, by the face they are set in, for the font subset. The reference
@@ -60,12 +35,12 @@ pub struct Drawn {
 impl Drawn {
     /// A label set in the regular weight.
     pub fn regular(&mut self, text: &str) {
-        self.regular.push_str(&shown(text));
+        self.regular.push_str(&shown_text(text));
     }
 
     /// A label set in the bold weight.
     pub fn bold(&mut self, text: &str) {
-        self.bold.push_str(&shown(text));
+        self.bold.push_str(&shown_text(text));
     }
 
     /// The runs of the subset: one for each weight that draws text. An empty run would embed an
@@ -139,6 +114,6 @@ mod tests {
 
     #[test]
     fn a_numeric_entity_is_shown_as_its_character() {
-        assert_eq!(shown("ﬂ°°35¶ß and ﬂ°°233¶ß"), "# and é");
+        assert_eq!(shown_text("ﬂ°°35¶ß and ﬂ°°233¶ß"), "# and é");
     }
 }

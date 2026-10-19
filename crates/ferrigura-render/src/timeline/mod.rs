@@ -27,7 +27,7 @@ use crate::a11y;
 use crate::common::style::base_style_sheet;
 use crate::common::text::{collapse_white_space, collapsed_box};
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
-use crate::common::{Element, decode_entities};
+use crate::common::{Element, decode_entities, shown_text};
 use crate::svg::{escape, number};
 
 /// The XML namespace of the root element.
@@ -396,47 +396,6 @@ pub(super) fn markup(text: &str) -> String {
     decode_entities(&escape(text))
 }
 
-/// The text a reader sees for an encoded text: its markup with the entities read, as the browser
-/// shows it. The boxes of `getBBox` are those of the glyphs drawn, so they are measured on this text,
-/// while the wrapping measures the encoded text, as the reference does while it lays out (NOTES 5.12,
-/// R11). An entity the markup does not name, such as `&foo;`, stays as it is.
-pub(super) fn shown(text: &str) -> String {
-    let markup = markup(text);
-    let mut out = String::with_capacity(markup.len());
-    let mut rest = markup.as_str();
-    while let Some(start) = rest.find('&') {
-        out.push_str(&rest[..start]);
-        rest = &rest[start..];
-        let Some(end) = rest.find(';').filter(|end| *end <= 12) else {
-            break;
-        };
-        let entity = &rest[1..end];
-        let read = match entity {
-            "amp" => Some('&'),
-            "lt" => Some('<'),
-            "gt" => Some('>'),
-            "quot" => Some('"'),
-            "#39" => Some('\''),
-            numeric if numeric.starts_with('#') => {
-                numeric[1..].parse::<u32>().ok().and_then(char::from_u32)
-            }
-            _ => None,
-        };
-        match read {
-            Some(character) => {
-                out.push(character);
-                rest = &rest[end + 1..];
-            }
-            None => {
-                out.push('&');
-                rest = &rest[1..];
-            }
-        }
-    }
-    out.push_str(rest);
-    out
-}
-
 /// The title: the text the timeline writes with `x` as given, the baseline at `y = 20`, in `4ex`
 /// (the x-height of the regular face at the CSS size, `timelineRenderer.ts` 209-216). It is set in
 /// the bold face. Returns the element and the box `getBBox` gives it.
@@ -445,9 +404,9 @@ pub(super) fn title(
     x: f64,
     text: &str,
 ) -> Result<(Element, Option<BBox>), RenderError> {
-    let shown_text = shown(text);
+    let shown = shown_text(text);
     // The title starts at `x`, and its box is the glyphs' box from there.
-    let ink = collapsed_box(cx.bold, &shown_text, cx.title_size)?;
+    let ink = collapsed_box(cx.bold, &shown, cx.title_size)?;
     let TextBox {
         ascent, descent, ..
     } = text_box(cx.bold, cx.title_size)?;
@@ -458,7 +417,7 @@ pub(super) fn title(
         .with("y", "20")
         .raw_text(markup(text));
     // A title with no glyph, such as one blank, has no box (as a node text with no glyph has none).
-    let bounds = (!collapse_white_space(&shown_text).is_empty()).then_some(BBox {
+    let bounds = (!collapse_white_space(&shown).is_empty()).then_some(BBox {
         x: x + ink.left,
         y: 20.0 - ascent,
         width: ink.width(),
@@ -470,11 +429,11 @@ pub(super) fn title(
 /// Every text the diagram shows, as a reader sees it: the glyphs the embedded subsets must hold. A
 /// character written as an entity is a character of its own here, not the entity's letters.
 fn drawn_texts(diagram: &TimelineDiagram) -> String {
-    let mut texts = vec![shown(&diagram.title)];
-    texts.extend(diagram.sections.iter().map(|text| shown(text)));
+    let mut texts = vec![shown_text(&diagram.title)];
+    texts.extend(diagram.sections.iter().map(|text| shown_text(text)));
     for period in &diagram.periods {
-        texts.push(shown(&period.period));
-        texts.extend(period.events.iter().map(|text| shown(text)));
+        texts.push(shown_text(&period.period));
+        texts.extend(period.events.iter().map(|text| shown_text(text)));
     }
     texts.join(" ")
 }

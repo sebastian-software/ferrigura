@@ -13,13 +13,12 @@ mod style;
 
 use ferrigura_model::config::PacketDiagramConfig;
 use ferrigura_model::packet::{PacketBlock, PacketDiagram};
-use ferrigura_syntax::sanitize::decode_references;
 use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
 
 use crate::RenderError;
 use crate::a11y;
 use crate::common::Element;
-use crate::common::decode_entities;
+use crate::common::shown_text;
 use crate::common::style::base_style_sheet;
 use crate::common::viewbox::configure_svg_size;
 use crate::context::Context;
@@ -287,18 +286,4 @@ fn row_group(
         }
     }
     group
-}
-
-/// The text an SVG `text` element shows for a string of the diagram. The encoding wrote a
-/// placeholder for each `&` and `#` entity the user typed (`encodeEntities`), and the reference
-/// turns the placeholders into the references they stand for when it writes the markup
-/// (`decodeEntities`, `utils.ts` 904-906, and `cleanUpSvgCode`); the browser reads those references.
-/// Every other character is a character of the text, so it is escaped first, as the serialiser
-/// writes a text node.
-fn shown_text(text: &str) -> String {
-    let escaped = text
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;");
-    decode_references(&decode_entities(&escaped))
 }

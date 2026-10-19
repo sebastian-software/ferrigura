@@ -10,16 +10,16 @@ use ferrigura_text::{Face, TextError};
 use super::boundary;
 use super::layout::{self, Domain, ITEM_HEIGHT, ITEM_PITCH, MAX_CONFUSION_ITEMS};
 use super::style::{Options, attribute_text};
-use super::text::{badge_width, bold, italic, markup, regular, shown};
-use crate::common::Element;
+use super::text::{badge_width, bold, italic, markup, regular};
 use crate::common::d3::js_number;
+use crate::common::{Element, shown_text};
 
 /// The text runs the diagram draws, with their faces: the characters of each go into the font subsets.
 pub(super) type Runs = Vec<(String, &'static Face)>;
 
 /// Records the characters a text shows, in the face it is set in.
 fn record(runs: &mut Runs, text: &str, face: &'static Face) {
-    runs.push((shown(&markup(text)), face));
+    runs.push((shown_text(text), face));
 }
 
 /// A number as the reference's attributes write it.

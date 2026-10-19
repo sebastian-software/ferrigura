@@ -13,9 +13,9 @@
 
 use ferrigura_model::theme::Token;
 use ferrigura_model::theme::tokens::TreeViewTokens;
-use ferrigura_model::value::Value;
 
 use crate::RenderError;
+use crate::common::template_text;
 
 /// The options of the tree view styles after the merge with the defaults, each as the template of
 /// `styles.ts` writes it.
@@ -44,7 +44,7 @@ impl Options {
         let read = |token: fn(&TreeViewTokens) -> &Token, default: &str| {
             group
                 .and_then(|options| token(options).value())
-                .map_or_else(|| default.to_owned(), value_text)
+                .map_or_else(|| default.to_owned(), template_text)
         };
         Self {
             label_font_size: read(|options| &options.label_font_size, "16px"),
@@ -71,27 +71,6 @@ impl Options {
                 self.label_font_size
             ))
         })
-    }
-}
-
-/// The value of an option as the template literal of `styles.ts` writes it: `${value}`. A number is
-/// written as JavaScript writes it, an array as its items joined with commas (`null` items empty),
-/// and an object as `[object Object]`.
-fn value_text(value: &Value) -> String {
-    match value {
-        Value::String(text) => text.clone(),
-        Value::Number(number) => crate::svg::number(*number),
-        Value::Bool(flag) => flag.to_string(),
-        Value::Null => "null".to_owned(),
-        Value::Array(items) => items
-            .iter()
-            .map(|item| match item {
-                Value::Null => String::new(),
-                other => value_text(other),
-            })
-            .collect::<Vec<_>>()
-            .join(","),
-        Value::Object(_) => "[object Object]".to_owned(),
     }
 }
 

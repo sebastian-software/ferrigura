@@ -19,7 +19,6 @@ use ferrigura_text::{
 
 use super::layout::{Measure, TextSize};
 use crate::common::text::collapse_white_space;
-use crate::svg::escape;
 
 /// The text the reference measures with: the configured font, which ferrigura draws in its bundled
 /// sans face (decision 0005), at the configured size. The rule names are measured in the regular
@@ -78,16 +77,8 @@ fn measure_text(face: &'static Face, text: &str, size: f64) -> Result<TextSize, 
     })
 }
 
-/// The text an SVG `<text>` shows for a string of the diagram. The database holds the text with the
-/// entity placeholders of `encodeEntities`, and the reference turns them into the characters they
-/// stand for when it decodes the whole SVG string; the browser then reads the references of the
-/// result. The text node is the escaped string, so it is escaped first, and the result is what the
-/// serialiser writes for the text node (the same composition as `packet::shown_text`).
-#[must_use]
-pub fn shown_text(text: &str) -> String {
-    let escaped = escape(text);
-    ferrigura_syntax::sanitize::decode_references(&crate::common::decode_entities(&escaped))
-}
+/// The text an SVG `<text>` shows for a string of the diagram ([`crate::common::shown_text`]).
+pub use crate::common::shown_text;
 
 #[cfg(test)]
 mod tests {

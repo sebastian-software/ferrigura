@@ -11,7 +11,7 @@
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_model::value::Value;
 
-use crate::common::d3::js_number;
+use crate::common::template_text;
 
 /// The colours the map draws with, each resolved as `getTheme` resolves it.
 #[derive(Debug, Clone, PartialEq)]
@@ -88,20 +88,7 @@ fn js(token: &Token) -> Option<String> {
 pub fn js_string(value: &Value) -> Option<String> {
     match value {
         Value::Null => None,
-        other => Some(string_of(other)),
-    }
-}
-
-/// `String(value)` for a value of any kind, as JavaScript writes it: an array joins its items with
-/// commas (a `null` item is empty), and an object is `[object Object]`.
-fn string_of(value: &Value) -> String {
-    match value {
-        Value::Null => String::new(),
-        Value::Bool(flag) => flag.to_string(),
-        Value::Number(number) => js_number(*number),
-        Value::String(text) => text.clone(),
-        Value::Array(items) => items.iter().map(string_of).collect::<Vec<_>>().join(","),
-        Value::Object(_) => "[object Object]".to_owned(),
+        other => Some(template_text(other)),
     }
 }
 
