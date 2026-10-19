@@ -11,8 +11,10 @@
 //! recorded draws are checked against the port's, so a difference in the generator is reported as
 //! such.
 //!
-//! Every value is compared exactly: a double is the same double as the reference's, including the
-//! sign of zero and NaN (any NaN matches any NaN, as JavaScript cannot tell them apart).
+//! Every value is compared exactly on a target that fuses multiply-adds ([`EXACT`]): a double is the
+//! same double as the reference's, including the sign of zero and NaN (any NaN matches any NaN, as
+//! JavaScript cannot tell them apart). Elsewhere the computed values are compared within
+//! [`UNFUSED_TOLERANCE`], and the random draws and the errors still exactly.
 
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -21,9 +23,29 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use ferrigura_venn::{Area, AreaLayout, Centre, Circle, Solution};
 use serde_json::Value;
 
-/// Values must agree exactly: the port reproduces the library's arithmetic, so a difference is a
-/// bug, not rounding.
-const TOLERANCE: f64 = 0.0;
+/// Whether the values must agree exactly. The corpus was captured in Chromium on arm64, whose V8
+/// fuses the multiply-adds of its `atan2`; `ferrigura_jsmath` gives that Chromium's doubles on a
+/// target that fuses too ([`ferrigura_jsmath::CONTRACTS`]), and there the port reproduces the
+/// library's arithmetic, so a difference is a bug, not rounding. On a target without fused
+/// multiply-adds (the x86-64 baseline of the Linux CI runner), `atan2` rounds as V8 does on that
+/// target, differently in the last bit for some inputs, and the layout's optimiser then takes
+/// slightly different steps from the captured ones.
+const EXACT: bool = ferrigura_jsmath::CONTRACTS;
+
+/// How far a computed value may lie from the capture on a target without fused multiply-adds, in
+/// the layout's units (pixels). Measured on arm64 with the fusion of `ferrigura_jsmath` turned off,
+/// which gives the x86-64 doubles (the 20 cases that differ on the Linux runner, with the same
+/// values): the largest difference over the corpus is 0.042, a text centre. The exact comparison
+/// runs on the macOS runner of the CI, which is arm64.
+const UNFUSED_TOLERANCE: f64 = 0.1;
+
+/// The tolerance of the computed values on this target.
+fn tolerance() -> f64 {
+    if EXACT { 0.0 } else { UNFUSED_TOLERANCE }
+}
+
+/// The largest difference within the tolerance, with its label, reported at the end of the run.
+static LARGEST: Mutex<(f64, String)> = Mutex::new((0.0, String::new()));
 
 /// The cases the corpus must hold. The floor only goes up.
 const CASE_FLOOR: usize = 447;
@@ -104,7 +126,24 @@ fn same(ours: f64, theirs: f64) -> bool {
 }
 
 fn expect_same(label: &str, ours: f64, theirs: f64) -> Result<(), String> {
-    if same(ours, theirs) || (ours - theirs).abs() <= TOLERANCE {
+    if same(ours, theirs) {
+        return Ok(());
+    }
+    let difference = (ours - theirs).abs();
+    if difference <= tolerance() {
+        let mut largest = LARGEST.lock().expect("largest");
+        if difference > largest.0 {
+            *largest = (difference, label.to_owned());
+        }
+        Ok(())
+    } else {
+        Err(format!("{label}: {ours:?}, the reference has {theirs:?}"))
+    }
+}
+
+/// [`expect_same`] without a tolerance on any target: the random draws do not depend on the math.
+fn expect_exact(label: &str, ours: f64, theirs: f64) -> Result<(), String> {
+    if same(ours, theirs) {
         Ok(())
     } else {
         Err(format!("{label}: {ours:?}, the reference has {theirs:?}"))
@@ -326,7 +365,7 @@ fn compare_draws(label: &str, expected: &Value, actual: &[f64]) -> Result<(), St
         ));
     }
     for (index, (ours, theirs)) in actual.iter().zip(&expected).enumerate() {
-        expect_same(&format!("{label} draw {index}"), *ours, *theirs)?;
+        expect_exact(&format!("{label} draw {index}"), *ours, *theirs)?;
     }
     Ok(())
 }
@@ -515,7 +554,7 @@ fn harness_generator_draws_the_recorded_numbers() {
 type Outcome = (usize, String, Result<(), String>);
 
 #[test]
-fn every_case_matches_the_reference_exactly() {
+fn every_case_matches_the_reference() {
     let names = case_names();
     let threads = std::thread::available_parallelism()
         .map_or(1, std::num::NonZero::get)
@@ -565,6 +604,13 @@ fn every_case_matches_the_reference_exactly() {
         names.len() - failures.len(),
         names.len()
     );
+    if !EXACT {
+        let largest = LARGEST.lock().expect("largest");
+        println!(
+            "compared within {UNFUSED_TOLERANCE} (no fused multiply-adds); the largest difference is {:e} at {}",
+            largest.0, largest.1
+        );
+    }
     assert!(
         names.len() >= CASE_FLOOR,
         "the corpus has {} cases",

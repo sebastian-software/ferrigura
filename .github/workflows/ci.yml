@@ -144,6 +144,10 @@ jobs:
         run: pnpm port:scope-pie
       - name: Flowchart geometry against the JS reference in Chromium
         run: pnpm port:geometry-flowchart
+      - name: Venn layout exactly against its Chromium captures (arm64, as they were taken)
+        # The Linux job compares the captures within a tolerance: without fused multiply-adds, atan2
+        # rounds as V8 does on x86-64 (crates/ferrigura-venn/tests/corpus.rs).
+        run: cargo test --release -p ferrigura-venn --test corpus
       - name: Geometry of the M6, P2 and P3 diagram types against the JS reference in Chromium
         # Every type runs, so one failing type does not hide the others.
         run: |
