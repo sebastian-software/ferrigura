@@ -38,6 +38,9 @@ pub enum Anchor {
     Middle,
     /// Every line starts at `x = 0`, as in a cluster title, which has no `text-anchor`.
     Start,
+    /// Every line starts at `x = 0`, and the label group is not shifted by half its width: the use
+    /// case's labels, whose stylesheet centres nothing and whose `labelHelper` translates only in y.
+    Origin,
 }
 
 /// What to lay out: the arguments of `createText`.
@@ -111,6 +114,9 @@ pub struct LabelLayout {
     pub title: bool,
     /// Where the lines are anchored on `x = 0`, as the spec asked.
     pub anchor: Anchor,
+    /// A class of the label's first line, besides `text-outer-tspan` and `row`: the use case's folded
+    /// stereotype, which its `querySelector` puts on the first line (`usecaseRenderer.ts` 185).
+    pub first_line_class: Option<&'static str>,
 }
 
 impl LabelLayout {
@@ -124,6 +130,7 @@ impl LabelLayout {
             font_size: 16.0,
             title: false,
             anchor: Anchor::Middle,
+            first_line_class: None,
         }
     }
 
@@ -207,11 +214,15 @@ impl LabelLayout {
             r#"<text y="-10.1" text-anchor="start" style="{}"{attributes}>"#,
             escape(text_style)
         );
-        for line in &self.lines {
+        for (index, line) in self.lines.iter().enumerate() {
             // Every line starts at its own x, with `text-anchor` start, so the browser never
             // aligns it by its own measure (decision 0005).
+            let first_class = match (index, self.first_line_class) {
+                (0, Some(class)) => format!(" {class}"),
+                _ => String::new(),
+            };
             out.push_str(&format!(
-                r#"<tspan class="text-outer-tspan {line_class}" x="{}" y="{}" text-anchor="start">"#,
+                r#"<tspan class="text-outer-tspan {line_class}{first_class}" x="{}" y="{}" text-anchor="start">"#,
                 number(line.runs.first().map_or(0.0, |run| run.x)),
                 number(line.baseline),
             ));
@@ -345,6 +356,7 @@ pub fn layout_inheriting(
         font_size,
         title: spec.title,
         anchor: spec.anchor,
+        first_line_class: None,
     })
 }
 
@@ -371,7 +383,7 @@ fn place(
         let width: f64 = widths.iter().sum();
         let mut x = match anchor {
             Anchor::Middle => -width / 2.0,
-            Anchor::Start => 0.0,
+            Anchor::Start | Anchor::Origin => 0.0,
         };
         // A line of spaces alone has no glyph to box: SVG text collapses its leading and trailing
         // spaces, so the `getBBox` of its `<text>` is empty (`er-diagram/nightly-check`, blank labels).

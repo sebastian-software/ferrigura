@@ -31,6 +31,7 @@ use ferrigura_render::kanban::KanbanSections;
 use ferrigura_render::mindmap::MindmapSection;
 use ferrigura_render::pie::render as render_pie;
 use ferrigura_render::unified::Section;
+use ferrigura_render::use_case::UseCaseSection;
 use ferrigura_render::{
     agentflow as agentflow_render, architecture as architecture_render, block as block_render,
     c4 as c4_render, class as class_render, cynefin as cynefin_render, er as er_render,
@@ -431,7 +432,10 @@ impl Renderer {
             }),
             DiagramType::UseCase => use_case_render::render(&Context {
                 diagram: &use_case::parse(text)?,
-                section: &typed_config.usecase,
+                section: &UseCaseSection {
+                    usecase: &typed_config.usecase,
+                    unified: section,
+                },
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,

@@ -118,6 +118,18 @@ pub struct Node {
     /// The fields that only a block of a block diagram carries; `None` for every other node.
     #[serde(skip)]
     pub block: Option<BlockFields>,
+    /// The fields that only a use case node carries (`usecaseDb.ts` `getData`, `usecaseRenderer.ts`), which
+    /// its shapes draw; `None` for every other node.
+    #[serde(skip)]
+    pub use_case: Option<crate::use_case::data::NodeFields>,
+    /// Whether ELK spreads the node's implicit ports (`spreadPorts`, `elk/render.ts` 1050-1058): the use
+    /// case's ellipses set it, and no other diagram does.
+    #[serde(skip)]
+    pub spread_ports: bool,
+    /// The font size of the node's label when its own stylesheet rule sets one (the use case's actor and
+    /// business labels take `actorFontSize` and `usecaseFontSize`); `None` takes the theme's font size.
+    #[serde(skip)]
+    pub font_size: Option<f64>,
     /// The corner radius of a rounded shape. A `rect` with both radii is a rounded rectangle
     /// (`nodes.ts` 22-29). Only the state diagram sets them; a flowchart node has none.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -300,6 +312,18 @@ pub struct Edge {
     /// after layout.
     pub curve: Option<String>,
 
+    /// The label's font size when the diagram's stylesheet sets one for its edge labels (the use
+    /// case's `.edgeLabel` is 10px); `None` takes the theme's font size.
+    #[serde(skip)]
+    pub font_size: Option<f64>,
+    /// The `id` of the path, when the diagram names its paths otherwise than by the edge id (the use
+    /// case's `usecase-<diagram>-<edge>`); `None` writes the edge id.
+    #[serde(skip)]
+    pub path_id: Option<String>,
+    /// Attributes the path takes after its markers, each with its leading space (the use case's
+    /// `data-usecase-*`, `role` and `aria-label`); empty for the other diagrams.
+    #[serde(skip)]
+    pub path_attributes: String,
     /// The label's measured width.
     #[serde(skip)]
     pub width: Option<f64>,

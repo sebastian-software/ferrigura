@@ -7,9 +7,10 @@
 //!
 //! Not ported, as `docs-port/usecase/PLAN.md` leaves them out of the model: the counters and the symbols
 //! of the DB (the counters are seen through the ids of a fresh parse), and the configuration. The
-//! oval-padding expectation needs the render input (`getData`), so it is ignored.
+//! oval-padding expectation is the render input's (`getData`), so it is in the render crate's
+//! `use_case_data_spec.rs`.
 
-use ferrigura_model::use_case::{Direction, UseCaseDiagram, UseCaseShape};
+use ferrigura_model::use_case::{Direction, UseCaseDiagram};
 use ferrigura_syntax::use_case::parse;
 
 /// The text of the first commit: an actor, two notes, a JSON table and a relation with its class,
@@ -140,22 +141,4 @@ fn clears_every_collection_counter_ast_direction_config_title_and_accessibility_
 
     // Without a model there is no AST: a parse that fails returns none.
     assert!(parse("usecase-beta\nunknown command").is_err());
-}
-
-#[test]
-#[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-fn gives_oval_use_cases_extra_label_clearance_over_rectangular_use_cases() {
-    let model = parse("usecase-beta\nBrowse(Browse catalog)\nManage[Manage catalog]")
-        .expect("the text parses");
-    let shape = |id: &str| {
-        model
-            .use_cases
-            .iter()
-            .find(|case| case.id == id)
-            .map(|case| case.shape)
-    };
-    assert_eq!(shape("Browse"), Some(UseCaseShape::Ellipse));
-    assert_eq!(shape("Manage"), Some(UseCaseShape::Rect));
-    // The render input gives the padding: 20 for an ellipse and 10 for a rectangle. It is not asserted
-    // here, since `getData` is not ported.
 }

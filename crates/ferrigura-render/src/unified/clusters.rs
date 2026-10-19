@@ -56,6 +56,7 @@ pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
         "noteGroup" => Ok(note_group(node)),
         "divider" => Ok(divider(node, config)),
         "flowGroup" => super::flow_group::paint(node, config),
+        "usecaseSystemBoundary" => super::shapes::usecase_boundary::paint(node, config),
         _ => rect(node, config),
     }
 }
@@ -66,7 +67,7 @@ pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
 pub fn is_cluster_kind(shape: &str) -> bool {
     matches!(
         shape,
-        "roundedWithTitle" | "noteGroup" | "divider" | "flowGroup"
+        "roundedWithTitle" | "noteGroup" | "divider" | "flowGroup" | "usecaseSystemBoundary"
     )
 }
 
