@@ -228,15 +228,16 @@ impl Renderer {
                 themes,
                 id,
             }),
-            DiagramType::Sequence => sequence_render::render(&sequence_render::SequenceInput {
+            DiagramType::Sequence => sequence_render::render(&Context {
                 diagram: &sequence::parse_with(
                     text,
                     sequence::Options {
                         wrap: sequence_wrap(&prepared.view.effective),
                     },
                 )?,
-                config: typed_config,
-                themes,
+                section: &typed_config.sequence,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::State => state_render::render(&state_render::StateInput {
