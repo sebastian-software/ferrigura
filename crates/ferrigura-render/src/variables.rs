@@ -136,6 +136,24 @@ mod tests {
             }
             None => assert!(packet.is_none()),
         }
+
+        // The group of the Cynefin diagram: an object, read by name, or nothing for any other value.
+        match map.get("cynefin") {
+            Some(cynefin) if cynefin.is_object() => {
+                let group = tokens.cynefin.as_ref().expect("an object is the group");
+                for (name, token) in group.entries() {
+                    assert_token(cynefin, &name, token);
+                }
+            }
+            other => {
+                assert!(tokens.cynefin.is_none());
+                if let Some(cynefin) = other {
+                    for name in ferrigura_model::theme::tokens::CynefinTokens::NAMES {
+                        assert_eq!(text_of(cynefin, name), None);
+                    }
+                }
+            }
+        }
     }
 
     /// A small deterministic generator, so that the generated maps are the same on every run.
@@ -229,6 +247,11 @@ mod tests {
         );
         names.extend(
             ferrigura_model::theme::tokens::PacketTokens::NAMES
+                .iter()
+                .map(|name| (*name).to_owned()),
+        );
+        names.extend(
+            ferrigura_model::theme::tokens::CynefinTokens::NAMES
                 .iter()
                 .map(|name| (*name).to_owned()),
         );

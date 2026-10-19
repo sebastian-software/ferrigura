@@ -298,6 +298,30 @@ token_struct! {
 }
 
 token_struct! {
+    /// The `cynefin` group of the theme variables: the colours and sizes of the Cynefin diagram. The
+    /// default theme computes the group (`theme-default.js`, the `cynefin` block), and a theme or a
+    /// user's override sets single keys of it; the renderer takes the defaults for the keys it does not
+    /// find (`cynefin/style.rs`).
+    pub struct CynefinTokens {
+        domain_font_size = "domainFontSize": token,
+        item_font_size = "itemFontSize": token,
+        boundary_color = "boundaryColor": token,
+        boundary_width = "boundaryWidth": token,
+        cliff_color = "cliffColor": token,
+        cliff_width = "cliffWidth": token,
+        arrow_color = "arrowColor": token,
+        arrow_width = "arrowWidth": token,
+        complex_bg = "complexBg": token,
+        complicated_bg = "complicatedBg": token,
+        chaotic_bg = "chaoticBg": token,
+        clear_bg = "clearBg": token,
+        confusion_bg = "confusionBg": token,
+        text_color = "textColor": token,
+        label_color = "labelColor": token,
+    }
+}
+
+token_struct! {
     /// The theme variables as typed tokens: one field per variable of the redux themes and of the
     /// renderers. Built once per resolved theme with [`ThemeTokens::from_value`].
     pub struct ThemeTokens {
@@ -491,6 +515,8 @@ token_struct! {
         packet = "packet": group(PacketTokens),
         row_even = "rowEven": token,
         row_odd = "rowOdd": token,
+        // cynefin (P3 renderer): the group of the Cynefin diagram's colours and sizes.
+        cynefin = "cynefin": group(CynefinTokens),
     }
 }
 
