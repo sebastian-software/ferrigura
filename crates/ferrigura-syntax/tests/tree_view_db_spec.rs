@@ -3,7 +3,8 @@
 //! (`level` spaces, then the name, with a trailing `/` for a directory), and the test reads the
 //! model. The expected values are the reference's.
 //!
-//! The configuration test is ignored: the configuration is read by the renderer stage.
+//! The configuration test (`getConfig`) is the renderer's: `tree_view_render_spec.rs` in
+//! `ferrigura-render` checks the section's defaults.
 
 use ferrigura_model::tree_view::{NodeType, TreeViewDiagram, TreeViewNode};
 use ferrigura_syntax::tree_view::parse;
@@ -175,12 +176,6 @@ mod add_node {
         let ids: Vec<u32> = root.children.iter().map(|n| n.id).collect();
         assert_eq!(ids, vec![1, 2, 3]);
     }
-}
-
-mod get_config {
-    #[test]
-    #[ignore = "port: the configuration is read by the renderer stage (docs-port/tree-view/PLAN.md, section 6); the defaults are compared by pnpm port:diff config"]
-    fn should_return_a_config_object_with_required_fields() {}
 }
 
 mod accessibility {

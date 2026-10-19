@@ -154,7 +154,8 @@ const suites: Record<string, string[]> = {
     'tree_view_db_spec',
     'tree_view_box_drawing_spec',
     'tree_view_grammar',
-    'tree_view_icons_spec',
+    'render:tree_view_icons_spec',
+    'render:tree_view_render_spec',
   ],
   usecase: [
     'use_case_lexer_spec',
