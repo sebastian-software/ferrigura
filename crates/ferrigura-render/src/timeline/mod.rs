@@ -14,7 +14,8 @@ mod style;
 mod text;
 mod vertical;
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::TimelineDiagramConfig;
+use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::timeline::TimelineDiagram;
 use ferrigura_text::{
     EmbeddedFamily, Face, FontFamily, FontStyle, FontWeight, Run, TextBox, embed_runs, face,
@@ -23,37 +24,24 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::a11y;
-use crate::common::style::base_style_sheet_with;
+use crate::common::style::base_style_sheet_tokens;
 use crate::common::text::{collapse_white_space, collapsed_box};
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
 use crate::common::{Element, decode_entities};
 use crate::svg::{escape, number};
-use crate::theme::Themes;
-use crate::variables::{px, text_of, texts_of, truthy};
 
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 
-/// What the timeline renderer draws.
-#[derive(Debug, Clone, Copy)]
-pub struct TimelineInput<'a> {
-    /// The parsed diagram.
-    pub diagram: &'a TimelineDiagram,
-    /// The effective configuration, in the timeline diagram's scope.
-    pub config: &'a MermaidConfig,
-    /// The colours and sizes of the theme.
-    pub themes: Themes<'a>,
-    /// The id of the SVG element. It scopes every selector and prefixes every element id, so it
-    /// must be a CSS identifier.
-    pub id: &'a str,
-}
-
-/// Renders the diagram to an SVG document.
+/// Renders the diagram to an SVG document. The context carries the timeline section of the
+/// configuration as its section, and the theme's tokens.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or subset.
-pub fn render(input: &TimelineInput<'_>) -> Result<String, RenderError> {
+pub fn render(
+    input: &crate::context::Context<'_, TimelineDiagram, TimelineDiagramConfig>,
+) -> Result<String, RenderError> {
     let diagram = input.diagram;
     let cx = Context::new(input)?;
     let mut canvas = Canvas {
@@ -82,12 +70,19 @@ pub fn render(input: &TimelineInput<'_>) -> Result<String, RenderError> {
     ];
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
-        || text_of(input.themes.primary(), "fontFamily").unwrap_or_else(|| "sans-serif".to_owned()),
+        || {
+            input
+                .theme
+                .light
+                .font_family
+                .text()
+                .unwrap_or_else(|| "sans-serif".to_owned())
+        },
         |family| family.css_family.clone(),
     );
-    let style = base_style_sheet_with(
+    let style = base_style_sheet_tokens(
         input.id,
-        input.themes,
+        input.theme,
         &font_family,
         &cx.css_font_size,
         &families,
@@ -219,13 +214,13 @@ pub(super) struct Palette {
 }
 
 impl Palette {
-    /// The palette of a set of theme variables (`styles.js` `genReduxSections`, `colorThemeGate.ts`).
-    fn new(variables: &ferrigura_model::value::Value, dark: bool) -> Self {
+    /// The palette of a set of theme tokens (`styles.js` `genReduxSections`, `colorThemeGate.ts`).
+    fn new(tokens: &ThemeTokens, dark: bool) -> Self {
         Self {
-            node_border: text_of(variables, "nodeBorder").unwrap_or_default(),
-            main_bkg: text_of(variables, "mainBkg").unwrap_or_default(),
+            node_border: tokens.node_border.text().unwrap_or_default(),
+            main_bkg: tokens.main_bkg.text().unwrap_or_default(),
             dark,
-            border: texts_of(variables, "borderColorArray"),
+            border: tokens.border_color_array.texts(),
         }
     }
 
@@ -245,15 +240,17 @@ impl Palette {
 }
 
 impl<'a> Context<'a> {
-    fn new(input: &TimelineInput<'a>) -> Result<Self, RenderError> {
-        let config = input.config;
-        let timeline = &config.timeline;
-        let themes = input.themes;
-        let variables = themes.primary();
-        let theme = config.theme.as_str();
+    fn new(
+        input: &crate::context::Context<'a, TimelineDiagram, TimelineDiagramConfig>,
+    ) -> Result<Self, RenderError> {
+        let timeline = input.section;
+        let tokens = input.theme.light;
+        let theme = input.globals.theme.as_str();
 
-        let text_size = px(variables, "fontSize").unwrap_or(16.0);
-        let weight = text_of(variables, "fontWeight")
+        let text_size = tokens.font_size.px().unwrap_or(16.0);
+        let weight = tokens
+            .font_weight
+            .text()
             .and_then(|text| text.trim().parse::<f64>().ok())
             .unwrap_or(400.0);
         let regular = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
@@ -265,18 +262,17 @@ impl<'a> Context<'a> {
         let middle = x_height(node_face, text_size)? / 2.0;
         let title_size = 4.0 * x_height(regular, text_size)?;
 
-        let limit = text_of(variables, "THEME_COLOR_LIMIT")
+        let limit = tokens
+            .theme_color_limit
+            .text()
             .and_then(|text| text.trim().parse::<f64>().ok())
             .filter(|limit| limit.is_finite() && *limit >= 1.0)
             .map_or(12, |limit| limit.floor() as usize);
         // A theme name that contains `dark` is the dark variant (`drawNode`'s `isDark`). With two
         // schemes the primary one is the light set, and the dark set is dark.
-        let primary_dark = matches!(themes, Themes::Single(_)) && theme.contains("dark");
-        let primary = Palette::new(variables, primary_dark);
-        let secondary = match themes {
-            Themes::Schemes { dark, .. } => Some(Palette::new(dark, true)),
-            Themes::Single(_) => None,
-        };
+        let primary_dark = input.theme.dark.is_none() && theme.contains("dark");
+        let primary = Palette::new(tokens, primary_dark);
+        let secondary = input.theme.dark.map(|dark| Palette::new(dark, true));
 
         Ok(Self {
             svg_id: input.id,
@@ -284,14 +280,14 @@ impl<'a> Context<'a> {
             padding: timeline.padding.unwrap_or(50.0),
             use_max_width: timeline.use_max_width,
             disable_multicolor: timeline.disable_multicolor,
-            neo: config.look == "neo",
+            neo: input.globals.look == "neo",
             dark: primary_dark,
-            gradient: truthy(variables, "useGradient")
-                && config.look == "neo"
+            gradient: tokens.use_gradient.truthy()
+                && input.globals.look == "neo"
                 && theme != "neutral",
-            gradient_start: text_of(variables, "gradientStart").unwrap_or_default(),
-            gradient_stop: text_of(variables, "gradientStop").unwrap_or_default(),
-            node_font_size: config.font_size,
+            gradient_start: tokens.gradient_start.text().unwrap_or_default(),
+            gradient_stop: tokens.gradient_stop.text().unwrap_or_default(),
+            node_font_size: input.globals.font_size,
             css_font_size: format!("{}px", number(text_size)),
             text_size,
             regular,
@@ -302,7 +298,10 @@ impl<'a> Context<'a> {
             middle,
             title_size,
             limit,
-            font_weight: text_of(variables, "fontWeight").unwrap_or_else(|| "400".to_owned()),
+            font_weight: tokens
+                .font_weight
+                .text()
+                .unwrap_or_else(|| "400".to_owned()),
             primary,
             secondary,
         })

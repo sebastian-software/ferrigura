@@ -192,19 +192,21 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Timeline => timeline_render::render(&timeline_render::TimelineInput {
+            DiagramType::Timeline => timeline_render::render(&Context {
                 diagram: &timeline::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.timeline,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Journey => journey_render::render(&journey_render::JourneyInput {
+            DiagramType::Journey => journey_render::render(&Context {
                 diagram: &journey::parse(text)?,
-                config: typed_config,
-                themes,
+                section: &typed_config.journey,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
-            DiagramType::GitGraph => git_graph_render::render(&git_graph_render::GitGraphInput {
+            DiagramType::GitGraph => git_graph_render::render(&Context {
                 diagram: &git_graph::parse_with(
                     text,
                     &git_graph::Options {
@@ -212,8 +214,9 @@ impl Renderer {
                         ..git_graph::options_of(text)?
                     },
                 )?,
-                config: typed_config,
-                themes,
+                section: &typed_config.git_graph,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::Er => er_render::render(&er_render::ErInput {
@@ -228,15 +231,16 @@ impl Renderer {
                 themes,
                 id,
             }),
-            DiagramType::Sequence => sequence_render::render(&sequence_render::SequenceInput {
+            DiagramType::Sequence => sequence_render::render(&Context {
                 diagram: &sequence::parse_with(
                     text,
                     sequence::Options {
                         wrap: sequence_wrap(&prepared.view.effective),
                     },
                 )?,
-                config: typed_config,
-                themes,
+                section: &typed_config.sequence,
+                globals: &prepared.view.globals,
+                theme: prepared.theme(),
                 id,
             }),
             DiagramType::State => state_render::render(&state_render::StateInput {
@@ -247,12 +251,15 @@ impl Renderer {
             }),
             DiagramType::Gantt => {
                 let now = options.now.unwrap_or_else(|| gantt::Options::default().now);
-                gantt_render::render(&gantt_render::GanttInput {
+                gantt_render::render(&Context {
                     diagram: &gantt::parse_with(text, gantt::Options { now })?,
-                    config: typed_config,
-                    themes,
+                    section: &gantt_render::GanttSection {
+                        config: &typed_config.gantt,
+                        now,
+                    },
+                    globals: &prepared.view.globals,
+                    theme: prepared.theme(),
                     id,
-                    now,
                 })
             }
             DiagramType::Mindmap => mindmap_render::render(&mindmap_render::MindmapInput {

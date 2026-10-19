@@ -3,68 +3,70 @@
 //! properties declared on the id (`docs-port/decisions/0007`), and the rules refer to them with
 //! `var(…)`; the elements carry the same colours as presentation attributes where they have them.
 
-use ferrigura_model::value::Value;
+use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use crate::common::style::base_style_sheet;
-use crate::theme::Themes;
-use crate::variables::{css_text, text_of};
+use crate::common::style::base_style_sheet_tokens;
+use crate::context::ThemeView;
+use crate::svg::css_text;
 
-/// The colour tokens of the sequence rules, each declared on the diagram's id, per scheme.
-const TOKENS: [&str; 16] = [
-    "actorBorder",
-    "actorBkg",
-    "actorTextColor",
-    "actorLineColor",
-    "signalColor",
-    "signalTextColor",
-    "labelBoxBorderColor",
-    "labelBoxBkgColor",
-    "labelTextColor",
-    "loopTextColor",
-    "noteBorderColor",
-    "noteBkgColor",
-    "noteTextColor",
-    "activationBorderColor",
-    "activationBkgColor",
-    "sequenceNumberColor",
-];
+/// The colour tokens of the sequence rules, each declared on the diagram's id, per scheme, in the
+/// order the sheet declares them.
+fn colour_tokens(tokens: &ThemeTokens) -> [(&'static str, &Token); 16] {
+    [
+        ("actorBorder", &tokens.actor_border),
+        ("actorBkg", &tokens.actor_bkg),
+        ("actorTextColor", &tokens.actor_text_color),
+        ("actorLineColor", &tokens.actor_line_color),
+        ("signalColor", &tokens.signal_color),
+        ("signalTextColor", &tokens.signal_text_color),
+        ("labelBoxBorderColor", &tokens.label_box_border_color),
+        ("labelBoxBkgColor", &tokens.label_box_bkg_color),
+        ("labelTextColor", &tokens.label_text_color),
+        ("loopTextColor", &tokens.loop_text_color),
+        ("noteBorderColor", &tokens.note_border_color),
+        ("noteBkgColor", &tokens.note_bkg_color),
+        ("noteTextColor", &tokens.note_text_color),
+        ("activationBorderColor", &tokens.activation_border_color),
+        ("activationBkgColor", &tokens.activation_bkg_color),
+        ("sequenceNumberColor", &tokens.sequence_number_color),
+    ]
+}
 
 /// The declarations of the tokens of one set of variables, as custom properties.
-fn declarations(variables: &Value) -> String {
-    TOKENS
+fn declarations(tokens: &ThemeTokens) -> String {
+    colour_tokens(tokens)
         .iter()
-        .map(|name| {
-            let value = text_of(variables, name).unwrap_or_else(|| "none".to_owned());
+        .map(|(name, token)| {
+            let value = token.text().unwrap_or_else(|| "none".to_owned());
             format!("--{name}:{value};")
         })
         .collect()
 }
 
 /// The `<style>` text of a sequence diagram with the id `svg_id`, escaped for XML. The base rules
-/// come first, from [`base_style_sheet`], then the diagram's own.
+/// come first, from [`base_style_sheet_tokens`], then the diagram's own.
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
-    themes: Themes<'_>,
+    theme: ThemeView<'_>,
     font_family: &str,
     font_size: &str,
     families: &[EmbeddedFamily],
     look_neo: bool,
 ) -> String {
-    let base = base_style_sheet(svg_id, themes, font_family, font_size, families);
+    let base = base_style_sheet_tokens(svg_id, theme, font_family, font_size, families, "");
     let id = format!("#{svg_id}");
-    let variables = themes.primary();
     let shadow = if look_neo {
         format!("url(#{svg_id}-drop-shadow)")
     } else {
         "none".to_owned()
     };
-    let scoped = match themes {
-        Themes::Single(_) => format!("{id}{{{}}}", declarations(variables)),
-        Themes::Schemes { light, dark } => format!(
+    let scoped = match theme.dark {
+        None => format!("{id}{{{}}}", declarations(theme.light)),
+        Some(dark) => format!(
             "{id}{{{}}}@media (prefers-color-scheme: dark){{{id}{{{}}}}}",
-            declarations(light),
+            declarations(theme.light),
             declarations(dark)
         ),
     };

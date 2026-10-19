@@ -21,7 +21,6 @@ use crate::RenderError;
 use crate::common::Element;
 use crate::common::draw::{RectData, draw_embedded_image, draw_image, draw_rect, get_note_rect};
 use crate::svg::number;
-use crate::variables::{text_of, texts_of};
 
 /// `ACTOR_TYPE_WIDTH` (`svgDraw.js:17`).
 pub const ACTOR_TYPE_WIDTH: f64 = 18.0 * 2.0;
@@ -129,21 +128,16 @@ fn property_text(actor: &Actor, key: &str) -> Option<String> {
 impl Renderer<'_> {
     /// The background and border palettes of the theme (`bkgColorArray`, `borderColorArray`).
     pub(super) fn palettes(&self) -> (Vec<String>, Vec<String>) {
-        let variables = self.themes.primary();
+        let tokens = self.theme.light;
         (
-            texts_of(variables, "bkgColorArray"),
-            texts_of(variables, "borderColorArray"),
+            tokens.bkg_color_array.texts(),
+            tokens.border_color_array.texts(),
         )
     }
 
     /// Whether the theme takes its actor colours from the palettes (`COLOR_THEMES`).
     pub(super) fn uses_palettes(&self) -> bool {
         matches!(self.conf.theme.as_str(), "redux-color" | "redux-dark-color")
-    }
-
-    /// A colour variable of the theme, as text.
-    fn theme_colour(&self, name: &str) -> Option<String> {
-        text_of(self.themes.primary(), name)
     }
 
     /// The stroke and fill of an actor's shape: the palette colour of its place under the palette
@@ -158,9 +152,9 @@ impl Renderer<'_> {
                 style.push(("fill", palette_color(&bkg, place)));
             }
         } else {
-            style.push(("stroke", self.theme_colour("actorBorder")));
+            style.push(("stroke", self.theme.light.actor_border.text()));
             if fill {
-                style.push(("fill", self.theme_colour("actorBkg")));
+                style.push(("fill", self.theme.light.actor_bkg.text()));
             }
         }
         style
@@ -607,7 +601,7 @@ impl Renderer<'_> {
                 "style",
                 format!(
                     "stroke: {};",
-                    self.theme_colour("actorBorder").unwrap_or_default()
+                    self.theme.light.actor_border.text().unwrap_or_default()
                 ),
             );
         }
@@ -724,7 +718,7 @@ impl Renderer<'_> {
                 "style",
                 format!(
                     "stroke: {};",
-                    self.theme_colour("actorBorder").unwrap_or_default()
+                    self.theme.light.actor_border.text().unwrap_or_default()
                 ),
             );
         }
@@ -848,8 +842,8 @@ impl Renderer<'_> {
             }
         } else {
             let (stroke, fill) = (
-                self.theme_colour("actorBorder"),
-                self.theme_colour("actorBkg"),
+                self.theme.light.actor_border.text(),
+                self.theme.light.actor_bkg.text(),
             );
             act.set(
                 "style",
@@ -1068,7 +1062,7 @@ impl Renderer<'_> {
                 "style",
                 format!(
                     "stroke: {};",
-                    self.theme_colour("actorBorder").unwrap_or_default()
+                    self.theme.light.actor_border.text().unwrap_or_default()
                 ),
             );
         }
