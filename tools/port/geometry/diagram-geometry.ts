@@ -67,6 +67,7 @@ import { join } from 'node:path';
 import {
   buildRenderExample,
   decodeFixtureEntities,
+  effectiveSettings,
   countClasses,
   exclusionReason,
   uncoveredScriptReason,
@@ -112,6 +113,18 @@ function pathOf(key: string): string {
   return key.startsWith('probes/')
     ? join(probeRoot, key.slice('probes/'.length))
     : join(fixtureRoot, key);
+}
+
+/**
+ * The settings of a cynefin fixture (cynefin only). The boundary waves are drawn from `cynefin.seed`,
+ * and a seed of 0 hashes the SVG id, which the reference and ferrigura share here; the e2e viewer
+ * still sets the seed to 1 under a fixture's own (`e2e/helpers/util.ts` 46), so the harness does the
+ * same: the fixture's own seed when it sets one, else 1. The `--self` pass then draws the same waves
+ * under both of its ids.
+ */
+function cynefinSettings(source: string): Record<string, unknown> {
+  const own = (effectiveSettings(source).cynefin as { seed?: unknown } | undefined)?.seed;
+  return { cynefin: { seed: own ?? 1 } };
 }
 
 /** The fixture folders of each type, under `e2e/diagrams`. */
@@ -234,7 +247,7 @@ const measure = (svg) => {
         ? 'label'
         : child.tagName +
           [...child.classList]
-            .filter((name) => !/^pie-slot-[0-9]+$/.test(name))
+            .filter((name) => !/^(pie-slot-[0-9]+|cynefin-fill-[a-z]+)$/.test(name))
             .sort()
             .map((name) => '.' + name)
             .join('');
@@ -365,7 +378,14 @@ async function main(): Promise<void> {
       const slug = slugOf(file);
       const id = `ref-${slug}`;
       const source = await decodeFixtureEntities(page, await readFile(pathOf(file), 'utf8'));
-      const text = patchText(source, options.type === 'journey' ? JOURNEY_SETTINGS : {});
+      const text = patchText(
+        source,
+        options.type === 'journey'
+          ? JOURNEY_SETTINGS
+          : options.type === 'cynefin'
+            ? cynefinSettings(source)
+            : {}
+      );
       const result: DiagramResult = {
         fixture: file,
         id,

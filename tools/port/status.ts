@@ -140,8 +140,8 @@ const suites: Record<string, string[]> = {
     'agentflow_conformance_spec',
     'agentflow_render_spec',
   ],
-  cynefin: ['cynefin_db_spec', 'cynefin_grammar', 'cynefin_boundary_spec'],
-  radar: ['radar_spec', 'radar_grammar', 'radar_db_spec'],
+  cynefin: ['cynefin_db_spec', 'cynefin_grammar', 'render:cynefin_boundary_spec'],
+  radar: ['radar_spec', 'radar_grammar', 'radar_db_spec', 'render:radar_render_spec'],
   railroad: [
     'railroad_spec',
     'railroad_grammar',
@@ -167,7 +167,7 @@ const suites: Record<string, string[]> = {
     'use_case_docs_spec',
     'use_case_render_spec',
   ],
-  venn: ['venn_spec', 'venn_quirks_spec', 'venn_renderer_spec'],
+  venn: ['venn_spec', 'venn_quirks_spec', 'render:venn_renderer_spec'],
   wardley: ['wardley_spec', 'wardley_grammar', 'wardley_db_spec'],
 };
 

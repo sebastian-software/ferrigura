@@ -12,8 +12,8 @@
 //! that the renderers read, including the names built at run time. The indexed names (`pie1` to
 //! `pie12`, `cScale0` to `cScale11`, `fillType0` to `fillType7`, and the others the themes number)
 //! are [`Family`]s, read by index. The groups of the diagram types (`xyChart`, `wardley`, `packet`,
-//! `treeView`, `radar`) are structs of their own. A name that only a user's overrides set, and that
-//! no renderer reads, is not a token: the map keeps it, and nothing reads it.
+//! `treeView`, `radar`, `cynefin`) are structs of their own. A name that only a user's overrides
+//! set, and that no renderer reads, is not a token: the map keeps it, and nothing reads it.
 
 use std::collections::BTreeMap;
 
@@ -350,6 +350,30 @@ token_struct! {
 }
 
 token_struct! {
+    /// The `cynefin` group of the theme variables: the colours and sizes of the Cynefin diagram. The
+    /// default theme computes the group (`theme-default.js`, the `cynefin` block), and a theme or a
+    /// user's override sets single keys of it; the renderer takes the defaults for the keys it does not
+    /// find (`cynefin/style.rs`).
+    pub struct CynefinTokens {
+        domain_font_size = "domainFontSize": token,
+        item_font_size = "itemFontSize": token,
+        boundary_color = "boundaryColor": token,
+        boundary_width = "boundaryWidth": token,
+        cliff_color = "cliffColor": token,
+        cliff_width = "cliffWidth": token,
+        arrow_color = "arrowColor": token,
+        arrow_width = "arrowWidth": token,
+        complex_bg = "complexBg": token,
+        complicated_bg = "complicatedBg": token,
+        chaotic_bg = "chaoticBg": token,
+        clear_bg = "clearBg": token,
+        confusion_bg = "confusionBg": token,
+        text_color = "textColor": token,
+        label_color = "labelColor": token,
+    }
+}
+
+token_struct! {
     /// The theme variables as typed tokens: one field per variable of the redux themes and of the
     /// renderers. Built once per resolved theme with [`ThemeTokens::from_value`].
     pub struct ThemeTokens {
@@ -552,6 +576,9 @@ token_struct! {
 
         // The wardley block: the group of the wardley map (`wardley/theme.rs`).
         wardley = "wardley": group(WardleyTokens),
+
+        // cynefin (P3 renderer): the group of the Cynefin diagram's colours and sizes.
+        cynefin = "cynefin": group(CynefinTokens),
     }
 }
 

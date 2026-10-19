@@ -139,6 +139,24 @@ mod tests {
             }
         }
 
+        // The group of the Cynefin diagram: an object, read by name, or nothing for any other value.
+        match map.get("cynefin") {
+            Some(cynefin) if cynefin.is_object() => {
+                let group = tokens.cynefin.as_ref().expect("an object is the group");
+                for (name, token) in group.entries() {
+                    assert_token(cynefin, &name, token);
+                }
+            }
+            other => {
+                assert!(tokens.cynefin.is_none());
+                if let Some(cynefin) = other {
+                    for name in ferrigura_model::theme::tokens::CynefinTokens::NAMES {
+                        assert_eq!(text_of(cynefin, name), None);
+                    }
+                }
+            }
+        }
+
         // The packet group: the renderer reads its options from the object by key, as a map of values.
         let packet = map.get("packet").and_then(Value::as_object);
         match &tokens.packet {
@@ -299,6 +317,11 @@ mod tests {
                 .iter()
                 .map(|name| (*name).to_owned()),
         );
+        names.extend(
+            ferrigura_model::theme::tokens::CynefinTokens::NAMES
+                .iter()
+                .map(|name| (*name).to_owned()),
+        );
         for prefix in [
             "pie",
             "venn",
@@ -328,6 +351,7 @@ mod tests {
                 "treeView",
                 "radar",
                 "wardley",
+                "cynefin",
             ]
             .map(str::to_owned),
         );

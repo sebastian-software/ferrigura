@@ -89,3 +89,29 @@ The cynefin section of the effective configuration is compared by `pnpm port:dif
 - `tools/port/diff-config.ts`: `cynefin` leaves `UNPORTED_SECTIONS` and `NOT_PORTED_SECTIONS`.
 - `tools/port/status.ts`: the suites of cynefin.
 - `tools/port/cases.ts`: the probes, the undetected inputs and the config cases of cynefin.
+
+## 10. Renderer (P3 stage 5)
+
+The renderer is `crates/ferrigura-render/src/cynefin/`: `boundary.rs` (the seeded generator, the hash of the id, `resolveSeed` and the four wave paths), `layout.rs` (the domains and their places), `style.rs` (the `cynefin` block of the theme with its defaults, the JavaScript conversions of the values, and the rules), `text.rs` (the markup of a text, the characters it shows, the width of a badge), `draw.rs` (the groups in the reference's order) and `mod.rs` (the root and the accessible texts). The research is section 6 of [NOTES.md](./NOTES.md).
+
+**Checked.** `pnpm port:geometry cynefin`: all 12 fixtures and the 11 probes of `tools/port/geometry/probes/cynefin/` are within tolerance, and every box, path sample and text is equal to the reference's (the harness reports no numeric difference). `--self` gives the same result. The forced seed is the fixture's own `cynefin.seed`, or 1 when it has none, as the e2e viewer sets it (`e2e/helpers/util.ts`). The unit and integration tests are `tests/cynefin_boundary_spec.rs` (the boundary specs of `cynefin.spec.ts`, with the vectors the probes recorded) and `tests/cynefin_render.rs` (one test per quirk below).
+
+**Quirks reproduced** (each with its test):
+
+1. The seed: a non-zero finite seed is used as it is, a negative one included; zero, `NaN` and the infinities take the hash of the id (`resolveSeed`). `|0` truncates a fractional seed, so 1 and 1.5 draw the same waves.
+2. Amplitude 0 draws straight boundaries (`??` keeps the 0).
+3. The title sits at `-padding / 2`; with padding 0 it is written `0`, not `-0`.
+4. An empty label measures 0 and falls back to its length times 7, so its badge is 20 wide.
+5. The badge is measured on the label as the DB holds it, with its entity placeholders; the text is written decoded (the whole-SVG pass of `mermaidAPI.ts` 359).
+6. The confusion ellipse shows three items and a `+N more` badge after them; the cap is three.
+7. The items group is written even when no domain has an item.
+8. Without descriptions the labels and the items sit at the centres (`showDomainDescriptions`).
+9. The transitions: a quadratic curve bent to the left of its direction, the label at the control point minus 6; a transition to a name that is not a domain is not drawn, and the defs stay.
+10. A self-loop that reaches the renderer is skipped (the DB drops them first).
+11. A null colour override removes the presentation attribute (`d3`'s `attr`); a string font size concatenates in `domainFontSize + 2` (`"20"` gives a 202 px title).
+12. The root's size follows `useMaxWidth` of the cynefin section only.
+13. An item font size that is not a length (`"14px"`, which the style sheet writes as `14pxpx`) is dropped by the browser, so the badges are measured at the root's font size (`style::item_measure_size`; probe `p11`).
+
+**Decisions of the renderer.** The colours are custom properties on the id, and each coloured element carries its colour as a presentation attribute (decision 0007). The domain fills take a class `cynefin-fill-<domain>`, which the geometry harness leaves out of the structural key, as it does the pie's slot classes, so that the dark scheme can choose the fill. The arrows of the subtitles are set in the symbol face by the text crate (`fallback_runs`).
+
+**Not reproduced.** A `cynefin` value in `themeVariables` that is not an object: the reference merges it key by key and draws `undefined` in the text, and ferrigura, as for `xyChart` and `packet`, takes the defaults. A `boundaryAmplitude` of `null`: the typed configuration has no such value.
