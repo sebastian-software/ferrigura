@@ -328,13 +328,16 @@ impl Renderer {
                     id,
                 })
             }
-            DiagramType::Treemap => treemap_render::render(&treemap_render::TreemapInput {
-                diagram: &treemap::parse(text)?,
-                config: typed_config,
-                settings: &treemap_render::TreemapSettings::of(&prepared.view.effective),
-                themes,
-                id,
-            }),
+            DiagramType::Treemap => {
+                let section = treemap_render::TreemapSettings::of(&prepared.view.effective);
+                treemap_render::render(&Context {
+                    diagram: &treemap::parse(text)?,
+                    section: &section,
+                    globals: &prepared.view.globals,
+                    theme: prepared.theme(),
+                    id,
+                })
+            }
             DiagramType::Ishikawa => ishikawa_render::render(&ishikawa_render::IshikawaInput {
                 diagram: &ishikawa::parse(text)?,
                 config: typed_config,
