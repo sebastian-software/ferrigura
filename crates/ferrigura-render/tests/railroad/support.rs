@@ -1,5 +1,6 @@
-//! Helpers of the railroad tests: the reference's stub measurement, the default spacing and colours,
-//! and the rendering of a parsed text with a theme.
+//! Helpers of the railroad tests (`railroad_render_spec.rs`, `railroad_quirks.rs`): the reference's
+//! stub measurement, the default spacing and colours, and the rendering of a parsed text with a
+//! theme.
 
 use ferrigura_model::config::RailroadDiagramConfig;
 use ferrigura_model::railroad::RailroadDiagram;

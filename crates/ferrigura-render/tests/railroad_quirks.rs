@@ -2,6 +2,7 @@
 //! (`docs-port/railroad/NOTES.md`, sections 6.2 to 6.8). Each names the reference's line, and the
 //! probe of `tools/port/geometry/probes/railroad` that checks it against Chromium.
 
+#[path = "railroad/support.rs"]
 mod support;
 
 use ferrigura_model::config::RailroadDiagramConfig;

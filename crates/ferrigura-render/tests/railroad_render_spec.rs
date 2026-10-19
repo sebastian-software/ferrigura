@@ -5,6 +5,7 @@
 //! are the reference's own. The styles specs read the stylesheet of the rendered SVG, with the bundled
 //! face measurement.
 
+#[path = "railroad/support.rs"]
 mod support;
 
 use ferrigura_model::config::RailroadDiagramConfig;
