@@ -7,6 +7,8 @@
 
 use std::f64::consts::PI;
 
+use ferrigura_jsmath::{cos, sin};
+
 use super::rough::{self, Outline};
 use super::util::{
     self, Part, generate_circle_points, label_helper, path_style, stroke_width, styles2string,
@@ -33,8 +35,8 @@ fn arc_points(
         .map(|index| {
             let angle = start + index as f64 * step;
             Point::new(
-                centre_x + radius * angle.cos(),
-                centre_y + radius * angle.sin(),
+                centre_x + radius * cos(angle),
+                centre_y + radius * sin(angle),
             )
         })
         .collect()
@@ -473,12 +475,14 @@ fn finish(
 
 #[cfg(test)]
 mod tests {
+    use ferrigura_jsmath::hypot;
+
     use super::*;
 
     #[test]
     fn the_brace_points_are_on_their_circles() {
         for point in arc_points(0.0, 0.0, 5.0, 20, -90.0, 0.0) {
-            assert!((point.x.hypot(point.y) - 5.0).abs() < 1e-9, "{point:?}");
+            assert!((hypot(point.x, point.y) - 5.0).abs() < 1e-9, "{point:?}");
         }
     }
 

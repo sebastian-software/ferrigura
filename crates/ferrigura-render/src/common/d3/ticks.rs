@@ -2,7 +2,7 @@
 //! domain, about `count` of them.
 
 use crate::common::d3::js_round;
-use ferrigura_jsmath::pow;
+use ferrigura_jsmath::{log10, pow};
 
 /// `tickSpec(start, stop, count)`: the first and last tick index and the increment, from the step
 /// of the range rounded to 1, 2 or 5 times a power of ten.
@@ -10,9 +10,8 @@ fn tick_spec(start: f64, stop: f64, count: f64) -> (f64, f64, f64) {
     // `Math.sqrt(50)`, `Math.sqrt(10)` and `Math.sqrt(2)`: the thresholds of the factors.
     let (e10, e5, e2) = (50.0_f64.sqrt(), 10.0_f64.sqrt(), 2.0_f64.sqrt());
     let step = (stop - start) / count.max(0.0);
-    // `Math.floor(Math.log10(step))`: the power only matters where a step is a power of ten, and
-    // there both libraries give the exact integer.
-    let power = step.log10().floor();
+    // `Math.floor(Math.log10(step))`
+    let power = log10(step).floor();
     let error = step / pow(10.0, power);
     let factor = if error >= e10 {
         10.0

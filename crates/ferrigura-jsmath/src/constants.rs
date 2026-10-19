@@ -125,13 +125,18 @@ pub(crate) const LOG_LG4: f64 = 2.222219843214978396e-01;
 pub(crate) const LOG_LG5: f64 = 1.818357216161805012e-01;
 pub(crate) const LOG_LG6: f64 = 1.531383769920937332e-01;
 pub(crate) const LOG_LG7: f64 = 1.479819860511658591e-01;
+pub(crate) const LOG10_TWO54: f64 = 1.80143985094819840000e+16;
+pub(crate) const LOG10_IVLN10: f64 = 4.34294481903251816668e-01;
+pub(crate) const LOG10_2HI: f64 = 3.01029995663611771306e-01;
+pub(crate) const LOG10_2LO: f64 = 3.69423907715893078616e-13;
 pub(crate) const ATAN2_PI_O_4: f64 = 7.8539816339744827900E-01;
 pub(crate) const ATAN2_PI_O_2: f64 = 1.5707963267948965580E+00;
 pub(crate) const ATAN2_PI: f64 = 3.1415926535897931160E+00;
 pub(crate) const ATAN2_PI_LO: f64 = 1.2246467991473531772E-16;
 
 // The constants of the correctly rounded functions (`correct.rs`), from mpmath:
-// floor(2/pi * 2^1408), floor(pi/2 * 2^256) and floor(ln 2 * 2^256), in little-endian limbs.
+// floor(2/pi * 2^1408), floor(pi/2 * 2^256) and floor(ln 2 * 2^256), and from Python's `decimal`:
+// floor(1/ln 10 * 2^256), in little-endian limbs.
 pub(crate) const CR_TWO_OVER_PI: [u64; 22] = [
     0x6599855f14a06840,
     0xa9e391615ee61b08,
@@ -169,6 +174,14 @@ pub(crate) const CR_LN2: [u64; 6] = [
     0x40f343267298b62d,
     0xc9e3b39803f2f6af,
     0xb17217f7d1cf79ab,
+    0x0000000000000000,
+    0x0000000000000000,
+];
+pub(crate) const CR_INV_LN10: [u64; 6] = [
+    0x1d1f96a27bc7529e,
+    0x1f71a30122e4d101,
+    0x9aadd557d699ee19,
+    0x6f2dec549b9438ca,
     0x0000000000000000,
     0x0000000000000000,
 ];

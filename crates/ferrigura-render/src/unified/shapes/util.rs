@@ -2,6 +2,7 @@
 //! `styles2String` splits them, the node's classes, and the attribute and path strings that the
 //! handlers share. See `docs-port/flowchart/render-notes/shapes-core.md` §1.
 
+use ferrigura_jsmath::{cos, sin};
 use ferrigura_model::theme::Token;
 use ferrigura_model::value::Value;
 
@@ -329,10 +330,6 @@ pub(super) fn create_path_from_points(points: &[Point]) -> String {
 
 /// `generateCirclePoints` (`shapes/util.ts:295-323`): `count` points over the arc from
 /// `start_degrees` to `end_degrees`. Both coordinates are negated, as the reference does.
-///
-/// `#[inline]` keeps the build that the outputs were compared with: without it the last digits of
-/// the points depend on whether the optimiser inlines the function (`docs-port/typed-views.md`).
-#[inline]
 #[must_use]
 pub(super) fn generate_circle_points(
     centre_x: f64,
@@ -348,8 +345,8 @@ pub(super) fn generate_circle_points(
     (0..count)
         .map(|index| {
             let angle = start + index as f64 * step;
-            let x = centre_x + radius * angle.cos();
-            let y = centre_y + radius * angle.sin();
+            let x = centre_x + radius * cos(angle);
+            let y = centre_y + radius * sin(angle);
             Point::new(-x, -y)
         })
         .collect()
@@ -377,7 +374,7 @@ pub(super) fn generate_full_sine_wave_points(
         .map(|step| {
             let t = step as f64 / STEPS as f64;
             let x = x1 + t * delta_x;
-            Point::new(x, mid_y + amplitude * (frequency * (x - x1)).sin())
+            Point::new(x, mid_y + amplitude * sin(frequency * (x - x1)))
         })
         .collect()
 }

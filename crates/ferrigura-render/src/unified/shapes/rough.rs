@@ -20,6 +20,8 @@
 
 use std::f64::consts::PI;
 
+use ferrigura_jsmath::{asin, cos, pow, sin, tan};
+
 use super::util::attribute;
 use crate::svg::{escape, number};
 use crate::unified::geom::{BBox, Point};
@@ -328,8 +330,8 @@ fn arc_to_flat(
         let k = sign * (left / right).abs().sqrt();
         cx = k * r1 * y / r2 + (x1 + x2) / 2.0;
         cy = k * -r2 * x / r1 + (y1 + y2) / 2.0;
-        f1 = round9((y1 - cy) / r2).asin();
-        f2 = round9((y2 - cy) / r2).asin();
+        f1 = asin(round9((y1 - cy) / r2));
+        f2 = asin(round9((y2 - cy) / r2));
         if x1 < cx {
             f1 = PI - f1;
         }
@@ -361,8 +363,8 @@ fn arc_to_flat(
         } else {
             f1 - limit
         };
-        x2 = cx + r1 * f2.cos();
-        y2 = cy + r2 * f2.sin();
+        x2 = cx + r1 * cos(f2);
+        y2 = cy + r2 * sin(f2);
         params = arc_to_flat(
             Point::new(x2, y2),
             Point::new(x2old, y2old),
@@ -374,8 +376,8 @@ fn arc_to_flat(
         );
     }
     df = f2 - f1;
-    let (c1, s1, c2, s2) = (f1.cos(), f1.sin(), f2.cos(), f2.sin());
-    let t = (df / 4.0).tan();
+    let (c1, s1, c2, s2) = (cos(f1), sin(f1), cos(f2), sin(f2));
+    let t = tan(df / 4.0);
     let hx = 4.0 / 3.0 * r1 * t;
     let hy = 4.0 / 3.0 * r2 * t;
     let m2 = Point::new(2.0 * x1 - (x1 + hx * s1), 2.0 * y1 - (y1 - hy * c1));
@@ -399,13 +401,13 @@ fn ellipse_ops(cx: f64, cy: f64, width: f64, height: f64) -> (Vec<Op>, Vec<Point
     // `generateEllipseParams`: the number of steps grows with the size.
     let rx = (width / 2.0).abs();
     let ry = (height / 2.0).abs();
-    let psq = (PI * 2.0 * (((width / 2.0).powi(2) + (height / 2.0).powi(2)) / 2.0).sqrt()).sqrt();
+    let psq = (PI * 2.0 * ((pow(width / 2.0, 2.0) + pow(height / 2.0, 2.0)) / 2.0).sqrt()).sqrt();
     let steps = CURVE_STEP_COUNT
         .max(CURVE_STEP_COUNT / 200.0_f64.sqrt() * psq)
         .ceil();
     let increment = 2.0 * PI / steps;
     let step = increment / 4.0;
-    let sample = |angle: f64| Point::new(cx + rx * angle.cos(), cy + ry * angle.sin());
+    let sample = |angle: f64| Point::new(cx + rx * cos(angle), cy + ry * sin(angle));
     let mut points = vec![sample(-step)];
     let mut angle = 0.0;
     while angle <= 2.0 * PI {
@@ -598,13 +600,13 @@ fn simplify_points(points: &[Point], start: usize, end: usize, epsilon: f64, out
 
 /// The squared distance from `p` to the segment `vw` (`points-on-curve`'s `distanceToSegmentSq`).
 fn distance_to_segment_sq(p: Point, v: Point, w: Point) -> f64 {
-    let l2 = (v.x - w.x).powi(2) + (v.y - w.y).powi(2);
+    let l2 = pow(v.x - w.x, 2.0) + pow(v.y - w.y, 2.0);
     if l2 == 0.0 {
-        return (p.x - v.x).powi(2) + (p.y - v.y).powi(2);
+        return pow(p.x - v.x, 2.0) + pow(p.y - v.y, 2.0);
     }
     let t = (((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2).clamp(0.0, 1.0);
     let projected = Point::new(v.x + (w.x - v.x) * t, v.y + (w.y - v.y) * t);
-    (p.x - projected.x).powi(2) + (p.y - projected.y).powi(2)
+    pow(p.x - projected.x, 2.0) + pow(p.y - projected.y, 2.0)
 }
 
 /// `pointsOnPath` (`points-on-path`): the points of each sub-path of a path, its curves subdivided at

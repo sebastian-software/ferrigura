@@ -3,6 +3,8 @@
 //! `shapes/folder.ts`, `bucket.ts`, `browser.ts` and `console.ts`, for the neo and classic looks.
 //! See `docs-port/flowchart/render-notes/shapes-core.md` §2.4.
 
+use ferrigura_jsmath::{cos, sin};
+
 use super::arcs::arc_points;
 use super::util::{Part, attribute, create_path_from_points, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
@@ -177,7 +179,7 @@ fn rim_arc(rx: f64, cy: f64, y_sign: f64, rim_ry: f64, segments: usize) -> Vec<P
         .map(|index| {
             let theta =
                 std::f64::consts::PI - (index as f64 * std::f64::consts::PI) / segments as f64;
-            Point::new(rx * theta.cos(), cy + y_sign * rim_ry * theta.sin())
+            Point::new(rx * cos(theta), cy + y_sign * rim_ry * sin(theta))
         })
         .collect()
 }

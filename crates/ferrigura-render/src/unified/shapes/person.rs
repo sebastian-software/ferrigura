@@ -2,6 +2,8 @@
 //! `shapes/person.ts` in the plain elements that both looks draw (the rough version is for the
 //! hand-drawn look only). See `docs-port/flowchart/render-notes/shapes-core.md` §2.1 and §2.4.
 
+use ferrigura_jsmath::asin;
+
 use super::util::{self, Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::svg::number;
@@ -68,7 +70,7 @@ pub(super) fn person(input: &ShapeInput<'_>) -> Part {
     // The intersect outline: the head's arc that shows above the body, joined to the body's
     // rounded corners, so edges meet the silhouette and not the box.
     let phi_right_deg =
-        ((body_top - head_centre_y) / head_radius).min(1.0).asin() * 180.0 / std::f64::consts::PI;
+        asin(((body_top - head_centre_y) / head_radius).min(1.0)) * 180.0 / std::f64::consts::PI;
     let mut points = util::generate_circle_points(
         0.0,
         -head_centre_y,

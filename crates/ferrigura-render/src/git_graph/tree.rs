@@ -6,6 +6,8 @@
 //! through the child's transform, and a transformed box the box of its four corners. An empty box
 //! (no width, or no height) is united too, so a vertical branch line reaches its end.
 
+use ferrigura_jsmath::{atan2, cos, sin};
+
 use crate::svg::{escape, number};
 use crate::unified::geom::{BBox, Point};
 
@@ -30,7 +32,7 @@ impl Transform {
     #[must_use]
     pub fn rotate(degrees: f64, cx: f64, cy: f64) -> Self {
         let radians = degrees.to_radians();
-        let (sin, cos) = radians.sin_cos();
+        let (sin, cos) = (sin(radians), cos(radians));
         let rotation = [cos, sin, -sin, cos, 0.0, 0.0];
         let matrix = multiply(
             &multiply(&[1.0, 0.0, 0.0, 1.0, cx, cy], &rotation),
@@ -454,8 +456,8 @@ fn arc_extremes(from: Point, to: Point, radius: f64, sweep: bool) -> Vec<Point> 
     let cy = cyp + (y1 + y2) / 2.0;
     let start = ((half_x - cxp) / r, (half_y - cyp) / r);
     let end = ((-half_x - cxp) / r, (-half_y - cyp) / r);
-    let theta = start.1.atan2(start.0);
-    let mut delta = end.1.atan2(end.0) - theta;
+    let theta = atan2(start.1, start.0);
+    let mut delta = atan2(end.1, end.0) - theta;
     let tau = std::f64::consts::TAU;
     if !sweep && delta > 0.0 {
         delta -= tau;
@@ -473,6 +475,6 @@ fn arc_extremes(from: Point, to: Point, radius: f64, sweep: bool) -> Vec<Point> 
             };
             offset <= delta.abs()
         })
-        .map(|angle| Point::new(cx + r * angle.cos(), cy + r * angle.sin()))
+        .map(|angle| Point::new(cx + r * cos(angle), cy + r * sin(angle)))
         .collect()
 }
