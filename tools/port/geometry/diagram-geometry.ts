@@ -153,10 +153,12 @@ const TYPE_FOLDERS: Record<string, string[]> = {
 /**
  * The page-side measurement of one SVG, as source text for the page (`pageHtml` in `common.ts`).
  * `record` gives one element its entry; `walk` visits the children of an element, in document
- * order, with the structural key of the parent. In label mode (`labels`, the journey and the
- * eventmodeling) a label is recorded with its lines and left out of the elements: a `switch` (the
- * journey's `fo` label, which ferrigura draws) or a `foreignObject` (the reference's box text of
- * eventmodeling). Both get the key `label[n]`, so the two sides pair (`journey-labels.ts`).
+ * order, with the structural key of the parent. In label mode (`labels`, the journey, the
+ * eventmodeling and the venn) a label is recorded with its lines and left out of the elements: a
+ * `switch` (the journey's `fo` label, which ferrigura draws), a `foreignObject` (the reference's box
+ * text of eventmodeling and venn), or the venn's `text.venn-text-node`, which ferrigura draws in
+ * place of the venn's `foreignObject`. Each gets the key `label[n]`, so the two sides pair
+ * (`journey-labels.ts`).
  */
 function measureSource(labels: boolean): string {
   return `
@@ -226,7 +228,7 @@ const measure = (svg) => {
       if (SKIPPED.has(child.tagName)) continue;
       // The pie's \`pie-slot-<n>\` classes are ferrigura's own: they carry the colour slots of
       // decision 0007, which the reference has no class for, so they are not part of the key.
-      const isLabel = ${labels} && (child.tagName === 'switch' || child.tagName === 'foreignObject');
+      const isLabel = ${labels} && (child.tagName === 'switch' || child.tagName === 'foreignObject' || (child.tagName === 'text' && child.classList.contains('venn-text-node')));
       const signature = isLabel
         ? 'label'
         : child.tagName +
@@ -351,9 +353,10 @@ async function main(): Promise<void> {
   );
 
   const results: DiagramResult[] = [];
-  // Journey and eventmodeling: the labels are compared by their lines, and the journey's settings
-  // pin its title font.
-  const labelled = options.type === 'journey' || options.type === 'eventmodeling';
+  // Journey, eventmodeling and venn: the labels are compared by their lines (the venn's text nodes
+  // are `foreignObject`s in the reference), and the journey's settings pin its title font.
+  const labelled =
+    options.type === 'journey' || options.type === 'eventmodeling' || options.type === 'venn';
   await withPage(measureSource(labelled), async (page) => {
     for (const file of selected) {
       const slug = slugOf(file);

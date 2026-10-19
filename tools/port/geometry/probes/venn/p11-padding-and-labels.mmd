@@ -1,0 +1,13 @@
+---
+config:
+  venn:
+    padding: 20
+---
+venn-beta
+  set A["First"]
+    text "Inside A"
+  set B["Second"]
+  set C
+  union A, B["AB"]
+  union A, C
+    text "AC"

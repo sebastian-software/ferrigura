@@ -14,8 +14,8 @@
  * A line is found from the characters: a `Range` over each character of the label's text gives its
  * box, the characters with the same top form a line, and the box of a line is the union of the
  * boxes of its characters that are not blanks. The reference's label is the `div.label` of the
- * `foreignObject` (or the `foreignObject` itself, the eventmodeling's box text, which has no
- * `.label`); ferrigura's is the `text` of the `switch`. The boxes are in viewBox units, as the
+ * `foreignObject` (or the `foreignObject` itself, the eventmodeling's and the venn's text, which
+ * have no `.label`); ferrigura's is the `text` of the `switch`, or the venn's `text` itself. The boxes are in viewBox units, as the
  * generic harness's boxes are.
  *
  * Everything else in a journey or an eventmodeling is compared by the generic rule
@@ -58,7 +58,7 @@ export const JOURNEY_SETTINGS: Record<string, unknown> = {
 export const LABEL_LINES = `
 const labelLines = (svg, element) => {
   const root =
-    element.tagName === 'foreignObject'
+    element.tagName === 'foreignObject' || element.tagName === 'text'
       ? element
       : element.querySelector('foreignObject .label') || element.querySelector('text');
   if (!root) return [];
