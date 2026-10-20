@@ -39,6 +39,14 @@ Together about 28,000 to 35,000 lines of Rust, of which swimlanes is a third.
 2. **Swimlanes is a milestone of its own**, running beside P3: its layout is a port the size of ELK Layered. P3 is the other eight types.
 3. **Collation.** The swimlane layout's `localeCompare` is a comparison of our own that gives ICU's root order exactly for ASCII; an ICU4X collator follows when ids outside ASCII need it.
 
+### Decided by Sebastian on 2026-10-20
+
+1. **Swimlanes is finished next**: its parser and its renderer, on the layout engine already ported.
+2. **handDrawn** comes later as a post-processing step over the finished SVG, not as a rough.js port inside each renderer. Until then its fixtures stay excluded.
+3. **Themes** stay as they are (the two redux themes). Before porting Mermaid's classic themes, consider themes as sets of CSS custom properties, which the output already declares (decision 0007), in place of their colour computations.
+4. **Math in labels** (KaTeX) is left out for now.
+5. **Fallback faces**: emoji and the miscellaneous symbols and dingbats (U+2600-27BF) are added; CJK and Arabic are left out for now.
+
 ## Stages
 
 1. **Research**: done, the nine `<type>/NOTES.md`.
