@@ -21,6 +21,8 @@ pub mod palette;
 pub mod path;
 pub mod pipeline;
 pub mod shapes;
+pub mod swimlane_lane;
+pub mod swimlane_layout;
 pub mod terminal;
 pub mod tidy_tree;
 

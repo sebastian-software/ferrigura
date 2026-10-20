@@ -230,13 +230,43 @@ export function uncoveredScriptReason(source: string): string | null {
   return null;
 }
 
-/** Why a fixture is excluded from the comparison, or null when it is compared. */
-export function exclusionReason(source: string): string | null {
+/**
+ * The swimlane fixtures' own exclusions, on top of `exclusionReason`: the two layout options that the
+ * swimlane engine does not port. Their fixtures are the only ones that set them (`mermaid-work` sets
+ * `ignoreCrossLaneEdges: false`, `14-messy-layout` sets `automaticLaneOrdering: true`).
+ */
+const SWIMLANE_OPTION_EXCLUSIONS: readonly [RegExp, string][] = [
+  [
+    /ignoreCrossLaneEdges\s*:\s*false/,
+    'swimlane.ignoreCrossLaneEdges: false (the gravity layering) is not ported',
+  ],
+  [
+    /automaticLaneOrdering\s*:\s*true/,
+    'swimlane.automaticLaneOrdering: true (the lane ordering) is not ported',
+  ],
+];
+
+/**
+ * Why a fixture is excluded from the comparison, or null when it is compared. `type` is the diagram type
+ * the fixtures belong to: the swimlane diagrams are laid out by the `swimlane` engine, which is layered
+ * only in the sense of its own pipeline, so their `layout: swimlane` is compared (scoped to them).
+ */
+export function exclusionReason(source: string, type = ''): string | null {
   const { look, layout } = effectiveSettings(source);
   if (look === EXCLUDED_LOOK) {
     return `look ${EXCLUDED_LOOK}: rough.js sketching is out of scope`;
   }
-  if (typeof layout === 'string' && NON_LAYERED_LAYOUTS.includes(layout)) {
+  const swimlanes = type === 'swimlanes';
+  if (swimlanes) {
+    for (const [option, reason] of SWIMLANE_OPTION_EXCLUSIONS) {
+      if (option.test(source)) return reason;
+    }
+  }
+  if (
+    typeof layout === 'string' &&
+    NON_LAYERED_LAYOUTS.includes(layout) &&
+    !(swimlanes && layout === 'swimlane')
+  ) {
     return `layout ${layout}: not layered, ferrigura falls back to layered`;
   }
   // Scripts the bundled faces do not cover need a fallback font, which ferrigura does not have
@@ -246,7 +276,7 @@ export function exclusionReason(source: string): string | null {
   }
   // A subgraph's own algorithm, from its shape data (`grp@{ algorithm: elk.box }`).
   for (const match of source.matchAll(/algorithm\s*:\s*["']?([\w.-]+)/g)) {
-    if (NON_LAYERED_LAYOUTS.includes(match[1])) {
+    if (NON_LAYERED_LAYOUTS.includes(match[1]) && !(swimlanes && match[1] === 'swimlane')) {
       return `subgraph algorithm ${match[1]}: not layered, ferrigura falls back to layered`;
     }
   }

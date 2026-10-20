@@ -57,17 +57,24 @@ pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
         "divider" => Ok(divider(node, config)),
         "flowGroup" => super::flow_group::paint(node, config),
         "usecaseSystemBoundary" => super::shapes::usecase_boundary::paint(node, config),
+        "swimlane" => super::swimlane_lane::paint(node, config),
         _ => rect(node, config),
     }
 }
 
-/// Whether a subgraph's shape is one of the state diagram's cluster kinds, which have no entry in the
-/// shape registry (`clusters.js` 806-815). Their labels are still measured as the others' are.
+/// Whether a subgraph's shape is one of the cluster kinds that have no entry in the shape registry
+/// (`clusters.js` 806-815: the state diagram's, and the swimlane's lane). Their labels are still measured
+/// as the others' are.
 #[must_use]
 pub fn is_cluster_kind(shape: &str) -> bool {
     matches!(
         shape,
-        "roundedWithTitle" | "noteGroup" | "divider" | "flowGroup" | "usecaseSystemBoundary"
+        "roundedWithTitle"
+            | "noteGroup"
+            | "divider"
+            | "flowGroup"
+            | "usecaseSystemBoundary"
+            | "swimlane"
     )
 }
 

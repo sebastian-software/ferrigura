@@ -197,6 +197,7 @@ dependencies = [
  "ferrigura-jsmath",
  "ferrigura-model",
  "ferrigura-path",
+ "ferrigura-swimlane",
  "ferrigura-syntax",
  "ferrigura-text",
  "ferrigura-venn",

@@ -417,7 +417,7 @@ async function main(): Promise<void> {
       let other: { svg: string; geometry: MeasuredSvg } | null = null;
       const excluded = options.self
         ? null
-        : (exclusionReason(source) ?? uncoveredScriptReason(source));
+        : (exclusionReason(source, options.type) ?? uncoveredScriptReason(source));
       if (excluded !== null) {
         result.class = 'excluded';
         result.reason = excluded;
