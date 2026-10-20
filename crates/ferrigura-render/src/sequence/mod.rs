@@ -5,8 +5,8 @@
 //! `addActorRenderingData`, `calculateLoopBounds`), the message loop that bounds every item and
 //! draws the notes and blocks, and the drawing of the actors' rows and the messages. The port
 //! follows that order. The children of the root are kept in two lists, because d3's `lower()`
-//! moves an element to the front of its parent: [`Renderer::lower`] puts an element in the front
-//! list, and [`Renderer::append`] in the back list, which keeps the indices of its anchors.
+//! moves an element to the front of its parent: `Renderer::lower` puts an element in the front
+//! list, and `Renderer::append` in the back list, which keeps the indices of its anchors.
 //!
 //! The modules: `conf` (the configuration), `model` (the state of one render), `bounds` (the
 //! bounds of the layout), `layout` (the widths and the models), `actors` (the participants),

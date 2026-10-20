@@ -61,7 +61,7 @@ pub fn font_metrics(face: &Face, size: f64) -> Result<FontMetrics, TextError> {
 
 /// The text box of `face` at `size` pixels, with ascent and descent rounded to whole pixels.
 ///
-/// The size is first floored to 1/100 px, as Chromium sets SVG text (see [`laid_out_size`]).
+/// The size is first floored to 1/100 px, as Chromium sets SVG text (see `laid_out_size`).
 ///
 /// # Errors
 ///

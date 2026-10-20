@@ -5,7 +5,7 @@
 //! The reference draws it with `flowRenderer-v3-unified.ts` and the layout's `render` (`render.ts`): the
 //! `layout` option names the engine (`getRegisteredLayoutAlgorithm`). The `swimlane` engine is the default
 //! (`swimlane.layout`). A diagram whose `layout` names ELK's layered algorithm, or any name that is not
-//! registered, is laid out by ELK, as a flowchart is, with no lanes ([`Engine::Elk`]).
+//! registered, is laid out by ELK, as a flowchart is, with no lanes (`Engine::Elk`).
 //!
 //! The steps follow the reference: `getData`, the preparation of the lanes and the label nodes, the measure,
 //! the layout, the paint with the lanes and the clipped edges, the title, and the root `svg`
@@ -76,7 +76,7 @@ const TITLE_FONT_SIZE: f64 = 18.0;
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, the layout fails, or the layout
-/// is one the port does not implement ([`engine_of`]).
+/// is one the port does not implement (`engine_of`).
 pub fn render(
     input: &Context<'_, SwimlanesDiagram, SwimlaneSection<'_>>,
 ) -> Result<String, RenderError> {

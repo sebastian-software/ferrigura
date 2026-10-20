@@ -54,6 +54,7 @@ jobs:
       # The toolchain comes from rust-toolchain.toml; the runner's rustup installs it on first use.
       - run: cargo fmt --all --check
       - run: cargo clippy --all-targets -- -D warnings
+      - run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace
       - run: cargo test --workspace --no-fail-fast
       - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:

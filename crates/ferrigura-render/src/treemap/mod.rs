@@ -1,12 +1,13 @@
 //! The treemap diagram: a port of `packages/mermaid/src/diagrams/treemap/renderer.ts` (`draw`), with
-//! the layout of `d3-hierarchy` ([`common::d3::treemap`]), the value formats of `d3-format`
-//! ([`common::d3::format`]) and the colour scales of `d3-scale` ([`common::d3::ordinal`]). The
-//! research is in `docs-port/treemap/NOTES.md` (section 6), and the parser in `docs-port/treemap/PLAN.md`.
+//! the layout of `d3-hierarchy` ([`common::d3::treemap`](crate::common::d3::treemap)), the value
+//! formats of `d3-format` ([`common::d3::format`](crate::common::d3::format)) and the colour scales
+//! of `d3-scale` ([`common::d3::ordinal`](crate::common::d3::ordinal)). The research is in
+//! `docs-port/treemap/NOTES.md` (section 6), and the parser in `docs-port/treemap/PLAN.md`.
 //!
 //! A section is a node with children: its box is the tile of its own children, with a header band
 //! of 25 px. A leaf is a node without children: its label and its value are fitted into its box by
 //! shrinking the font, and hidden when they do not fit. The fitting decisions read the advance of
-//! the text, so the text is measured as Chromium measures it ([`text`]). The viewBox is the union of
+//! the text, so the text is measured as Chromium measures it (`text`). The viewBox is the union of
 //! the boxes that are drawn; an element with `display: none` is left out, as `getBBox` leaves it out.
 //!
 //! Two things of the reference are kept on purpose: a `valueFormat` that is invalid after a `$`

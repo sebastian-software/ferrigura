@@ -552,8 +552,35 @@ fn def_pointer(prop: &Value) -> Option<&str> {
 fn description(node: &Value) -> Option<String> {
     node.get("description")
         .and_then(Value::as_str)
-        .map(|text| text.trim().to_owned())
+        .map(|text| autolink(text.trim()))
         .filter(|text| !text.is_empty())
+}
+
+/// The description with each bare URL written as rustdoc's autolink, `<https://…>`, which rustdoc
+/// asks for (`rustdoc::bare_urls`). The schema is Mermaid's source and stays as it is; a URL ends at
+/// white space, and a full stop or comma after it stays outside the link.
+fn autolink(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(at) = rest.find("http") {
+        let (before, from) = rest.split_at(at);
+        out.push_str(before);
+        let is_url = (from.starts_with("https://") || from.starts_with("http://"))
+            && !before.ends_with(['<', '(', '[']);
+        if !is_url {
+            out.push_str("http");
+            rest = &from[4..];
+            continue;
+        }
+        let end = from.find(char::is_whitespace).unwrap_or(from.len());
+        let url = from[..end].trim_end_matches(['.', ',', ';', ':']);
+        out.push('<');
+        out.push_str(url);
+        out.push('>');
+        rest = &from[url.len()..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// Merges `source` into `target` for `allOf`: properties are merged, and other keys are kept

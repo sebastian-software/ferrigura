@@ -1,11 +1,11 @@
 //! The part of d3 the renderers use (`docs-port/xychart/NOTES.md` 6.3): the number text and
 //! rounding of JavaScript ([`number`]), the band and linear scales of `d3-scale` 4.0.2 ([`scale`]),
-//! the ordinal scale and its colours ([`ordinal`]), the ticks of `d3-array` 3.2.4 ([`ticks`]), the
-//! reductions of `d3-array` 2.12.1 ([`array`]), the sort of `Array.prototype.sort` ([`sort`]), the
-//! linear line of `d3-shape` ([`line`]), and the `Math.max` and `Math.min` of two arguments
+//! the ordinal scale and its colours ([`ordinal`]), the ticks of `d3-array` 3.2.4 ([`mod@ticks`]), the
+//! reductions of `d3-array` 2.12.1 ([`mod@array`]), the sort of `Array.prototype.sort` ([`sort`]), the
+//! linear line of `d3-shape` ([`mod@line`]), and the `Math.max` and `Math.min` of two arguments
 //! ([`math`]).
 //!
-//! The treemap's pieces of `d3-hierarchy` ([`hierarchy`], [`treemap`]), `d3-format` ([`format`]),
+//! The treemap's pieces of `d3-hierarchy` ([`hierarchy`], [`treemap`]), `d3-format` ([`mod@format`]),
 //! and the ordinal scale of `d3-scale` ([`ordinal`]), see `docs-port/treemap/NOTES.md` (section 6).
 //!
 //! The scales and the line keep the reference's order of operations, and the path numbers are

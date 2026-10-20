@@ -2,10 +2,10 @@
 //! (`draw`) with its helpers in `svgDraw.ts`, `architectureStyles.ts` and `architectureIcons.ts`.
 //!
 //! The renderer lays the services, junctions and groups out with cytoscape and cytoscape-fcose, and
-//! draws the result. Here the cytoscape state is [`scene::Scene`] (the nodes, the edges and the
-//! functions cytoscape computes from them: bounds, endpoints, bends), the layout is [`layout`] (the
-//! two runs of fcose through `ferrigura-cose`), the constraints are [`constraints`] (the alignments and
-//! the relative placements of the DB's spatial maps), and the SVG is [`draw`].
+//! draws the result. Here the cytoscape state is `scene::Scene` (the nodes, the edges and the
+//! functions cytoscape computes from them: bounds, endpoints, bends), the layout is `layout` (the
+//! two runs of fcose through `ferrigura-cose`), the constraints are `constraints` (the alignments and
+//! the relative placements of the DB's spatial maps), and the SVG is `draw`.
 //!
 //! The research, with the file and line for each rule, is `docs-port/architecture/NOTES.md`, section 6
 //! and section E. The decisions of this port are `docs-port/architecture/PLAN.md`, section 8.

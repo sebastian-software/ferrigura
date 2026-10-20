@@ -38,7 +38,7 @@ pub fn browser_f32(value: f64) -> f64 {
 
 /// A coordinate of a path as the browser reads it from the `d` string: the number the reference
 /// writes (the shortest decimal that reads back as the same double), parsed the way Chromium's SVG
-/// parser parses it. See [`svg_number`].
+/// parser parses it. See `svg_number`.
 #[must_use]
 pub fn path_coordinate_f32(value: f64) -> f64 {
     f64::from(svg_number(&value.to_string()))

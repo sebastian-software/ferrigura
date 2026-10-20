@@ -9,7 +9,7 @@
 //! in the reference's paint order (`orderNodesForElkPaint`).
 //!
 //! The reference keeps a second copy of every node (`nodeDb`) for the post-processing, with the
-//! absolute top-left `offset`, the centre and the ELK size. That copy is [`DbNode`] here; the layout
+//! absolute top-left `offset`, the centre and the ELK size. That copy is `DbNode` here; the layout
 //! node in `data` gets the same centre and size as the reference writes them back.
 //!
 //! The terminal labels of the edges (their centres, `followMovedEndpoints`,

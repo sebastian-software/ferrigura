@@ -1,7 +1,7 @@
 //! The kanban diagram: a port of `packages/mermaid/src/diagrams/kanban/kanbanRenderer.ts` (`draw`),
 //! with `getData` (`kanbanDb.ts` 54-97) in [`data`], the section and item shapes in
 //! `unified/shapes/kanban_section.rs` and `kanban_item.rs`, and the styles of `styles.ts` in
-//! [`style`]. The research is in `docs-port/kanban/NOTES.md` (section 6).
+//! `style`. The research is in `docs-port/kanban/NOTES.md` (section 6).
 //!
 //! The layout is arithmetic on the sizes of the labels. A section is `width` wide, and the sections
 //! are side by side with `padding / 2` between them. The items of a section are stacked from the
