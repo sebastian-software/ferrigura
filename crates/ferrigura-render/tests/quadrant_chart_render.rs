@@ -245,3 +245,24 @@ fn a_text_outside_the_bundled_faces_still_renders() {
     let svg = draw("quadrantChart\n  中文点: [0.5, 0.5]\n");
     assert!(svg.contains("中文点"), "{svg}");
 }
+
+#[test]
+fn the_style_sheet_writes_each_font_face_once() {
+    // The faces come with the base sheet, before the theme's rules, as in the other diagrams.
+    let svg = draw(COMPLETE);
+    let start = svg.find("<style>").expect("a style sheet") + "<style>".len();
+    let sheet = &svg[start..start + svg[start..].find("</style>").expect("its end")];
+    let faces: Vec<&str> = sheet
+        .match_indices("@font-face")
+        .map(|(at, _)| {
+            let rule = &sheet[at..];
+            &rule[..=rule.find('}').expect("the rule's end")]
+        })
+        .collect();
+    assert!(!faces.is_empty(), "{sheet}");
+    let mut distinct = faces.clone();
+    distinct.sort_unstable();
+    distinct.dedup();
+    assert_eq!(distinct.len(), faces.len(), "{sheet}");
+    assert!(sheet.starts_with("@font-face"), "{sheet}");
+}

@@ -100,6 +100,10 @@ pub struct ShapeOutput {
     /// Attributes the shape writes on the node's `<g>`, after its `data-look`, each with its
     /// leading space (the colour slot of an ER entity). Empty for the other shapes.
     pub group_attributes: String,
+    /// The `data-color-id` that the shape's handler stamps on the node's `<g>` (`stampColorSlot`),
+    /// with its leading space: before the `data-look`, which `insertNode` sets after the handler.
+    /// The collapsed group's; empty for the other shapes.
+    pub colour_slot: String,
     /// The box of the whole node group, in the node's coordinates.
     pub bbox: BBox,
     /// How edges meet the outline.
@@ -128,6 +132,10 @@ pub enum Intersect {
         /// The vertical radius.
         ry: f64,
     },
+    /// `question.ts`'s `calcIntersect`: `intersect-polygon.js` on the diamond rebuilt from the
+    /// width of the box it is given (`s = bounds.width`), not from the drawn size. The box is the
+    /// measured one, so its corners are the box's to the last digit, where the ELK port is.
+    Question,
     /// `intersect-polygon.js` with these points, in the shape's own coordinates as the handler
     /// passes them.
     Polygon {
@@ -159,6 +167,9 @@ impl Intersect {
             Self::Rect => intersect::rect(node, point),
             Self::Circle { radius } => intersect::circle(node, *radius, point),
             Self::Ellipse { rx, ry } => intersect::ellipse(node, *rx, *ry, point),
+            Self::Question => {
+                intersect::polygon(node, &polygon::question_points(node.width), point)
+            }
             Self::Polygon { points } => intersect::polygon(node, points, point),
             Self::Cylinder { rx, ry } => intersect::cylinder(node, *rx, *ry, point),
             Self::TiltedCylinder { rx, ry } => intersect::tilted_cylinder(node, *rx, *ry, point),
@@ -276,10 +287,12 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
 
     let mut label_svg = String::new();
     if let (Some(label), Some(offset)) = (&shape.label, shape.label_offset) {
-        let style = if kind.is_some_and(Kind::sets_label_style) {
-            util::attribute("style", &styles.label)
-        } else {
-            String::new()
+        let style = match kind {
+            // `collapsedGroup.ts` leaves the node's `labelStyle` as the DB set it (empty), so
+            // `labelHelper` writes that and not the compiled label styles.
+            Some(Kind::CollapsedGroup) => util::attribute("style", &node.label_style),
+            Some(kind) if kind.sets_label_style() => util::attribute("style", &styles.label),
+            _ => String::new(),
         };
         // `note.ts` gives its label group a class of its own.
         let label_class = if kind == Some(Kind::Note) {
@@ -302,6 +315,7 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
     let transform = format!("translate({}, {})", number(x), number(y));
     let data_look = util::attribute("data-look", &node.look);
     let group_attributes = &shape.group_attributes;
+    let colour_slot = &shape.colour_slot;
     let title = node
         .tooltip
         .as_deref()
@@ -317,7 +331,7 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
                 .as_deref()
                 .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
             format!(
-                "<a xlink:href=\"{}\"{tooltip}><g class=\"{}\" id=\"{}\"{data_look} transform=\"{transform}\"{tooltip}>{body}</g></a>",
+                "<a xlink:href=\"{}\"{tooltip}><g class=\"{}\" id=\"{}\"{colour_slot}{data_look} transform=\"{transform}\"{tooltip}>{body}</g></a>",
                 escape(link),
                 escape(&class),
                 escape(&id),
@@ -330,14 +344,14 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
                 .as_deref()
                 .map_or_else(String::new, |target| util::attribute("target", target));
             format!(
-                "<a xlink:href=\"{}\"{target}{data_look} transform=\"{transform}\"><g class=\"{}\" id=\"{}\"{group_attributes}{title}>{body}</g></a>",
+                "<a xlink:href=\"{}\"{target}{data_look} transform=\"{transform}\"><g class=\"{}\" id=\"{}\"{colour_slot}{group_attributes}{title}>{body}</g></a>",
                 escape(link),
                 escape(&class),
                 escape(&id),
             )
         }
         None => format!(
-            "<g class=\"{}\" id=\"{}\"{data_look}{group_attributes} transform=\"{transform}\"{title}>{body}</g>",
+            "<g class=\"{}\" id=\"{}\"{colour_slot}{data_look}{group_attributes} transform=\"{transform}\"{title}>{body}</g>",
             escape(&class),
             escape(&id),
         ),
@@ -366,7 +380,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
     // draws beside its label (its rows).
     let mut extent = None;
     let mut texts = Vec::new();
-    let mut group_attributes = String::new();
+    let mut colour_slot = String::new();
     let part = match kind {
         Kind::SquareRect => rect::square_rect(input),
         Kind::RoundedRect => rect::rounded_rect(input),
@@ -391,7 +405,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::StateEnd => state::state_end(input),
         Kind::Anchor => state::anchor(input),
         Kind::CollapsedGroup => {
-            group_attributes = collapsed_group::colour_attribute(input);
+            colour_slot = collapsed_group::colour_attribute(input);
             collapsed_group::collapsed_group(input)
         }
         Kind::RectWithTitle => {
@@ -495,7 +509,8 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         after_label: part.after_label,
         label_offset: part.label_offset,
         label: part.label,
-        group_attributes,
+        group_attributes: String::new(),
+        colour_slot,
         bbox,
         intersect: part.intersect,
         extent,

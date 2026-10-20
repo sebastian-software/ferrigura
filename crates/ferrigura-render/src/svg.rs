@@ -5,6 +5,8 @@ use std::f64::consts::PI;
 use ferrigura_jsmath::{cos, sin};
 use ferrigura_text::EmbeddedFamily;
 
+use crate::common::d3::d3_number;
+
 /// Escapes text for an XML element or attribute value.
 #[must_use]
 pub fn escape(text: &str) -> String {
@@ -30,8 +32,7 @@ pub fn css_text(css: &str) -> String {
         .replace('>', "&gt;")
 }
 
-/// A number as SVG writes it. Rust prints the shortest text that reads back to the same value,
-/// without an exponent for the sizes that diagrams use. The text is written by
+/// A number as the reference writes it in an attribute: JavaScript's `String(number)`, written by
 /// [`ferrigura_model::value::number_text`], which the theme tokens read with.
 #[must_use]
 pub fn number(value: f64) -> String {
@@ -50,6 +51,8 @@ pub fn font_faces(families: &[EmbeddedFamily]) -> String {
 
 /// The path of an annular sector, as `d3-shape`'s `arc` writes it: the outer arc from `start` to
 /// `end`, then the inner arc back. Angles are in radians, measured clockwise from twelve o'clock.
+/// Every number has three decimals at most (`Math.round(x * 1000) / 1000`), the default `digits`
+/// of the shapes since `d3-shape` 3.2.0, so a point on an axis is `0` and not `1e-14`.
 ///
 /// A full circle is drawn as two half arcs, as `d3-path` does, so that it is not a zero-length arc.
 #[must_use]
@@ -75,20 +78,20 @@ pub fn arc_path(inner: f64, outer: f64, start: f64, end: f64) -> String {
         let sweep = u8::from(clockwise);
         path.push_str(&format!(
             "M{},{}A{},{},0,1,{},{},{},{}A{},{},0,1,{},{},{},{}",
-            number(x0),
-            number(y0),
-            number(outer),
-            number(outer),
+            d3_number(x0),
+            d3_number(y0),
+            d3_number(outer),
+            d3_number(outer),
             sweep,
-            number(xm),
-            number(ym),
-            number(outer),
-            number(outer),
+            d3_number(xm),
+            d3_number(ym),
+            d3_number(outer),
+            d3_number(outer),
             sweep,
-            number(x0),
-            number(y0),
-            number(outer),
-            number(outer),
+            d3_number(x0),
+            d3_number(y0),
+            d3_number(outer),
+            d3_number(outer),
         ));
         if inner > EPSILON {
             let (xi, yi) = point(inner, a0);
@@ -96,20 +99,20 @@ pub fn arc_path(inner: f64, outer: f64, start: f64, end: f64) -> String {
             let back = 1 - sweep;
             path.push_str(&format!(
                 "M{},{}A{},{},0,1,{},{},{},{}A{},{},0,1,{},{},{},{}Z",
-                number(xi),
-                number(yi),
-                number(inner),
-                number(inner),
+                d3_number(xi),
+                d3_number(yi),
+                d3_number(inner),
+                d3_number(inner),
                 back,
-                number(xim),
-                number(yim),
-                number(inner),
-                number(inner),
+                d3_number(xim),
+                d3_number(yim),
+                d3_number(inner),
+                d3_number(inner),
                 back,
-                number(xi),
-                number(yi),
-                number(inner),
-                number(inner),
+                d3_number(xi),
+                d3_number(yi),
+                d3_number(inner),
+                d3_number(inner),
             ));
         } else {
             path.push('Z');
@@ -123,28 +126,28 @@ pub fn arc_path(inner: f64, outer: f64, start: f64, end: f64) -> String {
     let (x1, y1) = point(outer, a1);
     path.push_str(&format!(
         "M{},{}A{},{},0,{},{},{},{}",
-        number(x0),
-        number(y0),
-        number(outer),
-        number(outer),
+        d3_number(x0),
+        d3_number(y0),
+        d3_number(outer),
+        d3_number(outer),
         large,
         sweep,
-        number(x1),
-        number(y1),
+        d3_number(x1),
+        d3_number(y1),
     ));
     if inner > EPSILON {
         let (xi1, yi1) = point(inner, a1);
         let (xi0, yi0) = point(inner, a0);
         path.push_str(&format!(
             "L{},{}A{},{},0,{},{},{},{}",
-            number(xi1),
-            number(yi1),
-            number(inner),
-            number(inner),
+            d3_number(xi1),
+            d3_number(yi1),
+            d3_number(inner),
+            d3_number(inner),
             large,
             1 - sweep,
-            number(xi0),
-            number(yi0),
+            d3_number(xi0),
+            d3_number(yi0),
         ));
     } else {
         path.push_str("L0,0");
@@ -170,6 +173,17 @@ mod tests {
         let path = arc_path(0.0, 10.0, 0.0, PI);
         assert!(path.starts_with("M0,-10A10,10,0,"), "{path}");
         assert!(path.ends_with("L0,0Z"), "{path}");
+    }
+
+    /// The start of a slice at twelve o'clock is `185 * cos(-π / 2)`, `1.1327982892113017e-14`,
+    /// which d3 writes as `0`, as it writes every number with three decimals (the path is
+    /// `arc().outerRadius(185)` of `d3-shape` 3.2.0 in Node).
+    #[test]
+    fn numbers_have_three_decimals_as_d3_writes_them() {
+        assert_eq!(
+            arc_path(0.0, 185.0, 0.0, 1.2),
+            "M0,-185A185,185,0,0,1,172.427,-67.036L0,0Z"
+        );
     }
 
     #[test]

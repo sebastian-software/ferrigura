@@ -35,9 +35,9 @@ use crate::common::d3::js_round;
 use crate::common::d3::math_max;
 use crate::common::d3::number::js_number;
 use crate::common::d3::treemap::{Padding, Treemap};
-use crate::common::decode_entities;
 use crate::common::style::base_style_sheet;
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
+use crate::common::{decode_entities, shown_text};
 use crate::context::Context;
 use crate::svg::{escape, number};
 use style::{Inline, Styles, colour_as_fill, own_rules, styles_to_string};
@@ -505,19 +505,19 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
     // The fonts: every text the diagram draws, in the faces it is drawn in.
     let mut runs: Vec<(String, &'static ferrigura_text::Face)> = section_runs
         .into_iter()
-        .map(|(text, face)| (shown(&text), face))
+        .map(|(text, face)| (shown_text(&text), face))
         .collect();
     if !title.is_empty() {
-        runs.push((shown(title), face_of(Font::REGULAR)));
+        runs.push((shown_text(title), face_of(Font::REGULAR)));
     }
     for leaf in &leaf_draws {
         runs.push((
-            shown(&leaf.label),
+            shown_text(&leaf.label),
             face_of(font_of(&leaf.label_style, Font::REGULAR)),
         ));
         if let Some(value) = &leaf.value {
             runs.push((
-                shown(&value.text),
+                shown_text(&value.text),
                 face_of(font_of(&value.style, Font::REGULAR)),
             ));
         }
@@ -954,41 +954,6 @@ fn fit_leaf_label(
 /// decoded here.
 fn markup(text: &str) -> String {
     decode_entities(&escape(text))
-}
-
-/// The characters a text shows in the browser: the markup of [`markup`], read back as XML. The fonts
-/// are subset to these, so a character the placeholders hide (the quote of `#quot;`) is embedded.
-fn shown(text: &str) -> String {
-    let markup = markup(text);
-    let mut out = String::with_capacity(markup.len());
-    let mut rest = markup.as_str();
-    while let Some(start) = rest.find('&') {
-        out.push_str(&rest[..start]);
-        let tail = &rest[start..];
-        let Some(end) = tail.find(';') else {
-            out.push_str(tail);
-            return out;
-        };
-        let entity = &tail[1..end];
-        let decoded = match entity {
-            "amp" => Some('&'),
-            "lt" => Some('<'),
-            "gt" => Some('>'),
-            "quot" => Some('"'),
-            "apos" | "#39" => Some('\''),
-            _ => entity
-                .strip_prefix('#')
-                .and_then(|number| number.parse::<u32>().ok())
-                .and_then(char::from_u32),
-        };
-        match decoded {
-            Some(character) => out.push(character),
-            None => out.push_str(&tail[..=end]),
-        }
-        rest = &tail[end + 1..];
-    }
-    out.push_str(rest);
-    out
 }
 
 /// The `<g>` of a section (`renderer.ts` 163-309): its header band, the clip of the header, the

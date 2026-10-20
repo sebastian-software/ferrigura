@@ -19,12 +19,7 @@ pub(super) fn question(input: &ShapeInput<'_>) -> Part {
     let width = label.bbox.width + node.padding;
     let height = label.bbox.height + node.padding;
     let size = width + height;
-    let points = [
-        Point::new(size / 2.0, 0.0),
-        Point::new(size, -size / 2.0),
-        Point::new(size / 2.0, -size),
-        Point::new(0.0, -size / 2.0),
-    ];
+    let points = question_points(size);
     let translate_x = -size / 2.0 + 0.5;
     let translate_y = size / 2.0;
     let styles = styles2string(node);
@@ -38,14 +33,17 @@ pub(super) fn question(input: &ShapeInput<'_>) -> Part {
     let bbox = BBox::from_points(points)
         .unwrap_or_default()
         .translate(translate_x, translate_y);
-    Part::with_centred_label(
-        svg,
-        bbox,
-        Intersect::Polygon {
-            points: points.to_vec(),
-        },
-        label,
-    )
+    Part::with_centred_label(svg, bbox, Intersect::Question, label)
+}
+
+/// The corners of the diamond of side `size` (`question.ts`), in the shape's own coordinates.
+pub(super) fn question_points(size: f64) -> [Point; 4] {
+    [
+        Point::new(size / 2.0, 0.0),
+        Point::new(size, -size / 2.0),
+        Point::new(size / 2.0, -size),
+        Point::new(0.0, -size / 2.0),
+    ]
 }
 
 /// `hexagon.ts`: a hexagon whose sides are `m` long, with the label in it. The neo look pads the
@@ -466,7 +464,19 @@ fn attribute_if(style: &str) -> String {
 mod tests {
     use super::super::test_support::{draw_box, node};
     use super::*;
+    use crate::unified::geom::CenterBox;
     use crate::unified::label::LabelLayout;
+
+    /// `calcIntersect` rebuilds the diamond from the box it is given, so an edge leaving the
+    /// bottom meets the box's own corner, whatever size the drawn diamond had.
+    #[test]
+    fn a_diamond_meets_its_edges_at_the_corners_of_its_box() {
+        let below = Point::new(0.0, 500.0);
+        for side in [100.0, 161.300_003_051_757_8] {
+            let corner = Intersect::Question.intersect(CenterBox::new(0.0, 0.0, side, side), below);
+            assert_eq!(corner, Point::new(0.0, -side / 2.0 + side), "{side}");
+        }
+    }
 
     // The bounding boxes of the reference's polygon shapes for a 120 by 17 label, as their
     // handlers compute them (shapes-core.md §2.1).

@@ -18,6 +18,7 @@ use ferrigura_model::value::Value;
 
 use super::layout::Domain;
 use crate::common::d3::{js_number, js_to_number};
+use crate::common::template_text;
 
 /// The options of the cynefin block after the merge with the defaults. Each is kept as the reference
 /// holds it (a value of any kind), and the readings below give what the reference writes from it.
@@ -99,27 +100,6 @@ impl Options {
 
 fn text(value: &str) -> Value {
     Value::String(value.to_owned())
-}
-
-/// `${value}`: the value as a template literal writes it, as JavaScript converts it to a string. An
-/// array is its items joined with commas (`null` items empty), and an object is `[object Object]`.
-#[must_use]
-pub(super) fn template_text(value: &Value) -> String {
-    match value {
-        Value::Null => "null".to_owned(),
-        Value::Bool(flag) => flag.to_string(),
-        Value::Number(number) => js_number(*number),
-        Value::String(text) => text.clone(),
-        Value::Array(items) => items
-            .iter()
-            .map(|item| match item {
-                Value::Null => String::new(),
-                other => template_text(other),
-            })
-            .collect::<Vec<_>>()
-            .join(","),
-        Value::Object(_) => "[object Object]".to_owned(),
-    }
 }
 
 /// The text a `d3` `attr` call writes for a value: the value as a string, or nothing when the value is

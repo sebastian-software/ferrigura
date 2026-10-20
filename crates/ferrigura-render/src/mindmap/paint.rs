@@ -8,11 +8,10 @@
 //! (`mindmap/NOTES.md` 6.5). The reference writes the style attribute as `undefined;;;undefined`
 //! because the edge has no `style` field, and `data-points` is the base64 of the points as JSON.
 
-use base64::Engine as _;
-
-use crate::svg::{escape, number};
+use crate::svg::escape;
 use crate::unified::data::{Edge, LayoutData};
-use crate::unified::geom::{BBox, Point};
+use crate::unified::edges;
+use crate::unified::geom::BBox;
 use crate::unified::markers;
 use crate::unified::path::{Curve, curve_path, fix_corners, path_bounds};
 use crate::unified::pipeline::{Measured, cover};
@@ -73,8 +72,7 @@ pub fn paint(measured: &Measured, id: &str) -> Painted {
 /// its classes are the thickness and the pattern before the edge's own, and `style` is the reference's
 /// `undefined;;;undefined`, since an edge of the mindmap has no `style`.
 fn edge_path(edge: &Edge, d: &str, id: &str) -> String {
-    let points = points_json(&edge.points);
-    let encoded = base64::engine::general_purpose::STANDARD.encode(points.as_bytes());
+    let encoded = edges::data_points(&edge.points);
     format!(
         "<path d=\"{d}\" id=\"{id}-{edge_id}\" class=\" edge-thickness-{thickness} edge-pattern-solid {classes}\" style=\"undefined;;;undefined\" data-edge=\"true\" data-et=\"edge\" data-id=\"{edge_id}\" data-look=\"{look}\" data-points=\"{encoded}\"></path>",
         id = escape(id),
@@ -92,27 +90,4 @@ fn empty_edge_label(edge: &Edge) -> String {
         "<g class=\"edgeLabel\"><g class=\"label\" data-id=\"{}\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g>",
         escape(&edge.id),
     )
-}
-
-/// `JSON.stringify` of the points, as `[{"x":…,"y":…}, …]`: a number that JSON cannot hold is `null`.
-fn points_json(points: &[Point]) -> String {
-    let items: Vec<String> = points
-        .iter()
-        .map(|point| {
-            format!(
-                "{{\"x\":{},\"y\":{}}}",
-                json_number(point.x),
-                json_number(point.y)
-            )
-        })
-        .collect();
-    format!("[{}]", items.join(","))
-}
-
-fn json_number(value: f64) -> String {
-    if value.is_finite() {
-        number(value)
-    } else {
-        "null".to_owned()
-    }
 }

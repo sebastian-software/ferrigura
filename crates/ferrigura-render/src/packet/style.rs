@@ -14,7 +14,8 @@
 
 use ferrigura_model::theme::Token;
 use ferrigura_model::theme::tokens::PacketTokens;
-use ferrigura_model::value::Value;
+
+use crate::common::template_text;
 
 /// The options of the packet styles after the merge with the defaults: `PacketStyleOptions`
 /// (`types.ts`), each as the template of `styles.ts` writes it.
@@ -67,27 +68,6 @@ impl Options {
     }
 }
 
-/// The value of an option as the template literal of `styles.ts` writes it: `${value}`. A number is
-/// written as JavaScript writes it, an array as its items joined with commas (`null` items empty),
-/// and an object as `[object Object]`.
-fn template_text(value: &Value) -> String {
-    match value {
-        Value::String(text) => text.clone(),
-        Value::Number(number) => crate::svg::number(*number),
-        Value::Bool(flag) => flag.to_string(),
-        Value::Null => "null".to_owned(),
-        Value::Array(items) => items
-            .iter()
-            .map(|item| match item {
-                Value::Null => String::new(),
-                other => template_text(other),
-            })
-            .collect::<Vec<_>>()
-            .join(","),
-        Value::Object(_) => "[object Object]".to_owned(),
-    }
-}
-
 /// The rules of the packet, after the base rules of the diagram and before its look rules, as the
 /// reference's `styles` places them. The colours are custom properties on the id, and the rules
 /// refer to them with `var(…)`.
@@ -124,6 +104,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use ferrigura_model::theme::ThemeTokens;
+    use ferrigura_model::value::Value;
 
     use super::*;
 

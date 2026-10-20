@@ -24,9 +24,9 @@ use crate::a11y;
 use crate::common::d3::js_number;
 use crate::common::style::base_style_sheet;
 use crate::common::viewbox::calculate_svg_size_attrs;
-use crate::common::{Element, decode_entities};
+use crate::common::{Element, decode_entities, shown_text};
 use crate::context::Context;
-use crate::svg::{escape, font_faces};
+use crate::svg::escape;
 use builder::{Chart, HorizontalPos, Line, Point, Quadrant, Text, Theme, VerticalPos};
 
 /// The XML namespace of the root element.
@@ -79,12 +79,6 @@ pub fn render(
         &families,
         "",
     );
-    let faces = if families.is_empty() {
-        String::new()
-    } else {
-        font_faces(&families)
-    };
-
     // The accessible texts keep the placeholders: the whole-SVG pass decodes them in `markup`.
     let title_text = &input.diagram.acc_title;
     let description = &input.diagram.acc_descr;
@@ -131,7 +125,7 @@ pub fn render(
                 .raw_text(markup(description)),
         );
     }
-    root.push_child(Element::new("style").raw_text(format!("{style}{faces}")));
+    root.push_child(Element::new("style").raw_text(style));
     // The empty group `mermaidAPI` appends before the renderer draws (`mermaidAPI.ts:419`).
     root.push_child(Element::new("g"));
     root.push_child(
@@ -162,31 +156,7 @@ fn drawn_text(chart: &Chart) -> String {
     if let Some(title) = &chart.title {
         texts.push(&title.text);
     }
-    texts.iter().map(|text| shown(text)).collect()
-}
-
-/// The characters a text shows: the placeholders of `encodeEntities` decoded to the characters
-/// they stand for (`#35;` shows `#`), and the other characters as they are.
-fn shown(text: &str) -> String {
-    let decoded = decode_entities(text);
-    let mut out = String::with_capacity(decoded.len());
-    let mut rest = decoded.as_str();
-    while let Some(start) = rest.find("&#") {
-        out.push_str(&rest[..start]);
-        let after = &rest[start + 2..];
-        match after.find(';') {
-            Some(end) if end > 0 && after[..end].bytes().all(|byte| byte.is_ascii_digit()) => {
-                out.extend(after[..end].parse::<u32>().ok().and_then(char::from_u32));
-                rest = &after[end + 1..];
-            }
-            _ => {
-                out.push_str("&#");
-                rest = after;
-            }
-        }
-    }
-    out.push_str(rest);
-    out
+    texts.iter().map(|text| shown_text(text)).collect()
 }
 
 /// The markup of a text, as the reference's whole-SVG pass leaves it: the characters escaped as the
