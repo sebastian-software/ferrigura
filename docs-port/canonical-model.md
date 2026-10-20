@@ -84,6 +84,14 @@ The flowchart model is the DB state after parsing (`flowDb.ts`), with the names 
 - **Edge ids.** The `id` is always present: the user's `e1@` id, or the generated `L_<start>_<end>_<n>`, where `n` counts the edges already drawn between the same pair. Tooltips are kept by id even when no vertex has that id.
 - **Config is not in the model.** `maxEdges` is a parser option (default 500). `securityLevel`, `htmlLabels`, `inheritDir` and `curve` act at render time and are not in the model.
 
+## Swimlanes
+
+The swimlane model is the flowchart model: `crates/ferrigura-model/src/swimlanes.rs` is a type alias of it. The reference's swimlane diagram is the flowchart's factory with its own styles (`diagrams/swimlanes/swimlanesDiagram.ts`), so the parser and the DB are the flowchart's, and the rules above for the flowchart hold. Its own points:
+
+- **Detection comes first.** The exporter (`export-swimlanes.ts`) runs `detectType` on the cleaned text, as `Diagram.fromText` does, and rejects a text that is not a swimlane diagram; the Rust side does the same in `examples/canonical.rs`. A text that no detector takes is in the undetected list of `cases.ts`.
+- **Lanes are subgraphs.** The layout's lanes are the DB's subgraphs; the layout's data (the lanes' sizes, the default lane of the nodes outside every lane) is the renderer's and is not in the model.
+- **Left out:** the configuration, which the configuration port owns, and the layout inputs (`getData`), which are the renderer stage ([swimlanes/PLAN.md](./swimlanes/PLAN.md), section 9).
+
 ## Timeline
 
 The model is the DB state after parsing, as [timeline/PLAN.md](./timeline/PLAN.md) describes it: `direction`, the header texts, `sections`, and `periods` with their `section`, `period` and `events`, in input order. The timeline's rules differ from the others in these points:

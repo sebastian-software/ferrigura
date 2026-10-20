@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/ferrigura", "crates/ferrigura-cli", "crates/ferrigura-cose", "crates/ferrigura-elk", "crates/ferrigura-jsmath", "crates/ferrigura-path", "crates/ferrigura-model", "crates/ferrigura-node", "crates/ferrigura-render", "crates/ferrigura-syntax", "crates/ferrigura-text", "crates/ferrigura-venn"]
+members = ["crates/ferrigura", "crates/ferrigura-cli", "crates/ferrigura-cose", "crates/ferrigura-elk", "crates/ferrigura-jsmath", "crates/ferrigura-model", "crates/ferrigura-node", "crates/ferrigura-path", "crates/ferrigura-render", "crates/ferrigura-swimlane", "crates/ferrigura-syntax", "crates/ferrigura-text", "crates/ferrigura-venn"]
 resolver = "3"
 
 [workspace.package]

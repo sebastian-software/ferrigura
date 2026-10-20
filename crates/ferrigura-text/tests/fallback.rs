@@ -22,7 +22,7 @@ fn arrows() -> impl Iterator<Item = char> {
 }
 
 fn symbols() -> &'static ferrigura_text::Face {
-    face(FontFamily::Symbols, FontWeight::Normal, FontStyle::Normal)
+    face(FontFamily::Arrows, FontWeight::Normal, FontStyle::Normal)
 }
 
 fn regular() -> &'static ferrigura_text::Face {
@@ -74,7 +74,7 @@ fn a_run_is_split_where_the_text_face_lacks_an_arrow() {
     });
     let shape: Vec<(&str, bool)> = stretches
         .iter()
-        .map(|stretch| (stretch.text, stretch.face.family() == FontFamily::Symbols))
+        .map(|stretch| (stretch.text, stretch.face.family() == FontFamily::Arrows))
         .collect();
     assert_eq!(
         shape,
@@ -106,7 +106,7 @@ fn text_without_arrows_and_empty_text_keep_one_run() {
         face: regular(),
     });
     assert_eq!(arrows_only.len(), 1, "a run of arrows is one stretch");
-    assert_eq!(arrows_only[0].face.family(), FontFamily::Symbols);
+    assert_eq!(arrows_only[0].face.family(), FontFamily::Arrows);
 }
 
 #[test]
@@ -242,7 +242,7 @@ fn an_embedded_symbol_subset_names_both_families_and_draws_the_arrows() {
     let sans = &families[0];
     let symbol = &families[1];
     assert_eq!(sans.family, FontFamily::Sans);
-    assert_eq!(symbol.family, FontFamily::Symbols);
+    assert_eq!(symbol.family, FontFamily::Arrows);
     assert!(symbol.name.ends_with("-symbols"), "{}", symbol.name);
     assert_eq!(
         sans.css_family,

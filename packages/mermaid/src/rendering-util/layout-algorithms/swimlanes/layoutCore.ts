@@ -1,8 +1,10 @@
+// cspell:ignore writeback
 import type { LayoutData } from '../../types.js';
 import { postProcessSwimlaneLayout, validateSwimlanesLayout } from './postProcessing.js';
 import { toGraphView, writeBackToLayoutData } from './helpers.js';
 import { sugiyamaLayout } from './pipeline.js';
 import { routeEdgesOrthogonal } from './orthogonalRouter/router.js';
+import { copyForStage, copyLayoutForStage, reportSwimlaneStage } from './stageReport.js';
 
 export type SwimlaneDirection = 'TB' | 'LR' | 'BT' | 'RL';
 
@@ -18,6 +20,7 @@ function getSwimlaneDirection(data4Layout: LayoutData): SwimlaneDirection {
  * before calling the same function.
  */
 export function runSwimlaneLayoutCore(data4Layout: LayoutData): SwimlaneDirection {
+  reportSwimlaneStage('input', () => copyLayoutForStage(data4Layout));
   const g = toGraphView(data4Layout);
   const nodeGap = data4Layout.config.flowchart?.nodeSpacing ?? 40;
   const layerGap = data4Layout.config.flowchart?.rankSpacing ?? 100;
@@ -26,7 +29,7 @@ export function runSwimlaneLayoutCore(data4Layout: LayoutData): SwimlaneDirectio
   const automaticLaneOrdering = data4Layout.config.swimlane?.automaticLaneOrdering ?? false;
   const direction = getSwimlaneDirection(data4Layout);
 
-  const { ordered, coordinates } = sugiyamaLayout(g, {
+  const sugiyamaResult = sugiyamaLayout(g, {
     nodeGap,
     layerGap,
     ignoreCrossLaneEdges,
@@ -34,7 +37,10 @@ export function runSwimlaneLayoutCore(data4Layout: LayoutData): SwimlaneDirectio
     automaticLaneOrdering,
     direction,
   });
+  const { ordered, coordinates } = sugiyamaResult;
+  reportSwimlaneStage('sugiyama', () => copyForStage(sugiyamaResult));
   writeBackToLayoutData(g, ordered, coordinates, { nodeGap, layerGap });
+  reportSwimlaneStage('writeback', () => copyLayoutForStage(data4Layout));
 
   // The layout phases above position nodes only; they do not emit edge routing.
   // Reset any edge points carried on the input so routeEdgesOrthogonal below is
@@ -43,6 +49,7 @@ export function runSwimlaneLayoutCore(data4Layout: LayoutData): SwimlaneDirectio
     delete edge.points;
   }
   routeEdgesOrthogonal(data4Layout, direction);
+  reportSwimlaneStage('routed', () => copyLayoutForStage(data4Layout));
 
   for (const edge of data4Layout.edges ?? []) {
     if (!edge.curve || edge.curve === 'basis') {
@@ -53,6 +60,7 @@ export function runSwimlaneLayoutCore(data4Layout: LayoutData): SwimlaneDirectio
   postProcessSwimlaneLayout(data4Layout, direction);
 
   validateSwimlanesLayout(data4Layout);
+  reportSwimlaneStage('output', () => copyLayoutForStage(data4Layout));
 
   return direction;
 }

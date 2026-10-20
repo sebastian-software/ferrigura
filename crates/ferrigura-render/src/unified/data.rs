@@ -160,6 +160,10 @@ pub struct Node {
     /// for every other node.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub requirement: Option<RequirementFields>,
+    /// The fields that only a lane of a swimlane diagram carries, which its lane shape draws; `None`
+    /// for every other node.
+    #[serde(skip)]
+    pub swimlane: Option<SwimlaneFields>,
 
     /// The size the layout uses: the measured box of a leaf, ELK's size afterwards.
     #[serde(skip)]
@@ -222,6 +226,18 @@ pub enum RequirementFields {
         #[serde(rename = "docRef")]
         doc_ref: String,
     },
+}
+
+/// The fields that only a lane of a swimlane diagram carries: the direction of the diagram, on a
+/// top-level lane, which `prepareLayoutForSwimlanes` gives it (`swimlanes/helpers.ts` 116-120), and the
+/// top of the lanes' content, which the layout writes back (`swimlaneContentTop`).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct SwimlaneFields {
+    /// The direction of the diagram, as the lane's title orientation reads it (`LR` puts the title on
+    /// the left); empty on a nested subgraph, which the lane shape does not draw.
+    pub direction: String,
+    /// The top of the content of the lanes, as the layout gives it; `None` until the layout has run.
+    pub content_top: Option<f64>,
 }
 
 /// The fields that only a block of a block diagram carries (`Block` in

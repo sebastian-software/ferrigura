@@ -23,10 +23,24 @@ import { simplifyDetouredEdges } from './direction/detourSimplification.js';
 import { anchorLabelsToPolyline } from './direction/labelAnchoring.js';
 import { straightenCollinearSiblingDetours } from './direction/siblingSharedFaceRouting.js';
 import { nudgeSharedInteriorSubpaths } from './direction/sharedTrackNudging.js';
+import { createPassReporter, type PassReporter } from './stageReport.js';
 export { validateSwimlanesLayout } from './direction/validation.js';
 
 /** Applies direction transforms and post-routing cleanup to a swimlane layout. */
 export function postProcessSwimlaneLayout(layout: LayoutData, direction?: string): void {
+  const report = createPassReporter(layout);
+  try {
+    runPostProcessingPasses(layout, direction, report);
+  } finally {
+    report.flush();
+  }
+}
+
+function runPostProcessingPasses(
+  layout: LayoutData,
+  direction: string | undefined,
+  report: PassReporter
+): void {
   const nodes = layout.nodes ?? [];
   const edges = layout.edges ?? [];
   const contentNodes = nodes.filter((n) => !n.isGroup);
@@ -34,16 +48,20 @@ export function postProcessSwimlaneLayout(layout: LayoutData, direction?: string
   // TB is the canonical orientation. LR/RL rotate rank progression onto X;
   // BT mirrors the canonical Y progression. Cleanup passes below operate in
   // whichever coordinate system this step leaves behind.
-  if (
-    (direction === 'LR' || direction === 'RL') &&
-    contentNodes.length > 0 &&
-    !applyLrDirectionTransform(layout, direction)
-  ) {
-    return;
+  if ((direction === 'LR' || direction === 'RL') && contentNodes.length > 0) {
+    const transformed = applyLrDirectionTransform(layout, direction);
+    report.pass('applyLrDirectionTransform');
+    if (!transformed) {
+      return;
+    }
   }
 
-  if (direction === 'BT' && contentNodes.length > 0 && !applyBtDirectionTransform(layout)) {
-    return;
+  if (direction === 'BT' && contentNodes.length > 0) {
+    const transformed = applyBtDirectionTransform(layout);
+    report.pass('applyBtDirectionTransform');
+    if (!transformed) {
+      return;
+    }
   }
 
   for (const edge of edges) {
@@ -58,14 +76,18 @@ export function postProcessSwimlaneLayout(layout: LayoutData, direction?: string
       orthogonalizePolyline(pts)
     );
   }
+  report.pass('orthogonalizePolyline+simplifyPolyline');
 
   simplifyDetouredEdges(edges as any[], nodes);
+  report.pass('simplifyDetouredEdges');
 
   // Prefer shorter sibling routes when a local port shift keeps them clear.
   straightenCollinearSiblingDetours(edges as any[], nodes);
+  report.pass('straightenCollinearSiblingDetours');
 
   // Swap a source port only when it produces a clear L-shape with fewer bends.
   portSwapToLShape(edges as any[], nodes);
+  report.pass('portSwapToLShape');
 
   const nodeByIdMap = new Map<string, any>();
   for (const n of nodes) {
@@ -75,11 +97,14 @@ export function postProcessSwimlaneLayout(layout: LayoutData, direction?: string
   // below (nudging, terminal-lane splits, crossing resolution) can still reshape
   // these polylines, so labels are re-anchored once more at the end.
   anchorLabelsToPolyline(edges, nodeByIdMap);
+  report.pass('anchorLabelsToPolyline');
 
   clipEdgeEndpointsToNodeBoundaries(edges, nodeByIdMap);
+  report.pass('clipEdgeEndpointsToNodeBoundaries');
 
   // Retarget short terminal stubs that are hidden by endpoint clipping.
   collapseShortTerminalStub(edges, nodeByIdMap);
+  report.pass('collapseShortTerminalStub');
 
   // Wybrow-style shared-track nudge. The router may legitimately bundle
   // connectors onto the same rail, but before rendering those coincident
@@ -87,39 +112,53 @@ export function postProcessSwimlaneLayout(layout: LayoutData, direction?: string
   // keeps endpoint stubs pinned and only offsets interior H/V segments whose
   // same-axis span overlaps another edge.
   nudgeSharedInteriorSubpaths(edges, nodeByIdMap);
+  report.pass('nudgeSharedInteriorSubpaths');
 
   // Materialized-render terminal lane split. The raw layout can still look
   // valid while the renderer's endpoint clipping creates coincident first/last
   // stubs on a shared node face. Split those visible terminal rails before the
   // endpoint-duplication handoff pins them.
   separateSharedRenderedTerminalLanes(edges, nodeByIdMap);
+  report.pass('separateSharedRenderedTerminalLanes');
 
   // Once terminal lanes have been separated, some earlier same-track detours
   // become unnecessary. Remove only provably redundant rectangular doglegs;
   // safety checks preserve obstacle clearance and the newly split lanes.
   collapseRedundantRectangularDoglegs(edges, nodeByIdMap);
+  report.pass('collapseRedundantRectangularDoglegs');
 
   // Same-side rails can be routed just inside a taller intervening node's
   // border. Lift those rails outside the blocker before crossing cleanup.
   liftObstacleHuggingSameSideRails(edges, nodeByIdMap);
+  report.pass('liftObstacleHuggingSameSideRails');
 
   // Some shared-destination crossings only improve when two terminal ports
   // exchange places together. Try that bounded transaction before falling back
   // to whole-edge reroutes.
   swapDestinationTerminalTailsToReduceCrossings(edges, nodeByIdMap);
+  report.pass('swapDestinationTerminalTailsToReduceCrossings');
 
   const finalizeRenderedEdges = (): void => {
     resolveRenderedOrthogonalCrossings(edges, nodeByIdMap);
+    report.pass('resolveRenderedOrthogonalCrossings');
     // Crossing cleanup can bring a route onto a face another edge already leaves or
     // enters from, so split shared terminal lanes again before endpoints are pinned.
     separateSharedRenderedTerminalLanes(edges, nodeByIdMap);
+    report.pass('separateSharedRenderedTerminalLanes');
     reassignCrossingExternalRailChannels(edges, nodeByIdMap);
+    report.pass('reassignCrossingExternalRailChannels');
     shortcutRedundantOrthogonalJogs(edges, nodeByIdMap);
+    report.pass('shortcutRedundantOrthogonalJogs');
     anchorLabelsToPolyline(edges, nodeByIdMap);
+    report.pass('anchorLabelsToPolyline');
     prepareEdgeEndpointsForRenderer(edges, nodeByIdMap);
+    report.pass('prepareEdgeEndpointsForRenderer');
     liftObstacleHuggingSameSideRails(edges, nodeByIdMap);
+    report.pass('liftObstacleHuggingSameSideRails');
     anchorLabelsToPolyline(edges, nodeByIdMap);
+    report.pass('anchorLabelsToPolyline');
     prepareEdgeEndpointsForRenderer(edges, nodeByIdMap);
+    report.pass('prepareEdgeEndpointsForRenderer');
   };
 
   // Wybrow-style crossing cleanup for the materialized render geometry. This
@@ -134,6 +173,7 @@ export function postProcessSwimlaneLayout(layout: LayoutData, direction?: string
   // labels and endpoint handoff. `prepareEdgeEndpointsForRenderer` is
   // idempotent, so unchanged edges do not accumulate duplicate endpoints.
   nudgeSharedInteriorSubpaths(edges, nodeByIdMap);
+  report.pass('nudgeSharedInteriorSubpaths');
 
   // Endpoint preparation materializes the renderer-facing terminal stubs. In
   // long return-edge cases those stubs can reveal a crossing that was not
@@ -145,11 +185,15 @@ export function postProcessSwimlaneLayout(layout: LayoutData, direction?: string
   // edge geometry is final, move the aligned title bands out of any clear rail
   // that still crosses the title section.
   liftTopLaneTitleBandsAboveRails(edges, nodeByIdMap, direction);
+  report.pass('liftTopLaneTitleBandsAboveRails');
   shiftLeftLaneTitleBandsLeftOfRails(edges, nodeByIdMap, direction);
+  report.pass('shiftLeftLaneTitleBandsLeftOfRails');
   // Moving one aligned title band can expose a second title/rail interaction
   // after the group bounds settle. The passes are idempotent, so one bounded
   // repeat keeps headers out of late crossing-cleanup routes without rerouting
   // the edges again.
   liftTopLaneTitleBandsAboveRails(edges, nodeByIdMap, direction);
+  report.pass('liftTopLaneTitleBandsAboveRails');
   shiftLeftLaneTitleBandsLeftOfRails(edges, nodeByIdMap, direction);
+  report.pass('shiftLeftLaneTitleBandsLeftOfRails');
 }

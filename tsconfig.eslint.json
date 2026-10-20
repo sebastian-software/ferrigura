@@ -14,6 +14,7 @@
     "./scripts",
     "./crates/ferrigura-elk/tools",
     "./crates/ferrigura-cose/tools",
+    "./crates/ferrigura-swimlane/tools",
     "./crates/ferrigura-venn/tools",
     "./spikes",
     "./tools/port",

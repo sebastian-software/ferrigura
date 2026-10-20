@@ -21,11 +21,11 @@ fn every_choice_names_its_own_face() {
 }
 
 #[test]
-fn the_registry_holds_nine_distinct_faces() {
+fn the_registry_holds_eleven_distinct_faces() {
     let mut names: Vec<&str> = FACES.iter().map(|f| f.file_name()).collect();
     names.sort_unstable();
     names.dedup();
-    assert_eq!(names.len(), 9);
+    assert_eq!(names.len(), 11);
 }
 
 #[test]
@@ -66,7 +66,9 @@ fn every_face_is_a_truetype_file() {
 fn css_names_follow_the_choice() {
     assert_eq!(FontFamily::Sans.css_suffix(), "sans");
     assert_eq!(FontFamily::Mono.css_suffix(), "mono");
-    assert_eq!(FontFamily::Symbols.css_suffix(), "symbols");
+    assert_eq!(FontFamily::Arrows.css_suffix(), "symbols");
+    assert_eq!(FontFamily::TextSymbols.css_suffix(), "text-symbols");
+    assert_eq!(FontFamily::Emoji.css_suffix(), "emoji");
     assert_eq!(FontWeight::Normal.css_value(), 400);
     assert_eq!(FontWeight::Bold.css_value(), 700);
     assert_eq!(FontStyle::Normal.css_keyword(), "normal");
@@ -78,4 +80,7 @@ fn the_license_texts_are_bundled() {
     assert!(include_str!("../fonts/OFL-Lexica.txt").contains("SIL OPEN FONT LICENSE"));
     assert!(include_str!("../fonts/OFL-AtkinsonMono.txt").contains("SIL OPEN FONT LICENSE"));
     assert!(include_str!("../fonts/OFL-NotoSansMath.txt").contains("SIL OPEN FONT LICENSE"));
+    assert!(include_str!("../fonts/OFL-NotoSansSymbols2.txt").contains("SIL OPEN FONT LICENSE"));
+    assert!(include_str!("../fonts/LICENSE-TwemojiMozilla.md").contains("CC BY 4.0"));
+    assert!(include_str!("../NOTICE.md").contains("Twemoji"));
 }
