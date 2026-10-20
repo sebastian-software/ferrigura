@@ -4,7 +4,7 @@
 //!
 //! The text goes through the same steps as the reference before the grammar sees it: front matter,
 //! directives and the entities, with the `%%` comments kept (the reference keeps them for its
-//! source positions). The lexer is the flowchart's scanner with agentflow's [`DIALECT`]; the
+//! source positions). The lexer is the flowchart's scanner with agentflow's `DIALECT`; the
 //! grammar and the DB are agentflow's own.
 
 mod db;

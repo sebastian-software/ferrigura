@@ -202,7 +202,7 @@ fn build_orthogonal_path_candidates(
 }
 
 /// `simplifyDetouredEdges(edges, nodes)` (`detourSimplification.ts:20-309`): each edge with at least
-/// [`BEND_THRESHOLD`] bends takes the candidate path that has the fewest bends among those that conflict no more
+/// `BEND_THRESHOLD` bends takes the candidate path that has the fewest bends among those that conflict no more
 /// than the current path, or, when the current path crosses other edges, the candidate with the fewest crossings.
 pub fn simplify_detoured_edges(layout: &mut LayoutData) {
     let (node_info_by_id, real_node_rects) = collect_real_node_bounds(&layout.nodes);

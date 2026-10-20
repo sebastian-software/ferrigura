@@ -9,7 +9,7 @@
 //! the laid-out components in rows, the way `SimpleRowGraphPlacer` does, and makes them the graph.
 //!
 //! A component is a copy of its nodes, their ports, their edges and their labels, in an arena of its
-//! own. Its indices differ from the graph's, so the copy is made with [`transplant`], which both
+//! own. Its indices differ from the graph's, so the copy is made with `transplant`, which both
 //! `split` and `combine` use.
 //!
 //! Not ported: external ports (a component's port sides), the model order placers (the component

@@ -3,9 +3,9 @@
 //!
 //! The text goes through the reference's steps before the scanner sees it (`Diagram.fromText`):
 //! front matter and directives, comment lines, entities, and a line break. The scanner
-//! ([`scanner`]) reads the tokens, the grammar ([`grammar`]) the syntax tree, the visitor
-//! ([`visitor`]) the drafts and the statements, and the builder ([`builder`]) checks the diagram
-//! and makes the model, with its graph AST ([`ast`]).
+//! ([`scanner`]) reads the tokens, the grammar (`grammar`) the syntax tree, the visitor
+//! (`visitor`) the drafts and the statements, and the builder (`builder`) checks the diagram
+//! and makes the model, with its graph AST (`ast`).
 
 pub mod json;
 

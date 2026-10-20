@@ -1,6 +1,6 @@
 //! The tree view diagram: a port of `packages/mermaid/src/diagrams/treeView/renderer.ts`, `draw`
 //! (lines 218-236), `drawTree` (130-216) and `positionLabel` and `positionLine` (55-128), with the
-//! icons of [`icons`] and the styles of [`style`]. The research, with the reference's file and line
+//! icons of `icons` and the styles of `style`. The research, with the reference's file and line
 //! for every rule, is in `docs-port/tree-view/NOTES.md`, section 6.
 //!
 //! Nothing is laid out in a graph: each row is a text box with its padding, the rows stack from the
