@@ -9,16 +9,16 @@ The crates are not published yet. The repository is [sebastian-software/ferrigur
 Once the crates are published, add the library with Cargo:
 
 ```sh
-cargo add ferrigura ferrigura-model serde_json
+cargo add ferrigura serde_json
 ```
 
-`ferrigura` renders. `ferrigura-model` provides `Value`, the type of the configuration. `serde_json` is needed only for the examples that build a configuration from JSON. The minimum Rust version is 1.95.
+`ferrigura::Value` is the type of the configuration. `serde_json` is needed only for the examples that build a configuration from JSON. The minimum Rust version is 1.95.
 
 ## Quick start
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-use ferrigura_model::value::Value;
+use ferrigura::Value;
 
 let text = "pie title Pets\n  \"Dogs\" : 386\n  \"Cats\" : 85\n";
 let svg = ferrigura::render(text, &Value::empty_object())?;
@@ -36,7 +36,7 @@ assert!(svg.starts_with("<svg "));
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 use ferrigura::Renderer;
-use ferrigura_model::value::Value;
+use ferrigura::Value;
 
 let renderer = Renderer::new(&Value::empty_object());
 let pie = renderer.render("pie\n  \"Dogs\" : 386\n  \"Cats\" : 85\n")?;
@@ -62,7 +62,7 @@ A `Renderer` is `Send` and `Sync`, so one renderer can serve renders on several 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 use ferrigura::{ColorScheme, RenderOptions, Renderer};
-use ferrigura_model::value::Value;
+use ferrigura::Value;
 
 let renderer = Renderer::new(&Value::empty_object());
 let svg = renderer.render_with(
@@ -106,7 +106,7 @@ Building the configuration in Rust:
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-use ferrigura_model::value::Value;
+use ferrigura::Value;
 
 let config = Value::from(serde_json::json!({
     "themeVariables": { "pie1": "#00ff00" }

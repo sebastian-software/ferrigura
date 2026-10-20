@@ -9,7 +9,6 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use ferrigura_model::config::{MermaidConfig, SiteConfig, typed};
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
-use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
 use ferrigura_render::agentflow::AgentflowSection;
 use ferrigura_render::block::BlockSection;
@@ -40,6 +39,8 @@ use ferrigura_syntax::{
     tree_view, treemap, use_case, venn, wardley, xychart,
 };
 
+/// The configuration and the values of Mermaid's `initialize` object, front matter and directives.
+pub use ferrigura_model::value::Value;
 pub use ferrigura_render::RenderError as Error;
 
 /// The colour scheme of the output.
@@ -96,7 +97,7 @@ pub struct RenderOptions {
 ///
 /// ```
 /// use ferrigura::{RenderOptions, Renderer};
-/// use ferrigura_model::value::Value;
+/// use ferrigura::Value;
 ///
 /// let renderer = Renderer::new(&Value::empty_object());
 /// let svg = renderer.render("pie\n  \"Dogs\" : 386\n  \"Cats\" : 85\n")?;
