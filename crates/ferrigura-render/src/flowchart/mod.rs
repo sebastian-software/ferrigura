@@ -19,7 +19,7 @@ use ferrigura_text::{
 use crate::RenderError;
 use crate::a11y;
 use crate::context::Context;
-use crate::svg::{escape, number};
+use crate::svg::{escape, number, xlink_declaration};
 use crate::unified::geom::BBox;
 use crate::unified::pipeline::{self, Measured, cover};
 use crate::unified::{Config, Section, edges, markers};
@@ -125,8 +125,9 @@ pub fn render(input: &Context<'_, FlowchartDiagram, Section<'_>>) -> Result<Stri
     let style =
         style::style_sheet_with_fonts(id, input.theme, input.globals, &diagram.classes, &families);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
+        xlink = xlink_declaration(painted.links),
         x = number(drawn.x - padding),
         y = number(drawn.y - padding),
         w = number(view_width),

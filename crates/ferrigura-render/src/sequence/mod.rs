@@ -40,7 +40,7 @@ use crate::common::TextMemo;
 use crate::common::decode_entities;
 use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::context::{Context, ThemeView};
-use crate::svg::number;
+use crate::svg::{number, xlink_declaration};
 
 /// The namespace of the root element (`mermaidAPI` writes it on every SVG).
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
@@ -522,8 +522,11 @@ impl<'a> Renderer<'a> {
             self.conf.neo,
         );
         let size = calculate_svg_size_attrs(view.height, view.width, self.conf.use_max_width);
+        // An actor's menu links and icons write `xlink:href`.
+        let links = self.children().iter().any(|element| element.uses_xlink());
         let mut open = format!(
-            "<svg xmlns=\"{SVG_NAMESPACE}\" id=\"{}\"",
+            "<svg xmlns=\"{SVG_NAMESPACE}\"{} id=\"{}\"",
+            xlink_declaration(links),
             crate::svg::escape(input.id)
         );
         for (name, value) in size {

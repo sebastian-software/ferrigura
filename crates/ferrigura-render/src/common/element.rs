@@ -113,6 +113,16 @@ impl Element {
         }
     }
 
+    /// Whether this element or one below it has an `xlink:` attribute, so that the root declares
+    /// the prefix. Raw text is not read.
+    #[must_use]
+    pub fn uses_xlink(&self) -> bool {
+        self.attributes
+            .iter()
+            .any(|(name, _)| name.starts_with("xlink:"))
+            || self.children.iter().any(Element::uses_xlink)
+    }
+
     /// Visits this element and every element below it, parents first. Used to set an attribute on
     /// an element that was built earlier, as the reference's `select('#id').attr(...)` does.
     pub fn visit_mut(&mut self, visit: &mut dyn FnMut(&mut Element)) {

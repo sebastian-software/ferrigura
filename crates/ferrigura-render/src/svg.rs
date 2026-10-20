@@ -24,6 +24,23 @@ pub fn escape(text: &str) -> String {
     out
 }
 
+/// The XLink namespace, which the `xlink:href` of a link or an image is in.
+pub const XLINK_NAMESPACE: &str = "http://www.w3.org/1999/xlink";
+
+/// The declaration of the `xlink` prefix that a root needs when the drawing writes `xlink:href`,
+/// with a space before it, or nothing. Without it the prefix is unbound, and an XML parser rejects
+/// the SVG. The reference declares it after `xmlns` on the root that `mermaid.run` draws
+/// (`appendDivSvgG` with `XMLNS_XLINK_STD`, `mermaidAPI.ts:414-416`); the root of `mermaid.render`
+/// has none, and the HTML serialisation writes `xlink:href` without it.
+#[must_use]
+pub fn xlink_declaration(links: bool) -> &'static str {
+    if links {
+        " xmlns:xlink=\"http://www.w3.org/1999/xlink\""
+    } else {
+        ""
+    }
+}
+
 /// Text for a `<style>` element: the characters that would end the element or start a reference
 /// are escaped, and the quotes of CSS are kept as they are.
 pub fn css_text(css: &str) -> String {

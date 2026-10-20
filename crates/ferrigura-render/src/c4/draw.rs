@@ -21,7 +21,7 @@ use crate::unified::shapes::Intersect;
 
 /// The placeholder of the embedded font family in the text that `byTspan` writes. The family is
 /// named when the subsets are made, after the text is laid out, so the body refers to it by this token
-/// and [`super::render`] replaces it.
+/// and [`super::render`] replaces it with the family escaped for the attribute value it stands in.
 pub const FAMILY: &str = "\u{1}c4-family\u{1}";
 
 /// The stroke that boundaries and relations take when the diagram gives none (`#444444`).

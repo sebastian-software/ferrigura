@@ -72,6 +72,8 @@ pub struct Painted<'a> {
     pub cluster_labels: Vec<LabelLayout>,
     /// The node and edge labels that were drawn.
     pub labels: Vec<&'a LabelLayout>,
+    /// Whether a node is wrapped in a link, so that the root declares the `xlink` prefix.
+    pub links: bool,
 }
 
 impl Painted<'_> {
@@ -285,22 +287,24 @@ pub fn paint<'a>(
     }
 
     let mut nodes = String::new();
+    let mut links = false;
     for node in data.nodes.iter().filter(|node| !node.is_group) {
         let Some(shape) = measured.shapes.get(&node.id) else {
             continue;
         };
+        links |= node.link.is_some();
         let (x, y) = (node.x.unwrap_or(0.0), node.y.unwrap_or(0.0));
         cover(
             &mut bounds,
             shape.extent.unwrap_or(shape.bbox).translate(x, y),
         );
         // A state diagram's links are written after its render (`LinkForm::PostRender`).
-        let links = if data.diagram_type == crate::state::DIAGRAM_TYPE {
+        let link_form = if data.diagram_type == crate::state::DIAGRAM_TYPE {
             shapes::LinkForm::PostRender
         } else {
             shapes::LinkForm::Flowchart
         };
-        nodes.push_str(&shapes::node_svg(node, shape, id, links));
+        nodes.push_str(&shapes::node_svg(node, shape, id, link_form));
         labels.extend(shape.label.as_ref());
         labels.extend(shape.texts.iter());
     }
@@ -368,6 +372,7 @@ pub fn paint<'a>(
         bounds,
         cluster_labels,
         labels,
+        links,
     })
 }
 

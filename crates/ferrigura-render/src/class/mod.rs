@@ -14,7 +14,7 @@ use ferrigura_text::{
 use crate::RenderError;
 use crate::a11y;
 use crate::context::Context;
-use crate::svg::{escape, number};
+use crate::svg::{escape, number, xlink_declaration};
 use crate::unified::geom::BBox;
 use crate::unified::markers;
 use crate::unified::pipeline::{self, cover};
@@ -116,8 +116,9 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
         a11y::root_attributes(id, "classDiagram", &diagram.acc_title, &diagram.acc_descr);
     let style = style::style_sheet(id, input.theme, input.globals, &families);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"classDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"classDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
+        xlink = xlink_declaration(painted.links),
         x = number(drawn.x - VIEWPORT_PADDING),
         y = number(drawn.y - VIEWPORT_PADDING),
         w = number(view_width),

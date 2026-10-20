@@ -187,7 +187,8 @@ pub fn render(input: &Context<'_, C4Diagram, C4DiagramConfig>) -> Result<String,
         relations,
         title_svg,
     );
-    let body = body.replace(FAMILY, &family_css);
+    // The placeholder stands in `style` attributes, where the family's quotes are escaped.
+    let body = body.replace(FAMILY, &escape(&family_css));
     Ok(format!(
         "<svg id=\"{id}\"{size_attributes} xmlns=\"{SVG_NAMESPACE}\"{style_attributes} viewBox=\"{view_box}\"{accessible}>{accessibility}<style>{style_sheet}</style><g></g>{body}</svg>",
         id = escape(input.id),

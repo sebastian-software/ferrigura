@@ -27,7 +27,7 @@ use crate::common::decode_entities;
 use crate::common::style::base_style_sheet;
 use crate::common::viewbox::{BBox as ViewBox, setup_graph_viewbox};
 use crate::context::Context;
-use crate::svg::number;
+use crate::svg::{XLINK_NAMESPACE, number};
 use crate::unified::geom::BBox;
 use crate::unified::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::unified::shapes::kanban_item::{ItemPaint, KanbanItem, kanban_item};
@@ -129,6 +129,7 @@ pub fn render(
     let item_top = top + max_label_height;
     let mut item_groups = String::new();
     let mut item_labels = Vec::new();
+    let mut links = false;
     let mut root_bounds: Option<BBox> = None;
     let mut heights = Vec::with_capacity(sections.len());
     for section in &sections {
@@ -139,6 +140,7 @@ pub fn render(
             let labels = item_labels_of(item, item_width, text_size)?;
             let priority: Option<&Value> = item.priority.as_ref();
             let link = ticket_link(item, &input.section.kanban.ticket_base_url);
+            links |= link.is_some();
             let shape = kanban_item(&KanbanItem {
                 dom_id: &format!("{id}-{}", item.id),
                 title: &labels.title,
@@ -234,6 +236,10 @@ pub fn render(
         .with("id", id)
         .with("width", "100%")
         .with("xmlns", SVG_NAMESPACE);
+    // A linked ticket writes `xlink:href`, whose prefix the root declares after `xmlns`.
+    if links {
+        root.set("xmlns:xlink", XLINK_NAMESPACE);
+    }
     setup_graph_viewbox(
         &mut root,
         ViewBox {

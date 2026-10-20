@@ -21,7 +21,7 @@ use crate::RenderError;
 use crate::a11y;
 use crate::context::Context;
 use crate::flowchart::style::look_defs;
-use crate::svg::{escape, number};
+use crate::svg::{escape, number, xlink_declaration};
 use crate::unified::geom::BBox;
 use crate::unified::pipeline::{self, cover};
 use crate::unified::{Config, Section, markers};
@@ -127,8 +127,9 @@ pub fn render(
     let style =
         style::style_sheet_with_fonts(id, input.theme, input.globals, &diagram.classes, &families);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"agentflow\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{defs}{title_svg}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"agentflow\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{defs}{title_svg}</svg>",
         id = escape(id),
+        xlink = xlink_declaration(painted.links),
         x = number(drawn.x - padding),
         y = number(drawn.y - padding),
         w = number(view_width),
