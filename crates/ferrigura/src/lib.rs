@@ -1,16 +1,4 @@
-//! ferrigura: renders Mermaid diagram text to SVG, without a browser.
-//!
-//! [`Renderer`] is the interface. It takes the configuration the user would pass to `initialize`
-//! once, when it is made, and resolves what its renders share: the configuration merged onto the
-//! defaults and typed, and both shipped themes as typed tokens. A render merges only the diagram's
-//! own front matter and directives on top of that, and only when there are any. [`render`] and
-//! [`render_with`] take the configuration with each call. They are a shorthand over a small cache of
-//! renderers, so a configuration that is rendered again is resolved once. The output is the same
-//! either way.
-//!
-//! The text goes in and an SVG document comes out. [`RenderOptions`] holds what is not Mermaid
-//! configuration: the id of the SVG and the colour scheme.
-
+#![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
 use std::borrow::Cow;

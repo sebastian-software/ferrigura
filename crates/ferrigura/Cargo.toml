@@ -1,6 +1,10 @@
 [package]
 name = "ferrigura"
 description = "Render Mermaid diagram text to SVG, without a browser"
+readme = "README.md"
+keywords = ["mermaid", "diagram", "svg", "rendering", "flowchart"]
+categories = ["visualization", "rendering"]
+documentation = "https://docs.rs/ferrigura"
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true

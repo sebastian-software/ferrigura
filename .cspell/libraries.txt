@@ -25,6 +25,7 @@ dompurify
 elkjs
 fastdom
 fcose
+fmin
 fontawesome
 Fonticons
 Forgejo
@@ -51,6 +52,7 @@ mdbook
 Mermerd
 mkdocs
 monocart
+napi
 Nextra
 nodenext
 npmjs
@@ -67,6 +69,7 @@ rehype
 roughjs
 rscratch
 scanline
+serde
 shiki
 Slidev
 sparkline
