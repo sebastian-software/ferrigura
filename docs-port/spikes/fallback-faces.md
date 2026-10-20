@@ -117,7 +117,7 @@ Inline and `<img>` are pixel-identical in both engines for every face (0 differi
 Documented support, not probed here, from memory and unverified: Firefox supports COLRv0, COLRv1, CBDT and OT-SVG; Safari supports sbix. WebKit 26.5, measured here, draws COLRv0 and not COLRv1 or CBDT.
 
 - Firefox: Playwright's Firefox build (1538) did not launch in 60 s, as in the text-measurement spike. The installed Firefox 155 in headless mode failed with "Could not find profile folder" for a scratch profile. Not measured.
-- Safari: probed as WebKit 26.5 (Playwright), not Safari 27.0.1 on this Mac.
+- Safari: probed as WebKit 26.5 (Playwright); Safari 27.0.1 itself afterwards, in section 8.
 - sbix: no redistributable sbix face was available; Apple Color Emoji is sbix, which is the reference's face, so it cannot be bundled.
 - OT-SVG: not tested in a browser (skera drops the table).
 
@@ -180,7 +180,6 @@ Decisions for Sebastian:
 ## Not verified
 
 - Firefox (both the Playwright build and the installed 155): not measured. Documented support only.
-- Safari 27.0.1 (only WebKit 26.5 was measured).
 - Linux Chromium: documentation only, not probed.
 - The current monochrome Noto Emoji (`NotoEmoji[wght]`): not obtained from the listed sources; v2.028 was measured instead.
 - sbix (Apple Color Emoji): not redistributable, not measured beyond Chromium's advance and platform face.
@@ -229,7 +228,12 @@ Against the harness before this change, eight fixtures are now compared that wer
 
 **Open.**
 
-- Safari 27 has not been measured. WebKit 26.5 draws the COLRv0 emoji and the text symbols; Safari 27 has to be checked before a release.
 - Firefox is not measured (see section 4).
 - The source of Noto Sans Symbols 2 is recorded as the file's SHA-256 and the date (2026-10-20), not a commit: the commit was not noted when the file was fetched.
 - CJK, kana, Arabic and the other emoji stay excluded. Fallback fonts for them are not part of this step.
+
+## 8. Safari 27
+
+Checked on 2026-10-20 on macOS 27.0.1 with Safari 27.0.1 installed. `tools/port/fonts/webkit-snapshot.swift` loads a page in a `WKWebView`, which runs the system WebKit, the engine Safari 27.0.1 uses, and writes a snapshot. The page showed one ferrigura SVG twice, inline and through `<img src>`: a flowchart whose labels hold 🚀, 🎉, ⚠, ♥, ➕, ⭐, 🟠 and 🟡 (the default configuration, so the diagram embeds the sans, text-symbol and emoji subsets).
+
+Both drew every character from the bundled faces: the emoji in Twemoji's colours, ⚠ and ♥ as Noto Sans Symbols 2 outlines in the label colour, the label text in Lexica. No character fell back to Apple Color Emoji, which would look different. So Safari 27 draws the COLRv0 faces, inline and as an image, as WebKit 26.5 did.
