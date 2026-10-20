@@ -13,3 +13,6 @@ ferrigura-model.workspace = true
 ferrigura-render = { path = "../ferrigura-render" }
 ferrigura-syntax = { path = "../ferrigura-syntax" }
 serde_json.workspace = true
+
+[dev-dependencies]
+roxmltree = "0.21"
