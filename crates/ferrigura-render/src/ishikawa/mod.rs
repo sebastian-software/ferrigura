@@ -5,8 +5,8 @@
 //! The layout is arithmetic on the angles of the spine and on the boxes of the labels. The four
 //! boxes the reference reads back with `getBBox` are computed from the fonts (`text`): the box of
 //! each label, the tight bounds of the head's curve, and the root's box as the union of everything
-//! drawn (`Drawing::bounds`). The geometry of the causes and their bones is in [`bones`]; the style
-//! sheet is in [`style`].
+//! drawn (`Drawing::bounds`). The geometry of the causes and their bones is in `bones`; the style
+//! sheet is in `style`.
 //!
 //! The `look: handDrawn` of the reference is drawn by roughjs, which is not ported: the classic
 //! geometry is drawn for it, as the other ported types do (`docs-port/ishikawa/PLAN.md`, section 10).

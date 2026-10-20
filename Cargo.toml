@@ -10,7 +10,7 @@ repository = "https://github.com/sebastian-software/ferrigura"
 publish = false
 
 [workspace.dependencies]
-ferrigura-model = { path = "crates/ferrigura-model" }
+ferrigura-model = { path = "crates/ferrigura-model", version = "0.0.0" }
 indexmap = { version = "2", features = ["serde"] }
 logos = "0.15"
 serde = { version = "1", features = ["derive"] }

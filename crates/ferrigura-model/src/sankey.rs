@@ -44,7 +44,7 @@ pub struct SankeyLink {
     /// The id of the node the link ends at.
     pub target: String,
     /// The value, read as `parseFloat` reads the field. A value that is not finite is written as
-    /// its sentinel string, see [`value`].
+    /// its sentinel string, see `value`.
     #[serde(with = "value")]
     pub value: f64,
 }

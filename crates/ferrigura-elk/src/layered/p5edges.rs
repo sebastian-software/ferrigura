@@ -4,12 +4,12 @@
 //!
 //! Phase 5, edge routing: `OrthogonalEdgeRouter.process`. It places the nodes of each layer,
 //! routes the edges between each pair of adjacent layers with the orthogonal routing generator
-//! ([`orthogonal`]), and sets the width of the graph. The layers, the node positions and the port
+//! (`orthogonal`), and sets the width of the graph. The layers, the node positions and the port
 //! positions are the input.
 //!
 //! Edges must leave the east side of a layer and enter the west side of the next one, or join two
 //! eastern or two western ports of one layer, as the inverted port dummies' edges do. Graphs with
-//! other features, which need processors that are not ported, are rejected by [`check_supported`]
+//! other features, which need processors that are not ported, are rejected by `check_supported`
 //! instead of being routed wrongly.
 
 pub(in crate::layered) mod orthogonal;

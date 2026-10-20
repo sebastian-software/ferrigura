@@ -348,7 +348,7 @@ pub(crate) fn encode_entities(text: &str) -> String {
     encode_hash_entities(&text)
 }
 
-/// `decodeEntities` (`utils.ts:904-906`): the placeholders that [`encode_entities`] writes become
+/// `decodeEntities` (`utils.ts:904-906`): the placeholders that `encode_entities` writes become
 /// `&#`, `&` and `;` again. The reference decodes them in labels and in the whole SVG string once
 /// it is rendered (`mermaidAPI.ts:359`), so a placeholder the user typed is decoded as well.
 #[must_use]

@@ -1,6 +1,8 @@
 //! Generates the configuration types of `ferrigura-model` from Mermaid's configuration schema.
 //!
-//! `packages/mermaid/src/schemas/config.schema.yaml` is the single source. This script turns its
+//! `packages/mermaid/src/schemas/config.schema.yaml` is the single source. The crate holds a copy of
+//! it, `schema/config.schema.yaml`, so that it builds from its own package on crates.io; the test
+//! `schema_copy` fails when the copy and the source differ. This script turns its
 //! `$defs` and properties into serde structs, with the schema's `default` values as their
 //! `Default` implementation, and writes the key set that the reference's `configKeys` gates
 //! directives with. The output is `$OUT_DIR/config_schema.rs`, included by `src/config/mod.rs`.
@@ -30,7 +32,7 @@ use std::{env, fs, path::PathBuf};
 
 use serde_json::{Map, Value};
 
-const SCHEMA: &str = "../../packages/mermaid/src/schemas/config.schema.yaml";
+const SCHEMA: &str = "schema/config.schema.yaml";
 
 /// Schema keys that the reference does not accept in a directive.
 const NOT_CONFIG_KEYS: &[&str] = &["dompurifyConfig"];
@@ -550,8 +552,35 @@ fn def_pointer(prop: &Value) -> Option<&str> {
 fn description(node: &Value) -> Option<String> {
     node.get("description")
         .and_then(Value::as_str)
-        .map(|text| text.trim().to_owned())
+        .map(|text| autolink(text.trim()))
         .filter(|text| !text.is_empty())
+}
+
+/// The description with each bare URL written as rustdoc's autolink, `<https://…>`, which rustdoc
+/// asks for (`rustdoc::bare_urls`). The schema is Mermaid's source and stays as it is; a URL ends at
+/// white space, and a full stop or comma after it stays outside the link.
+fn autolink(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(at) = rest.find("http") {
+        let (before, from) = rest.split_at(at);
+        out.push_str(before);
+        let is_url = (from.starts_with("https://") || from.starts_with("http://"))
+            && !before.ends_with(['<', '(', '[']);
+        if !is_url {
+            out.push_str("http");
+            rest = &from[4..];
+            continue;
+        }
+        let end = from.find(char::is_whitespace).unwrap_or(from.len());
+        let url = from[..end].trim_end_matches(['.', ',', ';', ':']);
+        out.push('<');
+        out.push_str(url);
+        out.push('>');
+        rest = &from[url.len()..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// Merges `source` into `target` for `allOf`: properties are merged, and other keys are kept

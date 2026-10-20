@@ -2,6 +2,7 @@
 name = "ferrigura-path"
 description = "Chromium's bounding box of an SVG path (getBBox), bit for bit: the path data read as float, the arcs decomposed as Blink does, and Skia's tight bounds in float"
 readme = "README.md"
+include = ["src/**", "Cargo.toml", "README.md", "LICENSE*", "NOTICE.md"]
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
@@ -11,7 +12,7 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
-ferrigura-jsmath = { path = "../ferrigura-jsmath" }
+ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.0.0" }
 
 [dev-dependencies]
 serde.workspace = true

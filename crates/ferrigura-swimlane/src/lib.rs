@@ -1,7 +1,7 @@
 //! The swimlane layout of Mermaid 12.2.0 (`packages/mermaid/src/rendering-util/layout-algorithms/swimlanes/`),
 //! ported from the TypeScript sources, on the default path.
 //!
-//! **Ported.** The data model ([`model`]), the graph view and the write-back (`helpers.ts`), the Sugiyama phases
+//! **Ported.** The data model (`model`), the graph view and the write-back (`helpers.ts`), the Sugiyama phases
 //! (`phase0` to `phase4`, `pipeline.ts`), the orthogonal router (`orthogonalRouter/router.ts`), the geometry passes
 //! of the post-processing (`direction/*.ts`, `postProcessing.ts`), and the seam, [`run_swimlane_layout_core`]
 //! (`layoutCore.ts`).

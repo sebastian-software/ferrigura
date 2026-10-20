@@ -37,7 +37,7 @@ static DEFAULTS: LazyLock<Value> = LazyLock::new(|| {
 });
 
 /// The defaults of every key: the schema's defaults, with the reference's TypeScript-only defaults
-/// on top. This is a copy of the defaults that [`cached_defaults`] shares.
+/// on top. This is a copy of the defaults that `cached_defaults` shares.
 #[must_use]
 pub fn defaults() -> Value {
     cached_defaults().clone()

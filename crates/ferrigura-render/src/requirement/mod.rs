@@ -84,7 +84,7 @@ fn check_names(diagram: &RequirementDiagram) -> Result<(), RenderError> {
 /// # Errors
 ///
 /// Returns an error if a relationship names no requirement or element, if a requirement and an
-/// element share a name (both are named exceptions, see [`check_names`]), if a bundled font cannot
+/// element share a name (both are named exceptions, see `check_names`), if a bundled font cannot
 /// be read, or if the layout fails.
 pub fn render(input: &Context<'_, RequirementDiagram, Section<'_>>) -> Result<String, RenderError> {
     check_names(input.diagram)?;

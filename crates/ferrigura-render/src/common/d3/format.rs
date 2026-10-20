@@ -6,7 +6,7 @@
 //! JavaScript's number text is reproduced exactly. `toFixed`, `toExponential` and `toPrecision`
 //! round the exact binary value half up: the specification picks the larger of two candidates on a
 //! tie, so `(2.5).toFixed(0)` is `"3"`, where Rust's formatting gives `"2"`. The digits come from
-//! the exact decimal expansion of the double ([`exact_digits`]).
+//! the exact decimal expansion of the double (`exact_digits`).
 //!
 //! The `s` type keeps the exponent of its last prefix in the formatter, as `formatPrefixAuto`
 //! keeps `prefixExponent` in the module (a non-finite value reuses the last one, and before any

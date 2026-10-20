@@ -3,7 +3,7 @@
 //! 755-770). It fills the layout data of [`crate::unified::data`].
 //!
 //! The reference keeps `dataFetcher`'s state in module variables (`nodeDb`, `graphItemCount`, the
-//! colour slots) and resets them at every `extract`. Here that state lives in one [`Fetcher`] per
+//! colour slots) and resets them at every `extract`. Here that state lives in one `Fetcher` per
 //! call, so each call starts from the reset state. The reference's `extract` runs `dataFetcher`
 //! on the root document a second time (`stateDb.ts` 277) and `draw` runs `extract` again; the
 //! second pass gives the same nodes and edges, so the document is read once (`docs-port/state/

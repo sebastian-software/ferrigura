@@ -1,5 +1,5 @@
 //! The xychart diagram: `xychartRenderer.ts` of the reference, over the chart builder in
-//! [`builder`]. The research is in `docs-port/xychart/NOTES.md`, section 6, and the quirks it lists
+//! `builder`. The research is in `docs-port/xychart/NOTES.md`, section 6, and the quirks it lists
 //! (R1 to R22) are reproduced where the reference writes them, except R20: the typed configuration
 //! reads a numeric string such as a `titlePadding` of `"5"` as a number, which the reference joins.
 

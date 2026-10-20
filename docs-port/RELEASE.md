@@ -1,6 +1,6 @@
 # The first release of ferrigura
 
-The plan for publishing ferrigura for the first time: what goes out, what has to be done before, how releases are made from then on, and the decisions that are Sebastian's. Status: a plan, prepared on 2026-10-20. Nothing is published.
+The plan for publishing ferrigura for the first time: what goes out, what has to be done before, how releases are made from then on, and the decisions that are Sebastian's. Status: prepared on 2026-10-20, with the decisions below; the steps that do not wait for the trademark check are done. Nothing is published.
 
 ## What is released
 
@@ -33,16 +33,27 @@ All crates share one version and are released together: a change in any crate is
 
 ## Before the first publish
 
+Done on 2026-10-20, without the trademark check:
+
+| Step                                  | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Build inputs inside the crates**    | `ferrigura-model` reads its own copy of the configuration schema, `schema/config.schema.yaml`; the test `schema_copy` fails when the copy and `packages/mermaid/src/schemas/config.schema.yaml` differ. Every other crate reads only its own files (checked with `grep` for `../` in the build scripts and the `include_*!` macros).                                                                                                                                                                                                         |
+| **Package contents**                  | Each publishable crate has an `include` list: `src`, its README, licence and notice files, and the model's build script and schema, the text crate's fonts. The packages, compressed: `ferrigura-text` 811 KB (the fonts), `ferrigura-render` 750 KB, `ferrigura-syntax` 476 KB, `ferrigura-elk` 299 KB, `ferrigura-model` 128 KB, `ferrigura-swimlane` 127 KB, `ferrigura-cose` 66 KB, `ferrigura-jsmath` 32 KB, `ferrigura-venn` 26 KB, `ferrigura` 19 KB, `ferrigura-path` 16 KB, `ferrigura-cli` 13 KB; all far below crates.io's 10 MB. |
+| **Versions on the path dependencies** | Every dependency between the crates has `version = "0.0.0"` beside its path; release-please raises them with the crates.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **Metadata**                          | Each crate has `readme`; `ferrigura` and `ferrigura-cli` have `keywords`, `categories` and `documentation`.                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Licences in the packages**          | The seven MIT crates without a licence file have the repository's `LICENSE`; the others keep their own (ELK's EPL-2.0, the notices of `ferrigura-jsmath` and `ferrigura-path`). `ferrigura-text` is `MIT AND OFL-1.1 AND CC-BY-4.0`, with the faces' licences and Twemoji's attribution in `fonts/` and `NOTICE.md`.                                                                                                                                                                                                                         |
+| **Well-formed XML**                   | Merged on 2026-10-20: every SVG is well-formed XML, and a test parses every fixture's output.                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Browsers**                          | Safari 27 draws the colour emoji (spike `fallback-faces.md`, section 8).                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **Docs**                              | `cargo doc` without warnings, checked in CI with `RUSTDOCFLAGS="-D warnings"`.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Dry run**                           | `cargo package --workspace --exclude ferrigura-node` packages the twelve crates and builds each from its package, in the order of their dependencies (with `publish = true` set for the run only).                                                                                                                                                                                                                                                                                                                                           |
+
+Left for the first release:
+
 1. **Trademark check** for `ferrigura` (DPMA, EUIPO, USPTO), as `STATUS.md` has it. A crate name on crates.io cannot be given back, so this comes first.
-2. **Build inputs inside the crates.** `ferrigura-model`'s `build.rs` reads `packages/mermaid/src/schemas/config.schema.yaml`, which is outside the crate and not in its package. The crate needs its own copy of the schema, kept equal to the source by a test or a CI check, so that the YAML stays the single source. Every other crate reads only its own files (checked with `grep` for `../` in the build scripts and the `include_*!` macros).
-3. **Package contents.** crates.io takes at most 10 MB per crate. The tracked files of `ferrigura-swimlane` are 38.7 MB, of `ferrigura-cose` 11.9 MB, of `ferrigura-render` 9.6 MB and of `ferrigura-venn` 7.3 MB, almost all of it test corpora. Each crate gets an `include` list (its `src`, build script, fonts, licence and notice files, README) and is checked with `cargo package --list` and the size of the `.crate` file.
-4. **Versions on the path dependencies.** Every dependency between the crates is a `path` dependency today; for crates.io it needs `version = "0.1.0"` beside the path. release-please keeps these versions up to date from then on.
-5. **Metadata.** `publish = false` in `[workspace.package]` goes, per crate; each crate gets `readme`, and `ferrigura` and `ferrigura-cli` `keywords`, `categories` and `documentation`. The user documentation is in the crates' README files.
-6. **Licences in the packages.** Each crate's licence files go into its package; the seven MIT crates without a licence file in their folder (`ferrigura`, `-model`, `-syntax`, `-render`, `-text`, `-cli`, `-node`) get one: the ELK crate's EPL-2.0, the notices of `ferrigura-jsmath` and `ferrigura-path`, and in `ferrigura-text` the OFL texts of the faces and Twemoji's CC BY 4.0 attribution (`crates/ferrigura-text/NOTICE.md`). The `license` field of `ferrigura-text` then names the faces' licences beside MIT, as an SPDX expression.
-7. **Well-formed XML.** The branch `sebastian/zealous-sutherland-8c49a9` makes every SVG well-formed XML (the xlink prefix, C4's quoted face, entities); it is merged before the release.
-8. **Browsers.** Safari 27 draws the colour emoji (spike `fallback-faces.md`, section 8). Firefox is not checked yet.
-9. **Docs**: `cargo doc --no-deps --workspace` warns 44 times in the internal crates (links to private items, a bare URL); docs.rs builds them as they are, and the warnings go before the release.
-10. **A dry run**: `cargo publish --workspace --dry-run` and `cargo doc` as docs.rs builds it (`cargo +nightly doc` with `--cfg docsrs` only if a crate uses it).
+2. **The GitHub App** for the release pull requests: Sebastian creates it with the rights to write contents and pull requests on this repository, and sets its client id as the variable `RELEASE_APP_CLIENT_ID` and its private key as the secret `RELEASE_APP_PRIVATE_KEY`.
+3. **The crates.io token** for the first publish, as the secret `CARGO_REGISTRY_TOKEN` of the environment `crates-io`; after the first release, crates.io's trusted publishing replaces it.
+4. **The two latches**: `publish = false` in `[workspace.package]` becomes `true` (`ferrigura-node` keeps `false`), and the repository variable `PUBLISH_CRATES` is set to `true`. Until then nothing can be published, by the workflow or by hand.
+5. **Firefox**: not checked yet for the colour emoji.
 
 ## How releases are made
 
@@ -52,16 +63,19 @@ All crates share one version and are released together: a change in any crate is
 - The commit messages are the release notes: `feat(…)` and `fix(…)` as the repository writes them already. Each crate gets a `CHANGELOG.md`.
 - `bootstrap-sha` is the commit release-please starts from, so the first changelog does not list the whole history of the port; the first release is forced to `0.1.0` with a `Release-As: 0.1.0` footer when it is due.
 - `.github/workflows/release-please.yml` runs release-please. Until the first release it runs only by hand (`workflow_dispatch`), so it opens no release pull request before the steps above are done; then it runs on every push to `main`.
-- When a release pull request is merged, release-please tags the commit and makes a GitHub release. Publishing to crates.io is a job after that (`cargo publish --workspace`), added with the first release. crates.io's trusted publishing (OpenID Connect from GitHub Actions) needs no long-lived token, but it can be set up only for a crate that exists: the first version is published with a token of Sebastian's, then trusted publishing takes over.
-- A pull request opened with the default `GITHUB_TOKEN` does not start the CI workflow. The release pull requests need a token of a GitHub App or a fine-grained token with the right to open pull requests, so that CI runs on them.
+- When a release pull request is merged, release-please tags the commit and makes a GitHub release, and the job `publish` runs `cargo publish --workspace --exclude ferrigura-node`, which uploads the crates in the order of their dependencies. It runs only when the variable `PUBLISH_CRATES` is `true`. crates.io's trusted publishing (OpenID Connect from GitHub Actions) needs no long-lived token, but it can be set up only for a crate that exists: the first version is published with a token of Sebastian's, then trusted publishing takes over.
+- A pull request opened with the default `GITHUB_TOKEN` does not start the CI workflow, so release-please opens the release pull requests with a GitHub App's token (`actions/create-github-app-token`).
 
 The changesets files, scripts and dependencies are removed; the JavaScript packages are not released from here.
 
-## Decisions for Sebastian
+## Decisions
 
-1. The channels of the first release: crates.io only (proposed), or npm and binaries as well.
-2. One version for all crates (proposed), or each crate its own.
-3. The first version: `0.1.0` (proposed).
-4. The schema copy in `ferrigura-model` (proposed), or the generated Rust code checked in.
-5. The token for the release pull requests: a GitHub App (proposed) or a fine-grained personal token.
-6. The trademark check: who does it, and when the first publish may follow.
+Decided by Sebastian on 2026-10-20, as proposed:
+
+1. The first release goes to crates.io only; npm and prebuilt binaries come later.
+2. One version for all crates.
+3. The first version is `0.1.0`.
+4. `ferrigura-model` holds a copy of the schema, checked against the source.
+5. A GitHub App's token opens the release pull requests.
+
+Open: the trademark check, who does it, and when the first publish may follow.

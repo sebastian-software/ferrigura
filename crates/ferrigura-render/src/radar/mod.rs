@@ -1,5 +1,5 @@
 //! The radar diagram: a port of `packages/mermaid/src/diagrams/radar/renderer.ts` (`draw`, lines 8-46,
-//! and the helpers below it), with the styles of `styles.ts` in [`style`] and the polar arithmetic in
+//! and the helpers below it), with the styles of `styles.ts` in `style` and the polar arithmetic in
 //! [`geometry`]. The research is in `docs-port/radar/NOTES.md`, section 6.
 //!
 //! Nothing is measured and nothing is laid out. The rings, the axes and the curves are placed from the

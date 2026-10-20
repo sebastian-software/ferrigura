@@ -1,5 +1,5 @@
 //! The packet diagram: a port of `packages/mermaid/src/diagrams/packet/renderer.ts` (`draw`, lines
-//! 8-34, and `drawWord`, lines 36-112), with the styles of `styles.ts` in [`style`]. The research is
+//! 8-34, and `drawWord`, lines 36-112), with the styles of `styles.ts` in `style`. The research is
 //! in `docs-port/packet/NOTES.md`, section 6.
 //!
 //! Nothing is measured and nothing is laid out. A block is drawn from its bits: its rectangle starts
