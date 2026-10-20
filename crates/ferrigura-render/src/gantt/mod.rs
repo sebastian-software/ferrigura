@@ -23,7 +23,7 @@ use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, emb
 use crate::RenderError;
 use crate::a11y;
 use crate::context::{Context, ThemeView};
-use crate::svg::{escape, font_faces, number};
+use crate::svg::{escape, font_faces, number, xlink_declaration};
 
 use scale::TimeScale;
 
@@ -100,11 +100,7 @@ pub fn render(input: &Context<'_, GanttDiagram, GanttSection<'_>>) -> Result<Str
             number(chart.w)
         )
     };
-    let link_namespace = if chart.has_links() {
-        " xmlns:xlink=\"http://www.w3.org/1999/xlink\""
-    } else {
-        ""
-    };
+    let link_namespace = xlink_declaration(chart.has_links());
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\"{size}{link_namespace} viewBox=\"0 0 {w} {h}\"{roles}>{accessibility}{style}{body}</svg>",
         id = escape(input.id),

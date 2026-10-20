@@ -3,11 +3,13 @@
 use std::f64::consts::PI;
 
 use ferrigura_jsmath::{cos, sin};
+use ferrigura_syntax::decode_entities;
 use ferrigura_text::EmbeddedFamily;
 
 use crate::common::d3::d3_number;
 
-/// Escapes text for an XML element or attribute value.
+/// Escapes text for an XML element or attribute value. A character that XML 1.0 cannot hold (a
+/// control other than tab, line feed and carriage return) is written as U+FFFD.
 #[must_use]
 pub fn escape(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
@@ -18,10 +20,101 @@ pub fn escape(text: &str) -> String {
             '>' => out.push_str("&gt;"),
             '"' => out.push_str("&quot;"),
             '\'' => out.push_str("&#39;"),
+            other if !is_xml_char(other) => out.push('\u{fffd}'),
             other => out.push(other),
         }
     }
     out
+}
+
+/// The markup of a text as the reference's final pass leaves it, for an XML parser: the text
+/// escaped, then the placeholders of `encodeEntities` decoded on the markup (`decodeEntities`,
+/// `mermaidAPI.ts` 359), then the references that XML does not define rewritten
+/// ([`xml_references`]).
+#[must_use]
+pub fn entity_markup(text: &str) -> String {
+    xml_references(&decode_entities(&escape(text)))
+}
+
+/// Markup with every character reference that XML does not read as HTML does replaced by the text
+/// that the HTML parser reads from it. The placeholders of the entities a user types decode to
+/// references by name (`#nbsp;` to `&nbsp;`), which the browser's HTML parser reads and an XML
+/// parser rejects. The five references XML defines and a numeric reference to a character that XML
+/// allows and HTML reads as itself are kept. Any other reference is decoded as the HTML parser's
+/// text state decodes it and escaped again: `&nbsp;` becomes U+00A0, `&#128;` becomes `€`, and a
+/// name HTML does not know, `&amp;name;`.
+#[must_use]
+pub fn xml_references(markup: &str) -> String {
+    let mut out = String::with_capacity(markup.len());
+    let mut rest = markup;
+    while let Some(at) = rest.find('&') {
+        out.push_str(&rest[..at]);
+        rest = &rest[at..];
+        // `&`, a `#` for a number, the letters and digits, and the `;` that ends them.
+        let start = if rest[1..].starts_with('#') { 2 } else { 1 };
+        let end = rest[start..]
+            .find(|c: char| !c.is_ascii_alphanumeric())
+            .map_or(rest.len(), |offset| start + offset);
+        let length = if rest[end..].starts_with(';') {
+            end + 1
+        } else {
+            end
+        };
+        let reference = &rest[..length];
+        if is_xml_reference(reference) {
+            out.push_str(reference);
+        } else {
+            out.push_str(&escape(&ferrigura_syntax::sanitize::decode_references(
+                reference,
+            )));
+        }
+        rest = &rest[length..];
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Whether XML reads the reference as the HTML parser does: one of the five that XML defines, or a
+/// numeric reference to a character that XML allows and HTML reads as itself.
+fn is_xml_reference(reference: &str) -> bool {
+    if matches!(reference, "&amp;" | "&lt;" | "&gt;" | "&quot;" | "&apos;") {
+        return true;
+    }
+    let Some(number) = reference
+        .strip_prefix("&#")
+        .and_then(|rest| rest.strip_suffix(';'))
+    else {
+        return false;
+    };
+    let value = match number.strip_prefix(['x', 'X']) {
+        Some(hex) => u32::from_str_radix(hex, 16),
+        None => number.parse(),
+    };
+    value.ok().and_then(char::from_u32).is_some_and(|c| {
+        is_xml_char(c) && ferrigura_syntax::sanitize::decode_references(reference) == c.to_string()
+    })
+}
+
+/// Whether XML 1.0 allows the character in a document.
+fn is_xml_char(c: char) -> bool {
+    matches!(c, '\t' | '\n' | '\r' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..)
+}
+
+/// The XLink namespace, which the `xlink:href` of a link or an image is in.
+pub const XLINK_NAMESPACE: &str = "http://www.w3.org/1999/xlink";
+
+/// The declaration of the `xlink` prefix that a root needs when the drawing writes `xlink:href`,
+/// with a space before it, or nothing. Without it the prefix is unbound, and an XML parser rejects
+/// the SVG. The reference declares it after `xmlns` on the root that `mermaid.run` draws
+/// (`appendDivSvgG` with `XMLNS_XLINK_STD`, `mermaidAPI.ts:414-416`); the root of `mermaid.render`
+/// has none, and the HTML serialisation writes `xlink:href` without it.
+#[must_use]
+pub fn xlink_declaration(links: bool) -> &'static str {
+    if links {
+        " xmlns:xlink=\"http://www.w3.org/1999/xlink\""
+    } else {
+        ""
+    }
 }
 
 /// Text for a `<style>` element: the characters that would end the element or start a reference
@@ -165,6 +258,35 @@ mod tests {
         assert_eq!(
             escape("a<b & \"c\" 'd'"),
             "a&lt;b &amp; &quot;c&quot; &#39;d&#39;"
+        );
+        assert_eq!(escape("a\u{1}b\tc\u{fffe}"), "a\u{fffd}b\tc\u{fffd}");
+    }
+
+    #[test]
+    fn references_xml_reads_as_html_does_are_kept() {
+        let markup = "&amp; &lt; &gt; &quot; &apos; &#39; &#9829; &#x2665;";
+        assert_eq!(xml_references(markup), markup);
+    }
+
+    #[test]
+    fn other_references_are_written_as_the_html_parser_reads_them() {
+        assert_eq!(xml_references("a&nbsp;b"), "a\u{a0}b");
+        assert_eq!(xml_references("&LT;&copy;"), "&lt;\u{a9}");
+        assert_eq!(xml_references("&#128;&#0;&#1;"), "\u{20ac}\u{fffd}\u{fffd}");
+        assert_eq!(
+            xml_references("&unknown; &not_x;"),
+            "&amp;unknown; \u{ac}_x;"
+        );
+        assert_eq!(xml_references("& x &"), "&amp; x &amp;");
+    }
+
+    #[test]
+    fn typed_entities_are_xml() {
+        assert_eq!(
+            entity_markup(
+                "Plan\u{fb02}\u{b0}nbsp\u{b6}\u{df}A <\u{fb02}\u{b0}\u{b0}9829\u{b6}\u{df}>"
+            ),
+            "Plan\u{a0}A &lt;&#9829;&gt;"
         );
     }
 

@@ -7,9 +7,8 @@
 
 use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, TextError, face};
 
-use crate::common::decode_entities;
 use crate::common::text::collapsed_box;
-use crate::svg::escape;
+use crate::svg::entity_markup;
 
 use super::layout::ITEM_PADDING_X;
 
@@ -17,7 +16,7 @@ use super::layout::ITEM_PADDING_X;
 /// placeholders decoded (the whole-SVG pass of `mermaidAPI.ts` 359).
 #[must_use]
 pub(super) fn markup(text: &str) -> String {
-    decode_entities(&escape(text))
+    entity_markup(text)
 }
 
 /// The width of a label's text as `getBBox().width` gives it, or the fallback of the reference when

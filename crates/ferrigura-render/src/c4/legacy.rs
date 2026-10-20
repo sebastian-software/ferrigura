@@ -3,8 +3,7 @@
 //! and drawn by `byTspan` (`svgDraw.ts:361-395`), the placement of C4, which reads no `textPlacement`.
 
 use crate::common::text::{MeasureError, TextMemo, TextStyle, WrapStyle, split_line_breaks};
-use crate::svg::{escape, number};
-use ferrigura_syntax::decode_entities;
+use crate::svg::{entity_markup, escape, number};
 
 /// `wrapLabel`'s join string: the `<br/>` the wrapped lines are joined with (`utils.ts:539`).
 const JOIN: &str = "<br/>";
@@ -119,7 +118,7 @@ pub fn by_tspan(
             weight = face.weight,
             family = face.family,
             dy = number(dy),
-            text = decode_entities(&escape(line)),
+            text = entity_markup(line),
         ));
     }
     out

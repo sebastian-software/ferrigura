@@ -17,7 +17,7 @@ use ferrigura_text::{EmbeddedFamily, Run, embed_runs};
 use crate::RenderError;
 use crate::a11y;
 use crate::context::Context;
-use crate::svg::{escape, number};
+use crate::svg::{escape, number, xlink_declaration};
 use crate::unified::pipeline::{self, Painted};
 use crate::unified::{Config, Section, markers, palette};
 
@@ -147,8 +147,9 @@ pub fn render(
     );
     let defs = crate::flowchart::style::look_defs(id, input.theme, input.globals);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"usecaseDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured}</g>{defs}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"usecaseDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured}</g>{defs}</svg>",
         id = escape(id),
+        xlink = xlink_declaration(painted.links),
         x = number(drawn.x - padding),
         y = number(drawn.y - padding),
         w = number(view_width),

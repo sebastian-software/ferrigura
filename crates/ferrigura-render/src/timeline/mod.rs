@@ -27,8 +27,8 @@ use crate::a11y;
 use crate::common::style::base_style_sheet;
 use crate::common::text::{collapse_white_space, collapsed_box};
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
-use crate::common::{Element, decode_entities, shown_text};
-use crate::svg::{escape, number};
+use crate::common::{Element, shown_text};
+use crate::svg::{entity_markup, number};
 
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
@@ -393,7 +393,7 @@ pub(super) fn zero_box() -> BBox {
 /// SVG and then decodes the entities over the whole markup (`mermaidAPI.ts` 359), so the escape comes
 /// first and the decode after it.
 pub(super) fn markup(text: &str) -> String {
-    decode_entities(&escape(text))
+    entity_markup(text)
 }
 
 /// The title: the text the timeline writes with `x` as given, the baseline at `y = 20`, in `4ex`

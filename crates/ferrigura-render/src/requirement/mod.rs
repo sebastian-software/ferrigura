@@ -24,7 +24,7 @@ use ferrigura_text::{
 use crate::RenderError;
 use crate::a11y;
 use crate::flowchart::style::look_defs;
-use crate::svg::{escape, number};
+use crate::svg::{escape, number, xlink_declaration};
 use crate::unified::geom::BBox;
 use crate::unified::markers;
 use crate::unified::pipeline::{self, Measured, cover};
@@ -181,8 +181,9 @@ pub fn render(input: &Context<'_, RequirementDiagram, Section<'_>>) -> Result<St
         .unwrap_or_else(|| "1".to_owned());
     let marker_defs = markers::requirement_markers(id, input.globals.look == "neo", &stroke_width);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"requirementDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{marker_defs}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"requirementDiagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{marker_defs}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
+        xlink = xlink_declaration(painted.links),
         x = number(drawn.x - VIEWBOX_PADDING),
         y = number(drawn.y - VIEWBOX_PADDING),
         w = number(view_width),

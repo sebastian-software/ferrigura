@@ -14,7 +14,7 @@ use ferrigura_text::{
 use crate::RenderError;
 use crate::a11y;
 use crate::context::Context;
-use crate::svg::{escape, number};
+use crate::svg::{escape, number, xlink_declaration};
 use crate::unified::data::LayoutData;
 use crate::unified::geom::BBox;
 use crate::unified::markers;
@@ -123,8 +123,9 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
         .unwrap_or_default();
     let markers = markers::barb_markers(id, DIAGRAM_TYPE, input.globals.look == "neo", &transition);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"statediagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"statediagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
+        xlink = xlink_declaration(painted.links),
         x = number(drawn.x - VIEWPORT_PADDING),
         y = number(drawn.y - VIEWPORT_PADDING),
         w = number(view_width),

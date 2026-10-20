@@ -24,7 +24,7 @@ use crate::RenderError;
 use crate::a11y;
 use crate::context::Context;
 use crate::flowchart;
-use crate::svg::{escape, number};
+use crate::svg::{escape, number, xlink_declaration};
 use crate::unified::geom::BBox;
 use crate::unified::pipeline::{self, Layout, cover};
 use crate::unified::{Config, Section, markers, swimlane_layout};
@@ -175,8 +175,9 @@ pub fn render(
         a11y::root_attributes(id, "swimlane", &diagram.acc_title, &diagram.acc_descr);
     let style = style::style_sheet(id, input.theme, input.globals, &diagram.classes, &families);
     Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
+        xlink = xlink_declaration(painted.links),
         x = number(drawn.x - padding),
         y = number(drawn.y - padding),
         w = number(view_width),

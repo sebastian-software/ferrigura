@@ -24,9 +24,9 @@ use crate::a11y;
 use crate::common::d3::js_number;
 use crate::common::style::base_style_sheet;
 use crate::common::viewbox::calculate_svg_size_attrs;
-use crate::common::{Element, decode_entities, shown_text};
+use crate::common::{Element, shown_text};
 use crate::context::Context;
-use crate::svg::escape;
+use crate::svg::entity_markup;
 use builder::{Chart, HorizontalPos, Line, Point, Quadrant, Text, Theme, VerticalPos};
 
 /// The XML namespace of the root element.
@@ -162,7 +162,7 @@ fn drawn_text(chart: &Chart) -> String {
 /// The markup of a text, as the reference's whole-SVG pass leaves it: the characters escaped as the
 /// DOM serialises them, then the placeholders of `encodeEntities` decoded (`mermaidAPI.ts` 359).
 fn markup(text: &str) -> String {
-    decode_entities(&escape(text))
+    entity_markup(text)
 }
 
 /// `g.quadrants`: one `g.quadrant` per quadrant, with its rectangle and its label.
