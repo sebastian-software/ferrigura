@@ -1,6 +1,7 @@
 [package]
 name = "ferrigura-model"
 description = "Diagram models, configuration and their canonical JSON form for ferrigura"
+readme = "README.md"
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
