@@ -1,0 +1,352 @@
+{
+ "name": "generated-252-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 252, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set Rust:1\n  set JavaScript\n  union JavaScript, Rust:1.5\n  union Rust, JavaScript, Rust:0.94\n  union Rust, JavaScript, Rust:0.33",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Rust"
+    ],
+    "size": 1.5
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Rust",
+     "Rust"
+    ],
+    "size": 0.94
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Rust",
+     "Rust"
+    ],
+    "size": 0.33
+   },
+   {
+    "sets": [
+     "Rust",
+     "Rust"
+    ],
+    "size": 0.25
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Rust"
+    ],
+    "size": 1.5
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Rust",
+     "Rust"
+    ],
+    "size": 0.94
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Rust",
+     "Rust"
+    ],
+    "size": 0.33
+   },
+   {
+    "sets": [
+     "Rust",
+     "Rust"
+    ],
+    "size": 0.25
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 0.5641895835477563
+   },
+   {
+    "id": "JavaScript",
+    "x": 1.219934532605015,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 0.5641895835477563
+   },
+   {
+    "id": "JavaScript",
+    "x": 1.219934532605015,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "JavaScript",
+    "x": 0,
+    "y": "-0",
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Rust",
+    "x": 1.219934532605015,
+    "y": 1.493988920524054e-16,
+    "radius": 0.5641895835477563
+   }
+  ],
+  "circles": [
+   {
+    "id": "JavaScript",
+    "x": 400,
+    "y": 225,
+    "radius": 210
+   },
+   {
+    "id": "Rust",
+    "x": 543.592169136464,
+    "y": 225.00000000000003,
+    "radius": 66.40783086353596
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Rust",
+    "x": 543.592169136464,
+    "y": 225.00000000000003,
+    "disjoint": false
+   },
+   {
+    "key": "JavaScript",
+    "x": 333.5921691364641,
+    "y": 224.99999562096548,
+    "disjoint": false
+   },
+   {
+    "key": "JavaScript,Rust",
+    "x": 543.592169136464,
+    "y": 225.00000000000003,
+    "disjoint": false
+   },
+   {
+    "key": "JavaScript,Rust,Rust",
+    "x": 543.592169136464,
+    "y": 225.00000000000003,
+    "disjoint": false
+   },
+   {
+    "key": "Rust,Rust",
+    "x": 543.592169136464,
+    "y": 225.00000000000003,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Rust"
+   ],
+   "text": {
+    "x": 548.3785747743461,
+    "y": 225.00000000000003,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 548.3785747743461,
+     "y": 225.00000000000003,
+     "radius": 68.62142522565382
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript"
+   ],
+   "text": {
+    "x": 331.3785747743462,
+    "y": 224.999999121897,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 400,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "Rust"
+   ],
+   "text": {
+    "x": 548.3785747743461,
+    "y": 225.00000000000003,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 400,
+     "y": 225,
+     "radius": 217
+    },
+    {
+     "set": "Rust",
+     "x": 548.3785747743461,
+     "y": 225.00000000000003,
+     "radius": 68.62142522565382
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "Rust",
+    "Rust"
+   ],
+   "text": {
+    "x": 548.3785747743461,
+    "y": 225.00000000000003,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 400,
+     "y": 225,
+     "radius": 217
+    },
+    {
+     "set": "Rust",
+     "x": 548.3785747743461,
+     "y": 225.00000000000003,
+     "radius": 68.62142522565382
+    },
+    {
+     "set": "Rust",
+     "x": 548.3785747743461,
+     "y": 225.00000000000003,
+     "radius": 68.62142522565382
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "Rust",
+    "Rust"
+   ],
+   "text": {
+    "x": 548.3785747743461,
+    "y": 225.00000000000003,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 400,
+     "y": 225,
+     "radius": 217
+    },
+    {
+     "set": "Rust",
+     "x": 548.3785747743461,
+     "y": 225.00000000000003,
+     "radius": 68.62142522565382
+    },
+    {
+     "set": "Rust",
+     "x": 548.3785747743461,
+     "y": 225.00000000000003,
+     "radius": 68.62142522565382
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Rust",
+    "Rust"
+   ],
+   "text": {
+    "x": 548.3785747743461,
+    "y": 225.00000000000003,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 548.3785747743461,
+     "y": 225.00000000000003,
+     "radius": 68.62142522565382
+    },
+    {
+     "set": "Rust",
+     "x": 548.3785747743461,
+     "y": 225.00000000000003,
+     "radius": 68.62142522565382
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

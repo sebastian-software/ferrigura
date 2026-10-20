@@ -1,5 +1,7 @@
 //! Points and boxes shared by the flowchart modules. Coordinates are SVG user units, y down.
 
+use ferrigura_jsmath::hypot;
+
 /// A point.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Point {
@@ -19,7 +21,7 @@ impl Point {
     /// The distance to another point.
     #[must_use]
     pub fn distance(self, other: Self) -> f64 {
-        (self.x - other.x).hypot(self.y - other.y)
+        hypot(self.x - other.x, self.y - other.y)
     }
 }
 

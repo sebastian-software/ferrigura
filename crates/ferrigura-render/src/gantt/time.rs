@@ -8,6 +8,8 @@
 //! Times are epoch milliseconds as JavaScript numbers: integral `f64` values, and NaN for an Invalid
 //! Date. Calendar fields are read with the Gregorian calendar of JavaScript's `Date`.
 
+use ferrigura_jsmath::{log, pow};
+
 /// `durationDay` in milliseconds.
 pub(crate) const DAY: f64 = 86_400_000.0;
 /// `durationWeek` in milliseconds.
@@ -390,7 +392,7 @@ fn tick_step(start: f64, stop: f64, count: f64) -> f64 {
         } else {
             count.max(0.0)
         };
-    let mut step1 = 10f64.powf((step0.ln() / std::f64::consts::LN_10).floor());
+    let mut step1 = pow(10.0, (log(step0) / std::f64::consts::LN_10).floor());
     let error = step0 / step1;
     if error >= 50f64.sqrt() {
         step1 *= 10.0;

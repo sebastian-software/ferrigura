@@ -1,15 +1,13 @@
-//! The reference's renderer and mermaid API tests, ignored with their reasons. Each reference `it` is
+//! The reference's mermaid API tests that are not ported, ignored with their reasons. Each reference `it` is
 //! one test with a panicking body, so the count of what is not ported stays visible.
 //!
-//! The renderer's colour slots, its container colour indices, its `draw` and the render path of the
-//! mermaid API are the renderer's (`colorSlots.ts`, `renderer.ts`, `mermaidAPI`). The source
-//! positions and the element mappings are not ported (open question Q-g). The diagnostic lifecycle
-//! reads the diagnostics after `getData()`; the diagnostics themselves are live in
-//! `agentflow_diagnostics_spec.rs`.
+//! The renderer's colour slots, its stylesheet, its container colour indices and its `draw` are ported to
+//! `crates/ferrigura-render/tests/agentflow_colour_slots_spec.rs` and `agentflow_render_spec.rs`. The source
+//! positions and the element mappings are not ported (open question Q-g). The diagnostic lifecycle reads the
+//! diagnostics after `getData()`; the diagnostics themselves are live in `agentflow_diagnostics_spec.rs`.
 //!
 //! Sources: `agentflow-diagnostics-lifecycle.spec.ts` (4), `agentflow-render-positions.spec.ts` (4),
-//! `agentflow-max-text-size.spec.ts` (5), `colorSlots.spec.ts` (14), `containerOrder.spec.ts` (3),
-//! `renderer.spec.ts` (1).
+//! `agentflow-max-text-size.spec.ts` (5).
 
 // agentflow-diagnostics-lifecycle.spec.ts
 
@@ -111,114 +109,6 @@ fn says_nothing_for_a_comment_heavy_diagram_that_never_parses_comments() {
 
 // colorSlots.spec.ts: the colour slots of the renderer
 
-#[test]
-#[ignore = "renderer: the colour slots of colorSlots.ts are the renderer's and are not ported"]
-fn tags_a_node_with_the_kind_the_db_reports() {
-    panic!("renderer: the colour slots of colorSlots.ts are not ported");
-}
-
-#[test]
-#[ignore = "renderer: the colour slots of colorSlots.ts are the renderer's and are not ported"]
-fn gives_two_nodes_of_one_kind_the_same_class_wherever_they_sit() {
-    panic!("renderer: the colour slots of colorSlots.ts are not ported");
-}
-
-#[test]
-#[ignore = "renderer: the colour slots of colorSlots.ts are the renderer's and are not ported"]
-fn keeps_any_classes_the_node_already_carried() {
-    panic!("renderer: the colour slots of colorSlots.ts are not ported");
-}
-
-#[test]
-#[ignore = "renderer: the colour slots of colorSlots.ts are the renderer's and are not ported"]
-fn numbers_containers_from_the_order_it_is_given_above_the_kind_slots() {
-    panic!("renderer: the colour slots of colorSlots.ts are not ported");
-}
-
-#[test]
-#[ignore = "renderer: the colour slots of colorSlots.ts are the renderer's and are not ported"]
-fn never_folds_a_container_back_onto_a_kind_slot() {
-    panic!("renderer: the colour slots of colorSlots.ts are not ported");
-}
-
-#[test]
-#[ignore = "renderer: the colour slots of colorSlots.ts are the renderer's and are not ported"]
-fn stamps_a_slot_the_stylesheet_actually_names_on_a_palette_shorter_than_the_kinds() {
-    panic!("renderer: the colour slots of colorSlots.ts are not ported");
-}
-
-#[test]
-#[ignore = "renderer: the colour slots of colorSlots.ts are the renderer's and are not ported"]
-fn agrees_with_the_stylesheet_at_every_palette_length() {
-    panic!("renderer: the colour slots of colorSlots.ts are not ported");
-}
-
-#[test]
-#[ignore = "renderer: the stylesheet of styles.ts is the renderer's and is not ported"]
-fn emits_a_rule_for_every_kind_at_that_kind_slot_colour() {
-    panic!("renderer: the stylesheet of styles.ts is not ported");
-}
-
-#[test]
-#[ignore = "renderer: the stylesheet of styles.ts is the renderer's and is not ported"]
-fn paints_containers_from_the_slots_above_the_kind_range() {
-    panic!("renderer: the stylesheet of styles.ts is not ported");
-}
-
-#[test]
-#[ignore = "renderer: the stylesheet of styles.ts is the renderer's and is not ported"]
-fn names_both_forms_of_a_container_so_a_collapsed_one_is_not_left_grey() {
-    panic!("renderer: the stylesheet of styles.ts is not ported");
-}
-
-#[test]
-#[ignore = "renderer: the stylesheet of styles.ts is the renderer's and is not ported"]
-fn uses_no_container_slot_below_the_kind_range() {
-    panic!("renderer: the stylesheet of styles.ts is not ported");
-}
-
-#[test]
-#[ignore = "renderer: the stylesheet of styles.ts is the renderer's and is not ported"]
-fn strokes_without_filling_when_the_theme_carries_no_background_palette() {
-    panic!("renderer: the stylesheet of styles.ts is not ported");
-}
-
-#[test]
-#[ignore = "renderer: the stylesheet of styles.ts is the renderer's and is not ported"]
-fn emits_nothing_for_a_theme_that_carries_no_palette() {
-    panic!("renderer: the stylesheet of styles.ts is not ported");
-}
-
-#[test]
-#[ignore = "renderer: the stylesheet of styles.ts is the renderer's and is not ported"]
-fn rejects_a_look_that_would_break_out_of_the_selector() {
-    panic!("renderer: the stylesheet of styles.ts is not ported");
-}
-
 // containerOrder.spec.ts: the colour indices of getData
 
-#[test]
-#[ignore = "renderer: the container colour indices of getData come with the renderer"]
-fn gives_the_first_declared_container_the_first_container_slot() {
-    panic!("renderer: the container colour indices of getData come with the renderer");
-}
-
-#[test]
-#[ignore = "renderer: the container colour indices of getData come with the renderer"]
-fn numbers_a_parent_before_the_container_nested_inside_it() {
-    panic!("renderer: the container colour indices of getData come with the renderer");
-}
-
-#[test]
-#[ignore = "renderer: the container colour indices of getData come with the renderer"]
-fn keeps_a_collapsed_container_in_the_sequence() {
-    panic!("renderer: the container colour indices of getData come with the renderer");
-}
-
 // renderer.spec.ts
-
-#[test]
-#[ignore = "renderer: draw(), the renderer's entry point, is not ported"]
-fn calls_set_diagram_id_with_the_svg_element_id() {
-    panic!("renderer: draw(), the renderer's entry point, is not ported");
-}

@@ -1,0 +1,167 @@
+{
+ "name": "generated-014-mixed",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 14, 2 sets, mixed ids",
+ "description": "A generated set system (mixed ids, 2 sets).",
+ "text": "venn-beta\n  set Python\n  set C:2",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "C"
+    ],
+    "size": 2
+   }
+  ],
+  "width": 640,
+  "height": 360,
+  "chartPadding": 15,
+  "layoutPadding": 15
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "C"
+    ],
+    "size": 2
+   },
+   {
+    "sets": [
+     "C",
+     "Python"
+    ],
+    "size": 0
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Python",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "C",
+    "x": 2.5820086769556365,
+    "y": 0,
+    "radius": 0.7978845608028654
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Python",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "C",
+    "x": 2.5820086769556365,
+    "y": 0,
+    "radius": 0.7978845608028654
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Python",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "C",
+    "x": 2.6533736416017475,
+    "y": 0,
+    "radius": 0.7978845608028654
+   }
+  ],
+  "circles": [
+   {
+    "id": "Python",
+    "x": 242.90975674250691,
+    "y": 180,
+    "radius": 165
+   },
+   {
+    "id": "C",
+    "x": 488.29999999999995,
+    "y": 180,
+    "radius": 73.79024325749306
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Python",
+    "x": 242.90975674250691,
+    "y": 180,
+    "disjoint": false
+   },
+   {
+    "key": "C",
+    "x": 488.29999999999995,
+    "y": 180,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Python"
+   ],
+   "text": {
+    "x": 242.90975674250691,
+    "y": 180,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 242.90975674250691,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C"
+   ],
+   "text": {
+    "x": 488.29999999999995,
+    "y": 180,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "C",
+     "x": 488.29999999999995,
+     "y": 180,
+     "radius": 73.79024325749306
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

@@ -23,6 +23,7 @@ use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
+use ferrigura_render::agentflow::AgentflowSection;
 use ferrigura_render::block::BlockSection;
 use ferrigura_render::context::{Context, Globals, ThemeView};
 use ferrigura_render::flowchart;
@@ -30,6 +31,7 @@ use ferrigura_render::kanban::KanbanSections;
 use ferrigura_render::mindmap::MindmapSection;
 use ferrigura_render::pie::render as render_pie;
 use ferrigura_render::unified::Section;
+use ferrigura_render::use_case::UseCaseSection;
 use ferrigura_render::{
     agentflow as agentflow_render, architecture as architecture_render, block as block_render,
     c4 as c4_render, class as class_render, cynefin as cynefin_render, er as er_render,
@@ -83,6 +85,12 @@ pub struct RenderOptions {
     /// reference's seed, so that the ids match the reference's; it is not part of the interface.
     #[doc(hidden)]
     pub git_graph_seed: Option<u32>,
+    /// The seed of the random numbers a venn layout draws when it has eight areas or more (the
+    /// reference draws them from `Math.random`). `None` gives the venn renderer's default seed. The
+    /// geometry harness gives the reference's seed, so that the draws match; it is not part of the
+    /// interface.
+    #[doc(hidden)]
+    pub random_seed: Option<u32>,
 }
 
 /// A renderer, with the site configuration resolved once.
@@ -376,7 +384,10 @@ impl Renderer {
             }),
             DiagramType::Agentflow => agentflow_render::render(&Context {
                 diagram: &agentflow::parse(text)?,
-                section: &typed_config.agentflow,
+                section: &AgentflowSection {
+                    agentflow: &typed_config.agentflow,
+                    unified: section,
+                },
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,
@@ -397,7 +408,10 @@ impl Renderer {
             }),
             DiagramType::Railroad => railroad_render::render(&Context {
                 diagram: &railroad::parse(text)?,
-                section: &typed_config.railroad,
+                section: &railroad_render::RailroadSection {
+                    config: &typed_config.railroad,
+                    detector: railroad::detector_id(text),
+                },
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,
@@ -418,14 +432,20 @@ impl Renderer {
             }),
             DiagramType::UseCase => use_case_render::render(&Context {
                 diagram: &use_case::parse(text)?,
-                section: &typed_config.usecase,
+                section: &UseCaseSection {
+                    usecase: &typed_config.usecase,
+                    unified: section,
+                },
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,
             }),
             DiagramType::Venn => venn_render::render(&Context {
                 diagram: &venn::parse(text)?,
-                section: &typed_config.venn,
+                section: &venn_render::VennSection {
+                    config: &typed_config.venn,
+                    seed: options.random_seed.unwrap_or(venn_render::DEFAULT_SEED),
+                },
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,

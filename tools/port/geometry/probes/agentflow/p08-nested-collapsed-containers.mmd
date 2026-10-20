@@ -1,0 +1,13 @@
+agentflow-beta TB
+  flow outer["Outer"]
+    flow inner["Inner"]
+      a["a"] --> b["b"]
+    end
+    c["c"]
+  end
+  flow other["Other"]
+    d["d"] --> e["e"]
+  end
+  d --> a
+  outer --> other
+  outer@{ view: "collapsed" }

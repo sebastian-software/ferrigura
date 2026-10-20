@@ -23,6 +23,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use ferrigura_elk::json::JsonNode;
+use ferrigura_jsmath::hypot;
 use ferrigura_model::config::MermaidConfig;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::theme::{Theme, ThemeTokens};
@@ -242,7 +243,7 @@ fn merged(points: &[Point]) -> Vec<Point> {
     for &point in points {
         if kept
             .last()
-            .is_none_or(|last| (point.x - last.x).hypot(point.y - last.y) >= TOLERANCE)
+            .is_none_or(|last| hypot(point.x - last.x, point.y - last.y) >= TOLERANCE)
         {
             kept.push(point);
         }

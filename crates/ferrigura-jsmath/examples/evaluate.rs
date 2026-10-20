@@ -17,7 +17,7 @@ use ferrigura_jsmath as jsmath;
 type UnaryFn = fn(f64) -> f64;
 type BinaryFn = fn(f64, f64) -> f64;
 
-const UNARY: [(&str, UnaryFn); 7] = [
+const UNARY: [(&str, UnaryFn); 8] = [
     ("sin", jsmath::sin),
     ("cos", jsmath::cos),
     ("tan", jsmath::tan),
@@ -25,6 +25,7 @@ const UNARY: [(&str, UnaryFn); 7] = [
     ("acos", jsmath::acos),
     ("atan", jsmath::atan),
     ("log", jsmath::log),
+    ("log10", jsmath::log10),
 ];
 
 const BINARY: [(&str, BinaryFn); 3] = [
@@ -34,7 +35,7 @@ const BINARY: [(&str, BinaryFn); 3] = [
 ];
 
 /// The fdlibm functions of Node's V8 (the `node` module).
-const NODE_UNARY: [(&str, UnaryFn); 7] = [
+const NODE_UNARY: [(&str, UnaryFn); 8] = [
     ("sin", jsmath::node::sin),
     ("cos", jsmath::node::cos),
     ("tan", jsmath::node::tan),
@@ -42,6 +43,7 @@ const NODE_UNARY: [(&str, UnaryFn); 7] = [
     ("acos", jsmath::node::acos),
     ("atan", jsmath::node::atan),
     ("log", jsmath::node::log),
+    ("log10", jsmath::node::log10),
 ];
 
 const NODE_BINARY: [(&str, BinaryFn); 3] = [
@@ -51,7 +53,7 @@ const NODE_BINARY: [(&str, BinaryFn); 3] = [
 ];
 
 /// The platform's functions, for the comparison with `--std`.
-const STD_UNARY: [(&str, UnaryFn); 7] = [
+const STD_UNARY: [(&str, UnaryFn); 8] = [
     ("sin", f64::sin),
     ("cos", f64::cos),
     ("tan", f64::tan),
@@ -59,6 +61,7 @@ const STD_UNARY: [(&str, UnaryFn); 7] = [
     ("acos", f64::acos),
     ("atan", f64::atan),
     ("log", f64::ln),
+    ("log10", f64::log10),
 ];
 
 const STD_BINARY: [(&str, BinaryFn); 3] = [

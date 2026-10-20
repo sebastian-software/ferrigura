@@ -1,0 +1,317 @@
+{
+ "name": "probe-quoted-ids-with-spaces",
+ "group": "probe",
+ "source": "probe: quoted-ids-with-spaces",
+ "description": "Quoted ids with spaces and punctuation.",
+ "text": "venn-beta\n  set \"Front end\":6\n  set \"Back end\":5\n  set \"Dev Ops\":4\n  union \"Front end\", \"Back end\":2\n  union \"Back end\", \"Dev Ops\":1",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 6
+   },
+   {
+    "sets": [
+     "Back end"
+    ],
+    "size": 5
+   },
+   {
+    "sets": [
+     "Dev Ops"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "Back end",
+     "Front end"
+    ],
+    "size": 2
+   },
+   {
+    "sets": [
+     "Back end",
+     "Dev Ops"
+    ],
+    "size": 1
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 6
+   },
+   {
+    "sets": [
+     "Back end"
+    ],
+    "size": 5
+   },
+   {
+    "sets": [
+     "Dev Ops"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "Back end",
+     "Front end"
+    ],
+    "size": 2
+   },
+   {
+    "sets": [
+     "Back end",
+     "Dev Ops"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "Dev Ops",
+     "Front end"
+    ],
+    "size": 0
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Front end",
+    "x": 1.3841456217976273,
+    "y": 0,
+    "radius": 1.381976597885342
+   },
+   {
+    "id": "Back end",
+    "x": 0,
+    "y": 0,
+    "radius": 1.2615662610100802
+   },
+   {
+    "id": "Dev Ops",
+    "x": -1.5823118012776178,
+    "y": 0,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Front end",
+    "x": 1.384145665614858,
+    "y": 0.00001296173485095783,
+    "radius": 1.381976597885342
+   },
+   {
+    "id": "Back end",
+    "x": 4.381162108628534e-8,
+    "y": 0.000018945593122384834,
+    "radius": 1.2615662610100802
+   },
+   {
+    "id": "Dev Ops",
+    "x": -1.5823117575147443,
+    "y": 0.000007867189444392934,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Front end",
+    "x": 0,
+    "y": 0,
+    "radius": 1.381976597885342
+   },
+   {
+    "id": "Back end",
+    "x": 1.3841456218161716,
+    "y": 2.0291521281492025e-16,
+    "radius": 1.2615662610100802
+   },
+   {
+    "id": "Dev Ops",
+    "x": 2.966457423079857,
+    "y": -0.00001791896251108236,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "circles": [
+   {
+    "id": "Front end",
+    "x": 209.29583296568657,
+    "y": 225,
+    "radius": 194.29583296568657
+   },
+   {
+    "id": "Back end",
+    "x": 403.8966148805868,
+    "y": 225.00000000000003,
+    "radius": 177.36701757427068
+   },
+   {
+    "id": "Dev Ops",
+    "x": 626.3581166950123,
+    "y": 224.99748072452724,
+    "radius": 158.64188330498763
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Front end",
+    "x": 120.76479865315807,
+    "y": 224.99999816056513,
+    "disjoint": false
+   },
+   {
+    "key": "Back end",
+    "x": 438.07523122692567,
+    "y": 336.8856936966351,
+    "disjoint": false
+   },
+   {
+    "key": "Dev Ops",
+    "x": 683.1318162166594,
+    "y": 224.99683810922653,
+    "disjoint": false
+   },
+   {
+    "key": "Back end,Front end",
+    "x": 315.06063161884464,
+    "y": 224.99999963695296,
+    "disjoint": false
+   },
+   {
+    "key": "Back end,Dev Ops",
+    "x": 524.4899329218536,
+    "y": 224.9986354671576,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Front end"
+   ],
+   "text": {
+    "x": 115.6877949923065,
+    "y": 225.0000046955094,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 205.82848447415358,
+     "y": 225,
+     "radius": 197.82848447415358
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Back end"
+   ],
+   "text": {
+    "x": 438.76750815829956,
+    "y": 338.91997903663923,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Back end",
+     "x": 403.96746242387024,
+     "y": 225.00000000000006,
+     "radius": 180.59187243925743
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Dev Ops"
+   ],
+   "text": {
+    "x": 688.2796674205335,
+    "y": 224.99677487419427,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Dev Ops",
+     "x": 630.4737188167398,
+     "y": 224.99743491951867,
+     "radius": 161.52628118326012
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Back end",
+    "Front end"
+   ],
+   "text": {
+    "x": 313.51627946646,
+    "y": 224.99999893984486,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Back end",
+     "x": 403.96746242387024,
+     "y": 225.00000000000006,
+     "radius": 180.59187243925743
+    },
+    {
+     "set": "Front end",
+     "x": 205.82848447415358,
+     "y": 225,
+     "radius": 197.82848447415358
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Back end",
+    "Dev Ops"
+   ],
+   "text": {
+    "x": 526.7533862476853,
+    "y": 224.9986088747466,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Back end",
+     "x": 403.96746242387024,
+     "y": 225.00000000000006,
+     "radius": 180.59187243925743
+    },
+    {
+     "set": "Dev Ops",
+     "x": 630.4737188167398,
+     "y": 224.99743491951867,
+     "radius": 161.52628118326012
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

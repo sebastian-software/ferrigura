@@ -1,0 +1,244 @@
+{
+ "name": "generated-299-mixed",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 299, 2 sets, mixed ids",
+ "description": "A generated set system (mixed ids, 2 sets).",
+ "text": "venn-beta\n  set C:12\n  set Python\n  union Python, C\n  union C, Python",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "C"
+    ],
+    "size": 12
+   },
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "C",
+     "Python"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "C",
+     "Python"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 320,
+  "height": 240,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "C"
+    ],
+    "size": 12
+   },
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "C",
+     "Python"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "C",
+     "Python"
+    ],
+    "size": 2.5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "C",
+    "x": 0,
+    "y": 0,
+    "radius": 1.9544100476116797
+   },
+   {
+    "id": "Python",
+    "x": 2.4569836331444233,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "C",
+    "x": 0,
+    "y": 0,
+    "radius": 1.9544100476116797
+   },
+   {
+    "id": "Python",
+    "x": 2.4569836331444233,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "C",
+    "x": 0,
+    "y": 0,
+    "radius": 1.9544100476116797
+   },
+   {
+    "id": "Python",
+    "x": 2.4569836331444233,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "C",
+    "x": 106.48208953417418,
+    "y": 120,
+    "radius": 91.48208953417418
+   },
+   {
+    "id": "Python",
+    "x": 221.48865992404254,
+    "y": 120,
+    "radius": 83.51134007595745
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "C",
+    "x": 76.48865992404255,
+    "y": 120.00000026402913,
+    "disjoint": false
+   },
+   {
+    "key": "Python",
+    "x": 251.48208953417418,
+    "y": 119.99999950594221,
+    "disjoint": false
+   },
+   {
+    "key": "C,Python",
+    "x": 167.97074945821672,
+    "y": 119.99999962437633,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "C"
+   ],
+   "text": {
+    "x": 72.45707798934116,
+    "y": 120.00000116066175,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "C",
+     "x": 103.89846627030673,
+     "y": 120,
+     "radius": 95.89846627030673
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python"
+   ],
+   "text": {
+    "x": 255.89846627030673,
+    "y": 120.00000107301013,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 224.45707798934114,
+     "y": 120,
+     "radius": 87.54292201065886
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C",
+    "Python"
+   ],
+   "text": {
+    "x": 168.35554425964787,
+    "y": 120.00000035127883,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "C",
+     "x": 103.89846627030673,
+     "y": 120,
+     "radius": 95.89846627030673
+    },
+    {
+     "set": "Python",
+     "x": 224.45707798934114,
+     "y": 120,
+     "radius": 87.54292201065886
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C",
+    "Python"
+   ],
+   "text": {
+    "x": 168.35554425964787,
+    "y": 120.00000035127883,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "C",
+     "x": 103.89846627030673,
+     "y": 120,
+     "radius": 95.89846627030673
+    },
+    {
+     "set": "Python",
+     "x": 224.45707798934114,
+     "y": 120,
+     "radius": 87.54292201065886
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

@@ -19,7 +19,7 @@ use std::collections::BTreeMap;
 use ferrigura_model::agentflow::{AgentflowDiagram, SubGraph, Vertex};
 use ferrigura_model::value::Value;
 use ferrigura_syntax::agentflow::parse_grammar;
-use ferrigura_syntax::agentflow::semantic::diagnostics;
+use ferrigura_syntax::agentflow::semantic::{Severity, diagnostics};
 
 /// Parses with the grammar and the DB alone, as the reference's raw Jison parser does.
 fn parses(text: &str) -> AgentflowDiagram {
@@ -249,12 +249,6 @@ end"#,
 // the member lists. The parent choice of `getData()` (which of the two wins) is the renderer's.
 
 #[test]
-#[ignore = "layout data (getData) comes with the renderer"]
-fn does_not_emit_a_parent_chain_that_closes_a_cycle() {
-    panic!("not ported: the parent chain is the layout data of getData");
-}
-
-#[test]
 fn keeps_the_first_containment_and_drops_only_the_one_closing_the_loop() {
     // The reference's parent of `A` and `B` is `getData()`'s. The DB holds the cycle: `A` lists `B`
     // and `B` lists `A`. The tasks keep their own containers.
@@ -266,9 +260,17 @@ fn keeps_the_first_containment_and_drops_only_the_one_closing_the_loop() {
 }
 
 #[test]
-#[ignore = "layout data (getData) comes with the renderer"]
 fn reports_the_dropped_nesting_as_a_containment_violation() {
-    panic!("not ported: CONTAINMENT_VIOLATION is raised by getData");
+    // The reference reads the violation after `getData()`; here the semantic reading of the model gives
+    // it, for the child whose nesting the parent assignment refuses (the `B` of the mutual pair).
+    let diagram = parses(&mutual("", ""));
+    let violations: Vec<_> = diagnostics(&diagram)
+        .into_iter()
+        .filter(|d| d.id == "CONTAINMENT_VIOLATION")
+        .collect();
+    assert_eq!(violations.len(), 1, "{violations:?}");
+    assert_eq!(violations[0].node_id, "B");
+    assert_eq!(violations[0].severity, Severity::Warning);
 }
 
 #[test]

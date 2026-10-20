@@ -1,0 +1,320 @@
+{
+ "name": "generated-035-plain",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 35, 2 sets, plain ids",
+ "description": "A generated set system (plain ids, 2 sets).",
+ "text": "venn-beta\n  set B:4\n  set set_x\n  set set_x\n  union B, set_x\n  union set_x, B\n  union set_x, B:1.33",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "set_x"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "set_x"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "B",
+     "set_x"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "B",
+     "set_x"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "B",
+     "set_x"
+    ],
+    "size": 1.33
+   }
+  ],
+  "width": 320,
+  "height": 240,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "set_x"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "set_x"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "B",
+     "set_x"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "B",
+     "set_x"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "B",
+     "set_x"
+    ],
+    "size": 1.33
+   },
+   {
+    "sets": [
+     "set_x",
+     "set_x"
+    ],
+    "size": 0
+   }
+  ],
+  "greedy": [
+   {
+    "id": "B",
+    "x": 0,
+    "y": 0,
+    "radius": 1.1283791670955126
+   },
+   {
+    "id": "set_x",
+    "x": 1.435229396746512,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "B",
+    "x": -0.0009341016541938893,
+    "y": 0.0008283629162245656,
+    "radius": 1.1283791670955126
+   },
+   {
+    "id": "set_x",
+    "x": 1.608463491081377,
+    "y": -0.0007920002350581775,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "set_x",
+    "x": 0,
+    "y": "-0",
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "B",
+    "x": 1.609398408437076,
+    "y": -6.353424730765056e-17,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "circles": [
+   {
+    "id": "set_x",
+    "x": 131.9375988676153,
+    "y": 120,
+    "radius": 105
+   },
+   {
+    "id": "B",
+    "x": 226.65457026884874,
+    "y": 120,
+    "radius": 66.40783086353596
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "B",
+    "x": 264.9999999999997,
+    "y": 120.00000606217077,
+    "disjoint": false
+   },
+   {
+    "key": "set_x",
+    "x": 93.59216913646404,
+    "y": 120.00000035844108,
+    "disjoint": false
+   },
+   {
+    "key": "B,set_x",
+    "x": 198.59216913646404,
+    "y": 120.00000082573095,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "B"
+   ],
+   "text": {
+    "x": 272,
+    "y": 119.99999883818325,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 231.098208286772,
+     "y": 120,
+     "radius": 70.8350195877717
+    }
+   ]
+  },
+  {
+   "sets": [
+    "set_x"
+   ],
+   "text": {
+    "x": 89.16498041222836,
+    "y": 119.99999749796095,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "set_x",
+     "x": 130.0667721254563,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  },
+  {
+   "sets": [
+    "set_x"
+   ],
+   "text": {
+    "x": 89.16498041222836,
+    "y": 119.99999749796095,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "set_x",
+     "x": 130.0667721254563,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B",
+    "set_x"
+   ],
+   "text": {
+    "x": 201.16498041222832,
+    "y": 119.99999958767555,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 231.098208286772,
+     "y": 120,
+     "radius": 70.8350195877717
+    },
+    {
+     "set": "set_x",
+     "x": 130.0667721254563,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B",
+    "set_x"
+   ],
+   "text": {
+    "x": 201.16498041222832,
+    "y": 119.99999958767555,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 231.098208286772,
+     "y": 120,
+     "radius": 70.8350195877717
+    },
+    {
+     "set": "set_x",
+     "x": 130.0667721254563,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B",
+    "set_x"
+   ],
+   "text": {
+    "x": 201.16498041222832,
+    "y": 119.99999958767555,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 231.098208286772,
+     "y": 120,
+     "radius": 70.8350195877717
+    },
+    {
+     "set": "set_x",
+     "x": 130.0667721254563,
+     "y": 120,
+     "radius": 112
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

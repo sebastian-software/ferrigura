@@ -1,0 +1,244 @@
+{
+ "name": "generated-017-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 17, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set \"Front end\":100\n  set Python\n  union \"Front end\", Python\n  union \"Front end\", Python:3.33",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 100
+   },
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Front end",
+     "Python"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Front end",
+     "Python"
+    ],
+    "size": 3.33
+   }
+  ],
+  "width": 1024,
+  "height": 640,
+  "chartPadding": 15,
+  "layoutPadding": 0
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 100
+   },
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Front end",
+     "Python"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Front end",
+     "Python"
+    ],
+    "size": 3.33
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Front end",
+    "x": 0,
+    "y": 0,
+    "radius": 5.641895835477563
+   },
+   {
+    "id": "Python",
+    "x": 6.029615237187725,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Front end",
+    "x": -0.0003169129731966239,
+    "y": 0.000763012179674576,
+    "radius": 5.641895835477563
+   },
+   {
+    "id": "Python",
+    "x": 6.15568961223536,
+    "y": 0.00042864126670643895,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Front end",
+    "x": 0,
+    "y": 0,
+    "radius": 5.641895835477563
+   },
+   {
+    "id": "Python",
+    "x": 6.156006534289436,
+    "y": 1.1736488517155585e-16,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "Front end",
+    "x": 449.87889399194455,
+    "y": 320,
+    "radius": 305
+   },
+   {
+    "id": "Python",
+    "x": 782.6716373729199,
+    "y": 320,
+    "radius": 96.44946863513557
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Front end",
+    "x": 415.55053136486447,
+    "y": 320.0000009890565,
+    "disjoint": false
+   },
+   {
+    "key": "Python",
+    "x": 816.9999999999998,
+    "y": 320.0000047886707,
+    "disjoint": false
+   },
+   {
+    "key": "Front end,Python",
+    "x": 720.5505313648645,
+    "y": 320.0000004059431,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Front end"
+   ],
+   "text": {
+    "x": 410.80711487461184,
+    "y": 320.00000088155195,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 446.82375763089266,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python"
+   ],
+   "text": {
+    "x": 832,
+    "y": 320.0000004257494,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 795.9833572437192,
+     "y": 320,
+     "radius": 101.19288512538814
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end",
+    "Python"
+   ],
+   "text": {
+    "x": 730.8071148746119,
+    "y": 319.99999845978385,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 446.82375763089266,
+     "y": 320,
+     "radius": 320
+    },
+    {
+     "set": "Python",
+     "x": 795.9833572437192,
+     "y": 320,
+     "radius": 101.19288512538814
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end",
+    "Python"
+   ],
+   "text": {
+    "x": 730.8071148746119,
+    "y": 319.99999845978385,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 446.82375763089266,
+     "y": 320,
+     "radius": 320
+    },
+    {
+     "set": "Python",
+     "x": 795.9833572437192,
+     "y": 320,
+     "radius": 101.19288512538814
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

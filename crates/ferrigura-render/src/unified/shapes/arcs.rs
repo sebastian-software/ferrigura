@@ -6,6 +6,8 @@
 
 use std::f64::consts::PI;
 
+use ferrigura_jsmath::{acos, atan2, cos, pow, sin};
+
 use super::rough;
 use super::util::{
     self, Part, attribute, generate_circle_points, label_helper, path_style, stroke_width,
@@ -345,7 +347,7 @@ pub(super) fn half_rounded_rectangle(input: &ShapeInput<'_>) -> Part {
 /// How far a cap of radius `radius` reaches in from its outer edge at the height of a label's top
 /// corner, `sqrt(max(0, r^2 - (h/2)^2))` (`halfRoundedRectangle.ts`, `curvedTrapezoid.ts`).
 fn cap_inset(radius: f64, label_height: f64) -> f64 {
-    (radius * radius - (label_height / 2.0).powi(2))
+    (radius * radius - pow(label_height / 2.0, 2.0))
         .max(0.0)
         .sqrt()
 }
@@ -358,7 +360,7 @@ fn arc_sagitta(chord: f64, radius_x: f64, radius_y: f64) -> f64 {
     } else {
         (radius_y, radius_x)
     };
-    minor * (1.0 - (1.0 - (chord / major / 2.0).powi(2)).sqrt())
+    minor * (1.0 - (1.0 - pow(chord / major / 2.0, 2.0)).sqrt())
 }
 
 /// `generateArcPoints` (`bowTieRect.ts`): 20 points of the elliptical arc from `(x1, y1)` to
@@ -375,16 +377,16 @@ fn bow_tie_arc(
     const POINTS: usize = 20;
     let mid_x = (x1 + x2) / 2.0;
     let mid_y = (y1 + y2) / 2.0;
-    let chord_angle = (y2 - y1).atan2(x2 - x1);
+    let chord_angle = atan2(y2 - y1, x2 - x1);
     let dx = (x2 - x1) / 2.0;
     let dy = (y2 - y1) / 2.0;
-    let distance = ((dx / rx).powi(2) + (dy / ry).powi(2)).sqrt();
+    let distance = (pow(dx / rx, 2.0) + pow(dy / ry, 2.0)).sqrt();
     let scaled = (1.0 - distance * distance).max(0.0).sqrt();
     let side = if clockwise { -1.0 } else { 1.0 };
-    let centre_x = mid_x + scaled * ry * chord_angle.sin() * side;
-    let centre_y = mid_y - scaled * rx * chord_angle.cos() * side;
-    let start = ((y1 - centre_y) / ry).atan2((x1 - centre_x) / rx);
-    let end = ((y2 - centre_y) / ry).atan2((x2 - centre_x) / rx);
+    let centre_x = mid_x + scaled * ry * sin(chord_angle) * side;
+    let centre_y = mid_y - scaled * rx * cos(chord_angle) * side;
+    let start = atan2((y1 - centre_y) / ry, (x1 - centre_x) / rx);
+    let end = atan2((y2 - centre_y) / ry, (x2 - centre_x) / rx);
     let mut range = end - start;
     if clockwise && range < 0.0 {
         range += 2.0 * PI;
@@ -396,7 +398,7 @@ fn bow_tie_arc(
         .map(|index| {
             let t = index as f64 / (POINTS - 1) as f64;
             let theta = start + t * range;
-            Point::new(centre_x + rx * theta.cos(), centre_y + ry * theta.sin())
+            Point::new(centre_x + rx * cos(theta), centre_y + ry * sin(theta))
         })
         .collect()
 }
@@ -452,7 +454,8 @@ impl Ellipse {
         if rx == 0.0 || ry == 0.0 {
             return None;
         }
-        let (sin, cos) = rotation.to_radians().sin_cos();
+        let radians = rotation.to_radians();
+        let (sin, cos) = (sin(radians), cos(radians));
         let dx2 = (from.x - to.x) / 2.0;
         let dy2 = (from.y - to.y) / 2.0;
         let x1 = cos * dx2 + sin * dy2;
@@ -475,7 +478,7 @@ impl Ellipse {
             let cosine = ((ux * vx + uy * vy)
                 / ((ux * ux + uy * uy).sqrt() * (vx * vx + vy * vy).sqrt()))
             .clamp(-1.0, 1.0);
-            sign * cosine.acos()
+            sign * acos(cosine)
         };
         let theta1 = angle(1.0, 0.0, (x1 - cxp) / rx, (y1 - cyp) / ry);
         let mut delta = angle(
@@ -504,14 +507,16 @@ impl Ellipse {
     /// The point of the ellipse at the angle `theta`.
     fn at(&self, theta: f64) -> Point {
         Point::new(
-            self.centre_x + self.rx * self.cos * theta.cos() - self.ry * self.sin * theta.sin(),
-            self.centre_y + self.rx * self.sin * theta.cos() + self.ry * self.cos * theta.sin(),
+            self.centre_x + self.rx * self.cos * cos(theta) - self.ry * self.sin * sin(theta),
+            self.centre_y + self.rx * self.sin * cos(theta) + self.ry * self.cos * sin(theta),
         )
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use ferrigura_jsmath::hypot;
+
     use super::*;
 
     #[test]
@@ -537,7 +542,7 @@ mod tests {
             "{last:?}"
         );
         for point in &points {
-            assert!((point.x.hypot(point.y) - 5.0).abs() < 1e-9, "{point:?}");
+            assert!((hypot(point.x, point.y) - 5.0).abs() < 1e-9, "{point:?}");
         }
         // A positive sweep turns through (0, -5) in SVG's y-down coordinates; the sampled extreme is
         // within the sampling error of 512 steps.

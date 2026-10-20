@@ -109,6 +109,8 @@ Inside the unified renderer, the pipeline, the shapes, the clusters, the palette
 
 Before the pin, the foundation differed from the base in 96 renders: the last digits of some points of the braces shapes (`braces`, `curlyBraces`), once `generate_circle_points` in `unified/shapes/util.rs` was no longer inlined. The helper is marked `#[inline]`, which restores the base bytes; nothing else in the shape code changed. The reason the optimiser's inlining decision moved was not found. The corpus comparison is the check that catches a repeat.
 
+The pin is gone since 2026-10-19: the renderer takes its transcendental functions from `ferrigura_jsmath` (STATUS, browser arithmetic), so no call to the platform's libm is left for the optimiser to fold or combine. The debug and the release build of that change give the same bytes for all 28 032 corpus renders; the two builds of the base differ in 12 (the pie with a long title, in the last digit of a slice label's `y`).
+
 ## Decided
 
 1. **One generic `Context<'a, Model, Section>`** for every renderer, in place of a struct per renderer: one shape for 33 types, which the P3 renderers learn once.

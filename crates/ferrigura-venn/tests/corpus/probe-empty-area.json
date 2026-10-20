@@ -1,0 +1,59 @@
+{
+ "name": "probe-empty-area",
+ "group": "probe",
+ "source": "probe: empty-area (areas given directly)",
+ "description": "An area with no set.",
+ "text": null,
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [],
+    "size": 1
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [],
+    "size": 1
+   }
+  ],
+  "greedy": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": null,
+ "layout": null,
+ "errors": {
+  "chart": "Cannot read properties of undefined (reading 'radius')",
+  "layout": "Cannot read properties of undefined (reading 'radius')"
+ }
+}

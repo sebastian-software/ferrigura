@@ -39,6 +39,19 @@ pub fn parse(raw: &str) -> Result<RailroadDiagram, ParseError> {
     Ok(db::build(document))
 }
 
+/// The id of the detector the text's header selects (`railroad`, `railroadEbnf`, `railroadAbnf` or
+/// `railroadPeg`). The reference names the SVG of a railroad diagram with it (`aria-roledescription`),
+/// so the renderer needs it next to the model. The text is prepared as [`parse`] prepares it; a text
+/// that does not prepare, or has no header, gives the IR id, which is the one the detector of
+/// `railroad-beta` names for any text it accepts.
+pub fn detector_id(raw: &str) -> &'static str {
+    let body = prepare(raw).map_or_else(
+        |_| String::new(),
+        |prepared| strip_front_matter(&cleanup_comments(&remove_directives(&prepared.text))),
+    );
+    syntax_of(crate::skip_hidden_prefix(&body)).map_or("railroad", Syntax::detector_id)
+}
+
 /// The syntax a text starts with, by the reference's detectors: the header keyword in any letter
 /// case. The header itself is checked case-sensitively by the grammar.
 fn syntax_of(text: &str) -> Option<Syntax> {

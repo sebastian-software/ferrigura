@@ -40,6 +40,10 @@ mod state;
 mod symbols;
 #[cfg(test)]
 mod test_support;
+mod usecase_actor;
+pub(crate) mod usecase_boundary;
+mod usecase_ellipse;
+mod usecase_json_table;
 mod util;
 mod wave;
 
@@ -240,7 +244,9 @@ pub fn node_label(
         anchor,
         wrap_in_style: true,
         styles: &declarations,
-        font_size: util::theme_number(&config.theme.font_size).unwrap_or(config.globals.font_size),
+        font_size: node.font_size.unwrap_or_else(|| {
+            util::theme_number(&config.theme.font_size).unwrap_or(config.globals.font_size)
+        }),
         title: false,
     };
     // The reference's `labelHelper` takes the label's box from `text.getBBox()` (shapes/util.ts
@@ -279,7 +285,7 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
         let label_class = if kind == Some(Kind::Note) {
             "label noteLabel"
         } else {
-            "label"
+            kind.and_then(Kind::label_class).unwrap_or("label")
         };
         label_svg = format!(
             "<g class=\"{label_class}\"{style} transform=\"translate({}, {})\"><rect></rect>{}</g>",
@@ -360,6 +366,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
     // draws beside its label (its rows).
     let mut extent = None;
     let mut texts = Vec::new();
+    let mut group_attributes = String::new();
     let part = match kind {
         Kind::SquareRect => rect::square_rect(input),
         Kind::RoundedRect => rect::rounded_rect(input),
@@ -383,7 +390,10 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::StateStart => state::state_start(input),
         Kind::StateEnd => state::state_end(input),
         Kind::Anchor => state::anchor(input),
-        Kind::CollapsedGroup => collapsed_group::collapsed_group(input),
+        Kind::CollapsedGroup => {
+            group_attributes = collapsed_group::colour_attribute(input);
+            collapsed_group::collapsed_group(input)
+        }
         Kind::RectWithTitle => {
             // The title and the rows are labels of the shape, so the font subsets cover them.
             let (part, title_and_rows) = rect_with_title::rect_with_title(input)?;
@@ -437,6 +447,26 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::RequirementBox => return requirement_box::requirement_box(input),
         Kind::Composite => composite::composite(input),
         Kind::BlockArrow => block_arrow::block_arrow(input),
+        Kind::UsecaseActor
+        | Kind::UsecaseActorHollow
+        | Kind::UsecaseActorAwesome
+        | Kind::UsecaseActorIcon => {
+            let variant = usecase_actor::variant_of_kind(kind);
+            let (part, rows) = usecase_actor::actor(input, variant)?;
+            texts = rows;
+            part
+        }
+        Kind::UsecaseEllipse => usecase_ellipse::ellipse(input),
+        Kind::UsecaseBusiness => {
+            let (part, rows) = usecase_ellipse::business(input)?;
+            texts = rows;
+            part
+        }
+        Kind::UsecaseJsonTable => {
+            let (part, rows) = usecase_json_table::json_table(input)?;
+            texts = rows;
+            part
+        }
         Kind::ClassBox => {
             let class_box::ClassBox {
                 part,
@@ -465,7 +495,7 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         after_label: part.after_label,
         label_offset: part.label_offset,
         label: part.label,
-        group_attributes: String::new(),
+        group_attributes,
         bbox,
         intersect: part.intersect,
         extent,

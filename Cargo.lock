@@ -199,6 +199,7 @@ dependencies = [
  "ferrigura-path",
  "ferrigura-syntax",
  "ferrigura-text",
+ "ferrigura-venn",
  "ferromark",
  "regex",
  "serde",
@@ -237,6 +238,15 @@ dependencies = [
  "serde_json",
  "skera",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "ferrigura-venn"
+version = "0.0.0"
+dependencies = [
+ "ferrigura-jsmath",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

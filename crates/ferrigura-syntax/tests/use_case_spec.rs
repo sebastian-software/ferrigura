@@ -8,18 +8,17 @@
 //! by id is a search of the array. `db.clear()` has no port of its own: each parse returns a new
 //! model, so a parse of the bare header starts from nothing.
 //!
-//! The expectations about `getData` (the render input) are not in this port. A test that asserts
-//! only them is `#[ignore]`d, and its body checks what the model holds, or is empty with a comment
-//! naming the expectations. A test that asserts both is split: the part about what the parse
-//! publishes (the AST, the model's fields and the JSON rows) is active, and the render part is
-//! ignored. The spec commits host-built models (`createModel`, `commit`), which the public API does
-//! not offer, so those tests take the same JSON as text.
+//! The expectations about `getData` (the render input) are ported to the render crate's tests
+//! (`ferrigura-render/tests/use_case_data_spec.rs`, `use_case_render_spec.rs` and
+//! `use_case_quirks_spec.rs`), so this file keeps only what the parse publishes: the AST, the model's
+//! fields and the JSON rows. The spec commits host-built models (`createModel`, `commit`), which the
+//! public API does not offer, so those tests take the same JSON as text.
 
 use std::collections::BTreeMap;
 
 use ferrigura_model::use_case::{
     Actor, ActorType, Animation, BoundaryType, Direction, GraphNode, JsonNode, RelationshipType,
-    SystemBoundary, UseCase, UseCaseDiagram, UseCaseShape,
+    SystemBoundary, UseCase, UseCaseDiagram,
 };
 use ferrigura_model::value::Value;
 use ferrigura_syntax::use_case::parse;
@@ -552,38 +551,6 @@ mod database_methods {
     }
 }
 
-mod get_data {
-    use super::*;
-
-    #[test]
-    #[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-    fn converts_diagram_data_to_layout_data() {
-        // getData: two nodes (the actor and the use case), one edge, the type `usecase`.
-        // The model: one actor and one use case, one relationship, and the AST's diagram type.
-        let diagram = parsed(
-            r#"usecase-beta
-        actor User
-        User --> Login"#,
-        );
-
-        assert_eq!(diagram.actors.len() + diagram.use_cases.len(), 2);
-        assert_eq!(diagram.relationships.len(), 1);
-        assert_eq!(diagram.ast.diagram_type, "usecase");
-    }
-
-    #[test]
-    #[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-    fn includes_direction_in_layout_data() {
-        let diagram = parsed(
-            r#"usecase-beta
-        direction LR
-        actor User"#,
-        );
-
-        assert_eq!(diagram.direction, Direction::Lr);
-    }
-}
-
 #[test]
 fn projects_parser_produced_actor_and_use_case_geometry_into_the_ast() {
     let diagram = parsed(
@@ -648,44 +615,6 @@ RectCase[Rectangle]"#,
 }
 
 #[test]
-#[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-fn projects_actor_and_use_case_geometry_into_the_layout() {
-    // The render input: the shapes `usecaseActor`, `usecaseActorHollow`, `usecaseBusiness`,
-    // `usecaseEllipse` and `rect`. The model holds the flags they read.
-    let diagram = parsed(
-        r#"usecase-beta
-actor Normal
-actor Hollow@{ type: hollow, business: true }
-Business(Business)@{ business: true }
-Ellipse
-RectCase[Rectangle]"#,
-    );
-
-    let normal = actor(&diagram, "Normal").expect("the actor Normal");
-    assert_eq!(
-        (normal.actor_type, normal.business),
-        (ActorType::Normal, false)
-    );
-    let hollow = actor(&diagram, "Hollow").expect("the actor Hollow");
-    assert_eq!(
-        (hollow.actor_type, hollow.business),
-        (ActorType::Hollow, true)
-    );
-    let business = use_case(&diagram, "Business").expect("the use case Business");
-    assert_eq!(
-        (business.shape, business.business),
-        (UseCaseShape::Ellipse, true)
-    );
-    let ellipse = use_case(&diagram, "Ellipse").expect("the use case Ellipse");
-    assert_eq!(
-        (ellipse.shape, ellipse.business),
-        (UseCaseShape::Ellipse, false)
-    );
-    let rect = use_case(&diagram, "RectCase").expect("the use case RectCase");
-    assert_eq!((rect.shape, rect.business), (UseCaseShape::Rect, false));
-}
-
-#[test]
 fn projects_base_one_extra_n_extra_and_labelled_minimum_lengths_into_the_ast() {
     let diagram = parsed(
         r#"usecase-beta
@@ -714,40 +643,6 @@ D labelled@-- "long" ----> E"#,
             ("two", None, Some(2.0)),
             ("many", None, Some(4.0)),
             ("labelled", Some("long"), Some(3.0)),
-        ]
-    );
-}
-
-#[test]
-#[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-fn projects_minimum_lengths_and_labels_into_the_layout() {
-    // The render input: the edges' `id`, `label` and `minlen`, which the model's relationships hold.
-    let diagram = parsed(
-        r#"usecase-beta
-A base@--> B
-B two@---> C
-C many@-----> D
-D labelled@-- "long" ----> E"#,
-    );
-
-    let edges: Vec<(&str, Option<&str>, u32)> = diagram
-        .relationships
-        .iter()
-        .map(|relationship| {
-            (
-                relationship.id.as_str(),
-                relationship.label.as_deref(),
-                relationship.minlen,
-            )
-        })
-        .collect();
-    assert_eq!(
-        edges,
-        [
-            ("base", None, 1),
-            ("two", None, 2),
-            ("many", None, 4),
-            ("labelled", Some("long"), 3),
         ]
     );
 }
@@ -787,14 +682,6 @@ offEdge@{ animate: false }"#,
             ("offEdge", false, None),
         ]
     );
-}
-
-#[test]
-#[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-fn projects_animation_metadata_into_the_layout_classes() {
-    // The render input: `classes` of the edges, `default relationship relationship-association`
-    // and `edge-animation-fast` (`trueEdge` and `fastEdge`) or `edge-animation-slow` (`slowEdge`).
-    // The model holds `animate` and `animation`, checked in the test above.
 }
 
 #[test]
@@ -888,65 +775,8 @@ style payloadEdge stroke:#f00"#,
     );
 }
 
-#[test]
-#[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-fn projects_the_layout_of_json_classes_styles_and_edges() {
-    // The render input: the shape `usecaseJsonTable`, the CSS classes `default usecase-json-table
-    // data`, and the edge's classes, style, `minlen` and `isUserDefinedId`. The model holds the
-    // table's classes and styles, and the edge's classes, styles, `minlen` and `explicit_id`.
-    let diagram = parsed(
-        r#"usecase-beta
-classDef data fill:#eef,stroke:#369
-json Payload@{
-  "2": "second",
-  "1": "first",
-  "colors": ["Red", "Green"],
-  "items": [{ "name": "A" }, {}],
-  "empty": {},
-  "duplicate": "old",
-  "duplicate": "new"
-}:::data
-style Payload stroke-width:4px
-Inspect payloadEdge@--> Payload
-class payloadEdge data
-style payloadEdge stroke:#f00"#,
-    );
-
-    let table = json_node(&diagram, "Payload");
-    assert_eq!(table.classes, ["data"]);
-    assert_eq!(table.styles, ["stroke-width:4px"]);
-
-    let edge = &diagram.relationships[0];
-    assert_eq!(edge.id, "payloadEdge");
-    assert_eq!(edge.classes, ["data"]);
-    assert_eq!(edge.styles, ["stroke:#f00"]);
-    assert_eq!(edge.minlen, 1);
-    assert!(edge.explicit_id);
-}
-
 mod layout_contract {
     use super::*;
-
-    #[test]
-    #[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-    fn emits_every_node_and_boundary_variant_in_committed_model_order() {
-        // The spec commits a host-built model with three classDefs, a normal actor with classes
-        // and styles, hollow and awesome actors, an icon actor, use cases of both shapes, a note, a
-        // JSON table and two boundaries, and reads `getData`. The node ids and shapes in order
-        // (`usecaseActor`, `usecaseActorHollow`, `usecaseActorAwesome`, `usecaseActorIcon`,
-        // `usecaseEllipse`, `rect`, `usecaseBusiness`, `note`, `usecaseJsonTable`,
-        // `usecaseSystemBoundary`), the sanitised labels, the compiled styles and the CSS classes
-        // belong to the render input. None of them is a parse result.
-    }
-
-    #[test]
-    #[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-    fn maps_relationship_semantics_markers_animation_styles_and_note_attachments_exactly() {
-        // The spec commits a host-built model: seven arrow types of `A` to `B`, the `include`,
-        // `extend` and `generalization` relationships, and a note on `A`, then reads the edges'
-        // `arrowTypeStart` and `arrowTypeEnd`, the markers, the patterns and the label rules of
-        // `getData`. The arrow type numbers are the model's, but the markers are the render input.
-    }
 
     #[test]
     fn flattens_json_rows_depth_first_using_source_property_order() {
@@ -985,26 +815,5 @@ json Payload@{
                 ("nothing", "nothing", "null"),
             ]
         );
-    }
-
-    #[test]
-    #[ignore = "the render input (getData) is not ported; it belongs to the renderer stage"]
-    fn hands_schema_driven_layout_viewport_and_font_configuration_to_the_renderer_contract() {
-        // The spec sets the `usecase` configuration (font sizes and families, spacings, the
-        // padding, `useMaxWidth`) and reads it back through `getData`. The configuration is not in
-        // the model. The direction is the one part the model holds: it is `LR` by default.
-        let diagram = parsed("usecase-beta");
-
-        assert_eq!(diagram.direction, Direction::Lr);
-    }
-
-    #[test]
-    #[ignore = "the stylesheet (styles.ts) is not ported; it belongs to the renderer stage"]
-    fn consolidates_canonical_selectors_and_relies_on_shared_animation_keyframes() {
-        // The spec checks the CSS of `getStyles`: the selectors of the hollow and awesome actors,
-        // the business marker, the boundary and title rules (the fills, the strokes and the
-        // title text), the note, the JSON table, the include relationship, the edge label and
-        // label background rules, the markers, the font-size variables, and that there are no
-        // keyframes. The stylesheet is the renderer's, not the parser's.
     }
 }

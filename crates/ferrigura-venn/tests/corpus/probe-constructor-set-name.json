@@ -1,0 +1,317 @@
+{
+ "name": "probe-constructor-set-name",
+ "group": "probe",
+ "source": "probe: constructor-set-name",
+ "description": "A set named constructor, an Object.prototype name the library sees as present.",
+ "text": "venn-beta\n  set constructor:8\n  set B:6\n  set C:4\n  union constructor, B:2\n  union B, C:1",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "constructor"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 6
+   },
+   {
+    "sets": [
+     "C"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "B",
+     "constructor"
+    ],
+    "size": 2
+   },
+   {
+    "sets": [
+     "B",
+     "C"
+    ],
+    "size": 1
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "constructor"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 6
+   },
+   {
+    "sets": [
+     "C"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "B",
+     "constructor"
+    ],
+    "size": 2
+   },
+   {
+    "sets": [
+     "B",
+     "C"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "C",
+     "constructor"
+    ],
+    "size": 0
+   }
+  ],
+  "greedy": [
+   {
+    "id": "constructor",
+    "x": 1.7755771918818128,
+    "y": 0,
+    "radius": 1.5957691216057308
+   },
+   {
+    "id": "B",
+    "x": 0,
+    "y": 0,
+    "radius": 1.381976597885342
+   },
+   {
+    "id": "C",
+    "x": -1.7147923306582662,
+    "y": 0,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "constructor",
+    "x": 1.7755774279166876,
+    "y": 0.000035989234789541186,
+    "radius": 1.5957691216057308
+   },
+   {
+    "id": "B",
+    "x": 2.361658818740396e-7,
+    "y": 0.00006091231551909912,
+    "radius": 1.381976597885342
+   },
+   {
+    "id": "C",
+    "x": -1.7147920944815764,
+    "y": 0.0000700470757229875,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "normalized": [
+   {
+    "id": "constructor",
+    "x": 0,
+    "y": 0,
+    "radius": 1.5957691216057308
+   },
+   {
+    "id": "B",
+    "x": 1.7755771919257233,
+    "y": 2.7611241198306667e-16,
+    "radius": 1.381976597885342
+   },
+   {
+    "id": "C",
+    "x": 3.490369522532473,
+    "y": -0.000014935107265762763,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "circles": [
+   {
+    "id": "constructor",
+    "x": 212.72124901070657,
+    "y": 225,
+    "radius": 197.72124901070657
+   },
+   {
+    "id": "B",
+    "x": 432.72133257493556,
+    "y": 225.00000000000003,
+    "radius": 171.2316245112607
+   },
+   {
+    "id": "C",
+    "x": 645.1899640398556,
+    "y": 224.99814948915684,
+    "radius": 139.81003596014455
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "constructor",
+    "x": 138.2448540318375,
+    "y": 224.9999982048295,
+    "disjoint": false
+   },
+   {
+    "key": "B",
+    "x": 335.96610304254403,
+    "y": 225.00000053594937,
+    "disjoint": false
+   },
+   {
+    "key": "C",
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   {
+    "key": "B,constructor",
+    "x": 335.96610304254403,
+    "y": 225.00000053594937,
+    "disjoint": false
+   },
+   {
+    "key": "B,C",
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "constructor"
+   ],
+   "text": {
+    "x": 133.48566955968906,
+    "y": 224.9999991440753,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "constructor",
+     "x": 209.31618081090122,
+     "y": 225,
+     "radius": 201.31618081090122
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B"
+   ],
+   "text": {
+    "x": 334.8018503705902,
+    "y": 225.0000005074999,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 433.31626589447984,
+     "y": 225.00000000000003,
+     "radius": 174.34492677510178
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C",
+     "x": 649.6479633860347,
+     "y": 224.99811584350516,
+     "radius": 142.35203661396537
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B",
+    "constructor"
+   ],
+   "text": {
+    "x": 334.8018503705902,
+    "y": 225.0000005074999,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 433.31626589447984,
+     "y": 225.00000000000003,
+     "radius": 174.34492677510178
+    },
+    {
+     "set": "constructor",
+     "x": 209.31618081090122,
+     "y": 225,
+     "radius": 201.31618081090122
+    }
+   ]
+  },
+  {
+   "sets": [
+    "B",
+    "C"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "B",
+     "x": 433.31626589447984,
+     "y": 225.00000000000003,
+     "radius": 174.34492677510178
+    },
+    {
+     "set": "C",
+     "x": 649.6479633860347,
+     "y": 224.99811584350516,
+     "radius": 142.35203661396537
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}
