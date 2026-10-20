@@ -70,7 +70,6 @@ import {
   effectiveSettings,
   countClasses,
   exclusionReason,
-  uncoveredScriptReason,
   flagValue,
   matchesFilter,
   measureSvg,
@@ -415,9 +414,7 @@ async function main(): Promise<void> {
       // The other side: a second render of the same text, or ferrigura's SVG.
       const otherName = options.self ? 'the second reference render' : 'ferrigura';
       let other: { svg: string; geometry: MeasuredSvg } | null = null;
-      const excluded = options.self
-        ? null
-        : (exclusionReason(source) ?? uncoveredScriptReason(source));
+      const excluded = options.self ? null : exclusionReason(source);
       if (excluded !== null) {
         result.class = 'excluded';
         result.reason = excluded;
