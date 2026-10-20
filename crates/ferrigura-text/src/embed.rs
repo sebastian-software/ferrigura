@@ -6,10 +6,10 @@
 //! keep the legacy `kern` table, and drop hinting. Each face becomes an `@font-face` rule with the
 //! subset as a base64 TTF data URL.
 //!
-//! A run whose characters the sans or mono face lacks and the symbol face has (the arrows) is cut
-//! the way [`crate::fallback_runs`] cuts it, so the symbol face gets a subset of its own. The text
-//! families name that subset second in their `css_family`, which is the font-family list a browser
-//! walks for each character.
+//! A run whose characters the sans or mono face lacks and a fallback face has (the arrows, the text
+//! symbols, the emoji) is cut the way [`crate::fallback_runs`] cuts it, so each fallback face gets a
+//! subset of its own. The text families name those subsets after their own in their `css_family`,
+//! which is the font-family list a browser walks for each character.
 //!
 //! `@font-face` rules are global to the HTML page, so a family name has to be unique to its subset:
 //! two diagrams with different subsets under one name would break each other's labels. The name
@@ -38,9 +38,10 @@ pub struct EmbeddedFamily {
     /// The family name the labels refer to, such as `fg-0123456789abcdef-sans`.
     pub name: String,
     /// The `font-family` value of the text set in this family, quoted for CSS: the family name, then
-    /// the symbol face's family name when the diagram embeds a symbol face, such as
-    /// `"fg-0123456789abcdef-sans", "fg-fedcba9876543210-symbols"`. A browser then sets each
-    /// character the first family lacks in the second, as [`crate::fallback_runs`] measured it.
+    /// the names of the fallback families the diagram embeds, in the order of
+    /// [`crate::fallback_faces`], such as `"fg-0123456789abcdef-sans", "fg-fedcba9876543210-symbols"`.
+    /// A browser then sets each character the first family lacks in the first fallback that has it,
+    /// as [`crate::fallback_runs`] measured it.
     pub css_family: String,
     /// One `@font-face` rule for each face of the family the diagram uses. Each rule names
     /// [`EmbeddedFamily::name`] and holds the subset as a base64 TTF data URL.
@@ -62,7 +63,13 @@ pub fn embed_runs(runs: &[Run<'_>]) -> Result<Vec<EmbeddedFamily>, TextError> {
     // characters drawn in its face, and no other.
     let stretches: Vec<Run<'_>> = runs.iter().flat_map(|run| fallback_runs(*run)).collect();
     let mut embedded = Vec::new();
-    for family in [FontFamily::Sans, FontFamily::Mono, FontFamily::Symbols] {
+    for family in [
+        FontFamily::Sans,
+        FontFamily::Mono,
+        FontFamily::Arrows,
+        FontFamily::TextSymbols,
+        FontFamily::Emoji,
+    ] {
         let mut subsets: Vec<(&'static Face, Vec<u8>)> = Vec::new();
         for face in FACES.iter().copied().filter(|f| f.family() == family) {
             let used = stretches.iter().any(|run| same_face(run.face, face));
@@ -88,19 +95,33 @@ pub fn embed_runs(runs: &[Run<'_>]) -> Result<Vec<EmbeddedFamily>, TextError> {
             css,
         });
     }
-    // The text of a text family is set in its own family and then in the symbol face, when the
-    // diagram embeds one; the symbol family is set in itself.
-    let symbols = embedded
-        .iter()
-        .find(|family| family.family == FontFamily::Symbols)
-        .map(|family| family.name.clone());
+    // The text of a text family is set in its own family and then in each fallback family the
+    // diagram embeds, in the order of `fallback_faces`; a fallback family is set in itself.
+    let fallbacks: Vec<String> = [
+        FontFamily::Arrows,
+        FontFamily::TextSymbols,
+        FontFamily::Emoji,
+    ]
+    .into_iter()
+    .filter_map(|family| {
+        embedded
+            .iter()
+            .find(|embedded| embedded.family == family)
+            .map(|embedded| embedded.name.clone())
+    })
+    .collect();
     for family in &mut embedded {
-        family.css_family = match (&symbols, family.family) {
-            (Some(symbol_name), FontFamily::Sans | FontFamily::Mono) => {
-                format!("\"{}\", \"{}\"", family.name, symbol_name)
-            }
-            _ => format!("\"{}\"", family.name),
+        let names: Vec<String> = match family.family {
+            FontFamily::Sans | FontFamily::Mono => std::iter::once(family.name.clone())
+                .chain(fallbacks.iter().cloned())
+                .collect(),
+            _ => vec![family.name.clone()],
         };
+        family.css_family = names
+            .iter()
+            .map(|name| format!("\"{name}\""))
+            .collect::<Vec<_>>()
+            .join(", ");
     }
     Ok(embedded)
 }
