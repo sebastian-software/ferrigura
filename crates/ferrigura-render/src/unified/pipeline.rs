@@ -7,17 +7,32 @@
 //! [`measure`], [`lay_out`] and [`paint`], and writes the root `<svg>` around the painted groups,
 //! with its own markers, style sheet and title.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use ferrigura_elk::json::JsonNode;
 use ferrigura_model::flowchart::LabelType;
 
 use crate::RenderError;
-use crate::unified::data::{LayoutData, Node};
+use crate::unified::data::{Edge, LayoutData, Node};
 use crate::unified::geom::BBox;
 use crate::unified::label::{Anchor, LabelLayout};
+use crate::unified::line_jumps::JumpStyle;
 use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
-use crate::unified::{Config, clusters, edges, elk_apply, elk_build, terminal};
+use crate::unified::{Config, clusters, edges, elk_apply, elk_build, swimlane_layout, terminal};
+
+/// The layout that placed the nodes of a diagram. It decides how the paint clips the edges and which
+/// line hops it draws: `insertEdge` takes the swimlane branch for the `swimlane` layout (`edges.js`
+/// 654-700), and the hops are the layout's own (`elk.lineHops`, or `swimlane.lineHops` for the swimlane
+/// engine).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Layout {
+    /// ELK Layered: the flowchart, the other unified diagrams, and a swimlane diagram that its
+    /// configuration lays out with ELK.
+    Elk,
+    /// The swimlane engine, with the line hops of `swimlane.lineHops` (`None` when they are off).
+    Swimlane(Option<JumpStyle>),
+}
 
 /// The graph handed to ELK and the graph it returned, for the differential comparison with the
 /// reference's capture (`tools/port/geometry/flowchart-geometry.ts`).
@@ -39,6 +54,8 @@ pub struct Measured {
     pub shapes: HashMap<String, ShapeOutput>,
     /// The label of every edge that has one, by edge id.
     pub edge_labels: HashMap<String, LabelLayout>,
+    /// The layout that places the nodes, which [`paint`] follows.
+    pub layout: Layout,
 }
 
 /// What [`paint`] drew: the groups below the root, the box they cover, and every label, so that
@@ -90,12 +107,27 @@ fn node_dir(data: &LayoutData, index: usize) -> Option<&str> {
 }
 
 /// The edge render data and the measure step of `createGraphWithElements`, for the layout data
-/// of a diagram's `getData`. `config` gives the sections and the globals, and the theme's tokens give the sizes.
+/// of a diagram's `getData`, laid out by ELK. `config` gives the sections and the globals, and the
+/// theme's tokens give the sizes.
 ///
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or a shape is unknown.
-pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, RenderError> {
+pub fn measure(data: LayoutData, config: &Config<'_>) -> Result<Measured, RenderError> {
+    measure_for(data, config, Layout::Elk)
+}
+
+/// [`measure`], for the layout that will place the nodes. The swimlane engine's groups are measured
+/// wrapped, as `createGraphWithElements` does without `unwrapGroupLabels` (`createGraph.ts` 42-59).
+///
+/// # Errors
+///
+/// Returns an error if a bundled font cannot be read or a shape is unknown.
+pub fn measure_for(
+    mut data: LayoutData,
+    config: &Config<'_>,
+    layout: Layout,
+) -> Result<Measured, RenderError> {
     edges::prepare(&mut data);
 
     let anchor = node_anchor(&data.diagram_type);
@@ -104,8 +136,10 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
         let node = &data.nodes[index];
         if node.is_group {
             // ELK sizes a subgraph from its title, measured unwrapped unless it is Markdown. The
-            // title's box is already a float32 value (`node_label`).
-            let width = (node.label_type != LabelType::Markdown).then_some(f64::INFINITY);
+            // title's box is already a float32 value (`node_label`). The swimlane engine takes the
+            // title wrapped, whatever its type.
+            let unwrapped = layout == Layout::Elk && node.label_type != LabelType::Markdown;
+            let width = unwrapped.then_some(f64::INFINITY);
             // `measureGroupLabel` gives a group without a label no size (`createGraph.ts` 56-58).
             let size = if node.label.is_empty() {
                 (0.0, 0.0)
@@ -116,7 +150,14 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
             data.nodes[index].label_bbox = Some(size);
             continue;
         }
-        let label = shapes::node_label(node, config, None, anchor)?;
+        // A `labelRect` is the label of a swimlane edge, which the stylesheet does not centre: its lines start
+        // at the origin, and `labelRect.ts` moves the label by half its width (`shapes/rect.rs`).
+        let label_anchor = if node.shape == "labelRect" {
+            Anchor::Start
+        } else {
+            anchor
+        };
+        let label = shapes::node_label(node, config, None, label_anchor)?;
         let shape = shapes::draw(&ShapeInput {
             node,
             label: label.as_ref(),
@@ -148,6 +189,7 @@ pub fn measure(mut data: LayoutData, config: &Config<'_>) -> Result<Measured, Re
         data,
         shapes,
         edge_labels,
+        layout,
     })
 }
 
@@ -217,6 +259,9 @@ pub fn paint<'a>(
 
     let mut clusters = String::new();
     let mut painted_clusters = Vec::new();
+    // The size of each lane once its shape has drawn it: the swimlane edges clip to it (`node.width`
+    // and `node.height` after `swimlane.js`).
+    let mut lanes: HashMap<String, (f64, f64)> = HashMap::new();
     for node in data.nodes.iter().filter(|node| node.is_group) {
         // `render` prefixes every node's DOM id with the diagram's id before the layout runs.
         let prefixed = Node {
@@ -224,6 +269,9 @@ pub fn paint<'a>(
             ..node.clone()
         };
         let cluster = clusters::paint(&prefixed, config)?;
+        if matches!(measured.layout, Layout::Swimlane(_)) {
+            lanes.insert(node.id.clone(), (cluster.bbox.width, cluster.bbox.height));
+        }
         // The frame of an empty subgraph has no height: an unrendered rect, which `getBBox` leaves
         // out of the drawing's box. Its title is text and counts.
         if !cluster.bbox.is_empty() {
@@ -257,9 +305,27 @@ pub fn paint<'a>(
         labels.extend(shape.texts.iter());
     }
 
+    // The swimlane engine's edges are clipped to the outlines of their ends (`insertEdge`'s swimlane
+    // branch) before they are drawn, and so are the line hops that follow from their points.
+    let (path_edges, jumps): (Cow<'_, [Edge]>, Option<JumpStyle>) = match measured.layout {
+        Layout::Elk => (
+            Cow::Borrowed(data.edges.as_slice()),
+            edges::jump_style(&config.section),
+        ),
+        Layout::Swimlane(jumps) => (
+            Cow::Owned(swimlane_layout::clip_edges(
+                &data.edges,
+                &data.nodes,
+                &measured.shapes,
+                &lanes,
+            )),
+            jumps,
+        ),
+    };
     let mut edge_paths = String::new();
     let mut coloured_markers = String::new();
-    for path in edges::paint_paths(&data.edges, id, &data.diagram_type, &config.section) {
+    for path in edges::paint_paths_with(&path_edges, id, &data.diagram_type, &config.section, jumps)
+    {
         cover(&mut bounds, path.bbox);
         edge_paths.push_str(&path.svg);
         coloured_markers.push_str(&path.markers);

@@ -197,11 +197,22 @@ dependencies = [
  "ferrigura-jsmath",
  "ferrigura-model",
  "ferrigura-path",
+ "ferrigura-swimlane",
  "ferrigura-syntax",
  "ferrigura-text",
  "ferrigura-venn",
  "ferromark",
  "regex",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "ferrigura-swimlane"
+version = "0.0.0"
+dependencies = [
+ "ferrigura-jsmath",
+ "indexmap",
  "serde",
  "serde_json",
 ]

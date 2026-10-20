@@ -92,6 +92,22 @@ fn cynefin_outcome(text: &str) -> Outcome {
     }
 }
 
+/// The swimlane diagram. The text must first be detected as one, as `detectType` does before the
+/// parser runs, so that a text of another type is a rejection (`/^\s*swimlane-beta\b/`).
+fn swimlanes_outcome(text: &str) -> Outcome {
+    if detect(text) != Some(DiagramType::Swimlanes) {
+        return Outcome::Rejected(ParseError {
+            line: 1,
+            column: 1,
+            message: "no swimlane diagram detected".to_owned(),
+        });
+    }
+    match swimlanes::parse(text) {
+        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
+        Err(error) => Outcome::Rejected(error),
+    }
+}
+
 /// The wardley map. The text must first be detected as one, as `detectType` does before the parser
 /// runs. The detector ignores case, and the parser then takes the header case-sensitively.
 fn wardley_outcome(text: &str) -> Outcome {
@@ -413,10 +429,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => Outcome::Rejected(error),
             },
             "railroad" => railroad_outcome(text),
-            "swimlanes" => match swimlanes::parse(text) {
-                Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-                Err(error) => Outcome::Rejected(error),
-            },
+            "swimlanes" => swimlanes_outcome(text),
             "treeView" => match tree_view::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),

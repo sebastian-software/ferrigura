@@ -17,20 +17,30 @@ pub enum FontFamily {
     Sans,
     /// Atkinson Hyperlegible Mono, for code.
     Mono,
-    /// Noto Sans Math, subset to the arrows block. It is never chosen for text directly: it is the
-    /// second family of every text's font-family list, which takes the characters the text's own
-    /// family lacks (see [`crate::fallback_runs`]).
-    Symbols,
+    /// The arrows block (U+2190-21FF) of Noto Sans Math. It is never chosen for text directly: it
+    /// is a fallback of every text, which takes the characters the text's own family lacks (see
+    /// [`crate::fallback_runs`]).
+    Arrows,
+    /// Noto Sans Symbols 2, cut to the text-default symbols of U+2600-27BF. A fallback of every text,
+    /// after the arrows; it never holds an emoji-presentation code point.
+    TextSymbols,
+    /// Twemoji Mozilla (COLRv0), cut to the code points with emoji presentation that it covers. A
+    /// fallback of every text, after the text symbols.
+    Emoji,
 }
 
 impl FontFamily {
-    /// The suffix of the family names that embedded subsets get, such as `fg-…-sans`.
+    /// The suffix of the family names that embedded subsets get, such as `fg-…-sans`. The arrows
+    /// keep the suffix `symbols` they have had since they were added, so the names of the diagrams
+    /// that draw arrows do not change.
     #[must_use]
     pub fn css_suffix(self) -> &'static str {
         match self {
             Self::Sans => "sans",
             Self::Mono => "mono",
-            Self::Symbols => "symbols",
+            Self::Arrows => "symbols",
+            Self::TextSymbols => "text-symbols",
+            Self::Emoji => "emoji",
         }
     }
 }
@@ -217,11 +227,11 @@ static ATKINSON_MONO_BOLD_ITALIC: Face = Face {
     data: include_bytes!("../fonts/AtkinsonHyperlegibleMono-BoldItalic.ttf"),
 };
 
-/// The arrows block of Noto Sans Math 3.000 (U+2190-21FF), the symbol face. It has one style, so
-/// every weight and style of the symbol family is this face; a browser synthesises the bold or the
-/// slant of it where the text asks for one, and the advances are the same (`tests/fallback.rs`).
+/// The arrows block of Noto Sans Math 3.000 (U+2190-21FF). It has one style, so every weight and
+/// style of the arrows family is this face; a browser synthesises the bold or the slant of it where
+/// the text asks for one, and the advances are the same (`tests/fallback.rs`).
 static NOTO_MATH_ARROWS: Face = Face {
-    family: FontFamily::Symbols,
+    family: FontFamily::Arrows,
     weight: FontWeight::Normal,
     style: FontStyle::Normal,
     file_name: "NotoSansMath-Regular-Arrows.ttf",
@@ -229,9 +239,31 @@ static NOTO_MATH_ARROWS: Face = Face {
     data: include_bytes!("../fonts/NotoSansMath-Regular-Arrows.ttf"),
 };
 
+/// Noto Sans Symbols 2 cut to the text-default code points of U+2600-27BF. Like the arrows, one
+/// style for every choice of its family (`tests/fallback.rs`).
+static NOTO_SANS_SYMBOLS2_TEXT: Face = Face {
+    family: FontFamily::TextSymbols,
+    weight: FontWeight::Normal,
+    style: FontStyle::Normal,
+    file_name: "NotoSansSymbols2-Regular-TextSymbols.ttf",
+    font: OnceLock::new(),
+    data: include_bytes!("../fonts/NotoSansSymbols2-Regular-TextSymbols.ttf"),
+};
+
+/// Twemoji Mozilla 0.7.0 (COLRv0) cut to the emoji-presentation code points it covers. Its colour
+/// layers are drawn by the browser from the COLR and CPAL tables, which a subset keeps.
+static TWEMOJI_EMOJI: Face = Face {
+    family: FontFamily::Emoji,
+    weight: FontWeight::Normal,
+    style: FontStyle::Normal,
+    file_name: "TwemojiMozilla-COLRv0-Emoji.ttf",
+    font: OnceLock::new(),
+    data: include_bytes!("../fonts/TwemojiMozilla-COLRv0-Emoji.ttf"),
+};
+
 /// Every bundled face: the four Lexica Ultralegible styles, the four Atkinson Hyperlegible Mono
-/// styles, then the symbol face.
-pub static FACES: [&Face; 9] = [
+/// styles, then the arrows, the text symbols and the emoji.
+pub static FACES: [&Face; 11] = [
     &LEXICA_REGULAR,
     &LEXICA_ITALIC,
     &LEXICA_BOLD,
@@ -241,12 +273,14 @@ pub static FACES: [&Face; 9] = [
     &ATKINSON_MONO_BOLD,
     &ATKINSON_MONO_BOLD_ITALIC,
     &NOTO_MATH_ARROWS,
+    &NOTO_SANS_SYMBOLS2_TEXT,
+    &TWEMOJI_EMOJI,
 ];
 
 /// The bundled face for one (family, weight, style) choice.
 ///
-/// Every combination has a face. The symbol family has one face for all its choices, as described
-/// on that face; the text families have a face for each of their styles.
+/// Every combination has a face. The fallback families have one face for all their choices, as
+/// described on each face; the text families have a face for each of their styles.
 #[must_use]
 pub fn face(family: FontFamily, weight: FontWeight, style: FontStyle) -> &'static Face {
     match (family, weight, style) {
@@ -258,6 +292,8 @@ pub fn face(family: FontFamily, weight: FontWeight, style: FontStyle) -> &'stati
         (FontFamily::Mono, FontWeight::Normal, FontStyle::Italic) => &ATKINSON_MONO_ITALIC,
         (FontFamily::Mono, FontWeight::Bold, FontStyle::Normal) => &ATKINSON_MONO_BOLD,
         (FontFamily::Mono, FontWeight::Bold, FontStyle::Italic) => &ATKINSON_MONO_BOLD_ITALIC,
-        (FontFamily::Symbols, _, _) => &NOTO_MATH_ARROWS,
+        (FontFamily::Arrows, _, _) => &NOTO_MATH_ARROWS,
+        (FontFamily::TextSymbols, _, _) => &NOTO_SANS_SYMBOLS2_TEXT,
+        (FontFamily::Emoji, _, _) => &TWEMOJI_EMOJI,
     }
 }

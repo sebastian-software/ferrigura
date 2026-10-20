@@ -67,6 +67,7 @@
     "port:jsmath": "tsx tools/port/jsmath-probe.ts",
     "port:text-fixture": "tsx tools/port/text/chromium-fixture.ts",
     "port:text-label-fixture": "tsx tools/port/text/label-fixture.ts",
+    "port:cut-fonts": "tsx tools/port/fonts/cut-faces.ts",
     "port:geometry-pie": "tsx tools/port/geometry/pie-geometry.ts",
     "port:geometry-flowchart": "tsx tools/port/geometry/flowchart-geometry.ts",
     "port:tidy-tree": "tsx tools/port/geometry/tidy-tree-capture.ts",

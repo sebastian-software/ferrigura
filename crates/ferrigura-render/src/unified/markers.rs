@@ -24,6 +24,10 @@ pub const REQUIREMENT: &str = "requirement";
 /// `USECASE_MARKERS`: point, circle, cross and extension).
 pub const USECASE: &str = "usecase";
 
+/// The diagram type of a swimlane diagram, in its marker ids and classes: the reference's `diag.type`
+/// (`swimlanesDiagram.ts`), which `flowRenderer-v3-unified.ts` gives the markers and the edges.
+pub const SWIMLANE: &str = "swimlane";
+
 /// The marker kinds an edge end can use: the flowchart's three in the order `markers.js` writes
 /// them, and the four cardinalities of ER diagrams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

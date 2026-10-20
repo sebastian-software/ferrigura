@@ -18,15 +18,33 @@ pub struct Run<'a> {
     pub face: &'static Face,
 }
 
-/// The stretches of a run as a browser sets them with the run's font-family list, which is the
-/// run's own face and then the symbol face.
+/// The faces a text's font-family list falls back to, in order, after the text's own face: the
+/// arrows, the text symbols and the emoji.
 ///
-/// A character the symbol face covers and the run's face lacks is set in the symbol face. Every
-/// other character stays in the run's face, where a character that neither face covers is drawn
-/// with the face's own missing glyph. Consecutive characters in one face form one stretch, so the
-/// stretches follow each other in the order of the text and cover all of it. A run without any
-/// such character comes back as itself, and so does an empty run, which keeps its place in the
-/// embedded subsets.
+/// The three cover disjoint code points (the emoji face holds no text-default symbol, and the text
+/// symbols hold no emoji-presentation code point), so the order decides nothing among them.
+#[must_use]
+pub fn fallback_faces() -> [&'static Face; 3] {
+    [
+        face(FontFamily::Arrows, FontWeight::Normal, FontStyle::Normal),
+        face(
+            FontFamily::TextSymbols,
+            FontWeight::Normal,
+            FontStyle::Normal,
+        ),
+        face(FontFamily::Emoji, FontWeight::Normal, FontStyle::Normal),
+    ]
+}
+
+/// The stretches of a run as a browser sets them with the run's font-family list, which is the
+/// run's own face and then the fallback faces of [`fallback_faces`].
+///
+/// A character the run's face lacks is set in the first fallback face that covers it. Every other
+/// character stays in the run's face, where a character that no face covers is drawn with the
+/// face's own missing glyph. Consecutive characters in one face form one stretch, so the stretches
+/// follow each other in the order of the text and cover all of it. A run without any such character
+/// comes back as itself, and so does an empty run, which keeps its place in the embedded subsets.
+/// A run in a fallback face is not split.
 ///
 /// This is the per-character fallback that Chromium makes for a font-family list: a run of text is
 /// split where the first family lacks a character, and each part is shaped in the family that has
@@ -34,18 +52,21 @@ pub struct Run<'a> {
 /// in the face they were measured in.
 #[must_use]
 pub fn fallback_runs(run: Run<'_>) -> Vec<Run<'_>> {
-    let symbols = face(FontFamily::Symbols, FontWeight::Normal, FontStyle::Normal);
-    if run.text.is_empty() || run.face.family() == FontFamily::Symbols {
+    if run.text.is_empty() || !matches!(run.face.family(), FontFamily::Sans | FontFamily::Mono) {
         return vec![run];
     }
+    let fallbacks = fallback_faces();
     let mut stretches = Vec::new();
     let mut start = 0;
     let mut current: &'static Face = run.face;
     for (index, character) in run.text.char_indices() {
-        let chosen = if symbols.covers(character) && !run.face.covers(character) {
-            symbols
-        } else {
+        let chosen = if run.face.covers(character) {
             run.face
+        } else {
+            fallbacks
+                .into_iter()
+                .find(|fallback| fallback.covers(character))
+                .unwrap_or(run.face)
         };
         if !std::ptr::eq(chosen, current) {
             if index > start {
@@ -80,7 +101,7 @@ pub fn layout_width(advance: f64) -> f64 {
 }
 
 /// The advance width, in pixels, of `text` set as one run in `face` at `size` pixels. The characters
-/// that `face` lacks and the symbol face has are set in the symbol face ([`fallback_runs`]), and the
+/// that `face` lacks and a fallback face has are set in that face ([`fallback_runs`]), and the
 /// advances of the stretches are summed without any snapping: a caller snaps the whole run.
 ///
 /// # Errors

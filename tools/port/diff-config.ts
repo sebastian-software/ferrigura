@@ -109,8 +109,10 @@ const p2Groups: [group: string, scope: string][] = [
   ['treemap', 'treemap'],
   ['ishikawa', 'ishikawa'],
   ['eventmodeling', 'eventmodeling'],
-  // railroad is a P3 type whose parser is ported: its section is compared like a P2 section.
+  // railroad and swimlanes are P3 types whose parsers are ported: their sections are compared like
+  // a P2 section.
   ['railroad', 'railroad'],
+  ['swimlanes', 'swimlane'],
 ];
 const p2Inputs: ConfigInput[] = [];
 for (const [group, scope] of p2Groups) {
@@ -126,11 +128,10 @@ for (const [group, scope] of p2Groups) {
 }
 /**
  * The P3 types, with the same meaning as `p2Groups`: their inputs must be detected in their own
- * scope on both sides, and their sections are not compared until their parsers are ported.
+ * scope on both sides, and their sections are compared (`NOT_PORTED_SECTIONS` lists the exceptions).
  */
 const p3Groups: [group: string, scope: string][] = [
   ['agentflow', 'agentflow'],
-  ['swimlanes', 'swimlane'],
   ['treeView', 'treeView'],
   ['radar', 'radar'],
   ['venn', 'venn'],
@@ -296,10 +297,11 @@ const UNPORTED_SECTIONS = [
 ];
 
 /**
- * The sections of the P3 types, whose parsers are not ported yet. Their inputs are run in their own
- * scope, but the section is not compared, not even for those inputs, until the type is ported.
+ * The sections of the P3 types whose parsers are not ported yet. Their inputs are run in their own
+ * scope, but the section is not compared, not even for those inputs, until the type is ported. Every
+ * P3 parser is ported now, so the set is empty.
  */
-const NOT_PORTED_SECTIONS = new Set<string>(['swimlane']);
+const NOT_PORTED_SECTIONS = new Set<string>();
 
 /**
  * The output with the sections that are not compared removed: the sections of diagram types that

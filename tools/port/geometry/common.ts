@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { JSON_SCHEMA, load } from 'js-yaml';
 import { chromium, type Page } from 'playwright';
 
+import { faceCoverage, labelCoverage, unicodeRange } from '../fonts/bundled.ts';
 import { ensureTidyTreeBundle, TIDY_TREE_DIR, TIDY_TREE_URL } from './tidy-tree-bundle.js';
 
 export const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -59,12 +60,13 @@ export function buildRenderExample(): void {
 
 /**
  * The settings of the directive every fixture gets (the brief's exact text). The font family is the
- * bundled text face and the symbol face after it: a browser sets each character the first family
- * lacks in the second, which is the fallback ferrigura measures and embeds (decision 0005).
+ * bundled text face and then the fallback faces after it: a browser sets each character the first
+ * family lacks in the first fallback that has it, which is the fallback ferrigura measures and embeds
+ * (decision 0005, and `fallback_faces` of `ferrigura-text`).
  */
 export const FORCED_SETTINGS: Record<string, unknown> = {
   htmlLabels: false,
-  fontFamily: '"Lexica Ultralegible", "Noto Sans Math"',
+  fontFamily: '"Lexica Ultralegible", "Noto Sans Math", "Noto Sans Symbols 2", "Twemoji Mozilla"',
   securityLevel: 'strict',
 };
 
@@ -184,69 +186,113 @@ export const NON_LAYERED_LAYOUTS: readonly string[] = [
 export const EXCLUDED_LOOK = 'handDrawn';
 
 /**
- * Symbols and scripts that the bundled faces do not draw: miscellaneous symbols and dingbats, kana,
- * CJK symbols and compatibility characters, and emoji. The bundled Lexica faces cover Latin letters
- * such as Ø, ζ and ẽ (the ER notes, section 6.1), and not these. The reference draws them in a
- * system font, which ferrigura does not have, so their fixtures are excluded until fallback fonts
- * exist (M6-PLAN, decisions: scripts). The arrows (U+2190-21FF) are not in this list: the symbol face
- * Noto Sans Math covers that block completely, and both sides set them in it (decision 0005).
- */
-const UNCOVERED_SYMBOLS =
-  /[\u2600-\u26FF\u2700-\u27BF\u3000-\u303F\u3040-\u30FF\u3300-\u33FF\u{1F000}-\u{1FAFF}]/u;
-
-/**
- * The text of a fixture that a diagram can draw: the body, and the front matter's `title`. The
- * rest of the front matter (a `description`, the `config`) is never drawn, so a symbol there does
- * not exclude the fixture.
+ * The text of a fixture that a diagram can draw: the body, and the front matter's `title`. The rest
+ * of the front matter (a `description`, the `config`) is never drawn, so a character there does not
+ * exclude the fixture. In a tree view, the box-drawing characters are the tree's syntax: its
+ * preprocessor (`boxDrawingPreprocessor.ts`) replaces them before anything is drawn, so they are not
+ * drawn text either.
  */
 function drawnText(source: string): string {
   const frontMatter = FRONT_MATTER.exec(source);
-  if (!frontMatter) {
-    return source;
-  }
-  const body = source.slice(frontMatter[0].length);
-  const yaml = frontMatter[0].replace(/^---[^\n]*\n/, '').replace(/\n---[^\n]*\n?$/, '');
+  let body = source;
   let title = '';
-  try {
-    const data: unknown = load(yaml, { schema: JSON_SCHEMA });
-    if (typeof data === 'object' && data !== null && 'title' in data) {
-      title = String((data as { title: unknown }).title);
+  if (frontMatter) {
+    body = source.slice(frontMatter[0].length);
+    const yaml = frontMatter[0].replace(/^---[^\n]*\n/, '').replace(/\n---[^\n]*\n?$/, '');
+    try {
+      const data: unknown = load(yaml, { schema: JSON_SCHEMA });
+      if (typeof data === 'object' && data !== null && 'title' in data) {
+        title = String((data as { title: unknown }).title);
+      }
+    } catch {
+      // Front matter that is not YAML is the reference's error; the body decides then.
     }
-  } catch {
-    // Front matter that is not YAML is the reference's error; the body decides then.
   }
-  return `${title}\n${body}`;
+  const text = `${title}\n${body}`;
+  return /^\s*treeView(?:-beta)?\b/m.test(body) ? text.replace(BOX_DRAWING, '') : text;
+}
+
+/** The box-drawing block, U+2500-257F. */
+const BOX_DRAWING = /[\u2500-\u257F]/gu;
+
+/**
+ * The characters of a fixture's drawn text that no bundled face covers (`labelCoverage`), as
+ * `U+XXXX` in the order of the text, each once. Line breaks, carriage returns and tabs are white
+ * space the reference collapses, not glyphs, so they are not counted.
+ */
+export function uncoveredCharacters(source: string): string[] {
+  const covered = labelCoverage();
+  const found = new Set<string>();
+  for (const character of drawnText(source)) {
+    const code = character.codePointAt(0) ?? 0;
+    if (code === 0x0a || code === 0x0d || code === 0x09 || covered.has(code)) {
+      continue;
+    }
+    found.add(`U+${code.toString(16).toUpperCase().padStart(4, '0')} ${character}`);
+  }
+  return [...found];
 }
 
 /**
- * The exclusion of a fixture whose drawn text (`drawnText`) has a symbol or script the bundled
- * faces do not cover, or null. It is separate from `exclusionReason`, which the flowchart harness
- * shares, so that the flowchart's comparison is the same as before.
+ * The exclusion of a fixture whose drawn text has a character no bundled face covers (CJK, Arabic,
+ * emoji that Twemoji lacks, and every other character outside the faces), or null. The reason names
+ * the characters. It is separate from `exclusionReason`'s look and layout rules, so that a harness
+ * can ask it alone.
  */
 export function uncoveredScriptReason(source: string): string | null {
-  if (UNCOVERED_SYMBOLS.test(drawnText(source))) {
-    return 'text the bundled faces do not cover (symbols, kana, CJK, emoji): needs a fallback font, which ferrigura does not have yet';
+  const characters = uncoveredCharacters(source);
+  if (characters.length === 0) {
+    return null;
   }
-  return null;
+  return `text no bundled face covers (${characters.join(', ')}): needs a fallback font, which ferrigura does not have`;
 }
 
-/** Why a fixture is excluded from the comparison, or null when it is compared. */
-export function exclusionReason(source: string): string | null {
+/**
+ * The swimlane fixtures' own exclusions, on top of `exclusionReason`: the two layout options that the
+ * swimlane engine does not port. Their fixtures are the only ones that set them (`mermaid-work` sets
+ * `ignoreCrossLaneEdges: false`, `14-messy-layout` sets `automaticLaneOrdering: true`).
+ */
+const SWIMLANE_OPTION_EXCLUSIONS: readonly [RegExp, string][] = [
+  [
+    /ignoreCrossLaneEdges\s*:\s*false/,
+    'swimlane.ignoreCrossLaneEdges: false (the gravity layering) is not ported',
+  ],
+  [
+    /automaticLaneOrdering\s*:\s*true/,
+    'swimlane.automaticLaneOrdering: true (the lane ordering) is not ported',
+  ],
+];
+
+/**
+ * Why a fixture is excluded from the comparison, or null when it is compared. `type` is the diagram type
+ * the fixtures belong to: the swimlane diagrams are laid out by the `swimlane` engine, which is layered
+ * only in the sense of its own pipeline, so their `layout: swimlane` is compared (scoped to them).
+ */
+export function exclusionReason(source: string, type = ''): string | null {
   const { look, layout } = effectiveSettings(source);
   if (look === EXCLUDED_LOOK) {
     return `look ${EXCLUDED_LOOK}: rough.js sketching is out of scope`;
   }
-  if (typeof layout === 'string' && NON_LAYERED_LAYOUTS.includes(layout)) {
+  const swimlanes = type === 'swimlanes';
+  if (swimlanes) {
+    for (const [option, reason] of SWIMLANE_OPTION_EXCLUSIONS) {
+      if (option.test(source)) return reason;
+    }
+  }
+  if (
+    typeof layout === 'string' &&
+    NON_LAYERED_LAYOUTS.includes(layout) &&
+    !(swimlanes && layout === 'swimlane')
+  ) {
     return `layout ${layout}: not layered, ferrigura falls back to layered`;
   }
-  // Scripts the bundled faces do not cover need a fallback font, which ferrigura does not have
-  // yet (STATUS.md, open since M2); the reference draws them in a system font.
-  if (/[⺀-鿿가-힯豈-﫿]/.test(source)) {
-    return 'CJK text: needs a fallback font, which ferrigura does not have yet';
+  const uncovered = uncoveredScriptReason(source);
+  if (uncovered !== null) {
+    return uncovered;
   }
   // A subgraph's own algorithm, from its shape data (`grp@{ algorithm: elk.box }`).
   for (const match of source.matchAll(/algorithm\s*:\s*["']?([\w.-]+)/g)) {
-    if (NON_LAYERED_LAYOUTS.includes(match[1])) {
+    if (NON_LAYERED_LAYOUTS.includes(match[1]) && !(swimlanes && match[1] === 'swimlane')) {
       return `subgraph algorithm ${match[1]}: not layered, ferrigura falls back to layered`;
     }
   }
@@ -432,7 +478,28 @@ function mappedFaces(family: string): string {
     (face) =>
       `@font-face { font-family: "${family}"; src: url(/fonts/${face.file}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; }`
   );
-  return [...own, arrowFaces(family)].join('\n');
+  return [...own, arrowFaces(family), fallbackFaces(family)].join('\n');
+}
+
+/** The text-default symbols and the emoji: the two fallback faces after the arrows (`fallback_faces`). */
+const TEXT_SYMBOLS_FILE = 'NotoSansSymbols2-Regular-TextSymbols.ttf';
+const EMOJI_FILE = 'TwemojiMozilla-COLRv0-Emoji.ttf';
+/** The family names the page declares the two faces under, for the forced font family. */
+const TEXT_SYMBOLS_FAMILY = 'Noto Sans Symbols 2';
+const EMOJI_FAMILY = 'Twemoji Mozilla';
+/**
+ * The code points of each face, as `unicode-range` ranges: each cut covers exactly these, so a family
+ * takes the characters of a face and no other, as it does for the arrows.
+ */
+const TEXT_SYMBOLS_RANGE = unicodeRange(faceCoverage(TEXT_SYMBOLS_FILE));
+const EMOJI_RANGE = unicodeRange(faceCoverage(EMOJI_FILE));
+
+/** The text symbols and the emoji under a family name that the page maps onto the bundled faces. */
+function fallbackFaces(family: string): string {
+  return LEXICA_FACES.flatMap((face) => [
+    `@font-face { font-family: "${family}"; src: url(/fonts/${TEXT_SYMBOLS_FILE}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; unicode-range: ${TEXT_SYMBOLS_RANGE}; }`,
+    `@font-face { font-family: "${family}"; src: url(/fonts/${EMOJI_FILE}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; unicode-range: ${EMOJI_RANGE}; }`,
+  ]).join('\n');
 }
 
 /**
@@ -468,13 +535,17 @@ const MONO_FACES: string = [
       `@font-face { font-family: "${MONO_FAMILY}"; src: url(/fonts/${face.file}) format("truetype"); font-weight: ${face.weight}; font-style: ${face.style}; }`
   )
   .join('\n')
-  .concat('\n', arrowFaces(MONO_FAMILY));
+  .concat('\n', arrowFaces(MONO_FAMILY), '\n', fallbackFaces(MONO_FAMILY));
 
 /**
  * The symbol face: the arrows block of Noto Sans Math, the subset ferrigura bundles (the same file,
  * so both sides draw the same glyphs and cover the same characters).
  */
 const SYMBOL_FACE = `@font-face { font-family: "${SYMBOL_FAMILY}"; src: url(/fonts/NotoSansMath-Regular-Arrows.ttf) format("truetype"); font-weight: 400; font-style: normal; }`;
+
+/** The two fallback faces under the names of the forced font family (`FORCED_SETTINGS`). */
+const NAMED_FALLBACK_FACES = `@font-face { font-family: "${TEXT_SYMBOLS_FAMILY}"; src: url(/fonts/${TEXT_SYMBOLS_FILE}) format("truetype"); font-weight: 400; font-style: normal; unicode-range: ${TEXT_SYMBOLS_RANGE}; }
+@font-face { font-family: "${EMOJI_FAMILY}"; src: url(/fonts/${EMOJI_FILE}) format("truetype"); font-weight: 400; font-style: normal; unicode-range: ${EMOJI_RANGE}; }`;
 
 export function pageHtml(measure: string): string {
   return `<!doctype html>
@@ -487,13 +558,14 @@ export function pageHtml(measure: string): string {
 ${MAPPED_FAMILIES.map(mappedFaces).join('\n')}
 ${MONO_FACES}
 ${SYMBOL_FACE}
+${NAMED_FALLBACK_FACES}
 /* The eventmodeling box text's code: the reference's code element takes the UA's monospace, which is
    the machine's own face. ferrigura draws code in the bundled mono face (decision 0005), so the page
    pins the reference's code of that diagram to it (eventmodeling db.ts 349-378). */
 [aria-roledescription="eventmodeling"] foreignObject code { font-family: "${MONO_FAMILY}"; }
 /* The wardley map's text: the reference sets no font, so its text takes the page's default face. The
    page pins that default to the bundled face, which ferrigura writes for the map (wardley/mod.rs). */
-[aria-roledescription="wardley"] { font-family: "Lexica Ultralegible"; }
+[aria-roledescription="wardley"] { font-family: ${WARDLEY_FAMILY}; }
 /* No body margin: a block the reference appends to the body (its diagram container) is then the
    1200 px viewport wide, which is the width the gantt renderer takes from the container when a
    diagram sets no useWidth (ganttRenderer.js:98). ferrigura uses the same 1200 px. */
@@ -533,13 +605,15 @@ await Promise.all([
   '400 16px "${MONO_FAMILY}"',
   'bold 16px "${MONO_FAMILY}"',
   '400 16px "${SYMBOL_FAMILY}"',
+  '400 16px "${TEXT_SYMBOLS_FAMILY}"',
+  '400 16px "${EMOJI_FAMILY}"',
   ...${JSON.stringify(MAPPED_FAMILIES)}.flatMap((family) => [
     '400 16px "' + family + '"',
     'italic 400 16px "' + family + '"',
     'bold 16px "' + family + '"',
     'italic bold 16px "' + family + '"',
   ]),
-].map((face) => document.fonts.load(face, '\\u2192')));
+].map((face) => document.fonts.load(face, '\\u2192\\u2665\\u{1F600}')));
 await document.fonts.ready;
 
 const numbers = (text) => (text || '').trim().split(/[\\s,]+/).filter(Boolean).map(Number);
@@ -805,7 +879,7 @@ export async function renderReference(
  * (`crates/ferrigura-render/src/wardley/mod.rs`). The reference sets no font, so its text takes the
  * page's default face, which is not the bundled one.
  */
-export const WARDLEY_FAMILY = '"Lexica Ultralegible"';
+export const WARDLEY_FAMILY = `"Lexica Ultralegible", "Noto Sans Math", "${TEXT_SYMBOLS_FAMILY}", "${EMOJI_FAMILY}"`;
 
 /**
  * The fixture text as the e2e viewer hands it to the reference: `mermaid.run` reads the element's

@@ -15,6 +15,7 @@ ferrigura-elk = { path = "../ferrigura-elk" }
 ferrigura-jsmath = { path = "../ferrigura-jsmath" }
 ferrigura-model.workspace = true
 ferrigura-path = { path = "../ferrigura-path" }
+ferrigura-swimlane = { path = "../ferrigura-swimlane" }
 ferrigura-syntax = { path = "../ferrigura-syntax" }
 ferrigura-text = { path = "../ferrigura-text" }
 ferrigura-venn = { path = "../ferrigura-venn" }

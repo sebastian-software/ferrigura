@@ -30,6 +30,7 @@ use ferrigura_render::flowchart;
 use ferrigura_render::kanban::KanbanSections;
 use ferrigura_render::mindmap::MindmapSection;
 use ferrigura_render::pie::render as render_pie;
+use ferrigura_render::swimlanes::SwimlaneSection;
 use ferrigura_render::unified::Section;
 use ferrigura_render::use_case::UseCaseSection;
 use ferrigura_render::{
@@ -418,7 +419,10 @@ impl Renderer {
             }),
             DiagramType::Swimlanes => swimlanes_render::render(&Context {
                 diagram: &swimlanes::parse(text)?,
-                section: &typed_config.swimlane,
+                section: &SwimlaneSection {
+                    swimlane: &typed_config.swimlane,
+                    unified: section,
+                },
                 globals: &prepared.view.globals,
                 theme: prepared.theme(),
                 id,
