@@ -35,6 +35,10 @@ So far the cleanup has mostly removed what surrounds the library: seven packages
 
 The fork is being ported to Rust as **ferrigura**: a library, a command-line tool and a Node.js addon that render diagram text to SVG without a browser. [docs-port/](./docs-port/README.md) holds the plan, the decisions and the status; the TypeScript implementation stays as the reference until each diagram type reaches parity.
 
+## Using ferrigura
+
+[crates/ferrigura/README.md](./crates/ferrigura/README.md) describes the library, [crates/ferrigura-cli/README.md](./crates/ferrigura-cli/README.md) the command-line tool, and [crates/ferrigura-node/README.md](./crates/ferrigura-node/README.md) the Node.js addon. The crates are not published yet.
+
 ## Repository layout
 
 | Path                        | Contents                                                                |
