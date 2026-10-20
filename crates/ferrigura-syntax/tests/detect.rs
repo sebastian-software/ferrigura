@@ -141,15 +141,11 @@ fn parse_dispatches_on_the_detected_type() {
     ));
     let error = parse("unknown diagram\n  x").expect_err("no diagram type matches");
     assert_eq!((error.line, error.column), (1, 1));
-    // The swimlane header is detected, and its parser is not ported yet (its own milestone).
-    let error =
-        parse("swimlane-beta LR\n  a-->b").expect_err("the swimlane parser is not ported yet");
-    assert_eq!((error.line, error.column), (1, 1));
-    assert!(
-        error.message.contains("not ported yet"),
-        "{}",
-        error.message
-    );
+    // The swimlane header is detected, and its parser is the flowchart's (`swimlanes_spec.rs`).
+    assert!(matches!(
+        parse("swimlane-beta LR\n  a-->b"),
+        Ok(Diagram::Swimlanes(_))
+    ));
 }
 
 #[test]
