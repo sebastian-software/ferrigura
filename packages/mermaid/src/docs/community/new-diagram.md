@@ -273,10 +273,10 @@ number.
 If your syntax introduces new keywords, add them to `.cspell/mermaid-terms.txt`. The pre-commit
 hook runs CSpell and will otherwise reject the commit.
 
-## Step 9: Changeset and pull request
+## Step 9: Commit message and pull request
 
-Run `pnpm changeset`, choose the `mermaid` package and a `minor` bump, and write a description
-prefixed with `feat:`.
+Write the commit messages as conventional commits, with `feat:` for the new diagram type: the
+releases are made from them (release-please, see `docs-port/RELEASE.md`).
 
 Open the PR against `develop` and link the issue it resolves. New diagram types are large by
 nature, and that is fine, but keep unrelated refactors out of the same branch.
@@ -303,5 +303,5 @@ review.
 - [ ] Documentation examples covered by a docs spec
 - [ ] Syntax page under `src/docs/syntax/`, with `MERMAID_RELEASE_VERSION`
 - [ ] New keywords added to `.cspell/mermaid-terms.txt`
-- [ ] Changeset created (`minor`, `feat:`)
+- [ ] Commit messages are conventional commits (`feat:` for the new type)
 - [ ] PR targets `develop` and links its issue

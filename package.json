@@ -38,8 +38,6 @@
     "dev:vite": "tsx .vite/server.ts",
     "dev:coverage": "pnpm coverage:e2e:clean && pnpm dev:vite",
     "copy-readme": "cpy './README.*' ./packages/mermaid/ --cwd=.",
-    "changeset:version": "changeset version && pnpm build && pnpm --filter mermaid run docs:release-version && pnpm --filter mermaid run docs:build && git add --all",
-    "changeset:publish": "pnpm copy-readme && changeset publish",
     "lint": "eslint --quiet --stats --cache --cache-strategy content . && pnpm lint:jison && prettier --cache --check .",
     "lint:fix": "eslint --cache --cache-strategy content --fix . && prettier --write . && tsx scripts/fixCSpell.ts",
     "lint:jison": "tsx ./scripts/jison/lint.mts",
@@ -97,8 +95,6 @@
     ]
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.5.2",
-    "@changesets/cli": "^2.29.8",
     "@codemirror/commands": "^6.10.4",
     "@codemirror/language": "^6.12.4",
     "@codemirror/state": "^6.7.1",
