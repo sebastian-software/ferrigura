@@ -26,12 +26,18 @@ classdefid
 classentity
 classname
 clazz
+cmap
+Cmap
 CODEOWNERS
 COLONSEP
+colr
+COLR
 COMPOSIT_STATE
 concat
 controlx
 controly
+cpal
+CPAL
 cplusplus
 CSSCLASS
 currentcolor
@@ -135,6 +141,7 @@ roughjs
 RPAREN
 sankey
 sequencenumber
+sfnt
 shrc
 Siebenhaller
 signaltype
@@ -164,6 +171,8 @@ SUBROUTINEEND
 SUBROUTINESTART
 Subschemas
 substr
+subtable
+subtables
 SVGG
 SVGSVG
 TAGEND
