@@ -2,6 +2,7 @@
 name = "ferrigura-syntax"
 description = "Shared lexer base, YAML reader and hand-written parsers for ferrigura diagram types"
 readme = "README.md"
+include = ["src/**", "Cargo.toml", "README.md", "LICENSE*"]
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true

@@ -13,7 +13,7 @@ publish.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-ferrigura = { path = "../ferrigura" }
+ferrigura = { path = "../ferrigura", version = "0.0.0" }
 ferrigura-model.workspace = true
 napi = { version = "3", features = ["serde-json"] }
 napi-derive = "3"

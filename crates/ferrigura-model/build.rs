@@ -1,6 +1,8 @@
 //! Generates the configuration types of `ferrigura-model` from Mermaid's configuration schema.
 //!
-//! `packages/mermaid/src/schemas/config.schema.yaml` is the single source. This script turns its
+//! `packages/mermaid/src/schemas/config.schema.yaml` is the single source. The crate holds a copy of
+//! it, `schema/config.schema.yaml`, so that it builds from its own package on crates.io; the test
+//! `schema_copy` fails when the copy and the source differ. This script turns its
 //! `$defs` and properties into serde structs, with the schema's `default` values as their
 //! `Default` implementation, and writes the key set that the reference's `configKeys` gates
 //! directives with. The output is `$OUT_DIR/config_schema.rs`, included by `src/config/mod.rs`.
@@ -30,7 +32,7 @@ use std::{env, fs, path::PathBuf};
 
 use serde_json::{Map, Value};
 
-const SCHEMA: &str = "../../packages/mermaid/src/schemas/config.schema.yaml";
+const SCHEMA: &str = "schema/config.schema.yaml";
 
 /// Schema keys that the reference does not accept in a directive.
 const NOT_CONFIG_KEYS: &[&str] = &["dompurifyConfig"];

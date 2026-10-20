@@ -2,6 +2,7 @@
 name = "ferrigura-cli"
 description = "Render a Mermaid diagram file to SVG from the command line"
 readme = "README.md"
+include = ["src/**", "Cargo.toml", "README.md", "LICENSE*"]
 keywords = ["mermaid", "diagram", "svg", "cli", "render"]
 categories = ["command-line-utilities", "visualization"]
 documentation = "https://docs.rs/ferrigura-cli"
@@ -19,6 +20,6 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
-ferrigura = { path = "../ferrigura" }
+ferrigura = { path = "../ferrigura", version = "0.0.0" }
 ferrigura-model.workspace = true
 serde_json.workspace = true
