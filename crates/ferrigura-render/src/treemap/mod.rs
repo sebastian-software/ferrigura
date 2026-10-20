@@ -35,11 +35,11 @@ use crate::common::d3::js_round;
 use crate::common::d3::math_max;
 use crate::common::d3::number::js_number;
 use crate::common::d3::treemap::{Padding, Treemap};
+use crate::common::shown_text;
 use crate::common::style::base_style_sheet;
 use crate::common::viewbox::{BBox, setup_graph_viewbox};
-use crate::common::{decode_entities, shown_text};
 use crate::context::Context;
-use crate::svg::{escape, number};
+use crate::svg::{entity_markup, number};
 use style::{Inline, Styles, colour_as_fill, own_rules, styles_to_string};
 use text::{Anchor, Baseline, Font, advance, line_box};
 
@@ -953,7 +953,7 @@ fn fit_leaf_label(
 /// with the placeholders in it, so the measurements use the names as they are and the markup is
 /// decoded here.
 fn markup(text: &str) -> String {
-    decode_entities(&escape(text))
+    entity_markup(text)
 }
 
 /// The `<g>` of a section (`renderer.ts` 163-309): its header band, the clip of the header, the

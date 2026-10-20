@@ -17,7 +17,7 @@ use crate::common::style::base_style_sheet;
 use crate::common::viewbox::configure_svg_size;
 use crate::common::{Element, decode_entities};
 use crate::context::Context;
-use crate::svg::{escape, font_faces};
+use crate::svg::{entity_markup, font_faces};
 use builder::interfaces::{Drawable, HorizontalPos, PathElem, RectElem, TextElem, VerticalPos};
 
 /// The XML namespace of the root element.
@@ -249,7 +249,7 @@ fn path_element(path: &PathElem) -> Element {
 /// `encodeEntities` decoded on the markup, as the reference decodes its final SVG (`utils.ts`
 /// 904-906). A placeholder of `#name;` therefore reads as an entity in the browser.
 fn markup(text: &str) -> String {
-    decode_entities(&escape(text))
+    entity_markup(text)
 }
 
 /// A text, with its position in the transform (`translate(x, y) rotate(r)`), as the reference

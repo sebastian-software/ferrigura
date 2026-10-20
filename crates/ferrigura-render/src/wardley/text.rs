@@ -10,8 +10,8 @@ use ferrigura_text::{
 
 use crate::RenderError;
 use crate::common::Element;
-use crate::common::{decode_entities, shown_text};
-use crate::svg::escape;
+use crate::common::shown_text;
+use crate::svg::entity_markup;
 
 /// The font size of the annotation lines (`wardleyRenderer.ts` 886, `fontSize`).
 pub const ANNOTATION_FONT_SIZE: f64 = 11.0;
@@ -20,7 +20,7 @@ pub const ANNOTATION_FONT_SIZE: f64 = 11.0;
 /// the final pass of the core does on the whole SVG.
 #[must_use]
 pub fn markup(text: &str) -> String {
-    decode_entities(&escape(text))
+    entity_markup(text)
 }
 
 /// The characters the map shows, by the face they are set in, for the font subset. The reference

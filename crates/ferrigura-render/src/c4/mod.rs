@@ -30,7 +30,7 @@ use crate::common::style::base_style_sheet;
 use crate::common::text::TextMemo;
 use crate::common::viewbox::calculate_svg_size_attrs;
 use crate::context::Context;
-use crate::svg::{escape, number};
+use crate::svg::{entity_markup, escape, number};
 
 use draw::{Draw, FAMILY, SCREEN_WIDTH};
 
@@ -102,7 +102,7 @@ pub fn render(input: &Context<'_, C4Diagram, C4DiagramConfig>) -> Result<String,
             "<text x=\"{}\" y=\"{}\">{}</text>",
             number(box_width / 2.0 - 4.0 * conf.diagram_margin_x),
             number(box_start_y + conf.diagram_margin_y),
-            decode_entities(&escape(title)),
+            entity_markup(title),
         )
     };
     let extra = if title.is_empty() { 0.0 } else { TITLE_HEIGHT };

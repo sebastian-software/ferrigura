@@ -4,7 +4,7 @@
 use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, measure_box};
 
 use crate::RenderError;
-use crate::svg::escape;
+use crate::svg::{escape, xml_references};
 
 /// A label's text: what the SVG writes (`xml`, with the entity references the reference's decoding
 /// leaves in it) and what the DOM reads from it (`plain`).
@@ -27,6 +27,7 @@ const CLOSE: &str = "¶ß";
 /// The text of a label, from the text the model holds. Entity placeholders become entity
 /// references, which the SVG parser reads as the characters they name; an entity name that XML
 /// does not define stays as the literal text `&name;`. Every other character is escaped as it is.
+/// The XML is well-formed: a number that XML cannot hold is written as [`xml_references`] writes it.
 pub(crate) fn label(raw: &str) -> Label {
     let mut xml = String::new();
     let mut plain = String::new();
@@ -37,7 +38,7 @@ pub(crate) fn label(raw: &str) -> Label {
                 Entity::Number(number) => match number.parse::<u32>().ok().and_then(char::from_u32)
                 {
                     Some(character) => {
-                        xml.push_str(&format!("&#{number};"));
+                        xml.push_str(&xml_references(&format!("&#{number};")));
                         plain.push(character);
                     }
                     None => push_literal(&mut xml, &mut plain, &format!("&#{number};")),
