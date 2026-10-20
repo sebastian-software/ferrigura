@@ -141,7 +141,7 @@ mod appearance {
     fn the_typed_view_carries_the_swimlane_section_and_the_resolved_appearance() {
         // The facade reads the typed configuration of the diagram (`View::resolve`): the top level
         // holds the resolved appearance, and the `swimlane` section its own defaults (`config.schema.yaml`
-        // 2315-2370).
+        // 2315-2370). The three layering defaults are the ones `config.spec.ts` 55-60 asserts.
         let typed = typed(&config_of(SWIMLANE, None)).expect("the configuration types");
         assert_eq!(typed.layout, "swimlane");
         assert_eq!(typed.look, "neo");
