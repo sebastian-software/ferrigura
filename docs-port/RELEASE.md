@@ -38,10 +38,11 @@ All crates share one version and are released together: a change in any crate is
 3. **Package contents.** crates.io takes at most 10 MB per crate. The tracked files of `ferrigura-swimlane` are 38.7 MB, of `ferrigura-cose` 11.9 MB, of `ferrigura-render` 9.6 MB and of `ferrigura-venn` 7.3 MB, almost all of it test corpora. Each crate gets an `include` list (its `src`, build script, fonts, licence and notice files, README) and is checked with `cargo package --list` and the size of the `.crate` file.
 4. **Versions on the path dependencies.** Every dependency between the crates is a `path` dependency today; for crates.io it needs `version = "0.1.0"` beside the path. release-please keeps these versions up to date from then on.
 5. **Metadata.** `publish = false` in `[workspace.package]` goes, per crate; each crate gets `readme`, and `ferrigura` and `ferrigura-cli` `keywords`, `categories` and `documentation`. The user documentation is in the crates' README files.
-6. **Licences in the packages.** Each crate's licence files go into its package: the ELK crate's EPL-2.0, the notices of `ferrigura-jsmath` and `ferrigura-path`, and in `ferrigura-text` the OFL texts of the faces and Twemoji's CC BY 4.0 attribution (`crates/ferrigura-text/NOTICE.md`). The `license` field of `ferrigura-text` then names the faces' licences beside MIT, as an SPDX expression.
+6. **Licences in the packages.** Each crate's licence files go into its package; the seven MIT crates without a licence file in their folder (`ferrigura`, `-model`, `-syntax`, `-render`, `-text`, `-cli`, `-node`) get one: the ELK crate's EPL-2.0, the notices of `ferrigura-jsmath` and `ferrigura-path`, and in `ferrigura-text` the OFL texts of the faces and Twemoji's CC BY 4.0 attribution (`crates/ferrigura-text/NOTICE.md`). The `license` field of `ferrigura-text` then names the faces' licences beside MIT, as an SPDX expression.
 7. **Well-formed XML.** The branch `sebastian/zealous-sutherland-8c49a9` makes every SVG well-formed XML (the xlink prefix, C4's quoted face, entities); it is merged before the release.
 8. **Browsers.** Safari 27 draws the colour emoji (spike `fallback-faces.md`, section 8). Firefox is not checked yet.
-9. **A dry run**: `cargo publish --workspace --dry-run` and `cargo doc` as docs.rs builds it (`cargo +nightly doc` with `--cfg docsrs` only if a crate uses it).
+9. **Docs**: `cargo doc --no-deps --workspace` warns 44 times in the internal crates (links to private items, a bare URL); docs.rs builds them as they are, and the warnings go before the release.
+10. **A dry run**: `cargo publish --workspace --dry-run` and `cargo doc` as docs.rs builds it (`cargo +nightly doc` with `--cfg docsrs` only if a crate uses it).
 
 ## How releases are made
 
