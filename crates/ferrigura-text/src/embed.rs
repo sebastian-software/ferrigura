@@ -125,7 +125,6 @@ fn same_face(a: &Face, b: &Face) -> bool {
 const COLLAPSED_WHITE_SPACE: [char; 3] = ['\n', '\r', '\t'];
 
 fn subset_characters(face: &Face, characters: &BTreeSet<char>) -> Result<Vec<u8>, TextError> {
-    let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
     let mut unicodes = IntSet::empty();
     for character in characters {
         unicodes.insert(u32::from(*character));
@@ -136,27 +135,62 @@ fn subset_characters(face: &Face, characters: &BTreeSet<char>) -> Result<Vec<u8>
     {
         unicodes.insert(u32::from(' '));
     }
+    // The name records 0 to 6 in English, which is what a browser needs for the family.
+    let mut name_ids = IntSet::empty();
+    name_ids.insert_range(NameId::from(0)..=NameId::from(6));
+    subset_data(face.data(), &unicodes, &name_ids)
+}
+
+/// Cuts a font file to the characters given, for the bundled faces (the cut `cut_font` names).
+///
+/// The cut keeps the name records 0 to 6, 13 and 14 in English, the licence records included, and
+/// otherwise the plan of [`subset_face`]: every script, the default layout features, the legacy
+/// `kern` table, the colour tables (COLR, CPAL) and no hinting.
+///
+/// # Errors
+///
+/// Returns an error if `data` does not parse as a font or subsetting fails.
+pub fn cut_font(
+    data: &[u8],
+    characters: impl IntoIterator<Item = char>,
+) -> Result<Vec<u8>, TextError> {
+    let mut unicodes = IntSet::empty();
+    for character in characters {
+        unicodes.insert(u32::from(character));
+    }
+    let mut name_ids = IntSet::empty();
+    name_ids.insert_range(NameId::from(0)..=NameId::from(6));
+    name_ids.insert(NameId::from(13));
+    name_ids.insert(NameId::from(14));
+    subset_data(data, &unicodes, &name_ids)
+}
+
+/// The subset of font `data` to `unicodes`, with the plan the embedded subsets and the bundled cuts
+/// share: every script, the default layout features, the legacy `kern` table and no hinting.
+fn subset_data(
+    data: &[u8],
+    unicodes: &IntSet<u32>,
+    name_ids: &IntSet<NameId>,
+) -> Result<Vec<u8>, TextError> {
+    let font = FontRef::new(data).map_err(|_| TextError::InvalidFont)?;
     // Every script and the default layout features, so kerning and ligatures are kept.
     let mut scripts = IntSet::empty();
     scripts.invert();
     let mut features = IntSet::empty();
     features.extend(DEFAULT_LAYOUT_FEATURES.iter().copied());
-    // The name records 0 to 6 in English, which is what a browser needs for the family.
-    let mut name_ids = IntSet::empty();
-    name_ids.insert_range(NameId::from(0)..=NameId::from(6));
     let mut languages = IntSet::empty();
     languages.insert(0x0409);
     // No table is dropped: the legacy `kern` table stays, as it does in the spike. Hinting goes.
     let no_tables: IntSet<Tag> = IntSet::empty();
     let plan = Plan::new(
         &IntSet::empty(),
-        &unicodes,
+        unicodes,
         &font,
         SubsetFlags::SUBSET_FLAGS_NO_HINTING,
         &no_tables,
         &scripts,
         &features,
-        &name_ids,
+        name_ids,
         &languages,
     );
     subset_font(&font, &plan).map_err(|error| TextError::Subset(error.to_string()))

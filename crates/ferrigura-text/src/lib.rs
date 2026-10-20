@@ -26,7 +26,7 @@ pub mod metrics;
 pub mod wrap;
 
 pub use bbox::{Extent, measure_box, measure_line_box};
-pub use embed::{EmbeddedFamily, embed_runs, subset_face};
+pub use embed::{EmbeddedFamily, cut_font, embed_runs, subset_face};
 pub use error::TextError;
 pub use fonts::{Face, FontFamily, FontStyle, FontWeight, face};
 pub use measure::{Run, fallback_runs, layout_width, measure, measure_data, measure_line};
