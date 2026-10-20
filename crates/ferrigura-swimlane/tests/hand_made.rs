@@ -156,13 +156,25 @@ fn non_default_options_are_refused_before_any_work() {
 }
 
 #[test]
-fn a_direction_outside_the_four_is_refused() {
-    let mut input = two_lanes();
-    input["direction"] = json!("TD");
-    let mut data = load(&input);
+fn a_direction_outside_the_four_lays_out_as_top_to_bottom() {
+    // `getSwimlaneDirection` keeps the string and every pass compares it with one of the four names
+    // (`layoutCore.ts` 10-13), so `BR`, which the flowchart parser keeps as written, is `TB`.
+    let mut top_to_bottom = load(&two_lanes());
+    let mut other = two_lanes();
+    other["direction"] = json!("BR");
+    let mut other = load(&other);
     assert_eq!(
-        run_swimlane_layout_core(&mut data),
-        Err(Error::UnknownDirection("TD".to_owned()))
+        run_swimlane_layout_core(&mut top_to_bottom),
+        Ok(Direction::TB)
+    );
+    assert_eq!(run_swimlane_layout_core(&mut other), Ok(Direction::TB));
+    assert_eq!(
+        format!("{:?}", other.nodes),
+        format!("{:?}", top_to_bottom.nodes)
+    );
+    assert_eq!(
+        format!("{:?}", other.edges),
+        format!("{:?}", top_to_bottom.edges)
     );
 }
 

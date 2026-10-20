@@ -29,7 +29,6 @@ const FALLBACK_RANK_SPACING: f64 = 100.0;
 /// # Errors
 ///
 /// [`Error::NonDefaultOption`] for `ignoreCrossLaneEdges: false` or `automaticLaneOrdering: true`;
-/// [`Error::UnknownDirection`] for a direction other than `TB`, `LR`, `BT` and `RL`;
 /// [`Error::NonAsciiId`] and [`Error::NotPrintableAscii`] for an id the collation is not ported for;
 pub fn run_swimlane_layout_core(data: &mut LayoutData) -> Result<Direction, Error> {
     let node_gap = data
@@ -56,12 +55,16 @@ pub fn run_swimlane_layout_core(data: &mut LayoutData) -> Result<Direction, Erro
         .as_ref()
         .and_then(|section| section.automatic_lane_ordering)
         .unwrap_or(false);
-    let direction = match data.direction.as_deref() {
-        None => Direction::TB,
-        Some(text) => {
-            Direction::parse(text).ok_or_else(|| Error::UnknownDirection(text.to_owned()))?
-        }
-    };
+    // `getSwimlaneDirection` takes the layout data's direction as it is, `TB` when there is none
+    // (`layoutCore.ts` 10-13), and every pass compares it with one of the four names, so another
+    // string, such as the `BR` that the flowchart parser keeps as written, lays out as `TB`
+    // (`postProcessing.ts` 51 and 59, `phase4.coordinates.ts` 22, `router.ts` 158,
+    // `materializedGeometry.ts` 759 and 887).
+    let direction = data
+        .direction
+        .as_deref()
+        .and_then(Direction::parse)
+        .unwrap_or(Direction::TB);
 
     check_default_path(ignore_cross_lane_edges, automatic_lane_ordering)?;
     check_ids(data)?;

@@ -14,8 +14,6 @@ pub enum Error {
     /// A string with a byte outside printable ASCII (0x20 to 0x7E), such as a control character. The
     /// collation of [`crate::js::locale_compare`] is ported for printable ASCII only.
     NotPrintableAscii(String),
-    /// The direction is not one of `TB`, `LR`, `BT` and `RL`, which `flowDb.ts` is the only producer of.
-    UnknownDirection(String),
 }
 
 impl fmt::Display for Error {
@@ -33,9 +31,6 @@ impl fmt::Display for Error {
                 f,
                 "the string {text:?} has a character outside printable ASCII; the collation is ported for printable ASCII only"
             ),
-            Error::UnknownDirection(direction) => {
-                write!(f, "the direction {direction:?} is not TB, LR, BT or RL")
-            }
         }
     }
 }
