@@ -54,6 +54,7 @@ descr
 distp
 distq
 divs
+dlopen
 docref
 DOMID
 domus
@@ -83,6 +84,7 @@ grammr
 graphtype
 halign
 htmllabels
+hypot
 iife
 instrumenter
 interp
@@ -101,6 +103,7 @@ layoutstop
 lcov
 LEFTOF
 Lexa
+libc
 libferrigura
 linebreak
 LINETYPE

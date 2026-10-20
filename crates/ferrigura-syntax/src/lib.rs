@@ -4,8 +4,7 @@
 //! and returns the diagram model of `ferrigura-model`. See `docs-port/decisions/0002` for why the
 //! parsers are written by hand on one lexer base.
 //!
-//! The crate covers the P1 and P2 diagram types and detects the P3 types whose parsers are not
-//! ported yet.
+//! The crate parses all 33 diagram families of Mermaid 12.2.0 (`docs-port/STATUS.md`).
 
 #![warn(missing_docs)]
 #![cfg_attr(

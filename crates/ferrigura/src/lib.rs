@@ -1,16 +1,4 @@
-//! ferrigura: renders Mermaid diagram text to SVG, without a browser.
-//!
-//! [`Renderer`] is the interface. It takes the configuration the user would pass to `initialize`
-//! once, when it is made, and resolves what its renders share: the configuration merged onto the
-//! defaults and typed, and both shipped themes as typed tokens. A render merges only the diagram's
-//! own front matter and directives on top of that, and only when there are any. [`render`] and
-//! [`render_with`] take the configuration with each call. They are a shorthand over a small cache of
-//! renderers, so a configuration that is rendered again is resolved once. The output is the same
-//! either way.
-//!
-//! The text goes in and an SVG document comes out. [`RenderOptions`] holds what is not Mermaid
-//! configuration: the id of the SVG and the colour scheme.
-
+#![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
 use std::borrow::Cow;
@@ -21,7 +9,6 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use ferrigura_model::config::{MermaidConfig, SiteConfig, typed};
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
-use ferrigura_model::value::Value;
 use ferrigura_render::RenderError;
 use ferrigura_render::agentflow::AgentflowSection;
 use ferrigura_render::block::BlockSection;
@@ -52,6 +39,8 @@ use ferrigura_syntax::{
     tree_view, treemap, use_case, venn, wardley, xychart,
 };
 
+/// The configuration and the values of Mermaid's `initialize` object, front matter and directives.
+pub use ferrigura_model::value::Value;
 pub use ferrigura_render::RenderError as Error;
 
 /// The colour scheme of the output.
@@ -108,7 +97,7 @@ pub struct RenderOptions {
 ///
 /// ```
 /// use ferrigura::{RenderOptions, Renderer};
-/// use ferrigura_model::value::Value;
+/// use ferrigura::Value;
 ///
 /// let renderer = Renderer::new(&Value::empty_object());
 /// let svg = renderer.render("pie\n  \"Dogs\" : 386\n  \"Cats\" : 85\n")?;

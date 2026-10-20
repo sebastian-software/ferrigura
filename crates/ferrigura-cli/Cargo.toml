@@ -1,6 +1,10 @@
 [package]
 name = "ferrigura-cli"
 description = "Render a Mermaid diagram file to SVG from the command line"
+readme = "README.md"
+keywords = ["mermaid", "diagram", "svg", "cli", "render"]
+categories = ["command-line-utilities", "visualization"]
+documentation = "https://docs.rs/ferrigura-cli"
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
