@@ -1,6 +1,6 @@
 # Swimlanes: the layout engine (P3 milestone)
 
-Status: the default path of the layout engine is ported in `crates/ferrigura-swimlane` and matches the reference corpus exactly, with two documented gaps in the sort (below). The parser and the DB are ported in `ferrigura-syntax` (section 9), on the flowchart's parser; the renderer is a later task. Research: [NOTES.md](NOTES.md), Part II (L0 to L8). Plan context: [../P3-PLAN.md](../P3-PLAN.md), decisions 2 and 3.
+Status: the default path of the layout engine is ported in `crates/ferrigura-swimlane` and matches the reference corpus exactly, with two documented gaps in the sort (below). The parser and the DB are ported in `ferrigura-syntax` (section 9), on the flowchart's parser, and the renderer in `ferrigura-render` (`swimlanes/`, `unified/swimlane_layout.rs`, `unified/swimlane_lane.rs`): 37 of the 46 fixtures and the probe are within tolerance, 9 are not compared (7 `handDrawn`, and the two with `ignoreCrossLaneEdges: false` or `automaticLaneOrdering: true`, whose layout code is not ported). Research: [NOTES.md](NOTES.md), Part II (L0 to L8). Plan context: [../P3-PLAN.md](../P3-PLAN.md), decisions 2 and 3.
 
 ## 1. The crate
 

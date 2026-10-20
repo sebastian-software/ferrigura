@@ -41,7 +41,7 @@ Together about 28,000 to 35,000 lines of Rust, of which swimlanes is a third.
 
 ### Decided by Sebastian on 2026-10-20
 
-1. **Swimlanes is finished next**: its parser and its renderer, on the layout engine already ported.
+1. **Swimlanes is finished next**: its parser and its renderer, on the layout engine already ported. Done on 2026-10-20 ([swimlanes/PLAN.md](./swimlanes/PLAN.md)).
 2. **handDrawn** comes later as a post-processing step over the finished SVG, not as a rough.js port inside each renderer. Until then its fixtures stay excluded.
 3. **Themes** stay as they are (the two redux themes). Before porting Mermaid's classic themes, consider themes as sets of CSS custom properties, which the output already declares (decision 0007), in place of their colour computations.
 4. **Math in labels** (KaTeX) is left out for now.
