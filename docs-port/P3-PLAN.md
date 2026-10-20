@@ -39,6 +39,11 @@ Together about 28,000 to 35,000 lines of Rust, of which swimlanes is a third.
 2. **Swimlanes is a milestone of its own**, running beside P3: its layout is a port the size of ELK Layered. P3 is the other eight types.
 3. **Collation.** The swimlane layout's `localeCompare` is a comparison of our own that gives ICU's root order exactly for ASCII; an ICU4X collator follows when ids outside ASCII need it.
 
+### Decided by Sebastian on 2026-10-20
+
+4. **Exclusions by coverage.** The geometry harness excludes a fixture only when its drawn text has a character that no bundled face covers, and the reason names the characters. The range list `UNCOVERED_SYMBOLS` is gone; the coverage is read from the bundled files (`tools/port/fonts/bundled.ts`). What no face draws stays excluded: CJK, kana, Arabic, the 34 emoji with emoji presentation that Twemoji lacks (for example U+1F6D8), and every symbol outside the faces. Characters in a tree view's box drawing are its syntax, not drawn text.
+5. **Two fallback faces, option B of [the fallback spike](./spikes/fallback-faces.md).** Twemoji Mozilla 0.7.0 (COLRv0, colour) for the emoji with emoji presentation that it covers: 1,185 code points, 820,656 bytes. Noto Sans Symbols 2 (OFL) for the text-default symbols of U+2600-27BF that it covers: 252 code points, 56,636 bytes. Both sides of the comparison set the characters in these faces, as the arrows are set: the reference's page maps the families it names onto them, so the widths of the bundled faces on both sides match by construction (the advances of the spike's table, section 5). The licences and the provenance are in `crates/ferrigura-text/NOTICE.md`. Before a release, Safari 27 has to be checked for the COLRv0 emoji: WebKit 26.5 draws them, Safari 27 is not measured.
+
 ## Stages
 
 1. **Research**: done, the nine `<type>/NOTES.md`.

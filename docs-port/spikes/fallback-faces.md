@@ -4,7 +4,7 @@
 
 **Answer in short.** The corpus uses only eleven emoji code points, one dingbat (U+2795), and no other symbol from U+2600-27BF. Noto Sans Symbols 2 (OFL) is the right face for the symbols in any case. For the emoji, a colour COLRv0 face works in Chromium and WebKit: Twemoji Mozilla (CC BY 4.0) is the smallest choice with a known coverage gap; OpenMoji (CC BY-SA 4.0) covers everything but is share-alike. Noto Color Emoji COLRv1 has the best advance (19.92 px against Apple's 20 px) and full coverage, but WebKit draws it wrong, so it is not safe for Safari. The decisions for Sebastian are at the end.
 
-Status: research only, nothing changed except this file; not committed. Date: 2026-10-20. Chromium 151.0.7922.34 (Playwright, launched as the harness launches it, `--font-render-hinting=none`), macOS. WebKit 26.5 (Playwright). Firefox and Linux not verified (see "Not verified").
+Status: research of 2026-10-20. The option B faces were built the same day, on Sebastian's decision (section 7). Date: 2026-10-20. Chromium 151.0.7922.34 (Playwright, launched as the harness launches it, `--font-render-hinting=none`), macOS. WebKit 26.5 (Playwright). Firefox and Linux not verified (see "Not verified").
 
 ## 1. Inventory
 
@@ -125,7 +125,7 @@ Consequence: COLRv0 is the colour format that works in both engines probed. COLR
 
 ## 5. Measurement parity
 
-The harness already makes the reference measure in the bundled face: `MAPPED_FAMILIES` (`common.ts:413`) names the families the reference uses, `arrowFaces` (`common.ts:447`) adds the arrows face under each of those names with `unicode-range: U+2190-21FF`, and both sides then measure the same face. Proposed, not implemented: the same pattern for emoji and symbols. The reference page would add, for each mapped family, `@font-face` rules for the emoji face with a `unicode-range` covering the emoji-presentation code points, and the symbols face for U+2600-27BF. Ferrigura would cut runs the same way (see below).
+The harness already makes the reference measure in the bundled face: `MAPPED_FAMILIES` (`common.ts:413`) names the families the reference uses, `arrowFaces` (`common.ts:447`) adds the arrows face under each of those names with `unicode-range: U+2190-21FF`, and both sides then measure the same face. Implemented on 2026-10-20 (section 7): the same pattern for the emoji and the text symbols. The reference page would add, for each mapped family, `@font-face` rules for the emoji face with a `unicode-range` covering the emoji-presentation code points, and the symbols face for U+2600-27BF. Ferrigura would cut runs the same way (see below).
 
 Probe: `scratchpad/browser-probe/parity-probe.mjs`, Chromium 151, same stack, pinned as above. Advances at 16 px:
 
@@ -140,7 +140,7 @@ Probe: `scratchpad/browser-probe/parity-probe.mjs`, Chromium 151, same stack, pi
 
 Pinning works: the pinned rows draw the pinned face (CDP names it), and the emoji width equals that face's advance. So the widths can match within tolerance by construction, as the Lexica and arrows mappings already do. This changes what the comparison checks: the emoji widths then agree with the bundled face, not with Apple Color Emoji. Visually, the output differs from macOS Mermaid for every emoji by the difference in the table (Noto COLRv1 -0.08 px, OpenMoji +0.6 px, Twemoji -4 px).
 
-Ferrigura side, for the same parity (what the code needs; nothing changed):
+Ferrigura side, for the same parity (what the code needed on 2026-10-20; built in section 7):
 
 - `fallback_runs` (`crates/ferrigura-text/src/measure.rs:36`) splits a run where the family lacks a character and the symbol face has it; it knows one symbol family, the arrows face. It needs a second and a third fallback family, in this order: the symbols face (U+2600-27BF, non-emoji-presentation code points), then the emoji face (emoji-presentation code points). A family list whose emoji face has text-default symbols would draw U+2665 and U+26A0 in colour; the Noto and OpenMoji faces cover them (checked: Noto COLRv1 covers U+2600, U+2665, U+26A0, U+260E, U+2702, U+2714, U+2728, U+27A1, U+2764), and Chromium on macOS draws them as text. So the emoji face must be limited to the `Emoji_Presentation` code points, which the subset also needs to be.
 - Order hazard: Noto Sans Symbols 2 covers 202 emoji-presentation code points, among them U+1F4E6 (in the corpus) and U+1F7E0-1F7E1 (in the corpus). If it comes first, those draw in monochrome, while the reference draws colour. Either the emoji face comes first for emoji-presentation code points, or the symbols face is restricted to the code points it draws as text.
@@ -193,3 +193,43 @@ Decisions for Sebastian:
 ## Reproduce
 
 Scratchpad (session-specific, not committed): `scratchpad/scripts/fontsinv/` (`cmap.py`, `ttfinfo.py`, `inventory.py`, `harness-exclusions.ts`, `chromium-probe.mjs`, `blocks.py`), `scratchpad/subset-probe/` (skera subsetter; outputs in `scratchpad/subset-out/`, sizes in `sizes.txt`), `scratchpad/browser-probe/` (`make_pages.py`, `run-browsers.mjs`, `parity-probe.mjs`, `montage.html`), downloads in `scratchpad/fonts-dl/candidates-1/`.
+
+## 7. What was built (2026-10-20)
+
+Sebastian chose option B on 2026-10-20 ([P3-PLAN decision 5](../P3-PLAN.md#decided-by-sebastian-on-2026-10-20)). Built on `sebastian/fonts-research`, in three commits, then this note:
+
+- `80dda9a3d` cuts the two faces from their sources, with the licences and `crates/ferrigura-text/NOTICE.md`.
+- `90ce0eddf` falls back to them in `ferrigura-text`.
+- `79971e9fc` makes the geometry harness exclude a fixture only for a character no bundled face covers.
+
+**Faces.** Both are cut by `pnpm port:cut-fonts -- <dir>` from the four source files, after a SHA-256 check of each. A second cut is byte-identical (`--check`).
+
+| Bundled file                                                           |                             Code points |   Bytes | Colour and layout tables | Typical subset                                        |
+| ---------------------------------------------------------------------- | --------------------------------------: | ------: | ------------------------ | ----------------------------------------------------- |
+| `TwemojiMozilla-COLRv0-Emoji.ttf` (Twemoji Mozilla 0.7.0)              |     1,185 emoji with emoji presentation | 820,656 | COLR and CPAL kept       | 2,160 bytes for the three emoji of a sample flowchart |
+| `NotoSansSymbols2-Regular-TextSymbols.ttf` (Noto Sans Symbols 2 2.003) | 252 text-default symbols of U+2600-27BF |  56,636 | GPOS and GSUB kept       | 2,224 bytes for the six symbols of the same flowchart |
+
+The 34 emoji with emoji presentation that Twemoji lacks (U+1F6D8, U+1FA75, and others) are in neither face. A viewer draws them with a system font, and the harness excludes a fixture that has one.
+
+**Fallback order** (`fallback_runs`, `embed_runs`): the text's own face (Lexica, or Atkinson Mono for code), then the arrows (Noto Sans Math, U+2190-21FF), then the text symbols, then the emoji. The three fallback faces cover disjoint code points, so the order decides nothing among them. A text symbol such as U+2665 or U+26A0 is never set in the emoji face. A diagram embeds only the glyphs it draws, and a text names its fallback subsets after its own, in that order. The arrows keep their family suffix `symbols`, so the names of existing diagrams do not change.
+
+**Widths on both sides.** The reference's page maps the families it names (and the forced font family, and the wardley map's family) onto the same files, each with its code points as `unicode-range`. The advances match by construction: Noto Sans Symbols 2 gives U+2665 11.84 px and U+2605 15.36 px at 16 px (Chromium: 11.844 and 15.375, after 1/64 px rounding), and Twemoji gives 16 px for an emoji. An emoji is therefore 16 px wide here, 4 px narrower than the 20 px of Apple Color Emoji that macOS Mermaid uses. This is the visible cost of option B (section 6, decision 3).
+
+**Harness.** `tools/port/fonts/bundled.ts` reads the coverage of the bundled files from their `cmap`. A fixture is excluded only when its drawn text has a character no bundled face covers, and the reason names it. The range list `UNCOVERED_SYMBOLS` is gone. In a tree view the box-drawing characters are its syntax, not drawn text.
+
+Against the harness before this change, eight fixtures are now compared that were excluded: four ER fixtures with `relationships-with-unicode-text`, the mindmap fixture with emoji, two tree-view fixtures and the treemap fixture. None was compared before and is excluded now. The ER fixtures with kana and CJK compatibility (U+307C, U+3315) and the flowchart with CJK ideographs stay excluded, as the rule names CJK and kana.
+
+**Results.** `pnpm port:geometry` for the 32 types and `pnpm port:geometry-pie`, `port:geometry-flowchart`: every compared fixture and probe is within 0.05 px, with none outside. Against the counts before this change, eight fixtures are compared that were excluded: ER 4 more (155 to 159 in STATUS), mindmap 1 more, tree view 2 more, treemap 1 more. None is excluded that was compared. The four ER fixtures with kana and CJK compatibility (U+307C, U+3315) and the flowchart with CJK ideographs stay excluded, so 8 of the 13 fixtures the research counted are compared. Compared with the exclusion list of the research at HEAD (224 entries, both rules), the exclusion of every other fixture is the same. The totals of the other types are sequence 193, class 180, state 140, gantt 52, timeline 30, gitgraph 135, journey 18, info 2, flowchart 298 (its specialised harness: 298 within, the ELK input equal in all 298), pie 24, block 58, packet 29, xychart 47, sankey 48, quadrant chart 30, requirement 146, c4 32, ishikawa 28, eventmodeling 39, usecase 31, venn 32, wardley 22, radar 26, railroad 42, cynefin 23, agentflow 51, architecture 46, kanban 30. STATUS still lists architecture 45 and kanban 29. The exclusion check shows no change for either type, and I did not trace where the older figures came from. Swimlanes exits 1 as before: its parser is not ported (a milestone of its own), so nothing is compared.
+
+**Corpus.** `compare-p3.sh <worktree> faces jsm` renders the 2,336 corpus inputs under three configurations and four colour schemes (28,032 renders) and compares each with the jsm baseline. 180 renders differ, and they belong to 15 inputs (12 renders each): 13 inputs outside the P3 fixtures (12 ER fixtures and one treemap fixture, 156 renders) and two tree-view fixtures (24 renders, P3). Each of the 15 has a code point of the new faces, checked against the `cmap` of the two bundled faces (`U+1F600`, `U+2795`, `U+1F534`, `U+1F7E0`, `U+1F7E1`, `U+1F3A8`, `U+1F4DD`, `U+1F4E6`, `U+1F680`, `U+1F493`). The corpus cannot show the mindmap emoji fixture: its corpus configuration sets the theme font (`Recursive Variable`), and its corpus render has no `@font-face` at all, so its render is unchanged in all twelve configurations. I did not trace why ferrigura embeds nothing in that configuration. The geometry harness forces the bundled font and does compare that fixture.
+
+**Differentials.** All 42 `pnpm port:diff` runs exit 0 with no difference: the 33 types (pie, info, flowchart, timeline, journey, gitgraph, er, class, sequence, state, gantt, mindmap, block, packet, xychart, sankey, quadrantChart, requirement, c4, kanban, architecture, treemap, ishikawa, eventmodeling, agentflow, cynefin, radar, railroad, swimlanes, treeView, usecase, venn, wardley), the six `-data` runs, `config`, `yaml` and `theme`. The counts are the inputs the reference accepts, as the runner reports them; swimlanes has 69 inputs that are not yet ported (no parser or exporter), so the reference is not run on them.
+
+**Gates.** `cargo fmt --all --check` passes. `cargo clippy --workspace --all-targets -- -D warnings` passes. `cargo test --workspace --no-fail-fast`: 241 suites, 6,092 passed, 0 failed, 170 ignored. `pnpm exec prettier --check .` passes. `pnpm exec vitest run tools/port/geometry/coverage.test.ts` passes (12 tests).
+
+**Open.**
+
+- Safari 27 has not been measured. WebKit 26.5 draws the COLRv0 emoji and the text symbols; Safari 27 has to be checked before a release.
+- Firefox is not measured (see section 4).
+- The source of Noto Sans Symbols 2 is recorded as the file's SHA-256 and the date (2026-10-20), not a commit: the commit was not noted when the file was fetched.
+- CJK, kana, Arabic and the other emoji stay excluded. Fallback fonts for them are not part of this step.
