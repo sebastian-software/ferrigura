@@ -262,7 +262,7 @@ export interface MermaidConfig {
   /**
    * Specifies the font to be used in the rendered diagrams.
    * Can be any possible CSS `font-family`.
-   * See https://developer.mozilla.org/en-US/docs/Web/CSS/font-family
+   * See <https://developer.mozilla.org/en-US/docs/Web/CSS/font-family>
    *
    */
   fontFamily?: string;
