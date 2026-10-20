@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 
+import { generateSwimlanes } from '../../crates/ferrigura-swimlane/tools/generate-swimlanes.ts';
+
 /**
  * Explicit inputs of the differential run, added to the ones the reference already tests.
  *
@@ -67,6 +69,17 @@ export const undetectedCases: Record<string, string[]> = {
   kanban: ['KANBAN\n  a\n', 'Kanban\n  a\n'],
   // The empty text has no header to detect: the reference and ferrigura give no type for it.
   radar: [''],
+  // Detection is `/^\s*swimlane-beta\b/` (`swimlanes/detector.ts`): a capitalised keyword, a
+  // letter, a digit or `_` after it, or a keyword with no dash, is no swimlane diagram, and no other
+  // detector takes these texts either, so the configuration run expects no scope for them.
+  swimlanes: [
+    'Swimlane-beta TD\n  A --> B',
+    'swimlane-betax TD\n  A --> B',
+    'swimlane-beta_x TD\n  A --> B',
+    'swimlane-beta1\n  A --> B',
+    'swimlanebeta TD\n  A --> B',
+    'swimlane TD\n  A --> B',
+  ],
   // Detection is case-sensitive (`architecture/architectureDetector.ts`): a capitalised keyword is
   // not an architecture diagram, and the grammar is never reached.
   architecture: ['Architecture-beta\nservice a(server)[A]\n', 'arch\nservice a(server)[A]\n'],
@@ -1004,7 +1017,107 @@ export const explicitCases: Record<string, string[]> = {
     'railroad-beta\naccDescr {\n    line one\n    line two\n}\nr = terminal("a") ;',
     '%%{init: {"theme": "forest"}}%%\nrailroad-beta\nr = terminal("a") ;',
   ],
-  swimlanes: [],
+  // cspell:ignore swimlanebeta asym Ünïcode
+  // The swimlane diagram is the flowchart's parser and DB with the `swimlane-beta` header
+  // (`flow.jison` 116, `diagrams/swimlanes/swimlanesDiagram.ts`). The probes cover the header and its
+  // direction, the lanes (subgraphs, loose nodes, repeated and nested ids), the edges and shapes the
+  // flowchart reads, the texts and the interactions, the front matter and the directives, the limit
+  // of 500 edges, and the rejections. The seeded diagrams of the layout corpus follow the list.
+  swimlanes: [
+    // Header and direction (`flow.jison` `dir` state).
+    'swimlane-beta TD;A-->B;',
+    'swimlane-beta LR;A-->B;',
+    'swimlane-beta\n  a-->b',
+    'swimlane-beta',
+    'swimlane-beta\n',
+    'swimlane-beta TD',
+    'swimlane-beta BT\n  a-->b',
+    'swimlane-beta RL\n  a-->b',
+    'swimlane-beta TB\n  a-->b',
+    'swimlane-beta >\n  a-->b',
+    'swimlane-beta <\n  a-->b',
+    'swimlane-beta ^\n  a-->b',
+    'swimlane-beta v\n  a-->b',
+    'swimlane-beta BR\n  a-->b',
+    'swimlane-beta LR  \n  a-->b',
+    'swimlane-beta-x\n  a-->b',
+    'swimlane-beta:\n  a-->b',
+    'swimlane-beta\n  graph TD\n  a-->b',
+    'swimlane-beta TD\r\n  a-->b\r\n',
+    'swimlane-beta TD\n\n\n  a-->b',
+    // Lanes: subgraphs, loose nodes, titles, nesting and repeated ids.
+    'swimlane-beta LR\n  subgraph A [Lane A]\n    a1[Start] --> a2(Next)\n  end\n  subgraph B [Lane B]\n    b1{Check} --> b2((Done))\n  end\n  a2 --> b1',
+    'swimlane-beta TD\n  subgraph L\n  end',
+    'swimlane-beta TD\n  subgraph\n  a\n  end',
+    'swimlane-beta TD\n  subgraph one ["Quoted title"]\n    a\n  end\n  subgraph two\n    b\n  end',
+    'swimlane-beta TD\n  subgraph s1\n    direction LR\n    a --> b\n  end',
+    'swimlane-beta TD\n  a --> b\n  subgraph X\n    c\n  end\n  b --> c',
+    'swimlane-beta TD\n  subgraph A\n    subgraph B\n      x\n    end\n  end',
+    'swimlane-beta TD\n  end',
+    'swimlane-beta TD\n  subgraph A\n  a --> b',
+    'swimlane-beta TD\n  subgraph A\n    a\n  end\n  subgraph A\n    b\n  end',
+    'swimlane-beta TD\n  subgraph A[Lane]\n    a\n  end\n  a --> b',
+    'swimlane-beta TD\n  subgraph s["<b>T</b>"]\n    a\n  end',
+    // Edges (`flow.jison` link tokens).
+    'swimlane-beta TD\n  a -- label --> b',
+    'swimlane-beta TD\n  a -->|label| b',
+    'swimlane-beta TD\n  a -.-> b',
+    'swimlane-beta TD\n  a ==> b',
+    'swimlane-beta TD\n  a ~~~ b',
+    'swimlane-beta TD\n  a --- b',
+    'swimlane-beta TD\n  a --o b\n  a --x c',
+    'swimlane-beta TD\n  a <--> b',
+    'swimlane-beta TD\n  a e1@--> b\n  e1@{ animate: true }',
+    'swimlane-beta TD\n  a & b --> c & d',
+    'swimlane-beta TD\n  a --> b --> c',
+    'swimlane-beta TD\n  a --> b\n  a --> b',
+    'swimlane-beta TD\n  a --> a',
+    'swimlane-beta TD\n  a ----> b',
+    // Shapes.
+    'swimlane-beta TD\n  a[Square] --> b(Round) --> c{Diamond}',
+    'swimlane-beta TD\n  a{{hex}} --> b([stadium]) --> c[(cylinder)] --> d((circle))',
+    'swimlane-beta TD\n  a@{ shape: notch-pent } --> b@{ shape: cyl, label: "x" }',
+    'swimlane-beta TD\n  a@{ shape: foo } --> b',
+    'swimlane-beta TD\n  a[/trap/] --> b[\\inv\\]',
+    'swimlane-beta TD\n  a(-ellipse-)',
+    'swimlane-beta TD\n  a>asym]',
+    // Texts and markup.
+    'swimlane-beta TD\n  a["<b>bold</b> & <script>x</script>"] --> b',
+    'swimlane-beta TD\n  a["`**md**`"] --> b',
+    'swimlane-beta TD\n  a["line<br/>two"] --> b',
+    'swimlane-beta TD\n  a["Ünïcode 日本"] --> b',
+    'swimlane-beta TD\n  a["&amp; &#35;"] --> b',
+    // Styling and interactions.
+    'swimlane-beta TD\n  classDef cls fill:#f9f\n  class a cls\n  a:::cls --> b',
+    'swimlane-beta TD\n  style a fill:#f9f,stroke:#333\n  a --> b',
+    'swimlane-beta TD\n  linkStyle 0 stroke:red\n  a --> b',
+    'swimlane-beta TD\n  linkStyle default interpolate linear\n  a --> b',
+    'swimlane-beta TD\n  a --> b\n  click a "https://example.com" "tip"',
+    'swimlane-beta TD\n  click a call fn()',
+    'swimlane-beta TD\n  a --> b\n  click a href "javascript:x"',
+    'swimlane-beta TD\n  a --> b\n  click a href "https://example.com" _blank',
+    'swimlane-beta TD\n  accTitle: Lanes\n  accDescr: Two lanes',
+    'swimlane-beta TD\n  accDescr {\n    multi line\n  }',
+    'swimlane-beta TD\n  accTitle:',
+    // Front matter, directives and comments.
+    '---\ntitle: FM title\n---\nswimlane-beta TD\n  a-->b',
+    '---\nconfig:\n  swimlane:\n    layout: elk\n---\nswimlane-beta LR\n  a-->b',
+    '---\nconfig:\n  flowchart:\n    curve: linear\n---\nswimlane-beta TD\n  a-->b',
+    '%%{init: {"flowchart": {"curve": "step"}}}%%\nswimlane-beta TD\n  a-->b',
+    '%% a comment\nswimlane-beta TD\n  a-->b %% trailing',
+    'swimlane-beta TD\n  %% comment\n  a-->b',
+    'swimlane-beta TD\n  a --> b;\n  c --> d;',
+    'swimlane-beta TD\n  a --> b; c --> d',
+    'swimlane-beta TD\n  title Lanes\n  a-->b',
+    // Limits and rejections.
+    'swimlane-beta TD\n' + Array.from({ length: 501 }, () => 'a-->b').join('\n'),
+    'swimlane-beta TD\n  a -->',
+    'swimlane-beta TD\n  --> b',
+    'swimlane-beta TD\n  a[ --> b',
+    'swimlane-beta TD\n  a -- x --',
+    // The seeded diagrams of the layout corpus (`crates/ferrigura-swimlane`, seed 20261018).
+    ...generateSwimlanes().map((diagram) => diagram.text),
+  ],
   treeView: [
     // cspell:ignore ntitlepage Ärger
     // The probes of docs-port/tree-view/NOTES.md, section 2 (the parser, the DB and the preprocessing),

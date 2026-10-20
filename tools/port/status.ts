@@ -151,7 +151,7 @@ const suites: Record<string, string[]> = {
     'railroad_db_spec',
     'render:railroad_render_spec',
   ],
-  swimlanes: [],
+  swimlanes: ['swimlanes_spec', 'swimlanes_parser_spec', 'swimlanes_lane_palette_spec'],
   treeView: [
     'tree_view_parser_spec',
     'tree_view_db_spec',
