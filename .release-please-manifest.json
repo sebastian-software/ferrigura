@@ -1,14 +1,3 @@
 {
-  "crates/ferrigura": "0.0.0",
-  "crates/ferrigura-cli": "0.0.0",
-  "crates/ferrigura-cose": "0.0.0",
-  "crates/ferrigura-elk": "0.0.0",
-  "crates/ferrigura-jsmath": "0.0.0",
-  "crates/ferrigura-model": "0.0.0",
-  "crates/ferrigura-path": "0.0.0",
-  "crates/ferrigura-render": "0.0.0",
-  "crates/ferrigura-swimlane": "0.0.0",
-  "crates/ferrigura-syntax": "0.0.0",
-  "crates/ferrigura-text": "0.0.0",
-  "crates/ferrigura-venn": "0.0.0"
+  ".": "0.0.0"
 }

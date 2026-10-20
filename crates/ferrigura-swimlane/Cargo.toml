@@ -2,12 +2,15 @@
 name = "ferrigura-swimlane"
 description = "The swimlane layout ported from Mermaid 12.2.0's swimlanes layout engine: the Sugiyama phases, the orthogonal router and the geometry passes (MIT)"
 readme = "README.md"
-include = ["src/**", "Cargo.toml", "README.md", "LICENSE*", "NOTICE.md"]
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md"]
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
 license = "MIT"
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/ferrigura-swimlane"
+keywords = ["ferrigura", "swimlane", "layout", "diagram", "sugiyama"]
 publish.workspace = true
 
 [dependencies]
@@ -17,3 +20,10 @@ serde_json.workspace = true
 
 [dev-dependencies]
 serde.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true

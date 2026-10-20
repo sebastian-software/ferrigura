@@ -1,70 +1,13 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "release-type": "rust",
   "bootstrap-sha": "e0ed18b5fbd68f7b6a34fd72ab61a1e1ca5e7c60",
-  "bump-minor-pre-major": true,
-  "separate-pull-requests": false,
+  "release-type": "rust",
   "include-component-in-tag": true,
-  "plugins": [
-    {
-      "type": "cargo-workspace",
-      "merge": false
-    },
-    {
-      "type": "linked-versions",
-      "groupName": "ferrigura",
-      "components": [
-        "ferrigura",
-        "ferrigura-cli",
-        "ferrigura-cose",
-        "ferrigura-elk",
-        "ferrigura-jsmath",
-        "ferrigura-model",
-        "ferrigura-path",
-        "ferrigura-render",
-        "ferrigura-swimlane",
-        "ferrigura-syntax",
-        "ferrigura-text",
-        "ferrigura-venn"
-      ]
-    }
-  ],
+  "bump-minor-pre-major": true,
   "packages": {
-    "crates/ferrigura": {
-      "component": "ferrigura"
-    },
-    "crates/ferrigura-cli": {
-      "component": "ferrigura-cli"
-    },
-    "crates/ferrigura-cose": {
-      "component": "ferrigura-cose"
-    },
-    "crates/ferrigura-elk": {
-      "component": "ferrigura-elk"
-    },
-    "crates/ferrigura-jsmath": {
-      "component": "ferrigura-jsmath"
-    },
-    "crates/ferrigura-model": {
-      "component": "ferrigura-model"
-    },
-    "crates/ferrigura-path": {
-      "component": "ferrigura-path"
-    },
-    "crates/ferrigura-render": {
-      "component": "ferrigura-render"
-    },
-    "crates/ferrigura-swimlane": {
-      "component": "ferrigura-swimlane"
-    },
-    "crates/ferrigura-syntax": {
-      "component": "ferrigura-syntax"
-    },
-    "crates/ferrigura-text": {
-      "component": "ferrigura-text"
-    },
-    "crates/ferrigura-venn": {
-      "component": "ferrigura-venn"
+    ".": {
+      "component": "ferrigura",
+      "changelog-path": "crates/ferrigura/CHANGELOG.md"
     }
   }
 }

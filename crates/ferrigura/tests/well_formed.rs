@@ -97,7 +97,7 @@ enum Outcome {
 
 #[test]
 fn every_rendered_svg_is_well_formed_xml() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut files = Vec::new();
     for folder in CORPUS {
         collect(&root.join(folder), &mut files);
@@ -147,7 +147,7 @@ fn every_rendered_svg_is_well_formed_xml() {
         if let Outcome::Rendered(error) = outcome {
             rendered += 1;
             if let Some(error) = error {
-                let name = files[*index].strip_prefix(&root).unwrap_or(&files[*index]);
+                let name = files[*index].strip_prefix(root).unwrap_or(&files[*index]);
                 failures.push(format!("{}: {error}", name.display()));
             }
         }
