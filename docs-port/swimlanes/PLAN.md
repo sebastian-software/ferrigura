@@ -1,6 +1,6 @@
 # Swimlanes: the layout engine (P3 milestone)
 
-Status: the default path of the layout engine is ported in `crates/ferrigura-swimlane` and matches the reference corpus exactly, with two documented gaps in the sort (below). The parser and the renderer are later tasks. Research: [NOTES.md](NOTES.md), Part II (L0 to L8). Plan context: [../P3-PLAN.md](../P3-PLAN.md), decisions 2 and 3.
+Status: the default path of the layout engine is ported in `crates/ferrigura-swimlane` and matches the reference corpus exactly, with two documented gaps in the sort (below). The parser and the DB are ported in `ferrigura-syntax` (section 9), on the flowchart's parser; the renderer is a later task. Research: [NOTES.md](NOTES.md), Part II (L0 to L8). Plan context: [../P3-PLAN.md](../P3-PLAN.md), decisions 2 and 3.
 
 ## 1. The crate
 
@@ -108,3 +108,39 @@ Gates: `cargo fmt --all --check`; `cargo clippy --workspace --all-targets -- -D 
 - A cycle of parents in the lanes: the reference recurses without end; the port visits each node once and does not fail. A flowchart cannot produce one.
 - NaN in the input: JSON cannot carry NaN, so only a direct call can reach the NaN paths. They follow the JavaScript semantics, and no test covers them.
 - The random layouts checked during the router's work were run through the Node-run reference, not Chromium. The same caveat as for the sort applies to them.
+
+## 9. The parser, the DB and the model
+
+The reference's swimlane diagram is the flowchart's factory with its own styles (`diagrams/swimlanes/swimlanesDiagram.ts`, `createFlowDiagram`). Its parser is `flow.jison`, its DB `flowDb.ts`, and the keyword is one more graph word (`flow.jison` 116). So the port reuses the flowchart's, and the swimlane code is the header, the detection and the model:
+
+| Piece                                                                                                                      | Where                                                           |
+| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Parser: the flowchart's `parse`, with the `swimlane-beta` header                                                           | `crates/ferrigura-syntax/src/swimlanes.rs`                      |
+| Detection: `/^\s*swimlane-beta\b/` (`detector.ts:8`)                                                                       | `crates/ferrigura-syntax/src/lib.rs` (`DiagramType::Swimlanes`) |
+| Model: the flowchart model, as a type alias                                                                                | `crates/ferrigura-model/src/swimlanes.rs`                       |
+| Exporter: `detectType`, then the flowchart DB (`flowchart-model.ts`)                                                       | `tools/port/export-swimlanes.ts`                                |
+| The differential's inputs: the 46 fixtures, the spec and doc literals, the probes, and the 60 seeded diagrams of section 5 | `tools/port/cases.ts` (`swimlanes`)                             |
+
+**Result.** `pnpm port:diff swimlanes`: 216 inputs, 195 accepted by the reference (46 fixtures, 10 spec literals, 13 doc blocks, 126 explicit inputs), 21 rejected on both sides, 0 differences. The configuration run covers the 216 inputs in the `swimlane` scope, with no difference. The flowchart run (783 inputs) is unchanged.
+
+### 9.1 What the port reproduces
+
+1. **The detector decides the type, not the keyword.** `/^\s*swimlane-beta\b/` ends at a word boundary: `swimlane-beta-x` is a swimlane diagram, and its `-x` is then a lexical error (both sides); `swimlane-betax`, `swimlane-beta_x`, `swimlane-beta1`, `Swimlane-beta` and `swimlane` are not (`cases.ts`, the undetected list). The flowchart's lexer rule `"swimlane-beta"` (`flow.jison` 116) has no `\b`, which is why the detector is the one that guards it.
+2. **The header is a graph word.** The `dir` state reads `LR`, `RL`, `TB`, `BT`, `TD`, `BR`, `<`, `>`, `^` and `v`; `TD` is stored as `TB` (`flowDb.ts`, `setDirection`), `BR` is kept as written, and a header with no direction is `TB` (`NODIR`). `swimlane-beta TD;A-->B;` on one line is accepted.
+3. **A lane is a subgraph.** The parser has no lane concept (NOTES section 2). The DB's subgraphs are the lanes: the title is the subgraph's, a nested lane closes before its parent and is listed by it, a repeated id merges into its first position (`flowDb.ts`, `addSubGraph`), and a subgraph's members list a chain's later nodes first (`A1[Start] --> A2(Next)` gives `[a2, a1]`).
+4. **A node outside every lane is a vertex in no subgraph.** The layout's synthesised default lane (`helpers.ts`) is the renderer's, so the model has no lane for it.
+5. **Rejections on both sides.** A `subgraph` with no id (the reference throws a `TypeError` while it parses), an unclosed lane, a stray `end`, a link with no end, an unknown shape (`No such shape`), a `linkStyle` before the first edge (a `TypeError` in the reference), a trailing `%%` comment after an edge on the same line, and more than 500 edges (`maxEdges`, `flowDb.ts` 330). The reference's messages are not ferrigura's (decision 0002).
+6. **Sanitising** is the flowchart's: node, edge, lane and title texts are DOMPurify's (`canonical-model.md`, Sanitisation).
+
+### 9.2 What is not in the model, and open questions
+
+- **Configuration.** The swimlane section and the appearance layers (`config.ts` 79-107) are the configuration's (`docs-port/typed-views.md`). `layout`, `look` and `theme` reach the typed view through `effective` with the `swimlane` scope, as the configuration run shows. No facade change was needed.
+- **`flowchart.inheritDir`.** The reference's DB gives a subgraph the direction of its parent when the key is true (`flowDb.ts` 721-725, read from `getConfig()`). The Rust DB reads no such key, and neither exporter applies a directive's configuration, so the differential does not reach it. No swimlane fixture sets it. This is the flowchart's gap, and it stays open.
+- **The layout's data** (`getData`, the lanes' sizes and positions, `helpers.prepareLayout`) is the renderer stage, as section 7 says.
+
+### 9.3 The specs
+
+- `crates/ferrigura-syntax/tests/swimlanes_spec.rs`: the five layout resolutions of `swimlanesDiagram.spec.ts`, the detection of `mermaidAPI.spec.ts` and `diagram-orchestration.spec.ts`, the swimlane rows of `config.appearance.spec.ts` and the typed view of the swimlane section (14 tests, passing).
+- `crates/ferrigura-syntax/tests/swimlanes_parser_spec.rs`: the parser decisions of section 9.1, with the reference's outputs as the expectations (11 tests, passing). `flow.spec.js`'s "should accept swimlane-beta as a graph keyword" is `should_accept_swimlane_beta_as_a_graph_keyword` in `flowchart_flow_spec.rs`.
+- `crates/ferrigura-syntax/tests/swimlanes_lane_palette_spec.rs`: the seven test names of `lanePalette.spec.ts`, ignored with the reason "renderer stage" (the lane stylesheet is the renderer's).
+- `tools/port/status.ts` lists the three suites. The `docs-port/STATUS.md` table is not rewritten here.
