@@ -10,7 +10,6 @@
     "./.build/*.ts",
     "./.esbuild/**/*.ts",
     "./.vite/*.ts",
-    "./playwright.config.ts",
     "./scripts",
     "./crates/ferrigura-elk/tools",
     "./crates/ferrigura-cose/tools",
