@@ -117,7 +117,7 @@ checksum = "00d174d5400e5e8fd687ad1049e2f578285fa914201b1af7e8b112a4546bd826"
 
 [[package]]
 name = "ferrigura"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ferrigura-model",
  "ferrigura-render",
@@ -128,7 +128,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-cli"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ferrigura",
  "ferrigura-model",
@@ -137,7 +137,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-cose"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ferrigura-jsmath",
  "serde",
@@ -146,7 +146,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-elk"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "indexmap",
  "serde",
@@ -155,11 +155,11 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-jsmath"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "ferrigura-model"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "regex",
  "serde",
@@ -169,7 +169,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-node"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ferrigura",
  "ferrigura-model",
@@ -181,7 +181,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-path"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ferrigura-jsmath",
  "serde",
@@ -190,7 +190,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-render"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "base64",
  "ferrigura-cose",
@@ -210,7 +210,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-swimlane"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ferrigura-jsmath",
  "indexmap",
@@ -220,7 +220,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-syntax"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ferrigura-model",
  "indexmap",
@@ -232,7 +232,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-text"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "base64",
  "harfrust",
@@ -244,7 +244,7 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-venn"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ferrigura-jsmath",
  "serde",

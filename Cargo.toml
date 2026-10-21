@@ -4,7 +4,7 @@
 [package]
 name = "ferrigura"
 description = "Render Mermaid diagram text to SVG, without a browser"
-version = "0.0.0"
+version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -63,9 +63,9 @@ name = "well_formed"
 path = "crates/ferrigura/tests/well_formed.rs"
 
 [dependencies]
-ferrigura-model = { path = "crates/ferrigura-model", version = "0.0.0" }
-ferrigura-render = { path = "crates/ferrigura-render", version = "0.0.0" }
-ferrigura-syntax = { path = "crates/ferrigura-syntax", version = "0.0.0" }
+ferrigura-model = { path = "crates/ferrigura-model", version = "0.1.0" }
+ferrigura-render = { path = "crates/ferrigura-render", version = "0.1.0" }
+ferrigura-syntax = { path = "crates/ferrigura-syntax", version = "0.1.0" }
 serde_json.workspace = true
 
 [dev-dependencies]

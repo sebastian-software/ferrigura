@@ -3,7 +3,7 @@ name = "ferrigura-jsmath"
 description = "JavaScript's Math functions (sin, cos, tan, asin, acos, atan, atan2, log, log10, pow, hypot) as V8 computes them, bit for bit"
 readme = "README.md"
 include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md"]
-version = "0.0.0"
+version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 # MIT for the crate, with the licences of the ported parts (NOTICE.md).
