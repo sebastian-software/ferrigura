@@ -628,14 +628,14 @@ Only `select`, `append`, `attr`, `style`, `text`, `lower`, `node`, `select(selec
 
 ### 6.1 Counts
 
-| Folder                                    | `.mmd`    | Notes                                                                                           |
-| ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------- |
-| `e2e/diagrams/sequence/nightly-check/`    | 177       |                                                                                                 |
-| `e2e/diagrams/sequence/pr-check/`         | 10        |                                                                                                 |
-| `e2e/diagrams/sequence/visual-check/`     | 6         |                                                                                                 |
-| Total                                     | 193       | all start with front matter `---`; the snapshot harness collects them (`mmd-snapshots.spec.ts`) |
-| `docs/syntax/sequenceDiagram.md`          | 38 blocks | not yet counted as inputs                                                                       |
-| `sequenceDiagram.spec.js` string literals | ≈150      | the spec inputs, for the differential run                                                       |
+| Folder                                                | `.mmd`    | Notes                                                                                           |
+| ----------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------- |
+| `e2e/diagrams/sequence/nightly-check/`                | 177       |                                                                                                 |
+| `e2e/diagrams/sequence/pr-check/`                     | 10        |                                                                                                 |
+| `e2e/diagrams/sequence/visual-check/`                 | 6         |                                                                                                 |
+| Total                                                 | 193       | all start with front matter `---`; the snapshot harness collects them (`mmd-snapshots.spec.ts`) |
+| `packages/mermaid/src/docs/syntax/sequenceDiagram.md` | 38 blocks | not yet counted as inputs                                                                       |
+| `sequenceDiagram.spec.js` string literals             | ≈150      | the spec inputs, for the differential run                                                       |
 
 ### 6.2 Configuration (per file)
 

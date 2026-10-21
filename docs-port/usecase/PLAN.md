@@ -20,7 +20,7 @@ The model is `ferrigura-model/src/use_case.rs`: the DB state after the parse, in
 
 1. **The AST is part of the model** (open question 1 of the notes, decided by Sebastian as the research recommended). The three specs assert it, and the differential compares it with the reference's `getAST()`, including the spans in UTF-16 code units.
 2. **Error texts are ours**; the differential compares acceptance only, and the specs assert that a text fails and at which position (open question 2).
-3. **The 24 documentation examples** (`docs/syntax/usecase.md`, the `mermaid-example` fences) parse in `use_case_docs_spec.rs` (open question 8).
+3. **The 24 documentation examples** (`packages/mermaid/src/docs/syntax/usecase.md`, the `mermaid-example` fences) parse in `use_case_docs_spec.rs` (open question 8).
 4. **Preprocessing** is the shared one: `prepare` (front matter), `remove_directives`, `cleanup_comments`, `encode_entities`, a line break, as `Diagram.fromText` does.
 5. **Lookahead.** Each OPTION, OR and MANY decision is made with the lookahead of the reference: the `statement` order and its GATEs, the OPTION guards of `relationTail` and `entityName`, the metadata separators. Where Chevrotain chooses by its maximum lookahead, the port uses the same tokens; the differential on the probes is the check.
 

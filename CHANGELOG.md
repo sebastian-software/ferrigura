@@ -1,1 +1,1 @@
-./packages/mermaid/CHANGELOG.md
+./crates/ferrigura/CHANGELOG.md

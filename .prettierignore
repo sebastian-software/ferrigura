@@ -1,5 +1,5 @@
 dist
-# Symlink to packages/mermaid/CHANGELOG.md — prettier must not add a trailing newline
+# release-please writes crates/ferrigura/CHANGELOG.md (the root CHANGELOG.md links to it); packages/mermaid/CHANGELOG.md is the reference's
 CHANGELOG.md
 .cache
 .pnpm-store
@@ -11,7 +11,7 @@ stats
 packages/mermaid/src/config.type.ts
 # autogenereated by langium-cli
 generated/
-# Intermediate typedoc output (git-ignored), copied into docs/ by `docs:build`
+# Intermediate typedoc output of the reference (git-ignored)
 packages/mermaid/src/docs/config/setup
 # Generated from elkjs output by crates/ferrigura-elk/tools/capture-corpus.ts
 crates/ferrigura-elk/tests/corpus/

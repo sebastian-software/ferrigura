@@ -586,7 +586,7 @@ Also read, outside the wardley code:
 
 - `securityLevel`, in `selectSvgElement.ts:12`, for the sandbox branch.
 - `getConfig().themeVariables`, in `wardleyRenderer.ts:32`, and `getConfigAPI().themeVariables` and the default theme in `styles.ts:24-26`.
-- `look` and `fontFamily` are not read by this type. The docs say `handDrawn` is not supported (`docs/syntax/wardley.md:461`), and the renderer has no rough branch (read).
+- `look` and `fontFamily` are not read by this type. The docs say `handDrawn` is not supported (`packages/mermaid/src/docs/syntax/wardley.md:461`), and the renderer has no rough branch (read).
 
 Fixed values, not configuration: the annotation numbers (10), the annotation lines (11), the notes (11), the accelerator labels (10), the stroke widths (1, 1.5, 2, 6), the arrow sizes (60 by 30, head 20, arrow 8), the buffer (105), the box's line height (16), the pipeline padding (15), the trend's shortening (`R + 2`), the link label offset (8), the grid ratios (1/4, 2/4, 3/4), and the default stages (`Genesis`, `Custom Built`, `Product`, `Commodity`, `:12`).
 
