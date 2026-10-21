@@ -60,7 +60,7 @@ ELK has been the default since 12.0. The dagre layout was the fallback for unreg
 
 **Packages and builds.** `@mermaid-js/mermaid-zenuml`, `@mermaid-js/examples`, `@mermaid-js/mermaid-example-diagram`, `@mermaid-js/mermaid-local-editor`, `@mermaid-js/layout-tidy-tree`, `@mermaid-js/tiny`, `@mermaid-js/layout-elk`, and the webpack and release-verification test harnesses. The `injected.includeLargeFeatures` build switch is gone with the tiny build.
 
-**Project infrastructure.** Upstream's GitHub workflows, issue templates, Netlify, Docker, Renovate, funding and citation files, the Chinese README copy, and the Applitools/Argos visual-testing integration. One workflow, `.github/workflows/ci.yml`, runs lint, the schema/type sync check, the circular-dependency check, unit tests and the out-of-tree TypeScript check. Playwright compares against local screenshot baselines.
+**Project infrastructure.** Upstream's GitHub workflows, issue templates, Netlify, Docker, Renovate, funding and citation files, the Chinese README copy, and the Applitools/Argos visual-testing integration. One workflow, `.github/workflows/ci.yml`, runs lint, the tests of the port's tools, the Rust job and the port's differential and geometry checks. Since 2026-10-21 it no longer runs the schema/type sync check, the circular-dependency check, Mermaid's unit tests and the out-of-tree TypeScript check: `packages/` stays only as the reference the port is checked against, and it does not change. Playwright compares against local screenshot baselines.
 
 **Demo pages.** The 38 hand-written pages under `demos/` that the dev server used to serve at `/`. The dev explorer at `/dev/` covers the same ground: it browses the e2e fixtures and `e2e/platform/dev-diagrams/`, and `/` now redirects there.
 
