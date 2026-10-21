@@ -4,7 +4,7 @@
 
 **Answer.** Yes. With the same font files, Rust and Chromium agree on every width to within Chromium's own layout rounding, on text box heights exactly, and a port of Mermaid's SVG line wrapping produces the same lines in every case tested.
 
-Code and how to run it: [spikes/text-measure/](../../spikes/text-measure/README.md). Run on 2026-10-15.
+Run on 2026-10-15. The spike's code was in `spikes/text-measure/` until 2026-10-21; `crates/ferrigura-text` and `tools/port/text/` took over its work, and the code stays in the history.
 
 ## Setup
 
@@ -112,7 +112,7 @@ Consequences:
 - **Never measure with WebKit's SVG text API.** Any check, test or tool that compares widths in WebKit has to use character positions or pixels, not `getComputedTextLength` or `getBBox`. The JS reference uses exactly these calls wherever it measures SVG text: labels with `htmlLabels: false` (`createText.ts`, `rendering-elements/shapes/util.ts`) and diagrams that draw SVG text directly, such as sequence. In Safari it therefore sizes those boxes and wraps those lines for unkerned text, while Safari draws kerned text. HTML labels are measured with `getBoundingClientRect` and are not affected. ferrigura measures without a browser, so its layouts are the same in every engine.
 - **Every text run is placed explicitly.** ferrigura writes `text-anchor` start and an `x` computed from its own measurement for every line, and an explicit `x` for every `tspan` that follows another (a style change, a second word run). A centred label gets `x = centre − width / 2`. The browser then never derives a position from its own text width, so WebKit draws where Chromium and Firefox do. Mermaid centres labels with `text-anchor: middle`, so in Safari its SVG labels with noticeable kerning sit off centre.
 - **No per-character positions and no `textLength`.** Both split WebKit's text into single characters and drop kerning from the ink.
-- **The lab stays** in `spikes/text-measure/lab/` for checking further engines and font settings without Playwright.
+- **The lab** (`spikes/text-measure/lab/`, in the history since 2026-10-21) checked further engines and font settings without Playwright; the WebKit check of the fallback faces used `tools/port/fonts/webkit-snapshot.swift` instead.
 
 One more observation, not investigated: in WebKit, the lab's HTML reference spans changed width after SVG text with other feature settings had been laid out, as if a cache kept features across font descriptions. ferrigura sets no feature switches, so this does not touch it.
 

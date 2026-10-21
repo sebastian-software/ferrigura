@@ -15,7 +15,6 @@
     "./crates/ferrigura-cose/tools",
     "./crates/ferrigura-swimlane/tools",
     "./crates/ferrigura-venn/tools",
-    "./spikes",
     "./tools/port",
     "./crates/ferrigura-node/test",
     "./e2e",

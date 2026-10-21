@@ -75,4 +75,3 @@ test-results/
 
 # Rust build output: the workspace, the port harness cache and the spikes
 /target
-spikes/*/target/
