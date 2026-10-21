@@ -3,7 +3,6 @@ import eslint from '@eslint/js';
 import compat from 'eslint-plugin-compat';
 import jsdoc from 'eslint-plugin-jsdoc';
 import json from 'eslint-plugin-json';
-import lodash from 'eslint-plugin-lodash';
 import markdown from 'eslint-plugin-markdown';
 import noOnlyTests from 'eslint-plugin-no-only-tests';
 import tsdoc from 'eslint-plugin-tsdoc';
@@ -52,7 +51,6 @@ export default tseslint.config(
       json,
       '@cspell': cspell,
       'no-only-tests': noOnlyTests,
-      lodash,
       unicorn,
       markdown,
       tsdoc,
@@ -139,7 +137,6 @@ export default tseslint.config(
         },
       ],
       'no-only-tests/no-only-tests': 'error',
-      'lodash/import-scope': ['error', 'method'],
       'unicorn/better-regex': 'error',
       'unicorn/no-abusive-eslint-disable': 'error',
       'unicorn/no-array-push-push': 'error',
