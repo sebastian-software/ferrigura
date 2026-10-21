@@ -1,87 +1,72 @@
-# ferraid
+# ferrigura
 
-A fork of [Mermaid](https://github.com/mermaid-js/mermaid): generate diagrams from Markdown-like text.
-
-The fork starts from Mermaid 12.2.0 and keeps its full history. Its first goal is a smaller core: everything that isn't the library itself goes, and so does every API, config option, keyword or code path that upstream has deprecated or that nothing reaches any more. [FORK.md](./FORK.md) lists what was removed, how to migrate, and what is still up for discussion.
-
-The npm package is still called `mermaid` for now, and the diagram syntax is Mermaid's, minus the removed aliases.
+ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0 with all 33 of its diagram types: the same diagram text gives the same diagram, and the geometry of the output is checked against Mermaid run in Chromium.
 
 ```mermaid
 flowchart LR
-  text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, swimlane, cose-bilkent] --> svg[SVG]
+  text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, swimlane, cose-bilkent, fcose, venn] --> svg[SVG]
 ```
-
-## Size compared with Mermaid 12.2.0
-
-Measured on 15 October 2026 against upstream commit `e28fbd9de`, with both checkouts built by `pnpm build`. Compressed sizes use gzip level 9 and Brotli quality 11; 1 kB is 1,000 bytes.
-
-|                                              | Mermaid 12.2.0 |  ferraid | Change |
-| -------------------------------------------- | -------------: | -------: | -----: |
-| `mermaid.min.js` (IIFE), minified            |        5.49 MB |  5.42 MB |  −1.3% |
-| `mermaid.min.js` (IIFE), gzip                |       1,567 kB | 1,542 kB |  −1.6% |
-| `mermaid.min.js` (IIFE), Brotli              |       1,177 kB | 1,157 kB |  −1.7% |
-| ESM entry `mermaid.esm.min.mjs`, gzip        |        11.6 kB |  11.3 kB |  −2.4% |
-| ESM entry and all lazy chunks, gzip          |       1,579 kB | 1,556 kB |  −1.5% |
-| npm tarball of `mermaid`, packed             |        26.0 MB |  25.5 MB |  −2.0% |
-| Library source lines, without tests and docs |        114,970 |  109,747 |  −4.5% |
-| Workspace packages                           |              9 |        2 |     −7 |
-| Packages resolved in `pnpm-lock.yaml`        |          2,409 |    1,280 |   −47% |
-| Files tracked in the repository              |          4,272 |    3,762 |   −12% |
-| Runtime dependencies of `mermaid`            |             23 |       23 |      0 |
-
-So far the cleanup has mostly removed what surrounds the library: seven packages, the website and the tooling they needed, which halves what `pnpm install` resolves. The bundles are only about 2% smaller, and most of that comes from removing the dagre layout. Most of the dead code removed from the library was never bundled in the first place, because nothing imported it.
-
-## Rust port
-
-The fork is being ported to Rust as **ferrigura**: a library, a command-line tool and a Node.js addon that render diagram text to SVG without a browser. [docs-port/](./docs-port/README.md) holds the plan, the decisions and the status; the TypeScript implementation stays as the reference until each diagram type reaches parity.
 
 ## Using ferrigura
 
 [crates/ferrigura/README.md](./crates/ferrigura/README.md) describes the library, [crates/ferrigura-cli/README.md](./crates/ferrigura-cli/README.md) the command-line tool, and [crates/ferrigura-node/README.md](./crates/ferrigura-node/README.md) the Node.js addon. The library and the command-line tool are on crates.io as [`ferrigura`](https://crates.io/crates/ferrigura) and [`ferrigura-cli`](https://crates.io/crates/ferrigura-cli); the addon is not published yet.
 
+```sh
+cargo add ferrigura
+```
+
+```sh
+cargo install ferrigura-cli
+```
+
 ## Repository layout
 
-| Path                        | Contents                                                                |
-| --------------------------- | ----------------------------------------------------------------------- |
-| `packages/mermaid`          | The library: diagram types, rendering, layouts, themes, config schema   |
-| `packages/parser`           | Langium grammars used by the newer diagram types (`@mermaid-js/parser`) |
-| `packages/mermaid/src/docs` | Markdown reference docs (source); `docs/` holds the generated copy      |
-| `e2e`                       | Playwright rendering tests and `.mmd` fixtures                          |
+| Path                         | Contents                                                                                                                                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `crates/ferrigura`           | The library. The repository's root `Cargo.toml` is its package, so that one release covers the workspace                                                                                                              |
+| `crates/ferrigura-cli`       | The command-line tool `ferrigura`                                                                                                                                                                                     |
+| `crates/ferrigura-node`      | The Node.js addon                                                                                                                                                                                                     |
+| `crates/ferrigura-*`         | The parts: models and configuration (`model`), parsers (`syntax`), layout and SVG (`render`), text (`text`), and the layouts and math ported from their sources (`elk`, `cose`, `swimlane`, `venn`, `path`, `jsmath`) |
+| `docs-port`                  | The plan, the decisions, the status and the release process of the port; start with [docs-port/README.md](./docs-port/README.md) and [STATUS.md](./docs-port/STATUS.md)                                               |
+| `tools/port`                 | The harness that checks the port against the reference: models (`port:diff`) and geometry in Chromium (`port:geometry`)                                                                                               |
+| `tools/release`              | `publish-crates.sh`, which publishes a release's crates by hand                                                                                                                                                       |
+| `packages/mermaid`, `parser` | Mermaid 12.2.0 as this repository's fork of it: the reference the port is checked against. It does not change any more                                                                                                |
+| `e2e/diagrams`               | The `.mmd` corpus that the harness and the tests render; `e2e/platform` holds more inputs and the page the corpus capture tools load                                                                                  |
 
 ## Development
 
-Requirements: Node.js 22.12 or newer and pnpm (the version is pinned in `package.json`).
+The Rust toolchain is pinned by `rust-toolchain.toml` (stable, with clippy and rustfmt). The checks CI runs:
+
+```bash
+cargo fmt --all --check
+```
+
+```bash
+cargo clippy --all-targets -- -D warnings
+```
+
+```bash
+cargo test --workspace
+```
+
+The harness needs Node.js 22.12 or newer and pnpm, whose version `package.json` pins (with corepack: `corepack enable`). `pnpm install` also builds the reference.
 
 ```bash
 pnpm install
 ```
 
 ```bash
-pnpm dev
+pnpm port:diff flowchart
 ```
 
-`pnpm dev` starts the dev server with live rebuilds; its root redirects to the diagram explorer at `/dev/`. To try a diagram of your own, save it as a `.mmd` file under `e2e/platform/dev-diagrams/` and pick it there.
+`pnpm port:diff <type>` compares the models of the Rust parsers with the reference's on every input of the type. `pnpm port:geometry <type>` renders the corpus with both and compares the geometry; it needs Chromium (`pnpm exec playwright install chromium`). `pnpm test` runs lint and the tests of the harness. [tools/port/README.md](./tools/port/README.md) lists every command.
 
-```bash
-pnpm test
-```
+Releases are made by release-please from the commit messages (`feat(…)`, `fix(…)`); [docs-port/RELEASE.md](./docs-port/RELEASE.md) describes the process.
 
-`pnpm test` runs lint and the Vitest unit tests. `pnpm e2e` runs the Playwright suite; on the first run it records local screenshot baselines under `e2e/__snapshots__/`, and later runs compare against them.
+## History
 
-```bash
-pnpm build
-```
-
-`pnpm build` writes the ESM, core and IIFE bundles to `packages/mermaid/dist`.
-
-## Following upstream
-
-The upstream repository is the `upstream` remote. The fork's commits sit on top of upstream commit `e28fbd9de` (the `develop` branch at 12.2.0), so upstream fixes can be cherry-picked or merged.
-
-```bash
-git fetch upstream
-```
+The repository started as a fork of Mermaid 12.2.0 that cleaned up the library, and keeps Mermaid's full history: the fork's commits sit on top of upstream commit `e28fbd9de` (the `develop` branch at 12.2.0). [FORK.md](./FORK.md) records what the fork removed from Mermaid. The port then took the fork as its reference.
 
 ## License and credits
 
-MIT, see [LICENSE](./LICENSE). Mermaid was created by Knut Sveidqvist and is maintained by the Mermaid contributors; all of their history is preserved in this repository.
+MIT, see [LICENSE](./LICENSE). Some crates port code or bundle fonts under the licences of their sources, which their `NOTICE.md` files list; `ferrigura-elk` is under EPL-2.0. Mermaid was created by Knut Sveidqvist and is maintained by the Mermaid contributors; all of their history is preserved in this repository.

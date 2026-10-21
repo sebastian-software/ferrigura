@@ -7,7 +7,7 @@
  * fills the DB in the order of `parser.ts`. The model is the DB after that parse: the texts, the
  * count and the root with its tree. The DB's setters sanitise with DOMPurify, which needs a window.
  *
- * Usage: `tsx tools/port/export-tree-view.ts inputs.json outputs.json`
+ * Usage: `tsx tools/port/export-treeView.ts inputs.json outputs.json`
  */
 import { provideDomForSanitising, registerDetectors, type Reference } from './reference.ts';
 import { runExporter } from './exporter.ts';

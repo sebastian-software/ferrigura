@@ -3,16 +3,14 @@
  * each fixture, both SVGs are measured in one Chromium page at scale 1, and the elements are paired
  * by their structural key and compared (`diagram-compare.ts`).
  *
- * The types are the P1 diagrams that ferrigura does not render yet (sequence, class, state, er,
- * gantt, timeline, gitgraph, journey, info), mapped to their fixture folders under
- * `e2e/diagrams`. Pie and flowchart are included so that the generic rule can be checked against
- * the specialised harnesses (`pie-geometry.ts`, `flowchart-geometry.ts`). Ferrigura renders none of
- * the others yet, so their fixtures are "not rendered" until it does.
+ * The types are the keys of `TYPE_FOLDERS`, each mapped to its fixture folders under
+ * `e2e/diagrams`. Pie and flowchart are among them, so that the generic rule can be checked against
+ * the specialised harnesses (`pie-geometry.ts`, `flowchart-geometry.ts`).
  *
  * A type may have probes too, under `tools/port/geometry/probes/<type>`: texts the e2e fixtures do not
  * cover (the kanban items, which no kanban fixture draws). They are compared like the fixtures, under
- * the keys `probes/<type>/<file>`. They are not in `e2e/diagrams`, where every `.mmd` is an image
- * snapshot test.
+ * the keys `probes/<type>/<file>`. They are kept apart from `e2e/diagrams`, whose `.mmd` files are
+ * the corpus that this harness and the Rust tests render.
  *
  * Both sides get the patched text (`patchText` in `common.ts`): the forced directive, and the
  * fallback theme. Each SVG is measured at scale 1. Excluded fixtures are those with `handDrawn`, a
@@ -51,15 +49,15 @@
  *   pnpm port:geometry <type> [--filter PATTERN] [--images DIR] [--capture] [--self]
  *   DUMP=SLUG[,SLUG...] pnpm port:geometry <type>   writes target/geometry/dump-SLUG.json
  *
- * `<type>`: sequence, class, state, er, gantt, timeline, gitgraph, journey, info, pie, flowchart.
+ * `<type>`: a key of `TYPE_FOLDERS`, matched without regard to case (`treeview` names `treeView`).
  * `--filter` takes a substring, or a glob with `*`, `**` and `?`, of the fixture's path under
  * `e2e/diagrams`, for example `class-diagram/**` or `state-diagram-v2/*note*`.
  *
  * `FERRIGURA_RENDER` replaces the ferrigura `render` example, as in the other harnesses.
  *
  * Exit code 1 if a fixture rendered on both sides is outside the tolerance, or if ferrigura does
- * not render a fixture the reference renders (every P1 type is ported since M6, so that is a
- * regression); for `--self`, whenever the two reference renders differ.
+ * not render a fixture the reference renders (every type is ported, so that is a regression); for
+ * `--self`, whenever the two reference renders differ.
  */
 import { readFile, mkdir, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -103,7 +101,7 @@ const fixtureRoot = join(root, 'e2e/diagrams');
  * The probe inputs of a type, under `tools/port/geometry/probes/<type>`: texts that the e2e fixtures
  * do not cover, such as kanban items (the fixtures are flat lists of sections). They are compared
  * with the fixtures, under the key `probes/<type>/<file>`, and not added to `e2e/diagrams`, whose
- * every `.mmd` is an image snapshot test.
+ * `.mmd` files are the corpus that this harness and the Rust tests render.
  */
 const probeRoot = join(root, 'tools/port/geometry/probes');
 
@@ -116,9 +114,10 @@ function pathOf(key: string): string {
 
 /**
  * The settings of a cynefin fixture (cynefin only). The boundary waves are drawn from `cynefin.seed`,
- * and a seed of 0 hashes the SVG id, which the reference and ferrigura share here; the e2e viewer
- * still sets the seed to 1 under a fixture's own (`e2e/helpers/util.ts` 46), so the harness does the
- * same: the fixture's own seed when it sets one, else 1. The `--self` pass then draws the same waves
+ * and a seed of 0 hashes the SVG id, which the reference and ferrigura share here; Mermaid's
+ * Playwright suites, which rendered these fixtures until they were removed, set the seed to 1 under a
+ * fixture's own (`e2e/helpers/util.ts` of Mermaid 12.2.0), so the harness does the same: the
+ * fixture's own seed when it sets one, else 1. The `--self` pass then draws the same waves
  * under both of its ids.
  */
 function cynefinSettings(source: string): Record<string, unknown> {

@@ -7,8 +7,8 @@
  * Each difference is printed with the path of the field, both values, and the number of differences
  * per field name at the end, so a shared cause shows up as one line.
  *
- * The flowchart and the class runs are `tools/port/diff-flowchart-data.ts` and
- * `tools/port/diff-class-data.ts`; both call [runLayoutDataDiff].
+ * The flowchart, class, requirement and kanban runs (`tools/port/diff-<type>-data.ts`) call
+ * [runLayoutDataDiff].
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
