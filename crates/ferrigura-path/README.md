@@ -4,8 +4,6 @@
 
 This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate.
 
-The crate is not published yet.
-
 ## Licence
 
 The crate is MIT-licensed. Its ported parts keep the licences of their sources: Skia's BSD-3-Clause licence (`LICENSE-SKIA`) and Chromium's licence (`LICENSE-CHROMIUM`), which covers Blink and `ui/gfx`. `NOTICE.md` lists each module and its source.

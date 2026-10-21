@@ -4,8 +4,6 @@
 
 This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate.
 
-The crate is not published yet.
-
 ## Licence
 
 MIT, as the workspace and as `@upsetjs/venn.js` is (the `LICENSE` file). `NOTICE.md` lists the copyright lines and the source lines that each function is ported from.

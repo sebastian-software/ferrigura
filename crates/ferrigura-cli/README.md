@@ -2,17 +2,13 @@
 
 `ferrigura-cli` is the command-line tool of [ferrigura](https://github.com/sebastian-software/ferrigura). It renders Mermaid diagram files to SVG, without a browser. The binary is called `ferrigura`.
 
-The crate is not published yet.
-
 ## Installation
-
-Once the crate is published:
 
 ```sh
 cargo install ferrigura-cli
 ```
 
-This installs the `ferrigura` binary. Until then, install it from a checkout of the repository:
+This installs the `ferrigura` binary. To install it from a checkout of the repository:
 
 ```sh
 cargo install --path crates/ferrigura-cli

@@ -4,8 +4,6 @@
 
 This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate.
 
-The crate is not published yet.
-
 ## Licence
 
 The crate is MIT-licensed. Its ported parts keep the licences of their sources: V8's BSD-style licence (`LICENSE-V8`), the Apache-2.0 licence with the LLVM exception of llvm-libc (`LICENSE-LLVM`), and fdlibm's notice. `NOTICE.md` lists each part and its licence.

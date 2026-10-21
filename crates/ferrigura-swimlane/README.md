@@ -4,8 +4,6 @@
 
 This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate.
 
-The crate is not published yet.
-
 ## Licence
 
 MIT, as the workspace and as Mermaid is (the `LICENSE` file, copied from the repository root). The `localeCompare` of the layout is ICU's root collation for ASCII, written as a table. `NOTICE.md` has the details.

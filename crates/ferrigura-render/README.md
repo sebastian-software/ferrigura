@@ -4,8 +4,6 @@
 
 This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate, which calls it.
 
-The crate is not published yet.
-
 ## Licence
 
 MIT, as the workspace (the `license` field of `Cargo.toml`), like Mermaid.
