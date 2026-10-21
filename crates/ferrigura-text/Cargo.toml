@@ -2,13 +2,15 @@
 name = "ferrigura-text"
 description = "Text measurement, Mermaid line wrapping and font embedding for ferrigura labels"
 readme = "README.md"
-include = ["src/**", "Cargo.toml", "README.md", "LICENSE*", "NOTICE.md", "fonts/**"]
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md", "/fonts/**"]
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
 license = "MIT AND OFL-1.1 AND CC-BY-4.0"
 repository.workspace = true
-publish.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/ferrigura-text"
+keywords = ["ferrigura", "text", "font", "measurement", "svg"]
 
 [dependencies]
 base64 = "0.23.1"
@@ -19,3 +21,10 @@ unicode-segmentation = "1.13.3"
 
 [dev-dependencies]
 serde_json = "1.0.154"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true

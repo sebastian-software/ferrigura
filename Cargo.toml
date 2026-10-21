@@ -1,5 +1,87 @@
+# The repository's root is the package `ferrigura`, the library, so that one release covers the
+# product: release-please's Rust strategy reads the version of this package and moves every member
+# of the workspace with it (docs-port/RELEASE.md). Its sources stay in crates/ferrigura.
+[package]
+name = "ferrigura"
+description = "Render Mermaid diagram text to SVG, without a browser"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/ferrigura"
+readme = "crates/ferrigura/README.md"
+keywords = ["ferrigura", "mermaid", "diagram", "svg", "flowchart"]
+categories = ["visualization", "rendering"]
+include = ["/crates/ferrigura/src/**", "/crates/ferrigura/README.md", "/Cargo.toml", "/LICENSE"]
+autoexamples = false
+autotests = false
+autobenches = false
+
+[lib]
+path = "crates/ferrigura/src/lib.rs"
+
+[[example]]
+name = "flowchart-elk"
+path = "crates/ferrigura/examples/flowchart-elk.rs"
+
+[[example]]
+name = "render"
+path = "crates/ferrigura/examples/render.rs"
+
+[[test]]
+name = "flowchart"
+path = "crates/ferrigura/tests/flowchart.rs"
+
+[[test]]
+name = "info"
+path = "crates/ferrigura/tests/info.rs"
+
+[[test]]
+name = "journey"
+path = "crates/ferrigura/tests/journey.rs"
+
+[[test]]
+name = "output"
+path = "crates/ferrigura/tests/output.rs"
+
+[[test]]
+name = "pie"
+path = "crates/ferrigura/tests/pie.rs"
+
+[[test]]
+name = "renderer"
+path = "crates/ferrigura/tests/renderer.rs"
+
+[[test]]
+name = "state"
+path = "crates/ferrigura/tests/state.rs"
+
+[[test]]
+name = "well_formed"
+path = "crates/ferrigura/tests/well_formed.rs"
+
+[dependencies]
+ferrigura-model = { path = "crates/ferrigura-model", version = "0.0.0" }
+ferrigura-render = { path = "crates/ferrigura-render", version = "0.0.0" }
+ferrigura-syntax = { path = "crates/ferrigura-syntax", version = "0.0.0" }
+serde_json.workspace = true
+
+[dev-dependencies]
+roxmltree = "0.21"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true
+
 [workspace]
-members = ["crates/ferrigura", "crates/ferrigura-cli", "crates/ferrigura-cose", "crates/ferrigura-elk", "crates/ferrigura-jsmath", "crates/ferrigura-model", "crates/ferrigura-node", "crates/ferrigura-path", "crates/ferrigura-render", "crates/ferrigura-swimlane", "crates/ferrigura-syntax", "crates/ferrigura-text", "crates/ferrigura-venn"]
+members = ["crates/ferrigura-cli", "crates/ferrigura-cose", "crates/ferrigura-elk", "crates/ferrigura-jsmath", "crates/ferrigura-model", "crates/ferrigura-node", "crates/ferrigura-path", "crates/ferrigura-render", "crates/ferrigura-swimlane", "crates/ferrigura-syntax", "crates/ferrigura-text", "crates/ferrigura-venn"]
+# Plain cargo commands at the root cover the whole workspace, not only the root package.
+default-members = [".", "crates/ferrigura-cli", "crates/ferrigura-cose", "crates/ferrigura-elk", "crates/ferrigura-jsmath", "crates/ferrigura-model", "crates/ferrigura-node", "crates/ferrigura-path", "crates/ferrigura-render", "crates/ferrigura-swimlane", "crates/ferrigura-syntax", "crates/ferrigura-text", "crates/ferrigura-venn"]
 resolver = "3"
 
 [workspace.package]
@@ -7,10 +89,12 @@ edition = "2024"
 rust-version = "1.95"
 license = "MIT"
 repository = "https://github.com/sebastian-software/ferrigura"
-publish = false
+homepage = "https://github.com/sebastian-software/ferrigura"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
 
 [workspace.dependencies]
-ferrigura-model = { path = "crates/ferrigura-model", version = "0.0.0" }
 indexmap = { version = "2", features = ["serde"] }
 logos = "0.15"
 serde = { version = "1", features = ["derive"] }

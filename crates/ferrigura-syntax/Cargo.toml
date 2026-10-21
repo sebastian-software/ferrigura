@@ -2,16 +2,18 @@
 name = "ferrigura-syntax"
 description = "Shared lexer base, YAML reader and hand-written parsers for ferrigura diagram types"
 readme = "README.md"
-include = ["src/**", "Cargo.toml", "README.md", "LICENSE*"]
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*"]
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-publish.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/ferrigura-syntax"
+keywords = ["ferrigura", "mermaid", "parser", "diagram"]
 
 [dependencies]
-ferrigura-model.workspace = true
+ferrigura-model = { path = "../ferrigura-model", version = "0.0.0" }
 indexmap.workspace = true
 logos.workspace = true
 regex = "1"
@@ -20,3 +22,10 @@ serde_json.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true

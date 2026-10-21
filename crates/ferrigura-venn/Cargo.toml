@@ -3,13 +3,15 @@ name = "ferrigura-venn"
 version = "0.0.0"
 description = "The layout of @upsetjs/venn.js 2.0.0 (the part Mermaid's venn renderer reaches), ported from the JavaScript bundle: circle placement, text centres, with fmin's minimisers"
 readme = "README.md"
-include = ["src/**", "Cargo.toml", "README.md", "LICENSE*", "NOTICE.md"]
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md"]
 edition.workspace = true
 rust-version.workspace = true
 # MIT for the crate, as the sources are (NOTICE.md).
 license = "MIT"
 repository.workspace = true
-publish.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/ferrigura-venn"
+keywords = ["ferrigura", "venn", "diagram", "layout"]
 
 [dependencies]
 ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.0.0" }
@@ -17,3 +19,10 @@ ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.0.0" }
 [dev-dependencies]
 serde.workspace = true
 serde_json.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true

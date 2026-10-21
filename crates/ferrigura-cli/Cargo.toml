@@ -2,8 +2,8 @@
 name = "ferrigura-cli"
 description = "Render a Mermaid diagram file to SVG from the command line"
 readme = "README.md"
-include = ["src/**", "Cargo.toml", "README.md", "LICENSE*"]
-keywords = ["mermaid", "diagram", "svg", "cli", "render"]
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*"]
+keywords = ["ferrigura", "mermaid", "diagram", "svg", "cli"]
 categories = ["command-line-utilities", "visualization"]
 documentation = "https://docs.rs/ferrigura-cli"
 version = "0.0.0"
@@ -11,7 +11,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-publish.workspace = true
+homepage.workspace = true
 
 [[bin]]
 name = "ferrigura"
@@ -20,6 +20,13 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
-ferrigura = { path = "../ferrigura", version = "0.0.0" }
-ferrigura-model.workspace = true
+ferrigura = { path = "../..", version = "0.0.0" }
+ferrigura-model = { path = "../ferrigura-model", version = "0.0.0" }
 serde_json.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true

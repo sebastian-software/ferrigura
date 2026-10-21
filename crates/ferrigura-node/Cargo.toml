@@ -7,14 +7,15 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-publish.workspace = true
+# A Node addon (a cdylib): it goes to npm with its prebuilt binaries, not to crates.io.
+publish = false
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-ferrigura = { path = "../ferrigura", version = "0.0.0" }
-ferrigura-model.workspace = true
+ferrigura = { path = "../..", version = "0.0.0" }
+ferrigura-model = { path = "../ferrigura-model", version = "0.0.0" }
 napi = { version = "3", features = ["serde-json"] }
 napi-derive = "3"
 serde_json.workspace = true

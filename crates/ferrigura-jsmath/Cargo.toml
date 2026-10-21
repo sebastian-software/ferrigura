@@ -2,13 +2,22 @@
 name = "ferrigura-jsmath"
 description = "JavaScript's Math functions (sin, cos, tan, asin, acos, atan, atan2, log, log10, pow, hypot) as V8 computes them, bit for bit"
 readme = "README.md"
-include = ["src/**", "Cargo.toml", "README.md", "LICENSE*", "NOTICE.md"]
+include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md"]
 version = "0.0.0"
 edition.workspace = true
 rust-version.workspace = true
 # MIT for the crate, with the licences of the ported parts (NOTICE.md).
 license = "MIT AND Apache-2.0 WITH LLVM-exception AND BSD-3-Clause"
 repository.workspace = true
-publish.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/ferrigura-jsmath"
+keywords = ["ferrigura", "javascript", "math", "v8", "fdlibm"]
 
 [dependencies]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true
