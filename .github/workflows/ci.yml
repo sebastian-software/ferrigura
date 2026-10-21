@@ -24,11 +24,9 @@ jobs:
           node-version-file: '.node-version'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
-      - name: Verify config types are in sync with the JSON schema
-        run: pnpm run --filter mermaid types:verify-config
-      - name: Verify no circular dependencies
-        run: pnpm run --filter mermaid checkCircle
 
+  # The tests of the port's tools. Mermaid's own tests do not run: packages/ is the reference the port
+  # is checked against (port-diff, port-geometry), and it does not change.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -39,13 +37,7 @@ jobs:
           cache: pnpm
           node-version-file: '.node-version'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm vitest run
-      - name: Run ganttDb tests in a non-UTC timezone
-        env:
-          TZ: America/Los_Angeles
-        run: pnpm exec vitest run ./packages/mermaid/src/diagrams/gantt/ganttDb.spec.ts
-      - name: Verify out-of-tree build with TypeScript
-        run: pnpm test:check:tsc
+      - run: pnpm exec vitest run tools/port
 
   rust:
     runs-on: ubuntu-latest
