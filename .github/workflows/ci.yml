@@ -93,6 +93,7 @@ jobs:
             usecase,
             venn,
             wardley,
+            swimlanes,
             flowchart-data,
             class-data,
             state-data,
@@ -141,11 +142,11 @@ jobs:
         # The Linux job compares the captures within a tolerance: without fused multiply-adds, atan2
         # rounds as V8 does on x86-64 (crates/ferrigura-venn/tests/corpus.rs).
         run: cargo test --release -p ferrigura-venn --test corpus
-      - name: Geometry of the M6, P2 and P3 diagram types against the JS reference in Chromium
+      - name: Geometry of the M6, P2, P3 and swimlane diagram types against the JS reference in Chromium
         # Every type runs, so one failing type does not hide the others.
         run: |
           status=0
-          for type in sequence class state er gantt timeline gitgraph journey info requirement xychart kanban c4 block quadrantChart packet ishikawa sankey treemap eventmodeling mindmap architecture agentflow cynefin radar railroad treeView usecase venn wardley; do
+          for type in sequence class state er gantt timeline gitgraph journey info requirement xychart kanban c4 block quadrantChart packet ishikawa sankey treemap eventmodeling mindmap architecture agentflow cynefin radar railroad treeView usecase venn wardley swimlanes; do
             pnpm port:geometry "$type" || status=1
           done
           exit $status
