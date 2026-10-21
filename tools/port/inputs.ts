@@ -31,7 +31,7 @@ const fixtureFolders: Record<string, string[]> = {
     'e2e/diagrams/state-diagram-v2/',
     'e2e/platform/dev-diagrams/',
   ],
-  // The kanban probes are not e2e fixtures: each one is an image snapshot test there.
+  // The kanban probes are probes of the geometry harness, not fixtures under e2e/diagrams.
   kanban: ['e2e/diagrams/kanban/', 'tools/port/geometry/probes/kanban/'],
 };
 

@@ -10,7 +10,7 @@ The API is synchronous. `render(source, options)` returns the SVG as a string wi
 
 ## Why it is fast
 
-Pele reports 0.05 to 0.3 ms per diagram, against 6 to 82 ms for Mermaid.js, and 230 kB against 1.6 MB gzipped (its own figures). Measured here (the [overview](./README.md) has the method): 0.05 ms in the median over 215 fixtures in Node, 0.17 ms at the 90th percentile, against 8.5 ms for Mermaid in Chromium and 1.6 ms for ferrigura's Node addon; `pele.js` with every diagram type is 678 kB, 251 kB gzipped. The sources show where the time goes, or rather does not:
+Pele reports 0.05 to 0.3 ms per diagram, against 6 to 82 ms for Mermaid.js, and 230 kB against 1.6 MB gzipped (its own figures). Measured here (the [overview](./README.md) has the method): 0.05 ms in the median over 215 fixtures in Node, 0.17 ms at the 90th percentile, against 8.5 ms for Mermaid in Chromium and 1.6 ms for ferrigura's Node addon (the first run, of 2026-10-17; the overview's table is a later run, of 2026-10-18, with ferrigura's `Renderer`); `pele.js` with every diagram type is 678 kB, 251 kB gzipped. The sources show where the time goes, or rather does not:
 
 - **No DOM while rendering.** The SVG is built as a string (`src/svg/builder.ts`). Mermaid inserts every label into the page and measures it with `getBBox()` or `getComputedTextLength()`, which makes the browser lay out the page each time; that is the largest cost Pele avoids.
 - **Cheap text measurement.** A browser measures with the 2D canvas's `measureText`, which needs no layout. Elsewhere, a built-in table of Arial advances for the 95 printable ASCII characters estimates the width, with a fixed width for wide (CJK) and other characters (`src/text/measurer.ts`). An app can pass its own measurer.
@@ -28,7 +28,7 @@ Pele reports 0.05 to 0.3 ms per diagram, against 6 to 82 ms for Mermaid.js, and 
 | Colours          | CSS custom properties, eight series colours                                           | CSS custom properties with presentation attributes as a fallback (decision 0007); Mermaid's redux themes          |
 | Small screens    | Adapts the layout: `maxWidth`, and a vertical layout below 640 px (`autoDirection`)   | Scales the diagram, as Mermaid does                                                                               |
 | Runs in          | Any JavaScript runtime, browser or server, no DOM                                     | Rust: a library, a CLI and a native Node addon; no browser and no WebAssembly (decision 0001)                     |
-| Diagram types    | All 33 of Mermaid 12.1.0                                                              | 24 of 33 (P1 and P2)                                                                                              |
+| Diagram types    | All 33 of Mermaid 12.1.0                                                              | 33 of 33 (P1, P2, P3 and swimlanes), those of Mermaid 12.2.0                                                      |
 | Security         | Escapes text, filters links, images and styles, limits source, output and edges       | DOMPurify's rules on the texts, as the reference runs them; no scripts or callbacks                               |
 
 ## What ferrigura can learn from it

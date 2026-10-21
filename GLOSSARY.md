@@ -23,12 +23,12 @@ A set of colour tokens that decides how a diagram is coloured.
 _Avoid_: skin, palette (for the whole set)
 
 **Fixture**:
-A `.mmd` file under `e2e/diagrams/` with one diagram and its front matter, rendered by the e2e suite.
+A `.mmd` file under `e2e/diagrams/` with one diagram and its front matter, which the differential runs and the tests render.
 
 ## Port
 
 **JS reference**:
-The TypeScript implementation in `packages/`, kept as the behaviour to match until a diagram type reaches parity.
+The TypeScript implementation in `packages/`, kept unchanged as the behaviour the port is checked against.
 _Avoid_: upstream (that is mermaid-js/mermaid), legacy
 
 **Canonical model**:
@@ -38,10 +38,10 @@ The versioned JSON form of a parsed diagram type that both the Rust model and th
 Feeding the same inputs to the JS reference and to ferrigura and comparing the canonical models, ELK coordinates or rendered geometry.
 
 **Parity**:
-The state of a diagram type whose ported specs pass and whose differential runs show no difference beyond tolerance; it allows removing the type from the JS reference.
+The state of a diagram type whose ported specs pass and whose differential runs show no difference beyond tolerance.
 
 **Tier**:
-The porting priority of a diagram type: P1 is ported first, P2 afterwards, P3 is left to contributors.
+The porting priority of a diagram type: P1 was ported first, then P2, then P3.
 
 **Strand**:
 One line of porting work that runs in its own session and worktree and reports in `docs-port/STATUS.md`.

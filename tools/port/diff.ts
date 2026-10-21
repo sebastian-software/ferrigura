@@ -2,12 +2,11 @@
  * Differential run for one diagram type: every collected input goes through the TypeScript
  * reference (`export-<type>.ts`) and through ferrigura (`cargo run --example canonical`), and the
  * canonical models are compared. A rejection on both sides counts as agreement; any other
- * difference is reported with both results. A type without an exporter is not ported yet: the run
- * says so and ends without a difference.
+ * difference is reported with both results. The layout data, configuration, YAML and theme runs
+ * have their own scripts (`diff-<type>.ts`), which this one starts.
  *
  * Usage: `pnpm port:diff <pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | agentflow | cynefin | radar | railroad | swimlanes | treeView | usecase | venn | wardley | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme>`
  */
-import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -16,8 +15,19 @@ import { collectInputs } from './inputs.ts';
 import { exceptions } from './exceptions.ts';
 import type { PortInput, PortOutput } from './reference.ts';
 
-/** The P2 types, whose parsers are not ported yet: each one's parser task writes its exporter. */
-const p2Types = [
+/** The types whose canonical models are compared, each through its exporter `export-<type>.ts`. */
+const modelTypes = [
+  'pie',
+  'info',
+  'flowchart',
+  'timeline',
+  'journey',
+  'gitgraph',
+  'er',
+  'class',
+  'sequence',
+  'state',
+  'gantt',
   'mindmap',
   'block',
   'packet',
@@ -26,14 +36,11 @@ const p2Types = [
   'quadrantChart',
   'requirement',
   'c4',
+  'kanban',
   'architecture',
   'treemap',
   'ishikawa',
   'eventmodeling',
-];
-
-/** The P3 types: each one's parser task writes its exporter, and until then its inputs are only collected. */
-const p3Types = [
   'agentflow',
   'cynefin',
   'radar',
@@ -45,18 +52,21 @@ const p3Types = [
   'wardley',
 ];
 
+/** The runs with a script of their own, `diff-<type>.ts`. */
+const ownRunTypes = [
+  'flowchart-data',
+  'er-data',
+  'state-data',
+  'class-data',
+  'requirement-data',
+  'kanban-data',
+  'config',
+  'yaml',
+  'theme',
+];
+
 const type = process.argv[2];
-if (
-  type === 'config' ||
-  type === 'yaml' ||
-  type === 'theme' ||
-  type === 'flowchart-data' ||
-  type === 'er-data' ||
-  type === 'state-data' ||
-  type === 'class-data' ||
-  type === 'requirement-data' ||
-  type === 'kanban-data'
-) {
+if (ownRunTypes.includes(type)) {
   const subRun = spawnSync(
     'pnpm',
     ['exec', 'tsx', fileURLToPath(new URL(`./diff-${type}.ts`, import.meta.url))],
@@ -64,45 +74,9 @@ if (
   );
   process.exit(subRun.status ?? 2);
 }
-if (
-  type !== 'pie' &&
-  type !== 'info' &&
-  type !== 'flowchart' &&
-  type !== 'timeline' &&
-  type !== 'journey' &&
-  type !== 'gitgraph' &&
-  type !== 'er' &&
-  type !== 'class' &&
-  type !== 'sequence' &&
-  type !== 'state' &&
-  type !== 'gantt' &&
-  type !== 'kanban' &&
-  !p2Types.includes(type) &&
-  !p3Types.includes(type)
-) {
-  console.error(
-    'usage: pnpm port:diff pie | info | flowchart | timeline | journey | gitgraph | er | class | sequence | state | gantt | mindmap | block | packet | xychart | sankey | quadrantChart | requirement | c4 | kanban | architecture | treemap | ishikawa | eventmodeling | agentflow | cynefin | radar | railroad | swimlanes | treeView | usecase | venn | wardley | flowchart-data | er-data | state-data | class-data | requirement-data | kanban-data | config | yaml | theme'
-  );
+if (!modelTypes.includes(type)) {
+  console.error(`usage: pnpm port:diff ${[...modelTypes, ...ownRunTypes].join(' | ')}`);
   process.exit(2);
-}
-// A P3 type has no exporter until its parser task writes one. Its inputs are still collected, so
-// the run shows how many inputs the parser task will have to reach, all as not yet ported.
-if (
-  p3Types.includes(type) &&
-  !existsSync(fileURLToPath(new URL(`./export-${type}.ts`, import.meta.url)))
-) {
-  const collected = await collectInputs(type);
-  console.log(
-    `${type}: ${collected.length} inputs, ${collected.length} not yet ported: the parser and the ` +
-      `exporter tools/port/export-${type}.ts do not exist, so the reference is not run on them`
-  );
-  process.exit(0);
-}
-if (!existsSync(fileURLToPath(new URL(`./export-${type}.ts`, import.meta.url)))) {
-  console.log(
-    `${type}: not ported yet, the parser and the exporter tools/port/export-${type}.ts do not exist`
-  );
-  process.exit(0);
 }
 
 const root = fileURLToPath(new URL('../../', import.meta.url));

@@ -28,10 +28,6 @@ local/
 
 /.vs
 
-e2e/screenshots/
-e2e/__snapshots__/
-e2e/snapshots/
-e2e/sheets/
 
 # eslint --cache file
 .eslintcache
@@ -43,7 +39,6 @@ local*.html
 stats/
 
 .pnpm-store
-.nyc_output
 
 .env
 
@@ -80,4 +75,3 @@ test-results/
 
 # Rust build output: the workspace, the port harness cache and the spikes
 /target
-spikes/*/target/

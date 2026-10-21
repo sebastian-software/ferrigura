@@ -10,18 +10,15 @@
     "./.build/*.ts",
     "./.esbuild/**/*.ts",
     "./.vite/*.ts",
-    "./playwright.config.ts",
     "./scripts",
     "./crates/ferrigura-elk/tools",
     "./crates/ferrigura-cose/tools",
     "./crates/ferrigura-swimlane/tools",
     "./crates/ferrigura-venn/tools",
-    "./spikes",
     "./tools/port",
     "./crates/ferrigura-node/test",
     "./e2e",
     "./vite.config.ts",
-    "./vitest.workspace.js",
     "eslint.config.js"
   ]
 }

@@ -4,8 +4,8 @@
  * through ferrigura (`cargo run --example config`). Each side detects the diagram type from the
  * text, as a render does, so each input gets its own diagram scope: the reference through
  * `processAndSetConfigs`, ferrigura through `detect`. A flowchart input must come out in the
- * `flowchart` scope on both sides, a journey input in `journey`, a gitGraph input in `gitGraph`, a state input in `state`, and a pie input or case in `pie`. A P2 input must come out in
- * its own scope, whose section is not compared until its parser is ported.
+ * `flowchart` scope on both sides, a journey input in `journey`, a gitGraph input in `gitGraph`, a state input in `state`, and a pie input or case in `pie`. A P2 or P3 input must come
+ * out in its own scope, whose section is compared too.
  *
  * The key set that directives may use is compared first. Then, per input, the scope and the
  * effective configuration: the top level (with `theme`, `look` and `layout` resolved), `elk`, the

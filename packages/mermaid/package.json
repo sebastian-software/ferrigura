@@ -34,17 +34,7 @@
   ],
   "scripts": {
     "clean": "rimraf dist",
-    "dev": "pnpm -w dev",
-    "docs:code": "typedoc src/defaultConfig.ts src/config.ts src/mermaid.ts && prettier --write ./src/docs/config/setup",
-    "docs:build": "pnpm docs:code && pnpm docs:spellcheck && rimraf ../../docs && tsx scripts/docs.cli.mts",
-    "docs:verify": "pnpm docs:code && pnpm docs:spellcheck && tsx scripts/docs.cli.mts --verify",
-    "docs:spellcheck": "cspell \"src/docs/**/*.md\"",
-    "docs:release-version": "tsx scripts/update-release-version.mts",
-    "docs:verify-version": "tsx scripts/update-release-version.mts --verify",
-    "types:build-config": "tsx scripts/create-types-from-json-schema.mts",
-    "types:verify-config": "tsx scripts/create-types-from-json-schema.mts --verify",
-    "checkCircle": "npx madge --circular ./src",
-    "prepublishOnly": "pnpm docs:verify-version"
+    "types:build-config": "tsx scripts/create-types-from-json-schema.mts"
   },
   "repository": {
     "type": "git",

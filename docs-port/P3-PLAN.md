@@ -53,7 +53,7 @@ Together about 28,000 to 35,000 lines of Rust, of which swimlanes is a third.
 1. **Research**: done, the nine `<type>/NOTES.md`.
 2. **Registry scaffold**, one task, merged before the parsers.
 3. **Parsers**, one task per type: model, parser and DB, specs, differential. Done on 2026-10-18 for the eight types: every collected input without a difference (agentflow 287, cynefin 125, radar 208, railroad 418, tree view 176, use case 291, venn 277, wardley 222), and each type's configuration section compared. Venn's DB keeps the sets in declaration order; the `Object.keys` order is the layout library's, and its port applies it.
-4. **Layout engines and shared code**: the venn library (done on 2026-10-18: `ferrigura-venn`, exact on 447 cases captured in Chromium), the swimlane layout (its own milestone, on `sebastian/port-swimlanes`), agentflow's `flowGroup` cluster.
+4. **Layout engines and shared code**: the venn library (done on 2026-10-18: `ferrigura-venn`, exact on 447 cases captured in Chromium), the swimlane layout (its own milestone, merged into `main` on 2026-10-20), agentflow's `flowGroup` cluster.
 5. **Renderers**, after issue #4 (merged on 2026-10-19), each checked with `pnpm port:geometry <type>`. Done on 2026-10-19 for the eight types, one task per type, on the rules of [P3-RENDERERS.md](./P3-RENDERERS.md): every comparable fixture and probe within tolerance (257 in all; 6 handDrawn fixtures and 2 with emoji and symbols not compared), every differential without a difference, and the 28 032 corpus renders of the 24 types ported before P3 unchanged. The results per type are in [STATUS.md](./STATUS.md).
 
 ## Follow-ups

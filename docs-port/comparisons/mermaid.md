@@ -26,12 +26,11 @@ ferrigura aims at Mermaid's output, not a look of its own:
 
 ## Speed and size
 
-Measured here (the [overview](./README.md) has the method): Mermaid takes 8.5 ms per diagram in the median over 215 fixtures, 35 ms at the 90th percentile, against 1.6 ms and 2.5 ms for ferrigura's Node addon. `mermaid.min.js` is 5.5 MB, 1.57 MB gzipped.
+Measured here (the [overview](./README.md) has the method): Mermaid takes 8.5 ms per diagram in the median over 215 fixtures, 35 ms at the 90th percentile, against 1.6 ms and 2.5 ms for ferrigura's Node addon. These figures are from the first run, of 2026-10-17, with ferrigura at `main` after P2. The overview's table is a later run, of 2026-10-18, with the `Renderer` of decision 0009, step 2: there Mermaid took 9.30 ms and 39.1 ms, and ferrigura 0.66 ms and 1.61 ms. `mermaid.min.js` is 5.5 MB, 1.57 MB gzipped.
 
-Chromium's profiler puts 57 percent of Mermaid's render time into `assignWithDepth`: `getConfig()` returns a deep copy of the whole configuration, theme variables included, and the renderers, shapes and labels call it again and again. The layouts take 17 percent, DOMPurify 10, and the DOM measurement with the layout it forces only 4. A change to Mermaid that hands out the configuration once per render, or as a frozen object, would be worth more than measuring text another way. ferrigura has the same weakness in a smaller form: 84 percent of a small render goes into resolving its configuration and theme.
+Chromium's profiler puts 57 percent of Mermaid's render time into `assignWithDepth`: `getConfig()` returns a deep copy of the whole configuration, theme variables included, and the renderers, shapes and labels call it again and again. The layouts take 17 percent, DOMPurify 10, and the DOM measurement with the layout it forces only 4. A change to Mermaid that hands out the configuration once per render, or as a frozen object, would be worth more than measuring text another way. ferrigura had the same weakness in a smaller form: on 2026-10-17, 84 percent of a small render went into resolving its configuration and theme. Since decision 0009, step 2, the configuration no longer shows in the profile of a render without a directive (the overview has the profile).
 
 ## What is not there yet
 
-- Nine of Mermaid's 33 diagram families: agentflow, cynefin, radar, railroad, swimlanes, tree view, use case, venn and wardley (P3).
-- The `handDrawn` look (rough.js sketching), math in labels (KaTeX), images and icon packs in flowcharts, and fallback fonts for scripts the bundled faces do not cover (CJK, emoji).
+- The `handDrawn` look (rough.js sketching), math in labels (KaTeX), images and icon packs in flowcharts, and fallback fonts for scripts the bundled faces do not cover (CJK, kana and Arabic; the emoji and the symbols of U+2600-27BF are bundled since 2026-10-20).
 - The known gaps of each milestone are listed in the handovers of [STATUS.md](../STATUS.md).

@@ -1,5 +1,7 @@
 # Fork notes
 
+The record of the fork's cleanup of Mermaid. The cleanup ended when the Rust port, ferrigura, took the fork as its reference: `packages/` does not change any more (see [README.md](./README.md)).
+
 This fork starts from Mermaid 12.2.0 (upstream `develop` at `e28fbd9de`) and keeps the full upstream history. Each cleanup step is its own commit, so any of them can be reverted on its own:
 
 ```bash
@@ -60,22 +62,42 @@ ELK has been the default since 12.0. The dagre layout was the fallback for unreg
 
 **Packages and builds.** `@mermaid-js/mermaid-zenuml`, `@mermaid-js/examples`, `@mermaid-js/mermaid-example-diagram`, `@mermaid-js/mermaid-local-editor`, `@mermaid-js/layout-tidy-tree`, `@mermaid-js/tiny`, `@mermaid-js/layout-elk`, and the webpack and release-verification test harnesses. The `injected.includeLargeFeatures` build switch is gone with the tiny build.
 
-**Project infrastructure.** Upstream's GitHub workflows, issue templates, Netlify, Docker, Renovate, funding and citation files, the Chinese README copy, and the Applitools/Argos visual-testing integration. One workflow, `.github/workflows/ci.yml`, runs lint, the tests of the port's tools, the Rust job and the port's differential and geometry checks. Since 2026-10-21 it no longer runs the schema/type sync check, the circular-dependency check, Mermaid's unit tests and the out-of-tree TypeScript check: `packages/` stays only as the reference the port is checked against, and it does not change. Playwright compares against local screenshot baselines.
+**Project infrastructure.** Upstream's GitHub workflows, issue templates, Netlify, Docker, Renovate, funding and citation files, the Chinese README copy, and the Applitools/Argos visual-testing integration. The repository's workflows are `.github/workflows/ci.yml` (lint, the tests of the port's tools, the Rust job and the port's differential and geometry checks) and `publish.yml` (the releases of the crates). Since 2026-10-21 they no longer run Mermaid's unit tests, its Playwright suites, the schema/type sync check, the circular-dependency check or the out-of-tree TypeScript check, and those suites, scripts and their dependencies are gone: `packages/` stays only as the reference the port is checked against, and it does not change.
 
-**Demo pages.** The 38 hand-written pages under `demos/` that the dev server used to serve at `/`. The dev explorer at `/dev/` covers the same ground: it browses the e2e fixtures and `e2e/platform/dev-diagrams/`, and `/` now redirects there.
+**Demo pages.** The 38 hand-written pages under `demos/` that the dev server used to serve at `/`. The dev explorer that replaced them at `/dev/` went on 2026-10-21 too; the dev server now serves the bundles and `e2e/platform`, which the port's corpus capture tools load.
 
-**Documentation website.** The VitePress site (theme, landing page, news, ecosystem and integration pages) and the generated JSON Schema reference. The Markdown reference docs stay in `packages/mermaid/src/docs` and are rendered to `docs/` for GitHub.
+**Documentation website.** The VitePress site (theme, landing page, news, ecosystem and integration pages) and the generated JSON Schema reference. The Markdown reference docs stay in `packages/mermaid/src/docs`, where the port reads their examples; their generated copy in `docs/` went on 2026-10-21.
 
 **Dead code** (about 4,000 lines). Upstream dropped the legacy `flowchart`, `class` and `state` diagram ids in 12.0, but their renderers stayed behind: `class/classRenderer.js`, `class/svgDraw.js`, the duplicate `class/classDiagram.ts`, `state/stateRenderer.js`, `state/shapes.js`, `state/stateDiagram.ts`, the StateDB v1 path, `er/erRenderer.js`, `er/erMarkers.js`, `flowchart/flowChartShapes.js` and the pre-unified `mindmap/svgDraw.ts`. Also gone: `interactionDb.ts` (never populated), the orphaned copies `block/blockUtils.ts` and `shapes/document.ts`, and helpers, `setConf` stubs and types nothing called.
 
-## Candidates for the next round
+## Not removed
 
-These are deprecated, legacy or redundant, but removing them changes user-visible behaviour or needs a decision first:
+These are deprecated, legacy or redundant, but removing them would have changed user-visible behaviour or needed a decision first. With `packages/` frozen as the reference, they stay:
 
 - **`%%{init}%%` and `%%{wrap}%%` directives.** Deprecated in the docs since 10.5 in favour of front matter; about 140 e2e fixtures still use them.
 - **Keyword aliases that upstream never deprecated.** `graph` (alias of `flowchart`), `classDiagram-v2`, `stateDiagram-v2`; `ishikawa-beta`, `treemap-beta` and `architecture-beta`, whose docs still use the beta keyword.
 - **`securityLevel: 'antiscript'`.** The schema describes it as allowing HTML and clicks, but the code treats it exactly like `strict`.
 - **Smaller internals.** The `arrowMarkerAbsolute` copies in each diagram section; the deprecated `createLabel.js` wrapper around `createText`; the `D3Element = any` type; the `"./*"` deep-import entry in `package.json` exports; layout test infrastructure (`ddlt`, `layout-utils`, the agentflow conformance runner) living in `src`; the size-capture dev hook in `createGraph.ts`; the single `uuid` use; 47 JavaScript files that could move to TypeScript; and duplicated helpers (three ways to select the SVG root, two viewport helpers, two curve maps).
+
+## Size compared with Mermaid 12.2.0
+
+Measured on 15 October 2026 against upstream commit `e28fbd9de`, with both checkouts built by `pnpm build`. Compressed sizes use gzip level 9 and Brotli quality 11; 1 kB is 1,000 bytes.
+
+|                                              | Mermaid 12.2.0 |  ferraid | Change |
+| -------------------------------------------- | -------------: | -------: | -----: |
+| `mermaid.min.js` (IIFE), minified            |        5.49 MB |  5.42 MB |  −1.3% |
+| `mermaid.min.js` (IIFE), gzip                |       1,567 kB | 1,542 kB |  −1.6% |
+| `mermaid.min.js` (IIFE), Brotli              |       1,177 kB | 1,157 kB |  −1.7% |
+| ESM entry `mermaid.esm.min.mjs`, gzip        |        11.6 kB |  11.3 kB |  −2.4% |
+| ESM entry and all lazy chunks, gzip          |       1,579 kB | 1,556 kB |  −1.5% |
+| npm tarball of `mermaid`, packed             |        26.0 MB |  25.5 MB |  −2.0% |
+| Library source lines, without tests and docs |        114,970 |  109,747 |  −4.5% |
+| Workspace packages                           |              9 |        2 |     −7 |
+| Packages resolved in `pnpm-lock.yaml`        |          2,409 |    1,280 |   −47% |
+| Files tracked in the repository              |          4,272 |    3,762 |   −12% |
+| Runtime dependencies of `mermaid`            |             23 |       23 |      0 |
+
+The cleanup mostly removed what surrounds the library: seven packages, the website and the tooling they needed, which halves what `pnpm install` resolves. The bundles are only about 2% smaller, and most of that comes from removing the dagre layout. Most of the dead code removed from the library was never bundled in the first place, because nothing imported it. ("ferraid" was the fork's working name.)
 
 ## Upstream bugs fixed
 
