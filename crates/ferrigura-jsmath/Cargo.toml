@@ -12,7 +12,6 @@ repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/ferrigura-jsmath"
 keywords = ["ferrigura", "javascript", "math", "v8", "fdlibm"]
-publish.workspace = true
 
 [dependencies]
 

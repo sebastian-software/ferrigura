@@ -9,7 +9,6 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-publish.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/ferrigura"
 readme = "crates/ferrigura/README.md"
@@ -91,7 +90,6 @@ rust-version = "1.95"
 license = "MIT"
 repository = "https://github.com/sebastian-software/ferrigura"
 homepage = "https://github.com/sebastian-software/ferrigura"
-publish = false
 
 [workspace.lints.rust]
 unsafe_code = "deny"

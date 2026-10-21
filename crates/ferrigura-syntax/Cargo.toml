@@ -11,7 +11,6 @@ repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/ferrigura-syntax"
 keywords = ["ferrigura", "mermaid", "parser", "diagram"]
-publish.workspace = true
 
 [dependencies]
 ferrigura-model = { path = "../ferrigura-model", version = "0.0.0" }

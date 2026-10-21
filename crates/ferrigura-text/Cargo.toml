@@ -11,7 +11,6 @@ repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/ferrigura-text"
 keywords = ["ferrigura", "text", "font", "measurement", "svg"]
-publish.workspace = true
 
 [dependencies]
 base64 = "0.23.1"

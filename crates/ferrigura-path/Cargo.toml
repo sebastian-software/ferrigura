@@ -12,7 +12,6 @@ repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/ferrigura-path"
 keywords = ["ferrigura", "svg", "path", "bounding-box", "skia"]
-publish.workspace = true
 
 [dependencies]
 ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.0.0" }

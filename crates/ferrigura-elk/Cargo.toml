@@ -11,7 +11,6 @@ repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/ferrigura-elk"
 keywords = ["ferrigura", "elk", "graph", "layout", "diagram"]
-publish.workspace = true
 
 [dependencies]
 indexmap.workspace = true
