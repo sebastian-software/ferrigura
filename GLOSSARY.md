@@ -1,6 +1,6 @@
-# ferraid and ferrigura
+# ferrigura
 
-ferraid is a fork of Mermaid trimmed to its core; ferrigura is its port to Rust, which replaces the TypeScript implementation diagram type by diagram type.
+ferrigura is the port of Mermaid 12.2.0 to Rust. Its reference is this repository's fork of Mermaid, trimmed to its core, whose working name was ferraid.
 
 ## Diagrams
 

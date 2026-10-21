@@ -1,6 +1,6 @@
 # ferrigura: porting the core to Rust
 
-This folder holds the plan, the decisions and the status of porting this Mermaid fork to Rust. The port is called **ferrigura** (Latin _ferrum_ and _figura_). The name checks of 2026-10-21 cleared it for the first release; a formal trademark search can follow ([RELEASE.md](./RELEASE.md)). The repository is [`sebastian-software/ferrigura`](https://github.com/sebastian-software/ferrigura); the local checkout may still be called `ferraid`. Crate names, Rust code and these documents use `ferrigura` throughout.
+This folder holds the plan, the decisions and the status of porting this Mermaid fork to Rust. The port is called **ferrigura** (Latin _ferrum_ and _figura_). The name checks of 2026-10-21 cleared it for the first release; a formal trademark search can follow ([RELEASE.md](./RELEASE.md)). The repository is [`sebastian-software/ferrigura`](https://github.com/sebastian-software/ferrigura). Crate names, Rust code and these documents use `ferrigura` throughout.
 
 | File                                       | Contents                                                                                   |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------ |
