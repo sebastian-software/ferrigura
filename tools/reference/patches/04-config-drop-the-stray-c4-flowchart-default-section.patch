@@ -1,0 +1,47 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs-port/ORACLE-PLAN.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(config): drop the stray c4.flowchart default section
+
+defaultConfig.ts spread the flowchart defaults into a `flowchart` block
+nested in the c4 section, to default `inheritDir` to false. Nothing
+reads `c4.flowchart`; the flowchart section already gets `inheritDir:
+false` from the schema, so the block only added a misplaced copy of the
+flowchart config under c4.
+
+The fork's commit c2057b2d2, its changes to packages/ and .build/.
+
+diff --git a/packages/mermaid/src/config.spec.ts b/packages/mermaid/src/config.spec.ts
+index 9cfc9b468..b0c1ce62a 100644
+--- a/packages/mermaid/src/config.spec.ts
++++ b/packages/mermaid/src/config.spec.ts
+@@ -67,6 +67,13 @@ describe('when working with site config', () => {
+     expect(config.elk?.nodePlacementAlignment).toBeUndefined();
+   });
+ 
++  it('keeps the flowchart inheritDir default in the flowchart section', () => {
++    const config = configApi.getConfig();
++
++    expect(config.flowchart?.inheritDir).toBe(false);
++    expect(config.c4).not.toHaveProperty('flowchart');
++  });
++
+   it('should not force class diagram padding', () => {
+     const config = configApi.getConfig();
+ 
+diff --git a/packages/mermaid/src/defaultConfig.ts b/packages/mermaid/src/defaultConfig.ts
+index 926f9bea4..16eeaa8e8 100644
+--- a/packages/mermaid/src/defaultConfig.ts
++++ b/packages/mermaid/src/defaultConfig.ts
+@@ -94,11 +94,6 @@ const config: RequiredDeep<MermaidConfig> = {
+         fontWeight: this.personFontWeight,
+       };
+     },
+-    flowchart: {
+-      ...defaultConfigJson.flowchart,
+-      inheritDir: false, // default to legacy behavior
+-    },
+-
+     external_personFont: function () {
+       return {
+         fontFamily: this.external_personFontFamily,

@@ -1,0 +1,59 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs-port/ORACLE-PLAN.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(detectors): end sankey, packet, xychart and block at the keyword
+
+The detectors took any word that starts with the keyword (sankeyfoo, packet0-7, packet-0-7). They now end at a word boundary, after the keyword or its -beta form, as the fork's detectors and ferrigura do.
+
+diff --git a/packages/mermaid/src/diagrams/block/blockDetector.ts b/packages/mermaid/src/diagrams/block/blockDetector.ts
+index 6122221e8..1246443b5 100644
+--- a/packages/mermaid/src/diagrams/block/blockDetector.ts
++++ b/packages/mermaid/src/diagrams/block/blockDetector.ts
+@@ -3,7 +3,7 @@ import type { DiagramDetector, ExternalDiagramDefinition } from '../../diagram-a
+ const id = 'block';
+ 
+ const detector: DiagramDetector = (txt) => {
+-  return /^\s*block(-beta)?/.test(txt);
++  return /^\s*block(-beta)?(?![\w-])/.test(txt);
+ };
+ 
+ const loader = async () => {
+diff --git a/packages/mermaid/src/diagrams/packet/detector.ts b/packages/mermaid/src/diagrams/packet/detector.ts
+index ed3c61054..cffe7ccb4 100644
+--- a/packages/mermaid/src/diagrams/packet/detector.ts
++++ b/packages/mermaid/src/diagrams/packet/detector.ts
+@@ -7,7 +7,7 @@ import type {
+ const id = 'packet';
+ 
+ const detector: DiagramDetector = (txt) => {
+-  return /^\s*packet(-beta)?/.test(txt);
++  return /^\s*packet(-beta)?(?![\w-])/.test(txt);
+ };
+ 
+ const loader: DiagramLoader = async () => {
+diff --git a/packages/mermaid/src/diagrams/sankey/sankeyDetector.ts b/packages/mermaid/src/diagrams/sankey/sankeyDetector.ts
+index 589bc9ade..2f1cd72ee 100644
+--- a/packages/mermaid/src/diagrams/sankey/sankeyDetector.ts
++++ b/packages/mermaid/src/diagrams/sankey/sankeyDetector.ts
+@@ -3,7 +3,7 @@ import type { DiagramDetector, ExternalDiagramDefinition } from '../../diagram-a
+ const id = 'sankey';
+ 
+ const detector: DiagramDetector = (txt) => {
+-  return /^\s*sankey(-beta)?/.test(txt);
++  return /^\s*sankey(-beta)?(?![\w-])/.test(txt);
+ };
+ 
+ const loader = async () => {
+diff --git a/packages/mermaid/src/diagrams/xychart/xychartDetector.ts b/packages/mermaid/src/diagrams/xychart/xychartDetector.ts
+index 3a848cd7f..8f7cb78ba 100644
+--- a/packages/mermaid/src/diagrams/xychart/xychartDetector.ts
++++ b/packages/mermaid/src/diagrams/xychart/xychartDetector.ts
+@@ -7,7 +7,7 @@ import type {
+ const id = 'xychart';
+ 
+ const detector: DiagramDetector = (txt) => {
+-  return /^\s*xychart(-beta)?/.test(txt);
++  return /^\s*xychart(-beta)?(?![\w-])/.test(txt);
+ };
+ 
+ const loader: DiagramLoader = async () => {

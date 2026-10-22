@@ -1,0 +1,75 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs-port/ORACLE-PLAN.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(architecture): accept the graduated architecture keyword
+
+The detector and the beta policy treat architecture as graduated, so
+both `architecture` and `architecture-beta` are detected, but the
+Langium grammar accepted only `architecture-beta`. A diagram starting
+with plain `architecture` was routed to the architecture parser and
+then failed. The token builder guarded an `architecture` keyword that
+did not exist, so `architecture-beta` was not protected against
+trailing text either.
+
+Accept both keywords in the grammar and guard both in the token
+builder.
+
+The fork's commit 87ba727fd, its changes to packages/ and .build/.
+
+diff --git a/packages/parser/src/language/architecture/architecture.langium b/packages/parser/src/language/architecture/architecture.langium
+index 93fdf24a8..9b18324f0 100644
+--- a/packages/parser/src/language/architecture/architecture.langium
++++ b/packages/parser/src/language/architecture/architecture.langium
+@@ -4,7 +4,7 @@ import "arch";
+ 
+ entry Architecture:
+     NEWLINE*
+-    "architecture-beta"
++    ("architecture" | "architecture-beta")
+     (
+         NEWLINE
+         | TitleAndAccessibilities
+diff --git a/packages/parser/src/language/architecture/tokenBuilder.ts b/packages/parser/src/language/architecture/tokenBuilder.ts
+index 6a7c6a37a..a350c8621 100644
+--- a/packages/parser/src/language/architecture/tokenBuilder.ts
++++ b/packages/parser/src/language/architecture/tokenBuilder.ts
+@@ -2,6 +2,6 @@ import { AbstractMermaidTokenBuilder } from '../common/index.js';
+ 
+ export class ArchitectureTokenBuilder extends AbstractMermaidTokenBuilder {
+   public constructor() {
+-    super(['architecture']);
++    super(['architecture', 'architecture-beta']);
+   }
+ }
+diff --git a/packages/parser/tests/architecture.test.ts b/packages/parser/tests/architecture.test.ts
+index 8039c8f43..f3837dbac 100644
+--- a/packages/parser/tests/architecture.test.ts
++++ b/packages/parser/tests/architecture.test.ts
+@@ -17,6 +17,27 @@ describe('architecture', () => {
+       expectNoErrorsOrAlternatives(result);
+       expect(result.value.$type).toBe(Architecture.$type);
+     });
++
++    it.each([`architecture`, `  architecture  `, `architecture %% comment`])(
++      'should handle the graduated keyword without -beta',
++      (context: string) => {
++        const result = parse(context);
++        expectNoErrorsOrAlternatives(result);
++        expect(result.value.$type).toBe(Architecture.$type);
++      }
++    );
++
++    it('should handle the graduated keyword with a service', () => {
++      const result = parse(`architecture
++        service db(database)[Database]`);
++      expectNoErrorsOrAlternatives(result);
++      expect(result.value.services[0].id).toBe('db');
++    });
++
++    it('should reject other text glued to the keyword', () => {
++      const result = parse(`architectures`);
++      expect(result.parserErrors.length + result.lexerErrors.length).toBeGreaterThan(0);
++    });
+   });
+ 
+   describe('should handle TitleAndAccessibilities', () => {

@@ -1,0 +1,44 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs-port/ORACLE-PLAN.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+feat(elk): a capture hook for ferrigura's harness
+
+A page callback, globalThis.__mermaidElkCapture, receives each ELK input and its layout, so the harness compares ferrigura's ELK graphs with the reference's. It does nothing when no callback is installed. As in the fork (00f87f4ee).
+
+diff --git a/packages/mermaid/src/rendering-util/layout-algorithms/elk/render.ts b/packages/mermaid/src/rendering-util/layout-algorithms/elk/render.ts
+index 51d29964e..6ba6ccc6d 100644
+--- a/packages/mermaid/src/rendering-util/layout-algorithms/elk/render.ts
++++ b/packages/mermaid/src/rendering-util/layout-algorithms/elk/render.ts
+@@ -1302,6 +1302,9 @@ function setIncludeChildrenPolicy(
+   }
+ }
+ 
++/** A page callback that receives each ELK graph and its layout (ferrigura's ELK capture). */
++type ElkCaptureHook = (input: unknown, output: unknown) => void;
++
+ async function runElkLayout(
+   elk: { layout: (graph: any) => Promise<ElkLayoutResult> },
+   elkGraph: any,
+@@ -1316,6 +1319,12 @@ async function runElkLayout(
+       __mermaidProfiler?: { begin(name: string): void; end(): void };
+     }
+   ).__mermaidProfiler;
++  // ELK capture hook (dev / test tooling of ferrigura's harness, which installs it). elkjs mutates
++  // the graph it is given, so the input is copied before layout runs.
++  const elkCapture = (globalThis as typeof globalThis & { __mermaidElkCapture?: ElkCaptureHook })
++    .__mermaidElkCapture;
++  const captureInput =
++    typeof elkCapture === 'function' ? JSON.parse(JSON.stringify(elkGraph)) : undefined;
+   try {
+     // Time the actual external elkjs call ("layoutCore") on its own.
+     profiler?.begin('layoutCore');
+@@ -1329,6 +1338,9 @@ async function runElkLayout(
+     // Pass the object, not a pre-serialised string: `JSON.stringify` of the
+     // whole laid-out graph ran on every render regardless of log level.
+     log.debug('APA01 layout result:', graph);
++    if (captureInput !== undefined && elkCapture !== undefined) {
++      elkCapture(captureInput, graph);
++    }
+     return graph;
+   } catch (error) {
+     log.error('ELK layout error:', error);

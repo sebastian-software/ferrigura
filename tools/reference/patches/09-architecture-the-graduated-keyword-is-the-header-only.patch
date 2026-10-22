@@ -1,0 +1,53 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs-port/ORACLE-PLAN.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(architecture): the graduated keyword is the header only
+
+With architecture accepted as a header keyword, service architecture no longer parsed: the keyword took the name. The keyword now matches only at the start of the text, so the word is a name after the header again, as upstream has it.
+
+diff --git a/packages/parser/src/language/architecture/tokenBuilder.ts b/packages/parser/src/language/architecture/tokenBuilder.ts
+index a350c8621..77cc3ba26 100644
+--- a/packages/parser/src/language/architecture/tokenBuilder.ts
++++ b/packages/parser/src/language/architecture/tokenBuilder.ts
+@@ -1,7 +1,41 @@
++import type { TokenType } from 'chevrotain';
++import type { GrammarAST, Stream, TokenBuilderOptions } from 'langium';
+ import { AbstractMermaidTokenBuilder } from '../common/index.js';
+ 
++/** The graduated header keyword, with the boundary the common token builder gives keywords. */
++const HEADER = /architecture(?:(?=%%)|(?!\S))/y;
++
+ export class ArchitectureTokenBuilder extends AbstractMermaidTokenBuilder {
+   public constructor() {
+     super(['architecture', 'architecture-beta']);
+   }
++
++  /**
++   * `architecture` is the header keyword only at the start of the text, after blanks; after the
++   * header it is a name again (`service architecture`), as it is upstream, whose grammar knows
++   * only `architecture-beta`. ferrigura's lexer does the same.
++   */
++  protected override buildKeywordTokens(
++    rules: Stream<GrammarAST.AbstractRule>,
++    terminalTokens: TokenType[],
++    options?: TokenBuilderOptions
++  ): TokenType[] {
++    const tokenTypes = super.buildKeywordTokens(rules, terminalTokens, options);
++    for (const tokenType of tokenTypes) {
++      if (tokenType.name === 'architecture') {
++        tokenType.PATTERN = {
++          exec: (text: string, offset: number) => {
++            if (!/^\s*$/.test(text.slice(0, offset))) {
++              return null;
++            }
++            HEADER.lastIndex = offset;
++            return HEADER.exec(text);
++          },
++        };
++        tokenType.START_CHARS_HINT = ['a'];
++        tokenType.LINE_BREAKS = false;
++      }
++    }
++    return tokenTypes;
++  }
+ }

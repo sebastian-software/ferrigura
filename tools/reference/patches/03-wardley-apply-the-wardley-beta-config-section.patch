@@ -1,0 +1,109 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs-port/ORACLE-PLAN.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(wardley): apply the wardley-beta config section
+
+The wardley diagram type keeps its config under `wardley-beta`, named
+after its beta keyword, but nothing connected the two:
+
+- getDiagramConfigKey('wardley') returned `wardley`, so a theme, look
+  or layout set under `wardley-beta` never reached the diagram.
+- The schema defaults generator skipped `wardley-beta`, so the section
+  was missing from defaultConfig and configKeys, and sanitizeDirective
+  stripped it from front matter and directives.
+
+Map the type to its existing section, which keeps current configs
+working, and generate its defaults. They match the renderer's
+fallbacks, so rendering does not change. A new test checks that every
+registered diagram type maps to a section in defaultConfig.
+
+The fork's commit cc2425204, its changes to packages/ and .build/.
+
+diff --git a/.build/jsonSchema.ts b/.build/jsonSchema.ts
+index d6df81a0e..374003123 100644
+--- a/.build/jsonSchema.ts
++++ b/.build/jsonSchema.ts
+@@ -35,6 +35,7 @@ const MERMAID_CONFIG_DIAGRAM_KEYS = [
+   'radar',
+   'usecase',
+   'venn',
++  'wardley-beta',
+   'cynefin',
+ ] as const;
+ 
+diff --git a/packages/mermaid/src/config.appearance.spec.ts b/packages/mermaid/src/config.appearance.spec.ts
+index 166177968..5360448fe 100644
+--- a/packages/mermaid/src/config.appearance.spec.ts
++++ b/packages/mermaid/src/config.appearance.spec.ts
+@@ -11,6 +11,7 @@ import {
+   setSiteConfig,
+   reset,
+ } from './config.js';
++import { detectors } from './diagram-api/detectType.js';
+ import { addDiagrams } from './diagram-api/diagram-orchestration.js';
+ import { getDiagramConfigKey } from './diagram-api/diagramConfigKeys.js';
+ import { mermaidAPI } from './mermaidAPI.js';
+@@ -137,6 +138,14 @@ describe('per-diagram appearance defaults', () => {
+       expect((await configFor('classDiagram-v2\n  class Duck')).theme).toBe('forest');
+     });
+ 
++    it('reaches a diagram type whose section is named after its beta keyword', async () => {
++      // The wardley diagram's id is `wardley`, its config section `wardley-beta`.
++      mermaidAPI.initialize({ 'wardley-beta': { theme: 'forest', look: 'handDrawn' } });
++      const config = await configFor('wardley-beta\n  component A [0.5, 0.5]');
++      expect(config.theme).toBe('forest');
++      expect(config.look).toBe('handDrawn');
++    });
++
+     it('opts a diagram type into a layout', async () => {
+       mermaidAPI.initialize({ er: { layout: 'dagre' } });
+       expect((await configFor(REDESIGNED_DIAGRAMS.er)).layout).toBe('dagre');
+@@ -159,6 +168,13 @@ describe('per-diagram appearance defaults', () => {
+       );
+     });
+ 
++    it('frontmatter reaches a diagram type whose section is named after its beta keyword', async () => {
++      const config = await configFor(
++        '---\nconfig:\n  wardley-beta:\n    look: handDrawn\n---\nwardley-beta\n  component A [0.5, 0.5]'
++      );
++      expect(config.look).toBe('handDrawn');
++    });
++
+     it('a diagram-scoped frontmatter value beats a global one in the same frontmatter', async () => {
+       const config = await configFor(
+         '---\nconfig:\n  look: classic\n  flowchart:\n    look: handDrawn\n---\nflowchart TD\n  A --> B'
+@@ -298,5 +314,14 @@ describe('per-diagram appearance defaults', () => {
+       expect(getDiagramConfigKey('classDiagram')).toBe('class');
+       expect(getDiagramConfigKey('stateDiagram')).toBe('state');
+     });
++
++    it('maps every registered diagram type to a config section', () => {
++      // Only these have nothing to configure.
++      const unconfigurable = new Set(['error', '---', 'info']);
++      const missing = Object.keys(detectors).filter(
++        (type) => !unconfigurable.has(type) && !(getDiagramConfigKey(type) in defaultConfig)
++      );
++      expect(missing).toEqual([]);
++    });
+   });
+ });
+diff --git a/packages/mermaid/src/diagram-api/diagramConfigKeys.ts b/packages/mermaid/src/diagram-api/diagramConfigKeys.ts
+index 9aa4c57bd..1734a2ce7 100644
+--- a/packages/mermaid/src/diagram-api/diagramConfigKeys.ts
++++ b/packages/mermaid/src/diagram-api/diagramConfigKeys.ts
+@@ -2,6 +2,7 @@
+  * Diagram types whose id differs from the `MermaidConfig` key their configuration lives
+  * under. Several share one section on purpose: they are renderers or parser versions of
+  * one diagram, so a setting made under `flowchart`, `class` or `state` must reach any of them.
++ * `wardley` keeps the section named after its beta keyword, which existing configs use.
+  */
+ const DIAGRAM_CONFIG_KEY_ALIASES: Record<string, string> = {
+   'flowchart-v2': 'flowchart',
+@@ -12,6 +13,7 @@ const DIAGRAM_CONFIG_KEY_ALIASES: Record<string, string> = {
+   railroadAbnf: 'railroad',
+   railroadEbnf: 'railroad',
+   railroadPeg: 'railroad',
++  wardley: 'wardley-beta',
+ };
+ 
+ /**
