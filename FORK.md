@@ -1,6 +1,6 @@
 # Fork notes
 
-The record of the fork's cleanup of Mermaid. The cleanup ended when the Rust port, ferrigura, took the fork as its reference: `packages/` does not change any more (see [README.md](./README.md)).
+The record of the fork's cleanup of Mermaid. The cleanup ended when the Rust port, ferrigura, took the fork as its reference; since 2026-10-23 the port is checked against upstream Mermaid at a pinned commit instead (`tools/reference/`), and the fork left the repository. Its last state is the tag `fork-mermaid-12.2.0`, and what follows describes the fork as it was there.
 
 This fork starts from Mermaid 12.2.0 (upstream `develop` at `e28fbd9de`) and keeps the full upstream history. Each cleanup step is its own commit, so any of them can be reverted on its own:
 

@@ -12,7 +12,7 @@ The port is checked against upstream Mermaid at a pinned commit, with a few patc
 REFERENCE_ROOT="$(tools/reference/setup.sh)" pnpm port:diff flowchart
 ```
 
-The first run takes about half a minute; later runs reuse the build while the pin and the patches are unchanged. CI builds the reference the same way, once per pin and patch set, and caches the build. Without `REFERENCE_ROOT`, the harness still takes the fork in `packages/`, until the fork goes (step 5 of the plan).
+The first run takes about half a minute; later runs reuse the build while the pin and the patches are unchanged. CI builds the reference the same way, once per pin and patch set, and caches the build. Without `REFERENCE_ROOT`, the harness takes this build of the pin.
 
 ## The patches
 
@@ -28,7 +28,7 @@ The first run takes about half a minute; later runs reuse the build while the pi
 | 08    | The sankey, packet, xychart and block detectors took any word that starts with the keyword                    |
 | 09    | With patch 02, `architecture` became a keyword everywhere; it is the header keyword only now                  |
 
-Patches 01 to 06 are this repository's fixes of the fork, limited to `packages/` and `.build/`. A new patch is a diff against the pinned commit with the earlier patches applied, with a header that says what it fixes and, where there is one, the upstream issue. When upstream fixes a bug, its patch goes with the next move of the pin.
+Patches 01 to 06 are the fork's fixes (at the tag `fork-mermaid-12.2.0`), limited to `packages/` and `.build/`. A new patch is a diff against the pinned commit with the earlier patches applied, with a header that says what it fixes and, where there is one, the upstream issue. When upstream fixes a bug, its patch goes with the next move of the pin.
 
 ## Moving the pin
 

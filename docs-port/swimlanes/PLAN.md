@@ -82,7 +82,7 @@ Excluded, with the reason in the manifest (11):
 
 Within the cases, a missing `post:` stage means the pass changed nothing. The comparison is exact: numbers with `==` on `f64`, an absent key is not `null`, nodes and edges by index (`tests/support/corpus.rs`).
 
-Regenerate, from the repository root: `pnpm exec tsx crates/ferrigura-swimlane/tools/capture-corpus.ts` (about 8 minutes; it starts `pnpm dev`), and the generator `pnpm exec tsx crates/ferrigura-swimlane/tools/generate-swimlanes.ts`. The sort data: `pnpm exec tsx crates/ferrigura-swimlane/tools/js-sort.ts`. The data of `js-semantics.ts` (`to-fixed.txt`, `js-round.txt`, `ascii-*.txt`) is Node's V8 13.6, and the ASCII order is also checked in Chromium (section 4). `to_fixed` and `js_round` are checked against Node only.
+Regenerate, from the repository root of a checkout of the tag `fork-mermaid-12.2.0` (the capture runs against the fork, whose dev server and stage reports it needs): `pnpm exec tsx crates/ferrigura-swimlane/tools/capture-corpus.ts` (about 8 minutes; it starts `pnpm dev`), and the generator `pnpm exec tsx crates/ferrigura-swimlane/tools/generate-swimlanes.ts`. The sort data: `pnpm exec tsx crates/ferrigura-swimlane/tools/js-sort.ts`. The data of `js-semantics.ts` (`to-fixed.txt`, `js-round.txt`, `ascii-*.txt`) is Node's V8 13.6, and the ASCII order is also checked in Chromium (section 4). `to_fixed` and `js_round` are checked against Node only.
 
 ## 6. Tests
 
