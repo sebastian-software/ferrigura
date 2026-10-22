@@ -46,16 +46,12 @@ tsx-0/**
 node-compile-cache/
 vite.config.ts.timestamp-*
 
-# autogenereated by langium-cli
-generated/
 
 
 /CLAUDE.md
 /AGENTS.md
 /assistant/
 /.claude/
-packages/mermaid/src/diagrams/CLAUDE.md
-packages/parser/CLAUDE.md
 AGENTS.mermaid.md
 CLAUDE.mermaid.md
 .envrc

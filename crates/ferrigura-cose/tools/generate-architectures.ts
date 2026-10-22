@@ -1,6 +1,6 @@
 /**
  * Generator of seeded architecture diagrams for the fcose differential corpus
- * (capture-fcose-corpus.ts).
+ * (capture-fcose-corpus.ts, at the tag fork-mermaid-12.2.0).
  *
  * The diagrams use the grammar of packages/parser/src/language/architecture/architecture.langium:
  * groups nested up to three levels deep, services with and without icons, junctions, edges between
