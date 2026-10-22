@@ -59,6 +59,10 @@ name = "state"
 path = "crates/ferrigura/tests/state.rs"
 
 [[test]]
+name = "snapshots"
+path = "crates/ferrigura/tests/snapshots.rs"
+
+[[test]]
 name = "well_formed"
 path = "crates/ferrigura/tests/well_formed.rs"
 
