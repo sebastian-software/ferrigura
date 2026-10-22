@@ -23,6 +23,8 @@ export default tseslint.config(
       '.claude/',
       '**/generated/',
       '**/coverage/',
+      // Cargo's build output, such as the JavaScript of `cargo doc`.
+      'target/',
       // Vendored from non-layered-tidy-tree-layout 2.0.2 (MIT), kept as published.
       'tools/port/vendor/',
       'packages/mermaid/src/config.type.ts',
