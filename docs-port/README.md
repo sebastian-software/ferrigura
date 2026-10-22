@@ -2,27 +2,27 @@
 
 This folder holds the plan, the decisions and the status of porting this Mermaid fork to Rust. The port is called **ferrigura** (Latin _ferrum_ and _figura_). The name checks of 2026-10-21 cleared it for the first release; a formal trademark search can follow ([RELEASE.md](./RELEASE.md)). The repository is [`sebastian-software/ferrigura`](https://github.com/sebastian-software/ferrigura). Crate names, Rust code and these documents use `ferrigura` throughout.
 
-| File                                       | Contents                                                                                   |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| [README.md](./README.md)                   | Goal, scope, architecture, test strategy, milestones                                       |
-| [STATUS.md](./STATUS.md)                   | Progress per milestone, diagram type and strand; the handover                              |
-| [canonical-model.md](./canonical-model.md) | Conventions of the canonical model: text, sanitisation, title precedence, what is left out |
-| [decisions/](./decisions/)                 | One short record per hard-to-reverse decision                                              |
-| [comparisons/](./comparisons/)             | ferrigura next to Mermaid and other renderers, with measured size and speed                |
-| [elk/](./elk/)                             | M4: the ELK source pin, Mermaid's option set and the port plan                             |
-| [M6-PLAN.md](./M6-PLAN.md)                 | M6: the remaining P1 diagram types; per type `<type>/NOTES.md` and `<type>/PLAN.md`        |
-| [M6-RENDERERS.md](./M6-RENDERERS.md)       | M6: how a renderer task is set up, checked and reported                                    |
-| [P2-PLAN.md](./P2-PLAN.md)                 | P2: the second tier of diagram types; per type `<type>/NOTES.md` and `<type>/PLAN.md`      |
-| [P2-RESEARCH.md](./P2-RESEARCH.md)         | P2: how a research task works and what its notes hold                                      |
-| [P2-PARSERS.md](./P2-PARSERS.md)           | P2: how a parser task is set up, checked and reported                                      |
-| [P2-RENDERERS.md](./P2-RENDERERS.md)       | P2: what the renderer tasks add to the M6 working rules                                    |
-| [P3-PLAN.md](./P3-PLAN.md)                 | P3: the third tier, the swimlane layout, the scope decisions and the follow-ups            |
-| [P3-RENDERERS.md](./P3-RENDERERS.md)       | P3: what the renderer tasks add to the earlier working rules                               |
-| [typed-views.md](./typed-views.md)         | The typed configuration views every renderer reads (decision 0009)                         |
-| [RELEASE.md](./RELEASE.md)                 | How the crates are released, and the first release                                         |
-| [FREEZE-PLAN.md](./FREEZE-PLAN.md)         | The plan for checking the port against frozen reference data instead of running Mermaid    |
-| [spikes/](./spikes/)                       | Write-ups of the spikes: text measurement, fallback faces                                  |
-| [../GLOSSARY.md](../GLOSSARY.md)           | Terms used across the fork and the port                                                    |
+| File                                       | Contents                                                                                     |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| [README.md](./README.md)                   | Goal, scope, architecture, test strategy, milestones                                         |
+| [STATUS.md](./STATUS.md)                   | Progress per milestone, diagram type and strand; the handover                                |
+| [canonical-model.md](./canonical-model.md) | Conventions of the canonical model: text, sanitisation, title precedence, what is left out   |
+| [decisions/](./decisions/)                 | One short record per hard-to-reverse decision                                                |
+| [comparisons/](./comparisons/)             | ferrigura next to Mermaid and other renderers, with measured size and speed                  |
+| [elk/](./elk/)                             | M4: the ELK source pin, Mermaid's option set and the port plan                               |
+| [M6-PLAN.md](./M6-PLAN.md)                 | M6: the remaining P1 diagram types; per type `<type>/NOTES.md` and `<type>/PLAN.md`          |
+| [M6-RENDERERS.md](./M6-RENDERERS.md)       | M6: how a renderer task is set up, checked and reported                                      |
+| [P2-PLAN.md](./P2-PLAN.md)                 | P2: the second tier of diagram types; per type `<type>/NOTES.md` and `<type>/PLAN.md`        |
+| [P2-RESEARCH.md](./P2-RESEARCH.md)         | P2: how a research task works and what its notes hold                                        |
+| [P2-PARSERS.md](./P2-PARSERS.md)           | P2: how a parser task is set up, checked and reported                                        |
+| [P2-RENDERERS.md](./P2-RENDERERS.md)       | P2: what the renderer tasks add to the M6 working rules                                      |
+| [P3-PLAN.md](./P3-PLAN.md)                 | P3: the third tier, the swimlane layout, the scope decisions and the follow-ups              |
+| [P3-RENDERERS.md](./P3-RENDERERS.md)       | P3: what the renderer tasks add to the earlier working rules                                 |
+| [typed-views.md](./typed-views.md)         | The typed configuration views every renderer reads (decision 0009)                           |
+| [RELEASE.md](./RELEASE.md)                 | How the crates are released, and the first release                                           |
+| [ORACLE-PLAN.md](./ORACLE-PLAN.md)         | The plan for checking the port against upstream Mermaid at a pinned commit, without the fork |
+| [spikes/](./spikes/)                       | Write-ups of the spikes: text measurement, fallback faces                                    |
+| [../GLOSSARY.md](../GLOSSARY.md)           | Terms used across the fork and the port                                                      |
 
 The milestone guides and the per-type `NOTES.md` and `PLAN.md` were written while the work was done. Their status lines (such as "research only" or "no Rust code yet") and the scratchpad paths they cite describe that moment; [STATUS.md](./STATUS.md) holds the current state.
 
