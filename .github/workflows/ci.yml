@@ -54,6 +54,15 @@ jobs:
       - name: Node addon
         run: node --test crates/ferrigura-node/test/render.test.mjs
 
+  snapshots:
+    # ferrigura's own output against crates/ferrigura/tests/snapshots/svg.tsv. The manifest holds the
+    # aarch64 renders (ferrigura_jsmath rounds with fused multiply-adds there), so this runs on macOS.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      # The toolchain comes from rust-toolchain.toml; the runner's rustup installs it on first use.
+      - run: cargo test --release --test snapshots
+
   # port-diff and port-geometry check ferrigura against upstream Mermaid at the pin of
   # tools/reference, with its patches (docs-port/ORACLE-PLAN.md), built once per pin and cached.
   port-diff:
