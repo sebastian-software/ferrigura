@@ -12,7 +12,7 @@ The port is checked against upstream Mermaid at a pinned commit, with a few patc
 REFERENCE_ROOT="$(tools/reference/setup.sh)" pnpm port:diff flowchart
 ```
 
-The first run takes about half a minute; later runs reuse the build while the pin and the patches are unchanged. Without `REFERENCE_ROOT`, the harness takes the fork in `packages/`, as CI does until the reference moves (step 3 of the plan).
+The first run takes about half a minute; later runs reuse the build while the pin and the patches are unchanged. CI builds the reference the same way, once per pin and patch set, and caches the build. Without `REFERENCE_ROOT`, the harness still takes the fork in `packages/`, until the fork goes (step 5 of the plan).
 
 ## The patches
 
