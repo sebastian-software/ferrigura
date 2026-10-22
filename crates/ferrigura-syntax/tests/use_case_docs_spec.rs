@@ -3,7 +3,7 @@
 
 use ferrigura_syntax::use_case::parse;
 
-const DOCS: &str = include_str!("../../../packages/mermaid/src/docs/syntax/usecase.md");
+const DOCS: &str = include_str!("data/usecase.md");
 
 /// The sources of the `mermaid-example` fences, in order.
 fn examples(markdown: &str) -> Vec<&str> {

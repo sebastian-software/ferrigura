@@ -6,9 +6,8 @@
 use ferrigura_model::sankey::SankeyDiagram;
 use ferrigura_syntax::sankey::parse;
 
-/// The CSV sample of the reference's spec, read from the reference's own folder.
-const ENERGY_CSV: &str =
-    include_str!("../../../packages/mermaid/src/diagrams/sankey/parser/energy.csv");
+/// The CSV sample of the reference's spec (`sankey/parser/energy.csv` of Mermaid 12.2.0), copied.
+const ENERGY_CSV: &str = include_str!("data/energy.csv");
 
 fn parses(text: &str) -> SankeyDiagram {
     parse(text).expect("parses")

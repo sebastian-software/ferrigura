@@ -21,7 +21,7 @@ import { JSON_SCHEMA, load } from 'js-yaml';
 import { chromium, type Page } from 'playwright';
 
 import { faceCoverage, labelCoverage, unicodeRange } from '../fonts/bundled.ts';
-import { referenceRoot } from '../reference-root.ts';
+import { referenceRoot, requireReference } from '../reference-root.ts';
 import { ensureTidyTreeBundle, TIDY_TREE_DIR, TIDY_TREE_URL } from './tidy-tree-bundle.js';
 
 export const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -779,6 +779,7 @@ const CONTENT_TYPES: Record<string, string> = {
 
 /** A static server for the page, the bundle and the fonts, on a free port of 127.0.0.1. */
 export function serve(html: string): Promise<{ server: Server; port: number }> {
+  requireReference();
   const handle = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
     const url = new URL(request.url ?? '/', 'http://localhost');
     try {

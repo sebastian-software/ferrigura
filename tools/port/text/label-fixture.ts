@@ -27,13 +27,17 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { build } from 'esbuild';
+import { build, type Plugin } from 'esbuild';
 import { chromium } from 'playwright';
 
-import jsonSchemaPlugin from '../../../.esbuild/jsonSchemaPlugin.js';
 import { referenceRoot } from '../reference-root.ts';
+
+// The reference's esbuild plugin for its configuration schema, from its checkout.
+const { default: jsonSchemaPlugin } = (await import(
+  pathToFileURL(join(referenceRoot, '.esbuild/jsonSchemaPlugin.ts')).href
+)) as { default: Plugin };
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const fixturePath = join(root, 'crates/ferrigura-render/tests/fixtures/labels-chromium.json');

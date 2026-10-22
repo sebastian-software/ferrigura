@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { createServer, type Plugin } from 'vite';
 
-import { referenceRoot } from './reference-root.ts';
+import { referenceRoot, requireReference } from './reference-root.ts';
 
 /** One of the reference checkout's Vite plugins, `.vite/<file>`. */
 async function referencePlugin(file: string): Promise<Plugin> {
@@ -35,6 +35,7 @@ export interface Reference {
  * the reference's source is not changed.
  */
 export async function openReference(extraPlugins: Plugin[] = []): Promise<Reference> {
+  requireReference();
   const server = await createServer({
     configFile: false,
     root: referenceRoot,

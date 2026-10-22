@@ -47,6 +47,7 @@ import {
   registerDetectors,
   type Reference,
 } from '../../../tools/port/reference.ts';
+import { referenceRoot } from '../../../tools/port/reference-root.ts';
 import { withPage } from '../../../tools/port/geometry/common.ts';
 import {
   GENERATED_COUNT,
@@ -572,7 +573,7 @@ const BROWSER_RUNNER = String.raw`async (jobs) => {
 function libraryBuildSource(): string {
   // The build Mermaid bundles, which lives in node_modules/.pnpm (the mermaid package links to it).
   const build = realpathSync(
-    join(REPO_ROOT, 'packages/mermaid/node_modules/@upsetjs/venn.js/build/venn.esm.js')
+    join(referenceRoot, 'packages/mermaid/node_modules/@upsetjs/venn.js/build/venn.esm.js')
   );
   return `${readFileSync(build, 'utf8')}\nexport { addMissingAreas, constrainedMDSLayout };\n`;
 }
