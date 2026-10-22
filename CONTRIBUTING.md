@@ -30,6 +30,14 @@ cargo test --workspace
 pnpm test
 ```
 
+On an aarch64 machine (CI runs it on macOS), the output of the whole corpus is pinned by hashes:
+
+```bash
+cargo test --release --test snapshots
+```
+
+A change that moves the output on purpose rewrites them with `UPDATE_SNAPSHOTS=1` in the same commit; `tools/snapshots/diff.sh` shows which renders moved.
+
 A change to a parser is checked with `pnpm port:diff <type>`, a change to a renderer with `pnpm port:geometry <type>` as well. A change in shared code must not change the output of the other diagram types; [tools/port/README.md](./tools/port/README.md) lists the commands.
 
 ## Commit messages
