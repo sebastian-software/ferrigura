@@ -222,6 +222,7 @@ The P3 types are registered: detection, the models, the parser and renderer stub
 
 ## Open items
 
+- Freezing the reference into the port's own tests, so that `packages/` and most of the JavaScript toolchain can go: planned in [FREEZE-PLAN.md](./FREEZE-PLAN.md) (2026-10-22), with four decisions open for Sebastian.
 - Configuration and themes per [0009](./decisions/0009-configuration-resolved-once.md): the cache ([#2](https://github.com/sebastian-software/ferrigura/issues/2)), the `Renderer` ([#3](https://github.com/sebastian-software/ferrigura/issues/3)) and the typed views ([#4](https://github.com/sebastian-software/ferrigura/issues/4), [typed-views.md](./typed-views.md)) are done; every renderer takes a read-only `Context`. Open: the same measurement in the Mermaid fork ([#5](https://github.com/sebastian-software/ferrigura/issues/5)).
 - P3 follow-ups from the renderer tasks: the unified edges, numbers in exponent notation and the shared text helpers are done; the markup that still differs from the reference, the text copies left, the configuration layer's wrong-type values and the default theme's tables are open. See [P3-PLAN.md](./P3-PLAN.md#follow-ups).
 - A formal trademark search for `ferrigura` (DPMA, EUIPO, USPTO); for the first release the name checks of 2026-10-21 are enough (Sebastian). The repository is public as `sebastian-software/ferrigura` since 2026-10-16; the local folder is called `ferrigura` since 2026-10-21 (before, `ferraid`).

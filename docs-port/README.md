@@ -20,6 +20,7 @@ This folder holds the plan, the decisions and the status of porting this Mermaid
 | [P3-RENDERERS.md](./P3-RENDERERS.md)       | P3: what the renderer tasks add to the earlier working rules                               |
 | [typed-views.md](./typed-views.md)         | The typed configuration views every renderer reads (decision 0009)                         |
 | [RELEASE.md](./RELEASE.md)                 | How the crates are released, and the first release                                         |
+| [FREEZE-PLAN.md](./FREEZE-PLAN.md)         | The plan for checking the port against frozen reference data instead of running Mermaid    |
 | [spikes/](./spikes/)                       | Write-ups of the spikes: text measurement, fallback faces                                  |
 | [../GLOSSARY.md](../GLOSSARY.md)           | Terms used across the fork and the port                                                    |
 
