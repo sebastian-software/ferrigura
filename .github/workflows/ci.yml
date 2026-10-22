@@ -54,6 +54,8 @@ jobs:
       - name: Node addon
         run: node --test crates/ferrigura-node/test/render.test.mjs
 
+  # port-diff and port-geometry check ferrigura against upstream Mermaid at the pin of
+  # tools/reference, with its patches (docs-port/ORACLE-PLAN.md), built once per pin and cached.
   port-diff:
     runs-on: ubuntu-latest
     strategy:
@@ -112,7 +114,14 @@ jobs:
           cache: pnpm
           node-version-file: '.node-version'
       - run: pnpm install --frozen-lockfile
-      - name: Differential parse against the TypeScript reference
+      - name: Restore the reference build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: target/reference
+          key: reference-${{ runner.os }}-${{ hashFiles('tools/reference/**') }}
+      - name: Build the reference (upstream Mermaid at the pin, with its patches)
+        run: echo "REFERENCE_ROOT=$(tools/reference/setup.sh)" >> "$GITHUB_ENV"
+      - name: Differential parse against the reference
         run: pnpm port:diff ${{ matrix.diagram }}
       - name: Pie header rules against the reference DB setters
         if: matrix.diagram == 'pie'
@@ -131,18 +140,25 @@ jobs:
           cache: pnpm
           node-version-file: '.node-version'
       - run: pnpm install --frozen-lockfile
+      - name: Restore the reference build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: target/reference
+          key: reference-${{ runner.os }}-${{ hashFiles('tools/reference/**') }}
+      - name: Build the reference (upstream Mermaid at the pin, with its patches)
+        run: echo "REFERENCE_ROOT=$(tools/reference/setup.sh)" >> "$GITHUB_ENV"
       - run: pnpm exec playwright install chromium
-      - name: Pie geometry against the JS reference in Chromium
+      - name: Pie geometry against the reference in Chromium
         run: pnpm port:geometry-pie
       - name: Scoped styles of several pies in one page
         run: pnpm port:scope-pie
-      - name: Flowchart geometry against the JS reference in Chromium
+      - name: Flowchart geometry against the reference in Chromium
         run: pnpm port:geometry-flowchart
       - name: Venn layout exactly against its Chromium captures (arm64, as they were taken)
         # The Linux job compares the captures within a tolerance: without fused multiply-adds, atan2
         # rounds as V8 does on x86-64 (crates/ferrigura-venn/tests/corpus.rs).
         run: cargo test --release -p ferrigura-venn --test corpus
-      - name: Geometry of the M6, P2, P3 and swimlane diagram types against the JS reference in Chromium
+      - name: Geometry of the M6, P2, P3 and swimlane diagram types against the reference in Chromium
         # Every type runs, so one failing type does not hide the others.
         run: |
           status=0
