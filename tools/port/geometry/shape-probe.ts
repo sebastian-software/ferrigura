@@ -21,8 +21,10 @@ import { fileURLToPath } from 'node:url';
 
 import { chromium, type Page } from 'playwright';
 
+import { referenceRoot } from '../reference-root.ts';
+
 const root = fileURLToPath(new URL('../../../', import.meta.url));
-const distDir = join(root, 'packages/mermaid/dist');
+const distDir = join(referenceRoot, 'packages/mermaid/dist');
 const fontDir = join(root, 'crates/ferrigura-text/fonts');
 const fixtureDir = join(root, 'crates/ferrigura-render/tests/fixtures');
 /** The fixture of the stage A shapes, and of the stage C shapes of T3c (`--t3c`). */

@@ -10,10 +10,15 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { matchFrontMatter } from '../../packages/mermaid/src/diagram-api/regexes.ts';
+import type * as Regexes from '../../packages/mermaid/src/diagram-api/regexes.ts';
+import { referenceRoot } from './reference-root.ts';
 import { yamlCases } from './yaml-cases.ts';
+
+// The reference's front matter matcher, from the reference's checkout (`reference-root.ts`).
+const regexes = join(referenceRoot, 'packages/mermaid/src/diagram-api/regexes.ts');
+const { matchFrontMatter } = (await import(pathToFileURL(regexes).href)) as typeof Regexes;
 
 interface YamlInput {
   id: number;
@@ -110,7 +115,7 @@ function wellFormed(value: unknown): unknown {
 const inputs: YamlInput[] = [];
 const fixtures = await filesUnder(join(root, 'e2e'), '.mmd');
 const flowchartSpecs = await filesUnder(
-  join(root, 'packages/mermaid/src/diagrams/flowchart'),
+  join(referenceRoot, 'packages/mermaid/src/diagrams/flowchart'),
   '.spec.ts'
 );
 const shapeData = /@{[^\n{}]*}/g;

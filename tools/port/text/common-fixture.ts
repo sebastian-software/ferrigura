@@ -33,11 +33,12 @@ import { build, type Plugin } from 'esbuild';
 import { chromium, type Browser, type Page } from 'playwright';
 
 import jsonSchemaPlugin from '../../../.esbuild/jsonSchemaPlugin.js';
+import { referenceRoot } from '../reference-root.ts';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const fixturePath = join(root, 'crates/ferrigura-render/tests/fixtures/common-chromium.json');
 const fontDir = join(root, 'crates/ferrigura-text/fonts');
-const sourceDir = join(root, 'packages/mermaid/src');
+const sourceDir = join(referenceRoot, 'packages/mermaid/src');
 const utilsPath = join(sourceDir, 'utils.ts');
 const svgDrawCommonPath = join(sourceDir, 'diagrams/common/svgDrawCommon.ts');
 const viewboxPath = join(sourceDir, 'setupGraphViewbox.js');
