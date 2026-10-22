@@ -65,18 +65,42 @@ fn detects_every_header_of_the_p2_types() {
 }
 
 #[test]
-fn the_stable_p2_types_reject_their_beta_keyword() {
-    // `sankey`, `packet`, `xychart` and `block` graduated from beta: `(?![\w-])` in their detectors.
+fn the_stable_p2_types_take_their_beta_keyword_too() {
+    // Upstream's detectors are `^\s*<keyword>(-beta)?`; ferrigura ends them at `(?![\w-])`, so a
+    // longer word is not taken (`sankeyfoo`, `packet-0-7`), a fix the reference gets as a patch.
+    let cases = [
+        ("sankey-beta\n  a,b,8", DiagramType::Sankey),
+        ("packet-beta\n  0-15: \"Header\"", DiagramType::Packet),
+        ("xychart-beta\n  x-axis [a, b]", DiagramType::XyChart),
+        ("block-beta\n  A", DiagramType::Block),
+    ];
+    for (text, expected) in cases {
+        assert_eq!(detect(text), Some(expected), "{text:?}");
+    }
     for text in [
-        "sankey-beta\n  a,b,8",
-        "packet-beta\n  0-15: \"Header\"",
-        "xychart-beta\n  x-axis [a, b]",
-        "block-beta\n  A",
+        "sankeyfoo\n",
+        "packet0-7\n",
+        "packet-0-7\n",
+        "sankey-betax\n",
+        "blockX\n",
     ] {
         assert_eq!(detect(text), None, "{text:?}");
     }
     assert_eq!(detect("block.A\n"), Some(DiagramType::Block));
-    assert_eq!(detect("blockX\n"), None);
+}
+
+#[test]
+fn detects_flowchart_elk_as_a_flowchart() {
+    // `flowchart-elk` is upstream's own diagram id with the flowchart's parser and ELK as its
+    // layout, which is ferrigura's layout of every flowchart.
+    assert_eq!(
+        detect("flowchart-elk TD; A-->B"),
+        Some(DiagramType::Flowchart)
+    );
+    assert!(matches!(
+        parse("flowchart-elk TD\n  A-->B"),
+        Ok(Diagram::Flowchart(_))
+    ));
 }
 
 #[test]

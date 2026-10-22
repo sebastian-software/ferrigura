@@ -37,8 +37,14 @@ fn a_header_with_text_on_its_line_is_rejected() {
 
 #[test]
 fn a_word_glued_to_the_keyword_is_rejected() {
-    rejects("sankey-beta\na,b,1");
     rejects("sankeyfoo\na,b,1");
+}
+
+/// The lexer's `<INITIAL>"sankey-beta"` rule, which upstream keeps before `"sankey"`, in any case.
+#[test]
+fn the_beta_keyword_is_taken_too() {
+    assert_eq!(links(&parses("sankey-beta\na,b,1")), [("a", "b", 1.0)]);
+    assert_eq!(links(&parses("Sankey-Beta\na,b,1")), [("a", "b", 1.0)]);
 }
 
 #[test]

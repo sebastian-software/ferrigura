@@ -30,7 +30,7 @@ fn class_def<'a>(diagram: &'a BlockDiagram, id: &str) -> Option<&'a ClassDef> {
 
 #[test]
 fn a_diagram_with_a_node() {
-    let diagram = parsed("block\n    id\n");
+    let diagram = parsed("block-beta\n    id\n");
     assert_eq!(diagram.blocks.len(), 1);
     assert_eq!(diagram.blocks[0].id.as_deref(), Some("id"));
     assert_eq!(diagram.blocks[0].label.as_deref(), Some("id"));
@@ -322,7 +322,7 @@ fn style_statements_applied_to_a_block() {
 
 #[test]
 fn should_log_a_warning_when_block_width_exceeds_column_width() {
-    let text = "block\n  columns 1\n  A:1\n  B:2\n  C:3\n  D:4\n  E:3\n  F:2\n  G:1";
+    let text = "block-beta\n  columns 1\n  A:1\n  B:2\n  C:3\n  D:4\n  E:3\n  F:2\n  G:1";
     let (_, warnings) = parse_with_warnings(text).expect("the diagram parses");
     assert!(
         warnings

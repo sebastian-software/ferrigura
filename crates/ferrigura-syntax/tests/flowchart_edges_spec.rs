@@ -508,6 +508,14 @@ mod edges_when_parsing {
         );
 
         edge_test!(
+            should_handle_normal_double_arrow_cross_with_flowchart_elk_text,
+            "graph TD;\nA x-- flowchart-elk --x B;",
+            "double_arrow_cross",
+            "normal",
+            "flowchart-elk"
+        );
+
+        edge_test!(
             should_handle_normal_double_arrow_cross_with_style_text,
             "graph TD;\nA x-- style --x B;",
             "double_arrow_cross",
@@ -665,6 +673,14 @@ mod edges_when_parsing {
             "double_arrow_cross",
             "thick",
             "flowchart"
+        );
+
+        edge_test!(
+            should_handle_thick_double_arrow_cross_with_flowchart_elk_text,
+            "graph TD;\nA x== flowchart-elk ==x B;",
+            "double_arrow_cross",
+            "thick",
+            "flowchart-elk"
         );
 
         edge_test!(
@@ -828,6 +844,14 @@ mod edges_when_parsing {
         );
 
         edge_test!(
+            should_handle_dotted_double_arrow_cross_with_flowchart_elk_text,
+            "graph TD;\nA x-. flowchart-elk .-x B;",
+            "double_arrow_cross",
+            "dotted",
+            "flowchart-elk"
+        );
+
+        edge_test!(
             should_handle_dotted_double_arrow_cross_with_style_text,
             "graph TD;\nA x-. style .-x B;",
             "double_arrow_cross",
@@ -985,6 +1009,14 @@ mod edges_when_parsing {
             "double_arrow_circle",
             "normal",
             "flowchart"
+        );
+
+        edge_test!(
+            should_handle_normal_double_arrow_circle_with_flowchart_elk_text,
+            "graph TD;\nA o-- flowchart-elk --o B;",
+            "double_arrow_circle",
+            "normal",
+            "flowchart-elk"
         );
 
         edge_test!(
@@ -1148,6 +1180,14 @@ mod edges_when_parsing {
         );
 
         edge_test!(
+            should_handle_thick_double_arrow_circle_with_flowchart_elk_text,
+            "graph TD;\nA o== flowchart-elk ==o B;",
+            "double_arrow_circle",
+            "thick",
+            "flowchart-elk"
+        );
+
+        edge_test!(
             should_handle_thick_double_arrow_circle_with_style_text,
             "graph TD;\nA o== style ==o B;",
             "double_arrow_circle",
@@ -1305,6 +1345,14 @@ mod edges_when_parsing {
             "double_arrow_circle",
             "dotted",
             "flowchart"
+        );
+
+        edge_test!(
+            should_handle_dotted_double_arrow_circle_with_flowchart_elk_text,
+            "graph TD;\nA o-. flowchart-elk .-o B;",
+            "double_arrow_circle",
+            "dotted",
+            "flowchart-elk"
         );
 
         edge_test!(
@@ -1468,6 +1516,14 @@ mod edges_when_parsing {
         );
 
         edge_test!(
+            should_handle_normal_double_arrow_point_with_flowchart_elk_text,
+            "graph TD;\nA <-- flowchart-elk --> B;",
+            "double_arrow_point",
+            "normal",
+            "flowchart-elk"
+        );
+
+        edge_test!(
             should_handle_normal_double_arrow_point_with_style_text,
             "graph TD;\nA <-- style --> B;",
             "double_arrow_point",
@@ -1628,6 +1684,14 @@ mod edges_when_parsing {
         );
 
         edge_test!(
+            should_handle_thick_double_arrow_point_with_flowchart_elk_text,
+            "graph TD;\nA <== flowchart-elk ==> B;",
+            "double_arrow_point",
+            "thick",
+            "flowchart-elk"
+        );
+
+        edge_test!(
             should_handle_thick_double_arrow_point_with_style_text,
             "graph TD;\nA <== style ==> B;",
             "double_arrow_point",
@@ -1785,6 +1849,14 @@ mod edges_when_parsing {
             "double_arrow_point",
             "dotted",
             "flowchart"
+        );
+
+        edge_test!(
+            should_handle_dotted_double_arrow_point_with_flowchart_elk_text,
+            "graph TD;\nA <-. flowchart-elk .-> B;",
+            "double_arrow_point",
+            "dotted",
+            "flowchart-elk"
         );
 
         edge_test!(

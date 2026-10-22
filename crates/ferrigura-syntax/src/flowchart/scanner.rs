@@ -170,7 +170,7 @@ pub(crate) struct Dialect {
 
 /// The flowchart's values: `flow.jison`.
 pub(crate) const FLOWCHART: Dialect = Dialect {
-    graph_words: &["swimlane-beta", "graph", "flowchart"],
+    graph_words: &["flowchart-elk", "swimlane-beta", "graph", "flowchart"],
     keywords: &[
         Keyword {
             word: "style",
