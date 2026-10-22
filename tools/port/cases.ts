@@ -88,11 +88,10 @@ export const undetectedCases: Record<string, string[]> = {
   // Detection is case-sensitive too: a capitalised `XYCHART` is not an xychart, though the parser
   // takes it (the reference's `xychartDetector` regex has no `i` flag).
   xychart: ['XYCHART\n  TITLE "Up"\n  X-AXIS Q [a, b]\n  Y-AXIS 0 --> 5\n  LINE [1, 2]\n'],
-  // The fork's detector is `/^\s*sankey(?![\w-])/` (`sankeyDetector.ts`), case-sensitive and with no
-  // word after the keyword. The parser takes a capitalised keyword, and `sankeyfoo` is a parse error;
-  // the fork detects none of them. Upstream also takes `sankey-beta`, as ferrigura does since
-  // docs-port/ORACLE-PLAN.md, step 1: a named exception until the reference is upstream (step 3).
-  sankey: ['SANKEY\na,b,8', 'Sankey\na,b,1', 'sankey-beta\na,b,1', 'sankeyfoo\na,b,1'],
+  // The detector is `/^\s*sankey(-beta)?(?![\w-])/` (`sankeyDetector.ts` with patch 08 of
+  // tools/reference), case-sensitive and with no word after the keyword. The parser takes a
+  // capitalised keyword, and `sankeyfoo` is a parse error; the reference detects none of them.
+  sankey: ['SANKEY\na,b,8', 'Sankey\na,b,1', 'sankeyfoo\na,b,1'],
   // The same for a mindmap: the grammar takes `MindMap`, the detector does not.
   mindmap: ['MindMap\n  root'],
   // The ishikawa header must start the text: a glued word, or a directive that the reference's loose
