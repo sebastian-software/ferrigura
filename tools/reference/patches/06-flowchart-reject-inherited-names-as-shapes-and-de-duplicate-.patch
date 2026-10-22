@@ -1,0 +1,98 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs-port/ORACLE-PLAN.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(flowchart): reject inherited names as shapes and de-duplicate __proto__
+
+isValidShape used `in`, so `constructor` passed as a shape name; it now
+checks own keys. Subgraph de-duplication marked ids in a plain object, so
+a node named `__proto__` was never recognised as seen; it now uses a Set.
+Both were found while planning the Rust flowchart parser, which would
+otherwise have needed exceptions in the differential run.
+
+The fork's commit 764814a2d, its changes to packages/ and .build/.
+
+diff --git a/packages/mermaid/src/diagrams/flowchart/flowDb.ts b/packages/mermaid/src/diagrams/flowchart/flowDb.ts
+index 3b2cd013f..9f7acc7c3 100644
+--- a/packages/mermaid/src/diagrams/flowchart/flowDb.ts
++++ b/packages/mermaid/src/diagrams/flowchart/flowDb.ts
+@@ -683,7 +683,12 @@ You have to call mermaid.initialize.`
+     }
+ 
+     const uniq = (a: any[]) => {
+-      const prims: any = { boolean: {}, number: {}, string: {} };
++      // Sets, not plain objects: an id such as `__proto__` must count as an ordinary key.
++      const prims: Record<string, Set<unknown>> = {
++        boolean: new Set(),
++        number: new Set(),
++        string: new Set(),
++      };
+       const objs: any[] = [];
+ 
+       let dir: string | undefined;
+@@ -698,7 +703,11 @@ You have to call mermaid.initialize.`
+           return false;
+         }
+         if (type in prims) {
+-          return prims[type].hasOwnProperty(item) ? false : (prims[type][item] = true);
++          if (prims[type].has(item)) {
++            return false;
++          }
++          prims[type].add(item);
++          return true;
+         } else {
+           return objs.includes(item) ? false : objs.push(item);
+         }
+diff --git a/packages/mermaid/src/diagrams/flowchart/parser/flow-node-data.spec.js b/packages/mermaid/src/diagrams/flowchart/parser/flow-node-data.spec.js
+index 0aeccd776..88f5e6a58 100644
+--- a/packages/mermaid/src/diagrams/flowchart/parser/flow-node-data.spec.js
++++ b/packages/mermaid/src/diagrams/flowchart/parser/flow-node-data.spec.js
+@@ -204,6 +204,13 @@ describe('when parsing directions', function () {
+       `);
+     }).toThrow('No such shape: this-shape-does-not-exist.');
+   });
++  it('should error on a shape name that is only an object property', function () {
++    expect(() => {
++      flow.parser.parse(`flowchart TB
++      A@{ shape: constructor }
++      `);
++    }).toThrow('No such shape: constructor.');
++  });
+   it('should error on internal-only shape', function () {
+     expect(() => {
+       // this shape does exist, but it's only supposed to be for internal/backwards compatibility use
+diff --git a/packages/mermaid/src/diagrams/flowchart/parser/subgraph.spec.js b/packages/mermaid/src/diagrams/flowchart/parser/subgraph.spec.js
+index 850479a6a..c0e85492a 100644
+--- a/packages/mermaid/src/diagrams/flowchart/parser/subgraph.spec.js
++++ b/packages/mermaid/src/diagrams/flowchart/parser/subgraph.spec.js
+@@ -24,6 +24,17 @@ describe('when parsing subgraphs', function () {
+     expect(subgraph.title).toBe('One');
+     expect(subgraph.id).toBe('One');
+   });
++  it('should list a __proto__ node once, as any other node', function () {
++    flow.parser.parse('graph TB\nsubgraph One\nb\nb-->a1\nend');
++    const ordinary = flow.parser.yy.getSubGraphs()[0].nodes;
++    flow.parser.yy = new FlowDB();
++    flow.parser.yy.clear();
++    flow.parser.yy.setGen('gen-2');
++    flow.parser.parse('graph TB\nsubgraph One\n__proto__\n__proto__-->a1\nend');
++    const nodes = flow.parser.yy.getSubGraphs()[0].nodes;
++    expect(nodes).toEqual(ordinary.map((node) => (node === 'b' ? '__proto__' : node)));
++    expect(nodes.filter((node) => node === '__proto__')).toHaveLength(1);
++  });
+   it('should handle subgraph with chaining nodes indentation', function () {
+     const res = flow.parser.parse('graph TB\nsubgraph One\n\ta1-->a2-->a3\nend');
+     const subgraphs = flow.parser.yy.getSubGraphs();
+diff --git a/packages/mermaid/src/rendering-util/rendering-elements/shapes.ts b/packages/mermaid/src/rendering-util/rendering-elements/shapes.ts
+index 344f5c70e..0db0fd891 100644
+--- a/packages/mermaid/src/rendering-util/rendering-elements/shapes.ts
++++ b/packages/mermaid/src/rendering-util/rendering-elements/shapes.ts
+@@ -603,7 +603,8 @@ const generateShapeMap = () => {
+ export const shapes = generateShapeMap();
+ 
+ export function isValidShape(shape: string): shape is ShapeID {
+-  return shape in shapes;
++  // Own keys only: `in` would also accept inherited names such as `constructor`.
++  return Object.hasOwn(shapes, shape);
+ }
+ 
+ export type ShapeID = keyof typeof shapes;

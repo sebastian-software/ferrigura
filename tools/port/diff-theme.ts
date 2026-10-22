@@ -11,6 +11,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+import { INERT_THEME_VARIABLES } from './inert-options.ts';
+
 const THEMES = ['redux-color', 'redux-dark-color'] as const;
 
 /** Sets of overrides, named for the case they cover. `null` means no overrides. */
@@ -174,6 +176,14 @@ run('cargo', [
   rsPath,
 ]);
 
+/** The variables without the inert ones (`inert-options.ts`), which are left out on both sides. */
+function compared(variables: unknown): unknown {
+  if (typeof variables !== 'object' || variables === null) return variables;
+  const copy = { ...(variables as Record<string, unknown>) };
+  for (const name of INERT_THEME_VARIABLES) delete copy[name];
+  return copy;
+}
+
 const js = JSON.parse(await readFile(jsPath, 'utf8')) as ThemeOutput[];
 const rs = JSON.parse(await readFile(rsPath, 'utf8')) as ThemeOutput[];
 const jsById = new Map(js.map((output) => [output.id, output]));
@@ -189,12 +199,12 @@ for (const input of inputs) {
     jsOutput !== undefined &&
     rsOutput !== undefined &&
     jsOutput.ok === rsOutput.ok &&
-    (!jsOutput.ok || same(jsOutput.variables, rsOutput.variables));
+    (!jsOutput.ok || same(compared(jsOutput.variables), compared(rsOutput.variables)));
   if (agree) continue;
   differences += 1;
   console.log(`\n✗ ${input.source}`);
   if (jsOutput?.ok && rsOutput?.ok) {
-    console.log(`  ${firstDifference(jsOutput.variables, rsOutput.variables)}`);
+    console.log(`  ${firstDifference(compared(jsOutput.variables), compared(rsOutput.variables))}`);
   } else {
     console.log(`  js: ${JSON.stringify(jsOutput).slice(0, 600)}`);
     console.log(`  rs: ${JSON.stringify(rsOutput).slice(0, 600)}`);

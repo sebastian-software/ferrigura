@@ -1,0 +1,129 @@
+A patch on upstream Mermaid at the pin, for the reference ferrigura is checked against
+(docs-port/ORACLE-PLAN.md). Applied in the order of the file names by tools/reference/setup.sh.
+
+fix(railroad): keep railroad-only options in front matter and directives
+
+The schema defaults generator skipped the `railroad` section, so
+`defaultConfig.railroad` held only the colours and typography that
+`defaultConfig.ts` sets to `undefined`. Options only railroad has, such
+as `arcRadius`, `compactMode`, `verticalSeparation` and
+`horizontalSeparation`, were missing from `configKeys`, and
+sanitizeDirective dropped them from front matter and directives.
+
+Generate the section's defaults. Its layout defaults match the
+renderer's fallbacks, and `defaultConfig.ts` keeps the theme-derived
+colours and typography `undefined`, so the default rendering does not
+change. A new test pins that split.
+
+The fork's commit b14103f27, its changes to packages/ and .build/.
+
+diff --git a/.build/jsonSchema.ts b/.build/jsonSchema.ts
+index 374003123..d5dfbfd38 100644
+--- a/.build/jsonSchema.ts
++++ b/.build/jsonSchema.ts
+@@ -37,6 +37,7 @@ const MERMAID_CONFIG_DIAGRAM_KEYS = [
+   'venn',
+   'wardley-beta',
+   'cynefin',
++  'railroad',
+ ] as const;
+ 
+ /**
+diff --git a/packages/mermaid/src/config.spec.ts b/packages/mermaid/src/config.spec.ts
+index b0c1ce62a..58ec4d44b 100644
+--- a/packages/mermaid/src/config.spec.ts
++++ b/packages/mermaid/src/config.spec.ts
+@@ -82,16 +82,21 @@ describe('when working with site config', () => {
+ 
+   it('should retain railroad directives after sanitization', () => {
+     configApi.saveConfigFromInitialize({});
+-    configApi.addDirective({
+-      railroad: {
+-        fontSize: 18,
+-        fontFamily: 'Courier New',
+-      },
+-    });
++    const railroad = {
++      fontSize: 18,
++      fontFamily: 'Courier New',
++      // Options only railroad has, so `configKeys` knows them only from its schema defaults
++      arcRadius: 4,
++      compactMode: true,
++      verticalSeparation: 12,
++      horizontalSeparation: 16,
++      showMarkers: false,
++      markerRadius: 3,
++    };
++    // A copy, since sanitizeDirective deletes unknown keys in place
++    configApi.addDirective({ railroad: { ...railroad } });
+ 
+-    const currentConfig = configApi.getConfig();
+-    expect(currentConfig.railroad?.fontSize).toBe(18);
+-    expect(currentConfig.railroad?.fontFamily).toBe('Courier New');
++    expect(configApi.getConfig().railroad).toMatchObject(railroad);
+   });
+   it('should set reset config properly', () => {
+     const config_0 = { fontFamily: 'foo-font', fontSize: 150 };
+diff --git a/packages/mermaid/src/diagrams/railroad/styles.spec.ts b/packages/mermaid/src/diagrams/railroad/styles.spec.ts
+index 732f4402d..bc7b47bea 100644
+--- a/packages/mermaid/src/diagrams/railroad/styles.spec.ts
++++ b/packages/mermaid/src/diagrams/railroad/styles.spec.ts
+@@ -1,6 +1,7 @@
+ import { beforeEach, describe, it, expect } from 'vitest';
+ import * as configApi from '../../config.js';
+ import themes from '../../themes/index.js';
++import { DEFAULT_RAILROAD_CONFIG } from './railroadTypes.js';
+ import { getStyles } from './styles.js';
+ 
+ describe('Railroad Styles', () => {
+@@ -221,4 +222,50 @@ describe('Railroad Styles', () => {
+       expect(styles).toContain('fill: #EEEEEE');
+     });
+   });
++
++  describe('default config', () => {
++    it('should match the renderer fallbacks and leave colours and typography to the theme', () => {
++      const {
++        compactMode,
++        padding,
++        verticalSeparation,
++        horizontalSeparation,
++        arcRadius,
++        strokeWidth,
++        showMarkers,
++        markerRadius,
++      } = DEFAULT_RAILROAD_CONFIG;
++
++      // Every option is listed, so front matter and directives may set it. The ones
++      // `buildRailroadStyleOptions` derives from the theme stay undefined; the schema's
++      // fixed values would otherwise win over the theme.
++      expect(configApi.defaultConfig.railroad).toStrictEqual({
++        useMaxWidth: true,
++        compactMode,
++        padding,
++        verticalSeparation,
++        horizontalSeparation,
++        arcRadius,
++        strokeWidth,
++        showMarkers,
++        markerRadius,
++        fontSize: undefined,
++        fontFamily: undefined,
++        terminalFill: undefined,
++        terminalStroke: undefined,
++        terminalTextColor: undefined,
++        nonTerminalFill: undefined,
++        nonTerminalStroke: undefined,
++        nonTerminalTextColor: undefined,
++        lineColor: undefined,
++        markerFill: undefined,
++        commentFill: undefined,
++        commentStroke: undefined,
++        commentTextColor: undefined,
++        specialFill: undefined,
++        specialStroke: undefined,
++        ruleNameColor: undefined,
++      });
++    });
++  });
+ });
