@@ -1,6 +1,6 @@
 # Checking the port against upstream Mermaid
 
-The plan for checking ferrigura against Mermaid itself, pinned to an upstream commit, instead of against this repository's fork of it: why, what a measurement against upstream 12.2.0 showed, how the differences are handled, and the steps that retire the fork from the repository. Status: a plan, written on 2026-10-22 with Sebastian; the measurement is done, the steps are not, and the decisions at the end are his.
+The plan for checking ferrigura against Mermaid itself, pinned to an upstream commit, instead of against this repository's fork of it: why, what a measurement against upstream 12.2.0 showed, how the differences are handled, and the steps that retire the fork from the repository. Status: a plan, written on 2026-10-22 with Sebastian, who decided its open points the same day (see the end); the measurement is done, the steps are not.
 
 ## Why
 
@@ -45,7 +45,7 @@ Limits of the measurement: upstream has no ELK capture hook, so the ELK inputs o
 Every difference is one of three kinds, and each kind has one place:
 
 1. **ferrigura is behind upstream.** It shows up when the pin moves. Each difference gets an issue; until the fix, it is a pending exception that names the issue, so CI stays green and nothing is forgotten. A pending exception without an issue is an error.
-2. **Mermaid has a bug that ferrigura does not.** When one bug touches many inputs, the fix is applied to the pinned checkout as a patch before it is built, so the reference is "Mermaid with this one fix" and the exception list stays short. The fork's own fixes are such patches already. When a bug touches a few inputs, it is a permanent exception with the reason and, where there is one, the upstream issue.
+2. **Mermaid has a bug that ferrigura does not.** The fix is applied to the pinned checkout as a patch before it is built, so the reference is "Mermaid with this fix", whether the bug touches one input or hundreds. The fork's own fixes are such patches already. Each patch names the bug and, where there is one, the upstream issue; when upstream fixes the bug, the patch goes with the next move of the pin.
 3. **ferrigura does not support something on purpose.** For example the dagre layout, or HTML labels (decision [0004](./decisions/0004-svg-text-labels.md)). Such a feature is a rule in the comparison (the reference's forced configuration, or which inputs a check compares), with the reason next to it.
 
 What the measurement found, sorted into these kinds:
@@ -54,20 +54,20 @@ What the measurement found, sorted into these kinds:
 | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | The keywords `flowchart-elk`, `sankey-beta`, `packet-beta`, `xychart-beta`, `block-beta`                | Behind upstream: users write them, so ferrigura accepts them again (issue)                                                                       |
 | `service architecture` as an id after `architecture-beta`                                               | Behind upstream: ferrigura accepts it (issue)                                                                                                    |
-| The removed options `legacyMathML`, `er.minEntityHeight`, `state.*` and the two theme variables         | Behind upstream: ferrigura takes upstream's schema and theme variables, which carry no behaviour where ferrigura has none                        |
-| The `architecture` keyword, `topAxis`, the `constructor` shape, `__proto__`, the detector word boundary | Mermaid bugs, a few inputs each: permanent exceptions, or the fork's fixes as patches                                                            |
+| The removed options `legacyMathML`, `er.minEntityHeight`, `state.*` and the two theme variables         | Not supported on purpose: no code reads them, upstream's included; the configuration run leaves these keys out, one rule with its reason         |
+| The `architecture` keyword, `topAxis`, the `constructor` shape, `__proto__`, the detector word boundary | Mermaid bugs, a few inputs each: the fork's fixes as patches                                                                                     |
 | Railroad options, the `wardley-beta` section, the `c4.flowchart` copy                                   | Mermaid bugs, many inputs each (417, 219 and 176 in the config run): the fork's fixes as patches                                                 |
 | `htmlLabels` of triangles and lane labels                                                               | Not supported on purpose: the reference's forced configuration gets `flowchart.htmlLabels: false` next to the `htmlLabels: false` it has already |
 | `layout: dagre`                                                                                         | Not supported on purpose: inputs that name dagre are left out of the geometry check, and compared as configuration                               |
 | The ELK capture hook (`__mermaidElkCapture`), which only the fork has                                   | A patch on the pinned checkout, so the flowchart harness can compare the ELK inputs again                                                        |
 
-So the pinned reference is upstream plus about ten small patches, each a fix the fork already has or the capture hook, with a short exception list besides.
+So the pinned reference is upstream plus nine small patches (the fork's eight fixes and the capture hook), and the comparison has three rules (`htmlLabels`, dagre and the inert options). No input needs an exception of its own; the exception file starts empty and holds the pending cases of later moves of the pin.
 
 ## The design
 
 - **The pin.** `tools/reference/pin` holds the upstream repository and commit; `tools/reference/patches/` holds the patches, each with a header that says why it exists and which upstream issue it belongs to. A script fetches the pinned commit (shallow, one commit), applies the patches, installs and builds it into `target/reference/<commit>`, and the harness runs with `REFERENCE_ROOT` pointing there. CI caches the build, keyed by the commit, the patches and the lockfile.
 - **The inputs.** The corpus of this repository (`e2e/diagrams`, the dev diagrams, the probes and the cases of `tools/port`) plus the spec literals and docs examples of the pinned checkout, as today. Moving the pin brings Mermaid's new tests and docs examples in as inputs by itself.
-- **The exceptions.** One file, each entry with its kind (pending with an issue, Mermaid bug with a reason, or unsupported with a reason) and the inputs or the rule it covers. The runs fail on a difference that no entry covers and on an entry that covers nothing any more.
+- **The exceptions and rules.** One file, each entry with its kind (pending with an issue, or unsupported with a reason) and the inputs or the rule it covers; Mermaid bugs are patches, not entries. The runs fail on a difference that no entry covers and on an entry that covers nothing any more.
 - **ferrigura's own output.** A Rust test renders the corpus for each configuration and colour scheme (3 × 4) and compares, per corpus file, one SHA-256 over its 12 renders with `tests/snapshots/svg.tsv`: 2,625 lines, about 0.3 MB of text. `UPDATE_SNAPSHOTS=1` rewrites it; a tool shows which renders of a changed file moved, and runs the geometry check on them. This test needs neither Node nor the reference, so it runs in `cargo test`.
 - **Moving the pin.** A pull request moves `tools/reference/pin`; the runs show what is new in Mermaid. Each difference is fixed in that pull request or becomes a pending exception with its issue. Patches that upstream has made unnecessary go.
 
@@ -77,8 +77,8 @@ Nothing large is checked in: the reference is fetched and built from upstream, a
 
 Each step is one change with CI green. Until step 4 the fork keeps running in CI next to upstream, so every step is checked against both.
 
-1. **Catch up with upstream where the fork took things away.** ferrigura accepts the removed keywords and `service architecture` again, and takes upstream's configuration schema and theme variables. Issues for each; checked with the upstream runs of the measurement.
-2. **Set up the pinned reference.** The pin, the patches (the fork's fixes of the `architecture` keyword, `topAxis`, the `constructor` shape, `__proto__`, the detector word boundary, the railroad options, the `wardley-beta` section and the `c4.flowchart` copy, and the ELK capture hook), the script, `flowchart.htmlLabels: false` in the forced configuration, the dagre rule, and the merge of `sebastian/upstream-oracle`. The input collector learns upstream's keywords.
+1. **Catch up with upstream where the fork took things away.** ferrigura accepts the removed keywords (`flowchart-elk` as a flowchart with ELK, the `-beta` names as aliases of their types) and `architecture` as a name after the header again. An issue for each; checked with the upstream runs of the measurement.
+2. **Set up the pinned reference.** The pin, the patches (the fork's fixes of the `architecture` keyword, `topAxis`, the `constructor` shape, `__proto__`, the detector word boundary, the railroad options, the `wardley-beta` section and the `c4.flowchart` copy, and the ELK capture hook), the script, `flowchart.htmlLabels: false` in the forced configuration, the dagre rule, the rule for the inert options, and the merge of `sebastian/upstream-oracle`. The input collector learns upstream's keywords.
 3. **Switch CI to the pinned reference.** The exception file replaces `tools/port/exceptions.ts`; `port-diff` and `port-geometry` run against `target/reference/<commit>`. Check: every run is clean against upstream with the exceptions it lists.
 4. **Pin ferrigura's output.** The SVG hash test and its tools, in `cargo test`.
 5. **Retire the fork.** `packages/`, the fork's build tooling (`.esbuild`, `.build`, the Jison and Langium setup) and the dependencies only it needs go; the harness keeps what it needs to load and render the pinned checkout (Vite, tsx, jsdom, Playwright). The schema copy in `ferrigura-model` is checked against the pinned checkout's schema; the Rust tests that read files from `packages/` get their own copies. The last commit with the fork gets the tag `fork-mermaid-12.2.0`.
@@ -87,9 +87,11 @@ Each step is one change with CI green. Until step 4 the fork keeps running in CI
 
 A new repository without Mermaid's history, as Sebastian considers, fits after step 5: nothing in it would need that history any more.
 
-## Decisions for Sebastian
+## Decisions
 
-1. **Compatibility:** accept the removed keywords and options again (recommended, as above), or keep them removed and list them as unsupported.
-2. **Mermaid bugs:** the fork's fixes as patches on the pinned checkout (recommended for the bugs that touch many inputs), or every one as an exception.
-3. **Snapshots:** one hash line per corpus file in the repository (about 0.3 MB), as planned.
-4. **The pin:** stay at 12.2.0 until the fork is retired, then follow Mermaid's releases (each minor release, say) with a pull request per move.
+Decided by Sebastian on 2026-10-22:
+
+1. **Compatibility:** ferrigura accepts the removed keywords (`flowchart-elk`, `sankey-beta`, `packet-beta`, `xychart-beta`, `block-beta`) and `architecture` as a name again, as upstream does. The removed configuration options and theme variables stay removed: no code reads them, upstream's included, so the configuration run leaves them out by one rule.
+2. **Mermaid bugs:** every fix of the fork becomes a patch on the pinned checkout, eight in all, and the ELK capture hook a ninth.
+3. **Snapshots:** one hash line per corpus file in the repository, about 0.3 MB.
+4. **The pin:** it stays at 12.2.0 (`e28fbd9de`) until the fork is retired; then it follows Mermaid's releases, one pull request per minor release, with an issue for everything to catch up on.
