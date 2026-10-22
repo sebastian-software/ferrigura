@@ -36,7 +36,11 @@ const fixtureFolders: Record<string, string[]> = {
   kanban: ['e2e/diagrams/kanban/', 'tools/port/geometry/probes/kanban/'],
 };
 
-/** The detectors of the reference, as its files write them (`packages/mermaid/src/diagrams/`). */
+/**
+ * The detectors of the reference, as its files write them (`packages/mermaid/src/diagrams/`). The four
+ * stable types take their `-beta` keyword too, as upstream Mermaid and ferrigura do, and end at the
+ * boundary the fork added (docs-port/ORACLE-PLAN.md, step 1).
+ */
 const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
@@ -50,10 +54,10 @@ const detectors: Record<string, RegExp> = {
   state: /^\s*stateDiagram/,
   gantt: /^\s*gantt/,
   mindmap: /^\s*mindmap/,
-  block: /^\s*block(?![\w-])/,
-  packet: /^\s*packet(?![\w-])/,
-  xychart: /^\s*xychart(?![\w-])/,
-  sankey: /^\s*sankey(?![\w-])/,
+  block: /^\s*block(?:-beta)?(?![\w-])/,
+  packet: /^\s*packet(?:-beta)?(?![\w-])/,
+  xychart: /^\s*xychart(?:-beta)?(?![\w-])/,
+  sankey: /^\s*sankey(?:-beta)?(?![\w-])/,
   quadrantChart: /^\s*quadrantChart/,
   requirement: /^\s*requirementDiagram/,
   c4: /^\s*(?:C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)/,
