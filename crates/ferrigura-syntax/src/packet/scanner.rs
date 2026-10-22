@@ -106,10 +106,13 @@ fn step(rest: &str) -> Result<Step, &'static str> {
         let (value, consumed) = acc_descr(after)?;
         return Ok(Step::Token(Token::AccDescr(value), 8 + consumed));
     }
-    if let Some(after) = rest.strip_prefix("packet")
-        && keyword_boundary(after)
-    {
-        return Ok(Step::Token(Token::Packet, 6));
+    // The header keywords, longest first: `"packet" | "packet-beta"`.
+    for keyword in ["packet-beta", "packet"] {
+        if let Some(after) = rest.strip_prefix(keyword)
+            && keyword_boundary(after)
+        {
+            return Ok(Step::Token(Token::Packet, keyword.len()));
+        }
     }
     Err("unexpected character")
 }

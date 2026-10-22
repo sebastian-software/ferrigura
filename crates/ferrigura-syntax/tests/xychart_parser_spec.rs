@@ -114,6 +114,13 @@ fn should_not_throw_error_if_only_xychart_is_there() {
     parses("xychart");
 }
 
+/// The lexer's `"xychart-beta"` rule, which upstream keeps next to `"xychart"`.
+#[test]
+fn should_not_throw_error_if_only_xychart_beta_is_there() {
+    parses("xychart-beta");
+    assert!(parse("xychart-beta-1").is_err());
+}
+
 #[test]
 fn parse_title_of_the_chart_within() {
     let diagram = parses("xychart \n title \"This is a title\"");

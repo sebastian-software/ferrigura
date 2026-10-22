@@ -12,6 +12,13 @@ export interface PortException {
 }
 
 export const exceptions: Record<string, PortException[]> = {
+  config: [
+    {
+      text: 'sankey-beta\na,b,1',
+      reason:
+        "Upstream Mermaid takes the `-beta` keyword, which this repository's fork removed; ferrigura follows upstream (docs-port/ORACLE-PLAN.md, step 1). The entry goes when the reference is upstream (step 3).",
+    },
+  ],
   flowchart: [],
   class: [],
   'flowchart-data': [],
@@ -27,13 +34,25 @@ export const exceptions: Record<string, PortException[]> = {
   block: [],
   packet: [],
   xychart: [],
-  sankey: [],
+  sankey: [
+    {
+      text: 'sankey-beta\na,b,1',
+      reason:
+        "Upstream Mermaid takes the `-beta` keyword, which this repository's fork removed; ferrigura follows upstream (docs-port/ORACLE-PLAN.md, step 1). The entry goes when the reference is upstream (step 3).",
+    },
+  ],
   quadrantChart: [],
   requirement: [],
   'requirement-data': [],
   c4: [],
   kanban: [],
-  architecture: [],
+  architecture: [
+    {
+      text: 'architecture-beta\nservice architecture\n',
+      reason:
+        "Upstream Mermaid's grammar knows only `architecture-beta`, so `architecture` is a name; the fork's fix of the graduated keyword reserved the word. ferrigura follows upstream (docs-port/ORACLE-PLAN.md, step 1). The entry goes when the reference is upstream (step 3).",
+    },
+  ],
   treemap: [],
   ishikawa: [],
   eventmodeling: [],

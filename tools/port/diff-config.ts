@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 import { configCases } from './config-cases.ts';
 import { undetectedCases } from './cases.ts';
+import { exceptions } from './exceptions.ts';
 import { collectInputs, looksLikeType } from './inputs.ts';
 
 interface ConfigInput {
@@ -330,6 +331,10 @@ const SHIPPED_THEMES = ['redux-color', 'redux-dark-color'];
 let accepted = 0;
 let differences = 0;
 let unshippedThemes = 0;
+/** The named exceptions of the run (`exceptions.ts`, key `config`), by input text. */
+const named = new Map((exceptions.config ?? []).map((entry) => [entry.text, entry.reason]));
+let excepted = 0;
+const stale: string[] = [];
 const groupCounts = new Map<string, number>();
 for (const input of inputs) {
   groupCounts.set(input.group, (groupCounts.get(input.group) ?? 0) + 1);
@@ -361,7 +366,14 @@ for (const input of inputs) {
     rsOutput !== undefined &&
     jsOutput.ok === rsOutput.ok &&
     (!jsOutput.ok || (scopeAgrees && same(jsConfig, rsConfig)));
-  if (agree && scopeIsExpected) continue;
+  if (agree && scopeIsExpected) {
+    if (named.has(input.text)) stale.push(input.text);
+    continue;
+  }
+  if (named.has(input.text)) {
+    excepted += 1;
+    continue;
+  }
   differences += 1;
   console.log(`\n✗ ${input.source}`);
   console.log(`  input: ${JSON.stringify(input.text.slice(0, 300))}`);
@@ -381,7 +393,8 @@ const groups = [...groupCounts]
   .join(', ');
 console.log(
   `\nconfig: ${inputs.length} inputs (accepted by the reference per group: ${groups}), ` +
-    `${accepted} accepted, ${differences} differences; ` +
+    `${accepted} accepted, ${excepted} named exceptions, ${differences} differences ` +
+    `(${stale.length} stale exceptions); ` +
     `configKeys: ${missingInRust.length + extraInRust.length} differences; ` +
     `${unshippedThemes} inputs with a theme ferrigura does not ship compared without theme variables`
 );
@@ -401,6 +414,10 @@ await writeFile(
   )
 );
 
-if (differences > 0 || missingInRust.length > 0 || extraInRust.length > 0) {
+for (const text of stale) {
+  console.log(`\n✗ stale exception, now agrees: ${JSON.stringify(text)}`);
+}
+
+if (differences > 0 || stale.length > 0 || missingInRust.length > 0 || extraInRust.length > 0) {
   process.exit(1);
 }

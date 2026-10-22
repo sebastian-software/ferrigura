@@ -33,11 +33,12 @@ import { build } from 'esbuild';
 import { chromium } from 'playwright';
 
 import jsonSchemaPlugin from '../../../.esbuild/jsonSchemaPlugin.js';
+import { referenceRoot } from '../reference-root.ts';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const fixturePath = join(root, 'crates/ferrigura-render/tests/fixtures/labels-chromium.json');
 const fontDir = join(root, 'crates/ferrigura-text/fonts');
-const createTextPath = join(root, 'packages/mermaid/src/rendering-util/createText.ts');
+const createTextPath = join(referenceRoot, 'packages/mermaid/src/rendering-util/createText.ts');
 
 /** The tolerance of positions and widths, in pixels, when `--check` compares fresh values. */
 const TOLERANCE = 0.001;

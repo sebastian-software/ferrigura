@@ -19,8 +19,8 @@ fn node_ids(diagram: &SankeyDiagram) -> Vec<&str> {
 }
 
 #[test]
-fn parses_csv() {
-    let diagram = parses(&format!("sankey\n\n {ENERGY_CSV}"));
+fn parses_csv_with_sankey_beta_syntax() {
+    let diagram = parses(&format!("sankey-beta\n\n {ENERGY_CSV}"));
     // The spec parses the sample without asserting on it; the counts are those of the rendered
     // sample in the reference's probes (`docs-port/sankey/NOTES.md`, section 5).
     assert_eq!(diagram.nodes.len(), 52);
@@ -34,8 +34,8 @@ fn parses_csv_with_sankey_syntax() {
 }
 
 #[test]
-fn allows_proto_as_id() {
-    let diagram = parses("sankey\n      __proto__,A,0.597\n      A,__proto__,0.403\n      ");
+fn allows_proto_as_id_with_sankey_beta_syntax() {
+    let diagram = parses("sankey-beta\n      __proto__,A,0.597\n      A,__proto__,0.403\n      ");
     assert_eq!(node_ids(&diagram), ["__proto__", "A"]);
     assert_eq!(diagram.links.len(), 2);
 }
@@ -48,8 +48,19 @@ fn allows_proto_as_id_with_sankey_syntax() {
 }
 
 #[test]
+fn parses_the_issue_7528_sample_with_sankey_beta_syntax() {
+    parses_the_issue_7528_sample("sankey-beta");
+}
+
+#[test]
 fn parses_the_issue_7528_sample_with_sankey_syntax() {
-    let sample = "sankey
+    parses_the_issue_7528_sample("sankey");
+}
+
+/// `parses the issue #7528 sample with ${syntax} syntax`, which the spec runs for both headers.
+fn parses_the_issue_7528_sample(header: &str) {
+    let sample = format!(
+        "{header}
       Agricultural 'waste',Bio-conversion,124.729
       Bio-conversion,Liquid,0.597
       Bio-conversion,Losses,26.862
@@ -66,8 +77,9 @@ fn parses_the_issue_7528_sample_with_sankey_syntax() {
       Electricity grid,Over generation / exports,104.453
       Electricity grid,Lighting & appliances - commercial,113.726
       Electricity grid,Lighting & appliances - homes,27.14
-      ";
-    let diagram = parses(sample);
+      "
+    );
+    let diagram = parses(&sample);
     assert_eq!(diagram.nodes.len(), 19);
     assert_eq!(diagram.links.len(), 16);
     for id in [

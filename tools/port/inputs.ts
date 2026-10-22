@@ -1,7 +1,9 @@
 /**
  * Collects the inputs of the differential run for one diagram type from the places the reference
  * already tests: the e2e fixtures, the string literals of the spec files and the mermaid blocks of
- * the docs. Identical texts are kept once, with the first place they were found in.
+ * the docs. Identical texts are kept once, with the first place they were found in. The fixtures and
+ * the cases come from this repository; the specs and the docs from the reference's checkout
+ * (`reference-root.ts`), named by their path in it.
  */
 import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
@@ -10,8 +12,7 @@ import ts from 'typescript';
 
 import { explicitCases, undetectedCases } from './cases.ts';
 import type { PortInput } from './reference.ts';
-
-const root = new URL('../../', import.meta.url);
+import { referenceRoot, repositoryRoot } from './reference-root.ts';
 
 /** The spec files whose literals are collected, where a type's specs are JavaScript. */
 const specPatterns: Record<string, RegExp> = { er: /\.(spec|test)\.[jt]s$/ };
@@ -35,7 +36,11 @@ const fixtureFolders: Record<string, string[]> = {
   kanban: ['e2e/diagrams/kanban/', 'tools/port/geometry/probes/kanban/'],
 };
 
-/** The detectors of the reference, as its files write them (`packages/mermaid/src/diagrams/`). */
+/**
+ * The detectors of the reference, as its files write them (`packages/mermaid/src/diagrams/`). The four
+ * stable types take their `-beta` keyword too, as upstream Mermaid and ferrigura do, and end at the
+ * boundary the fork added (docs-port/ORACLE-PLAN.md, step 1).
+ */
 const detectors: Record<string, RegExp> = {
   pie: /^\s*pie/,
   info: /^\s*info/,
@@ -49,10 +54,10 @@ const detectors: Record<string, RegExp> = {
   state: /^\s*stateDiagram/,
   gantt: /^\s*gantt/,
   mindmap: /^\s*mindmap/,
-  block: /^\s*block(?![\w-])/,
-  packet: /^\s*packet(?![\w-])/,
-  xychart: /^\s*xychart(?![\w-])/,
-  sankey: /^\s*sankey(?![\w-])/,
+  block: /^\s*block(?:-beta)?(?![\w-])/,
+  packet: /^\s*packet(?:-beta)?(?![\w-])/,
+  xychart: /^\s*xychart(?:-beta)?(?![\w-])/,
+  sankey: /^\s*sankey(?:-beta)?(?![\w-])/,
   quadrantChart: /^\s*quadrantChart/,
   requirement: /^\s*requirementDiagram/,
   c4: /^\s*(?:C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)/,
@@ -79,13 +84,18 @@ export function looksLikeType(type: string, text: string): boolean {
   return detectors[type].test(body);
 }
 
-async function walk(dir: string, filter: (path: string) => boolean): Promise<string[]> {
+/** The files under `dir` of the checkout at `root` that pass `filter`, relative to `root`. */
+async function walk(
+  root: string,
+  dir: string,
+  filter: (path: string) => boolean
+): Promise<string[]> {
   const found: string[] = [];
-  const entries = await readdir(new URL(dir, root), { withFileTypes: true, recursive: true });
+  const entries = await readdir(join(root, dir), { withFileTypes: true, recursive: true });
   for (const entry of entries) {
     if (!entry.isFile()) continue;
     const path = join(entry.parentPath, entry.name);
-    const repoRelative = relative(new URL(root).pathname, path);
+    const repoRelative = relative(root, path);
     if (repoRelative.includes('node_modules') || repoRelative.includes('/dist/')) continue;
     if (filter(repoRelative)) found.push(repoRelative);
   }
@@ -120,18 +130,18 @@ export async function collectInputs(type: string): Promise<PortInput[]> {
   // The state fixtures are in two folders, and some state inputs sit in the platform's dev folder.
   // Those are kept by detector, and the info smoke test in the state folders is dropped the same way.
   for (const folder of fixtureFolders[type] ?? [`e2e/diagrams/${type}/`]) {
-    const fixtures = await walk(folder, (path) => path.endsWith('.mmd'));
+    const fixtures = await walk(repositoryRoot, folder, (path) => path.endsWith('.mmd'));
     for (const fixture of fixtures) {
-      const text = await readFile(new URL(fixture, root), 'utf8');
+      const text = await readFile(join(repositoryRoot, fixture), 'utf8');
       if (type === 'state' && !looksLikeType(type, text)) continue;
       candidates.push({ source: fixture, text });
     }
   }
 
   const specPattern = specPatterns[type] ?? /\.(spec|test)\.(ts|js)$/;
-  const specs = await walk('packages/', (path) => specPattern.test(path));
+  const specs = await walk(referenceRoot, 'packages/', (path) => specPattern.test(path));
   for (const spec of specs) {
-    const source = await readFile(new URL(spec, root), 'utf8');
+    const source = await readFile(join(referenceRoot, spec), 'utf8');
     for (const literal of stringLiterals(spec, source)) {
       if (looksLikeType(type, literal.text)) {
         candidates.push({ source: `${spec}:${literal.line}`, text: literal.text });
@@ -139,9 +149,11 @@ export async function collectInputs(type: string): Promise<PortInput[]> {
     }
   }
 
-  const docs = await walk('packages/mermaid/src/docs/', (path) => path.endsWith('.md'));
+  const docs = await walk(referenceRoot, 'packages/mermaid/src/docs/', (path) =>
+    path.endsWith('.md')
+  );
   for (const doc of docs) {
-    const source = await readFile(new URL(doc, root), 'utf8');
+    const source = await readFile(join(referenceRoot, doc), 'utf8');
     for (const block of mermaidBlocks(source)) {
       if (looksLikeType(type, block)) {
         candidates.push({ source: doc, text: block });

@@ -4,19 +4,27 @@
  * The reference imports Vite-only forms such as `config.schema.yaml?only-defaults=true`, which
  * Node cannot load, so the modules go through Vite's SSR loader with the schema plugin the
  * tests use. The exporters themselves run under tsx.
+ *
+ * The loader's root is the reference's checkout (`reference-root.ts`), and the Jison and schema
+ * plugins are that checkout's own, so another checkout is loaded the way its tests load it.
  */
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { JSDOM } from 'jsdom';
 import { createServer, type Plugin } from 'vite';
 
-import jisonPlugin from '../../.vite/jisonPlugin.ts';
-import jsonSchemaPlugin from '../../.vite/jsonSchemaPlugin.ts';
+import { referenceRoot } from './reference-root.ts';
 
-const root = fileURLToPath(new URL('../../', import.meta.url));
+/** One of the reference checkout's Vite plugins, `.vite/<file>`. */
+async function referencePlugin(file: string): Promise<Plugin> {
+  const url = pathToFileURL(join(referenceRoot, '.vite', file)).href;
+  const module = (await import(url)) as { default: () => Plugin };
+  return module.default();
+}
 
 export interface Reference {
-  /** Loads a module by its path relative to the repository root, with a leading slash. */
+  /** Loads a module by its path relative to the reference's root, with a leading slash. */
   load<T>(path: string): Promise<T>;
   close(): Promise<void>;
 }
@@ -29,10 +37,14 @@ export interface Reference {
 export async function openReference(extraPlugins: Plugin[] = []): Promise<Reference> {
   const server = await createServer({
     configFile: false,
-    root,
+    root: referenceRoot,
     logLevel: 'warn',
     appType: 'custom',
-    plugins: [jsonSchemaPlugin(), jisonPlugin(), ...extraPlugins],
+    plugins: [
+      await referencePlugin('jsonSchemaPlugin.ts'),
+      await referencePlugin('jisonPlugin.ts'),
+      ...extraPlugins,
+    ],
     resolve: { extensions: ['.ts', '.js'] },
     server: { middlewareMode: true, hmr: false, watch: null },
     optimizeDeps: { noDiscovery: true, include: [] },

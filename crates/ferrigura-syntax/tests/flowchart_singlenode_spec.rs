@@ -323,6 +323,7 @@ mod singlenodes_when_parsing {
     dash_keyword_tests! {
         should_handle_keywords_between_dashes_graph => "graph",
         should_handle_keywords_between_dashes_flowchart => "flowchart",
+        should_handle_keywords_between_dashes_flowchart_elk => "flowchart-elk",
         should_handle_keywords_between_dashes_style => "style",
         should_handle_keywords_between_dashes_default => "default",
         should_handle_keywords_between_dashes_linkstyle => "linkStyle",
@@ -343,6 +344,7 @@ mod singlenodes_when_parsing {
     period_keyword_tests! {
         should_handle_keywords_between_periods_graph => "graph",
         should_handle_keywords_between_periods_flowchart => "flowchart",
+        should_handle_keywords_between_periods_flowchart_elk => "flowchart-elk",
         should_handle_keywords_between_periods_style => "style",
         should_handle_keywords_between_periods_default => "default",
         should_handle_keywords_between_periods_linkstyle => "linkStyle",
@@ -363,6 +365,7 @@ mod singlenodes_when_parsing {
     underscore_keyword_tests! {
         should_handle_keywords_between_underscores_graph => "graph",
         should_handle_keywords_between_underscores_flowchart => "flowchart",
+        should_handle_keywords_between_underscores_flowchart_elk => "flowchart-elk",
         should_handle_keywords_between_underscores_style => "style",
         should_handle_keywords_between_underscores_default => "default",
         should_handle_keywords_between_underscores_linkstyle => "linkStyle",
@@ -383,6 +386,7 @@ mod singlenodes_when_parsing {
     ending_keyword_tests! {
         should_handle_nodes_ending_in_graph => "graph",
         should_handle_nodes_ending_in_flowchart => "flowchart",
+        should_handle_nodes_ending_in_flowchart_elk => "flowchart-elk",
         should_handle_nodes_ending_in_style => "style",
         should_handle_nodes_ending_in_default => "default",
         should_handle_nodes_ending_in_linkstyle => "linkStyle",
@@ -403,6 +407,7 @@ mod singlenodes_when_parsing {
     error_keyword_tests! {
         should_throw_error_at_nodes_beginning_with_graph => "graph",
         should_throw_error_at_nodes_beginning_with_flowchart => "flowchart",
+        should_throw_error_at_nodes_beginning_with_flowchart_elk => "flowchart-elk",
         should_throw_error_at_nodes_beginning_with_style => "style",
         should_throw_error_at_nodes_beginning_with_linkstyle => "linkStyle",
         should_throw_error_at_nodes_beginning_with_interpolate => "interpolate",

@@ -375,8 +375,10 @@ impl Scanner<'_> {
                     len,
                 ))
             }
-            // `xychart\b`.
-            14 => keyword_len(rest, "xychart").map(|len| Matched::Token(Token::XyChart, len)),
+            // `xychart-beta\b`, then `xychart\b`.
+            14 => keyword_len(rest, "xychart-beta")
+                .or_else(|| keyword_len(rest, "xychart"))
+                .map(|len| Matched::Token(Token::XyChart, len)),
             // `(?:vertical|horizontal)`: no word boundary after it (quirk P2).
             15 => ["vertical", "horizontal"]
                 .into_iter()

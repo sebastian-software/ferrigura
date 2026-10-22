@@ -2,7 +2,7 @@
 //! over the scanner's tokens:
 //!
 //! ```text
-//! Packet:      NEWLINE* "packet" ( TitleAndAccessibilities | PacketBlock | NEWLINE )*
+//! Packet:      NEWLINE* ("packet" | "packet-beta") ( TitleAndAccessibilities | PacketBlock | NEWLINE )*
 //! PacketBlock: ( INT ( '-' INT )? | '+' INT ) ':' STRING EOL
 //! EOL:         NEWLINE+ | EOF
 //! ```

@@ -368,13 +368,15 @@ pub fn detect(text: &str) -> Option<DiagramType> {
     }
 }
 
-/// `^\s*<keyword>(?![\w-])`, the reference's header test for the stable types `sankey`, `packet`,
-/// `xychart` and `block`: the keyword is not followed by a word character or a hyphen, so the
-/// `-beta` keyword is not taken.
+/// `^\s*<keyword>(-beta)?(?![\w-])`, the header test for `sankey`, `packet`, `xychart` and `block`:
+/// the keyword or its `-beta` form, as upstream Mermaid takes both, not followed by a word character
+/// or a hyphen. Upstream's detectors end without that boundary (`^\s*sankey(-beta)?`), so they also
+/// take `sankeyfoo`; ferrigura keeps the boundary, a fix the reference gets as a patch
+/// (`docs-port/ORACLE-PLAN.md`).
 fn has_keyword_alone(text: &str, keyword: &str) -> bool {
-    text.strip_prefix(keyword).is_some_and(|after| {
-        !matches!(after.as_bytes().first(), Some(&byte) if byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')
-    })
+    let alone = |after: &str| !matches!(after.as_bytes().first(), Some(&byte) if byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-');
+    text.strip_prefix(keyword)
+        .is_some_and(|after| alone(after) || after.strip_prefix("-beta").is_some_and(alone))
 }
 
 /// `^\s*(?:C4Context|C4Container|C4Component|C4Dynamic|C4Deployment)`, the detector of `c4`.

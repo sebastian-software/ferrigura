@@ -191,7 +191,7 @@ pub(crate) fn tokenize(text: &str) -> Result<Vec<Spanned>, LexFailure> {
     let mut pos = 0;
     while pos < text.len() {
         let rest = &text[pos..];
-        let (len, token) = match next_step(rest) {
+        let (len, token) = match next_step(rest, at_header(&tokens)) {
             Some(Step::Emit(token, len)) if len > 0 => (len, Some(token)),
             Some(Step::Hidden(len)) if len > 0 => (len, None),
             _ => return Err(LexFailure { offset: pos }),
@@ -204,9 +204,20 @@ pub(crate) fn tokenize(text: &str) -> Result<Vec<Spanned>, LexFailure> {
     Ok(tokens)
 }
 
-/// The first terminal that matches at the start of `rest`, in the lexer's order.
-fn next_step(rest: &str) -> Option<Step> {
+/// Whether the next token is the header: only line breaks come before it.
+fn at_header(tokens: &[Spanned]) -> bool {
+    tokens.iter().all(|spanned| spanned.token == Token::Newline)
+}
+
+/// The first terminal that matches at the start of `rest`, in the lexer's order. The graduated
+/// keyword `architecture` is the header only (`header`): after it the word is a name again, as in
+/// upstream Mermaid, whose grammar knows only `architecture-beta` (`service architecture` is a
+/// service called `architecture`).
+fn next_step(rest: &str, header: bool) -> Option<Step> {
     for rule in KEYWORDS {
+        if !header && rule.literal == "architecture" {
+            continue;
+        }
         if let Some(len) = keyword_len(rest, rule) {
             return Some(keyword_step(rest, rule, len));
         }
@@ -524,6 +535,16 @@ mod tests {
             vec![Token::Title(String::new()), Token::Id("1".into())]
         );
         assert_eq!(kinds("accTitlex")[0], Token::Id("accTitlex".into()));
+    }
+
+    #[test]
+    fn architecture_is_a_name_after_the_header() {
+        let tokens = kinds("architecture-beta\nservice architecture");
+        assert_eq!(tokens[0], Token::Keyword(Kw::Architecture));
+        assert_eq!(tokens.last(), Some(&Token::Id("architecture".into())));
+        let tokens = kinds("\narchitecture\nservice architecture\n");
+        assert_eq!(tokens[1], Token::Keyword(Kw::Architecture));
+        assert!(tokens.contains(&Token::Id("architecture".into())));
     }
 
     #[test]

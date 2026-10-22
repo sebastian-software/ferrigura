@@ -21,10 +21,16 @@ import { JSON_SCHEMA, load } from 'js-yaml';
 import { chromium, type Page } from 'playwright';
 
 import { faceCoverage, labelCoverage, unicodeRange } from '../fonts/bundled.ts';
+import { referenceRoot } from '../reference-root.ts';
 import { ensureTidyTreeBundle, TIDY_TREE_DIR, TIDY_TREE_URL } from './tidy-tree-bundle.js';
 
 export const root = fileURLToPath(new URL('../../../', import.meta.url));
-export const distDir = join(root, 'packages/mermaid/dist');
+/**
+ * The reference's built bundle, from the reference's checkout (`reference-root.ts`). The full ESM
+ * bundle registers the ELK layouts itself, in the fork and in upstream Mermaid 12.2.0 alike; the
+ * separate `@mermaid-js/layout-elk` package of upstream serves only the tiny build.
+ */
+export const distDir = join(referenceRoot, 'packages/mermaid/dist');
 export const fontDir = join(root, 'crates/ferrigura-text/fonts');
 export const workDir = join(root, 'target/geometry');
 

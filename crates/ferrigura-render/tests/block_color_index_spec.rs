@@ -35,7 +35,7 @@ fn indices(text: &str, ids: &[&str]) -> Vec<Option<u32>> {
 
 #[test]
 fn numbers_composites_in_declaration_order() {
-    let text = "block
+    let text = "block-beta
       block:first
         a
       end
@@ -55,7 +55,7 @@ fn numbers_composites_in_declaration_order() {
 #[test]
 fn gives_no_slot_to_a_simple_block() {
     // The flowchart colours containers and leaves its nodes alone; so does this.
-    let text = "block
+    let text = "block-beta
       a
       b
       block:group
@@ -70,7 +70,7 @@ fn gives_no_slot_to_a_simple_block() {
 fn numbers_an_outer_composite_before_one_nested_inside_it() {
     // Source order, not completion order: a container is declared before its children, so it takes the
     // lower slot even though it closes last.
-    let text = "block
+    let text = "block-beta
       block:outer
         block:inner
           a
@@ -90,7 +90,7 @@ fn numbers_an_outer_composite_before_one_nested_inside_it() {
 fn runs_one_counter_across_the_whole_diagram() {
     // Not per container: restarting the count inside each one would open every container's first child on
     // the same colour as its cousins.
-    let text = "block
+    let text = "block-beta
       block:a1
         block:a2
           x

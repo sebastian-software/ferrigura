@@ -13,6 +13,9 @@ use crate::error::{ParseError, Source};
 /// The header keyword, as the initial state reads it.
 const HEADER: &str = "sankey";
 
+/// The header keyword of the beta, which upstream Mermaid still takes (`<INITIAL>"sankey-beta"`).
+const BETA_HEADER: &str = "sankey-beta";
+
 /// The tokens of the grammar.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Token {
@@ -43,20 +46,25 @@ pub(crate) struct Spanned {
 /// [`Token::Eof`], or with the error of a character no rule takes.
 pub(crate) fn scan(source: Source<'_>) -> Result<Vec<Spanned>, ParseError> {
     let text = source.text();
-    // The initial state takes the keyword in any case, with no word boundary after it (`sankey-beta`
-    // is then a parse error at its `-`, as the grammar gives).
-    if !text
-        .as_bytes()
-        .get(..HEADER.len())
-        .is_some_and(|head| head.eq_ignore_ascii_case(HEADER.as_bytes()))
-    {
+    // The initial state takes `sankey-beta` or `sankey` in any case, in that order, with no word
+    // boundary after it.
+    let starts_with = |keyword: &str| {
+        text.as_bytes()
+            .get(..keyword.len())
+            .is_some_and(|head| head.eq_ignore_ascii_case(keyword.as_bytes()))
+    };
+    let header_len = if starts_with(BETA_HEADER) {
+        BETA_HEADER.len()
+    } else if starts_with(HEADER) {
+        HEADER.len()
+    } else {
         return Err(source.error(0, "expected the keyword 'sankey'"));
-    }
+    };
     let mut tokens = vec![Spanned {
         token: Token::Sankey,
         start: 0,
     }];
-    let mut pos = HEADER.len();
+    let mut pos = header_len;
     let mut quoted = false;
     loop {
         let rest = &text[pos..];

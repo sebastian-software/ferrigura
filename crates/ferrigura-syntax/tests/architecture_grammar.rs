@@ -260,10 +260,13 @@ fn an_id_that_begins_with_accessibility_keyword_is_an_id_unless_a_colon_follows(
     accepts(&format!("{HEADER}service accTitlex(server)[A]\n"));
 }
 
+/// `architecture` is the header keyword only at the start; after the header it is a name, as in
+/// upstream Mermaid, whose grammar knows only `architecture-beta`.
 #[test]
-fn the_header_keyword_is_an_id_when_a_parenthesis_follows() {
+fn the_header_keyword_is_a_name_after_the_header() {
     accepts(&format!("{HEADER}service architecture(server)[A]\n"));
-    rejects(&format!("{HEADER}service architecture\n"));
+    accepts(&format!("{HEADER}service architecture\n"));
+    accepts("architecture\nservice architecture\n");
     rejects("architecture(x)\n");
     rejects("architecture-betax\n");
     rejects("architecturex\n");

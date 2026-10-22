@@ -36,6 +36,12 @@ mod parse_spec {
     }
 
     #[test]
+    fn should_handle_a_packet_beta_definition() {
+        let diagram = accepts("packet-beta");
+        assert!(diagram.rows.is_empty());
+    }
+
+    #[test]
     fn should_handle_diagram_with_data_and_title() {
         let diagram = accepts(
             "packet

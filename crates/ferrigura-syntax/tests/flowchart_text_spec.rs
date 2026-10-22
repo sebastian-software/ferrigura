@@ -307,6 +307,7 @@ mod text_when_parsing {
             "square", "[", "]";
             should_handle_graph_keyword_in_square_vertex => "graph",
             should_handle_flowchart_keyword_in_square_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_square_vertex => "flowchart-elk",
             should_handle_style_keyword_in_square_vertex => "style",
             should_handle_default_keyword_in_square_vertex => "default",
             should_handle_linkstyle_keyword_in_square_vertex => "linkStyle",
@@ -329,6 +330,7 @@ mod text_when_parsing {
             "round", "(", ")";
             should_handle_graph_keyword_in_round_vertex => "graph",
             should_handle_flowchart_keyword_in_round_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_round_vertex => "flowchart-elk",
             should_handle_style_keyword_in_round_vertex => "style",
             should_handle_default_keyword_in_round_vertex => "default",
             should_handle_linkstyle_keyword_in_round_vertex => "linkStyle",
@@ -351,6 +353,7 @@ mod text_when_parsing {
             "diamond", "{", "}";
             should_handle_graph_keyword_in_diamond_vertex => "graph",
             should_handle_flowchart_keyword_in_diamond_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_diamond_vertex => "flowchart-elk",
             should_handle_style_keyword_in_diamond_vertex => "style",
             should_handle_default_keyword_in_diamond_vertex => "default",
             should_handle_linkstyle_keyword_in_diamond_vertex => "linkStyle",
@@ -373,6 +376,7 @@ mod text_when_parsing {
             "ellipse", "(-", "-)";
             should_handle_graph_keyword_in_ellipse_vertex => "graph",
             should_handle_flowchart_keyword_in_ellipse_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_ellipse_vertex => "flowchart-elk",
             should_handle_style_keyword_in_ellipse_vertex => "style",
             should_handle_default_keyword_in_ellipse_vertex => "default",
             should_handle_linkstyle_keyword_in_ellipse_vertex => "linkStyle",
@@ -395,6 +399,7 @@ mod text_when_parsing {
             "stadium", "([", "])";
             should_handle_graph_keyword_in_stadium_vertex => "graph",
             should_handle_flowchart_keyword_in_stadium_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_stadium_vertex => "flowchart-elk",
             should_handle_style_keyword_in_stadium_vertex => "style",
             should_handle_default_keyword_in_stadium_vertex => "default",
             should_handle_linkstyle_keyword_in_stadium_vertex => "linkStyle",
@@ -417,6 +422,7 @@ mod text_when_parsing {
             "odd", ">", "]";
             should_handle_graph_keyword_in_odd_vertex => "graph",
             should_handle_flowchart_keyword_in_odd_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_odd_vertex => "flowchart-elk",
             should_handle_style_keyword_in_odd_vertex => "style",
             should_handle_default_keyword_in_odd_vertex => "default",
             should_handle_linkstyle_keyword_in_odd_vertex => "linkStyle",
@@ -439,6 +445,7 @@ mod text_when_parsing {
             "cylinder", "[(", ")]";
             should_handle_graph_keyword_in_cylinder_vertex => "graph",
             should_handle_flowchart_keyword_in_cylinder_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_cylinder_vertex => "flowchart-elk",
             should_handle_style_keyword_in_cylinder_vertex => "style",
             should_handle_default_keyword_in_cylinder_vertex => "default",
             should_handle_linkstyle_keyword_in_cylinder_vertex => "linkStyle",
@@ -461,6 +468,7 @@ mod text_when_parsing {
             "doublecircle", "(((", ")))";
             should_handle_graph_keyword_in_doublecircle_vertex => "graph",
             should_handle_flowchart_keyword_in_doublecircle_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_doublecircle_vertex => "flowchart-elk",
             should_handle_style_keyword_in_doublecircle_vertex => "style",
             should_handle_default_keyword_in_doublecircle_vertex => "default",
             should_handle_linkstyle_keyword_in_doublecircle_vertex => "linkStyle",
@@ -483,6 +491,7 @@ mod text_when_parsing {
             "trapezoid", "[/", "\\]";
             should_handle_graph_keyword_in_trapezoid_vertex => "graph",
             should_handle_flowchart_keyword_in_trapezoid_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_trapezoid_vertex => "flowchart-elk",
             should_handle_style_keyword_in_trapezoid_vertex => "style",
             should_handle_default_keyword_in_trapezoid_vertex => "default",
             should_handle_linkstyle_keyword_in_trapezoid_vertex => "linkStyle",
@@ -505,6 +514,7 @@ mod text_when_parsing {
             "inv_trapezoid", "[\\", "/]";
             should_handle_graph_keyword_in_inv_trapezoid_vertex => "graph",
             should_handle_flowchart_keyword_in_inv_trapezoid_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_inv_trapezoid_vertex => "flowchart-elk",
             should_handle_style_keyword_in_inv_trapezoid_vertex => "style",
             should_handle_default_keyword_in_inv_trapezoid_vertex => "default",
             should_handle_linkstyle_keyword_in_inv_trapezoid_vertex => "linkStyle",
@@ -527,6 +537,7 @@ mod text_when_parsing {
             "lean_right", "[/", "/]";
             should_handle_graph_keyword_in_lean_right_vertex => "graph",
             should_handle_flowchart_keyword_in_lean_right_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_lean_right_vertex => "flowchart-elk",
             should_handle_style_keyword_in_lean_right_vertex => "style",
             should_handle_default_keyword_in_lean_right_vertex => "default",
             should_handle_linkstyle_keyword_in_lean_right_vertex => "linkStyle",
@@ -549,6 +560,7 @@ mod text_when_parsing {
             "lean_left", "[\\", "\\]";
             should_handle_graph_keyword_in_lean_left_vertex => "graph",
             should_handle_flowchart_keyword_in_lean_left_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_lean_left_vertex => "flowchart-elk",
             should_handle_style_keyword_in_lean_left_vertex => "style",
             should_handle_default_keyword_in_lean_left_vertex => "default",
             should_handle_linkstyle_keyword_in_lean_left_vertex => "linkStyle",
@@ -571,6 +583,7 @@ mod text_when_parsing {
             "subroutine", "[[", "]]";
             should_handle_graph_keyword_in_subroutine_vertex => "graph",
             should_handle_flowchart_keyword_in_subroutine_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_subroutine_vertex => "flowchart-elk",
             should_handle_style_keyword_in_subroutine_vertex => "style",
             should_handle_default_keyword_in_subroutine_vertex => "default",
             should_handle_linkstyle_keyword_in_subroutine_vertex => "linkStyle",
@@ -593,6 +606,7 @@ mod text_when_parsing {
             "hexagon", "{{", "}}";
             should_handle_graph_keyword_in_hexagon_vertex => "graph",
             should_handle_flowchart_keyword_in_hexagon_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_hexagon_vertex => "flowchart-elk",
             should_handle_style_keyword_in_hexagon_vertex => "style",
             should_handle_default_keyword_in_hexagon_vertex => "default",
             should_handle_linkstyle_keyword_in_hexagon_vertex => "linkStyle",
@@ -614,6 +628,7 @@ mod text_when_parsing {
         rect_keyword_tests! {
             should_handle_graph_keyword_in_rect_vertex => "graph",
             should_handle_flowchart_keyword_in_rect_vertex => "flowchart",
+            should_handle_flowchart_elk_keyword_in_rect_vertex => "flowchart-elk",
             should_handle_style_keyword_in_rect_vertex => "style",
             should_handle_default_keyword_in_rect_vertex => "default",
             should_handle_linkstyle_keyword_in_rect_vertex => "linkStyle",

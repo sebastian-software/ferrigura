@@ -253,6 +253,9 @@ impl<'a> Scanner<'a> {
 
 /// The rules of the initial state, in the order of `block.jison` (lines 39-160).
 fn initial(rest: &str) -> Option<Hit> {
+    if let Some(len) = word_len(rest, "block-beta") {
+        return Some(Hit::token(len, Token::BlockKey));
+    }
     if let Some(len) = literal_len(rest, "block:") {
         return Some(Hit::token(len, Token::IdBlock));
     }
