@@ -72,6 +72,10 @@ export function buildRenderExample(): void {
  */
 export const FORCED_SETTINGS: Record<string, unknown> = {
   htmlLabels: false,
+  // Upstream's triangle shape and swimlane lane labels read `flowchart.htmlLabels`, which it leaves
+  // unset, so they drew HTML labels; ferrigura draws SVG text (decision 0004), and the fork made
+  // them follow the root option (FORK.md, Behaviour changes).
+  flowchart: { htmlLabels: false },
   fontFamily: '"Lexica Ultralegible", "Noto Sans Math", "Noto Sans Symbols 2", "Twemoji Mozilla"',
   securityLevel: 'strict',
 };
@@ -284,6 +288,10 @@ export function exclusionReason(source: string, type = ''): string | null {
     for (const [option, reason] of SWIMLANE_OPTION_EXCLUSIONS) {
       if (option.test(source)) return reason;
     }
+  }
+  if (layout === 'dagre') {
+    // Upstream lays these out with dagre; ferrigura has ELK only (docs-port/ORACLE-PLAN.md).
+    return 'layout dagre: ferrigura lays out with ELK';
   }
   if (
     typeof layout === 'string' &&

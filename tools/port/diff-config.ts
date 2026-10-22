@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { configCases } from './config-cases.ts';
 import { undetectedCases } from './cases.ts';
 import { exceptions } from './exceptions.ts';
+import { INERT_KEYS, withoutInertOptions } from './inert-options.ts';
 import { collectInputs, looksLikeType } from './inputs.ts';
 
 interface ConfigInput {
@@ -256,8 +257,8 @@ const rs = JSON.parse(await readFile(rsPath, 'utf8')) as ConfigRun;
 
 const jsKeys = new Set(js.configKeys);
 const rsKeys = new Set(rs.configKeys);
-const missingInRust = js.configKeys.filter((key) => !rsKeys.has(key));
-const extraInRust = rs.configKeys.filter((key) => !jsKeys.has(key));
+const missingInRust = js.configKeys.filter((key) => !rsKeys.has(key) && !INERT_KEYS.has(key));
+const extraInRust = rs.configKeys.filter((key) => !jsKeys.has(key) && !INERT_KEYS.has(key));
 if (missingInRust.length > 0 || extraInRust.length > 0) {
   console.log(
     `\n✗ configKeys: ${missingInRust.length} missing in Rust, ${extraInRust.length} extra`
@@ -311,7 +312,7 @@ const NOT_PORTED_SECTIONS = new Set<string>();
  */
 function ported(config: unknown, scope: string | null): unknown {
   if (typeof config !== 'object' || config === null) return config;
-  const copy = { ...(config as Record<string, unknown>) };
+  const copy = { ...(withoutInertOptions(config) as Record<string, unknown>) };
   for (const section of UNPORTED_SECTIONS) {
     if (section !== scope || NOT_PORTED_SECTIONS.has(section)) delete copy[section];
   }
