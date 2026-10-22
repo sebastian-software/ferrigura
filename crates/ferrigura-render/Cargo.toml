@@ -3,7 +3,7 @@ name = "ferrigura-render"
 description = "Layout and SVG output of ferrigura diagrams"
 readme = "README.md"
 include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*"]
-version = "0.1.0"
+version = "0.2.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -14,15 +14,15 @@ keywords = ["ferrigura", "mermaid", "svg", "diagram", "layout"]
 
 [dependencies]
 base64 = "0.23.1"
-ferrigura-cose = { path = "../ferrigura-cose", version = "0.1.0" }
-ferrigura-elk = { path = "../ferrigura-elk", version = "0.1.0" }
-ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.1.0" }
-ferrigura-model = { path = "../ferrigura-model", version = "0.1.0" }
-ferrigura-path = { path = "../ferrigura-path", version = "0.1.0" }
-ferrigura-swimlane = { path = "../ferrigura-swimlane", version = "0.1.0" }
-ferrigura-syntax = { path = "../ferrigura-syntax", version = "0.1.0" }
-ferrigura-text = { path = "../ferrigura-text", version = "0.1.0" }
-ferrigura-venn = { path = "../ferrigura-venn", version = "0.1.0" }
+ferrigura-cose = { path = "../ferrigura-cose", version = "0.2.0" }
+ferrigura-elk = { path = "../ferrigura-elk", version = "0.2.0" }
+ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.2.0" }
+ferrigura-model = { path = "../ferrigura-model", version = "0.2.0" }
+ferrigura-path = { path = "../ferrigura-path", version = "0.2.0" }
+ferrigura-swimlane = { path = "../ferrigura-swimlane", version = "0.2.0" }
+ferrigura-syntax = { path = "../ferrigura-syntax", version = "0.2.0" }
+ferrigura-text = { path = "../ferrigura-text", version = "0.2.0" }
+ferrigura-venn = { path = "../ferrigura-venn", version = "0.2.0" }
 ferromark = "3.1.0"
 serde.workspace = true
 serde_json.workspace = true

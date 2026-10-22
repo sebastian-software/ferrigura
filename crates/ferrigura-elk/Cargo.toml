@@ -1,6 +1,6 @@
 [package]
 name = "ferrigura-elk"
-version = "0.1.0"
+version = "0.2.0"
 description = "ELK Layered layout ported from the Eclipse Layout Kernel Java sources (EPL-2.0)"
 readme = "README.md"
 include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md"]

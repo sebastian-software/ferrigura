@@ -1,6 +1,6 @@
 [package]
 name = "ferrigura-cose"
-version = "0.1.0"
+version = "0.2.0"
 description = "Force-directed layouts ported from the JavaScript sources: cytoscape-cose-bilkent 4.1.0 (the tree path Mermaid's mindmaps use) and cytoscape-fcose 2.2.0 (architecture diagrams)"
 readme = "README.md"
 include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md"]
@@ -13,7 +13,7 @@ documentation = "https://docs.rs/ferrigura-cose"
 keywords = ["ferrigura", "graph", "layout", "force-directed", "cose"]
 
 [dependencies]
-ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.1.0" }
+ferrigura-jsmath = { path = "../ferrigura-jsmath", version = "0.2.0" }
 
 [dev-dependencies]
 serde.workspace = true

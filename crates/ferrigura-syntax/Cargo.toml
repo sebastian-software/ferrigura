@@ -3,7 +3,7 @@ name = "ferrigura-syntax"
 description = "Shared lexer base, YAML reader and hand-written parsers for ferrigura diagram types"
 readme = "README.md"
 include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*"]
-version = "0.1.0"
+version = "0.2.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -13,7 +13,7 @@ documentation = "https://docs.rs/ferrigura-syntax"
 keywords = ["ferrigura", "mermaid", "parser", "diagram"]
 
 [dependencies]
-ferrigura-model = { path = "../ferrigura-model", version = "0.1.0" }
+ferrigura-model = { path = "../ferrigura-model", version = "0.2.0" }
 indexmap.workspace = true
 logos.workspace = true
 regex = "1"

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/sebastian-software/ferrigura/compare/ferrigura-v0.1.0...ferrigura-v0.2.0) (2026-10-22)
+
+
+### Features
+
+* **port:** accept flowchart-elk and the -beta keywords, as upstream Mermaid does ([d465e8d](https://github.com/sebastian-software/ferrigura/commit/d465e8d52b515c1bcdf0544f60762078abc83720))
+* **port:** take the reference from REFERENCE_ROOT ([457fdce](https://github.com/sebastian-software/ferrigura/commit/457fdce94aa20e4993c6a25e863f31b0e8e2ebda))
+
+
+### Bug Fixes
+
+* **port:** architecture is a name after the header, as in upstream Mermaid ([a80f23a](https://github.com/sebastian-software/ferrigura/commit/a80f23aefd8d414bade91796c3dd7e6e39963808))
+
 ## 0.1.0 (2026-10-21)
 
 
