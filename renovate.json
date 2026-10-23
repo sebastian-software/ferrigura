@@ -1,0 +1,41 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["local>sebastian-software/renovate-config"],
+  "customManagers": [
+    {
+      "description": "The pin of the JS reference: the newest Mermaid release its commit contains, and the commit. A new mermaid@ release opens a pull request that moves both; its CI shows what is new (docs-port/ORACLE-PLAN.md).",
+      "customType": "regex",
+      "managerFilePatterns": ["/^tools/reference/pin$/"],
+      "matchStrings": [
+        "release (?<currentValue>mermaid@\\d+\\.\\d+\\.\\d+)\\ncommit (?<currentDigest>[0-9a-f]{40})"
+      ],
+      "depNameTemplate": "mermaid-js/mermaid",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "regex:^mermaid@(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Only the crates are released. Updates of the harness and of CI are chores, not fixes that release-please would publish as a release of the crates (CONTRIBUTING.md).",
+      "matchManagers": ["npm", "github-actions"],
+      "semanticCommitType": "chore"
+    },
+    {
+      "description": "One pull request per Mermaid minor release, merged by hand: moving the pin can need rebased patches and pending exceptions. The pin may sit a few commits after its release, so it gets no digest updates.",
+      "matchDepNames": ["mermaid-js/mermaid"],
+      "separateMultipleMinor": true,
+      "automerge": false,
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "reference",
+      "commitMessageTopic": "the Mermaid reference",
+      "prBodyNotes": [
+        "Moving the pin: run `tools/reference/setup.sh`, rebase or drop the patches that no longer apply, and fix every new difference or make it a pending exception with its issue (`tools/reference/README.md`)."
+      ]
+    },
+    {
+      "matchDepNames": ["mermaid-js/mermaid"],
+      "matchUpdateTypes": ["digest"],
+      "enabled": false
+    }
+  ]
+}
