@@ -1,24 +1,15 @@
 {
-  // extend your base config to share compilerOptions, etc
   "extends": "./tsconfig.json",
-  "compilerOptions": {
-    // ensure that nobody can accidentally use this config for a build
-    "noEmit": true,
-    "allowJs": true
-  },
   "include": [
-    "./.build/*.ts",
-    "./.esbuild/**/*.ts",
-    "./.vite/*.ts",
     "./scripts",
+    "./tools/port",
     "./crates/ferrigura-elk/tools",
     "./crates/ferrigura-cose/tools",
     "./crates/ferrigura-swimlane/tools",
     "./crates/ferrigura-venn/tools",
-    "./tools/port",
     "./crates/ferrigura-node/test",
-    "./e2e",
     "./vite.config.ts",
-    "eslint.config.js"
+    "eslint.config.js",
+    ".lintstagedrc.mjs"
   ]
 }

@@ -22,10 +22,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { referenceRoot } from '../../../tools/port/reference-root.ts';
 import { CORPUS_VERSION, jsonRoundTrip, stripGwtHashKeys } from './corpus-model.js';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
-const mermaidRequire = createRequire(join(REPO_ROOT, 'packages/mermaid/package.json'));
+const mermaidRequire = createRequire(join(referenceRoot, 'packages/mermaid/package.json'));
 const ELK = mermaidRequire('elkjs/lib/elk.bundled.js') as new () => {
   layout(graph: unknown, options?: { logging?: boolean }): Promise<Record<string, unknown>>;
 };

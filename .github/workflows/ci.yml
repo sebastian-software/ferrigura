@@ -25,8 +25,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
 
-  # The tests of the port's tools. Mermaid's own tests do not run: packages/ is the reference the port
-  # is checked against (port-diff, port-geometry), and it does not change.
+  # The tests of the port's tools (tools/port).
   test:
     runs-on: ubuntu-latest
     steps:

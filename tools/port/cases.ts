@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
+import { referenceRoot } from './reference-root.ts';
 import { generateSwimlanes } from '../../crates/ferrigura-swimlane/tools/generate-swimlanes.ts';
 
 /**
@@ -2661,7 +2663,7 @@ export const explicitCases: Record<string, string[]> = {
     "sankey\n      Agricultural 'waste',Bio-conversion,124.729\n      Bio-conversion,Liquid,0.597\n      Bio-conversion,Losses,26.862\n      Bio-conversion,Solid,280.322\n      Bio-conversion,Gas,81.144\n      Biofuel imports,Liquid,35\n      Biomass imports,Solid,35\n      Coal imports,Coal,11.606\n      Coal reserves,Coal,63.965\n      Coal,Solid,75.571\n      District heating,Industry,10.639\n      District heating,Heating and cooling - homes,22.505\n      District heating,Heating and cooling - commercial,46.184\n      Electricity grid,Over generation / exports,104.453\n      Electricity grid,Lighting & appliances - commercial,113.726\n      Electricity grid,Lighting & appliances - homes,27.14\n      ",
     'sankey\n\n ' +
       readFileSync(
-        new URL('../../packages/mermaid/src/diagrams/sankey/parser/energy.csv', import.meta.url),
+        join(referenceRoot, 'packages/mermaid/src/diagrams/sankey/parser/energy.csv'),
         'utf8'
       ),
   ],
@@ -4776,7 +4778,7 @@ export const explicitCases: Record<string, string[]> = {
  */
 function erCharacterCases(): string[] {
   const spec = readFileSync(
-    new URL('../../packages/mermaid/src/diagrams/er/parser/erDiagram.spec.js', import.meta.url),
+    join(referenceRoot, 'packages/mermaid/src/diagrams/er/parser/erDiagram.spec.js'),
     'utf8'
   );
   const list = /const chars =\s*"([^"]*)";/.exec(spec)?.[1] ?? '';

@@ -5,8 +5,8 @@
 //! A case in `tests/fcose-corpus` is one render: its `runs` are the two runs of fcose (run 1 from
 //! the input positions, run 2 from run 1's output), each with the node and edge lists in
 //! cytoscape's order, the options, the seed, the constraints, the component bounds and the
-//! positions the run wrote. The corpus is written by `tools/capture-fcose-corpus.ts`; see
-//! `NOTICE.md` for the sources.
+//! positions the run wrote. The corpus is written by `tools/capture-fcose-corpus.ts` of the tag
+//! `fork-mermaid-12.2.0`, which ran against the fork; see `NOTICE.md` for the sources.
 //!
 //! Only the leaves (nodes without children) are compared: fcose writes their positions, and
 //! cytoscape places the compounds from their children. Every compared centre must agree exactly

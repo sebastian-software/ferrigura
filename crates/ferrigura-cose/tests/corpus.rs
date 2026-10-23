@@ -3,7 +3,8 @@
 //!
 //! Each case in `tests/corpus` holds the input Mermaid's integration handed the engine (the node
 //! sizes it measured, and the edges in order) and the centres the engine returned. The corpus is
-//! written by `tools/capture-corpus.ts`; see `NOTICE.md` for the sources.
+//! written by `tools/capture-corpus.ts` of the tag `fork-mermaid-12.2.0`, which ran against the fork; see
+//! `NOTICE.md` for the sources.
 //!
 //! The edge endpoints in the corpus (cytoscape's `rscratch`) are not compared here: they are the
 //! mindmap renderer's to produce, not this crate's (see the crate docs).

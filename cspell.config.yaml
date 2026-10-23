@@ -16,8 +16,6 @@ ignorePaths:
   - CHANGELOG.md
   - backup
   - '**/*.spec.{js,ts}' # checked by eslint
-  - 'tests/webpack/src/index.js' # checked by eslint
-  - 'cypress/**/*.js' # checked by eslint
   - '*.csv'
   - '*.patch'
   - 'docs/**/*.html'

@@ -4,5 +4,4 @@ export default {
     'prettier --write',
   ],
   '.cspell/*.txt': ['tsx scripts/fixCSpell.ts'],
-  '**/*.jison': ['pnpm -w run lint:jison'],
 };

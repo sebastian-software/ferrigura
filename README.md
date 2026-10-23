@@ -21,17 +21,17 @@ cargo install ferrigura-cli
 
 ## Repository layout
 
-| Path                         | Contents                                                                                                                                                                                                              |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `crates/ferrigura`           | The library. The repository's root `Cargo.toml` is its package, so that one release covers the workspace                                                                                                              |
-| `crates/ferrigura-cli`       | The command-line tool `ferrigura`                                                                                                                                                                                     |
-| `crates/ferrigura-node`      | The Node.js addon                                                                                                                                                                                                     |
-| `crates/ferrigura-*`         | The parts: models and configuration (`model`), parsers (`syntax`), layout and SVG (`render`), text (`text`), and the layouts and math ported from their sources (`elk`, `cose`, `swimlane`, `venn`, `path`, `jsmath`) |
-| `docs-port`                  | The plan, the decisions, the status and the release process of the port; start with [docs-port/README.md](./docs-port/README.md) and [STATUS.md](./docs-port/STATUS.md)                                               |
-| `tools/port`                 | The harness that checks the port against the reference: models (`port:diff`) and geometry in Chromium (`port:geometry`)                                                                                               |
-| `tools/release`              | `publish-crates.sh`, which publishes a release's crates by hand                                                                                                                                                       |
-| `packages/mermaid`, `parser` | Mermaid 12.2.0 as this repository's fork of it: the reference the port is checked against. It does not change any more                                                                                                |
-| `e2e/diagrams`               | The `.mmd` corpus that the harness and the tests render; `e2e/platform` holds more inputs and the page the corpus capture tools load                                                                                  |
+| Path                    | Contents                                                                                                                                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `crates/ferrigura`      | The library. The repository's root `Cargo.toml` is its package, so that one release covers the workspace                                                                                                              |
+| `crates/ferrigura-cli`  | The command-line tool `ferrigura`                                                                                                                                                                                     |
+| `crates/ferrigura-node` | The Node.js addon                                                                                                                                                                                                     |
+| `crates/ferrigura-*`    | The parts: models and configuration (`model`), parsers (`syntax`), layout and SVG (`render`), text (`text`), and the layouts and math ported from their sources (`elk`, `cose`, `swimlane`, `venn`, `path`, `jsmath`) |
+| `docs-port`             | The plan, the decisions, the status and the release process of the port; start with [docs-port/README.md](./docs-port/README.md) and [STATUS.md](./docs-port/STATUS.md)                                               |
+| `tools/port`            | The harness that checks the port against the reference: models (`port:diff`) and geometry in Chromium (`port:geometry`)                                                                                               |
+| `tools/release`         | `publish-crates.sh`, which publishes a release's crates by hand                                                                                                                                                       |
+| `tools/reference`       | The reference the port is checked against: upstream Mermaid at a pinned commit, with patches, which `setup.sh` builds                                                                                                 |
+| `e2e/diagrams`          | The `.mmd` corpus that the harness and the tests render; `e2e/platform/dev-diagrams` holds more inputs                                                                                                                |
 
 ## Development
 
@@ -65,7 +65,7 @@ Releases are made by release-please from the commit messages (`feat(…)`, `fix(
 
 ## History
 
-The repository started as a fork of Mermaid 12.2.0 that cleaned up the library, and keeps Mermaid's full history: the fork's commits sit on top of upstream commit `e28fbd9de` (the `develop` branch at 12.2.0). [FORK.md](./FORK.md) records what the fork removed from Mermaid. The port then took the fork as its reference.
+The repository started as a fork of Mermaid 12.2.0 that cleaned up the library, and keeps Mermaid's full history: the fork's commits sit on top of upstream commit `e28fbd9de` (the `develop` branch at 12.2.0). [FORK.md](./FORK.md) records what the fork removed from Mermaid. The port then took the fork as its reference, and later upstream Mermaid at a pinned commit; the fork left the repository then, and its last state is the tag `fork-mermaid-12.2.0`.
 
 ## License and credits
 

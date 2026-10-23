@@ -28,7 +28,7 @@ A `.mmd` file under `e2e/diagrams/` with one diagram and its front matter, which
 ## Port
 
 **JS reference**:
-The TypeScript implementation in `packages/`, kept unchanged as the behaviour the port is checked against.
+Upstream Mermaid at the commit of `tools/reference/pin`, with the patches beside it: the behaviour the port is checked against.
 _Avoid_: upstream (that is mermaid-js/mermaid), legacy
 
 **Canonical model**:
