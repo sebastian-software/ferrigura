@@ -19,6 +19,18 @@ cargo add ferrigura
 cargo install ferrigura-cli
 ```
 
+## Alternatives
+
+Other projects render Mermaid's syntax too. Which one fits depends on where the diagrams are drawn and how close to Mermaid they must look; [the comparison](./docs-port/comparisons/README.md) sets them side by side, with measured sizes and render times.
+
+| Project                                                                | A fit when                                                                                                                                                 |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Mermaid](https://mermaid.js.org/)                                     | Diagrams are drawn in a browser, with click callbacks, tooltips and the newest diagram types first. On a server it needs a headless browser (mermaid-cli). |
+| [Pele](https://pele.run/)                                              | Speed matters most, in any JavaScript runtime, and a layout and style of its own are fine.                                                                 |
+| [merman](https://github.com/Latias94/merman)                           | Mermaid's drawing is wanted in Rust with output beyond SVG (PNG, PDF, ASCII) or bindings such as WebAssembly and Python, measured without bundled fonts.   |
+| [mermaid-rs-renderer](https://github.com/1jehuang/mermaid-rs-renderer) | A small, fast Rust renderer with a layout of its own is enough, for 23 of the diagram types.                                                               |
+| ferrigura                                                              | Mermaid 12.2.0's drawing is wanted without a browser and the same on every machine, with its fonts embedded: in Rust, on the command line or in Node.      |
+
 ## Repository layout
 
 | Path                    | Contents                                                                                                                                                                                                              |

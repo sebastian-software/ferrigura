@@ -184,6 +184,18 @@ The geometry of the output (node and label boxes, edge paths and the viewBox) is
 - ELK layout algorithms other than `elk.layered`. A diagram that names another one is laid out with `elk.layered`.
 - Swimlane diagrams with `ignoreCrossLaneEdges: false` or `automaticLaneOrdering: true`. The render fails with an error that names the option.
 
+## Alternatives
+
+Other projects render Mermaid's syntax too. Which one fits depends on where the diagrams are drawn and how close to Mermaid they must look; [the comparison](https://github.com/sebastian-software/ferrigura/blob/main/docs-port/comparisons/README.md) sets them side by side, with measured sizes and render times.
+
+| Project                                                                | A fit when                                                                                                                                                 |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Mermaid](https://mermaid.js.org/)                                     | Diagrams are drawn in a browser, with click callbacks, tooltips and the newest diagram types first. On a server it needs a headless browser (mermaid-cli). |
+| [Pele](https://pele.run/)                                              | Speed matters most, in any JavaScript runtime, and a layout and style of its own are fine.                                                                 |
+| [merman](https://github.com/Latias94/merman)                           | Mermaid's drawing is wanted in Rust with output beyond SVG (PNG, PDF, ASCII) or bindings such as WebAssembly and Python, measured without bundled fonts.   |
+| [mermaid-rs-renderer](https://github.com/1jehuang/mermaid-rs-renderer) | A small, fast Rust renderer with a layout of its own is enough, for 23 of the diagram types.                                                               |
+| ferrigura                                                              | Mermaid 12.2.0's drawing is wanted without a browser and the same on every machine, with its fonts embedded: in Rust, on the command line or in Node.      |
+
 ## Licences
 
 The crates are MIT-licensed, as Mermaid is: ferrigura ports Mermaid 12.2.0, and the licence text is the `LICENSE` file of the repository. `ferrigura-elk`, which ports ELK, is licensed under EPL-2.0. Some crates port code or bundle fonts under the licences of their sources, which their `NOTICE.md` files list: `ferrigura-cose`, `ferrigura-elk`, `ferrigura-jsmath`, `ferrigura-path`, `ferrigura-swimlane`, `ferrigura-text` and `ferrigura-venn`.
