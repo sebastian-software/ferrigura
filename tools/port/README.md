@@ -1,6 +1,6 @@
 # Port tooling
 
-Scripts that compare ferrigura with the reference, upstream Mermaid at the pin of [tools/reference/](../reference/README.md). The conventions the canonical models follow are in [`docs-port/canonical-model.md`](../../docs-port/canonical-model.md); the decision to test this way is in [0003](../../docs-port/decisions/0003-differential-testing.md).
+Scripts that compare ferrigura with the reference, upstream Mermaid at the pin of [tools/reference/](../reference/README.md). The conventions the canonical models follow are in [`docs-port/canonical-model.md`](../../docs-port/canonical-model.md); the decision to test this way is in [0003](../../docs-port/decisions/0003-differential-testing.md), and the decision on the reference in [0010](../../docs-port/decisions/0010-upstream-reference-at-a-pin.md).
 
 The `.mmd` files under `e2e/diagrams` are the corpus these scripts and the Rust tests render. `pnpm port:diff` also reads `e2e/platform/dev-diagrams` (state), the string literals of the reference's specs, the mermaid blocks of its docs (its `packages/mermaid/src/docs`) and the cases of `cases.ts`. `pnpm port:geometry` also reads the probes under `geometry/probes/<type>`. The geometry harnesses and `geometry/shape-probe.ts` load the reference's built bundle, its `packages/mermaid/dist`.
 

@@ -4,7 +4,7 @@ ferrigura is a port of Mermaid 12.2.0 to Rust. The port's plan, its decisions an
 
 ## The reference
 
-The port is checked against upstream Mermaid at a pinned commit, with a few patches ([tools/reference/](./tools/reference/README.md)): `tools/reference/setup.sh` builds it, and the harness takes it from there. A difference from the reference is fixed in the port, recorded as a pending or unsupported exception (`tools/port/exceptions.ts`), or, when Mermaid is wrong, fixed in the reference by a patch.
+The port is checked against upstream Mermaid at a pinned commit, with a few patches ([0010](./docs-port/decisions/0010-upstream-reference-at-a-pin.md), [tools/reference/](./tools/reference/README.md)): `tools/reference/setup.sh` builds it, and the harness takes it from there. A difference from the reference is fixed in the port, recorded as a pending or unsupported exception (`tools/port/exceptions.ts`), or, when Mermaid is wrong, fixed in the reference by a patch.
 
 ## Checks
 

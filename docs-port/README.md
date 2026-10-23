@@ -1,34 +1,34 @@
 # ferrigura: porting the core to Rust
 
-This folder holds the plan, the decisions and the status of porting this Mermaid fork to Rust. The port is called **ferrigura** (Latin _ferrum_ and _figura_). The name checks of 2026-10-21 cleared it for the first release; a formal trademark search can follow ([RELEASE.md](./RELEASE.md)). The repository is [`sebastian-software/ferrigura`](https://github.com/sebastian-software/ferrigura). Crate names, Rust code and these documents use `ferrigura` throughout.
+This folder holds the plan, the decisions and the status of porting Mermaid to Rust. The port is called **ferrigura** (Latin _ferrum_ and _figura_). The name checks of 2026-10-21 cleared it for the first release; a formal trademark search can follow ([RELEASE.md](./RELEASE.md)). The repository is [`sebastian-software/ferrigura`](https://github.com/sebastian-software/ferrigura). Crate names, Rust code and these documents use `ferrigura` throughout.
 
-| File                                       | Contents                                                                                     |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| [README.md](./README.md)                   | Goal, scope, architecture, test strategy, milestones                                         |
-| [STATUS.md](./STATUS.md)                   | Progress per milestone, diagram type and strand; the handover                                |
-| [canonical-model.md](./canonical-model.md) | Conventions of the canonical model: text, sanitisation, title precedence, what is left out   |
-| [decisions/](./decisions/)                 | One short record per hard-to-reverse decision                                                |
-| [comparisons/](./comparisons/)             | ferrigura next to Mermaid and other renderers, with measured size and speed                  |
-| [elk/](./elk/)                             | M4: the ELK source pin, Mermaid's option set and the port plan                               |
-| [M6-PLAN.md](./M6-PLAN.md)                 | M6: the remaining P1 diagram types; per type `<type>/NOTES.md` and `<type>/PLAN.md`          |
-| [M6-RENDERERS.md](./M6-RENDERERS.md)       | M6: how a renderer task is set up, checked and reported                                      |
-| [P2-PLAN.md](./P2-PLAN.md)                 | P2: the second tier of diagram types; per type `<type>/NOTES.md` and `<type>/PLAN.md`        |
-| [P2-RESEARCH.md](./P2-RESEARCH.md)         | P2: how a research task works and what its notes hold                                        |
-| [P2-PARSERS.md](./P2-PARSERS.md)           | P2: how a parser task is set up, checked and reported                                        |
-| [P2-RENDERERS.md](./P2-RENDERERS.md)       | P2: what the renderer tasks add to the M6 working rules                                      |
-| [P3-PLAN.md](./P3-PLAN.md)                 | P3: the third tier, the swimlane layout, the scope decisions and the follow-ups              |
-| [P3-RENDERERS.md](./P3-RENDERERS.md)       | P3: what the renderer tasks add to the earlier working rules                                 |
-| [typed-views.md](./typed-views.md)         | The typed configuration views every renderer reads (decision 0009)                           |
-| [RELEASE.md](./RELEASE.md)                 | How the crates are released, and the first release                                           |
-| [ORACLE-PLAN.md](./ORACLE-PLAN.md)         | The plan for checking the port against upstream Mermaid at a pinned commit, without the fork |
-| [spikes/](./spikes/)                       | Write-ups of the spikes: text measurement, fallback faces                                    |
-| [../GLOSSARY.md](../GLOSSARY.md)           | Terms used across the fork and the port                                                      |
+| File                                       | Contents                                                                                   |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| [README.md](./README.md)                   | Goal, scope, architecture, test strategy, milestones                                       |
+| [STATUS.md](./STATUS.md)                   | Progress per milestone, diagram type and strand; the handover                              |
+| [canonical-model.md](./canonical-model.md) | Conventions of the canonical model: text, sanitisation, title precedence, what is left out |
+| [decisions/](./decisions/)                 | One short record per hard-to-reverse decision                                              |
+| [comparisons/](./comparisons/)             | ferrigura next to Mermaid and other renderers, with measured size and speed                |
+| [elk/](./elk/)                             | M4: the ELK source pin, Mermaid's option set and the port plan                             |
+| [M6-PLAN.md](./M6-PLAN.md)                 | M6: the remaining P1 diagram types; per type `<type>/NOTES.md` and `<type>/PLAN.md`        |
+| [M6-RENDERERS.md](./M6-RENDERERS.md)       | M6: how a renderer task is set up, checked and reported                                    |
+| [P2-PLAN.md](./P2-PLAN.md)                 | P2: the second tier of diagram types; per type `<type>/NOTES.md` and `<type>/PLAN.md`      |
+| [P2-RESEARCH.md](./P2-RESEARCH.md)         | P2: how a research task works and what its notes hold                                      |
+| [P2-PARSERS.md](./P2-PARSERS.md)           | P2: how a parser task is set up, checked and reported                                      |
+| [P2-RENDERERS.md](./P2-RENDERERS.md)       | P2: what the renderer tasks add to the M6 working rules                                    |
+| [P3-PLAN.md](./P3-PLAN.md)                 | P3: the third tier, the swimlane layout, the scope decisions and the follow-ups            |
+| [P3-RENDERERS.md](./P3-RENDERERS.md)       | P3: what the renderer tasks add to the earlier working rules                               |
+| [typed-views.md](./typed-views.md)         | The typed configuration views every renderer reads (decision 0009)                         |
+| [RELEASE.md](./RELEASE.md)                 | How the crates are released, and the first release                                         |
+| [ORACLE-PLAN.md](./ORACLE-PLAN.md)         | How the reference moved from the fork to upstream Mermaid at a pinned commit               |
+| [spikes/](./spikes/)                       | Write-ups of the spikes: text measurement, fallback faces                                  |
+| [../GLOSSARY.md](../GLOSSARY.md)           | Terms used across the port                                                                 |
 
 The milestone guides and the per-type `NOTES.md` and `PLAN.md` were written while the work was done. Their status lines (such as "research only" or "no Rust code yet") and the scratchpad paths they cite describe that moment; [STATUS.md](./STATUS.md) holds the current state.
 
 ## Goal
 
-A complete Rust implementation that renders Mermaid diagram text to SVG without a browser. The TypeScript implementation stays in the repository as the [JS reference](../GLOSSARY.md). Every diagram type has reached parity; the reference stays, unchanged, so that every change of the port is checked against it ([0003](./decisions/0003-differential-testing.md), addendum of 2026-10-21).
+A complete Rust implementation that renders Mermaid diagram text to SVG without a browser. Every diagram type has reached parity, and every change of the port is checked against the [JS reference](../GLOSSARY.md), upstream Mermaid at a pinned commit ([0003](./decisions/0003-differential-testing.md), [0010](./decisions/0010-upstream-reference-at-a-pin.md)).
 
 **Delivered as**
 
@@ -80,7 +80,7 @@ A Cargo workspace under `crates/`. Diagram types are modules inside these crates
 
 **Building blocks**
 
-- **Parsing:** `logos` for lexing, hand-written recursive descent for the grammar, one shared base for common rules such as `title`, `accTitle` and `accDescr`. The Jison and Langium grammars stay in the repository as the specification. See [0002](./decisions/0002-hand-written-parsers.md).
+- **Parsing:** `logos` for lexing, hand-written recursive descent for the grammar, one shared base for common rules such as `title`, `accTitle` and `accDescr`. The Jison and Langium grammars of the JS reference are the specification. See [0002](./decisions/0002-hand-written-parsers.md).
 - **Configuration:** Rust types generated by `build.rs` from the crate's copy of the fork's `config.schema.yaml` as serde structs with defaults; the YAML stays the single source, trimmed of what has no meaning without a browser. The configuration is resolved once per level (process, renderer, diagram) and renderers get read-only typed views of it; see [0009](./decisions/0009-configuration-resolved-once.md).
 - **Labels:** Markdown in labels is parsed by Ferromark and written as styled `tspan` runs.
 - **Text:** `harfrust` for shaping, the `read-fonts` model for metrics, and a port of Mermaid's own label wrapping with `unicode-segmentation` for graphemes. Only text is measured; every other size is calculated. See [0005](./decisions/0005-text-measurement-and-fonts.md) and the [text measurement spike](./spikes/text-measurement.md).
@@ -90,7 +90,7 @@ A Cargo workspace under `crates/`. Diagram types are modules inside these crates
 
 ## Test strategy
 
-The port is driven by tests that already exist, so progress is measured, not estimated. See [0003](./decisions/0003-differential-testing.md).
+The port is driven by tests that already exist, so progress is measured, not estimated. See [0003](./decisions/0003-differential-testing.md), and [0010](./decisions/0010-upstream-reference-at-a-pin.md) for the reference.
 
 1. **Specs, ported one to one.** Every TypeScript spec file gets a Rust counterpart with the same test names, translated mechanically first. Tests that cannot pass yet are marked `#[ignore = "port: <reason>"]`, so the suite stays green while the count of ignored tests shows the remaining work. A script counts ported, ignored and passing tests per diagram type and writes them to STATUS. Tests that assert the exact Jison error text are changed to assert that parsing fails and where.
 2. **Differential parsing.** A small exporter per diagram type turns the JS diagram DB into the [canonical model](../GLOSSARY.md), the same JSON the Rust model serializes to. Every input we have (e2e fixtures, spec inputs, documentation examples) goes through both, and any difference is a reproducible case.

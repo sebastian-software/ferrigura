@@ -1,6 +1,6 @@
 # The reference
 
-The port is checked against upstream Mermaid at a pinned commit, with a few patches applied ([docs-port/ORACLE-PLAN.md](../../docs-port/ORACLE-PLAN.md)). This folder holds what makes that reference:
+The port is checked against upstream Mermaid at a pinned commit, with a few patches applied ([0010](../../docs-port/decisions/0010-upstream-reference-at-a-pin.md), [docs-port/ORACLE-PLAN.md](../../docs-port/ORACLE-PLAN.md)). This folder holds what makes that reference:
 
 | File       | Contents                                                                                                                    |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------- |

@@ -11,3 +11,7 @@ The JS reference, its build and the e2e harness stay working until a diagram typ
 ## Addendum, 2026-10-21
 
 Every diagram type has reached parity, and the JS reference stays: it is how every later change of the port is checked, by the same differential runs in CI. It is kept unchanged as Mermaid 12.2.0 in this repository's fork, with the part of the JavaScript toolchain that builds and runs it. Mermaid's own unit tests and its Playwright e2e suites no longer run and are removed; the `.mmd` fixtures stay as the inputs of the differential runs and the tests.
+
+## Addendum, 2026-10-23
+
+The reference is no longer the fork. It is upstream Mermaid at a pinned commit, with patches ([0010](./0010-upstream-reference-at-a-pin.md)), and the fork and the toolchain that built it left the repository. The differential runs are unchanged.
