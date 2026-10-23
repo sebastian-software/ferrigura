@@ -49,10 +49,14 @@ cargo clippy --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-The harness needs Node.js 22.12 or newer and pnpm, whose version `package.json` pins (with corepack: `corepack enable`). `pnpm install` also builds the reference.
+The harness needs Node.js 22.12 or newer and pnpm, whose version `package.json` pins (with corepack: `corepack enable`). `tools/reference/setup.sh` builds the reference once, upstream Mermaid at the pin with its patches, in about half a minute; the harness takes it from `target/reference`.
 
 ```bash
 pnpm install
+```
+
+```bash
+tools/reference/setup.sh
 ```
 
 ```bash
