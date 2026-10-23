@@ -42,7 +42,7 @@ A change to a parser is checked with `pnpm port:diff <type>`, a change to a rend
 
 ## Commit messages
 
-Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/): `feat(…)` and `fix(…)` go into the changelog when release-please makes the next release ([docs-port/RELEASE.md](./docs-port/RELEASE.md)); `docs`, `chore`, `ci` and `test` do not.
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/): `feat(…)` and `fix(…)` go into the changelog when release-please makes the next release ([docs-port/RELEASE.md](./docs-port/RELEASE.md)); `docs`, `chore`, `ci` and `test` do not. Renovate keeps the dependencies and the pin of the reference current; its pull requests for the harness, CI and the pin are `chore`.
 
 ## Conduct
 

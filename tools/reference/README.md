@@ -2,11 +2,11 @@
 
 The port is checked against upstream Mermaid at a pinned commit, with a few patches applied ([0010](../../docs-port/decisions/0010-upstream-reference-at-a-pin.md), [docs-port/ORACLE-PLAN.md](../../docs-port/ORACLE-PLAN.md)). This folder holds what makes that reference:
 
-| File       | Contents                                                                                                                    |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `pin`      | The upstream repository and the commit, one per line: `repository <url>` and `commit <sha>`                                 |
-| `patches/` | The patches on that commit, applied in the order of their names. Each starts with why it exists, then the diff              |
-| `setup.sh` | Fetches the pinned commit, applies the patches, installs and builds it in `target/reference/<commit>`, and prints that path |
+| File       | Contents                                                                                                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pin`      | One per line: the upstream repository (`repository <url>`), the newest Mermaid release the commit contains (`release mermaid@<version>`) and the commit (`commit <sha>`) |
+| `patches/` | The patches on that commit, applied in the order of their names. Each starts with why it exists, then the diff                                                           |
+| `setup.sh` | Fetches the pinned commit, applies the patches, installs and builds it in `target/reference/<commit>`, and prints that path                                              |
 
 ```bash
 REFERENCE_ROOT="$(tools/reference/setup.sh)" pnpm port:diff flowchart
@@ -32,4 +32,4 @@ Patches 01 to 06 are the fork's fixes (at the tag `fork-mermaid-12.2.0`), limite
 
 ## Moving the pin
 
-Change the commit in `pin`, run `setup.sh`, and see which patches no longer apply or are no longer needed. Then run the checks: every new difference is fixed in the same change or becomes a pending exception that names its issue (`tools/port/exceptions.ts`).
+Renovate watches `pin` (`renovate.json`): a new `mermaid@` release opens a pull request that sets the release and its commit, one per minor release, and its CI shows what is new. By hand, change the release and the commit in `pin` the same way. Then run `setup.sh`, and see which patches no longer apply or are no longer needed. Then run the checks: every new difference is fixed in the same change or becomes a pending exception that names its issue (`tools/port/exceptions.ts`).
