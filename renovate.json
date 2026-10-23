@@ -21,8 +21,9 @@
       "semanticCommitType": "chore"
     },
     {
-      "description": "One pull request per Mermaid minor release, merged by hand: moving the pin can need rebased patches and pending exceptions. The pin may sit a few commits after its release, so it gets no digest updates.",
+      "description": "One pull request per Mermaid minor release, opened without approval in the Dependency Dashboard so that a release is not missed, and merged by hand: moving the pin can need rebased patches and pending exceptions. The pin may sit a few commits after its release, so it gets no digest updates.",
       "matchDepNames": ["mermaid-js/mermaid"],
+      "dependencyDashboardApproval": false,
       "separateMultipleMinor": true,
       "automerge": false,
       "semanticCommitType": "chore",
