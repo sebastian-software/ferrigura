@@ -2,7 +2,7 @@ import cspell from '@cspell/eslint-plugin';
 import eslint from '@eslint/js';
 import jsdoc from 'eslint-plugin-jsdoc';
 import json from 'eslint-plugin-json';
-import markdown from 'eslint-plugin-markdown';
+import markdown from '@eslint/markdown';
 import noOnlyTests from 'eslint-plugin-no-only-tests';
 import tsdoc from 'eslint-plugin-tsdoc';
 import unicorn from 'eslint-plugin-unicorn';
@@ -206,15 +206,22 @@ export default tseslint.config(
       ],
     },
   },
+  // The JavaScript and TypeScript blocks of the Markdown files, such as the Node addon's examples. The
+  // processor goes on the Markdown files only: on the blocks, it would read them as Markdown again.
   {
-    files: ['*.html', '*.md', '**/*.md/*'],
+    files: ['**/*.md'],
+    processor: 'markdown/markdown',
+  },
+  {
+    files: ['**/*.md/*'],
+    ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    files: ['**/*.md/*'],
     rules: {
       'no-var': 'error',
       'no-undef': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-floating-promises': 'off',
-      '@typescript-eslint/no-misused-promises': 'off',
     },
-    processor: 'markdown/markdown',
   }
 );
