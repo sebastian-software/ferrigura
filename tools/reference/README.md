@@ -32,4 +32,4 @@ Patches 01 to 06 are the fork's fixes (at the tag `fork-mermaid-12.2.0`), limite
 
 ## Moving the pin
 
-Renovate watches `pin` (`renovate.json`): a new `mermaid@` release opens a pull request that sets the release and its commit, one per minor release, and its CI shows what is new. By hand, change the release and the commit in `pin` the same way. Then run `setup.sh`, and see which patches no longer apply or are no longer needed. Then run the checks: every new difference is fixed in the same change or becomes a pending exception that names its issue (`tools/port/exceptions.ts`).
+Renovate watches `pin` (`renovate.json`): a new `mermaid@` release opens a pull request that sets the release and its commit, one per minor release and without waiting for approval in the Dependency Dashboard, and its CI shows what is new. By hand, change the release and the commit in `pin` the same way. Then run `setup.sh`, and see which patches no longer apply or are no longer needed. Then run the checks: every new difference is fixed in the same change or becomes a pending exception that names its issue (`tools/port/exceptions.ts`).
