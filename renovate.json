@@ -37,6 +37,11 @@
       "matchDepNames": ["mermaid-js/mermaid"],
       "matchUpdateTypes": ["digest"],
       "enabled": false
+    },
+    {
+      "description": "sebastian-software/standards tags its releases standards-vX.Y.Z, which the versioning of GitHub Actions does not take for versions; the comment after the digest names the tag.",
+      "matchPackageNames": ["sebastian-software/standards"],
+      "versioning": "regex:^standards-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     }
   ]
 }
