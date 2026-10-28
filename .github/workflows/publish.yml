@@ -1,0 +1,220 @@
+# Publishes ferrigura's crates (docs/decisions/0004-one-version-one-release.md), after the publish skeleton of
+# sebastian-software/standards (reference/release-please/publish-skeleton.yml, standards-v0.9.0).
+#
+# One product, one release signal: release-please keeps one release pull request for the
+# workspace; merging it creates the tag and the GitHub release, and publish-crates publishes from
+# that tag. The manual path is for retries only: dispatch the workflow with the release's tag, and
+# every job checks out that tag, never main.
+#
+# publish-crates runs only when the repository variable PUBLISH_ENABLED is 'true'. The first
+# release is published by hand with tools/release/publish-crates.sh, because crates.io's Trusted
+# Publishing can be enabled only for crates that exist and limits how many new crates an account
+# creates in a row; the variable is set once Trusted Publishing is enabled for every crate.
+
+name: publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to (re)publish, for example v0.3.0'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: release please
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # The organization's token, so that CI runs on the release pull request: events created
+          # with the built-in GITHUB_TOKEN start no workflow.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+  publish-crates:
+    name: publish to crates.io
+    needs: release-please
+    # `!cancelled()` lets the job run when release-please was skipped by the manual path; a plain
+    # `needs` would skip it too.
+    if: >-
+      ${{ !cancelled() && vars.PUBLISH_ENABLED == 'true' && (
+        (github.event_name == 'push' && needs.release-please.outputs.releases_created == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      ) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # crates.io Trusted Publishing exchanges this OIDC token for a short-lived registry token.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable branch
+
+      - uses: sebastian-software/standards/.github/actions/publish-crates@a840766444dbb0e421f1f1868c48bee315ead769 # standards-v0.13.0
+        with:
+          # Leaves first: a crate must be on crates.io before a crate that depends on it.
+          crates: |
+            ferrigura-jsmath
+            ferrigura-model
+            ferrigura-text
+            ferrigura-elk
+            ferrigura-path
+            ferrigura-cose
+            ferrigura-venn
+            ferrigura-swimlane
+            ferrigura-syntax
+            ferrigura-render
+            ferrigura
+            ferrigura-cli
+          # No token: the action authenticates with Trusted Publishing, which is enabled per crate
+          # after the first publish. The organization's CARGO_REGISTRY_TOKEN would do as `token`
+          # only if its account were an owner of the crates.
+
+  npm-release-source:
+    permissions:
+      contents: read
+      actions: read
+    timeout-minutes: 35
+    needs: release-please
+    if: >-
+      ${{ !cancelled() && vars.NPM_PUBLISH_ENABLED == 'true' && (
+        (github.event_name == 'push' && needs.release-please.outputs.releases_created == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      ) }}
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.release_sha }}
+      tag: ${{ steps.source.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '26'
+      - run: pnpm -C node install --frozen-lockfile --ignore-scripts
+      - id: source
+        working-directory: node
+        env:
+          RELEASE_TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm exec ferramenta-native source resolve
+      - working-directory: node
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.release_sha }}
+          RELEASE_VERSION: ${{ steps.source.outputs.release_version }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm exec ferramenta-native source verify
+
+  npm-matrix:
+    needs: npm-release-source
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.npm-release-source.outputs.sha }}
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '26'
+      - run: pnpm -C node install --frozen-lockfile --ignore-scripts
+      - id: matrix
+        working-directory: node
+        run: echo "matrix=$(node scripts/native-matrix.mjs)" >> "$GITHUB_OUTPUT"
+
+  build-npm:
+    needs: [npm-release-source, npm-matrix]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.npm-matrix.outputs.matrix) }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: node
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.npm-release-source.outputs.sha }}
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '26'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build, verify and upload the native release artifact
+        uses: ./node/node_modules/ferramenta-native/actions/build-native
+        with:
+          target: ${{ matrix.target }}
+          libc: ${{ matrix.libc }}
+          platform-id: ${{ matrix.id }}
+          source-sha: ${{ needs.npm-release-source.outputs.sha }}
+          command: pnpm build
+        env:
+          FERRIGURA_RUST_TARGET: ${{ matrix.target }}
+
+  publish-npm:
+    timeout-minutes: 60
+    needs: [npm-release-source, build-npm]
+    runs-on: ubuntu-latest
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: node
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.npm-release-source.outputs.sha }}
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '26'
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Pack, test, publish and verify the native npm release
+        uses: ./node/node_modules/ferramenta-native/actions/release-native
+        with:
+          source-sha: ${{ needs.npm-release-source.outputs.sha }}
+          tag: ${{ needs.npm-release-source.outputs.tag }}
+          prepare-command: pnpm native:check
+          publish: 'true'

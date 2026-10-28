@@ -1,0 +1,111 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["local>sebastian-software/renovate-config"],
+  "customManagers": [
+    {
+      "description": "The pin of the JS reference: the newest Mermaid release its commit contains, and the commit. A new mermaid@ release opens a pull request that moves both; its CI shows what is new (docs/decisions/0014-upstream-reference-at-a-pin.md).",
+      "customType": "regex",
+      "managerFilePatterns": ["/^tools/reference/pin$/"],
+      "matchStrings": [
+        "release (?<currentValue>mermaid@\\d+\\.\\d+\\.\\d+)\\ncommit (?<currentDigest>[0-9a-f]{40})"
+      ],
+      "depNameTemplate": "mermaid-js/mermaid",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "regex:^mermaid@(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Updates of the harness and of CI are chores, not fixes that release-please would publish as a release (docs/decisions/0003-conventional-commits.md).",
+      "matchManagers": ["npm", "github-actions"],
+      "semanticCommitType": "chore"
+    },
+    {
+      "description": "The harness's lint, format and type check, with its pre-commit hook (tools/port).",
+      "matchPackageNames": ["oxlint", "oxfmt", "typescript", "husky", "lint-staged"],
+      "groupName": "harness lint and format",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "description": "What the harness runs the reference with: tsx, the browser, the DOM, the bundlers and YAML.",
+      "matchPackageNames": [
+        "tsx",
+        "playwright",
+        "jsdom",
+        "@types/jsdom",
+        "vite",
+        "esbuild",
+        "js-yaml",
+        "@types/js-yaml"
+      ],
+      "groupName": "harness runtime",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "description": "The harness reads the strings of the upstream tests with TypeScript's compiler API (tools/port/inputs.ts), which TypeScript 7, the native compiler, does not offer. TypeScript stays on 6, the last release with that API.",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
+    },
+    {
+      "description": "The harness reads YAML as the reference does, and Mermaid 12.2.0 reads it with js-yaml 4; js-yaml 5 parses differently (port-diff yaml). Raise the limit when the pinned Mermaid moves to js-yaml 5.",
+      "matchPackageNames": ["js-yaml", "@types/js-yaml"],
+      "allowedVersions": "<5"
+    },
+    {
+      "description": "Node.js and pnpm, which CI and the harness run on.",
+      "matchPackageNames": ["node", "@types/node", "pnpm"],
+      "groupName": "Node.js and pnpm",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "description": "The actions of the workflows.",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "description": "The font and text crates of ferrigura-text, which move together.",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["harfrust", "read-fonts", "skera"],
+      "groupName": "Rust text stack",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "description": "The binding crates of the Node addon.",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["napi", "napi-derive"],
+      "groupName": "Rust napi",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "description": "The other Rust crates.",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["!harfrust", "!read-fonts", "!skera", "!napi", "!napi-derive"],
+      "groupName": "Rust crates",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "description": "One pull request per Mermaid minor release, opened without approval in the Dependency Dashboard so that a release is not missed, and merged by hand: moving the pin can need rebased patches and pending exceptions. The pin may sit a few commits after its release, so it gets no digest updates.",
+      "matchDepNames": ["mermaid-js/mermaid"],
+      "dependencyDashboardApproval": false,
+      "separateMultipleMinor": true,
+      "automerge": false,
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "reference",
+      "commitMessageTopic": "the Mermaid reference",
+      "prBodyNotes": [
+        "Moving the pin: run `tools/reference/setup.sh`, rebase or drop the patches that no longer apply, and fix every new difference or make it a pending exception with its issue (`tools/reference/README.md`)."
+      ]
+    },
+    {
+      "matchDepNames": ["mermaid-js/mermaid"],
+      "matchUpdateTypes": ["digest"],
+      "enabled": false
+    },
+    {
+      "description": "sebastian-software/standards tags its releases standards-vX.Y.Z, which the versioning of GitHub Actions does not take for versions; the comment after the digest names the tag.",
+      "matchPackageNames": ["sebastian-software/standards"],
+      "versioning": "regex:^standards-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    }
+  ]
+}
