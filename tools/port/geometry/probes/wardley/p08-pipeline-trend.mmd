@@ -1,0 +1,11 @@
+wardley-beta
+title Pipeline trends
+component Kettle [0.57, 0.45]
+component Power [0.1, 0.7]
+pipeline Kettle {
+  component Campfire Kettle [0.35]
+  component Electric Kettle [0.53]
+}
+evolve Kettle 0.8
+Campfire Kettle -> Kettle
+Kettle -> Power

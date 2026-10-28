@@ -1,0 +1,9 @@
+swimlane-beta BR
+  subgraph Sales
+    A[Order] --> B{Valid?}
+  end
+  subgraph Warehouse
+    C[Pick] --> D[Ship]
+  end
+  B -->|yes| C
+  B -->|no| A

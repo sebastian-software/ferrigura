@@ -1,0 +1,9 @@
+architecture-beta
+  group net(cloud)[Network]
+  service db "PostgreSQL primary" [Primary database] in net
+  service cache "Redis" [Cache]
+  service app "Application server with a long descriptive icon text that wraps" in net
+  service plain [No icon]
+  db:R -- L:cache
+  cache:B -- T:app
+  app:R -- L:plain

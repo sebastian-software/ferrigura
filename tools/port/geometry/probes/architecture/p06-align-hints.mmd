@@ -1,0 +1,18 @@
+architecture-beta
+  group sub(cloud)[Subscription]
+  service a(server)[A] in sub
+  service b(server)[B] in sub
+  service c(server)[C] in sub
+  service d(database)[D]
+  service e(disk)[E]
+  service f(disk)[F]
+  junction jn
+  a:R -- L:b
+  b:R -- L:c
+  c:B -- T:d
+  d:R -- L:e
+  e:R -- L:f
+  f:T -- B:jn
+  align row a b c
+  align column d e
+  align row jn d

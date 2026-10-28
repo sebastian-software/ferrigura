@@ -1,0 +1,7 @@
+{
+  "*.{ts,mts,cts,js,mjs,cjs}": [
+    "oxlint --fix -c tools/port/.oxlintrc.json",
+    "tsx tools/port/format.ts"
+  ],
+  "*.{md,json,jsonc,yaml,yml}": "tsx tools/port/format.ts"
+}

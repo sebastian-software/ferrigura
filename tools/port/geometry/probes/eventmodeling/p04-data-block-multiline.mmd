@@ -1,0 +1,12 @@
+eventmodeling
+tf 01 cmd AddItem [[AddItemData]]
+tf 02 evt ItemAdded [[ItemAddedData]]
+tf 03 cmd AddItem [[Missing]]
+data AddItemData {
+  productId: 7,
+  description: 'a long description value that needs to wrap somewhere in the middle of the block',
+  quantity: 1
+}
+data ItemAddedData {
+  x: 1
+}

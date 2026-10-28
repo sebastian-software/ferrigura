@@ -1,0 +1,16 @@
+architecture-beta
+  group g1(cloud)[Group with icon]
+  group g2(logos:aws)[Unregistered group icon] in g1
+  group g3[Group without icon] in g1
+  service a(database)[Database] in g2
+  service b(server)[Server] in g2
+  service c(disk)[Disk] in g3
+  service d(internet)[Internet]
+  service e(unknownname)[Unknown] in g3
+  service f(blank)[Blank icon]
+  service g(mermaid-architecture:cloud)[Prefixed cloud]
+  a:R -- L:b
+  b:B -- T:c
+  c:R -- L:e
+  d:B -- T:f
+  f:R -- L:g

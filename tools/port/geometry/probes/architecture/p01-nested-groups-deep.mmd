@@ -1,0 +1,16 @@
+architecture-beta
+  group world(cloud)[World]
+  group region(cloud)[Region] in world
+  group zone(cloud)[Zone A] in region
+  group rack[Rack] in zone
+  group empty[Empty group] in region
+  service s1(server)[Alpha] in rack
+  service s2(database)[Beta] in rack
+  service s3(disk)[Gamma] in zone
+  service s4(internet)[Delta] in empty
+  service s5(server)[Epsilon] in world
+  s1:R -- L:s2
+  s2:B -- T:s3
+  s3:R -- L:s4
+  s4:T -- B:s5
+  s5:L -- R:s1

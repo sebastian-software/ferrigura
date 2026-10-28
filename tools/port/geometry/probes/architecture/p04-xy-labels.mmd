@@ -1,0 +1,16 @@
+architecture-beta
+  service hub(server)[Hub]
+  service n(server)[North]
+  service e(server)[East]
+  service s(server)[South]
+  service w(server)[West]
+  service ne(server)[Northeast]
+  service se(server)[Southeast]
+  hub:T -[Up and over]- B:n
+  hub:R -[Right]- L:e
+  hub:B -[Down]- T:s
+  hub:L -[Left]- R:w
+  hub:T -[North-east]- L:ne
+  hub:B -[South-east]- L:se
+  n:R -[Long label for a diagonal edge]- L:e
+  s:L -[Short]- R:w

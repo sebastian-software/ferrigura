@@ -1,0 +1,6 @@
+minimumReleaseAge: 4320 # 4320 minutes = 3 days
+# The packages whose install scripts run (true) or are skipped (false). pnpm 12 reads this only
+# here, and fails an install on any other package with an install script.
+allowBuilds:
+  esbuild: true
+  canvas: false

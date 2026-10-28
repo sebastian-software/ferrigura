@@ -1,0 +1,31 @@
+architecture-beta
+    service s1(database)[Service 1]
+    service s2(internet)[Service 2]
+    service s3(disk)[Service 3]
+    service s4(database)[Service 4]
+    service s5(server)[Service 5]
+    service s6[Service 6]
+    service s7(internet)
+    service s8(database)
+    service s9[Service 9]
+    service s10(database)
+    service s11(disk)[Service 11]
+    service s12(server)[Service 12]
+    service s13(disk)[Service 13]
+    service s14(internet)[Service 14]
+    service s15(internet)[Service 15]
+    service s16(database)[Service 16]
+    s6:R <-- L:s12
+    s12:L -- T:s7
+    s6:B -- T:s4
+    s5:T -- R:s14
+    s13:T <-- R:s4
+    s3:R -- T:s10
+    s8:L -- R:s4
+    s2:L -- B:s6
+    s5:R -- T:s8
+    s6:T -[Link 10]- L:s14
+    s14:B -[Link 11]- R:s13
+    s6:R -- R:s7
+    s9:L -- T:s7
+    s12:L <-- B:s11

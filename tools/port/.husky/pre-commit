@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Formats and lints the staged files with the harness's tools (tools/port/package.json). The hook
+# runs in tools/port, so that corepack takes the pnpm version that package.json pins.
+cd tools/port && pnpm run pre-commit
