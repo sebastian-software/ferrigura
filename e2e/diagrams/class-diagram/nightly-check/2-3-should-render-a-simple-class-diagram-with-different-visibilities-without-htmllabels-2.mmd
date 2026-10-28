@@ -1,0 +1,19 @@
+---
+description: >-
+  Same interface class with all three visibility markers (`-`/`+`/`#`) as
+  the '-2-2' sibling, but with `htmlLabels: false`.
+config:
+  logLevel: 1
+  htmlLabels: false
+---
+classDiagram
+  Class01 <|-- AveryLongClass : Cool
+  class Class01 {
+    &lt;&lt;interface&gt;&gt;
+  }
+  Class01 : -privateMethod()
+  Class01 : +publicMethod()
+  Class01 : #protectedMethod()
+  Class01 : -int privateChimp
+  Class01 : +int publicGorilla
+  Class01 : #int protectedMarmoset
