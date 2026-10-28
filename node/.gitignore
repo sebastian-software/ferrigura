@@ -1,0 +1,9 @@
+node_modules/
+artifacts/
+.napi-artifacts/
+ferrigura/*.node
+
+# Platform artifacts and licenses are staged by the native build for packing.
+platforms/*/*.node
+platforms/*/LICENSE
+platforms/*/NOTICE.md

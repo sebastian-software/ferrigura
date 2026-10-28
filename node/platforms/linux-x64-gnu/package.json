@@ -1,0 +1,34 @@
+{
+  "name": "@ferrigura/linux-x64-gnu",
+  "version": "0.3.0",
+  "private": false,
+  "description": "Native x86_64-unknown-linux-gnu binary for ferrigura",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/ferrigura.git",
+    "directory": "node/platforms/linux-x64-gnu"
+  },
+  "files": [
+    "LICENSE",
+    "NOTICE.md",
+    "ferrigura.node"
+  ],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "main": "ferrigura.node",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

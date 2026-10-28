@@ -1,0 +1,31 @@
+{
+  "name": "@ferrigura/win32-arm64-msvc",
+  "version": "0.3.0",
+  "private": false,
+  "description": "Native aarch64-pc-windows-msvc binary for ferrigura",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/ferrigura.git",
+    "directory": "node/platforms/win32-arm64-msvc"
+  },
+  "files": [
+    "LICENSE",
+    "NOTICE.md",
+    "ferrigura.node"
+  ],
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "ferrigura.node",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

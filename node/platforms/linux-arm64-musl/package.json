@@ -1,0 +1,34 @@
+{
+  "name": "@ferrigura/linux-arm64-musl",
+  "version": "0.3.0",
+  "private": false,
+  "description": "Native aarch64-unknown-linux-musl binary for ferrigura",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/ferrigura.git",
+    "directory": "node/platforms/linux-arm64-musl"
+  },
+  "files": [
+    "LICENSE",
+    "NOTICE.md",
+    "ferrigura.node"
+  ],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "libc": [
+    "musl"
+  ],
+  "main": "ferrigura.node",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

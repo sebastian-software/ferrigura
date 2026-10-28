@@ -1,0 +1,62 @@
+{
+  "name": "@ferrigura/core",
+  "version": "0.3.0",
+  "private": false,
+  "description": "Render Mermaid diagram text to SVG in Node.js, without a browser",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/ferrigura.git",
+    "directory": "node/ferrigura"
+  },
+  "files": [
+    "index.mjs",
+    "index.d.mts",
+    "native-runtime.mjs",
+    "native-runtime.d.mts",
+    "native.d.ts",
+    "README.md",
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./index.mjs",
+  "types": "./index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./index.d.mts",
+      "default": "./index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "optionalDependencies": {
+    "@ferrigura/darwin-arm64": "workspace:*",
+    "@ferrigura/linux-arm64-gnu": "workspace:*",
+    "@ferrigura/linux-arm64-musl": "workspace:*",
+    "@ferrigura/linux-x64-gnu": "workspace:*",
+    "@ferrigura/linux-x64-musl": "workspace:*",
+    "@ferrigura/win32-arm64-msvc": "workspace:*",
+    "@ferrigura/win32-x64-msvc": "workspace:*"
+  },
+  "napi": {
+    "binaryName": "ferrigura",
+    "packageName": "@ferrigura/core",
+    "targets": [
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-pc-windows-msvc",
+      "x86_64-pc-windows-msvc"
+    ]
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@ferrigura/darwin-arm64",
+  "version": "0.3.0",
+  "private": false,
+  "description": "Native aarch64-apple-darwin binary for ferrigura",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/ferrigura.git",
+    "directory": "node/platforms/darwin-arm64"
+  },
+  "files": [
+    "LICENSE",
+    "NOTICE.md",
+    "ferrigura.node"
+  ],
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "ferrigura.node",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

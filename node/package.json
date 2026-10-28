@@ -1,0 +1,27 @@
+{
+  "name": "ferrigura-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm native:generate && node scripts/build-native.mjs",
+    "native:generate": "node scripts/native-packages.mjs",
+    "native:check": "node scripts/native-packages.mjs --check",
+    "test": "node --test ferrigura/test/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "format": "oxfmt --write -c ../tools/port/.oxfmtrc.jsonc --ignore-path=.prettierignore .",
+    "format:check": "oxfmt --check -c ../tools/port/.oxfmtrc.jsonc --ignore-path=.prettierignore .",
+    "lint": "node --check ferrigura/index.mjs && node --check scripts/build-native.mjs && pnpm native:check && node scripts/write-notices.mjs --check",
+    "pack:check": "node scripts/verify-consumer.mjs"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "3.10.7",
+    "@types/node": "26.6.5",
+    "ferramenta-native": "github:sebastian-software/ferramenta#7996529affaf835c959db0cd2ef64022ba4c17e0&path:/packages/native",
+    "oxfmt": "0.74.0",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "packageManager": "pnpm@12.15.0"
+}
