@@ -1,0 +1,100 @@
+{
+ "name": "generated-033",
+ "group": "generated",
+ "source": "seed 20261017 index 33",
+ "text": "mindmap\n  ((compass telescope overview 2026))\n    {{summit harbour pattern}}\n      [summit nectar infrastructure scaffolding umbrella firmware]\n      ))delta saddle horizon velvet junction oasis((\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 225.6793670654297,
+    "height": 225.6793670654297
+   },
+   {
+    "id": "1",
+    "width": 174,
+    "height": 68
+   },
+   {
+    "id": "2",
+    "width": 160,
+    "height": 140
+   },
+   {
+    "id": "3",
+    "width": 312.5,
+    "height": 110
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_1_3",
+    "source": "1",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 414.6753276210734,
+    "y": 396.9057282853198
+   },
+   {
+    "id": "1",
+    "x": 315.38075415775256,
+    "y": 202.3382984349238
+   },
+   {
+    "id": "2",
+    "x": 95,
+    "y": 229.42254317627226
+   },
+   {
+    "id": "3",
+    "x": 412.34026763338034,
+    "y": 70
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 407.85688442078805,
+    "startY": 383.54500853208486,
+    "midX": 365.028040889413,
+    "midY": 299.6220133601218,
+    "endX": 322.1991973580379,
+    "endY": 215.69901818815873
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 300.4927653716138,
+    "startY": 204.16799510481354,
+    "midX": 205.19037707887628,
+    "midY": 215.88042080559802,
+    "endX": 109.88798878613878,
+    "endY": 227.5928465063825
+   },
+   {
+    "id": "edge_1_3",
+    "startX": 324.24594203207505,
+    "startY": 190.23836273455888,
+    "midX": 363.86051089556645,
+    "midY": 136.1691492174619,
+    "endX": 403.47507975905785,
+    "endY": 82.09993570036491
+   }
+  ]
+ }
+}

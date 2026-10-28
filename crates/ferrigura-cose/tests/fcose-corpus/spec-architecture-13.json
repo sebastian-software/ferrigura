@@ -1,0 +1,140 @@
+{
+ "name": "spec-architecture-13",
+ "group": "spec",
+ "source": "packages/mermaid/src/diagrams/architecture/architecture.spec.ts:259",
+ "text": "architecture-beta\n  service a(server)[A]\n  service b(server)[B]\n  align column a b",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "a",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "b",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": [
+     [
+      "a",
+      "b"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "top": "a",
+     "bottom": "b",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -41,
+    "y1": -41,
+    "w": 82,
+    "h": 100
+   },
+   "output": [
+    {
+     "id": "a",
+     "x": 0,
+     "y": -78.78766679601688
+    },
+    {
+     "id": "b",
+     "x": 0,
+     "y": 96.78766679601688
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "a",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": -78.78766679601688
+    },
+    {
+     "id": "b",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 96.78766679601688
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": [
+     [
+      "a",
+      "b"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "top": "a",
+     "bottom": "b",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -41,
+    "y1": -119.78766679601688,
+    "w": 82,
+    "h": 275.57533359203376
+   },
+   "output": [
+    {
+     "id": "a",
+     "x": 0,
+     "y": -69.78766679601688
+    },
+    {
+     "id": "b",
+     "x": 0,
+     "y": 105.78766679601688
+    }
+   ]
+  }
+ ]
+}

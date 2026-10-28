@@ -1,0 +1,210 @@
+{
+ "name": "should-render-a-linear-chain-with-default-fcose-knobs",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/visual-check/should-render-a-linear-chain-with-default-fcose-knobs.mmd",
+ "text": "---\ndescription: >-\n  A linear three-service chain (A→B→C) rendered with fcose's default layout\n  knobs — the baseline companion to the increased-idealEdgeLengthMultiplier\n  variant of the same chain, so the two only differ by that one config value.\n---\narchitecture-beta\n  service a(server)[A]\n  service b(server)[B]\n  service c(server)[C]\n  a:R --> L:b\n  b:R --> L:c\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "a",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "b",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "c",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "a-b",
+     "source": "a",
+     "target": "b",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "b-c",
+     "source": "b",
+     "target": "c",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "a",
+      "b",
+      "c"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "b",
+     "left": "a",
+     "gap": 120
+    },
+    {
+     "right": "c",
+     "left": "b",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -41,
+    "y1": -41,
+    "w": 123.5,
+    "h": 100
+   },
+   "output": [
+    {
+     "id": "a",
+     "x": -179.93652784647549,
+     "y": 9
+    },
+    {
+     "id": "b",
+     "x": 20.75,
+     "y": 9
+    },
+    {
+     "id": "c",
+     "x": 221.43652784647549,
+     "y": 9
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "a",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -179.93652784647549,
+     "y": 9
+    },
+    {
+     "id": "b",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 20.75,
+     "y": 9
+    },
+    {
+     "id": "c",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 221.43652784647549,
+     "y": 9
+    }
+   ],
+   "edges": [
+    {
+     "id": "a-b",
+     "source": "a",
+     "target": "b",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "b-c",
+     "source": "b",
+     "target": "c",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "a",
+      "b",
+      "c"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "b",
+     "left": "a",
+     "gap": 120
+    },
+    {
+     "right": "c",
+     "left": "b",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -220.93652784647549,
+    "y1": -32,
+    "w": 483.37305569295097,
+    "h": 100
+   },
+   "output": [
+    {
+     "id": "a",
+     "x": -179.93652784647549,
+     "y": 18
+    },
+    {
+     "id": "b",
+     "x": 20.749999999999993,
+     "y": 18
+    },
+    {
+     "id": "c",
+     "x": 221.43652784647549,
+     "y": 18
+    }
+   ]
+  }
+ ]
+}

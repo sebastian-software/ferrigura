@@ -1,0 +1,218 @@
+{
+ "name": "should-render-edges-at-correct-length",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/nightly-check/should-render-edges-at-correct-length.mmd",
+ "text": "---\ndescription: >-\n  A single \"cell\" service connected to two others (\"colspan\" and \"rowspan\")\n  with differently-sized labels on the R/L and B/T ports, checking that edge\n  length adapts to the label/node sizes rather than using a fixed length\n  that would overlap or leave excess gaps.\n---\narchitecture-beta\n  service cell[Table Cell]\n  service colspan[colspan]\n  service rowspan[rowspan]\n  cell:R --> L:colspan\n  cell:B --> T:rowspan\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "cell",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "colspan",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "rowspan",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "cell-colspan",
+     "source": "cell",
+     "target": "colspan",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "cell-rowspan",
+     "source": "cell",
+     "target": "rowspan",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "cell",
+      "colspan"
+     ]
+    ],
+    "vertical": [
+     [
+      "cell",
+      "rowspan"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "colspan",
+     "left": "cell",
+     "gap": 120
+    },
+    {
+     "bottom": "rowspan",
+     "top": "cell",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -41,
+    "y1": -41,
+    "w": 123.5,
+    "h": 123.5
+   },
+   "output": [
+    {
+     "id": "cell",
+     "x": -79.71281630915064,
+     "y": -79.71281630915064
+    },
+    {
+     "id": "colspan",
+     "x": 121.21281630915064,
+     "y": -79.71281630915064
+    },
+    {
+     "id": "rowspan",
+     "x": -79.71281630915064,
+     "y": 121.21281630915064
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "cell",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -79.71281630915064,
+     "y": -79.71281630915064
+    },
+    {
+     "id": "colspan",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 121.21281630915064,
+     "y": -79.71281630915064
+    },
+    {
+     "id": "rowspan",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -79.71281630915064,
+     "y": 121.21281630915064
+    }
+   ],
+   "edges": [
+    {
+     "id": "cell-colspan",
+     "source": "cell",
+     "target": "colspan",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "cell-rowspan",
+     "source": "cell",
+     "target": "rowspan",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "cell",
+      "colspan"
+     ]
+    ],
+    "vertical": [
+     [
+      "cell",
+      "rowspan"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "colspan",
+     "left": "cell",
+     "gap": 120
+    },
+    {
+     "bottom": "rowspan",
+     "top": "cell",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -120.71281630915064,
+    "y1": -120.71281630915064,
+    "w": 282.9256326183013,
+    "h": 300.9256326183013
+   },
+   "output": [
+    {
+     "id": "cell",
+     "x": -79.71281630915064,
+     "y": -70.71281630915064
+    },
+    {
+     "id": "colspan",
+     "x": 121.21281630915064,
+     "y": -70.71281630915064
+    },
+    {
+     "id": "rowspan",
+     "x": -79.71281630915064,
+     "y": 130.21281630915064
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,172 @@
+{
+ "name": "generated-098",
+ "group": "generated",
+ "source": "seed 20261017 index 98",
+ "text": "mindmap\n  )oasis multiplication portfolio summit ledger characterisation(\n    [Cipher signal umbrella reproducibility balance photographs evidence]\n      [firmware archive pixel workflow forest signal]\n        ((Engine journey keystone))\n          ((Marble umbrella evidence ripple evidence kernel))\n          v2 firmware photographs ladder overview circuit hypothesis keystone v2\n          {{multiplication}}\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 267.2347106933594,
+    "height": 182.9372100830078
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 164
+   },
+   {
+    "id": "2",
+    "width": 160,
+    "height": 116
+   },
+   {
+    "id": "3",
+    "width": 196.9940948486328,
+    "height": 196.9940948486328
+   },
+   {
+    "id": "4",
+    "width": 225.6793670654297,
+    "height": 225.6793670654297
+   },
+   {
+    "id": "5",
+    "width": 240,
+    "height": 82
+   },
+   {
+    "id": "6",
+    "width": 142.40625,
+    "height": 44
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_3_4",
+    "source": "3",
+    "target": "4"
+   },
+   {
+    "id": "edge_3_5",
+    "source": "3",
+    "target": "5"
+   },
+   {
+    "id": "edge_3_6",
+    "source": "3",
+    "target": "6"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 922.3894655251572,
+    "y": 799.381748250835
+   },
+   {
+    "id": "1",
+    "x": 718.8372803579393,
+    "y": 587.3204821199184
+   },
+   {
+    "id": "2",
+    "x": 555.2585563952414,
+    "y": 407.7769752905208
+   },
+   {
+    "id": "3",
+    "x": 382.9596428363707,
+    "y": 211.03654067932723
+   },
+   {
+    "id": "4",
+    "x": 127.83968353271484,
+    "y": 390.1304370538403
+   },
+   {
+    "id": "5",
+    "x": 192.66609519562326,
+    "y": 56
+   },
+   {
+    "id": "6",
+    "x": 488.7055107328624,
+    "y": 45.454641186998515
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 912.0021953192502,
+    "startY": 788.5602595515167,
+    "midX": 820.6133729415483,
+    "midY": 693.3511151853768,
+    "endX": 729.2245505638464,
+    "endY": 598.1419708192368
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 708.7351112901563,
+    "startY": 576.2323722662993,
+    "midX": 637.0479183765904,
+    "midY": 497.54872870521956,
+    "endX": 565.3607254630244,
+    "endY": 418.8650851441399
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 545.3760818736354,
+    "startY": 396.49261898057523,
+    "midX": 469.10909961580603,
+    "midY": 309.406757984924,
+    "endX": 392.8421173579767,
+    "endY": 222.3208969892728
+   },
+   {
+    "id": "edge_3_4",
+    "startX": 370.6827033210576,
+    "startY": 219.65493705785056,
+    "midX": 255.39966318454276,
+    "midY": 300.58348886658376,
+    "endX": 140.11662304802792,
+    "endY": 381.51204067531694
+   },
+   {
+    "id": "edge_3_5",
+    "startX": 371.33059553390865,
+    "startY": 201.56208772218497,
+    "midX": 287.81286901599697,
+    "midY": 133.51827033966362,
+    "endX": 204.29514249808526,
+    "endY": 65.47445295714226
+   },
+   {
+    "id": "edge_3_6",
+    "startX": 391.03317391903283,
+    "startY": 198.3946224760921,
+    "midX": 435.83257678461655,
+    "midY": 128.24559093316287,
+    "endX": 480.63197965020026,
+    "endY": 58.09655939023364
+   }
+  ]
+ }
+}

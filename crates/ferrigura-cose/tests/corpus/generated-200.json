@@ -1,0 +1,124 @@
+{
+ "name": "generated-200",
+ "group": "generated",
+ "source": "seed 20261017 index 200",
+ "text": "mindmap\n  [migration hypothesis standard beacon ember]\n    [Zephyr willow]\n      [cipher ripple 2026 tunnel]\n      [Horizon firmware workflow]\n        [umbrella ladder journey signal doorway 2026 beacon multiplication doorway]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 160,
+    "height": 116
+   },
+   {
+    "id": "1",
+    "width": 140.515625,
+    "height": 44
+   },
+   {
+    "id": "2",
+    "width": 160,
+    "height": 68
+   },
+   {
+    "id": "3",
+    "width": 160,
+    "height": 92
+   },
+   {
+    "id": "4",
+    "width": 160,
+    "height": 164
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_1_3",
+    "source": "1",
+    "target": "3"
+   },
+   {
+    "id": "edge_3_4",
+    "source": "3",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 356.0506956600142,
+    "y": 516.6599982116825
+   },
+   {
+    "id": "1",
+    "x": 298.5635872481831,
+    "y": 387.7963412077837
+   },
+   {
+    "id": "2",
+    "x": 95,
+    "y": 404.3797055180157
+   },
+   {
+    "id": "3",
+    "x": 359.8561356033339,
+    "y": 272.58750801855115
+   },
+   {
+    "id": "4",
+    "x": 449.9344417068536,
+    "y": 97
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 349.93959491400904,
+    "startY": 502.9612958033456,
+    "midX": 327.30714145409866,
+    "midY": 452.22816970973315,
+    "endX": 304.6746879941883,
+    "endY": 401.4950436161206
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 283.61311529789714,
+    "startY": 389.0142855676423,
+    "midX": 196.78179362409156,
+    "midY": 396.0880233628997,
+    "endX": 109.95047195028602,
+    "endY": 403.16176115815716
+   },
+   {
+    "id": "edge_1_3",
+    "startX": 305.6087901292031,
+    "startY": 374.5537917415643,
+    "midX": 329.2098614257585,
+    "midY": 330.19192461316743,
+    "endX": 352.8109327223139,
+    "endY": 285.8300574847706
+   },
+   {
+    "id": "edge_3_4",
+    "startX": 366.70289713664636,
+    "startY": 259.2412779701085,
+    "midX": 404.89528865509374,
+    "midY": 184.79375400927557,
+    "endX": 443.0876801735411,
+    "endY": 110.3462300484426
+   }
+  ]
+ }
+}

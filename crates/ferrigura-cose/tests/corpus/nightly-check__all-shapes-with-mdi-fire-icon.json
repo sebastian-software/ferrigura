@@ -1,0 +1,196 @@
+{
+ "name": "nightly-check__all-shapes-with-mdi-fire-icon",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/all-shapes-with-mdi-fire-icon.mmd",
+ "text": "---\ndescription: >-\n  A rounded-rectangle root plus one child per remaining shape (square, rounded,\n  circle, bang, cloud, hexagon, default), every node carrying the same\n  `::icon(mdi:fire)` directive — the comprehensive shape x icon combination\n  sweep.\n---\nmindmap\n  root((MindMap))\n  ::icon(mdi:fire)\n    square[I am a square]\n    ::icon(mdi:fire)\n    rounded(I am a rounded square)\n    ::icon(mdi:fire)\n    circle((I am a circle))\n    ::icon(mdi:fire)\n    bang))I am a bang((\n    ::icon(mdi:fire)\n    cloud)I am a cloud(\n    ::icon(mdi:fire)\n    hex{{I am a hexagon}}\n    ::icon(mdi:fire)\n    I am the default shape\n    ::icon(mdi:fire)\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 86.7162857055664,
+    "height": 86.7162857055664
+   },
+   {
+    "id": "1",
+    "width": 136.5,
+    "height": 44
+   },
+   {
+    "id": "2",
+    "width": 150,
+    "height": 78
+   },
+   {
+    "id": "3",
+    "width": 112.25460815429688,
+    "height": 112.25460815429688
+   },
+   {
+    "id": "4",
+    "width": 166.38671875,
+    "height": 80
+   },
+   {
+    "id": "5",
+    "width": 123.2079849243164,
+    "height": 81.05145263671875
+   },
+   {
+    "id": "6",
+    "width": 150.265625,
+    "height": 44
+   },
+   {
+    "id": "7",
+    "width": 202.265625,
+    "height": 34
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   },
+   {
+    "id": "edge_0_3",
+    "source": "0",
+    "target": "3"
+   },
+   {
+    "id": "edge_0_4",
+    "source": "0",
+    "target": "4"
+   },
+   {
+    "id": "edge_0_5",
+    "source": "0",
+    "target": "5"
+   },
+   {
+    "id": "edge_0_6",
+    "source": "0",
+    "target": "6"
+   },
+   {
+    "id": "edge_0_7",
+    "source": "0",
+    "target": "7"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 315.41352398527886,
+    "y": 195.56839452795987
+   },
+   {
+    "id": "1",
+    "x": 482.10659708609626,
+    "y": 222.87612877159881
+   },
+   {
+    "id": "2",
+    "x": 402.80393582875,
+    "y": 324.3306616198755
+   },
+   {
+    "id": "3",
+    "x": 222.42338498348556,
+    "y": 342.44094276448175
+   },
+   {
+    "id": "4",
+    "x": 488.16367897660064,
+    "y": 106.3338894399185
+   },
+   {
+    "id": "5",
+    "x": 296.16978239176785,
+    "y": 55.525726318359375
+   },
+   {
+    "id": "6",
+    "x": 156.6847792066344,
+    "y": 139.98228399430423
+   },
+   {
+    "id": "7",
+    "x": 116.1328125,
+    "y": 229.1001443921532
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 330.2162082148871,
+    "startY": 197.99337691934073,
+    "midX": 398.76006053568756,
+    "midY": 209.22226164977934,
+    "endX": 467.303912856488,
+    "endY": 220.45114638021795
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 323.8371023054195,
+    "startY": 207.97981379750584,
+    "midX": 359.10872990701444,
+    "midY": 259.9495280739177,
+    "endX": 394.3803575086094,
+    "endY": 311.91924235032957
+   },
+   {
+    "id": "edge_0_3",
+    "startX": 307.38953755406294,
+    "startY": 208.2418171813579,
+    "midX": 268.9184544843822,
+    "midY": 269.0046686462208,
+    "endX": 230.44737141470148,
+    "endY": 329.76752011108374
+   },
+   {
+    "id": "edge_0_4",
+    "startX": 328.7405336185079,
+    "startY": 188.6842958770238,
+    "midX": 401.78860148093975,
+    "midY": 150.95114198393918,
+    "endX": 474.83666934337157,
+    "endY": 113.21798809085456
+   },
+   {
+    "id": "edge_0_5",
+    "startX": 313.37151166224015,
+    "startY": 180.70803835212888,
+    "midX": 305.79165318852336,
+    "midY": 125.54706042315962,
+    "endX": 298.21179471480656,
+    "endY": 70.38608249419035
+   },
+   {
+    "id": "edge_0_6",
+    "startX": 301.2565123448478,
+    "startY": 190.6106711176937,
+    "midX": 236.04915159595663,
+    "midY": 167.77533926113205,
+    "endX": 170.84179084706543,
+    "endY": 144.9400074045704
+   },
+   {
+    "id": "edge_0_7",
+    "startX": 300.62146429069946,
+    "startY": 198.05736419270082,
+    "midX": 215.77316824263943,
+    "midY": 212.33426946005653,
+    "endX": 130.92487219457936,
+    "endY": 226.61117472741225
+   }
+  ]
+ }
+}

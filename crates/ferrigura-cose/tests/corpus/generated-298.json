@@ -1,0 +1,124 @@
+{
+ "name": "generated-298",
+ "group": "generated",
+ "source": "seed 20261017 index 298",
+ "text": "mindmap\n  Archive landscape telescope migration oasis\n    [Doorway pixel scaffolding circuit horizon zephyr 3d marble kernel hypothesis saddle]\n      (infrastructure balance)\n        ((multiplication firmware lantern keystone island infrastructure interdisciplinary))\n        ((Archive validation multiplication standard standard interdisciplinary lantern anchor beacon saddle firmware landscape))\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 58
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 188
+   },
+   {
+    "id": "2",
+    "width": 150,
+    "height": 78
+   },
+   {
+    "id": "3",
+    "width": 241.84678649902344,
+    "height": 241.84678649902344
+   },
+   {
+    "id": "4",
+    "width": 253.2380828857422,
+    "height": 253.2380828857422
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_2_4",
+    "source": "2",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 373.11884717569455,
+    "y": 655.0338392863081
+   },
+   {
+    "id": "1",
+    "x": 365.09489261640715,
+    "y": 478.6242987100353
+   },
+   {
+    "id": "2",
+    "x": 359.1068482756539,
+    "y": 292.1920091587938
+   },
+   {
+    "id": "3",
+    "x": 135.92339324951172,
+    "y": 141.9566996933571
+   },
+   {
+    "id": "4",
+    "x": 590.5755073471059,
+    "y": 141.6190414428711
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 372.43727968745645,
+    "startY": 640.0493317615685,
+    "midX": 369.10686989605085,
+    "midY": 566.8290689981717,
+    "endX": 365.77646010464525,
+    "endY": 493.6088062347749
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 364.61335387709227,
+    "startY": 463.6320300210564,
+    "midX": 362.1008704460305,
+    "midY": 385.4081539344145,
+    "endX": 359.58838701496876,
+    "endY": 307.1842778477727
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 346.66343694039074,
+    "startY": 283.8157621267725,
+    "midX": 247.5151207625828,
+    "midY": 217.07435442607544,
+    "endX": 148.36680458477485,
+    "endY": 150.33294672537838
+   },
+   {
+    "id": "edge_2_4",
+    "startX": 371.680564318336,
+    "startY": 284.012665366166,
+    "midX": 474.8411778113799,
+    "midY": 216.90552530083244,
+    "endX": 578.0017913044238,
+    "endY": 149.79838523549887
+   }
+  ]
+ }
+}

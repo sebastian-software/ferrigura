@@ -1,0 +1,124 @@
+{
+ "name": "generated-102",
+ "group": "generated",
+ "source": "seed 20261017 index 102",
+ "text": "mindmap\n  landscape migration quartz engine infrastructure delta marble cipher island island orbit\n    [photographs harbour ladder journey tunnel]\n    [compass circuit garden meadow]\n    [Archive kernel lantern infrastructure doorway orbit]\n    [garden reproducibility garden roadmap ember delta inventory characterisation island]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 130
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 92
+   },
+   {
+    "id": "2",
+    "width": 160,
+    "height": 68
+   },
+   {
+    "id": "3",
+    "width": 160,
+    "height": 116
+   },
+   {
+    "id": "4",
+    "width": 161.40625,
+    "height": 188
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   },
+   {
+    "id": "edge_0_3",
+    "source": "0",
+    "target": "3"
+   },
+   {
+    "id": "edge_0_4",
+    "source": "0",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 347.13800036196676,
+    "y": 311.50454868298357
+   },
+   {
+    "id": "1",
+    "x": 203.63101407972658,
+    "y": 161.91030717652416
+   },
+   {
+    "id": "2",
+    "x": 383.4058723755127,
+    "y": 462.5304984312776
+   },
+   {
+    "id": "3",
+    "x": 95,
+    "y": 369.3495908391593
+   },
+   {
+    "id": "4",
+    "x": 491.9453913769403,
+    "y": 109
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 336.75392044540285,
+    "startY": 300.6799986098205,
+    "midX": 275.3845072208467,
+    "midY": 236.70742792975386,
+    "endX": 214.01509399629046,
+    "endY": 172.73485724968722
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 350.6405710513471,
+    "startY": 326.0898837345309,
+    "midX": 365.2719363687397,
+    "midY": 387.0175235571306,
+    "endX": 379.90330168613235,
+    "endY": 447.9451633797303
+   },
+   {
+    "id": "edge_0_3",
+    "startX": 332.51781665181966,
+    "startY": 314.85868467926497,
+    "midX": 221.06900018098338,
+    "midY": 340.42706976107144,
+    "endX": 109.62018371014707,
+    "endY": 365.9954548428779
+   },
+   {
+    "id": "edge_0_4",
+    "startX": 355.8630068237753,
+    "startY": 299.3031445735624,
+    "midX": 419.5416958694535,
+    "midY": 210.25227434149178,
+    "endX": 483.2203849151317,
+    "endY": 121.20140410942116
+   }
+  ]
+ }
+}

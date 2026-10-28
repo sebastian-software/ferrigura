@@ -1,0 +1,292 @@
+{
+ "name": "generated-122",
+ "group": "generated",
+ "source": "seed 20261017 index 122",
+ "text": "mindmap\n  photographs responsibilities marble landscape landscape quotient river infrastructure ripple v2 velvet orbit\n    [garden balance meadow]\n    [Quartz]\n    [evidence beacon landscape river landscape 3d circuit reproducibility]\n    [Engine]\n    [Inventory summit island landscape ledger orbit glacier workflow saddle hypothesis garden journey]\n    [Telescope reproducibility firmware harbour harbour roadmap marble landscape migration beacon]\n    [journey ladder]\n    [Scaffolding velvet beacon signal v2 summit tunnel roadmap reproducibility firmware 3d]\n    [Journey willow evidence standard nectar overview landscape]\n    [Workflow meadow]\n    [Ember quartz migration saddle compass]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 154
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 68
+   },
+   {
+    "id": "2",
+    "width": 88.125,
+    "height": 44
+   },
+   {
+    "id": "3",
+    "width": 160,
+    "height": 164
+   },
+   {
+    "id": "4",
+    "width": 87.375,
+    "height": 44
+   },
+   {
+    "id": "5",
+    "width": 160,
+    "height": 236
+   },
+   {
+    "id": "6",
+    "width": 160,
+    "height": 260
+   },
+   {
+    "id": "7",
+    "width": 145.5,
+    "height": 44
+   },
+   {
+    "id": "8",
+    "width": 160,
+    "height": 188
+   },
+   {
+    "id": "9",
+    "width": 160,
+    "height": 140
+   },
+   {
+    "id": "10",
+    "width": 160,
+    "height": 68
+   },
+   {
+    "id": "11",
+    "width": 160,
+    "height": 92
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   },
+   {
+    "id": "edge_0_3",
+    "source": "0",
+    "target": "3"
+   },
+   {
+    "id": "edge_0_4",
+    "source": "0",
+    "target": "4"
+   },
+   {
+    "id": "edge_0_5",
+    "source": "0",
+    "target": "5"
+   },
+   {
+    "id": "edge_0_6",
+    "source": "0",
+    "target": "6"
+   },
+   {
+    "id": "edge_0_7",
+    "source": "0",
+    "target": "7"
+   },
+   {
+    "id": "edge_0_8",
+    "source": "0",
+    "target": "8"
+   },
+   {
+    "id": "edge_0_9",
+    "source": "0",
+    "target": "9"
+   },
+   {
+    "id": "edge_0_10",
+    "source": "0",
+    "target": "10"
+   },
+   {
+    "id": "edge_0_11",
+    "source": "0",
+    "target": "11"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 356.1134910237598,
+    "y": 424.7883316617672
+   },
+   {
+    "id": "1",
+    "x": 95,
+    "y": 460.6506372203037
+   },
+   {
+    "id": "2",
+    "x": 573.1478908729355,
+    "y": 518.9122495326108
+   },
+   {
+    "id": "3",
+    "x": 423.12794115999304,
+    "y": 215.69215887132248
+   },
+   {
+    "id": "4",
+    "x": 146.3790920885906,
+    "y": 317.05795656972737
+   },
+   {
+    "id": "5",
+    "x": 284.43216392279123,
+    "y": 684.3810296528178
+   },
+   {
+    "id": "6",
+    "x": 242.93238325601135,
+    "y": 145
+   },
+   {
+    "id": "7",
+    "x": 104.98969554912821,
+    "y": 380.7924656277945
+   },
+   {
+    "id": "8",
+    "x": 471.02092875102835,
+    "y": 653.9381536983892
+   },
+   {
+    "id": "9",
+    "x": 620.4837207167413,
+    "y": 405.04164744886054
+   },
+   {
+    "id": "10",
+    "x": 121.28761657230041,
+    "y": 555.3028693878827
+   },
+   {
+    "id": "11",
+    "x": 605.4323609087573,
+    "y": 263.66517097302005
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 341.2529952528805,
+    "startY": 426.8293278508079,
+    "midX": 225.5567455118799,
+    "midY": 442.71948444103543,
+    "endX": 109.86049577087928,
+    "endY": 458.609641031263
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 369.8750741738844,
+    "startY": 430.7564828999822,
+    "midX": 464.63069094834765,
+    "midY": 471.850290597189,
+    "endX": 559.3863077228109,
+    "endY": 512.9440982943958
+   },
+   {
+    "id": "edge_0_3",
+    "startX": 360.6915510845761,
+    "startY": 410.5040267756497,
+    "midX": 389.6207160918764,
+    "midY": 320.24024526654483,
+    "endX": 418.5498810991768,
+    "endY": 229.97646375743994
+   },
+   {
+    "id": "edge_0_4",
+    "startX": 342.77073363612146,
+    "startY": 417.93480517574386,
+    "midX": 251.2462915561752,
+    "midY": 370.9231441157473,
+    "endX": 159.72184947622893,
+    "endY": 323.9114830557507
+   },
+   {
+    "id": "edge_0_5",
+    "startX": 352.12095638793323,
+    "startY": 439.247227441934,
+    "midX": 320.2728274732755,
+    "midY": 554.5846806572924,
+    "endX": 288.4246985586178,
+    "endY": 669.922133872651
+   },
+   {
+    "id": "edge_0_6",
+    "startX": 350.4884416959931,
+    "startY": 410.8829794526288,
+    "midX": 299.5229371398856,
+    "midY": 284.8941658308836,
+    "endX": 248.55743258377805,
+    "endY": 158.9053522091384
+   },
+   {
+    "id": "edge_0_7",
+    "startX": 341.3385258215079,
+    "startY": 422.1998179430003,
+    "midX": 230.55159328644402,
+    "midY": 402.79039864478085,
+    "endX": 119.76466075138015,
+    "endY": 383.3809793465614
+   },
+   {
+    "id": "edge_0_8",
+    "startX": 362.83725658155413,
+    "startY": 438.1969474264097,
+    "midX": 413.56720988739414,
+    "midY": 539.3632426800782,
+    "endX": 464.29716319323404,
+    "endY": 640.5295379337467
+   },
+   {
+    "id": "edge_0_9",
+    "startX": 371.0718221335784,
+    "startY": 423.67104458628705,
+    "midX": 488.2986058702506,
+    "midY": 414.9149895553138,
+    "endX": 605.5253896069228,
+    "endY": 406.1589345243407
+   },
+   {
+    "id": "edge_0_10",
+    "startX": 343.0024527782591,
+    "startY": 432.075352735225,
+    "midX": 238.7005537980301,
+    "midY": 490.0456005248249,
+    "endX": 134.3986548178011,
+    "endY": 548.0158483144248
+   },
+   {
+    "id": "edge_0_11",
+    "startX": 368.71166946570764,
+    "startY": 416.6467163463128,
+    "midX": 480.77292596625864,
+    "midY": 344.2267513173937,
+    "endX": 592.8341824668096,
+    "endY": 271.8067862884744
+   }
+  ]
+ }
+}

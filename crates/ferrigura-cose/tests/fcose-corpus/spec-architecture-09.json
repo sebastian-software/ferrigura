@@ -1,0 +1,184 @@
+{
+ "name": "spec-architecture-09",
+ "group": "spec",
+ "source": "packages/mermaid/src/diagrams/architecture/architecture.spec.ts:209",
+ "text": "architecture-beta\n      group __proto__(cloud)[Marker]\n      service a(server)[A] in __proto__\n      service b(server)[B] in __proto__\n      a:R -- L:b",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "__proto__",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "a",
+     "parent": "__proto__",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "b",
+     "parent": "__proto__",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "a-b",
+     "source": "a",
+     "target": "b",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "a",
+      "b"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "b",
+     "left": "a",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "__proto__",
+     "x": 0,
+     "y": 17
+    },
+    {
+     "id": "a",
+     "x": -100.34328288059254,
+     "y": 8.5
+    },
+    {
+     "id": "b",
+     "x": 100.34328288059253,
+     "y": 8.5
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "__proto__",
+     "parent": null,
+     "width": 363.6865657611851,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 17
+    },
+    {
+     "id": "a",
+     "parent": "__proto__",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -100.34328288059254,
+     "y": 8.5
+    },
+    {
+     "id": "b",
+     "parent": "__proto__",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 100.34328288059253,
+     "y": 8.5
+    }
+   ],
+   "edges": [
+    {
+     "id": "a-b",
+     "source": "a",
+     "target": "b",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "a",
+      "b"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "b",
+     "left": "a",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -182.84328288059254,
+    "y1": -74,
+    "w": 365.6865657611851,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "__proto__",
+     "x": 0,
+     "y": 25.5
+    },
+    {
+     "id": "a",
+     "x": -100.34328288059254,
+     "y": 17
+    },
+    {
+     "id": "b",
+     "x": 100.34328288059253,
+     "y": 17
+    }
+   ]
+  }
+ ]
+}

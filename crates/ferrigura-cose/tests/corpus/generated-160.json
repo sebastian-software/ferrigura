@@ -1,0 +1,52 @@
+{
+ "name": "generated-160",
+ "group": "generated",
+ "source": "seed 20261017 index 160",
+ "text": "mindmap\n  )Junction v2 umbrella roadmap(\n    )Gradient multiplication glacier island quartz v2 characterisation garden horizon harbour canvas island(\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 262.5205993652344,
+    "height": 158.9372100830078
+   },
+   {
+    "id": "1",
+    "width": 324.8608093261719,
+    "height": 230.9372100830078
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 524.6155854523975,
+    "y": 130.4686050415039
+   },
+   {
+    "id": "1",
+    "x": 177.43040466308594,
+    "y": 130.4686050415039
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 509.61558545239745,
+    "startY": 130.4686050415039,
+    "midX": 351.0229950577417,
+    "midY": 130.4686050415039,
+    "endX": 192.43040466308594,
+    "endY": 130.4686050415039
+   }
+  ]
+ }
+}

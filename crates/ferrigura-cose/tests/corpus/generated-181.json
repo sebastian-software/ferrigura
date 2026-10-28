@@ -1,0 +1,196 @@
+{
+ "name": "generated-181",
+ "group": "generated",
+ "source": "seed 20261017 index 181",
+ "text": "mindmap\n  [characterisation compass yonder summit kernel standard quartz tunnel ripple 3d characterisation journey]\n    [Canvas oasis]\n      [keystone ripple canvas 2026 engine responsibilities standard canvas characterisation harbour responsibilities]\n        [archive lantern beacon garden responsibilities overview 2026 yonder]\n          [standard validation meadow quotient ripple journey hypothesis]\n            [Summit forest kernel delta]\n              [saddle keystone orbit zephyr balance multiplication]\n                [Compass]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 161.40625,
+    "height": 188
+   },
+   {
+    "id": "1",
+    "width": 128.765625,
+    "height": 44
+   },
+   {
+    "id": "2",
+    "width": 161.40625,
+    "height": 212
+   },
+   {
+    "id": "3",
+    "width": 160,
+    "height": 140
+   },
+   {
+    "id": "4",
+    "width": 160,
+    "height": 164
+   },
+   {
+    "id": "5",
+    "width": 160,
+    "height": 68
+   },
+   {
+    "id": "6",
+    "width": 160,
+    "height": 116
+   },
+   {
+    "id": "7",
+    "width": 101.71875,
+    "height": 44
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_3_4",
+    "source": "3",
+    "target": "4"
+   },
+   {
+    "id": "edge_4_5",
+    "source": "4",
+    "target": "5"
+   },
+   {
+    "id": "edge_5_6",
+    "source": "5",
+    "target": "6"
+   },
+   {
+    "id": "edge_6_7",
+    "source": "6",
+    "target": "7"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 98.27731695316902,
+    "y": 1270.7402781511855
+   },
+   {
+    "id": "1",
+    "x": 110.63493540576133,
+    "y": 1101.3748518444302
+   },
+   {
+    "id": "2",
+    "x": 95.703125,
+    "y": 920.0183253124874
+   },
+   {
+    "id": "3",
+    "x": 111.985805595785,
+    "y": 690.6093116175164
+   },
+   {
+    "id": "4",
+    "x": 102.72442850603397,
+    "y": 485.13021005066577
+   },
+   {
+    "id": "5",
+    "x": 95.09585235362374,
+    "y": 315.65606142934524
+   },
+   {
+    "id": "6",
+    "x": 108.86637229345047,
+    "y": 170.34831682229049
+   },
+   {
+    "id": "7",
+    "x": 98.4626863049566,
+    "y": 37
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 99.36887869047325,
+    "startY": 1255.780047772824,
+    "midX": 104.45612617946517,
+    "midY": 1186.0575649978077,
+    "endX": 109.5433736684571,
+    "endY": 1116.3350822227917
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 109.40409006387958,
+    "startY": 1086.4254364797957,
+    "midX": 103.16903020288066,
+    "midY": 1010.6965885784587,
+    "endX": 96.93397034188175,
+    "endY": 934.9677406771218
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 96.76510298114539,
+    "startY": 905.0559657803961,
+    "midX": 103.8444652978925,
+    "midY": 805.3138184650019,
+    "endX": 110.9238276146396,
+    "endY": 705.5716711496076
+   },
+   {
+    "id": "edge_3_4",
+    "startX": 111.31040959886258,
+    "startY": 675.6245246571575,
+    "midX": 107.35511705090948,
+    "midY": 587.869760834091,
+    "endX": 103.39982450295639,
+    "endY": 500.1149970110246
+   },
+   {
+    "id": "edge_4_5",
+    "startX": 102.04991329511373,
+    "startY": 470.14538341735977,
+    "midX": 98.91014042982886,
+    "midY": 400.3931357400055,
+    "endX": 95.77036756454399,
+    "endY": 330.64088806265124
+   },
+   {
+    "id": "edge_5_6",
+    "startX": 96.51103126541935,
+    "startY": 300.7229683589994,
+    "midX": 101.9811123235371,
+    "midY": 243.00218912581784,
+    "endX": 107.45119338165486,
+    "endY": 185.28140989263628
+   },
+   {
+    "id": "edge_6_7",
+    "startX": 107.69963467846453,
+    "startY": 155.39376155181264,
+    "midX": 103.66452929920354,
+    "midY": 103.67415841114524,
+    "endX": 99.62942391994254,
+    "endY": 51.954555270477854
+   }
+  ]
+ }
+}

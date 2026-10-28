@@ -1,0 +1,148 @@
+{
+ "name": "generated-006",
+ "group": "generated",
+ "source": "seed 20261017 index 6",
+ "text": "mindmap\n  keystone junction delta landscape scaffolding\n    Delta orbit ledger roadmap overview quartz migration\n      Summit landscape horizon tunnel lantern harbour delta archive\n        Nectar compass circuit 2026 river doorway standard gradient firmware reproducibility ember oasis\n          cipher junction island anchor 3d\n            glacier doorway\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 58
+   },
+   {
+    "id": "1",
+    "width": 240,
+    "height": 58
+   },
+   {
+    "id": "2",
+    "width": 240,
+    "height": 82
+   },
+   {
+    "id": "3",
+    "width": 240,
+    "height": 130
+   },
+   {
+    "id": "4",
+    "width": 240,
+    "height": 58
+   },
+   {
+    "id": "5",
+    "width": 153.921875,
+    "height": 34
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_3_4",
+    "source": "3",
+    "target": "4"
+   },
+   {
+    "id": "edge_4_5",
+    "source": "4",
+    "target": "5"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 137.4500439539413,
+    "y": 672.4265815916328
+   },
+   {
+    "id": "1",
+    "x": 147.04350975283796,
+    "y": 561.1302811721691
+   },
+   {
+    "id": "2",
+    "x": 135.03114813867978,
+    "y": 437.87843938675394
+   },
+   {
+    "id": "3",
+    "x": 148.09968770781597,
+    "y": 278.56186903276296
+   },
+   {
+    "id": "4",
+    "x": 135,
+    "y": 131.27267962118606
+   },
+   {
+    "id": "5",
+    "x": 144.14485709703013,
+    "y": 32
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 138.73823008686443,
+    "startY": 657.4819980749555,
+    "midX": 142.24677685338963,
+    "midY": 616.778431381901,
+    "endX": 145.75532361991483,
+    "endY": 576.0748646888464
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 145.58847512335458,
+    "startY": 546.2010188251205,
+    "midX": 141.03732894575887,
+    "midY": 499.50436027946154,
+    "endX": 136.48618276816316,
+    "endY": 452.80770173380256
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 136.25746059363738,
+    "startY": 422.9286515032147,
+    "midX": 141.56541792324788,
+    "midY": 358.22015420975845,
+    "endX": 146.87337525285838,
+    "endY": 293.5116569163022
+   },
+   {
+    "id": "edge_3_4",
+    "startX": 146.7708546063879,
+    "startY": 263.62084488484896,
+    "midX": 141.549843853908,
+    "midY": 204.9172743269745,
+    "endX": 136.32883310142807,
+    "endY": 146.21370376910005
+   },
+   {
+    "id": "edge_4_5",
+    "startX": 136.37595280304538,
+    "startY": 116.33592114138892,
+    "midX": 139.57242854851506,
+    "midY": 81.63633981059303,
+    "endX": 142.76890429398475,
+    "endY": 46.936758479797135
+   }
+  ]
+ }
+}

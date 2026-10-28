@@ -1,0 +1,26 @@
+{
+ "name": "nightly-check__circle-shape",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/circle-shape.mmd",
+ "text": "---\ndescription: >-\n  A root using the circle shape (`(...)`) with its label split across multiple\n  source lines.\n---\nmindmap\n    root(\n      The root\n    )\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 91.3125,
+    "height": 54
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 60.65625,
+    "y": 42
+   }
+  ],
+  "edgePoints": []
+ }
+}

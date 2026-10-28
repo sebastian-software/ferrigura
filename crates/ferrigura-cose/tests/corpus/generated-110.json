@@ -1,0 +1,124 @@
+{
+ "name": "generated-110",
+ "group": "generated",
+ "source": "seed 20261017 index 110",
+ "text": "mindmap\n  Oasis v2 umbrella lantern hypothesis engine telescope pixel yonder reproducibility\n    characterisation keystone telescope delta\n      Keystone v2 photographs summit gradient oasis validation interdisciplinary\n        saddle\n      archive archive junction kernel garden zephyr\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 106
+   },
+   {
+    "id": "1",
+    "width": 240,
+    "height": 58
+   },
+   {
+    "id": "2",
+    "width": 240,
+    "height": 82
+   },
+   {
+    "id": "3",
+    "width": 86.15625,
+    "height": 34
+   },
+   {
+    "id": "4",
+    "width": 240,
+    "height": 58
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_1_4",
+    "source": "1",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 622.2765572212489,
+    "y": 281.7926955829088
+   },
+   {
+    "id": "1",
+    "x": 567.9913421384773,
+    "y": 150.2851505035543
+   },
+   {
+    "id": "2",
+    "x": 274.5641090933459,
+    "y": 160.34378165282294
+   },
+   {
+    "id": "3",
+    "x": 58.078125,
+    "y": 170.26086812857886
+   },
+   {
+    "id": "4",
+    "x": 618.3476080618588,
+    "y": 44
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 616.5531379303286,
+    "startY": 267.9275424420192,
+    "midX": 595.1339496798631,
+    "midY": 216.03892304323153,
+    "endX": 573.7147614293976,
+    "endY": 164.15030364444388
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 553.0001476713339,
+    "startY": 150.7990458706171,
+    "midX": 421.27772561591166,
+    "midY": 155.31446607818862,
+    "endX": 289.55530356048934,
+    "endY": 159.82988628576013
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 259.5798231034264,
+    "startY": 161.03020234911807,
+    "midX": 166.32111704667295,
+    "midY": 165.3023248907009,
+    "endX": 73.0624109899195,
+    "endY": 169.57444743228373
+   },
+   {
+    "id": "edge_1_4",
+    "startX": 574.413748572057,
+    "startY": 136.7296093634185,
+    "midX": 593.169475100168,
+    "midY": 97.14257525177715,
+    "endX": 611.9252016282791,
+    "endY": 57.55554114013579
+   }
+  ]
+ }
+}

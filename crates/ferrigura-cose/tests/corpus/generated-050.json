@@ -1,0 +1,52 @@
+{
+ "name": "generated-050",
+ "group": "generated",
+ "source": "seed 20261017 index 50",
+ "text": "mindmap\n  quotient photographs delta kernel multiplication horizon umbrella 3d island hypothesis\n    [photographs balance landscape meadow multiplication summit]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 106
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 164
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 348.4944764436084,
+    "y": 97
+   },
+   {
+    "id": "1",
+    "x": 95,
+    "y": 97
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 333.4944764436084,
+    "startY": 97,
+    "midX": 221.7472382218042,
+    "midY": 97,
+    "endX": 110,
+    "endY": 97
+   }
+  ]
+ }
+}

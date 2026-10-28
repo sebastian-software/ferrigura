@@ -1,0 +1,148 @@
+{
+ "name": "generated-297",
+ "group": "generated",
+ "source": "seed 20261017 index 297",
+ "text": "mindmap\n  ))Multiplication responsibilities((\n    )Garden inventory forest pattern engine summit willow 2026 multiplication ripple v2 engine(\n    )V2 scaffolding doorway 2026 archive ripple(\n    saddle standard journey validation oasis lantern validation cipher validation\n    [Quartz portfolio pixel compass landscape balance validation standard saddle]\n    ((inventory tunnel engine keystone responsibilities lantern umbrella kernel roadmap roadmap evidence))\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 312.5,
+    "height": 110
+   },
+   {
+    "id": "1",
+    "width": 283.080322265625,
+    "height": 206.9372100830078
+   },
+   {
+    "id": "2",
+    "width": 262.5205993652344,
+    "height": 158.9372100830078
+   },
+   {
+    "id": "3",
+    "width": 240,
+    "height": 82
+   },
+   {
+    "id": "4",
+    "width": 160,
+    "height": 188
+   },
+   {
+    "id": "5",
+    "width": 241.84678649902344,
+    "height": 241.84678649902344
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   },
+   {
+    "id": "edge_0_3",
+    "source": "0",
+    "target": "3"
+   },
+   {
+    "id": "edge_0_4",
+    "source": "0",
+    "target": "4"
+   },
+   {
+    "id": "edge_0_5",
+    "source": "0",
+    "target": "5"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 433.5146029383408,
+    "y": 288.6877952319021
+   },
+   {
+    "id": "1",
+    "x": 156.5401611328125,
+    "y": 118.4686050415039
+   },
+   {
+    "id": "2",
+    "x": 547.0065539933106,
+    "y": 108.61654617153226
+   },
+   {
+    "id": "3",
+    "x": 763.8664801162228,
+    "y": 305.0126978457023
+   },
+   {
+    "id": "4",
+    "x": 566.4636734381867,
+    "y": 482.2241664372367
+   },
+   {
+    "id": "5",
+    "x": 198.5833857865896,
+    "y": 469.8595993440648
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 420.7350632922596,
+    "startY": 280.8339193458036,
+    "midX": 295.02738203557664,
+    "midY": 203.578200136703,
+    "endX": 169.31970077889366,
+    "endY": 126.32248092760238
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 441.51254195650597,
+    "startY": 275.9979185003609,
+    "midX": 490.2605784658257,
+    "midY": 198.65217070171718,
+    "endX": 539.0086149751454,
+    "endY": 121.30642290307347
+   },
+   {
+    "id": "edge_0_3",
+    "startX": 448.4963213309179,
+    "startY": 289.42814245146553,
+    "midX": 598.6905415272818,
+    "midY": 296.8502465388022,
+    "endX": 748.8847617236456,
+    "endY": 304.27235062613886
+   },
+   {
+    "id": "edge_0_4",
+    "startX": 442.0078850153446,
+    "startY": 301.051619865099,
+    "midX": 499.9891381882637,
+    "midY": 385.4559808345694,
+    "endX": 557.9703913611829,
+    "endY": 469.8603418040398
+   },
+   {
+    "id": "edge_0_5",
+    "startX": 421.6363813666577,
+    "startY": 297.8479181728894,
+    "midX": 316.0489943624652,
+    "midY": 379.2736972879834,
+    "endX": 210.4616073582727,
+    "endY": 460.6994764030775
+   }
+  ]
+ }
+}

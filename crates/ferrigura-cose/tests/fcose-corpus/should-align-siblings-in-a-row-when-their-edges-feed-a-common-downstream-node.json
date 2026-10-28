@@ -1,0 +1,262 @@
+{
+ "name": "should-align-siblings-in-a-row-when-their-edges-feed-a-common-downstream-node",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/nightly-check/should-align-siblings-in-a-row-when-their-edges-feed-a-common-downstream-node.mmd",
+ "text": "---\ndescription: >-\n  Three source services each feed a single downstream processor, with an\n  explicit `align row src1 src2 src3` directive — checking that the align\n  statement keeps sibling nodes in a row even though their edges converge on\n  one common downstream node.\n---\narchitecture-beta\n  service src1(server)[Source 1]\n  service src2(server)[Source 2]\n  service src3(server)[Source 3]\n  service proc(server)[Processor]\n  src1:B --> T:proc\n  src2:B --> T:proc\n  src3:B --> T:proc\n  align row src1 src2 src3\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "src1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "src2",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "src3",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "proc",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "src1-proc",
+     "source": "src1",
+     "target": "proc",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "src2-proc",
+     "source": "src2",
+     "target": "proc",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "src3-proc",
+     "source": "src3",
+     "target": "proc",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "src1",
+      "src2",
+      "src3"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "src1",
+     "right": "src2",
+     "gap": 120
+    },
+    {
+     "left": "src2",
+     "right": "src3",
+     "gap": 120
+    },
+    {
+     "bottom": "proc",
+     "top": "src3",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -41,
+    "y1": -41,
+    "w": 83.5,
+    "h": 123.5
+   },
+   "output": [
+    {
+     "id": "src1",
+     "x": -126.60628085325558,
+     "y": -72.60108609142365
+    },
+    {
+     "id": "src2",
+     "x": 0.16590783240848594,
+     "y": -72.60108609142365
+    },
+    {
+     "id": "src3",
+     "x": 128.10628085325558,
+     "y": -72.60108609142365
+    },
+    {
+     "id": "proc",
+     "x": 1.274294833337315,
+     "y": 114.10108609142365
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "src1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -126.60628085325558,
+     "y": -72.60108609142365
+    },
+    {
+     "id": "src2",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0.16590783240848594,
+     "y": -72.60108609142365
+    },
+    {
+     "id": "src3",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 128.10628085325558,
+     "y": -72.60108609142365
+    },
+    {
+     "id": "proc",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 1.274294833337315,
+     "y": 114.10108609142365
+    }
+   ],
+   "edges": [
+    {
+     "id": "src1-proc",
+     "source": "src1",
+     "target": "proc",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "src2-proc",
+     "source": "src2",
+     "target": "proc",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "src3-proc",
+     "source": "src3",
+     "target": "proc",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "src1",
+      "src2",
+      "src3"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "src1",
+     "right": "src2",
+     "gap": 120
+    },
+    {
+     "left": "src2",
+     "right": "src3",
+     "gap": 120
+    },
+    {
+     "bottom": "proc",
+     "top": "src3",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -167.60628085325558,
+    "y1": -113.60108609142365,
+    "w": 338.21256170651117,
+    "h": 286.70217218284733
+   },
+   "output": [
+    {
+     "id": "src1",
+     "x": -125.85889726241993,
+     "y": -63.60082290675656
+    },
+    {
+     "id": "src2",
+     "x": 0.9016889218437214,
+     "y": -63.60082290675656
+    },
+    {
+     "id": "src3",
+     "x": 128.85889726241993,
+     "y": -63.60082290675656
+    },
+    {
+     "id": "proc",
+     "x": 2.0354154973181124,
+     "y": 123.10082290675659
+    }
+   ]
+  }
+ ]
+}

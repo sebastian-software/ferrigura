@@ -1,0 +1,290 @@
+{
+ "name": "should-stack-three-same-port-databases-in-a-column-without-overlap",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/nightly-check/should-stack-three-same-port-databases-in-a-column-without-overlap.mmd",
+ "text": "---\ndescription: >-\n  Three databases inside a group all connect from the same right-to-left\n  port pair (`:R --> L:`) into a single MCP server, combined with an\n  explicit `align column db1 db2 db3`, verifying the three same-port\n  siblings stack vertically without overlapping.\n---\narchitecture-beta\n  group api(cloud)[API]\n  service db1(database)[DB1] in api\n  service db2(database)[DB2] in api\n  service db3(database)[DB3] in api\n  service mcp(server)[MCP] in api\n  db1:R --> L:mcp\n  db2:R --> L:mcp\n  db3:R --> L:mcp\n  align column db1 db2 db3\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "api",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "db1",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "db2",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "db3",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "mcp",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "db1-mcp",
+     "source": "db1",
+     "target": "mcp",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "db2-mcp",
+     "source": "db2",
+     "target": "mcp",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "db3-mcp",
+     "source": "db3",
+     "target": "mcp",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": [
+     [
+      "db1",
+      "db2",
+      "db3"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "top": "db1",
+     "bottom": "db2",
+     "gap": 120
+    },
+    {
+     "top": "db2",
+     "bottom": "db3",
+     "gap": 120
+    },
+    {
+     "right": "mcp",
+     "left": "db3",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "api",
+     "x": -1.4210854715202004e-14,
+     "y": 17
+    },
+    {
+     "id": "db1",
+     "x": -93.35108609142367,
+     "y": -118.85628085325558
+    },
+    {
+     "id": "db2",
+     "x": -93.35108609142367,
+     "y": 7.915907832408486
+    },
+    {
+     "id": "db3",
+     "x": -93.35108609142367,
+     "y": 135.85628085325558
+    },
+    {
+     "id": "mcp",
+     "x": 93.35108609142364,
+     "y": 9.024294833337308
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "api",
+     "parent": null,
+     "width": 349.70217218284733,
+     "height": 434.71256170651117,
+     "padding": 40,
+     "x": -1.4210854715202004e-14,
+     "y": 17
+    },
+    {
+     "id": "db1",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -93.35108609142367,
+     "y": -118.85628085325558
+    },
+    {
+     "id": "db2",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -93.35108609142367,
+     "y": 7.915907832408486
+    },
+    {
+     "id": "db3",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -93.35108609142367,
+     "y": 135.85628085325558
+    },
+    {
+     "id": "mcp",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 93.35108609142364,
+     "y": 9.024294833337308
+    }
+   ],
+   "edges": [
+    {
+     "id": "db1-mcp",
+     "source": "db1",
+     "target": "mcp",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "db2-mcp",
+     "source": "db2",
+     "target": "mcp",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "db3-mcp",
+     "source": "db3",
+     "target": "mcp",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": [
+     [
+      "db1",
+      "db2",
+      "db3"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "top": "db1",
+     "bottom": "db2",
+     "gap": 120
+    },
+    {
+     "top": "db2",
+     "bottom": "db3",
+     "gap": 120
+    },
+    {
+     "right": "mcp",
+     "left": "db3",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -175.85108609142367,
+    "y1": -201.35628085325558,
+    "w": 351.70217218284733,
+    "h": 436.71256170651117
+   },
+   "output": [
+    {
+     "id": "api",
+     "x": -2.842170943040401e-14,
+     "y": 25.5
+    },
+    {
+     "id": "db1",
+     "x": -93.3508229067566,
+     "y": -110.35889726241993
+    },
+    {
+     "id": "db2",
+     "x": -93.3508229067566,
+     "y": 16.40168892184373
+    },
+    {
+     "id": "db3",
+     "x": -93.3508229067566,
+     "y": 144.35889726241993
+    },
+    {
+     "id": "mcp",
+     "x": 93.35082290675656,
+     "y": 17.535415497318116
+    }
+   ]
+  }
+ ]
+}

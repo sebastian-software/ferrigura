@@ -1,0 +1,26 @@
+{
+ "name": "generated-252",
+ "group": "generated",
+ "source": "seed 20261017 index 252",
+ "text": "mindmap\n  Ember\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 85.71875,
+    "height": 34
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 57.859375,
+    "y": 32
+   }
+  ],
+  "edgePoints": []
+ }
+}

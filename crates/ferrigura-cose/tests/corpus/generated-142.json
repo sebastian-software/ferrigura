@@ -1,0 +1,100 @@
+{
+ "name": "generated-142",
+ "group": "generated",
+ "source": "seed 20261017 index 142",
+ "text": "mindmap\n  (Nectar gradient circuit summit journey evidence circuit garden portfolio engine)\n    {{notebook responsibilities marble multiplication balance tunnel archive standard zephyr meadow tunnel circuit}}\n    landscape responsibilities canvas infrastructure doorway gradient circuit notebook landscape archive standard\n    {{Garden overview engine evidence velvet landscape archive oasis horizon firmware}}\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 150,
+    "height": 174
+   },
+   {
+    "id": "1",
+    "width": 258,
+    "height": 236
+   },
+   {
+    "id": "2",
+    "width": 240,
+    "height": 130
+   },
+   {
+    "id": "3",
+    "width": 246,
+    "height": 212
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   },
+   {
+    "id": "edge_0_3",
+    "source": "0",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 228.2614639321764,
+    "y": 364.56900225674667
+   },
+   {
+    "id": "1",
+    "x": 486.50606589103677,
+    "y": 370.2286295055462
+   },
+   {
+    "id": "2",
+    "x": 168.7652159611016,
+    "y": 568.4994092583124
+   },
+   {
+    "id": "3",
+    "x": 138,
+    "y": 121
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 243.2578629745824,
+    "startY": 364.8976597698582,
+    "midX": 357.3837649116066,
+    "midY": 367.39881588114645,
+    "endX": 471.5096668486308,
+    "endY": 369.8999719924347
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 224.06038721927007,
+    "startY": 378.96868817180314,
+    "midX": 198.513339946639,
+    "midY": 466.53420575752955,
+    "endX": 172.96629267400795,
+    "endY": 554.099723343256
+   },
+   {
+    "id": "edge_0_3",
+    "startX": 223.0491729619232,
+    "startY": 350.5037250521759,
+    "midX": 183.1307319660882,
+    "midY": 242.78450112837334,
+    "endX": 143.2122909702532,
+    "endY": 135.06527720457072
+   }
+  ]
+ }
+}

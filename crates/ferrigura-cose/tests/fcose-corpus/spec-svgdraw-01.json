@@ -1,0 +1,324 @@
+{
+ "name": "spec-svgdraw-01",
+ "group": "spec",
+ "source": "packages/mermaid/src/diagrams/architecture/svgDraw.spec.ts:16",
+ "text": "\n      architecture-beta\n        group api(cloud)[API]\n\n        service db(database)[Database] in api\n        service disk1(disk)[Storage] in api\n        service disk2(disk)[Storage] in api\n        service server(server)[Server] in api\n\n        db:L -- R:server\n        disk1:T -- B:server\n        disk2:T -- B:db\n    ",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "api",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "db",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "disk1",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "disk2",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "server",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "db-server",
+     "source": "db",
+     "target": "server",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "disk1-server",
+     "source": "disk1",
+     "target": "server",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "disk2-db",
+     "source": "disk2",
+     "target": "db",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "db",
+      "server"
+     ],
+     [
+      "disk2",
+      "disk1"
+     ]
+    ],
+    "vertical": [
+     [
+      "db",
+      "disk2"
+     ],
+     [
+      "server",
+      "disk1"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "server",
+     "right": "db",
+     "gap": 120
+    },
+    {
+     "bottom": "disk2",
+     "top": "db",
+     "gap": 120
+    },
+    {
+     "bottom": "disk1",
+     "top": "server",
+     "gap": 120
+    },
+    {
+     "left": "disk1",
+     "right": "disk2",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "api",
+     "x": 0,
+     "y": 17.000000000000014
+    },
+    {
+     "id": "db",
+     "x": 100.91357551748237,
+     "y": -91.96131677889235
+    },
+    {
+     "id": "disk1",
+     "x": -100.91357551748237,
+     "y": 108.96131677889238
+    },
+    {
+     "id": "disk2",
+     "x": 100.91357551748237,
+     "y": 108.96131677889238
+    },
+    {
+     "id": "server",
+     "x": -100.91357551748237,
+     "y": -91.96131677889235
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "api",
+     "parent": null,
+     "width": 364.82715103496474,
+     "height": 380.9226335577847,
+     "padding": 40,
+     "x": 0,
+     "y": 17.000000000000014
+    },
+    {
+     "id": "db",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 100.91357551748237,
+     "y": -91.96131677889235
+    },
+    {
+     "id": "disk1",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -100.91357551748237,
+     "y": 108.96131677889238
+    },
+    {
+     "id": "disk2",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 100.91357551748237,
+     "y": 108.96131677889238
+    },
+    {
+     "id": "server",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -100.91357551748237,
+     "y": -91.96131677889235
+    }
+   ],
+   "edges": [
+    {
+     "id": "db-server",
+     "source": "db",
+     "target": "server",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "disk1-server",
+     "source": "disk1",
+     "target": "server",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "disk2-db",
+     "source": "disk2",
+     "target": "db",
+     "idealLength": 120,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "db",
+      "server"
+     ],
+     [
+      "disk2",
+      "disk1"
+     ]
+    ],
+    "vertical": [
+     [
+      "db",
+      "disk2"
+     ],
+     [
+      "server",
+      "disk1"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "server",
+     "right": "db",
+     "gap": 120
+    },
+    {
+     "bottom": "disk2",
+     "top": "db",
+     "gap": 120
+    },
+    {
+     "bottom": "disk1",
+     "top": "server",
+     "gap": 120
+    },
+    {
+     "left": "disk1",
+     "right": "disk2",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -183.41357551748237,
+    "y1": -174.46131677889235,
+    "w": 366.82715103496474,
+    "h": 382.9226335577847
+   },
+   "output": [
+    {
+     "id": "api",
+     "x": 0,
+     "y": 25.500000000000014
+    },
+    {
+     "id": "db",
+     "x": 100.91357551748237,
+     "y": -83.46131677889235
+    },
+    {
+     "id": "disk1",
+     "x": -100.91357551748237,
+     "y": 117.46131677889238
+    },
+    {
+     "id": "disk2",
+     "x": 100.91357551748237,
+     "y": 117.46131677889238
+    },
+    {
+     "id": "server",
+     "x": -100.91357551748237,
+     "y": -83.46131677889235
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,428 @@
+{
+ "name": "generated-397",
+ "group": "generated",
+ "source": "seed 20261017 index 397",
+ "text": "architecture-beta\n    group g1(cloud)[Group 1]\n    group g2(cloud)[Group 2]\n    group g3(cloud)[Group 3]\n    group g4(cloud)[Group 4]\n    group g5[Group 5]\n    group g6(cloud)[Group 6]\n    group g7(cloud)[Group 7]\n    service s1(server)[Service 1] in g3\n    service s2(database)[Service 2] in g3\n    service s3(disk)[Service 3]\n    s1:T -- L:s2\n    s3:T <-- T:s2{group}\n    s3:L -- R:s1\n    align column s1 s2",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 9,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 200,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "g1",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "g2",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "g3",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "g4",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "g5",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "g6",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "g7",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s1",
+     "parent": "g3",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s2",
+     "parent": "g3",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "s3",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1-s2",
+     "source": "s1",
+     "target": "s2",
+     "idealLength": 240,
+     "elasticity": 0.6
+    },
+    {
+     "id": "s3-s2",
+     "source": "s3",
+     "target": "s2",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "s3-s1",
+     "source": "s3",
+     "target": "s1",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": [
+     [
+      "s1",
+      "s2"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "top": "s1",
+     "bottom": "s2",
+     "gap": 240
+    },
+    {
+     "right": "s3",
+     "left": "s1",
+     "gap": 240
+    },
+    {
+     "top": "s2",
+     "bottom": "s3",
+     "gap": 240
+    }
+   ],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "g1",
+     "x": 422.77378607709034,
+     "y": 473.391015955032
+    },
+    {
+     "id": "g2",
+     "x": 298.64990116713165,
+     "y": 313.2148849466821
+    },
+    {
+     "id": "g3",
+     "x": -397.77378607709034,
+     "y": -263.0154583482942
+    },
+    {
+     "id": "g4",
+     "x": 143.75497773643252,
+     "y": 228.43575952259704
+    },
+    {
+     "id": "g5",
+     "x": -8.67688599808912,
+     "y": 132.15346456989133
+    },
+    {
+     "id": "g6",
+     "x": -65.74566060547372,
+     "y": -23.2256906321131
+    },
+    {
+     "id": "g7",
+     "x": -210.96341153873556,
+     "y": -144.4790350610228
+    },
+    {
+     "id": "s1",
+     "x": -397.77378607709034,
+     "y": -431.391015955032
+    },
+    {
+     "id": "s2",
+     "x": -397.77378607709034,
+     "y": -111.63990074155637
+    },
+    {
+     "id": "s3",
+     "x": 68.36746861699149,
+     "y": 397.47361204685376
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 9,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 200,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "g1",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 422.77378607709034,
+     "y": 473.391015955032
+    },
+    {
+     "id": "g2",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 298.64990116713165,
+     "y": 313.2148849466821
+    },
+    {
+     "id": "g3",
+     "parent": null,
+     "width": 163,
+     "height": 499.7511152134756,
+     "padding": 40,
+     "x": -397.77378607709034,
+     "y": -263.0154583482942
+    },
+    {
+     "id": "g4",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": 143.75497773643252,
+     "y": 228.43575952259704
+    },
+    {
+     "id": "g5",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": -8.67688599808912,
+     "y": 132.15346456989133
+    },
+    {
+     "id": "g6",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": -65.74566060547372,
+     "y": -23.2256906321131
+    },
+    {
+     "id": "g7",
+     "parent": null,
+     "width": 110,
+     "height": 110,
+     "padding": 40,
+     "x": -210.96341153873556,
+     "y": -144.4790350610228
+    },
+    {
+     "id": "s1",
+     "parent": "g3",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -397.77378607709034,
+     "y": -431.391015955032
+    },
+    {
+     "id": "s2",
+     "parent": "g3",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -397.77378607709034,
+     "y": -111.63990074155637
+    },
+    {
+     "id": "s3",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 68.36746861699149,
+     "y": 397.47361204685376
+    }
+   ],
+   "edges": [
+    {
+     "id": "s1-s2",
+     "source": "s1",
+     "target": "s2",
+     "idealLength": 240,
+     "elasticity": 0.6
+    },
+    {
+     "id": "s3-s2",
+     "source": "s3",
+     "target": "s2",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "s3-s1",
+     "source": "s3",
+     "target": "s1",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": [
+     [
+      "s1",
+      "s2"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "top": "s1",
+     "bottom": "s2",
+     "gap": 240
+    },
+    {
+     "right": "s3",
+     "left": "s1",
+     "gap": 240
+    },
+    {
+     "top": "s2",
+     "bottom": "s3",
+     "gap": 240
+    }
+   ],
+   "bounds": {
+    "x1": -480.27378607709034,
+    "y1": -513.891015955032,
+    "w": 959.0475721541807,
+    "h": 1043.282031910064
+   },
+   "output": [
+    {
+     "id": "g1",
+     "x": 404.2406812624033,
+     "y": 419.5108742282825
+    },
+    {
+     "id": "g2",
+     "x": 293.033302482258,
+     "y": 237.12411525319112
+    },
+    {
+     "id": "g3",
+     "x": -380.7406812624033,
+     "y": -210.6292677745697
+    },
+    {
+     "id": "g4",
+     "x": 122.61651667784855,
+     "y": 178.25707445993427
+    },
+    {
+     "id": "g5",
+     "x": -22.12313093656141,
+     "y": 25.442890119443774
+    },
+    {
+     "id": "g6",
+     "x": -112.7203118611875,
+     "y": -130.10345774709054
+    },
+    {
+     "id": "g7",
+     "x": -146.53938056907023,
+     "y": -312.87271193900403
+    },
+    {
+     "id": "s1",
+     "x": -380.7406812624033,
+     "y": -379.0108742282825
+    },
+    {
+     "id": "s2",
+     "x": -380.7406812624033,
+     "y": -59.247661320856935
+    },
+    {
+     "id": "s3",
+     "x": -125.92933033252618,
+     "y": 189.50684860362202
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,90 @@
+{
+ "name": "generated-115",
+ "group": "generated",
+ "source": "seed 20261017 index 115",
+ "text": "architecture-beta\n    service s1(disk)[Service 1]",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 9,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 150,
+    "numIter": 200,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "s1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -41,
+    "y1": -41,
+    "w": 82,
+    "h": 100
+   },
+   "output": [
+    {
+     "id": "s1",
+     "x": 0,
+     "y": 9
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 9,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 150,
+    "numIter": 200,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "s1",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 9
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [],
+   "bounds": {
+    "x1": -41,
+    "y1": -32,
+    "w": 82,
+    "h": 100
+   },
+   "output": [
+    {
+     "id": "s1",
+     "x": 0,
+     "y": 18
+    }
+   ]
+  }
+ ]
+}

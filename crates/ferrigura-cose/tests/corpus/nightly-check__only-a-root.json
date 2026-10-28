@@ -1,0 +1,26 @@
+{
+ "name": "nightly-check__only-a-root",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/only-a-root.mmd",
+ "text": "---\ndescription: 'The minimal mindmap: a single default-shape root node with no children.'\n---\nmindmap\nroot\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 69.734375,
+    "height": 34
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 49.8671875,
+    "y": 32
+   }
+  ],
+  "edgePoints": []
+ }
+}

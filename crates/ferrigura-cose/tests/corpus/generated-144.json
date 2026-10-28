@@ -1,0 +1,26 @@
+{
+ "name": "generated-144",
+ "group": "generated",
+ "source": "seed 20261017 index 144",
+ "text": "mindmap\n  ))tunnel circuit compass((\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 265,
+    "height": 80
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 147.5,
+    "y": 55
+   }
+  ],
+  "edgePoints": []
+ }
+}

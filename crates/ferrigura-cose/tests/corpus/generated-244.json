@@ -1,0 +1,124 @@
+{
+ "name": "generated-244",
+ "group": "generated",
+ "source": "seed 20261017 index 244",
+ "text": "mindmap\n  ((V2))\n    Scaffolding roadmap island\n      )Reproducibility compass saddle delta velvet marble signal circuit(\n      {{infrastructure photographs quartz delta inventory infrastructure hypothesis nectar island anchor willow circuit}}\n    Island orbit\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 49.87856674194336,
+    "height": 49.87856674194336
+   },
+   {
+    "id": "1",
+    "width": 233.59375,
+    "height": 34
+   },
+   {
+    "id": "2",
+    "width": 267.2347106933594,
+    "height": 182.9372100830078
+   },
+   {
+    "id": "3",
+    "width": 258,
+    "height": 236
+   },
+   {
+    "id": "4",
+    "width": 121.15625,
+    "height": 34
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_1_3",
+    "source": "1",
+    "target": "3"
+   },
+   {
+    "id": "edge_0_4",
+    "source": "0",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 517.048631042005,
+    "y": 400.8113003138675
+   },
+   {
+    "id": "1",
+    "x": 452.1827609056876,
+    "y": 316.46366792026333
+   },
+   {
+    "id": "2",
+    "x": 148.6173553466797,
+    "y": 281.822323639813
+   },
+   {
+    "id": "3",
+    "x": 537.93314239514,
+    "y": 133
+   },
+   {
+    "id": "4",
+    "x": 508.49874484414033,
+    "y": 496.029427164157
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 507.90446857705496,
+    "startY": 388.9207875909191,
+    "midX": 484.6156959738463,
+    "midY": 358.6374841170654,
+    "endX": 461.32692337063764,
+    "endY": 328.35418064321175
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 437.27948388874074,
+    "startY": 314.76298154231364,
+    "midX": 300.4000581261837,
+    "midY": 299.1429957800382,
+    "endX": 163.52063236362653,
+    "endY": 283.5230100177627
+   },
+   {
+    "id": "edge_1_3",
+    "startX": 458.53419221115377,
+    "startY": 302.8747268146457,
+    "midX": 495.05795165041377,
+    "midY": 224.73183396013167,
+    "endX": 531.5817110896737,
+    "endY": 146.5889411056176
+   },
+   {
+    "id": "edge_0_4",
+    "startX": 515.7071387451615,
+    "startY": 415.7511931654749,
+    "midX": 512.7736879430727,
+    "midY": 448.42036373901226,
+    "endX": 509.8402371409839,
+    "endY": 481.08953431254963
+   }
+  ]
+ }
+}

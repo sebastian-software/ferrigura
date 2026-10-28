@@ -1,0 +1,26 @@
+{
+ "name": "nightly-check__square-shape",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/square-shape.mmd",
+ "text": "---\ndescription: >-\n  A root using the square shape with its label split across multiple source\n  lines inside the brackets.\n---\nmindmap\n    root[\n      The root\n    ]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 101.3125,
+    "height": 44
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 65.65625,
+    "y": 37
+   }
+  ],
+  "edgePoints": []
+ }
+}

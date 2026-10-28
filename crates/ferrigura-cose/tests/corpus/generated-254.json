@@ -1,0 +1,364 @@
+{
+ "name": "generated-254",
+ "group": "generated",
+ "source": "seed 20261017 index 254",
+ "text": "mindmap\n  compass summit beacon\n    [3d tunnel standard quartz marble compass anchor]\n      (Ember characterisation characterisation ripple hypothesis)\n        ((Yonder))\n        ((notebook harbour journey))\n      (overview pattern willow forest multiplication)\n      (v2 oasis)\n    [Kernel meadow characterisation pixel river roadmap 3d telescope anchor]\n      (Delta interdisciplinary firmware canvas velvet lantern)\n      (Roadmap compass lantern river saddle engine pattern)\n      (telescope doorway compass portfolio compass keystone notebook garden ledger journey signal summit)\n    [signal overview 2026 migration anchor evidence characterisation summit ladder hypothesis]\n      (balance junction photographs ember kernel engine v2 reproducibility pattern)\n      (Pixel responsibilities ember characterisation firmware engine pixel telescope)\n      (ledger interdisciplinary forest infrastructure journey engine kernel junction circuit meadow scaffolding canvas)\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 213.6875,
+    "height": 34
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 116
+   },
+   {
+    "id": "2",
+    "width": 151.40625,
+    "height": 150
+   },
+   {
+    "id": "3",
+    "width": 74.09930419921875,
+    "height": 74.09930419921875
+   },
+   {
+    "id": "4",
+    "width": 208.3323516845703,
+    "height": 208.3323516845703
+   },
+   {
+    "id": "5",
+    "width": 150,
+    "height": 126
+   },
+   {
+    "id": "6",
+    "width": 85.5625,
+    "height": 54
+   },
+   {
+    "id": "7",
+    "width": 161.40625,
+    "height": 164
+   },
+   {
+    "id": "8",
+    "width": 151.3125,
+    "height": 150
+   },
+   {
+    "id": "9",
+    "width": 150,
+    "height": 150
+   },
+   {
+    "id": "10",
+    "width": 150,
+    "height": 270
+   },
+   {
+    "id": "11",
+    "width": 161.40625,
+    "height": 188
+   },
+   {
+    "id": "12",
+    "width": 150,
+    "height": 198
+   },
+   {
+    "id": "13",
+    "width": 151.40625,
+    "height": 198
+   },
+   {
+    "id": "14",
+    "width": 151.3125,
+    "height": 246
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_2_4",
+    "source": "2",
+    "target": "4"
+   },
+   {
+    "id": "edge_1_5",
+    "source": "1",
+    "target": "5"
+   },
+   {
+    "id": "edge_1_6",
+    "source": "1",
+    "target": "6"
+   },
+   {
+    "id": "edge_0_7",
+    "source": "0",
+    "target": "7"
+   },
+   {
+    "id": "edge_7_8",
+    "source": "7",
+    "target": "8"
+   },
+   {
+    "id": "edge_7_9",
+    "source": "7",
+    "target": "9"
+   },
+   {
+    "id": "edge_7_10",
+    "source": "7",
+    "target": "10"
+   },
+   {
+    "id": "edge_0_11",
+    "source": "0",
+    "target": "11"
+   },
+   {
+    "id": "edge_11_12",
+    "source": "11",
+    "target": "12"
+   },
+   {
+    "id": "edge_11_13",
+    "source": "11",
+    "target": "13"
+   },
+   {
+    "id": "edge_11_14",
+    "source": "11",
+    "target": "14"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 410.7123952850611,
+    "y": 520.0586238824492
+   },
+   {
+    "id": "1",
+    "x": 616.8871659386648,
+    "y": 471.0681942131974
+   },
+   {
+    "id": "2",
+    "x": 759.89412330194,
+    "y": 295.42766561953823
+   },
+   {
+    "id": "3",
+    "x": 770.9017085425307,
+    "y": 129.15255293240313
+   },
+   {
+    "id": "4",
+    "x": 994.2110725856016,
+    "y": 313.2625203401094
+   },
+   {
+    "id": "5",
+    "x": 822.8236805323963,
+    "y": 552.6983647369225
+   },
+   {
+    "id": "6",
+    "x": 634.8016717132869,
+    "y": 609.4473443639738
+   },
+   {
+    "id": "7",
+    "x": 312.90689346533395,
+    "y": 666.5865320690468
+   },
+   {
+    "id": "8",
+    "x": 260.50848996270827,
+    "y": 878.194749632516
+   },
+   {
+    "id": "9",
+    "x": 497.72519949398725,
+    "y": 862.8845612634093
+   },
+   {
+    "id": "10",
+    "x": 102.14501915580217,
+    "y": 647.0944413506111
+   },
+   {
+    "id": "11",
+    "x": 301.6814302077738,
+    "y": 362.19649470076064
+   },
+   {
+    "id": "12",
+    "x": 90,
+    "y": 351.0051670377916
+   },
+   {
+    "id": "13",
+    "x": 273.43996347344194,
+    "y": 114
+   },
+   {
+    "id": "14",
+    "x": 497.2528201398245,
+    "y": 172.03746267310052
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 425.3060627844535,
+    "startY": 516.5909346061186,
+    "midX": 513.799780611863,
+    "midY": 495.5634090478233,
+    "endX": 602.2934984392724,
+    "endY": 474.53588348952803
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 626.3579790413953,
+    "startY": 459.4361823849216,
+    "midX": 688.3906446203024,
+    "midY": 383.2479299163678,
+    "endX": 750.4233101992095,
+    "endY": 307.059677447814
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 760.8849700311896,
+    "startY": 280.46042730516854,
+    "midX": 765.3979159222354,
+    "midY": 212.29010927597068,
+    "endX": 769.9108618132811,
+    "endY": 144.1197912467728
+   },
+   {
+    "id": "edge_2_4",
+    "startX": 774.8508608653902,
+    "startY": 296.5660862175929,
+    "midX": 877.0525979437708,
+    "midY": 304.3450929798238,
+    "endX": 979.2543350221514,
+    "endY": 312.12409974205474
+   },
+   {
+    "id": "edge_1_5",
+    "startX": 630.8316304172769,
+    "startY": 476.5955724709907,
+    "midX": 719.8554232355306,
+    "midY": 511.8832794750599,
+    "endX": 808.8792160537843,
+    "endY": 547.1709864791292
+   },
+   {
+    "id": "edge_1_6",
+    "startX": 618.8129884184092,
+    "startY": 485.9440541136035,
+    "midX": 625.8444188259758,
+    "midY": 540.2577692885856,
+    "endX": 632.8758492335425,
+    "endY": 594.5714844635677
+   },
+   {
+    "id": "edge_0_7",
+    "startX": 402.3848066104883,
+    "startY": 532.5346515702641,
+    "midX": 361.80964437519754,
+    "midY": 593.322577975748,
+    "endX": 321.2344821399068,
+    "endY": 654.1105043812319
+   },
+   {
+    "id": "edge_7_8",
+    "startX": 309.301484710172,
+    "startY": 681.1467871392097,
+    "midX": 286.7076917140211,
+    "midY": 772.3906408507814,
+    "endX": 264.1138987178702,
+    "endY": 863.6344945623532
+   },
+   {
+    "id": "edge_7_9",
+    "startX": 323.1893469049189,
+    "startY": 677.5076653098222,
+    "midX": 405.3160464796606,
+    "midY": 764.735546666228,
+    "endX": 487.4427460544023,
+    "endY": 851.9634280226339
+   },
+   {
+    "id": "edge_7_10",
+    "startX": 297.9706344675503,
+    "startY": 665.2051678335434,
+    "midX": 207.52595631056806,
+    "midY": 656.840486709829,
+    "endX": 117.08127815358577,
+    "endY": 648.4758055861145
+   },
+   {
+    "id": "edge_0_11",
+    "startX": 402.1878974162212,
+    "startY": 507.71630092102316,
+    "midX": 356.1969127464175,
+    "midY": 441.1275592916049,
+    "endX": 310.20592807661376,
+    "endY": 374.5388176621866
+   },
+   {
+    "id": "edge_11_12",
+    "startX": 286.70234963093276,
+    "startY": 361.40456978481075,
+    "midX": 195.8407151038869,
+    "midY": 356.60083086927614,
+    "endX": 104.97908057684108,
+    "endY": 351.79709195374147
+   },
+   {
+    "id": "edge_11_13",
+    "startX": 299.9855724886448,
+    "startY": 347.2926674541615,
+    "midX": 287.5606968406079,
+    "midY": 238.09824735038032,
+    "endX": 275.135821192571,
+    "endY": 128.90382724659912
+   },
+   {
+    "id": "edge_11_14",
+    "startX": 312.43579933171907,
+    "startY": 351.7397483260065,
+    "midX": 399.46712517379916,
+    "midY": 267.11697868693057,
+    "endX": 486.49845101587925,
+    "endY": 182.4942090478546
+   }
+  ]
+ }
+}

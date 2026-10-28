@@ -1,0 +1,76 @@
+{
+ "name": "nightly-check__bang-and-cloud-shape-with-icons",
+ "group": "fixture",
+ "source": "e2e/diagrams/mindmap/nightly-check/bang-and-cloud-shape-with-icons.mmd",
+ "text": "---\ndescription: >-\n  The same bang/cloud shape root and children as bang-and-cloud-shape.mmd, but\n  without any icon directives — isolates the shape rendering from the icon\n  rendering.\n---\nmindmap\nroot))bang((\n\n  a))Another bang((\n  a)A cloud(\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 105.1171875,
+    "height": 80
+   },
+   {
+    "id": "1",
+    "width": 182.1484375,
+    "height": 80
+   },
+   {
+    "id": "2",
+    "width": 87.23194885253906,
+    "height": 63.928184509277344
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 208.2850190461478,
+    "y": 55
+   },
+   {
+    "id": "1",
+    "x": 405.41230798975573,
+    "y": 55
+   },
+   {
+    "id": "2",
+    "x": 58.61597442626953,
+    "y": 55
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 223.2850190461478,
+    "startY": 55,
+    "midX": 306.84866351795176,
+    "midY": 55,
+    "endX": 390.41230798975573,
+    "endY": 55
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 193.2850190461478,
+    "startY": 55,
+    "midX": 133.45049673620866,
+    "midY": 55,
+    "endX": 73.61597442626953,
+    "endY": 55
+   }
+  ]
+ }
+}

@@ -1,0 +1,52 @@
+{
+ "name": "generated-233",
+ "group": "generated",
+ "source": "seed 20261017 index 233",
+ "text": "mindmap\n  Firmware island oasis ripple balance ledger reproducibility keystone workflow delta\n    [telescope beacon workflow]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 106
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 92
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 348.4944764436084,
+    "y": 68
+   },
+   {
+    "id": "1",
+    "x": 95,
+    "y": 68
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 333.4944764436084,
+    "startY": 68,
+    "midX": 221.7472382218042,
+    "midY": 68,
+    "endX": 110,
+    "endY": 68
+   }
+  ]
+ }
+}

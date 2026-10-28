@@ -1,0 +1,148 @@
+{
+ "name": "generated-086",
+ "group": "generated",
+ "source": "seed 20261017 index 86",
+ "text": "mindmap\n  {{doorway zephyr glacier notebook yonder marble 3d oasis oasis anchor}}\n    )Landscape forest compass interdisciplinary inventory doorway yonder characterisation(\n      {{telescope engine v2 river engine compass infrastructure}}\n        (Lantern compass v2 workflow forest garden roadmap validation)\n          (Ledger engine)\n            [ledger summit beacon evidence landscape evidence]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 222,
+    "height": 164
+   },
+   {
+    "id": "1",
+    "width": 283.080322265625,
+    "height": 206.9372100830078
+   },
+   {
+    "id": "2",
+    "width": 198,
+    "height": 116
+   },
+   {
+    "id": "3",
+    "width": 150,
+    "height": 174
+   },
+   {
+    "id": "4",
+    "width": 131.078125,
+    "height": 54
+   },
+   {
+    "id": "5",
+    "width": 160,
+    "height": 140
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_3_4",
+    "source": "3",
+    "target": "4"
+   },
+   {
+    "id": "edge_4_5",
+    "source": "4",
+    "target": "5"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 140.57353574646822,
+    "y": 1054.5363961510755
+   },
+   {
+    "id": "1",
+    "x": 156.5401611328125,
+    "y": 815.7047574939986
+   },
+   {
+    "id": "2",
+    "x": 138.30464125244748,
+    "y": 600.9285690627962
+   },
+   {
+    "id": "3",
+    "x": 154.07374550424106,
+    "y": 402.60035646115244
+   },
+   {
+    "id": "4",
+    "x": 138.90376530395906,
+    "y": 235.31557095763122
+   },
+   {
+    "id": "5",
+    "x": 151.1240454138317,
+    "y": 85
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 141.57409818630902,
+    "startY": 1039.5698041941876,
+    "midX": 148.55684843964036,
+    "midY": 935.120576822537,
+    "endX": 155.5395986929717,
+    "endY": 830.6713494508865
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 155.2711555933248,
+    "startY": 800.7585330563438,
+    "midX": 147.42240119263,
+    "midY": 708.3166632783975,
+    "endX": 139.57364679193518,
+    "endY": 615.874793500451
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 139.49354126475453,
+    "startY": 585.9757594017079,
+    "midX": 146.18919337834427,
+    "midY": 501.76446276197436,
+    "endX": 152.88484549193402,
+    "endY": 417.5531661222408
+   },
+   {
+    "id": "edge_3_4",
+    "startX": 152.71905084253882,
+    "startY": 387.6616549655888,
+    "midX": 146.48875540410006,
+    "midY": 318.95796370939183,
+    "endX": 140.2584599656613,
+    "endY": 250.25427245319486
+   },
+   {
+    "id": "edge_4_5",
+    "startX": 140.11921778189128,
+    "startY": 220.3648962145339,
+    "midX": 145.01390535889539,
+    "midY": 160.1577854788156,
+    "endX": 149.9085929358995,
+    "endY": 99.95067474309732
+   }
+  ]
+ }
+}

@@ -1,0 +1,100 @@
+{
+ "name": "generated-226",
+ "group": "generated",
+ "source": "seed 20261017 index 226",
+ "text": "mindmap\n  (Zephyr quartz ladder doorway reproducibility umbrella 2026 landscape)\n    (multiplication summit)\n      (Garden multiplication compass portfolio)\n        (Evidence 3d garden validation interdisciplinary roadmap)\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 150,
+    "height": 150
+   },
+   {
+    "id": "1",
+    "width": 150,
+    "height": 78
+   },
+   {
+    "id": "2",
+    "width": 150,
+    "height": 126
+   },
+   {
+    "id": "3",
+    "width": 151.3125,
+    "height": 150
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 103.53659673890911,
+    "y": 603.838976156019
+   },
+   {
+    "id": "1",
+    "x": 90,
+    "y": 436.5255920309304
+   },
+   {
+    "id": "2",
+    "x": 106.47606765954288,
+    "y": 281.3249171563057
+   },
+   {
+    "id": "3",
+    "x": 91.62865585654981,
+    "y": 90
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 102.32696461151353,
+    "startY": 588.8878293733682,
+    "midX": 96.76829836945456,
+    "midY": 520.1822840934747,
+    "endX": 91.20963212739558,
+    "endY": 451.4767388135813
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 91.58349858902598,
+    "startY": 421.6094084634574,
+    "midX": 98.23803382977144,
+    "midY": 358.9252545936181,
+    "endX": 104.8925690705169,
+    "endY": 296.2411007237787
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 105.31551009342795,
+    "startY": 266.3698810100527,
+    "midX": 99.05236175804635,
+    "midY": 185.66245857815284,
+    "endX": 92.78921342266474,
+    "endY": 104.95503614625298
+   }
+  ]
+ }
+}

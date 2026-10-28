@@ -1,0 +1,372 @@
+{
+ "name": "should-render-an-architecture-diagram-with-groups-within-groups",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/pr-check/should-render-an-architecture-diagram-with-groups-within-groups.mmd",
+ "text": "---\ndescription: >-\n  A top-level API group containing two nested subgroups (public, private)\n  plus an ungrouped-icon gateway also placed inside the parent group, with\n  services inside each subgroup connected across the subgroup boundary —\n  exercising two-level group nesting with cross-subgroup edges.\n---\narchitecture-beta\n  group api[API]\n  group public[Public API] in api\n  group private[Private API] in api\n\n  service serv1(server)[Server] in public\n\n  service serv2(server)[Server] in private\n  service db(database)[Database] in private\n\n  service gateway(internet)[Gateway] in api\n\n  serv1:B -- T:serv2\n  serv2:L -- R:db\n  serv1:L -- R:gateway\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "api",
+     "parent": null,
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "public",
+     "parent": "api",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "private",
+     "parent": "api",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "serv1",
+     "parent": "public",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "serv2",
+     "parent": "private",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "db",
+     "parent": "private",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "gateway",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "serv1-serv2",
+     "source": "serv1",
+     "target": "serv2",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "serv2-db",
+     "source": "serv2",
+     "target": "db",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "serv1-gateway",
+     "source": "serv1",
+     "target": "gateway",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "serv1",
+      "gateway"
+     ],
+     [
+      "serv2",
+      "db"
+     ]
+    ],
+    "vertical": [
+     [
+      "serv1",
+      "serv2"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "gateway",
+     "right": "serv1",
+     "gap": 120
+    },
+    {
+     "bottom": "serv2",
+     "top": "serv1",
+     "gap": 120
+    },
+    {
+     "bottom": "db",
+     "top": "gateway",
+     "gap": 120
+    },
+    {
+     "left": "db",
+     "right": "serv2",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -124,
+    "y1": -124,
+    "w": 248,
+    "h": 265
+   },
+   "output": [
+    {
+     "id": "api",
+     "x": 0,
+     "y": 17
+    },
+    {
+     "id": "public",
+     "x": 100.66279641431203,
+     "y": -110.70195436082355
+    },
+    {
+     "id": "private",
+     "x": 0,
+     "y": 144.70195436082355
+    },
+    {
+     "id": "serv1",
+     "x": 100.66279641431201,
+     "y": -119.20195436082355
+    },
+    {
+     "id": "serv2",
+     "x": 100.66279641431201,
+     "y": 136.20195436082355
+    },
+    {
+     "id": "db",
+     "x": -100.66279641431203,
+     "y": 136.20195436082355
+    },
+    {
+     "id": "gateway",
+     "x": -118.06514763362978,
+     "y": -119.20195436082355
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "api",
+     "parent": null,
+     "width": 447.32559282862405,
+     "height": 518.4039087216471,
+     "padding": 40,
+     "x": 0,
+     "y": 17
+    },
+    {
+     "id": "public",
+     "parent": "api",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 100.66279641431203,
+     "y": -110.70195436082355
+    },
+    {
+     "id": "private",
+     "parent": "api",
+     "width": 364.32559282862405,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 144.70195436082355
+    },
+    {
+     "id": "serv1",
+     "parent": "public",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 100.66279641431201,
+     "y": -119.20195436082355
+    },
+    {
+     "id": "serv2",
+     "parent": "private",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 100.66279641431201,
+     "y": 136.20195436082355
+    },
+    {
+     "id": "db",
+     "parent": "private",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -100.66279641431203,
+     "y": 136.20195436082355
+    },
+    {
+     "id": "gateway",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -118.06514763362978,
+     "y": -119.20195436082355
+    }
+   ],
+   "edges": [
+    {
+     "id": "serv1-serv2",
+     "source": "serv1",
+     "target": "serv2",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "serv2-db",
+     "source": "serv2",
+     "target": "db",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "serv1-gateway",
+     "source": "serv1",
+     "target": "gateway",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "serv1",
+      "gateway"
+     ],
+     [
+      "serv2",
+      "db"
+     ]
+    ],
+    "vertical": [
+     [
+      "serv1",
+      "serv2"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "gateway",
+     "right": "serv1",
+     "gap": 120
+    },
+    {
+     "bottom": "serv2",
+     "top": "serv1",
+     "gap": 120
+    },
+    {
+     "bottom": "db",
+     "top": "gateway",
+     "gap": 120
+    },
+    {
+     "left": "db",
+     "right": "serv2",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -224.66279641431203,
+    "y1": -243.20195436082355,
+    "w": 449.32559282862405,
+    "h": 520.4039087216471
+   },
+   "output": [
+    {
+     "id": "api",
+     "x": 0,
+     "y": 25.5
+    },
+    {
+     "id": "public",
+     "x": 100.64826857290873,
+     "y": -102.08623628793907
+    },
+    {
+     "id": "private",
+     "x": 0,
+     "y": 153.08623628793907
+    },
+    {
+     "id": "serv1",
+     "x": 100.64826857290873,
+     "y": -110.58623628793907
+    },
+    {
+     "id": "serv2",
+     "x": 100.64826857290873,
+     "y": 144.58623628793907
+    },
+    {
+     "id": "db",
+     "x": -100.64826857290873,
+     "y": 144.58623628793907
+    },
+    {
+     "id": "gateway",
+     "x": -122.00196673100422,
+     "y": -110.58623628793907
+    }
+   ]
+  }
+ ]
+}

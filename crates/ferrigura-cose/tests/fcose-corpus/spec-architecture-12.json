@@ -1,0 +1,208 @@
+{
+ "name": "spec-architecture-12",
+ "group": "spec",
+ "source": "packages/mermaid/src/diagrams/architecture/architecture.spec.ts:245",
+ "text": "architecture-beta\n  group api(cloud)[API]\n  service db1(database)[DB1] in api\n  service db2(database)[DB2] in api\n  service db3(database)[DB3] in api\n  align row db1 db2 db3",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "api",
+     "parent": null,
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "db1",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "db2",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "db3",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "db1",
+      "db2",
+      "db3"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "db1",
+     "right": "db2",
+     "gap": 120
+    },
+    {
+     "left": "db2",
+     "right": "db3",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -82.5,
+    "y1": -82.5,
+    "w": 165,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "api",
+     "x": 0,
+     "y": 17
+    },
+    {
+     "id": "db1",
+     "x": -157.62032405276386,
+     "y": 8.5
+    },
+    {
+     "id": "db2",
+     "x": -2.842170943040401e-14,
+     "y": 8.5
+    },
+    {
+     "id": "db3",
+     "x": 157.62032405276386,
+     "y": 8.5
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "api",
+     "parent": null,
+     "width": 478.2406481055277,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 17
+    },
+    {
+     "id": "db1",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -157.62032405276386,
+     "y": 8.5
+    },
+    {
+     "id": "db2",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -2.842170943040401e-14,
+     "y": 8.5
+    },
+    {
+     "id": "db3",
+     "parent": "api",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 157.62032405276386,
+     "y": 8.5
+    }
+   ],
+   "edges": [],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "db1",
+      "db2",
+      "db3"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "left": "db1",
+     "right": "db2",
+     "gap": 120
+    },
+    {
+     "left": "db2",
+     "right": "db3",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -240.12032405276386,
+    "y1": -74,
+    "w": 480.2406481055277,
+    "h": 182
+   },
+   "output": [
+    {
+     "id": "api",
+     "x": 0,
+     "y": 25.5
+    },
+    {
+     "id": "db1",
+     "x": -157.62032405276386,
+     "y": 17
+    },
+    {
+     "id": "db2",
+     "x": -2.842170943040401e-14,
+     "y": 17
+    },
+    {
+     "id": "db3",
+     "x": 157.62032405276386,
+     "y": 17
+    }
+   ]
+  }
+ ]
+}

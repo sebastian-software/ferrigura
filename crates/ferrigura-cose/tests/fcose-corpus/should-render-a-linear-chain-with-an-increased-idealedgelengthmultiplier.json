@@ -1,0 +1,210 @@
+{
+ "name": "should-render-a-linear-chain-with-an-increased-idealedgelengthmultiplier",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/visual-check/should-render-a-linear-chain-with-an-increased-idealedgelengthmultiplier.mmd",
+ "text": "---\ndescription: >-\n  The same linear three-service chain (A→B→C) as the default-fcose-knobs\n  fixture, but with architecture.idealEdgeLengthMultiplier set to 3 —\n  visibly stretches the gap between successive nodes, chosen as a clean\n  demonstration of the knob (unlike the 3-DB→MCP #6120 repro, whose spatial\n  overlap comes from the BFS map collapsing siblings before fcose runs, which\n  this knob cannot fix).\nconfig:\n  architecture:\n    idealEdgeLengthMultiplier: 3\n---\narchitecture-beta\n  service a(server)[A]\n  service b(server)[B]\n  service c(server)[C]\n  a:R --> L:b\n  b:R --> L:c\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "a",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "b",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "c",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "a-b",
+     "source": "a",
+     "target": "b",
+     "idealLength": 240,
+     "elasticity": 0.45
+    },
+    {
+     "id": "b-c",
+     "source": "b",
+     "target": "c",
+     "idealLength": 240,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "a",
+      "b",
+      "c"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "b",
+     "left": "a",
+     "gap": 240
+    },
+    {
+     "right": "c",
+     "left": "b",
+     "gap": 240
+    }
+   ],
+   "bounds": {
+    "x1": -41,
+    "y1": -41,
+    "w": 123.5,
+    "h": 100
+   },
+   "output": [
+    {
+     "id": "a",
+     "x": -299.42331510624683,
+     "y": 9
+    },
+    {
+     "id": "b",
+     "x": 20.749999999999986,
+     "y": 9
+    },
+    {
+     "id": "c",
+     "x": 340.92331510624683,
+     "y": 9
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "a",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -299.42331510624683,
+     "y": 9
+    },
+    {
+     "id": "b",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 20.749999999999986,
+     "y": 9
+    },
+    {
+     "id": "c",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 340.92331510624683,
+     "y": 9
+    }
+   ],
+   "edges": [
+    {
+     "id": "a-b",
+     "source": "a",
+     "target": "b",
+     "idealLength": 240,
+     "elasticity": 0.45
+    },
+    {
+     "id": "b-c",
+     "source": "b",
+     "target": "c",
+     "idealLength": 240,
+     "elasticity": 0.45
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "a",
+      "b",
+      "c"
+     ]
+    ],
+    "vertical": []
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "b",
+     "left": "a",
+     "gap": 240
+    },
+    {
+     "right": "c",
+     "left": "b",
+     "gap": 240
+    }
+   ],
+   "bounds": {
+    "x1": -340.42331510624683,
+    "y1": -32,
+    "w": 722.3466302124937,
+    "h": 100
+   },
+   "output": [
+    {
+     "id": "a",
+     "x": -299.42331510624683,
+     "y": 18
+    },
+    {
+     "id": "b",
+     "x": 20.750000000000007,
+     "y": 18
+    },
+    {
+     "id": "c",
+     "x": 340.92331510624683,
+     "y": 18
+    }
+   ]
+  }
+ ]
+}

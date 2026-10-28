@@ -1,0 +1,124 @@
+{
+ "name": "generated-046",
+ "group": "generated",
+ "source": "seed 20261017 index 46",
+ "text": "mindmap\n  ladder 2026 roadmap quotient\n    [Canvas]\n      (Multiplication signal anchor horizon saddle responsibilities 3d willow ember)\n        ((ledger pixel evidence forest v2 evidence scaffolding evidence ember))\n          )Signal v2 cipher portfolio doorway glacier doorway zephyr telescope compass responsibilities(\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 58
+   },
+   {
+    "id": "1",
+    "width": 89.4375,
+    "height": 44
+   },
+   {
+    "id": "2",
+    "width": 150,
+    "height": 150
+   },
+   {
+    "id": "3",
+    "width": 232.56527709960938,
+    "height": 232.56527709960938
+   },
+   {
+    "id": "4",
+    "width": 283.080322265625,
+    "height": 206.9372100830078
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   },
+   {
+    "id": "edge_2_3",
+    "source": "2",
+    "target": "3"
+   },
+   {
+    "id": "edge_3_4",
+    "source": "3",
+    "target": "4"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 165.879967783108,
+    "y": 890.781750526427
+   },
+   {
+    "id": "1",
+    "x": 153.939858715132,
+    "y": 786.6278009635625
+   },
+   {
+    "id": "2",
+    "x": 162.63121877560275,
+    "y": 636.2385580707139
+   },
+   {
+    "id": "3",
+    "x": 176.37467567442854,
+    "y": 391.5632392712876
+   },
+   {
+    "id": "4",
+    "x": 156.5401611328125,
+    "y": 118.4686050415039
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 164.17157146650317,
+    "startY": 875.8793553489594,
+    "midX": 159.90991324912,
+    "midY": 838.7047757449948,
+    "endX": 155.64825503173682,
+    "endY": 801.5301961410302
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 154.80530112287607,
+    "startY": 771.6527881275454,
+    "midX": 158.28553874536738,
+    "midY": 711.4331795171382,
+    "endX": 161.76577636785868,
+    "endY": 651.2135709067311
+   },
+   {
+    "id": "edge_2_3",
+    "startX": 163.47244546037314,
+    "startY": 621.2621653920736,
+    "midX": 169.50294722501565,
+    "midY": 513.9008986710007,
+    "endX": 175.53344898965815,
+    "endY": 406.53963194992787
+   },
+   {
+    "id": "edge_3_4",
+    "startX": 175.28810684820218,
+    "startY": 376.6026454265944,
+    "midX": 166.45741840362052,
+    "midY": 255.01592215639576,
+    "endX": 157.62672995903887,
+    "endY": 133.42919888619713
+   }
+  ]
+ }
+}

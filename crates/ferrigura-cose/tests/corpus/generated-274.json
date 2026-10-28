@@ -1,0 +1,76 @@
+{
+ "name": "generated-274",
+ "group": "generated",
+ "source": "seed 20261017 index 274",
+ "text": "mindmap\n  Infrastructure summit willow orbit notebook\n    [evidence photographs pixel junction circuit portfolio tunnel 2026]\n    [keystone gradient ladder]\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 240,
+    "height": 58
+   },
+   {
+    "id": "1",
+    "width": 160,
+    "height": 140
+   },
+   {
+    "id": "2",
+    "width": 160,
+    "height": 68
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_0_2",
+    "source": "0",
+    "target": "2"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 348.3187905395057,
+    "y": 65.14764266660518
+   },
+   {
+    "id": "1",
+    "x": 601.6395596922573,
+    "y": 85
+   },
+   {
+    "id": "2",
+    "x": 95,
+    "y": 85.14476030929848
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 363.27293952050775,
+    "startY": 66.31957622018072,
+    "midX": 474.9791751158815,
+    "midY": 75.07382133330259,
+    "endX": 586.6854107112553,
+    "endY": 83.82806644642446
+   },
+   {
+    "id": "edge_0_2",
+    "startX": 333.3653102780477,
+    "startY": 66.32807820918461,
+    "midX": 221.65939526975285,
+    "midY": 75.14620148795183,
+    "endX": 109.95348026145805,
+    "endY": 83.96432476671905
+   }
+  ]
+ }
+}

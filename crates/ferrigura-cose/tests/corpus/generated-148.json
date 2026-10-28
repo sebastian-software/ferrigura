@@ -1,0 +1,76 @@
+{
+ "name": "generated-148",
+ "group": "generated",
+ "source": "seed 20261017 index 148",
+ "text": "mindmap\n  ))Validation notebook quotient interdisciplinary pixel infrastructure infrastructure marble kernel multiplication((\n    ))infrastructure river((\n      ))2026 summit archive summit tunnel((\n",
+ "input": {
+  "nodes": [
+   {
+    "id": "0",
+    "width": 312.5,
+    "height": 200
+   },
+   {
+    "id": "1",
+    "width": 234.9609375,
+    "height": 80
+   },
+   {
+    "id": "2",
+    "width": 312.5,
+    "height": 110
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge_0_1",
+    "source": "0",
+    "target": "1"
+   },
+   {
+    "id": "edge_1_2",
+    "source": "1",
+    "target": "2"
+   }
+  ]
+ },
+ "output": {
+  "positions": [
+   {
+    "id": "0",
+    "x": 171.25,
+    "y": 411.79463186098576
+   },
+   {
+    "id": "1",
+    "x": 180.7450203019432,
+    "y": 218.39195230278858
+   },
+   {
+    "id": "2",
+    "x": 188.73165337299656,
+    "y": 70
+   }
+  ],
+  "edgePoints": [
+   {
+    "id": "edge_0_1",
+    "startX": 171.98553258076072,
+    "startY": 396.81267632031484,
+    "midX": 175.9975101509716,
+    "midY": 315.0932920818871,
+    "endX": 180.0094877211825,
+    "endY": 233.37390784345948
+   },
+   {
+    "id": "edge_1_2",
+    "startX": 181.55117156128028,
+    "startY": 203.41363062954798,
+    "midX": 184.7383368374699,
+    "midY": 144.1959761513943,
+    "endX": 187.9255021136595,
+    "endY": 84.9783216732406
+   }
+  ]
+ }
+}

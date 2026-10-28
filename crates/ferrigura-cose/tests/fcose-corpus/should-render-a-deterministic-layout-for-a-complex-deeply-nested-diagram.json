@@ -1,0 +1,986 @@
+{
+ "name": "should-render-a-deterministic-layout-for-a-complex-deeply-nested-diagram",
+ "group": "fixture",
+ "source": "e2e/diagrams/architecture/pr-check/should-render-a-deterministic-layout-for-a-complex-deeply-nested-diagram.mmd",
+ "text": "---\ndescription: >-\n  A deeply nested architecture-beta diagram (subscription > vnet > subnet\n  groups, plus a separately nested shared/environment hierarchy) with\n  `randomize: false` set explicitly, verifying that layout stays\n  deterministic for a complex multi-level nesting structure.\nconfig:\n  architecture:\n    randomize: false\n---\narchitecture-beta\n  group sub1(cloud)[Subscription A]\n  group vnet1(cloud)[VNet A] in sub1\n  service vm1(server)[VM] in vnet1\n\n  group sub2(cloud)[Subscription B]\n  group shared(cloud)[Shared] in sub2\n  service reg(database)[Registry] in shared\n\n  group env(cloud)[Environment] in sub2\n  group vnet(cloud)[VNet] in env\n  group snet1(cloud)[App Subnet] in vnet\n  service nsg(server)[NSG] in snet1\n  service asp(server)[App Plan] in snet1\n  service web(server)[Web App] in snet1\n\n  group snet2(cloud)[PE Subnet] in vnet\n  service pe1(server)[PE Blob] in snet2\n  service pe2(server)[PE Bus] in snet2\n\n  service storage(disk)[Storage] in env\n  service container(disk)[Container] in env\n  service bus(server)[Service Bus] in env\n  service dns(server)[DNS Zone] in env\n\n  service client(internet)[Client]\n\n  reg:B --> T:web\n  nsg:R --> L:asp\n  asp:R --> L:web\n  web:R --> L:pe1\n  pe1:R --> L:storage\n  storage:B --> T:container\n  web:B --> T:pe2\n  pe2:R --> L:bus\n  vm1:R --> L:pe2\n",
+ "runs": [
+  {
+   "run": 1,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "sub1",
+     "parent": null,
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "vnet1",
+     "parent": "sub1",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "sub2",
+     "parent": null,
+     "width": 412,
+     "height": 429,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "shared",
+     "parent": "sub2",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "env",
+     "parent": "sub2",
+     "width": 329,
+     "height": 346,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "vnet",
+     "parent": "env",
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "snet1",
+     "parent": "vnet",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "snet2",
+     "parent": "vnet",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 0,
+     "y": 8.5
+    },
+    {
+     "id": "vm1",
+     "parent": "vnet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "reg",
+     "parent": "shared",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "nsg",
+     "parent": "snet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "asp",
+     "parent": "snet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "web",
+     "parent": "snet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "pe1",
+     "parent": "snet2",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "pe2",
+     "parent": "snet2",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "storage",
+     "parent": "env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "container",
+     "parent": "env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "bus",
+     "parent": "env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "dns",
+     "parent": "env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": "client",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 0,
+     "y": 0
+    }
+   ],
+   "edges": [
+    {
+     "id": "reg-web",
+     "source": "reg",
+     "target": "web",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "nsg-asp",
+     "source": "nsg",
+     "target": "asp",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "asp-web",
+     "source": "asp",
+     "target": "web",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "web-pe1",
+     "source": "web",
+     "target": "pe1",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "pe1-storage",
+     "source": "pe1",
+     "target": "storage",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "storage-container",
+     "source": "storage",
+     "target": "container",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "web-pe2",
+     "source": "web",
+     "target": "pe2",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "pe2-bus",
+     "source": "pe2",
+     "target": "bus",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "vm1-pe2",
+     "source": "vm1",
+     "target": "pe2",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "vm1",
+      "pe2",
+      "pe2",
+      "bus",
+      "container"
+     ],
+     [
+      "bus",
+      "container"
+     ],
+     [
+      "web",
+      "asp",
+      "nsg"
+     ],
+     [
+      "web",
+      "asp",
+      "nsg"
+     ],
+     [
+      "pe1",
+      "storage"
+     ]
+    ],
+    "vertical": [
+     [
+      "pe2",
+      "web",
+      "web",
+      "reg"
+     ],
+     [
+      "storage",
+      "container"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "pe2",
+     "left": "vm1",
+     "gap": 120
+    },
+    {
+     "top": "asp",
+     "bottom": "vm1",
+     "gap": 120
+    },
+    {
+     "right": "bus",
+     "left": "pe2",
+     "gap": 120
+    },
+    {
+     "top": "web",
+     "bottom": "pe2",
+     "gap": 120
+    },
+    {
+     "left": "nsg",
+     "right": "asp",
+     "gap": 120
+    },
+    {
+     "right": "web",
+     "left": "asp",
+     "gap": 120
+    },
+    {
+     "right": "container",
+     "left": "bus",
+     "gap": 120
+    },
+    {
+     "top": "pe1",
+     "bottom": "bus",
+     "gap": 120
+    },
+    {
+     "right": "pe1",
+     "left": "web",
+     "gap": 120
+    },
+    {
+     "top": "reg",
+     "bottom": "web",
+     "gap": 120
+    },
+    {
+     "right": "pe1",
+     "left": "web",
+     "gap": 120
+    },
+    {
+     "top": "reg",
+     "bottom": "web",
+     "gap": 120
+    },
+    {
+     "top": "storage",
+     "bottom": "container",
+     "gap": 120
+    },
+    {
+     "right": "storage",
+     "left": "pe1",
+     "gap": 120
+    },
+    {
+     "right": "storage",
+     "left": "pe1",
+     "gap": 120
+    },
+    {
+     "right": "storage",
+     "left": "pe1",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -207,
+    "y1": -207,
+    "w": 414,
+    "h": 431
+   },
+   "output": [
+    {
+     "id": "sub1",
+     "x": -693.6438158662177,
+     "y": 386.5462795079435
+    },
+    {
+     "id": "vnet1",
+     "x": -693.6438158662177,
+     "y": 386.5462795079435
+    },
+    {
+     "id": "sub2",
+     "x": 28.25847782709093,
+     "y": 18.499999999999943
+    },
+    {
+     "id": "shared",
+     "x": 83.3550771836426,
+     "y": -432.5462795079436
+    },
+    {
+     "id": "env",
+     "x": 28.25847782709093,
+     "y": 164.4051210857162
+    },
+    {
+     "id": "vnet",
+     "x": -66.67432397234325,
+     "y": 164.4051210857162
+    },
+    {
+     "id": "snet1",
+     "x": -126.67432397234347,
+     "y": -57.73603733651112
+    },
+    {
+     "id": "snet2",
+     "x": 143.35507718364283,
+     "y": 264.6425312198799
+    },
+    {
+     "id": "vm1",
+     "x": -693.6438158662177,
+     "y": 378.0462795079435
+    },
+    {
+     "id": "reg",
+     "x": 83.3550771836426,
+     "y": -441.0462795079436
+    },
+    {
+     "id": "nsg",
+     "x": -336.70372512832955,
+     "y": -66.23603733651112
+    },
+    {
+     "id": "asp",
+     "x": -129.57802877764516,
+     "y": -66.23603733651112
+    },
+    {
+     "id": "web",
+     "x": 83.3550771836426,
+     "y": -66.23603733651112
+    },
+    {
+     "id": "pe1",
+     "x": 203.35507718364306,
+     "y": 134.23878293181633
+    },
+    {
+     "id": "pe2",
+     "x": 83.3550771836426,
+     "y": 378.0462795079435
+    },
+    {
+     "id": "storage",
+     "x": 476.2206807825114,
+     "y": 134.23878293181633
+    },
+    {
+     "id": "container",
+     "x": 476.2206807825114,
+     "y": 318.04627950794327
+    },
+    {
+     "id": "bus",
+     "x": 352.72080628275626,
+     "y": 318.04627950794327
+    },
+    {
+     "id": "dns",
+     "x": 355.1286278493649,
+     "y": -79.09205527098993
+    },
+    {
+     "id": "client",
+     "x": 773.6438158662177,
+     "y": 81.93672684200556
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "seed": 1,
+   "options": {
+    "quality": "proof",
+    "randomize": false,
+    "nodeSeparation": 75,
+    "numIter": 2500,
+    "nodeDimensionsIncludeLabels": false
+   },
+   "nodes": [
+    {
+     "id": "sub1",
+     "parent": null,
+     "width": 246,
+     "height": 263,
+     "padding": 40,
+     "x": -693.6438158662177,
+     "y": 386.5462795079435
+    },
+    {
+     "id": "vnet1",
+     "parent": "sub1",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": -693.6438158662177,
+     "y": 386.5462795079435
+    },
+    {
+     "id": "sub2",
+     "parent": null,
+     "width": 1141.924405910841,
+     "height": 1165.0925590158872,
+     "padding": 40,
+     "x": 28.25847782709093,
+     "y": 18.499999999999943
+    },
+    {
+     "id": "shared",
+     "parent": "sub2",
+     "width": 163,
+     "height": 180,
+     "padding": 40,
+     "x": 83.3550771836426,
+     "y": -432.5462795079436
+    },
+    {
+     "id": "env",
+     "parent": "sub2",
+     "width": 1058.924405910841,
+     "height": 790.2823168444546,
+     "padding": 40,
+     "x": 28.25847782709093,
+     "y": 164.4051210857162
+    },
+    {
+     "id": "vnet",
+     "parent": "env",
+     "width": 786.0588023119726,
+     "height": 707.2823168444546,
+     "padding": 40,
+     "x": -66.67432397234325,
+     "y": 164.4051210857162
+    },
+    {
+     "id": "snet1",
+     "parent": "vnet",
+     "width": 583.0588023119722,
+     "height": 180,
+     "padding": 40,
+     "x": -126.67432397234347,
+     "y": -57.73603733651112
+    },
+    {
+     "id": "snet2",
+     "parent": "vnet",
+     "width": 283.00000000000045,
+     "height": 423.80749657612716,
+     "padding": 40,
+     "x": 143.35507718364283,
+     "y": 264.6425312198799
+    },
+    {
+     "id": "vm1",
+     "parent": "vnet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -693.6438158662177,
+     "y": 378.0462795079435
+    },
+    {
+     "id": "reg",
+     "parent": "shared",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 83.3550771836426,
+     "y": -441.0462795079436
+    },
+    {
+     "id": "nsg",
+     "parent": "snet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -336.70372512832955,
+     "y": -66.23603733651112
+    },
+    {
+     "id": "asp",
+     "parent": "snet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": -129.57802877764516,
+     "y": -66.23603733651112
+    },
+    {
+     "id": "web",
+     "parent": "snet1",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 83.3550771836426,
+     "y": -66.23603733651112
+    },
+    {
+     "id": "pe1",
+     "parent": "snet2",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 203.35507718364306,
+     "y": 134.23878293181633
+    },
+    {
+     "id": "pe2",
+     "parent": "snet2",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 83.3550771836426,
+     "y": 378.0462795079435
+    },
+    {
+     "id": "storage",
+     "parent": "env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 476.2206807825114,
+     "y": 134.23878293181633
+    },
+    {
+     "id": "container",
+     "parent": "env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 476.2206807825114,
+     "y": 318.04627950794327
+    },
+    {
+     "id": "bus",
+     "parent": "env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 352.72080628275626,
+     "y": 318.04627950794327
+    },
+    {
+     "id": "dns",
+     "parent": "env",
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 355.1286278493649,
+     "y": -79.09205527098993
+    },
+    {
+     "id": "client",
+     "parent": null,
+     "width": 80,
+     "height": 80,
+     "padding": 0,
+     "x": 773.6438158662177,
+     "y": 81.93672684200556
+    }
+   ],
+   "edges": [
+    {
+     "id": "reg-web",
+     "source": "reg",
+     "target": "web",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "nsg-asp",
+     "source": "nsg",
+     "target": "asp",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "asp-web",
+     "source": "asp",
+     "target": "web",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "web-pe1",
+     "source": "web",
+     "target": "pe1",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "pe1-storage",
+     "source": "pe1",
+     "target": "storage",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "storage-container",
+     "source": "storage",
+     "target": "container",
+     "idealLength": 120,
+     "elasticity": 0.45
+    },
+    {
+     "id": "web-pe2",
+     "source": "web",
+     "target": "pe2",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "pe2-bus",
+     "source": "pe2",
+     "target": "bus",
+     "idealLength": 40,
+     "elasticity": 0.001
+    },
+    {
+     "id": "vm1-pe2",
+     "source": "vm1",
+     "target": "pe2",
+     "idealLength": 40,
+     "elasticity": 0.001
+    }
+   ],
+   "alignmentConstraint": {
+    "horizontal": [
+     [
+      "vm1",
+      "pe2",
+      "pe2",
+      "bus",
+      "container"
+     ],
+     [
+      "bus",
+      "container"
+     ],
+     [
+      "web",
+      "asp",
+      "nsg"
+     ],
+     [
+      "web",
+      "asp",
+      "nsg"
+     ],
+     [
+      "pe1",
+      "storage"
+     ]
+    ],
+    "vertical": [
+     [
+      "pe2",
+      "web",
+      "web",
+      "reg"
+     ],
+     [
+      "storage",
+      "container"
+     ]
+    ]
+   },
+   "relativePlacementConstraint": [
+    {
+     "right": "pe2",
+     "left": "vm1",
+     "gap": 120
+    },
+    {
+     "top": "asp",
+     "bottom": "vm1",
+     "gap": 120
+    },
+    {
+     "right": "bus",
+     "left": "pe2",
+     "gap": 120
+    },
+    {
+     "top": "web",
+     "bottom": "pe2",
+     "gap": 120
+    },
+    {
+     "left": "nsg",
+     "right": "asp",
+     "gap": 120
+    },
+    {
+     "right": "web",
+     "left": "asp",
+     "gap": 120
+    },
+    {
+     "right": "container",
+     "left": "bus",
+     "gap": 120
+    },
+    {
+     "top": "pe1",
+     "bottom": "bus",
+     "gap": 120
+    },
+    {
+     "right": "pe1",
+     "left": "web",
+     "gap": 120
+    },
+    {
+     "top": "reg",
+     "bottom": "web",
+     "gap": 120
+    },
+    {
+     "right": "pe1",
+     "left": "web",
+     "gap": 120
+    },
+    {
+     "top": "reg",
+     "bottom": "web",
+     "gap": 120
+    },
+    {
+     "top": "storage",
+     "bottom": "container",
+     "gap": 120
+    },
+    {
+     "right": "storage",
+     "left": "pe1",
+     "gap": 120
+    },
+    {
+     "right": "storage",
+     "left": "pe1",
+     "gap": 120
+    },
+    {
+     "right": "storage",
+     "left": "pe1",
+     "gap": 120
+    }
+   ],
+   "bounds": {
+    "x1": -817.6438158662177,
+    "y1": -565.0462795079436,
+    "w": 1632.2876317324353,
+    "h": 1167.0925590158872
+   },
+   "output": [
+    {
+     "id": "sub1",
+     "x": -702.2715621907482,
+     "y": 173.97215132957172
+    },
+    {
+     "id": "vnet1",
+     "x": -702.2715621907482,
+     "y": 173.97215132957172
+    },
+    {
+     "id": "sub2",
+     "x": 35.92828942658616,
+     "y": 26.999999999999545
+    },
+    {
+     "id": "shared",
+     "x": 85.77355768853522,
+     "y": -347.6146825494534
+    },
+    {
+     "id": "env",
+     "x": 35.92828942658616,
+     "y": 151.99732704966073
+    },
+    {
+     "id": "vnet",
+     "x": -10.121277624200047,
+     "y": 113.60516700716744
+    },
+    {
+     "id": "snet1",
+     "x": -135.12310003955554,
+     "y": -14.62002845013103
+    },
+    {
+     "id": "snet2",
+     "x": 210.7753801038907,
+     "y": 207.9012568970188
+    },
+    {
+     "id": "vm1",
+     "x": -702.2715621907482,
+     "y": 165.47215132957172
+    },
+    {
+     "id": "reg",
+     "x": 85.77355768853522,
+     "y": -356.1146825494534
+    },
+    {
+     "id": "nsg",
+     "x": -356.0197577676463,
+     "y": -23.12002845013103
+    },
+    {
+     "id": "asp",
+     "x": -142.03385864276424,
+     "y": -23.12002845013103
+    },
+    {
+     "id": "web",
+     "x": 85.77355768853522,
+     "y": -23.12002845013103
+    },
+    {
+     "id": "pe1",
+     "x": 335.7772025192462,
+     "y": 233.3303624644659
+    },
+    {
+     "id": "pe2",
+     "x": 85.77355768853522,
+     "y": 165.47215132957172
+    },
+    {
+     "id": "storage",
+     "x": 510.8763366208186,
+     "y": 233.3303624644659
+    },
+    {
+     "id": "container",
+     "x": 510.8763366208186,
+     "y": 393.1146825494525
+    },
+    {
+     "id": "bus",
+     "x": 388.6107784107335,
+     "y": 393.1146825494525
+    },
+    {
+     "id": "dns",
+     "x": 474.9473437136239,
+     "y": -82.72536570673401
+    },
+    {
+     "id": "client",
+     "x": 779.2715621907464,
+     "y": 126.94238492779641
+    }
+   ]
+  }
+ ]
+}
