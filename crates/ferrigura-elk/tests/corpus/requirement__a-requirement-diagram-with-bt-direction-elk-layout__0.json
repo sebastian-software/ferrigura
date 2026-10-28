@@ -1,0 +1,377 @@
+{
+ "version": 1,
+ "name": "requirement__a-requirement-diagram-with-bt-direction-elk-layout__0",
+ "fixture": "e2e/diagrams/requirement/nightly-check/a-requirement-diagram-with-bt-direction-elk-layout.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "UP",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "name": "test_req",
+    "type": "Requirement",
+    "requirementId": "1",
+    "text": "the test text.",
+    "risk": "High",
+    "verifyMethod": "Test",
+    "cssStyles": [],
+    "classes": [
+     "default"
+    ],
+    "id": "test_req",
+    "cssClasses": "default",
+    "shape": "requirementBox",
+    "look": "neo",
+    "colorIndex": 0,
+    "labelStyle": "",
+    "width": 132.859375,
+    "height": 166
+   },
+   {
+    "name": "test_entity",
+    "type": "simulation",
+    "docRef": "",
+    "cssStyles": [],
+    "classes": [
+     "default"
+    ],
+    "shape": "requirementBox",
+    "look": "neo",
+    "id": "test_entity",
+    "cssClasses": "default",
+    "colorIndex": 1,
+    "labelStyle": "",
+    "width": 121.171875,
+    "height": 103
+   }
+  ],
+  "edges": [
+   {
+    "id": "test_entity-test_req-0",
+    "start": "test_entity",
+    "end": "test_req",
+    "label": "&lt;&lt;satisfies&gt;&gt;",
+    "classes": "relationshipLine",
+    "style": [
+     "fill:none",
+     "stroke-dasharray: 10,7"
+    ],
+    "labelpos": "c",
+    "thickness": "normal",
+    "type": "normal",
+    "pattern": "dashed",
+    "arrowTypeStart": "",
+    "arrowTypeEnd": "requirement_arrow",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "&lt;&lt;satisfies&gt;&gt;",
+    "arrowhead": "normal",
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 83.28125,
+    "height": 21,
+    "sources": [
+     "test_entity"
+    ],
+    "targets": [
+     "test_req"
+    ],
+    "sourceId": "test_entity",
+    "targetId": "test_req",
+    "labels": [
+     {
+      "width": 83.28125,
+      "height": 21,
+      "orgWidth": 83.28125,
+      "orgHeight": 21,
+      "text": "&lt;&lt;satisfies&gt;&gt;",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "UP",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "name": "test_req",
+    "type": "Requirement",
+    "requirementId": "1",
+    "text": "the test text.",
+    "risk": "High",
+    "verifyMethod": "Test",
+    "cssStyles": [],
+    "classes": [
+     "default"
+    ],
+    "id": "test_req",
+    "cssClasses": "default",
+    "shape": "requirementBox",
+    "look": "neo",
+    "colorIndex": 0,
+    "labelStyle": "",
+    "width": 132.859375,
+    "height": 166,
+    "x": 12,
+    "y": 12
+   },
+   {
+    "name": "test_entity",
+    "type": "simulation",
+    "docRef": "",
+    "cssStyles": [],
+    "classes": [
+     "default"
+    ],
+    "shape": "requirementBox",
+    "look": "neo",
+    "id": "test_entity",
+    "cssClasses": "default",
+    "colorIndex": 1,
+    "labelStyle": "",
+    "width": 121.171875,
+    "height": 103,
+    "x": 17.84375,
+    "y": 279
+   }
+  ],
+  "edges": [
+   {
+    "id": "test_entity-test_req-0",
+    "start": "test_entity",
+    "end": "test_req",
+    "label": "&lt;&lt;satisfies&gt;&gt;",
+    "classes": "relationshipLine",
+    "style": [
+     "fill:none",
+     "stroke-dasharray: 10,7"
+    ],
+    "labelpos": "c",
+    "thickness": "normal",
+    "type": "normal",
+    "pattern": "dashed",
+    "arrowTypeStart": "",
+    "arrowTypeEnd": "requirement_arrow",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "&lt;&lt;satisfies&gt;&gt;",
+    "arrowhead": "normal",
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 83.28125,
+    "height": 21,
+    "sources": [
+     "test_entity"
+    ],
+    "targets": [
+     "test_req"
+    ],
+    "sourceId": "test_entity",
+    "targetId": "test_req",
+    "labels": [
+     {
+      "width": 83.28125,
+      "height": 21,
+      "orgWidth": 83.28125,
+      "orgHeight": 21,
+      "text": "&lt;&lt;satisfies&gt;&gt;",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 36.4296875,
+      "y": 218
+     }
+    ],
+    "sections": [
+     {
+      "id": "test_entity-test_req-0_s0",
+      "startPoint": {
+       "x": 78.4296875,
+       "y": 279
+      },
+      "endPoint": {
+       "x": 78.4296875,
+       "y": 178
+      },
+      "incomingShape": "test_entity",
+      "outgoingShape": "test_req"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 156.859375,
+  "height": 394
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.test_entity ports: [p_0[n_root.test_entity] >> 1[n(label)_0]]",
+         "Layer 0: L_0[n_root.test_entity]",
+         "Layer 1: L_1[n(label)_0]",
+         "Node n_root.test_req ports: [p_0[n_root.test_req] << 0[n(label)_0]]",
+         "Layer 2: L_2[n_root.test_req]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 132.859375",
+         "RIGHTUP size is 132.859375",
+         "LEFTDOWN size is 132.859375",
+         "LEFTUP size is 132.859375",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.test_entity, n(label)_0, n_root.test_req]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

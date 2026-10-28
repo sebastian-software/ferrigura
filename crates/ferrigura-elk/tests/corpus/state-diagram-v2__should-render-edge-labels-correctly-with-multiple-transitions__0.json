@@ -1,0 +1,4788 @@
+{
+ "version": 1,
+ "name": "state-diagram-v2__should-render-edge-labels-correctly-with-multiple-transitions__0",
+ "fixture": "e2e/diagrams/state-diagram-v2/pr-check/should-render-edge-labels-correctly-with-multiple-transitions.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State1_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State1_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c0",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c0",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State1_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State1_____________",
+      "width": 141.703125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State2_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State2_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 1,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c1",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c1",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State2_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State2_____________",
+      "width": 141.703125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State3_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State3_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 2,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c7",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c7",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State3_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State3_____________",
+      "width": 141.703125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State4_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State4_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 3,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c2",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c2",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State4_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State4_____________",
+      "width": 141.703125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State5_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State5_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 4,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c3",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c3",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State5_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State5_____________",
+      "width": 141.703125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State6_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State6_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 5,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c4",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c4",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State6_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State6_____________",
+      "width": 141.703125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State7_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State7_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 6,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c5",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c5",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State7_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State7_____________",
+      "width": 141.703125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State8_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State8_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 7,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c6",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c6",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State8_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State8_____________",
+      "width": 141.703125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State9_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State9_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 8,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c9",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c9",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State9_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State9_____________",
+      "width": 141.703125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "stateStart",
+    "label": "root_start",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "root_start",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 14,
+    "height": 14
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "root_start",
+    "end": "State1_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "root_start"
+    ],
+    "targets": [
+     "State1_____________"
+    ],
+    "sourceId": "root_start",
+    "targetId": "State1_____________",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge1",
+    "start": "State1_____________",
+    "end": "State2_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition1_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition1_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State1_____________"
+    ],
+    "targets": [
+     "State2_____________"
+    ],
+    "sourceId": "State1_____________",
+    "targetId": "State2_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition1_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge2",
+    "start": "State2_____________",
+    "end": "State4_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition2_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition2_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State2_____________"
+    ],
+    "targets": [
+     "State4_____________"
+    ],
+    "sourceId": "State2_____________",
+    "targetId": "State4_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition2_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge3",
+    "start": "State2_____________",
+    "end": "State3_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition3_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition3_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State2_____________"
+    ],
+    "targets": [
+     "State3_____________"
+    ],
+    "sourceId": "State2_____________",
+    "targetId": "State3_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition3_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge4",
+    "start": "State3_____________",
+    "end": "State2_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "State3_____________"
+    ],
+    "targets": [
+     "State2_____________"
+    ],
+    "sourceId": "State3_____________",
+    "targetId": "State2_____________",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge5",
+    "start": "State4_____________",
+    "end": "State2_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition5_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition5_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State4_____________"
+    ],
+    "targets": [
+     "State2_____________"
+    ],
+    "sourceId": "State4_____________",
+    "targetId": "State2_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition5_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge6",
+    "start": "State4_____________",
+    "end": "State5_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition6_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition6_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State4_____________"
+    ],
+    "targets": [
+     "State5_____________"
+    ],
+    "sourceId": "State4_____________",
+    "targetId": "State5_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition6_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge7",
+    "start": "State5_____________",
+    "end": "State6_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition7_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition7_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State5_____________"
+    ],
+    "targets": [
+     "State6_____________"
+    ],
+    "sourceId": "State5_____________",
+    "targetId": "State6_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition7_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge8",
+    "start": "State6_____________",
+    "end": "State4_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition8_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition8_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State6_____________"
+    ],
+    "targets": [
+     "State4_____________"
+    ],
+    "sourceId": "State6_____________",
+    "targetId": "State4_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition8_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge9",
+    "start": "State2_____________",
+    "end": "State7_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition4_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition4_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State2_____________"
+    ],
+    "targets": [
+     "State7_____________"
+    ],
+    "sourceId": "State2_____________",
+    "targetId": "State7_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition4_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge10",
+    "start": "State4_____________",
+    "end": "State7_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition4_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition4_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State4_____________"
+    ],
+    "targets": [
+     "State7_____________"
+    ],
+    "sourceId": "State4_____________",
+    "targetId": "State7_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition4_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge11",
+    "start": "State5_____________",
+    "end": "State7_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition4_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition4_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State5_____________"
+    ],
+    "targets": [
+     "State7_____________"
+    ],
+    "sourceId": "State5_____________",
+    "targetId": "State7_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition4_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge12",
+    "start": "State6_____________",
+    "end": "State7_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition4_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition4_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State6_____________"
+    ],
+    "targets": [
+     "State7_____________"
+    ],
+    "sourceId": "State6_____________",
+    "targetId": "State7_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition4_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge13",
+    "start": "State7_____________",
+    "end": "State1_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition9_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition9_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State7_____________"
+    ],
+    "targets": [
+     "State1_____________"
+    ],
+    "sourceId": "State7_____________",
+    "targetId": "State1_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition9_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge14",
+    "start": "State5_____________",
+    "end": "State8_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition10____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition10____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State5_____________"
+    ],
+    "targets": [
+     "State8_____________"
+    ],
+    "sourceId": "State5_____________",
+    "targetId": "State8_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition10____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge15",
+    "start": "State8_____________",
+    "end": "State5_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition11____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition11____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 106.640625,
+    "height": 21,
+    "sources": [
+     "State8_____________"
+    ],
+    "targets": [
+     "State5_____________"
+    ],
+    "sourceId": "State8_____________",
+    "targetId": "State5_____________",
+    "labels": [
+     {
+      "width": 106.640625,
+      "height": 21,
+      "orgWidth": 106.640625,
+      "orgHeight": 21,
+      "text": "Transition11____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge16",
+    "start": "State9_____________",
+    "end": "State8_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition12____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition12____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State9_____________"
+    ],
+    "targets": [
+     "State8_____________"
+    ],
+    "sourceId": "State9_____________",
+    "targetId": "State8_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition12____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State1_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State1_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c0",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c0",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State1_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State1_____________",
+      "width": 141.703125,
+      "height": 19,
+      "x": 21.1484375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 420.5385416666667,
+    "y": 1502,
+    "width": 184,
+    "height": 109
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State2_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State2_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 1,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c1",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c1",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State2_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State2_____________",
+      "width": 141.703125,
+      "height": 19,
+      "x": 21.1484375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 154.871875,
+    "y": 1062,
+    "width": 184,
+    "height": 109
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State3_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State3_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 2,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c7",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c7",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State3_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State3_____________",
+      "width": 141.703125,
+      "height": 19,
+      "x": 21.1484375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 159.671875,
+    "y": 1292,
+    "width": 184,
+    "height": 109
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State4_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State4_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 3,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c2",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c2",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State4_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State4_____________",
+      "width": 141.703125,
+      "height": 19,
+      "x": 21.1484375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 218.7078125,
+    "y": 852,
+    "width": 184,
+    "height": 109
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State5_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State5_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 4,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c3",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c3",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State5_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State5_____________",
+      "width": 141.703125,
+      "height": 19,
+      "x": 21.1484375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 401.04375000000005,
+    "y": 432,
+    "width": 184,
+    "height": 109
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State6_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State6_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 5,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c4",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c4",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State6_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State6_____________",
+      "width": 141.703125,
+      "height": 19,
+      "x": 21.1484375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 399.97187500000007,
+    "y": 642,
+    "width": 184,
+    "height": 109
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State7_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State7_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 6,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c5",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c5",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State7_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State7_____________",
+      "width": 141.703125,
+      "height": 19,
+      "x": 21.1484375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 420.5385416666667,
+    "y": 1292,
+    "width": 184,
+    "height": 109
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State8_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State8_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 7,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c6",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c6",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State8_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State8_____________",
+      "width": 141.703125,
+      "height": 19,
+      "x": 21.1484375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 401.04375000000005,
+    "y": 222,
+    "width": 184,
+    "height": 109
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "State9_____________",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State9_____________",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 8,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 141.703125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "c9",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "c9",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "State9_____________",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 141.703125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "State9_____________",
+      "width": 141.703125,
+      "height": 19,
+      "x": 21.1484375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(149.703125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 401.04375000000005,
+    "y": 12,
+    "width": 184,
+    "height": 109
+   },
+   {
+    "labelStyle": "",
+    "shape": "stateStart",
+    "label": "root_start",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "root_start",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 14,
+    "height": 14,
+    "x": 606.2104166666667,
+    "y": 1448
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "root_start",
+    "end": "State1_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "root_start"
+    ],
+    "targets": [
+     "State1_____________"
+    ],
+    "sourceId": "root_start",
+    "targetId": "State1_____________",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge0_s0",
+      "startPoint": {
+       "x": 616.2104166666667,
+       "y": 1462
+      },
+      "endPoint": {
+       "x": 553.5385416666667,
+       "y": 1502
+      },
+      "bendPoints": [
+       {
+        "x": 616.2104166666667,
+        "y": 1482
+       },
+       {
+        "x": 553.5385416666667,
+        "y": 1482
+       }
+      ],
+      "incomingShape": "root_start",
+      "outgoingShape": "State1_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge1",
+    "start": "State1_____________",
+    "end": "State2_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition1_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition1_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State1_____________"
+    ],
+    "targets": [
+     "State2_____________"
+    ],
+    "sourceId": "State1_____________",
+    "targetId": "State2_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition1_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 12,
+      "y": 1336
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge1_s0",
+      "startPoint": {
+       "x": 471.5385416666667,
+       "y": 1502
+      },
+      "endPoint": {
+       "x": 197.67187499999997,
+       "y": 1171
+      },
+      "bendPoints": [
+       {
+        "x": 471.5385416666667,
+        "y": 1482
+       },
+       {
+        "x": 66,
+        "y": 1482
+       },
+       {
+        "x": 66,
+        "y": 1451.5
+       },
+       {
+        "x": 66,
+        "y": 1241.5
+       },
+       {
+        "x": 66,
+        "y": 1191
+       },
+       {
+        "x": 197.67187499999997,
+        "y": 1191
+       }
+      ],
+      "incomingShape": "State1_____________",
+      "outgoingShape": "State2_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge2",
+    "start": "State2_____________",
+    "end": "State4_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition2_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition2_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State2_____________"
+    ],
+    "targets": [
+     "State4_____________"
+    ],
+    "sourceId": "State2_____________",
+    "targetId": "State4_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition2_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 231.63854166666664,
+      "y": 1001
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge2_s0",
+      "startPoint": {
+       "x": 274.2052083333333,
+       "y": 1062
+      },
+      "endPoint": {
+       "x": 310.70781250000005,
+       "y": 961
+      },
+      "bendPoints": [
+       {
+        "x": 274.2052083333333,
+        "y": 1042
+       },
+       {
+        "x": 285.63854166666664,
+        "y": 1042
+       },
+       {
+        "x": 285.63854166666664,
+        "y": 981
+       },
+       {
+        "x": 310.70781250000005,
+        "y": 981
+       }
+      ],
+      "incomingShape": "State2_____________",
+      "outgoingShape": "State4_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge3",
+    "start": "State2_____________",
+    "end": "State3_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition3_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition3_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State2_____________"
+    ],
+    "targets": [
+     "State3_____________"
+    ],
+    "sourceId": "State2_____________",
+    "targetId": "State3_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition3_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 160.83593749999997,
+      "y": 1231
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge3_s0",
+      "startPoint": {
+       "x": 230.47187499999998,
+       "y": 1171
+      },
+      "endPoint": {
+       "x": 224.33854166666666,
+       "y": 1292
+      },
+      "bendPoints": [
+       {
+        "x": 230.47187499999998,
+        "y": 1191
+       },
+       {
+        "x": 214.83593749999997,
+        "y": 1191
+       },
+       {
+        "x": 214.83593749999997,
+        "y": 1272
+       },
+       {
+        "x": 224.33854166666666,
+        "y": 1272
+       }
+      ],
+      "incomingShape": "State2_____________",
+      "outgoingShape": "State3_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge4",
+    "start": "State3_____________",
+    "end": "State2_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "State3_____________"
+    ],
+    "targets": [
+     "State2_____________"
+    ],
+    "sourceId": "State3_____________",
+    "targetId": "State2_____________",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge4_s0",
+      "startPoint": {
+       "x": 279.0052083333333,
+       "y": 1292
+      },
+      "endPoint": {
+       "x": 263.271875,
+       "y": 1171
+      },
+      "bendPoints": [
+       {
+        "x": 279.0052083333333,
+        "y": 1272
+       },
+       {
+        "x": 288.5078125,
+        "y": 1272
+       },
+       {
+        "x": 288.5078125,
+        "y": 1241.5
+       },
+       {
+        "x": 288.5078125,
+        "y": 1211
+       },
+       {
+        "x": 263.271875,
+        "y": 1211
+       }
+      ],
+      "incomingShape": "State3_____________",
+      "outgoingShape": "State2_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge5",
+    "start": "State4_____________",
+    "end": "State2_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition5_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition5_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State4_____________"
+    ],
+    "targets": [
+     "State2_____________"
+    ],
+    "sourceId": "State4_____________",
+    "targetId": "State2_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition5_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 103.96666666666664,
+      "y": 1001
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge5_s0",
+      "startPoint": {
+       "x": 269.7078125,
+       "y": 961
+      },
+      "endPoint": {
+       "x": 219.53854166666665,
+       "y": 1062
+      },
+      "bendPoints": [
+       {
+        "x": 269.7078125,
+        "y": 981
+       },
+       {
+        "x": 157.96666666666664,
+        "y": 981
+       },
+       {
+        "x": 157.96666666666664,
+        "y": 1042
+       },
+       {
+        "x": 219.53854166666665,
+        "y": 1042
+       }
+      ],
+      "incomingShape": "State4_____________",
+      "outgoingShape": "State2_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge6",
+    "start": "State4_____________",
+    "end": "State5_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition6_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition6_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State4_____________"
+    ],
+    "targets": [
+     "State5_____________"
+    ],
+    "sourceId": "State4_____________",
+    "targetId": "State5_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition6_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 218.13593749999998,
+      "y": 686
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge6_s0",
+      "startPoint": {
+       "x": 283.3744791666667,
+       "y": 852
+      },
+      "endPoint": {
+       "x": 452.04375000000005,
+       "y": 541
+      },
+      "bendPoints": [
+       {
+        "x": 283.3744791666667,
+        "y": 832
+       },
+       {
+        "x": 272.13593749999995,
+        "y": 832
+       },
+       {
+        "x": 272.13593749999995,
+        "y": 801.5
+       },
+       {
+        "x": 272.13593749999995,
+        "y": 591.5
+       },
+       {
+        "x": 272.13593749999995,
+        "y": 561
+       },
+       {
+        "x": 452.04375000000005,
+        "y": 561
+       }
+      ],
+      "incomingShape": "State4_____________",
+      "outgoingShape": "State5_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge7",
+    "start": "State5_____________",
+    "end": "State6_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition7_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition7_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State5_____________"
+    ],
+    "targets": [
+     "State6_____________"
+    ],
+    "sourceId": "State5_____________",
+    "targetId": "State6_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition7_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 437.97187500000007,
+      "y": 581
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge7_s0",
+      "startPoint": {
+       "x": 493.04375000000005,
+       "y": 541
+      },
+      "endPoint": {
+       "x": 491.97187500000007,
+       "y": 642
+      },
+      "bendPoints": [
+       {
+        "x": 493.04375000000005,
+        "y": 561
+       },
+       {
+        "x": 491.97187500000007,
+        "y": 561
+       }
+      ],
+      "incomingShape": "State5_____________",
+      "outgoingShape": "State6_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge8",
+    "start": "State6_____________",
+    "end": "State4_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition8_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition8_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State6_____________"
+    ],
+    "targets": [
+     "State4_____________"
+    ],
+    "sourceId": "State6_____________",
+    "targetId": "State4_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition8_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 317.8052083333333,
+      "y": 791
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge8_s0",
+      "startPoint": {
+       "x": 464.6385416666667,
+       "y": 751
+      },
+      "endPoint": {
+       "x": 338.0411458333333,
+       "y": 852
+      },
+      "bendPoints": [
+       {
+        "x": 464.6385416666667,
+        "y": 771
+       },
+       {
+        "x": 371.8052083333333,
+        "y": 771
+       },
+       {
+        "x": 371.8052083333333,
+        "y": 832
+       },
+       {
+        "x": 338.0411458333333,
+        "y": 832
+       }
+      ],
+      "incomingShape": "State6_____________",
+      "outgoingShape": "State4_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge9",
+    "start": "State2_____________",
+    "end": "State7_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition4_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition4_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State2_____________"
+    ],
+    "targets": [
+     "State7_____________"
+    ],
+    "sourceId": "State2_____________",
+    "targetId": "State7_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition4_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 315.171875,
+      "y": 1231
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge9_s0",
+      "startPoint": {
+       "x": 296.071875,
+       "y": 1171
+      },
+      "endPoint": {
+       "x": 463.33854166666663,
+       "y": 1292
+      },
+      "bendPoints": [
+       {
+        "x": 296.071875,
+        "y": 1191
+       },
+       {
+        "x": 369.171875,
+        "y": 1191
+       },
+       {
+        "x": 369.171875,
+        "y": 1272
+       },
+       {
+        "x": 463.33854166666663,
+        "y": 1272
+       }
+      ],
+      "incomingShape": "State2_____________",
+      "outgoingShape": "State7_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge10",
+    "start": "State4_____________",
+    "end": "State7_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition4_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition4_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State4_____________"
+    ],
+    "targets": [
+     "State7_____________"
+    ],
+    "sourceId": "State4_____________",
+    "targetId": "State7_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition4_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 421.0385416666667,
+      "y": 1106
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge10_s0",
+      "startPoint": {
+       "x": 351.70781250000005,
+       "y": 961
+      },
+      "endPoint": {
+       "x": 496.1385416666667,
+       "y": 1292
+      },
+      "bendPoints": [
+       {
+        "x": 351.70781250000005,
+        "y": 981
+       },
+       {
+        "x": 475.0385416666667,
+        "y": 981
+       },
+       {
+        "x": 475.0385416666667,
+        "y": 1011.5
+       },
+       {
+        "x": 475.0385416666667,
+        "y": 1241.5
+       },
+       {
+        "x": 475.0385416666667,
+        "y": 1272
+       },
+       {
+        "x": 496.1385416666667,
+        "y": 1272
+       }
+      ],
+      "incomingShape": "State4_____________",
+      "outgoingShape": "State7_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge11",
+    "start": "State5_____________",
+    "end": "State7_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition4_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition4_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State5_____________"
+    ],
+    "targets": [
+     "State7_____________"
+    ],
+    "sourceId": "State5_____________",
+    "targetId": "State7_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition4_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 575.871875,
+      "y": 896
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge11_s0",
+      "startPoint": {
+       "x": 534.04375,
+       "y": 541
+      },
+      "endPoint": {
+       "x": 561.7385416666667,
+       "y": 1292
+      },
+      "bendPoints": [
+       {
+        "x": 534.04375,
+        "y": 561
+       },
+       {
+        "x": 629.871875,
+        "y": 561
+       },
+       {
+        "x": 629.871875,
+        "y": 591.5
+       },
+       {
+        "x": 629.871875,
+        "y": 696.5
+       },
+       {
+        "x": 629.871875,
+        "y": 801.5
+       },
+       {
+        "x": 629.871875,
+        "y": 1011.5
+       },
+       {
+        "x": 629.871875,
+        "y": 1116.5
+       },
+       {
+        "x": 629.871875,
+        "y": 1241.5
+       },
+       {
+        "x": 629.871875,
+        "y": 1272
+       },
+       {
+        "x": 561.7385416666667,
+        "y": 1272
+       }
+      ],
+      "incomingShape": "State5_____________",
+      "outgoingShape": "State7_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge12",
+    "start": "State6_____________",
+    "end": "State7_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition4_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition4_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State6_____________"
+    ],
+    "targets": [
+     "State7_____________"
+    ],
+    "sourceId": "State6_____________",
+    "targetId": "State7_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition4_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 496.0385416666667,
+      "y": 1001
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge12_s0",
+      "startPoint": {
+       "x": 519.3052083333333,
+       "y": 751
+      },
+      "endPoint": {
+       "x": 528.9385416666667,
+       "y": 1292
+      },
+      "bendPoints": [
+       {
+        "x": 519.3052083333333,
+        "y": 771
+       },
+       {
+        "x": 550.0385416666667,
+        "y": 771
+       },
+       {
+        "x": 550.0385416666667,
+        "y": 801.5
+       },
+       {
+        "x": 550.0385416666667,
+        "y": 906.5
+       },
+       {
+        "x": 550.0385416666667,
+        "y": 1116.5
+       },
+       {
+        "x": 550.0385416666667,
+        "y": 1241.5
+       },
+       {
+        "x": 550.0385416666667,
+        "y": 1272
+       },
+       {
+        "x": 528.9385416666667,
+        "y": 1272
+       }
+      ],
+      "incomingShape": "State6_____________",
+      "outgoingShape": "State7_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge13",
+    "start": "State7_____________",
+    "end": "State1_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition9_____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition9_____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State7_____________"
+    ],
+    "targets": [
+     "State1_____________"
+    ],
+    "sourceId": "State7_____________",
+    "targetId": "State1_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition9_____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 458.5385416666667,
+      "y": 1441
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge13_s0",
+      "startPoint": {
+       "x": 512.5385416666667,
+       "y": 1401
+      },
+      "endPoint": {
+       "x": 512.5385416666667,
+       "y": 1502
+      },
+      "incomingShape": "State7_____________",
+      "outgoingShape": "State1_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge14",
+    "start": "State5_____________",
+    "end": "State8_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition10____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition10____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State5_____________"
+    ],
+    "targets": [
+     "State8_____________"
+    ],
+    "sourceId": "State5_____________",
+    "targetId": "State8_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition10____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 500.8052083333333,
+      "y": 371
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge14_s0",
+      "startPoint": {
+       "x": 520.3770833333333,
+       "y": 432
+      },
+      "endPoint": {
+       "x": 520.3770833333333,
+       "y": 331
+      },
+      "bendPoints": [
+       {
+        "x": 520.3770833333333,
+        "y": 412
+       },
+       {
+        "x": 554.8052083333333,
+        "y": 412
+       },
+       {
+        "x": 554.8052083333333,
+        "y": 351
+       },
+       {
+        "x": 520.3770833333333,
+        "y": 351
+       }
+      ],
+      "incomingShape": "State5_____________",
+      "outgoingShape": "State8_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge15",
+    "start": "State8_____________",
+    "end": "State5_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition11____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition11____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 106.640625,
+    "height": 21,
+    "sources": [
+     "State8_____________"
+    ],
+    "targets": [
+     "State5_____________"
+    ],
+    "sourceId": "State8_____________",
+    "targetId": "State5_____________",
+    "labels": [
+     {
+      "width": 106.640625,
+      "height": 21,
+      "orgWidth": 106.640625,
+      "orgHeight": 21,
+      "text": "Transition11____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 374.1645833333333,
+      "y": 371
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge15_s0",
+      "startPoint": {
+       "x": 465.7104166666667,
+       "y": 331
+      },
+      "endPoint": {
+       "x": 465.7104166666667,
+       "y": 432
+      },
+      "bendPoints": [
+       {
+        "x": 465.7104166666667,
+        "y": 351
+       },
+       {
+        "x": 427.6645833333333,
+        "y": 351
+       },
+       {
+        "x": 427.6645833333333,
+        "y": 412
+       },
+       {
+        "x": 465.7104166666667,
+        "y": 412
+       }
+      ],
+      "incomingShape": "State8_____________",
+      "outgoingShape": "State5_____________"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge16",
+    "start": "State9_____________",
+    "end": "State8_____________",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "Transition12____",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "Transition12____",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 107.671875,
+    "height": 21,
+    "sources": [
+     "State9_____________"
+    ],
+    "targets": [
+     "State8_____________"
+    ],
+    "sourceId": "State9_____________",
+    "targetId": "State8_____________",
+    "labels": [
+     {
+      "width": 107.671875,
+      "height": 21,
+      "orgWidth": 107.671875,
+      "orgHeight": 21,
+      "text": "Transition12____",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 439.04375000000005,
+      "y": 161
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge16_s0",
+      "startPoint": {
+       "x": 493.04375000000005,
+       "y": 121
+      },
+      "endPoint": {
+       "x": 493.04375000000005,
+       "y": 222
+      },
+      "incomingShape": "State9_____________",
+      "outgoingShape": "State8_____________"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 695.54375,
+  "height": 1623
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.State1_____________.c0]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.State2_____________.c1]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.State3_____________.c7]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.State4_____________.c2]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.State5_____________.c3]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.State6_____________.c4]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.State7_____________.c5]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.State8_____________.c6]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 136",
+       "RIGHTUP size is 136",
+       "LEFTDOWN size is 136",
+       "LEFTUP size is 136",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.State9_____________.c9]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_State9_____________ ports: [p_0[n_State9_____________] >> 1[n(label)_0]]",
+         "Layer 0: L_0[n_State9_____________]",
+         "Layer 1: L_1[n(label)_0]",
+         "Node n_State8_____________ ports: [p_0[n_State8_____________] >> 1[n(label)_1], p_1[n_State8_____________] >> 1[n(label)_0], p_2[n_State8_____________] << 0[n(label)_0]]",
+         "Layer 2: L_2[n_State8_____________]",
+         "Layer 3: L_3[n(label)_0, n(label)_1]",
+         "Node n_State5_____________ ports: [p_0[n_State5_____________] >> 1[n(long_edge)_1], p_1[n_State5_____________] >> 1[n(label)_0], p_2[n_State5_____________] >> 1[n(long_edge)_2], p_3[n_State5_____________] << 0[n(label)_1], p_4[n_State5_____________] << 0[n(label)_0]]",
+         "Layer 4: L_4[n_State5_____________]",
+         "Layer 5: L_5[n(long_edge)_0, n(label)_1, n(long_edge)_2]",
+         "Node n_State6_____________ ports: [p_0[n_State6_____________] >> 1[n(label)_0], p_1[n_State6_____________] >> 1[n(long_edge)_3], p_2[n_State6_____________] << 0[n(label)_1]]",
+         "Layer 6: L_6[n(label)_0, n_State6_____________, n(long_edge)_2]",
+         "Layer 7: L_7[n(long_edge)_0, n(label)_1, n(long_edge)_2, n(label)_3]",
+         "Node n_State4_____________ ports: [p_0[n_State4_____________] >> 1[n(label)_1], p_1[n_State4_____________] >> 1[n(label)_0], p_2[n_State4_____________] >> 1[n(long_edge)_2], p_3[n_State4_____________] << 0[n(label)_1], p_4[n_State4_____________] << 0[n(long_edge)_0]]",
+         "Layer 8: L_8[n_State4_____________, n(label)_1, n(long_edge)_2]",
+         "Layer 9: L_9[n(label)_0, n(label)_1, n(long_edge)_2, n(long_edge)_3, n(long_edge)_4]",
+         "Node n_State2_____________ ports: [p_0[n_State2_____________] >> 1[n(long_edge)_2], p_1[n_State2_____________] >> 1[n(label)_1], p_2[n_State2_____________] >> 1[n(long_edge)_3], p_3[n_State2_____________] >> 1[n(label)_0], p_4[n_State2_____________] << 0[n(label)_1], p_5[n_State2_____________] << 0[n(label)_0]]",
+         "Layer 10: L_10[n_State2_____________, n(label)_1, n(long_edge)_2, n(long_edge)_3]",
+         "Layer 11: L_11[n(long_edge)_0, n(label)_1, n(long_edge)_2, n(label)_3, n(long_edge)_4, n(long_edge)_5, n(long_edge)_6]",
+         "Node n_State7_____________ ports: [p_0[n_State7_____________] >> 1[n(label)_1], p_1[n_State7_____________] << 0[n(long_edge)_6], p_2[n_State7_____________] << 0[n(long_edge)_5], p_3[n_State7_____________] << 0[n(long_edge)_4], p_4[n_State7_____________] << 0[n(label)_3]]",
+         "Node n_State3_____________ ports: [p_0[n_State3_____________] << 0[n(long_edge)_2], p_1[n_State3_____________] << 0[n(label)_1]]",
+         "Layer 12: L_12[n(label)_0, n_State3_____________, n_State7_____________]",
+         "Node n_root.root_start ports: [p_0[n_root.root_start] >> 0[n_State1_____________]]",
+         "Layer 13: L_13[n(long_edge)_0, n(label)_1, n_root.root_start]",
+         "Node n_State1_____________ ports: [p_0[n_State1_____________] << 0[n_root.root_start], p_1[n_State1_____________] << 0[n(label)_1], p_2[n_State1_____________] << 0[n(long_edge)_0]]",
+         "Layer 14: L_14[n_State1_____________]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 650.94375",
+         "RIGHTUP size is 692.14375",
+         "LEFTDOWN size is 691.815625",
+         "LEFTUP size is 701.7437500000001",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_State9_____________, n(label)_0, n_State8_____________, n(label)_0, n(label)_1, n_State5_____________, n(long_edge)_0, n(label)_1, n(long_edge)_2, n(label)_0, n_State6_____________, n(long_edge)_2, n(long_edge)_0, n(label)_1, n(long_edge)_2, n(long_edge)_3, n_State4_____________, n(long_edge)_1, n(label)_2, n(label)_0, n(label)_1, n(long_edge)_2, n(label)_3, n(long_edge)_4, n_State2_____________, n(label)_1, n(long_edge)_2, n(long_edge)_3, n(long_edge)_0, n(label)_1, n(long_edge)_2, n(label)_3, n(long_edge)_4, n(long_edge)_5, n(long_edge)_6, n(label)_0, n_State3_____________, n_State7_____________, n(long_edge)_0, n(label)_1, n_root.root_start, n_State1_____________]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

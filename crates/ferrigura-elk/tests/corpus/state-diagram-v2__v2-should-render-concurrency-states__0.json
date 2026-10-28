@@ -1,0 +1,2925 @@
+{
+ "version": 1,
+ "name": "state-diagram-v2__v2-should-render-concurrency-states__0",
+ "fixture": "e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-concurrency-states.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "stateStart",
+    "label": "root_start",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "root_start",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 14,
+    "height": 14
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "Active",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "Active",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 50.421875,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "divider",
+      "label": "",
+      "cssClasses": " statediagram-state statediagram-cluster statediagram-cluster-alt",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "divider-id-1",
+      "dir": "TB",
+      "type": "group",
+      "isGroup": true,
+      "colorIndex": 0,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Active",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "labelBBox": {
+       "width": 0,
+       "height": 0
+      },
+      "children": [
+       {
+        "labelStyle": "",
+        "shape": "stateStart",
+        "label": "divider-id-1_start",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "divider-id-1_start",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 14,
+        "height": 14
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "NumLockOff",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "NumLockOff",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "NumLockOn",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "NumLockOn",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37
+       }
+      ],
+      "labelData": {
+       "width": 0,
+       "height": 0,
+       "wrappingWidth": 120
+      },
+      "labels": [
+       {
+        "text": "",
+        "width": 0,
+        "height": 0
+       }
+      ],
+      "layoutOptions": {
+       "spacing.baseValue": 24,
+       "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+       "elk.spacing.edgeEdge": 20,
+       "spacing.nodeNode": 50,
+       "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+       "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+       "elk.layered.mergeEdges": false,
+       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+       "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+       "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+       "elk.algorithm": "elk.layered",
+       "elk.direction": "DOWN",
+       "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+      }
+     },
+     {
+      "labelStyle": "",
+      "shape": "divider",
+      "label": "",
+      "cssClasses": " statediagram-state statediagram-cluster statediagram-cluster-alt",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "divider-id-2",
+      "dir": "TB",
+      "type": "group",
+      "isGroup": true,
+      "colorIndex": 0,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Active",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "labelBBox": {
+       "width": 0,
+       "height": 0
+      },
+      "children": [
+       {
+        "labelStyle": "",
+        "shape": "stateStart",
+        "label": "divider-id-2_start",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "divider-id-2_start",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-2",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 14,
+        "height": 14
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "CapsLockOff",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "CapsLockOff",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-2",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "CapsLockOn",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "CapsLockOn",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-2",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37
+       }
+      ],
+      "labelData": {
+       "width": 0,
+       "height": 0,
+       "wrappingWidth": 120
+      },
+      "labels": [
+       {
+        "text": "",
+        "width": 0,
+        "height": 0
+       }
+      ],
+      "layoutOptions": {
+       "spacing.baseValue": 24,
+       "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+       "elk.spacing.edgeEdge": 20,
+       "spacing.nodeNode": 50,
+       "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+       "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+       "elk.layered.mergeEdges": false,
+       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+       "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+       "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+       "elk.algorithm": "elk.layered",
+       "elk.direction": "DOWN",
+       "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+      }
+     },
+     {
+      "labelStyle": "",
+      "shape": "divider",
+      "label": "",
+      "cssClasses": " statediagram-state statediagram-cluster statediagram-cluster-alt",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "id-91clr3ah1p-1",
+      "dir": "TB",
+      "type": "group",
+      "isGroup": true,
+      "colorIndex": 0,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Active",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "labelBBox": {
+       "width": 0,
+       "height": 0
+      },
+      "children": [
+       {
+        "labelStyle": "",
+        "shape": "stateStart",
+        "label": "id-91clr3ah1p-1_start",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "id-91clr3ah1p-1_start",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "id-91clr3ah1p-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 14,
+        "height": 14
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "ScrollLockOff",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "ScrollLockOff",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "id-91clr3ah1p-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "ScrollLockOn",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "ScrollLockOn",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "id-91clr3ah1p-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37
+       }
+      ],
+      "labelData": {
+       "width": 0,
+       "height": 0,
+       "wrappingWidth": 120
+      },
+      "labels": [
+       {
+        "text": "",
+        "width": 0,
+        "height": 0
+       }
+      ],
+      "layoutOptions": {
+       "spacing.baseValue": 24,
+       "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+       "elk.spacing.edgeEdge": 20,
+       "spacing.nodeNode": 50,
+       "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+       "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+       "elk.layered.mergeEdges": false,
+       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+       "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+       "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+       "elk.algorithm": "elk.layered",
+       "elk.direction": "DOWN",
+       "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+      }
+     }
+    ],
+    "labelData": {
+     "width": 50.421875,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "Active",
+      "width": 50.421875,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(58.421875, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "root_start",
+    "end": "Active",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "root_start"
+    ],
+    "targets": [
+     "Active"
+    ],
+    "sourceId": "root_start",
+    "targetId": "Active",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge1",
+    "start": "divider-id-1_start",
+    "end": "NumLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "divider-id-1_start"
+    ],
+    "targets": [
+     "NumLockOff"
+    ],
+    "sourceId": "divider-id-1_start",
+    "targetId": "NumLockOff",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge2",
+    "start": "NumLockOff",
+    "end": "NumLockOn",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvNumLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvNumLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 134.421875,
+    "height": 21,
+    "sources": [
+     "NumLockOff"
+    ],
+    "targets": [
+     "NumLockOn"
+    ],
+    "sourceId": "NumLockOff",
+    "targetId": "NumLockOn",
+    "labels": [
+     {
+      "width": 134.421875,
+      "height": 21,
+      "orgWidth": 134.421875,
+      "orgHeight": 21,
+      "text": "EvNumLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge3",
+    "start": "NumLockOn",
+    "end": "NumLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvNumLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvNumLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 134.421875,
+    "height": 21,
+    "sources": [
+     "NumLockOn"
+    ],
+    "targets": [
+     "NumLockOff"
+    ],
+    "sourceId": "NumLockOn",
+    "targetId": "NumLockOff",
+    "labels": [
+     {
+      "width": 134.421875,
+      "height": 21,
+      "orgWidth": 134.421875,
+      "orgHeight": 21,
+      "text": "EvNumLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge4",
+    "start": "divider-id-2_start",
+    "end": "CapsLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "divider-id-2_start"
+    ],
+    "targets": [
+     "CapsLockOff"
+    ],
+    "sourceId": "divider-id-2_start",
+    "targetId": "CapsLockOff",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge5",
+    "start": "CapsLockOff",
+    "end": "CapsLockOn",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvCapsLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvCapsLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "CapsLockOff"
+    ],
+    "targets": [
+     "CapsLockOn"
+    ],
+    "sourceId": "CapsLockOff",
+    "targetId": "CapsLockOn",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "EvCapsLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge6",
+    "start": "CapsLockOn",
+    "end": "CapsLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvCapsLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvCapsLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "CapsLockOn"
+    ],
+    "targets": [
+     "CapsLockOff"
+    ],
+    "sourceId": "CapsLockOn",
+    "targetId": "CapsLockOff",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "EvCapsLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge7",
+    "start": "id-91clr3ah1p-1_start",
+    "end": "ScrollLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "id-91clr3ah1p-1_start"
+    ],
+    "targets": [
+     "ScrollLockOff"
+    ],
+    "sourceId": "id-91clr3ah1p-1_start",
+    "targetId": "ScrollLockOff",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge8",
+    "start": "ScrollLockOff",
+    "end": "ScrollLockOn",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvCapsLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvCapsLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "ScrollLockOff"
+    ],
+    "targets": [
+     "ScrollLockOn"
+    ],
+    "sourceId": "ScrollLockOff",
+    "targetId": "ScrollLockOn",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "EvCapsLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge9",
+    "start": "ScrollLockOn",
+    "end": "ScrollLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvCapsLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvCapsLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "ScrollLockOn"
+    ],
+    "targets": [
+     "ScrollLockOff"
+    ],
+    "sourceId": "ScrollLockOn",
+    "targetId": "ScrollLockOff",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "EvCapsLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "stateStart",
+    "label": "root_start",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "root_start",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 14,
+    "height": 14,
+    "x": 383.25,
+    "y": 12
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "Active",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "Active",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 50.421875,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "divider",
+      "label": "",
+      "cssClasses": " statediagram-state statediagram-cluster statediagram-cluster-alt",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "divider-id-1",
+      "dir": "TB",
+      "type": "group",
+      "isGroup": true,
+      "colorIndex": 0,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Active",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "labelBBox": {
+       "width": 0,
+       "height": 0
+      },
+      "children": [
+       {
+        "labelStyle": "",
+        "shape": "stateStart",
+        "label": "divider-id-1_start",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "divider-id-1_start",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 14,
+        "height": 14,
+        "x": 157.9109375,
+        "y": 24
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "NumLockOff",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "NumLockOff",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37,
+        "x": 100.7109375,
+        "y": 62
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "NumLockOn",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "NumLockOn",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37,
+        "x": 100.7109375,
+        "y": 240
+       }
+      ],
+      "labelData": {
+       "width": 0,
+       "height": 0,
+       "wrappingWidth": 120
+      },
+      "labels": [
+       {
+        "text": "",
+        "width": 0,
+        "height": 0,
+        "x": 0,
+        "y": 0
+       }
+      ],
+      "layoutOptions": {
+       "spacing.baseValue": 24,
+       "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+       "elk.spacing.edgeEdge": 20,
+       "spacing.nodeNode": 50,
+       "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+       "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+       "elk.layered.mergeEdges": false,
+       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+       "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+       "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+       "elk.algorithm": "elk.layered",
+       "elk.direction": "DOWN",
+       "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+      },
+      "x": 24,
+      "y": 48,
+      "width": 336.84375,
+      "height": 301
+     },
+     {
+      "labelStyle": "",
+      "shape": "divider",
+      "label": "",
+      "cssClasses": " statediagram-state statediagram-cluster statediagram-cluster-alt",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "divider-id-2",
+      "dir": "TB",
+      "type": "group",
+      "isGroup": true,
+      "colorIndex": 0,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Active",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "labelBBox": {
+       "width": 0,
+       "height": 0
+      },
+      "children": [
+       {
+        "labelStyle": "",
+        "shape": "stateStart",
+        "label": "divider-id-2_start",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "divider-id-2_start",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-2",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 14,
+        "height": 14,
+        "x": 166.1140625,
+        "y": 24
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "CapsLockOff",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "CapsLockOff",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-2",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37,
+        "x": 108.9140625,
+        "y": 62
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "CapsLockOn",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "CapsLockOn",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "divider-id-2",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37,
+        "x": 108.9140625,
+        "y": 240
+       }
+      ],
+      "labelData": {
+       "width": 0,
+       "height": 0,
+       "wrappingWidth": 120
+      },
+      "labels": [
+       {
+        "text": "",
+        "width": 0,
+        "height": 0,
+        "x": 0,
+        "y": 0
+       }
+      ],
+      "layoutOptions": {
+       "spacing.baseValue": 24,
+       "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+       "elk.spacing.edgeEdge": 20,
+       "spacing.nodeNode": 50,
+       "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+       "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+       "elk.layered.mergeEdges": false,
+       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+       "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+       "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+       "elk.algorithm": "elk.layered",
+       "elk.direction": "DOWN",
+       "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+      },
+      "x": 384.84375,
+      "y": 48,
+      "width": 353.65625,
+      "height": 301
+     },
+     {
+      "labelStyle": "",
+      "shape": "divider",
+      "label": "",
+      "cssClasses": " statediagram-state statediagram-cluster statediagram-cluster-alt",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "id-91clr3ah1p-1",
+      "dir": "TB",
+      "type": "group",
+      "isGroup": true,
+      "colorIndex": 0,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "Active",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "labelBBox": {
+       "width": 0,
+       "height": 0
+      },
+      "children": [
+       {
+        "labelStyle": "",
+        "shape": "stateStart",
+        "label": "id-91clr3ah1p-1_start",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "id-91clr3ah1p-1_start",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "id-91clr3ah1p-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 14,
+        "height": 14,
+        "x": 166.1140625,
+        "y": 24
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "ScrollLockOff",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "ScrollLockOff",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "id-91clr3ah1p-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37,
+        "x": 108.9140625,
+        "y": 62
+       },
+       {
+        "labelStyle": "",
+        "shape": "roundedRect",
+        "label": "ScrollLockOn",
+        "cssClasses": " statediagram-state",
+        "cssCompiledStyles": [],
+        "cssStyles": [],
+        "id": "ScrollLockOn",
+        "isGroup": false,
+        "padding": 8,
+        "rx": 10,
+        "ry": 10,
+        "look": "neo",
+        "labelType": "markdown",
+        "parentId": "id-91clr3ah1p-1",
+        "centerLabel": true,
+        "wrappingWidth": 120,
+        "minWidth": 120,
+        "width": 136,
+        "height": 37,
+        "x": 108.9140625,
+        "y": 240
+       }
+      ],
+      "labelData": {
+       "width": 0,
+       "height": 0,
+       "wrappingWidth": 120
+      },
+      "labels": [
+       {
+        "text": "",
+        "width": 0,
+        "height": 0,
+        "x": 0,
+        "y": 0
+       }
+      ],
+      "layoutOptions": {
+       "spacing.baseValue": 24,
+       "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+       "elk.spacing.edgeEdge": 20,
+       "spacing.nodeNode": 50,
+       "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+       "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+       "elk.layered.mergeEdges": false,
+       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+       "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+       "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+       "elk.algorithm": "elk.layered",
+       "elk.direction": "DOWN",
+       "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+      },
+      "x": 24,
+      "y": 373,
+      "width": 353.65625,
+      "height": 301
+     }
+    ],
+    "labelData": {
+     "width": 50.421875,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "Active",
+      "width": 50.421875,
+      "height": 19,
+      "x": 356.0390625,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(58.421875, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 12,
+    "y": 66,
+    "width": 762.5,
+    "height": 698
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "root_start",
+    "end": "Active",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "root_start"
+    ],
+    "targets": [
+     "Active"
+    ],
+    "sourceId": "root_start",
+    "targetId": "Active",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge0_s0",
+      "startPoint": {
+       "x": 393.25,
+       "y": 26
+      },
+      "endPoint": {
+       "x": 393.25,
+       "y": 66
+      },
+      "incomingShape": "root_start",
+      "outgoingShape": "Active"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge1",
+    "start": "divider-id-1_start",
+    "end": "NumLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "divider-id-1_start"
+    ],
+    "targets": [
+     "NumLockOff"
+    ],
+    "sourceId": "divider-id-1_start",
+    "targetId": "NumLockOff",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge1_s0",
+      "startPoint": {
+       "x": 168.7109375,
+       "y": 38
+      },
+      "endPoint": {
+       "x": 168.7109375,
+       "y": 62
+      },
+      "incomingShape": "divider-id-1_start",
+      "outgoingShape": "NumLockOff"
+     }
+    ],
+    "container": "divider-id-1"
+   },
+   {
+    "id": "edge2",
+    "start": "NumLockOff",
+    "end": "NumLockOn",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvNumLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvNumLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 134.421875,
+    "height": 21,
+    "sources": [
+     "NumLockOff"
+    ],
+    "targets": [
+     "NumLockOn"
+    ],
+    "sourceId": "NumLockOff",
+    "targetId": "NumLockOn",
+    "labels": [
+     {
+      "width": 134.421875,
+      "height": 21,
+      "orgWidth": 134.421875,
+      "orgHeight": 21,
+      "text": "EvNumLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 178.421875,
+      "y": 159
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge2_s0",
+      "startPoint": {
+       "x": 187.77760416666666,
+       "y": 99
+      },
+      "endPoint": {
+       "x": 187.77760416666666,
+       "y": 240
+      },
+      "bendPoints": [
+       {
+        "x": 187.77760416666666,
+        "y": 129
+       },
+       {
+        "x": 245.921875,
+        "y": 129
+       },
+       {
+        "x": 245.921875,
+        "y": 210
+       },
+       {
+        "x": 187.77760416666666,
+        "y": 210
+       }
+      ],
+      "incomingShape": "NumLockOff",
+      "outgoingShape": "NumLockOn"
+     }
+    ],
+    "container": "divider-id-1"
+   },
+   {
+    "id": "edge3",
+    "start": "NumLockOn",
+    "end": "NumLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvNumLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvNumLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 134.421875,
+    "height": 21,
+    "sources": [
+     "NumLockOn"
+    ],
+    "targets": [
+     "NumLockOff"
+    ],
+    "sourceId": "NumLockOn",
+    "targetId": "NumLockOff",
+    "labels": [
+     {
+      "width": 134.421875,
+      "height": 21,
+      "orgWidth": 134.421875,
+      "orgHeight": 21,
+      "text": "EvNumLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 24,
+      "y": 159
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge3_s0",
+      "startPoint": {
+       "x": 149.64427083333334,
+       "y": 240
+      },
+      "endPoint": {
+       "x": 149.64427083333334,
+       "y": 99
+      },
+      "bendPoints": [
+       {
+        "x": 149.64427083333334,
+        "y": 210
+       },
+       {
+        "x": 91.5,
+        "y": 210
+       },
+       {
+        "x": 91.5,
+        "y": 129
+       },
+       {
+        "x": 149.64427083333334,
+        "y": 129
+       }
+      ],
+      "incomingShape": "NumLockOn",
+      "outgoingShape": "NumLockOff"
+     }
+    ],
+    "container": "divider-id-1"
+   },
+   {
+    "id": "edge4",
+    "start": "divider-id-2_start",
+    "end": "CapsLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "divider-id-2_start"
+    ],
+    "targets": [
+     "CapsLockOff"
+    ],
+    "sourceId": "divider-id-2_start",
+    "targetId": "CapsLockOff",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge4_s0",
+      "startPoint": {
+       "x": 176.9140625,
+       "y": 38
+      },
+      "endPoint": {
+       "x": 176.9140625,
+       "y": 62
+      },
+      "incomingShape": "divider-id-2_start",
+      "outgoingShape": "CapsLockOff"
+     }
+    ],
+    "container": "divider-id-2"
+   },
+   {
+    "id": "edge5",
+    "start": "CapsLockOff",
+    "end": "CapsLockOn",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvCapsLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvCapsLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "CapsLockOff"
+    ],
+    "targets": [
+     "CapsLockOn"
+    ],
+    "sourceId": "CapsLockOff",
+    "targetId": "CapsLockOn",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "EvCapsLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 186.828125,
+      "y": 159
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge5_s0",
+      "startPoint": {
+       "x": 195.98072916666666,
+       "y": 99
+      },
+      "endPoint": {
+       "x": 195.98072916666666,
+       "y": 240
+      },
+      "bendPoints": [
+       {
+        "x": 195.98072916666666,
+        "y": 129
+       },
+       {
+        "x": 258.328125,
+        "y": 129
+       },
+       {
+        "x": 258.328125,
+        "y": 210
+       },
+       {
+        "x": 195.98072916666666,
+        "y": 210
+       }
+      ],
+      "incomingShape": "CapsLockOff",
+      "outgoingShape": "CapsLockOn"
+     }
+    ],
+    "container": "divider-id-2"
+   },
+   {
+    "id": "edge6",
+    "start": "CapsLockOn",
+    "end": "CapsLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvCapsLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvCapsLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "CapsLockOn"
+    ],
+    "targets": [
+     "CapsLockOff"
+    ],
+    "sourceId": "CapsLockOn",
+    "targetId": "CapsLockOff",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "EvCapsLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 24,
+      "y": 159
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge6_s0",
+      "startPoint": {
+       "x": 157.84739583333334,
+       "y": 240
+      },
+      "endPoint": {
+       "x": 157.84739583333334,
+       "y": 99
+      },
+      "bendPoints": [
+       {
+        "x": 157.84739583333334,
+        "y": 210
+       },
+       {
+        "x": 95.5,
+        "y": 210
+       },
+       {
+        "x": 95.5,
+        "y": 129
+       },
+       {
+        "x": 157.84739583333334,
+        "y": 129
+       }
+      ],
+      "incomingShape": "CapsLockOn",
+      "outgoingShape": "CapsLockOff"
+     }
+    ],
+    "container": "divider-id-2"
+   },
+   {
+    "id": "edge7",
+    "start": "id-91clr3ah1p-1_start",
+    "end": "ScrollLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "id-91clr3ah1p-1_start"
+    ],
+    "targets": [
+     "ScrollLockOff"
+    ],
+    "sourceId": "id-91clr3ah1p-1_start",
+    "targetId": "ScrollLockOff",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge7_s0",
+      "startPoint": {
+       "x": 176.9140625,
+       "y": 38
+      },
+      "endPoint": {
+       "x": 176.9140625,
+       "y": 62
+      },
+      "incomingShape": "id-91clr3ah1p-1_start",
+      "outgoingShape": "ScrollLockOff"
+     }
+    ],
+    "container": "id-91clr3ah1p-1"
+   },
+   {
+    "id": "edge8",
+    "start": "ScrollLockOff",
+    "end": "ScrollLockOn",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvCapsLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvCapsLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "ScrollLockOff"
+    ],
+    "targets": [
+     "ScrollLockOn"
+    ],
+    "sourceId": "ScrollLockOff",
+    "targetId": "ScrollLockOn",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "EvCapsLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 186.828125,
+      "y": 159
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge8_s0",
+      "startPoint": {
+       "x": 195.98072916666666,
+       "y": 99
+      },
+      "endPoint": {
+       "x": 195.98072916666666,
+       "y": 240
+      },
+      "bendPoints": [
+       {
+        "x": 195.98072916666666,
+        "y": 129
+       },
+       {
+        "x": 258.328125,
+        "y": 129
+       },
+       {
+        "x": 258.328125,
+        "y": 210
+       },
+       {
+        "x": 195.98072916666666,
+        "y": 210
+       }
+      ],
+      "incomingShape": "ScrollLockOff",
+      "outgoingShape": "ScrollLockOn"
+     }
+    ],
+    "container": "id-91clr3ah1p-1"
+   },
+   {
+    "id": "edge9",
+    "start": "ScrollLockOn",
+    "end": "ScrollLockOff",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "EvCapsLockPressed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "EvCapsLockPressed",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 142.828125,
+    "height": 21,
+    "sources": [
+     "ScrollLockOn"
+    ],
+    "targets": [
+     "ScrollLockOff"
+    ],
+    "sourceId": "ScrollLockOn",
+    "targetId": "ScrollLockOff",
+    "labels": [
+     {
+      "width": 142.828125,
+      "height": 21,
+      "orgWidth": 142.828125,
+      "orgHeight": 21,
+      "text": "EvCapsLockPressed",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 24,
+      "y": 159
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge9_s0",
+      "startPoint": {
+       "x": 157.84739583333334,
+       "y": 240
+      },
+      "endPoint": {
+       "x": 157.84739583333334,
+       "y": 99
+      },
+      "bendPoints": [
+       {
+        "x": 157.84739583333334,
+        "y": 210
+       },
+       {
+        "x": 95.5,
+        "y": 210
+       },
+       {
+        "x": 95.5,
+        "y": 129
+       },
+       {
+        "x": 157.84739583333334,
+        "y": 129
+       }
+      ],
+      "incomingShape": "ScrollLockOn",
+      "outgoingShape": "ScrollLockOff"
+     }
+    ],
+    "container": "id-91clr3ah1p-1"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 786.5,
+  "height": 776
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 25 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LabelDummyInserter",
+     "   Slot 04: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 05: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 09: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 14: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LabelDummySwitcher",
+     "   Slot 16: org.eclipse.elk.alg.layered.intermediate.LabelSideSelector",
+     "   Slot 17: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 19: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 21: org.eclipse.elk.alg.layered.intermediate.LabelDummyRemover",
+     "   Slot 22: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 23: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 24: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Label dummy insertions"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Label dummy switching"
+     },
+     {
+      "name": "Label side selection (SMART_UP)"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 288.84375",
+       "RIGHTUP size is 288.84375",
+       "LEFTDOWN size is 288.84375",
+       "LEFTUP size is 288.84375",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.Active.divider-id-1.divider-id-1_start, n_root.Active.divider-id-1.NumLockOff, n(label)_0, n(label)_1, n_root.Active.divider-id-1.NumLockOn]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Label dummy removal"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 25 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LabelDummyInserter",
+     "   Slot 04: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 05: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 09: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 14: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LabelDummySwitcher",
+     "   Slot 16: org.eclipse.elk.alg.layered.intermediate.LabelSideSelector",
+     "   Slot 17: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 19: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 21: org.eclipse.elk.alg.layered.intermediate.LabelDummyRemover",
+     "   Slot 22: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 23: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 24: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Label dummy insertions"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Label dummy switching"
+     },
+     {
+      "name": "Label side selection (SMART_UP)"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 305.65625",
+       "RIGHTUP size is 305.65625",
+       "LEFTDOWN size is 305.65625",
+       "LEFTUP size is 305.65625",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.Active.divider-id-2.divider-id-2_start, n_root.Active.divider-id-2.CapsLockOff, n(label)_0, n(label)_1, n_root.Active.divider-id-2.CapsLockOn]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Label dummy removal"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 25 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LabelDummyInserter",
+     "   Slot 04: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 05: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 09: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 14: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LabelDummySwitcher",
+     "   Slot 16: org.eclipse.elk.alg.layered.intermediate.LabelSideSelector",
+     "   Slot 17: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 19: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 21: org.eclipse.elk.alg.layered.intermediate.LabelDummyRemover",
+     "   Slot 22: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 23: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 24: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Label dummy insertions"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Label dummy switching"
+     },
+     {
+      "name": "Label side selection (SMART_UP)"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 305.65625",
+       "RIGHTUP size is 305.65625",
+       "LEFTDOWN size is 305.65625",
+       "LEFTUP size is 305.65625",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.Active.id-91clr3ah1p-1.id-91clr3ah1p-1_start, n_root.Active.id-91clr3ah1p-1.ScrollLockOff, n(label)_0, n(label)_1, n_root.Active.id-91clr3ah1p-1.ScrollLockOn]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Label dummy removal"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Component Layout",
+      "logs": [
+       "ELK Layered uses the following 21 modules:",
+       "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+       "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+       "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+       "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+       "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+       "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+       "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+       "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+       "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+       "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+       "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+       "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+       "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+       "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+       "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+       "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+       "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+       "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+       "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+      ],
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 336.84375",
+         "RIGHTUP size is 336.84375",
+         "LEFTDOWN size is 336.84375",
+         "LEFTUP size is 336.84375",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.Active.divider-id-1]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Component Layout",
+      "logs": [
+       "ELK Layered uses the following 21 modules:",
+       "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+       "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+       "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+       "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+       "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+       "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+       "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+       "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+       "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+       "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+       "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+       "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+       "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+       "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+       "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+       "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+       "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+       "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+       "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+      ],
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 353.65625",
+         "RIGHTUP size is 353.65625",
+         "LEFTDOWN size is 353.65625",
+         "LEFTUP size is 353.65625",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.Active.divider-id-2]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Component Layout",
+      "logs": [
+       "ELK Layered uses the following 21 modules:",
+       "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+       "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+       "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+       "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+       "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+       "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+       "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+       "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+       "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+       "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+       "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+       "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+       "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+       "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+       "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+       "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+       "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+       "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+       "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+       "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+      ],
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 353.65625",
+         "RIGHTUP size is 353.65625",
+         "LEFTDOWN size is 353.65625",
+         "LEFTUP size is 353.65625",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.Active.id-91clr3ah1p-1]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.root_start ports: [p_0[n_root.root_start] >> 0[n_Active]]",
+         "Layer 0: L_0[n_root.root_start]",
+         "Node n_Active ports: [p_0[n_Active] << 0[n_root.root_start]]",
+         "Layer 1: L_1[n_Active]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 762.5",
+         "RIGHTUP size is 762.5",
+         "LEFTDOWN size is 762.5",
+         "LEFTUP size is 762.5",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.root_start, n_Active]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

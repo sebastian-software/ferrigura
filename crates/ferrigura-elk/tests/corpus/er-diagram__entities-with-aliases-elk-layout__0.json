@@ -1,0 +1,1421 @@
+{
+ "version": 1,
+ "name": "er-diagram__entities-with-aliases-elk-layout__0",
+ "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-aliases-elk-layout.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-T1-0",
+    "label": "T1",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81
+   },
+   {
+    "id": "entity-T2-1",
+    "label": "T2",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81
+   },
+   {
+    "id": "entity-T3-2",
+    "label": "T3",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 2,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81
+   },
+   {
+    "id": "entity-T4-3",
+    "label": "T4",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 3,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81
+   },
+   {
+    "id": "entity-T5-4",
+    "label": "T5",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 4,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81
+   },
+   {
+    "id": "entity-T6-5",
+    "label": "T6",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 5,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-T1-0_entity-T2-1_0",
+    "type": "normal",
+    "start": "entity-T1-0",
+    "end": "entity-T2-1",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T1-0"
+    ],
+    "targets": [
+     "entity-T2-1"
+    ],
+    "sourceId": "entity-T1-0",
+    "targetId": "entity-T2-1",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-T2-1_entity-T3-2_1",
+    "type": "normal",
+    "start": "entity-T2-1",
+    "end": "entity-T3-2",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "zero_or_one",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T2-1"
+    ],
+    "targets": [
+     "entity-T3-2"
+    ],
+    "sourceId": "entity-T2-1",
+    "targetId": "entity-T3-2",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-T3-2_entity-T4-3_2",
+    "type": "normal",
+    "start": "entity-T3-2",
+    "end": "entity-T4-3",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_more",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T3-2"
+    ],
+    "targets": [
+     "entity-T4-3"
+    ],
+    "sourceId": "entity-T3-2",
+    "targetId": "entity-T4-3",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-T4-3_entity-T5-4_3",
+    "type": "normal",
+    "start": "entity-T4-3",
+    "end": "entity-T5-4",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T4-3"
+    ],
+    "targets": [
+     "entity-T5-4"
+    ],
+    "sourceId": "entity-T4-3",
+    "targetId": "entity-T5-4",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-T5-4_entity-T6-5_4",
+    "type": "normal",
+    "start": "entity-T5-4",
+    "end": "entity-T6-5",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_more",
+    "arrowTypeEnd": "only_one",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T5-4"
+    ],
+    "targets": [
+     "entity-T6-5"
+    ],
+    "sourceId": "entity-T5-4",
+    "targetId": "entity-T6-5",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-T6-5_entity-T1-0_5",
+    "type": "normal",
+    "start": "entity-T6-5",
+    "end": "entity-T1-0",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "only_one",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T6-5"
+    ],
+    "targets": [
+     "entity-T1-0"
+    ],
+    "sourceId": "entity-T6-5",
+    "targetId": "entity-T1-0",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-T4-3_entity-T6-5_6",
+    "type": "normal",
+    "start": "entity-T4-3",
+    "end": "entity-T6-5",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T4-3"
+    ],
+    "targets": [
+     "entity-T6-5"
+    ],
+    "sourceId": "entity-T4-3",
+    "targetId": "entity-T6-5",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-T1-0_entity-T3-2_7",
+    "type": "normal",
+    "start": "entity-T1-0",
+    "end": "entity-T3-2",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "only_one",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T1-0"
+    ],
+    "targets": [
+     "entity-T3-2"
+    ],
+    "sourceId": "entity-T1-0",
+    "targetId": "entity-T3-2",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-T1-0",
+    "label": "T1",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81,
+    "x": 113.5,
+    "y": 12
+   },
+   {
+    "id": "entity-T2-1",
+    "label": "T2",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81,
+    "x": 12,
+    "y": 194
+   },
+   {
+    "id": "entity-T3-2",
+    "label": "T3",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 2,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81,
+    "x": 62.74999999999999,
+    "y": 376
+   },
+   {
+    "id": "entity-T4-3",
+    "label": "T4",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 3,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81,
+    "x": 62.74999999999999,
+    "y": 558
+   },
+   {
+    "id": "entity-T5-4",
+    "label": "T5",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 4,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81,
+    "x": 12,
+    "y": 740
+   },
+   {
+    "id": "entity-T6-5",
+    "label": "T6",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 5,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81,
+    "x": 113.5,
+    "y": 922
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-T1-0_entity-T2-1_0",
+    "type": "normal",
+    "start": "entity-T1-0",
+    "end": "entity-T2-1",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T1-0"
+    ],
+    "targets": [
+     "entity-T2-1"
+    ],
+    "sourceId": "entity-T1-0",
+    "targetId": "entity-T2-1",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 50.5,
+      "y": 133
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-T1-0_entity-T2-1_0_s0",
+      "startPoint": {
+       "x": 143.5,
+       "y": 93
+      },
+      "endPoint": {
+       "x": 62,
+       "y": 194
+      },
+      "bendPoints": [
+       {
+        "x": 143.5,
+        "y": 113
+       },
+       {
+        "x": 62,
+        "y": 113
+       }
+      ],
+      "incomingShape": "entity-T1-0",
+      "outgoingShape": "entity-T2-1"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-T2-1_entity-T3-2_1",
+    "type": "normal",
+    "start": "entity-T2-1",
+    "end": "entity-T3-2",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "zero_or_one",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T2-1"
+    ],
+    "targets": [
+     "entity-T3-2"
+    ],
+    "sourceId": "entity-T2-1",
+    "targetId": "entity-T3-2",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 50.5,
+      "y": 315
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-T2-1_entity-T3-2_1_s0",
+      "startPoint": {
+       "x": 62,
+       "y": 275
+      },
+      "endPoint": {
+       "x": 99.41666666666667,
+       "y": 376
+      },
+      "bendPoints": [
+       {
+        "x": 62,
+        "y": 356
+       },
+       {
+        "x": 99.41666666666667,
+        "y": 356
+       }
+      ],
+      "incomingShape": "entity-T2-1",
+      "outgoingShape": "entity-T3-2"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-T3-2_entity-T4-3_2",
+    "type": "normal",
+    "start": "entity-T3-2",
+    "end": "entity-T4-3",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_more",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T3-2"
+    ],
+    "targets": [
+     "entity-T4-3"
+    ],
+    "sourceId": "entity-T3-2",
+    "targetId": "entity-T4-3",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 101.24999999999999,
+      "y": 497
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-T3-2_entity-T4-3_2_s0",
+      "startPoint": {
+       "x": 112.74999999999999,
+       "y": 457
+      },
+      "endPoint": {
+       "x": 112.74999999999999,
+       "y": 558
+      },
+      "incomingShape": "entity-T3-2",
+      "outgoingShape": "entity-T4-3"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-T4-3_entity-T5-4_3",
+    "type": "normal",
+    "start": "entity-T4-3",
+    "end": "entity-T5-4",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T4-3"
+    ],
+    "targets": [
+     "entity-T5-4"
+    ],
+    "sourceId": "entity-T4-3",
+    "targetId": "entity-T5-4",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 50.5,
+      "y": 679
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-T4-3_entity-T5-4_3_s0",
+      "startPoint": {
+       "x": 99.41666666666667,
+       "y": 639
+      },
+      "endPoint": {
+       "x": 62,
+       "y": 740
+      },
+      "bendPoints": [
+       {
+        "x": 99.41666666666667,
+        "y": 659
+       },
+       {
+        "x": 62,
+        "y": 659
+       }
+      ],
+      "incomingShape": "entity-T4-3",
+      "outgoingShape": "entity-T5-4"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-T5-4_entity-T6-5_4",
+    "type": "normal",
+    "start": "entity-T5-4",
+    "end": "entity-T6-5",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_more",
+    "arrowTypeEnd": "only_one",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T5-4"
+    ],
+    "targets": [
+     "entity-T6-5"
+    ],
+    "sourceId": "entity-T5-4",
+    "targetId": "entity-T6-5",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 50.5,
+      "y": 861
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-T5-4_entity-T6-5_4_s0",
+      "startPoint": {
+       "x": 62,
+       "y": 821
+      },
+      "endPoint": {
+       "x": 143.5,
+       "y": 922
+      },
+      "bendPoints": [
+       {
+        "x": 62,
+        "y": 902
+       },
+       {
+        "x": 143.5,
+        "y": 902
+       }
+      ],
+      "incomingShape": "entity-T5-4",
+      "outgoingShape": "entity-T6-5"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-T6-5_entity-T1-0_5",
+    "type": "normal",
+    "start": "entity-T6-5",
+    "end": "entity-T1-0",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "only_one",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T6-5"
+    ],
+    "targets": [
+     "entity-T1-0"
+    ],
+    "sourceId": "entity-T6-5",
+    "targetId": "entity-T1-0",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 195.87239583333331,
+      "y": 497
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-T6-5_entity-T1-0_5_s0",
+      "startPoint": {
+       "x": 183.5,
+       "y": 922
+      },
+      "endPoint": {
+       "x": 183.5,
+       "y": 93
+      },
+      "bendPoints": [
+       {
+        "x": 183.5,
+        "y": 902
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 902
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 871.5
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 780.5
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 689.5
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 598.5
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 416.5
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 325.5
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 234.5
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 143.5
+       },
+       {
+        "x": 207.37239583333331,
+        "y": 113
+       },
+       {
+        "x": 183.5,
+        "y": 113
+       }
+      ],
+      "incomingShape": "entity-T6-5",
+      "outgoingShape": "entity-T1-0"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-T4-3_entity-T6-5_6",
+    "type": "normal",
+    "start": "entity-T4-3",
+    "end": "entity-T6-5",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "zero_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T4-3"
+    ],
+    "targets": [
+     "entity-T6-5"
+    ],
+    "sourceId": "entity-T4-3",
+    "targetId": "entity-T6-5",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 152,
+      "y": 770
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-T4-3_entity-T6-5_6_s0",
+      "startPoint": {
+       "x": 126.08333333333333,
+       "y": 639
+      },
+      "endPoint": {
+       "x": 163.5,
+       "y": 922
+      },
+      "bendPoints": [
+       {
+        "x": 126.08333333333333,
+        "y": 659
+       },
+       {
+        "x": 163.5,
+        "y": 659
+       },
+       {
+        "x": 163.5,
+        "y": 689.5
+       },
+       {
+        "x": 163.5,
+        "y": 871.5
+       }
+      ],
+      "incomingShape": "entity-T4-3",
+      "outgoingShape": "entity-T6-5"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-T1-0_entity-T3-2_7",
+    "type": "normal",
+    "start": "entity-T1-0",
+    "end": "entity-T3-2",
+    "label": "test",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "only_one",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "test",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 22.578125,
+    "height": 21,
+    "sources": [
+     "entity-T1-0"
+    ],
+    "targets": [
+     "entity-T3-2"
+    ],
+    "sourceId": "entity-T1-0",
+    "targetId": "entity-T3-2",
+    "labels": [
+     {
+      "width": 22.578125,
+      "height": 21,
+      "orgWidth": 22.578125,
+      "orgHeight": 21,
+      "text": "test",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 152,
+      "y": 224
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-T1-0_entity-T3-2_7_s0",
+      "startPoint": {
+       "x": 163.5,
+       "y": 93
+      },
+      "endPoint": {
+       "x": 126.08333333333333,
+       "y": 376
+      },
+      "bendPoints": [
+       {
+        "x": 163.5,
+        "y": 143.5
+       },
+       {
+        "x": 163.5,
+        "y": 325.5
+       },
+       {
+        "x": 163.5,
+        "y": 356
+       },
+       {
+        "x": 126.08333333333333,
+        "y": 356
+       }
+      ],
+      "incomingShape": "entity-T1-0",
+      "outgoingShape": "entity-T3-2"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 230.45052083333331,
+  "height": 1015
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.entity-T1-0 ports: [p_0[n_root.entity-T1-0] >> 1[n(label)_0], p_1[n_root.entity-T1-0] >> 1[n(long_edge)_1], p_2[n_root.entity-T1-0] >> 1[n(long_edge)_2]]",
+         "Layer 0: L_0[n_root.entity-T1-0]",
+         "Layer 1: L_1[n(label)_0, n(long_edge)_1, n(long_edge)_2]",
+         "Node n_root.entity-T2-1 ports: [p_0[n_root.entity-T2-1] >> 1[n(label)_0], p_1[n_root.entity-T2-1] << 0[n(label)_0]]",
+         "Layer 2: L_2[n_root.entity-T2-1, n(label)_1, n(long_edge)_2]",
+         "Layer 3: L_3[n(label)_0, n(long_edge)_1, n(label)_2]",
+         "Node n_root.entity-T3-2 ports: [p_0[n_root.entity-T3-2] >> 1[n(label)_0], p_1[n_root.entity-T3-2] << 0[n(label)_2], p_2[n_root.entity-T3-2] << 0[n(label)_0]]",
+         "Layer 4: L_4[n_root.entity-T3-2, n(long_edge)_1]",
+         "Layer 5: L_5[n(label)_0, n(long_edge)_1]",
+         "Node n_root.entity-T4-3 ports: [p_0[n_root.entity-T4-3] >> 1[n(label)_0], p_1[n_root.entity-T4-3] >> 1[n(long_edge)_1], p_2[n_root.entity-T4-3] << 0[n(label)_0]]",
+         "Layer 6: L_6[n_root.entity-T4-3, n(long_edge)_1]",
+         "Layer 7: L_7[n(label)_0, n(long_edge)_1, n(long_edge)_2]",
+         "Node n_root.entity-T5-4 ports: [p_0[n_root.entity-T5-4] >> 1[n(label)_0], p_1[n_root.entity-T5-4] << 0[n(label)_0]]",
+         "Layer 8: L_8[n_root.entity-T5-4, n(label)_1, n(long_edge)_2]",
+         "Layer 9: L_9[n(label)_0, n(long_edge)_1, n(long_edge)_2]",
+         "Node n_root.entity-T6-5 ports: [p_0[n_root.entity-T6-5] << 0[n(long_edge)_2], p_1[n_root.entity-T6-5] << 0[n(long_edge)_1], p_2[n_root.entity-T6-5] << 0[n(label)_0]]",
+         "Layer 10: L_10[n_root.entity-T6-5]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 201.5",
+         "RIGHTUP size is 238.16666666666666",
+         "LEFTDOWN size is 201.5",
+         "LEFTUP size is 238.16666666666666",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.entity-T1-0, n(label)_0, n(long_edge)_1, n(long_edge)_2, n_root.entity-T2-1, n(label)_1, n(long_edge)_2, n(label)_0, n(long_edge)_1, n(long_edge)_2, n_root.entity-T3-2, n(long_edge)_1, n(label)_0, n(label)_1, n_root.entity-T4-3, n(long_edge)_1, n(label)_0, n(long_edge)_1, n(long_edge)_2, n_root.entity-T5-4, n(label)_1, n(long_edge)_2, n(label)_0, n(long_edge)_1, n(long_edge)_2, n_root.entity-T6-5]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

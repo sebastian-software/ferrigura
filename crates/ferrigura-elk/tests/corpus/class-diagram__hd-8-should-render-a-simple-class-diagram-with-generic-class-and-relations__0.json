@@ -1,0 +1,885 @@
+{
+ "version": 1,
+ "name": "class-diagram__hd-8-should-render-a-simple-class-diagram-with-generic-class-and-relations__0",
+ "fixture": "e2e/diagrams/class-diagram/pr-check/hd-8-should-render-a-simple-class-diagram-with-generic-class-and-relations.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "Class01",
+    "label": "Class01",
+    "text": "Class01&lt;T&gt;",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "size()",
+      "id": "size",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int chimp",
+      "id": "int chimp"
+     },
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int gorilla",
+      "id": "int gorilla"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 0,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 123.19981384277344,
+    "height": 159.51422119140625
+   },
+   {
+    "id": "AveryLongClass",
+    "label": "AveryLongClass",
+    "text": "AveryLongClass",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 1,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 139.7529754638672,
+    "height": 84.75408172607422
+   },
+   {
+    "id": "Class03",
+    "label": "Class03",
+    "text": "Class03&lt;T&gt;",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 2,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 106.002685546875,
+    "height": 84.53109741210938
+   },
+   {
+    "id": "Class04",
+    "label": "Class04",
+    "text": "Class04&lt;T&gt;",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 3,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 105.65381622314453,
+    "height": 84.5270004272461
+   },
+   {
+    "id": "Class08",
+    "label": "Class08",
+    "text": "Class08",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 4,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 81.67536163330078,
+    "height": 84.62159729003906
+   },
+   {
+    "id": "C2",
+    "label": "C2",
+    "text": "C2",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 5,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 46.07930374145508,
+    "height": 84.27916717529297
+   },
+   {
+    "id": "Class10",
+    "label": "Class10",
+    "text": "Class10&lt;T&gt;",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "test()",
+      "id": "test",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int id",
+      "id": "int id"
+     }
+    ],
+    "annotations": [
+     "service"
+    ],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 6,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 106.50006103515625,
+    "height": 159.26856994628906
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_Class01_AveryLongClass_1",
+    "start": "Class01",
+    "end": "AveryLongClass",
+    "type": "normal",
+    "label": "Cool",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "extension",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "",
+    "endLabelLeft": "",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "handDrawn",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Cool",
+    "arrowhead": "normal",
+    "width": 28.796875,
+    "height": 21,
+    "sources": [
+     "Class01"
+    ],
+    "targets": [
+     "AveryLongClass"
+    ],
+    "sourceId": "Class01",
+    "targetId": "AveryLongClass",
+    "labels": [
+     {
+      "width": 28.796875,
+      "height": 21,
+      "orgWidth": 28.796875,
+      "orgHeight": 21,
+      "text": "Cool",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Class03_Class04_2",
+    "start": "Class03",
+    "end": "Class04",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "composition",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "",
+    "endLabelLeft": "",
+    "arrowheadStyle": "",
+    "labelStyle": [
+     "display: inline-block"
+    ],
+    "style": "",
+    "pattern": "solid",
+    "look": "handDrawn",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "sources": [
+     "Class03"
+    ],
+    "targets": [
+     "Class04"
+    ],
+    "sourceId": "Class03",
+    "targetId": "Class04",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Class08_C2_3",
+    "start": "Class08",
+    "end": "C2",
+    "type": "normal",
+    "label": "Cool label",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "dependency",
+    "arrowTypeEnd": "dependency",
+    "startLabelRight": "",
+    "endLabelLeft": "",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "handDrawn",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Cool label",
+    "arrowhead": "normal",
+    "width": 62.265625,
+    "height": 21,
+    "sources": [
+     "Class08"
+    ],
+    "targets": [
+     "C2"
+    ],
+    "sourceId": "Class08",
+    "targetId": "C2",
+    "labels": [
+     {
+      "width": 62.265625,
+      "height": 21,
+      "orgWidth": 62.265625,
+      "orgHeight": 21,
+      "text": "Cool label",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "Class01",
+    "label": "Class01",
+    "text": "Class01&lt;T&gt;",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "size()",
+      "id": "size",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int chimp",
+      "id": "int chimp"
+     },
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int gorilla",
+      "id": "int gorilla"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 0,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 123.19981384277344,
+    "height": 159.51422119140625,
+    "x": 20.276580810546875,
+    "y": 12
+   },
+   {
+    "id": "AveryLongClass",
+    "label": "AveryLongClass",
+    "text": "AveryLongClass",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 1,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 139.7529754638672,
+    "height": 84.75408172607422,
+    "x": 12,
+    "y": 336.04122161865234
+   },
+   {
+    "id": "Class03",
+    "label": "Class03",
+    "text": "Class03&lt;T&gt;",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 2,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 106.002685546875,
+    "height": 84.53109741210938,
+    "x": 183.4763946533203,
+    "y": 86.98312377929688
+   },
+   {
+    "id": "Class04",
+    "label": "Class04",
+    "text": "Class04&lt;T&gt;",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 3,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 105.65381622314453,
+    "height": 84.5270004272461,
+    "x": 183.65082931518555,
+    "y": 211.51422119140625
+   },
+   {
+    "id": "Class08",
+    "label": "Class08",
+    "text": "Class08",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 4,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 81.67536163330078,
+    "height": 84.62159729003906,
+    "x": 329.4790802001953,
+    "y": 86.89262390136719
+   },
+   {
+    "id": "C2",
+    "label": "C2",
+    "text": "C2",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 5,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 46.07930374145508,
+    "height": 84.27916717529297,
+    "x": 347.27710914611816,
+    "y": 336.04122161865234
+   },
+   {
+    "id": "Class10",
+    "label": "Class10",
+    "text": "Class10&lt;T&gt;",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "test()",
+      "id": "test",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int id",
+      "id": "int id"
+     }
+    ],
+    "annotations": [
+     "service"
+    ],
+    "styles": [],
+    "isGroup": false,
+    "look": "handDrawn",
+    "colorIndex": 6,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 106.50006103515625,
+    "height": 159.26856994628906,
+    "x": 451.1544418334961,
+    "y": 12.122825622558594
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_Class01_AveryLongClass_1",
+    "start": "Class01",
+    "end": "AveryLongClass",
+    "type": "normal",
+    "label": "Cool",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "extension",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "",
+    "endLabelLeft": "",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "handDrawn",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Cool",
+    "arrowhead": "normal",
+    "width": 28.796875,
+    "height": 21,
+    "sources": [
+     "Class01"
+    ],
+    "targets": [
+     "AveryLongClass"
+    ],
+    "sourceId": "Class01",
+    "targetId": "AveryLongClass",
+    "labels": [
+     {
+      "width": 28.796875,
+      "height": 21,
+      "orgWidth": 28.796875,
+      "orgHeight": 21,
+      "text": "Cool",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 67.3764877319336,
+      "y": 243.2777214050293
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class01_AveryLongClass_1_s0",
+      "startPoint": {
+       "x": 81.8764877319336,
+       "y": 171.51422119140625
+      },
+      "endPoint": {
+       "x": 81.8764877319336,
+       "y": 336.04122161865234
+      },
+      "incomingShape": "Class01",
+      "outgoingShape": "AveryLongClass"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Class03_Class04_2",
+    "start": "Class03",
+    "end": "Class04",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "composition",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "",
+    "endLabelLeft": "",
+    "arrowheadStyle": "",
+    "labelStyle": [
+     "display: inline-block"
+    ],
+    "style": "",
+    "pattern": "solid",
+    "look": "handDrawn",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "sources": [
+     "Class03"
+    ],
+    "targets": [
+     "Class04"
+    ],
+    "sourceId": "Class03",
+    "targetId": "Class04",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class03_Class04_2_s0",
+      "startPoint": {
+       "x": 236.4777374267578,
+       "y": 171.51422119140625
+      },
+      "endPoint": {
+       "x": 236.4777374267578,
+       "y": 211.51422119140625
+      },
+      "incomingShape": "Class03",
+      "outgoingShape": "Class04"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Class08_C2_3",
+    "start": "Class08",
+    "end": "C2",
+    "type": "normal",
+    "label": "Cool label",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "dependency",
+    "arrowTypeEnd": "dependency",
+    "startLabelRight": "",
+    "endLabelLeft": "",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "handDrawn",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Cool label",
+    "arrowhead": "normal",
+    "width": 62.265625,
+    "height": 21,
+    "sources": [
+     "Class08"
+    ],
+    "targets": [
+     "C2"
+    ],
+    "sourceId": "Class08",
+    "targetId": "C2",
+    "labels": [
+     {
+      "width": 62.265625,
+      "height": 21,
+      "orgWidth": 62.265625,
+      "orgHeight": 21,
+      "text": "Cool label",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 338.8167610168457,
+      "y": 243.2777214050293
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class08_C2_3_s0",
+      "startPoint": {
+       "x": 370.3167610168457,
+       "y": 171.51422119140625
+      },
+      "endPoint": {
+       "x": 370.3167610168457,
+       "y": 336.04122161865234
+      },
+      "incomingShape": "Class08",
+      "outgoingShape": "C2"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 569.6545028686523,
+  "height": 432.79530334472656
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         },
+         {
+          "name": "Network simplex"
+         },
+         {
+          "name": "Network simplex"
+         },
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.Class01 ports: [p_0[n_root.Class01] >> 1[n(label)_0]]",
+         "Node n_root.Class03 ports: [p_0[n_root.Class03] >> 0[n_root.Class04]]",
+         "Node n_root.Class08 ports: [p_0[n_root.Class08] >> 1[n(label)_2]]",
+         "Node n_root.Class10 ports: []",
+         "Layer 0: L_0[n_root.Class01, n_root.Class03, n_root.Class08, n_root.Class10]",
+         "Node n_root.Class04 ports: [p_0[n_root.Class04] << 0[n_root.Class03]]",
+         "Layer 1: L_1[n(label)_0, n_root.Class04, n(label)_2]",
+         "Node n_root.AveryLongClass ports: [p_0[n_root.AveryLongClass] << 0[n(label)_0]]",
+         "Node n_root.C2 ports: [p_0[n_root.C2] << 0[n(label)_2]]",
+         "Layer 2: L_2[n_root.AveryLongClass, n_root.C2]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 545.6545028686523",
+         "RIGHTUP size is 545.6545028686523",
+         "LEFTDOWN size is 545.6545028686523",
+         "LEFTUP size is 545.6545028686523",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.Class01, n_root.Class03, n_root.Class08, n_root.Class10, n(label)_0, n_root.Class04, n(label)_2, n_root.AveryLongClass, n_root.C2]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

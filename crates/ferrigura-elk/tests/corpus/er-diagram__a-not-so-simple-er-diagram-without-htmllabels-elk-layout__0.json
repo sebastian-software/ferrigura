@@ -1,0 +1,1412 @@
+{
+ "version": 1,
+ "name": "er-diagram__a-not-so-simple-er-diagram-without-htmllabels-elk-layout__0",
+ "fixture": "e2e/diagrams/er-diagram/visual-check/a-not-so-simple-er-diagram-without-htmllabels-elk-layout.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-CUSTOMER-0",
+    "label": "CUSTOMER",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 119.859375,
+    "height": 76
+   },
+   {
+    "id": "entity-DELIVERY-ADDRESS-1",
+    "label": "DELIVERY-ADDRESS",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 152.046875,
+    "height": 91.4000015258789
+   },
+   {
+    "id": "entity-ORDER-2",
+    "label": "ORDER",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 2,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 76
+   },
+   {
+    "id": "entity-INVOICE-3",
+    "label": "INVOICE",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 3,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 97.578125,
+    "height": 76
+   },
+   {
+    "id": "entity-ORDER-ITEM-4",
+    "label": "ORDER-ITEM",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 4,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 128.671875,
+    "height": 76
+   },
+   {
+    "id": "entity-PRODUCT-CATEGORY-5",
+    "label": "PRODUCT-CATEGORY",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 5,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 149.421875,
+    "height": 91.4000015258789
+   },
+   {
+    "id": "entity-PRODUCT-6",
+    "label": "PRODUCT",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 6,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 109.234375,
+    "height": 76
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-CUSTOMER-0_entity-DELIVERY-ADDRESS-1_0",
+    "type": "normal",
+    "start": "entity-CUSTOMER-0",
+    "end": "entity-DELIVERY-ADDRESS-1",
+    "label": "has",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "has",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 26.578125,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-CUSTOMER-0"
+    ],
+    "targets": [
+     "entity-DELIVERY-ADDRESS-1"
+    ],
+    "sourceId": "entity-CUSTOMER-0",
+    "targetId": "entity-DELIVERY-ADDRESS-1",
+    "labels": [
+     {
+      "width": 26.578125,
+      "height": 19.999998092651367,
+      "orgWidth": 26.578125,
+      "orgHeight": 19.999998092651367,
+      "text": "has",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-CUSTOMER-0_entity-ORDER-2_1",
+    "type": "normal",
+    "start": "entity-CUSTOMER-0",
+    "end": "entity-ORDER-2",
+    "label": "places",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "places",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 44.46875,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-CUSTOMER-0"
+    ],
+    "targets": [
+     "entity-ORDER-2"
+    ],
+    "sourceId": "entity-CUSTOMER-0",
+    "targetId": "entity-ORDER-2",
+    "labels": [
+     {
+      "width": 44.46875,
+      "height": 19.999998092651367,
+      "orgWidth": 44.46875,
+      "orgHeight": 19.999998092651367,
+      "text": "places",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-CUSTOMER-0_entity-INVOICE-3_2",
+    "type": "normal",
+    "start": "entity-CUSTOMER-0",
+    "end": "entity-INVOICE-3",
+    "label": "liable for",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "liable for",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 57.1220703125,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-CUSTOMER-0"
+    ],
+    "targets": [
+     "entity-INVOICE-3"
+    ],
+    "sourceId": "entity-CUSTOMER-0",
+    "targetId": "entity-INVOICE-3",
+    "labels": [
+     {
+      "width": 57.1220703125,
+      "height": 19.999998092651367,
+      "orgWidth": 57.1220703125,
+      "orgHeight": 19.999998092651367,
+      "text": "liable for",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-DELIVERY-ADDRESS-1_entity-ORDER-2_3",
+    "type": "normal",
+    "start": "entity-DELIVERY-ADDRESS-1",
+    "end": "entity-ORDER-2",
+    "label": "receives",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "receives",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 56.140625,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-DELIVERY-ADDRESS-1"
+    ],
+    "targets": [
+     "entity-ORDER-2"
+    ],
+    "sourceId": "entity-DELIVERY-ADDRESS-1",
+    "targetId": "entity-ORDER-2",
+    "labels": [
+     {
+      "width": 56.140625,
+      "height": 19.999998092651367,
+      "orgWidth": 56.140625,
+      "orgHeight": 19.999998092651367,
+      "text": "receives",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-INVOICE-3_entity-ORDER-2_4",
+    "type": "normal",
+    "start": "entity-INVOICE-3",
+    "end": "entity-ORDER-2",
+    "label": "covers",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "covers",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 45.234375,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-INVOICE-3"
+    ],
+    "targets": [
+     "entity-ORDER-2"
+    ],
+    "sourceId": "entity-INVOICE-3",
+    "targetId": "entity-ORDER-2",
+    "labels": [
+     {
+      "width": 45.234375,
+      "height": 19.999998092651367,
+      "orgWidth": 45.234375,
+      "orgHeight": 19.999998092651367,
+      "text": "covers",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-ORDER-2_entity-ORDER-ITEM-4_5",
+    "type": "normal",
+    "start": "entity-ORDER-2",
+    "end": "entity-ORDER-ITEM-4",
+    "label": "includes",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "includes",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 55.375,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-ORDER-2"
+    ],
+    "targets": [
+     "entity-ORDER-ITEM-4"
+    ],
+    "sourceId": "entity-ORDER-2",
+    "targetId": "entity-ORDER-ITEM-4",
+    "labels": [
+     {
+      "width": 55.375,
+      "height": 19.999998092651367,
+      "orgWidth": 55.375,
+      "orgHeight": 19.999998092651367,
+      "text": "includes",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-PRODUCT-CATEGORY-5_entity-PRODUCT-6_6",
+    "type": "normal",
+    "start": "entity-PRODUCT-CATEGORY-5",
+    "end": "entity-PRODUCT-6",
+    "label": "contains",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "contains",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 56.15625,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-PRODUCT-CATEGORY-5"
+    ],
+    "targets": [
+     "entity-PRODUCT-6"
+    ],
+    "sourceId": "entity-PRODUCT-CATEGORY-5",
+    "targetId": "entity-PRODUCT-6",
+    "labels": [
+     {
+      "width": 56.15625,
+      "height": 19.999998092651367,
+      "orgWidth": 56.15625,
+      "orgHeight": 19.999998092651367,
+      "text": "contains",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-PRODUCT-6_entity-ORDER-ITEM-4_7",
+    "type": "normal",
+    "start": "entity-PRODUCT-6",
+    "end": "entity-ORDER-ITEM-4",
+    "label": "ordered in",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "ordered in",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 67.0625,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-PRODUCT-6"
+    ],
+    "targets": [
+     "entity-ORDER-ITEM-4"
+    ],
+    "sourceId": "entity-PRODUCT-6",
+    "targetId": "entity-ORDER-ITEM-4",
+    "labels": [
+     {
+      "width": 67.0625,
+      "height": 19.999998092651367,
+      "orgWidth": 67.0625,
+      "orgHeight": 19.999998092651367,
+      "text": "ordered in",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-CUSTOMER-0",
+    "label": "CUSTOMER",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 119.859375,
+    "height": 76,
+    "x": 166.6171875,
+    "y": 12
+   },
+   {
+    "id": "entity-DELIVERY-ADDRESS-1",
+    "label": "DELIVERY-ADDRESS",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 152.046875,
+    "height": 91.4000015258789,
+    "x": 12,
+    "y": 187.99999809265137
+   },
+   {
+    "id": "entity-ORDER-2",
+    "label": "ORDER",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 2,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 76,
+    "x": 176.546875,
+    "y": 379.39999771118164
+   },
+   {
+    "id": "entity-INVOICE-3",
+    "label": "INVOICE",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 3,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 97.578125,
+    "height": 76,
+    "x": 288.515625,
+    "y": 195.69999885559082
+   },
+   {
+    "id": "entity-ORDER-ITEM-4",
+    "label": "ORDER-ITEM",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 4,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 128.671875,
+    "height": 76,
+    "x": 299.33984375,
+    "y": 555.399995803833
+   },
+   {
+    "id": "entity-PRODUCT-CATEGORY-5",
+    "label": "PRODUCT-CATEGORY",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 5,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 149.421875,
+    "height": 91.4000015258789,
+    "x": 426.09375,
+    "y": 187.99999809265137
+   },
+   {
+    "id": "entity-PRODUCT-6",
+    "label": "PRODUCT",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 6,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "labelStyle": "",
+    "width": 109.234375,
+    "height": 76,
+    "x": 446.1875,
+    "y": 379.39999771118164
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-CUSTOMER-0_entity-DELIVERY-ADDRESS-1_0",
+    "type": "normal",
+    "start": "entity-CUSTOMER-0",
+    "end": "entity-DELIVERY-ADDRESS-1",
+    "label": "has",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "has",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 26.578125,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-CUSTOMER-0"
+    ],
+    "targets": [
+     "entity-DELIVERY-ADDRESS-1"
+    ],
+    "sourceId": "entity-CUSTOMER-0",
+    "targetId": "entity-DELIVERY-ADDRESS-1",
+    "labels": [
+     {
+      "width": 26.578125,
+      "height": 19.999998092651367,
+      "orgWidth": 26.578125,
+      "orgHeight": 19.999998092651367,
+      "text": "has",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 74.5234375,
+      "y": 128
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-CUSTOMER-0_entity-DELIVERY-ADDRESS-1_0_s0",
+      "startPoint": {
+       "x": 201.58203125,
+       "y": 88
+      },
+      "endPoint": {
+       "x": 88.0234375,
+       "y": 187.99999809265137
+      },
+      "bendPoints": [
+       {
+        "x": 201.58203125,
+        "y": 108
+       },
+       {
+        "x": 88.0234375,
+        "y": 108
+       }
+      ],
+      "incomingShape": "entity-CUSTOMER-0",
+      "outgoingShape": "entity-DELIVERY-ADDRESS-1"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-CUSTOMER-0_entity-ORDER-2_1",
+    "type": "normal",
+    "start": "entity-CUSTOMER-0",
+    "end": "entity-ORDER-2",
+    "label": "places",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "places",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 44.46875,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-CUSTOMER-0"
+    ],
+    "targets": [
+     "entity-ORDER-2"
+    ],
+    "sourceId": "entity-CUSTOMER-0",
+    "targetId": "entity-ORDER-2",
+    "labels": [
+     {
+      "width": 44.46875,
+      "height": 19.999998092651367,
+      "orgWidth": 44.46875,
+      "orgHeight": 19.999998092651367,
+      "text": "places",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 204.046875,
+      "y": 223.69999980926514
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-CUSTOMER-0_entity-ORDER-2_1_s0",
+      "startPoint": {
+       "x": 226.546875,
+       "y": 88
+      },
+      "endPoint": {
+       "x": 226.546875,
+       "y": 379.39999771118164
+      },
+      "bendPoints": [
+       {
+        "x": 226.546875,
+        "y": 137.99999904632568
+       },
+       {
+        "x": 226.546875,
+        "y": 329.39999866485596
+       }
+      ],
+      "incomingShape": "entity-CUSTOMER-0",
+      "outgoingShape": "entity-ORDER-2"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-CUSTOMER-0_entity-INVOICE-3_2",
+    "type": "normal",
+    "start": "entity-CUSTOMER-0",
+    "end": "entity-INVOICE-3",
+    "label": "liable for",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "liable for",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 57.1220703125,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-CUSTOMER-0"
+    ],
+    "targets": [
+     "entity-INVOICE-3"
+    ],
+    "sourceId": "entity-CUSTOMER-0",
+    "targetId": "entity-INVOICE-3",
+    "labels": [
+     {
+      "width": 57.1220703125,
+      "height": 19.999998092651367,
+      "orgWidth": 57.1220703125,
+      "orgHeight": 19.999998092651367,
+      "text": "liable for",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 308.3046875,
+      "y": 128
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-CUSTOMER-0_entity-INVOICE-3_2_s0",
+      "startPoint": {
+       "x": 251.51171875,
+       "y": 88
+      },
+      "endPoint": {
+       "x": 337.3046875,
+       "y": 195.69999885559082
+      },
+      "bendPoints": [
+       {
+        "x": 251.51171875,
+        "y": 108
+       },
+       {
+        "x": 337.3046875,
+        "y": 108
+       }
+      ],
+      "incomingShape": "entity-CUSTOMER-0",
+      "outgoingShape": "entity-INVOICE-3"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-DELIVERY-ADDRESS-1_entity-ORDER-2_3",
+    "type": "normal",
+    "start": "entity-DELIVERY-ADDRESS-1",
+    "end": "entity-ORDER-2",
+    "label": "receives",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "receives",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 56.140625,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-DELIVERY-ADDRESS-1"
+    ],
+    "targets": [
+     "entity-ORDER-2"
+    ],
+    "sourceId": "entity-DELIVERY-ADDRESS-1",
+    "targetId": "entity-ORDER-2",
+    "labels": [
+     {
+      "width": 56.140625,
+      "height": 19.999998092651367,
+      "orgWidth": 56.140625,
+      "orgHeight": 19.999998092651367,
+      "text": "receives",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 59.5234375,
+      "y": 319.3999996185303
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-DELIVERY-ADDRESS-1_entity-ORDER-2_3_s0",
+      "startPoint": {
+       "x": 88.0234375,
+       "y": 279.3999996185303
+      },
+      "endPoint": {
+       "x": 206.546875,
+       "y": 379.39999771118164
+      },
+      "bendPoints": [
+       {
+        "x": 88.0234375,
+        "y": 359.39999771118164
+       },
+       {
+        "x": 206.546875,
+        "y": 359.39999771118164
+       }
+      ],
+      "incomingShape": "entity-DELIVERY-ADDRESS-1",
+      "outgoingShape": "entity-ORDER-2"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-INVOICE-3_entity-ORDER-2_4",
+    "type": "normal",
+    "start": "entity-INVOICE-3",
+    "end": "entity-ORDER-2",
+    "label": "covers",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "covers",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 45.234375,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-INVOICE-3"
+    ],
+    "targets": [
+     "entity-ORDER-2"
+    ],
+    "sourceId": "entity-INVOICE-3",
+    "targetId": "entity-ORDER-2",
+    "labels": [
+     {
+      "width": 45.234375,
+      "height": 19.999998092651367,
+      "orgWidth": 45.234375,
+      "orgHeight": 19.999998092651367,
+      "text": "covers",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 314.3046875,
+      "y": 319.3999996185303
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-INVOICE-3_entity-ORDER-2_4_s0",
+      "startPoint": {
+       "x": 337.3046875,
+       "y": 271.6999988555908
+      },
+      "endPoint": {
+       "x": 246.546875,
+       "y": 379.39999771118164
+      },
+      "bendPoints": [
+       {
+        "x": 337.3046875,
+        "y": 359.39999771118164
+       },
+       {
+        "x": 246.546875,
+        "y": 359.39999771118164
+       }
+      ],
+      "incomingShape": "entity-INVOICE-3",
+      "outgoingShape": "entity-ORDER-2"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-ORDER-2_entity-ORDER-ITEM-4_5",
+    "type": "normal",
+    "start": "entity-ORDER-2",
+    "end": "entity-ORDER-ITEM-4",
+    "label": "includes",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "includes",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 55.375,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-ORDER-2"
+    ],
+    "targets": [
+     "entity-ORDER-ITEM-4"
+    ],
+    "sourceId": "entity-ORDER-2",
+    "targetId": "entity-ORDER-ITEM-4",
+    "labels": [
+     {
+      "width": 55.375,
+      "height": 19.999998092651367,
+      "orgWidth": 55.375,
+      "orgHeight": 19.999998092651367,
+      "text": "includes",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 198.546875,
+      "y": 495.39999771118164
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-ORDER-2_entity-ORDER-ITEM-4_5_s0",
+      "startPoint": {
+       "x": 226.546875,
+       "y": 455.39999771118164
+      },
+      "endPoint": {
+       "x": 345.5638020833333,
+       "y": 555.399995803833
+      },
+      "bendPoints": [
+       {
+        "x": 226.546875,
+        "y": 535.399995803833
+       },
+       {
+        "x": 345.5638020833333,
+        "y": 535.399995803833
+       }
+      ],
+      "incomingShape": "entity-ORDER-2",
+      "outgoingShape": "entity-ORDER-ITEM-4"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-PRODUCT-CATEGORY-5_entity-PRODUCT-6_6",
+    "type": "normal",
+    "start": "entity-PRODUCT-CATEGORY-5",
+    "end": "entity-PRODUCT-6",
+    "label": "contains",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "contains",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 56.15625,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-PRODUCT-CATEGORY-5"
+    ],
+    "targets": [
+     "entity-PRODUCT-6"
+    ],
+    "sourceId": "entity-PRODUCT-CATEGORY-5",
+    "targetId": "entity-PRODUCT-6",
+    "labels": [
+     {
+      "width": 56.15625,
+      "height": 19.999998092651367,
+      "orgWidth": 56.15625,
+      "orgHeight": 19.999998092651367,
+      "text": "contains",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 472.3046875,
+      "y": 319.3999996185303
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-PRODUCT-CATEGORY-5_entity-PRODUCT-6_6_s0",
+      "startPoint": {
+       "x": 500.8046875,
+       "y": 279.3999996185303
+      },
+      "endPoint": {
+       "x": 500.8046875,
+       "y": 379.39999771118164
+      },
+      "incomingShape": "entity-PRODUCT-CATEGORY-5",
+      "outgoingShape": "entity-PRODUCT-6"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-PRODUCT-6_entity-ORDER-ITEM-4_7",
+    "type": "normal",
+    "start": "entity-PRODUCT-6",
+    "end": "entity-ORDER-ITEM-4",
+    "label": "ordered in",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "only_one",
+    "arrowTypeEnd": "zero_or_more",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "ordered in",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 67.0625,
+    "height": 19.999998092651367,
+    "sources": [
+     "entity-PRODUCT-6"
+    ],
+    "targets": [
+     "entity-ORDER-ITEM-4"
+    ],
+    "sourceId": "entity-PRODUCT-6",
+    "targetId": "entity-ORDER-ITEM-4",
+    "labels": [
+     {
+      "width": 67.0625,
+      "height": 19.999998092651367,
+      "orgWidth": 67.0625,
+      "orgHeight": 19.999998092651367,
+      "text": "ordered in",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 466.8046875,
+      "y": 495.39999771118164
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-PRODUCT-6_entity-ORDER-ITEM-4_7_s0",
+      "startPoint": {
+       "x": 500.8046875,
+       "y": 455.39999771118164
+      },
+      "endPoint": {
+       "x": 381.78776041666663,
+       "y": 555.399995803833
+      },
+      "bendPoints": [
+       {
+        "x": 500.8046875,
+        "y": 535.399995803833
+       },
+       {
+        "x": 381.78776041666663,
+        "y": 535.399995803833
+       }
+      ],
+      "incomingShape": "entity-PRODUCT-6",
+      "outgoingShape": "entity-ORDER-ITEM-4"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 587.515625,
+  "height": 643.399995803833
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.entity-CUSTOMER-0 ports: [p_0[n_root.entity-CUSTOMER-0] >> 1[n(label)_0], p_1[n_root.entity-CUSTOMER-0] >> 1[n(label)_1], p_2[n_root.entity-CUSTOMER-0] >> 1[n(label)_2]]",
+         "Layer 0: L_0[n_root.entity-CUSTOMER-0]",
+         "Layer 1: L_1[n(label)_0, n(label)_1, n(label)_2]",
+         "Node n_root.entity-DELIVERY-ADDRESS-1 ports: [p_0[n_root.entity-DELIVERY-ADDRESS-1] >> 1[n(label)_0], p_1[n_root.entity-DELIVERY-ADDRESS-1] << 0[n(label)_0]]",
+         "Node n_root.entity-INVOICE-3 ports: [p_0[n_root.entity-INVOICE-3] >> 1[n(label)_1], p_1[n_root.entity-INVOICE-3] << 0[n(label)_2]]",
+         "Node n_root.entity-PRODUCT-CATEGORY-5 ports: [p_0[n_root.entity-PRODUCT-CATEGORY-5] >> 1[n(label)_2]]",
+         "Layer 2: L_2[n_root.entity-DELIVERY-ADDRESS-1, n(long_edge)_1, n_root.entity-INVOICE-3, n_root.entity-PRODUCT-CATEGORY-5]",
+         "Layer 3: L_3[n(label)_0, n(long_edge)_1, n(label)_2, n(label)_3]",
+         "Node n_root.entity-ORDER-2 ports: [p_0[n_root.entity-ORDER-2] >> 1[n(label)_0], p_1[n_root.entity-ORDER-2] << 0[n(label)_2], p_2[n_root.entity-ORDER-2] << 0[n(long_edge)_1], p_3[n_root.entity-ORDER-2] << 0[n(label)_0]]",
+         "Node n_root.entity-PRODUCT-6 ports: [p_0[n_root.entity-PRODUCT-6] >> 1[n(label)_1], p_1[n_root.entity-PRODUCT-6] << 0[n(label)_3]]",
+         "Layer 4: L_4[n_root.entity-ORDER-2, n_root.entity-PRODUCT-6]",
+         "Layer 5: L_5[n(label)_0, n(label)_1]",
+         "Node n_root.entity-ORDER-ITEM-4 ports: [p_0[n_root.entity-ORDER-ITEM-4] << 0[n(label)_1], p_1[n_root.entity-ORDER-ITEM-4] << 0[n(label)_0]]",
+         "Layer 6: L_6[n_root.entity-ORDER-ITEM-4]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 563.515625",
+         "RIGHTUP size is 563.515625",
+         "LEFTDOWN size is 563.515625",
+         "LEFTUP size is 563.515625",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.entity-CUSTOMER-0, n(label)_0, n(long_edge)_1, n(label)_2, n_root.entity-DELIVERY-ADDRESS-1, n(label)_1, n_root.entity-INVOICE-3, n_root.entity-PRODUCT-CATEGORY-5, n(label)_0, n(long_edge)_1, n(label)_2, n(label)_3, n_root.entity-ORDER-2, n_root.entity-PRODUCT-6, n(label)_0, n(label)_1, n_root.entity-ORDER-ITEM-4]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

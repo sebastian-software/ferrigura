@@ -1,0 +1,1593 @@
+{
+ "version": 1,
+ "name": "state-diagram__should-render-forks-in-composit-states__0",
+ "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-forks-in-composit-states.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "stateStart",
+    "label": "root_start",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "root_start",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 14,
+    "height": 14
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "TV",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "TV",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 16.8125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "fork",
+      "label": "",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "fork_state",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 70,
+      "height": 10
+     },
+     {
+      "labelStyle": "",
+      "shape": "stateStart",
+      "label": "TV_start",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "TV_start",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14,
+      "height": 14
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "State2",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "State2",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "State3",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "State3",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     },
+     {
+      "labelStyle": "",
+      "shape": "join",
+      "label": "",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "join_state",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 70,
+      "height": 10
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "State4",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "State4",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37
+     },
+     {
+      "labelStyle": "",
+      "shape": "stateEnd",
+      "label": "TV_end",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "TV_end",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14.013293266296387,
+      "height": 14
+     }
+    ],
+    "labelData": {
+     "width": 16.8125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "TV",
+      "width": 16.8125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(24.8125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "root_start",
+    "end": "TV",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "root_start"
+    ],
+    "targets": [
+     "TV"
+    ],
+    "sourceId": "root_start",
+    "targetId": "TV",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge1",
+    "start": "TV_start",
+    "end": "fork_state",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "TV_start"
+    ],
+    "targets": [
+     "fork_state"
+    ],
+    "sourceId": "TV_start",
+    "targetId": "fork_state",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge2",
+    "start": "fork_state",
+    "end": "State2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "fork_state"
+    ],
+    "targets": [
+     "State2"
+    ],
+    "sourceId": "fork_state",
+    "targetId": "State2",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge3",
+    "start": "fork_state",
+    "end": "State3",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "fork_state"
+    ],
+    "targets": [
+     "State3"
+    ],
+    "sourceId": "fork_state",
+    "targetId": "State3",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge4",
+    "start": "State2",
+    "end": "join_state",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "State2"
+    ],
+    "targets": [
+     "join_state"
+    ],
+    "sourceId": "State2",
+    "targetId": "join_state",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge5",
+    "start": "State3",
+    "end": "join_state",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "State3"
+    ],
+    "targets": [
+     "join_state"
+    ],
+    "sourceId": "State3",
+    "targetId": "join_state",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge6",
+    "start": "join_state",
+    "end": "State4",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "join_state"
+    ],
+    "targets": [
+     "State4"
+    ],
+    "sourceId": "join_state",
+    "targetId": "State4",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge7",
+    "start": "State4",
+    "end": "TV_end",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "State4"
+    ],
+    "targets": [
+     "TV_end"
+    ],
+    "sourceId": "State4",
+    "targetId": "TV_end",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "stateStart",
+    "label": "root_start",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "root_start",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 14,
+    "height": 14,
+    "x": 187,
+    "y": 12
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedWithTitle",
+    "label": "TV",
+    "cssClasses": " statediagram-state statediagram-cluster ",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "TV",
+    "dir": "TB",
+    "type": "group",
+    "isGroup": true,
+    "colorIndex": 0,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 16.8125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "fork",
+      "label": "",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "fork_state",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 70,
+      "height": 10,
+      "x": 150,
+      "y": 86
+     },
+     {
+      "labelStyle": "",
+      "shape": "stateStart",
+      "label": "TV_start",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "TV_start",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14,
+      "height": 14,
+      "x": 174.2,
+      "y": 48
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "State2",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "State2",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 210,
+      "y": 156
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "State3",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "State3",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 24,
+      "y": 156
+     },
+     {
+      "labelStyle": "",
+      "shape": "join",
+      "label": "",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "join_state",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 70,
+      "height": 10,
+      "x": 150,
+      "y": 253
+     },
+     {
+      "labelStyle": "",
+      "shape": "roundedRect",
+      "label": "State4",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "State4",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 136,
+      "height": 37,
+      "x": 117,
+      "y": 287
+     },
+     {
+      "labelStyle": "",
+      "shape": "stateEnd",
+      "label": "TV_end",
+      "cssClasses": " statediagram-state",
+      "cssCompiledStyles": [],
+      "cssStyles": [],
+      "id": "TV_end",
+      "isGroup": false,
+      "padding": 8,
+      "rx": 10,
+      "ry": 10,
+      "look": "neo",
+      "labelType": "markdown",
+      "parentId": "TV",
+      "centerLabel": true,
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 14.013293266296387,
+      "height": 14,
+      "x": 174.2,
+      "y": 348
+     }
+    ],
+    "labelData": {
+     "width": 16.8125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "TV",
+      "width": 16.8125,
+      "height": 19,
+      "x": 176.59375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "nodeSize.constraints": "[MINIMUM_SIZE, NODE_LABELS]",
+     "nodeSize.minimum": "(24.8125, 0)",
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.algorithm": "elk.layered",
+     "elk.direction": "DOWN",
+     "elk.hierarchyHandling": "SEPARATE_CHILDREN"
+    },
+    "x": 12,
+    "y": 66,
+    "width": 370,
+    "height": 386
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge0",
+    "start": "root_start",
+    "end": "TV",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "root_start"
+    ],
+    "targets": [
+     "TV"
+    ],
+    "sourceId": "root_start",
+    "targetId": "TV",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge0_s0",
+      "startPoint": {
+       "x": 197,
+       "y": 26
+      },
+      "endPoint": {
+       "x": 197,
+       "y": 66
+      },
+      "incomingShape": "root_start",
+      "outgoingShape": "TV"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge1",
+    "start": "TV_start",
+    "end": "fork_state",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "TV_start"
+    ],
+    "targets": [
+     "fork_state"
+    ],
+    "sourceId": "TV_start",
+    "targetId": "fork_state",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge1_s0",
+      "startPoint": {
+       "x": 185,
+       "y": 62
+      },
+      "endPoint": {
+       "x": 185,
+       "y": 86
+      },
+      "incomingShape": "TV_start",
+      "outgoingShape": "fork_state"
+     }
+    ],
+    "container": "TV"
+   },
+   {
+    "id": "edge2",
+    "start": "fork_state",
+    "end": "State2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "fork_state"
+    ],
+    "targets": [
+     "State2"
+    ],
+    "sourceId": "fork_state",
+    "targetId": "State2",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge2_s0",
+      "startPoint": {
+       "x": 193.06666666666666,
+       "y": 96
+      },
+      "endPoint": {
+       "x": 278,
+       "y": 156
+      },
+      "bendPoints": [
+       {
+        "x": 193.06666666666666,
+        "y": 126
+       },
+       {
+        "x": 278,
+        "y": 126
+       }
+      ],
+      "incomingShape": "fork_state",
+      "outgoingShape": "State2"
+     }
+    ],
+    "container": "TV"
+   },
+   {
+    "id": "edge3",
+    "start": "fork_state",
+    "end": "State3",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "fork_state"
+    ],
+    "targets": [
+     "State3"
+    ],
+    "sourceId": "fork_state",
+    "targetId": "State3",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge3_s0",
+      "startPoint": {
+       "x": 176.93333333333334,
+       "y": 96
+      },
+      "endPoint": {
+       "x": 92,
+       "y": 156
+      },
+      "bendPoints": [
+       {
+        "x": 176.93333333333334,
+        "y": 126
+       },
+       {
+        "x": 92,
+        "y": 126
+       }
+      ],
+      "incomingShape": "fork_state",
+      "outgoingShape": "State3"
+     }
+    ],
+    "container": "TV"
+   },
+   {
+    "id": "edge4",
+    "start": "State2",
+    "end": "join_state",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "State2"
+    ],
+    "targets": [
+     "join_state"
+    ],
+    "sourceId": "State2",
+    "targetId": "join_state",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge4_s0",
+      "startPoint": {
+       "x": 278,
+       "y": 193
+      },
+      "endPoint": {
+       "x": 193.06666666666666,
+       "y": 253
+      },
+      "bendPoints": [
+       {
+        "x": 278,
+        "y": 223
+       },
+       {
+        "x": 193.06666666666666,
+        "y": 223
+       }
+      ],
+      "incomingShape": "State2",
+      "outgoingShape": "join_state"
+     }
+    ],
+    "container": "TV"
+   },
+   {
+    "id": "edge5",
+    "start": "State3",
+    "end": "join_state",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "State3"
+    ],
+    "targets": [
+     "join_state"
+    ],
+    "sourceId": "State3",
+    "targetId": "join_state",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge5_s0",
+      "startPoint": {
+       "x": 92,
+       "y": 193
+      },
+      "endPoint": {
+       "x": 176.93333333333334,
+       "y": 253
+      },
+      "bendPoints": [
+       {
+        "x": 92,
+        "y": 223
+       },
+       {
+        "x": 176.93333333333334,
+        "y": 223
+       }
+      ],
+      "incomingShape": "State3",
+      "outgoingShape": "join_state"
+     }
+    ],
+    "container": "TV"
+   },
+   {
+    "id": "edge6",
+    "start": "join_state",
+    "end": "State4",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "join_state"
+    ],
+    "targets": [
+     "State4"
+    ],
+    "sourceId": "join_state",
+    "targetId": "State4",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge6_s0",
+      "startPoint": {
+       "x": 185,
+       "y": 263
+      },
+      "endPoint": {
+       "x": 185,
+       "y": 287
+      },
+      "incomingShape": "join_state",
+      "outgoingShape": "State4"
+     }
+    ],
+    "container": "TV"
+   },
+   {
+    "id": "edge7",
+    "start": "State4",
+    "end": "TV_end",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "sources": [
+     "State4"
+    ],
+    "targets": [
+     "TV_end"
+    ],
+    "sourceId": "State4",
+    "targetId": "TV_end",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge7_s0",
+      "startPoint": {
+       "x": 185,
+       "y": 324
+      },
+      "endPoint": {
+       "x": 185,
+       "y": 348
+      },
+      "incomingShape": "State4",
+      "outgoingShape": "TV_end"
+     }
+    ],
+    "container": "TV"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 394,
+  "height": 464
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 21 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.GraphTransformer",
+     "   Slot 01: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 02: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 03: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 04: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer",
+     "   Slot 20: org.eclipse.elk.alg.layered.intermediate.GraphTransformer"
+    ],
+    "children": [
+     {
+      "name": "Graph transformation (TO_INPUT_DIRECTION)"
+     },
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 322",
+       "RIGHTUP size is 322",
+       "LEFTDOWN size is 322",
+       "LEFTUP size is 322",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.TV.TV_start, n_root.TV.fork_state, n_root.TV.State3, n_root.TV.State2, n_root.TV.join_state, n_root.TV.State4, n_root.TV.TV_end]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     },
+     {
+      "name": "Graph transformation (TO_INTERNAL_LTR)"
+     }
+    ]
+   },
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.root_start ports: [p_0[n_root.root_start] >> 0[n_TV]]",
+         "Layer 0: L_0[n_root.root_start]",
+         "Node n_TV ports: [p_0[n_TV] << 0[n_root.root_start]]",
+         "Layer 1: L_1[n_TV]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 370",
+         "RIGHTUP size is 370",
+         "LEFTDOWN size is 370",
+         "LEFTUP size is 370",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.root_start, n_TV]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

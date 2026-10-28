@@ -1,0 +1,663 @@
+{
+ "version": 1,
+ "name": "er-diagram__an-er-diagram-with-blank-or-empty-labels-elk-layout__0",
+ "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-blank-or-empty-labels-elk-layout.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-BOOK-0",
+    "label": "BOOK",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81
+   },
+   {
+    "id": "entity-AUTHOR-1",
+    "label": "AUTHOR",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "labelStyle": "",
+    "width": 99.125,
+    "height": 81
+   },
+   {
+    "id": "entity-GENRE-2",
+    "label": "GENRE",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 2,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-BOOK-0_entity-AUTHOR-1_0",
+    "type": "normal",
+    "start": "entity-BOOK-0",
+    "end": "entity-AUTHOR-1",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": [],
+    "sources": [
+     "entity-BOOK-0"
+    ],
+    "targets": [
+     "entity-AUTHOR-1"
+    ],
+    "sourceId": "entity-BOOK-0",
+    "targetId": "entity-AUTHOR-1",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-BOOK-0_entity-GENRE-2_1",
+    "type": "normal",
+    "start": "entity-BOOK-0",
+    "end": "entity-GENRE-2",
+    "label": " ",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": " ",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 0,
+    "height": 0,
+    "sources": [
+     "entity-BOOK-0"
+    ],
+    "targets": [
+     "entity-GENRE-2"
+    ],
+    "sourceId": "entity-BOOK-0",
+    "targetId": "entity-GENRE-2",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": " ",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_entity-AUTHOR-1_entity-GENRE-2_2",
+    "type": "normal",
+    "start": "entity-AUTHOR-1",
+    "end": "entity-GENRE-2",
+    "label": "  ",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "  ",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 0,
+    "height": 0,
+    "sources": [
+     "entity-AUTHOR-1"
+    ],
+    "targets": [
+     "entity-GENRE-2"
+    ],
+    "sourceId": "entity-AUTHOR-1",
+    "targetId": "entity-GENRE-2",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "  ",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-BOOK-0",
+    "label": "BOOK",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81,
+    "x": 56.59374999999999,
+    "y": 12
+   },
+   {
+    "id": "entity-AUTHOR-1",
+    "label": "AUTHOR",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "labelStyle": "",
+    "width": 99.125,
+    "height": 81,
+    "x": 12,
+    "y": 133
+   },
+   {
+    "id": "entity-GENRE-2",
+    "label": "GENRE",
+    "attributes": [],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 2,
+    "isGroup": false,
+    "width": 100,
+    "labelStyle": "",
+    "height": 81,
+    "x": 56.59374999999999,
+    "y": 294
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-BOOK-0_entity-AUTHOR-1_0",
+    "type": "normal",
+    "start": "entity-BOOK-0",
+    "end": "entity-AUTHOR-1",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": [],
+    "sources": [
+     "entity-BOOK-0"
+    ],
+    "targets": [
+     "entity-AUTHOR-1"
+    ],
+    "sourceId": "entity-BOOK-0",
+    "targetId": "entity-AUTHOR-1",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-BOOK-0_entity-AUTHOR-1_0_s0",
+      "startPoint": {
+       "x": 93.26041666666666,
+       "y": 93
+      },
+      "endPoint": {
+       "x": 61.5625,
+       "y": 133
+      },
+      "bendPoints": [
+       {
+        "x": 93.26041666666666,
+        "y": 113
+       },
+       {
+        "x": 61.5625,
+        "y": 113
+       }
+      ],
+      "incomingShape": "entity-BOOK-0",
+      "outgoingShape": "entity-AUTHOR-1"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-BOOK-0_entity-GENRE-2_1",
+    "type": "normal",
+    "start": "entity-BOOK-0",
+    "end": "entity-GENRE-2",
+    "label": " ",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": " ",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 0,
+    "height": 0,
+    "sources": [
+     "entity-BOOK-0"
+    ],
+    "targets": [
+     "entity-GENRE-2"
+    ],
+    "sourceId": "entity-BOOK-0",
+    "targetId": "entity-GENRE-2",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": " ",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 151.625,
+      "y": 173.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-BOOK-0_entity-GENRE-2_1_s0",
+      "startPoint": {
+       "x": 119.92708333333333,
+       "y": 93
+      },
+      "endPoint": {
+       "x": 119.92708333333333,
+       "y": 294
+      },
+      "bendPoints": [
+       {
+        "x": 119.92708333333333,
+        "y": 113
+       },
+       {
+        "x": 151.625,
+        "y": 113
+       },
+       {
+        "x": 151.625,
+        "y": 254
+       },
+       {
+        "x": 151.625,
+        "y": 274
+       },
+       {
+        "x": 119.92708333333333,
+        "y": 274
+       }
+      ],
+      "incomingShape": "entity-BOOK-0",
+      "outgoingShape": "entity-GENRE-2"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_entity-AUTHOR-1_entity-GENRE-2_2",
+    "type": "normal",
+    "start": "entity-AUTHOR-1",
+    "end": "entity-GENRE-2",
+    "label": "  ",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "  ",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 0,
+    "height": 0,
+    "sources": [
+     "entity-AUTHOR-1"
+    ],
+    "targets": [
+     "entity-GENRE-2"
+    ],
+    "sourceId": "entity-AUTHOR-1",
+    "targetId": "entity-GENRE-2",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "  ",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 61.5625,
+      "y": 254
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-AUTHOR-1_entity-GENRE-2_2_s0",
+      "startPoint": {
+       "x": 61.5625,
+       "y": 214
+      },
+      "endPoint": {
+       "x": 93.26041666666666,
+       "y": 294
+      },
+      "bendPoints": [
+       {
+        "x": 61.5625,
+        "y": 274
+       },
+       {
+        "x": 93.26041666666666,
+        "y": 274
+       }
+      ],
+      "incomingShape": "entity-AUTHOR-1",
+      "outgoingShape": "entity-GENRE-2"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 168.59375,
+  "height": 387
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.entity-BOOK-0 ports: [p_0[n_root.entity-BOOK-0] >> 1[n_root.entity-AUTHOR-1], p_1[n_root.entity-BOOK-0] >> 1[n(long_edge)_1]]",
+         "Layer 0: L_0[n_root.entity-BOOK-0]",
+         "Node n_root.entity-AUTHOR-1 ports: [p_0[n_root.entity-AUTHOR-1] >> 1[n(label)_0], p_1[n_root.entity-AUTHOR-1] << 0[n_root.entity-BOOK-0]]",
+         "Layer 1: L_1[n_root.entity-AUTHOR-1, n(long_edge)_1]",
+         "Layer 2: L_2[n(label)_0, n(label)_1]",
+         "Node n_root.entity-GENRE-2 ports: [p_0[n_root.entity-GENRE-2] << 0[n(label)_1], p_1[n_root.entity-GENRE-2] << 0[n(label)_0]]",
+         "Layer 3: L_3[n_root.entity-GENRE-2]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 140.625",
+         "RIGHTUP size is 176.29166666666666",
+         "LEFTDOWN size is 140.625",
+         "LEFTUP size is 176.29166666666666",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.entity-BOOK-0, n_root.entity-AUTHOR-1, n(label)_1, n(label)_0, n(long_edge)_1, n_root.entity-GENRE-2]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

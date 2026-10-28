@@ -1,0 +1,591 @@
+{
+ "version": 1,
+ "name": "synthetic__compound-edge-into-ancestor",
+ "fixture": null,
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "UP",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "GREEDY",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.mergeEdges": false,
+   "elk.layered.mergeHierarchyEdges": false,
+   "elk.randomSeed": 920,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "g0",
+    "children": [
+     {
+      "id": "g1",
+      "children": [
+       {
+        "id": "g2",
+        "width": 73,
+        "height": 37
+       },
+       {
+        "id": "g3",
+        "width": 34,
+        "height": 45,
+        "labels": [
+         {
+          "text": "Leaf g3",
+          "width": 24,
+          "height": 18
+         }
+        ],
+        "layoutOptions": {
+         "elk.nodeLabels.placement": "[H_CENTER V_CENTER, INSIDE]"
+        }
+       }
+      ],
+      "labels": [
+       {
+        "text": "Group g1",
+        "width": 38,
+        "height": 12
+       }
+      ],
+      "layoutOptions": {
+       "elk.nodeLabels.placement": "[H_LEFT V_TOP, INSIDE]"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g4",
+    "width": 33,
+    "height": 47
+   }
+  ],
+  "edges": [
+   {
+    "id": "e0",
+    "sources": [
+     "g3"
+    ],
+    "targets": [
+     "g0"
+    ],
+    "labels": [
+     {
+      "text": "L0",
+      "width": 22,
+      "height": 17
+     }
+    ]
+   },
+   {
+    "id": "e1",
+    "sources": [
+     "g4"
+    ],
+    "targets": [
+     "g3"
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "UP",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "GREEDY",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.mergeEdges": false,
+   "elk.layered.mergeHierarchyEdges": false,
+   "elk.randomSeed": 920,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "g0",
+    "children": [
+     {
+      "id": "g1",
+      "children": [
+       {
+        "id": "g2",
+        "width": 73,
+        "height": 37,
+        "x": 55,
+        "y": 33
+       },
+       {
+        "id": "g3",
+        "width": 34,
+        "height": 45,
+        "labels": [
+         {
+          "text": "Leaf g3",
+          "width": 24,
+          "height": 18,
+          "x": 5,
+          "y": 13.5
+         }
+        ],
+        "layoutOptions": {
+         "elk.nodeLabels.placement": "[H_CENTER V_CENTER, INSIDE]"
+        },
+        "x": 148,
+        "y": 29
+       }
+      ],
+      "labels": [
+       {
+        "text": "Group g1",
+        "width": 38,
+        "height": 12,
+        "x": 5,
+        "y": 5
+       }
+      ],
+      "layoutOptions": {
+       "elk.nodeLabels.placement": "[H_LEFT V_TOP, INSIDE]"
+      },
+      "x": 12,
+      "y": 27,
+      "width": 194,
+      "height": 86
+     }
+    ],
+    "x": 12,
+    "y": 12,
+    "width": 253,
+    "height": 167
+   },
+   {
+    "id": "g4",
+    "width": 33,
+    "height": 47,
+    "x": 172.5,
+    "y": 224
+   }
+  ],
+  "edges": [
+   {
+    "id": "e0",
+    "sources": [
+     "g3"
+    ],
+    "targets": [
+     "g0"
+    ],
+    "labels": [
+     {
+      "text": "L0",
+      "width": 22,
+      "height": 17,
+      "x": 219,
+      "y": 138
+     }
+    ],
+    "sections": [
+     {
+      "id": "e0_s0",
+      "startPoint": {
+       "x": 177,
+       "y": 56
+      },
+      "endPoint": {
+       "x": 216,
+       "y": 167
+      },
+      "bendPoints": [
+       {
+        "x": 177,
+        "y": 22
+       },
+       {
+        "x": 177,
+        "y": 12
+       },
+       {
+        "x": 216,
+        "y": 12
+       }
+      ],
+      "incomingShape": "g3",
+      "outgoingShape": "g0"
+     }
+    ],
+    "container": "g0"
+   },
+   {
+    "id": "e1",
+    "sources": [
+     "g4"
+    ],
+    "targets": [
+     "g3"
+    ],
+    "sections": [
+     {
+      "id": "e1_s0",
+      "startPoint": {
+       "x": 189,
+       "y": 224
+      },
+      "endPoint": {
+       "x": 189,
+       "y": 113
+      },
+      "bendPoints": [
+       {
+        "x": 189,
+        "y": 184
+       },
+       {
+        "x": 189,
+        "y": 130
+       }
+      ],
+      "incomingShape": "g4",
+      "outgoingShape": "g3"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 277,
+  "height": 283
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Greedy cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         },
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Hierarchical port constraint processing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Greedy cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Hierarchical port constraint processing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Inverted port preprocessing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Greedy cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Inverted port preprocessing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.g4 ports: [p_0[n_root.g4] >> 1[n_root.g0]]",
+         "Layer 0: L_0[n_root.g4]",
+         "Node n_root.g0 ports: [p_0[n_root.g0], p_1[n_root.g0] << 0[n_root.g4]]",
+         "Layer 1: L_1[n_root.g0]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Hierarchical port dummy size processing"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 127",
+         "RIGHTUP size is 127",
+         "LEFTDOWN size is 127",
+         "LEFTUP size is 127",
+         "RIGHTDOWN is feasible: true",
+         "RIGHTUP is feasible: true",
+         "LEFTDOWN is feasible: true",
+         "LEFTUP is feasible: true",
+         "Chosen node placement: RIGHTDOWN",
+         "Blocks: {n(external_port)_0=[n(external_port)_0, n_Leaf g3, n(external_port)_0], n_root.g0.g1.g2=[n_root.g0.g1.g2]}",
+         "Classes: {n_root.g0.g1.g2=[n(external_port)_0, n_root.g0.g1.g2]}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Hierarchical port position processing"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Orthogonally routing hierarchical port edges"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "End label pre-processing"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Hierarchical port dummy size processing"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 229",
+         "RIGHTUP size is 229",
+         "LEFTDOWN size is 229",
+         "LEFTUP size is 229",
+         "RIGHTDOWN is feasible: true",
+         "RIGHTUP is feasible: true",
+         "LEFTDOWN is feasible: true",
+         "LEFTUP is feasible: true",
+         "Chosen node placement: RIGHTDOWN",
+         "Blocks: {n(external_port)_0=[n(external_port)_0, n(long_edge)_0, n_Group g1], n(external_port)_1=[n(external_port)_1, n(label)_1, n(long_edge)_1]}",
+         "Classes: {n(external_port)_0=[n(external_port)_0, n(external_port)_1]}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Hierarchical port position processing"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Orthogonally routing hierarchical port edges"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "End label post-processing"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 253",
+         "RIGHTUP size is 253",
+         "LEFTDOWN size is 253",
+         "LEFTUP size is 253",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.g4, n_root.g0]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

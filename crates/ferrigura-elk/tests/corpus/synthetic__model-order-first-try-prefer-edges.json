@@ -1,0 +1,384 @@
+{
+ "version": 1,
+ "name": "synthetic__model-order-first-try-prefer-edges",
+ "fixture": null,
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "SEPARATE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "RIGHT",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.mergeEdges": false,
+   "elk.randomSeed": 3,
+   "elk.layered.considerModelOrder.strategy": "PREFER_EDGES"
+  },
+  "children": [
+   {
+    "id": "n1",
+    "width": 57,
+    "height": 55
+   },
+   {
+    "id": "n2",
+    "width": 50,
+    "height": 40
+   },
+   {
+    "id": "n3",
+    "width": 43,
+    "height": 47
+   },
+   {
+    "id": "n4",
+    "width": 46,
+    "height": 26
+   }
+  ],
+  "edges": [
+   {
+    "id": "e3",
+    "sources": [
+     "n3"
+    ],
+    "targets": [
+     "n4"
+    ]
+   },
+   {
+    "id": "e4",
+    "sources": [
+     "n2"
+    ],
+    "targets": [
+     "n4"
+    ]
+   },
+   {
+    "id": "e5",
+    "sources": [
+     "n2"
+    ],
+    "targets": [
+     "n4"
+    ]
+   },
+   {
+    "id": "e7",
+    "sources": [
+     "n2"
+    ],
+    "targets": [
+     "n1"
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "SEPARATE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.direction": "RIGHT",
+   "spacing.baseValue": 40,
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.mergeEdges": false,
+   "elk.randomSeed": 3,
+   "elk.layered.considerModelOrder.strategy": "PREFER_EDGES"
+  },
+  "children": [
+   {
+    "id": "n1",
+    "width": 57,
+    "height": 55,
+    "x": 122,
+    "y": 101.5
+   },
+   {
+    "id": "n2",
+    "width": 50,
+    "height": 40,
+    "x": 12,
+    "y": 99
+   },
+   {
+    "id": "n3",
+    "width": 43,
+    "height": 47,
+    "x": 19,
+    "y": 12
+   },
+   {
+    "id": "n4",
+    "width": 46,
+    "height": 26,
+    "x": 122,
+    "y": 35.5
+   }
+  ],
+  "edges": [
+   {
+    "id": "e3",
+    "sources": [
+     "n3"
+    ],
+    "targets": [
+     "n4"
+    ],
+    "sections": [
+     {
+      "id": "e3_s0",
+      "startPoint": {
+       "x": 62,
+       "y": 35.5
+      },
+      "endPoint": {
+       "x": 122,
+       "y": 42
+      },
+      "bendPoints": [
+       {
+        "x": 82,
+        "y": 35.5
+       },
+       {
+        "x": 82,
+        "y": 42
+       }
+      ],
+      "incomingShape": "n3",
+      "outgoingShape": "n4"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e4",
+    "sources": [
+     "n2"
+    ],
+    "targets": [
+     "n4"
+    ],
+    "sections": [
+     {
+      "id": "e4_s0",
+      "startPoint": {
+       "x": 62,
+       "y": 109
+      },
+      "endPoint": {
+       "x": 122,
+       "y": 48.5
+      },
+      "bendPoints": [
+       {
+        "x": 82,
+        "y": 109
+       },
+       {
+        "x": 82,
+        "y": 48.5
+       }
+      ],
+      "incomingShape": "n2",
+      "outgoingShape": "n4"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e5",
+    "sources": [
+     "n2"
+    ],
+    "targets": [
+     "n4"
+    ],
+    "sections": [
+     {
+      "id": "e5_s0",
+      "startPoint": {
+       "x": 62,
+       "y": 119
+      },
+      "endPoint": {
+       "x": 122,
+       "y": 55
+      },
+      "bendPoints": [
+       {
+        "x": 102,
+        "y": 119
+       },
+       {
+        "x": 102,
+        "y": 55
+       }
+      ],
+      "incomingShape": "n2",
+      "outgoingShape": "n4"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "e7",
+    "sources": [
+     "n2"
+    ],
+    "targets": [
+     "n1"
+    ],
+    "sections": [
+     {
+      "id": "e7_s0",
+      "startPoint": {
+       "x": 62,
+       "y": 129
+      },
+      "endPoint": {
+       "x": 122,
+       "y": 129
+      },
+      "incomingShape": "n2",
+      "outgoingShape": "n1"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 191,
+  "height": 168.5
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "logs": [
+     "ELK Layered uses the following 20 modules:",
+     "   Slot 00: org.eclipse.elk.alg.layered.intermediate.EdgeAndLayerConstraintEdgeReverser",
+     "   Slot 01: org.eclipse.elk.alg.layered.p1cycles.DepthFirstCycleBreaker",
+     "   Slot 02: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPreprocessor",
+     "   Slot 03: org.eclipse.elk.alg.layered.p2layers.NetworkSimplexLayerer",
+     "   Slot 04: org.eclipse.elk.alg.layered.intermediate.LayerConstraintPostprocessor",
+     "   Slot 05: org.eclipse.elk.alg.layered.intermediate.LongEdgeSplitter",
+     "   Slot 06: org.eclipse.elk.alg.layered.intermediate.PortSideProcessor",
+     "   Slot 07: org.eclipse.elk.alg.layered.intermediate.PortListSorter",
+     "   Slot 08: org.eclipse.elk.alg.layered.intermediate.SortByInputModelProcessor",
+     "   Slot 09: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 10: org.eclipse.elk.alg.layered.p3order.LayerSweepCrossingMinimizer",
+     "   Slot 11: org.eclipse.elk.alg.layered.intermediate.InLayerConstraintProcessor",
+     "   Slot 12: org.eclipse.elk.alg.layered.intermediate.LabelAndNodeSizeProcessor",
+     "   Slot 13: org.eclipse.elk.alg.layered.intermediate.InnermostNodeMarginCalculator",
+     "   Slot 14: org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer",
+     "   Slot 15: org.eclipse.elk.alg.layered.intermediate.LayerSizeAndGraphHeightCalculator",
+     "   Slot 16: org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter",
+     "   Slot 17: org.eclipse.elk.alg.layered.intermediate.LongEdgeJoiner",
+     "   Slot 18: org.eclipse.elk.alg.layered.intermediate.EndLabelSorter",
+     "   Slot 19: org.eclipse.elk.alg.layered.intermediate.ReversedEdgeRestorer"
+    ],
+    "children": [
+     {
+      "name": "Edge and layer constraint edge reversal"
+     },
+     {
+      "name": "Depth-first cycle removal"
+     },
+     {
+      "name": "Layer constraint preprocessing"
+     },
+     {
+      "name": "Network simplex layering",
+      "children": [
+       {
+        "name": "Network simplex"
+       }
+      ]
+     },
+     {
+      "name": "Layer constraint postprocessing"
+     },
+     {
+      "name": "Edge splitting"
+     },
+     {
+      "name": "Port side processing"
+     },
+     {
+      "name": "Port order processing"
+     },
+     {
+      "name": "Sort By Input Model PREFER_EDGES",
+      "logs": [
+       "Node n_root.n2 ports: [p_0[n_root.n2] >> 1[n_root.n4], p_1[n_root.n2] >> 2[n_root.n4], p_2[n_root.n2] >> 0[n_root.n1]]",
+       "Node n_root.n3 ports: [p_0[n_root.n3] >> 0[n_root.n4]]",
+       "Layer 0: L_0[n_root.n2, n_root.n3]",
+       "Node n_root.n1 ports: [p_0[n_root.n1] << 2[n_root.n2]]",
+       "Node n_root.n4 ports: [p_0[n_root.n4] << 0[n_root.n3], p_1[n_root.n4] << 0[n_root.n2], p_2[n_root.n4] << 1[n_root.n2]]",
+       "Layer 1: L_1[n_root.n4, n_root.n1]"
+      ]
+     },
+     {
+      "name": "Minimize Crossings BARYCENTER"
+     },
+     {
+      "name": "Minimize Crossings TWO_SIDED_GREEDY_SWITCH"
+     },
+     {
+      "name": "Layer constraint edge reversal"
+     },
+     {
+      "name": "Node and Port Label Placement and Node Sizing"
+     },
+     {
+      "name": "Node margin calculation"
+     },
+     {
+      "name": "Brandes & Koepf node placement",
+      "logs": [
+       "RIGHTDOWN size is 205",
+       "RIGHTUP size is 144.5",
+       "LEFTDOWN size is 144.5",
+       "LEFTUP size is 208.5",
+       "BALANCED is feasible: true",
+       "Chosen node placement: BALANCED",
+       "Blocks: {null=[n_root.n3, n_root.n2, n_root.n4, n_root.n1]}",
+       "There are no classes in a balanced layout.",
+       "Classes: {}",
+       "Marked edges: []"
+      ]
+     },
+     {
+      "name": "Layer size calculation"
+     },
+     {
+      "name": "Orthogonal edge routing"
+     },
+     {
+      "name": "Edge joining"
+     },
+     {
+      "name": "Sort end labels"
+     },
+     {
+      "name": "Restoring reversed edges"
+     }
+    ]
+   }
+  ]
+ }
+}

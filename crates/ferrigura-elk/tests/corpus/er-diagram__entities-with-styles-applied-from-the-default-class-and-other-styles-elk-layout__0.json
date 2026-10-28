@@ -1,0 +1,264 @@
+{
+ "version": 1,
+ "name": "er-diagram__entities-with-styles-applied-from-the-default-class-and-other-styles-elk-layout__0",
+ "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-styles-applied-from-the-default-class-and-other-styles-elk-layout.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-c-0",
+    "label": "CUSTOMER",
+    "attributes": [],
+    "alias": "CUSTOMER",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [
+     "color:green"
+    ],
+    "labelType": "markdown",
+    "cssCompiledStyles": [
+     "fill:pink"
+    ],
+    "colorIndex": 0,
+    "isGroup": false,
+    "labelStyle": "color:green !important",
+    "width": 119.859375,
+    "height": 81
+   },
+   {
+    "id": "entity-p-1",
+    "label": "PERSON",
+    "attributes": [],
+    "alias": "PERSON",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default blue",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [
+     "fill:pink",
+     "stroke:lightblue",
+     "color:#0000FF",
+     "color:#0000FF"
+    ],
+    "colorIndex": 1,
+    "isGroup": false,
+    "labelStyle": "color:#0000FF !important",
+    "width": 99.125,
+    "height": 81
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-c-0",
+    "label": "CUSTOMER",
+    "attributes": [],
+    "alias": "CUSTOMER",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [
+     "color:green"
+    ],
+    "labelType": "markdown",
+    "cssCompiledStyles": [
+     "fill:pink"
+    ],
+    "colorIndex": 0,
+    "isGroup": false,
+    "labelStyle": "color:green !important",
+    "width": 119.859375,
+    "height": 81,
+    "x": 12,
+    "y": 12
+   },
+   {
+    "id": "entity-p-1",
+    "label": "PERSON",
+    "attributes": [],
+    "alias": "PERSON",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default blue",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [
+     "fill:pink",
+     "stroke:lightblue",
+     "color:#0000FF",
+     "color:#0000FF"
+    ],
+    "colorIndex": 1,
+    "isGroup": false,
+    "labelStyle": "color:#0000FF !important",
+    "width": 99.125,
+    "height": 81,
+    "x": 171.859375,
+    "y": 12
+   }
+  ],
+  "edges": [],
+  "x": 0,
+  "y": 0,
+  "width": 282.984375,
+  "height": 105
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         },
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.entity-c-0 ports: []",
+         "Node n_root.entity-p-1 ports: []",
+         "Layer 0: L_0[n_root.entity-c-0, n_root.entity-p-1]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 258.984375",
+         "RIGHTUP size is 258.984375",
+         "LEFTDOWN size is 258.984375",
+         "LEFTUP size is 258.984375",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.entity-c-0, n_root.entity-p-1]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,2199 @@
+{
+ "version": 1,
+ "name": "class-diagram__2-should-render-a-simple-class-diagrams-with-cardinality-3__0",
+ "fixture": "e2e/diagrams/class-diagram/pr-check/2-should-render-a-simple-class-diagrams-with-cardinality-3.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "Class01",
+    "label": "Class01",
+    "text": "Class01",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "size()",
+      "id": "size",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int chimp",
+      "id": "int chimp"
+     },
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int gorilla",
+      "id": "int gorilla"
+     }
+    ],
+    "annotations": [
+     "interface"
+    ],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 0,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 114.671875,
+    "height": 177
+   },
+   {
+    "id": "AveryLongClass",
+    "label": "AveryLongClass",
+    "text": "AveryLongClass",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 1,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 133.96875,
+    "height": 81
+   },
+   {
+    "id": "Class03",
+    "label": "Class03",
+    "text": "Class03",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 2,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81
+   },
+   {
+    "id": "Class04",
+    "label": "Class04",
+    "text": "Class04",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 3,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81
+   },
+   {
+    "id": "Class05",
+    "label": "Class05",
+    "text": "Class05",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 4,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81
+   },
+   {
+    "id": "Class06",
+    "label": "Class06",
+    "text": "Class06",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 5,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81
+   },
+   {
+    "id": "Class07",
+    "label": "Class07",
+    "text": "Class07",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "equals()",
+      "id": "equals",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "Object[] elementData",
+      "id": "Object[] elementData"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 6,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 181.984375,
+    "height": 135
+   },
+   {
+    "id": "Class08",
+    "label": "Class08",
+    "text": "Class08",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 7,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81
+   },
+   {
+    "id": "Class09",
+    "label": "Class09",
+    "text": "Class09",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 8,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81
+   },
+   {
+    "id": "C2",
+    "label": "C2",
+    "text": "C2",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 9,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 41.90625,
+    "height": 81
+   },
+   {
+    "id": "C3",
+    "label": "C3",
+    "text": "C3",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 10,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 41.90625,
+    "height": 81
+   },
+   {
+    "id": "Class10",
+    "label": "Class10",
+    "text": "Class10",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "test()",
+      "id": "test",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int id",
+      "id": "int id"
+     }
+    ],
+    "annotations": [
+     "service"
+    ],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 11,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 85.8515625,
+    "height": 156
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_Class01_AveryLongClass_1",
+    "start": "Class01",
+    "end": "AveryLongClass",
+    "type": "normal",
+    "label": "Cool",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "extension",
+    "arrowTypeEnd": "extension",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Cool",
+    "arrowhead": "normal",
+    "width": 28.796875,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class01"
+    ],
+    "targets": [
+     "AveryLongClass"
+    ],
+    "sourceId": "Class01",
+    "targetId": "AveryLongClass",
+    "labels": [
+     {
+      "width": 28.796875,
+      "height": 21,
+      "orgWidth": 28.796875,
+      "orgHeight": 21,
+      "text": "Cool",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 16.28125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Class03_Class04_2",
+    "start": "Class03",
+    "end": "Class04",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "composition",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class03"
+    ],
+    "targets": [
+     "Class04"
+    ],
+    "sourceId": "Class03",
+    "targetId": "Class04",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 4.28125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Class05_Class06_3",
+    "start": "Class05",
+    "end": "Class06",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "aggregation",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "1",
+    "endLabelLeft": "many",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 26.90625,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class05"
+    ],
+    "targets": [
+     "Class06"
+    ],
+    "sourceId": "Class05",
+    "targetId": "Class06",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "many",
+      "width": 26.90625,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Class07_Class08_4",
+    "start": "Class07",
+    "end": "Class08",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class07"
+    ],
+    "targets": [
+     "Class08"
+    ],
+    "sourceId": "Class07",
+    "targetId": "Class08",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 4.28125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Class09_C2_5",
+    "start": "Class09",
+    "end": "C2",
+    "type": "normal",
+    "label": "Where am i?",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "dependency",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Where am i?",
+    "arrowhead": "normal",
+    "width": 79.359375,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class09"
+    ],
+    "targets": [
+     "C2"
+    ],
+    "sourceId": "Class09",
+    "targetId": "C2",
+    "labels": [
+     {
+      "width": 79.359375,
+      "height": 21,
+      "orgWidth": 79.359375,
+      "orgHeight": 21,
+      "text": "Where am i?",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 16.28125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Class09_C3_6",
+    "start": "Class09",
+    "end": "C3",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "composition",
+    "startLabelRight": "*",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 4.28125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class09"
+    ],
+    "targets": [
+     "C3"
+    ],
+    "sourceId": "Class09",
+    "targetId": "C3",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "*",
+      "width": 4.28125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 16.28125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Class09_Class07_7",
+    "start": "Class09",
+    "end": "Class07",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "extension",
+    "startLabelRight": "1",
+    "endLabelLeft": "1",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 6.125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class09"
+    ],
+    "targets": [
+     "Class07"
+    ],
+    "sourceId": "Class09",
+    "targetId": "Class07",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   },
+   {
+    "id": "id_Class08_C2_8",
+    "start": "Class08",
+    "end": "C2",
+    "type": "normal",
+    "label": "Cool label",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "dependency",
+    "arrowTypeEnd": "dependency",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Cool label",
+    "arrowhead": "normal",
+    "width": 62.265625,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class08"
+    ],
+    "targets": [
+     "C2"
+    ],
+    "sourceId": "Class08",
+    "targetId": "C2",
+    "labels": [
+     {
+      "width": 62.265625,
+      "height": 21,
+      "orgWidth": 62.265625,
+      "orgHeight": 21,
+      "text": "Cool label",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      }
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 16.28125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "Class01",
+    "label": "Class01",
+    "text": "Class01",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "size()",
+      "id": "size",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int chimp",
+      "id": "int chimp"
+     },
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int gorilla",
+      "id": "int gorilla"
+     }
+    ],
+    "annotations": [
+     "interface"
+    ],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 0,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 114.671875,
+    "height": 177,
+    "x": 21.6484375,
+    "y": 12
+   },
+   {
+    "id": "AveryLongClass",
+    "label": "AveryLongClass",
+    "text": "AveryLongClass",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 1,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 133.96875,
+    "height": 81,
+    "x": 12,
+    "y": 522
+   },
+   {
+    "id": "Class03",
+    "label": "Class03",
+    "text": "Class03",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 2,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81,
+    "x": 176.3203125,
+    "y": 108
+   },
+   {
+    "id": "Class04",
+    "label": "Class04",
+    "text": "Class04",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 3,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81,
+    "x": 176.3203125,
+    "y": 294
+   },
+   {
+    "id": "Class05",
+    "label": "Class05",
+    "text": "Class05",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 4,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81,
+    "x": 293.2578125,
+    "y": 108
+   },
+   {
+    "id": "Class06",
+    "label": "Class06",
+    "text": "Class06",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 5,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81,
+    "x": 293.2578125,
+    "y": 294
+   },
+   {
+    "id": "Class07",
+    "label": "Class07",
+    "text": "Class07",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "equals()",
+      "id": "equals",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "Object[] elementData",
+      "id": "Object[] elementData"
+     }
+    ],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 6,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 181.984375,
+    "height": 135,
+    "x": 509.9453125,
+    "y": 294
+   },
+   {
+    "id": "Class08",
+    "label": "Class08",
+    "text": "Class08",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 7,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81,
+    "x": 562.46875,
+    "y": 510
+   },
+   {
+    "id": "Class09",
+    "label": "Class09",
+    "text": "Class09",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 8,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 76.9375,
+    "height": 81,
+    "x": 410.1953125,
+    "y": 108
+   },
+   {
+    "id": "C2",
+    "label": "C2",
+    "text": "C2",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 9,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 41.90625,
+    "height": 81,
+    "x": 467.18359375,
+    "y": 785.5
+   },
+   {
+    "id": "C3",
+    "label": "C3",
+    "text": "C3",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [],
+    "members": [],
+    "annotations": [],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 10,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 41.90625,
+    "height": 81,
+    "x": 427.7109375,
+    "y": 294
+   },
+   {
+    "id": "Class10",
+    "label": "Class10",
+    "text": "Class10",
+    "shape": "classBox",
+    "cssClasses": "default",
+    "methods": [
+     {
+      "memberType": "method",
+      "visibility": "",
+      "classifier": "",
+      "text": "test()",
+      "id": "test",
+      "parameters": "",
+      "returnType": ""
+     }
+    ],
+    "members": [
+     {
+      "memberType": "attribute",
+      "visibility": "",
+      "classifier": "",
+      "text": "int id",
+      "id": "int id"
+     }
+    ],
+    "annotations": [
+     "service"
+    ],
+    "styles": [],
+    "isGroup": false,
+    "look": "neo",
+    "colorIndex": 11,
+    "labelStyle": "",
+    "cssStyles": [],
+    "width": 85.8515625,
+    "height": 156,
+    "x": 527.1328125,
+    "y": 38.75
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_Class01_AveryLongClass_1",
+    "start": "Class01",
+    "end": "AveryLongClass",
+    "type": "normal",
+    "label": "Cool",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "extension",
+    "arrowTypeEnd": "extension",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Cool",
+    "arrowhead": "normal",
+    "width": 28.796875,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class01"
+    ],
+    "targets": [
+     "AveryLongClass"
+    ],
+    "sourceId": "Class01",
+    "targetId": "AveryLongClass",
+    "labels": [
+     {
+      "width": 28.796875,
+      "height": 21,
+      "orgWidth": 28.796875,
+      "orgHeight": 21,
+      "text": "Cool",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 64.484375,
+      "y": 345
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 83.984375,
+      "y": 193
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 16.28125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 83.984375,
+      "y": 489.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class01_AveryLongClass_1_s0",
+      "startPoint": {
+       "x": 78.984375,
+       "y": 189
+      },
+      "endPoint": {
+       "x": 78.984375,
+       "y": 522
+      },
+      "incomingShape": "Class01",
+      "outgoingShape": "AveryLongClass"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Class03_Class04_2",
+    "start": "Class03",
+    "end": "Class04",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "composition",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class03"
+    ],
+    "targets": [
+     "Class04"
+    ],
+    "sourceId": "Class03",
+    "targetId": "Class04",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 219.7890625,
+      "y": 193
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 4.28125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 219.7890625,
+      "y": 273.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class03_Class04_2_s0",
+      "startPoint": {
+       "x": 214.7890625,
+       "y": 189
+      },
+      "endPoint": {
+       "x": 214.7890625,
+       "y": 294
+      },
+      "incomingShape": "Class03",
+      "outgoingShape": "Class04"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Class05_Class06_3",
+    "start": "Class05",
+    "end": "Class06",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "aggregation",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "1",
+    "endLabelLeft": "many",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 26.90625,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class05"
+    ],
+    "targets": [
+     "Class06"
+    ],
+    "sourceId": "Class05",
+    "targetId": "Class06",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 336.7265625,
+      "y": 193
+     },
+     {
+      "terminal": "endLeft",
+      "text": "many",
+      "width": 26.90625,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 336.7265625,
+      "y": 273.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class05_Class06_3_s0",
+      "startPoint": {
+       "x": 331.7265625,
+       "y": 189
+      },
+      "endPoint": {
+       "x": 331.7265625,
+       "y": 294
+      },
+      "incomingShape": "Class05",
+      "outgoingShape": "Class06"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Class07_Class08_4",
+    "start": "Class07",
+    "end": "Class08",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "none",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class07"
+    ],
+    "targets": [
+     "Class08"
+    ],
+    "sourceId": "Class07",
+    "targetId": "Class08",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 605.9375,
+      "y": 433
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 4.28125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 605.9375,
+      "y": 489.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class07_Class08_4_s0",
+      "startPoint": {
+       "x": 600.9375,
+       "y": 429
+      },
+      "endPoint": {
+       "x": 600.9375,
+       "y": 510
+      },
+      "incomingShape": "Class07",
+      "outgoingShape": "Class08"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Class09_C2_5",
+    "start": "Class09",
+    "end": "C2",
+    "type": "normal",
+    "label": "Where am i?",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "dependency",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Where am i?",
+    "arrowhead": "normal",
+    "width": 79.359375,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class09"
+    ],
+    "targets": [
+     "C2"
+    ],
+    "sourceId": "Class09",
+    "targetId": "C2",
+    "labels": [
+     {
+      "width": 79.359375,
+      "height": 21,
+      "orgWidth": 79.359375,
+      "orgHeight": 21,
+      "text": "Where am i?",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 358.453125,
+      "y": 546
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 439.4296875,
+      "y": 193
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 16.28125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 489.4856770833333,
+      "y": 753
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class09_C2_5_s0",
+      "startPoint": {
+       "x": 434.4296875,
+       "y": 189
+      },
+      "endPoint": {
+       "x": 484.4856770833333,
+       "y": 785.5
+      },
+      "bendPoints": [
+       {
+        "x": 434.4296875,
+        "y": 241.5
+       },
+       {
+        "x": 398.453125,
+        "y": 241.5
+       },
+       {
+        "x": 398.453125,
+        "y": 355.5
+       },
+       {
+        "x": 398.453125,
+        "y": 674
+       },
+       {
+        "x": 398.453125,
+        "y": 704.5
+       },
+       {
+        "x": 484.4856770833333,
+        "y": 704.5
+       }
+      ],
+      "incomingShape": "Class09",
+      "outgoingShape": "C2"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Class09_C3_6",
+    "start": "Class09",
+    "end": "C3",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "composition",
+    "startLabelRight": "*",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 4.28125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class09"
+    ],
+    "targets": [
+     "C3"
+    ],
+    "sourceId": "Class09",
+    "targetId": "C3",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     },
+     {
+      "terminal": "startRight",
+      "text": "*",
+      "width": 4.28125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 453.6640625,
+      "y": 193
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 16.28125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 453.6640625,
+      "y": 261.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class09_C3_6_s0",
+      "startPoint": {
+       "x": 448.6640625,
+       "y": 189
+      },
+      "endPoint": {
+       "x": 448.6640625,
+       "y": 294
+      },
+      "incomingShape": "Class09",
+      "outgoingShape": "C3"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Class09_Class07_7",
+    "start": "Class09",
+    "end": "Class07",
+    "type": "normal",
+    "label": "",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "extension",
+    "startLabelRight": "1",
+    "endLabelLeft": "1",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "arrowhead": "normal",
+    "width": 0,
+    "height": 0,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 6.125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class09"
+    ],
+    "targets": [
+     "Class07"
+    ],
+    "sourceId": "Class09",
+    "targetId": "Class07",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 6.125,
+      "height": 16.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 467.8984375,
+      "y": 193
+     },
+     {
+      "terminal": "endLeft",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 605.9375,
+      "y": 261.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class09_Class07_7_s0",
+      "startPoint": {
+       "x": 462.8984375,
+       "y": 189
+      },
+      "endPoint": {
+       "x": 600.9375,
+       "y": 294
+      },
+      "bendPoints": [
+       {
+        "x": 462.8984375,
+        "y": 241.5
+       },
+       {
+        "x": 600.9375,
+        "y": 241.5
+       }
+      ],
+      "incomingShape": "Class09",
+      "outgoingShape": "Class07"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "id_Class08_C2_8",
+    "start": "Class08",
+    "end": "C2",
+    "type": "normal",
+    "label": "Cool label",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relation",
+    "arrowTypeStart": "dependency",
+    "arrowTypeEnd": "dependency",
+    "startLabelRight": "1",
+    "endLabelLeft": "*",
+    "arrowheadStyle": "",
+    "labelStyle": "",
+    "style": "",
+    "pattern": "solid",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "Cool label",
+    "arrowhead": "normal",
+    "width": 62.265625,
+    "height": 21,
+    "terminalLabelSizes": {
+     "startRight": {
+      "width": 6.125,
+      "height": 16.5
+     },
+     "endLeft": {
+      "width": 4.28125,
+      "height": 16.5
+     }
+    },
+    "sources": [
+     "Class08"
+    ],
+    "targets": [
+     "C2"
+    ],
+    "sourceId": "Class08",
+    "targetId": "C2",
+    "labels": [
+     {
+      "width": 62.265625,
+      "height": 21,
+      "orgWidth": 62.265625,
+      "orgHeight": 21,
+      "text": "Cool label",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 569.4375,
+      "y": 663.5
+     },
+     {
+      "terminal": "startRight",
+      "text": "1",
+      "width": 18.125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "TAIL"
+      },
+      "x": 605.9375,
+      "y": 595
+     },
+     {
+      "terminal": "endLeft",
+      "text": "*",
+      "width": 16.28125,
+      "height": 28.5,
+      "layoutOptions": {
+       "edgeLabels.placement": "HEAD"
+      },
+      "x": 496.7877604166667,
+      "y": 724.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_Class08_C2_8_s0",
+      "startPoint": {
+       "x": 600.9375,
+       "y": 591
+      },
+      "endPoint": {
+       "x": 491.7877604166667,
+       "y": 785.5
+      },
+      "bendPoints": [
+       {
+        "x": 600.9375,
+        "y": 704.5
+       },
+       {
+        "x": 491.7877604166667,
+        "y": 704.5
+       }
+      ],
+      "incomingShape": "Class08",
+      "outgoingShape": "C2"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 703.9296875,
+  "height": 878.5
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         },
+         {
+          "name": "Network simplex"
+         },
+         {
+          "name": "Network simplex"
+         },
+         {
+          "name": "Network simplex"
+         },
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.Class09 ports: [p_0[n_root.Class09] >> 1[n(long_edge)_5], p_1[n_root.Class09] >> 0[n_root.C3], p_2[n_root.Class09] >> 1[n_root.Class07]]",
+         "Node n_root.Class01 ports: [p_0[n_root.Class01] >> 1[n(label)_2]]",
+         "Node n_root.Class03 ports: [p_0[n_root.Class03] >> 0[n_root.Class04]]",
+         "Node n_root.Class05 ports: [p_0[n_root.Class05] >> 0[n_root.Class06]]",
+         "Node n_root.Class10 ports: []",
+         "Layer 0: L_0[n_root.Class01, n_root.Class03, n_root.Class05, n_root.Class09, n_root.Class10]",
+         "Node n_root.Class07 ports: [p_0[n_root.Class07] >> 1[n_root.Class08], p_1[n_root.Class07] << 2[n_root.Class09]]",
+         "Node n_root.C3 ports: [p_0[n_root.C3] << 1[n_root.Class09]]",
+         "Node n_root.Class04 ports: [p_0[n_root.Class04] << 0[n_root.Class03]]",
+         "Node n_root.Class06 ports: [p_0[n_root.Class06] << 0[n_root.Class05]]",
+         "Layer 1: L_1[n(label)_0, n_root.Class04, n_root.Class06, n(long_edge)_3, n_root.Class07, n_root.C3]",
+         "Node n_root.Class08 ports: [p_0[n_root.Class08] >> 1[n(label)_0], p_1[n_root.Class08] << 0[n_root.Class07]]",
+         "Node n_root.AveryLongClass ports: [p_0[n_root.AveryLongClass] << 0[n(label)_0]]",
+         "Layer 2: L_2[n_root.AveryLongClass, n(label)_1, n_root.Class08]",
+         "Layer 3: L_3[n(long_edge)_0, n(label)_1]",
+         "Node n_root.C2 ports: [p_0[n_root.C2] << 0[n(label)_1], p_1[n_root.C2] << 0[n(long_edge)_0]]",
+         "Layer 4: L_4[n_root.C2]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "End label pre-processing"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 707.6484375",
+         "RIGHTUP size is 722.5078125",
+         "LEFTDOWN size is 679.9296875",
+         "LEFTUP size is 679.9296875",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.Class01, n_root.Class03, n_root.Class05, n_root.Class09, n_root.Class10, n(label)_0, n_root.Class04, n_root.Class06, n(long_edge)_3, n_root.C3, n_root.Class07, n_root.AveryLongClass, n(label)_1, n_root.Class08, n(long_edge)_0, n(label)_1, n_root.C2]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "End label post-processing"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

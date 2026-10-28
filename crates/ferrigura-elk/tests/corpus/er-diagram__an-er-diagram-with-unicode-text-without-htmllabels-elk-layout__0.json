@@ -1,0 +1,276 @@
+{
+ "version": 1,
+ "name": "er-diagram__an-er-diagram-with-unicode-text-without-htmllabels-elk-layout__0",
+ "fixture": "e2e/diagrams/er-diagram/visual-check/an-er-diagram-with-unicode-text-without-htmllabels-elk-layout.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-_**testẽζ➕Ø😀㌕ぼ**_-0",
+    "label": "_**testẽζ➕Ø😀㌕ぼ**_",
+    "attributes": [
+     {
+      "type": "*__List~List~int~~sdfds__*",
+      "name": "**driversLicense**",
+      "keys": [
+       "PK"
+      ],
+      "comment": "***The l😀icense #***"
+     },
+     {
+      "type": "*string(99)~T~~~~~~*",
+      "name": "firstName",
+      "comment": "Only __99__ <br/>characters are a<br/>llowed dsfsdfsdfsdfs",
+      "keys": []
+     },
+     {
+      "type": "string",
+      "name": "last*Name*",
+      "keys": [],
+      "comment": ""
+     },
+     {
+      "type": "string",
+      "name": "__phone__",
+      "keys": [
+       "UK"
+      ],
+      "comment": ""
+     },
+     {
+      "type": "int",
+      "name": "_age_",
+      "keys": [],
+      "comment": ""
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "width": 468.515625,
+    "height": 247.3000030517578
+   }
+  ],
+  "edges": []
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-_**testẽζ➕Ø😀㌕ぼ**_-0",
+    "label": "_**testẽζ➕Ø😀㌕ぼ**_",
+    "attributes": [
+     {
+      "type": "*__List~List~int~~sdfds__*",
+      "name": "**driversLicense**",
+      "keys": [
+       "PK"
+      ],
+      "comment": "***The l😀icense #***"
+     },
+     {
+      "type": "*string(99)~T~~~~~~*",
+      "name": "firstName",
+      "comment": "Only __99__ <br/>characters are a<br/>llowed dsfsdfsdfsdfs",
+      "keys": []
+     },
+     {
+      "type": "string",
+      "name": "last*Name*",
+      "keys": [],
+      "comment": ""
+     },
+     {
+      "type": "string",
+      "name": "__phone__",
+      "keys": [
+       "UK"
+      ],
+      "comment": ""
+     },
+     {
+      "type": "int",
+      "name": "_age_",
+      "keys": [],
+      "comment": ""
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "useHtmlLabels": false,
+    "width": 468.515625,
+    "height": 247.3000030517578,
+    "x": 12,
+    "y": 12
+   }
+  ],
+  "edges": [],
+  "x": 0,
+  "y": 0,
+  "width": 492.515625,
+  "height": 271.3000030517578
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.entity-_**testẽζ➕Ø😀㌕ぼ**_-0 ports: []",
+         "Layer 0: L_0[n_root.entity-_**testẽζ➕Ø😀㌕ぼ**_-0]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 468.515625",
+         "RIGHTUP size is 468.515625",
+         "LEFTDOWN size is 468.515625",
+         "LEFTUP size is 468.515625",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.entity-_**testẽζ➕Ø😀㌕ぼ**_-0]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,417 @@
+{
+ "version": 1,
+ "name": "er-diagram__entities-with-comments-elk-layout__0",
+ "fixture": "e2e/diagrams/er-diagram/visual-check/entities-with-comments-elk-layout.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-AUTHOR_WITH_LONG_ENTITY_NAME-0",
+    "label": "AUTHOR_WITH_LONG_ENTITY_NAME",
+    "attributes": [
+     {
+      "type": "string",
+      "name": "name",
+      "comment": "comment",
+      "keys": []
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "width": 305.9375,
+    "height": 79.5
+   },
+   {
+    "id": "entity-BOOK-1",
+    "label": "BOOK",
+    "attributes": [
+     {
+      "type": "string",
+      "name": "author",
+      "keys": [],
+      "comment": ""
+     },
+     {
+      "type": "string",
+      "name": "title",
+      "comment": "author comment",
+      "keys": []
+     },
+     {
+      "type": "float",
+      "name": "price",
+      "comment": "price comment",
+      "keys": []
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "width": 250.109375,
+    "height": 159
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-AUTHOR_WITH_LONG_ENTITY_NAME-0_entity-BOOK-1_0",
+    "type": "normal",
+    "start": "entity-AUTHOR_WITH_LONG_ENTITY_NAME-0",
+    "end": "entity-BOOK-1",
+    "label": "writes",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "writes",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 36.5625,
+    "height": 21,
+    "sources": [
+     "entity-AUTHOR_WITH_LONG_ENTITY_NAME-0"
+    ],
+    "targets": [
+     "entity-BOOK-1"
+    ],
+    "sourceId": "entity-AUTHOR_WITH_LONG_ENTITY_NAME-0",
+    "targetId": "entity-BOOK-1",
+    "labels": [
+     {
+      "width": 36.5625,
+      "height": 21,
+      "orgWidth": 36.5625,
+      "orgHeight": 21,
+      "text": "writes",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "id": "entity-AUTHOR_WITH_LONG_ENTITY_NAME-0",
+    "label": "AUTHOR_WITH_LONG_ENTITY_NAME",
+    "attributes": [
+     {
+      "type": "string",
+      "name": "name",
+      "comment": "comment",
+      "keys": []
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 0,
+    "isGroup": false,
+    "width": 305.9375,
+    "height": 79.5,
+    "x": 12,
+    "y": 12
+   },
+   {
+    "id": "entity-BOOK-1",
+    "label": "BOOK",
+    "attributes": [
+     {
+      "type": "string",
+      "name": "author",
+      "keys": [],
+      "comment": ""
+     },
+     {
+      "type": "string",
+      "name": "title",
+      "comment": "author comment",
+      "keys": []
+     },
+     {
+      "type": "float",
+      "name": "price",
+      "comment": "price comment",
+      "keys": []
+     }
+    ],
+    "alias": "",
+    "shape": "erBox",
+    "look": "neo",
+    "cssClasses": "default",
+    "cssStyles": [],
+    "labelType": "markdown",
+    "cssCompiledStyles": [],
+    "colorIndex": 1,
+    "isGroup": false,
+    "width": 250.109375,
+    "height": 159,
+    "x": 39.9140625,
+    "y": 192.5
+   }
+  ],
+  "edges": [
+   {
+    "id": "id_entity-AUTHOR_WITH_LONG_ENTITY_NAME-0_entity-BOOK-1_0",
+    "type": "normal",
+    "start": "entity-AUTHOR_WITH_LONG_ENTITY_NAME-0",
+    "end": "entity-BOOK-1",
+    "label": "writes",
+    "labelpos": "c",
+    "thickness": "normal",
+    "classes": "relationshipLine",
+    "arrowTypeStart": "one_or_more",
+    "arrowTypeEnd": "one_or_more",
+    "pattern": "dashed",
+    "look": "neo",
+    "labelType": "markdown",
+    "minlen": 1,
+    "text": "writes",
+    "arrowhead": "normal",
+    "style": [
+     "fill:none"
+    ],
+    "labelStyle": "",
+    "arrowheadStyle": "fill: #333",
+    "width": 36.5625,
+    "height": 21,
+    "sources": [
+     "entity-AUTHOR_WITH_LONG_ENTITY_NAME-0"
+    ],
+    "targets": [
+     "entity-BOOK-1"
+    ],
+    "sourceId": "entity-AUTHOR_WITH_LONG_ENTITY_NAME-0",
+    "targetId": "entity-BOOK-1",
+    "labels": [
+     {
+      "width": 36.5625,
+      "height": 21,
+      "orgWidth": 36.5625,
+      "orgHeight": 21,
+      "text": "writes",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 146.46875,
+      "y": 131.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "id_entity-AUTHOR_WITH_LONG_ENTITY_NAME-0_entity-BOOK-1_0_s0",
+      "startPoint": {
+       "x": 164.96875,
+       "y": 91.5
+      },
+      "endPoint": {
+       "x": 164.96875,
+       "y": 192.5
+      },
+      "incomingShape": "entity-AUTHOR_WITH_LONG_ENTITY_NAME-0",
+      "outgoingShape": "entity-BOOK-1"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 329.9375,
+  "height": 363.5
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.entity-AUTHOR_WITH_LONG_ENTITY_NAME-0 ports: [p_0[n_root.entity-AUTHOR_WITH_LONG_ENTITY_NAME-0] >> 1[n(label)_0]]",
+         "Layer 0: L_0[n_root.entity-AUTHOR_WITH_LONG_ENTITY_NAME-0]",
+         "Layer 1: L_1[n(label)_0]",
+         "Node n_root.entity-BOOK-1 ports: [p_0[n_root.entity-BOOK-1] << 0[n(label)_0]]",
+         "Layer 2: L_2[n_root.entity-BOOK-1]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 305.9375",
+         "RIGHTUP size is 305.9375",
+         "LEFTDOWN size is 305.9375",
+         "LEFTUP size is 305.9375",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.entity-AUTHOR_WITH_LONG_ENTITY_NAME-0, n(label)_0, n_root.entity-BOOK-1]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}

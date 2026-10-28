@@ -1,0 +1,1114 @@
+{
+ "version": 1,
+ "name": "state-diagram__should-render-a-state-with-a-note-together-with-another-state__0",
+ "fixture": "e2e/diagrams/state-diagram/pr-check/should-render-a-state-with-a-note-together-with-another-state.mmd",
+ "algorithm": "elk.layered",
+ "input": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "roundedRect",
+    "label": "The state with a note +,-",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State1",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "description": [],
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 136,
+    "height": 79,
+    "layoutOptions": {
+     "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "noteGroup",
+    "label": "Important information! You can write +,-\n  notes.",
+    "cssClasses": " statediagram-state",
+    "cssStyles": [],
+    "id": "State1----parent",
+    "type": "group",
+    "isGroup": true,
+    "padding": 16,
+    "look": "neo",
+    "position": "right of",
+    "cssCompiledStyles": [],
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 336.0625,
+     "height": 42
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "note",
+      "label": "Important information! You can write +,-\n  notes.",
+      "labelType": "markdown",
+      "cssClasses": "statediagram-note",
+      "cssStyles": [],
+      "cssCompiledStyles": [],
+      "id": "State1----note-0",
+      "type": "node",
+      "isGroup": false,
+      "padding": 15,
+      "look": "neo",
+      "position": "right of",
+      "parentId": "State1----parent",
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 150,
+      "height": 135,
+      "layoutOptions": {
+       "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+      }
+     }
+    ],
+    "labelData": {
+     "width": 336.0625,
+     "height": 40,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "Important information! You can write +,-\n  notes.",
+      "width": 336.0625,
+      "height": 40
+     }
+    ],
+    "layoutOptions": {
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedRect",
+    "label": "State2",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State2",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 136,
+    "height": 37,
+    "layoutOptions": {
+     "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+    }
+   },
+   {
+    "labelStyle": "",
+    "shape": "noteGroup",
+    "label": "This is the note +,-<br>",
+    "cssClasses": " statediagram-state",
+    "cssStyles": [],
+    "id": "State2----parent",
+    "type": "group",
+    "isGroup": true,
+    "padding": 16,
+    "look": "neo",
+    "position": "left of",
+    "cssCompiledStyles": [],
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 168.03125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "note",
+      "label": "This is the note +,-<br>",
+      "labelType": "markdown",
+      "cssClasses": "statediagram-note",
+      "cssStyles": [],
+      "cssCompiledStyles": [],
+      "id": "State2----note-2",
+      "type": "node",
+      "isGroup": false,
+      "padding": 15,
+      "look": "neo",
+      "position": "left of",
+      "parentId": "State2----parent",
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 150,
+      "height": 72,
+      "layoutOptions": {
+       "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+      }
+     }
+    ],
+    "labelData": {
+     "width": 168.03125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "This is the note +,-<br>",
+      "width": 168.03125,
+      "height": 19
+     }
+    ],
+    "layoutOptions": {
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "State1-State1----note-0",
+    "start": "State1",
+    "end": "State1----note-0",
+    "arrowhead": "none",
+    "arrowTypeEnd": "",
+    "style": "fill:none",
+    "labelStyle": "",
+    "classes": "transition note-edge",
+    "pattern": "dashed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "look": "neo",
+    "minlen": 1,
+    "arrowTypeStart": "none",
+    "label": "",
+    "sources": [
+     "State1"
+    ],
+    "targets": [
+     "State1----note-0"
+    ],
+    "sourceId": "State1",
+    "targetId": "State1----note-0",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "edge1",
+    "start": "State1",
+    "end": "State2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "With +,-",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "With +,-",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 67.21875,
+    "height": 21,
+    "sources": [
+     "State1"
+    ],
+    "targets": [
+     "State2"
+    ],
+    "sourceId": "State1",
+    "targetId": "State2",
+    "labels": [
+     {
+      "width": 67.21875,
+      "height": 21,
+      "orgWidth": 67.21875,
+      "orgHeight": 21,
+      "text": "With +,-",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   },
+   {
+    "id": "State2----note-2-State2",
+    "start": "State2----note-2",
+    "end": "State2",
+    "arrowhead": "none",
+    "arrowTypeEnd": "",
+    "style": "fill:none",
+    "labelStyle": "",
+    "classes": "transition note-edge",
+    "pattern": "dashed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "look": "neo",
+    "minlen": 1,
+    "arrowTypeStart": "none",
+    "label": "",
+    "sources": [
+     "State2----note-2"
+    ],
+    "targets": [
+     "State2"
+    ],
+    "sourceId": "State2----note-2",
+    "targetId": "State2",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "output": {
+  "id": "root",
+  "layoutOptions": {
+   "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+   "elk.algorithm": "elk.layered",
+   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+   "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+   "elk.layered.mergeEdges": false,
+   "elk.direction": "DOWN",
+   "spacing.baseValue": 40,
+   "elk.layered.crossingMinimization.forceNodeModelOrder": false,
+   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+   "elk.layered.unnecessaryBendpoints": true,
+   "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+   "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+   "elk.layered.layering.coffmanGraham.layerBound": 4,
+   "elk.layered.wrapping.multiEdge.improveCuts": true,
+   "elk.layered.wrapping.multiEdge.improveWrappedEdges": true,
+   "elk.layered.edgeRouting.selfLoopDistribution": "EQUALLY",
+   "elk.layered.mergeHierarchyEdges": true,
+   "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]"
+  },
+  "children": [
+   {
+    "labelStyle": "",
+    "shape": "roundedRect",
+    "label": "The state with a note +,-",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State1",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "description": [],
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 136,
+    "height": 79,
+    "layoutOptions": {
+     "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+    },
+    "x": 233.04687499999997,
+    "y": 12
+   },
+   {
+    "labelStyle": "",
+    "shape": "noteGroup",
+    "label": "Important information! You can write +,-\n  notes.",
+    "cssClasses": " statediagram-state",
+    "cssStyles": [],
+    "id": "State1----parent",
+    "type": "group",
+    "isGroup": true,
+    "padding": 16,
+    "look": "neo",
+    "position": "right of",
+    "cssCompiledStyles": [],
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 336.0625,
+     "height": 42
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "note",
+      "label": "Important information! You can write +,-\n  notes.",
+      "labelType": "markdown",
+      "cssClasses": "statediagram-note",
+      "cssStyles": [],
+      "cssCompiledStyles": [],
+      "id": "State1----note-0",
+      "type": "node",
+      "isGroup": false,
+      "padding": 15,
+      "look": "neo",
+      "position": "right of",
+      "parentId": "State1----parent",
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 150,
+      "height": 135,
+      "layoutOptions": {
+       "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+      },
+      "x": 24,
+      "y": 69
+     }
+    ],
+    "labelData": {
+     "width": 336.0625,
+     "height": 40,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "Important information! You can write +,-\n  notes.",
+      "width": 336.0625,
+      "height": 40,
+      "x": -69.03125,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+    },
+    "x": 81.03125,
+    "y": 141,
+    "width": 198,
+    "height": 228
+   },
+   {
+    "labelStyle": "",
+    "shape": "roundedRect",
+    "label": "State2",
+    "cssClasses": " statediagram-state",
+    "cssCompiledStyles": [],
+    "cssStyles": [],
+    "id": "State2",
+    "isGroup": false,
+    "padding": 8,
+    "rx": 10,
+    "ry": 10,
+    "look": "neo",
+    "labelType": "markdown",
+    "centerLabel": true,
+    "wrappingWidth": 120,
+    "minWidth": 120,
+    "width": 136,
+    "height": 37,
+    "layoutOptions": {
+     "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+    },
+    "x": 440.171875,
+    "y": 409
+   },
+   {
+    "labelStyle": "",
+    "shape": "noteGroup",
+    "label": "This is the note +,-<br>",
+    "cssClasses": " statediagram-state",
+    "cssStyles": [],
+    "id": "State2----parent",
+    "type": "group",
+    "isGroup": true,
+    "padding": 16,
+    "look": "neo",
+    "position": "left of",
+    "cssCompiledStyles": [],
+    "wrappingWidth": 120,
+    "labelBBox": {
+     "width": 168.03125,
+     "height": 21
+    },
+    "children": [
+     {
+      "labelStyle": "",
+      "shape": "note",
+      "label": "This is the note +,-<br>",
+      "labelType": "markdown",
+      "cssClasses": "statediagram-note",
+      "cssStyles": [],
+      "cssCompiledStyles": [],
+      "id": "State2----note-2",
+      "type": "node",
+      "isGroup": false,
+      "padding": 15,
+      "look": "neo",
+      "position": "left of",
+      "parentId": "State2----parent",
+      "wrappingWidth": 120,
+      "minWidth": 120,
+      "width": 150,
+      "height": 72,
+      "layoutOptions": {
+       "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+      },
+      "x": 24,
+      "y": 48
+     }
+    ],
+    "labelData": {
+     "width": 168.03125,
+     "height": 19,
+     "wrappingWidth": 120
+    },
+    "labels": [
+     {
+      "text": "This is the note +,-<br>",
+      "width": 168.03125,
+      "height": 19,
+      "x": 14.984375,
+      "y": 5
+     }
+    ],
+    "layoutOptions": {
+     "spacing.baseValue": 24,
+     "elk.layered.spacing.edgeNodeBetweenLayers": 30,
+     "elk.spacing.edgeEdge": 20,
+     "spacing.nodeNode": 50,
+     "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+     "nodeLabels.placement": "[H_CENTER V_TOP, INSIDE]",
+     "elk.layered.mergeEdges": false,
+     "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+     "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+     "elk.layered.nodePlacement.networkSimplex.nodeFlexibility": "PORT_POSITION",
+     "elk.spacing.portsSurrounding": "[top=12,left=12,bottom=12,right=12]",
+     "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+    },
+    "x": 495.28125,
+    "y": 215,
+    "width": 198,
+    "height": 144
+   }
+  ],
+  "edges": [
+   {
+    "id": "State1-State1----note-0",
+    "start": "State1",
+    "end": "State1----note-0",
+    "arrowhead": "none",
+    "arrowTypeEnd": "",
+    "style": "fill:none",
+    "labelStyle": "",
+    "classes": "transition note-edge",
+    "pattern": "dashed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "look": "neo",
+    "minlen": 1,
+    "arrowTypeStart": "none",
+    "label": "",
+    "sources": [
+     "State1"
+    ],
+    "targets": [
+     "State1----note-0"
+    ],
+    "sourceId": "State1",
+    "targetId": "State1----note-0",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "State1-State1----note-0_s0",
+      "startPoint": {
+       "x": 281.71354166666663,
+       "y": 91
+      },
+      "endPoint": {
+       "x": 180.03125,
+       "y": 210
+      },
+      "bendPoints": [
+       {
+        "x": 281.71354166666663,
+        "y": 111
+       },
+       {
+        "x": 180.03125,
+        "y": 111
+       },
+       {
+        "x": 180.03125,
+        "y": 131
+       }
+      ],
+      "incomingShape": "State1",
+      "outgoingShape": "State1----note-0"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "edge1",
+    "start": "State1",
+    "end": "State2",
+    "arrowhead": "normal",
+    "arrowTypeEnd": "arrow_barb_neo",
+    "style": "fill:none",
+    "labelStyle": "",
+    "label": "With +,-",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "classes": "transition",
+    "look": "neo",
+    "minlen": 1,
+    "text": "With +,-",
+    "arrowTypeStart": "none",
+    "pattern": "solid",
+    "width": 67.21875,
+    "height": 21,
+    "sources": [
+     "State1"
+    ],
+    "targets": [
+     "State2"
+    ],
+    "sourceId": "State1",
+    "targetId": "State2",
+    "labels": [
+     {
+      "width": 67.21875,
+      "height": 21,
+      "orgWidth": 67.21875,
+      "orgHeight": 21,
+      "text": "With +,-",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 388.0625,
+      "y": 239.5
+     }
+    ],
+    "sections": [
+     {
+      "id": "edge1_s0",
+      "startPoint": {
+       "x": 320.3802083333333,
+       "y": 91
+      },
+      "endPoint": {
+       "x": 488.8385416666667,
+       "y": 409
+      },
+      "bendPoints": [
+       {
+        "x": 320.3802083333333,
+        "y": 111
+       },
+       {
+        "x": 422.0625,
+        "y": 111
+       },
+       {
+        "x": 422.0625,
+        "y": 389
+       },
+       {
+        "x": 488.8385416666667,
+        "y": 389
+       }
+      ],
+      "incomingShape": "State1",
+      "outgoingShape": "State2"
+     }
+    ],
+    "container": "root"
+   },
+   {
+    "id": "State2----note-2-State2",
+    "start": "State2----note-2",
+    "end": "State2",
+    "arrowhead": "none",
+    "arrowTypeEnd": "",
+    "style": "fill:none",
+    "labelStyle": "",
+    "classes": "transition note-edge",
+    "pattern": "dashed",
+    "arrowheadStyle": "fill: #333",
+    "labelpos": "c",
+    "labelType": "markdown",
+    "thickness": "normal",
+    "look": "neo",
+    "minlen": 1,
+    "arrowTypeStart": "none",
+    "label": "",
+    "sources": [
+     "State2----note-2"
+    ],
+    "targets": [
+     "State2"
+    ],
+    "sourceId": "State2----note-2",
+    "targetId": "State2",
+    "labels": [
+     {
+      "width": 0,
+      "height": 0,
+      "orgWidth": 0,
+      "orgHeight": 0,
+      "text": "",
+      "layoutOptions": {
+       "edgeLabels.inline": "true",
+       "edgeLabels.placement": "CENTER"
+      },
+      "x": 0,
+      "y": 0
+     }
+    ],
+    "sections": [
+     {
+      "id": "State2----note-2-State2_s0",
+      "startPoint": {
+       "x": 594.28125,
+       "y": 335
+      },
+      "endPoint": {
+       "x": 527.5052083333334,
+       "y": 409
+      },
+      "bendPoints": [
+       {
+        "x": 594.28125,
+        "y": 369
+       },
+       {
+        "x": 594.28125,
+        "y": 389
+       },
+       {
+        "x": 527.5052083333334,
+        "y": 389
+       }
+      ],
+      "incomingShape": "State2----note-2",
+      "outgoingShape": "State2"
+     }
+    ],
+    "container": "root"
+   }
+  ],
+  "x": 0,
+  "y": 0,
+  "width": 705.28125,
+  "height": 458
+ },
+ "trace": {
+  "name": "Recursive Graph Layout",
+  "children": [
+   {
+    "name": "Layered layout",
+    "children": [
+     {
+      "name": "Compound graph preprocessor"
+     },
+     {
+      "name": "Recursive hierarchical layout",
+      "children": [
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Hierarchical port constraint processing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Hierarchical port constraint processing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Graph transformation (TO_INPUT_DIRECTION)"
+       },
+       {
+        "name": "Edge and layer constraint edge reversal"
+       },
+       {
+        "name": "Depth-first cycle removal"
+       },
+       {
+        "name": "Label dummy insertions"
+       },
+       {
+        "name": "Layer constraint preprocessing"
+       },
+       {
+        "name": "Network simplex layering",
+        "children": [
+         {
+          "name": "Network simplex"
+         }
+        ]
+       },
+       {
+        "name": "Layer constraint postprocessing"
+       },
+       {
+        "name": "Edge splitting"
+       },
+       {
+        "name": "Port side processing"
+       },
+       {
+        "name": "Inverted port preprocessing"
+       },
+       {
+        "name": "Port order processing"
+       },
+       {
+        "name": "Sort By Input Model NODES_AND_EDGES",
+        "logs": [
+         "Node n_root.State1 ports: [p_0[n_root.State1] >> 0[n_Important information! You can write +,-\n  notes.], p_1[n_root.State1] >> 1[n(label)_1]]",
+         "Layer 0: L_0[n_root.State1]",
+         "Node n_Important information! You can write +,-\n  notes. ports: [p_0[n_Important information! You can write +,-\n  notes.] << 0[n_root.State1]]",
+         "Node n_This is the note +,-<br> ports: [p_0[n_This is the note +,-<br>] >> 1[n_root.State2]]",
+         "Layer 1: L_1[n_Important information! You can write +,-\n  notes., n(label)_1, n_This is the note +,-<br>]",
+         "Node n_root.State2 ports: [p_0[n_root.State2] << 0[n_This is the note +,-<br>], p_1[n_root.State2] << 0[n(label)_1]]",
+         "Layer 2: L_2[n_root.State2]"
+        ]
+       },
+       {
+        "name": "Minimize Crossings BARYCENTER"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Hierarchical port dummy size processing"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 150",
+         "RIGHTUP size is 150",
+         "LEFTDOWN size is 150",
+         "LEFTUP size is 150",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.State2----parent.State2----note-2, n(external_port)_0]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Hierarchical port position processing"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Orthogonally routing hierarchical port edges"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Hierarchical port dummy size processing"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 150",
+         "RIGHTUP size is 150",
+         "LEFTDOWN size is 150",
+         "LEFTUP size is 150",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n(external_port)_0, n_root.State1----parent.State1----note-0]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Hierarchical port position processing"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Orthogonally routing hierarchical port edges"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       },
+       {
+        "name": "Layer constraint edge reversal"
+       },
+       {
+        "name": "Node and Port Label Placement and Node Sizing"
+       },
+       {
+        "name": "Node margin calculation"
+       },
+       {
+        "name": "Label dummy switching"
+       },
+       {
+        "name": "Label side selection (SMART_UP)"
+       },
+       {
+        "name": "Brandes & Koepf node placement",
+        "logs": [
+         "RIGHTDOWN size is 681.28125",
+         "RIGHTUP size is 681.28125",
+         "LEFTDOWN size is 681.28125",
+         "LEFTUP size is 681.28125",
+         "BALANCED is feasible: true",
+         "Chosen node placement: BALANCED",
+         "Blocks: {null=[n_root.State1, n_Important information! You can write +,-\n  notes., n(label)_1, n_This is the note +,-<br>, n_root.State2]}",
+         "There are no classes in a balanced layout.",
+         "Classes: {}",
+         "Marked edges: []"
+        ]
+       },
+       {
+        "name": "Layer size calculation"
+       },
+       {
+        "name": "Orthogonal edge routing"
+       },
+       {
+        "name": "Edge joining"
+       },
+       {
+        "name": "Label dummy removal"
+       },
+       {
+        "name": "Sort end labels"
+       },
+       {
+        "name": "Restoring reversed edges"
+       },
+       {
+        "name": "Resize child graph to fit parent."
+       },
+       {
+        "name": "Graph transformation (TO_INTERNAL_LTR)"
+       }
+      ]
+     },
+     {
+      "name": "Compound graph postprocessor"
+     }
+    ]
+   }
+  ]
+ }
+}
