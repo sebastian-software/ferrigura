@@ -1,0 +1,361 @@
+{
+ "name": "generated-290-plain",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 290, 2 sets, plain ids",
+ "description": "A generated set system (plain ids, 2 sets).",
+ "text": "venn-beta\n  set DevOps:25\n  set Backend\n  union Backend, DevOps:10\n  union DevOps, Backend:10\n  union DevOps, Backend:4.88\n  union DevOps, Backend\n  union DevOps, Backend:7.26",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "DevOps"
+    ],
+    "size": 25
+   },
+   {
+    "sets": [
+     "Backend"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 4.88
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 7.26
+   }
+  ],
+  "width": 640,
+  "height": 360,
+  "chartPadding": 15,
+  "layoutPadding": 15
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "DevOps"
+    ],
+    "size": 25
+   },
+   {
+    "sets": [
+     "Backend"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 4.88
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "Backend",
+     "DevOps"
+    ],
+    "size": 7.26
+   }
+  ],
+  "greedy": [
+   {
+    "id": "DevOps",
+    "x": 0,
+    "y": 0,
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "Backend",
+    "x": 1.98576766216194,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "DevOps",
+    "x": -0.00039188945806419804,
+    "y": 0.0004237942538266575,
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "Backend",
+    "x": 2.078789544740844,
+    "y": 0.00008844242318450928,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "DevOps",
+    "x": 0,
+    "y": 0,
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "Backend",
+    "x": 2.0791814612434094,
+    "y": 2.990229591715021e-16,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "DevOps",
+    "x": 289.5157410099698,
+    "y": 180,
+    "radius": 165
+   },
+   {
+    "id": "Backend",
+    "x": 411.12909620447374,
+    "y": 180.00000000000003,
+    "radius": 104.35516278555653
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "DevOps",
+    "x": 215.64483721444353,
+    "y": 179.99999777051363,
+    "disjoint": false
+   },
+   {
+    "key": "Backend",
+    "x": 485,
+    "y": 179.99999778878106,
+    "disjoint": false
+   },
+   {
+    "key": "Backend,DevOps",
+    "x": 380.6448372144435,
+    "y": 180.00000096641537,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "DevOps"
+   ],
+   "text": {
+    "x": 215.64483721444353,
+    "y": 179.99999777051363,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "DevOps",
+     "x": 289.5157410099698,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend"
+   ],
+   "text": {
+    "x": 485,
+    "y": 179.99999778878106,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 411.12909620447374,
+     "y": 180.00000000000003,
+     "radius": 104.35516278555653
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend",
+    "DevOps"
+   ],
+   "text": {
+    "x": 380.6448372144435,
+    "y": 180.00000096641537,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 411.12909620447374,
+     "y": 180.00000000000003,
+     "radius": 104.35516278555653
+    },
+    {
+     "set": "DevOps",
+     "x": 289.5157410099698,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend",
+    "DevOps"
+   ],
+   "text": {
+    "x": 380.6448372144435,
+    "y": 180.00000096641537,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 411.12909620447374,
+     "y": 180.00000000000003,
+     "radius": 104.35516278555653
+    },
+    {
+     "set": "DevOps",
+     "x": 289.5157410099698,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend",
+    "DevOps"
+   ],
+   "text": {
+    "x": 380.6448372144435,
+    "y": 180.00000096641537,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 411.12909620447374,
+     "y": 180.00000000000003,
+     "radius": 104.35516278555653
+    },
+    {
+     "set": "DevOps",
+     "x": 289.5157410099698,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend",
+    "DevOps"
+   ],
+   "text": {
+    "x": 380.6448372144435,
+    "y": 180.00000096641537,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 411.12909620447374,
+     "y": 180.00000000000003,
+     "radius": 104.35516278555653
+    },
+    {
+     "set": "DevOps",
+     "x": 289.5157410099698,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Backend",
+    "DevOps"
+   ],
+   "text": {
+    "x": 380.6448372144435,
+    "y": 180.00000096641537,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Backend",
+     "x": 411.12909620447374,
+     "y": 180.00000000000003,
+     "radius": 104.35516278555653
+    },
+    {
+     "set": "DevOps",
+     "x": 289.5157410099698,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

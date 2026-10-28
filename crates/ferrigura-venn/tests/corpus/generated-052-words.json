@@ -1,0 +1,188 @@
+{
+ "name": "generated-052-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 52, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set \"Front end\":50\n  set \"C#\":0\n  union \"Front end\", \"C#\":0\n  union \"C#\", \"Front end\"",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 50
+   },
+   {
+    "sets": [
+     "C#"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C#",
+     "Front end"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C#",
+     "Front end"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 50
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Front end",
+    "x": 0,
+    "y": 0,
+    "radius": 3.989422804014327
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Front end",
+    "x": 0,
+    "y": 0,
+    "radius": 3.989422804014327
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Front end",
+    "x": 0,
+    "y": 0,
+    "radius": 3.989422804014327
+   }
+  ],
+  "circles": [
+   {
+    "id": "Front end",
+    "x": 400,
+    "y": 225,
+    "radius": 210
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Front end",
+    "x": 400,
+    "y": 225,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Front end"
+   ],
+   "text": {
+    "x": 395.65999999999997,
+    "y": 225,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 395.65999999999997,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#"
+   ],
+   "text": {
+    "x": 621.34,
+    "y": 225,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 621.34,
+     "y": 225,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "Front end"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 621.34,
+     "y": 225,
+     "radius": 0
+    },
+    {
+     "set": "Front end",
+     "x": 395.65999999999997,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "Front end"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 621.34,
+     "y": 225,
+     "radius": 0
+    },
+    {
+     "set": "Front end",
+     "x": 395.65999999999997,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

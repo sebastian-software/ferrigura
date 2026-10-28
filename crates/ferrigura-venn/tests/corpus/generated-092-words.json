@@ -1,0 +1,409 @@
+{
+ "name": "generated-092-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 92, 3 sets, words ids",
+ "description": "A generated set system (words ids, 3 sets).",
+ "text": "venn-beta\n  set Rust:10\n  set TypeScript\n  set \"Front end\":4\n  union \"Front end\", Rust, TypeScript:1.11",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "Front end",
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 1.11
+   },
+   {
+    "sets": [
+     "Front end",
+     "Rust"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "Front end",
+     "TypeScript"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Front end"
+    ],
+    "size": 4
+   },
+   {
+    "sets": [
+     "Front end",
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 1.11
+   },
+   {
+    "sets": [
+     "Front end",
+     "Rust"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "Front end",
+     "TypeScript"
+    ],
+    "size": 1
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 2.5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.264783545440907,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Front end",
+    "x": 1.1323917727204535,
+    "y": 1.8214652941407392,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Rust",
+    "x": 0.000965172274444077,
+    "y": 0.00028678738293633264,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.238670528959136,
+    "y": 0.0009687444431651719,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Front end",
+    "x": 1.1192887438158197,
+    "y": 1.7121204545346402,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "TypeScript",
+    "x": 2.2377054606003886,
+    "y": 1.7780915627173063e-17,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Front end",
+    "x": 1.1188452134037346,
+    "y": -1.711492770391584,
+    "radius": 1.1283791670955126
+   }
+  ],
+  "circles": [
+   {
+    "id": "Rust",
+    "x": 298.3740164838211,
+    "y": 272.94706567832975,
+    "radius": 162.05293432167025
+   },
+   {
+    "id": "TypeScript",
+    "x": 501.6259835161789,
+    "y": 272.94706567832975,
+    "radius": 162.05293432167025
+   },
+   {
+    "id": "Front end",
+    "x": 399.99931723633057,
+    "y": 117.49127479403026,
+    "radius": 102.49127479403028
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Rust",
+    "x": 237.94706567832984,
+    "y": 272.9470627899151,
+    "disjoint": false
+   },
+   {
+    "key": "TypeScript",
+    "x": 562.0529343216703,
+    "y": 272.9470657449344,
+    "disjoint": false
+   },
+   {
+    "key": "Front end",
+    "x": 399.99999999982333,
+    "y": 75.24211392596412,
+    "disjoint": false
+   },
+   {
+    "key": "Front end,Rust,TypeScript",
+    "x": 399.9999999999908,
+    "y": 189.45462497622424,
+    "disjoint": false
+   },
+   {
+    "key": "Front end,Rust",
+    "x": 343.8448247316361,
+    "y": 154.54072136020957,
+    "disjoint": false
+   },
+   {
+    "key": "Front end,TypeScript",
+    "x": 456.154471806709,
+    "y": 154.54051894441335,
+    "disjoint": false
+   },
+   {
+    "key": "Rust,TypeScript",
+    "x": 400.00000000000665,
+    "y": 280.15425821004914,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Rust"
+   ],
+   "text": {
+    "x": 232.5453012009407,
+    "y": 274.5453008155469,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 294.98648369994845,
+     "y": 274.54530120094074,
+     "radius": 167.45469879905926
+    }
+   ]
+  },
+  {
+   "sets": [
+    "TypeScript"
+   ],
+   "text": {
+    "x": 567.4546987990591,
+    "y": 274.5453066185374,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "TypeScript",
+     "x": 505.0135163000515,
+     "y": 274.54530120094074,
+     "radius": 167.45469879905926
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end"
+   ],
+   "text": {
+    "x": 399.9999999999489,
+    "y": 70.25018439023927,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 399.9992944775416,
+     "y": 113.90765062049793,
+     "radius": 105.90765062049795
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end",
+    "Rust",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 400.0000000000523,
+    "y": 188.26977914206006,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 399.9992944775416,
+     "y": 113.90765062049793,
+     "radius": 105.90765062049795
+    },
+    {
+     "set": "Rust",
+     "x": 294.98648369994845,
+     "y": 274.54530120094074,
+     "radius": 167.45469879905926
+    },
+    {
+     "set": "TypeScript",
+     "x": 505.0135163000515,
+     "y": 274.54530120094074,
+     "radius": 167.45469879905926
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end",
+    "Rust"
+   ],
+   "text": {
+    "x": 341.97298555590964,
+    "y": 152.1920787387614,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 399.9992944775416,
+     "y": 113.90765062049793,
+     "radius": 105.90765062049795
+    },
+    {
+     "set": "Rust",
+     "x": 294.98648369994845,
+     "y": 274.54530120094074,
+     "radius": 167.45469879905926
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Front end",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 458.0262875336395,
+    "y": 152.19186957579478,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Front end",
+     "x": 399.9992944775416,
+     "y": 113.90765062049793,
+     "radius": 105.90765062049795
+    },
+    {
+     "set": "TypeScript",
+     "x": 505.0135163000515,
+     "y": 274.54530120094074,
+     "radius": 167.45469879905926
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Rust",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 399.9999999999949,
+    "y": 281.99273348365284,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 294.98648369994845,
+     "y": 274.54530120094074,
+     "radius": 167.45469879905926
+    },
+    {
+     "set": "TypeScript",
+     "x": 505.0135163000515,
+     "y": 274.54530120094074,
+     "radius": 167.45469879905926
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

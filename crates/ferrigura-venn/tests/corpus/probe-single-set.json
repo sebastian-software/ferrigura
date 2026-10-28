@@ -1,0 +1,100 @@
+{
+ "name": "probe-single-set",
+ "group": "probe",
+ "source": "probe: single-set",
+ "description": "A single set and nothing else.",
+ "text": "venn-beta\n  set A",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   }
+  ],
+  "greedy": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "A",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "A",
+    "x": 400,
+    "y": 225,
+    "radius": 210
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "A",
+    "x": 400,
+    "y": 225,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "A"
+   ],
+   "text": {
+    "x": 400,
+    "y": 225,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "A",
+     "x": 400,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

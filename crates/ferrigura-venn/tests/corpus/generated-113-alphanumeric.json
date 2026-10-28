@@ -1,0 +1,261 @@
+{
+ "name": "generated-113-alphanumeric",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 113, 3 sets, alphanumeric ids",
+ "description": "A generated set system (alphanumeric ids, 3 sets).",
+ "text": "venn-beta\n  set b30:0\n  set a1\n  set a2\n  union a1, a2:15\n  union a1, b30:0",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "b30"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "a1"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "a2"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "a1",
+     "a2"
+    ],
+    "size": 15
+   },
+   {
+    "sets": [
+     "a1",
+     "b30"
+    ],
+    "size": 0
+   }
+  ],
+  "width": 1024,
+  "height": 640,
+  "chartPadding": 15,
+  "layoutPadding": 0
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "a1"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "a2"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "a1",
+     "a2"
+    ],
+    "size": 15
+   }
+  ],
+  "greedy": [
+   {
+    "id": "a1",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "a2",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "a1",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "a2",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "a1",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "a2",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "a1",
+    "x": 512,
+    "y": 320,
+    "radius": 305
+   },
+   {
+    "id": "a2",
+    "x": 512,
+    "y": 320,
+    "radius": 305
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "a1",
+    "x": 716.6114301014054,
+    "y": 93.81608662007443,
+    "disjoint": false
+   },
+   {
+    "key": "a2",
+    "x": 512,
+    "y": 320,
+    "disjoint": false
+   },
+   {
+    "key": "a1,a2",
+    "x": 512,
+    "y": 320,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "b30"
+   ],
+   "text": {
+    "x": 838.4,
+    "y": 320,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "b30",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "sets": [
+    "a1"
+   ],
+   "text": {
+    "x": 720.0258504726637,
+    "y": 82.46778187143772,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "a1",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "a2"
+   ],
+   "text": {
+    "x": 505.6,
+    "y": 320,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "a2",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "a1",
+    "a2"
+   ],
+   "text": {
+    "x": 505.6,
+    "y": 320,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "a1",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    },
+    {
+     "set": "a2",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "a1",
+    "b30"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "a1",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    },
+    {
+     "set": "b30",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

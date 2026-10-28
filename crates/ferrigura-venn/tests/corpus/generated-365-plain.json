@@ -1,0 +1,320 @@
+{
+ "name": "generated-365-plain",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 365, 2 sets, plain ids",
+ "description": "A generated set system (plain ids, 2 sets).",
+ "text": "venn-beta\n  set E:10\n  set E\n  set DevOps:8\n  union E, DevOps:8\n  union E, DevOps\n  union E, DevOps",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "E"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "E"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "DevOps"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "DevOps",
+     "E"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "DevOps",
+     "E"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "DevOps",
+     "E"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 1024,
+  "height": 640,
+  "chartPadding": 15,
+  "layoutPadding": 0
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "E"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "E"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "DevOps"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "DevOps",
+     "E"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "DevOps",
+     "E"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "DevOps",
+     "E"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "E",
+     "E"
+    ],
+    "size": 0
+   }
+  ],
+  "greedy": [
+   {
+    "id": "E",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "DevOps",
+    "x": 2.0456837592951866,
+    "y": 0,
+    "radius": 1.5957691216057308
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "E",
+    "x": 0.0029808517784657164,
+    "y": 0.001858373371408145,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "DevOps",
+    "x": 1.4118342666864767,
+    "y": 0.0007446136869262023,
+    "radius": 1.5957691216057308
+   }
+  ],
+  "normalized": [
+   {
+    "id": "E",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "DevOps",
+    "x": 1.4088538551455927,
+    "y": 8.283304597789254e-17,
+    "radius": 1.5957691216057308
+   }
+  ],
+  "circles": [
+   {
+    "id": "E",
+    "x": 407.67649775250186,
+    "y": 320,
+    "radius": 305
+   },
+   {
+    "id": "DevOps",
+    "x": 648.5232089925238,
+    "y": 320,
+    "radius": 272.80029325497435
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "E",
+    "x": 239.19970674502576,
+    "y": 320.0000061659812,
+    "disjoint": false
+   },
+   {
+    "key": "DevOps",
+    "x": 816.9999999999995,
+    "y": 320.0000148067333,
+    "disjoint": false
+   },
+   {
+    "key": "DevOps,E",
+    "x": 544.1997067450257,
+    "y": 320.00000113037265,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "E"
+   ],
+   "text": {
+    "x": 225.78329888002693,
+    "y": 319.9999994283284,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "E",
+     "x": 402.54583370754295,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "E"
+   ],
+   "text": {
+    "x": 225.78329888002693,
+    "y": 319.9999994283284,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "E",
+     "x": 402.54583370754295,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "DevOps"
+   ],
+   "text": {
+    "x": 831.9999999999993,
+    "y": 319.9999815469033,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "DevOps",
+     "x": 655.237465172484,
+     "y": 320,
+     "radius": 286.2167011199731
+    }
+   ]
+  },
+  {
+   "sets": [
+    "DevOps",
+    "E"
+   ],
+   "text": {
+    "x": 545.7832988800269,
+    "y": 320.0000017170756,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "DevOps",
+     "x": 655.237465172484,
+     "y": 320,
+     "radius": 286.2167011199731
+    },
+    {
+     "set": "E",
+     "x": 402.54583370754295,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "DevOps",
+    "E"
+   ],
+   "text": {
+    "x": 545.7832988800269,
+    "y": 320.0000017170756,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "DevOps",
+     "x": 655.237465172484,
+     "y": 320,
+     "radius": 286.2167011199731
+    },
+    {
+     "set": "E",
+     "x": 402.54583370754295,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "DevOps",
+    "E"
+   ],
+   "text": {
+    "x": 545.7832988800269,
+    "y": 320.0000017170756,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "DevOps",
+     "x": 655.237465172484,
+     "y": 320,
+     "radius": 286.2167011199731
+    },
+    {
+     "set": "E",
+     "x": 402.54583370754295,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

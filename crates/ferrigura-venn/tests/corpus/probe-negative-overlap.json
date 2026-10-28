@@ -1,0 +1,71 @@
+{
+ "name": "probe-negative-overlap",
+ "group": "probe",
+ "source": "probe: negative-overlap",
+ "description": "A negative overlap: the library throws in its bisection.",
+ "text": "venn-beta\n  set A:10\n  set B:10\n  union A, B:-5",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "A",
+     "B"
+    ],
+    "size": -5
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "A"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "B"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "A",
+     "B"
+    ],
+    "size": -5
+   }
+  ],
+  "greedy": null,
+  "constrained": null
+ },
+ "chart": null,
+ "layout": null,
+ "errors": {
+  "greedy": "Initial bisect points must have opposite signs",
+  "chart": "Initial bisect points must have opposite signs",
+  "layout": "Initial bisect points must have opposite signs"
+ }
+}

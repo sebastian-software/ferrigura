@@ -1,0 +1,322 @@
+{
+ "name": "generated-197-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 197, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set JavaScript\n  set Python\n  union Python, JavaScript\n  union Python, JavaScript:2.61\n  union Python, JavaScript:0\n  union Python, JavaScript:4.25",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 2.61
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 4.25
+   }
+  ],
+  "width": 1024,
+  "height": 640,
+  "chartPadding": 15,
+  "layoutPadding": 0
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 2.61
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 4.25
+   }
+  ],
+  "greedy": [
+   {
+    "id": "JavaScript",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Python",
+    "x": 2.264783545440907,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "JavaScript",
+    "x": -0.000643892404480864,
+    "y": 0.0004986203345960151,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Python",
+    "x": 2.322687020510364,
+    "y": 0.00046950901673338584,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "JavaScript",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "Python",
+    "x": 2.323330913097227,
+    "y": 3.5700067034516447e-16,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "JavaScript",
+    "x": 316.0091738884071,
+    "y": 320,
+    "radius": 301.009173888407
+   },
+   {
+    "id": "Python",
+    "x": 707.9908261115929,
+    "y": 320.00000000000006,
+    "radius": 301.009173888407
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "JavaScript",
+    "x": 210.99082611159298,
+    "y": 319.9999988614585,
+    "disjoint": false
+   },
+   {
+    "key": "Python",
+    "x": 813.0091738884071,
+    "y": 319.9999994919473,
+    "disjoint": false
+   },
+   {
+    "key": "JavaScript,Python",
+    "x": 512,
+    "y": 320.00000161803814,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "JavaScript"
+   ],
+   "text": {
+    "x": 201.90604219141971,
+    "y": 320.0000008863652,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 310.0939578085803,
+     "y": 319.99999999999994,
+     "radius": 310.0939578085803
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python"
+   ],
+   "text": {
+    "x": 822.0939578085803,
+    "y": 320.0000016300836,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 713.9060421914197,
+     "y": 320.00000000000006,
+     "radius": 310.0939578085803
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "Python"
+   ],
+   "text": {
+    "x": 512,
+    "y": 319.9999999077968,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 310.0939578085803,
+     "y": 319.99999999999994,
+     "radius": 310.0939578085803
+    },
+    {
+     "set": "Python",
+     "x": 713.9060421914197,
+     "y": 320.00000000000006,
+     "radius": 310.0939578085803
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "Python"
+   ],
+   "text": {
+    "x": 512,
+    "y": 319.9999999077968,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 310.0939578085803,
+     "y": 319.99999999999994,
+     "radius": 310.0939578085803
+    },
+    {
+     "set": "Python",
+     "x": 713.9060421914197,
+     "y": 320.00000000000006,
+     "radius": 310.0939578085803
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "Python"
+   ],
+   "text": {
+    "x": 512,
+    "y": 319.9999999077968,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 310.0939578085803,
+     "y": 319.99999999999994,
+     "radius": 310.0939578085803
+    },
+    {
+     "set": "Python",
+     "x": 713.9060421914197,
+     "y": 320.00000000000006,
+     "radius": 310.0939578085803
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "Python"
+   ],
+   "text": {
+    "x": 512,
+    "y": 319.9999999077968,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 310.0939578085803,
+     "y": 319.99999999999994,
+     "radius": 310.0939578085803
+    },
+    {
+     "set": "Python",
+     "x": 713.9060421914197,
+     "y": 320.00000000000006,
+     "radius": 310.0939578085803
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

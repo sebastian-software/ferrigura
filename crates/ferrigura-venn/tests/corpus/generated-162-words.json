@@ -1,0 +1,205 @@
+{
+ "name": "generated-162-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 162, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set Rust:25\n  set TypeScript:15\n  union TypeScript, Rust:22.5",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 25
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 15
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 22.5
+   }
+  ],
+  "width": 640,
+  "height": 360,
+  "chartPadding": 15,
+  "layoutPadding": 15
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 25
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 15
+   },
+   {
+    "sets": [
+     "Rust",
+     "TypeScript"
+    ],
+    "size": 22.5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "TypeScript",
+    "x": 0.6358510565546229,
+    "y": 0,
+    "radius": 2.1850968611841584
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "TypeScript",
+    "x": 0.6358510565546229,
+    "y": 0,
+    "radius": 2.1850968611841584
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Rust",
+    "x": 0,
+    "y": 0,
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "TypeScript",
+    "x": 0.6358510565546229,
+    "y": 0,
+    "radius": 2.1850968611841584
+   }
+  ],
+  "circles": [
+   {
+    "id": "Rust",
+    "x": 320,
+    "y": 180,
+    "radius": 165
+   },
+   {
+    "id": "TypeScript",
+    "x": 357.19154957515525,
+    "y": 180,
+    "radius": 127.80845042484476
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Rust",
+    "x": 192.19154957538285,
+    "y": 180.0002602960609,
+    "disjoint": false
+   },
+   {
+    "key": "TypeScript",
+    "x": 357.19154957515525,
+    "y": 180,
+    "disjoint": false
+   },
+   {
+    "key": "Rust,TypeScript",
+    "x": 357.19154957515525,
+    "y": 180,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Rust"
+   ],
+   "text": {
+    "x": 192.19154957538285,
+    "y": 180.0002602960609,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 320,
+     "y": 180,
+     "radius": 165
+    }
+   ]
+  },
+  {
+   "sets": [
+    "TypeScript"
+   ],
+   "text": {
+    "x": 357.19154957515525,
+    "y": 180,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "TypeScript",
+     "x": 357.19154957515525,
+     "y": 180,
+     "radius": 127.80845042484476
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Rust",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 357.19154957515525,
+    "y": 180,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 320,
+     "y": 180,
+     "radius": 165
+    },
+    {
+     "set": "TypeScript",
+     "x": 357.19154957515525,
+     "y": 180,
+     "radius": 127.80845042484476
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

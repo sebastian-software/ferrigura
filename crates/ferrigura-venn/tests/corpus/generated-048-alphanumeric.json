@@ -1,0 +1,167 @@
+{
+ "name": "generated-048-alphanumeric",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 48, 2 sets, alphanumeric ids",
+ "description": "A generated set system (alphanumeric ids, 2 sets).",
+ "text": "venn-beta\n  set b30\n  set a1:2",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "b30"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "a1"
+    ],
+    "size": 2
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "b30"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "a1"
+    ],
+    "size": 2
+   },
+   {
+    "sets": [
+     "a1",
+     "b30"
+    ],
+    "size": 0
+   }
+  ],
+  "greedy": [
+   {
+    "id": "b30",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "a1",
+    "x": 2.5820086769556365,
+    "y": 0,
+    "radius": 0.7978845608028654
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "b30",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "a1",
+    "x": 2.5820086769556365,
+    "y": 0,
+    "radius": 0.7978845608028654
+   }
+  ],
+  "normalized": [
+   {
+    "id": "b30",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "a1",
+    "x": 2.6533736416017475,
+    "y": 0,
+    "radius": 0.7978845608028654
+   }
+  ],
+  "circles": [
+   {
+    "id": "b30",
+    "x": 301.88514494500885,
+    "y": 225,
+    "radius": 210
+   },
+   {
+    "id": "a1",
+    "x": 614.2,
+    "y": 225,
+    "radius": 93.91485505499116
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "b30",
+    "x": 301.88514494500885,
+    "y": 225,
+    "disjoint": false
+   },
+   {
+    "key": "a1",
+    "x": 614.2,
+    "y": 225,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "b30"
+   ],
+   "text": {
+    "x": 298.6146497765091,
+    "y": 225,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "b30",
+     "x": 298.6146497765091,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  },
+  {
+   "sets": [
+    "a1"
+   ],
+   "text": {
+    "x": 621.3400000000001,
+    "y": 225,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "a1",
+     "x": 621.3400000000001,
+     "y": 225,
+     "radius": 97.04535022349087
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

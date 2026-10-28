@@ -1,0 +1,409 @@
+{
+ "name": "generated-389-mixed",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 389, 3 sets, mixed ids",
+ "description": "A generated set system (mixed ids, 3 sets).",
+ "text": "venn-beta\n  set Python\n  set JavaScript:3.25\n  set TypeScript:25\n  union TypeScript, JavaScript, Python:2.32",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 3.25
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 25
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python",
+     "TypeScript"
+    ],
+    "size": 2.32
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 0.8125
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "TypeScript"
+    ],
+    "size": 0.8125
+   },
+   {
+    "sets": [
+     "Python",
+     "TypeScript"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 1024,
+  "height": 640,
+  "chartPadding": 15,
+  "layoutPadding": 0
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 3.25
+   },
+   {
+    "sets": [
+     "TypeScript"
+    ],
+    "size": 25
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python",
+     "TypeScript"
+    ],
+    "size": 2.32
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "Python"
+    ],
+    "size": 0.8125
+   },
+   {
+    "sets": [
+     "JavaScript",
+     "TypeScript"
+    ],
+    "size": 0.8125
+   },
+   {
+    "sets": [
+     "Python",
+     "TypeScript"
+    ],
+    "size": 2.5
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Python",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "JavaScript",
+    "x": 0.8634742636915664,
+    "y": 1.9335420507266656,
+    "radius": 1.0171072362820548
+   },
+   {
+    "id": "TypeScript",
+    "x": 3.39118229549164,
+    "y": 0,
+    "radius": 2.8209479177387813
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Python",
+    "x": 0.00009125606903828324,
+    "y": 0.002073812820770427,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "JavaScript",
+    "x": 0.9036812298000878,
+    "y": 1.5156994372722155,
+    "radius": 1.0171072362820548
+   },
+   {
+    "id": "TypeScript",
+    "x": 3.3281756898284387,
+    "y": 0.0009342620906855027,
+    "radius": 2.8209479177387813
+   }
+  ],
+  "normalized": [
+   {
+    "id": "TypeScript",
+    "x": 0,
+    "y": "-0",
+    "radius": 2.8209479177387813
+   },
+   {
+    "id": "Python",
+    "x": 3.328084628852983,
+    "y": -3.382710778154774e-17,
+    "radius": 1.7841241161527712
+   },
+   {
+    "id": "JavaScript",
+    "x": 2.4250129801233675,
+    "y": -1.5139349288803927,
+    "radius": 1.0171072362820548
+   }
+  ],
+  "circles": [
+   {
+    "id": "TypeScript",
+    "x": 388.13480066009174,
+    "y": 320,
+    "radius": 305
+   },
+   {
+    "id": "Python",
+    "x": 747.9662620696371,
+    "y": 320,
+    "radius": 192.89893727027115
+   },
+   {
+    "id": "JavaScript",
+    "x": 650.3264399621388,
+    "y": 156.31383252242034,
+    "radius": 109.96931390165167
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Python",
+    "x": 816.9995655358518,
+    "y": 320.32146024893586,
+    "disjoint": false
+   },
+   {
+    "key": "JavaScript",
+    "x": 660.6057508165493,
+    "y": 95.34711279317233,
+    "disjoint": false
+   },
+   {
+    "key": "TypeScript",
+    "x": 319.1010627297288,
+    "y": 320.0000017819277,
+    "disjoint": false
+   },
+   {
+    "key": "JavaScript,Python,TypeScript",
+    "x": 632.6166936310193,
+    "y": 222.24657120809638,
+    "disjoint": false
+   },
+   {
+    "key": "JavaScript,Python",
+    "x": 709.8451621058648,
+    "y": 178.57310703368177,
+    "disjoint": false
+   },
+   {
+    "key": "JavaScript,TypeScript",
+    "x": 584.7930032922555,
+    "y": 148.3251267232296,
+    "disjoint": false
+   },
+   {
+    "key": "Python,TypeScript",
+    "x": 624.2602128342419,
+    "y": 332.8924741715019,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Python"
+   ],
+   "text": {
+    "x": 831.9995441687627,
+    "y": 320.3372697694386,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 759.5711602042095,
+     "y": 320,
+     "radius": 202.3857702507763
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript"
+   ],
+   "text": {
+    "x": 667.9142303651282,
+    "y": 84.29861014366915,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 657.1293796324078,
+     "y": 148.26369313827706,
+     "radius": 115.37764081484767
+    }
+   ]
+  },
+  {
+   "sets": [
+    "TypeScript"
+   ],
+   "text": {
+    "x": 309.61422974922374,
+    "y": 320.00000330001006,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "TypeScript",
+     "x": 382.04306954501425,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "Python",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 638.5486621701948,
+    "y": 217.4390255299047,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 657.1293796324078,
+     "y": 148.26369313827706,
+     "radius": 115.37764081484767
+    },
+    {
+     "set": "Python",
+     "x": 759.5711602042095,
+     "y": 320,
+     "radius": 202.3857702507763
+    },
+    {
+     "set": "TypeScript",
+     "x": 382.04306954501425,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "Python"
+   ],
+   "text": {
+    "x": 719.5752520454926,
+    "y": 171.61768606823742,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 657.1293796324078,
+     "y": 148.26369313827706,
+     "radius": 115.37764081484767
+    },
+    {
+     "set": "Python",
+     "x": 759.5711602042095,
+     "y": 320,
+     "radius": 202.3857702507763
+    }
+   ]
+  },
+  {
+   "sets": [
+    "JavaScript",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 588.3729870607033,
+    "y": 139.88210016851184,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 657.1293796324078,
+     "y": 148.26369313827706,
+     "radius": 115.37764081484767
+    },
+    {
+     "set": "TypeScript",
+     "x": 382.04306954501425,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python",
+    "TypeScript"
+   ],
+   "text": {
+    "x": 629.7812069080219,
+    "y": 333.52653027776165,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 759.5711602042095,
+     "y": 320,
+     "radius": 202.3857702507763
+    },
+    {
+     "set": "TypeScript",
+     "x": 382.04306954501425,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

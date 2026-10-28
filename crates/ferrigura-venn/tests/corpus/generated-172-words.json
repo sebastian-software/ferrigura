@@ -1,0 +1,220 @@
+{
+ "name": "generated-172-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 172, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set Python\n  set Rust:0\n  union Python, Rust:0\n  union Python, Rust:0\n  union Python, Rust",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "Rust"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "Python",
+     "Rust"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "Python",
+     "Rust"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "Python",
+     "Rust"
+    ],
+    "size": 2.5
+   }
+  ],
+  "width": 800,
+  "height": 450,
+  "chartPadding": 15,
+  "layoutPadding": 8
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "Python"
+    ],
+    "size": 10
+   }
+  ],
+  "greedy": [
+   {
+    "id": "Python",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "Python",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "Python",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "Python",
+    "x": 400,
+    "y": 225,
+    "radius": 210
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "Python",
+    "x": 400,
+    "y": 225,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "Python"
+   ],
+   "text": {
+    "x": 395.66,
+    "y": 225,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 395.66,
+     "y": 225,
+     "radius": 217
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Rust"
+   ],
+   "text": {
+    "x": 621.3399999999999,
+    "y": 225,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "Rust",
+     "x": 621.3399999999999,
+     "y": 225,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python",
+    "Rust"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 395.66,
+     "y": 225,
+     "radius": 217
+    },
+    {
+     "set": "Rust",
+     "x": 621.3399999999999,
+     "y": 225,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python",
+    "Rust"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 395.66,
+     "y": 225,
+     "radius": 217
+    },
+    {
+     "set": "Rust",
+     "x": 621.3399999999999,
+     "y": 225,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "sets": [
+    "Python",
+    "Rust"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "Python",
+     "x": 395.66,
+     "y": 225,
+     "radius": 217
+    },
+    {
+     "set": "Rust",
+     "x": 621.3399999999999,
+     "y": 225,
+     "radius": 0
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

@@ -1,0 +1,421 @@
+{
+ "name": "generated-277-words",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 277, 2 sets, words ids",
+ "description": "A generated set system (words ids, 2 sets).",
+ "text": "venn-beta\n  set JavaScript\n  set \"C#\":0\n  union JavaScript, \"C#\":0\n  union \"C#\", JavaScript\n  union \"C#\", JavaScript:0\n  union \"C#\", JavaScript:0\n  union \"C#\", JavaScript:0\n  union JavaScript, \"C#\":0\n  union JavaScript, \"C#\":0\n  union \"C#\", JavaScript:0",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "C#"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C#",
+     "JavaScript"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C#",
+     "JavaScript"
+    ],
+    "size": 2.5
+   },
+   {
+    "sets": [
+     "C#",
+     "JavaScript"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C#",
+     "JavaScript"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C#",
+     "JavaScript"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C#",
+     "JavaScript"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C#",
+     "JavaScript"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "C#",
+     "JavaScript"
+    ],
+    "size": 0
+   }
+  ],
+  "width": 1024,
+  "height": 640,
+  "chartPadding": 15,
+  "layoutPadding": 0
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": [
+   0.6270739405881613,
+   0.002735721180215478,
+   0.5274470399599522,
+   0.9810509674716741,
+   0.9683778982143849,
+   0.281103502959013,
+   0.6128388606011868,
+   0.7207431411370635,
+   0.425796952098608,
+   0.9948229456786066,
+   0.45527112716808915,
+   0.48878831742331386,
+   0.13893358339555562,
+   0.40374476509168744,
+   0.24752389639616013,
+   0.15449313493445516,
+   0.48914389545097947,
+   0.0673698834143579,
+   0.3946193160954863,
+   0.7671080259606242,
+   0.28586167353205383,
+   0.19087357842363417,
+   0.042729709995910525,
+   0.42738195578567684,
+   0.590382493333891,
+   0.7986842156387866,
+   0.29486987087875605,
+   0.2054697866551578,
+   0.6581296445801854,
+   0.5460823616012931,
+   0.758442840538919,
+   0.19281403115019202,
+   0.7209477317519486,
+   0.4541360163129866,
+   0.770413824589923,
+   0.9945340014528483,
+   0.23933332320302725,
+   0.7570012940559536,
+   0.15327094192616642,
+   0.3233316196128726
+  ]
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "JavaScript"
+    ],
+    "size": 10
+   }
+  ],
+  "greedy": [
+   {
+    "id": "JavaScript",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "JavaScript",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "JavaScript",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "JavaScript",
+    "x": 512,
+    "y": 320,
+    "radius": 305
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "JavaScript",
+    "x": 512,
+    "y": 320,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "JavaScript"
+   ],
+   "text": {
+    "x": 505.6,
+    "y": 320,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "JavaScript",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#"
+   ],
+   "text": {
+    "x": 838.4,
+    "y": 320,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "JavaScript"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    },
+    {
+     "set": "JavaScript",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "JavaScript"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    },
+    {
+     "set": "JavaScript",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "JavaScript"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    },
+    {
+     "set": "JavaScript",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "JavaScript"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    },
+    {
+     "set": "JavaScript",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "JavaScript"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    },
+    {
+     "set": "JavaScript",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "JavaScript"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    },
+    {
+     "set": "JavaScript",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "JavaScript"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    },
+    {
+     "set": "JavaScript",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "C#",
+    "JavaScript"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "C#",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    },
+    {
+     "set": "JavaScript",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

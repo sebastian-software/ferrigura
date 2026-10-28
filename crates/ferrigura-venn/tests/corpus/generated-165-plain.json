@@ -1,0 +1,205 @@
+{
+ "name": "generated-165-plain",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 165, 2 sets, plain ids",
+ "description": "A generated set system (plain ids, 2 sets).",
+ "text": "venn-beta\n  set E:100\n  set node-2:8\n  union node-2, E:2.43",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "E"
+    ],
+    "size": 100
+   },
+   {
+    "sets": [
+     "node-2"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "E",
+     "node-2"
+    ],
+    "size": 2.43
+   }
+  ],
+  "width": 1024,
+  "height": 640,
+  "chartPadding": 15,
+  "layoutPadding": 0
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "E"
+    ],
+    "size": 100
+   },
+   {
+    "sets": [
+     "node-2"
+    ],
+    "size": 8
+   },
+   {
+    "sets": [
+     "E",
+     "node-2"
+    ],
+    "size": 2.43
+   }
+  ],
+  "greedy": [
+   {
+    "id": "E",
+    "x": 0,
+    "y": 0,
+    "radius": 5.641895835477563
+   },
+   {
+    "id": "node-2",
+    "x": 6.075709165308701,
+    "y": 0,
+    "radius": 1.5957691216057308
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "E",
+    "x": 5.963844593828938e-7,
+    "y": 0.0002716008649296923,
+    "radius": 5.641895835477563
+   },
+   {
+    "id": "node-2",
+    "x": 6.075709761606056,
+    "y": 0.00023586030759944836,
+    "radius": 1.5957691216057308
+   }
+  ],
+  "normalized": [
+   {
+    "id": "E",
+    "x": 0,
+    "y": 0,
+    "radius": 5.641895835477563
+   },
+   {
+    "id": "node-2",
+    "x": 6.07570916532672,
+    "y": 7.072115245851385e-16,
+    "radius": 1.5957691216057308
+   }
+  ],
+  "circles": [
+   {
+    "id": "E",
+    "x": 457.140546214875,
+    "y": 320,
+    "radius": 305
+   },
+   {
+    "id": "node-2",
+    "x": 785.5924264803662,
+    "y": 320.00000000000006,
+    "radius": 86.26702730475881
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "E",
+    "x": 425.7329726952412,
+    "y": 320.00000220772307,
+    "disjoint": false
+   },
+   {
+    "key": "node-2",
+    "x": 817,
+    "y": 319.99999979703466,
+    "disjoint": false
+   },
+   {
+    "key": "E,node-2",
+    "x": 730.7329726952412,
+    "y": 319.999999556701,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "E"
+   ],
+   "text": {
+    "x": 421.49033200812187,
+    "y": 319.9999990569045,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "E",
+     "x": 454.44254029101637,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "node-2"
+   ],
+   "text": {
+    "x": 832,
+    "y": 320.000000097666,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "node-2",
+     "x": 799.0477917171055,
+     "y": 320.00000000000006,
+     "radius": 90.50966799187809
+    }
+   ]
+  },
+  {
+   "sets": [
+    "E",
+    "node-2"
+   ],
+   "text": {
+    "x": 741.4903320081219,
+    "y": 320.0000010632234,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "E",
+     "x": 454.44254029101637,
+     "y": 320,
+     "radius": 320
+    },
+    {
+     "set": "node-2",
+     "x": 799.0477917171055,
+     "y": 320.00000000000006,
+     "radius": 90.50966799187809
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}

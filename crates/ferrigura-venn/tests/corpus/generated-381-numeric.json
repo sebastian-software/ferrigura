@@ -1,0 +1,156 @@
+{
+ "name": "generated-381-numeric",
+ "group": "generated",
+ "source": "generated: seed 20261018, index 381, 2 sets, numeric ids",
+ "description": "A generated set system (numeric ids, 2 sets).",
+ "text": "venn-beta\n  set \"1\":0\n  set \"10\"\n  union \"1\", \"10\":0",
+ "input": {
+  "areas": [
+   {
+    "sets": [
+     "1"
+    ],
+    "size": 0
+   },
+   {
+    "sets": [
+     "10"
+    ],
+    "size": 10
+   },
+   {
+    "sets": [
+     "1",
+     "10"
+    ],
+    "size": 0
+   }
+  ],
+  "width": 1024,
+  "height": 640,
+  "chartPadding": 15,
+  "layoutPadding": 0
+ },
+ "draws": {
+  "stages": [],
+  "chart": [],
+  "layout": []
+ },
+ "stages": {
+  "areas": [
+   {
+    "sets": [
+     "10"
+    ],
+    "size": 10
+   }
+  ],
+  "greedy": [
+   {
+    "id": "10",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "constrained": null
+ },
+ "chart": {
+  "venn": [
+   {
+    "id": "10",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "normalized": [
+   {
+    "id": "10",
+    "x": 0,
+    "y": 0,
+    "radius": 1.7841241161527712
+   }
+  ],
+  "circles": [
+   {
+    "id": "10",
+    "x": 512,
+    "y": 320,
+    "radius": 305
+   }
+  ],
+  "textCentres": [
+   {
+    "key": "10",
+    "x": 512,
+    "y": 320,
+    "disjoint": false
+   }
+  ]
+ },
+ "layout": [
+  {
+   "sets": [
+    "1"
+   ],
+   "text": {
+    "x": 838.4,
+    "y": 320,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "1",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "sets": [
+    "10"
+   ],
+   "text": {
+    "x": 505.6,
+    "y": 320,
+    "disjoint": false
+   },
+   "circles": [
+    {
+     "set": "10",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  },
+  {
+   "sets": [
+    "1",
+    "10"
+   ],
+   "text": {
+    "x": 0,
+    "y": -1000,
+    "disjoint": true
+   },
+   "circles": [
+    {
+     "set": "1",
+     "x": 838.4,
+     "y": 320,
+     "radius": 0
+    },
+    {
+     "set": "10",
+     "x": 505.6,
+     "y": 320,
+     "radius": 320
+    }
+   ]
+  }
+ ],
+ "errors": {}
+}
