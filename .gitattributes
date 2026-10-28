@@ -1,0 +1,14 @@
+* text=auto
+
+run text eol=lf
+
+# Maintained Node sources use LF for identical checks on Windows and Unix.
+/node/**/*.mjs text eol=lf
+/node/**/*.mts text eol=lf
+/node/**/*.json text eol=lf
+/node/**/*.yaml text eol=lf
+/node/**/*.md text eol=lf
+/node/.prettierignore text eol=lf
+
+# Preserve verbatim upstream license text in the generated npm notices.
+/node/ferrigura/NOTICE.md -text -whitespace

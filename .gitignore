@@ -1,0 +1,15 @@
+# Build output: the Rust workspace, the reference, the harness's runs and caches
+/target/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Local settings and tools
+.DS_Store
+.env
+.envrc
+.idea/
+/.vscode/
+/.claude/
+*.tsbuildinfo
