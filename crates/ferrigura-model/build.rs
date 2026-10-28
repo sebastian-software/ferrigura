@@ -1,0 +1,688 @@
+//! Generates the configuration types of `ferrigura-model` from Mermaid's configuration schema.
+//!
+//! `schema/config.schema.yaml` is the single source: Mermaid 12.2.0's configuration schema
+//! (`packages/mermaid/src/schemas/config.schema.yaml`) without the options that no code reads,
+//! copied into the crate so that it builds from its own package on crates.io. The differential configuration run checks its key set against the reference's
+//! (`tools/port/diff-config.ts`). This script turns its
+//! `$defs` and properties into serde structs, with the schema's `default` values as their
+//! `Default` implementation, and writes the key set that the reference's `configKeys` gates
+//! directives with. The output is `$OUT_DIR/config_schema.rs`, included by `src/config/mod.rs`.
+//!
+//! Rules:
+//! - An object with `properties` (after `$ref` and `allOf` are resolved) is a struct. A `$defs`
+//!   entry keeps its name; any other object is named after its path.
+//! - A property with a `default` is a field of its own type, with that default. An object with
+//!   any defaulted field is a field holding the struct's defaults. Every other field is an
+//!   `Option` that is left out of the defaults.
+//! - `string` and enums are `String`, `number` is `f64`, `integer` is `i64`, `boolean` is `bool`,
+//!   `array` is `Vec`. Anything else (`tsType: any`, free-form objects) is `crate::value::Value`.
+//! - `CONFIG_KEYS` lists the keys a directive or front matter may set, as `keyify` in
+//!   `defaultConfig.ts` builds them. Array-valued keys are left out, with their children.
+//! - `FIELD_TYPES` lists the type of every option that the schema types, by its path, parents
+//!   first. `typed` checks each value against its type (see `config/lenient.rs`). A union such as
+//!   `[string, number]` takes both. A node with no type, or with `null` among its types, is not
+//!   listed. An array whose items have no scalar type is checked as an array only; an array of
+//!   objects is refused at build time, as `typed` has no check for its items.
+//!
+//! The reference's TypeScript-only defaults are not in the schema. They live in
+//! `src/config/ts_defaults.json`, and the differential run (`pnpm -C tools/port port:diff config`) checks them.
+
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write as _;
+use std::{env, fs, path::PathBuf};
+
+use serde_json::{Map, Value};
+
+const SCHEMA: &str = "schema/config.schema.yaml";
+
+/// Schema keys that the reference does not accept in a directive.
+const NOT_CONFIG_KEYS: &[&str] = &["dompurifyConfig"];
+
+/// Keys of the class section that the reference's `defaultConfig.ts` leaves undefined. It builds the
+/// `class` object from scratch, so the schema's defaults for these keys are not in the runtime
+/// object (`docs/diagrams/class.md#learnings`). They are fields without a default here.
+const CLASS_KEYS_WITHOUT_DEFAULT: &[&str] = &[
+    "arrowMarkerAbsolute",
+    "diagramPadding",
+    "padding",
+    "textHeight",
+    "titleTopMargin",
+    "useMaxWidth",
+];
+
+/// Keys of the railroad section that the reference's `defaultConfig.ts` leaves undefined: its
+/// `railroad` object sets the colors, the typography and the marker and comment colors to
+/// `undefined` (`railroad` keeps the schema's other defaults), so the theme supplies them, and the
+/// configuration has no value for them unless a directive gives one (`docs/diagrams/railroad.md`,
+/// Differences from Mermaid). They are fields without a default here, as the class keys are.
+const RAILROAD_KEYS_WITHOUT_DEFAULT: &[&str] = &[
+    "commentFill",
+    "commentStroke",
+    "commentTextColor",
+    "fontFamily",
+    "fontSize",
+    "lineColor",
+    "markerFill",
+    "nonTerminalFill",
+    "nonTerminalStroke",
+    "nonTerminalTextColor",
+    "ruleNameColor",
+    "specialFill",
+    "specialStroke",
+    "terminalFill",
+    "terminalStroke",
+    "terminalTextColor",
+];
+
+/// Whether the reference's `defaultConfig.ts` leaves the key of a section undefined, so that the
+/// schema's default for it is not in the reference's configuration (see the two lists above).
+fn without_reference_default(parent: &str, key: &str) -> bool {
+    match parent {
+        "ClassDiagramConfig" => CLASS_KEYS_WITHOUT_DEFAULT.contains(&key),
+        "RailroadDiagramConfig" => RAILROAD_KEYS_WITHOUT_DEFAULT.contains(&key),
+        _ => false,
+    }
+}
+
+/// Rust keywords and reserved words; a field with one of these names gets a trailing `_`.
+const KEYWORDS: &[&str] = &[
+    "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "crate",
+    "do", "dyn", "else", "enum", "extern", "false", "final", "fn", "for", "gen", "if", "impl",
+    "in", "let", "loop", "macro", "match", "mod", "move", "mut", "override", "priv", "pub", "ref",
+    "return", "self", "Self", "static", "struct", "super", "trait", "true", "try", "type",
+    "typeof", "unsafe", "unsized", "use", "virtual", "where", "while", "yield",
+];
+
+/// The Rust type of a schema node, as far as the generated code needs it.
+#[derive(Clone)]
+enum Kind {
+    /// A struct; `has_defaults` is true when one of its fields carries a default.
+    Object { name: String, has_defaults: bool },
+    /// A scalar with its Rust type.
+    Scalar(&'static str),
+    /// A `Vec` of the inner kind.
+    Array(Box<Kind>),
+    /// Any JSON value.
+    Json,
+}
+
+/// One generated field: its Rust type, the expression of its default, and its documentation.
+#[derive(Clone)]
+struct Field {
+    ident: String,
+    json: String,
+    ty: String,
+    expr: String,
+    option: bool,
+    doc: String,
+    kind: Kind,
+}
+
+struct Generator<'a> {
+    root: &'a Value,
+    blocks: Vec<String>,
+    names: BTreeSet<String>,
+    /// Structs of `$defs` entries, by pointer: the name and whether they carry defaults.
+    shared: BTreeMap<String, (String, bool)>,
+    /// The fields of every generated struct, by its name: a schema default of an object is built
+    /// from them.
+    struct_fields: BTreeMap<String, Vec<Field>>,
+}
+
+fn main() {
+    println!("cargo:rerun-if-changed={SCHEMA}");
+    println!("cargo:rerun-if-changed=build.rs");
+
+    let source =
+        fs::read_to_string(SCHEMA).unwrap_or_else(|error| panic!("cannot read {SCHEMA}: {error}"));
+    let schema: Value = serde_yaml_ng::from_str(&source)
+        .unwrap_or_else(|error| panic!("cannot parse {SCHEMA}: {error}"));
+
+    let mut generator = Generator {
+        root: &schema,
+        blocks: Vec::new(),
+        names: BTreeSet::new(),
+        shared: BTreeMap::new(),
+        struct_fields: BTreeMap::new(),
+    };
+    let root = generator.flatten(&schema);
+    generator.struct_for(&root, "MermaidConfig", None);
+
+    let mut keys = BTreeSet::new();
+    generator.collect_keys(&root, &mut keys);
+    // `dompurifyConfig` has no default in the reference, so its `keyify` never sees it.
+    for key in NOT_CONFIG_KEYS {
+        keys.remove(*key);
+    }
+    // Keys the reference accepts without the schema naming them; see `ts_keys.txt`.
+    println!("cargo:rerun-if-changed=src/config/ts_keys.txt");
+    let ts_keys = fs::read_to_string("src/config/ts_keys.txt")
+        .unwrap_or_else(|error| panic!("cannot read src/config/ts_keys.txt: {error}"));
+    for line in ts_keys.lines().map(str::trim) {
+        if !line.is_empty() && !line.starts_with('#') {
+            keys.insert(line.to_owned());
+        }
+    }
+
+    let mut field_types = Vec::new();
+    generator.collect_field_types(&root, &mut Vec::new(), &mut field_types);
+
+    let mut out =
+        String::from("// @generated by build.rs from schema/config.schema.yaml. Do not edit.\n\n");
+    out.push_str("use super::lenient::{FieldType, Scalar};\n\n");
+    for block in &generator.blocks {
+        out.push_str(block);
+        out.push('\n');
+    }
+    out.push_str(
+        "/// The keys a directive or front matter `config` block may set: the reference's `configKeys`.\n",
+    );
+    out.push_str("pub const CONFIG_KEYS: &[&str] = &[\n");
+    for key in &keys {
+        let _ = writeln!(out, "    {key:?},");
+    }
+    out.push_str("];\n\n");
+    out.push_str(
+        "/// The type of every option that the schema types, parents before children; `typed` reads each\n\
+         /// value against it.\n",
+    );
+    out.push_str("pub(crate) const FIELD_TYPES: &[(&[&str], FieldType)] = &[\n");
+    for (path, field_type) in &field_types {
+        let segments: Vec<String> = path.iter().map(|segment| format!("{segment:?}")).collect();
+        let _ = writeln!(out, "    (&[{}], {field_type}),", segments.join(", "));
+    }
+    out.push_str("];\n");
+
+    let target = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| "target".to_owned()))
+        .join("config_schema.rs");
+    fs::write(&target, out).unwrap_or_else(|error| panic!("cannot write {target:?}: {error}"));
+}
+
+impl Generator<'_> {
+    /// The node a `#/…` pointer names in the schema.
+    fn resolve(&self, pointer: &str) -> &Value {
+        let path = pointer.strip_prefix("#/").unwrap_or(pointer);
+        path.split('/').fold(self.root, |node, segment| {
+            let key = segment.replace("~1", "/").replace("~0", "~");
+            node.get(&key)
+                .unwrap_or_else(|| panic!("unresolved schema pointer {pointer}"))
+        })
+    }
+
+    /// The node with its `$ref` and `allOf` resolved into one object. Sibling keys win over the
+    /// referenced ones, and properties from every source are merged.
+    fn flatten(&self, node: &Value) -> Value {
+        let mut out = Map::new();
+        if let Some(pointer) = node.get("$ref").and_then(Value::as_str)
+            && let Value::Object(target) = self.flatten(self.resolve(pointer))
+        {
+            out = target;
+        }
+        if let Some(parts) = node.get("allOf").and_then(Value::as_array) {
+            for part in parts {
+                if let Value::Object(flat) = self.flatten(part) {
+                    merge_into(&mut out, &flat);
+                }
+            }
+        }
+        if let Some(own) = node.as_object() {
+            for (key, value) in own {
+                if key == "$ref" || key == "allOf" {
+                    continue;
+                }
+                if key == "properties" {
+                    let target = out
+                        .entry("properties")
+                        .or_insert_with(|| Value::Object(Map::new()));
+                    if let (Value::Object(target), Value::Object(props)) = (target, value) {
+                        for (name, prop) in props {
+                            target.insert(name.clone(), prop.clone());
+                        }
+                    }
+                } else {
+                    out.insert(key.clone(), value.clone());
+                }
+            }
+        }
+        Value::Object(out)
+    }
+
+    /// Creates the struct for an object with properties, unless a `$defs` entry already has one.
+    fn struct_for(&mut self, flat: &Value, hint: &str, def: Option<&str>) -> (String, bool) {
+        if let Some(pointer) = def
+            && let Some(done) = self.shared.get(pointer)
+        {
+            return done.clone();
+        }
+        let name = self.unique_name(hint);
+        if let Some(pointer) = def {
+            self.shared
+                .insert(pointer.to_owned(), (name.clone(), false));
+        }
+
+        let mut fields = Vec::new();
+        let mut carries_default = false;
+        if let Some(props) = flat.get("properties").and_then(Value::as_object) {
+            for (key, prop) in props {
+                let (field, carries) = self.field(key, prop, &name);
+                carries_default |= carries;
+                fields.push(field);
+            }
+        }
+
+        let doc = description(flat).unwrap_or_else(|| format!("Configuration of `{name}`."));
+        self.blocks.push(emit_struct(&name, &doc, &fields));
+        self.struct_fields.insert(name.clone(), fields);
+        if let Some(pointer) = def {
+            self.shared
+                .insert(pointer.to_owned(), (name.clone(), carries_default));
+        }
+        (name, carries_default)
+    }
+
+    /// Builds the field of one property. Returns whether it carries a default.
+    fn field(&mut self, key: &str, prop: &Value, parent: &str) -> (Field, bool) {
+        let flat = self.flatten(prop);
+        let def = def_pointer(prop);
+        let hint = match def {
+            Some(pointer) => pointer.rsplit('/').next().unwrap_or(key).to_owned(),
+            None => format!("{parent}{}", pascal(key)),
+        };
+        let kind = self.kind(&flat, &hint, def);
+        let default: Option<&Value> = if without_reference_default(parent, key) {
+            None
+        } else {
+            flat.get("default")
+        };
+        let (ty, option, expr, carries) = match &kind {
+            Kind::Object { name, has_defaults } => {
+                let literal = default
+                    .and_then(Value::as_object)
+                    .map(|object| self.struct_literal(name, object));
+                match (*has_defaults, literal) {
+                    (true, literal) => (
+                        name.clone(),
+                        false,
+                        literal.unwrap_or_else(|| "Default::default()".to_owned()),
+                        true,
+                    ),
+                    (false, Some(literal)) => (
+                        format!("Option<{name}>"),
+                        true,
+                        format!("Some({literal})"),
+                        true,
+                    ),
+                    (false, None) => (format!("Option<{name}>"), true, "None".to_owned(), false),
+                }
+            }
+            Kind::Json => match default.and_then(|value| literal(&kind, value)) {
+                Some(lit) => (
+                    "Option<crate::value::Value>".to_owned(),
+                    true,
+                    format!("Some({lit})"),
+                    true,
+                ),
+                None => (
+                    "Option<crate::value::Value>".to_owned(),
+                    true,
+                    "None".to_owned(),
+                    false,
+                ),
+            },
+            _ => match default.and_then(|value| literal(&kind, value)) {
+                Some(lit) => (rust_type(&kind), false, lit, true),
+                None => (
+                    format!("Option<{}>", rust_type(&kind)),
+                    true,
+                    "None".to_owned(),
+                    false,
+                ),
+            },
+        };
+        let field = Field {
+            ident: field_ident(key),
+            json: key.to_owned(),
+            ty,
+            expr,
+            option,
+            doc: description(&flat).unwrap_or_else(|| format!("The `{key}` option.")),
+            kind,
+        };
+        (field, carries)
+    }
+
+    /// A struct literal of `name`, for a default that is an object in the schema: the options it
+    /// names take the values of the default, the others the defaults of the struct.
+    fn struct_literal(&self, name: &str, object: &Map<String, Value>) -> String {
+        let fields = self
+            .struct_fields
+            .get(name)
+            .unwrap_or_else(|| panic!("no generated struct {name} for a schema default"));
+        let parts: Vec<String> = fields
+            .iter()
+            .map(|field| {
+                let expr = object
+                    .get(&field.json)
+                    .and_then(|value| self.value_expr(field, value))
+                    .unwrap_or_else(|| field.expr.clone());
+                format!("{}: {expr}", field.ident)
+            })
+            .collect();
+        format!("{name} {{ {} }}", parts.join(", "))
+    }
+
+    /// The expression of one option from a schema default, or `None` when the value does not fit
+    /// the option's type.
+    fn value_expr(&self, field: &Field, value: &Value) -> Option<String> {
+        let expr = match &field.kind {
+            Kind::Object { name, .. } => self.struct_literal(name, value.as_object()?),
+            kind => literal(kind, value)?,
+        };
+        Some(if field.option {
+            format!("Some({expr})")
+        } else {
+            expr
+        })
+    }
+
+    fn kind(&mut self, flat: &Value, hint: &str, def: Option<&str>) -> Kind {
+        if flat.get("properties").is_some() {
+            let (name, has_defaults) = self.struct_for(flat, hint, def);
+            return Kind::Object { name, has_defaults };
+        }
+        match flat.get("type").and_then(Value::as_str) {
+            Some("string") => Kind::Scalar("String"),
+            Some("number") => Kind::Scalar("f64"),
+            Some("integer") => Kind::Scalar("i64"),
+            Some("boolean") => Kind::Scalar("bool"),
+            Some("array") => {
+                let items = flat
+                    .get("items")
+                    .map_or(Value::Null, |items| self.flatten(items));
+                Kind::Array(Box::new(self.kind(&items, &format!("{hint}Item"), None)))
+            }
+            _ => Kind::Json,
+        }
+    }
+
+    fn unique_name(&mut self, hint: &str) -> String {
+        let base = pascal(hint);
+        let mut name = base.clone();
+        let mut counter = 2;
+        while self.names.contains(&name) {
+            name = format!("{base}{counter}");
+            counter += 1;
+        }
+        self.names.insert(name.clone());
+        name
+    }
+
+    /// Adds to `keys` every key that `keyify` finds in the defaults: each property name, and the
+    /// names below an object, except that array-valued properties and their children are left out.
+    fn collect_keys(&self, flat: &Value, keys: &mut BTreeSet<String>) {
+        let Some(props) = flat.get("properties").and_then(Value::as_object) else {
+            return;
+        };
+        for (key, prop) in props {
+            let child = self.flatten(prop);
+            if child.get("type").and_then(Value::as_str) == Some("array") {
+                continue;
+            }
+            keys.insert(key.clone());
+            self.collect_keys(&child, keys);
+        }
+    }
+
+    /// Adds the type of every option below `flat` to `out`, parents first, as the Rust source of a
+    /// `FieldType`. `path` holds the keys down to `flat`.
+    fn collect_field_types(
+        &self,
+        flat: &Value,
+        path: &mut Vec<String>,
+        out: &mut Vec<(Vec<String>, String)>,
+    ) {
+        let Some(props) = flat.get("properties").and_then(Value::as_object) else {
+            return;
+        };
+        for (key, prop) in props {
+            let child = self.flatten(prop);
+            path.push(key.clone());
+            if let Some(field_type) = self.field_type(&child) {
+                out.push((path.clone(), field_type));
+            }
+            if child.get("properties").is_some() {
+                self.collect_field_types(&child, path, out);
+            }
+            path.pop();
+        }
+    }
+
+    /// The `FieldType` of a schema node, as Rust source; `None` when `typed` has no check for its
+    /// type (no `type`, or a type with `null` in it).
+    fn field_type(&self, flat: &Value) -> Option<String> {
+        if flat.get("properties").is_some() {
+            return Some("FieldType::Object".to_owned());
+        }
+        let type_node = flat.get("type")?;
+        match type_node {
+            Value::String(name) if name == "object" => Some("FieldType::Object".to_owned()),
+            Value::String(name) if name == "array" => {
+                let items = flat
+                    .get("items")
+                    .map_or(Value::Null, |items| self.flatten(items));
+                assert!(
+                    items.get("properties").is_none(),
+                    "the schema has an array of objects, which `typed` does not check"
+                );
+                let variants = items
+                    .get("type")
+                    .and_then(scalar_variants)
+                    .unwrap_or_default();
+                Some(format!("FieldType::Array(&[{}])", variants.join(", ")))
+            }
+            _ => {
+                let variants = scalar_variants(type_node)?;
+                Some(format!("FieldType::Scalars(&[{}])", variants.join(", ")))
+            }
+        }
+    }
+}
+
+/// The `Scalar` variants of a schema `type`, which is a name or a list of names. `None` when a name
+/// is not a scalar type that `typed` checks.
+fn scalar_variants(type_node: &Value) -> Option<Vec<&'static str>> {
+    let names: Vec<&str> = match type_node {
+        Value::String(name) => vec![name.as_str()],
+        Value::Array(names) => names
+            .iter()
+            .map(Value::as_str)
+            .collect::<Option<Vec<_>>>()?,
+        _ => return None,
+    };
+    names
+        .iter()
+        .map(|name| match *name {
+            "string" => Some("Scalar::String"),
+            "number" => Some("Scalar::Number"),
+            "integer" => Some("Scalar::Integer"),
+            "boolean" => Some("Scalar::Boolean"),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The Rust type of a kind, without the `Option` a field may add.
+fn rust_type(kind: &Kind) -> String {
+    match kind {
+        Kind::Object { name, .. } => name.clone(),
+        Kind::Scalar(ty) => (*ty).to_owned(),
+        Kind::Array(inner) => format!("Vec<{}>", rust_type(inner)),
+        Kind::Json => "crate::value::Value".to_owned(),
+    }
+}
+
+/// A Rust expression for a schema default of the given kind, or `None` when it has none.
+fn literal(kind: &Kind, value: &Value) -> Option<String> {
+    match (kind, value) {
+        (Kind::Scalar("String"), Value::String(text)) => Some(format!("{text:?}.to_owned()")),
+        (Kind::Scalar("f64"), Value::Number(number)) => {
+            number.as_f64().map(|float| format!("{float:?}"))
+        }
+        (Kind::Scalar("i64"), Value::Number(number)) => number.as_i64().map(|int| format!("{int}")),
+        (Kind::Scalar("bool"), Value::Bool(flag)) => Some(flag.to_string()),
+        (Kind::Array(inner), Value::Array(items)) => items
+            .iter()
+            .map(|item| literal(inner, item))
+            .collect::<Option<Vec<_>>>()
+            .map(|parts| format!("vec![{}]", parts.join(", "))),
+        (Kind::Json, value) => Some(format!(
+            "crate::value::Value::from(serde_json::json!({value}))"
+        )),
+        _ => None,
+    }
+}
+
+/// The `$defs` pointer of a property, when it refers to a whole definition.
+fn def_pointer(prop: &Value) -> Option<&str> {
+    prop.get("$ref")
+        .and_then(Value::as_str)
+        .filter(|pointer| pointer.starts_with("#/$defs/") && pointer.matches('/').count() == 2)
+}
+
+fn description(node: &Value) -> Option<String> {
+    node.get("description")
+        .and_then(Value::as_str)
+        .map(|text| autolink(text.trim()))
+        .filter(|text| !text.is_empty())
+}
+
+/// The description with each bare URL written as rustdoc's autolink, `<https://…>`, which rustdoc
+/// asks for (`rustdoc::bare_urls`). The schema is Mermaid's source and stays as it is; a URL ends at
+/// white space, and a full stop or comma after it stays outside the link.
+fn autolink(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(at) = rest.find("http") {
+        let (before, from) = rest.split_at(at);
+        out.push_str(before);
+        let is_url = (from.starts_with("https://") || from.starts_with("http://"))
+            && !before.ends_with(['<', '(', '[']);
+        if !is_url {
+            out.push_str("http");
+            rest = &from[4..];
+            continue;
+        }
+        let end = from.find(char::is_whitespace).unwrap_or(from.len());
+        let url = from[..end].trim_end_matches(['.', ',', ';', ':']);
+        out.push('<');
+        out.push_str(url);
+        out.push('>');
+        rest = &from[url.len()..];
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Merges `source` into `target` for `allOf`: properties are merged, and other keys are kept
+/// from the first source that has them.
+fn merge_into(target: &mut Map<String, Value>, source: &Map<String, Value>) {
+    for (key, value) in source {
+        if key == "properties" {
+            let entry = target
+                .entry("properties")
+                .or_insert_with(|| Value::Object(Map::new()));
+            if let (Value::Object(entry), Value::Object(props)) = (entry, value) {
+                for (name, prop) in props {
+                    entry.insert(name.clone(), prop.clone());
+                }
+            }
+        } else {
+            target.entry(key.clone()).or_insert_with(|| value.clone());
+        }
+    }
+}
+
+fn emit_struct(name: &str, doc: &str, fields: &[Field]) -> String {
+    let mut out = doc_comment(doc, "");
+    out.push_str("#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]\n");
+    out.push_str("#[serde(default)]\n");
+    let _ = writeln!(out, "pub struct {name} {{");
+    for field in fields {
+        out.push_str(&doc_comment(&field.doc, "    "));
+        if field.option {
+            out.push_str("    #[serde(skip_serializing_if = \"Option::is_none\")]\n");
+        }
+        let _ = writeln!(out, "    #[serde(rename = {:?})]", field.json);
+        let _ = writeln!(out, "    pub {}: {},", field.ident, field.ty);
+    }
+    out.push_str("}\n\n");
+    out.push_str("#[allow(clippy::derivable_impls)]\n");
+    let _ = writeln!(out, "impl Default for {name} {{");
+    out.push_str("    fn default() -> Self {\n");
+    out.push_str("        Self {\n");
+    for field in fields {
+        let _ = writeln!(out, "            {}: {},", field.ident, field.expr);
+    }
+    out.push_str("        }\n    }\n}\n");
+    out
+}
+
+fn doc_comment(text: &str, indent: &str) -> String {
+    let mut out = String::new();
+    for line in text.trim().lines() {
+        let line = line.trim_end();
+        if line.is_empty() {
+            let _ = writeln!(out, "{indent}///");
+        } else {
+            let _ = writeln!(out, "{indent}/// {line}");
+        }
+    }
+    out
+}
+
+fn field_ident(key: &str) -> String {
+    let ident = snake(key);
+    if KEYWORDS.contains(&ident.as_str()) {
+        format!("{ident}_")
+    } else {
+        ident
+    }
+}
+
+/// `camelCase` and `kebab-case` as `snake_case`; a run of capitals stays together.
+fn snake(name: &str) -> String {
+    let chars: Vec<char> = name.chars().collect();
+    let mut out = String::new();
+    for (index, &c) in chars.iter().enumerate() {
+        if !c.is_ascii_alphanumeric() {
+            out.push('_');
+            continue;
+        }
+        if c.is_ascii_uppercase() && index > 0 {
+            let previous = chars[index - 1];
+            let next_is_lower = chars.get(index + 1).is_some_and(char::is_ascii_lowercase);
+            if previous.is_ascii_lowercase()
+                || previous.is_ascii_digit()
+                || (previous.is_ascii_uppercase() && next_is_lower)
+            {
+                out.push('_');
+            }
+        }
+        out.push(c.to_ascii_lowercase());
+    }
+    out
+}
+
+/// `kebab-case` and `camelCase` as `PascalCase`.
+fn pascal(name: &str) -> String {
+    name.split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut chars = part.chars();
+            match chars.next() {
+                Some(first) => first.to_ascii_uppercase().to_string() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect()
+}

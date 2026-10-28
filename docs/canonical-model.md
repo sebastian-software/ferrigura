@@ -1,0 +1,335 @@
+# Canonical model
+
+The canonical model is the JSON form of a parsed diagram that both the Rust parsers and the JS exporters in [`tools/port/`](../tools/port/) produce. The differential run compares the two outputs of every input ([0015](./decisions/0015-differential-testing.md)). The Rust structs live in [`crates/ferrigura-model`](../crates/ferrigura-model/); this page fixes the conventions they follow, and their doc comments refer here.
+
+The model is ours, not a dump of the JS DB: where the DB holds something that the input does not contain, or that only rendering needs, the model leaves it out. The rules below say which, and why.
+
+## Shape
+
+- Every model has `"version": 1`, the constant `CANONICAL_VERSION`. It changes when a field is added, removed or changes meaning; the change is described in this page before the code changes.
+- Keys are camelCase (`showData`, `accTitle`, `accDescr`), as serde writes them with `rename_all = "camelCase"`.
+- Strings are always present. An absent header text is `""`, not `null`, because the DB defaults to `''` and the JS exporters read it that way.
+- Numbers are JSON numbers. The differential run compares them with `===`, so `-0` and `0` agree.
+- Objects are compared without regard to their key order. Where the order is part of the model, the differential run writes the object as a list of `[key, value]` pairs on both sides (the links of a sequence actor, see [Sequence](#sequence)).
+
+## Text
+
+The text of a value is what the grammar's value rules return from the source, and nothing more:
+
+1. **Line breaks.** CRLF and CR become LF before anything else, in the reference's `cleanupText` and in `preprocess.rs`.
+2. **HTML attribute quotes.** Inside a tag, `="x"` becomes `='x'`, as the reference's `cleanupText` does before parsing. The canonical text contains the rewritten form, because it is what the grammar sees.
+3. **Strings.** Quotes are removed and escapes resolved as Langium's default value converter does: `\b \f \n \r \t \v \0`, and any other escaped character stands for itself. The railroad grammars are the exception (see Railroad).
+4. **Single-line header values** (`title`, `accTitle:`, `accDescr:`) are trimmed, and each run of two or more spaces or tabs becomes one space. The timeline keeps its own rules, see [Timeline](#timeline).
+5. **Block `accDescr { … }`** loses the leading whitespace of each line, the trailing whitespace of each line, collapses runs of blanks, and collapses runs of two or more line breaks into one line break. The order is that of the reference's converter.
+6. **Markup is raw.** `<br>`, `<b>`, `&`, `&amp;` and every other character stay as written, except the flowchart's node, edge and subgraph texts and the railroad's texts, which hold the sanitized text (see Sanitization and Railroad). Escaping for SVG is the renderer's job, and labels are text in SVG ([0009](./decisions/0009-svg-text-labels.md)).
+
+### Sanitization
+
+The reference's DB setters pass every text through DOMPurify (`sanitizeText`). DOMPurify returns text that has no `<` unchanged (its fast path, `purify.es.mjs` 2250), so the DB value of `AT&T` is `AT&T`. Text with markup is serialized as HTML: `AT&T <b>bold</b>` becomes `AT&amp;T <b>bold</b>`, and script tags are removed.
+
+The flowchart DB keeps that step, because its layout data (`getData`) carries the sanitized texts: the node text of a bracket or text label, the edge text and the subgraph title are the DB values of the reference. The Rust DB applies [`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs), a pure port of the part of DOMPurify 3.4.12 that these texts reach, and `pnpm -C tools/port port:diff flowchart` and `flowchart-data` compare the result with the reference's DOMPurify on every flowchart input. The `@{ label }` text is not sanitized, as the reference does not sanitize it. The timeline DB sanitizes its title and header texts with the same subset, because its setters are the common DB's (see [Timeline](#timeline)); `pnpm -C tools/port port:diff timeline` compares them. The railroad DB sanitizes its names and texts the same way (see Railroad). The other diagram types, and the header texts of the flowchart, are unchanged: the pie and info setters need a DOM that the canonical model does not provide, and the header setters are replaced in the exporters as before.
+
+For the same reason the exporters do not call the setters for the header texts. They read the grammar's AST and apply the DB's two whitespace rules themselves ([`pie-header.ts`](../tools/port/pie-header.ts)):
+
+- `accTitle`: leading whitespace removed (`^\s+`);
+- `accDescr`: whitespace after each line break removed (`\n\s+` becomes `\n`).
+
+These rules never change a value that the grammar gives, because the value rules already remove that whitespace. They stay so that the model follows the DB as written. [`check-header.ts`](../tools/port/check-header.ts) runs the real setters, with jsdom providing the DOM DOMPurify needs, and compares the two on every accepted input whose header texts contain no `&`, `<`, `>` or no-break space. A drift in these rules fails `pnpm -C tools/port port:check-header`.
+
+## Numbers
+
+A JSON number is read to the exact double that JavaScript reads from the same text. The default parser of `serde_json` is not correctly rounded and can be a few ulps off, which changes the last digit of a layout coordinate or a trace value. The workspace therefore enables its `float_roundtrip` feature in the root `Cargo.toml`, and every crate inherits it. The layout inputs and the reference outputs both go through the same reader, so both are exact.
+
+When a value is written back, it is written with the shortest representation that reads back to the same double, which is what JavaScript prints. Nothing else rounds a number on the way.
+
+JSON has no `NaN` and no infinity. A number that is not finite is written as the string `"NaN"`, `"Infinity"` or `"-Infinity"`; the configuration (`value.rs`) and the journey scores (below) do so. The exporters write the same strings, since `JSON.stringify` would write `null`.
+
+## Title precedence
+
+Where the title comes from differs by type, because the types set it through different DB setters. Each type's page states its own rule; the cases are pinned in [`cases.ts`](../tools/port/cases.ts) and in `crates/ferrigura-syntax/tests/title_precedence.rs`.
+
+- **Most types** (pie, gitGraph and the other Langium types): `Diagram.fromText` sets the front matter's title first, then `populateCommonDb` sets the grammar's title, but only when that is non-empty. So the grammar's title wins when it is non-empty, otherwise the front matter's title is used, otherwise the title is `""`. The grammar's own rule is that the last `title` line wins, even when it is empty; an empty last title therefore lets the front matter title through.
+- **Gantt, sequence and journey**: their grammars set the title on the DB directly, so the last `title` statement of the body replaces the front matter title even when it is blank.
+- **Timeline**: its DB has no front matter setter, so only the grammar's title reaches the model, and a blank last title stays blank (see [Timeline](#timeline)).
+- **Info**: its DB has no title setter, so the front matter title does not reach the model, and the title is the grammar's alone.
+
+## Front matter
+
+Only the front matter `title` is read. The `config` block and every other key belong to the configuration ([0008](./decisions/0008-canonical-model-and-typed-views.md)) and are not in any model. The front matter itself is removed before lexing. The number of lines it occupied is kept only to report error positions against the original input.
+
+## Pie
+
+- `sections` are in the order of first appearance. A label given again keeps its first value and position, as `addSection` does.
+- A negative value is an error, and it is checked before the duplicate test, so a negative value under a repeated label is still an error, as in the reference.
+- `showData` is true only when the keyword directly follows `pie`.
+
+## Info
+
+The model keeps `title`, `accTitle` and `accDescr` as the grammar gives them. The keyword `showInfo` is not in the grammar's AST, so it is in no model.
+
+## Flowchart
+
+The flowchart model is the DB state after parsing (`flowDb.ts`), with the names of the DB in camelCase. The full field list and the exclusions are in [its page](./diagrams/flowchart.md); the rules here are the ones the other diagrams do not share.
+
+- **Header texts use the flowchart's own rules.** `accTitle` is the grammar's trimmed value without leading blanks. A block or single-line `accDescr` is the grammar's trimmed value with each line break and the blanks after it reduced to one line break. Blank lines are not collapsed, which differs from the pie and info converter in section 5 above.
+- **Title.** The flowchart grammar has no `title` statement, so `title` is the front matter title, or `""`.
+- **Labels.** Each label carries its kind as `labelType`: `text`, `string` (double-quoted) or `markdown` (quoted, between backticks). The text is raw; Markdown is parsed at render time with Ferromark.
+- **Undefined is `null`.** A DB field the input never sets is `null` (`shape`, `link`, `linkTarget`, `style`, `interpolate`, `animate`, `animation`, `dir`, `length` of an `INVALID` link, the shape data fields). An empty list is `[]`.
+- **Order.** Vertices are in creation order, edges in creation order (the order of the DB's `edges` array), subgraphs in closing order (a nested subgraph closes first), with a repeated id merged into its first position. Subgraph `nodes` keep the grammar's order, in which a chain's later nodes come first (`A --> B --> C` gives `[C, B, A]`).
+- **Edge ids.** The `id` is always present: the user's `e1@` id, or the generated `L_<start>_<end>_<n>`, where `n` counts the edges already drawn between the same pair. Tooltips are kept by id even when no vertex has that id.
+- **Config is not in the model.** `maxEdges` is a parser option (default 500). `securityLevel`, `htmlLabels`, `inheritDir` and `curve` act at render time and are not in the model.
+
+## Swimlanes
+
+The swimlane model is the flowchart model: `crates/ferrigura-model/src/swimlanes.rs` is a type alias of it. The reference's swimlane diagram is the flowchart's factory with its own styles (`diagrams/swimlanes/swimlanesDiagram.ts`), so the parser and the DB are the flowchart's, and the rules above for the flowchart hold. Its own points:
+
+- **Detection comes first.** The exporter (`export-swimlanes.ts`) runs `detectType` on the cleaned text, as `Diagram.fromText` does, and rejects a text that is not a swimlane diagram; the Rust side does the same in `examples/canonical.rs`. A text that no detector takes is in the undetected list of `cases.ts`.
+- **Lanes are subgraphs.** The layout's lanes are the DB's subgraphs; the layout's data (the lanes' sizes, the default lane of the nodes outside every lane) is the renderer's and is not in the model.
+- **Left out:** the configuration, and the layout inputs (`getData`), which are the renderer stage ([its page](./diagrams/swimlanes.md)).
+
+## Timeline
+
+The model is the DB state after parsing, as [its page](./diagrams/timeline.md) describes it: `direction`, the header texts, `sections`, and `periods` with their `section`, `period` and `events`, in input order. The timeline's rules differ from the others in these points:
+
+- **Header texts use the grammar's own rules.** The grammar calls `trim()` on `accTitle` and `accDescr` (`timeline.jison` 73-75) and nothing on `title`, so runs of blanks are kept, and a title keeps its leading and trailing blanks. The `accDescr` setter then removes the indentation after each line break.
+- **Title.** The front matter title does not reach the model (the timeline DB has no setter). The title is the grammar's last `title` line, even when it is blank.
+- **Text is encoded, not decoded.** Entities are encoded before parsing (`#quot;` is `ﬂ°quot¶ß`), and the model keeps the encoded form, as the flowchart does. Sections, periods and events are not sanitized. The title and the header texts are, as above.
+- **Left out.** The task `id` (a counter that `clear` does not reset), `type` (always the section) and `score` (always 0).
+
+## Journey
+
+- **Texts are the reader's text.** The journey DB keeps the entities as placeholders (`ﬂ°name¶ß`), and the renderer decodes them as the HTML parser reads a character reference. The model holds that decoded text: `#hearts;` is `♥`, an unknown name stays as `&name;`, and raw text, `&amp;` included, reads as it was written. The rule is in [its page](./diagrams/journey.md).
+- **Sanitizing.** The title and the accessibility texts go through the sanitizer of the flowchart (`sanitize.rs`, with the full HTML5 names of `entities.rs`), before the entities are read. The task names, the people and the sections are not sanitized.
+- **Scores** are `Number()` of the text, as a number or one of the sentinel strings above.
+
+## XyChart
+
+The xychart model is the DB state after the parse, before the chart builder runs, with the field list in [its page](./diagrams/xychart.md). Its own rules:
+
+- **Orientation** is the header keyword when it is given, else the configuration's `chartOrientation`. The keyword is compared as typed, so `HORIZONTAL` is `vertical`.
+- **Title** is the DB's `getDiagramTitle()`, so a grammar title replaces the front matter title even when it is blank. The DB's `getXYChartData().title` is not used: only `getDrawableElem` sets it.
+- **Absent values are `null`.** A category without a value is `[category, null]`. The other fields keep `""` and `[]` as the rule above says.
+- **Non-finite numbers** (the range of a chart with no plot, or a number beyond the double range) are the sentinel strings, as in the other models.
+- **X values are strings** as the DB stores them: the category, or the JavaScript string of the linear position (`1.6666666666666667`, `1e-7`).
+- **Colors** are the palette entries of the theme the configuration resolves to, one per plot in declaration order. The exporter applies ferrigura's rule for themes it does not ship.
+
+## QuadrantChart
+
+The quadrant model is the DB state after the parse, before the chart builder lays it out, with the field list in [its page](./diagrams/quadrant.md). Its own rules:
+
+- **Coordinates** are `Number(text)` of the token the grammar read, the value the scale reads: `0x5` is 5, and `0,5` is `"NaN"`.
+- **Entities** keep the placeholders the DB holds (`ﬂ°°35¶ß`); the renderer decodes them.
+- **Styles are present only when set**: a point or class without a `radius` has no `radius` key.
+- **Order**: the points are in the DB's order, the last source line first, and the classes are a list of `[name, styles]` pairs in the order of their first definition.
+
+## Block
+
+The block model is the DB state after parsing (`blockDB.ts`), with the field list and the quirks in [its page](./diagrams/block.md). Its own rules:
+
+- **Generated ids are placeholders.** The ids the reference draws at random (of space cells and anonymous composites) are deterministic in the port, and the differential replaces them by `$genK` on both sides, in tree order. A space cell's label is its generated id, so it takes the same placeholder. The counter itself is not compared.
+- **Undefined is absent**, with one exception: the first block of a chained link (`A --> B --> C`) is an empty object, as the reference's DB holds it ([its page](./diagrams/block.md#parsing)).
+- **Texts** are the sanitized labels, with the entity placeholders kept, as the DB keeps them. Blanks in directions and styles are kept as written.
+- **Left out**: the layout, the palette slots and the shapes (renderer concerns), and the edge's `type`, which is always `edge`.
+
+## Packet
+
+The packet model is the DB state after the parse, with the rows of blocks and the header texts, as [its page](./diagrams/packet.md) says. Its own rules:
+
+- **Numbers.** A bit number is a double, as the DB holds it, and a non-finite one is its sentinel string (`"Infinity"`). The `bits` of a piece split at a row boundary is one less than its width, as the DB gives it (quirk 1).
+- **Labels** are the DB's strings: the grammar's value with the escapes resolved and the entity placeholders kept, and the markup raw.
+- **Texts.** The title and the accessibility texts are sanitized as the DB sanitizes them. The title follows the precedence of the section above.
+- **Rows** depend on `bitsPerRow`, which is read from the effective configuration (quirk 9), and not stored in the model. No row is empty.
+- **Left out**: the configuration and the styles, which only the renderer reads.
+
+## ER
+
+The ER model is the DB state after parsing (`erDb.ts`), with the DB's names in camelCase, as the flowchart's model is. The full field list and the exclusions are in [its page](./diagrams/er.md); the rules here are the ones the other diagrams do not share.
+
+- **Sanitized texts.** The header texts (`accTitle`, `accDescr`), the subgraph titles and the front-matter title are the DB's values after DOMPurify ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), with the DB's whitespace rules applied after it. Entity names, aliases, attributes, roles, styles and class names are raw.
+- **Ids.** An entity id is `entity-<name>-<n>`, where `n` is the number of entities before it. A relationship end is an entity id, or the id of a subgraph of that id when one exists at the point of the statement.
+- **Members.** A subgraph's `nodes` are the values the grammar gives inside it, in order: entity names, nested subgraph ids, and the strings of the `classDef`, `class`, `style`, `accTitle` and `accDescr` statements. Empty and repeated strings are dropped. These are the DB's members, not what the renderer draws.
+- **Cardinalities** are the DB's strings (`ZERO_OR_ONE`, `ONLY_ONE`, `MD_PARENT`, and the rest); `cardA` is the end on the right of the line, `cardB` the end on the left.
+- **Classes.** An entity's `classes` are the names given by `:::` and `class`, without the `default` that the DB starts with. A class keeps its `textStyles`, which the DB derives from its styles.
+
+## Requirement
+
+The requirement model is the DB state after parsing (`requirementDb.ts`), with the field list in [its page](./diagrams/requirement.md). Its own rules:
+
+- **Texts keep the placeholders.** The DB keeps the entities as placeholders (`ﬂ°name¶ß`), and the requirement, element, relationship and class texts are not sanitized, so the model holds them as the DB does. The renderer decodes them when it draws. This differs from the journey, which decodes its texts in the model.
+- **Header texts are sanitized.** The title and the accessibility texts go through the sanitizer of the flowchart, with the DB's whitespace rules (`setAccTitle`, `setAccDescription`).
+- **Blanks are kept.** Unlike the single-line header values of the general rules above, a header value keeps its inner blanks: the requirement DB removes only the leading blanks of `accTitle`, and the blanks after each line break of `accDescr`.
+- **Values are kept as written.** The kinds, risks and methods are the DB's display strings (`Functional Requirement`, `Medium`, `Analysis`); an unset risk, method, type or document reference is `""`.
+
+## Gantt
+
+The gantt model is the DB state after `getTasks()` (`ganttDb.js`), with the field list and the exclusions in [its page](./diagrams/gantt.md). Its own rules:
+
+- **Dates are numbers.** `startTime`, `endTime` and `renderEndTime` are epoch milliseconds in UTC, and `null` is a date the DB leaves unresolved or an Invalid Date. The parser takes the current time as an option (`now`), for the dates that take missing parts from the clock; the differential run gives both sides the same fixed clock under `TZ=UTC`.
+- **Sanitized texts.** `title`, `accTitle` and `accDescr` are the DB values after the sanitizer of the flowchart ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), with the DB's whitespace rules. A `title` statement overrides the front matter title even when it sanitizes to empty. Task texts and section names are raw.
+- **Links** map a task id to the URL of its `click … href` statement after `sanitizeUrl`, for the tasks that exist when the line is read. Callbacks are not in the model (decision 0006).
+- **Statements are raw.** `dateFormat`, `axisFormat`, `tickInterval` and `todayMarker` keep the text after their keyword, blanks included; `includes` and `excludes` are lower case and de-duplicated in first-seen order.
+
+## Sequence
+
+The sequence model is the DB state after parsing (`sequenceDb.ts`), with the field list and the exclusions in [its page](./diagrams/sequence.md). Its own rule:
+
+- **Links keep the key order of a JavaScript object.** The reference lists an actor's links in its menu with `for…in`, so their order is part of the model: the array indices (the canonical integers from 0 to 2^32 − 2) first, ascending, then the other keys in insertion order; a repeated key keeps its place and takes the new value. The model holds them in a `JsObject` ([`js_object.rs`](../crates/ferrigura-model/src/js_object.rs)), which serde writes as a JSON object in that order. The differential run cannot compare that order as an object: `serde_json::Value` sorts the keys, and `same` in [`diff.ts`](../tools/port/diff.ts) ignores their order. The exporter ([`export-sequence.ts`](../tools/port/export-sequence.ts), `Object.entries`) and the canonical example ([`canonical.rs`](../crates/ferrigura-syntax/examples/canonical.rs)) therefore both write `links` as a list of `[key, value]` pairs, which is compared in order. `properties` stay an object, as no output depends on their order.
+
+## Kanban
+
+- **The DB state.** The model holds the nodes that the kanban DB holds, in the order the grammar added them, sections and items alike (`isSection` marks a section), with the shape-data and decoration fields the DB keeps. The shape is not in it, because the DB never stores one (quirk K7). Width and padding are left out: the configuration sets them, and no field the renderer reads depends on them. The rules are in [its page](./diagrams/kanban.md).
+- **Texts** are what the DB holds, with the entity placeholders kept. Ids, descriptions, and the icon and classes of a decoration are sanitized; the label, icon, assignee and ticket of the shape data are not, as the YAML gives them.
+- **Values.** A label or a priority from the shape data keeps its number, boolean, array or object. A non-finite number is its sentinel string, as the other models write it.
+
+## C4
+
+The C4 model is the DB state after parsing (`c4Db.ts`), with the field list and the exclusions in [its page](./diagrams/c4.md). Its own rules:
+
+- **Text fields are strings or absent.** A `{ text }` field is its string. A field that holds a bare string (a style statement wrote it) or nothing is left out. A label may also be the object of a named argument (`Person(a, $sprite="x")`), which the reference keeps as the text.
+- **Texts keep the entity placeholders** that the DB keeps (`ﬂ°name¶ß`), as the flowchart's texts do; no sanitizing is applied to them except where the DB sanitizes (the title and the accessibility description).
+- **Relation offsets are strings:** the `String()` of the DB value, so a positional offset is its `parseInt` result and a named one is its raw text.
+- **The global boundary's `tags` and `link` are `null`**, and an absent value is left out.
+- **The title** is the grammar's last `title` or `accTitle` line. The front matter title does not reach a C4 diagram.
+
+## Mindmap
+
+The mindmap model is the DB state after the parse (`mindmapDb.ts`): the tree from the first node, with the fields and the exclusions in [its page](./diagrams/mindmap.md). Its own rules:
+
+- **Texts are the DB's values.** `nodeId`, `descr`, `icon` and `class` are the sanitized texts of the DB ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), and the entity placeholders stay as the DB keeps them (`ﬂ°°35¶ß`), which the renderer decodes.
+- **Configuration values keep their type.** `width` and `padding` are the configuration's values as the reference holds them: a number, unless the text gave another type (a string or a boolean), and the doubling of the rounded, rectangle and hexagon shapes turns the value into a number. An array or an object does not replace the default number.
+- **Empty and absent are `""`.** `icon` and `class` are `""` when the DB has none, and `root` is `null` when the text has no node.
+- **The renderer's data is left out.** `getData`, the sections, the layout and the shape names are the renderer stage.
+
+## Ishikawa
+
+The ishikawa model is the DB state after the parse (`ishikawaDb.ts`), with the quirks in [its page](./diagrams/ishikawa.md). Its own rules:
+
+- **The title is the common DB's.** It is the head's text, sanitized twice, or the front matter title when no statement was read. A head replaces the front matter title even when its text sanitizes to nothing.
+- **The head is `root`, or `null` when no statement was read.** A header followed by a line break is accepted with no root. A node is `{ text, children }`, with the children in source order.
+- **Texts are the DB's**, sanitized, with the entity placeholders kept.
+- **The header texts are always empty.** `accTitle` and `accDescr` are in the model, as the DB holds them, but no rule of the grammar sets them.
+- **Left out:** the stack and the base level (the parse state), and the layout, which is the renderer's.
+
+## Treemap
+
+The treemap model is the DB state after parsing and `buildHierarchy` (`treemap/db.ts`, `utils.ts`), with the field list and the quirks in [its page](./diagrams/treemap.md). Its own rules:
+
+- **Header texts are sanitized.** `title`, `accTitle` and `accDescr` go through the DB's setters, which sanitize and apply the blank rules of the common DB. The grammar's title replaces the front matter's only when it is non-empty.
+- **Names are the DB's names.** The quoted text without its quotes, nothing sanitized, and the entity placeholders kept as the DB keeps them.
+- **Non-finite values are sentinel strings.** A value of only separators is `"NaN"`, and a digit run that overflows is `"Infinity"`.
+- **The tree keeps the DB's distinction.** A leaf has no `children`; a section has them, empty when it has no rows.
+- **Left out**: the indentation levels, the renderer's layout and value formats, and the configuration.
+
+## Sankey
+
+- **The DB state.** The model is the DB state after the parse (`sankeyDB.ts`), with the field list in [its page](./diagrams/sankey.md). The `title` is the front matter's, sanitized, or `""`, although nothing draws it. `accTitle` and `accDescr` are always `""`, since the grammar has no statement for them.
+- **Names are the DB's ids.** A node id and a link end are the name as the DB sanitizes it ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)); two names that sanitize alike are one node. An entity in a name is a parse error, so no name holds a placeholder.
+- **Values** are `parseFloat` of the field. A value that is not finite is its sentinel string.
+- **Left out**: the layout (`x0`, `y0`, `layer`, `width`, the node values, which the layout sums) and the configuration.
+
+## Event modeling
+
+The event modeling model is the DB state after parsing, without the geometry and the measured box texts, with the fields and the quirks in [its page](./diagrams/eventmodeling.md). Its own rules:
+
+- **Frames are the boxes, in text order**, each with its name as written (`01` and `1` are different frames), its kind (`time` or `reset`), its entity, its lane index, and its inline data and data reference as written. The entity name and namespace are the DB's split of the qualified name, and `null` when the name has no namespace.
+- **The data text is the DB's cut.** `data` is the referenced block's text, or else the inline data's, cut and sanitized as `calculateTextProps` cuts it, before the line breaks and the `&nbsp;` joins that measurement needs. `null` means no data, and `""` a quoted inline value, which the reference shows as an empty code block.
+- **Lanes and relations are indices.** A lane is its index and label; a relation joins two frame indices, in the order the DB creates them. The box sizes and positions are not in the model.
+- **Header texts are sanitized** with the flowchart's subset, as the common setters do, and `accTitle` loses its leading blanks, `accDescr` the blanks after each line break.
+
+## Architecture
+
+The architecture model is the DB state after the parse (`architectureDb.ts`), with the field list and the exclusions in [its page](./diagrams/architecture.md). Its own rules:
+
+- **The enclosing id is `in`.** A group, service or junction names the group it sits in under `in`, which is the DB's own name, and `""` at the top.
+- **The lists are in the DB's order.** Groups are in text order. Services and junctions are two lists, each in text order, because the DB adds every service before any junction. Edges and alignments are in text order.
+- **The derived block is the reference's `getDataStructures`.** `derived.groupAlignments` is a list of `[key, axis]` pairs in the order the DB first set each key. `derived.spatialMaps` is a list of maps, each a list of `{id, x, y}` in the order the breadth-first search placed them, and the search's quirks (a node placed again, the last placement wins) are part of the value.
+- **Texts.** The header texts are sanitized, as the common setters sanitize them. The other texts are the grammar's values as written, with the entity placeholders kept; an absent icon, title or parent is `""`, and an absent arrow head or `{group}` mark is `false`.
+
+## Cynefin
+
+The cynefin model is the DB state after parsing (`cynefinDb.ts`), with the field list and the quirks in [its page](./diagrams/cynefin.md). Its own rules:
+
+- **Header texts are sanitized.** `title`, `accTitle` and `accDescr` are the DB's values after DOMPurify ([`sanitize.rs`](../crates/ferrigura-syntax/src/sanitize.rs)), with the DB's whitespace rules, and `""` when unset.
+- **Domains are the blocks.** A domain is in the model when it has a block, in order of first appearance; a repeated block replaces its items and keeps its place. A domain that only a transition names is not in `domains`.
+- **Items and labels are raw.** They keep the entity placeholders (`ﬂ°amp¶ß`) and are not sanitized, as the DB keeps them.
+- **Transitions** are the DB's list after the self-loops are dropped, in declaration order. A label that is absent or empty is `null`, since the DB stores `undefined` for both.
+- **Left out**: the configuration, and the renderer's data (the positions, the boundary waves and the seed), which the renderer stage reads from the configuration and the model.
+
+## Wardley
+
+The wardley model is the DB state after the parse (`getWardleyData`), with no layout layer, and the fields and quirks in [its page](./diagrams/wardley.md). Its own rules:
+
+- **Coordinates are the DB's.** `x` is the evolution and `y` the visibility, both percentages, as the DB stores them, though the statements write the visibility first. An annotation, an accelerator and the annotations box are `[visibility, evolution]` in the text and `x`, `y` in the model.
+- **Nodes are in the DB's order**: the first insertion of each id, with the last values. A pipeline component's id is `Parent_Name`, and its `label` is its name.
+- **`null` is the DB's `undefined`.** `inertia` is `false` for a component without the word, and `null` for an anchor or a pipeline component, whose calls give none. `size`, `axes.stages`, `axes.stageBoundaries` and `annotationsBox` are `null` when the text gives none.
+- **Texts keep the placeholders.** The node, note, annotation, accelerator and link texts are as the DB holds them. The header texts are sanitized; an absent header is `""`.
+- **Non-finite numbers** are the sentinel strings: only an integer or a decimal of more than 308 digits is one, in a label offset, the annotation number, the size or a stage boundary.
+
+## Radar
+
+The radar model is the DB state after the parse (`radar/db.ts`), with the field list in [its page](./diagrams/radar.md). Its own rules:
+
+- **Options are the DB's.** Each option takes its default when the text gives none, the last option of a name wins, and `ticks` is clamped to 32. `max` is the one nullable field: `null` when no `max` is written, and `0` when `max 0` is written.
+- **A label defaults to the name only when it is absent.** An axis or curve label is the name unless the text writes one, and an empty label `[""]` is kept as empty.
+- **Entries are the text's numbers, or the values in axis order.** A list of numbers is kept whatever its length, since the DB does not check it against the axes.
+- **Texts.** The title and the accessibility texts are sanitized. The labels are the grammar's strings with their markup kept as text, and an entity keeps its placeholder.
+
+## Tree view
+
+The tree view model is the DB state after the parse (`db.ts`), with the field list and the quirks in [its page](./diagrams/tree-view.md). Its own rules:
+
+- **The root is always there.** The DB's synthetic root `/` (id 0, level -1, a directory) is the model's `root`, even when the diagram has no node, and the renderer draws it. The user's top-level nodes are its children.
+- **The count is `getCount()`**: the nodes plus one, because the counter starts at 1 and the root takes no number.
+- **Icons keep the three states of the DB.** `""` when the input gave none, `none` when `icon()` or `icon(none)` suppressed it, and the name as written otherwise. The built-in icons and the defaults of `showIcons` and the maps are resolved at render time, so they are not in the model.
+- **Names keep the entity placeholders**, as the DB keeps them, and a directory's trailing `/` is removed once. The class, the description and the icon are `""` when absent.
+- **Texts are sanitized as the common setters sanitize them**: the title, the accessible title and description, and a node's description. Names are not sanitized.
+
+## Venn
+
+The venn model is the DB state after the parse (`vennDB.ts`), with the grammar's quirks in [its page](./diagrams/venn.md). Its own rules:
+
+- **Subsets keep the order they were given in, duplicates included.** A subset is `{ sets, size, label }`, with `sets` sorted as JavaScript's default sort sorts strings, so `"10"` comes before `"2"`. The layout's `Object.keys` order is the layout's to apply, not the model's.
+- **Sizes are numbers, and a size that is not finite is its sentinel string.** A negative size is kept as a number, as the reference keeps it; the renderer draws it as the reference does.
+- **Texts are the DB's values.** The title is sanitized. Labels and text ids are not, so markup stays raw and an entity placeholder (`ﬂ°name¶ß`) stays as the DB holds it. An absent label is `""`.
+- **Styles are ordered pairs.** `styles` is a list of `[key, value]` pairs in the order the DB's object holds them: a repeated key keeps its first place and takes its last value, and `__proto__` is dropped.
+- **Left out:** the layout and the geometry, which are the renderer's, the parser's indent mode, and the configuration.
+
+## Use case
+
+The use case model is the DB state after the parse, with the names that [its page](./diagrams/usecase.md) lists. Its own rules:
+
+- **Labels are raw.** The DB sanitizes labels only in `getData`, the renderer's input, so the model holds the labels as the grammar gave them, with the entity placeholders. The header texts (`accTitle`, `accDescr`) are sanitized as the common DB sanitizes them, and `title` is always `""`: the front matter title is set and then cleared by the parser.
+- **The AST is in the model.** `ast` is the graph AST of the parse (`usecaseAst.ts`). Its spans are UTF-16 code units, and its `nodes`, `groups` and `classDefs` drop the key `__proto__`, as the reference's plain objects do.
+- **JSON tables.** `value` writes a non-finite number as its sentinel string; `propertyOrder` lists each object's keys in the text order, keyed by JSON pointer; `rows` is the display of `getData`, with the numbers written as JavaScript writes them (`String(number)`).
+- **Ids** are the grammar's, and a quoted name's id is `label.replace(/\W/g, '_')`.
+
+## Agentflow
+
+The agentflow model is the DB state after the parse (`agentflowDb.ts`), with the fields and the quirks in [its page](./diagrams/agentflow.md). Its own rules:
+
+- **Lists are in the DB's order.** Vertices are in creation order, connectors are vertices too and also in `connectors`, edges are in creation order, containers in completion order (a repeated id merges into its first record).
+- **Optional keys are absent, not null.** A key the reference leaves `undefined` (a vertex's `link`, a container's `dir`, a metadata block that is not there) is left out of the JSON; a metadata block that is there is an object, empty or not.
+- **Metadata is the YAML as js-yaml reads it.** A number that is not finite (`.nan`, `.inf`) is its sentinel string inside the metadata, as in the other models. The prototype keys are gone at every depth.
+- **The diagnostics are not in the model.** The reference raises them when the layout data is read, not during the parse, so after the parse there are none; the layout's shape diagnostics are read by `agentflow::semantic::diagnostics`.
+
+## Railroad
+
+The railroad model is the DB state after the parse of any of its four syntaxes: `railroad-beta`, `railroad-ebnf-beta`, `railroad-abnf-beta` and `railroad-peg-beta` share one model, and the syntax is not a field of it. The fields and the quirks are in [its page](./diagrams/railroad.md). Its own rules:
+
+- **The header texts.** `title`, `accTitle` and `accDescr` are the DB's, sanitized, and `""` when the grammar gives none (the last line of each kind wins, even when it is empty). The front matter title does not reach the model: the reference's parser clears the DB after the front matter sets it, in all four syntaxes (probed through `Diagram.fromText`, Q8). This is the one place where the front matter title is dropped, as the title precedence of this page says for the info DB.
+- **Rules are in text order**, duplicates included. A rule is `{ name, definition }`.
+- **Expressions** are objects with a `type`: `terminal` (`value`), `nonterminal` (`name`), `special` (`text`), `sequence` (`elements`), `choice` (`alternatives`), `optional` (`element`) and `repetition` (`element`, `min`, `max`). A sequence or a choice of one element is that element. `min` and `max` are the grammar's numbers, kept as given, so a min above a max is kept (Q5); `Infinity` is written as `"Infinity"`.
+- **Strings differ from text rule 3 (Q3).** The IR, EBNF and PEG strings and quoted titles decode only `\n`, `\r` and `\t`, and any other escaped character stands for itself: `\b`, `\f`, `\v` and `\0` are the letters. The ABNF strings and numeric values decode nothing. These are the reference's rules for these grammars, so the canonical text is the reference's text here.
+- **The texts are sanitized (Q4).** Rule names, terminal values, nonterminal names, special texts, the title and the accessibility texts are the DB's sanitized values: the strict `sanitizeText` of the reference (`<script>` removed, `&` written `&amp;`), with the entity placeholders kept, as the other models keep them. A special made by a PEG lookahead is sanitized after its label is made, as the reference does.
+- **Left out**: the rule's comment and a repetition's separator (no grammar sets them), the configuration, and the styles.
+
+## GitGraph
+
+The gitGraph model is the DB state after the parse, with the field list in [its page](./diagrams/gitgraph.md#model). Its own rule: the ids the reference draws at random for commits without an `id` are numbered (`autoId`), and the differential compares them normalized.
+
+## Left out, and why
+
+- **The info `version`.** The reference's info DB holds only the Mermaid build version, which is a constant of the build and not part of the input. Putting it in the model would make the differential run depend on the build.
+- **Escaped text.** Escaping for SVG belongs to rendering. Sanitizing is in the model for the flowchart DB only (see Sanitization above).
+- **Configuration and directives.** `%%{init: …}%%` and the front matter `config` block are read by `ferrigura-syntax`'s `config` module and resolved by `ferrigura-model`'s `config` module (the effective configuration, checked by `pnpm -C tools/port port:diff config`). The grammar treats directives and comments as hidden, so they never reach a model.
+- **Source positions.** Errors carry them; models do not.
