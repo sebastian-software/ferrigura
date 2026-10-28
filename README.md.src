@@ -1,0 +1,60 @@
+# ferrigura
+
+<!-- mdtheme:badges:start -->
+
+[![crates.io](https://img.shields.io/crates/v/ferrigura?style=flat-square&logo=rust&label=crates.io)](https://crates.io/crates/ferrigura)
+[![docs.rs](https://img.shields.io/docsrs/ferrigura?style=flat-square&logo=docsdotrs&label=docs.rs)](https://docs.rs/ferrigura)
+[![CI](https://img.shields.io/github/actions/workflow/status/sebastian-software/ferrigura/ci.yml?branch=main&style=flat-square&logo=github&label=CI)](https://github.com/sebastian-software/ferrigura/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
+
+<!-- mdtheme:badges:end -->
+
+ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0 with all 33 of its diagram types: the same diagram text gives the same diagram, and the geometry of the output is checked against Mermaid run in Chromium.
+
+```mermaid
+flowchart LR
+  text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, swimlane, cose-bilkent, fcose, venn] --> svg[SVG]
+```
+
+## Using ferrigura
+
+[crates/ferrigura/README.md](./crates/ferrigura/README.md) describes the library, [crates/ferrigura-cli/README.md](./crates/ferrigura-cli/README.md) the command-line tool, and [crates/ferrigura-node/README.md](./crates/ferrigura-node/README.md) the Node.js addon. The library and the command-line tool are on crates.io as [`ferrigura`](https://crates.io/crates/ferrigura) and [`ferrigura-cli`](https://crates.io/crates/ferrigura-cli); the standalone npm distribution is prepared in `node/` and awaits registry bootstrap.
+
+```sh
+cargo add ferrigura
+```
+
+```sh
+cargo install ferrigura-cli
+```
+
+## Alternatives
+
+Other projects render Mermaid's syntax too. Which one fits depends on where the diagrams are drawn and how close to Mermaid they must look; [the comparison](./docs/comparisons/README.md) sets them side by side, with measured sizes and render times.
+
+| Project                                                                | A fit when                                                                                                                                                 |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Mermaid](https://mermaid.js.org/)                                     | Diagrams are drawn in a browser, with click callbacks, tooltips and the newest diagram types first. On a server it needs a headless browser (mermaid-cli). |
+| [Pele](https://pele.run/)                                              | Speed matters most, in any JavaScript runtime, and a layout and style of its own are fine.                                                                 |
+| [merman](https://github.com/Latias94/merman)                           | Mermaid's drawing is wanted in Rust with output beyond SVG (PNG, PDF, ASCII) or bindings such as WebAssembly and Python, measured without bundled fonts.   |
+| [mermaid-rs-renderer](https://github.com/1jehuang/mermaid-rs-renderer) | A small, fast Rust renderer with a layout of its own is enough, for 23 of the diagram types.                                                               |
+| ferrigura                                                              | Mermaid 12.2.0's drawing is wanted without a browser and the same on every machine, with its fonts embedded: in Rust, on the command line or in Node.      |
+
+## Documentation
+
+| Page                                              | For                                                                                        |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)    | How a diagram becomes SVG, the crates, and what ferrigura does not do                      |
+| [docs/decisions/](./docs/decisions/README.md)     | The decisions that shape ferrigura, each with its scope and reasons                        |
+| [docs/diagrams/](./docs/diagrams/README.md)       | Each diagram type: what is covered, how it is laid out, and its known gaps                 |
+| [docs/LEARNINGS.md](./docs/LEARNINGS.md)          | What porting taught: browser arithmetic, text metrics and the quirks of the layout engines |
+| [docs/DEVELOPING.md](./docs/DEVELOPING.md)        | Setup, the checks, and how a change is checked against Mermaid                             |
+| [docs/comparisons/](./docs/comparisons/README.md) | ferrigura next to Mermaid and other renderers, with measured sizes and render times        |
+
+## Contributing
+
+ferrigura is checked against upstream Mermaid at a pinned commit: every parser change against Mermaid's parser on every input, every renderer change against Mermaid's geometry in Chromium. [docs/DEVELOPING.md](./docs/DEVELOPING.md) has the setup and the commands, and [AGENTS.md](./AGENTS.md) the rules every change follows. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/); releases are made from them.
+
+## License and credits
+
+MIT, see [LICENSE](./LICENSE). Some crates port code or bundle fonts under the licenses of their sources, which their `NOTICE.md` files list; `ferrigura-elk` is under EPL-2.0. ferrigura is a port of [Mermaid](https://github.com/mermaid-js/mermaid), which was created by Knut Sveidqvist and is maintained by the Mermaid contributors; its license and copyright notice stay with the port.

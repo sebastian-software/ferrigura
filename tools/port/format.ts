@@ -27,6 +27,8 @@ const generated = [
   '**/*.toml',
   // Written by release-please
   'CHANGELOG.md',
+  // Written by mdtheme from README.md.src
+  'README.md',
   // Written by pnpm
   '**/pnpm-lock.yaml',
   // Generated from elkjs output

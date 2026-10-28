@@ -19,6 +19,12 @@ tools/reference/setup.sh
 
 `pnpm -C tools/port install` also installs the pre-commit hook, which formats and lints the staged files.
 
+- **The README:** `README.md` is generated from `README.md.src` by [mdtheme](https://github.com/sebastian-software/mdtheme), which frames it with the Sebastian Software theme pinned in `mdtheme.yaml`. Edit the source, run `mise run readme:write`, and commit both. [mise](https://mise.jdx.dev) installs the mdtheme version that `mise.toml` and `mise.lock` pin; rendering fetches the theme from GitHub.
+
+```bash
+mise trust && mise install --locked
+```
+
 ## The checks
 
 What CI runs on every change ([0005](./decisions/0005-quality-gates.md)):
@@ -45,6 +51,10 @@ pnpm -C tools/port run lint
 
 ```bash
 pnpm -C tools/port test
+```
+
+```bash
+mise run readme:check
 ```
 
 On an aarch64 machine (CI runs it on macOS), the output of the whole corpus is pinned by hashes:
