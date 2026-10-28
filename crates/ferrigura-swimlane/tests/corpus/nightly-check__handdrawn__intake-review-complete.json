@@ -1,0 +1,5881 @@
+{
+ "name": "nightly-check__handdrawn__intake-review-complete",
+ "group": "fixture",
+ "source": "e2e/diagrams/swimlanes/nightly-check/handdrawn/intake-review-complete.mmd",
+ "text": "---\ndescription: >-\n  `look: handDrawn` variant of `release/intake-review-complete.mmd` - the\n  same three-lane (Intake, Review, Complete) approval loop, rendered with\n  the rough.js sketch style.\nconfig:\n  logLevel: 0\n  look: handDrawn\n  htmlLabels: false\n  flowchart:\n    useMaxWidth: false\n---\nswimlane-beta LR\n  subgraph Intake\n  start([Start])\n  task[Do work]\n  fix[Fix issues]\n  end\n\n  subgraph Review\n  decision{Ready?}\n  end\n\n  subgraph Complete\n  done((Done))\n  end\n\n  start --> task --> decision\n  decision -->|Yes| done\n  decision -->|No| fix\n  fix --> task\n",
+ "input": {
+  "direction": "LR",
+  "config": {
+   "flowchart": {
+    "useMaxWidth": false,
+    "theme": "redux-color",
+    "look": "neo",
+    "titleTopMargin": 25,
+    "subGraphTitleMargin": {
+     "top": 0,
+     "bottom": 0
+    },
+    "diagramPadding": 8,
+    "nodeSpacing": 50,
+    "rankSpacing": 50,
+    "curve": "basis",
+    "padding": 15,
+    "wrappingWidth": 120,
+    "minNodeWidth": 120,
+    "inheritDir": false,
+    "arrowMarkerAbsolute": false
+   },
+   "look": "handDrawn",
+   "swimlane": {
+    "useMaxWidth": true,
+    "theme": "redux-color",
+    "look": "handDrawn",
+    "layout": "swimlane",
+    "lineHops": "arc",
+    "ignoreCrossLaneEdges": true,
+    "optimizeRanksByCrossings": true,
+    "automaticLaneOrdering": false
+   }
+  },
+  "nodes": [
+   {
+    "id": "Complete",
+    "label": "Complete",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "handDrawn",
+    "colorIndex": 2,
+    "direction": "LR"
+   },
+   {
+    "id": "Review",
+    "label": "Review",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "handDrawn",
+    "colorIndex": 1,
+    "direction": "LR"
+   },
+   {
+    "id": "Intake",
+    "label": "Intake",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "handDrawn",
+    "colorIndex": 0,
+    "direction": "LR"
+   },
+   {
+    "id": "start",
+    "label": "Start",
+    "labelStyle": "",
+    "parentId": "Intake",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "stadium",
+    "width": 144.291748046875,
+    "height": 34.200706481933594
+   },
+   {
+    "id": "task",
+    "label": "Do work",
+    "labelStyle": "",
+    "parentId": "Intake",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 182.48121643066406,
+    "height": 49.75504684448242
+   },
+   {
+    "id": "fix",
+    "label": "Fix issues",
+    "labelStyle": "",
+    "parentId": "Intake",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 182.28387451171875,
+    "height": 49.8260383605957
+   },
+   {
+    "id": "decision",
+    "label": "Ready?",
+    "labelStyle": "",
+    "parentId": "Review",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "diamond",
+    "width": 167.77487182617188,
+    "height": 167.3424530029297
+   },
+   {
+    "id": "done",
+    "label": "Done",
+    "labelStyle": "",
+    "parentId": "Complete",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "circle",
+    "width": 53.696144104003906,
+    "height": 53.78972625732422
+   },
+   {
+    "id": "edge-label-decision-done-L_decision_done_0",
+    "label": "Yes",
+    "edgeStart": "decision",
+    "edgeEnd": "done",
+    "shape": "labelRect",
+    "width": 22.84375,
+    "height": 15.999999046325684,
+    "isEdgeLabel": true,
+    "isDummy": true,
+    "parentId": "Complete",
+    "isGroup": false
+   },
+   {
+    "id": "edge-label-decision-fix-L_decision_fix_0",
+    "label": "No",
+    "edgeStart": "decision",
+    "edgeEnd": "fix",
+    "shape": "labelRect",
+    "width": 17.90625,
+    "height": 15.999999046325684,
+    "isEdgeLabel": true,
+    "isDummy": true,
+    "parentId": "Intake",
+    "isGroup": false
+   }
+  ],
+  "edges": [
+   {
+    "id": "L_start_task_0",
+    "start": "start",
+    "end": "task",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "basis"
+   },
+   {
+    "id": "L_task_decision_0",
+    "start": "task",
+    "end": "decision",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "basis"
+   },
+   {
+    "id": "L_decision_done_0",
+    "start": "decision",
+    "end": "done",
+    "type": "arrow_point",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "basis",
+    "labelNodeId": "edge-label-decision-done-L_decision_done_0"
+   },
+   {
+    "id": "L_decision_fix_0",
+    "start": "decision",
+    "end": "fix",
+    "type": "arrow_point",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "basis",
+    "labelNodeId": "edge-label-decision-fix-L_decision_fix_0"
+   },
+   {
+    "id": "L_fix_task_0",
+    "start": "fix",
+    "end": "task",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "basis"
+   },
+   {
+    "id": "L_decision_done_0-to-label",
+    "start": "decision",
+    "end": "edge-label-decision-done-L_decision_done_0",
+    "type": "normal",
+    "isLayoutOnly": true
+   },
+   {
+    "id": "L_decision_done_0-from-label",
+    "start": "edge-label-decision-done-L_decision_done_0",
+    "end": "done",
+    "type": "normal",
+    "isLayoutOnly": true
+   },
+   {
+    "id": "L_decision_fix_0-to-label",
+    "start": "decision",
+    "end": "edge-label-decision-fix-L_decision_fix_0",
+    "type": "normal",
+    "isLayoutOnly": true
+   },
+   {
+    "id": "L_decision_fix_0-from-label",
+    "start": "edge-label-decision-fix-L_decision_fix_0",
+    "end": "fix",
+    "type": "normal",
+    "isLayoutOnly": true
+   }
+  ]
+ },
+ "stages": [
+  {
+   "stage": "sugiyama",
+   "data": {
+    "acyclic": {
+     "nodes": [
+      "Complete",
+      "Review",
+      "Intake",
+      "start",
+      "task",
+      "fix",
+      "decision",
+      "done",
+      "edge-label-decision-done-L_decision_done_0",
+      "edge-label-decision-fix-L_decision_fix_0"
+     ],
+     "edges": [
+      {
+       "id": "L_start_task_0",
+       "src": "start",
+       "dst": "task",
+       "ref": {
+        "id": "L_start_task_0",
+        "isUserDefinedId": false,
+        "start": "start",
+        "end": "task",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "handDrawn",
+        "curve": "basis"
+       }
+      },
+      {
+       "id": "L_task_decision_0",
+       "src": "task",
+       "dst": "decision",
+       "ref": {
+        "id": "L_task_decision_0",
+        "isUserDefinedId": false,
+        "start": "task",
+        "end": "decision",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "handDrawn",
+        "curve": "basis"
+       }
+      },
+      {
+       "id": "L_fix_task_0",
+       "src": "task",
+       "dst": "fix",
+       "ref": {
+        "id": "L_fix_task_0",
+        "isUserDefinedId": false,
+        "start": "fix",
+        "end": "task",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "handDrawn",
+        "curve": "basis"
+       }
+      },
+      {
+       "id": "L_decision_done_0-to-label",
+       "src": "decision",
+       "dst": "edge-label-decision-done-L_decision_done_0",
+       "ref": {
+        "id": "L_decision_done_0-to-label",
+        "start": "decision",
+        "end": "edge-label-decision-done-L_decision_done_0",
+        "type": "normal",
+        "isLayoutOnly": true
+       }
+      },
+      {
+       "id": "L_decision_done_0-from-label",
+       "src": "edge-label-decision-done-L_decision_done_0",
+       "dst": "done",
+       "ref": {
+        "id": "L_decision_done_0-from-label",
+        "start": "edge-label-decision-done-L_decision_done_0",
+        "end": "done",
+        "type": "normal",
+        "isLayoutOnly": true
+       }
+      },
+      {
+       "id": "L_decision_fix_0-to-label",
+       "src": "decision",
+       "dst": "edge-label-decision-fix-L_decision_fix_0",
+       "ref": {
+        "id": "L_decision_fix_0-to-label",
+        "start": "decision",
+        "end": "edge-label-decision-fix-L_decision_fix_0",
+        "type": "normal",
+        "isLayoutOnly": true
+       }
+      },
+      {
+       "id": "L_decision_fix_0-from-label",
+       "src": "edge-label-decision-fix-L_decision_fix_0",
+       "dst": "fix",
+       "ref": {
+        "id": "L_decision_fix_0-from-label",
+        "start": "edge-label-decision-fix-L_decision_fix_0",
+        "end": "fix",
+        "type": "normal",
+        "isLayoutOnly": true
+       }
+      }
+     ],
+     "layout": {
+      "nodes": [
+       {
+        "id": "Complete",
+        "label": "Complete",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "handDrawn",
+        "colorIndex": 2,
+        "domId": "mermaid-1700000000000-Complete",
+        "direction": "LR",
+        "labelBBox": {
+         "width": 59.921875,
+         "height": 15.999999046325684
+        }
+       },
+       {
+        "id": "Review",
+        "label": "Review",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "handDrawn",
+        "colorIndex": 1,
+        "domId": "mermaid-1700000000000-Review",
+        "direction": "LR",
+        "labelBBox": {
+         "width": 45.90625,
+         "height": 15.999999046325684
+        }
+       },
+       {
+        "id": "Intake",
+        "label": "Intake",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "handDrawn",
+        "colorIndex": 0,
+        "domId": "mermaid-1700000000000-Intake",
+        "direction": "LR",
+        "labelBBox": {
+         "width": 38.140625,
+         "height": 15.999999046325684
+        }
+       },
+       {
+        "id": "start",
+        "label": "Start",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Intake",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-start-0",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "stadium",
+        "minWidth": 120,
+        "width": 144.291748046875,
+        "height": 34.200706481933594
+       },
+       {
+        "id": "task",
+        "label": "Do work",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Intake",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-task-1",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 182.48121643066406,
+        "height": 49.75504684448242
+       },
+       {
+        "id": "fix",
+        "label": "Fix issues",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Intake",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-fix-2",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 182.28387451171875,
+        "height": 49.8260383605957
+       },
+       {
+        "id": "decision",
+        "label": "Ready?",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Review",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-decision-3",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "diamond",
+        "minWidth": 120,
+        "width": 167.77487182617188,
+        "height": 167.3424530029297
+       },
+       {
+        "id": "done",
+        "label": "Done",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Complete",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-done-4",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "circle",
+        "minWidth": 120,
+        "width": 53.696144104003906,
+        "height": 53.78972625732422
+       },
+       {
+        "id": "edge-label-decision-done-L_decision_done_0",
+        "label": "Yes",
+        "edgeStart": "decision",
+        "edgeEnd": "done",
+        "shape": "labelRect",
+        "width": 22.84375,
+        "height": 15.999999046325684,
+        "isEdgeLabel": true,
+        "isDummy": true,
+        "parentId": "Complete",
+        "isGroup": false
+       },
+       {
+        "id": "edge-label-decision-fix-L_decision_fix_0",
+        "label": "No",
+        "edgeStart": "decision",
+        "edgeEnd": "fix",
+        "shape": "labelRect",
+        "width": 17.90625,
+        "height": 15.999999046325684,
+        "isEdgeLabel": true,
+        "isDummy": true,
+        "parentId": "Intake",
+        "isGroup": false
+       }
+      ],
+      "edges": [
+       {
+        "id": "L_start_task_0",
+        "isUserDefinedId": false,
+        "start": "start",
+        "end": "task",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "handDrawn",
+        "curve": "basis"
+       },
+       {
+        "id": "L_task_decision_0",
+        "isUserDefinedId": false,
+        "start": "task",
+        "end": "decision",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "handDrawn",
+        "curve": "basis"
+       },
+       {
+        "id": "L_decision_done_0",
+        "isUserDefinedId": false,
+        "start": "decision",
+        "end": "done",
+        "type": "arrow_point",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "handDrawn",
+        "curve": "basis",
+        "labelNodeId": "edge-label-decision-done-L_decision_done_0"
+       },
+       {
+        "id": "L_decision_fix_0",
+        "isUserDefinedId": false,
+        "start": "decision",
+        "end": "fix",
+        "type": "arrow_point",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "handDrawn",
+        "curve": "basis",
+        "labelNodeId": "edge-label-decision-fix-L_decision_fix_0"
+       },
+       {
+        "id": "L_fix_task_0",
+        "isUserDefinedId": false,
+        "start": "fix",
+        "end": "task",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "handDrawn",
+        "curve": "basis"
+       },
+       {
+        "id": "L_decision_done_0-to-label",
+        "start": "decision",
+        "end": "edge-label-decision-done-L_decision_done_0",
+        "type": "normal",
+        "isLayoutOnly": true
+       },
+       {
+        "id": "L_decision_done_0-from-label",
+        "start": "edge-label-decision-done-L_decision_done_0",
+        "end": "done",
+        "type": "normal",
+        "isLayoutOnly": true
+       },
+       {
+        "id": "L_decision_fix_0-to-label",
+        "start": "decision",
+        "end": "edge-label-decision-fix-L_decision_fix_0",
+        "type": "normal",
+        "isLayoutOnly": true
+       },
+       {
+        "id": "L_decision_fix_0-from-label",
+        "start": "edge-label-decision-fix-L_decision_fix_0",
+        "end": "fix",
+        "type": "normal",
+        "isLayoutOnly": true
+       }
+      ],
+      "other": {},
+      "config": {
+       "flowchart": {
+        "useMaxWidth": false,
+        "theme": "redux-color",
+        "look": "neo",
+        "titleTopMargin": 25,
+        "subGraphTitleMargin": {
+         "top": 0,
+         "bottom": 0
+        },
+        "diagramPadding": 8,
+        "nodeSpacing": 50,
+        "rankSpacing": 50,
+        "curve": "basis",
+        "padding": 15,
+        "wrappingWidth": 120,
+        "minNodeWidth": 120,
+        "inheritDir": false,
+        "arrowMarkerAbsolute": false
+       },
+       "swimlane": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "handDrawn",
+        "layout": "swimlane",
+        "lineHops": "arc",
+        "ignoreCrossLaneEdges": true,
+        "optimizeRanksByCrossings": true,
+        "automaticLaneOrdering": false
+       },
+       "agentflow": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "titleTopMargin": 25,
+        "diagramPadding": 8,
+        "nodeSpacing": 50,
+        "rankSpacing": 50,
+        "wrappingWidth": 120,
+        "minNodeWidth": 120
+       },
+       "sequence": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "hideUnusedParticipants": false,
+        "activationWidth": 10,
+        "diagramMarginX": 50,
+        "diagramMarginY": 10,
+        "actorMargin": 50,
+        "width": 150,
+        "height": 65,
+        "boxMargin": 10,
+        "boxTextMargin": 5,
+        "noteMargin": 10,
+        "messageMargin": 35,
+        "messageAlign": "center",
+        "mirrorActors": true,
+        "forceMenus": false,
+        "bottomMarginAdj": 1,
+        "rightAngles": false,
+        "showSequenceNumbers": false,
+        "actorFontSize": 14,
+        "actorFontFamily": "\"Open Sans\", sans-serif",
+        "actorFontWeight": 400,
+        "noteFontSize": 14,
+        "noteFontFamily": "\"trebuchet ms\", verdana, arial, sans-serif",
+        "noteFontWeight": 400,
+        "noteAlign": "center",
+        "messageFontSize": 16,
+        "messageFontFamily": "\"trebuchet ms\", verdana, arial, sans-serif",
+        "messageFontWeight": 400,
+        "wrap": false,
+        "wrapPadding": 10,
+        "labelBoxWidth": 50,
+        "labelBoxHeight": 20
+       },
+       "gantt": {
+        "useMaxWidth": true,
+        "titleTopMargin": 25,
+        "barHeight": 20,
+        "barGap": 4,
+        "topPadding": 50,
+        "rightPadding": 75,
+        "leftPadding": 75,
+        "gridLineStartPadding": 35,
+        "fontSize": 11,
+        "sectionFontSize": 11,
+        "numberSectionStyles": 4,
+        "axisFormat": "%Y-%m-%d",
+        "topAxis": false,
+        "displayMode": "",
+        "weekday": "sunday"
+       },
+       "journey": {
+        "useMaxWidth": true,
+        "diagramMarginX": 50,
+        "diagramMarginY": 10,
+        "leftMargin": 150,
+        "maxLabelWidth": 360,
+        "width": 150,
+        "height": 50,
+        "boxMargin": 10,
+        "boxTextMargin": 5,
+        "noteMargin": 10,
+        "messageMargin": 35,
+        "messageAlign": "center",
+        "bottomMarginAdj": 1,
+        "rightAngles": false,
+        "taskFontSize": 14,
+        "taskFontFamily": "\"Open Sans\", sans-serif",
+        "taskMargin": 50,
+        "activationWidth": 10,
+        "textPlacement": "fo",
+        "actorColours": [
+         "#8FBC8F",
+         "#7CFC00",
+         "#00FFFF",
+         "#20B2AA",
+         "#B0E0E6",
+         "#FFFFE0"
+        ],
+        "sectionFills": [
+         "#191970",
+         "#8B008B",
+         "#4B0082",
+         "#2F4F4F",
+         "#800000",
+         "#8B4513",
+         "#00008B"
+        ],
+        "sectionColours": [
+         "#fff"
+        ],
+        "titleColor": "",
+        "titleFontFamily": "\"trebuchet ms\", verdana, arial, sans-serif",
+        "titleFontSize": "4ex"
+       },
+       "class": {
+        "theme": "redux-color",
+        "look": "neo",
+        "hideEmptyMembersBox": false,
+        "hierarchicalNamespaces": true
+       },
+       "state": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "layout": "elk",
+        "wrappingWidth": 120,
+        "minNodeWidth": 120,
+        "titleTopMargin": 25,
+        "padding": 8,
+        "textHeight": 10,
+        "noteMargin": 10,
+        "fontSize": 24,
+        "labelHeight": 16,
+        "radius": 5
+       },
+       "er": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "titleTopMargin": 25,
+        "diagramPadding": 20,
+        "layoutDirection": "TB",
+        "minEntityWidth": 100,
+        "entityPadding": 15,
+        "nodeSpacing": 140,
+        "rankSpacing": 80,
+        "stroke": "gray",
+        "fill": "honeydew",
+        "fontSize": 12
+       },
+       "pie": {
+        "useMaxWidth": true,
+        "textPosition": 0.75,
+        "donutHole": 0,
+        "legendPosition": "right",
+        "highlightSlice": "",
+        "useWidth": 984
+       },
+       "quadrantChart": {
+        "useMaxWidth": true,
+        "chartWidth": 500,
+        "chartHeight": 500,
+        "titleFontSize": 20,
+        "titlePadding": 10,
+        "quadrantPadding": 5,
+        "xAxisLabelPadding": 5,
+        "yAxisLabelPadding": 5,
+        "xAxisLabelFontSize": 16,
+        "yAxisLabelFontSize": 16,
+        "quadrantLabelFontSize": 16,
+        "quadrantTextTopPadding": 5,
+        "pointTextPadding": 5,
+        "pointLabelFontSize": 12,
+        "pointRadius": 5,
+        "xAxisPosition": "top",
+        "yAxisPosition": "left",
+        "quadrantInternalBorderStrokeWidth": 1,
+        "quadrantExternalBorderStrokeWidth": 2
+       },
+       "xyChart": {
+        "useMaxWidth": true,
+        "width": 700,
+        "height": 500,
+        "titleFontSize": 20,
+        "titlePadding": 10,
+        "showDataLabel": false,
+        "showDataLabelOutsideBar": false,
+        "showTitle": true,
+        "showLegend": true,
+        "legendFontSize": 14,
+        "legendPadding": 10,
+        "xAxis": {
+         "$ref": "#/$defs/XYChartAxisConfig",
+         "showLabel": true,
+         "labelFontSize": 14,
+         "labelPadding": 5,
+         "showTitle": true,
+         "titleFontSize": 16,
+         "titlePadding": 5,
+         "showTick": true,
+         "tickLength": 5,
+         "tickWidth": 2,
+         "showAxisLine": true,
+         "axisLineWidth": 2,
+         "labelRotation": 0
+        },
+        "yAxis": {
+         "$ref": "#/$defs/XYChartAxisConfig",
+         "showLabel": true,
+         "labelFontSize": 14,
+         "labelPadding": 5,
+         "showTitle": true,
+         "titleFontSize": 16,
+         "titlePadding": 5,
+         "showTick": true,
+         "tickLength": 5,
+         "tickWidth": 2,
+         "showAxisLine": true,
+         "axisLineWidth": 2,
+         "labelRotation": 0
+        },
+        "chartOrientation": "vertical",
+        "plotReservedSpacePercent": 50
+       },
+       "requirement": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "rect_fill": "#f9f9f9",
+        "text_color": "#333",
+        "rect_border_size": "0.5px",
+        "rect_border_color": "#bbb",
+        "rect_min_width": 200,
+        "rect_min_height": 200,
+        "fontSize": 14,
+        "rect_padding": 10,
+        "line_height": 20
+       },
+       "mindmap": {
+        "useMaxWidth": true,
+        "colorBy": "branch",
+        "padding": 10,
+        "maxNodeWidth": 200,
+        "layoutAlgorithm": "cose-bilkent"
+       },
+       "ishikawa": {
+        "useMaxWidth": true,
+        "diagramPadding": 20
+       },
+       "kanban": {
+        "useMaxWidth": true,
+        "padding": 8,
+        "sectionWidth": 200,
+        "ticketBaseUrl": ""
+       },
+       "timeline": {
+        "useMaxWidth": true,
+        "diagramMarginX": 50,
+        "diagramMarginY": 10,
+        "leftMargin": 150,
+        "width": 150,
+        "height": 50,
+        "boxMargin": 10,
+        "boxTextMargin": 5,
+        "noteMargin": 10,
+        "messageMargin": 35,
+        "messageAlign": "center",
+        "bottomMarginAdj": 1,
+        "rightAngles": false,
+        "taskFontSize": 14,
+        "taskFontFamily": "\"Open Sans\", sans-serif",
+        "taskMargin": 50,
+        "activationWidth": 10,
+        "textPlacement": "fo",
+        "actorColours": [
+         "#8FBC8F",
+         "#7CFC00",
+         "#00FFFF",
+         "#20B2AA",
+         "#B0E0E6",
+         "#FFFFE0"
+        ],
+        "sectionFills": [
+         "#191970",
+         "#8B008B",
+         "#4B0082",
+         "#2F4F4F",
+         "#800000",
+         "#8B4513",
+         "#00008B"
+        ],
+        "sectionColours": [
+         "#fff"
+        ],
+        "disableMulticolor": false
+       },
+       "gitGraph": {
+        "useMaxWidth": true,
+        "titleTopMargin": 25,
+        "diagramPadding": 8,
+        "nodeLabel": {
+         "width": 75,
+         "height": 100,
+         "x": -25,
+         "y": 0
+        },
+        "mainBranchName": "main",
+        "mainBranchOrder": 0,
+        "showCommitLabel": true,
+        "showBranches": true,
+        "rotateCommitLabel": true,
+        "parallelCommits": false,
+        "arrowMarkerAbsolute": false
+       },
+       "c4": {
+        "useMaxWidth": true,
+        "diagramMarginX": 50,
+        "diagramMarginY": 10,
+        "c4ShapeMargin": 50,
+        "c4ShapePadding": 20,
+        "width": 216,
+        "height": 60,
+        "boxMargin": 10,
+        "c4ShapeInRow": 4,
+        "nextLinePaddingX": 0,
+        "c4BoundaryInRow": 2,
+        "personFontSize": 14,
+        "personFontFamily": "\"Open Sans\", sans-serif",
+        "personFontWeight": "normal",
+        "external_personFontSize": 14,
+        "external_personFontFamily": "\"Open Sans\", sans-serif",
+        "external_personFontWeight": "normal",
+        "systemFontSize": 14,
+        "systemFontFamily": "\"Open Sans\", sans-serif",
+        "systemFontWeight": "normal",
+        "external_systemFontSize": 14,
+        "external_systemFontFamily": "\"Open Sans\", sans-serif",
+        "external_systemFontWeight": "normal",
+        "system_dbFontSize": 14,
+        "system_dbFontFamily": "\"Open Sans\", sans-serif",
+        "system_dbFontWeight": "normal",
+        "external_system_dbFontSize": 14,
+        "external_system_dbFontFamily": "\"Open Sans\", sans-serif",
+        "external_system_dbFontWeight": "normal",
+        "system_queueFontSize": 14,
+        "system_queueFontFamily": "\"Open Sans\", sans-serif",
+        "system_queueFontWeight": "normal",
+        "external_system_queueFontSize": 14,
+        "external_system_queueFontFamily": "\"Open Sans\", sans-serif",
+        "external_system_queueFontWeight": "normal",
+        "boundaryFontSize": 14,
+        "boundaryFontFamily": "\"Open Sans\", sans-serif",
+        "boundaryFontWeight": "normal",
+        "messageFontSize": 12,
+        "messageFontFamily": "\"Open Sans\", sans-serif",
+        "messageFontWeight": "normal",
+        "containerFontSize": 14,
+        "containerFontFamily": "\"Open Sans\", sans-serif",
+        "containerFontWeight": "normal",
+        "external_containerFontSize": 14,
+        "external_containerFontFamily": "\"Open Sans\", sans-serif",
+        "external_containerFontWeight": "normal",
+        "container_dbFontSize": 14,
+        "container_dbFontFamily": "\"Open Sans\", sans-serif",
+        "container_dbFontWeight": "normal",
+        "external_container_dbFontSize": 14,
+        "external_container_dbFontFamily": "\"Open Sans\", sans-serif",
+        "external_container_dbFontWeight": "normal",
+        "container_queueFontSize": 14,
+        "container_queueFontFamily": "\"Open Sans\", sans-serif",
+        "container_queueFontWeight": "normal",
+        "external_container_queueFontSize": 14,
+        "external_container_queueFontFamily": "\"Open Sans\", sans-serif",
+        "external_container_queueFontWeight": "normal",
+        "componentFontSize": 14,
+        "componentFontFamily": "\"Open Sans\", sans-serif",
+        "componentFontWeight": "normal",
+        "external_componentFontSize": 14,
+        "external_componentFontFamily": "\"Open Sans\", sans-serif",
+        "external_componentFontWeight": "normal",
+        "component_dbFontSize": 14,
+        "component_dbFontFamily": "\"Open Sans\", sans-serif",
+        "component_dbFontWeight": "normal",
+        "external_component_dbFontSize": 14,
+        "external_component_dbFontFamily": "\"Open Sans\", sans-serif",
+        "external_component_dbFontWeight": "normal",
+        "component_queueFontSize": 14,
+        "component_queueFontFamily": "\"Open Sans\", sans-serif",
+        "component_queueFontWeight": "normal",
+        "external_component_queueFontSize": 14,
+        "external_component_queueFontFamily": "\"Open Sans\", sans-serif",
+        "external_component_queueFontWeight": "normal",
+        "wrap": true,
+        "wrapPadding": 10,
+        "person_bg_color": "#08427B",
+        "person_border_color": "#073B6F",
+        "external_person_bg_color": "#686868",
+        "external_person_border_color": "#8A8A8A",
+        "system_bg_color": "#1168BD",
+        "system_border_color": "#3C7FC0",
+        "system_db_bg_color": "#1168BD",
+        "system_db_border_color": "#3C7FC0",
+        "system_queue_bg_color": "#1168BD",
+        "system_queue_border_color": "#3C7FC0",
+        "external_system_bg_color": "#999999",
+        "external_system_border_color": "#8A8A8A",
+        "external_system_db_bg_color": "#999999",
+        "external_system_db_border_color": "#8A8A8A",
+        "external_system_queue_bg_color": "#999999",
+        "external_system_queue_border_color": "#8A8A8A",
+        "container_bg_color": "#438DD5",
+        "container_border_color": "#3C7FC0",
+        "container_db_bg_color": "#438DD5",
+        "container_db_border_color": "#3C7FC0",
+        "container_queue_bg_color": "#438DD5",
+        "container_queue_border_color": "#3C7FC0",
+        "external_container_bg_color": "#B3B3B3",
+        "external_container_border_color": "#A6A6A6",
+        "external_container_db_bg_color": "#B3B3B3",
+        "external_container_db_border_color": "#A6A6A6",
+        "external_container_queue_bg_color": "#B3B3B3",
+        "external_container_queue_border_color": "#A6A6A6",
+        "component_bg_color": "#85BBF0",
+        "component_border_color": "#78A8D8",
+        "component_db_bg_color": "#85BBF0",
+        "component_db_border_color": "#78A8D8",
+        "component_queue_bg_color": "#85BBF0",
+        "component_queue_border_color": "#78A8D8",
+        "external_component_bg_color": "#CCCCCC",
+        "external_component_border_color": "#BFBFBF",
+        "external_component_db_bg_color": "#CCCCCC",
+        "external_component_db_border_color": "#BFBFBF",
+        "external_component_queue_bg_color": "#CCCCCC",
+        "external_component_queue_border_color": "#BFBFBF"
+       },
+       "sankey": {
+        "useMaxWidth": true,
+        "width": 600,
+        "height": 400,
+        "linkColor": "gradient",
+        "nodeAlignment": "justify",
+        "showValues": true,
+        "prefix": "",
+        "suffix": "",
+        "nodeWidth": 10,
+        "nodePadding": 12,
+        "labelStyle": "legacy"
+       },
+       "block": {
+        "useMaxWidth": true,
+        "padding": 8
+       },
+       "packet": {
+        "useMaxWidth": true,
+        "rowHeight": 32,
+        "bitWidth": 32,
+        "bitsPerRow": 32,
+        "showBits": true,
+        "bitOrder": "ascending",
+        "paddingX": 5,
+        "paddingY": 5
+       },
+       "treeView": {
+        "useMaxWidth": true,
+        "rowIndent": 10,
+        "paddingX": 5,
+        "paddingY": 5,
+        "lineThickness": 1,
+        "showIcons": false,
+        "defaultIconPack": "",
+        "filenameIcons": {},
+        "extensionIcons": {}
+       },
+       "architecture": {
+        "useMaxWidth": true,
+        "padding": 40,
+        "iconSize": 80,
+        "fontSize": 16,
+        "randomize": false,
+        "nodeSeparation": 75,
+        "idealEdgeLengthMultiplier": 1.5,
+        "edgeElasticity": 0.45,
+        "numIter": 2500,
+        "seed": 1
+       },
+       "eventmodeling": {
+        "useMaxWidth": true,
+        "padding": 30,
+        "rowHeight": 32
+       },
+       "radar": {
+        "useMaxWidth": true,
+        "width": 600,
+        "height": 600,
+        "marginTop": 50,
+        "marginRight": 50,
+        "marginBottom": 50,
+        "marginLeft": 50,
+        "axisScaleFactor": 1,
+        "axisLabelFactor": 1.05,
+        "curveTension": 0.17
+       },
+       "usecase": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "wrappingWidth": 120,
+        "minNodeWidth": 120,
+        "actorFontSize": 14,
+        "actorFontFamily": "\"Open Sans\", sans-serif",
+        "actorFontWeight": "normal",
+        "usecaseFontSize": 12,
+        "usecaseFontFamily": "\"Open Sans\", sans-serif",
+        "usecaseFontWeight": "normal",
+        "nodeSpacing": 50,
+        "rankSpacing": 50,
+        "diagramPadding": 20,
+        "colorScheme": "role"
+       },
+       "venn": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "width": 800,
+        "height": 450,
+        "padding": 8,
+        "useDebugLayout": false
+       },
+       "wardley-beta": {
+        "useMaxWidth": true,
+        "width": 900,
+        "height": 600,
+        "padding": 48,
+        "nodeRadius": 6,
+        "nodeLabelOffset": 8,
+        "axisFontSize": 12,
+        "labelFontSize": 10,
+        "showGrid": false
+       },
+       "cynefin": {
+        "useMaxWidth": true,
+        "width": 800,
+        "height": 600,
+        "padding": 40,
+        "showDomainDescriptions": true,
+        "boundaryAmplitude": 8,
+        "seed": 0
+       },
+       "railroad": {
+        "useMaxWidth": true,
+        "compactMode": false,
+        "padding": 10,
+        "verticalSeparation": 8,
+        "horizontalSeparation": 10,
+        "arcRadius": 10,
+        "strokeWidth": 2,
+        "showMarkers": true,
+        "markerRadius": 5
+       },
+       "theme": "redux-color",
+       "look": "handDrawn",
+       "handDrawnSeed": 0,
+       "layout": "swimlane",
+       "maxTextSize": 50000,
+       "maxEdges": 500,
+       "darkMode": false,
+       "fontFamily": "\"trebuchet ms\", verdana, arial, sans-serif;",
+       "logLevel": 0,
+       "securityLevel": "strict",
+       "startOnLoad": true,
+       "arrowMarkerAbsolute": false,
+       "secure": [
+        "secure",
+        "securityLevel",
+        "startOnLoad",
+        "maxTextSize",
+        "suppressErrorRendering",
+        "maxEdges"
+       ],
+       "forceLegacyMathML": false,
+       "deterministicIds": false,
+       "fontSize": 16,
+       "markdownAutoWrap": true,
+       "suppressErrorRendering": false,
+       "htmlLabels": false,
+       "elk": {
+        "mergeEdges": false,
+        "straightenEdges": true,
+        "lineHops": true,
+        "preset": "default",
+        "layeringLayerBound": 4,
+        "forceNodeModelOrder": false,
+        "considerModelOrder": "NODES_AND_EDGES",
+        "keepEntryNodeOnTop": false,
+        "orientFeedbackEdges": true
+       },
+       "themeVariables": {
+        "background": "#ffffff",
+        "primaryColor": "#cccccc",
+        "mainBkg": "#ffffff",
+        "noteBkgColor": "#fff5ad",
+        "noteTextColor": "#28253D",
+        "THEME_COLOR_LIMIT": 12,
+        "radius": 12,
+        "strokeWidth": 2,
+        "primaryBorderColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "fontFamily": "\"Recursive Variable\", arial, sans-serif",
+        "fontSize": "14px",
+        "nodeBorder": "#28253D",
+        "stateBorder": "#28253D",
+        "useGradient": false,
+        "gradientStart": "#0042eb",
+        "gradientStop": "#eb0042",
+        "dropShadow": "url(#drop-shadow)",
+        "nodeShadow": true,
+        "tertiaryColor": "#ffffff",
+        "clusterBkg": "#F9F9FB",
+        "clusterBorder": "#BDBCCC",
+        "archEdgeColor": "#000000",
+        "archEdgeArrowColor": "#000000",
+        "archEdgeWidth": "3",
+        "archGroupBorderColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "archGroupBorderWidth": "2px",
+        "actorBorder": "#28253D",
+        "noteBorderColor": "#FACC15",
+        "noteFontWeight": 600,
+        "borderColorArray": [
+         "#E879F9",
+         "#2DD4BF",
+         "#FB923C",
+         "#22D3EE",
+         "#4ADE80",
+         "#A78BFA",
+         "#F87171",
+         "#FACC15",
+         "#818CF8",
+         "#A3E635 ",
+         "#38BDF8",
+         "#FB7185"
+        ],
+        "bkgColorArray": [
+         "#FDF4FF",
+         "#F0FDFA",
+         "#FFF7ED",
+         "#ECFEFF",
+         "#F0FDF4",
+         "#F5F3FF",
+         "#FEF2F2",
+         "#FEFCE8",
+         "#EEF2FF",
+         "#F7FEE7",
+         "#F0F9FF",
+         "#FFF1F2"
+        ],
+        "usecaseActorBorder": "#A78BFA",
+        "usecaseActorBkg": "#F5F3FF",
+        "usecaseBorder": "#2DD4BF",
+        "usecaseBkg": "#F0FDFA",
+        "usecaseBoundaryBorder": "#BDBCCC",
+        "usecaseBoundaryBkg": "#FAFAFC",
+        "usecaseIncludeLine": "#38BDF8",
+        "usecaseExtendLine": "#FB923C",
+        "filterColor": "#000000",
+        "primaryTextColor": "#28253D",
+        "secondaryColor": "hsl(-120, 0%, 80%)",
+        "secondaryBorderColor": "hsl(-120, 0%, 70%)",
+        "tertiaryBorderColor": "hsl(0, 0%, 90%)",
+        "secondaryTextColor": "#333333",
+        "tertiaryTextColor": "#000000",
+        "lineColor": "#000000",
+        "arrowheadColor": "#000000",
+        "textColor": "#28253D",
+        "border2": "hsl(0, 0%, 90%)",
+        "nodeBkg": "#cccccc",
+        "defaultLinkColor": "#000000",
+        "titleColor": "#000000",
+        "edgeLabelBackground": "hsl(-120, 0%, 80%)",
+        "nodeTextColor": "#28253D",
+        "flowContainerStroke": "hsl(-120, 0%, 70%)",
+        "actorBkg": "#ffffff",
+        "actorTextColor": "#28253D",
+        "actorLineColor": "#28253D",
+        "labelBoxBkgColor": "#ffffff",
+        "signalColor": "#28253D",
+        "signalTextColor": "#28253D",
+        "labelBoxBorderColor": "#28253D",
+        "labelTextColor": "#28253D",
+        "loopTextColor": "#28253D",
+        "activationBorderColor": "hsl(-120, 0%, 70%)",
+        "activationBkgColor": "hsl(-120, 0%, 80%)",
+        "sequenceNumberColor": "#ffffff",
+        "rectBkgColor": "hsl(0, 0%, 96%)",
+        "excludeBkgColor": "#eeeeee",
+        "taskBorderColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "taskBkgColor": "#ECECFE",
+        "activeTaskBorderColor": "#ECECFE",
+        "activeTaskBkgColor": "hsl(240, 90%, 100%)",
+        "gridColor": "lightgrey",
+        "doneTaskBkgColor": "lightgrey",
+        "doneTaskBorderColor": "grey",
+        "critBorderColor": "#ff8888",
+        "critBkgColor": "red",
+        "todayLineColor": "red",
+        "taskTextColor": "#28253D",
+        "vertLineColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "taskTextOutsideColor": "#28253D",
+        "taskTextLightColor": "#28253D",
+        "taskTextDarkColor": "#28253D",
+        "taskTextClickableColor": "#003163",
+        "personBorder": "hsl(247.5, 0%, 9.2156862745%)",
+        "personBkg": "#ffffff",
+        "transitionColor": "#000000",
+        "transitionLabelColor": "#28253D",
+        "stateLabelColor": "#28253D",
+        "stateEdgeLabelBackground": "#FFFFFF",
+        "stateBkg": "#ffffff",
+        "labelBackgroundColor": "#ffffff",
+        "compositeBackground": "#ffffff",
+        "altBackground": "#F9F9FB",
+        "compositeTitleBackground": "#F9F9FB",
+        "compositeBorder": "#28253D",
+        "innerEndBackground": "#28253D",
+        "errorBkgColor": "#ffffff",
+        "errorTextColor": "#000000",
+        "specialStateColor": "#000000",
+        "cScale0": "#f4a8ff",
+        "cScale1": "#46ecd5",
+        "cScale2": "#ffb86a",
+        "cScale3": "#dab2ff",
+        "cScale4": "#7bf1a8",
+        "cScale5": "#c4b4ff",
+        "cScale6": "#ffa2a2",
+        "cScale7": "#ffdf20",
+        "cScale8": "#a3b3ff",
+        "cScale9": "#bbf451",
+        "cScale10": "#74d4ff",
+        "cScale11": "#ffa1ad",
+        "sectionBkgColor": "#f4a8ff",
+        "sectionBkgColor2": "#46ecd5",
+        "altSectionBkgColor": "white",
+        "cScaleInv0": "#0b5700",
+        "cScaleInv1": "#b9132a",
+        "cScaleInv2": "#004795",
+        "cScaleInv3": "#254d00",
+        "cScaleInv4": "#840e57",
+        "cScaleInv5": "#3b4b00",
+        "cScaleInv6": "#005d5d",
+        "cScaleInv7": "#0020df",
+        "cScaleInv8": "#5c4c00",
+        "cScaleInv9": "#440bae",
+        "cScaleInv10": "#8b2b00",
+        "cScaleInv11": "#005e52",
+        "cScalePeer0": "hsl(292.4137931034, 100%, 72.9411764706%)",
+        "cScalePeer1": "hsl(171.686746988, 81.3725490196%, 50%)",
+        "cScalePeer2": "hsl(31.4093959732, 100%, 60.7843137255%)",
+        "cScalePeer3": "hsl(271.1688311688, 100%, 74.9019607843%)",
+        "cScalePeer4": "hsl(142.8813559322, 80.8219178082%, 61.3725490196%)",
+        "cScalePeer5": "hsl(252.8, 100%, 75.2941176471%)",
+        "cScalePeer6": "hsl(0, 100%, 71.7647058824%)",
+        "cScalePeer7": "hsl(51.3901345291, 100%, 46.2745098039%)",
+        "cScalePeer8": "hsl(229.5652173913, 100%, 71.9607843137%)",
+        "cScalePeer9": "hsl(80.981595092, 88.1081081081%, 53.7254901961%)",
+        "cScalePeer10": "hsl(198.5611510791, 100%, 62.7450980392%)",
+        "cScalePeer11": "hsl(352.3404255319, 100%, 71.568627451%)",
+        "scaleLabelColor": "#28253D",
+        "cScaleLabel0": "#28253D",
+        "cScaleLabel1": "#28253D",
+        "cScaleLabel2": "#28253D",
+        "cScaleLabel3": "#28253D",
+        "cScaleLabel4": "#28253D",
+        "cScaleLabel5": "#28253D",
+        "cScaleLabel6": "#28253D",
+        "cScaleLabel7": "#28253D",
+        "cScaleLabel8": "#28253D",
+        "cScaleLabel9": "#28253D",
+        "cScaleLabel10": "#28253D",
+        "cScaleLabel11": "#28253D",
+        "surface0": "hsl(180, 0%, 95%)",
+        "surfacePeer0": "hsl(180, 0%, 92%)",
+        "surface1": "hsl(180, 0%, 92%)",
+        "surfacePeer1": "hsl(180, 0%, 89%)",
+        "surface2": "hsl(180, 0%, 89%)",
+        "surfacePeer2": "hsl(180, 0%, 86%)",
+        "surface3": "hsl(180, 0%, 86%)",
+        "surfacePeer3": "hsl(180, 0%, 83%)",
+        "surface4": "hsl(180, 0%, 83%)",
+        "surfacePeer4": "hsl(180, 0%, 80%)",
+        "classText": "#28253D",
+        "fillType0": "#FDF4FF",
+        "fillType1": "#F0FDFA",
+        "fillType2": "#FFF7ED",
+        "fillType3": "#ECFEFF",
+        "fillType4": "#F0FDF4",
+        "fillType5": "#F5F3FF",
+        "fillType6": "#FEF2F2",
+        "fillType7": "#FEFCE8",
+        "pie1": "#f4a8ff",
+        "pie2": "#46ecd5",
+        "pie3": "#ffb86a",
+        "pie4": "#dab2ff",
+        "pie5": "#7bf1a8",
+        "pie6": "#c4b4ff",
+        "pie7": "#ffa2a2",
+        "pie8": "#ffdf20",
+        "pie9": "#a3b3ff",
+        "pie10": "#bbf451",
+        "pie11": "#74d4ff",
+        "pie12": "#ffa1ad",
+        "pieTitleTextSize": "25px",
+        "pieTitleTextColor": "#28253D",
+        "pieSectionTextSize": "17px",
+        "pieSectionTextColor": "#28253D",
+        "pieLegendTextSize": "17px",
+        "pieLegendTextColor": "#28253D",
+        "pieStrokeColor": "black",
+        "pieStrokeWidth": "2px",
+        "pieOuterStrokeWidth": "2px",
+        "pieOuterStrokeColor": "black",
+        "pieOpacity": "0.7",
+        "venn1": "#E879F9",
+        "venn2": "#2DD4BF",
+        "venn3": "#FB923C",
+        "venn4": "#22D3EE",
+        "venn5": "#4ADE80",
+        "venn6": "#A78BFA",
+        "venn7": "#F87171",
+        "venn8": "#FACC15",
+        "vennTitleTextColor": "#000000",
+        "vennSetTextColor": "#28253D",
+        "quadrant1Fill": "#ECECFE",
+        "quadrant2Fill": "#f1f1ff",
+        "quadrant3Fill": "#f6f6ff",
+        "quadrant4Fill": "#fbfbff",
+        "quadrant1TextFill": "#28253D",
+        "quadrant2TextFill": "#232038",
+        "quadrant3TextFill": "#1e1b33",
+        "quadrant4TextFill": "#19162e",
+        "quadrantPointFill": "hsl(240, 90%, NaN%)",
+        "quadrantPointTextFill": "#28253D",
+        "quadrantXAxisTextFill": "#28253D",
+        "quadrantYAxisTextFill": "#28253D",
+        "quadrantInternalBorderStrokeFill": "hsl(247.5, 0%, 9.2156862745%)",
+        "quadrantExternalBorderStrokeFill": "hsl(247.5, 0%, 9.2156862745%)",
+        "quadrantTitleFill": "#28253D",
+        "xyChart": {
+         "backgroundColor": "#ffffff",
+         "titleColor": "#28253D",
+         "legendTextColor": "#28253D",
+         "xAxisTitleColor": "#28253D",
+         "xAxisLabelColor": "#28253D",
+         "xAxisTickColor": "#28253D",
+         "xAxisLineColor": "#28253D",
+         "yAxisTitleColor": "#28253D",
+         "yAxisLabelColor": "#28253D",
+         "yAxisTickColor": "#28253D",
+         "yAxisLineColor": "#28253D",
+         "plotColorPalette": "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0"
+        },
+        "requirementBackground": "#ECECFE",
+        "requirementBorderColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "requirementBorderSize": "1",
+        "requirementTextColor": "#28253D",
+        "relationColor": "#000000",
+        "relationLabelBackground": "hsl(-120, 0%, 80%)",
+        "relationLabelColor": "#28253D",
+        "requirementEdgeLabelBackground": "#FFFFFF",
+        "git0": "hsl(240, 90%, 71.0784313725%)",
+        "git1": "hsl(240, 22.2222222222%, 67.9411764706%)",
+        "git2": "hsl(60, 90%, 75%)",
+        "git3": "hsl(210, 90%, 71.0784313725%)",
+        "git4": "hsl(180, 90%, 71.0784313725%)",
+        "git5": "hsl(150, 90%, 71.0784313725%)",
+        "git6": "hsl(300, 90%, 71.0784313725%)",
+        "git7": "hsl(0, 90%, 71.0784313725%)",
+        "gitInv0": "rgb(140.1250000002, 140.1250000002, 7.375)",
+        "gitInv1": "rgb(99.9166666666, 99.9166666666, 63.5833333333)",
+        "gitInv2": "rgb(6.375, 6.375, 121.125)",
+        "gitInv3": "rgb(140.1250000002, 73.7500000001, 7.375)",
+        "gitInv4": "rgb(140.1250000002, 7.375, 7.375)",
+        "gitInv5": "rgb(140.1250000002, 7.375, 73.7500000001)",
+        "gitInv6": "rgb(7.375, 140.1250000002, 7.375)",
+        "gitInv7": "rgb(7.375, 140.1250000002, 140.1250000002)",
+        "branchLabelColor": "#28253D",
+        "gitBranchLabel0": "#28253D",
+        "gitBranchLabel1": "#28253D",
+        "gitBranchLabel2": "#28253D",
+        "gitBranchLabel3": "#28253D",
+        "gitBranchLabel4": "#28253D",
+        "gitBranchLabel5": "#28253D",
+        "gitBranchLabel6": "#28253D",
+        "gitBranchLabel7": "#28253D",
+        "tagLabelColor": "#28253D",
+        "tagLabelBackground": "#cccccc",
+        "tagLabelBorder": "hsl(247.5, 0%, 9.2156862745%)",
+        "tagLabelFontSize": "10px",
+        "commitLabelColor": "#333333",
+        "commitLabelBackground": "hsl(-120, 0%, 80%)",
+        "commitLineColor": "#BDBCCC",
+        "commitLabelFontSize": "10px",
+        "fontWeight": 600,
+        "erEdgeLabelBackground": "#FFFFFF"
+       },
+       "treemap": {
+        "useMaxWidth": true,
+        "padding": 10,
+        "diagramPadding": 8,
+        "showValues": true,
+        "nodeWidth": 100,
+        "nodeHeight": 40,
+        "borderWidth": 1,
+        "valueFontSize": 12,
+        "labelFontSize": 14,
+        "valueFormat": ","
+       }
+      },
+      "type": "swimlane",
+      "layoutAlgorithm": "swimlane",
+      "direction": "LR",
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "markers": [
+       "point",
+       "circle",
+       "cross"
+      ],
+      "diagramId": "mermaid-1700000000000"
+     },
+     "nodeById": [
+      [
+       "Complete",
+       {
+        "id": "Complete",
+        "label": "Complete",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "handDrawn",
+        "colorIndex": 2,
+        "domId": "mermaid-1700000000000-Complete",
+        "direction": "LR",
+        "labelBBox": {
+         "width": 59.921875,
+         "height": 15.999999046325684
+        }
+       }
+      ],
+      [
+       "Review",
+       {
+        "id": "Review",
+        "label": "Review",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "handDrawn",
+        "colorIndex": 1,
+        "domId": "mermaid-1700000000000-Review",
+        "direction": "LR",
+        "labelBBox": {
+         "width": 45.90625,
+         "height": 15.999999046325684
+        }
+       }
+      ],
+      [
+       "Intake",
+       {
+        "id": "Intake",
+        "label": "Intake",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "handDrawn",
+        "colorIndex": 0,
+        "domId": "mermaid-1700000000000-Intake",
+        "direction": "LR",
+        "labelBBox": {
+         "width": 38.140625,
+         "height": 15.999999046325684
+        }
+       }
+      ],
+      [
+       "start",
+       {
+        "id": "start",
+        "label": "Start",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Intake",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-start-0",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "stadium",
+        "minWidth": 120,
+        "width": 144.291748046875,
+        "height": 34.200706481933594
+       }
+      ],
+      [
+       "task",
+       {
+        "id": "task",
+        "label": "Do work",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Intake",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-task-1",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 182.48121643066406,
+        "height": 49.75504684448242
+       }
+      ],
+      [
+       "fix",
+       {
+        "id": "fix",
+        "label": "Fix issues",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Intake",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-fix-2",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 182.28387451171875,
+        "height": 49.8260383605957
+       }
+      ],
+      [
+       "decision",
+       {
+        "id": "decision",
+        "label": "Ready?",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Review",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-decision-3",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "diamond",
+        "minWidth": 120,
+        "width": 167.77487182617188,
+        "height": 167.3424530029297
+       }
+      ],
+      [
+       "done",
+       {
+        "id": "done",
+        "label": "Done",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Complete",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-done-4",
+        "look": "handDrawn",
+        "isGroup": false,
+        "shape": "circle",
+        "minWidth": 120,
+        "width": 53.696144104003906,
+        "height": 53.78972625732422
+       }
+      ],
+      [
+       "edge-label-decision-done-L_decision_done_0",
+       {
+        "id": "edge-label-decision-done-L_decision_done_0",
+        "label": "Yes",
+        "edgeStart": "decision",
+        "edgeEnd": "done",
+        "shape": "labelRect",
+        "width": 22.84375,
+        "height": 15.999999046325684,
+        "isEdgeLabel": true,
+        "isDummy": true,
+        "parentId": "Complete",
+        "isGroup": false
+       }
+      ],
+      [
+       "edge-label-decision-fix-L_decision_fix_0",
+       {
+        "id": "edge-label-decision-fix-L_decision_fix_0",
+        "label": "No",
+        "edgeStart": "decision",
+        "edgeEnd": "fix",
+        "shape": "labelRect",
+        "width": 17.90625,
+        "height": 15.999999046325684,
+        "isEdgeLabel": true,
+        "isDummy": true,
+        "parentId": "Intake",
+        "isGroup": false
+       }
+      ]
+     ]
+    },
+    "reversed": [
+     {
+      "id": "L_fix_task_0",
+      "src": "fix",
+      "dst": "task",
+      "ref": {
+       "id": "L_fix_task_0",
+       "isUserDefinedId": false,
+       "start": "fix",
+       "end": "task",
+       "type": "arrow_point",
+       "label": "",
+       "labelType": "text",
+       "labelpos": "c",
+       "thickness": "normal",
+       "minlen": 1,
+       "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+       "arrowTypeStart": "none",
+       "arrowTypeEnd": "arrow_point",
+       "arrowheadStyle": "fill: #333",
+       "cssCompiledStyles": [],
+       "labelStyle": [],
+       "style": [],
+       "pattern": "normal",
+       "look": "handDrawn",
+       "curve": "basis"
+      }
+     }
+    ],
+    "layering": {
+     "layers": [
+      [
+       "start"
+      ],
+      [
+       "task",
+       "decision",
+       "edge-label-decision-done-L_decision_done_0"
+      ],
+      [
+       "edge-label-decision-fix-L_decision_fix_0",
+       "done",
+       "placeholder-0"
+      ],
+      [
+       "fix"
+      ]
+     ],
+     "rankOf": {
+      "start": 0,
+      "task": 1,
+      "decision": 1,
+      "edge-label-decision-done-L_decision_done_0": 1,
+      "edge-label-decision-fix-L_decision_fix_0": 2,
+      "done": 2,
+      "fix": 3,
+      "placeholder-0": 2
+     },
+     "dummy": [
+      "placeholder-0"
+     ]
+    },
+    "ordered": {
+     "layers": [
+      [
+       "start"
+      ],
+      [
+       "task",
+       "decision",
+       "edge-label-decision-done-L_decision_done_0"
+      ],
+      [
+       "edge-label-decision-fix-L_decision_fix_0",
+       "placeholder-0",
+       "done"
+      ],
+      [
+       "fix"
+      ]
+     ]
+    },
+    "coordinates": {
+     "x": {
+      "start": -160.7355079650879,
+      "task": -160.7355079650879,
+      "decision": 114.39253616333008,
+      "edge-label-decision-done-L_decision_done_0": 325.12804412841797,
+      "placeholder-0": -161,
+      "edge-label-decision-fix-L_decision_fix_0": -160.7355079650879,
+      "done": 325.12804412841797,
+      "fix": -160.7355079650879
+     },
+     "y": {
+      "start": 17.100353240966797,
+      "task": 180.48683547973633,
+      "decision": 180.48683547973633,
+      "edge-label-decision-done-L_decision_done_0": 180.48683547973633,
+      "placeholder-0": 341.0529251098633,
+      "edge-label-decision-fix-L_decision_fix_0": 341.0529251098633,
+      "done": 341.0529251098633,
+      "fix": 459.0429344177246
+     }
+    }
+   }
+  },
+  {
+   "stage": "writeback",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 325.12804412841797,
+      "y": 241.97797679901123,
+      "width": 153.6961441040039,
+      "height": 555.9559535980225,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 248.27997207641602,
+       "right": 401.9761161804199,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 114.39253616333008,
+      "y": 241.97797679901123,
+      "width": 267.7748718261719,
+      "height": 555.9559535980225,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -19.49489974975586,
+       "right": 248.27997207641602,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": -160.7355079650879,
+      "y": 241.97797679901123,
+      "width": 282.48121643066406,
+      "height": 555.9559535980225,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -301.9761161804199,
+       "right": -19.49489974975586,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": -160.7355079650879,
+      "y": 17.100353240966797
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": -160.7355079650879,
+      "y": 180.48683547973633
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": -160.7355079650879,
+      "y": 459.0429344177246
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 114.39253616333008,
+      "y": 180.48683547973633
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 325.12804412841797,
+      "y": 341.0529251098633
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 325.12804412841797,
+      "y": 180.48683547973633
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Intake",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": -160.7355079650879,
+      "y": 341.0529251098633
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis"
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis"
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0"
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0"
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis"
+     },
+     {
+      "id": "L_decision_done_0-to-label",
+      "start": "decision",
+      "end": "edge-label-decision-done-L_decision_done_0",
+      "type": "normal",
+      "isLayoutOnly": true
+     },
+     {
+      "id": "L_decision_done_0-from-label",
+      "start": "edge-label-decision-done-L_decision_done_0",
+      "end": "done",
+      "type": "normal",
+      "isLayoutOnly": true
+     },
+     {
+      "id": "L_decision_fix_0-to-label",
+      "start": "decision",
+      "end": "edge-label-decision-fix-L_decision_fix_0",
+      "type": "normal",
+      "isLayoutOnly": true
+     },
+     {
+      "id": "L_decision_fix_0-from-label",
+      "start": "edge-label-decision-fix-L_decision_fix_0",
+      "end": "fix",
+      "type": "normal",
+      "isLayoutOnly": true
+     }
+    ]
+   }
+  },
+  {
+   "stage": "routed",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 325.12804412841797,
+      "y": 241.97797679901123,
+      "width": 153.6961441040039,
+      "height": 555.9559535980225,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 248.27997207641602,
+       "right": 401.9761161804199,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 114.39253616333008,
+      "y": 241.97797679901123,
+      "width": 267.7748718261719,
+      "height": 555.9559535980225,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -19.49489974975586,
+       "right": 248.27997207641602,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": -160.7355079650879,
+      "y": 241.97797679901123,
+      "width": 282.48121643066406,
+      "height": 555.9559535980225,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -301.9761161804199,
+       "right": -19.49489974975586,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": -160.7355079650879,
+      "y": 17.100353240966797
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": -160.7355079650879,
+      "y": 180.48683547973633
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": -160.7355079650879,
+      "y": 459.0429344177246
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 114.39253616333008,
+      "y": 180.48683547973633
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 325.12804412841797,
+      "y": 341.0529251098633
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 325.12804412841797,
+      "y": 180.48683547973633
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Intake",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": -160.7355079650879,
+      "y": 341.0529251098633
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis",
+      "points": [
+       {
+        "x": -160.7355079650879,
+        "y": 34.200706481933594
+       },
+       {
+        "x": -160.7355079650879,
+        "y": 54.200706481933594
+       },
+       {
+        "x": -160.7355079650879,
+        "y": 135.60931205749512
+       },
+       {
+        "x": -160.7355079650879,
+        "y": 155.60931205749512
+       }
+      ]
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis",
+      "points": [
+       {
+        "x": -69.49489974975586,
+        "y": 180.48683547973633
+       },
+       {
+        "x": -49.49489974975586,
+        "y": 180.48683547973633
+       },
+       {
+        "x": 10.50510025024414,
+        "y": 180.48683547973633
+       },
+       {
+        "x": 30.50510025024414,
+        "y": 180.48683547973633
+       }
+      ]
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+      "points": [
+       {
+        "x": 198.27997207641602,
+        "y": 180.48683547973633
+       },
+       {
+        "x": 218.27997207641602,
+        "y": 180.48683547973633
+       },
+       {
+        "x": 325.12804412841797,
+        "y": 180.48683547973633
+       },
+       {
+        "x": 325.12804412841797,
+        "y": 314.1580619812012
+       }
+      ]
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+      "points": [
+       {
+        "x": 114.39253616333008,
+        "y": 264.1580619812012
+       },
+       {
+        "x": 114.39253616333008,
+        "y": 284.1580619812012
+       },
+       {
+        "x": -170.7355079650879,
+        "y": 284.1580619812012
+       },
+       {
+        "x": -170.7355079650879,
+        "y": 434.12991523742676
+       },
+       {
+        "x": -160.7355079650879,
+        "y": 434.12991523742676
+       }
+      ]
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "basis",
+      "points": [
+       {
+        "x": -160.7355079650879,
+        "y": 434.12991523742676
+       },
+       {
+        "x": -160.7355079650879,
+        "y": 414.12991523742676
+       },
+       {
+        "x": -160.7355079650879,
+        "y": 205.36435890197754
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:applyLrDirectionTransform",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 478.8211975097656,
+      "width": 1100.2602063917661,
+      "height": 139.8744354248047,
+      "swimlaneContentTop": 458.96868896484375,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 408.8839797973633,
+       "bottom": 548.758415222168
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 258.5344491004944,
+      "width": 1100.2602063917661,
+      "height": 300.6990613937378,
+      "swimlaneContentTop": 191.45681762695312,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 108.18491840362549,
+       "bottom": 408.8839797973633
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 23.63594961166382,
+      "width": 1100.2602063917661,
+      "height": 169.09793758392334,
+      "swimlaneContentTop": -24.91301918029785,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": -60.91301918029785,
+       "bottom": 108.18491840362549
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": 36,
+      "y": 0
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": 361.69611238551454,
+      "y": 0
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": 916.9723951124691,
+      "y": 0
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 361.69611238551454,
+      "y": 275.12804412841797
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 681.7700282744222,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 361.69611238551454,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Intake",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": 681.7700282744222,
+      "y": 0
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 70.08800100648929,
+        "y": 0
+       },
+       {
+        "x": 109.95618445994648,
+        "y": 0
+       },
+       {
+        "x": 272.23684554877775,
+        "y": 0
+       },
+       {
+        "x": 312.10502900223497,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 91.24060821533203
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 111.24060821533203
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 171.24060821533203
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 191.24060821533203
+       }
+      ]
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 359.0154800415039
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 379.0154800415039
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 628.157561415966,
+        "y": 485.86355209350586
+       }
+      ]
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+      "points": [
+       {
+        "x": 528.4871027823231,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 568.3552862357802,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 568.3552862357802,
+        "y": -10
+       },
+       {
+        "x": 867.3105541594886,
+        "y": -10
+       },
+       {
+        "x": 867.3105541594886,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 867.3105541594886,
+        "y": 0
+       },
+       {
+        "x": 827.4423707060313,
+        "y": 0
+       },
+       {
+        "x": 411.2871957687941,
+        "y": 0
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:orthogonalizePolyline+simplifyPolyline",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 478.8211975097656,
+      "width": 1100.2602063917661,
+      "height": 139.8744354248047,
+      "swimlaneContentTop": 458.96868896484375,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 408.8839797973633,
+       "bottom": 548.758415222168
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 258.5344491004944,
+      "width": 1100.2602063917661,
+      "height": 300.6990613937378,
+      "swimlaneContentTop": 191.45681762695312,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 108.18491840362549,
+       "bottom": 408.8839797973633
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 23.63594961166382,
+      "width": 1100.2602063917661,
+      "height": 169.09793758392334,
+      "swimlaneContentTop": -24.91301918029785,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": -60.91301918029785,
+       "bottom": 108.18491840362549
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": 36,
+      "y": 0
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": 361.69611238551454,
+      "y": 0
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": 916.9723951124691,
+      "y": 0
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 361.69611238551454,
+      "y": 275.12804412841797
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 681.7700282744222,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 361.69611238551454,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Intake",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": 681.7700282744222,
+      "y": 0
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 70.08800100648929,
+        "y": 0
+       },
+       {
+        "x": 312.10502900223497,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 91.24060821533203
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 191.24060821533203
+       }
+      ]
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 359.0154800415039
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 628.157561415966,
+        "y": 485.86355209350586
+       }
+      ]
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+      "points": [
+       {
+        "x": 528.4871027823231,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 568.3552862357802,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 568.3552862357802,
+        "y": -10
+       },
+       {
+        "x": 867.3105541594886,
+        "y": -10
+       },
+       {
+        "x": 867.3105541594886,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 867.3105541594886,
+        "y": 0
+       },
+       {
+        "x": 411.2871957687941,
+        "y": 0
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:anchorLabelsToPolyline#1",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 478.8211975097656,
+      "width": 1100.2602063917661,
+      "height": 139.8744354248047,
+      "swimlaneContentTop": 458.96868896484375,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 408.8839797973633,
+       "bottom": 548.758415222168
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 258.5344491004944,
+      "width": 1100.2602063917661,
+      "height": 300.6990613937378,
+      "swimlaneContentTop": 191.45681762695312,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 108.18491840362549,
+       "bottom": 408.8839797973633
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 23.63594961166382,
+      "width": 1100.2602063917661,
+      "height": 169.09793758392334,
+      "swimlaneContentTop": -24.91301918029785,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": -60.91301918029785,
+       "bottom": 108.18491840362549
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": 36,
+      "y": 0
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": 361.69611238551454,
+      "y": 0
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": 916.9723951124691,
+      "y": 0
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 361.69611238551454,
+      "y": 275.12804412841797
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 681.7700282744222,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 494.9268369007403,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Review",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": 568.3552862357802,
+      "y": 132.56402206420898
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 70.08800100648929,
+        "y": 0
+       },
+       {
+        "x": 312.10502900223497,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 91.24060821533203
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 191.24060821533203
+       }
+      ]
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 359.0154800415039
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 628.157561415966,
+        "y": 485.86355209350586
+       }
+      ]
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+      "points": [
+       {
+        "x": 528.4871027823231,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 568.3552862357802,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 568.3552862357802,
+        "y": -10
+       },
+       {
+        "x": 867.3105541594886,
+        "y": -10
+       },
+       {
+        "x": 867.3105541594886,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 867.3105541594886,
+        "y": 0
+       },
+       {
+        "x": 411.2871957687941,
+        "y": 0
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:clipEdgeEndpointsToNodeBoundaries",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 478.8211975097656,
+      "width": 1100.2602063917661,
+      "height": 139.8744354248047,
+      "swimlaneContentTop": 458.96868896484375,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 408.8839797973633,
+       "bottom": 548.758415222168
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 258.5344491004944,
+      "width": 1100.2602063917661,
+      "height": 300.6990613937378,
+      "swimlaneContentTop": 191.45681762695312,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 108.18491840362549,
+       "bottom": 408.8839797973633
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 23.63594961166382,
+      "width": 1100.2602063917661,
+      "height": 169.09793758392334,
+      "swimlaneContentTop": -24.91301918029785,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": -60.91301918029785,
+       "bottom": 108.18491840362549
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": 36,
+      "y": 0
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": 361.69611238551454,
+      "y": 0
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": 916.9723951124691,
+      "y": 0
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 361.69611238551454,
+      "y": 275.12804412841797
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 681.7700282744222,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 494.9268369007403,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Review",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": 568.3552862357802,
+      "y": 132.56402206420898
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 108.1458740234375,
+        "y": 0
+       },
+       {
+        "x": 270.4555041701825,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 91.24060821533203
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 191.24060821533203
+       }
+      ]
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 359.0154800415039
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 628.157561415966,
+        "y": 485.86355209350586
+       }
+      ]
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+      "points": [
+       {
+        "x": 528.4871027823231,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 568.3552862357802,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 568.3552862357802,
+        "y": -10
+       },
+       {
+        "x": 825.8304578566098,
+        "y": -10
+       }
+      ]
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 825.8304578566098,
+        "y": 0
+       },
+       {
+        "x": 452.93672060084657,
+        "y": 0
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:resolveRenderedOrthogonalCrossings#1",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 478.8211975097656,
+      "width": 1100.2602063917661,
+      "height": 139.8744354248047,
+      "swimlaneContentTop": 458.96868896484375,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 408.8839797973633,
+       "bottom": 548.758415222168
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 258.5344491004944,
+      "width": 1100.2602063917661,
+      "height": 300.6990613937378,
+      "swimlaneContentTop": 191.45681762695312,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 108.18491840362549,
+       "bottom": 408.8839797973633
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 23.63594961166382,
+      "width": 1100.2602063917661,
+      "height": 169.09793758392334,
+      "swimlaneContentTop": -24.91301918029785,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": -60.91301918029785,
+       "bottom": 108.18491840362549
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": 36,
+      "y": 0
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": 361.69611238551454,
+      "y": 0
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": 916.9723951124691,
+      "y": 0
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 361.69611238551454,
+      "y": 275.12804412841797
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 681.7700282744222,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 494.9268369007403,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Review",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": 568.3552862357802,
+      "y": 132.56402206420898
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 108.1458740234375,
+        "y": 0
+       },
+       {
+        "x": 270.4555041701825,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 91.24060821533203
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 191.24060821533203
+       }
+      ]
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 359.0154800415039
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 628.157561415966,
+        "y": 485.86355209350586
+       }
+      ]
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+      "points": [
+       {
+        "x": 445.5835482986005,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 24.91301918029785
+       }
+      ]
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 825.8304578566098,
+        "y": 0
+       },
+       {
+        "x": 452.93672060084657,
+        "y": 0
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:anchorLabelsToPolyline#2",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 478.8211975097656,
+      "width": 1100.2602063917661,
+      "height": 139.8744354248047,
+      "swimlaneContentTop": 458.96868896484375,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 408.8839797973633,
+       "bottom": 548.758415222168
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 258.5344491004944,
+      "width": 1100.2602063917661,
+      "height": 300.6990613937378,
+      "swimlaneContentTop": 191.45681762695312,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 108.18491840362549,
+       "bottom": 408.8839797973633
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 23.63594961166382,
+      "width": 1100.2602063917661,
+      "height": 169.09793758392334,
+      "swimlaneContentTop": -24.91301918029785,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": -60.91301918029785,
+       "bottom": 108.18491840362549
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": 36,
+      "y": 0
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": 361.69611238551454,
+      "y": 0
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": 916.9723951124691,
+      "y": 0
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 361.69611238551454,
+      "y": 275.12804412841797
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 681.7700282744222,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 494.9268369007403,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Review",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": 681.2779717055348,
+      "y": 275.12804412841797
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 108.1458740234375,
+        "y": 0
+       },
+       {
+        "x": 270.4555041701825,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 91.24060821533203
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 191.24060821533203
+       }
+      ]
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 359.0154800415039
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 628.157561415966,
+        "y": 485.86355209350586
+       }
+      ]
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+      "points": [
+       {
+        "x": 445.5835482986005,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 24.91301918029785
+       }
+      ]
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 825.8304578566098,
+        "y": 0
+       },
+       {
+        "x": 452.93672060084657,
+        "y": 0
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:prepareEdgeEndpointsForRenderer#1",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 478.8211975097656,
+      "width": 1100.2602063917661,
+      "height": 139.8744354248047,
+      "swimlaneContentTop": 458.96868896484375,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 408.8839797973633,
+       "bottom": 548.758415222168
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 258.5344491004944,
+      "width": 1100.2602063917661,
+      "height": 300.6990613937378,
+      "swimlaneContentTop": 191.45681762695312,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 108.18491840362549,
+       "bottom": 408.8839797973633
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 23.63594961166382,
+      "width": 1100.2602063917661,
+      "height": 169.09793758392334,
+      "swimlaneContentTop": -24.91301918029785,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": -60.91301918029785,
+       "bottom": 108.18491840362549
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": 36,
+      "y": 0
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": 361.69611238551454,
+      "y": 0
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": 916.9723951124691,
+      "y": 0
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 361.69611238551454,
+      "y": 275.12804412841797
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 681.7700282744222,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 494.9268369007403,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Review",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": 681.2779717055348,
+      "y": 275.12804412841797
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 108.1458740234375,
+        "y": 0
+       },
+       {
+        "x": 270.4555041701825,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 24.87752342224121
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 191.45681762695312
+       }
+      ]
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 358.7992706298828
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 358.7992706298828
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 654.9219562224202,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 654.9219562224202,
+        "y": 485.86355209350586
+       }
+      ]
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+      "points": [
+       {
+        "x": 445.5835482986005,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 445.5835482986005,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 24.91301918029785
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 24.91301918029785
+       }
+      ]
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 825.8304578566098,
+        "y": 0
+       },
+       {
+        "x": 452.93672060084657,
+        "y": 0
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:anchorLabelsToPolyline#3",
+   "data": {
+    "direction": "LR",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "handDrawn",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux-color",
+      "look": "handDrawn",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Complete",
+      "label": "Complete",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 2,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 478.8211975097656,
+      "width": 1100.2602063917661,
+      "height": 139.8744354248047,
+      "swimlaneContentTop": 458.96868896484375,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 408.8839797973633,
+       "bottom": 548.758415222168
+      }
+     },
+     {
+      "id": "Review",
+      "label": "Review",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 1,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 258.5344491004944,
+      "width": 1100.2602063917661,
+      "height": 300.6990613937378,
+      "swimlaneContentTop": 191.45681762695312,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": 108.18491840362549,
+       "bottom": 408.8839797973633
+      }
+     },
+     {
+      "id": "Intake",
+      "label": "Intake",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "handDrawn",
+      "colorIndex": 0,
+      "direction": "LR",
+      "x": 467.9842291724455,
+      "y": 23.63594961166382,
+      "width": 1100.2602063917661,
+      "height": 169.09793758392334,
+      "swimlaneContentTop": -24.91301918029785,
+      "groupTitleRect": {
+       "left": -82.14587402343756,
+       "right": -46.14587402343756,
+       "top": -60.91301918029785,
+       "bottom": 108.18491840362549
+      }
+     },
+     {
+      "id": "start",
+      "label": "Start",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "stadium",
+      "width": 144.291748046875,
+      "height": 34.200706481933594,
+      "layer": 0,
+      "order": 0,
+      "x": 36,
+      "y": 0
+     },
+     {
+      "id": "task",
+      "label": "Do work",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.48121643066406,
+      "height": 49.75504684448242,
+      "layer": 1,
+      "order": 0,
+      "x": 361.69611238551454,
+      "y": 0
+     },
+     {
+      "id": "fix",
+      "label": "Fix issues",
+      "labelStyle": "",
+      "parentId": "Intake",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 182.28387451171875,
+      "height": 49.8260383605957,
+      "layer": 3,
+      "order": 0,
+      "x": 916.9723951124691,
+      "y": 0
+     },
+     {
+      "id": "decision",
+      "label": "Ready?",
+      "labelStyle": "",
+      "parentId": "Review",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "diamond",
+      "width": 167.77487182617188,
+      "height": 167.3424530029297,
+      "layer": 1,
+      "order": 1,
+      "x": 361.69611238551454,
+      "y": 275.12804412841797
+     },
+     {
+      "id": "done",
+      "label": "Done",
+      "labelStyle": "",
+      "parentId": "Complete",
+      "padding": 15,
+      "look": "handDrawn",
+      "isGroup": false,
+      "shape": "circle",
+      "width": 53.696144104003906,
+      "height": 53.78972625732422,
+      "layer": 2,
+      "order": 2,
+      "x": 681.7700282744222,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-done-L_decision_done_0",
+      "label": "Yes",
+      "edgeStart": "decision",
+      "edgeEnd": "done",
+      "shape": "labelRect",
+      "width": 22.84375,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Complete",
+      "isGroup": false,
+      "layer": 1,
+      "order": 2,
+      "x": 508.3090343039674,
+      "y": 485.86355209350586
+     },
+     {
+      "id": "edge-label-decision-fix-L_decision_fix_0",
+      "label": "No",
+      "edgeStart": "decision",
+      "edgeEnd": "fix",
+      "shape": "labelRect",
+      "width": 17.90625,
+      "height": 15.999999046325684,
+      "isEdgeLabel": true,
+      "isDummy": true,
+      "parentId": "Review",
+      "isGroup": false,
+      "layer": 2,
+      "order": 0,
+      "x": 681.2779717055348,
+      "y": 275.12804412841797
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_start_task_0",
+      "start": "start",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 108.1458740234375,
+        "y": 0
+       },
+       {
+        "x": 270.4555041701825,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_task_decision_0",
+      "start": "task",
+      "end": "decision",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 24.87752342224121
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 191.45681762695312
+       }
+      ]
+     },
+     {
+      "id": "L_decision_done_0",
+      "start": "decision",
+      "end": "done",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+      "points": [
+       {
+        "x": 361.69611238551454,
+        "y": 358.7992706298828
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 358.7992706298828
+       },
+       {
+        "x": 361.69611238551454,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 654.9219562224202,
+        "y": 485.86355209350586
+       },
+       {
+        "x": 654.9219562224202,
+        "y": 485.86355209350586
+       }
+      ]
+     },
+     {
+      "id": "L_decision_fix_0",
+      "start": "decision",
+      "end": "fix",
+      "type": "arrow_point",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+      "points": [
+       {
+        "x": 445.5835482986005,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 445.5835482986005,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 275.12804412841797
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 24.91301918029785
+       },
+       {
+        "x": 916.9723951124691,
+        "y": 24.91301918029785
+       }
+      ]
+     },
+     {
+      "id": "L_fix_task_0",
+      "start": "fix",
+      "end": "task",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "handDrawn",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 825.8304578566098,
+        "y": 0
+       },
+       {
+        "x": 452.93672060084657,
+        "y": 0
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "output": {
+  "direction": "LR",
+  "config": {
+   "flowchart": {
+    "useMaxWidth": false,
+    "theme": "redux-color",
+    "look": "neo",
+    "titleTopMargin": 25,
+    "subGraphTitleMargin": {
+     "top": 0,
+     "bottom": 0
+    },
+    "diagramPadding": 8,
+    "nodeSpacing": 50,
+    "rankSpacing": 50,
+    "curve": "basis",
+    "padding": 15,
+    "wrappingWidth": 120,
+    "minNodeWidth": 120,
+    "inheritDir": false,
+    "arrowMarkerAbsolute": false
+   },
+   "look": "handDrawn",
+   "swimlane": {
+    "useMaxWidth": true,
+    "theme": "redux-color",
+    "look": "handDrawn",
+    "layout": "swimlane",
+    "lineHops": "arc",
+    "ignoreCrossLaneEdges": true,
+    "optimizeRanksByCrossings": true,
+    "automaticLaneOrdering": false
+   }
+  },
+  "nodes": [
+   {
+    "id": "Complete",
+    "label": "Complete",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "handDrawn",
+    "colorIndex": 2,
+    "direction": "LR",
+    "x": 467.9842291724455,
+    "y": 478.8211975097656,
+    "width": 1100.2602063917661,
+    "height": 139.8744354248047,
+    "swimlaneContentTop": 458.96868896484375,
+    "groupTitleRect": {
+     "left": -82.14587402343756,
+     "right": -46.14587402343756,
+     "top": 408.8839797973633,
+     "bottom": 548.758415222168
+    }
+   },
+   {
+    "id": "Review",
+    "label": "Review",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "handDrawn",
+    "colorIndex": 1,
+    "direction": "LR",
+    "x": 467.9842291724455,
+    "y": 258.5344491004944,
+    "width": 1100.2602063917661,
+    "height": 300.6990613937378,
+    "swimlaneContentTop": 191.45681762695312,
+    "groupTitleRect": {
+     "left": -82.14587402343756,
+     "right": -46.14587402343756,
+     "top": 108.18491840362549,
+     "bottom": 408.8839797973633
+    }
+   },
+   {
+    "id": "Intake",
+    "label": "Intake",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "handDrawn",
+    "colorIndex": 0,
+    "direction": "LR",
+    "x": 467.9842291724455,
+    "y": 23.63594961166382,
+    "width": 1100.2602063917661,
+    "height": 169.09793758392334,
+    "swimlaneContentTop": -24.91301918029785,
+    "groupTitleRect": {
+     "left": -82.14587402343756,
+     "right": -46.14587402343756,
+     "top": -60.91301918029785,
+     "bottom": 108.18491840362549
+    }
+   },
+   {
+    "id": "start",
+    "label": "Start",
+    "labelStyle": "",
+    "parentId": "Intake",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "stadium",
+    "width": 144.291748046875,
+    "height": 34.200706481933594,
+    "layer": 0,
+    "order": 0,
+    "x": 36,
+    "y": 0
+   },
+   {
+    "id": "task",
+    "label": "Do work",
+    "labelStyle": "",
+    "parentId": "Intake",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 182.48121643066406,
+    "height": 49.75504684448242,
+    "layer": 1,
+    "order": 0,
+    "x": 361.69611238551454,
+    "y": 0
+   },
+   {
+    "id": "fix",
+    "label": "Fix issues",
+    "labelStyle": "",
+    "parentId": "Intake",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 182.28387451171875,
+    "height": 49.8260383605957,
+    "layer": 3,
+    "order": 0,
+    "x": 916.9723951124691,
+    "y": 0
+   },
+   {
+    "id": "decision",
+    "label": "Ready?",
+    "labelStyle": "",
+    "parentId": "Review",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "diamond",
+    "width": 167.77487182617188,
+    "height": 167.3424530029297,
+    "layer": 1,
+    "order": 1,
+    "x": 361.69611238551454,
+    "y": 275.12804412841797
+   },
+   {
+    "id": "done",
+    "label": "Done",
+    "labelStyle": "",
+    "parentId": "Complete",
+    "padding": 15,
+    "look": "handDrawn",
+    "isGroup": false,
+    "shape": "circle",
+    "width": 53.696144104003906,
+    "height": 53.78972625732422,
+    "layer": 2,
+    "order": 2,
+    "x": 681.7700282744222,
+    "y": 485.86355209350586
+   },
+   {
+    "id": "edge-label-decision-done-L_decision_done_0",
+    "label": "Yes",
+    "edgeStart": "decision",
+    "edgeEnd": "done",
+    "shape": "labelRect",
+    "width": 22.84375,
+    "height": 15.999999046325684,
+    "isEdgeLabel": true,
+    "isDummy": true,
+    "parentId": "Complete",
+    "isGroup": false,
+    "layer": 1,
+    "order": 2,
+    "x": 508.3090343039674,
+    "y": 485.86355209350586
+   },
+   {
+    "id": "edge-label-decision-fix-L_decision_fix_0",
+    "label": "No",
+    "edgeStart": "decision",
+    "edgeEnd": "fix",
+    "shape": "labelRect",
+    "width": 17.90625,
+    "height": 15.999999046325684,
+    "isEdgeLabel": true,
+    "isDummy": true,
+    "parentId": "Review",
+    "isGroup": false,
+    "layer": 2,
+    "order": 0,
+    "x": 681.2779717055348,
+    "y": 275.12804412841797
+   }
+  ],
+  "edges": [
+   {
+    "id": "L_start_task_0",
+    "start": "start",
+    "end": "task",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "rounded",
+    "points": [
+     {
+      "x": 108.1458740234375,
+      "y": 0
+     },
+     {
+      "x": 270.4555041701825,
+      "y": 0
+     }
+    ]
+   },
+   {
+    "id": "L_task_decision_0",
+    "start": "task",
+    "end": "decision",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "rounded",
+    "points": [
+     {
+      "x": 361.69611238551454,
+      "y": 24.87752342224121
+     },
+     {
+      "x": 361.69611238551454,
+      "y": 191.45681762695312
+     }
+    ]
+   },
+   {
+    "id": "L_decision_done_0",
+    "start": "decision",
+    "end": "done",
+    "type": "arrow_point",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "rounded",
+    "labelNodeId": "edge-label-decision-done-L_decision_done_0",
+    "points": [
+     {
+      "x": 361.69611238551454,
+      "y": 358.7992706298828
+     },
+     {
+      "x": 361.69611238551454,
+      "y": 358.7992706298828
+     },
+     {
+      "x": 361.69611238551454,
+      "y": 485.86355209350586
+     },
+     {
+      "x": 654.9219562224202,
+      "y": 485.86355209350586
+     },
+     {
+      "x": 654.9219562224202,
+      "y": 485.86355209350586
+     }
+    ]
+   },
+   {
+    "id": "L_decision_fix_0",
+    "start": "decision",
+    "end": "fix",
+    "type": "arrow_point",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "rounded",
+    "labelNodeId": "edge-label-decision-fix-L_decision_fix_0",
+    "points": [
+     {
+      "x": 445.5835482986005,
+      "y": 275.12804412841797
+     },
+     {
+      "x": 445.5835482986005,
+      "y": 275.12804412841797
+     },
+     {
+      "x": 916.9723951124691,
+      "y": 275.12804412841797
+     },
+     {
+      "x": 916.9723951124691,
+      "y": 24.91301918029785
+     },
+     {
+      "x": 916.9723951124691,
+      "y": 24.91301918029785
+     }
+    ]
+   },
+   {
+    "id": "L_fix_task_0",
+    "start": "fix",
+    "end": "task",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "handDrawn",
+    "curve": "rounded",
+    "points": [
+     {
+      "x": 825.8304578566098,
+      "y": 0
+     },
+     {
+      "x": 452.93672060084657,
+      "y": 0
+     }
+    ]
+   }
+  ]
+ },
+ "returnedDirection": "LR"
+}

@@ -1,0 +1,5333 @@
+{
+ "name": "nightly-check__15-border-hugging",
+ "group": "fixture",
+ "source": "e2e/diagrams/swimlanes/nightly-check/15-border-hugging.mmd",
+ "text": "---\ndescription: >-\n  The same short approval chain as 15-border-hugging-lr.mmd, rendered\n  top-to-bottom instead of left-to-right.\nconfig:\n  theme: redux\n  look: neo\n  htmlLabels: false\n  flowchart:\n    useMaxWidth: false\n---\nswimlane-beta TD\n\nsubgraph Requestor\n\n  24[Inform Supply Chain Associate regarding the approved EAF <br/> Note: Log Note in PR Request]\n\nend\n\nsubgraph Supply_Chain_Associate [Supply Chain Associate]\n\n  25[Submit chosen RFQ for Approval]\n\nend\n\n\nsubgraph Supply_Chain_Head [Supply Chain Head]\n  26[26: Reviews and Approves the chosen RFQ]\nend\n\nsubgraph General_Manager [General Manager]\n  28[28: Reviews and Approves the chosen RFQ <br/> Note: RFQ will be converted to PO]\nend\n\n\nsubgraph BOD\n\n  23[Suggest the best Supplier based on all RFQs <br/> Note: Log Note in EAF Request]\nend\n\nsubgraph Finance_Head [Finance Head]\n  27[27: Reviews and Approves the chosen RFQ]\nend\n\n\n%% Connections\n\n23 --> 24\n24 --> 25\n25 --> 26\n26 --> 27\n27 --> 28\n",
+ "input": {
+  "direction": "TB",
+  "config": {
+   "flowchart": {
+    "useMaxWidth": false,
+    "theme": "redux-color",
+    "look": "neo",
+    "titleTopMargin": 25,
+    "subGraphTitleMargin": {
+     "top": 0,
+     "bottom": 0
+    },
+    "diagramPadding": 8,
+    "nodeSpacing": 50,
+    "rankSpacing": 50,
+    "curve": "basis",
+    "padding": 15,
+    "wrappingWidth": 120,
+    "minNodeWidth": 120,
+    "inheritDir": false,
+    "arrowMarkerAbsolute": false
+   },
+   "look": "neo",
+   "swimlane": {
+    "useMaxWidth": true,
+    "theme": "redux",
+    "look": "neo",
+    "layout": "swimlane",
+    "lineHops": "arc",
+    "ignoreCrossLaneEdges": true,
+    "optimizeRanksByCrossings": true,
+    "automaticLaneOrdering": false
+   }
+  },
+  "nodes": [
+   {
+    "id": "Finance_Head",
+    "label": "Finance Head",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 5,
+    "direction": "TB"
+   },
+   {
+    "id": "BOD",
+    "label": "BOD",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 4,
+    "direction": "TB"
+   },
+   {
+    "id": "General_Manager",
+    "label": "General Manager",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 3,
+    "direction": "TB"
+   },
+   {
+    "id": "Supply_Chain_Head",
+    "label": "Supply Chain Head",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 2,
+    "direction": "TB"
+   },
+   {
+    "id": "Supply_Chain_Associate",
+    "label": "Supply Chain Associate",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 1,
+    "direction": "TB"
+   },
+   {
+    "id": "Requestor",
+    "label": "Requestor",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 0,
+    "direction": "TB"
+   },
+   {
+    "id": "24",
+    "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+    "labelStyle": "",
+    "parentId": "Requestor",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 117
+   },
+   {
+    "id": "25",
+    "label": "Submit chosen RFQ for Approval",
+    "labelStyle": "",
+    "parentId": "Supply_Chain_Associate",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 55.400001525878906
+   },
+   {
+    "id": "26",
+    "label": "26: Reviews and Approves the chosen RFQ",
+    "labelStyle": "",
+    "parentId": "Supply_Chain_Head",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 70.79999542236328
+   },
+   {
+    "id": "28",
+    "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+    "labelStyle": "",
+    "parentId": "General_Manager",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 101.60000610351562
+   },
+   {
+    "id": "23",
+    "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+    "labelStyle": "",
+    "parentId": "BOD",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 101.60000610351562
+   },
+   {
+    "id": "27",
+    "label": "27: Reviews and Approves the chosen RFQ",
+    "labelStyle": "",
+    "parentId": "Finance_Head",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 70.79999542236328
+   }
+  ],
+  "edges": [
+   {
+    "id": "L_23_24_0",
+    "start": "23",
+    "end": "24",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "basis"
+   },
+   {
+    "id": "L_24_25_0",
+    "start": "24",
+    "end": "25",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "basis"
+   },
+   {
+    "id": "L_25_26_0",
+    "start": "25",
+    "end": "26",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "basis"
+   },
+   {
+    "id": "L_26_27_0",
+    "start": "26",
+    "end": "27",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "basis"
+   },
+   {
+    "id": "L_27_28_0",
+    "start": "27",
+    "end": "28",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "basis"
+   }
+  ]
+ },
+ "stages": [
+  {
+   "stage": "sugiyama",
+   "data": {
+    "acyclic": {
+     "nodes": [
+      "Finance_Head",
+      "BOD",
+      "General_Manager",
+      "Supply_Chain_Head",
+      "Supply_Chain_Associate",
+      "Requestor",
+      "24",
+      "25",
+      "26",
+      "28",
+      "23",
+      "27"
+     ],
+     "edges": [
+      {
+       "id": "L_23_24_0",
+       "src": "23",
+       "dst": "24",
+       "ref": {
+        "id": "L_23_24_0",
+        "isUserDefinedId": false,
+        "start": "23",
+        "end": "24",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       }
+      },
+      {
+       "id": "L_24_25_0",
+       "src": "24",
+       "dst": "25",
+       "ref": {
+        "id": "L_24_25_0",
+        "isUserDefinedId": false,
+        "start": "24",
+        "end": "25",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       }
+      },
+      {
+       "id": "L_25_26_0",
+       "src": "25",
+       "dst": "26",
+       "ref": {
+        "id": "L_25_26_0",
+        "isUserDefinedId": false,
+        "start": "25",
+        "end": "26",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       }
+      },
+      {
+       "id": "L_26_27_0",
+       "src": "26",
+       "dst": "27",
+       "ref": {
+        "id": "L_26_27_0",
+        "isUserDefinedId": false,
+        "start": "26",
+        "end": "27",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       }
+      },
+      {
+       "id": "L_27_28_0",
+       "src": "27",
+       "dst": "28",
+       "ref": {
+        "id": "L_27_28_0",
+        "isUserDefinedId": false,
+        "start": "27",
+        "end": "28",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       }
+      }
+     ],
+     "layout": {
+      "nodes": [
+       {
+        "id": "Finance_Head",
+        "label": "Finance Head",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 5,
+        "domId": "mermaid-1700000000000-Finance_Head",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 87.171875,
+         "height": 15.999999046325684
+        }
+       },
+       {
+        "id": "BOD",
+        "label": "BOD",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 4,
+        "domId": "mermaid-1700000000000-BOD",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 30.34375,
+         "height": 15.999999046325684
+        }
+       },
+       {
+        "id": "General_Manager",
+        "label": "General Manager",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 3,
+        "domId": "mermaid-1700000000000-General_Manager",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 109.1484375,
+         "height": 15.999999046325684
+        }
+       },
+       {
+        "id": "Supply_Chain_Head",
+        "label": "Supply Chain Head",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 2,
+        "domId": "mermaid-1700000000000-Supply_Chain_Head",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 83.28125,
+         "height": 31.400001525878906
+        }
+       },
+       {
+        "id": "Supply_Chain_Associate",
+        "label": "Supply Chain Associate",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 1,
+        "domId": "mermaid-1700000000000-Supply_Chain_Associate",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 83.28125,
+         "height": 31.400001525878906
+        }
+       },
+       {
+        "id": "Requestor",
+        "label": "Requestor",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 0,
+        "domId": "mermaid-1700000000000-Requestor",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 64.7841796875,
+         "height": 15.999999046325684
+        }
+       },
+       {
+        "id": "24",
+        "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Requestor",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-24-0",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 117
+       },
+       {
+        "id": "25",
+        "label": "Submit chosen RFQ for Approval",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Supply_Chain_Associate",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-25-1",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 55.400001525878906
+       },
+       {
+        "id": "26",
+        "label": "26: Reviews and Approves the chosen RFQ",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Supply_Chain_Head",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-26-2",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 70.79999542236328
+       },
+       {
+        "id": "28",
+        "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "General_Manager",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-28-3",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 101.60000610351562
+       },
+       {
+        "id": "23",
+        "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "BOD",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-23-4",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 101.60000610351562
+       },
+       {
+        "id": "27",
+        "label": "27: Reviews and Approves the chosen RFQ",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Finance_Head",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-27-5",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 70.79999542236328
+       }
+      ],
+      "edges": [
+       {
+        "id": "L_23_24_0",
+        "isUserDefinedId": false,
+        "start": "23",
+        "end": "24",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       },
+       {
+        "id": "L_24_25_0",
+        "isUserDefinedId": false,
+        "start": "24",
+        "end": "25",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       },
+       {
+        "id": "L_25_26_0",
+        "isUserDefinedId": false,
+        "start": "25",
+        "end": "26",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       },
+       {
+        "id": "L_26_27_0",
+        "isUserDefinedId": false,
+        "start": "26",
+        "end": "27",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       },
+       {
+        "id": "L_27_28_0",
+        "isUserDefinedId": false,
+        "start": "27",
+        "end": "28",
+        "type": "arrow_point",
+        "label": "",
+        "labelType": "text",
+        "labelpos": "c",
+        "thickness": "normal",
+        "minlen": 1,
+        "classes": "edge-thickness-normal edge-pattern-solid flowchart-link",
+        "arrowTypeStart": "none",
+        "arrowTypeEnd": "arrow_point",
+        "arrowheadStyle": "fill: #333",
+        "cssCompiledStyles": [],
+        "labelStyle": [],
+        "style": [],
+        "pattern": "normal",
+        "look": "neo",
+        "curve": "basis"
+       }
+      ],
+      "other": {},
+      "config": {
+       "flowchart": {
+        "useMaxWidth": false,
+        "theme": "redux-color",
+        "look": "neo",
+        "titleTopMargin": 25,
+        "subGraphTitleMargin": {
+         "top": 0,
+         "bottom": 0
+        },
+        "diagramPadding": 8,
+        "nodeSpacing": 50,
+        "rankSpacing": 50,
+        "curve": "basis",
+        "padding": 15,
+        "wrappingWidth": 120,
+        "minNodeWidth": 120,
+        "inheritDir": false,
+        "arrowMarkerAbsolute": false
+       },
+       "swimlane": {
+        "useMaxWidth": true,
+        "theme": "redux",
+        "look": "neo",
+        "layout": "swimlane",
+        "lineHops": "arc",
+        "ignoreCrossLaneEdges": true,
+        "optimizeRanksByCrossings": true,
+        "automaticLaneOrdering": false
+       },
+       "agentflow": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "titleTopMargin": 25,
+        "diagramPadding": 8,
+        "nodeSpacing": 50,
+        "rankSpacing": 50,
+        "wrappingWidth": 120,
+        "minNodeWidth": 120
+       },
+       "sequence": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "hideUnusedParticipants": false,
+        "activationWidth": 10,
+        "diagramMarginX": 50,
+        "diagramMarginY": 10,
+        "actorMargin": 50,
+        "width": 150,
+        "height": 65,
+        "boxMargin": 10,
+        "boxTextMargin": 5,
+        "noteMargin": 10,
+        "messageMargin": 35,
+        "messageAlign": "center",
+        "mirrorActors": true,
+        "forceMenus": false,
+        "bottomMarginAdj": 1,
+        "rightAngles": false,
+        "showSequenceNumbers": false,
+        "actorFontSize": 14,
+        "actorFontFamily": "\"Open Sans\", sans-serif",
+        "actorFontWeight": 400,
+        "noteFontSize": 14,
+        "noteFontFamily": "\"trebuchet ms\", verdana, arial, sans-serif",
+        "noteFontWeight": 400,
+        "noteAlign": "center",
+        "messageFontSize": 16,
+        "messageFontFamily": "\"trebuchet ms\", verdana, arial, sans-serif",
+        "messageFontWeight": 400,
+        "wrap": false,
+        "wrapPadding": 10,
+        "labelBoxWidth": 50,
+        "labelBoxHeight": 20
+       },
+       "gantt": {
+        "useMaxWidth": true,
+        "titleTopMargin": 25,
+        "barHeight": 20,
+        "barGap": 4,
+        "topPadding": 50,
+        "rightPadding": 75,
+        "leftPadding": 75,
+        "gridLineStartPadding": 35,
+        "fontSize": 11,
+        "sectionFontSize": 11,
+        "numberSectionStyles": 4,
+        "axisFormat": "%Y-%m-%d",
+        "topAxis": false,
+        "displayMode": "",
+        "weekday": "sunday"
+       },
+       "journey": {
+        "useMaxWidth": true,
+        "diagramMarginX": 50,
+        "diagramMarginY": 10,
+        "leftMargin": 150,
+        "maxLabelWidth": 360,
+        "width": 150,
+        "height": 50,
+        "boxMargin": 10,
+        "boxTextMargin": 5,
+        "noteMargin": 10,
+        "messageMargin": 35,
+        "messageAlign": "center",
+        "bottomMarginAdj": 1,
+        "rightAngles": false,
+        "taskFontSize": 14,
+        "taskFontFamily": "\"Open Sans\", sans-serif",
+        "taskMargin": 50,
+        "activationWidth": 10,
+        "textPlacement": "fo",
+        "actorColours": [
+         "#8FBC8F",
+         "#7CFC00",
+         "#00FFFF",
+         "#20B2AA",
+         "#B0E0E6",
+         "#FFFFE0"
+        ],
+        "sectionFills": [
+         "#191970",
+         "#8B008B",
+         "#4B0082",
+         "#2F4F4F",
+         "#800000",
+         "#8B4513",
+         "#00008B"
+        ],
+        "sectionColours": [
+         "#fff"
+        ],
+        "titleColor": "",
+        "titleFontFamily": "\"trebuchet ms\", verdana, arial, sans-serif",
+        "titleFontSize": "4ex"
+       },
+       "class": {
+        "theme": "redux-color",
+        "look": "neo",
+        "hideEmptyMembersBox": false,
+        "hierarchicalNamespaces": true
+       },
+       "state": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "layout": "elk",
+        "wrappingWidth": 120,
+        "minNodeWidth": 120,
+        "titleTopMargin": 25,
+        "padding": 8,
+        "textHeight": 10,
+        "noteMargin": 10,
+        "fontSize": 24,
+        "labelHeight": 16,
+        "radius": 5
+       },
+       "er": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "titleTopMargin": 25,
+        "diagramPadding": 20,
+        "layoutDirection": "TB",
+        "minEntityWidth": 100,
+        "entityPadding": 15,
+        "nodeSpacing": 140,
+        "rankSpacing": 80,
+        "stroke": "gray",
+        "fill": "honeydew",
+        "fontSize": 12
+       },
+       "pie": {
+        "useMaxWidth": true,
+        "textPosition": 0.75,
+        "donutHole": 0,
+        "legendPosition": "right",
+        "highlightSlice": "",
+        "useWidth": 984
+       },
+       "quadrantChart": {
+        "useMaxWidth": true,
+        "chartWidth": 500,
+        "chartHeight": 500,
+        "titleFontSize": 20,
+        "titlePadding": 10,
+        "quadrantPadding": 5,
+        "xAxisLabelPadding": 5,
+        "yAxisLabelPadding": 5,
+        "xAxisLabelFontSize": 16,
+        "yAxisLabelFontSize": 16,
+        "quadrantLabelFontSize": 16,
+        "quadrantTextTopPadding": 5,
+        "pointTextPadding": 5,
+        "pointLabelFontSize": 12,
+        "pointRadius": 5,
+        "xAxisPosition": "top",
+        "yAxisPosition": "left",
+        "quadrantInternalBorderStrokeWidth": 1,
+        "quadrantExternalBorderStrokeWidth": 2
+       },
+       "xyChart": {
+        "useMaxWidth": true,
+        "width": 700,
+        "height": 500,
+        "titleFontSize": 20,
+        "titlePadding": 10,
+        "showDataLabel": false,
+        "showDataLabelOutsideBar": false,
+        "showTitle": true,
+        "showLegend": true,
+        "legendFontSize": 14,
+        "legendPadding": 10,
+        "xAxis": {
+         "$ref": "#/$defs/XYChartAxisConfig",
+         "showLabel": true,
+         "labelFontSize": 14,
+         "labelPadding": 5,
+         "showTitle": true,
+         "titleFontSize": 16,
+         "titlePadding": 5,
+         "showTick": true,
+         "tickLength": 5,
+         "tickWidth": 2,
+         "showAxisLine": true,
+         "axisLineWidth": 2,
+         "labelRotation": 0
+        },
+        "yAxis": {
+         "$ref": "#/$defs/XYChartAxisConfig",
+         "showLabel": true,
+         "labelFontSize": 14,
+         "labelPadding": 5,
+         "showTitle": true,
+         "titleFontSize": 16,
+         "titlePadding": 5,
+         "showTick": true,
+         "tickLength": 5,
+         "tickWidth": 2,
+         "showAxisLine": true,
+         "axisLineWidth": 2,
+         "labelRotation": 0
+        },
+        "chartOrientation": "vertical",
+        "plotReservedSpacePercent": 50
+       },
+       "requirement": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "rect_fill": "#f9f9f9",
+        "text_color": "#333",
+        "rect_border_size": "0.5px",
+        "rect_border_color": "#bbb",
+        "rect_min_width": 200,
+        "rect_min_height": 200,
+        "fontSize": 14,
+        "rect_padding": 10,
+        "line_height": 20
+       },
+       "mindmap": {
+        "useMaxWidth": true,
+        "colorBy": "branch",
+        "padding": 10,
+        "maxNodeWidth": 200,
+        "layoutAlgorithm": "cose-bilkent"
+       },
+       "ishikawa": {
+        "useMaxWidth": true,
+        "diagramPadding": 20
+       },
+       "kanban": {
+        "useMaxWidth": true,
+        "padding": 8,
+        "sectionWidth": 200,
+        "ticketBaseUrl": ""
+       },
+       "timeline": {
+        "useMaxWidth": true,
+        "diagramMarginX": 50,
+        "diagramMarginY": 10,
+        "leftMargin": 150,
+        "width": 150,
+        "height": 50,
+        "boxMargin": 10,
+        "boxTextMargin": 5,
+        "noteMargin": 10,
+        "messageMargin": 35,
+        "messageAlign": "center",
+        "bottomMarginAdj": 1,
+        "rightAngles": false,
+        "taskFontSize": 14,
+        "taskFontFamily": "\"Open Sans\", sans-serif",
+        "taskMargin": 50,
+        "activationWidth": 10,
+        "textPlacement": "fo",
+        "actorColours": [
+         "#8FBC8F",
+         "#7CFC00",
+         "#00FFFF",
+         "#20B2AA",
+         "#B0E0E6",
+         "#FFFFE0"
+        ],
+        "sectionFills": [
+         "#191970",
+         "#8B008B",
+         "#4B0082",
+         "#2F4F4F",
+         "#800000",
+         "#8B4513",
+         "#00008B"
+        ],
+        "sectionColours": [
+         "#fff"
+        ],
+        "disableMulticolor": false
+       },
+       "gitGraph": {
+        "useMaxWidth": true,
+        "titleTopMargin": 25,
+        "diagramPadding": 8,
+        "nodeLabel": {
+         "width": 75,
+         "height": 100,
+         "x": -25,
+         "y": 0
+        },
+        "mainBranchName": "main",
+        "mainBranchOrder": 0,
+        "showCommitLabel": true,
+        "showBranches": true,
+        "rotateCommitLabel": true,
+        "parallelCommits": false,
+        "arrowMarkerAbsolute": false
+       },
+       "c4": {
+        "useMaxWidth": true,
+        "diagramMarginX": 50,
+        "diagramMarginY": 10,
+        "c4ShapeMargin": 50,
+        "c4ShapePadding": 20,
+        "width": 216,
+        "height": 60,
+        "boxMargin": 10,
+        "c4ShapeInRow": 4,
+        "nextLinePaddingX": 0,
+        "c4BoundaryInRow": 2,
+        "personFontSize": 14,
+        "personFontFamily": "\"Open Sans\", sans-serif",
+        "personFontWeight": "normal",
+        "external_personFontSize": 14,
+        "external_personFontFamily": "\"Open Sans\", sans-serif",
+        "external_personFontWeight": "normal",
+        "systemFontSize": 14,
+        "systemFontFamily": "\"Open Sans\", sans-serif",
+        "systemFontWeight": "normal",
+        "external_systemFontSize": 14,
+        "external_systemFontFamily": "\"Open Sans\", sans-serif",
+        "external_systemFontWeight": "normal",
+        "system_dbFontSize": 14,
+        "system_dbFontFamily": "\"Open Sans\", sans-serif",
+        "system_dbFontWeight": "normal",
+        "external_system_dbFontSize": 14,
+        "external_system_dbFontFamily": "\"Open Sans\", sans-serif",
+        "external_system_dbFontWeight": "normal",
+        "system_queueFontSize": 14,
+        "system_queueFontFamily": "\"Open Sans\", sans-serif",
+        "system_queueFontWeight": "normal",
+        "external_system_queueFontSize": 14,
+        "external_system_queueFontFamily": "\"Open Sans\", sans-serif",
+        "external_system_queueFontWeight": "normal",
+        "boundaryFontSize": 14,
+        "boundaryFontFamily": "\"Open Sans\", sans-serif",
+        "boundaryFontWeight": "normal",
+        "messageFontSize": 12,
+        "messageFontFamily": "\"Open Sans\", sans-serif",
+        "messageFontWeight": "normal",
+        "containerFontSize": 14,
+        "containerFontFamily": "\"Open Sans\", sans-serif",
+        "containerFontWeight": "normal",
+        "external_containerFontSize": 14,
+        "external_containerFontFamily": "\"Open Sans\", sans-serif",
+        "external_containerFontWeight": "normal",
+        "container_dbFontSize": 14,
+        "container_dbFontFamily": "\"Open Sans\", sans-serif",
+        "container_dbFontWeight": "normal",
+        "external_container_dbFontSize": 14,
+        "external_container_dbFontFamily": "\"Open Sans\", sans-serif",
+        "external_container_dbFontWeight": "normal",
+        "container_queueFontSize": 14,
+        "container_queueFontFamily": "\"Open Sans\", sans-serif",
+        "container_queueFontWeight": "normal",
+        "external_container_queueFontSize": 14,
+        "external_container_queueFontFamily": "\"Open Sans\", sans-serif",
+        "external_container_queueFontWeight": "normal",
+        "componentFontSize": 14,
+        "componentFontFamily": "\"Open Sans\", sans-serif",
+        "componentFontWeight": "normal",
+        "external_componentFontSize": 14,
+        "external_componentFontFamily": "\"Open Sans\", sans-serif",
+        "external_componentFontWeight": "normal",
+        "component_dbFontSize": 14,
+        "component_dbFontFamily": "\"Open Sans\", sans-serif",
+        "component_dbFontWeight": "normal",
+        "external_component_dbFontSize": 14,
+        "external_component_dbFontFamily": "\"Open Sans\", sans-serif",
+        "external_component_dbFontWeight": "normal",
+        "component_queueFontSize": 14,
+        "component_queueFontFamily": "\"Open Sans\", sans-serif",
+        "component_queueFontWeight": "normal",
+        "external_component_queueFontSize": 14,
+        "external_component_queueFontFamily": "\"Open Sans\", sans-serif",
+        "external_component_queueFontWeight": "normal",
+        "wrap": true,
+        "wrapPadding": 10,
+        "person_bg_color": "#08427B",
+        "person_border_color": "#073B6F",
+        "external_person_bg_color": "#686868",
+        "external_person_border_color": "#8A8A8A",
+        "system_bg_color": "#1168BD",
+        "system_border_color": "#3C7FC0",
+        "system_db_bg_color": "#1168BD",
+        "system_db_border_color": "#3C7FC0",
+        "system_queue_bg_color": "#1168BD",
+        "system_queue_border_color": "#3C7FC0",
+        "external_system_bg_color": "#999999",
+        "external_system_border_color": "#8A8A8A",
+        "external_system_db_bg_color": "#999999",
+        "external_system_db_border_color": "#8A8A8A",
+        "external_system_queue_bg_color": "#999999",
+        "external_system_queue_border_color": "#8A8A8A",
+        "container_bg_color": "#438DD5",
+        "container_border_color": "#3C7FC0",
+        "container_db_bg_color": "#438DD5",
+        "container_db_border_color": "#3C7FC0",
+        "container_queue_bg_color": "#438DD5",
+        "container_queue_border_color": "#3C7FC0",
+        "external_container_bg_color": "#B3B3B3",
+        "external_container_border_color": "#A6A6A6",
+        "external_container_db_bg_color": "#B3B3B3",
+        "external_container_db_border_color": "#A6A6A6",
+        "external_container_queue_bg_color": "#B3B3B3",
+        "external_container_queue_border_color": "#A6A6A6",
+        "component_bg_color": "#85BBF0",
+        "component_border_color": "#78A8D8",
+        "component_db_bg_color": "#85BBF0",
+        "component_db_border_color": "#78A8D8",
+        "component_queue_bg_color": "#85BBF0",
+        "component_queue_border_color": "#78A8D8",
+        "external_component_bg_color": "#CCCCCC",
+        "external_component_border_color": "#BFBFBF",
+        "external_component_db_bg_color": "#CCCCCC",
+        "external_component_db_border_color": "#BFBFBF",
+        "external_component_queue_bg_color": "#CCCCCC",
+        "external_component_queue_border_color": "#BFBFBF"
+       },
+       "sankey": {
+        "useMaxWidth": true,
+        "width": 600,
+        "height": 400,
+        "linkColor": "gradient",
+        "nodeAlignment": "justify",
+        "showValues": true,
+        "prefix": "",
+        "suffix": "",
+        "nodeWidth": 10,
+        "nodePadding": 12,
+        "labelStyle": "legacy"
+       },
+       "block": {
+        "useMaxWidth": true,
+        "padding": 8
+       },
+       "packet": {
+        "useMaxWidth": true,
+        "rowHeight": 32,
+        "bitWidth": 32,
+        "bitsPerRow": 32,
+        "showBits": true,
+        "bitOrder": "ascending",
+        "paddingX": 5,
+        "paddingY": 5
+       },
+       "treeView": {
+        "useMaxWidth": true,
+        "rowIndent": 10,
+        "paddingX": 5,
+        "paddingY": 5,
+        "lineThickness": 1,
+        "showIcons": false,
+        "defaultIconPack": "",
+        "filenameIcons": {},
+        "extensionIcons": {}
+       },
+       "architecture": {
+        "useMaxWidth": true,
+        "padding": 40,
+        "iconSize": 80,
+        "fontSize": 16,
+        "randomize": false,
+        "nodeSeparation": 75,
+        "idealEdgeLengthMultiplier": 1.5,
+        "edgeElasticity": 0.45,
+        "numIter": 2500,
+        "seed": 1
+       },
+       "eventmodeling": {
+        "useMaxWidth": true,
+        "padding": 30,
+        "rowHeight": 32
+       },
+       "radar": {
+        "useMaxWidth": true,
+        "width": 600,
+        "height": 600,
+        "marginTop": 50,
+        "marginRight": 50,
+        "marginBottom": 50,
+        "marginLeft": 50,
+        "axisScaleFactor": 1,
+        "axisLabelFactor": 1.05,
+        "curveTension": 0.17
+       },
+       "usecase": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "wrappingWidth": 120,
+        "minNodeWidth": 120,
+        "actorFontSize": 14,
+        "actorFontFamily": "\"Open Sans\", sans-serif",
+        "actorFontWeight": "normal",
+        "usecaseFontSize": 12,
+        "usecaseFontFamily": "\"Open Sans\", sans-serif",
+        "usecaseFontWeight": "normal",
+        "nodeSpacing": 50,
+        "rankSpacing": 50,
+        "diagramPadding": 20,
+        "colorScheme": "role"
+       },
+       "venn": {
+        "useMaxWidth": true,
+        "theme": "redux-color",
+        "look": "neo",
+        "width": 800,
+        "height": 450,
+        "padding": 8,
+        "useDebugLayout": false
+       },
+       "wardley-beta": {
+        "useMaxWidth": true,
+        "width": 900,
+        "height": 600,
+        "padding": 48,
+        "nodeRadius": 6,
+        "nodeLabelOffset": 8,
+        "axisFontSize": 12,
+        "labelFontSize": 10,
+        "showGrid": false
+       },
+       "cynefin": {
+        "useMaxWidth": true,
+        "width": 800,
+        "height": 600,
+        "padding": 40,
+        "showDomainDescriptions": true,
+        "boundaryAmplitude": 8,
+        "seed": 0
+       },
+       "railroad": {
+        "useMaxWidth": true,
+        "compactMode": false,
+        "padding": 10,
+        "verticalSeparation": 8,
+        "horizontalSeparation": 10,
+        "arcRadius": 10,
+        "strokeWidth": 2,
+        "showMarkers": true,
+        "markerRadius": 5
+       },
+       "theme": "redux",
+       "look": "neo",
+       "handDrawnSeed": 0,
+       "layout": "swimlane",
+       "maxTextSize": 50000,
+       "maxEdges": 500,
+       "darkMode": false,
+       "fontFamily": "\"trebuchet ms\", verdana, arial, sans-serif;",
+       "logLevel": 5,
+       "securityLevel": "strict",
+       "startOnLoad": true,
+       "arrowMarkerAbsolute": false,
+       "secure": [
+        "secure",
+        "securityLevel",
+        "startOnLoad",
+        "maxTextSize",
+        "suppressErrorRendering",
+        "maxEdges"
+       ],
+       "forceLegacyMathML": false,
+       "deterministicIds": false,
+       "fontSize": 16,
+       "markdownAutoWrap": true,
+       "suppressErrorRendering": false,
+       "htmlLabels": false,
+       "elk": {
+        "mergeEdges": false,
+        "straightenEdges": true,
+        "lineHops": true,
+        "preset": "default",
+        "layeringLayerBound": 4,
+        "forceNodeModelOrder": false,
+        "considerModelOrder": "NODES_AND_EDGES",
+        "keepEntryNodeOnTop": false,
+        "orientFeedbackEdges": true
+       },
+       "themeVariables": {
+        "background": "#ffffff",
+        "primaryColor": "#cccccc",
+        "mainBkg": "#ffffff",
+        "noteBkgColor": "#fff5ad",
+        "noteTextColor": "#28253D",
+        "THEME_COLOR_LIMIT": 12,
+        "radius": 12,
+        "strokeWidth": 2,
+        "primaryBorderColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "fontFamily": "\"Recursive Variable\", arial, sans-serif",
+        "fontSize": "14px",
+        "nodeBorder": "#28253D",
+        "stateBorder": "#28253D",
+        "useGradient": false,
+        "gradientStart": "#0042eb",
+        "gradientStop": "#eb0042",
+        "dropShadow": "url(#drop-shadow)",
+        "nodeShadow": true,
+        "tertiaryColor": "#ffffff",
+        "clusterBkg": "#F9F9FB",
+        "clusterBorder": "#BDBCCC",
+        "noteBorderColor": "#FACC15",
+        "archEdgeColor": "#000000",
+        "archEdgeArrowColor": "#000000",
+        "archEdgeWidth": "3",
+        "archGroupBorderColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "archGroupBorderWidth": "2px",
+        "actorBorder": "#28253D",
+        "filterColor": "#000000",
+        "primaryTextColor": "#28253D",
+        "secondaryColor": "hsl(-120, 0%, 80%)",
+        "secondaryBorderColor": "hsl(-120, 0%, 70%)",
+        "tertiaryBorderColor": "hsl(0, 0%, 90%)",
+        "secondaryTextColor": "#333333",
+        "tertiaryTextColor": "#000000",
+        "lineColor": "#000000",
+        "arrowheadColor": "#000000",
+        "textColor": "#28253D",
+        "border2": "hsl(0, 0%, 90%)",
+        "nodeBkg": "#cccccc",
+        "defaultLinkColor": "#000000",
+        "titleColor": "#000000",
+        "edgeLabelBackground": "hsl(-120, 0%, 80%)",
+        "nodeTextColor": "#28253D",
+        "flowContainerStroke": "hsl(-120, 0%, 70%)",
+        "noteFontWeight": 600,
+        "actorBkg": "#ffffff",
+        "actorTextColor": "#28253D",
+        "actorLineColor": "#28253D",
+        "labelBoxBkgColor": "#ffffff",
+        "signalColor": "#28253D",
+        "signalTextColor": "#28253D",
+        "labelBoxBorderColor": "#28253D",
+        "labelTextColor": "#28253D",
+        "loopTextColor": "#28253D",
+        "activationBorderColor": "hsl(-120, 0%, 70%)",
+        "activationBkgColor": "hsl(-120, 0%, 80%)",
+        "sequenceNumberColor": "#ffffff",
+        "rectBkgColor": "hsl(0, 0%, 96%)",
+        "sectionBkgColor": "hsl(60, 90%, 100%)",
+        "altSectionBkgColor": "white",
+        "sectionBkgColor2": "#ECECFE",
+        "excludeBkgColor": "#eeeeee",
+        "taskBorderColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "taskBkgColor": "#ECECFE",
+        "activeTaskBorderColor": "#ECECFE",
+        "activeTaskBkgColor": "hsl(240, 90%, 100%)",
+        "gridColor": "lightgrey",
+        "doneTaskBkgColor": "lightgrey",
+        "doneTaskBorderColor": "grey",
+        "critBorderColor": "#ff8888",
+        "critBkgColor": "red",
+        "todayLineColor": "red",
+        "taskTextColor": "#28253D",
+        "vertLineColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "taskTextOutsideColor": "#28253D",
+        "taskTextLightColor": "#28253D",
+        "taskTextDarkColor": "#28253D",
+        "taskTextClickableColor": "#003163",
+        "personBorder": "hsl(247.5, 0%, 9.2156862745%)",
+        "personBkg": "#ffffff",
+        "transitionColor": "#000000",
+        "transitionLabelColor": "#28253D",
+        "stateLabelColor": "#28253D",
+        "compositeTitleBackground": "#F9F9FB",
+        "altBackground": "#F9F9FB",
+        "stateEdgeLabelBackground": "#FFFFFF",
+        "fontWeight": 600,
+        "stateBkg": "#ffffff",
+        "labelBackgroundColor": "#ffffff",
+        "compositeBackground": "#ffffff",
+        "compositeBorder": "#28253D",
+        "innerEndBackground": "#28253D",
+        "errorBkgColor": "#ffffff",
+        "errorTextColor": "#000000",
+        "specialStateColor": "#000000",
+        "cScale0": "hsl(0, 0%, 75%)",
+        "cScale1": "hsl(0, 0%, 75%)",
+        "cScale2": "hsl(0, 0%, 75%)",
+        "cScale3": "hsl(0, 0%, 75%)",
+        "cScale4": "hsl(0, 0%, 75%)",
+        "cScale5": "hsl(0, 0%, 75%)",
+        "cScale6": "hsl(0, 0%, 75%)",
+        "cScale7": "hsl(0, 0%, 75%)",
+        "cScale8": "hsl(0, 0%, 75%)",
+        "cScale9": "hsl(0, 0%, 75%)",
+        "cScale10": "hsl(0, 0%, 75%)",
+        "cScale11": "hsl(0, 0%, 75%)",
+        "cScaleInv0": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv1": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv2": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv3": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv4": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv5": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv6": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv7": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv8": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv9": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv10": "rgb(63.75, 63.75, 63.75)",
+        "cScaleInv11": "rgb(63.75, 63.75, 63.75)",
+        "cScalePeer0": "hsl(0, 0%, 65%)",
+        "cScalePeer1": "hsl(0, 0%, 65%)",
+        "cScalePeer2": "hsl(0, 0%, 65%)",
+        "cScalePeer3": "hsl(0, 0%, 65%)",
+        "cScalePeer4": "hsl(0, 0%, 65%)",
+        "cScalePeer5": "hsl(0, 0%, 65%)",
+        "cScalePeer6": "hsl(0, 0%, 65%)",
+        "cScalePeer7": "hsl(0, 0%, 65%)",
+        "cScalePeer8": "hsl(0, 0%, 65%)",
+        "cScalePeer9": "hsl(0, 0%, 65%)",
+        "cScalePeer10": "hsl(0, 0%, 65%)",
+        "cScalePeer11": "hsl(0, 0%, 65%)",
+        "scaleLabelColor": "#28253D",
+        "cScaleLabel0": "#28253D",
+        "cScaleLabel1": "#28253D",
+        "cScaleLabel2": "#28253D",
+        "cScaleLabel3": "#28253D",
+        "cScaleLabel4": "#28253D",
+        "cScaleLabel5": "#28253D",
+        "cScaleLabel6": "#28253D",
+        "cScaleLabel7": "#28253D",
+        "cScaleLabel8": "#28253D",
+        "cScaleLabel9": "#28253D",
+        "cScaleLabel10": "#28253D",
+        "cScaleLabel11": "#28253D",
+        "surface0": "hsl(180, 0%, 95%)",
+        "surfacePeer0": "hsl(180, 0%, 92%)",
+        "surface1": "hsl(180, 0%, 92%)",
+        "surfacePeer1": "hsl(180, 0%, 89%)",
+        "surface2": "hsl(180, 0%, 89%)",
+        "surfacePeer2": "hsl(180, 0%, 86%)",
+        "surface3": "hsl(180, 0%, 86%)",
+        "surfacePeer3": "hsl(180, 0%, 83%)",
+        "surface4": "hsl(180, 0%, 83%)",
+        "surfacePeer4": "hsl(180, 0%, 80%)",
+        "classText": "#28253D",
+        "fillType0": "#ECECFE",
+        "fillType1": "#E9E9F1",
+        "fillType2": "hsl(304, 90%, 96.0784313725%)",
+        "fillType3": "hsl(304, 22.2222222222%, 92.9411764706%)",
+        "fillType4": "hsl(176, 90%, 96.0784313725%)",
+        "fillType5": "hsl(176, 22.2222222222%, 92.9411764706%)",
+        "fillType6": "hsl(8, 90%, 96.0784313725%)",
+        "fillType7": "hsl(8, 22.2222222222%, 92.9411764706%)",
+        "pie1": "#ECECFE",
+        "pie2": "#E9E9F1",
+        "pie3": "hsl(60, 90%, 100%)",
+        "pie4": "hsl(240, 90%, 86.0784313725%)",
+        "pie5": "hsl(240, 22.2222222222%, 82.9411764706%)",
+        "pie6": "hsl(60, 90%, 90%)",
+        "pie7": "hsl(300, 90%, 86.0784313725%)",
+        "pie8": "hsl(180, 90%, 86.0784313725%)",
+        "pie9": "hsl(0, 90%, 96.0784313725%)",
+        "pie10": "hsl(300, 90%, 76.0784313725%)",
+        "pie11": "hsl(180, 90%, 76.0784313725%)",
+        "pie12": "hsl(0, 90%, 86.0784313725%)",
+        "pieTitleTextSize": "25px",
+        "pieTitleTextColor": "#28253D",
+        "pieSectionTextSize": "17px",
+        "pieSectionTextColor": "#28253D",
+        "pieLegendTextSize": "17px",
+        "pieLegendTextColor": "#28253D",
+        "pieStrokeColor": "black",
+        "pieStrokeWidth": "2px",
+        "pieOuterStrokeWidth": "2px",
+        "pieOuterStrokeColor": "black",
+        "pieOpacity": "0.7",
+        "vennTitleTextColor": "#000000",
+        "vennSetTextColor": "#28253D",
+        "quadrant1Fill": "#ECECFE",
+        "quadrant2Fill": "#f1f1ff",
+        "quadrant3Fill": "#f6f6ff",
+        "quadrant4Fill": "#fbfbff",
+        "quadrant1TextFill": "#28253D",
+        "quadrant2TextFill": "#232038",
+        "quadrant3TextFill": "#1e1b33",
+        "quadrant4TextFill": "#19162e",
+        "quadrantPointFill": "hsl(240, 90%, NaN%)",
+        "quadrantPointTextFill": "#28253D",
+        "quadrantXAxisTextFill": "#28253D",
+        "quadrantYAxisTextFill": "#28253D",
+        "quadrantInternalBorderStrokeFill": "hsl(247.5, 0%, 9.2156862745%)",
+        "quadrantExternalBorderStrokeFill": "hsl(247.5, 0%, 9.2156862745%)",
+        "quadrantTitleFill": "#28253D",
+        "xyChart": {
+         "backgroundColor": "#ffffff",
+         "titleColor": "#28253D",
+         "legendTextColor": "#28253D",
+         "xAxisTitleColor": "#28253D",
+         "xAxisLabelColor": "#28253D",
+         "xAxisTickColor": "#28253D",
+         "xAxisLineColor": "#28253D",
+         "yAxisTitleColor": "#28253D",
+         "yAxisLabelColor": "#28253D",
+         "yAxisTickColor": "#28253D",
+         "yAxisLineColor": "#28253D",
+         "plotColorPalette": "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0"
+        },
+        "requirementBackground": "#ECECFE",
+        "requirementBorderColor": "hsl(247.5, 0%, 9.2156862745%)",
+        "requirementBorderSize": "1",
+        "requirementTextColor": "#28253D",
+        "relationColor": "#000000",
+        "relationLabelBackground": "hsl(-120, 0%, 80%)",
+        "relationLabelColor": "#28253D",
+        "requirementEdgeLabelBackground": "#FFFFFF",
+        "git0": "hsl(240, 90%, 71.0784313725%)",
+        "git1": "hsl(240, 22.2222222222%, 67.9411764706%)",
+        "git2": "hsl(60, 90%, 75%)",
+        "git3": "hsl(210, 90%, 71.0784313725%)",
+        "git4": "hsl(180, 90%, 71.0784313725%)",
+        "git5": "hsl(150, 90%, 71.0784313725%)",
+        "git6": "hsl(300, 90%, 71.0784313725%)",
+        "git7": "hsl(0, 90%, 71.0784313725%)",
+        "gitInv0": "rgb(140.1250000002, 140.1250000002, 7.375)",
+        "gitInv1": "rgb(99.9166666666, 99.9166666666, 63.5833333333)",
+        "gitInv2": "rgb(6.375, 6.375, 121.125)",
+        "gitInv3": "rgb(140.1250000002, 73.7500000001, 7.375)",
+        "gitInv4": "rgb(140.1250000002, 7.375, 7.375)",
+        "gitInv5": "rgb(140.1250000002, 7.375, 73.7500000001)",
+        "gitInv6": "rgb(7.375, 140.1250000002, 7.375)",
+        "gitInv7": "rgb(7.375, 140.1250000002, 140.1250000002)",
+        "branchLabelColor": "#28253D",
+        "gitBranchLabel0": "#28253D",
+        "gitBranchLabel1": "#28253D",
+        "gitBranchLabel2": "#28253D",
+        "gitBranchLabel3": "#28253D",
+        "gitBranchLabel4": "#28253D",
+        "gitBranchLabel5": "#28253D",
+        "gitBranchLabel6": "#28253D",
+        "gitBranchLabel7": "#28253D",
+        "tagLabelColor": "#28253D",
+        "tagLabelBackground": "#cccccc",
+        "tagLabelBorder": "hsl(247.5, 0%, 9.2156862745%)",
+        "tagLabelFontSize": "10px",
+        "commitLabelColor": "#333333",
+        "commitLabelBackground": "hsl(-120, 0%, 80%)",
+        "commitLabelFontSize": "10px",
+        "commitLineColor": "#BDBCCC",
+        "erEdgeLabelBackground": "#FFFFFF"
+       },
+       "treemap": {
+        "useMaxWidth": true,
+        "padding": 10,
+        "diagramPadding": 8,
+        "showValues": true,
+        "nodeWidth": 100,
+        "nodeHeight": 40,
+        "borderWidth": 1,
+        "valueFontSize": 12,
+        "labelFontSize": 14,
+        "valueFormat": ","
+       }
+      },
+      "type": "swimlane",
+      "layoutAlgorithm": "swimlane",
+      "direction": "TB",
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "markers": [
+       "point",
+       "circle",
+       "cross"
+      ],
+      "diagramId": "mermaid-1700000000000"
+     },
+     "nodeById": [
+      [
+       "Finance_Head",
+       {
+        "id": "Finance_Head",
+        "label": "Finance Head",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 5,
+        "domId": "mermaid-1700000000000-Finance_Head",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 87.171875,
+         "height": 15.999999046325684
+        }
+       }
+      ],
+      [
+       "BOD",
+       {
+        "id": "BOD",
+        "label": "BOD",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 4,
+        "domId": "mermaid-1700000000000-BOD",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 30.34375,
+         "height": 15.999999046325684
+        }
+       }
+      ],
+      [
+       "General_Manager",
+       {
+        "id": "General_Manager",
+        "label": "General Manager",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 3,
+        "domId": "mermaid-1700000000000-General_Manager",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 109.1484375,
+         "height": 15.999999046325684
+        }
+       }
+      ],
+      [
+       "Supply_Chain_Head",
+       {
+        "id": "Supply_Chain_Head",
+        "label": "Supply Chain Head",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 2,
+        "domId": "mermaid-1700000000000-Supply_Chain_Head",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 83.28125,
+         "height": 31.400001525878906
+        }
+       }
+      ],
+      [
+       "Supply_Chain_Associate",
+       {
+        "id": "Supply_Chain_Associate",
+        "label": "Supply Chain Associate",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 1,
+        "domId": "mermaid-1700000000000-Supply_Chain_Associate",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 83.28125,
+         "height": 31.400001525878906
+        }
+       }
+      ],
+      [
+       "Requestor",
+       {
+        "id": "Requestor",
+        "label": "Requestor",
+        "labelStyle": "",
+        "labelType": "text",
+        "padding": 8,
+        "cssCompiledStyles": [],
+        "cssClasses": "",
+        "shape": "swimlane",
+        "isGroup": true,
+        "look": "neo",
+        "colorIndex": 0,
+        "domId": "mermaid-1700000000000-Requestor",
+        "direction": "TB",
+        "labelBBox": {
+         "width": 64.7841796875,
+         "height": 15.999999046325684
+        }
+       }
+      ],
+      [
+       "24",
+       {
+        "id": "24",
+        "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Requestor",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-24-0",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 117
+       }
+      ],
+      [
+       "25",
+       {
+        "id": "25",
+        "label": "Submit chosen RFQ for Approval",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Supply_Chain_Associate",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-25-1",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 55.400001525878906
+       }
+      ],
+      [
+       "26",
+       {
+        "id": "26",
+        "label": "26: Reviews and Approves the chosen RFQ",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Supply_Chain_Head",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-26-2",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 70.79999542236328
+       }
+      ],
+      [
+       "28",
+       {
+        "id": "28",
+        "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "General_Manager",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-28-3",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 101.60000610351562
+       }
+      ],
+      [
+       "23",
+       {
+        "id": "23",
+        "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "BOD",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-23-4",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 101.60000610351562
+       }
+      ],
+      [
+       "27",
+       {
+        "id": "27",
+        "label": "27: Reviews and Approves the chosen RFQ",
+        "labelType": "text",
+        "labelStyle": "",
+        "parentId": "Finance_Head",
+        "padding": 15,
+        "cssStyles": [],
+        "cssCompiledStyles": [],
+        "cssClasses": "default ",
+        "domId": "mermaid-1700000000000-flowchart-27-5",
+        "look": "neo",
+        "isGroup": false,
+        "shape": "squareRect",
+        "minWidth": 120,
+        "width": 152,
+        "height": 70.79999542236328
+       }
+      ]
+     ]
+    },
+    "reversed": [],
+    "layering": {
+     "layers": [
+      [
+       "23",
+       "24",
+       "25",
+       "26",
+       "27",
+       "28"
+      ]
+     ],
+     "rankOf": {
+      "23": 0,
+      "24": 0,
+      "25": 0,
+      "26": 0,
+      "27": 0,
+      "28": 0
+     },
+     "dummy": []
+    },
+    "ordered": {
+     "layers": [
+      [
+       "23",
+       "24",
+       "25",
+       "26",
+       "27",
+       "28"
+      ]
+     ]
+    },
+    "coordinates": {
+     "x": {
+      "23": 378,
+      "24": -630,
+      "25": -378,
+      "26": -126,
+      "27": 630,
+      "28": 126
+     },
+     "y": {
+      "23": 58.5,
+      "24": 58.5,
+      "25": 58.5,
+      "26": 58.5,
+      "27": 58.5,
+      "28": 58.5
+     }
+    }
+   }
+  },
+  {
+   "stage": "writeback",
+   "data": {
+    "direction": "TB",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "neo",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux",
+      "look": "neo",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Finance_Head",
+      "label": "Finance Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 5,
+      "direction": "TB",
+      "x": 630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 504,
+       "right": 756,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "BOD",
+      "label": "BOD",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 4,
+      "direction": "TB",
+      "x": 378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 252,
+       "right": 504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "General_Manager",
+      "label": "General Manager",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 3,
+      "direction": "TB",
+      "x": 126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 0,
+       "right": 252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Head",
+      "label": "Supply Chain Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 2,
+      "direction": "TB",
+      "x": -126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -252,
+       "right": 0,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Associate",
+      "label": "Supply Chain Associate",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 1,
+      "direction": "TB",
+      "x": -378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -504,
+       "right": -252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Requestor",
+      "label": "Requestor",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 0,
+      "direction": "TB",
+      "x": -630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -756,
+       "right": -504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "24",
+      "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+      "labelStyle": "",
+      "parentId": "Requestor",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 117,
+      "layer": 0,
+      "order": 1,
+      "x": -630,
+      "y": 58.5
+     },
+     {
+      "id": "25",
+      "label": "Submit chosen RFQ for Approval",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Associate",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 55.400001525878906,
+      "layer": 0,
+      "order": 2,
+      "x": -378,
+      "y": 58.5
+     },
+     {
+      "id": "26",
+      "label": "26: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 3,
+      "x": -126,
+      "y": 58.5
+     },
+     {
+      "id": "28",
+      "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+      "labelStyle": "",
+      "parentId": "General_Manager",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 5,
+      "x": 126,
+      "y": 58.5
+     },
+     {
+      "id": "23",
+      "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+      "labelStyle": "",
+      "parentId": "BOD",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 0,
+      "x": 378,
+      "y": 58.5
+     },
+     {
+      "id": "27",
+      "label": "27: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Finance_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 4,
+      "x": 630,
+      "y": 58.5
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_23_24_0",
+      "start": "23",
+      "end": "24",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis"
+     },
+     {
+      "id": "L_24_25_0",
+      "start": "24",
+      "end": "25",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis"
+     },
+     {
+      "id": "L_25_26_0",
+      "start": "25",
+      "end": "26",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis"
+     },
+     {
+      "id": "L_26_27_0",
+      "start": "26",
+      "end": "27",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis"
+     },
+     {
+      "id": "L_27_28_0",
+      "start": "27",
+      "end": "28",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis"
+     }
+    ]
+   }
+  },
+  {
+   "stage": "routed",
+   "data": {
+    "direction": "TB",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "neo",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux",
+      "look": "neo",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Finance_Head",
+      "label": "Finance Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 5,
+      "direction": "TB",
+      "x": 630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 504,
+       "right": 756,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "BOD",
+      "label": "BOD",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 4,
+      "direction": "TB",
+      "x": 378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 252,
+       "right": 504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "General_Manager",
+      "label": "General Manager",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 3,
+      "direction": "TB",
+      "x": 126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 0,
+       "right": 252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Head",
+      "label": "Supply Chain Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 2,
+      "direction": "TB",
+      "x": -126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -252,
+       "right": 0,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Associate",
+      "label": "Supply Chain Associate",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 1,
+      "direction": "TB",
+      "x": -378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -504,
+       "right": -252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Requestor",
+      "label": "Requestor",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 0,
+      "direction": "TB",
+      "x": -630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -756,
+       "right": -504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "24",
+      "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+      "labelStyle": "",
+      "parentId": "Requestor",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 117,
+      "layer": 0,
+      "order": 1,
+      "x": -630,
+      "y": 58.5
+     },
+     {
+      "id": "25",
+      "label": "Submit chosen RFQ for Approval",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Associate",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 55.400001525878906,
+      "layer": 0,
+      "order": 2,
+      "x": -378,
+      "y": 58.5
+     },
+     {
+      "id": "26",
+      "label": "26: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 3,
+      "x": -126,
+      "y": 58.5
+     },
+     {
+      "id": "28",
+      "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+      "labelStyle": "",
+      "parentId": "General_Manager",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 5,
+      "x": 126,
+      "y": 58.5
+     },
+     {
+      "id": "23",
+      "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+      "labelStyle": "",
+      "parentId": "BOD",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 0,
+      "x": 378,
+      "y": 58.5
+     },
+     {
+      "id": "27",
+      "label": "27: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Finance_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 4,
+      "x": 630,
+      "y": 58.5
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_23_24_0",
+      "start": "23",
+      "end": "24",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis",
+      "points": [
+       {
+        "x": 302,
+        "y": 58.5
+       },
+       {
+        "x": 282,
+        "y": 58.5
+       },
+       {
+        "x": 225,
+        "y": 58.5
+       },
+       {
+        "x": 225,
+        "y": -23
+       },
+       {
+        "x": -534,
+        "y": -23
+       },
+       {
+        "x": -534,
+        "y": 58.5
+       },
+       {
+        "x": -554,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_24_25_0",
+      "start": "24",
+      "end": "25",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis",
+      "points": [
+       {
+        "x": -554,
+        "y": 58.5
+       },
+       {
+        "x": -534,
+        "y": 58.5
+       },
+       {
+        "x": -474,
+        "y": 58.5
+       },
+       {
+        "x": -454,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_25_26_0",
+      "start": "25",
+      "end": "26",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis",
+      "points": [
+       {
+        "x": -302,
+        "y": 58.5
+       },
+       {
+        "x": -282,
+        "y": 58.5
+       },
+       {
+        "x": -222,
+        "y": 58.5
+       },
+       {
+        "x": -202,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_26_27_0",
+      "start": "26",
+      "end": "27",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis",
+      "points": [
+       {
+        "x": -50,
+        "y": 58.5
+       },
+       {
+        "x": -30,
+        "y": 58.5
+       },
+       {
+        "x": 27,
+        "y": 58.5
+       },
+       {
+        "x": 27,
+        "y": 132.3000030517578
+       },
+       {
+        "x": 531,
+        "y": 132.3000030517578
+       },
+       {
+        "x": 531,
+        "y": 58.5
+       },
+       {
+        "x": 554,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_27_28_0",
+      "start": "27",
+      "end": "28",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "basis",
+      "points": [
+       {
+        "x": 554,
+        "y": 58.5
+       },
+       {
+        "x": 554,
+        "y": 68.5
+       },
+       {
+        "x": 534,
+        "y": 68.5
+       },
+       {
+        "x": 477,
+        "y": 68.5
+       },
+       {
+        "x": 477,
+        "y": -15.300003051757812
+       },
+       {
+        "x": 222,
+        "y": -15.300003051757812
+       },
+       {
+        "x": 222,
+        "y": 58.5
+       },
+       {
+        "x": 202,
+        "y": 58.5
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:orthogonalizePolyline+simplifyPolyline",
+   "data": {
+    "direction": "TB",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "neo",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux",
+      "look": "neo",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Finance_Head",
+      "label": "Finance Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 5,
+      "direction": "TB",
+      "x": 630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 504,
+       "right": 756,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "BOD",
+      "label": "BOD",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 4,
+      "direction": "TB",
+      "x": 378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 252,
+       "right": 504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "General_Manager",
+      "label": "General Manager",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 3,
+      "direction": "TB",
+      "x": 126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 0,
+       "right": 252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Head",
+      "label": "Supply Chain Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 2,
+      "direction": "TB",
+      "x": -126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -252,
+       "right": 0,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Associate",
+      "label": "Supply Chain Associate",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 1,
+      "direction": "TB",
+      "x": -378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -504,
+       "right": -252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Requestor",
+      "label": "Requestor",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 0,
+      "direction": "TB",
+      "x": -630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -756,
+       "right": -504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "24",
+      "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+      "labelStyle": "",
+      "parentId": "Requestor",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 117,
+      "layer": 0,
+      "order": 1,
+      "x": -630,
+      "y": 58.5
+     },
+     {
+      "id": "25",
+      "label": "Submit chosen RFQ for Approval",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Associate",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 55.400001525878906,
+      "layer": 0,
+      "order": 2,
+      "x": -378,
+      "y": 58.5
+     },
+     {
+      "id": "26",
+      "label": "26: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 3,
+      "x": -126,
+      "y": 58.5
+     },
+     {
+      "id": "28",
+      "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+      "labelStyle": "",
+      "parentId": "General_Manager",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 5,
+      "x": 126,
+      "y": 58.5
+     },
+     {
+      "id": "23",
+      "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+      "labelStyle": "",
+      "parentId": "BOD",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 0,
+      "x": 378,
+      "y": 58.5
+     },
+     {
+      "id": "27",
+      "label": "27: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Finance_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 4,
+      "x": 630,
+      "y": 58.5
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_23_24_0",
+      "start": "23",
+      "end": "24",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 302,
+        "y": 58.5
+       },
+       {
+        "x": 225,
+        "y": 58.5
+       },
+       {
+        "x": 225,
+        "y": -23
+       },
+       {
+        "x": -534,
+        "y": -23
+       },
+       {
+        "x": -534,
+        "y": 58.5
+       },
+       {
+        "x": -554,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_24_25_0",
+      "start": "24",
+      "end": "25",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -554,
+        "y": 58.5
+       },
+       {
+        "x": -454,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_25_26_0",
+      "start": "25",
+      "end": "26",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -302,
+        "y": 58.5
+       },
+       {
+        "x": -202,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_26_27_0",
+      "start": "26",
+      "end": "27",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -50,
+        "y": 58.5
+       },
+       {
+        "x": 27,
+        "y": 58.5
+       },
+       {
+        "x": 27,
+        "y": 132.3000030517578
+       },
+       {
+        "x": 531,
+        "y": 132.3000030517578
+       },
+       {
+        "x": 531,
+        "y": 58.5
+       },
+       {
+        "x": 554,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_27_28_0",
+      "start": "27",
+      "end": "28",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 554,
+        "y": 58.5
+       },
+       {
+        "x": 554,
+        "y": 68.5
+       },
+       {
+        "x": 477,
+        "y": 68.5
+       },
+       {
+        "x": 477,
+        "y": -15.300003051757812
+       },
+       {
+        "x": 222,
+        "y": -15.300003051757812
+       },
+       {
+        "x": 222,
+        "y": 58.5
+       },
+       {
+        "x": 202,
+        "y": 58.5
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:simplifyDetouredEdges",
+   "data": {
+    "direction": "TB",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "neo",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux",
+      "look": "neo",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Finance_Head",
+      "label": "Finance Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 5,
+      "direction": "TB",
+      "x": 630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 504,
+       "right": 756,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "BOD",
+      "label": "BOD",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 4,
+      "direction": "TB",
+      "x": 378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 252,
+       "right": 504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "General_Manager",
+      "label": "General Manager",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 3,
+      "direction": "TB",
+      "x": 126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 0,
+       "right": 252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Head",
+      "label": "Supply Chain Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 2,
+      "direction": "TB",
+      "x": -126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -252,
+       "right": 0,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Associate",
+      "label": "Supply Chain Associate",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 1,
+      "direction": "TB",
+      "x": -378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -504,
+       "right": -252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Requestor",
+      "label": "Requestor",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 0,
+      "direction": "TB",
+      "x": -630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -756,
+       "right": -504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "24",
+      "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+      "labelStyle": "",
+      "parentId": "Requestor",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 117,
+      "layer": 0,
+      "order": 1,
+      "x": -630,
+      "y": 58.5
+     },
+     {
+      "id": "25",
+      "label": "Submit chosen RFQ for Approval",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Associate",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 55.400001525878906,
+      "layer": 0,
+      "order": 2,
+      "x": -378,
+      "y": 58.5
+     },
+     {
+      "id": "26",
+      "label": "26: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 3,
+      "x": -126,
+      "y": 58.5
+     },
+     {
+      "id": "28",
+      "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+      "labelStyle": "",
+      "parentId": "General_Manager",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 5,
+      "x": 126,
+      "y": 58.5
+     },
+     {
+      "id": "23",
+      "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+      "labelStyle": "",
+      "parentId": "BOD",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 0,
+      "x": 378,
+      "y": 58.5
+     },
+     {
+      "id": "27",
+      "label": "27: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Finance_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 4,
+      "x": 630,
+      "y": 58.5
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_23_24_0",
+      "start": "23",
+      "end": "24",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 378,
+        "y": 7.6999969482421875
+       },
+       {
+        "x": 378,
+        "y": -20
+       },
+       {
+        "x": -630,
+        "y": -20
+       },
+       {
+        "x": -630,
+        "y": 0
+       }
+      ]
+     },
+     {
+      "id": "L_24_25_0",
+      "start": "24",
+      "end": "25",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -554,
+        "y": 58.5
+       },
+       {
+        "x": -454,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_25_26_0",
+      "start": "25",
+      "end": "26",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -302,
+        "y": 58.5
+       },
+       {
+        "x": -202,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_26_27_0",
+      "start": "26",
+      "end": "27",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -126,
+        "y": 93.89999771118164
+       },
+       {
+        "x": -126,
+        "y": 113.89999771118164
+       },
+       {
+        "x": 630,
+        "y": 113.89999771118164
+       },
+       {
+        "x": 630,
+        "y": 93.89999771118164
+       }
+      ]
+     },
+     {
+      "id": "L_27_28_0",
+      "start": "27",
+      "end": "28",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 630,
+        "y": 23.10000228881836
+       },
+       {
+        "x": 630,
+        "y": -12.300003051757812
+       },
+       {
+        "x": 126,
+        "y": -12.300003051757812
+       },
+       {
+        "x": 126,
+        "y": 7.6999969482421875
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:resolveRenderedOrthogonalCrossings#1",
+   "data": {
+    "direction": "TB",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "neo",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux",
+      "look": "neo",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Finance_Head",
+      "label": "Finance Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 5,
+      "direction": "TB",
+      "x": 630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 504,
+       "right": 756,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "BOD",
+      "label": "BOD",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 4,
+      "direction": "TB",
+      "x": 378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 252,
+       "right": 504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "General_Manager",
+      "label": "General Manager",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 3,
+      "direction": "TB",
+      "x": 126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 0,
+       "right": 252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Head",
+      "label": "Supply Chain Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 2,
+      "direction": "TB",
+      "x": -126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -252,
+       "right": 0,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Associate",
+      "label": "Supply Chain Associate",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 1,
+      "direction": "TB",
+      "x": -378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -504,
+       "right": -252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Requestor",
+      "label": "Requestor",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 0,
+      "direction": "TB",
+      "x": -630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -756,
+       "right": -504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "24",
+      "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+      "labelStyle": "",
+      "parentId": "Requestor",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 117,
+      "layer": 0,
+      "order": 1,
+      "x": -630,
+      "y": 58.5
+     },
+     {
+      "id": "25",
+      "label": "Submit chosen RFQ for Approval",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Associate",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 55.400001525878906,
+      "layer": 0,
+      "order": 2,
+      "x": -378,
+      "y": 58.5
+     },
+     {
+      "id": "26",
+      "label": "26: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 3,
+      "x": -126,
+      "y": 58.5
+     },
+     {
+      "id": "28",
+      "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+      "labelStyle": "",
+      "parentId": "General_Manager",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 5,
+      "x": 126,
+      "y": 58.5
+     },
+     {
+      "id": "23",
+      "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+      "labelStyle": "",
+      "parentId": "BOD",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 0,
+      "x": 378,
+      "y": 58.5
+     },
+     {
+      "id": "27",
+      "label": "27: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Finance_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 4,
+      "x": 630,
+      "y": 58.5
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_23_24_0",
+      "start": "23",
+      "end": "24",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 378,
+        "y": 109.30000305175781
+       },
+       {
+        "x": 378,
+        "y": 137
+       },
+       {
+        "x": -630,
+        "y": 137
+       },
+       {
+        "x": -630,
+        "y": 117
+       }
+      ]
+     },
+     {
+      "id": "L_24_25_0",
+      "start": "24",
+      "end": "25",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -554,
+        "y": 58.5
+       },
+       {
+        "x": -454,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_25_26_0",
+      "start": "25",
+      "end": "26",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -302,
+        "y": 58.5
+       },
+       {
+        "x": -202,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_26_27_0",
+      "start": "26",
+      "end": "27",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -126,
+        "y": 23.10000228881836
+       },
+       {
+        "x": -126,
+        "y": -20
+       },
+       {
+        "x": 726,
+        "y": -20
+       },
+       {
+        "x": 726,
+        "y": 58.5
+       },
+       {
+        "x": 706,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_27_28_0",
+      "start": "27",
+      "end": "28",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 630,
+        "y": 23.10000228881836
+       },
+       {
+        "x": 630,
+        "y": -12.300003051757812
+       },
+       {
+        "x": 126,
+        "y": -12.300003051757812
+       },
+       {
+        "x": 126,
+        "y": 7.6999969482421875
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:prepareEdgeEndpointsForRenderer#1",
+   "data": {
+    "direction": "TB",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "neo",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux",
+      "look": "neo",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Finance_Head",
+      "label": "Finance Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 5,
+      "direction": "TB",
+      "x": 630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 504,
+       "right": 756,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "BOD",
+      "label": "BOD",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 4,
+      "direction": "TB",
+      "x": 378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 252,
+       "right": 504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "General_Manager",
+      "label": "General Manager",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 3,
+      "direction": "TB",
+      "x": 126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 0,
+       "right": 252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Head",
+      "label": "Supply Chain Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 2,
+      "direction": "TB",
+      "x": -126,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -252,
+       "right": 0,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Supply_Chain_Associate",
+      "label": "Supply Chain Associate",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 1,
+      "direction": "TB",
+      "x": -378,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -504,
+       "right": -252,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "Requestor",
+      "label": "Requestor",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 0,
+      "direction": "TB",
+      "x": -630,
+      "y": 58.5,
+      "width": 252,
+      "height": 189,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -756,
+       "right": -504,
+       "top": -36,
+       "bottom": -15
+      }
+     },
+     {
+      "id": "24",
+      "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+      "labelStyle": "",
+      "parentId": "Requestor",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 117,
+      "layer": 0,
+      "order": 1,
+      "x": -630,
+      "y": 58.5
+     },
+     {
+      "id": "25",
+      "label": "Submit chosen RFQ for Approval",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Associate",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 55.400001525878906,
+      "layer": 0,
+      "order": 2,
+      "x": -378,
+      "y": 58.5
+     },
+     {
+      "id": "26",
+      "label": "26: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 3,
+      "x": -126,
+      "y": 58.5
+     },
+     {
+      "id": "28",
+      "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+      "labelStyle": "",
+      "parentId": "General_Manager",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 5,
+      "x": 126,
+      "y": 58.5
+     },
+     {
+      "id": "23",
+      "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+      "labelStyle": "",
+      "parentId": "BOD",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 0,
+      "x": 378,
+      "y": 58.5
+     },
+     {
+      "id": "27",
+      "label": "27: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Finance_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 4,
+      "x": 630,
+      "y": 58.5
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_23_24_0",
+      "start": "23",
+      "end": "24",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 378,
+        "y": 109.30000305175781
+       },
+       {
+        "x": 378,
+        "y": 109.30000305175781
+       },
+       {
+        "x": 378,
+        "y": 137
+       },
+       {
+        "x": -630,
+        "y": 137
+       },
+       {
+        "x": -630,
+        "y": 117
+       },
+       {
+        "x": -630,
+        "y": 117
+       }
+      ]
+     },
+     {
+      "id": "L_24_25_0",
+      "start": "24",
+      "end": "25",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -554,
+        "y": 58.5
+       },
+       {
+        "x": -454,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_25_26_0",
+      "start": "25",
+      "end": "26",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -302,
+        "y": 58.5
+       },
+       {
+        "x": -202,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_26_27_0",
+      "start": "26",
+      "end": "27",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -126,
+        "y": 23.10000228881836
+       },
+       {
+        "x": -126,
+        "y": 23.10000228881836
+       },
+       {
+        "x": -126,
+        "y": -20
+       },
+       {
+        "x": 726,
+        "y": -20
+       },
+       {
+        "x": 726,
+        "y": 58.5
+       },
+       {
+        "x": 706,
+        "y": 58.5
+       },
+       {
+        "x": 706,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_27_28_0",
+      "start": "27",
+      "end": "28",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 630,
+        "y": 23.10000228881836
+       },
+       {
+        "x": 630,
+        "y": 23.10000228881836
+       },
+       {
+        "x": 630,
+        "y": -12.300003051757812
+       },
+       {
+        "x": 126,
+        "y": -12.300003051757812
+       },
+       {
+        "x": 126,
+        "y": 7.6999969482421875
+       },
+       {
+        "x": 126,
+        "y": 7.6999969482421875
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stage": "post:liftTopLaneTitleBandsAboveRails#1",
+   "data": {
+    "direction": "TB",
+    "config": {
+     "flowchart": {
+      "useMaxWidth": false,
+      "theme": "redux-color",
+      "look": "neo",
+      "titleTopMargin": 25,
+      "subGraphTitleMargin": {
+       "top": 0,
+       "bottom": 0
+      },
+      "diagramPadding": 8,
+      "nodeSpacing": 50,
+      "rankSpacing": 50,
+      "curve": "basis",
+      "padding": 15,
+      "wrappingWidth": 120,
+      "minNodeWidth": 120,
+      "inheritDir": false,
+      "arrowMarkerAbsolute": false
+     },
+     "look": "neo",
+     "swimlane": {
+      "useMaxWidth": true,
+      "theme": "redux",
+      "look": "neo",
+      "layout": "swimlane",
+      "lineHops": "arc",
+      "ignoreCrossLaneEdges": true,
+      "optimizeRanksByCrossings": true,
+      "automaticLaneOrdering": false
+     }
+    },
+    "nodes": [
+     {
+      "id": "Finance_Head",
+      "label": "Finance Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 5,
+      "direction": "TB",
+      "x": 630,
+      "y": 54,
+      "width": 252,
+      "height": 198,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 504,
+       "right": 756,
+       "top": -45,
+       "bottom": -24
+      }
+     },
+     {
+      "id": "BOD",
+      "label": "BOD",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 4,
+      "direction": "TB",
+      "x": 378,
+      "y": 54,
+      "width": 252,
+      "height": 198,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 252,
+       "right": 504,
+       "top": -45,
+       "bottom": -24
+      }
+     },
+     {
+      "id": "General_Manager",
+      "label": "General Manager",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 3,
+      "direction": "TB",
+      "x": 126,
+      "y": 54,
+      "width": 252,
+      "height": 198,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": 0,
+       "right": 252,
+       "top": -45,
+       "bottom": -24
+      }
+     },
+     {
+      "id": "Supply_Chain_Head",
+      "label": "Supply Chain Head",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 2,
+      "direction": "TB",
+      "x": -126,
+      "y": 54,
+      "width": 252,
+      "height": 198,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -252,
+       "right": 0,
+       "top": -45,
+       "bottom": -24
+      }
+     },
+     {
+      "id": "Supply_Chain_Associate",
+      "label": "Supply Chain Associate",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 1,
+      "direction": "TB",
+      "x": -378,
+      "y": 54,
+      "width": 252,
+      "height": 198,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -504,
+       "right": -252,
+       "top": -45,
+       "bottom": -24
+      }
+     },
+     {
+      "id": "Requestor",
+      "label": "Requestor",
+      "labelStyle": "",
+      "padding": 8,
+      "shape": "swimlane",
+      "isGroup": true,
+      "look": "neo",
+      "colorIndex": 0,
+      "direction": "TB",
+      "x": -630,
+      "y": 54,
+      "width": 252,
+      "height": 198,
+      "swimlaneContentTop": 0,
+      "groupTitleRect": {
+       "left": -756,
+       "right": -504,
+       "top": -45,
+       "bottom": -24
+      }
+     },
+     {
+      "id": "24",
+      "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+      "labelStyle": "",
+      "parentId": "Requestor",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 117,
+      "layer": 0,
+      "order": 1,
+      "x": -630,
+      "y": 58.5
+     },
+     {
+      "id": "25",
+      "label": "Submit chosen RFQ for Approval",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Associate",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 55.400001525878906,
+      "layer": 0,
+      "order": 2,
+      "x": -378,
+      "y": 58.5
+     },
+     {
+      "id": "26",
+      "label": "26: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Supply_Chain_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 3,
+      "x": -126,
+      "y": 58.5
+     },
+     {
+      "id": "28",
+      "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+      "labelStyle": "",
+      "parentId": "General_Manager",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 5,
+      "x": 126,
+      "y": 58.5
+     },
+     {
+      "id": "23",
+      "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+      "labelStyle": "",
+      "parentId": "BOD",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 101.60000610351562,
+      "layer": 0,
+      "order": 0,
+      "x": 378,
+      "y": 58.5
+     },
+     {
+      "id": "27",
+      "label": "27: Reviews and Approves the chosen RFQ",
+      "labelStyle": "",
+      "parentId": "Finance_Head",
+      "padding": 15,
+      "look": "neo",
+      "isGroup": false,
+      "shape": "squareRect",
+      "width": 152,
+      "height": 70.79999542236328,
+      "layer": 0,
+      "order": 4,
+      "x": 630,
+      "y": 58.5
+     }
+    ],
+    "edges": [
+     {
+      "id": "L_23_24_0",
+      "start": "23",
+      "end": "24",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 378,
+        "y": 109.30000305175781
+       },
+       {
+        "x": 378,
+        "y": 109.30000305175781
+       },
+       {
+        "x": 378,
+        "y": 137
+       },
+       {
+        "x": -630,
+        "y": 137
+       },
+       {
+        "x": -630,
+        "y": 117
+       },
+       {
+        "x": -630,
+        "y": 117
+       }
+      ]
+     },
+     {
+      "id": "L_24_25_0",
+      "start": "24",
+      "end": "25",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -554,
+        "y": 58.5
+       },
+       {
+        "x": -454,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_25_26_0",
+      "start": "25",
+      "end": "26",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -302,
+        "y": 58.5
+       },
+       {
+        "x": -202,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_26_27_0",
+      "start": "26",
+      "end": "27",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": -126,
+        "y": 23.10000228881836
+       },
+       {
+        "x": -126,
+        "y": 23.10000228881836
+       },
+       {
+        "x": -126,
+        "y": -20
+       },
+       {
+        "x": 726,
+        "y": -20
+       },
+       {
+        "x": 726,
+        "y": 58.5
+       },
+       {
+        "x": 706,
+        "y": 58.5
+       },
+       {
+        "x": 706,
+        "y": 58.5
+       }
+      ]
+     },
+     {
+      "id": "L_27_28_0",
+      "start": "27",
+      "end": "28",
+      "type": "arrow_point",
+      "label": "",
+      "arrowTypeStart": "none",
+      "arrowTypeEnd": "arrow_point",
+      "labelStyle": [],
+      "style": [],
+      "look": "neo",
+      "curve": "rounded",
+      "points": [
+       {
+        "x": 630,
+        "y": 23.10000228881836
+       },
+       {
+        "x": 630,
+        "y": 23.10000228881836
+       },
+       {
+        "x": 630,
+        "y": -12.300003051757812
+       },
+       {
+        "x": 126,
+        "y": -12.300003051757812
+       },
+       {
+        "x": 126,
+        "y": 7.6999969482421875
+       },
+       {
+        "x": 126,
+        "y": 7.6999969482421875
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "output": {
+  "direction": "TB",
+  "config": {
+   "flowchart": {
+    "useMaxWidth": false,
+    "theme": "redux-color",
+    "look": "neo",
+    "titleTopMargin": 25,
+    "subGraphTitleMargin": {
+     "top": 0,
+     "bottom": 0
+    },
+    "diagramPadding": 8,
+    "nodeSpacing": 50,
+    "rankSpacing": 50,
+    "curve": "basis",
+    "padding": 15,
+    "wrappingWidth": 120,
+    "minNodeWidth": 120,
+    "inheritDir": false,
+    "arrowMarkerAbsolute": false
+   },
+   "look": "neo",
+   "swimlane": {
+    "useMaxWidth": true,
+    "theme": "redux",
+    "look": "neo",
+    "layout": "swimlane",
+    "lineHops": "arc",
+    "ignoreCrossLaneEdges": true,
+    "optimizeRanksByCrossings": true,
+    "automaticLaneOrdering": false
+   }
+  },
+  "nodes": [
+   {
+    "id": "Finance_Head",
+    "label": "Finance Head",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 5,
+    "direction": "TB",
+    "x": 630,
+    "y": 54,
+    "width": 252,
+    "height": 198,
+    "swimlaneContentTop": 0,
+    "groupTitleRect": {
+     "left": 504,
+     "right": 756,
+     "top": -45,
+     "bottom": -24
+    }
+   },
+   {
+    "id": "BOD",
+    "label": "BOD",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 4,
+    "direction": "TB",
+    "x": 378,
+    "y": 54,
+    "width": 252,
+    "height": 198,
+    "swimlaneContentTop": 0,
+    "groupTitleRect": {
+     "left": 252,
+     "right": 504,
+     "top": -45,
+     "bottom": -24
+    }
+   },
+   {
+    "id": "General_Manager",
+    "label": "General Manager",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 3,
+    "direction": "TB",
+    "x": 126,
+    "y": 54,
+    "width": 252,
+    "height": 198,
+    "swimlaneContentTop": 0,
+    "groupTitleRect": {
+     "left": 0,
+     "right": 252,
+     "top": -45,
+     "bottom": -24
+    }
+   },
+   {
+    "id": "Supply_Chain_Head",
+    "label": "Supply Chain Head",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 2,
+    "direction": "TB",
+    "x": -126,
+    "y": 54,
+    "width": 252,
+    "height": 198,
+    "swimlaneContentTop": 0,
+    "groupTitleRect": {
+     "left": -252,
+     "right": 0,
+     "top": -45,
+     "bottom": -24
+    }
+   },
+   {
+    "id": "Supply_Chain_Associate",
+    "label": "Supply Chain Associate",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 1,
+    "direction": "TB",
+    "x": -378,
+    "y": 54,
+    "width": 252,
+    "height": 198,
+    "swimlaneContentTop": 0,
+    "groupTitleRect": {
+     "left": -504,
+     "right": -252,
+     "top": -45,
+     "bottom": -24
+    }
+   },
+   {
+    "id": "Requestor",
+    "label": "Requestor",
+    "labelStyle": "",
+    "padding": 8,
+    "shape": "swimlane",
+    "isGroup": true,
+    "look": "neo",
+    "colorIndex": 0,
+    "direction": "TB",
+    "x": -630,
+    "y": 54,
+    "width": 252,
+    "height": 198,
+    "swimlaneContentTop": 0,
+    "groupTitleRect": {
+     "left": -756,
+     "right": -504,
+     "top": -45,
+     "bottom": -24
+    }
+   },
+   {
+    "id": "24",
+    "label": "Inform Supply Chain Associate regarding the approved EAF <br> Note: Log Note in PR Request",
+    "labelStyle": "",
+    "parentId": "Requestor",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 117,
+    "layer": 0,
+    "order": 1,
+    "x": -630,
+    "y": 58.5
+   },
+   {
+    "id": "25",
+    "label": "Submit chosen RFQ for Approval",
+    "labelStyle": "",
+    "parentId": "Supply_Chain_Associate",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 55.400001525878906,
+    "layer": 0,
+    "order": 2,
+    "x": -378,
+    "y": 58.5
+   },
+   {
+    "id": "26",
+    "label": "26: Reviews and Approves the chosen RFQ",
+    "labelStyle": "",
+    "parentId": "Supply_Chain_Head",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 70.79999542236328,
+    "layer": 0,
+    "order": 3,
+    "x": -126,
+    "y": 58.5
+   },
+   {
+    "id": "28",
+    "label": "28: Reviews and Approves the chosen RFQ <br> Note: RFQ will be converted to PO",
+    "labelStyle": "",
+    "parentId": "General_Manager",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 101.60000610351562,
+    "layer": 0,
+    "order": 5,
+    "x": 126,
+    "y": 58.5
+   },
+   {
+    "id": "23",
+    "label": "Suggest the best Supplier based on all RFQs <br> Note: Log Note in EAF Request",
+    "labelStyle": "",
+    "parentId": "BOD",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 101.60000610351562,
+    "layer": 0,
+    "order": 0,
+    "x": 378,
+    "y": 58.5
+   },
+   {
+    "id": "27",
+    "label": "27: Reviews and Approves the chosen RFQ",
+    "labelStyle": "",
+    "parentId": "Finance_Head",
+    "padding": 15,
+    "look": "neo",
+    "isGroup": false,
+    "shape": "squareRect",
+    "width": 152,
+    "height": 70.79999542236328,
+    "layer": 0,
+    "order": 4,
+    "x": 630,
+    "y": 58.5
+   }
+  ],
+  "edges": [
+   {
+    "id": "L_23_24_0",
+    "start": "23",
+    "end": "24",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "rounded",
+    "points": [
+     {
+      "x": 378,
+      "y": 109.30000305175781
+     },
+     {
+      "x": 378,
+      "y": 109.30000305175781
+     },
+     {
+      "x": 378,
+      "y": 137
+     },
+     {
+      "x": -630,
+      "y": 137
+     },
+     {
+      "x": -630,
+      "y": 117
+     },
+     {
+      "x": -630,
+      "y": 117
+     }
+    ]
+   },
+   {
+    "id": "L_24_25_0",
+    "start": "24",
+    "end": "25",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "rounded",
+    "points": [
+     {
+      "x": -554,
+      "y": 58.5
+     },
+     {
+      "x": -454,
+      "y": 58.5
+     }
+    ]
+   },
+   {
+    "id": "L_25_26_0",
+    "start": "25",
+    "end": "26",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "rounded",
+    "points": [
+     {
+      "x": -302,
+      "y": 58.5
+     },
+     {
+      "x": -202,
+      "y": 58.5
+     }
+    ]
+   },
+   {
+    "id": "L_26_27_0",
+    "start": "26",
+    "end": "27",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "rounded",
+    "points": [
+     {
+      "x": -126,
+      "y": 23.10000228881836
+     },
+     {
+      "x": -126,
+      "y": 23.10000228881836
+     },
+     {
+      "x": -126,
+      "y": -20
+     },
+     {
+      "x": 726,
+      "y": -20
+     },
+     {
+      "x": 726,
+      "y": 58.5
+     },
+     {
+      "x": 706,
+      "y": 58.5
+     },
+     {
+      "x": 706,
+      "y": 58.5
+     }
+    ]
+   },
+   {
+    "id": "L_27_28_0",
+    "start": "27",
+    "end": "28",
+    "type": "arrow_point",
+    "label": "",
+    "arrowTypeStart": "none",
+    "arrowTypeEnd": "arrow_point",
+    "labelStyle": [],
+    "style": [],
+    "look": "neo",
+    "curve": "rounded",
+    "points": [
+     {
+      "x": 630,
+      "y": 23.10000228881836
+     },
+     {
+      "x": 630,
+      "y": 23.10000228881836
+     },
+     {
+      "x": 630,
+      "y": -12.300003051757812
+     },
+     {
+      "x": 126,
+      "y": -12.300003051757812
+     },
+     {
+      "x": 126,
+      "y": 7.6999969482421875
+     },
+     {
+      "x": 126,
+      "y": 7.6999969482421875
+     }
+    ]
+   }
+  ]
+ },
+ "returnedDirection": "TB"
+}
