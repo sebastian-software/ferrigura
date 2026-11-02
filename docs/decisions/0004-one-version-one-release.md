@@ -10,7 +10,7 @@ ferrigura is one product with one version.
 - release-please makes the releases from the commit messages ([0003](./0003-conventional-commits.md)): one component, `ferrigura` at the repository's root, with the `rust` release type. The root `Cargo.toml` is the package `ferrigura` (its sources are in `crates/ferrigura`), so the Rust strategy reads its version and moves every member of the workspace, the versions of the dependencies between them and `Cargo.lock` with it. The npm manifests follow as extra files (`release-please-config.json`).
 - One release pull request, one changelog (`CHANGELOG.md` at the root), one tag `v<version>` and one GitHub release.
 - Before `1.0.0`, a feature raises the minor version and a fix the patch version (`bump-minor-pre-major`), as Cargo reads `0.x` versions: `0.4.0` is a breaking change for `0.3.x` users.
-- `.github/workflows/publish.yml` publishes a release from its tag. Crates go to crates.io through Trusted Publishing, in the order of their dependencies; npm packages go through Trusted Publishing from the environment `npm-release`, the platform packages before the facade ([0016](./0016-npm-packages-via-napi.md)). Each registry has its own switch, the repository variables `PUBLISH_ENABLED` and `NPM_PUBLISH_ENABLED`.
+- `.github/workflows/publish.yml` publishes a release from its tag. Crates go to crates.io through Trusted Publishing, in the order of their dependencies; npm packages go through Trusted Publishing from the environment `npm-release`, the platform packages before the facade ([0016](./0016-npm-packages-via-napi.md)). The repository variable `PUBLISH_ENABLED` controls the crates.io publication; npm publication runs for every release.
 
 ## Why
 

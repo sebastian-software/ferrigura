@@ -102,7 +102,7 @@ jobs:
     timeout-minutes: 35
     needs: release-please
     if: >-
-      ${{ !cancelled() && vars.NPM_PUBLISH_ENABLED == 'true' && (
+      ${{ !cancelled() && (
         (github.event_name == 'push' && needs.release-please.outputs.releases_created == 'true') ||
         github.event_name == 'workflow_dispatch'
       ) }}

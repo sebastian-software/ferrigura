@@ -17,7 +17,7 @@ An addon is called in-process, with no process per call. One facade with optiona
 
 ## Consequences
 
-- The npm packages share the product version and are released with the crates; their switch is the repository variable `NPM_PUBLISH_ENABLED`.
+- The npm packages share the product version and are released with the crates.
 - Trusted Publishing cannot create a package, so the `@ferrigura` scope and each package are bootstrapped once by hand, each with its Trusted Publisher for `publish.yml` and the environment `npm-release`.
 - Each platform package carries the notices of its binary ([0013](./0013-licenses-of-ported-code.md)).
 
