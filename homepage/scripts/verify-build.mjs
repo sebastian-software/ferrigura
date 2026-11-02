@@ -42,7 +42,7 @@ for (const page of expectedPages) {
 // Dogfood the actual checker for pages, fragments, assets and the project base.
 execFileSync(
   'ferrolink',
-  ['check', fileURLToPath(output), '--site-url', 'https://sebastian-software.github.io/ferrigura/'],
+  ['check', fileURLToPath(output), '--site-url', 'https://ferrigura.dev/'],
   { cwd: repository, stdio: 'inherit' }
 );
 console.log(

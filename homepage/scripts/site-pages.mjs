@@ -44,5 +44,5 @@ export const documents = [...new Set([...featured.keys(), ...docs])].map((source
 });
 export const expectedPages = ['index.html', ...documents.map(({ path }) => `${path}/index.html`)];
 export function pagePath(page) {
-  return `/ferrigura/${page === 'index.html' ? '' : page.replace(/index\.html$/, '')}`;
+  return `/${page === 'index.html' ? '' : page.replace(/index\.html$/, '')}`;
 }
