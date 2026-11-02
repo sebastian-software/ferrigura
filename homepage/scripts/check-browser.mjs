@@ -33,7 +33,7 @@ try {
     configFile: false,
     root: homepageRoot,
     logLevel: 'silent',
-    base: '/ferrigura/',
+    base: '/',
     build: { outDir: 'build/client' },
     preview: {
       host: '127.0.0.1',
@@ -90,7 +90,7 @@ try {
 }
 
 async function verifyExample(page, origin) {
-  await page.goto(new URL('/ferrigura/', origin).href, { waitUntil: 'load' });
+  await page.goto(new URL('/', origin).href, { waitUntil: 'load' });
   const example = page.locator('#example');
   const choice = example.getByRole('combobox', { name: 'Diagram type', exact: true });
   for (const id of ['sequence', 'state', 'flowchart']) {
@@ -102,7 +102,7 @@ async function verifyExample(page, origin) {
 }
 async function verifyNavigation(page, origin) {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(new URL('/ferrigura/guide/getting-started/', origin).href, { waitUntil: 'load' });
+  await page.goto(new URL('/guide/getting-started/', origin).href, { waitUntil: 'load' });
   await page.getByRole('heading', { name: 'Getting started', level: 1, exact: true }).waitFor();
   const menu = page.locator(selectors.menu);
   await focusMenuByKeyboard(page, menu);
@@ -119,7 +119,7 @@ async function verifyNavigation(page, origin) {
     .getByRole('dialog')
     .getByRole('link', { name: 'Getting started', exact: true })
     .click();
-  await page.waitForURL((url) => url.pathname.startsWith('/ferrigura/guide/getting-started'));
+  await page.waitForURL((url) => url.pathname.startsWith('/guide/getting-started'));
   await page.getByRole('dialog').waitFor({ state: 'detached' });
   await verifyLandscape(page, origin);
 }
@@ -136,7 +136,7 @@ async function focusMenuByKeyboard(page, menu) {
 }
 async function verifyLandscape(page, origin) {
   await page.setViewportSize({ width: 844, height: 390 });
-  await page.goto(new URL('/ferrigura/reference/rust/', origin).href, { waitUntil: 'load' });
+  await page.goto(new URL('/reference/rust/', origin).href, { waitUntil: 'load' });
   const table = page
     .locator('div[role="region"][tabindex="0"]')
     .filter({ has: page.locator('table') })
@@ -160,7 +160,7 @@ async function verifyLandscape(page, origin) {
 async function verifySearch(page, origin) {
   for (const width of [320, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(new URL('/ferrigura/', origin).href, { waitUntil: 'load' });
+    await page.goto(new URL('/', origin).href, { waitUntil: 'load' });
     const search = page.locator(selectors.search);
     await search
       .locator('kbd')
@@ -186,10 +186,10 @@ async function verifySearch(page, origin) {
 async function capture(page, origin) {
   await mkdir(join(tmpdir(), 'ferrigura-review'), { recursive: true });
   for (const [path, label] of [
-    ['/ferrigura/', 'home'],
-    ['/ferrigura/guide/getting-started/', 'guide'],
-    ['/ferrigura/reference/rust/', 'reference'],
-    ['/ferrigura/diagrams/overview/', 'evidence'],
+    ['/', 'home'],
+    ['/guide/getting-started/', 'guide'],
+    ['/reference/rust/', 'reference'],
+    ['/diagrams/overview/', 'evidence'],
   ]) {
     for (const width of [390, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
