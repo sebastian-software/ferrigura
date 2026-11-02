@@ -14,6 +14,9 @@ flowchart LR
   text[Diagram text] --> parse[Parser] --> layout[Layout: ELK, swimlane, cose-bilkent, fcose, venn] --> svg[SVG]
 ```
 
+[Website and getting started](https://sebastian-software.github.io/ferrigura/) ·
+[Diagram reference](https://sebastian-software.github.io/ferrigura/diagrams/overview/)
+
 ## Using ferrigura
 
 [crates/ferrigura/README.md](./crates/ferrigura/README.md) describes the library, [crates/ferrigura-cli/README.md](./crates/ferrigura-cli/README.md) the command-line tool, and [crates/ferrigura-node/README.md](./crates/ferrigura-node/README.md) the Node.js addon. The library and the command-line tool are on crates.io as [`ferrigura`](https://crates.io/crates/ferrigura) and [`ferrigura-cli`](https://crates.io/crates/ferrigura-cli); the standalone npm distribution is prepared in `node/` and awaits registry bootstrap.

@@ -93,7 +93,7 @@ edition = "2024"
 rust-version = "1.95"
 license = "MIT"
 repository = "https://github.com/sebastian-software/ferrigura"
-homepage = "https://github.com/sebastian-software/ferrigura"
+homepage = "https://sebastian-software.github.io/ferrigura/"
 
 [workspace.lints.rust]
 unsafe_code = "deny"

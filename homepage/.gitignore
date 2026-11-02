@@ -1,0 +1,13 @@
+node_modules/
+build/
+.DS_Store
+app/routes.ts
+app/data/site.json
+app/data/navigation.json
+app/routes/guide/
+app/routes/reference/
+app/routes/diagrams/
+app/routes/architecture/
+app/routes/comparisons/
+app/routes/changelog.md
+public/notices/
