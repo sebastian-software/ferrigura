@@ -102,3 +102,16 @@ Then `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check` and `pnpm p
 ## Releases
 
 release-please opens a release pull request from the commit messages on `main`; merging it tags `v<version>` and publishes the crates and npm packages ([0004](./decisions/0004-one-version-one-release.md)). Nothing else is needed for a release. To retry a failed publish, run `publish.yml` by hand with the release's tag.
+
+## The website
+
+The Ardo site in `homepage/` uses the shared Ferramenta theme without local CSS.
+Its documentation routes are generated from the repository's canonical Markdown;
+edit those source files rather than the ignored generated routes. The authored
+entry guide lives in `homepage/content/`.
+
+From `homepage/`, run `pnpm install`, then `pnpm dev` for a local server.
+`pnpm verify` checks the native SVG samples, website source, rendered links and
+browser behavior. The examples are rendered by the Rust CLI; no Mermaid runtime
+is shipped to render them in the visitor's browser. GitHub Actions deploys the
+site from `main` to GitHub Pages under `/ferrigura/`.
