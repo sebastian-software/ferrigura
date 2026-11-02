@@ -937,6 +937,9 @@ e2e/diagrams/flowchart/visual-check/neutral-theme-legacy-graph.mmd	453004a581ace
 e2e/diagrams/flowchart/visual-check/neutral-theme-new-syntax.mmd	3ca1f9b1f6730aed
 e2e/diagrams/flowchart/visual-check/new-line-in-node-and-formatted-edge-label-2.mmd	99ca9b8f5a5ada98
 e2e/diagrams/flowchart/visual-check/new-line-in-node-and-formatted-edge-label.mmd	328171df18985699
+e2e/diagrams/flowchart/visual-check/review-cycle-default.mmd	4ae1eccab57cac2e
+e2e/diagrams/flowchart/visual-check/review-cycle-horizontal.mmd	399e852aebcea414
+e2e/diagrams/flowchart/visual-check/review-cycle-unstraightened.mmd	6cfc701807d56419
 e2e/diagrams/flowchart/visual-check/selected-shape-wrapping.mmd	f95a1069349a5dc3
 e2e/diagrams/flowchart/visual-check/should-be-possible-to-use-syntax-to-add-labels-on-multi-nodes.mmd	d1339a81af6dc392
 e2e/diagrams/flowchart/visual-check/should-be-possible-to-use-syntax-to-add-labels-with-trail-spaces-and-edge-link.mmd	194144aff768d12c

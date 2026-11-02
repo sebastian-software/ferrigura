@@ -192,6 +192,61 @@ Other cluster kinds share the table: `swimlane` ([swimlanes](./swimlanes.md)), t
 
 Terminal labels, `slideTerminalLabelsOffFrames` and the like are in `terminal.rs` and never change a flowchart.
 
+### Diagnosing small steps in a review cycle
+
+The `visual-check/review-cycle-*.mmd` fixtures separate the layout from the SVG
+post-processing. They contain the same draft, review and publication graph in
+vertical and horizontal directions, plus a vertical variant with
+`elk.straightenEdges: false`. Compare and capture them with:
+
+```sh
+# Run inside tools/port after tools/reference/setup.sh has built the reference.
+pnpm port:geometry-flowchart --filter review-cycle --capture --images ../../target/geometry/review-cycle
+```
+
+The capture stores the reference's raw ELK input and output alongside the rendered
+SVG and its measured geometry. The harness also compares Ferrigura's ELK input
+and final SVG geometry with the reference. These are different boundaries:
+
+- ELK supplies node boxes, ports and orthogonal routes. The vertical default
+  fixture already has short perpendicular segments in the raw ELK output.
+- The unified post-processing clips those routes to the actual node outlines,
+  reserves marker space and straightens terminal jogs. The review diamond is
+  clipped inside the rectangular box that ELK laid out.
+- The SVG writer rounds each surviving corner. It preserves the remaining step;
+  it does not create a disconnected path or choose a different layout.
+
+With the bundled font and default configuration, the draft rectangle is 152 units
+wide and the review diamond has a 167-unit layout box. ELK distributes their ports
+along those different widths. Replacing the diamond with a review rectangle gives
+equal-width nodes and removes the lateral steps in a control render.
+
+The downward draft-to-review edge starts at x = 73.5 and reaches the diamond at x = 71. The reverse edge leaves
+at x = 120 and reaches the draft at x = 117.5. Keeping both ports and orthogonal
+segments therefore requires a perpendicular segment. A single vertical line
+cannot satisfy both constraints. Straightening removes some of ELK's terminal
+steps, but keeps a step when collapsing it would move the far port. Disabling
+straightening exposes more steps while leaving the raw ELK graph unchanged.
+
+Changing the existing placement strategy or preset is not a general remedy:
+`LINEAR_SEGMENTS` adds a step to the publication edge in this fixture,
+`NETWORK_SIMPLEX` aligns the downward edge but leaves a larger step on the return,
+and the legacy preset also changes the node arrangement. These settings remain
+available for diagrams whose needs they suit; none is a replacement renderer.
+
+The reference's rounded ELK paths address inconsistent curve interpolation in
+[Mermaid issue #7213](https://github.com/mermaid-js/mermaid/issues/7213).
+The [follow-up correction](https://github.com/mermaid-js/mermaid/pull/7454)
+limits that behavior to ELK. The
+[`straightenEdges` documentation](https://mermaid.js.org/config/setup/mermaid/interfaces/MermaidConfig.html#straightenedges)
+explains why far ports and crossings limit straightening. Ferrigura retains these
+constraints and defaults ([0017](../decisions/0017-reproduce-the-reference.md)).
+
+Edge-label readability is a separate paint issue. The default flowchart CSS
+sets the label background rectangle to 50% opacity, as the reference does; the
+edge beneath it remains visible. The routing comparison measures geometry, not
+readability, and matching the reference does not establish visual quality.
+
 ### Style sheet, looks and the SVG root
 
 `flowchart/style.rs` ports `flowchart/styles.ts`, the shared rules of `styles.ts`, the `classDef` rules of `mermaidAPI.ts` and `insertLookDefs.ts` ([0011](../decisions/0011-themes-as-css-variables.md)). Every color is a custom property declared on the diagram's id, once per token set, and the rules use `var(…)`; the elements carry the same colors as presentation attributes. A rule that no element of a flowchart can match is left out, each with a stated reason in `tests/flowchart_styles.rs`, which checks every other rule against the reference's compiled CSS. The look definitions (the two drop-shadow filters, and the gradient only with `useGradient`) are written for every look, as in the reference, where they are unused in `classic`.
