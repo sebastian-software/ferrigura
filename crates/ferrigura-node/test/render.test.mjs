@@ -22,6 +22,19 @@ const { render, Renderer } = addon.exports;
 
 const PIE = 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85\n';
 
+void test('flowchart routing is adaptive by default and compatibility is per render', () => {
+  const text = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
+  const renderer = new Renderer();
+  const compatible = renderer.render(text, { flowchartRouting: 'mermaid' });
+  assert.equal(renderer.render(text), render(text, {}, { flowchartRouting: 'adaptive' }));
+  assert.notEqual(renderer.render(text), compatible);
+  assert.equal(renderer.render(text, { flowchartRouting: 'mermaid' }), compatible);
+  assert.throws(
+    () => renderer.render(text, { flowchartRouting: 'typo' }),
+    /expected adaptive or mermaid/
+  );
+});
+
 void test('renders a pie to an SVG document with a derived id', () => {
   const svg = render(PIE);
   assert.match(svg, /^<svg /);

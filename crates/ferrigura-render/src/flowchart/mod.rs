@@ -8,6 +8,7 @@
 //! `docs/diagrams/flowchart.md#the-pipeline`.
 
 pub mod data;
+pub mod routing;
 pub mod style;
 
 use ferrigura_model::flowchart::FlowchartDiagram;

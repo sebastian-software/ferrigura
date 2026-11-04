@@ -4,6 +4,20 @@ A flowchart draws nodes of many shapes, the edges between them and subgraphs tha
 
 This page is also the reference for the unified renderer. Other diagram types link to its sections for shapes, labels, edges, clusters and the ELK glue.
 
+## Routing policy
+
+Flowcharts use adaptive routing by default ([0019](../decisions/0019-adaptive-flowchart-routing.md)). Ports are centered on each node, with spacing derived from measured edge labels. This removes unnecessary attachment steps in simple diagrams while keeping ELK placement, obstacle routing, outline clipping and the existing label guards. Nested subgraphs receive the same policy. Necessary bends remain; node positions can change in complex graphs.
+
+Centering can add bends in dense labeled fan-in and fan-out, as in `visual-check/with-formatting-in-a-node*.mmd`. Use `mermaid` when preserving those routes takes priority. Parents without measured edge labels retain their existing child alignments and port spacing.
+
+To preserve the pinned Mermaid reference's routing, choose the per-render compatibility option:
+
+- Rust: `RenderOptions { flowchart_routing: FlowchartRouting::Mermaid, ..RenderOptions::default() }`.
+- Node.js: `renderer.render(text, { flowchartRouting: 'mermaid' })` or `render(text, config, { flowchartRouting: 'mermaid' })`.
+- CLI: `ferrigura --flowchart-routing mermaid diagram.mmd`.
+
+Use `Adaptive` in Rust or `adaptive` in Node.js and the CLI to select the default explicitly. The option affects only flowcharts, including the `graph` and `flowchart-elk` headers. Other diagram types keep their routing. It is a render option, not a front-matter or init configuration key. `elk.straightenEdges` remains a separate post-processing setting for both policies.
+
 ## Model
 
 The model, `FlowchartDiagram`, is the state of the reference's flowchart DB (`flowDb.ts`) after the parse, with the DB's names in camelCase. [canonical-model.md](../canonical-model.md) holds the conventions that every model shares (the text rules, `""` for an absent string, `null` for an undefined field); the fields are these.
@@ -169,6 +183,8 @@ Other cluster kinds share the table: `swimlane` ([swimlanes](./swimlanes.md)), t
 
 **`elk_build.rs`** builds the elkjs graph.
 
+The graph builder follows the reference first. For a flowchart in adaptive mode, `flowchart/routing.rs` then sets centered port alignment on the child nodes of parents with measured edge labels, and parent-level `portPort` spacing of `max(20, 2 × maximum measured edge-label height + 2)`. Parents without measured labels retain their original alignment and spacing. ELK fits the spacing to the available side of each node. Mermaid mode leaves the complete input unchanged.
+
 - A leaf's size is the measured size of its shape; ELK never sees a leaf's label. A subgraph gets its measured title as a label with `H_CENTER V_TOP, INSIDE` placement, the height less 2, and a width floor of `label width + padding`. A plain title is measured unwrapped, a Markdown title wrapped at 120.
 - Every edge is put in the root's `edges` array, and elkjs moves each into the lowest common ancestor of its ends, so the sections of its result are relative to that container.
 - A subgraph keeps `SEPARATE_CHILDREN`, and so its own `elk.direction`, only when no edge crosses its boundary. `configure_cross_hierarchy_edges` otherwise gives the ends of such an edge, and their ancestors up to the common ancestor, `INCLUDE_CHILDREN`, which makes the group's direction inert. A `SEPARATE_CHILDREN` group with a crossing edge makes ELK fail, which is why the policy exists.
@@ -199,6 +215,8 @@ Terminal labels, `slideTerminalLabelsOffFrames` and the like are in `terminal.rs
 `flowchart::render` writes `<svg class="flowchart">` with the `aria-roledescription` `flowchart-v2`, then the accessibility children, the `<style>`, the markers, the root group, the colored markers, the title, and the defs. The `viewBox` is the painted bounding box plus `diagramPadding` on each side (`setupViewPortForSVG`); `useMaxWidth` chooses `width="100%"` with a `max-width`, or the size in pixels. The title is centered over everything drawn so far, `titleTopMargin` above the origin, at font size 18.
 
 ## Differences from Mermaid
+
+- **Flowchart routing** centers ports with label-aware spacing by default. The explicit `mermaid` render option preserves the reference's attachment policy ([0019](../decisions/0019-adaptive-flowchart-routing.md)).
 
 - **Labels are SVG text, not HTML** ([0009](../decisions/0009-svg-text-labels.md)). `htmlLabels: true` is drawn as SVG text too, and the geometry runs compare against the reference with `htmlLabels: false`.
 - **Fonts are bundled and embedded** ([0010](../decisions/0010-text-measurement-and-fonts.md)), so every text run is placed at an explicit `x`.

@@ -1,0 +1,4 @@
+flowchart BT
+  draft[Draft] --> review{Review}
+  review -->|Approved| publish[Publish]
+  review -->|Changes| draft

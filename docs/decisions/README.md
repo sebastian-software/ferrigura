@@ -35,6 +35,7 @@ A new decision that is hard to reverse gets the next free number. Code comments 
 | [0012](./0012-layout-engines-ported-exactly.md)   | Layout engines and browser arithmetic are ported to give the same numbers                           |
 | [0013](./0013-licenses-of-ported-code.md)         | Ported code keeps its source's license, in a crate of its own when it differs                       |
 | [0018](./0018-deterministic-output.md)            | The same input gives the same output: no randomness, screen or state from the environment           |
+| [0019](./0019-adaptive-flowchart-routing.md) | Flowcharts center ports with label-aware spacing by default and retain explicit Mermaid-compatible routing |
 
 ## Verification
 

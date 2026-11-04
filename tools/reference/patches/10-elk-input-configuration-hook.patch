@@ -1,0 +1,19 @@
+A testing hook for ferrigura's adaptive flowchart policy (decision 0019).
+The callback changes the measured ELK input before capture and layout; it is absent in
+Mermaid-compatibility runs. Without a callback this patch has no effect on the reference.
+
+diff --git a/packages/mermaid/src/rendering-util/layout-algorithms/elk/render.ts b/packages/mermaid/src/rendering-util/layout-algorithms/elk/render.ts
+--- a/packages/mermaid/src/rendering-util/layout-algorithms/elk/render.ts
++++ b/packages/mermaid/src/rendering-util/layout-algorithms/elk/render.ts
+@@ -1323,6 +1323,11 @@ async function runElkLayout(
+   // the graph it is given, so the input is copied before layout runs.
+   const elkCapture = (globalThis as typeof globalThis & { __mermaidElkCapture?: ElkCaptureHook })
+     .__mermaidElkCapture;
++  const configure = (
++    globalThis as typeof globalThis & { __mermaidElkConfigure?: (graph: unknown) => void }
++  ).__mermaidElkConfigure;
++  configure?.(elkGraph);
++
+   const captureInput =
+     typeof elkCapture === 'function' ? JSON.parse(JSON.stringify(elkGraph)) : undefined;
+   try {

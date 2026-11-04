@@ -243,7 +243,7 @@ A rule is only learned by running the reference: the built bundle in Chromium, t
 
 ### Reproduce quirks, and name the exceptions
 
-A quirk that changes the output is reproduced, with its probe as a test: the compatibility promise is that the same text renders the same diagram. A difference is accepted only where the reference crashes or its result depends on the page (a random value, the clock), with its reason, and a bug is fixed only together with a patch on the reference ([0017](./decisions/0017-reproduce-the-reference.md)). The easy mistake is to fix a quirk because it looks like a bug.
+A quirk that changes the output is reproduced, with its probe as a test: the compatibility promise is that the same text renders the same diagram. The explicit adaptive flowchart policy has a separate comparison and preserves a Mermaid-compatible render option ([0019](./decisions/0019-adaptive-flowchart-routing.md)). Other differences are accepted only where the reference crashes or its result depends on the page (a random value, the clock), with their reason, and a bug is fixed only together with a patch on the reference ([0017](./decisions/0017-reproduce-the-reference.md)). The easy mistake is to fix a quirk because it looks like a bug.
 
 ### Port the dependency, not a substitute
 

@@ -6,6 +6,8 @@
 
 ferrigura reproduces what the reference does, also where it looks like a bug. The same text renders the same diagram, and fails where the reference fails.
 
+The explicit exception is the flowchart attachment policy ([0019](./0019-adaptive-flowchart-routing.md)): the default centers ports with label-aware spacing; `FlowchartRouting::Mermaid` retains the reference's output. The rules below apply to that compatibility mode and to all other behavior.
+
 - A quirk that changes the output is reproduced, and the probe that showed it becomes a test.
 - A reference bug is fixed in ferrigura only together with a patch on the pinned commit that fixes it in the reference too, so that both sides agree again ([0014](./0014-upstream-reference-at-a-pin.md)).
 - Where the reference crashes, or its result depends on the page it runs in (a random draw, the clock, the screen; [0018](./0018-deterministic-output.md)), ferrigura does not reproduce that. The comparison classes such an input as one the reference failed on, or leaves it out by a rule with its reason. Odd results that are deterministic, `NaN` geometry included, are reproduced.

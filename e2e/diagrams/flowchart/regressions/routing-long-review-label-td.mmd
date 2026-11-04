@@ -1,0 +1,4 @@
+flowchart TD
+  draft[Draft] --> review{Review}
+  review -->|Approved| publish[Publish]
+  review -->|Please revise the complete implementation before submitting again| draft

@@ -186,6 +186,8 @@ jobs:
         run: pnpm -C tools/port port:scope-pie
       - name: Flowchart geometry against the reference in Chromium
         run: pnpm -C tools/port port:geometry-flowchart
+      - name: Adaptive flowchart geometry against the reference with centered ports
+        run: pnpm -C tools/port port:geometry-flowchart --routing adaptive
       - name: Venn layout exactly against its Chromium captures (arm64, as they were taken)
         # The Linux job compares the captures within a tolerance: without fused multiply-adds, atan2
         # rounds as V8 does on x86-64 (crates/ferrigura-venn/tests/corpus.rs).
