@@ -34,6 +34,7 @@ use ferrigura_model::config::{
 use ferrigura_model::theme::ThemeTokens;
 
 use crate::context::{Context, Globals};
+use crate::flowchart::policy::FlowchartMode;
 
 /// The sections of the configuration that the unified renderer reads, borrowed from the view that the
 /// facade resolves. The `flowchart` section gives the layout's spacing, the curve and the title
@@ -43,6 +44,8 @@ use crate::context::{Context, Globals};
 /// their title margin and their `useMaxWidth` from it.
 #[derive(Debug, Clone, Copy)]
 pub struct Section<'a> {
+    /// The flowchart's rendering mode. Other diagram types ignore it.
+    pub flowchart_mode: FlowchartMode,
     /// The `flowchart` section.
     pub flowchart: &'a FlowchartDiagramConfig,
     /// The `elk` section.
@@ -56,10 +59,12 @@ pub struct Section<'a> {
 }
 
 impl<'a> Section<'a> {
-    /// The sections of a resolved configuration.
+    /// The sections of Mermaid configuration, with Mermaid-compatible flowchart routing.
+    /// The facade applies its separate render option for flowcharts.
     #[must_use]
     pub fn of(config: &'a MermaidConfig) -> Self {
         Self {
+            flowchart_mode: FlowchartMode::Mermaid,
             flowchart: &config.flowchart,
             elk: &config.elk,
             class: &config.class,

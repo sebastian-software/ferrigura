@@ -4,6 +4,9 @@ export type RenderOptions = {
   /** SVG namespace; starts with an ASCII letter and contains letters, digits, - or _. */
   id?: string;
   colorScheme?: 'light' | 'dark' | 'auto';
+  /** Flowcharts only. `adaptive` centers ports and draws label backgrounds at full opacity;
+   * `mermaid` preserves the reference's routing and half-opacity label backgrounds. */
+  flowchartMode?: 'adaptive' | 'mermaid';
 };
 /** Render Mermaid source to an SVG string. Throws on invalid source or configuration. */
 export declare function render(text: string, config?: Config, options?: RenderOptions): string;

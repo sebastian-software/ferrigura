@@ -2,7 +2,7 @@
 //! standard input, as `{"elkInput": …, "elkOutput": …}`. The flowchart geometry harness
 //! (`tools/port/geometry/flowchart-geometry.ts`) compares them with the reference's capture.
 //!
-//! Usage: `cargo run -p ferrigura --example flowchart-elk -- [--config file.json] [--id ID]`
+//! Usage: `cargo run -p ferrigura --example flowchart-elk -- [--config file.json] [--id ID] [--flowchart-mode adaptive|mermaid]`
 
 use std::error::Error;
 use std::io::{Read, Write};
@@ -28,6 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 )?);
             }
             "--id" => options.id = Some(value),
+            "--flowchart-mode" => options.flowchart_mode = value.parse()?,
             other => return Err(format!("unknown argument {other}").into()),
         }
     }

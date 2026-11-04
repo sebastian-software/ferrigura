@@ -14,7 +14,7 @@ A change lands only with the whole suite green. Nothing is switched off to make 
 
 ## Why
 
-ferrigura promises that the same diagram text gives the same diagram as Mermaid. That promise holds only while every check that defines it runs on every change; a check that is skipped once stops meaning anything.
+ferrigura checks Mermaid-compatible output and the explicit adaptive flowchart policy ([0019](./0019-adaptive-flowchart-mode.md)) against the reference. That promise holds only while every check that defines it runs on every change; a check that is skipped once stops meaning anything.
 
 ## Consequences
 

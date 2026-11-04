@@ -6,7 +6,9 @@
 
 The reference is upstream Mermaid at a pinned commit, with a few patches. `tools/reference/pin` names the commit and the newest Mermaid release it contains; `tools/reference/patches/` holds the patches, applied in the order of their names; `tools/reference/setup.sh` fetches the commit, applies the patches and builds it in `target/reference/<commit>`.
 
-Every difference between the reference and ferrigura has exactly one place:
+The intentional flowchart default is recorded in [0019](./0019-adaptive-flowchart-mode.md). Test instrumentation exposes layout inputs and outputs without changing ordinary reference renders. For adaptive routing, the harness configures the measured ELK input through such a hook; a separate compatibility run keeps the hook inactive and compares the original input and geometry. The stylesheet comparison checks Mermaid mode against the reference rule by rule; public render tests cover the adaptive background opacity.
+
+Every other difference between the reference and ferrigura has exactly one place:
 
 - **ferrigura is behind Mermaid:** a `pending` exception in `tools/port/exceptions.ts`, which names the issue that tracks the fix.
 - **Mermaid has a bug that ferrigura does not:** a patch on the pinned commit, whose header says what it fixes and, where there is one, names the upstream issue. The patch goes when the pin moves past upstream's fix.

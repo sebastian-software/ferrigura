@@ -12,7 +12,7 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ferrigura::{ColorScheme, RenderOptions, Renderer};
+use ferrigura::{ColorScheme, FlowchartMode, RenderOptions, Renderer};
 use ferrigura_model::value::Value;
 
 const USAGE: &str = "\
@@ -30,6 +30,8 @@ Options:
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
+      --flowchart-mode <MODE>
+                          `adaptive` (default) or `mermaid` for reference-compatible output
   -o, --output <FILE>     Write the SVG to FILE instead of standard output (one input only)
       --output-dir <DIR>  Write each SVG to DIR/<name>.svg, named after its input file
                           (file inputs only)
@@ -53,6 +55,7 @@ struct Job {
     config: Option<PathBuf>,
     id: Option<String>,
     scheme: Option<ColorScheme>,
+    flowchart_mode: FlowchartMode,
     output: Option<PathBuf>,
     output_dir: Option<PathBuf>,
 }
@@ -108,6 +111,7 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
             "-c" | "--config" => job.config = Some(value(&mut args, &argument)?.into()),
             "--id" => job.id = Some(value(&mut args, &argument)?),
             "--scheme" => job.scheme = Some(scheme(&value(&mut args, &argument)?)?),
+            "--flowchart-mode" => job.flowchart_mode = value(&mut args, &argument)?.parse()?,
             "-o" | "--output" => job.output = Some(value(&mut args, &argument)?.into()),
             "--output-dir" => job.output_dir = Some(value(&mut args, &argument)?.into()),
             "-" => job.inputs.push(Input::Stdin),
@@ -178,6 +182,7 @@ fn run(job: &Job) -> Result<(), String> {
     let options = RenderOptions {
         id: job.id.clone(),
         color_scheme: job.scheme,
+        flowchart_mode: job.flowchart_mode,
         now: None,
         git_graph_seed: None,
         random_seed: None,

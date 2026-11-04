@@ -7,7 +7,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/sebastian-software/ferrigura/ci.yml?branch=main&style=flat-square&logo=github&label=CI)](https://github.com/sebastian-software/ferrigura/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 
-ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0 with all 33 of its diagram types: the same diagram text gives the same diagram, and the geometry of the output is checked against Mermaid run in Chromium.
+ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0 with all 33 of its diagram types, checked against Mermaid run in Chromium. Flowcharts use adaptive port alignment and full-opacity edge-label backgrounds by default; an explicit [Mermaid-compatible rendering option](./docs/diagrams/flowchart.md#rendering-mode) preserves the reference's output.
 
 ```mermaid
 flowchart LR

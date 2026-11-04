@@ -24,6 +24,8 @@ flowchart LR
 
 The facade, `ferrigura`, ties it together: `Renderer::new(config)` resolves the configuration once, `renderer.render(text)` returns the SVG, and `ferrigura::render(text, config)` is the shorthand.
 
+Render options are separate from Mermaid configuration. Flowcharts use adaptive port alignment with label-aware spacing and full-opacity edge-label backgrounds by default; the per-render Mermaid-compatible mode preserves the reference's input and output ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Both use the same ELK engine.
+
 ## Crates
 
 A Cargo workspace under `crates/`. Diagram types are modules inside the crates, not crates of their own.

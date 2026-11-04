@@ -109,7 +109,7 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         .map(|node| (node.id.clone(), label_data_of(node, section)))
         .collect();
 
-    let graph = JsonNode {
+    let mut graph = JsonNode {
         id: "root".to_owned(),
         layout_options: Some(root_options),
         children: root_children
@@ -119,6 +119,11 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         edges,
         ..JsonNode::default()
     };
+    if data.diagram_type == super::markers::FLOWCHART
+        && section.flowchart_mode == crate::flowchart::policy::FlowchartMode::Adaptive
+    {
+        crate::flowchart::policy::center_ports(&mut graph);
+    }
     ElkInput { graph, state }
 }
 

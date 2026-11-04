@@ -19,6 +19,12 @@ resolves configuration once; reuse `renderer.render(text, options?)` for many
 blocks. Both return SVG synchronously and throw on engine errors. Give diagrams
 unique IDs when combining them in one document. SVG is not automatically JSX.
 
+Flowcharts center edge attachment points with label-aware spacing and draw edge-label backgrounds at full opacity by default.
+For Mermaid-compatible routing and label backgrounds, pass `{ flowchartMode: 'mermaid' }` as the
+render options. Use `'adaptive'` to select the default explicitly. This option
+affects only flowcharts and is separate from Mermaid configuration and
+`elk.straightenEdges`.
+
 Supported platforms: macOS arm64; Linux x64/arm64 with glibc or musl; Windows
 x64/arm64. Node.js 22.13.0 or newer is required. The main package contains no
 native addon. See `NOTICE.md` for layout and bundled-font license texts.

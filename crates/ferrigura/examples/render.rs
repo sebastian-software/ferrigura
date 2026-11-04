@@ -1,6 +1,6 @@
 //! Renders the diagram text on standard input to SVG on standard output.
 //!
-//! Usage: `cargo run -p ferrigura --example render -- [--config file.json] [--id ID] [--scheme light|dark|auto] [--now MS] [--seed N]`
+//! Usage: `cargo run -p ferrigura --example render -- [--config file.json] [--id ID] [--scheme light|dark|auto] [--now MS] [--seed N] [--flowchart-mode adaptive|mermaid]`
 //!
 //! `--config` is the `initialize` configuration as JSON; `--id` is the id of the SVG element, and
 //! `--scheme` the color scheme, and `--now` the current time in milliseconds since the epoch (the
@@ -32,6 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 )?);
             }
             "--id" => options.id = Some(value),
+            "--flowchart-mode" => options.flowchart_mode = value.parse()?,
             "--now" => options.now = Some(value.parse()?),
             "--seed" => {
                 let seed = value.parse()?;

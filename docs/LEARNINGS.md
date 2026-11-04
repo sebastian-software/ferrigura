@@ -243,7 +243,7 @@ A rule is only learned by running the reference: the built bundle in Chromium, t
 
 ### Reproduce quirks, and name the exceptions
 
-A quirk that changes the output is reproduced, with its probe as a test: the compatibility promise is that the same text renders the same diagram. A difference is accepted only where the reference crashes or its result depends on the page (a random value, the clock), with its reason, and a bug is fixed only together with a patch on the reference ([0017](./decisions/0017-reproduce-the-reference.md)). The easy mistake is to fix a quirk because it looks like a bug.
+A quirk that changes the output is reproduced, with its probe as a test: the compatibility promise is that the same text renders the same diagram. The explicit adaptive flowchart policy has a separate comparison and preserves a Mermaid-compatible render option ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Other differences are accepted only where the reference crashes or its result depends on the page (a random value, the clock), with their reason, and a bug is fixed only together with a patch on the reference ([0017](./decisions/0017-reproduce-the-reference.md)). The easy mistake is to fix a quirk because it looks like a bug.
 
 ### Port the dependency, not a substitute
 
@@ -270,3 +270,11 @@ Where an engine's numbers must match, the port keeps the source's expression tre
 - **The swimlane layout's sort.** Its port of `Array.prototype.sort` is exact for arrays of 17 to 129 elements as Chromium 151 runs it, with two gaps (2 to 16 elements, and 130 and more), where the sort of `common/d3/sort.rs` follows V8's TimSort completely (`ferrigura-swimlane`, `js.rs`, `js_sort_by`).
 - **Grapheme and code-unit counts.** Whether `Intl.Segmenter` and `unicode-segmentation` agree on the newest emoji sequences is not checked, and the treemap's label truncation counts characters where the reference counts UTF-16 units, so an astral character may be cut differently (not probed).
 - **WOFF2.** The subsets are embedded as TTF; WOFF2 would roughly halve them, but needs an encoder that has not been evaluated.
+
+### HTML and SVG edge-label backgrounds differ
+
+Mermaid's HTML-label path gives the paragraph inside an edge label its own background color. The SVG-label path applies an additional opacity of 0.5 to its background rectangle. Changing `edgeLabelBackground` to an opaque color does not remove that multiplier. Ferrigura's adaptive flowchart mode uses full-opacity rectangles with the same theme color; Mermaid mode retains the multiplier. The theme color's explicit alpha channel still applies ([0019](./decisions/0019-adaptive-flowchart-mode.md)).
+
+### Edge storage does not identify the layout container
+
+The flowchart input stores every edge on the root. ELK imports the edge into the lowest common ancestor of its endpoints, or the parent of a self-loop. A policy based on the current `edges` array therefore applies nested labels to the wrong graph. Adaptive routing resolves that containment and the intermediate containers on both endpoint branches before deriving each parent's label-aware port spacing ([0019](./decisions/0019-adaptive-flowchart-mode.md)).

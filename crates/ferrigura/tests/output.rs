@@ -15,6 +15,7 @@ const PIE: &str = "pie title Sports in Sweden\n  \"Bandy\" : 40\n  \"Ice-Hockey\
 
 fn svg_with(text: &str, scheme: Option<ColorScheme>, id: Option<&str>) -> String {
     let options = RenderOptions {
+        flowchart_mode: Default::default(),
         id: id.map(str::to_owned),
         color_scheme: scheme,
         now: None,
@@ -206,6 +207,7 @@ fn the_default_id_comes_from_the_text_and_the_configuration() {
 fn an_id_that_is_not_a_css_identifier_is_refused() {
     for bad in ["1pie", "my pie", "a.b", "", "x{}"] {
         let options = RenderOptions {
+            flowchart_mode: Default::default(),
             id: Some(bad.to_owned()),
             color_scheme: None,
             now: None,

@@ -42,6 +42,7 @@ use ferrigura_syntax::{
 /// The configuration and the values of Mermaid's `initialize` object, front matter and directives.
 pub use ferrigura_model::value::Value;
 pub use ferrigura_render::RenderError as Error;
+pub use ferrigura_render::flowchart::policy::FlowchartMode;
 
 /// The color scheme of the output.
 ///
@@ -61,6 +62,10 @@ pub enum ColorScheme {
 /// The options of a render that are not Mermaid configuration.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RenderOptions {
+    /// The flowchart's rendering mode. `Adaptive` centers ports with label-aware spacing and draws
+    /// edge-label backgrounds at full opacity. `Mermaid` preserves the pinned reference's output.
+    /// Other diagram types ignore it.
+    pub flowchart_mode: FlowchartMode,
     /// The id of the SVG element, which scopes its styles. It must start with an ASCII letter and
     /// contain only ASCII letters, digits, `-` and `_`. By default the id is derived from the text
     /// and the configuration, so the same input gives the same id.
@@ -450,7 +455,9 @@ impl Renderer {
                 theme: prepared.theme(),
                 id,
             }),
-            DiagramType::Flowchart => with_flowchart(text, &prepared, flowchart::render),
+            DiagramType::Flowchart => {
+                with_flowchart(text, &prepared, options.flowchart_mode, flowchart::render)
+            }
         }
     }
 
@@ -693,7 +700,12 @@ pub fn flowchart_elk_stages(
     }
     let renderer = shorthand(config);
     let prepared = renderer.prepare(text, options, DiagramType::Flowchart)?;
-    let stages = with_flowchart(text, &prepared, flowchart::elk_stages)?;
+    let stages = with_flowchart(
+        text,
+        &prepared,
+        options.flowchart_mode,
+        flowchart::elk_stages,
+    )?;
     Ok(serde_json::json!({
         "elkInput": stages.input,
         "elkOutput": stages.output,
@@ -704,11 +716,13 @@ pub fn flowchart_elk_stages(
 fn with_flowchart<T>(
     text: &str,
     prepared: &Prepared<'_>,
+    mode: FlowchartMode,
     step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
     let diagram = ferrigura_syntax::flowchart::parse(text)
         .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
-    let section = Section::of(&prepared.view.config);
+    let mut section = Section::of(&prepared.view.config);
+    section.flowchart_mode = mode;
     step(&Context {
         diagram: &diagram,
         section: &section,
