@@ -21,7 +21,7 @@ flowchart LR
 
 ## Using ferrigura
 
-[crates/ferrigura/README.md](./crates/ferrigura/README.md) describes the library, [crates/ferrigura-cli/README.md](./crates/ferrigura-cli/README.md) the command-line tool, and [crates/ferrigura-node/README.md](./crates/ferrigura-node/README.md) the Node.js addon. The library and the command-line tool are on crates.io as [`ferrigura`](https://crates.io/crates/ferrigura) and [`ferrigura-cli`](https://crates.io/crates/ferrigura-cli); the standalone npm distribution is prepared in `node/` and awaits registry bootstrap.
+[crates/ferrigura/README.md](./crates/ferrigura/README.md) describes the library, [crates/ferrigura-cli/README.md](./crates/ferrigura-cli/README.md) the command-line tool, and [node/ferrigura/README.md](./node/ferrigura/README.md) the Node.js package. Install [`ferrigura`](https://crates.io/crates/ferrigura) or [`ferrigura-cli`](https://crates.io/crates/ferrigura-cli) from crates.io, or run `npm install @ferrigura/core` for Node.js. npm installs the native binary for your platform automatically.
 
 ```sh
 cargo add ferrigura
