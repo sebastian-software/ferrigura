@@ -18,6 +18,7 @@ The commit messages are the release notes. A harness or CI change typed `fix` wo
 ## Consequences
 
 - Renovate types the updates of the harness, of CI and of the pin `chore`; updates of the crates' own dependencies stay `fix(deps)`, since they ship (`renovate.json`).
+- Each Rust dependency group sets `semanticCommitType` explicitly: Renovate's Cargo manager does not expose a dependency type for its automatic production-dependency classification. The Node addon's Rust dependencies ship in the npm binaries and follow the same rule.
 - A reviewer checks the type as part of the change.
 
 ## Related
