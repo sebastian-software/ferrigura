@@ -68,6 +68,7 @@
       "matchManagers": ["cargo"],
       "matchPackageNames": ["harfrust", "read-fonts", "skera"],
       "groupName": "Rust text stack",
+      "semanticCommitType": "fix",
       "dependencyDashboardApproval": false
     },
     {
@@ -75,6 +76,7 @@
       "matchManagers": ["cargo"],
       "matchPackageNames": ["napi", "napi-derive"],
       "groupName": "Rust napi",
+      "semanticCommitType": "fix",
       "dependencyDashboardApproval": false
     },
     {
@@ -82,6 +84,7 @@
       "matchManagers": ["cargo"],
       "matchPackageNames": ["!harfrust", "!read-fonts", "!skera", "!napi", "!napi-derive"],
       "groupName": "Rust crates",
+      "semanticCommitType": "fix",
       "dependencyDashboardApproval": false
     },
     {
