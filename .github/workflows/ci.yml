@@ -57,6 +57,10 @@ jobs:
 
   rust:
     runs-on: ubuntu-latest
+    env:
+      # Integration-test binaries must fit on hosted runners; keep file/line backtraces.
+      CARGO_PROFILE_TEST_DEBUG: line-tables-only
+      CARGO_INCREMENTAL: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The toolchain comes from rust-toolchain.toml; the runner's rustup installs it on first use.
