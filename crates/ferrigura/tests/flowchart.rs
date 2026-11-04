@@ -1,7 +1,7 @@
 //! Flowcharts through the public entry point: what the root element's box is.
 
 use ferrigura::render;
-use ferrigura::{FlowchartRouting, RenderOptions, Renderer, flowchart_elk_stages};
+use ferrigura::{FlowchartMode, RenderOptions, Renderer, flowchart_elk_stages};
 use ferrigura_model::value::Value;
 
 /// The tolerance of the comparison with the reference, in SVG user units.
@@ -23,20 +23,83 @@ fn unlabeled_parent_graphs_keep_their_existing_routing() {
     ] {
         assert_eq!(
             renderer
-                .render_with(text, &options(FlowchartRouting::Adaptive))
-                .unwrap(),
+                .render_with(text, &options(FlowchartMode::Adaptive))
+                .unwrap()
+                .replacen(
+                    "#routing .edgeLabel rect{opacity:1;",
+                    "#routing .edgeLabel rect{opacity:0.5;",
+                    1
+                ),
             renderer
-                .render_with(text, &options(FlowchartRouting::Mermaid))
+                .render_with(text, &options(FlowchartMode::Mermaid))
                 .unwrap()
         );
     }
 }
 
-fn options(routing: FlowchartRouting) -> RenderOptions {
+fn options(routing: FlowchartMode) -> RenderOptions {
     RenderOptions {
         id: Some("routing".to_owned()),
-        flowchart_routing: routing,
+        flowchart_mode: routing,
         ..RenderOptions::default()
+    }
+}
+
+#[test]
+fn edge_label_backgrounds_follow_the_mode_without_leaking_between_renders() {
+    let text = "flowchart LR\n A -->|Readable label| B\n";
+    let opaque = "#routing .edgeLabel rect{opacity:1;";
+    let translucent = "#routing .edgeLabel rect{opacity:0.5;";
+    for theme in [
+        "redux-color",
+        "redux-dark-color",
+        "redux",
+        "redux-dark",
+        "neo",
+        "neo-dark",
+    ] {
+        let renderer = Renderer::new(&Value::from(serde_json::json!({ "theme": theme })));
+        let adaptive = renderer
+            .render_with(text, &options(FlowchartMode::Adaptive))
+            .unwrap();
+        let compatible = renderer
+            .render_with(text, &options(FlowchartMode::Mermaid))
+            .unwrap();
+        assert!(adaptive.contains(opaque), "{theme}");
+        assert!(compatible.contains(translucent), "{theme}");
+        // One edge has identical geometry. The opacity rule is the entire SVG difference.
+        assert_eq!(
+            adaptive.replacen(opaque, translucent, 1),
+            compatible,
+            "{theme}"
+        );
+        assert_eq!(
+            adaptive,
+            renderer
+                .render_with(text, &options(FlowchartMode::Adaptive))
+                .unwrap(),
+            "{theme}"
+        );
+    }
+}
+
+#[test]
+fn full_opacity_keeps_explicit_theme_background_colors() {
+    for color in ["transparent", "rgba(25,50,75,0.25)", "#abcdef"] {
+        let renderer = Renderer::new(&Value::from(serde_json::json!({
+            "themeVariables": { "edgeLabelBackground": color }
+        })));
+        let svg = renderer
+            .render_with(
+                "flowchart LR\n A -->|Label| B\n",
+                &options(FlowchartMode::Adaptive),
+            )
+            .unwrap();
+        assert!(
+            svg.contains(&format!("--edgeLabelBackground:{color};")),
+            "{color}"
+        );
+        assert!(svg.contains("#routing .edgeLabel rect{opacity:1;"));
     }
 }
 
@@ -49,7 +112,7 @@ fn wrapped_labels_increase_the_port_gap_instead_of_using_a_fixed_example_value()
     let stages = flowchart_elk_stages(
         &text,
         &Value::empty_object(),
-        &options(FlowchartRouting::Adaptive),
+        &options(FlowchartMode::Adaptive),
     )
     .unwrap();
     let gap = stages["elkInput"]["layoutOptions"]["elk.spacing.portPort"]
@@ -65,10 +128,10 @@ fn wrapped_labels_increase_the_port_gap_instead_of_using_a_fixed_example_value()
 fn adaptive_routing_straightens_the_review_cycle_without_moving_or_resizing_nodes() {
     let renderer = Renderer::new(&Value::empty_object());
     let adaptive = renderer
-        .render_with(REVIEW, &options(FlowchartRouting::Adaptive))
+        .render_with(REVIEW, &options(FlowchartMode::Adaptive))
         .unwrap();
     let compatible = renderer
-        .render_with(REVIEW, &options(FlowchartRouting::Mermaid))
+        .render_with(REVIEW, &options(FlowchartMode::Mermaid))
         .unwrap();
     assert_eq!(
         adaptive,
@@ -116,8 +179,8 @@ fn adaptive_routing_straightens_the_review_cycle_without_moving_or_resizing_node
     );
     let stages =
         |routing| flowchart_elk_stages(REVIEW, &Value::empty_object(), &options(routing)).unwrap();
-    let adaptive = stages(FlowchartRouting::Adaptive);
-    let compatible = stages(FlowchartRouting::Mermaid);
+    let adaptive = stages(FlowchartMode::Adaptive);
+    let compatible = stages(FlowchartMode::Mermaid);
     for (a, b) in adaptive["elkOutput"]["children"]
         .as_array()
         .unwrap()
@@ -143,15 +206,15 @@ fn adaptive_routing_straightens_the_review_cycle_without_moving_or_resizing_node
 fn routing_is_per_render_and_does_not_affect_other_diagram_types() {
     let renderer = Renderer::new(&Value::empty_object());
     let first = renderer
-        .render_with(REVIEW, &options(FlowchartRouting::Mermaid))
+        .render_with(REVIEW, &options(FlowchartMode::Mermaid))
         .unwrap();
     renderer
-        .render_with(REVIEW, &options(FlowchartRouting::Adaptive))
+        .render_with(REVIEW, &options(FlowchartMode::Adaptive))
         .unwrap();
     assert_eq!(
         first,
         renderer
-            .render_with(REVIEW, &options(FlowchartRouting::Mermaid))
+            .render_with(REVIEW, &options(FlowchartMode::Mermaid))
             .unwrap()
     );
     for text in [
@@ -161,10 +224,10 @@ fn routing_is_per_render_and_does_not_affect_other_diagram_types() {
     ] {
         assert_eq!(
             renderer
-                .render_with(text, &options(FlowchartRouting::Mermaid))
+                .render_with(text, &options(FlowchartMode::Mermaid))
                 .unwrap(),
             renderer
-                .render_with(text, &options(FlowchartRouting::Adaptive))
+                .render_with(text, &options(FlowchartMode::Adaptive))
                 .unwrap()
         );
     }

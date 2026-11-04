@@ -120,9 +120,9 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         ..JsonNode::default()
     };
     if data.diagram_type == super::markers::FLOWCHART
-        && section.flowchart_routing == crate::flowchart::routing::FlowchartRouting::Adaptive
+        && section.flowchart_mode == crate::flowchart::policy::FlowchartMode::Adaptive
     {
-        crate::flowchart::routing::center_ports(&mut graph);
+        crate::flowchart::policy::center_ports(&mut graph);
     }
     ElkInput { graph, state }
 }

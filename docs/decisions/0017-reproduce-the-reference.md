@@ -6,7 +6,7 @@
 
 ferrigura reproduces what the reference does, also where it looks like a bug. The same text renders the same diagram, and fails where the reference fails.
 
-The explicit exception is the flowchart attachment policy ([0019](./0019-adaptive-flowchart-routing.md)): the default centers ports with label-aware spacing; `FlowchartRouting::Mermaid` retains the reference's output. The rules below apply to that compatibility mode and to all other behavior.
+The explicit exception is the flowchart rendering mode ([0019](./0019-adaptive-flowchart-mode.md)): the default centers ports with label-aware spacing and draws edge-label backgrounds at full opacity; `FlowchartMode::Mermaid` retains the reference's output. The rules below apply to that compatibility mode and to all other behavior.
 
 - A quirk that changes the output is reproduced, and the probe that showed it becomes a test.
 - A reference bug is fixed in ferrigura only together with a patch on the pinned commit that fixes it in the reference too, so that both sides agree again ([0014](./0014-upstream-reference-at-a-pin.md)).

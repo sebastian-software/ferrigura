@@ -23,7 +23,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use ferrigura::{ColorScheme, FlowchartRouting, RenderOptions, Renderer};
+use ferrigura::{ColorScheme, FlowchartMode, RenderOptions, Renderer};
 use ferrigura_model::value::Value;
 
 /// The clock of the gantt dates, fixed as in the corpus comparisons.
@@ -90,7 +90,7 @@ fn fnv1a(hash: u64, bytes: &[u8]) -> u64 {
 fn renders(
     text: &str,
     renderers: &[(&'static str, Renderer)],
-    routing: FlowchartRouting,
+    routing: FlowchartMode,
 ) -> Vec<(String, String)> {
     let mut out = Vec::with_capacity(renderers.len() * SCHEMES.len());
     for (config, renderer) in renderers {
@@ -98,7 +98,7 @@ fn renders(
             let options = RenderOptions {
                 now: Some(NOW),
                 color_scheme,
-                flowchart_routing: routing,
+                flowchart_mode: routing,
                 ..RenderOptions::default()
             };
             let result = match renderer.render_with(text, &options) {
@@ -162,7 +162,7 @@ fn the_output_of_the_corpus_is_unchanged() {
                         .expect("a corpus file in the repository")
                         .to_string_lossy()
                         .replace('\\', "/");
-                    let mut hash = hash(&renders(&text, &renderers, FlowchartRouting::Adaptive));
+                    let mut hash = hash(&renders(&text, &renderers, FlowchartMode::Adaptive));
                     // A third column pins the compatibility mode separately, so updating the new
                     // default cannot silently bless a change in Mermaid-compatible output.
                     if ferrigura_syntax::detect(&text)
@@ -172,7 +172,7 @@ fn the_output_of_the_corpus_is_unchanged() {
                         hash.push_str(&self::hash(&renders(
                             &text,
                             &renderers,
-                            FlowchartRouting::Mermaid,
+                            FlowchartMode::Mermaid,
                         )));
                     }
                     hashes.lock().expect("hashes").push((name, hash));
@@ -227,7 +227,7 @@ fn the_output_of_the_corpus_is_unchanged() {
         let text = std::fs::read_to_string(root.join(name)).expect("a corpus file");
         let folder = head.join(name);
         std::fs::create_dir_all(&folder).expect("the review folder");
-        for (label, result) in renders(&text, &renderers, FlowchartRouting::Adaptive) {
+        for (label, result) in renders(&text, &renderers, FlowchartMode::Adaptive) {
             std::fs::write(folder.join(format!("{label}.svg")), result).expect("a review render");
         }
     }

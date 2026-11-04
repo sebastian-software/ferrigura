@@ -13,9 +13,10 @@ use napi_derive::napi;
 /// The options that are not Mermaid configuration.
 #[napi(object)]
 pub struct RenderOptionsInput {
-    /// Flowchart routing: `adaptive` (default) centers ports with label-aware spacing; `mermaid`
-    /// preserves the pinned Mermaid reference's output. Other diagram types ignore it.
-    pub flowchart_routing: Option<String>,
+    /// Flowchart mode: `adaptive` (default) centers ports with label-aware spacing and draws
+    /// edge-label backgrounds at full opacity; `mermaid` preserves the pinned reference's output.
+    /// Other diagram types ignore it.
+    pub flowchart_mode: Option<String>,
     /// The id of the SVG element, which scopes its styles. By default it is derived from the text and
     /// the configuration, so the same input gives the same id.
     pub id: Option<String>,
@@ -88,8 +89,8 @@ impl Renderer {
 fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
     Ok(match input {
         Some(input) => RenderOptions {
-            flowchart_routing: input
-                .flowchart_routing
+            flowchart_mode: input
+                .flowchart_mode
                 .as_deref()
                 .map(str::parse)
                 .transpose()

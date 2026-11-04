@@ -21,7 +21,7 @@ Only the paths Mermaid reaches are ported. Of ELK, that is Layered: the other EL
 
 ## Why
 
-The compatibility promise is that the same text gives the same diagram, with the explicit flowchart attachment policy of [0019](./0019-adaptive-flowchart-routing.md). That policy changes the engine's input, not the engine. A layout of ferrigura's own would be deterministic too, but would have no reference to check against. Layout engines amplify the last bit of a number into visibly different positions, so the arithmetic must match as well: the platform's `sin` or `log` differs from V8's in the last bit for a few percent of inputs.
+The compatibility promise is that the same text gives the same diagram, with the explicit flowchart attachment policy of [0019](./0019-adaptive-flowchart-mode.md). That policy changes the engine's input, not the engine. A layout of ferrigura's own would be deterministic too, but would have no reference to check against. Layout engines amplify the last bit of a number into visibly different positions, so the arithmetic must match as well: the platform's `sin` or `log` differs from V8's in the last bit for a few percent of inputs.
 
 Weighed and not chosen: ELK Layered for every graph, including mindmaps (no new layout code, but not what Mermaid draws), and a port of dagre, which Mermaid still offers as `layout: dagre`. ELK is Mermaid's default layout, and ferrigura lays out `layout: dagre` with ELK as well; the geometry runs leave such fixtures out.
 

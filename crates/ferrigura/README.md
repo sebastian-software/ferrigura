@@ -1,6 +1,6 @@
 # ferrigura
 
-ferrigura renders Mermaid diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0, checked against Mermaid run in Chromium. Flowcharts use adaptive port alignment with label-aware spacing by default; `FlowchartRouting::Mermaid` preserves the reference's routing.
+ferrigura renders Mermaid diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0, checked against Mermaid run in Chromium. Flowcharts use adaptive port alignment with label-aware spacing and full-opacity edge-label backgrounds by default; `FlowchartMode::Mermaid` preserves the reference's routing and half-opacity label backgrounds.
 
 The repository is [sebastian-software/ferrigura](https://github.com/sebastian-software/ferrigura).
 
@@ -58,7 +58,7 @@ A `Renderer` is `Send` and `Sync`, so one renderer can serve renders on several 
 | `id`           | `Option<String>`      | The id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id. |
 | `color_scheme` | `Option<ColorScheme>` | `Light`, `Dark` or `Auto`. `Auto` writes both color sets, and the dark one applies under `prefers-color-scheme: dark`. `None` keeps the colors of the configured theme.                                                                        |
 | `now`          | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                               |
-| `flowchart_routing` | `FlowchartRouting` | `Adaptive` (default) centers flowchart ports with label-aware spacing. `Mermaid` preserves the pinned reference's routing. Other diagram types ignore this option. |
+| `flowchart_mode` | `FlowchartMode` | `Adaptive` (default) centers flowchart ports with label-aware spacing and draws edge-label backgrounds at full opacity. `Mermaid` preserves the pinned reference's routing and half-opacity label backgrounds. Other diagram types ignore this option. |
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {

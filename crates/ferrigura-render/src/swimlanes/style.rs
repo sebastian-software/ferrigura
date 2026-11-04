@@ -23,7 +23,14 @@ pub fn style_sheet(
     classes: &[FlowClass],
     families: &[EmbeddedFamily],
 ) -> String {
-    let mut css = style_sheet_with_fonts(id, theme, globals, classes, families);
+    let mut css = style_sheet_with_fonts(
+        id,
+        theme,
+        globals,
+        classes,
+        families,
+        crate::flowchart::policy::FlowchartMode::Mermaid,
+    );
     css.push_str(&css_text(&lane_rules(id, theme, globals)));
     css
 }

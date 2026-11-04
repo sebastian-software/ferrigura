@@ -67,7 +67,7 @@ cargo test --release --test snapshots
 
 - **A parser change:** `pnpm -C tools/port port:diff <type>` compares the canonical models of ferrigura and the reference on every input of the type.
 - **A renderer change:** `pnpm -C tools/port port:geometry <type>` renders the fixtures and probes with both in Chromium and compares the geometry; `--filter <text>` narrows the fixtures and `--images <dir>` writes side-by-side PNGs.
-- **Flowchart routing:** `pnpm -C tools/port port:geometry-flowchart` checks Mermaid-compatible output. Run it again with `--routing adaptive` to compare the adaptive default against the reference with the same attachment policy ([0019](./decisions/0019-adaptive-flowchart-routing.md)). Both runs are CI gates.
+- **Flowchart routing:** `pnpm -C tools/port port:geometry-flowchart` checks Mermaid-compatible output. Run it again with `--routing adaptive` to compare the adaptive default against the reference with the same attachment policy ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Both runs are CI gates.
 - **A change to shared code** (text, the unified renderer, configuration) must not move the output of other types: run the snapshots, and `tools/snapshots/diff.sh` shows which renders moved.
 - **A change that moves the output on purpose** rewrites the snapshots in the same commit:
 

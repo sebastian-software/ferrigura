@@ -11,7 +11,7 @@ ferrigura is checked by running the same inputs through the reference and throug
 3. **Differential layout data.** For the unified renderer, the reference's `getData()` and ferrigura's are compared field by field (`port:diff <type>-data`).
 4. **Differential layout.** Each layout engine is compared with the original on captured inputs, with the engine's own corpus in its crate ([0012](./0012-layout-engines-ported-exactly.md)).
 5. **Geometry.** Both render every fixture and probe in Chromium, and node positions and sizes, edge points and label boxes are compared, paired by their structural keys, within 0.05 px (`port:geometry <type>`). The reference runs with `htmlLabels: false` and loads ferrigura's fonts as web fonts, so that both draw the same text.
-6. **Snapshots.** ferrigura's own output for the corpus is pinned by one default-output hash per file in `crates/ferrigura/tests/snapshots/svg.tsv`, so that any change of the output shows, also where the comparison does not look. Flowcharts have a second hash for Mermaid-compatible routing ([0019](./0019-adaptive-flowchart-routing.md)).
+6. **Snapshots.** ferrigura's own output for the corpus is pinned by one default-output hash per file in `crates/ferrigura/tests/snapshots/svg.tsv`, so that any change of the output shows, also where the comparison does not look. Flowcharts have a second hash for the Mermaid-compatible rendering mode ([0019](./0019-adaptive-flowchart-mode.md)).
 
 ## Why
 
@@ -19,7 +19,7 @@ Pixel comparison is impossible once fonts and label technique differ, and a port
 
 ## Consequences
 
-- Flowchart geometry runs in both routing modes: unchanged reference inputs for `mermaid`, and centered ports with adaptive spacing on both sides for `adaptive` ([0019](./0019-adaptive-flowchart-routing.md)).
+- Flowchart geometry runs in both routing modes: unchanged reference inputs for `mermaid`, and centered ports with adaptive spacing on both sides for `adaptive` ([0019](./0019-adaptive-flowchart-mode.md)).
 
 - The harness is the repository's only JavaScript project (`tools/port`), with its own lint, format and tests ([0005](./0005-quality-gates.md)).
 - A geometry run fails on a fixture outside the tolerance and on one ferrigura does not render. Fixtures that use what ferrigura leaves out (`look: handDrawn`, `layout: dagre`, scripts the bundled fonts lack) are left out by rules of the harness, each with its reason.

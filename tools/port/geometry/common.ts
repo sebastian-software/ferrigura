@@ -410,14 +410,14 @@ export function renderFerrigura(
   id: string,
   now?: number,
   seed?: number,
-  flowchartRouting: 'adaptive' | 'mermaid' = 'mermaid'
+  flowchartMode: 'adaptive' | 'mermaid' = 'mermaid'
 ): { svg: string } | { error: string } {
   // The site configuration goes through a file of this process, so parallel runs do not share it.
   const configPath = join(workDir, `site-config-${process.pid}.json`);
   mkdirSync(workDir, { recursive: true });
   writeFileSync(configPath, JSON.stringify(forcedSiteConfig(text)));
   const args = ['--id', id, '--config', configPath];
-  args.push('--flowchart-routing', flowchartRouting);
+  args.push('--flowchart-mode', flowchartMode);
   if (now !== undefined) args.push('--now', String(Math.trunc(now)));
   // The seed of the reference's random numbers: the generated gitGraph ids (commits, merges and
   // cherry-picks without an `id:`) are drawn from the same generator.

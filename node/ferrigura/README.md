@@ -19,8 +19,8 @@ resolves configuration once; reuse `renderer.render(text, options?)` for many
 blocks. Both return SVG synchronously and throw on engine errors. Give diagrams
 unique IDs when combining them in one document. SVG is not automatically JSX.
 
-Flowcharts center edge attachment points with label-aware spacing by default.
-For Mermaid-compatible routing, pass `{ flowchartRouting: 'mermaid' }` as the
+Flowcharts center edge attachment points with label-aware spacing and draw edge-label backgrounds at full opacity by default.
+For Mermaid-compatible routing and label backgrounds, pass `{ flowchartMode: 'mermaid' }` as the
 render options. Use `'adaptive'` to select the default explicitly. This option
 affects only flowcharts and is separate from Mermaid configuration and
 `elk.straightenEdges`.

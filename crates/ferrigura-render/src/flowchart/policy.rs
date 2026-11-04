@@ -1,18 +1,19 @@
-//! Flowchart attachment policy, applied to the measured graph before ELK (decision 0019).
+//! Flowchart rendering mode and attachment policy (decision 0019).
 
 use ferrigura_elk::json::JsonNode;
 
-/// How a flowchart places its edge attachment points before ELK routes the edges.
+/// The flowchart's attachment policy and edge-label background treatment.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum FlowchartRouting {
-    /// Center the ports with spacing derived from measured edge labels. The default.
+pub enum FlowchartMode {
+    /// Center ports with label-aware spacing and draw edge-label backgrounds at full opacity.
+    /// Theme colors, including explicit transparency, still apply. The default.
     #[default]
     Adaptive,
-    /// Preserve the pinned Mermaid reference's ports and spacing.
+    /// Preserve the pinned Mermaid reference's ports, spacing and half-opacity backgrounds.
     Mermaid,
 }
 
-impl std::str::FromStr for FlowchartRouting {
+impl std::str::FromStr for FlowchartMode {
     type Err = String;
 
     fn from_str(name: &str) -> Result<Self, Self::Err> {
@@ -20,7 +21,7 @@ impl std::str::FromStr for FlowchartRouting {
             "adaptive" => Ok(Self::Adaptive),
             "mermaid" => Ok(Self::Mermaid),
             other => Err(format!(
-                "unknown flowchart routing {other}, expected adaptive or mermaid"
+                "unknown flowchart mode {other}, expected adaptive or mermaid"
             )),
         }
     }

@@ -46,10 +46,11 @@ export declare function render(text: string, config?: any | undefined | null, op
 /** The options that are not Mermaid configuration. */
 export interface RenderOptionsInput {
   /**
-   * Flowchart routing: `adaptive` (default) centers ports with label-aware spacing; `mermaid`
-   * preserves the pinned Mermaid reference's output. Other diagram types ignore it.
+   * Flowchart mode: `adaptive` (default) centers ports with label-aware spacing and draws
+   * edge-label backgrounds at full opacity; `mermaid` preserves the pinned reference's output.
+   * Other diagram types ignore it.
    */
-  flowchartRouting?: string
+  flowchartMode?: string
   /**
    * The id of the SVG element, which scopes its styles. By default it is derived from the text and
    * the configuration, so the same input gives the same id.

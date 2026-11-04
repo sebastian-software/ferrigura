@@ -9,14 +9,14 @@ use std::process::{Command, Output, Stdio};
 const PIE: &str = "pie title Pets\n  \"Dogs\" : 386\n  \"Cats\" : 85\n";
 
 #[test]
-fn flowchart_routing_selects_the_compatibility_mode_and_rejects_unknown_modes() {
+fn flowchart_mode_selects_the_compatibility_mode_and_rejects_unknown_modes() {
     let text = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
     let adaptive = run(&["--id", "routing"], text);
-    let compatible = run(&["--id", "routing", "--flowchart-routing", "mermaid"], text);
+    let compatible = run(&["--id", "routing", "--flowchart-mode", "mermaid"], text);
     assert!(adaptive.status.success(), "{}", stderr(&adaptive));
     assert!(compatible.status.success(), "{}", stderr(&compatible));
     assert_ne!(stdout(&adaptive), stdout(&compatible));
-    let invalid = run(&["--flowchart-routing", "typo"], "");
+    let invalid = run(&["--flowchart-mode", "typo"], "");
     assert_eq!(invalid.status.code(), Some(2));
     assert!(stderr(&invalid).contains("expected adaptive or mermaid"));
 }

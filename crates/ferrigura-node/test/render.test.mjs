@@ -25,12 +25,12 @@ const PIE = 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85\n';
 void test('flowchart routing is adaptive by default and compatibility is per render', () => {
   const text = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
   const renderer = new Renderer();
-  const compatible = renderer.render(text, { flowchartRouting: 'mermaid' });
-  assert.equal(renderer.render(text), render(text, {}, { flowchartRouting: 'adaptive' }));
+  const compatible = renderer.render(text, { flowchartMode: 'mermaid' });
+  assert.equal(renderer.render(text), render(text, {}, { flowchartMode: 'adaptive' }));
   assert.notEqual(renderer.render(text), compatible);
-  assert.equal(renderer.render(text, { flowchartRouting: 'mermaid' }), compatible);
+  assert.equal(renderer.render(text, { flowchartMode: 'mermaid' }), compatible);
   assert.throws(
-    () => renderer.render(text, { flowchartRouting: 'typo' }),
+    () => renderer.render(text, { flowchartMode: 'typo' }),
     /expected adaptive or mermaid/
   );
 });

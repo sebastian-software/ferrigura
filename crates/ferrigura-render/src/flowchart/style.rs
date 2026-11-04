@@ -7,12 +7,13 @@
 //! elements carry the same colors as presentation attributes, where they have one (see
 //! `clusters.rs`). The rules that the reference writes but no flowchart element can match are left
 //! out, each for a stated reason; `docs/diagrams/flowchart.md#style-sheet-looks-and-the-svg-root` says why, and
-//! `tests/flowchart_styles.rs` checks every other rule against the reference's compiled CSS.
+//! `tests/flowchart_styles.rs` checks every other rule in Mermaid mode against the reference's compiled CSS.
 
 use ferrigura_model::flowchart::FlowClass;
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
+use super::policy::FlowchartMode;
 use crate::context::{Globals, ThemeView};
 use crate::svg::{css_text, escape, font_faces};
 use crate::unified::palette::{Palette, palette};
@@ -48,8 +49,9 @@ pub fn style_sheet(
     theme: ThemeView<'_>,
     globals: &Globals,
     classes: &[FlowClass],
+    mode: FlowchartMode,
 ) -> String {
-    style_sheet_with_fonts(svg_id, theme, globals, classes, &[])
+    style_sheet_with_fonts(svg_id, theme, globals, classes, &[], mode)
 }
 
 /// [`style_sheet`] for a diagram whose text is set in embedded font subsets. The rules name the first
@@ -62,6 +64,7 @@ pub fn style_sheet_with_fonts(
     globals: &Globals,
     classes: &[FlowClass],
     families: &[EmbeddedFamily],
+    mode: FlowchartMode,
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
@@ -98,6 +101,12 @@ pub fn style_sheet_with_fonts(
             1,
         ),
         _ => "none".to_owned(),
+    };
+    // Match Mermaid's normally opaque HTML paragraph backgrounds in the SVG-only default.
+    // Keep the theme's color (and its alpha); only the extra SVG opacity changes.
+    let label_opacity = match mode {
+        FlowchartMode::Adaptive => "1",
+        FlowchartMode::Mermaid => "0.5",
     };
 
     let mut rules = vec![
@@ -171,7 +180,7 @@ pub fn style_sheet_with_fonts(
         ),
         rule(
             &format!("{id} .edgeLabel rect"),
-            "opacity:0.5;background-color:var(--edgeLabelBackground);fill:var(--edgeLabelBackground);",
+            &format!("opacity:{label_opacity};background-color:var(--edgeLabelBackground);fill:var(--edgeLabelBackground);"),
         ),
         rule(
             &format!("{id} .cluster rect"),
@@ -485,6 +494,7 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &[],
+            FlowchartMode::Mermaid,
         );
         assert!(
             sheet.starts_with("#flowchart{--nodeBorder:#28253D;"),
@@ -514,6 +524,7 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &[],
+            FlowchartMode::Mermaid,
         );
         assert!(
             sheet.contains("@media (prefers-color-scheme: dark){#flowchart{--nodeBorder:#FFFFFF;"),
@@ -534,6 +545,7 @@ mod tests {
             },
             &globals("redux-dark-color", "classic"),
             &[],
+            FlowchartMode::Mermaid,
         );
         assert!(!sheet.contains("bkgColor0:"), "{sheet}");
         assert!(sheet.contains("[data-look=\"classic\"][data-color-id=\"color-0\"].cluster:not(.swimlane) rect{stroke:var(--borderColor0);}"), "{sheet}");
@@ -549,6 +561,7 @@ mod tests {
             },
             &globals("default", "neo"),
             &[],
+            FlowchartMode::Mermaid,
         );
         assert!(!sheet.contains("color-0"), "{sheet}");
     }
@@ -575,6 +588,7 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &classes,
+            FlowchartMode::Mermaid,
         );
         assert!(
             sheet.contains(
@@ -604,6 +618,7 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &classes,
+            FlowchartMode::Mermaid,
         );
         assert!(!sheet.contains(".bad"), "{sheet}");
     }
@@ -691,6 +706,7 @@ mod tests {
             &globals("redux-color", "neo"),
             &[],
             std::slice::from_ref(&family),
+            FlowchartMode::Mermaid,
         );
         assert!(
             sheet.starts_with("@font-face{font-family:\"fg-0123456789abcdef-sans\";"),

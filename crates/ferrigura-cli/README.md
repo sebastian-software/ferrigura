@@ -31,8 +31,8 @@ Options:
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
-      --flowchart-routing <MODE>
-                          `adaptive` (default) or `mermaid` for reference-compatible routing
+      --flowchart-mode <MODE>
+                          `adaptive` (default) or `mermaid` for reference-compatible output
   -o, --output <FILE>     Write the SVG to FILE instead of standard output (one input only)
       --output-dir <DIR>  Write each SVG to DIR/<name>.svg, named after its input file
                           (file inputs only)
@@ -80,9 +80,9 @@ ferrigura --config config.json --id pets pets.mmd
 
 ## Behavior
 
-Flowcharts center their attachment points with label-aware spacing by default.
-`--flowchart-routing mermaid` preserves the pinned Mermaid reference's routing;
-`--flowchart-routing adaptive` selects the default explicitly. Other diagram
+Flowcharts center their attachment points with label-aware spacing and draw edge-label backgrounds at full opacity by default.
+`--flowchart-mode mermaid` preserves the pinned Mermaid reference's routing and half-opacity label backgrounds;
+`--flowchart-mode adaptive` selects the default explicitly. Other diagram
 types ignore this option. It is separate from `--config` and the post-processing
 setting `elk.straightenEdges`.
 

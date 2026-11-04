@@ -8,7 +8,7 @@
 //! `docs/diagrams/flowchart.md#the-pipeline`.
 
 pub mod data;
-pub mod routing;
+pub mod policy;
 pub mod style;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
@@ -123,8 +123,14 @@ pub fn render(input: &Context<'_, FlowchartDiagram, Section<'_>>) -> Result<Stri
     let accessibility = a11y::children(id, &diagram.acc_title, &diagram.acc_descr);
     let accessible_attributes =
         a11y::root_attributes(id, "flowchart-v2", &diagram.acc_title, &diagram.acc_descr);
-    let style =
-        style::style_sheet_with_fonts(id, input.theme, input.globals, &diagram.classes, &families);
+    let style = style::style_sheet_with_fonts(
+        id,
+        input.theme,
+        input.globals,
+        &diagram.classes,
+        &families,
+        input.section.flowchart_mode,
+    );
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
