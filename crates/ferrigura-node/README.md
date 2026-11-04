@@ -2,10 +2,10 @@
 
 `ferrigura-node` is the Node.js addon of [ferrigura](https://github.com/sebastian-software/ferrigura). It is a native addon built with napi-rs, so it renders Mermaid diagram text to SVG in the Node.js process, without a browser. It is for Node.js only: there is no WebAssembly build.
 
-The npm facade and platform packages live under `node/` as `@ferrigura/core` and
-`@ferrigura/<platform>`. The first npm publication and Trusted Publisher setup
-are pending. See [the npm release procedure](../../docs/decisions/0016-npm-packages-via-napi.md).
-The raw addon workflow below remains available for binding development.
+Install the npm facade with `npm install @ferrigura/core`; npm selects the native
+package for your platform. See [the npm package reference](../../node/ferrigura/README.md)
+for supported platforms and the JavaScript API. The raw addon workflow below is
+for binding development.
 
 ## Building and loading
 

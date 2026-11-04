@@ -225,6 +225,10 @@ At every security level but `loose` and `sandbox`, the reference runs DOMPurify 
 
 The reference keeps module-level state across the renders of one page (`actorCnt`, the gantt's `taskDb`, the timeline's `currentTaskId`, the measurement memo). ferrigura keeps none, and the exporters load a fresh DB module per input where the reference's state would leak (`tools/port/export-gantt.ts`). The default SVG id is a hash of the text and the configuration (`crates/ferrigura/src/lib.rs`, `derived_id`), so the output is deterministic, and any change to a fixture, even a `%%` comment, changes its snapshot ([0018](./decisions/0018-deterministic-output.md)).
 
+### Integration-test artifacts can fill a hosted runner's disk
+
+The workspace's many integration tests each link a binary. Full test debug information and incremental compilation caches can exhaust a hosted Linux runner's disk during linking, before tests run. The Rust CI job uses `CARGO_PROFILE_TEST_DEBUG=line-tables-only` to retain file/line backtraces and `CARGO_INCREMENTAL=0` because its build artifacts are not reused across jobs. Test coverage, assertions and optimization levels stay the same. **Where:** `.github/workflows/ci.yml`, `rust` job.
+
 ## The porting method
 
 What worked, in the order it was needed.

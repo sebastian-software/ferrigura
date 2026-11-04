@@ -140,9 +140,9 @@ function Boundaries() {
         coverage are outside the supported scope.
       </p>
       <p>
-        The Node.js addon can be built from the repository; its prepared{' '}
-        <code>@ferrigura/core</code> package is not available from npm. Ferromark’s optional adapter
-        renders Mermaid fences in custom builds, alongside its Markdown renderer.
+        Install <code>@ferrigura/core</code> from npm to render in Node.js. npm selects the native
+        binary for your platform. Ferromark’s optional adapter renders Mermaid fences in custom
+        builds, alongside its Markdown renderer.
       </p>
       <Link to="/reference/rust/#not-supported-yet">Read the specific limitations</Link>
     </FerraArticle>

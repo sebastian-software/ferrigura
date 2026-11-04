@@ -54,12 +54,26 @@ configuration, themes and render options.
 
 ## Node.js integration
 
-The native Node.js addon can be built from the repository. Its prepared npm
-facade is `@ferrigura/core`; installation from npm is unavailable until registry
-bootstrap is complete. Use the
-[addon instructions](../../crates/ferrigura-node/README.md) for a local build,
-and the [distribution reference](../../node/ferrigura/README.md) for its package
-and platform contract.
+Install the native Node.js package with Node.js 22.13.0 or newer:
+
+```sh
+npm install @ferrigura/core
+```
+
+```js
+import { Renderer } from '@ferrigura/core';
+
+const diagrams = new Renderer();
+const svg = diagrams.render('flowchart LR\n  A[Draft] --> B[Published]\n', {
+  id: 'review',
+  colorScheme: 'light',
+});
+```
+
+npm installs the native binary for your platform; keep optional dependencies
+enabled. The [package reference](../../node/ferrigura/README.md) covers supported
+platforms, configuration and render options. Use the
+[addon instructions](../../crates/ferrigura-node/README.md) for binding development.
 
 The optional Ferromark adapter renders Mermaid fences in custom builds. It is
 not included in Ferromark’s standard npm addon. See the

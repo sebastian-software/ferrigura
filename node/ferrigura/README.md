@@ -4,6 +4,10 @@ Render Mermaid diagram text to SVG in Node.js without a browser. The engine runs
 in Rust. npm installs the matching optional platform package; keep optional
 dependencies enabled. No browser or WASM runtime is required.
 
+```sh
+npm install @ferrigura/core
+```
+
 ```js
 import { Renderer } from '@ferrigura/core';
 const diagrams = new Renderer();
@@ -28,6 +32,3 @@ affects only flowcharts and is separate from Mermaid configuration and
 Supported platforms: macOS arm64; Linux x64/arm64 with glibc or musl; Windows
 x64/arm64. Node.js 22.13.0 or newer is required. The main package contains no
 native addon. See `NOTICE.md` for layout and bundled-font license texts.
-
-This source introduces the npm distribution; registry bootstrap and Trusted
-Publishing setup must complete before installation from npm is available.

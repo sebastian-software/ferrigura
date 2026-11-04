@@ -29,6 +29,10 @@ mise trust && mise install --locked
 
 What CI runs on every change ([0005](./decisions/0005-quality-gates.md)):
 
+The Rust job sets `CARGO_PROFILE_TEST_DEBUG=line-tables-only` and
+`CARGO_INCREMENTAL=0` to keep test artifacts within hosted runners' disk space.
+Backtraces retain file names and line numbers; local build profiles are unchanged.
+
 ```bash
 cargo fmt --all --check
 ```

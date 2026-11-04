@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/sebastian-software/ferrigura/compare/v0.3.1...v0.4.0) (2026-11-04)
+
+
+### Features
+
+* **flowchart:** improve default routing and label backgrounds ([#19](https://github.com/sebastian-software/ferrigura/issues/19)) ([3714ca8](https://github.com/sebastian-software/ferrigura/commit/3714ca8e13d9732e34eb93973e957af08b731215))
+
 ## [0.3.1](https://github.com/sebastian-software/ferrigura/compare/v0.3.0...v0.3.1) (2026-11-04)
 
 
