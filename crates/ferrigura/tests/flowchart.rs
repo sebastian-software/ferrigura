@@ -15,9 +15,6 @@ fn unlabeled_parent_graphs_keep_their_existing_routing() {
     for text in [
         "flowchart LR\n A{First} --> B{Second}\n A --> B\n A --> B\n",
         include_str!(
-            "../../../e2e/diagrams/flowchart/nightly-check/6088-1-should-handle-diamond-shape-intersections.mmd"
-        ),
-        include_str!(
             "../../../e2e/diagrams/flowchart/nightly-check/shape-themes/02-connect-all-shapes-with-each-other.mmd"
         ),
     ] {
@@ -35,6 +32,222 @@ fn unlabeled_parent_graphs_keep_their_existing_routing() {
                 .unwrap()
         );
     }
+}
+
+/// The node with an id in the measured input or the laid-out output.
+fn elk_node<'a>(graph: &'a serde_json::Value, id: &str) -> Option<&'a serde_json::Value> {
+    if graph["id"] == id {
+        return Some(graph);
+    }
+    graph["children"]
+        .as_array()?
+        .iter()
+        .find_map(|child| elk_node(child, id))
+}
+
+fn assert_straight_routes(svg: &str, expected_count: usize) {
+    let document = roxmltree::Document::parse(svg).unwrap();
+    let paths: Vec<_> = document
+        .descendants()
+        .filter(|node| node.has_attribute("data-points"))
+        .collect();
+    assert_eq!(paths.len(), expected_count);
+    for path in paths {
+        let d = path.attribute("d").unwrap();
+        assert!(
+            d.chars()
+                .all(|c| !c.is_ascii_alphabetic() || c == 'M' || c == 'L'),
+            "{d}"
+        );
+        let numbers: Vec<f64> = d
+            .split(['M', 'L', ','])
+            .filter(|s| !s.is_empty())
+            .map(|s| s.parse().unwrap())
+            .collect();
+        let points = numbers.as_chunks::<2>().0;
+        assert!(points.len() >= 2, "{d}");
+        let vertical = points
+            .iter()
+            .all(|p| (p[0] - points[0][0]).abs() < TOLERANCE);
+        let horizontal = points
+            .iter()
+            .all(|p| (p[1] - points[0][1]).abs() < TOLERANCE);
+        assert!(vertical || horizontal, "{d}");
+    }
+}
+
+#[test]
+fn nested_edge_labels_center_their_actual_container_in_every_direction() {
+    for direction in ["TD", "BT", "LR", "RL"] {
+        let body = REVIEW.split_once('\n').unwrap().1;
+        let text = format!(
+            "flowchart {direction}\n subgraph outer[Outer]\n subgraph workflow[Workflow]\n{body} end\n end\n"
+        );
+        let stages = flowchart_elk_stages(
+            &text,
+            &Value::empty_object(),
+            &options(FlowchartMode::Adaptive),
+        )
+        .unwrap();
+        let input = &stages["elkInput"];
+        for id in ["root", "outer"] {
+            assert!(
+                elk_node(input, id).unwrap()["layoutOptions"]
+                    .get("elk.spacing.portPort")
+                    .is_none(),
+                "{direction}: {id}"
+            );
+        }
+        assert_eq!(
+            elk_node(input, "workflow").unwrap()["layoutOptions"]["elk.spacing.portPort"],
+            44.0
+        );
+        for id in ["draft", "review", "publish"] {
+            assert_eq!(
+                elk_node(input, id).unwrap()["layoutOptions"]["elk.portAlignment.default"],
+                "CENTER",
+                "{direction}: {id}"
+            );
+        }
+        // In the vertical review loop, all three routes can stay straight inside both frames.
+        if matches!(direction, "TD" | "BT") {
+            let svg = Renderer::new(&Value::empty_object())
+                .render_with(&text, &options(FlowchartMode::Adaptive))
+                .unwrap();
+            assert_straight_routes(&svg, 3);
+        }
+    }
+}
+
+#[test]
+fn local_cross_hierarchy_and_self_loop_labels_use_their_own_containers() {
+    let text = "flowchart TD\n subgraph left[Left]\n A -->|Local| B\n A -->|Repeat| A\n end\n subgraph right[Right]\n C --> D\n end\n subgraph plain[Plain]\n E --> F\n end\n B -->|Across| C\n";
+    let stages = flowchart_elk_stages(
+        text,
+        &Value::empty_object(),
+        &options(FlowchartMode::Adaptive),
+    )
+    .unwrap();
+    let input = &stages["elkInput"];
+    for id in ["root", "left", "right"] {
+        assert_eq!(
+            elk_node(input, id).unwrap()["layoutOptions"]["elk.spacing.portPort"],
+            44.0,
+            "{id}"
+        );
+    }
+    for id in ["left", "right", "A", "B", "C", "D"] {
+        assert_eq!(
+            elk_node(input, id).unwrap()["layoutOptions"]["elk.portAlignment.default"],
+            "CENTER",
+            "{id}"
+        );
+    }
+    for id in ["E", "F"] {
+        assert!(
+            elk_node(input, id).unwrap()["layoutOptions"]
+                .get("elk.portAlignment.default")
+                .is_none(),
+            "unrelated plain container: {id}"
+        );
+    }
+    assert!(
+        elk_node(input, "plain").unwrap()["layoutOptions"]
+            .get("elk.spacing.portPort")
+            .is_none()
+    );
+}
+
+#[test]
+fn wide_inline_labels_have_room_for_the_neighboring_vertical_route() {
+    let source = include_str!(
+        "../../../e2e/diagrams/flowchart/regressions/routing-subgraph-long-review-label-td.mmd"
+    );
+    // Check an inherited vertical direction, and an explicit vertical direction in a horizontal graph.
+    for text in [
+        source.to_owned(),
+        source.replace("flowchart TD", "flowchart LR").replace(
+            "subgraph workflow[Workflow]",
+            "subgraph workflow[Workflow]\n direction TB",
+        ),
+    ] {
+        let stages = flowchart_elk_stages(
+            &text,
+            &Value::empty_object(),
+            &options(FlowchartMode::Adaptive),
+        )
+        .unwrap();
+        let gap = elk_node(&stages["elkInput"], "workflow").unwrap()["layoutOptions"]["elk.spacing.portPort"].as_f64().unwrap();
+        assert!(
+            gap > 60.0,
+            "the long label needs more than the 44-unit height-based gap: {gap}"
+        );
+        let svg = Renderer::new(&Value::empty_object())
+            .render_with(&text, &options(FlowchartMode::Adaptive))
+            .unwrap();
+        assert_straight_routes(&svg, 3);
+    }
+}
+
+#[test]
+fn a_merged_subgraphs_inert_direction_does_not_change_the_clearance_axis() {
+    let source = include_str!(
+        "../../../e2e/diagrams/flowchart/regressions/routing-subgraph-long-review-label-td.mmd"
+    );
+    let text = source.replace("flowchart TD", "flowchart LR").replace(
+        "subgraph workflow[Workflow]",
+        "subgraph workflow[Workflow]\n direction TB",
+    ) + " publish --> outside[Outside]\n";
+    let stages = flowchart_elk_stages(
+        &text,
+        &Value::empty_object(),
+        &options(FlowchartMode::Adaptive),
+    )
+    .unwrap();
+    let workflow = elk_node(&stages["elkInput"], "workflow").unwrap();
+    assert_eq!(
+        workflow["layoutOptions"]["elk.hierarchyHandling"],
+        "INCLUDE_CHILDREN"
+    );
+    assert_eq!(workflow["layoutOptions"]["elk.direction"], "DOWN");
+    assert_eq!(
+        workflow["layoutOptions"]["elk.spacing.portPort"], 44.0,
+        "the layout inherits RIGHT from the root"
+    );
+}
+
+#[test]
+fn existing_nested_diamond_labels_configure_the_inner_graph() {
+    let text = include_str!(
+        "../../../e2e/diagrams/flowchart/nightly-check/6088-1-should-handle-diamond-shape-intersections.mmd"
+    );
+    let stages = flowchart_elk_stages(
+        text,
+        &Value::empty_object(),
+        &options(FlowchartMode::Adaptive),
+    )
+    .unwrap();
+    let input = &stages["elkInput"];
+    assert!(input["layoutOptions"].get("elk.spacing.portPort").is_none());
+    assert_eq!(
+        elk_node(input, "S2").unwrap()["layoutOptions"]["elk.spacing.portPort"],
+        44.0
+    );
+    assert_eq!(
+        elk_node(input, "s1").unwrap()["layoutOptions"]["elk.spacing.portPort"],
+        44.0
+    );
+    for id in ["s1", "D", "I"] {
+        assert_eq!(
+            elk_node(input, id).unwrap()["layoutOptions"]["elk.portAlignment.default"],
+            "CENTER",
+            "{id}"
+        );
+    }
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &options(FlowchartMode::Adaptive))
+        .unwrap();
+    assert_straight_routes(&svg, 3);
 }
 
 fn options(routing: FlowchartMode) -> RenderOptions {

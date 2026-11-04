@@ -6,9 +6,9 @@ This page is also the reference for the unified renderer. Other diagram types li
 
 ## Rendering mode
 
-Flowcharts use adaptive rendering by default ([0019](../decisions/0019-adaptive-flowchart-mode.md)). Ports are centered on each node, with spacing derived from measured edge labels. This removes unnecessary attachment steps in simple diagrams while keeping ELK placement, obstacle routing, outline clipping and the existing label guards. Nested subgraphs receive the same policy. Necessary bends remain; node positions can change in complex graphs.
+Flowcharts use adaptive rendering by default ([0019](../decisions/0019-adaptive-flowchart-mode.md)). Ports are centered on each node, with spacing derived from measured edge labels. This removes unnecessary attachment steps in simple diagrams while keeping ELK placement, obstacle routing, outline clipping and the existing label guards. Nested subgraphs receive the same policy. Labels contribute to the lowest common ancestor of their endpoints (a self-loop uses its node's parent) and to intermediate containers on both endpoint branches, regardless of where the input stores the edge. Vertical routes also reserve half the widest label plus clearance, so an inline label has room beside its neighboring route. Necessary bends remain; node positions can change in complex graphs.
 
-Centering can add bends in dense labeled fan-in and fan-out, as in `visual-check/with-formatting-in-a-node*.mmd`. Use `mermaid` when preserving those routes takes priority. Parents without measured edge labels retain their existing child alignments and port spacing.
+Centering can add bends in dense labeled fan-in and fan-out, as in `visual-check/with-formatting-in-a-node*.mmd`. Use `mermaid` when preserving those routes takes priority. Parents not traversed by a measured labeled edge retain their existing child alignments and port spacing.
 
 Adaptive mode also draws edge-label backgrounds at full opacity, so lines do not show through the text. It keeps the theme's `edgeLabelBackground` color and any explicit alpha channel. Icon and image captions retain their reference styling.
 
@@ -185,7 +185,7 @@ Other cluster kinds share the table: `swimlane` ([swimlanes](./swimlanes.md)), t
 
 **`elk_build.rs`** builds the elkjs graph.
 
-The graph builder follows the reference first. For a flowchart in adaptive mode, `flowchart/policy.rs` then sets centered port alignment on the child nodes of parents with measured edge labels, and parent-level `portPort` spacing of `max(20, 2 × maximum measured edge-label height + 2)`. Parents without measured labels retain their original alignment and spacing. ELK fits the spacing to the available side of each node. Mermaid mode leaves the complete input unchanged.
+The graph builder follows the reference first. For a flowchart in adaptive mode, `flowchart/policy.rs` then sets centered port alignment on the child nodes of parents traversed by measured labeled edges, and parent-level `portPort` spacing of `max(20, 2 × maximum measured edge-label height + 2)`. Vertical containers also reserve `maximum measured edge-label width / 2 + 2`, using their effective layout direction (`INCLUDE_CHILDREN` inherits its ancestor's direction). Parents not traversed by those labeled routes retain their original alignment and spacing. ELK fits the spacing to the available side of each node. Mermaid mode leaves the complete input unchanged.
 
 - A leaf's size is the measured size of its shape; ELK never sees a leaf's label. A subgraph gets its measured title as a label with `H_CENTER V_TOP, INSIDE` placement, the height less 2, and a width floor of `label width + padding`. A plain title is measured unwrapped, a Markdown title wrapped at 120.
 - Every edge is put in the root's `edges` array, and elkjs moves each into the lowest common ancestor of its ends, so the sections of its result are relative to that container.

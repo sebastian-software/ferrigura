@@ -1,0 +1,8 @@
+flowchart LR
+  subgraph workflow[Workflow]
+ direction TB
+    draft[Draft] --> review{Review}
+    review -->|Approved| publish[Publish]
+    review -->|Changes requested| draft
+  end
+ publish --> outside[Outside]

@@ -1,0 +1,8 @@
+flowchart BT
+  subgraph outer[Outer]
+    subgraph workflow[Workflow]
+      draft[Draft] --> review{Review}
+      review -->|Approved| publish[Publish]
+      review -->|Changes| draft
+    end
+  end

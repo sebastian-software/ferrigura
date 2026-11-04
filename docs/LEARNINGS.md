@@ -274,3 +274,7 @@ Where an engine's numbers must match, the port keeps the source's expression tre
 ### HTML and SVG edge-label backgrounds differ
 
 Mermaid's HTML-label path gives the paragraph inside an edge label its own background color. The SVG-label path applies an additional opacity of 0.5 to its background rectangle. Changing `edgeLabelBackground` to an opaque color does not remove that multiplier. Ferrigura's adaptive flowchart mode uses full-opacity rectangles with the same theme color; Mermaid mode retains the multiplier. The theme color's explicit alpha channel still applies ([0019](./decisions/0019-adaptive-flowchart-mode.md)).
+
+### Edge storage does not identify the layout container
+
+The flowchart input stores every edge on the root. ELK imports the edge into the lowest common ancestor of its endpoints, or the parent of a self-loop. A policy based on the current `edges` array therefore applies nested labels to the wrong graph. Adaptive routing resolves that containment and the intermediate containers on both endpoint branches before deriving each parent's label-aware port spacing ([0019](./decisions/0019-adaptive-flowchart-mode.md)).
