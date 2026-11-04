@@ -1,6 +1,6 @@
 {
   "name": "@ferrigura/core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": false,
   "description": "Render Mermaid diagram text to SVG in Node.js, without a browser",
   "license": "MIT",
