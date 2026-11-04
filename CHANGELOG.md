@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/sebastian-software/ferrigura/compare/v0.3.0...v0.3.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **deps:** update Rust napi to v3.16.1 ([897d309](https://github.com/sebastian-software/ferrigura/commit/897d3090f505510a359cdaeaa9acbad9c186338d))
+
 ## 0.3.0 (2026-10-27)
 
 The first public baseline. ferrigura renders the diagram text of all 33 diagram types of Mermaid 12.2.0 to SVG, in Rust and without a browser:
