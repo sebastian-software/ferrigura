@@ -10,7 +10,7 @@ use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::context::{Context, Globals, ThemeView};
 use ferrigura_render::packet::{PacketSection, render};
-use regex::Regex;
+use ferroni::Regex;
 
 const ID: &str = "packet-diagram";
 

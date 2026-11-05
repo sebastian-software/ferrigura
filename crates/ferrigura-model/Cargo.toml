@@ -13,7 +13,7 @@ documentation = "https://docs.rs/ferrigura-model"
 keywords = ["ferrigura", "mermaid", "diagram", "config"]
 
 [dependencies]
-regex = "1"
+ferroni.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

@@ -282,8 +282,8 @@ impl BlockNames {
 /// cell suffix `-<j>` of a space kept; the label of a space cell is its base and takes the same
 /// placeholder. The blocks are visited in tree order, id before label before children.
 fn normalize_block_ids(mut model: Value) -> Value {
-    let generated = regex::Regex::new(r"^(id-[0-9a-z]*-[0-9]+)(-[0-9]+)?$").expect("a pattern");
-    let base = regex::Regex::new(r"^id-[0-9a-z]*-[0-9]+$").expect("a pattern");
+    let generated = ferroni::Regex::new(r"\A(id-[0-9a-z]*-[0-9]+)(-[0-9]+)?\z").expect("a pattern");
+    let base = ferroni::Regex::new(r"\Aid-[0-9a-z]*-[0-9]+\z").expect("a pattern");
     let mut names = BlockNames::default();
     if let Some(blocks) = model.get_mut("blocks").and_then(Value::as_array_mut) {
         visit_blocks(blocks, &mut names, &generated, &base);
@@ -294,14 +294,21 @@ fn normalize_block_ids(mut model: Value) -> Value {
 fn visit_blocks(
     blocks: &mut [Value],
     names: &mut BlockNames,
-    generated: &regex::Regex,
-    base: &regex::Regex,
+    generated: &ferroni::Regex,
+    base: &ferroni::Regex,
 ) {
     for block in blocks {
-        if let Some(caps) = block["id"].as_str().and_then(|id| generated.captures(id)) {
-            let name = names.placeholder(&caps[1]);
-            let suffix = caps.get(2).map_or("", |m| m.as_str());
-            block["id"] = json!(format!("{name}{suffix}"));
+        // The captures borrow the id until they are dropped, so the replacement is built first.
+        let replacement = block["id"]
+            .as_str()
+            .and_then(|id| generated.captures(id))
+            .map(|caps| {
+                let name = names.placeholder(&caps[1]);
+                let suffix = caps.get(2).map_or("", |m| m.as_str());
+                format!("{name}{suffix}")
+            });
+        if let Some(id) = replacement {
+            block["id"] = json!(id);
         }
         let space_label = (block["type"] == json!("space"))
             .then(|| block["label"].as_str().filter(|label| base.is_match(label)))

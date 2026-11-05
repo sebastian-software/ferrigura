@@ -1380,7 +1380,7 @@ fn translate_y(node: &Node) -> f64 {
 /// `x,y` pair in its data.
 fn path_bottom(path: &Node) -> Option<f64> {
     let data = path.attr("d")?;
-    let pair = regex::Regex::new(r"([\d.-]+)[\s,]([\d.-]+)").expect("a valid pattern");
+    let pair = ferroni::Regex::new(r"([\d.-]+)[\s,]([\d.-]+)").expect("a valid pattern");
     pair.captures_iter(data)
         .filter_map(|captures| captures[2].parse::<f64>().ok())
         .filter(|value| value.is_finite())

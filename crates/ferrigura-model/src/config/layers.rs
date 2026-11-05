@@ -5,7 +5,7 @@
 
 use std::collections::BTreeMap as Map;
 
-use regex::Regex;
+use ferroni::Regex;
 
 use super::{CONFIG_KEYS, cached_defaults};
 use crate::theme::Theme;
@@ -471,11 +471,13 @@ fn dictionary_pattern(key: &str) -> Option<&'static Regex> {
     static ICONS: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
     match key {
         "nodeColors" => Some(NODE_COLORS.get_or_init(|| {
-            Regex::new(r"(?i)^#[0-9a-f]{3,8}$|^rgb\([0-9\s%,.]+\)$|^hsl\([0-9\s%,.]+\)$|^[a-z]+$")
-                .unwrap_or_else(|_| unreachable!("a fixed pattern"))
+            Regex::new(
+                r"(?i)\A#[0-9a-f]{3,8}\z|\Argb\([0-9\s%,.]+\)\z|\Ahsl\([0-9\s%,.]+\)\z|\A[a-z]+\z",
+            )
+            .unwrap_or_else(|_| unreachable!("a fixed pattern"))
         })),
         "filenameIcons" | "extensionIcons" => Some(ICONS.get_or_init(|| {
-            Regex::new(r"^[A-Za-z0-9_-]+(?::[A-Za-z0-9_-]+)?$")
+            Regex::new(r"\A[A-Za-z0-9_-]+(?::[A-Za-z0-9_-]+)?\z")
                 .unwrap_or_else(|_| unreachable!("a fixed pattern"))
         })),
         _ => None,
@@ -497,7 +499,7 @@ fn sanitize_dictionary(value: &mut Value, pattern: &Regex) {
 fn theme_value_pattern() -> &'static Regex {
     static PATTERN: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
     PATTERN.get_or_init(|| {
-        Regex::new(r##"^[0-9 "#%(),.;A-Za-z]+$"##)
+        Regex::new(r##"\A[0-9 "#%(),.;A-Za-z]+\z"##)
             .unwrap_or_else(|_| unreachable!("a fixed pattern"))
     })
 }
