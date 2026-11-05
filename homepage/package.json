@@ -21,7 +21,7 @@
     "ferramenta-family": "github:sebastian-software/ferramenta#0e22e8aa755fce55287a1a26a66f5e8de5b91f29&path:/packages/family"
   },
   "devDependencies": {
-    "axe-core": "4.13.0",
+    "axe-core": "4.14.0",
     "eslint": "^10.11.0",
     "eslint-config-setup": "^0.5.2",
     "jiti": "^2.7.0",
