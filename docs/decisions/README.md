@@ -36,6 +36,7 @@ A new decision that is hard to reverse gets the next free number. Code comments 
 | [0013](./0013-licenses-of-ported-code.md)         | Ported code keeps its source's license, in a crate of its own when it differs                       |
 | [0018](./0018-deterministic-output.md)            | The same input gives the same output: no randomness, screen or state from the environment           |
 | [0019](./0019-adaptive-flowchart-mode.md) | Flowcharts use adaptive ports and full-opacity edge-label backgrounds by default, with explicit Mermaid compatibility |
+| [0020](./0020-diagram-types-as-plugins.md) | Diagram types are plugins of the renderer; a program links only the types it registers |
 
 ## Verification
 

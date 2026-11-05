@@ -10,34 +10,17 @@ use ferrigura_model::config::{MermaidConfig, SiteConfig, typed};
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_render::RenderError;
-use ferrigura_render::agentflow::AgentflowSection;
-use ferrigura_render::block::BlockSection;
 use ferrigura_render::context::{Context, Globals, ThemeView};
 use ferrigura_render::flowchart;
-use ferrigura_render::kanban::KanbanSections;
-use ferrigura_render::mindmap::MindmapSection;
-use ferrigura_render::pie::render as render_pie;
-use ferrigura_render::swimlanes::SwimlaneSection;
 use ferrigura_render::unified::Section;
-use ferrigura_render::use_case::UseCaseSection;
-use ferrigura_render::{
-    agentflow as agentflow_render, architecture as architecture_render, block as block_render,
-    c4 as c4_render, class as class_render, cynefin as cynefin_render, er as er_render,
-    event_modeling as event_modeling_render, gantt as gantt_render, git_graph as git_graph_render,
-    info as info_render, ishikawa as ishikawa_render, journey as journey_render,
-    kanban as kanban_render, mindmap as mindmap_render, packet as packet_render,
-    quadrant_chart as quadrant_chart_render, radar as radar_render, railroad as railroad_render,
-    requirement as requirement_render, sankey as sankey_render, sequence as sequence_render,
-    state as state_render, swimlanes as swimlanes_render, timeline as timeline_render,
-    tree_view as tree_view_render, treemap as treemap_render, use_case as use_case_render,
-    venn as venn_render, wardley as wardley_render, xychart as xychart_render,
-};
-use ferrigura_syntax::{
-    DiagramType, ParseError, agentflow, architecture, block, c4, class, config, cynefin, detect,
-    er, event_modeling, gantt, git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie,
-    quadrant_chart, radar, railroad, requirement, sankey, sequence, state, swimlanes, timeline,
-    tree_view, treemap, use_case, venn, wardley, xychart,
-};
+use ferrigura_syntax::{ParseError, config, detect};
+
+pub mod diagrams;
+
+use diagrams::Plugin;
+
+/// The diagram types, as the detector names them: what a [`diagrams::Plugin`] draws.
+pub use ferrigura_syntax::DiagramType;
 
 /// The configuration and the values of Mermaid's `initialize` object, front matter and directives.
 pub use ferrigura_model::value::Value;
@@ -129,30 +112,43 @@ pub struct Renderer {
     /// The views of the diagram types, made at their first render. A view that cannot be resolved
     /// keeps its error, which the render reports as it always has.
     views: Mutex<HashMap<DiagramType, Result<Arc<View>, String>>>,
+    /// The diagram types this renderer draws, one plugin per kind.
+    plugins: Vec<Plugin>,
 }
 
 impl Renderer {
-    /// Resolves the configuration of a renderer. `config` is what the user would pass to
-    /// `initialize`, as a [`Value`]; an empty object gives the defaults.
+    /// Resolves the configuration of a renderer that draws every diagram type. `config` is what
+    /// the user would pass to `initialize`, as a [`Value`]; an empty object gives the defaults.
     ///
     /// Making a renderer does not fail. A value of the wrong type is reported by the render that reads
     /// it, as [`render`] reports it.
     #[must_use]
     pub fn new(config: &Value) -> Self {
-        let site = SiteConfig::new(Some(config));
-        let overrides = site.user_theme_variables(&Value::empty_object());
-        Self {
-            light_tokens: ThemeTokens::from_value(
-                &Theme::ReduxColor.variables_shared(Some(&overrides)),
-            ),
-            dark_tokens: ThemeTokens::from_value(
-                &Theme::ReduxDarkColor.variables_shared(Some(&overrides)),
-            ),
-            configuration: serde_json::to_string(config).unwrap_or_default(),
-            overrides,
-            site,
-            views: Mutex::new(HashMap::new()),
+        Self::builder(config).with_all().build()
+    }
+
+    /// A builder for a renderer that draws only the diagram types it registers. See
+    /// [`RendererBuilder`].
+    #[must_use]
+    pub fn builder(config: &Value) -> RendererBuilder {
+        RendererBuilder {
+            config: config.clone(),
+            plugins: Vec::new(),
         }
+    }
+
+    /// The plugin of a diagram type, or the error of a type this renderer does not draw.
+    fn plugin(&self, kind: DiagramType) -> Result<Plugin, RenderError> {
+        self.plugins
+            .iter()
+            .find(|plugin| plugin.kind() == kind)
+            .copied()
+            .ok_or_else(|| {
+                RenderError::Unsupported(format!(
+                    "the diagram type `{}` is not registered in this renderer",
+                    kind.config_key()
+                ))
+            })
     }
 
     /// Renders a diagram to an SVG document, with the default options. See [`render`].
@@ -177,288 +173,9 @@ impl Renderer {
                 message: "no diagram type detected".to_owned(),
             }));
         };
+        let plugin = self.plugin(kind)?;
         let prepared = self.prepare(text, options, kind)?;
-        let (typed_config, id) = (&prepared.view.config, prepared.id.as_str());
-        let section = Section::of(typed_config);
-        match kind {
-            DiagramType::Pie => render_pie(&Context {
-                diagram: &pie::parse(text)?,
-                section: &typed_config.pie,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Info => info_render::render(&Context {
-                diagram: &info::parse(text)?,
-                section: &(),
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Timeline => timeline_render::render(&Context {
-                diagram: &timeline::parse(text)?,
-                section: &typed_config.timeline,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Journey => journey_render::render(&Context {
-                diagram: &journey::parse(text)?,
-                section: &typed_config.journey,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::GitGraph => git_graph_render::render(&Context {
-                diagram: &git_graph::parse_with(
-                    text,
-                    &git_graph::Options {
-                        auto_id_seed: options.git_graph_seed,
-                        ..git_graph::options_of(text)?
-                    },
-                )?,
-                section: &typed_config.git_graph,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Er => er_render::render(&Context {
-                diagram: &er::parse(text)?,
-                section: &section,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Class => class_render::render(&Context {
-                diagram: &class::parse(text)?,
-                section: &section,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Sequence => sequence_render::render(&Context {
-                diagram: &sequence::parse_with(
-                    text,
-                    sequence::Options {
-                        wrap: sequence_wrap(&prepared.view.effective),
-                    },
-                )?,
-                section: &typed_config.sequence,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::State => state_render::render(&Context {
-                diagram: &state::parse(text)?,
-                section: &section,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Gantt => {
-                let now = options.now.unwrap_or_else(|| gantt::Options::default().now);
-                gantt_render::render(&Context {
-                    diagram: &gantt::parse_with(text, gantt::Options { now })?,
-                    section: &gantt_render::GanttSection {
-                        config: &typed_config.gantt,
-                        now,
-                    },
-                    globals: &prepared.view.globals,
-                    theme: prepared.theme(),
-                    id,
-                })
-            }
-            DiagramType::Mindmap => mindmap_render::render(&Context {
-                diagram: &mindmap::parse(text)?,
-                section: &MindmapSection {
-                    mindmap: &typed_config.mindmap,
-                    unified: section,
-                },
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Block => block_render::render(&Context {
-                diagram: &block::parse(text)?,
-                section: &BlockSection {
-                    block: &typed_config.block,
-                    unified: section,
-                },
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Packet => {
-                let section = packet_render::PacketSection {
-                    config: typed_config.packet.clone(),
-                    bits_per_row: packet::bits_per_row(&prepared.view.effective),
-                };
-                packet_render::render(&Context {
-                    diagram: &packet::parse_with(text, &prepared.view.effective)?,
-                    section: &section,
-                    globals: &prepared.view.globals,
-                    theme: prepared.theme(),
-                    id,
-                })
-            }
-            DiagramType::XyChart => xychart_render::render(&Context {
-                diagram: &xychart::parse(text)?,
-                section: &typed_config.xy_chart,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Requirement => requirement_render::render(&Context {
-                diagram: &requirement::parse(text)?,
-                section: &section,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Sankey => sankey_render::render(&Context {
-                diagram: &sankey::parse(text)?,
-                section: &typed_config.sankey,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::QuadrantChart => quadrant_chart_render::render(&Context {
-                diagram: &quadrant_chart::parse(text)?,
-                section: &typed_config.quadrant_chart,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::C4 => c4_render::render(&Context {
-                diagram: &c4::parse(text)?,
-                section: &typed_config.c4,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Kanban => kanban_render::render(&Context {
-                diagram: &kanban::parse(text)?,
-                section: &KanbanSections {
-                    kanban: &typed_config.kanban,
-                    mindmap: &typed_config.mindmap,
-                },
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Architecture => architecture_render::render(&Context {
-                diagram: &architecture::parse(text)?,
-                section: &typed_config.architecture,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Treemap => {
-                let section = treemap_render::TreemapSettings::of(&prepared.view.effective);
-                treemap_render::render(&Context {
-                    diagram: &treemap::parse(text)?,
-                    section: &section,
-                    globals: &prepared.view.globals,
-                    theme: prepared.theme(),
-                    id,
-                })
-            }
-            DiagramType::Ishikawa => ishikawa_render::render(&Context {
-                diagram: &ishikawa::parse(text)?,
-                section: &typed_config.ishikawa,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::EventModeling => event_modeling_render::render(&Context {
-                diagram: &event_modeling::parse(text)?,
-                section: &typed_config.eventmodeling,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Agentflow => agentflow_render::render(&Context {
-                diagram: &agentflow::parse(text)?,
-                section: &AgentflowSection {
-                    agentflow: &typed_config.agentflow,
-                    unified: section,
-                },
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Cynefin => cynefin_render::render(&Context {
-                diagram: &cynefin::parse(text)?,
-                section: &typed_config.cynefin,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Radar => radar_render::render(&Context {
-                diagram: &radar::parse(text)?,
-                section: &typed_config.radar,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Railroad => railroad_render::render(&Context {
-                diagram: &railroad::parse(text)?,
-                section: &railroad_render::RailroadSection {
-                    config: &typed_config.railroad,
-                    detector: railroad::detector_id(text),
-                },
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Swimlanes => swimlanes_render::render(&Context {
-                diagram: &swimlanes::parse(text)?,
-                section: &SwimlaneSection {
-                    swimlane: &typed_config.swimlane,
-                    unified: section,
-                },
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::TreeView => tree_view_render::render(&Context {
-                diagram: &tree_view::parse(text)?,
-                section: &typed_config.tree_view,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::UseCase => use_case_render::render(&Context {
-                diagram: &use_case::parse(text)?,
-                section: &UseCaseSection {
-                    usecase: &typed_config.usecase,
-                    unified: section,
-                },
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Venn => venn_render::render(&Context {
-                diagram: &venn::parse(text)?,
-                section: &venn_render::VennSection {
-                    config: &typed_config.venn,
-                    seed: options.random_seed.unwrap_or(venn_render::DEFAULT_SEED),
-                },
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Wardley => wardley_render::render(&Context {
-                diagram: &wardley::parse(text)?,
-                section: &typed_config.wardley_beta,
-                globals: &prepared.view.globals,
-                theme: prepared.theme(),
-                id,
-            }),
-            DiagramType::Flowchart => {
-                with_flowchart(text, &prepared, options.flowchart_mode, flowchart::render)
-            }
-        }
+        plugin.render(text, &prepared, options)
     }
 
     /// What a render needs besides its diagram, as `mermaidAPI` resolves it before it calls the
@@ -532,6 +249,66 @@ impl Renderer {
             }
         };
         resolved.map_err(RenderError::Config)
+    }
+}
+
+/// Makes a [`Renderer`] that draws only the diagram types it registers.
+///
+/// Each diagram type is a [`diagrams::Plugin`]; a program that registers only the types it draws
+/// links only their parsers, renderers and layout engines, since nothing else refers to the rest.
+/// [`Renderer::new`] registers them all.
+///
+/// ```
+/// use ferrigura::{Renderer, Value, diagrams};
+///
+/// let renderer = Renderer::builder(&Value::empty_object())
+///     .with(diagrams::pie())
+///     .with(diagrams::sequence())
+///     .build();
+/// assert!(renderer.render("pie\n  \"Dogs\" : 386\n").is_ok());
+/// assert!(renderer.render("flowchart LR\n  a --> b\n").is_err());
+/// ```
+#[derive(Debug)]
+pub struct RendererBuilder {
+    /// The configuration the renderer is made with.
+    config: Value,
+    /// The plugins registered so far, one per kind.
+    plugins: Vec<Plugin>,
+}
+
+impl RendererBuilder {
+    /// Registers a diagram type. A plugin of a kind that is registered already replaces it.
+    #[must_use]
+    pub fn with(mut self, plugin: Plugin) -> Self {
+        self.plugins.retain(|known| known.kind() != plugin.kind());
+        self.plugins.push(plugin);
+        self
+    }
+
+    /// Registers every diagram type, as [`Renderer::new`] does.
+    #[must_use]
+    pub fn with_all(self) -> Self {
+        diagrams::all().into_iter().fold(self, Self::with)
+    }
+
+    /// Resolves the configuration and makes the renderer. This does not fail; see [`Renderer::new`].
+    #[must_use]
+    pub fn build(self) -> Renderer {
+        let site = SiteConfig::new(Some(&self.config));
+        let overrides = site.user_theme_variables(&Value::empty_object());
+        Renderer {
+            light_tokens: ThemeTokens::from_value(
+                &Theme::ReduxColor.variables_shared(Some(&overrides)),
+            ),
+            dark_tokens: ThemeTokens::from_value(
+                &Theme::ReduxDarkColor.variables_shared(Some(&overrides)),
+            ),
+            configuration: serde_json::to_string(&self.config).unwrap_or_default(),
+            overrides,
+            site,
+            views: Mutex::new(HashMap::new()),
+            plugins: self.plugins,
+        }
     }
 }
 

@@ -49,6 +49,28 @@ assert!(flowchart.starts_with("<svg "));
 
 A `Renderer` is `Send` and `Sync`, so one renderer can serve renders on several threads at once. For the same configuration, its output is the output of `render`, byte for byte.
 
+## Choosing the diagram types
+
+Every diagram type is a plugin of the renderer. `Renderer::new` registers all 33; a builder registers only the types a program draws, and the parsers, renderers and layout engines of the other types are then not linked into it, since nothing refers to them. A program that draws sequence diagrams alone is about half the size of one that draws every type.
+
+```rust
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+use ferrigura::{Renderer, Value, diagrams};
+
+let renderer = Renderer::builder(&Value::empty_object())
+    .with(diagrams::sequence())
+    .with(diagrams::pie())
+    .build();
+let svg = renderer.render("sequenceDiagram\n  Alice->>Bob: Hello\n")?;
+assert!(svg.starts_with("<svg "));
+// A type that is not registered is refused, not drawn by a hidden default.
+assert!(renderer.render("flowchart LR\n  A --> B\n").is_err());
+# Ok(())
+# }
+```
+
+The constructors of `ferrigura::diagrams` are named after the types (`flowchart`, `sequence`, `class`, `state`, `er`, `gantt`, …), and `diagrams::all()` is the list `Renderer::new` uses. A text whose type has no plugin gives `Error::Unsupported`, which names the type.
+
 ## Options
 
 `render_with` and `Renderer::render_with` take a `RenderOptions` as well. It holds what is not Mermaid configuration:
