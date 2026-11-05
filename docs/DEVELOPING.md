@@ -49,6 +49,12 @@ RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace
 cargo test --workspace
 ```
 
+The addon crate with one diagram type, so that its features keep compiling:
+
+```bash
+cargo test -p ferrigura-node --no-default-features --features sequence
+```
+
 ```bash
 pnpm -C tools/port run lint
 ```

@@ -13,6 +13,81 @@ publish = false
 [lib]
 crate-type = ["cdylib"]
 
+# One feature per diagram type, named as its constructor in `ferrigura::diagrams`. The published
+# addon is built with `all`; a program that builds its own addon enables the types it draws, and the
+# linker leaves out the rest (docs/decisions/0020-diagram-types-as-plugins.md).
+[features]
+default = ["all"]
+all = [
+    "pie",
+    "info",
+    "flowchart",
+    "timeline",
+    "journey",
+    "git_graph",
+    "er",
+    "class",
+    "sequence",
+    "state",
+    "gantt",
+    "mindmap",
+    "block",
+    "packet",
+    "xy_chart",
+    "sankey",
+    "quadrant_chart",
+    "requirement",
+    "c4",
+    "kanban",
+    "architecture",
+    "treemap",
+    "ishikawa",
+    "event_modeling",
+    "agentflow",
+    "cynefin",
+    "radar",
+    "railroad",
+    "swimlanes",
+    "tree_view",
+    "use_case",
+    "venn",
+    "wardley",
+]
+pie = []
+info = []
+flowchart = []
+timeline = []
+journey = []
+git_graph = []
+er = []
+class = []
+sequence = []
+state = []
+gantt = []
+mindmap = []
+block = []
+packet = []
+xy_chart = []
+sankey = []
+quadrant_chart = []
+requirement = []
+c4 = []
+kanban = []
+architecture = []
+treemap = []
+ishikawa = []
+event_modeling = []
+agentflow = []
+cynefin = []
+radar = []
+railroad = []
+swimlanes = []
+tree_view = []
+use_case = []
+venn = []
+wardley = []
+
+
 [dependencies]
 ferrigura = { path = "../..", version = "0.4.0" }
 ferrigura-model = { path = "../ferrigura-model", version = "0.4.0" }

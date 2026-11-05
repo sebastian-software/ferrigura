@@ -4,8 +4,13 @@
 //! `ferrigura` crate. `Renderer` resolves a configuration once, for many renders:
 //! `new Renderer(config?)`, then `renderer.render(text, options?)`. Both give the same SVG for the
 //! same configuration, byte for byte.
+//!
+//! The crate has one cargo feature per diagram type, named as its constructor in
+//! `ferrigura::diagrams`, and `all`, the default. A build with fewer features draws fewer types and
+//! links only those (decision 0020); a text of another type is refused as not registered.
 
-use ferrigura::{ColorScheme, RenderOptions};
+use ferrigura::diagrams::{self, Plugin};
+use ferrigura::{ColorScheme, RenderOptions, RendererBuilder};
 use ferrigura_model::value::Value;
 use napi::{Error, Result, Status};
 use napi_derive::napi;
@@ -33,8 +38,9 @@ pub struct RenderOptionsInput {
 ///
 /// # Errors
 ///
-/// Throws if the text is not a diagram that ferrigura renders, if it does not parse, if the
-/// configuration holds a value of the wrong type, or if the color scheme or the id is not valid.
+/// Throws if the text is not a diagram that ferrigura renders or of a type this build leaves out, if it
+/// does not parse, if the configuration holds a value of the wrong type, or if the color scheme or the
+/// id is not valid.
 #[napi]
 pub fn render(
     text: String,
@@ -43,7 +49,10 @@ pub fn render(
 ) -> Result<String> {
     let config = config.map_or_else(Value::empty_object, Value::from);
     let options = render_options(options)?;
-    ferrigura::render_with(&text, &config, &options).map_err(to_error)
+    builder(&config)
+        .shared()
+        .render_with(&text, &options)
+        .map_err(to_error)
 }
 
 /// A renderer that resolves its configuration once, for many renders.
@@ -67,7 +76,7 @@ impl Renderer {
     pub fn new(config: Option<serde_json::Value>) -> Self {
         let config = config.map_or_else(Value::empty_object, Value::from);
         Self {
-            inner: ferrigura::Renderer::new(&config),
+            inner: builder(&config).build(),
         }
     }
 
@@ -124,4 +133,194 @@ fn color_scheme(name: &str) -> Result<ColorScheme> {
 
 fn to_error(error: ferrigura::Error) -> Error {
     Error::new(Status::GenericFailure, error.to_string())
+}
+
+#[cfg(not(any(
+    feature = "pie",
+    feature = "info",
+    feature = "flowchart",
+    feature = "timeline",
+    feature = "journey",
+    feature = "git_graph",
+    feature = "er",
+    feature = "class",
+    feature = "sequence",
+    feature = "state",
+    feature = "gantt",
+    feature = "mindmap",
+    feature = "block",
+    feature = "packet",
+    feature = "xy_chart",
+    feature = "sankey",
+    feature = "quadrant_chart",
+    feature = "requirement",
+    feature = "c4",
+    feature = "kanban",
+    feature = "architecture",
+    feature = "treemap",
+    feature = "ishikawa",
+    feature = "event_modeling",
+    feature = "agentflow",
+    feature = "cynefin",
+    feature = "radar",
+    feature = "railroad",
+    feature = "swimlanes",
+    feature = "tree_view",
+    feature = "use_case",
+    feature = "venn",
+    feature = "wardley"
+)))]
+compile_error!(
+    "ferrigura-node draws no diagram type: enable at least one feature, or the default `all`"
+);
+
+/// The plugins of this build, one per enabled feature.
+#[expect(
+    clippy::vec_init_then_push,
+    reason = "a `vec!` literal cannot hold `#[cfg]` elements"
+)]
+fn plugins() -> Vec<Plugin> {
+    let mut plugins = Vec::new();
+    #[cfg(feature = "pie")]
+    plugins.push(diagrams::pie());
+    #[cfg(feature = "info")]
+    plugins.push(diagrams::info());
+    #[cfg(feature = "flowchart")]
+    plugins.push(diagrams::flowchart());
+    #[cfg(feature = "timeline")]
+    plugins.push(diagrams::timeline());
+    #[cfg(feature = "journey")]
+    plugins.push(diagrams::journey());
+    #[cfg(feature = "git_graph")]
+    plugins.push(diagrams::git_graph());
+    #[cfg(feature = "er")]
+    plugins.push(diagrams::er());
+    #[cfg(feature = "class")]
+    plugins.push(diagrams::class());
+    #[cfg(feature = "sequence")]
+    plugins.push(diagrams::sequence());
+    #[cfg(feature = "state")]
+    plugins.push(diagrams::state());
+    #[cfg(feature = "gantt")]
+    plugins.push(diagrams::gantt());
+    #[cfg(feature = "mindmap")]
+    plugins.push(diagrams::mindmap());
+    #[cfg(feature = "block")]
+    plugins.push(diagrams::block());
+    #[cfg(feature = "packet")]
+    plugins.push(diagrams::packet());
+    #[cfg(feature = "xy_chart")]
+    plugins.push(diagrams::xy_chart());
+    #[cfg(feature = "sankey")]
+    plugins.push(diagrams::sankey());
+    #[cfg(feature = "quadrant_chart")]
+    plugins.push(diagrams::quadrant_chart());
+    #[cfg(feature = "requirement")]
+    plugins.push(diagrams::requirement());
+    #[cfg(feature = "c4")]
+    plugins.push(diagrams::c4());
+    #[cfg(feature = "kanban")]
+    plugins.push(diagrams::kanban());
+    #[cfg(feature = "architecture")]
+    plugins.push(diagrams::architecture());
+    #[cfg(feature = "treemap")]
+    plugins.push(diagrams::treemap());
+    #[cfg(feature = "ishikawa")]
+    plugins.push(diagrams::ishikawa());
+    #[cfg(feature = "event_modeling")]
+    plugins.push(diagrams::event_modeling());
+    #[cfg(feature = "agentflow")]
+    plugins.push(diagrams::agentflow());
+    #[cfg(feature = "cynefin")]
+    plugins.push(diagrams::cynefin());
+    #[cfg(feature = "radar")]
+    plugins.push(diagrams::radar());
+    #[cfg(feature = "railroad")]
+    plugins.push(diagrams::railroad());
+    #[cfg(feature = "swimlanes")]
+    plugins.push(diagrams::swimlanes());
+    #[cfg(feature = "tree_view")]
+    plugins.push(diagrams::tree_view());
+    #[cfg(feature = "use_case")]
+    plugins.push(diagrams::use_case());
+    #[cfg(feature = "venn")]
+    plugins.push(diagrams::venn());
+    #[cfg(feature = "wardley")]
+    plugins.push(diagrams::wardley());
+    plugins
+}
+
+/// A builder with the plugins of this build.
+fn builder(config: &Value) -> RendererBuilder {
+    plugins()
+        .into_iter()
+        .fold(ferrigura::Renderer::builder(config), RendererBuilder::with)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    /// Which features this build has, in the order of `plugins`.
+    const FEATURES: [bool; 33] = [
+        cfg!(feature = "pie"),
+        cfg!(feature = "info"),
+        cfg!(feature = "flowchart"),
+        cfg!(feature = "timeline"),
+        cfg!(feature = "journey"),
+        cfg!(feature = "git_graph"),
+        cfg!(feature = "er"),
+        cfg!(feature = "class"),
+        cfg!(feature = "sequence"),
+        cfg!(feature = "state"),
+        cfg!(feature = "gantt"),
+        cfg!(feature = "mindmap"),
+        cfg!(feature = "block"),
+        cfg!(feature = "packet"),
+        cfg!(feature = "xy_chart"),
+        cfg!(feature = "sankey"),
+        cfg!(feature = "quadrant_chart"),
+        cfg!(feature = "requirement"),
+        cfg!(feature = "c4"),
+        cfg!(feature = "kanban"),
+        cfg!(feature = "architecture"),
+        cfg!(feature = "treemap"),
+        cfg!(feature = "ishikawa"),
+        cfg!(feature = "event_modeling"),
+        cfg!(feature = "agentflow"),
+        cfg!(feature = "cynefin"),
+        cfg!(feature = "radar"),
+        cfg!(feature = "railroad"),
+        cfg!(feature = "swimlanes"),
+        cfg!(feature = "tree_view"),
+        cfg!(feature = "use_case"),
+        cfg!(feature = "venn"),
+        cfg!(feature = "wardley"),
+    ];
+
+    #[test]
+    fn one_plugin_per_enabled_feature() {
+        let plugins = plugins();
+        let kinds: HashSet<_> = plugins.iter().map(Plugin::kind).collect();
+        assert_eq!(kinds.len(), plugins.len());
+        assert_eq!(plugins.len(), FEATURES.iter().filter(|on| **on).count());
+    }
+
+    #[cfg(feature = "sequence")]
+    #[test]
+    fn draws_a_type_whose_feature_is_on() {
+        let svg = render("sequenceDiagram\n  A->>B: Hi\n".to_owned(), None, None).unwrap();
+        assert!(svg.starts_with("<svg "));
+    }
+
+    #[cfg(not(feature = "pie"))]
+    #[test]
+    fn refuses_a_type_whose_feature_is_off() {
+        let error = render("pie\n  \"Dogs\" : 1\n".to_owned(), None, None).unwrap_err();
+        let message = error.to_string();
+        assert!(message.contains("pie"), "{message}");
+        assert!(message.contains("not registered"), "{message}");
+    }
 }

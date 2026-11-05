@@ -291,6 +291,33 @@ impl RendererBuilder {
         diagrams::all().into_iter().fold(self, Self::with)
     }
 
+    /// The renderer of this configuration and these plugins, kept for the next call. A renderer that
+    /// is kept already is returned; otherwise it is made as [`build`](Self::build) makes it and kept,
+    /// in the place of the least recently used one once a handful are kept. [`render`] uses it with
+    /// every plugin; a program that renders one diagram at a time with the same configuration uses
+    /// it so that the configuration is not resolved again. The order of registration does not matter.
+    #[must_use]
+    pub fn shared(self) -> Arc<Renderer> {
+        let mut kinds: Vec<DiagramType> = self.plugins.iter().map(Plugin::kind).collect();
+        kinds.sort_unstable_by(|a, b| a.config_key().cmp(b.config_key()));
+        if let Some(renderer) = kept(&self.config, &kinds) {
+            return renderer;
+        }
+        // Two threads that miss at once keep two equal renderers for a while; that costs memory only.
+        let config = self.config.clone();
+        let renderer = Arc::new(self.build());
+        let mut cache = lock(&SHORTHAND);
+        if cache.len() == SHORTHAND_CAPACITY {
+            cache.remove(0);
+        }
+        cache.push(Shared {
+            config,
+            kinds,
+            renderer: Arc::clone(&renderer),
+        });
+        renderer
+    }
+
     /// Resolves the configuration and makes the renderer. This does not fail; see [`Renderer::new`].
     #[must_use]
     pub fn build(self) -> Renderer {
@@ -337,7 +364,10 @@ pub fn render_with(
     config: &Value,
     options: &RenderOptions,
 ) -> Result<String, RenderError> {
-    shorthand(config).render_with(text, options)
+    Renderer::builder(config)
+        .with_all()
+        .shared()
+        .render_with(text, options)
 }
 
 /// The view of a diagram type, its configuration in the diagram's scope and typed, the tokens of its
@@ -475,7 +505,7 @@ pub fn flowchart_elk_stages(
             message: "not a flowchart".to_owned(),
         }));
     }
-    let renderer = shorthand(config);
+    let renderer = Renderer::builder(config).with_all().shared();
     let prepared = renderer.prepare(text, options, DiagramType::Flowchart)?;
     let stages = with_flowchart(
         text,
@@ -509,35 +539,31 @@ fn with_flowchart<T>(
     })
 }
 
-/// The renderers of [`render`] and [`render_with`], with their configurations, least recently used
-/// first.
-static SHORTHAND: Mutex<Vec<(Value, Arc<Renderer>)>> = Mutex::new(Vec::new());
+/// The renderers of [`RendererBuilder::shared`], which [`render`] and [`render_with`] use with every
+/// plugin, each with the configuration and the kinds it was made from, least recently used first.
+static SHORTHAND: Mutex<Vec<Shared>> = Mutex::new(Vec::new());
 
-/// How many configurations the shorthand keeps a renderer for. A configuration that is not kept is
-/// resolved again at its next render; the output does not depend on it.
+/// How many renderers the shorthand keeps. One that is not kept is made again at its next render;
+/// the output does not depend on it.
 const SHORTHAND_CAPACITY: usize = 8;
 
-/// The renderer of a configuration, from the shorthand's cache or made for it, and kept there.
-fn shorthand(config: &Value) -> Arc<Renderer> {
-    if let Some(renderer) = kept(config) {
-        return renderer;
-    }
-    // Two threads that miss at once keep two equal renderers for a while; that costs memory only.
-    let renderer = Arc::new(Renderer::new(config));
-    let mut cache = lock(&SHORTHAND);
-    if cache.len() == SHORTHAND_CAPACITY {
-        cache.remove(0);
-    }
-    cache.push((config.clone(), Arc::clone(&renderer)));
-    renderer
+/// A renderer the shorthand keeps, with what it was made from.
+struct Shared {
+    config: Value,
+    /// The kinds the renderer draws, sorted, so that the order of registration does not matter.
+    kinds: Vec<DiagramType>,
+    renderer: Arc<Renderer>,
 }
 
-/// The renderer that the shorthand keeps for a configuration, which becomes the most recently used.
-fn kept(config: &Value) -> Option<Arc<Renderer>> {
+/// The renderer that the shorthand keeps for a configuration and a set of kinds, which becomes the
+/// most recently used.
+fn kept(config: &Value, kinds: &[DiagramType]) -> Option<Arc<Renderer>> {
     let mut cache = lock(&SHORTHAND);
-    let at = cache.iter().position(|(key, _)| identical(key, config))?;
+    let at = cache
+        .iter()
+        .position(|entry| entry.kinds == kinds && identical(&entry.config, config))?;
     let entry = cache.remove(at);
-    let renderer = Arc::clone(&entry.1);
+    let renderer = Arc::clone(&entry.renderer);
     cache.push(entry);
     Some(renderer)
 }
