@@ -1,8 +1,12 @@
 name: CI
 
+# A pull request runs once, for its merge commit; a push to its branch does not run again. A push to
+# main runs every job, and the release reads that run (docs/decisions/0005-quality-gates.md).
 on:
   push:
+    branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 
 concurrency:
@@ -76,12 +80,19 @@ jobs:
 
   snapshots:
     # ferrigura's own output against crates/ferrigura/tests/snapshots/svg.tsv. The manifest holds the
-    # aarch64 renders (ferrigura_jsmath rounds with fused multiply-adds there), so this runs on macOS.
-    runs-on: macos-latest
+    # aarch64 renders (ferrigura_jsmath rounds with fused multiply-adds there), so this runs on an arm64
+    # runner: Linux, since the macOS runners queue for an hour and the hashes depend on the architecture
+    # alone.
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # The toolchain comes from rust-toolchain.toml; the runner's rustup installs it on first use.
+      # The arm64 image has no rustup; the toolchain itself comes from rust-toolchain.toml.
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable branch
       - run: cargo test --release --test snapshots
+      - name: Venn layout exactly against its Chromium captures (arm64, as they were taken)
+        # The x86-64 test job compares the captures within a tolerance: without fused multiply-adds,
+        # atan2 rounds as V8 does on x86-64 (crates/ferrigura-venn/tests/corpus.rs).
+        run: cargo test --release -p ferrigura-venn --test corpus
 
   # port-diff and port-geometry check ferrigura against upstream Mermaid at the pin of
   # tools/reference, with its patches (docs/decisions/0014-upstream-reference-at-a-pin.md), built once per pin and cached.
@@ -163,7 +174,9 @@ jobs:
   port-geometry:
     # The comparison needs a browser whose text layout keeps fractional glyph advances, as the Rust
     # measurement does. Chromium on macOS does; on Linux the classic themes still differ by about
-    # 0.7 px with hinting off (docs/LEARNINGS.md, open questions).
+    # 0.7 px with hinting off (docs/LEARNINGS.md, open questions). The macOS runners queue for an hour,
+    # so this runs for every push to main and for a pull request with the label ci:macos.
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:macos')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -192,10 +205,6 @@ jobs:
         run: pnpm -C tools/port port:geometry-flowchart
       - name: Adaptive flowchart geometry against the reference with centered ports
         run: pnpm -C tools/port port:geometry-flowchart --routing adaptive
-      - name: Venn layout exactly against its Chromium captures (arm64, as they were taken)
-        # The Linux job compares the captures within a tolerance: without fused multiply-adds, atan2
-        # rounds as V8 does on x86-64 (crates/ferrigura-venn/tests/corpus.rs).
-        run: cargo test --release -p ferrigura-venn --test corpus
       - name: Geometry of the other diagram types against the reference in Chromium
         # Every type runs, so one failing type does not hide the others.
         run: |
@@ -220,7 +229,9 @@ jobs:
       - run: pnpm -C node install --frozen-lockfile --ignore-scripts
       - id: matrix
         working-directory: node
-        run: echo "matrix=$(node scripts/native-matrix.mjs)" >> "$GITHUB_OUTPUT"
+        # The macOS addon build needs a macOS runner, which queues for an hour: a pull request leaves it
+        # out unless it carries the label ci:macos; the push to main builds every platform.
+        run: echo "matrix=$(node scripts/native-matrix.mjs ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'ci:macos')) && '--without-macos' || '' }})" >> "$GITHUB_OUTPUT"
 
   native-npm:
     needs: native-matrix

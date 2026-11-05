@@ -27,7 +27,7 @@ mise trust && mise install --locked
 
 ## The checks
 
-What CI runs on every change ([0005](./decisions/0005-quality-gates.md)):
+What CI runs ([0005](./decisions/0005-quality-gates.md)). A push to `main` runs every job. A pull request runs the jobs that a Linux or Windows runner can; the geometry comparison and the macOS addon build need a macOS runner, which queues for an hour, so they run on the merge, or on the pull request once it carries the label `ci:macos`.
 
 The Rust job sets `CARGO_PROFILE_TEST_DEBUG=line-tables-only` and
 `CARGO_INCREMENTAL=0` to keep test artifacts within hosted runners' disk space.
@@ -61,7 +61,7 @@ pnpm -C tools/port test
 mise run readme:check
 ```
 
-On an aarch64 machine (CI runs it on macOS), the output of the whole corpus is pinned by hashes:
+On an aarch64 machine (CI uses a Linux arm64 runner), the output of the whole corpus is pinned by hashes:
 
 ```bash
 cargo test --release --test snapshots
