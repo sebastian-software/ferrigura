@@ -25,6 +25,16 @@ const { render, Renderer } = addon.exports;
 
 Run the tests from the repository root with `node --test crates/ferrigura-node/test/render.test.mjs`.
 
+## Choosing the diagram types
+
+The published addon draws every diagram type. The crate has one cargo feature per type, named as its constructor in `ferrigura::diagrams` (`flowchart`, `sequence`, `class`, `state`, `er`, `gantt`, …), and `all`, the default. A program that ships its own addon builds it with the types it draws; the parsers, renderers and layout engines of the other types are then not linked into it:
+
+```sh
+cargo build --profile release-node -p ferrigura-node --no-default-features --features flowchart,sequence
+```
+
+Node loads the library with `process.dlopen` as above. A text whose type the build leaves out throws an `Error` that names the type and says it is not registered. Under the release profile on macOS arm64, the addon with `sequence` alone is 6.5 MB (3.0 MB gzipped), with `flowchart`, `sequence`, `class`, `state` and `er` 8.6 MB (4.1 MB), with `all` 11.8 MB (5.7 MB).
+
 ## render(text, config?, options?)
 
 Returns the SVG document of a diagram as a string.

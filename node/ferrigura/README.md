@@ -32,3 +32,7 @@ affects only flowcharts and is separate from Mermaid configuration and
 Supported platforms: macOS arm64; Linux x64/arm64 with glibc or musl; Windows
 x64/arm64. Node.js 22.13.0 or newer is required. The main package contains no
 native addon. See `NOTICE.md` for layout and bundled-font license texts.
+
+The published addon draws all 33 diagram types. To ship fewer, build the
+[addon crate](https://github.com/sebastian-software/ferrigura/blob/main/crates/ferrigura-node/README.md)
+with the features of the types you draw.

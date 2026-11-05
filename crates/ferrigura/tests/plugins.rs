@@ -2,6 +2,7 @@
 //! registers, and what a renderer says about a type it does not draw.
 
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use ferrigura::{DiagramType, Error, Renderer, Value, diagrams};
 
@@ -63,4 +64,28 @@ fn a_text_of_no_diagram_type_is_a_parse_error_whatever_is_registered() {
         renderer.render("not a diagram"),
         Err(Error::Parse(_))
     ));
+}
+
+#[test]
+fn shared_keeps_one_renderer_per_configuration_and_plugin_set() {
+    let config = Value::empty_object();
+    let pie = || Renderer::builder(&config).with(diagrams::pie());
+    let first = pie().shared();
+    assert!(Arc::ptr_eq(&first, &pie().shared()));
+
+    let with_flowchart = pie().with(diagrams::flowchart()).shared();
+    assert!(!Arc::ptr_eq(&first, &with_flowchart));
+    assert!(first.render(FLOWCHART).is_err());
+    assert!(with_flowchart.render(FLOWCHART).is_ok());
+
+    let reversed = Renderer::builder(&config)
+        .with(diagrams::flowchart())
+        .with(diagrams::pie())
+        .shared();
+    assert!(Arc::ptr_eq(&with_flowchart, &reversed));
+
+    // The shorthand `render` keeps a renderer with every plugin of its own, not the reduced one.
+    let all = Renderer::builder(&config).with_all().shared();
+    assert!(!Arc::ptr_eq(&all, &first));
+    assert!(ferrigura::render(FLOWCHART, &config).is_ok());
 }
