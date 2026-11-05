@@ -51,6 +51,10 @@ name = "pie"
 path = "crates/ferrigura/tests/pie.rs"
 
 [[test]]
+name = "plugins"
+path = "crates/ferrigura/tests/plugins.rs"
+
+[[test]]
 name = "renderer"
 path = "crates/ferrigura/tests/renderer.rs"
 

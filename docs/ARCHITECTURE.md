@@ -22,13 +22,13 @@ flowchart LR
 5. **Lay out and render** (`ferrigura-render`): either a renderer of the type's own (sequence, gantt, pie, timeline and the other chart-like types) or the unified renderer, which builds the layout data as Mermaid's `getData()` does and lays it out with one of the ported engines ([0012](./decisions/0012-layout-engines-ported-exactly.md)).
 6. **Text** (`ferrigura-text`): every label is measured and wrapped with the bundled fonts, written as SVG text, and the glyphs used are embedded as font subsets ([0009](./decisions/0009-svg-text-labels.md), [0010](./decisions/0010-text-measurement-and-fonts.md)).
 
-The facade, `ferrigura`, ties it together: `Renderer::new(config)` resolves the configuration once, `renderer.render(text)` returns the SVG, and `ferrigura::render(text, config)` is the shorthand.
+The facade, `ferrigura`, ties it together: `Renderer::new(config)` resolves the configuration once, `renderer.render(text)` returns the SVG, and `ferrigura::render(text, config)` is the shorthand. Each diagram type is a plugin of the renderer: `Renderer::new` registers all of them, and `Renderer::builder(config).with(diagrams::sequence())` registers only the types a program draws, so that it links only those ([0020](./decisions/0020-diagram-types-as-plugins.md)).
 
 Render options are separate from Mermaid configuration. Flowcharts use adaptive port alignment with label-aware spacing and full-opacity edge-label backgrounds by default; the per-render Mermaid-compatible mode preserves the reference's input and output ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Both use the same ELK engine.
 
 ## Crates
 
-A Cargo workspace under `crates/`. Diagram types are modules inside the crates, not crates of their own.
+A Cargo workspace under `crates/`. Diagram types are modules inside the crates, not crates of their own. A program chooses the types it links through the facade's plugins ([0020](./decisions/0020-diagram-types-as-plugins.md)).
 
 | Crate                | Does                                                                                                                        | License                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
