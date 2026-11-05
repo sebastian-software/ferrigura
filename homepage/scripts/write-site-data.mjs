@@ -55,13 +55,22 @@ const labels = {
   comparisons: 'Comparisons',
   changelog: 'Changelog',
 };
+// Line icons from the family mark sprite, one per section in the section rail.
+const icons = {
+  guide: 'document',
+  reference: 'package',
+  diagrams: 'adapter',
+  architecture: 'crate',
+  comparisons: 'half',
+  changelog: 'pen',
+};
 await writeData(
   'navigation.json',
   Object.entries(labels).map(([id, label]) => {
     const pages = documents
       .filter((document) => document.section === id)
       .map(({ path, title }) => ({ title, to: `/${path}/` }));
-    return { id, label, to: pages[0].to, pages };
+    return { id, label, icon: icons[id], to: pages[0].to, pages };
   })
 );
 async function writeData(name, value) {
