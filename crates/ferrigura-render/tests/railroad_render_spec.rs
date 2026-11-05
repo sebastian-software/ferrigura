@@ -10,7 +10,7 @@ mod support;
 
 use ferrigura_model::config::RailroadDiagramConfig;
 use ferrigura_model::theme::Theme;
-use regex::Regex;
+use ferroni::Regex;
 use support::{
     children_classed, classed, descendants, draw_real, draw_stub, path_data, render_default,
     render_with, tokens, tokens_of,

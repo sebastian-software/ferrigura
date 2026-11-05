@@ -15,7 +15,7 @@
 use std::f64::consts::PI;
 use std::sync::LazyLock;
 
-use regex::Regex;
+use ferroni::Regex;
 
 use super::ThemeError;
 
@@ -527,7 +527,7 @@ fn parse_keyword(color: &str) -> Option<Channels> {
 }
 
 /// Builds a pattern that matches `word` in any letter case, so that the patterns do not depend on
-/// the case folding of `regex`, which folds more than JavaScript's `/i` does.
+/// Oniguruma's case folding, which folds more than JavaScript's `/i` does.
 fn ci(word: &str) -> String {
     word.chars()
         .map(|character| {
@@ -542,7 +542,7 @@ fn ci(word: &str) -> String {
         .collect()
 }
 
-/// The whitespace of JavaScript's `\s`, which `regex`'s `\s` does not match exactly.
+/// The whitespace of JavaScript's `\s`, which Oniguruma's `\s` does not match exactly.
 const WS: &str = r"[\t\n\x0B\x0C\r \x{A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]";
 
 /// A decimal number with an optional sign, as the reference's color expressions read it.
@@ -555,8 +555,8 @@ fn rgb_pattern() -> String {
     let exponent = format!("{NUMBER}(?:[eE][0-9]+)?");
     let channel = format!("({exponent}(%?))");
     let alpha = format!("(?:{WS}*?(?:,|/){WS}*?\\+?{channel})?");
-    let open = format!("^{}[aA]?\\({WS}*?", ci("rgb"));
-    format!("{open}{channel}{separator}{channel}{separator}{channel}{alpha}{WS}*?\\)$")
+    let open = format!("\\A{}[aA]?\\({WS}*?", ci("rgb"));
+    format!("{open}{channel}{separator}{channel}{separator}{channel}{alpha}{WS}*?\\)\\z")
 }
 
 /// The pattern of `color/hsl.ts`, with the same groups: hue, saturation, lightness, and optionally
@@ -574,8 +574,8 @@ fn hsl_pattern() -> String {
     let percent = "(-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)(?:[eE]-?[0-9]+)?%)".to_owned();
     let alpha_number = "(-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)(?:[eE]-?[0-9]+)?(%)?)".to_owned();
     let alpha = format!("(?:{WS}*?(?:,|/){WS}*?\\+?{alpha_number})?");
-    let open = format!("^{}[aA]?\\({WS}*?", ci("hsl"));
-    format!("{open}{hue}{separator}{percent}{separator}{percent}{alpha}{WS}*?\\)$")
+    let open = format!("\\A{}[aA]?\\({WS}*?", ci("hsl"));
+    format!("{open}{hue}{separator}{percent}{separator}{percent}{alpha}{WS}*?\\)\\z")
 }
 
 /// The RGB pattern, compiled once. The pattern is a constant, so the `None` case is unreachable.

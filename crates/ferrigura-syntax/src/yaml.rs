@@ -36,7 +36,7 @@ use std::fmt;
 use std::rc::Rc;
 
 use ferrigura_model::value::Value;
-use regex::Regex;
+use ferroni::Regex;
 
 /// A YAML value as `js-yaml` with `JSON_SCHEMA` reads it.
 #[derive(Debug, Clone, PartialEq)]
@@ -2035,12 +2035,12 @@ fn resolve_float(text: &str) -> Option<f64> {
     static SPECIAL: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
     let float = FLOAT.get_or_init(|| {
         Regex::new(
-            r"^(?:[-+]?[0-9]+(?:\.[0-9]*)?(?:[eE][-+]?[0-9]+)?|\.[0-9]+(?:[eE][-+]?[0-9]+)?|[-+]?\.(?:inf|Inf|INF)|\.(?:nan|NaN|NAN))$",
+            r"\A(?:[-+]?[0-9]+(?:\.[0-9]*)?(?:[eE][-+]?[0-9]+)?|\.[0-9]+(?:[eE][-+]?[0-9]+)?|[-+]?\.(?:inf|Inf|INF)|\.(?:nan|NaN|NAN))\z",
         )
         .unwrap_or_else(|_| unreachable!("a fixed pattern"))
     });
     let special = SPECIAL.get_or_init(|| {
-        Regex::new(r"^(?:[-+]?\.(?:inf|Inf|INF)|\.(?:nan|NaN|NAN))$")
+        Regex::new(r"\A(?:[-+]?\.(?:inf|Inf|INF)|\.(?:nan|NaN|NAN))\z")
             .unwrap_or_else(|_| unreachable!("a fixed pattern"))
     });
     if !float.is_match(text) {

@@ -19,7 +19,7 @@ use ferrigura_render::unified::data::{LayoutData, Node};
 use ferrigura_render::use_case::data::{NodeFields, layout_data};
 use ferrigura_render::use_case::style::own_rules;
 use ferrigura_render::use_case::{UseCaseSection, render};
-use regex::Regex;
+use ferroni::Regex;
 use serde_json::json;
 
 /// The color themes, which carry a palette (`colorThemeGate.ts`).

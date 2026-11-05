@@ -99,6 +99,9 @@ homepage = "https://sebastian-software.github.io/ferrigura/"
 unsafe_code = "deny"
 
 [workspace.dependencies]
+# One regex engine for the whole workspace: the marked port needs Oniguruma's look-around and
+# back-references, and the other patterns are small, so the `regex` crate is not linked as well.
+ferroni = { version = "2.7.0", default-features = false }
 indexmap = { version = "2", features = ["serde"] }
 logos = "0.16"
 serde = { version = "1", features = ["derive"] }

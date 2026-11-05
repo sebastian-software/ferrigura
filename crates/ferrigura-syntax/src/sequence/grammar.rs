@@ -859,10 +859,10 @@ pub(crate) fn is_css_color(value: &str) -> bool {
 
 /// The regular expression of the color functions, compiled once. It is `None` only if the
 /// pattern is invalid, which the tests catch, so a missing pattern answers false.
-fn color_function() -> Option<&'static regex::Regex> {
-    static PATTERN: std::sync::OnceLock<Option<regex::Regex>> = std::sync::OnceLock::new();
+fn color_function() -> Option<&'static ferroni::Regex> {
+    static PATTERN: std::sync::OnceLock<Option<ferroni::Regex>> = std::sync::OnceLock::new();
     PATTERN
-        .get_or_init(|| regex::Regex::new(&color_function_pattern()).ok())
+        .get_or_init(|| ferroni::Regex::new(&color_function_pattern()).ok())
         .as_ref()
 }
 
@@ -897,7 +897,7 @@ fn color_function_pattern() -> String {
         format!("{hue}{blank}{percent}{blank}{percent}(?:{slash}{alpha})?"),
     ];
     format!(
-        "^(?:rgba?\\({space}*(?:{}){space}*\\)|hsla?\\({space}*(?:{}){space}*\\))$",
+        "\\A(?:rgba?\\({space}*(?:{}){space}*\\)|hsla?\\({space}*(?:{}){space}*\\))\\z",
         rgb.join("|"),
         hsl.join("|"),
     )

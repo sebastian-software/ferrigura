@@ -16,7 +16,7 @@ mod support;
 use ferrigura_render::RenderError;
 use ferrigura_render::unified::edges::swimlane_points;
 use ferrigura_render::unified::geom::Point;
-use regex::Regex;
+use ferroni::Regex;
 use support::{Setup, config_with, count, fixture, svg};
 
 /// A lane's `data-id`, and the first rectangle of its `class`, as the numbers of its `x`, `y`, `width`
