@@ -8,6 +8,7 @@ What porting Mermaid taught that concerns more than one diagram type, and that t
 - [SVG and Chromium geometry](#svg-and-chromium-geometry)
 - [The layout engines](#the-layout-engines)
 - [The reference and the harness](#the-reference-and-the-harness)
+- [The build](#the-build)
 - [The porting method](#the-porting-method)
 - [Open questions](#open-questions)
 
@@ -228,6 +229,12 @@ The reference keeps module-level state across the renders of one page (`actorCnt
 ### Integration-test artifacts can fill a hosted runner's disk
 
 The workspace's many integration tests each link a binary. Full test debug information and incremental compilation caches can exhaust a hosted Linux runner's disk during linking, before tests run. The Rust CI job uses `CARGO_PROFILE_TEST_DEBUG=line-tables-only` to retain file/line backtraces and `CARGO_INCREMENTAL=0` because its build artifacts are not reused across jobs. Test coverage, assertions and optimization levels stay the same. **Where:** `.github/workflows/ci.yml`, `rust` job.
+
+## The build
+
+### Size optimization costs render time only in the layout and text crates
+
+A release build with `opt-level = "s"` for every crate is about a third smaller than one at `opt-level = 3` and renders the corpus 78 percent slower; `"z"` is about half the size and 101 percent slower. The time goes to the crates that run in the inner loops: the layout engines (`ferrigura-elk`, `ferrigura-cose`, `ferrigura-swimlane`, `ferrigura-venn`), the browser arithmetic (`ferrigura-jsmath`, `ferrigura-path`) and the text stack (`ferrigura-text`, HarfRust, skera and the font crates). With those at 3 and every other crate at `"s"`, the corpus renders as fast as at 3 throughout (the runs differ by a percent either way), and the artifacts are 14 percent smaller than with fat LTO alone. Fat LTO in one codegen unit takes 15 percent off on its own and costs no render time; it costs build time, about four times that of a build without it. The profile does not change the SVG: the corpus renders byte for byte the same under every profile measured, so the snapshot test, which runs under the release profile, is the check when the profile changes. **Where:** `Cargo.toml`, `[profile.release]` and its package overrides.
 
 ## The porting method
 
