@@ -117,6 +117,59 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 [profile.dev.package.ferrigura-jsmath]
 opt-level = 3
 
+# Release builds trade build time for size. Fat LTO in one codegen unit and stripped symbols take a
+# quarter off the published artifacts and nothing off the render time. `opt-level = "s"` is for the crates whose
+# code runs once per diagram: the parsers, the model, the renderers, the regex engine, the facade.
+# The layout engines, the browser arithmetic and the text stack below run in the inner loops and stay
+# at 3: with every crate at "s" the corpus renders 78 percent slower, with this split as fast as at 3
+# throughout (docs/LEARNINGS.md, "The build"). A crate moves between the two groups only with a benchmark of the
+# corpus. The profile does not move the output; `cargo test --release --test snapshots` renders the
+# corpus under it.
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = "s"
+strip = "symbols"
+# A panic in the CLI aborts, so the binary carries no unwinding tables. The addon unwinds, see below.
+panic = "abort"
+
+[profile.release.package.ferrigura-cose]
+opt-level = 3
+
+[profile.release.package.ferrigura-elk]
+opt-level = 3
+
+[profile.release.package.ferrigura-jsmath]
+opt-level = 3
+
+[profile.release.package.ferrigura-path]
+opt-level = 3
+
+[profile.release.package.ferrigura-swimlane]
+opt-level = 3
+
+[profile.release.package.ferrigura-text]
+opt-level = 3
+
+[profile.release.package.ferrigura-venn]
+opt-level = 3
+
+[profile.release.package.font-types]
+opt-level = 3
+
+[profile.release.package.harfrust]
+opt-level = 3
+
+[profile.release.package.read-fonts]
+opt-level = 3
+
+[profile.release.package.skera]
+opt-level = 3
+
+[profile.release.package.write-fonts]
+opt-level = 3
+
+# The Node addon turns a panic into a JavaScript exception, so it must unwind.
 [profile.release-node]
 inherits = "release"
 panic = "unwind"

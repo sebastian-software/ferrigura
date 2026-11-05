@@ -67,6 +67,8 @@ On an aarch64 machine (CI runs it on macOS), the output of the whole corpus is p
 cargo test --release --test snapshots
 ```
 
+A release build links with fat LTO in one codegen unit and takes minutes where a debug build takes seconds; iterate with the dev profile and reserve `--release` for the snapshots and the artifacts.
+
 ## Checking a change against the reference
 
 - **A parser change:** `pnpm -C tools/port port:diff <type>` compares the canonical models of ferrigura and the reference on every input of the type.
