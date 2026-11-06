@@ -173,8 +173,8 @@ importers:
         specifier: 26.6.6
         version: 26.6.6
       ferramenta-native:
-        specifier: github:sebastian-software/ferramenta#7996529affaf835c959db0cd2ef64022ba4c17e0&path:/packages/native
-        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/7996529affaf835c959db0cd2ef64022ba4c17e0#path:/packages/native
+        specifier: github:sebastian-software/ferramenta#ff352075df49f56e8e0b0de8e03d43e426cba05e&path:/packages/native
+        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/ff352075df49f56e8e0b0de8e03d43e426cba05e#path:/packages/native
       oxfmt:
         specifier: 0.75.0
         version: 0.75.0
@@ -970,8 +970,8 @@ packages:
   fast-wrap-ansi@0.2.2:
     resolution: {integrity: sha512-7F2Fl+TjRSenLqlU3UjSH0iyqopqoZIu7eZVpEirP2g1GtWa2G/ecEmBdgz31+Mxr+ELclgg6sokpSFIQiZ02Q==}
 
-  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/7996529affaf835c959db0cd2ef64022ba4c17e0#path:/packages/native:
-    resolution: {gitHosted: true, path: /packages/native, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/7996529affaf835c959db0cd2ef64022ba4c17e0}
+  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/ff352075df49f56e8e0b0de8e03d43e426cba05e#path:/packages/native:
+    resolution: {gitHosted: true, integrity: sha512-ZQ174MO2WvP5oOcsdYub+Hk8mIqImEFBEhylaCFuhHEqfzdnCYWzIs1dKfqq39ylFMh0207kwuxlo7ObbrXEOg==, path: /packages/native, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/ff352075df49f56e8e0b0de8e03d43e426cba05e}
     version: 0.1.0
     engines: {node: '>=22.13.0'}
     hasBin: true
@@ -1661,7 +1661,7 @@ snapshots:
     dependencies:
       fast-string-width: 3.0.2
 
-  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/7996529affaf835c959db0cd2ef64022ba4c17e0#path:/packages/native:
+  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/ff352075df49f56e8e0b0de8e03d43e426cba05e#path:/packages/native:
     dependencies:
       cross-spawn: 7.0.6
 

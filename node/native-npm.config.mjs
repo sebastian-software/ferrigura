@@ -11,7 +11,13 @@ export default {
   repositoryPlatformDir: 'node/platforms',
   licenses: ['LICENSE', 'NOTICE.md'],
   workspaceProtocol: true,
-  pack: { required: ['index.mjs', 'index.d.mts', 'native-runtime.mjs'], maxUnpackedSize: 200_000 },
+  pack: {
+    required: ['index.mjs', 'index.d.mts', 'native-runtime.mjs'],
+    maxUnpackedSize: 200_000,
+    // Each platform package: the addon is about 12 MB with the release profile; 16 MB catches a
+    // return to the 18 MB of an unstripped build without LTO (docs/decisions/0016-npm-packages-via-napi.md).
+    platformMaxUnpackedSize: 16_000_000,
+  },
   consumer: {
     smoke: `import { render } from '@ferrigura/core'; const result = render('graph TD; A-->B'); if (!result.includes('<svg')) throw new Error('SVG mismatch');`,
   },
