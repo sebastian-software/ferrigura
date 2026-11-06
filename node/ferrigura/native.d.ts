@@ -38,8 +38,9 @@ export declare class Renderer {
  *
  * # Errors
  *
- * Throws if the text is not a diagram that ferrigura renders, if it does not parse, if the
- * configuration holds a value of the wrong type, or if the color scheme or the id is not valid.
+ * Throws if the text is not a diagram that ferrigura renders or of a type this build leaves out, if it
+ * does not parse, if the configuration holds a value of the wrong type, or if the color scheme or the
+ * id is not valid.
  */
 export declare function render(text: string, config?: any | undefined | null, options?: RenderOptionsInput | undefined | null): string
 
