@@ -4,7 +4,7 @@
 //! The facade resolves the globals and the tokens once per resolved view, so a render gets them by
 //! reference and nothing below the facade writes to them.
 
-use ferrigura_model::config::MermaidConfig;
+use ferrigura_model::config::{MermaidConfig, MermaidConfigTop};
 use ferrigura_model::theme::ThemeTokens;
 
 /// What a renderer gets: its diagram, the section of its configuration, the globals, the theme and
@@ -47,19 +47,32 @@ pub struct Globals {
     pub html_labels: Option<bool>,
 }
 
+/// The globals of a configuration, from the whole configuration or from its top level only.
+macro_rules! globals_of {
+    ($config:expr) => {
+        Globals {
+            look: $config.look.clone(),
+            theme: $config.theme.clone(),
+            font_family: $config.font_family.clone(),
+            font_size: $config.font_size,
+            security_level: $config.security_level.clone(),
+            layout: $config.layout.clone(),
+            html_labels: $config.html_labels,
+        }
+    };
+}
+
 impl Globals {
     /// The globals of a configuration.
     #[must_use]
     pub fn of(config: &MermaidConfig) -> Self {
-        Self {
-            look: config.look.clone(),
-            theme: config.theme.clone(),
-            font_family: config.font_family.clone(),
-            font_size: config.font_size,
-            security_level: config.security_level.clone(),
-            layout: config.layout.clone(),
-            html_labels: config.html_labels,
-        }
+        globals_of!(config)
+    }
+
+    /// The globals of the top level of a configuration, which is all they read.
+    #[must_use]
+    pub fn of_top(config: &MermaidConfigTop) -> Self {
+        globals_of!(config)
     }
 }
 
@@ -80,8 +93,8 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     /// The files below `src` that name the whole configuration outside their tests: the two
-    /// constructors that the facade calls (`Globals::of` here, `unified::Section::of`), and a module
-    /// that only the tests compile.
+    /// constructors from the whole configuration (`Globals::of` here, `unified::Section::of`), and a
+    /// module that only the tests compile.
     const WHOLE_CONFIG: [&str; 3] = [
         "context.rs",
         "unified/mod.rs",
