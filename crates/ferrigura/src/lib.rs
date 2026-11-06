@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::hash::Hasher;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use ferrigura_model::config::{MermaidConfig, SiteConfig, typed};
+use ferrigura_model::config::{MermaidConfig, SiteConfig, typed_top};
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_render::RenderError;
@@ -174,7 +174,7 @@ impl Renderer {
             }));
         };
         let plugin = self.plugin(kind)?;
-        let prepared = self.prepare(text, options, kind)?;
+        let prepared = self.prepare(text, options, plugin)?;
         plugin.render(text, &prepared, options)
     }
 
@@ -189,7 +189,7 @@ impl Renderer {
         &self,
         text: &str,
         options: &RenderOptions,
-        kind: DiagramType,
+        plugin: Plugin,
     ) -> Result<Prepared<'_>, RenderError> {
         let id = match &options.id {
             Some(id) if valid_id(id) => id.clone(),
@@ -201,13 +201,13 @@ impl Renderer {
         if is_empty_object(&directive) {
             return Ok(Prepared {
                 id,
-                view: self.view(kind)?,
+                view: self.view(plugin)?,
                 light_tokens: Cow::Borrowed(&self.light_tokens),
                 dark_tokens: Cow::Borrowed(&self.dark_tokens),
                 scheme,
             });
         }
-        let view = View::resolve(&self.site, kind, &directive).map_err(RenderError::Config)?;
+        let view = View::resolve(&self.site, plugin, &directive).map_err(RenderError::Config)?;
         let overrides = self.site.user_theme_variables(&directive);
         let (light_tokens, dark_tokens) = if overrides == self.overrides {
             (
@@ -238,13 +238,14 @@ impl Renderer {
     }
 
     /// The view of a diagram type with no directive, resolved at its first render.
-    fn view(&self, kind: DiagramType) -> Result<Arc<View>, RenderError> {
+    fn view(&self, plugin: Plugin) -> Result<Arc<View>, RenderError> {
+        let kind = plugin.kind();
         let known = lock(&self.views).get(&kind).cloned();
         let resolved = match known {
             Some(resolved) => resolved,
             None => {
                 let resolved =
-                    View::resolve(&self.site, kind, &Value::empty_object()).map(Arc::new);
+                    View::resolve(&self.site, plugin, &Value::empty_object()).map(Arc::new);
                 lock(&self.views).entry(kind).or_insert(resolved).clone()
             }
         };
@@ -378,7 +379,8 @@ struct View {
     /// does not type as the reference reads it (packet's `bitsPerRow`, the treemap's settings, the
     /// sequence's `wrap`).
     effective: Value,
-    /// The same configuration, typed.
+    /// The sections of the same configuration that the diagram type's renderer reads, typed; the
+    /// other sections keep their defaults, and the top level is read into `globals`.
     config: MermaidConfig,
     /// The tokens of the configured theme: the `themeVariables` of the configuration.
     configured_tokens: ThemeTokens,
@@ -392,23 +394,30 @@ impl View {
     /// # Errors
     ///
     /// Returns the message of the error when the configuration cannot be read into its types.
-    fn resolve(site: &SiteConfig, kind: DiagramType, directive: &Value) -> Result<Self, String> {
+    fn resolve(site: &SiteConfig, plugin: Plugin, directive: &Value) -> Result<Self, String> {
+        let kind = plugin.kind();
         let effective = site.effective(Some(kind.config_key()), directive);
-        let mut config = typed(&effective).map_err(|error| error.to_string())?;
+        let mut top = typed_top(&effective).map_err(|error| error.to_string())?;
         // `getData` sets the mindmap's layout to cose-bilkent unless the top-level `layout` is set by the
         // user (`mindmapDb.ts` 361-367): the schema's default, `elk`, does not reach a mindmap.
         if matches!(kind, DiagramType::Mindmap)
             && !user_sets_layout(Some(site.settings()), directive)
         {
-            config.layout = "cose-bilkent".to_owned();
+            top.layout = "cose-bilkent".to_owned();
         }
+        // Only the sections this diagram type reads are typed, so a program that registers few
+        // plugins links the reading code of their sections only (decision 0020).
+        let mut config = MermaidConfig::default();
+        plugin
+            .read(&effective, &mut config)
+            .map_err(|error| error.to_string())?;
         let configured_tokens = ThemeTokens::from_value(
             effective
                 .get("themeVariables")
                 .unwrap_or(&Value::empty_object()),
         );
         Ok(Self {
-            globals: Globals::of(&config),
+            globals: Globals::of_top(&top),
             configured_tokens,
             effective,
             config,
@@ -506,7 +515,7 @@ pub fn flowchart_elk_stages(
         }));
     }
     let renderer = Renderer::builder(config).with_all().shared();
-    let prepared = renderer.prepare(text, options, DiagramType::Flowchart)?;
+    let prepared = renderer.prepare(text, options, diagrams::flowchart())?;
     let stages = with_flowchart(
         text,
         &prepared,
