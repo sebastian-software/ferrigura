@@ -33,7 +33,7 @@ The published addon draws every diagram type. The crate has one cargo feature pe
 cargo build --profile release-node -p ferrigura-node --no-default-features --features flowchart,sequence
 ```
 
-Node loads the library with `process.dlopen` as above. A text whose type the build leaves out throws an `Error` that names the type and says it is not registered. Under the release profile on macOS arm64, the addon with `sequence` alone is 6.5 MB (3.0 MB gzipped), with `flowchart`, `sequence`, `class`, `state` and `er` 8.6 MB (4.1 MB), with `all` 11.8 MB (5.7 MB).
+Node loads the library with `process.dlopen` as above. A text whose type the build leaves out throws an `Error` that names the type and says it is not registered. Under the release profile on macOS arm64, the addon with `sequence` alone is 6.0 MB (2.9 MB gzipped), with `flowchart`, `sequence`, `class`, `state` and `er` 8.1 MB (3.9 MB), with `all` 11.8 MB (5.7 MB).
 
 ## render(text, config?, options?)
 

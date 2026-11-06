@@ -4,7 +4,7 @@
 
 ## Decision
 
-Each diagram type is a `diagrams::Plugin`: the kind its detector reports, with the parse-and-render step of that kind. A `Renderer` holds the plugins it draws with, and a text whose detected type has no plugin is refused with `Error::Unsupported`.
+Each diagram type is a `diagrams::Plugin`: the kind its detector reports, with the reader of the configuration sections its renderer takes and the parse-and-render step of that kind. A `Renderer` holds the plugins it draws with, and a text whose detected type has no plugin is refused with `Error::Unsupported`.
 
 - `Renderer::new(config)` registers `diagrams::all()`, so it draws every type, as the shorthand `render` does.
 - `Renderer::builder(config).with(plugin)…build()` registers only the plugins it is given. The plugins are made by the functions of `ferrigura::diagrams` (`flowchart()`, `sequence()`, …), one per type, and a kind registered twice counts once.
@@ -24,7 +24,7 @@ Weighed and not chosen: a trait object per type (the same effect, but a larger p
 ## Consequences
 
 - The public API of the facade grows by `Renderer::builder`, `RendererBuilder` with `with`, `with_all`, `build` and `shared`, `diagrams::Plugin`, `diagrams::all` and one constructor per type, and re-exports `DiagramType` for `Plugin::kind`. New types add a constructor, an entry in `all`, and a feature of the addon crate.
-- The typed configuration (`MermaidConfig`, [0008](./0008-canonical-model-and-typed-views.md)) is still read as one struct, so the generated configuration code of every type stays linked; reading it section by section is the next step for smaller builds.
+- The configuration is typed section by section ([0008](./0008-canonical-model-and-typed-views.md)): each plugin reads the sections its renderer takes, so the generated reading code of a section is linked only with a plugin that reads it. What every build keeps is the top level and the `MermaidConfig` struct with the defaults of every section, which a view starts from. For an addon with `sequence` alone, the section readers took the size from 6.52 MB to 5.98 MB (stripped, macOS arm64, release profile).
 - The command-line tool keeps `Renderer::new`. The addon registers the plugins of its features, all by default, so the published binaries do not change; its `render` keeps a renderer per configuration through `RendererBuilder::shared`, as the facade's shorthand does.
 - The snapshots and the geometry runs are unchanged: the plugins call the same functions the `match` called, in the same order, and the output is byte for byte the same.
 

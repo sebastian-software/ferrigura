@@ -6,6 +6,11 @@
 //! applies them, and [`deep_merge`] merges front matter and directives. The differential run
 //! (`pnpm -C tools/port port:diff config`) compares the results with the reference; see
 //! `docs/decisions/0015-differential-testing.md`.
+//!
+//! [`typed`] reads a whole configuration into [`MermaidConfig`]. A renderer reads the top level
+//! with [`typed_top`] and each section it needs with [`typed_section`] instead: the result is the
+//! same, and a program that draws few diagram types then links the reading code of their sections
+//! only (decision 0020).
 
 mod generated {
     include!(concat!(env!("OUT_DIR"), "/config_schema.rs"));
@@ -29,7 +34,10 @@ const TS_DEFAULTS: &str = include_str!("ts_defaults.json");
 
 /// The defaults of every key, computed once per process. See [`defaults`].
 static DEFAULTS: LazyLock<Value> = LazyLock::new(|| {
-    let mut value = Value::from(serde_json::to_value(MermaidConfig::default()).unwrap_or_default());
+    // `DEFAULTS_JSON` is what serializing `MermaidConfig::default()` gives, computed by `build.rs`;
+    // serializing here would link the serialization of every section.
+    let mut value =
+        Value::from(serde_json::from_str::<serde_json::Value>(DEFAULTS_JSON).unwrap_or_default());
     let overrides =
         Value::from(serde_json::from_str::<serde_json::Value>(TS_DEFAULTS).unwrap_or_default());
     layers::assign_with_depth(&mut value, &overrides, 2);
@@ -88,6 +96,52 @@ pub fn typed_with_warnings(value: &Value) -> Result<TypedConfig, serde_json::Err
     let warnings = lenient::read_types(&mut read, cached_defaults(), &SCHEMA);
     let config: MermaidConfig = serde::Deserialize::deserialize(read)?;
     Ok(TypedConfig { config, warnings })
+}
+
+/// The top level of a configuration value, typed: every option that is not a section. It reads as
+/// [`typed`] reads the same options, and never fails for a value of the wrong type.
+///
+/// # Errors
+///
+/// Returns an error only when the configuration is not an object, which [`effective`] never returns.
+pub fn typed_top(value: &Value) -> Result<MermaidConfigTop, serde_json::Error> {
+    let mut read = match value {
+        Value::Object(map) => Value::Object(
+            TOP_KEYS
+                .iter()
+                .filter_map(|key| {
+                    map.get(*key)
+                        .map(|option| ((*key).to_owned(), option.clone()))
+                })
+                .collect(),
+        ),
+        other => other.clone(),
+    };
+    lenient::read_types(&mut read, cached_defaults(), &SCHEMA);
+    serde::Deserialize::deserialize(read)
+}
+
+/// One section of a configuration value, typed: the options below `key`, such as `"pie"` for a
+/// [`PieDiagramConfig`]. It reads as [`typed`] reads the same section, so `T` must be the type of
+/// that section in [`MermaidConfig`]. An absent section gives the type's defaults.
+///
+/// # Errors
+///
+/// Returns an error only when the section cannot be read into `T`, which does not happen for the
+/// type of the section: a value of the wrong type is replaced by its default before.
+pub fn typed_section<T>(value: &Value, key: &str) -> Result<T, serde_json::Error>
+where
+    T: serde::de::DeserializeOwned + Default,
+{
+    let Some(section) = value.get(key) else {
+        return Ok(T::default());
+    };
+    let mut read = Value::Object(std::iter::once((key.to_owned(), section.clone())).collect());
+    lenient::read_types(&mut read, cached_defaults(), &SCHEMA);
+    match read.get(key) {
+        Some(section) => serde::Deserialize::deserialize(section.clone()),
+        None => Ok(T::default()),
+    }
 }
 
 #[cfg(test)]
@@ -233,5 +287,86 @@ mod tests {
     #[test]
     fn a_configuration_that_is_not_an_object_is_an_error() {
         assert!(typed(&Value::Null).is_err());
+    }
+
+    #[test]
+    fn the_generated_defaults_json_is_the_serialized_defaults() {
+        let generated: serde_json::Value = serde_json::from_str(DEFAULTS_JSON).expect("valid JSON");
+        let serialized = serde_json::to_value(MermaidConfig::default()).expect("serializable");
+        assert_eq!(Value::from(generated), Value::from(serialized));
+    }
+
+    #[test]
+    fn the_top_keys_are_the_options_that_are_not_sections() {
+        let serialized = serde_json::to_value(MermaidConfigTop::default()).expect("serializable");
+        let mut keys: Vec<&str> = TOP_KEYS.to_vec();
+        keys.sort_unstable();
+        for key in serialized.as_object().expect("an object").keys() {
+            assert!(
+                keys.binary_search(&key.as_str()).is_ok(),
+                "{key} is not listed"
+            );
+        }
+        assert!(!keys.contains(&"pie") && !keys.contains(&"flowchart") && !keys.contains(&"elk"));
+    }
+
+    /// Configurations to read section by section and whole: the defaults, values of the wrong type,
+    /// numeric strings and options the schema does not name.
+    fn samples() -> Vec<Value> {
+        let odd = json!({
+            "theme": 5,
+            "look": "neo",
+            "fontSize": "18",
+            "htmlLabels": "yes",
+            "layout": "elk",
+            "flowchart": { "rankSpacing": "100", "curve": 3, "unknown": true },
+            "pie": { "textPosition": true, "useMaxWidth": "maybe", "donutHole": "0.25" },
+            "sequence": "not a section",
+            "elk": { "mergeEdges": "no", "nodePlacementStrategy": "SIMPLE" },
+            "gantt": { "barHeight": "30", "axisFormat": 7 },
+        });
+        let mut merged = defaults();
+        deep_merge(&mut merged, &odd);
+        vec![defaults(), odd, merged, json!({})]
+    }
+
+    #[test]
+    fn reading_section_by_section_gives_what_reading_the_whole_gives() {
+        for value in samples() {
+            let whole = typed(&value).expect("an object");
+            let top = typed_top(&value).expect("an object");
+            assert_eq!(top.look, whole.look);
+            assert_eq!(top.theme, whole.theme);
+            assert_eq!(top.font_family, whole.font_family);
+            assert_eq!(top.font_size, whole.font_size);
+            assert_eq!(top.security_level, whole.security_level);
+            assert_eq!(top.layout, whole.layout);
+            assert_eq!(top.html_labels, whole.html_labels);
+            assert_eq!(top.theme_variables, whole.theme_variables);
+            assert_eq!(
+                typed_section::<FlowchartDiagramConfig>(&value, "flowchart").unwrap(),
+                whole.flowchart
+            );
+            assert_eq!(
+                typed_section::<PieDiagramConfig>(&value, "pie").unwrap(),
+                whole.pie
+            );
+            assert_eq!(
+                typed_section::<SequenceDiagramConfig>(&value, "sequence").unwrap(),
+                whole.sequence
+            );
+            assert_eq!(
+                typed_section::<MermaidConfigElk>(&value, "elk").unwrap(),
+                whole.elk
+            );
+            assert_eq!(
+                typed_section::<GanttDiagramConfig>(&value, "gantt").unwrap(),
+                whole.gantt
+            );
+            assert_eq!(
+                typed_section::<WardleyDiagramConfig>(&value, "wardley-beta").unwrap(),
+                whole.wardley_beta
+            );
+        }
     }
 }

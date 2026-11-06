@@ -5,9 +5,13 @@
 //! [`Renderer::new`](crate::Renderer::new) registers [`all`] of them. One made with
 //! [`Renderer::builder`](crate::Renderer::builder) registers only the plugins it is given, and the
 //! parsers, renderers and layout engines of the others are never referenced, so a program that
-//! names only the types it draws links only those (decision 0020).
+//! names only the types it draws links only those (decision 0020). The same holds for the
+//! configuration: each plugin reads the sections its renderer takes, and only those are typed.
 
 use std::fmt;
+
+use ferrigura_model::config::{MermaidConfig, typed_section};
+use ferrigura_model::value::Value;
 
 use ferrigura_render::RenderError;
 use ferrigura_render::agentflow::AgentflowSection;
@@ -44,12 +48,17 @@ use crate::{Prepared, RenderOptions, sequence_wrap, with_flowchart};
 /// The parse-and-render step of one diagram type.
 type RenderFn = fn(&str, &Prepared<'_>, &RenderOptions) -> Result<String, RenderError>;
 
+/// Reads the sections of the configuration that one diagram type's renderer takes into a
+/// configuration whose other sections keep their defaults.
+type ReadFn = fn(&Value, &mut MermaidConfig) -> Result<(), serde_json::Error>;
+
 /// One diagram type that a [`Renderer`](crate::Renderer) draws: the kind its detector reports, with
 /// the parser and the renderer of that kind. The functions of this module make them, and
 /// [`RendererBuilder::with`](crate::RendererBuilder::with) registers them.
 #[derive(Clone, Copy)]
 pub struct Plugin {
     kind: DiagramType,
+    read: ReadFn,
     render: RenderFn,
 }
 
@@ -58,6 +67,16 @@ impl Plugin {
     #[must_use]
     pub fn kind(&self) -> DiagramType {
         self.kind
+    }
+
+    /// Reads the sections of `value` that this plugin's renderer takes into `config`; the other
+    /// sections of `config` are left as they are.
+    pub(crate) fn read(
+        &self,
+        value: &Value,
+        config: &mut MermaidConfig,
+    ) -> Result<(), serde_json::Error> {
+        (self.read)(value, config)
     }
 
     /// Parses `text` as a diagram of this plugin's kind and renders it.
@@ -124,8 +143,14 @@ pub fn all() -> Vec<Plugin> {
 pub fn pie() -> Plugin {
     Plugin {
         kind: DiagramType::Pie,
+        read: read_pie,
         render: render_pie,
     }
+}
+
+fn read_pie(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.pie = typed_section(value, "pie")?;
+    Ok(())
 }
 
 fn render_pie(
@@ -149,8 +174,13 @@ fn render_pie(
 pub fn info() -> Plugin {
     Plugin {
         kind: DiagramType::Info,
+        read: read_info,
         render: render_info,
     }
+}
+
+fn read_info(_value: &Value, _config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    Ok(())
 }
 
 fn render_info(
@@ -173,8 +203,14 @@ fn render_info(
 pub fn flowchart() -> Plugin {
     Plugin {
         kind: DiagramType::Flowchart,
+        read: read_flowchart,
         render: render_flowchart,
     }
+}
+
+fn read_flowchart(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    Ok(())
 }
 
 fn render_flowchart(
@@ -190,8 +226,14 @@ fn render_flowchart(
 pub fn timeline() -> Plugin {
     Plugin {
         kind: DiagramType::Timeline,
+        read: read_timeline,
         render: render_timeline,
     }
+}
+
+fn read_timeline(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.timeline = typed_section(value, "timeline")?;
+    Ok(())
 }
 
 fn render_timeline(
@@ -215,8 +257,14 @@ fn render_timeline(
 pub fn journey() -> Plugin {
     Plugin {
         kind: DiagramType::Journey,
+        read: read_journey,
         render: render_journey,
     }
+}
+
+fn read_journey(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.journey = typed_section(value, "journey")?;
+    Ok(())
 }
 
 fn render_journey(
@@ -240,8 +288,14 @@ fn render_journey(
 pub fn git_graph() -> Plugin {
     Plugin {
         kind: DiagramType::GitGraph,
+        read: read_git_graph,
         render: render_git_graph,
     }
+}
+
+fn read_git_graph(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.git_graph = typed_section(value, "gitGraph")?;
+    Ok(())
 }
 
 fn render_git_graph(
@@ -271,8 +325,14 @@ fn render_git_graph(
 pub fn er() -> Plugin {
     Plugin {
         kind: DiagramType::Er,
+        read: read_er,
         render: render_er,
     }
+}
+
+fn read_er(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    Ok(())
 }
 
 fn render_er(
@@ -296,8 +356,14 @@ fn render_er(
 pub fn class() -> Plugin {
     Plugin {
         kind: DiagramType::Class,
+        read: read_class,
         render: render_class,
     }
+}
+
+fn read_class(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    Ok(())
 }
 
 fn render_class(
@@ -321,8 +387,14 @@ fn render_class(
 pub fn sequence() -> Plugin {
     Plugin {
         kind: DiagramType::Sequence,
+        read: read_sequence,
         render: render_sequence,
     }
+}
+
+fn read_sequence(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.sequence = typed_section(value, "sequence")?;
+    Ok(())
 }
 
 fn render_sequence(
@@ -351,8 +423,14 @@ fn render_sequence(
 pub fn state() -> Plugin {
     Plugin {
         kind: DiagramType::State,
+        read: read_state,
         render: render_state,
     }
+}
+
+fn read_state(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    Ok(())
 }
 
 fn render_state(
@@ -376,8 +454,14 @@ fn render_state(
 pub fn gantt() -> Plugin {
     Plugin {
         kind: DiagramType::Gantt,
+        read: read_gantt,
         render: render_gantt,
     }
+}
+
+fn read_gantt(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.gantt = typed_section(value, "gantt")?;
+    Ok(())
 }
 
 fn render_gantt(
@@ -405,8 +489,15 @@ fn render_gantt(
 pub fn mindmap() -> Plugin {
     Plugin {
         kind: DiagramType::Mindmap,
+        read: read_mindmap,
         render: render_mindmap,
     }
+}
+
+fn read_mindmap(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    config.mindmap = typed_section(value, "mindmap")?;
+    Ok(())
 }
 
 fn render_mindmap(
@@ -434,8 +525,15 @@ fn render_mindmap(
 pub fn block() -> Plugin {
     Plugin {
         kind: DiagramType::Block,
+        read: read_block,
         render: render_block,
     }
+}
+
+fn read_block(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    config.block = typed_section(value, "block")?;
+    Ok(())
 }
 
 fn render_block(
@@ -463,8 +561,14 @@ fn render_block(
 pub fn packet() -> Plugin {
     Plugin {
         kind: DiagramType::Packet,
+        read: read_packet,
         render: render_packet,
     }
+}
+
+fn read_packet(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.packet = typed_section(value, "packet")?;
+    Ok(())
 }
 
 fn render_packet(
@@ -492,8 +596,14 @@ fn render_packet(
 pub fn xy_chart() -> Plugin {
     Plugin {
         kind: DiagramType::XyChart,
+        read: read_xy_chart,
         render: render_xy_chart,
     }
+}
+
+fn read_xy_chart(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.xy_chart = typed_section(value, "xyChart")?;
+    Ok(())
 }
 
 fn render_xy_chart(
@@ -517,8 +627,14 @@ fn render_xy_chart(
 pub fn sankey() -> Plugin {
     Plugin {
         kind: DiagramType::Sankey,
+        read: read_sankey,
         render: render_sankey,
     }
+}
+
+fn read_sankey(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.sankey = typed_section(value, "sankey")?;
+    Ok(())
 }
 
 fn render_sankey(
@@ -542,8 +658,14 @@ fn render_sankey(
 pub fn quadrant_chart() -> Plugin {
     Plugin {
         kind: DiagramType::QuadrantChart,
+        read: read_quadrant_chart,
         render: render_quadrant_chart,
     }
+}
+
+fn read_quadrant_chart(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.quadrant_chart = typed_section(value, "quadrantChart")?;
+    Ok(())
 }
 
 fn render_quadrant_chart(
@@ -567,8 +689,14 @@ fn render_quadrant_chart(
 pub fn requirement() -> Plugin {
     Plugin {
         kind: DiagramType::Requirement,
+        read: read_requirement,
         render: render_requirement,
     }
+}
+
+fn read_requirement(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    Ok(())
 }
 
 fn render_requirement(
@@ -592,8 +720,14 @@ fn render_requirement(
 pub fn c4() -> Plugin {
     Plugin {
         kind: DiagramType::C4,
+        read: read_c4,
         render: render_c4,
     }
+}
+
+fn read_c4(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.c4 = typed_section(value, "c4")?;
+    Ok(())
 }
 
 fn render_c4(
@@ -617,8 +751,15 @@ fn render_c4(
 pub fn kanban() -> Plugin {
     Plugin {
         kind: DiagramType::Kanban,
+        read: read_kanban,
         render: render_kanban,
     }
+}
+
+fn read_kanban(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.kanban = typed_section(value, "kanban")?;
+    config.mindmap = typed_section(value, "mindmap")?;
+    Ok(())
 }
 
 fn render_kanban(
@@ -645,8 +786,14 @@ fn render_kanban(
 pub fn architecture() -> Plugin {
     Plugin {
         kind: DiagramType::Architecture,
+        read: read_architecture,
         render: render_architecture,
     }
+}
+
+fn read_architecture(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.architecture = typed_section(value, "architecture")?;
+    Ok(())
 }
 
 fn render_architecture(
@@ -670,8 +817,13 @@ fn render_architecture(
 pub fn treemap() -> Plugin {
     Plugin {
         kind: DiagramType::Treemap,
+        read: read_treemap,
         render: render_treemap,
     }
+}
+
+fn read_treemap(_value: &Value, _config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    Ok(())
 }
 
 fn render_treemap(
@@ -695,8 +847,14 @@ fn render_treemap(
 pub fn ishikawa() -> Plugin {
     Plugin {
         kind: DiagramType::Ishikawa,
+        read: read_ishikawa,
         render: render_ishikawa,
     }
+}
+
+fn read_ishikawa(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.ishikawa = typed_section(value, "ishikawa")?;
+    Ok(())
 }
 
 fn render_ishikawa(
@@ -720,8 +878,14 @@ fn render_ishikawa(
 pub fn event_modeling() -> Plugin {
     Plugin {
         kind: DiagramType::EventModeling,
+        read: read_event_modeling,
         render: render_event_modeling,
     }
+}
+
+fn read_event_modeling(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.eventmodeling = typed_section(value, "eventmodeling")?;
+    Ok(())
 }
 
 fn render_event_modeling(
@@ -745,8 +909,15 @@ fn render_event_modeling(
 pub fn agentflow() -> Plugin {
     Plugin {
         kind: DiagramType::Agentflow,
+        read: read_agentflow,
         render: render_agentflow,
     }
+}
+
+fn read_agentflow(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    config.agentflow = typed_section(value, "agentflow")?;
+    Ok(())
 }
 
 fn render_agentflow(
@@ -774,8 +945,14 @@ fn render_agentflow(
 pub fn cynefin() -> Plugin {
     Plugin {
         kind: DiagramType::Cynefin,
+        read: read_cynefin,
         render: render_cynefin,
     }
+}
+
+fn read_cynefin(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.cynefin = typed_section(value, "cynefin")?;
+    Ok(())
 }
 
 fn render_cynefin(
@@ -799,8 +976,14 @@ fn render_cynefin(
 pub fn radar() -> Plugin {
     Plugin {
         kind: DiagramType::Radar,
+        read: read_radar,
         render: render_radar,
     }
+}
+
+fn read_radar(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.radar = typed_section(value, "radar")?;
+    Ok(())
 }
 
 fn render_radar(
@@ -824,8 +1007,14 @@ fn render_radar(
 pub fn railroad() -> Plugin {
     Plugin {
         kind: DiagramType::Railroad,
+        read: read_railroad,
         render: render_railroad,
     }
+}
+
+fn read_railroad(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.railroad = typed_section(value, "railroad")?;
+    Ok(())
 }
 
 fn render_railroad(
@@ -852,8 +1041,15 @@ fn render_railroad(
 pub fn swimlanes() -> Plugin {
     Plugin {
         kind: DiagramType::Swimlanes,
+        read: read_swimlanes,
         render: render_swimlanes,
     }
+}
+
+fn read_swimlanes(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    config.swimlane = typed_section(value, "swimlane")?;
+    Ok(())
 }
 
 fn render_swimlanes(
@@ -881,8 +1077,14 @@ fn render_swimlanes(
 pub fn tree_view() -> Plugin {
     Plugin {
         kind: DiagramType::TreeView,
+        read: read_tree_view,
         render: render_tree_view,
     }
+}
+
+fn read_tree_view(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.tree_view = typed_section(value, "treeView")?;
+    Ok(())
 }
 
 fn render_tree_view(
@@ -906,8 +1108,15 @@ fn render_tree_view(
 pub fn use_case() -> Plugin {
     Plugin {
         kind: DiagramType::UseCase,
+        read: read_use_case,
         render: render_use_case,
     }
+}
+
+fn read_use_case(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    read_unified(value, config)?;
+    config.usecase = typed_section(value, "usecase")?;
+    Ok(())
 }
 
 fn render_use_case(
@@ -935,8 +1144,14 @@ fn render_use_case(
 pub fn venn() -> Plugin {
     Plugin {
         kind: DiagramType::Venn,
+        read: read_venn,
         render: render_venn,
     }
+}
+
+fn read_venn(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.venn = typed_section(value, "venn")?;
+    Ok(())
 }
 
 fn render_venn(
@@ -963,8 +1178,14 @@ fn render_venn(
 pub fn wardley() -> Plugin {
     Plugin {
         kind: DiagramType::Wardley,
+        read: read_wardley,
         render: render_wardley,
     }
+}
+
+fn read_wardley(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.wardley_beta = typed_section(value, "wardley-beta")?;
+    Ok(())
 }
 
 fn render_wardley(
@@ -981,4 +1202,15 @@ fn render_wardley(
         theme: prepared.theme(),
         id,
     })
+}
+
+/// Reads the sections that the unified renderer takes (`unified::Section`): `flowchart`, `elk`,
+/// `class`, `er` and `state`.
+fn read_unified(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json::Error> {
+    config.flowchart = typed_section(value, "flowchart")?;
+    config.elk = typed_section(value, "elk")?;
+    config.class = typed_section(value, "class")?;
+    config.er = typed_section(value, "er")?;
+    config.state = typed_section(value, "state")?;
+    Ok(())
 }
