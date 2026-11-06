@@ -173,8 +173,8 @@ importers:
         specifier: 26.6.6
         version: 26.6.6
       ferramenta-native:
-        specifier: github:sebastian-software/ferramenta#ff352075df49f56e8e0b0de8e03d43e426cba05e&path:/packages/native
-        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/ff352075df49f56e8e0b0de8e03d43e426cba05e#path:/packages/native
+        specifier: github:sebastian-software/ferramenta#22e2d4128cefaf797e18aab022915e47993f0c3e&path:/packages/native
+        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/22e2d4128cefaf797e18aab022915e47993f0c3e#path:/packages/native
       oxfmt:
         specifier: 0.75.0
         version: 0.75.0
@@ -970,8 +970,8 @@ packages:
   fast-wrap-ansi@0.2.2:
     resolution: {integrity: sha512-7F2Fl+TjRSenLqlU3UjSH0iyqopqoZIu7eZVpEirP2g1GtWa2G/ecEmBdgz31+Mxr+ELclgg6sokpSFIQiZ02Q==}
 
-  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/ff352075df49f56e8e0b0de8e03d43e426cba05e#path:/packages/native:
-    resolution: {gitHosted: true, integrity: sha512-ZQ174MO2WvP5oOcsdYub+Hk8mIqImEFBEhylaCFuhHEqfzdnCYWzIs1dKfqq39ylFMh0207kwuxlo7ObbrXEOg==, path: /packages/native, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/ff352075df49f56e8e0b0de8e03d43e426cba05e}
+  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/22e2d4128cefaf797e18aab022915e47993f0c3e#path:/packages/native:
+    resolution: {gitHosted: true, integrity: sha512-oVtHDwo4RZfSKj3v+fTaOahgcZCVgUEgo7vzvYD8t1XXlRBM01XROlz/z2xzsSwcDMg9St3gxRiCv6qavCrykA==, path: /packages/native, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/22e2d4128cefaf797e18aab022915e47993f0c3e}
     version: 0.1.0
     engines: {node: '>=22.13.0'}
     hasBin: true
@@ -1661,7 +1661,7 @@ snapshots:
     dependencies:
       fast-string-width: 3.0.2
 
-  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/ff352075df49f56e8e0b0de8e03d43e426cba05e#path:/packages/native:
+  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/22e2d4128cefaf797e18aab022915e47993f0c3e#path:/packages/native:
     dependencies:
       cross-spawn: 7.0.6
 

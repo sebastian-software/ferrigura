@@ -16,7 +16,7 @@
   "devDependencies": {
     "@napi-rs/cli": "3.10.9",
     "@types/node": "26.6.6",
-    "ferramenta-native": "github:sebastian-software/ferramenta#ff352075df49f56e8e0b0de8e03d43e426cba05e&path:/packages/native",
+    "ferramenta-native": "github:sebastian-software/ferramenta#22e2d4128cefaf797e18aab022915e47993f0c3e&path:/packages/native",
     "oxfmt": "0.75.0",
     "typescript": "6.0.3"
   },

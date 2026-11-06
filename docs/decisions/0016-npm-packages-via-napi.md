@@ -18,7 +18,7 @@ An addon is called in-process, with no process per call. One facade with optiona
 ## Consequences
 
 - The npm packages share the product version and are released with the crates.
-- The facade and each platform package have an unpacked-size budget in `node/native-npm.config.mjs`. The platform budget sits a few megabytes above the addon built with the release profile, so a build that loses LTO or stripping fails `pnpm pack:check` and the release instead of shipping.
+- The facade and each platform package have an unpacked-size budget in `node/native-npm.config.mjs`. The platform budget is set per target, a few megabytes above the addon built with the release profile and below the unoptimized build, so a build that loses LTO or stripping fails `pnpm pack:check` and the release instead of shipping. Windows on x64 gets its own, higher budget: its DLL keeps the symbols in a separate PDB, so stripping does not shrink it.
 - Trusted Publishing cannot create a package, so the `@ferrigura` scope and each package are bootstrapped once by hand, each with its Trusted Publisher for `publish.yml` and the environment `npm-release`.
 - Each platform package carries the notices of its binary ([0013](./0013-licenses-of-ported-code.md)).
 

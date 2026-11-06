@@ -14,9 +14,12 @@ export default {
   pack: {
     required: ['index.mjs', 'index.d.mts', 'native-runtime.mjs'],
     maxUnpackedSize: 200_000,
-    // Each platform package: the addon is about 12 MB with the release profile; 16 MB catches a
-    // return to the 18 MB of an unstripped build without LTO (docs/decisions/0016-npm-packages-via-napi.md).
-    platformMaxUnpackedSize: 16_000_000,
+    // Each platform package, a few megabytes above its addon under the release profile and below
+    // the 0.4.0 packages, built without LTO and unstripped (docs/decisions/0016-npm-packages-via-napi.md).
+    // A Windows DLL keeps its symbols in a separate PDB, so stripping does not shrink it, and x86-64
+    // code is larger than arm64: win32-x64 is 18.9 MB (0.4.0: 23.8 MB), the others are under 16 MB
+    // (darwin-arm64 12.0 MB, 0.4.0: 19.8 MB).
+    platformMaxUnpackedSize: { default: 16_000_000, 'win32-x64-msvc': 22_000_000 },
   },
   consumer: {
     smoke: `import { render } from '@ferrigura/core'; const result = render('graph TD; A-->B'); if (!result.includes('<svg')) throw new Error('SVG mismatch');`,
