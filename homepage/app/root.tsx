@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from 'ardo/react';
-import { ArdoActiveLink as NavLink, useArdoHref, useArdoPageData, useArdoPath } from 'ardo/runtime';
+import { ArdoActiveLink as NavLink, useArdoPageData, useArdoPath } from 'ardo/runtime';
 import {
   ArdoErrorBoundary,
   ArdoHeaderSearch,
@@ -10,9 +10,7 @@ import {
 } from 'ardo/ui';
 import { Mark, MarkDefs } from 'ferramenta-family';
 import {
-  FerraFooter,
   FerraGuideNavigation,
-  FerraHeader,
   FerraPage,
   FerraReadingLayout,
   FerraReadingTable,
@@ -20,12 +18,16 @@ import {
 } from 'ferramenta-family/ferra';
 import touchIcon from 'ferramenta-family/ferra-assets/ferrigura/apple-touch-icon.png?url';
 import favicon from 'ferramenta-family/ferra-assets/ferrigura/favicon.ico?url';
-import { WORKSHOP } from 'ferramenta-family/registry';
+import { MonoFooter, MonoHeader, MonoPage } from 'ferramenta-family/monografie';
 import 'ferramenta-family/ferra.css';
 
 import navigation from './data/navigation.json';
-import site from './data/site.json';
+import { version } from './version';
 import 'ferramenta-family/ferra-ardo.css';
+import 'ferramenta-family/monografie.css';
+
+// Ferrigura's own specimens, all under fgr- classes; after the package so they win its ties.
+import './components/homepage-specimens.css';
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
@@ -79,38 +81,55 @@ function GuideNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function Header() {
-  const home = useArdoHref('/');
+const links = [
+  <NavLink key="guide" to="/guide/getting-started">
+    Guide
+  </NavLink>,
+  <NavLink key="reference" to="/reference/rust">
+    Reference
+  </NavLink>,
+  <NavLink key="diagrams" to="/diagrams/overview">
+    Diagram types
+  </NavLink>,
+  <NavLink key="comparisons" to="/comparisons/overview">
+    Comparisons
+  </NavLink>,
+  <a key="github" href="https://github.com/sebastian-software/ferrigura">
+    GitHub
+  </a>,
+];
+
+/** The documentation menu and search, beside the header's own menu on documentation pages. */
+function DocsActions() {
   const [open, setOpen] = useState(false);
   return (
-    <FerraHeader
+    <>
+      <ArdoMobileNavigation title="Ferrigura documentation" open={open} onOpenChange={setOpen}>
+        <GuideNavigation
+          onNavigate={() => {
+            setOpen(false);
+          }}
+        />
+      </ArdoMobileNavigation>
+      <ArdoHeaderSearch
+        variant="icon"
+        onActivate={() => {
+          setOpen(false);
+        }}
+      />
+    </>
+  );
+}
+
+/** The Monografie header on every page; documentation adds its section menu and search. */
+function Header({ docs }: { docs: boolean }) {
+  return (
+    <MonoHeader
       product="ferrigura"
-      home={home}
-      nav={
-        <>
-          <NavLink to="/guide/getting-started">Guide</NavLink>
-          <NavLink to="/reference/rust">Reference</NavLink>
-          <NavLink to="/diagrams/overview">Diagrams</NavLink>
-          <a href="https://ferramenta.dev">Ferramenta</a>
-        </>
-      }
-      actions={
-        <>
-          <ArdoMobileNavigation title="Ferrigura documentation" open={open} onOpenChange={setOpen}>
-            <GuideNavigation
-              onNavigate={() => {
-                setOpen(false);
-              }}
-            />
-          </ArdoMobileNavigation>
-          <ArdoHeaderSearch
-            variant="icon"
-            onActivate={() => {
-              setOpen(false);
-            }}
-          />
-        </>
-      }
+      home="/"
+      release={version}
+      links={links}
+      actions={docs ? <DocsActions /> : undefined}
     />
   );
 }
@@ -137,29 +156,37 @@ function Article({ children }: { children: ReactNode }) {
 }
 const components = { table: FerraReadingTable, wrapper: Article };
 
+/**
+ * Every page wears the Monografie header and footer. The homepage reads on the
+ * Monografie page ground; documentation keeps the Ferra reading layout.
+ */
 export default function Root() {
-  const home = useArdoHref('/');
-  const fontNotices = useArdoHref('/notices/diagram-fonts.txt');
-  return (
-    <FerraPage className="ferra-site">
-      <MarkDefs />
+  const path = useArdoPath();
+  const home = path === '/' || path === '';
+  const shell = (
+    <>
       <ArdoRoot
-        className="ferra-ardo-shell"
+        className={home ? 'fgr-shell' : 'ferra-ardo-shell'}
         scrollMode="document"
-        header={<Header />}
+        header={<Header docs={!home} />}
         sidebar={false}
         footer={false}
         components={components}
       />
-      <FerraFooter product="ferrigura" home={home}>
-        <p>
-          Ferrigura v{site.version} · MIT License ·{' '}
-          <a href="https://ardo-docs.dev">Built with Ardo</a> ·{' '}
-          <a href={WORKSHOP.openSource}>{WORKSHOP.company}</a> ·{' '}
-          <a href="https://ferramenta.dev">Ferramenta family</a> ·{' '}
-          <a href={fontNotices}>Diagram font licenses</a>
-        </p>
-      </FerraFooter>
+      <MonoFooter product="ferrigura" home="/">
+        <a href="https://github.com/sebastian-software/ferrigura">GitHub</a>
+        <a href="https://crates.io/crates/ferrigura">crates.io</a>
+        <a href="https://www.npmjs.com/package/@ferrigura/core">npm</a>
+        <a href="/notices/diagram-fonts.txt">Diagram font licenses</a>
+        <a href="https://ardo-docs.dev">Built with Ardo</a>
+      </MonoFooter>
+    </>
+  );
+  if (home) return <MonoPage className="fgr-site">{shell}</MonoPage>;
+  return (
+    <FerraPage className="ferra-site fgr-docs">
+      <MarkDefs />
+      {shell}
     </FerraPage>
   );
 }

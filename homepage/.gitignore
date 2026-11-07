@@ -4,6 +4,7 @@ build/
 app/routes.ts
 app/data/site.json
 app/data/navigation.json
+app/data/coverage.json
 app/routes/guide/
 app/routes/reference/
 app/routes/diagrams/

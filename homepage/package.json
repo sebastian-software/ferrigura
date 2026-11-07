@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "ardo": "^6.0.0",
-    "ferramenta-family": "github:sebastian-software/ferramenta#0e22e8aa755fce55287a1a26a66f5e8de5b91f29&path:/packages/family"
+    "ferramenta-family": "github:sebastian-software/ferramenta#3f98d378b0ce66275b1131225d4ee51816be85a3&path:/packages/family"
   },
   "devDependencies": {
     "axe-core": "4.14.0",

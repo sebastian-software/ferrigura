@@ -118,13 +118,20 @@ release-please opens a release pull request from the commit messages on `main`; 
 
 ## The website
 
-The Ardo site in `homepage/` uses the shared Ferramenta theme without local CSS.
+The Ardo site in `homepage/` uses the shared Ferramenta page systems: Monografie
+for the homepage, with the Monografie header and footer on every page, and the
+Ferra reading layout for the documentation. Its only local stylesheet holds the
+homepage's specimens, every rule under an `fgr-` class.
 Its documentation routes are generated from the repository's canonical Markdown;
 edit those source files rather than the ignored generated routes. The authored
-entry guide lives in `homepage/content/`.
+entry guide lives in `homepage/content/`, and the figures of the homepage's
+checks come from the coverage table of `docs/diagrams/README.md`.
 
 From `homepage/`, run `pnpm install`, then `pnpm dev` for a local server.
-`pnpm verify` checks the native SVG samples, website source, rendered links and
-browser behavior. The examples are rendered by the Rust CLI; no Mermaid runtime
-is shipped to render them in the visitor's browser. GitHub Actions deploys the
-site from `main` to GitHub Pages under `/ferrigura/`.
+Every drawing on the homepage is real output of the published `@ferrigura/core`
+package: `pnpm sample:write` installs the version of `node/ferrigura/package.json`
+from npm, renders the diagrams into `homepage/app/data/` and records the version;
+run it again after a release. `pnpm verify` checks those drawings against the
+recorded version, the website source, rendered links and browser behavior. No
+Mermaid runtime is shipped to render them in the visitor's browser. GitHub
+Actions deploys the site from `main` to GitHub Pages.

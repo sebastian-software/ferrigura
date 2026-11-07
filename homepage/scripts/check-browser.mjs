@@ -19,10 +19,10 @@ assert(
   'FERRIGURA_PREVIEW_PORT must be a valid TCP port'
 );
 const selectors = {
-  nav: '.ferra-header > .ferra-nav',
+  nav: '.mono-header nav',
+  // The header's own menu; documentation pages hand narrow screens to their drawer instead.
+  headerMenu: '.mono-header .mono-menu-button',
   menu: 'button[aria-label="Toggle menu"]',
-  summary: 'button[aria-label="Toggle menu"]',
-  flyout: '[role="dialog"]',
   search: 'button[aria-label="Search"]',
 };
 
@@ -68,10 +68,12 @@ try {
 
   await verifyExample(page, origin);
   await verifyNavigation(page, origin);
+  await verifyHeaderMenu(page, origin);
   await verifySearch(page, origin);
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(new URL('/', origin).href, { waitUntil: 'load' });
   const motion = await page
-    .locator('.ferra-page, .ferra-page *')
+    .locator('.mono, .mono *')
     .evaluateAll((elements) =>
       elements
         .map((element) => getComputedStyle(element).animationDuration)
@@ -82,7 +84,7 @@ try {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await capture(page, origin);
   console.log(
-    'Verified all pages at eight widths, native diagram choices, navigation, search, focus return, reduced motion and runtime errors.'
+    'Verified all pages at eight widths, the diagram choices and their files, both menus, search, focus return, reduced motion and runtime errors.'
   );
 } finally {
   await browser?.close();
@@ -90,15 +92,55 @@ try {
 }
 
 async function verifyExample(page, origin) {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(new URL('/', origin).href, { waitUntil: 'load' });
   const example = page.locator('#example');
-  const choice = example.getByRole('combobox', { name: 'Diagram type', exact: true });
-  for (const id of ['sequence', 'state', 'flowchart']) {
-    await choice.selectOption(id);
+  const choice = example.getByRole('group', { name: 'Diagram type', exact: true });
+  for (const [id, label] of [
+    ['sequence', 'Sequence'],
+    ['er', 'Entity relationship'],
+    ['state', 'State'],
+    ['flowchart', 'Flowchart'],
+  ]) {
+    await choice.getByRole('button', { name: label, exact: true }).click();
     await example.locator(`svg[id="homepage-${id}"]`).waitFor();
+    assert.equal(
+      await choice.getByRole('button', { name: label, exact: true }).getAttribute('aria-pressed'),
+      'true',
+      `The ${label} choice is not pressed`
+    );
     assert((await example.locator('svg text').count()) > 0, 'Diagram labels must remain SVG text');
     assert.equal(await example.locator('foreignObject').count(), 0);
+    const file = await example
+      .getByRole('link', { name: 'Open the SVG file' })
+      .getAttribute('href');
+    const response = await page.request.get(new URL(file, origin).href);
+    const body = await response.text();
+    assert(
+      response.ok() && body.includes(`id="homepage-${id}"`),
+      `The ${label} file link does not lead to its SVG`
+    );
   }
+}
+/** Below 961px the homepage folds its links into the header menu, which Escape closes. */
+async function verifyHeaderMenu(page, origin) {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(new URL('/', origin).href, { waitUntil: 'load' });
+  const button = page.locator(selectors.headerMenu);
+  await button.click();
+  const link = page.locator('.mono-menu').getByRole('link', { name: 'Diagram types', exact: true });
+  await link.waitFor();
+  const bounds = await link.boundingBox();
+  assert(
+    bounds && bounds.x >= 0 && bounds.x + bounds.width <= 390,
+    'Menu link leaves the viewport'
+  );
+  await page.keyboard.press('Escape');
+  await link.waitFor({ state: 'hidden' });
+  assert(
+    await button.evaluate((element) => element === document.activeElement),
+    'Header menu focus was not restored'
+  );
 }
 async function verifyNavigation(page, origin) {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -160,7 +202,8 @@ async function verifyLandscape(page, origin) {
 async function verifySearch(page, origin) {
   for (const width of [320, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(new URL('/', origin).href, { waitUntil: 'load' });
+    // Search lives in the documentation header; the homepage keeps its own links.
+    await page.goto(new URL('/guide/getting-started/', origin).href, { waitUntil: 'load' });
     const search = page.locator(selectors.search);
     await search
       .locator('kbd')
@@ -217,31 +260,7 @@ async function verifyViewport({ page, pageFile, viewport, origin }) {
     `${pageFile} has horizontal page overflow at ${viewport.name} width ${viewport.width}px: ${layout.pageWidth}px`
   );
 
-  const navDisplay = await page
-    .locator(selectors.nav)
-    .evaluate((element) => getComputedStyle(element).display);
-  const menuDisplay = await page
-    .locator(selectors.menu)
-    .evaluate((element) => getComputedStyle(element).display);
-  assert(
-    await page.locator(selectors.search).isVisible(),
-    'The site should keep search visible at each checked viewport'
-  );
-  if (viewport.name === 'desktop') {
-    assert.notEqual(navDisplay, 'none', `${pageFile} hides desktop section navigation`);
-    assert.equal(menuDisplay, 'none', `${pageFile} shows the phone navigation on desktop`);
-  } else {
-    assert.equal(
-      navDisplay,
-      'none',
-      `${pageFile} shows desktop navigation at ${viewport.name} width`
-    );
-    assert.notEqual(
-      menuDisplay,
-      'none',
-      `${pageFile} hides the phone navigation at ${viewport.name} width`
-    );
-  }
+  await verifyHeader(page, pageFile, viewport);
   if (
     [
       'index.html',
@@ -252,6 +271,32 @@ async function verifyViewport({ page, pageFile, viewport, origin }) {
   )
     await verifyAccessibility(page, pageFile, viewport);
   console.log(`Verified ${pageFile} at ${viewport.name} (${viewport.width}px).`);
+}
+/** Links on desktop; below 961px the homepage's header menu or the documentation drawer. */
+async function verifyHeader(page, pageFile, viewport) {
+  const home = pageFile === 'index.html';
+  const navVisible = await page.locator(selectors.nav).isVisible();
+  const headerMenuVisible = await page.locator(selectors.headerMenu).isVisible();
+  const drawerVisible = home ? false : await page.locator(selectors.menu).isVisible();
+  if (!home) {
+    assert(
+      await page.locator(selectors.search).isVisible(),
+      'Documentation pages should keep search visible at each checked viewport'
+    );
+  }
+  if (viewport.width >= 961) {
+    assert(navVisible, `${pageFile} hides the header links at ${viewport.name} width`);
+    assert(!headerMenuVisible, `${pageFile} shows the header menu at ${viewport.name} width`);
+    // The documentation drawer stands in for the sidebar until the sidebar fits.
+    if (viewport.name === 'desktop')
+      assert(!drawerVisible, `${pageFile} shows the documentation drawer on desktop`);
+  } else {
+    assert(!navVisible, `${pageFile} shows the header links at ${viewport.name} width`);
+    assert(
+      home ? headerMenuVisible : drawerVisible && !headerMenuVisible,
+      `${pageFile} shows the wrong menu at ${viewport.name} width`
+    );
+  }
 }
 async function verifyAccessibility(page, pageFile, viewport) {
   await page.addScriptTag({ content: axeSource });

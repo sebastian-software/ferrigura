@@ -31,7 +31,15 @@ for (const document of documents) {
 const cargo = await readFile(new URL('Cargo.toml', repository), 'utf8');
 const version = /^version = "([^"]+)"/m.exec(cargo)?.[1];
 if (!version) throw new Error('The package has no release version.');
-await writeData('site.json', { version });
+const rustVersion = /^rust-version = "([^"]+)"/m.exec(cargo)?.[1];
+if (!rustVersion) throw new Error('The workspace has no minimum Rust version.');
+const npmManifest = JSON.parse(
+  await readFile(new URL('node/ferrigura/package.json', repository), 'utf8')
+);
+const nodeVersion = /^>=\s*(\S+)$/.exec(npmManifest.engines?.node ?? '')?.[1];
+if (!nodeVersion) throw new Error('The npm package has no minimum Node.js version.');
+await writeData('site.json', { version, rustVersion, nodeVersion });
+await writeData('coverage.json', await readCoverage());
 const noticeDirectory = new URL('../public/notices/', import.meta.url);
 await mkdir(noticeDirectory, { recursive: true });
 const fontRoot = new URL('crates/ferrigura-text/', repository);
@@ -73,6 +81,53 @@ await writeData(
     return { id, label, icon: icons[id], to: pages[0].to, pages };
   })
 );
+/**
+ * The checks against Mermaid, per diagram type, from the coverage table of
+ * docs/diagrams/README.md, which `pnpm -C tools/port port:status` rewrites.
+ */
+async function readCoverage() {
+  const source = await readFile(new URL('docs/diagrams/README.md', repository), 'utf8');
+  const [, mermaidTypes, mermaid] =
+    /renders all (\d+) diagram types of Mermaid (\d+\.\d+\.\d+)/.exec(source) ?? [];
+  if (!mermaid) throw new Error('docs/diagrams/README.md names no Mermaid version.');
+  const types = source
+    .split('\n')
+    .filter((line) => /^\| \[[a-z0-9-]+\]\(\.\/[a-z0-9-]+\.md\)/.test(line))
+    .map((line) => {
+      const cells = line
+        .split('|')
+        .slice(1, -1)
+        .map((cell) => cell.trim());
+      const type = /^\[([^\]]+)\]/.exec(cells[0])?.[1];
+      const parse = /^(\d+) inputs, no difference$/.exec(cells[4]);
+      const geometry = /^(\d+) of (\d+) within tolerance/.exec(cells[6]);
+      const left = /\((\d+) not compared\)$/.exec(cells[6]);
+      if (!type || !parse || !geometry)
+        throw new Error(`docs/diagrams/README.md: cannot read the coverage row ${cells[0]}`);
+      return {
+        type,
+        layout: cells[2],
+        parsed: Number(parse[1]),
+        agreed: Number(geometry[1]),
+        compared: Number(geometry[2]),
+        notCompared: Number(left?.[1] ?? 0),
+      };
+    });
+  if (types.length === 0) throw new Error('docs/diagrams/README.md has no coverage rows.');
+  const sum = (key) => types.reduce((total, row) => total + row[key], 0);
+  if (types.length !== Number(mermaidTypes))
+    throw new Error(`docs/diagrams/README.md lists ${types.length} of ${mermaidTypes} types.`);
+  return {
+    mermaid,
+    mermaidTypes: Number(mermaidTypes),
+    types,
+    parsed: sum('parsed'),
+    agreed: sum('agreed'),
+    compared: sum('compared'),
+    notCompared: sum('notCompared'),
+  };
+}
+
 async function writeData(name, value) {
   const result = await format(name, JSON.stringify(value));
   if (result.errors.length) throw new Error(`Cannot format ${name}`);
