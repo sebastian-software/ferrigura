@@ -1,0 +1,200 @@
+/*
+ * Ferrigura's own specimens on the Monografie homepage (and one fit of the
+ * header on the documentation pages, under `fgr-docs`): the diagram text and
+ * its drawing on facing sheets, the file's contents, the per-type checks and
+ * the cards. Everything is scoped to `fgr-` classes and takes the package's
+ * `--mono-*` tokens; the page system itself lives in ferramenta-family.
+ * scripts/verify-build.mjs fails on a selector without an `fgr-` class.
+ */
+
+/* ---------- Ardo shell: the homepage's main stands on the page's paper ---------- */
+.fgr-shell {
+  min-height: 0;
+  background: transparent;
+}
+.fgr-shell > div {
+  padding-block-start: 0;
+}
+.fgr-shell #main-content {
+  min-width: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+.fgr-site {
+  min-height: 100vh;
+}
+/* Anchors clear the sticky Monografie header. */
+html:has(.fgr-site, .fgr-docs) {
+  scroll-padding-top: 76px;
+}
+
+/* ---------- Documentation under the sticky header ---------- */
+/* The reading layout's sticky panels clear the 60px Monografie header. */
+.fgr-docs :is(.ferra-reading-navigation, .ferra-reading-outline) {
+  top: 84px;
+  max-height: calc(100svh - 108px);
+}
+
+/* One menu on narrow screens. */
+/* The documentation drawer carries the navigation below 961px; a second menu
+   icon beside it would only confuse. The name leads home. */
+@media (max-width: 960px) {
+  .fgr-docs .mono-menu-button {
+    display: none;
+  }
+  .fgr-docs .mono-header-actions {
+    margin-left: auto;
+  }
+  /* Search is the last control in the bar: its shortcut hint aligns to the
+     button's right edge so it stays inside a phone's viewport. */
+  .fgr-docs .mono-header-actions button[aria-label='Search'] > span[aria-hidden='true'] {
+    left: auto;
+    right: 0;
+    transform: translateY(-2px);
+  }
+}
+
+/* Room between a specimen and the reading text that follows it. */
+.fgr-gap {
+  margin-bottom: 44px;
+}
+
+/* ---------- Diagram text and drawings on facing sheets ---------- */
+.fgr-gallery,
+.fgr-file,
+.fgr-pair,
+.fgr-coverage {
+  margin-top: 56px;
+  margin-bottom: 44px;
+}
+/* The type choices wrap on a phone instead of widening the page. */
+.fgr-gallery .mono-seg {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.fgr-gallery > .mono-facing,
+.fgr-file > .mono-facing,
+.fgr-pair > .mono-facing {
+  margin: 20px 0 16px;
+}
+.fgr-file > .mono-facing,
+.fgr-pair > .mono-facing {
+  margin-top: 0;
+}
+.fgr-source {
+  margin: 0;
+  font: 400 13px/1.65 var(--mono-mono);
+  color: var(--mono-ink);
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 2;
+}
+.fgr-source:focus-visible {
+  outline: 2px solid var(--mono-ink);
+  outline-offset: 4px;
+}
+/* The drawing keeps its own size up to the sheet's width, centered. */
+.fgr-drawing {
+  display: flex;
+  justify-content: center;
+}
+.fgr-drawing svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.fgr-open {
+  margin: 16px 0 0;
+  font: 400 13.5px/1.4 var(--mono-sans);
+}
+/* The dark scheme stands on the page's darkest ink; the drawing brings no ground. */
+.fgr-pair .fgr-dark {
+  background: var(--mono-ink);
+}
+.fgr-pair .fgr-dark .mono-sheet-head {
+  color: var(--mono-steel);
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+}
+.fgr-pair .mono-table-view .fgr-source {
+  margin-top: 12px;
+}
+
+/* One sheet alone, at the wide measure: a label's markup needs the width. */
+.fgr-single {
+  background: var(--mono-sheet);
+  box-shadow:
+    0 0 0 1px var(--mono-hair-2),
+    0 18px 36px -28px rgba(38, 35, 31, 0.55),
+    0 2px 4px rgba(38, 35, 31, 0.05);
+}
+.fgr-file .fgr-proofs.mono-proofs {
+  columns: 2;
+  column-gap: 40px;
+  margin: 28px 0 16px;
+}
+.fgr-file .fgr-proofs.mono-proofs li {
+  break-inside: avoid;
+}
+
+/* ---------- Proofs per type ---------- */
+.fgr-proofs.mono-proofs li {
+  font-size: 15px;
+  padding: 10px 0;
+}
+.fgr-coverage .fgr-proofs.mono-proofs {
+  columns: 3;
+  column-gap: 40px;
+  margin: 0 0 16px;
+}
+.fgr-coverage .fgr-proofs.mono-proofs li {
+  break-inside: avoid;
+}
+.fgr-coverage .fgr-proofs.mono-proofs li span:first-child {
+  font-family: var(--mono-mono);
+  font-size: 14px;
+  color: var(--mono-ink);
+}
+.fgr-table {
+  overflow-x: auto;
+}
+.fgr-table:focus-visible {
+  outline: 2px solid var(--mono-ink);
+  outline-offset: 4px;
+}
+.fgr-table .mono-table {
+  min-width: 640px;
+}
+
+/* ---------- Cards ---------- */
+.fgr-card-text {
+  margin: 0;
+  font: 400 14.5px/1.5 var(--mono-sans);
+  color: var(--mono-ink-2);
+}
+.fgr-card-link {
+  margin: 10px 0 0;
+  font: 400 13.5px/1.4 var(--mono-mono);
+  overflow-wrap: anywhere;
+}
+.fgr-start .mono-card .fgr-source {
+  font-size: 12px;
+}
+
+@media (max-width: 960px) {
+  .fgr-coverage .fgr-proofs.mono-proofs {
+    columns: 2;
+  }
+}
+@media (max-width: 640px) {
+  .fgr-coverage .fgr-proofs.mono-proofs,
+  .fgr-file .fgr-proofs.mono-proofs {
+    columns: 1;
+  }
+  .fgr-gallery,
+  .fgr-file,
+  .fgr-pair,
+  .fgr-coverage {
+    margin-top: 40px;
+  }
+}

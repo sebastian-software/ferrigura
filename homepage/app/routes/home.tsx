@@ -1,188 +1,159 @@
 import type { ArdoMetaFunction } from 'ardo/runtime';
 
+import { Fragment } from 'ardo/react';
 import { ArdoLink as Link } from 'ardo/runtime';
-import { Mark, RegistryFacts } from 'ferramenta-family';
 import {
-  FerraArticle,
-  FerraChoices,
-  FerraCode,
-  FerraColumns,
-  FerraEditorialRow,
-  FerraFeatureGrid,
-  FerraInstrument,
-  FerraNotes,
-  FerraProductLead,
-  FerraProductPage,
-  FerraReleaseFacts,
-} from 'ferramenta-family/ferra';
-import { family, WORKSHOP } from 'ferramenta-family/registry';
+  MonoAction,
+  MonoClosing,
+  MonoColophon,
+  MonoEngraving,
+  MonoOpening,
+} from 'ferramenta-family/monografie';
+import { displayName, WORKSHOP } from 'ferramenta-family/registry';
 
-import { DiagramExample } from '../components/diagram-example';
-import { SiteAction } from '../components/site-action';
-import site from '../data/site.json';
+import {
+  Alternatives,
+  Boundaries,
+  Checked,
+  Family,
+  Runtimes,
+} from '../components/feature-sections';
+import { grouped, tool } from '../components/homepage-data';
+import { Explainer, Modes, Schemes, Text } from '../components/story-sections';
+import coverage from '../data/coverage.json';
+import { nodeVersion, releaseLine, rustVersion } from '../version';
 
 // oxlint-disable-next-line react/only-export-components -- Ardo reads route metadata.
 export const meta: ArdoMetaFunction = () => [
-  { title: 'Ferrigura — Mermaid diagrams, rendered in Rust.' },
+  { title: 'Ferrigura — Mermaid diagrams, drawn without a browser' },
   {
     name: 'description',
     content:
-      'Render Mermaid diagram text to standalone SVG, without a browser. Bundled fonts, selectable labels and native Rust rendering for your documentation build.',
+      'Ferrigura renders Mermaid diagram text to standalone SVG in Rust, without a browser: bundled fonts, labels that stay text, and every diagram type checked against Mermaid. For Rust, Node.js and the command line.',
   },
 ];
 // oxlint-disable-next-line react/only-export-components -- Ardo reads the route layout.
 export const handle = { layout: 'bare' };
-const member = family.find((entry) => entry.name === 'ferrigura');
-if (!member) throw new Error('Ferrigura is missing from the family registry.');
-const tool = { ...member, version: site.version };
+
+function Actions() {
+  return (
+    <>
+      <MonoAction
+        href="/guide/getting-started/#use-the-rust-library"
+        primary
+        detail="cargo add ferrigura"
+      >
+        Start with Rust
+      </MonoAction>
+      <MonoAction href="/reference/npm/" detail="npm install @ferrigura/core">
+        Start with Node.js
+      </MonoAction>
+    </>
+  );
+}
 
 function Opening() {
   return (
-    <FerraProductLead
-      id="overview"
-      title="Mermaid diagrams, rendered in Rust."
-      introduction="Turn diagram text into standalone SVG for your documentation, application or build. Ferrigura runs without a browser process and embeds the fonts it uses, while keeping labels as selectable text. Start with the Rust library or the command-line tool."
-      art={<FerraInstrument product="ferrigura" />}
-      byline={
-        <>
-          An open-source project by <a href={WORKSHOP.openSource}>{WORKSHOP.company}</a>.
-        </>
-      }
-    >
-      <div className="ferra-actions">
-        <SiteAction to="/guide/getting-started/">Render your first diagram</SiteAction>
-        <SiteAction variant="secondary" to="#example">
-          See the SVG output
-        </SiteAction>
+    <div id="overview">
+      <MonoOpening
+        product="ferrigura"
+        instrumentLabel="Ferrigura's instrument: three steel roller conveyors meet in a Y at a switch plate with a rust-brown dial. Square and round steel pieces ride the lanes, one lane leading in and two branching off."
+        caption="A diagram switch: pieces travel the lanes and meet at one plate that sends each where it belongs, the way connected nodes in a text become a precisely arranged drawing."
+        kicker={`${displayName(tool)} ${releaseLine}, ${tool.what.toLowerCase()} for Rust, Node.js and the command line`}
+        title="Mermaid diagrams, drawn without a browser."
+        subtitle="Fonts included, labels still text."
+        standfirst={`Ferrigura turns Mermaid diagram text into standalone SVG files for documentation sites, build tools and servers. It is a port of Mermaid ${coverage.mermaid} to Rust: no browser starts, the fonts the labels were measured with travel inside the file, and every label stays real text.`}
+        actions={<Actions />}
+        facts={[
+          {
+            value: (
+              <>
+                <em>{coverage.types.length}</em> of {coverage.mermaidTypes}
+              </>
+            ),
+            label: `diagram types of Mermaid ${coverage.mermaid}`,
+          },
+          {
+            value: (
+              <>
+                <em>{grouped(coverage.agreed)}</em> of {grouped(coverage.compared)}
+              </>
+            ),
+            label: 'drawings within 0.05 px of Mermaid’s',
+          },
+          {
+            value: <em>{grouped(coverage.parsed)}</em>,
+            label: 'inputs read the way Mermaid reads them',
+          },
+          { value: `Rust ${rustVersion}+`, label: `Node.js ${nodeVersion}+, MIT license` },
+        ]}
+      />
+    </div>
+  );
+}
+
+// Keys are written out: minified builds do not keep function names.
+const chapters = [
+  { key: 'explainer', Chapter: Explainer },
+  { key: 'text', Chapter: Text },
+  { key: 'modes', Chapter: Modes },
+  { key: 'schemes', Chapter: Schemes },
+  { key: 'checked', Chapter: Checked },
+  { key: 'alternatives', Chapter: Alternatives },
+  { key: 'boundaries', Chapter: Boundaries },
+  { key: 'runtimes', Chapter: Runtimes },
+  { key: 'family', Chapter: Family },
+];
+
+function Origin() {
+  return (
+    <section aria-label="Origin">
+      <div className="mono-axis">
+        <MonoColophon>
+          {tool.proof} Mermaid was created by Knut Sveidqvist and is maintained by the Mermaid
+          contributors; its license and copyright notice stay with the port. Ferrigura is one of the
+          Ferramenta engines, made by {WORKSHOP.name} in {WORKSHOP.place}.
+        </MonoColophon>
       </div>
-    </FerraProductLead>
+    </section>
   );
 }
-function Highlights() {
+
+/** The actions again, under the published anchor #start. */
+function Closing() {
   return (
-    <FerraColumns>
-      <FerraArticle
-        title="A diagram your build can produce."
-        icon={<Mark name="package" size={28} />}
-        meta={<FerraReleaseFacts tool={tool} />}
-      >
-        <p>
-          Render in a native process and keep the SVG alongside your other build artifacts. No
-          headless browser needs to start, and the result can travel with the page or document that
-          uses it.
-        </p>
-        <Link to="/reference/cli/">Use it from the command line</Link>
-      </FerraArticle>
-      <FerraArticle
-        title="Labels stay text. Fonts travel with them."
-        icon={<Mark name="document" size={28} />}
-        meta={
-          <Link to="/architecture/decisions/0010-text-measurement-and-fonts/">
-            How text measurement works
-          </Link>
+    <div id="start">
+      <MonoClosing
+        title="Draw your next diagram in the build."
+        standfirst="Add the crate or the npm package, hand it your diagram text and keep the SVG with the rest of your site."
+        actions={<Actions />}
+        links={
+          <>
+            <a href="https://crates.io/crates/ferrigura">crates.io</a>
+            <a href="https://www.npmjs.com/package/@ferrigura/core">npm</a>
+            <a href="https://github.com/sebastian-software/ferrigura">GitHub repository</a>
+            <Link to="/guide/getting-started/">Documentation</Link>
+            <a href={WORKSHOP.consulting}>Integration and support</a>
+          </>
         }
-      >
-        <p>
-          Text is measured with bundled fonts, then the glyphs it needs are embedded in the SVG.
-          Labels stay selectable and searchable, with line breaks tied to the same typography the
-          viewer receives.
-        </p>
-        <Link to="/reference/rust/#how-the-output-differs-from-mermaid">
-          Understand the output contract
-        </Link>
-      </FerraArticle>
-    </FerraColumns>
+      />
+    </div>
   );
 }
-function Scope() {
-  return (
-    <FerraEditorialRow
-      notes={<FerraNotes label="Inside Ferrigura" notes={tool.editorial?.notes ?? []} />}
-    >
-      <FerraArticle
-        title="Familiar diagram text. Explicit rendering choices."
-        introduction="Ferrigura ports Mermaid 12.2.0. Its type reference documents the supported syntax, layout and limits for each diagram."
-        meta={<Link to="/diagrams/overview/">Explore diagram coverage</Link>}
-      >
-        <FerraFeatureGrid
-          items={[
-            {
-              heading: 'Diagrams for different questions',
-              text: 'Flowcharts, sequences, classes, states and entity relationships sit alongside the other supported diagram types.',
-            },
-            {
-              heading: 'Geometry checked against Mermaid',
-              text: 'The verification harness compares parser models and rendered geometry with the pinned upstream implementation in Chromium.',
-            },
-            {
-              heading: 'One renderer, many inputs',
-              text: 'Reuse resolved configuration across diagrams. Give inline SVGs unique IDs so their styles and references stay scoped.',
-            },
-            {
-              heading: 'Repeatable output',
-              text: 'Fixed randomness and per-render state support reproducible output. For gantt diagrams that depend on today, Rust callers supply the clock explicitly.',
-            },
-          ]}
-        />
-      </FerraArticle>
-    </FerraEditorialRow>
-  );
-}
-function Boundaries() {
-  return (
-    <FerraArticle
-      title="Choose it with the boundaries in view."
-      meta={<Link to="/comparisons/overview/">Compare rendering approaches</Link>}
-    >
-      <p>
-        Ferrigura produces SVG. Labels use SVG text rather than HTML, and the renderer has no
-        browser callbacks or tooltips. Math labels, hand-drawn strokes, classic themes and some font
-        coverage are outside the supported scope.
-      </p>
-      <p>
-        Install <code>@ferrigura/core</code> from npm to render in Node.js. npm selects the native
-        binary for your platform. Ferromark’s optional adapter renders Mermaid fences in custom
-        builds, alongside its Markdown renderer.
-      </p>
-      <Link to="/reference/rust/#not-supported-yet">Read the specific limitations</Link>
-    </FerraArticle>
-  );
-}
-function GettingStarted() {
-  return (
-    <FerraChoices>
-      <FerraArticle
-        title="Add rendering to your Rust application."
-        introduction="Pass diagram text and configuration to the library. Reuse a renderer when you have several blocks to process."
-      >
-        <FerraCode caption="Add the library">cargo add ferrigura</FerraCode>
-        <SiteAction to="/guide/getting-started/#use-the-rust-library">Start with Rust</SiteAction>
-      </FerraArticle>
-      <FerraArticle
-        title="Give your build an SVG file."
-        introduction="Use the native CLI with files or standard input. Render several inputs into an output directory with one command."
-      >
-        <FerraCode caption="Install the command-line tool">
-          cargo install --locked ferrigura-cli
-        </FerraCode>
-        <SiteAction variant="secondary" to="/guide/getting-started/#render-a-file">
-          Start with the CLI
-        </SiteAction>
-      </FerraArticle>
-    </FerraChoices>
-  );
-}
+
 export default function HomePage() {
   return (
-    <RegistryFacts>
-      <FerraProductPage>
-        <Opening />
-        <Highlights />
-        <DiagramExample />
-        <Scope />
-        <Boundaries />
-        <GettingStarted />
-      </FerraProductPage>
-    </RegistryFacts>
+    <>
+      <Opening />
+      {chapters.map(({ key, Chapter }, index) => (
+        <Fragment key={key}>
+          <MonoEngraving seed={index + 1} />
+          <Chapter />
+        </Fragment>
+      ))}
+      <MonoEngraving seed={chapters.length + 1} />
+      <Origin />
+      <Closing />
+    </>
   );
 }
