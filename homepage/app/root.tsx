@@ -9,31 +9,31 @@ import {
   ArdoTOC,
 } from 'ardo/ui';
 import { Mark, MarkDefs } from 'ferramenta-family';
-import {
-  FerraGuideNavigation,
-  FerraPage,
-  FerraReadingLayout,
-  FerraReadingTable,
-  FerraSectionRail,
-} from 'ferramenta-family/ferra';
 import touchIcon from 'ferramenta-family/ferra-assets/ferrigura/apple-touch-icon.png?url';
 import favicon from 'ferramenta-family/ferra-assets/ferrigura/favicon.ico?url';
-import { MonoFooter, MonoHeader, MonoPage } from 'ferramenta-family/monografie';
-import 'ferramenta-family/ferra.css';
+import {
+  MonoFooter,
+  MonoGuideNavigation,
+  MonoHeader,
+  MonoPage,
+  MonoReadingLayout,
+  MonoReadingTable,
+  MonoSectionRail,
+} from 'ferramenta-family/monografie';
+import 'ferramenta-family/monografie.css';
+import 'ferramenta-family/monografie-docs.css';
+import 'ferramenta-family/monografie-ardo.css';
 
 import navigation from './data/navigation.json';
 import { version } from './version';
-import 'ferramenta-family/ferra-ardo.css';
-import 'ferramenta-family/monografie.css';
-
 // Ferrigura's own specimens, all under fgr- classes; after the package so they win its ties.
 import './components/homepage-specimens.css';
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
     <ArdoRootLayout
+      className="mono-ardo"
       colorScheme="light"
-      className="ferra-tokens ferra-ardo"
       icon={favicon}
       appleTouchIcon={touchIcon}
       iconBasePath={false}
@@ -53,7 +53,7 @@ function GuideNavigation({ onNavigate }: { onNavigate?: () => void }) {
     first;
   return (
     <>
-      <FerraSectionRail aria-label="Documentation sections">
+      <MonoSectionRail aria-label="Documentation sections">
         {navigation.map((section) => (
           <NavLink
             key={section.id}
@@ -65,18 +65,18 @@ function GuideNavigation({ onNavigate }: { onNavigate?: () => void }) {
             {section.label}
           </NavLink>
         ))}
-      </FerraSectionRail>
-      <FerraGuideNavigation aria-label="Documentation pages">
+      </MonoSectionRail>
+      <MonoGuideNavigation aria-label="Documentation pages">
         <NavLink to="/" onClick={onNavigate}>
           Overview
         </NavLink>
         <p>{current.label}</p>
         {current.pages.map(({ title, to: href }) => (
-          <NavLink key={href} to={href} onClick={onNavigate}>
+          <NavLink key={href} to={href} end onClick={onNavigate}>
             {title}
           </NavLink>
         ))}
-      </FerraGuideNavigation>
+      </MonoGuideNavigation>
     </>
   );
 }
@@ -141,7 +141,7 @@ function Article({ children }: { children: ReactNode }) {
     (section) => path === `/${section.id}` || path.startsWith(`/${section.id}/`)
   );
   return (
-    <FerraReadingLayout
+    <MonoReadingLayout
       id="ferrigura-article"
       navigation={<GuideNavigation />}
       outline={<ArdoTOC source="dom" scope="#ferrigura-article" />}
@@ -151,14 +151,14 @@ function Article({ children }: { children: ReactNode }) {
         <h1>{page?.title.replaceAll('`', '') ?? 'Documentation'}</h1>
       </header>
       {children}
-    </FerraReadingLayout>
+    </MonoReadingLayout>
   );
 }
-const components = { table: FerraReadingTable, wrapper: Article };
+const components = { table: MonoReadingTable, wrapper: Article };
 
 /**
- * Every page wears the Monografie header and footer. The homepage reads on the
- * Monografie page ground; documentation keeps the Ferra reading layout.
+ * Every page is a Monografie page: the homepage, and the documentation in the
+ * Monografie reading layout.
  */
 export default function Root() {
   const path = useArdoPath();
@@ -166,7 +166,7 @@ export default function Root() {
   const shell = (
     <>
       <ArdoRoot
-        className={home ? 'fgr-shell' : 'ferra-ardo-shell'}
+        className="mono-ardo-shell"
         scrollMode="document"
         header={<Header docs={!home} />}
         sidebar={false}
@@ -184,9 +184,9 @@ export default function Root() {
   );
   if (home) return <MonoPage className="fgr-site">{shell}</MonoPage>;
   return (
-    <FerraPage className="ferra-site fgr-docs">
+    <MonoPage className="mono-docs fgr-docs">
       <MarkDefs />
       {shell}
-    </FerraPage>
+    </MonoPage>
   );
 }

@@ -1,6 +1,7 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Every page comes from the repository-owned route manifest. */
 // Checks the prerendered site after `ardo build`: every page wears the
-// Monografie header and footer, documentation keeps its reading navigation,
+// Monografie header and footer, documentation reads in the Monografie reading
+// layout and nothing renders or bundles the retired Ferra theme,
 // the homepage carries the release, its real drawings with their credit and
 // the figures of the coverage table, and the only local stylesheet stays
 // scoped to the homepage's specimens.
@@ -66,12 +67,20 @@ for (const page of expectedPages) {
   // Every page wears the Monografie header and footer, never Ardo's or the Ferra ones.
   const fragments = ['class="mono-header"', 'class="mono-footer"', 'rel="icon"'];
   if (page !== 'index.html')
-    fragments.push('class="ferra-guide-navigation"', 'aria-label="Toggle menu"', 'fgr-docs');
+    fragments.push(
+      'class="mono mono-docs fgr-docs"',
+      'class="mono-reading"',
+      'class="mono-section-rail"',
+      'class="mono-guide-navigation"',
+      'class="mono-prose"',
+      'aria-label="Toggle menu"'
+    );
   const absent = fragments.filter((fragment) => !html.includes(fragment));
-  const stray = ['class="ardo-header', 'class="ardo-footer', 'ferra-header', 'ferra-footer'].filter(
-    (fragment) => html.includes(fragment)
+  const stray = ['class="ardo-header', 'class="ardo-footer'].filter((fragment) =>
+    html.includes(fragment)
   );
   assert.deepEqual([absent, stray], [[], []], `${page}: missing or unexpected shell parts`);
+  assert.deepEqual(retiredFerraClasses(html), [], `${page} renders Ferra classes`);
   if (page === 'index.html') {
     verifyHomepage(html);
     continue;
@@ -129,6 +138,36 @@ function verifyHomepage(html) {
   const missing = required.filter((fragment) => !html.includes(fragment));
   assert.deepEqual(missing, [], 'The homepage is missing these fragments');
   assert.doesNotMatch(html, /<foreignObject\b/, 'Homepage drawings must keep their labels as text');
+}
+
+// The Ferra theme is retired: no bundled stylesheet and no import of the site
+// may bring it back. Only the Monografie entry's identity classes keep the name.
+for (const file of await readdir(new URL('assets/', output), { recursive: true })) {
+  if (!file.endsWith('.css')) continue;
+  const css = await readFile(new URL(`assets/${file}`, output), 'utf8');
+  const ferra = [...new Set(retiredFerra([...css.matchAll(/\.(ferra-[\w-]+)/g)].map((m) => m[1])))];
+  assert.deepEqual(ferra, [], `assets/${file} bundles Ferra styles`);
+}
+for (const file of appFiles.filter((name) => /\.(?:tsx?|mdx|css)$/.test(name))) {
+  const source = await readFile(new URL(`../app/${file}`, import.meta.url), 'utf8');
+  assert.doesNotMatch(
+    source,
+    /ferramenta-family\/(?:ferra(?:-ardo)?\.css|ferra)['"]/,
+    `homepage/app/${file} imports the Ferra entry or its stylesheets`
+  );
+}
+
+/** The ferra- names a page may keep: the Monografie entry's identity classes. */
+function retiredFerra(names) {
+  const kept = new Set(['ferra-mark', 'ferra-instrument', 'ferra-workshop-logo']);
+  return names.filter((name) => name.startsWith('ferra-') && !kept.has(name));
+}
+
+/** Every ferra- class a page renders outside the kept identity classes. */
+function retiredFerraClasses(html) {
+  return retiredFerra(
+    [...html.matchAll(/\sclass="([^"]*)"/g)].flatMap((match) => match[1].split(/\s+/))
+  );
 }
 
 // Dogfood the actual checker for pages, fragments, assets and the project base.
