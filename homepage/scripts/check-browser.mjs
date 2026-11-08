@@ -284,7 +284,9 @@ async function verifyHeader(page, pageFile, viewport) {
       'Documentation pages should keep search visible at each checked viewport'
     );
   }
-  if (viewport.width >= 961) {
+  // Documentation pages fold the header's links into Ardo's menu where Ardo's
+  // sidebar folds away.
+  if (viewport.width >= (home ? 961 : 1025)) {
     assert(navVisible, `${pageFile} hides the header links at ${viewport.name} width`);
     assert(!headerMenuVisible, `${pageFile} shows the header menu at ${viewport.name} width`);
     // The documentation drawer stands in for the sidebar until the sidebar fits.
