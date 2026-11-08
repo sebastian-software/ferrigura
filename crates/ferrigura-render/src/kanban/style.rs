@@ -88,7 +88,7 @@ fn limit_of(tokens: &ThemeTokens) -> usize {
 pub(super) struct Schemes {
     /// The palette the presentation attributes take.
     pub primary: Palette,
-    /// The palette of the dark scheme, under `prefers-color-scheme: dark`.
+    /// The palette of the dark scheme, the second values of `light-dark()`.
     pub dark: Option<Palette>,
 }
 
@@ -121,10 +121,9 @@ fn tokens(palette: &Palette) -> String {
 pub(super) fn own_rules(id: &str, schemes: &Schemes) -> String {
     let mut css = match &schemes.dark {
         None => format!("#{id}{{{}}}", tokens(&schemes.primary)),
-        Some(dark) => format!(
-            "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            tokens(&schemes.primary),
-            tokens(dark)
+        Some(dark) => crate::scheme::both(
+            &format!("#{id}{{{}}}", tokens(&schemes.primary)),
+            &format!("#{id}{{{}}}", tokens(dark)),
         ),
     };
     // `genSections`: the rules of section `i - 1`, for each color slot `i` (styles.ts 21-44).

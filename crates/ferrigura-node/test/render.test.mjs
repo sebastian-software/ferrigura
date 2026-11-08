@@ -52,9 +52,10 @@ void test('the id option names the diagram and scopes its styles', () => {
   assert.match(svg, /#pie-one \.pieCircle/);
 });
 
-void test('the auto colour scheme writes the dark set under the media query', () => {
+void test('the auto colour scheme writes light-dark() values', () => {
   const svg = render(PIE, undefined, { id: 'pie-one', colorScheme: 'auto' });
-  assert.match(svg, /@media \(prefers-color-scheme: dark\){#pie-one{/);
+  assert.match(svg, /svg:root{color-scheme:light dark;}#pie-one{[^}]*light-dark\(/);
+  assert.doesNotMatch(svg, /prefers-color-scheme/);
 });
 
 void test('the configuration applies its theme variables', () => {

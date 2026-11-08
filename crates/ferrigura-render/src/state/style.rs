@@ -561,16 +561,15 @@ fn rule(selector: &str, declarations: &str) -> String {
 }
 
 /// The custom properties of the colors, declared on the diagram's id. With one set of variables they
-/// are written as they are; with a light and a dark set, the dark set applies under
-/// `prefers-color-scheme: dark`, as the flowchart does.
+/// are written as they are; with a light and a dark set, the values that differ are
+/// `light-dark()` pairs, as the flowchart writes them.
 fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
     let id = format!("#{svg_id}");
     match theme.dark {
         None => rule(&id, &declarations(theme.light, flood(globals))),
-        Some(dark) => format!(
-            "{}@media (prefers-color-scheme: dark){{{}}}",
-            rule(&id, &declarations(theme.light, LIGHT_FLOOD)),
-            rule(&id, &declarations(dark, DARK_FLOOD)),
+        Some(dark) => crate::scheme::both(
+            &rule(&id, &declarations(theme.light, LIGHT_FLOOD)),
+            &rule(&id, &declarations(dark, DARK_FLOOD)),
         ),
     }
 }

@@ -36,10 +36,9 @@ pub fn base_style_sheet(
     let id = format!("#{svg_id}");
     let colours = match theme.dark {
         None => format!("{id}{{{}}}", declarations(theme.light)),
-        Some(dark) => format!(
-            "{id}{{{}}}@media (prefers-color-scheme: dark){{{id}{{{}}}}}",
-            declarations(theme.light),
-            declarations(dark)
+        Some(dark) => crate::scheme::both(
+            &format!("{id}{{{}}}", declarations(theme.light)),
+            &format!("{id}{{{}}}", declarations(dark)),
         ),
     };
     let tokens = theme.light;
@@ -130,7 +129,7 @@ mod tests {
         )
     }
 
-    /// One scheme gives one block of colors; both give the dark one under the media query.
+    /// One scheme gives one block of colors; both give one block of `light-dark()` values.
     #[test]
     fn the_colors_are_declared_per_scheme() {
         let light = ThemeTokens::from_value(&Theme::ReduxColor.variables(None));
@@ -145,7 +144,10 @@ mod tests {
             light: &light,
             dark: Some(&dark),
         });
-        assert!(both.contains("@media (prefers-color-scheme: dark){#ferrigura-test{--textColor:"));
+        assert!(both.starts_with(
+            "svg:root{color-scheme:light dark;}#ferrigura-test{--textColor:light-dark("
+        ));
+        assert!(!both.contains("@media"));
         assert!(both.contains("own{x:1}#ferrigura-test .node .neo-node"));
     }
 

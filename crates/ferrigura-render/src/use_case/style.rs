@@ -5,8 +5,8 @@
 //!
 //! A theme color is written `var(--name, value)`. `name` is the custom property of the token, or of the
 //! palette slot (`borderColor<i>` and `bkgColor<i>`, as the flowchart and the ER name theirs), and `value`
-//! is what the scheme gives it. Under `colorScheme: auto` the rules of the dark set follow the light ones in
-//! a media query, each color resolved against its own scheme ([`scheme_rules`]).
+//! is what the scheme gives it. Under `colorScheme: auto` the rules are written for each set, each color
+//! resolved against its own scheme, and merged into `light-dark()` values ([`scheme_rules`]).
 //!
 //! The `isHandDrawn ? '' : ...` splits of the reference are not ported. The handDrawn look is out of scope
 //! for ferrigura (the harness excludes fixtures with it), so the text the reference keeps for the other
@@ -17,9 +17,8 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use crate::context::{Globals, ThemeView};
 use crate::unified::palette::{Palette, palette};
 
-/// The rules of the diagram for the color schemes of `theme`. Under `colorScheme: auto` the rules of the
-/// dark set come after the light ones, inside `@media (prefers-color-scheme: dark)`, and each color of them is
-/// resolved against the dark tokens. The rules are not made of custom properties, because a fallback chain
+/// The rules of the diagram for the color schemes of `theme`. Under `colorScheme: auto` the rules are written
+/// for each set, each color resolved against that set's tokens, and merged into `light-dark()` values. The rules are not made of custom properties, because a fallback chain
 /// (`usecaseActorBkg`, then `actorBkg`, then `mainBkg`) resolves per scheme: a property the light set declares
 /// would reach the dark set where the dark theme has no value for it.
 #[must_use]
@@ -27,10 +26,7 @@ pub fn scheme_rules(id: &str, theme: ThemeView<'_>, globals: &Globals, rotate: b
     let light = own_rules(id, theme.light, globals, rotate);
     match theme.dark {
         None => light,
-        Some(dark) => format!(
-            "{light}@media (prefers-color-scheme: dark){{{}}}",
-            own_rules(id, dark, globals, rotate)
-        ),
+        Some(dark) => crate::scheme::both(&light, &own_rules(id, dark, globals, rotate)),
     }
 }
 
@@ -749,7 +745,7 @@ mod scheme_tests {
     }
 
     #[test]
-    fn the_dark_set_follows_the_light_rules_under_the_media_query() {
+    fn the_dark_set_merges_into_the_light_rules() {
         let light = tokens(serde_json::json!({ "usecaseBkg": "#light-bkg" }));
         let dark = tokens(serde_json::json!({ "usecaseBkg": "#dark-bkg" }));
         let theme = ThemeView {
@@ -757,12 +753,11 @@ mod scheme_tests {
             dark: Some(&dark),
         };
         let css = scheme_rules("u", theme, &globals(), false);
-        let (before, after) = css
-            .split_once("@media (prefers-color-scheme: dark){")
-            .expect("a media block");
-        assert!(before.contains("var(--usecaseBkg, #light-bkg)"), "{css}");
-        assert!(!before.contains("#dark-bkg"), "{css}");
-        assert!(after.contains("var(--usecaseBkg, #dark-bkg)"), "{css}");
+        assert!(
+            css.contains("light-dark(var(--usecaseBkg, #light-bkg),var(--usecaseBkg, #dark-bkg))"),
+            "{css}"
+        );
+        assert!(!css.contains("@media"), "{css}");
     }
 
     #[test]
@@ -778,12 +773,13 @@ mod scheme_tests {
             dark: Some(&dark),
         };
         let css = scheme_rules("u", theme, &globals(), false);
-        let (_, after) = css
-            .split_once("@media (prefers-color-scheme: dark){")
-            .expect("a media block");
         // The name is the first token of the chain that the scheme gives a value (`mainBkg`), and the
         // light set's `usecaseActorBkg` does not reach the dark set.
-        assert!(after.contains("fill:var(--mainBkg, #dark-main)"), "{css}");
-        assert!(!after.contains("#light-actor"), "{css}");
+        assert!(
+            css.contains(
+                "light-dark(var(--usecaseActorBkg, #light-actor),var(--mainBkg, #dark-main))"
+            ),
+            "{css}"
+        );
     }
 }

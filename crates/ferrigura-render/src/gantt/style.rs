@@ -178,16 +178,15 @@ pub(crate) fn attribute(name: &str, token: &Token) -> String {
         .unwrap_or_default()
 }
 
-/// The `<style>` element of the chart: the color tokens (one set, or a light and a dark set under
-/// `prefers-color-scheme`), the embedded font faces, and the rules of `styles.js` with every
+/// The `<style>` element of the chart: the color tokens (one set, or `light-dark()` pairs for a light and a
+/// dark set), the embedded font faces, and the rules of `styles.js` with every
 /// selector starting with the diagram's id.
 pub(crate) fn style_element(id: &str, theme: ThemeView<'_>, family: &str, faces: &str) -> String {
     let tokens = match theme.dark {
         None => format!("#{id}{{{}}}", declarations(theme.light)),
-        Some(dark) => format!(
-            "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            declarations(theme.light),
-            declarations(dark)
+        Some(dark) => crate::scheme::both(
+            &format!("#{id}{{{}}}", declarations(theme.light)),
+            &format!("#{id}{{{}}}", declarations(dark)),
         ),
     };
     // `family` is the quoted `font-family` list of the embedded faces, or empty.

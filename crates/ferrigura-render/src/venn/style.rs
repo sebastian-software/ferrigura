@@ -6,8 +6,8 @@
 /// The custom properties of one scheme: `(name, value)` pairs in the order they are declared.
 pub(super) type Declarations = Vec<(String, String)>;
 
-/// The rules that come after the base sheet: the custom properties of the colors (light, then dark
-/// under `prefers-color-scheme: dark` when there is a dark scheme), then `styles.ts`, which keeps
+/// The rules that come after the base sheet: the custom properties of the colors (as `light-dark()`
+/// pairs when there is a dark scheme), then `styles.ts`, which keeps
 /// its rules as the reference writes them. The font is the diagram's font, as `styles.ts` names it.
 ///
 /// The reference's `font-size: 32px` of the title and its 48px of the labels are kept: the style
@@ -19,16 +19,15 @@ pub(super) fn own_rules(
     light: &Declarations,
     dark: Option<&Declarations>,
 ) -> String {
-    let mut css = String::new();
-    if !light.is_empty() {
-        css.push_str(&format!("#{id}{{{}}}", declare(light)));
-    }
-    if let Some(dark) = dark.filter(|dark| !dark.is_empty()) {
-        css.push_str(&format!(
-            "@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            declare(dark)
-        ));
-    }
+    let light_rule = if light.is_empty() {
+        String::new()
+    } else {
+        format!("#{id}{{{}}}", declare(light))
+    };
+    let mut css = match dark.filter(|dark| !dark.is_empty()) {
+        None => light_rule,
+        Some(dark) => crate::scheme::both(&light_rule, &format!("#{id}{{{}}}", declare(dark))),
+    };
     css.push_str(&format!(
         "#{id} .venn-title{{font-size:32px;fill:var(--vennTitleTextColor);font-family:{font_family};}}\
 #{id} .venn-circle text{{font-size:48px;font-family:{font_family};}}\

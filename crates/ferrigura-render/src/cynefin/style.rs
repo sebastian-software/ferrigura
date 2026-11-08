@@ -9,8 +9,8 @@
 //! for `null`, and the arithmetic of `itemFontSize - 1` and `domainFontSize + 2` is JavaScript's.
 //!
 //! Every color is a custom property declared on the diagram's id, and every colored element also
-//! carries its color as a presentation attribute (`docs/decisions/0011-themes-as-css-variables.md`). The custom properties
-//! of the dark scheme, when the render has one, are declared under the media query.
+//! carries its color as a presentation attribute (`docs/decisions/0011-themes-as-css-variables.md`). When the render has a
+//! dark scheme, the custom properties that differ are `light-dark()` pairs.
 
 use ferrigura_model::theme::Token;
 use ferrigura_model::theme::tokens::CynefinTokens;
@@ -190,15 +190,14 @@ fn declarations(options: &Options) -> String {
 /// The rules of the diagram, after the base rules and before the look rules, as `styles.ts` writes them
 /// (lines 29-93): every selector starts with the id, the colors are custom properties, and the sizes
 /// are the light scheme's, as the layout measures them. `light` declares the colors on the id; with a
-/// `dark` scheme they are declared again under `prefers-color-scheme: dark`.
+/// `dark` scheme the values that differ are `light-dark()` pairs.
 #[must_use]
 pub(super) fn own_rules(id: &str, light: &Options, dark: Option<&Options>) -> String {
     let declared = match dark {
         None => format!("#{id}{{{}}}", declarations(light)),
-        Some(dark) => format!(
-            "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            declarations(light),
-            declarations(dark)
+        Some(dark) => crate::scheme::both(
+            &format!("#{id}{{{}}}", declarations(light)),
+            &format!("#{id}{{{}}}", declarations(dark)),
         ),
     };
     let domain_size = template_text(&light.domain_font_size);

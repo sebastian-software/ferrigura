@@ -494,10 +494,10 @@ fn the_seed_decides_the_waves_and_zero_takes_the_id() {
     );
 }
 
-/// Under `colorScheme: auto` the colors are declared again under the media query (decision 0011), with
-/// the dark scheme's own values.
+/// Under `colorScheme: auto` a color that differs is declared as `light-dark()` (decision 0011), with
+/// the dark scheme's own value second.
 #[test]
-fn the_dark_scheme_declares_its_colors_under_the_media_query() {
+fn the_dark_scheme_declares_its_colors_as_light_dark_values() {
     let diagram = parse("cynefin-beta\n  complex\n  \"A\"\n").expect("parses");
     let setup = Setup {
         dark_overrides: Some(Some(Value::from(
@@ -507,7 +507,7 @@ fn the_dark_scheme_declares_its_colors_under_the_media_query() {
     };
     let svg = draw(&diagram, &setup);
     assert!(
-        svg.contains("@media (prefers-color-scheme: dark){#chart{--cynefinComplexBg:#000001;"),
+        svg.contains("#chart{--cynefinComplexBg:light-dark(#E8F5E9,#000001);"),
         "{svg}"
     );
     // The presentation attribute keeps the light scheme's color.

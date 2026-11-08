@@ -377,10 +377,9 @@ fn style_element(
     let tokens = theme.light;
     let declared = match theme.dark {
         None => format!("#{id}{{{}}}", declarations(tokens)),
-        Some(dark) => format!(
-            "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            declarations(tokens),
-            declarations(dark)
+        Some(dark) => crate::scheme::both(
+            &format!("#{id}{{{}}}", declarations(tokens)),
+            &format!("#{id}{{{}}}", declarations(dark)),
         ),
     };
     let stroke_width = tokens.pie_stroke_width.text().unwrap_or_default();

@@ -315,8 +315,8 @@ fn rule(selector: &str, declarations: &str) -> String {
 }
 
 /// The custom properties of the colors, declared on the diagram's id. With one set of variables they
-/// are written as they are; with a light and a dark set, the dark set applies under
-/// `prefers-color-scheme: dark`, so one SVG follows the viewer's scheme.
+/// are written as they are; with a light and a dark set, the values that differ are
+/// `light-dark()` pairs, so one SVG follows the page's or the viewer's scheme.
 fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
     let id = format!("#{svg_id}");
     match theme.dark {
@@ -329,13 +329,12 @@ fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> S
         }
         Some(dark) => {
             let palette = palette(globals, theme.light);
-            format!(
-                "{}@media (prefers-color-scheme: dark){{{}}}",
-                rule(
+            crate::scheme::both(
+                &rule(
                     &id,
-                    &declarations(theme.light, LIGHT_FLOOD, palette.as_ref())
+                    &declarations(theme.light, LIGHT_FLOOD, palette.as_ref()),
                 ),
-                rule(&id, &declarations(dark, DARK_FLOOD, palette.as_ref())),
+                &rule(&id, &declarations(dark, DARK_FLOOD, palette.as_ref())),
             )
         }
     }

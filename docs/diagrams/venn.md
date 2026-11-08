@@ -60,7 +60,7 @@ Errors carry positions against the original input, including the front matter; t
 - A style applies to the key of its sorted targets joined by `|`; statements with the same key merge, property by property, the later one winning. `style A,B` styles the pair only.
 - A set label is one `tspan`: its words joined by single blanks, the way `wrapText` leaves it (see Learnings). A set without a label shows its id, an intersection without one shows nothing.
 - A text node is `text` with one `tspan` per line, placed in a grid inside its area (`text_area`): the center and the inner radius of the area (a zero radius becomes 0.6 times the smallest circle radius), a grid of `ceil(sqrt(n))` columns inside `max(80 * scale, 0.95 * 2r)`, moved down by a label offset when the area has a label and by `30 * scale` when it has two nodes or fewer. A node's box is 90% of its cell. A text node of an area that `layout` has no area for is dropped. With `useDebugLayout`, the debug circle and cells are drawn.
-- Colors are CSS custom properties on the diagram's id, light and dark under `prefers-color-scheme` for `colorScheme: auto`, and each element carries its light color as an attribute ([0011](../decisions/0011-themes-as-css-variables.md)). The palette is `venn1` to `venn8` of the theme, with the empty ones removed.
+- Colors are CSS custom properties on the diagram's id, light and dark as `light-dark()` values for `colorScheme: auto`, and each element carries its light color as an attribute ([0011](../decisions/0011-themes-as-css-variables.md)). The palette is `venn1` to `venn8` of the theme, with the empty ones removed.
 
 ## Differences from Mermaid
 

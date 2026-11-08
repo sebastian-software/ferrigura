@@ -64,10 +64,9 @@ pub fn style_sheet(
     };
     let scoped = match theme.dark {
         None => format!("{id}{{{}}}", declarations(theme.light)),
-        Some(dark) => format!(
-            "{id}{{{}}}@media (prefers-color-scheme: dark){{{id}{{{}}}}}",
-            declarations(theme.light),
-            declarations(dark)
+        Some(dark) => crate::scheme::both(
+            &format!("{id}{{{}}}", declarations(theme.light)),
+            &format!("{id}{{{}}}", declarations(dark)),
         ),
     };
     let rules = format!(
