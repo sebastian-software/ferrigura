@@ -1,5 +1,5 @@
 import { ArdoLink as Link } from 'ardo/runtime';
-import { MonoLeadIn, MonoPassage, MonoSection } from 'ferramenta-family/monografie';
+import { MonoPassage, MonoSection } from 'ferramenta-family/monografie';
 
 import samples from '../data/diagram-samples.json';
 import { DiagramGallery, FileContents, ModeSheets, SchemeSheets } from './homepage-specimens';
@@ -19,11 +19,11 @@ export function Explainer() {
         }}
       >
         <p>
-          <MonoLeadIn>A diagram in a document</MonoLeadIn> is usually a picture: drawn in one tool,
-          exported, pasted in, and out of date by the next release. Mermaid took another road. You
-          write the diagram as text, a box here, an arrow there, right beside the prose that
-          explains it. The text lives in the repository, changes in the same review as the code, and
-          a renderer turns it into a drawing.
+          A diagram in a document is usually a picture: drawn in one tool, exported, pasted in, and
+          out of date by the next release. Mermaid took another road. You write the diagram as text,
+          a box here, an arrow there, right beside the prose that explains it. The text lives in the
+          repository, changes in the same review as the code, and a renderer turns it into a
+          drawing.
         </p>
       </MonoPassage>
       <MonoPassage
@@ -93,10 +93,10 @@ export function Text() {
         }}
       >
         <p>
-          <MonoLeadIn>The size of a box</MonoLeadIn> depends on the words inside it. To place a
-          node, an edge or a line break, a renderer must know how wide each label will be, and that
-          width depends on the font. Measure with one font and display with another, and labels
-          spill out of their boxes or wrap where they should not.
+          The size of a box depends on the words inside it. To place a node, an edge or a line
+          break, a renderer must know how wide each label will be, and that width depends on the
+          font. Measure with one font and display with another, and labels spill out of their boxes
+          or wrap where they should not.
         </p>
       </MonoPassage>
       <p>
@@ -133,10 +133,9 @@ export function Modes() {
         }}
       >
         <p>
-          <MonoLeadIn>Mermaid spreads</MonoLeadIn> the ports of a box across its side. When two
-          boxes of different widths are joined, their ports rarely line up, and the arrow between
-          them takes a small step. Its edge labels are also only half opaque, so a line shows
-          through the text that sits on it.
+          Mermaid spreads the ports of a box across its side. When two boxes of different widths are
+          joined, their ports rarely line up, and the arrow between them takes a small step. Its
+          edge labels are also only half opaque, so a line shows through the text that sits on it.
         </p>
       </MonoPassage>
       <p>
@@ -173,10 +172,9 @@ export function Schemes() {
         }}
       >
         <p>
-          <MonoLeadIn>A drawing that sits</MonoLeadIn> on a documentation page has to suit the page
-          around it. Ferrigura renders in a light or a dark scheme. With the automatic scheme, the
-          SVG carries both and follows the reader&rsquo;s system setting, with no script and no
-          second file.
+          A drawing that sits on a documentation page has to suit the page around it. Ferrigura
+          renders in a light or a dark scheme. With the automatic scheme, the SVG carries both and
+          follows the reader&rsquo;s system setting, with no script and no second file.
         </p>
       </MonoPassage>
       <SchemeSheets />

@@ -2,14 +2,13 @@ import { ArdoLink as Link } from 'ardo/runtime';
 import {
   MonoCard,
   MonoCards,
-  MonoLeadIn,
   MonoPassage,
   MonoSection,
   MonoTerms,
   MonoVerdict,
   MonoWide,
 } from 'ferramenta-family/monografie';
-import { displayName, family, STATUS_MEANING } from 'ferramenta-family/registry';
+import { displayName, family } from 'ferramenta-family/registry';
 
 import coverage from '../data/coverage.json';
 import { grouped, tool } from './homepage-data';
@@ -32,9 +31,9 @@ export function Checked() {
         }}
       >
         <p>
-          <MonoLeadIn>A port is only useful</MonoLeadIn> if it behaves like the original. So
-          Ferrigura does not take Mermaid&rsquo;s word for it, and does not ask you to take ours. A
-          test harness runs the original next to the port and compares them, type by type.
+          A port is only useful if it behaves like the original. So Ferrigura does not take
+          Mermaid&rsquo;s word for it, and does not ask you to take ours. A test harness runs the
+          original next to the port and compares them, type by type.
         </p>
       </MonoPassage>
       <MonoPassage
@@ -97,9 +96,9 @@ export function Alternatives() {
       standfirst="Ferrigura is one of several renderers for Mermaid’s syntax. Which one fits depends on where the diagrams are drawn and how close to Mermaid they must look."
     >
       <p>
-        <MonoLeadIn>Choose Ferrigura</MonoLeadIn> when you want Mermaid&rsquo;s own drawing without
-        a browser, the same on every machine, with its fonts inside the file: in a Rust program, on
-        the command line or in Node.js. Choose one of these when something else matters more.
+        Choose Ferrigura when you want Mermaid&rsquo;s own drawing without a browser, the same on
+        every machine, with its fonts inside the file: in a Rust program, on the command line or in
+        Node.js. Choose one of these when something else matters more.
       </p>
       <MonoWide className="fgr-gap">
         <MonoCards>
@@ -154,16 +153,11 @@ const limits = [
 
 export function Boundaries() {
   return (
-    <MonoSection
-      id="boundaries"
-      title="Early, and clear about its limits."
-      standfirst={`Ferrigura is an early member of its family. ${STATUS_MEANING[tool.status]}`}
-    >
+    <MonoSection id="boundaries" title="Clear about its limits.">
       <p>
-        <MonoLeadIn>Every diagram type</MonoLeadIn> of Mermaid {coverage.mermaid} renders, and the
-        checks above run in the repository&rsquo;s continuous integration. What is young is
-        everything around them: the interface may still change between releases, and a few parts of
-        Mermaid are left out on purpose or not done yet.
+        Every diagram type of Mermaid {coverage.mermaid} renders, and the checks above run in the
+        repository&rsquo;s continuous integration. A few parts of Mermaid are left out on purpose or
+        not done yet.
       </p>
       <MonoTerms items={limits} columns={3} prose className="fgr-gap" />
       <p>
@@ -190,11 +184,11 @@ export function Runtimes() {
         }}
       >
         <p>
-          <MonoLeadIn>The engine is written</MonoLeadIn> in Rust. The crate gives a Rust program the
-          renderer directly. The command-line tool renders files in a build script. The npm package
-          brings the same engine to Node.js as a native addon, with a small JavaScript API and no
-          WebAssembly. The library and the package render synchronously and return the SVG; the tool
-          writes it to a file or to standard output.
+          The engine is written in Rust. The crate gives a Rust program the renderer directly. The
+          command-line tool renders files in a build script. The npm package brings the same engine
+          to Node.js as a native addon, with a small JavaScript API and no WebAssembly. The library
+          and the package render synchronously and return the SVG; the tool writes it to a file or
+          to standard output.
         </p>
       </MonoPassage>
       <StartCards />
