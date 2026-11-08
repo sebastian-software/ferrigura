@@ -4,9 +4,11 @@
  * Three pie diagrams are inlined in one page, each with its own id, and the page has a stylesheet of
  * its own that paints every path, text and rectangle. Each diagram must keep its own colors: the
  * computed colors of its title, its first slice, that slice's stroke and its first legend entry must
- * equal the values its own style declares. This is checked under the light and the dark color scheme
- * the viewer may ask for, and with the style sheets off, where the presentation attributes must draw
- * the colors of the light set: the fallback for viewers without custom properties.
+ * equal the values its own style declares. This is checked under the light and the dark
+ * `color-scheme` of the page, which an auto diagram follows through its `light-dark()` colors; under
+ * a dark operating system on a page that declares no scheme, where the auto diagram stays light; and
+ * with the style sheets off, where the presentation attributes must draw the colors of the light set:
+ * the fallback for viewers without custom properties.
  *
  * This is a check of the cascade, not of the geometry; `pie-geometry.ts` compares the geometry.
  *
@@ -88,28 +90,44 @@ window.measure = (ids) => ids.map((id) => {
     legend: getComputedStyle(root.querySelector('g.legend rect.pie-slot-0')).fill,
   };
 });
+window.pageScheme = (scheme) => {
+  document.documentElement.style.colorScheme = scheme;
+};
 window.withoutStyles = (off) => {
   for (const sheet of document.styleSheets) sheet.disabled = off;
 };
 </script></body></html>`;
 
-/** The declarations of a diagram's own rule: the top-level set, or the set under the dark media query. */
+/** The declarations of a diagram's own rule, with each `light-dark()` value resolved for one scheme. */
 function declared(svg: string, id: string, dark: boolean): Declared {
   const style = /<style>([\S\s]*?)<\/style>/.exec(svg)?.[1] ?? '';
-  const pattern = dark
-    ? new RegExp(`@media \\(prefers-color-scheme: dark\\)\\{#${id}\\{([^}]*)\\}`)
-    : new RegExp(`(?:^|\\})#${id}\\{([^}]*)\\}`);
-  const body = pattern.exec(style)?.[1];
-  if (body === undefined) {
-    throw new Error(`${id} has no ${dark ? 'dark' : 'top-level'} declarations`);
-  }
+  const body = new RegExp(`(?:^|\\})#${id}\\{([^}]*)\\}`).exec(style)?.[1];
+  if (body === undefined) throw new Error(`${id} has no top-level declarations`);
   const declarations: Declared = {};
   for (const declaration of body.split(';')) {
     const colon = declaration.indexOf(':');
-    if (colon > 0)
-      declarations[declaration.slice(0, colon).trim()] = declaration.slice(colon + 1).trim();
+    if (colon > 0) {
+      const value = declaration.slice(colon + 1).trim();
+      declarations[declaration.slice(0, colon).trim()] = pick(value, dark);
+    }
   }
   return declarations;
+}
+
+/** The light or the dark argument of `light-dark(light,dark)`, or the value as it is. */
+function pick(value: string, dark: boolean): string {
+  const inner = /^light-dark\((.*)\)$/.exec(value)?.[1];
+  if (inner === undefined) return value;
+  let depth = 0;
+  for (let index = 0; index < inner.length; index++) {
+    const character = inner[index];
+    if (character === '(') depth++;
+    else if (character === ')') depth--;
+    else if (character === ',' && depth === 0) {
+      return (dark ? inner.slice(index + 1) : inner.slice(0, index)).trim();
+    }
+  }
+  throw new Error(`${value} has no second argument`);
 }
 
 /** The colors a diagram declares for one set. */
@@ -215,17 +233,34 @@ async function main(): Promise<void> {
       [...renders.values()]
     );
 
-    // Under each scheme the viewer asks for: an auto diagram follows it, the others keep their own set.
+    // Under each scheme the page declares: an auto diagram follows it, the others keep their own set.
+    // The operating system asks for the other scheme, which the diagrams must not follow.
     for (const scheme of ['light', 'dark'] as const) {
-      await page.emulateMedia({ colorScheme: scheme });
+      await page.emulateMedia({ colorScheme: scheme === 'dark' ? 'light' : 'dark' });
+      await page.evaluate(
+        (value) =>
+          (window as unknown as { pageScheme: (scheme: string) => void }).pageScheme(value),
+        scheme
+      );
       const measured = await measure(page, ids);
       const expected = diagrams.map((diagram) =>
         colours(
           declared(svgOf(diagram.id), diagram.id, diagram.scheme === 'auto' && scheme === 'dark')
         )
       );
-      await compare(page, `under ${scheme}`, measured, expected, failures);
+      await compare(page, `in a ${scheme} page`, measured, expected, failures);
     }
+
+    // A page that declares no scheme is light, so an auto diagram stays light under a dark system.
+    await page.evaluate(() =>
+      (window as unknown as { pageScheme: (scheme: string) => void }).pageScheme('')
+    );
+    await page.emulateMedia({ colorScheme: 'dark' });
+    const undeclared = await measure(page, ids);
+    const light = diagrams.map((diagram) =>
+      colours(declared(svgOf(diagram.id), diagram.id, false))
+    );
+    await compare(page, 'in a page without a scheme', undeclared, light, failures);
 
     // Without the style sheets, the presentation attributes draw: the light set of every diagram.
     await page.emulateMedia({ colorScheme: 'light' });
