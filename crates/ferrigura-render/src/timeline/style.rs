@@ -21,14 +21,13 @@ pub(super) fn own_rules(cx: &Context<'_>) -> String {
     let slots = rule_slots(cx.limit);
     let mut css = String::new();
 
-    // The colors: one custom property per slot and per color, on the diagram's id, and the dark
-    // scheme's values under `prefers-color-scheme: dark` when both schemes are written.
+    // The colors: one custom property per slot and per color, on the diagram's id, as `light-dark()`
+    // pairs when both schemes are written.
     match &cx.secondary {
         None => css.push_str(&format!("#{id}{{{}}}", tokens(&cx.primary, slots))),
-        Some(dark) => css.push_str(&format!(
-            "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            tokens(&cx.primary, slots),
-            tokens(dark, slots)
+        Some(dark) => css.push_str(&crate::scheme::both(
+            &format!("#{id}{{{}}}", tokens(&cx.primary, slots)),
+            &format!("#{id}{{{}}}", tokens(dark, slots)),
         )),
     }
 

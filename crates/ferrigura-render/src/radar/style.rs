@@ -193,13 +193,13 @@ fn colour_limit(value: Option<&ferrigura_model::value::Value>) -> usize {
 /// the axes, the graticule, the legend and the curves. Every rule is scoped to the id.
 pub(super) fn own_rules(id: &str, style: &Style) -> String {
     let light = &style.light;
-    let mut css = format!("#{id}{{{}}}", light.declarations());
-    if let Some(dark) = &style.dark {
-        css.push_str(&format!(
-            "@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            dark.declarations()
-        ));
-    }
+    let light_rule = format!("#{id}{{{}}}", light.declarations());
+    let mut css = match &style.dark {
+        None => light_rule,
+        Some(dark) => {
+            crate::scheme::both(&light_rule, &format!("#{id}{{{}}}", dark.declarations()))
+        }
+    };
     let font_size = light
         .font_size
         .as_ref()

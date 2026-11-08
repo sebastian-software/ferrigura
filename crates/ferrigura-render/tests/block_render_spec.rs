@@ -109,8 +109,8 @@ fn a_plain_block_takes_no_palette_slot() {
 
 #[test]
 fn a_composite_takes_the_dark_cluster_colors_under_the_dark_scheme() {
-    // Both schemes write the composite's cluster fill: the dark one under `prefers-color-scheme`, since its
-    // colors carry an alpha and cannot be a custom property.
+    // Both schemes write the composite's cluster fill as one `light-dark()` value, since its colors carry
+    // an alpha and cannot be a custom property.
     let diagram = ferrigura_syntax::block::parse("block\n  columns 2\n  block:g\n    a\n  end")
         .expect("the text parses");
     let light = Theme::ReduxColor.variables(None);
@@ -134,8 +134,10 @@ fn a_composite_takes_the_dark_cluster_colors_under_the_dark_scheme() {
     })
     .expect("renders");
 
-    let (_, scheme) = svg
-        .split_once("@media (prefers-color-scheme: dark)")
-        .expect("the dark scheme is in a media query");
-    assert!(scheme.contains("#b1 .node .cluster{fill:"), "{svg}");
+    assert!(
+        svg.contains(
+            "#b1 .node .cluster{fill:light-dark(rgba(249, 249, 251, 0.5),rgba(30, 26, 46, 0.5));"
+        ),
+        "{svg}"
+    );
 }

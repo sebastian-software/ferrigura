@@ -306,18 +306,17 @@ pub(crate) fn rule(selector: &str, declarations: &str) -> String {
 }
 
 /// The custom properties of the colors, declared on the diagram's id. With one set of variables they
-/// are written as they are; with a light and a dark set, the dark set applies under
-/// `prefers-color-scheme: dark`, so one SVG follows the viewer's scheme.
+/// are written as they are; with a light and a dark set, the values that differ are
+/// `light-dark()` pairs, so one SVG follows the page's or the viewer's scheme.
 pub(crate) fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
     let id = format!("#{svg_id}");
     let light = theme.light;
     let slots = palette(globals, light).map(|palette| slot_counts(&palette));
     match theme.dark {
         None => rule(&id, &declarations(light, flood_color(globals), slots)),
-        Some(dark) => format!(
-            "{}@media (prefers-color-scheme: dark){{{}}}",
-            rule(&id, &declarations(light, LIGHT_FLOOD, slots)),
-            rule(&id, &declarations(dark, DARK_FLOOD, slots)),
+        Some(dark) => crate::scheme::both(
+            &rule(&id, &declarations(light, LIGHT_FLOOD, slots)),
+            &rule(&id, &declarations(dark, DARK_FLOOD, slots)),
         ),
     }
 }
@@ -513,7 +512,7 @@ mod tests {
     }
 
     #[test]
-    fn a_dark_scheme_follows_prefers_color_scheme() {
+    fn a_dark_scheme_writes_light_dark_values() {
         let light = light();
         let dark = dark();
         let sheet = style_sheet(
@@ -527,12 +526,16 @@ mod tests {
             FlowchartMode::Mermaid,
         );
         assert!(
-            sheet.contains("@media (prefers-color-scheme: dark){#flowchart{--nodeBorder:#FFFFFF;"),
+            sheet.contains("#flowchart{--nodeBorder:light-dark(#28253D,#FFFFFF);"),
             "{sheet}"
         );
-        assert!(sheet.contains("--floodColor:#FFFFFF;}}"), "{sheet}");
+        assert!(
+            sheet.contains("--floodColor:light-dark(#000000,#FFFFFF);"),
+            "{sheet}"
+        );
         // The dark theme has no fills, so the fill slots take its cluster background.
-        assert!(sheet.contains("--bkgColor0:#1E1A2E;"), "{sheet}");
+        assert!(sheet.contains(",#1E1A2E);"), "{sheet}");
+        assert!(!sheet.contains("@media"), "{sheet}");
     }
 
     #[test]

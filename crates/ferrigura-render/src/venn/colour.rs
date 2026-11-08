@@ -1,7 +1,7 @@
 //! The colors of the venn diagram, one set per color scheme: the palette of the circles
 //! (`venn1` to `venn8`, `vennRenderer.ts` 41-50), the colors derived from the palette, and the
 //! text colors. A `colorScheme: auto` render has two sets; the light set gives the presentation
-//! attributes and the dark set the `prefers-color-scheme: dark` rules (`docs/decisions/0011-themes-as-css-variables.md`).
+//! attributes, and the dark set the second values of the `light-dark()` pairs (`docs/decisions/0011-themes-as-css-variables.md`).
 
 use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::theme::khroma::{darken, is_dark, lighten};

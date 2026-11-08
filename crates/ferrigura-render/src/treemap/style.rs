@@ -226,10 +226,9 @@ pub fn own_rules(id: &str, theme: ThemeView<'_>) -> String {
     };
     let colours = match theme.dark {
         None => format!("#{id}{{{}}}", tokens(theme.light)),
-        Some(dark) => format!(
-            "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            tokens(theme.light),
-            tokens(dark)
+        Some(dark) => crate::scheme::both(
+            &format!("#{id}{{{}}}", tokens(theme.light)),
+            &format!("#{id}{{{}}}", tokens(dark)),
         ),
     };
     format!(

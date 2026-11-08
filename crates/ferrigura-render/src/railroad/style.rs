@@ -382,12 +382,10 @@ pub fn own_rules(id: &str, options: &Options, font_family: &str) -> String {
     let size = number(options.font_size);
     let stroke = number(options.stroke_width);
     let mut rules = String::new();
-    rules.push_str(&color_declarations(id, &options.light));
-    if let Some(dark) = &options.dark {
-        rules.push_str(&format!(
-            "@media (prefers-color-scheme: dark){{{}}}",
-            color_declarations(id, dark)
-        ));
+    let light = color_declarations(id, &options.light);
+    match &options.dark {
+        None => rules.push_str(&light),
+        Some(dark) => rules.push_str(&crate::scheme::both(&light, &color_declarations(id, dark))),
     }
     let text = format!("font-family:{font_family};font-size:{size}px;");
     rules.push_str(&format!(

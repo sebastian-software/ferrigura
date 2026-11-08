@@ -165,15 +165,14 @@ pub fn style_sheet_with_fonts(
 }
 
 /// The composite's cluster colors for the scheme or schemes of the theme. With a light and a dark set, the
-/// dark rule applies under `prefers-color-scheme: dark`, as the custom properties do, since the colors are
-/// written with their alpha and cannot follow a custom property.
+/// two rules merge into `light-dark()` values ([`crate::scheme::both`]), since the colors are written with
+/// their alpha and cannot follow a custom property.
 fn composite_cluster_colors(id: &str, theme: ThemeView<'_>, stroke_width: &str) -> String {
     match theme.dark {
         None => composite_cluster_rule(id, theme.light, stroke_width),
-        Some(dark) => format!(
-            "{}@media (prefers-color-scheme: dark){{{}}}",
-            composite_cluster_rule(id, theme.light, stroke_width),
-            composite_cluster_rule(id, dark, stroke_width),
+        Some(dark) => crate::scheme::both(
+            &composite_cluster_rule(id, theme.light, stroke_width),
+            &composite_cluster_rule(id, dark, stroke_width),
         ),
     }
 }

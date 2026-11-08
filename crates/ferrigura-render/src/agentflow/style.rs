@@ -51,10 +51,9 @@ pub fn style_sheet_with_fonts(
 fn custom_properties(id: &str, theme: ThemeView<'_>, palette: Option<&Palette>) -> String {
     match theme.dark {
         None => format!("{id}{{{}}}", declarations(theme.light, palette)),
-        Some(dark) => format!(
-            "{id}{{{}}}@media (prefers-color-scheme: dark){{{id}{{{}}}}}",
-            declarations(theme.light, palette),
-            declarations(dark, palette)
+        Some(dark) => crate::scheme::both(
+            &format!("{id}{{{}}}", declarations(theme.light, palette)),
+            &format!("{id}{{{}}}", declarations(dark, palette)),
         ),
     }
 }

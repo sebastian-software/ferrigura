@@ -78,7 +78,7 @@ impl Globals {
 
 /// The theme of a render. `light` gives the presentation attributes and the sizes, and it is the only
 /// set of a render with one color scheme. With both schemes (`colorScheme: auto`), `dark` is set, and
-/// it applies under `prefers-color-scheme: dark` (`docs/decisions/0011-themes-as-css-variables.md`).
+/// its colors become the second values of `light-dark()` (`docs/decisions/0011-themes-as-css-variables.md`).
 #[derive(Debug, Clone, Copy)]
 pub struct ThemeView<'a> {
     /// The tokens of the light scheme, or of the one scheme that the render draws.

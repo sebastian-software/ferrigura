@@ -114,7 +114,9 @@ fn the_configuration_file_applies_its_theme_variables() {
 fn the_scheme_option_writes_both_sets_for_auto() {
     let output = run(&["--scheme", "auto"], PIE);
     assert!(output.status.success(), "{}", stderr(&output));
-    assert!(stdout(&output).contains("@media (prefers-color-scheme: dark)"));
+    let svg = stdout(&output);
+    assert!(svg.contains("svg:root{color-scheme:light dark;}"), "{svg}");
+    assert!(svg.contains("light-dark("), "{svg}");
 }
 
 #[test]

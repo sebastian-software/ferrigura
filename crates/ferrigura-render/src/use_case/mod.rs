@@ -106,7 +106,7 @@ pub fn render(
         .px()
         .unwrap_or(DEFAULT_FONT_SIZE);
     let rotate = input.section.usecase.color_scheme == "rotate";
-    // Under `colorScheme: auto` the dark set of the rules follows the light set, under the media query.
+    // Under `colorScheme: auto` the rules of both sets merge into `light-dark()` values.
     let rules = style::scheme_rules(id, input.theme, input.globals, rotate);
     let style = crate::common::style::base_style_sheet(
         id,

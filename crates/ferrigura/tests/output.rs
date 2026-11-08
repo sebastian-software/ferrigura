@@ -144,23 +144,19 @@ fn the_dark_scheme_draws_with_the_dark_theme() {
 }
 
 #[test]
-fn auto_writes_both_sets_and_the_dark_one_under_the_media_query() {
+fn auto_writes_the_colors_that_differ_as_light_dark_values() {
     let out = svg_with(PIE, Some(ColorScheme::Auto), Some("pie-one"));
     let css = style_of(&out);
-    let (light_block, dark_block) = css
-        .split_once("@media (prefers-color-scheme: dark)")
-        .expect("a media query for the dark scheme");
+    assert!(!css.contains("@media"), "{css}");
     assert!(
-        light_block.contains(&format!("--pieTitleTextColor: {LIGHT_TITLE};")),
-        "the light set is written"
+        css.contains("svg:root{color-scheme:light dark;}#pie-one{"),
+        "a standalone SVG follows the viewer's scheme: {css}"
     );
     assert!(
-        dark_block.starts_with("{#pie-one{"),
-        "the dark set is scoped to the diagram"
-    );
-    assert!(
-        dark_block.contains(&format!("--pieTitleTextColor: {DARK_TITLE};")),
-        "the dark set is written"
+        css.contains(&format!(
+            "--pieTitleTextColor:light-dark({LIGHT_TITLE},{DARK_TITLE});"
+        )),
+        "{css}"
     );
     // The attributes carry the light colors, which viewers without custom properties draw.
     assert!(out.contains(&format!("fill=\"{LIGHT_TITLE}\"")), "{out}");
@@ -172,7 +168,10 @@ fn every_selector_starts_with_the_diagram_id() {
         let out = svg_with(PIE, scheme, Some("pie-one"));
         for selector in selectors(style_of(&out)) {
             assert!(
-                selector.starts_with("#pie-one") || selector.starts_with("@media"),
+                // `svg:root` matches only a standalone SVG, never one inside a page.
+                selector.starts_with("#pie-one")
+                    || selector.starts_with("@media")
+                    || selector == "svg:root",
                 "{selector} is not scoped, in {scheme:?}"
             );
         }

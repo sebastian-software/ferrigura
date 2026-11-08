@@ -3,7 +3,7 @@
 //! diagram's id, as the reference's stylis scoping writes it.
 //!
 //! Colors follow `docs/decisions/0011-themes-as-css-variables.md`: every color is a custom property declared on the
-//! diagram's id (once, or once per scheme under `prefers-color-scheme`), and the rules refer to it
+//! diagram's id (once, with `light-dark()` values when both schemes are written), and the rules refer to it
 //! with `var(…)`. The palette of the color themes gives each class box its border and fill by its
 //! color slot (`genColor`, `styles.js` 14-38). The elements carry no color attribute of their own,
 //! as the flowchart's do not (`flowchart/style.rs`).
@@ -201,8 +201,8 @@ fn palette_rules(id: &str, look: &str, palette: Option<&Palette>) -> String {
 }
 
 /// The custom properties of the colors, declared on the diagram's id. With one set they are
-/// written as they are; with a light and a dark set, the dark one applies under
-/// `prefers-color-scheme: dark` (decision 0011).
+/// written as they are; with a light and a dark set, the values that differ
+/// are `light-dark()` pairs (decision 0011).
 fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
     let id = format!("#{svg_id}");
     match theme.dark {
@@ -217,10 +217,15 @@ fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> S
                 declarations(theme.light, palette(globals, theme.light), flood)
             )
         }
-        Some(dark) => format!(
-            "{id}{{{}}}@media (prefers-color-scheme: dark){{{id}{{{}}}}}",
-            declarations(theme.light, palette(globals, theme.light), LIGHT_FLOOD),
-            declarations(dark, palette(globals, dark), DARK_FLOOD),
+        Some(dark) => crate::scheme::both(
+            &format!(
+                "{id}{{{}}}",
+                declarations(theme.light, palette(globals, theme.light), LIGHT_FLOOD)
+            ),
+            &format!(
+                "{id}{{{}}}",
+                declarations(dark, palette(globals, dark), DARK_FLOOD)
+            ),
         ),
     }
 }

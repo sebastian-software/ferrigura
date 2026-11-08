@@ -2,8 +2,8 @@
 //!
 //! The reference's `styles.js` returns no rules, so the sheet is the common base only, and the
 //! colors are the code's fallbacks: none of the shipped themes defines an `em` key. Every color is a custom property declared on the diagram's id,
-//! for the light scheme and, when both schemes are written, for the dark one under
-//! `prefers-color-scheme: dark` (decision 0011). The elements carry their colors as presentation
+//! as `light-dark()` pairs
+//! when both schemes are written (decision 0011). The elements carry their colors as presentation
 //! attributes too, so a viewer without custom properties draws the same diagram.
 
 use ferrigura_model::theme::{ThemeTokens, Token};
@@ -135,16 +135,15 @@ fn declarations(tokens: &ThemeTokens) -> String {
     out
 }
 
-/// The color properties on the id, for each scheme of the theme (the dark one, when the render
-/// draws both, under the media query).
+/// The color properties on the id, for each scheme of the theme (as `light-dark()` pairs when the
+/// render draws both).
 #[must_use]
 pub fn tokens(svg_id: &str, theme: ThemeView<'_>) -> String {
     match theme.dark {
         None => format!("#{svg_id}{{{}}}", declarations(theme.light)),
-        Some(dark) => format!(
-            "#{svg_id}{{{}}}@media (prefers-color-scheme: dark){{#{svg_id}{{{}}}}}",
-            declarations(theme.light),
-            declarations(dark)
+        Some(dark) => crate::scheme::both(
+            &format!("#{svg_id}{{{}}}", declarations(theme.light)),
+            &format!("#{svg_id}{{{}}}", declarations(dark)),
         ),
     }
 }

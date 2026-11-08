@@ -25,8 +25,9 @@ fn background_token(id: &str, theme: ThemeView<'_>) -> String {
         None => format!("#{id}{{--mainBkg:{light};}}"),
         Some(dark) => {
             let dark = dark.main_bkg.text().unwrap_or_else(|| "#ffffff".to_owned());
-            format!(
-                "#{id}{{--mainBkg:{light};}}@media (prefers-color-scheme: dark){{#{id}{{--mainBkg:{dark};}}}}"
+            crate::scheme::both(
+                &format!("#{id}{{--mainBkg:{light};}}"),
+                &format!("#{id}{{--mainBkg:{dark};}}"),
             )
         }
     }

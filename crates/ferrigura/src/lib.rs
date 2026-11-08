@@ -30,15 +30,16 @@ pub use ferrigura_render::flowchart::policy::FlowchartMode;
 /// The color scheme of the output.
 ///
 /// The configuration decides the colors by default: the configured theme, as Mermaid does. `Light`
-/// and `Dark` draw with the shipped light and dark themes, and `Auto` writes both, so that one SVG
-/// follows the viewer's `prefers-color-scheme`. The user's `themeVariables` apply to both.
+/// and `Dark` draw with the shipped light and dark themes, and `Auto` writes both as `light-dark()`
+/// values, so that one SVG follows the `color-scheme` of the page it is inlined in, or the viewer's
+/// scheme as a standalone file. The user's `themeVariables` apply to both.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ColorScheme {
     /// The light theme, `redux-color`.
     Light,
     /// The dark theme, `redux-dark-color`.
     Dark,
-    /// Both themes; the dark one applies under `prefers-color-scheme: dark`.
+    /// Both themes, as `light-dark()` values.
     Auto,
 }
 

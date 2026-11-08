@@ -4,8 +4,8 @@
 //! flowchart and the other types (`.node`, `.edgeLabel`, `.cluster`, the tooltip) match nothing in a
 //! journey, and are not written.
 //!
-//! Every color is a custom property declared on the diagram's id, for the light scheme and, when
-//! both schemes are written, for the dark one under `prefers-color-scheme: dark` (decision 0011).
+//! Every color is a custom property declared on the diagram's id, as `light-dark()` pairs when
+//! both schemes are written (decision 0011).
 
 use ferrigura_model::theme::ThemeTokens;
 use ferrigura_text::EmbeddedFamily;
@@ -72,10 +72,9 @@ pub fn style_sheet(
 fn tokens(svg_id: &str, theme: ThemeView<'_>) -> String {
     match theme.dark {
         None => format!("#{svg_id}{{{}}}", declarations(theme.light)),
-        Some(dark) => format!(
-            "#{svg_id}{{{}}}@media (prefers-color-scheme: dark){{#{svg_id}{{{}}}}}",
-            declarations(theme.light),
-            declarations(dark)
+        Some(dark) => crate::scheme::both(
+            &format!("#{svg_id}{{{}}}", declarations(theme.light)),
+            &format!("#{svg_id}{{{}}}", declarations(dark)),
         ),
     }
 }

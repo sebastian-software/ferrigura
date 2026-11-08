@@ -468,15 +468,15 @@ fn the_color_limit_is_the_theme_color_limit() {
     assert!(rule(style, ".radarCurve-2").is_none());
 }
 
-/// With both schemes, the dark colors are declared under the `prefers-color-scheme: dark` query.
+/// With both schemes, the colors that differ are declared as `light-dark()` values.
 #[test]
-fn the_dark_scheme_is_declared_under_the_media_query() {
+fn the_dark_scheme_is_declared_as_light_dark_values() {
     let light = Theme::ReduxColor.variables(None);
     let dark = Theme::ReduxDarkColor.variables(None);
     let svg = draw_schemes(SIMPLE, &light, Some(&dark));
     let style = style_of(&svg);
     assert!(
-        style.contains("@media (prefers-color-scheme: dark){#tst{--radarTitleColor:"),
+        style.contains("#tst{--radarTitleColor:light-dark(#000000,"),
         "{style}"
     );
     assert!(style.contains("--radarAxisColor:#333333;"), "{style}");

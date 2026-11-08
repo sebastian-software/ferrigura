@@ -44,7 +44,7 @@ Returns the SVG document of a diagram as a string.
 - `options` is an object with these optional fields:
   - `id`: the id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id.
   - `flowchartMode`: `'adaptive'` (default) centers ports with label-aware spacing and draws edge-label backgrounds at full opacity. `'mermaid'` retains the reference's routing and half-opacity label backgrounds. Other diagram types ignore it.
-  - `colorScheme`: `'light'`, `'dark'` or `'auto'`. `'auto'` writes both color sets, and the dark one applies under `prefers-color-scheme: dark`. By default the configured theme decides the colors.
+  - `colorScheme`: `'light'`, `'dark'` or `'auto'`. `'auto'` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. By default the configured theme decides the colors.
 
 ```js
 const svg = render(

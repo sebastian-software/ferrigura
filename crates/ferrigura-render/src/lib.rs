@@ -33,6 +33,7 @@ pub mod radar;
 pub mod railroad;
 pub mod requirement;
 pub mod sankey;
+mod scheme;
 pub mod sequence;
 pub mod state;
 pub mod svg;

@@ -2,8 +2,8 @@
 //! which are the only ones ported), with every color as a custom property of the diagram.
 //!
 //! The reference writes its colors into the rules; here each color is `var(--name)`, and the
-//! custom properties are declared on the diagram's id, for the light scheme and, when both
-//! schemes are written, for the dark one under `prefers-color-scheme: dark` (decision 0011). Every
+//! custom properties are declared on the diagram's id, as `light-dark()` pairs when both
+//! schemes are written (decision 0011). Every
 //! selector starts with the id.
 
 use ferrigura_text::EmbeddedFamily;
@@ -25,10 +25,9 @@ pub fn style_element(
 ) -> String {
     let tokens = match theme.dark {
         None => format!("#{id}{{{}}}", light.declarations()),
-        Some(_) => format!(
-            "#{id}{{{}}}@media (prefers-color-scheme: dark){{#{id}{{{}}}}}",
-            light.declarations(),
-            dark.declarations()
+        Some(_) => crate::scheme::both(
+            &format!("#{id}{{{}}}", light.declarations()),
+            &format!("#{id}{{{}}}", dark.declarations()),
         ),
     };
     let faces = if families.is_empty() {
