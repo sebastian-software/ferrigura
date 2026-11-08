@@ -4,7 +4,6 @@ import {
   MonoCards,
   MonoPassage,
   MonoSection,
-  MonoTerms,
   MonoVerdict,
   MonoWide,
 } from 'ferramenta-family/monografie';
@@ -15,7 +14,7 @@ import { grouped, tool } from './homepage-data';
 import { CoverageProofs, StartCards } from './homepage-specimens';
 
 /* The homepage's later chapters: the checks against Mermaid, the alternatives,
-   the limits, the three ways in and the family. */
+   the three ways in and the family. */
 
 export function Checked() {
   return (
@@ -117,52 +116,6 @@ export function Alternatives() {
         The comparison page sets these and mermaid-rs-renderer side by side, with measured sizes and
         render times, and says what each does better.{' '}
         <Link to="/comparisons/overview/">Compare the renderers</Link>
-      </p>
-    </MonoSection>
-  );
-}
-
-const limits = [
-  {
-    term: 'No interaction',
-    description:
-      'Click callbacks and tooltips need a browser at run time, so they have no meaning in a static file.',
-  },
-  {
-    term: 'No hand-drawn look',
-    description: 'Shapes take the classic geometry, without the sketched strokes.',
-  },
-  {
-    term: 'No math in labels',
-    description: 'Formulas between $$ marks are not typeset.',
-  },
-  {
-    term: 'Two themes',
-    description: 'Mermaid’s classic themes (default, dark, forest, neutral) are not shipped.',
-  },
-  {
-    term: 'No fallback font',
-    description:
-      'Text in Chinese, Japanese, Korean or Arabic, and emoji the bundled fonts lack, cannot be drawn yet.',
-  },
-  {
-    term: 'No images or icon packs',
-    description: 'An image shape needs its size given in the text; icon packs are not read.',
-  },
-];
-
-export function Boundaries() {
-  return (
-    <MonoSection id="boundaries" title="Clear about its limits.">
-      <p>
-        Every diagram type of Mermaid {coverage.mermaid} renders, and the checks above run in the
-        repository&rsquo;s continuous integration. A few parts of Mermaid are left out on purpose or
-        not done yet.
-      </p>
-      <MonoTerms items={limits} columns={3} prose className="fgr-gap" />
-      <p>
-        The output is SVG only. For PNG or PDF, hand the file to a converter of your choice.{' '}
-        <Link to="/reference/rust/#not-supported-yet">The full list of limits</Link>
       </p>
     </MonoSection>
   );
