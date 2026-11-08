@@ -11,13 +11,7 @@ import {
 } from 'ferramenta-family/monografie';
 import { displayName, WORKSHOP } from 'ferramenta-family/registry';
 
-import {
-  Alternatives,
-  Boundaries,
-  Checked,
-  Family,
-  Runtimes,
-} from '../components/feature-sections';
+import { Alternatives, Checked, Family, Runtimes } from '../components/feature-sections';
 import { grouped, tool } from '../components/homepage-data';
 import { Explainer, Modes, Schemes, Text } from '../components/story-sections';
 import coverage from '../data/coverage.json';
@@ -58,7 +52,6 @@ function Opening() {
       <MonoOpening
         product="ferrigura"
         instrumentLabel="Ferrigura's instrument: three steel roller conveyors meet in a Y at a switch plate with a rust-brown dial. Square and round steel pieces ride the lanes, one lane leading in and two branching off."
-        caption="A diagram switch: pieces travel the lanes and meet at one plate that sends each where it belongs, the way connected nodes in a text become a precisely arranged drawing."
         kicker={`${displayName(tool)} ${releaseLine}, ${tool.what.toLowerCase()} for Rust, Node.js and the command line`}
         title="Mermaid diagrams, drawn without a browser."
         subtitle="Fonts included, labels still text."
@@ -100,7 +93,6 @@ const chapters = [
   { key: 'schemes', Chapter: Schemes },
   { key: 'checked', Chapter: Checked },
   { key: 'alternatives', Chapter: Alternatives },
-  { key: 'boundaries', Chapter: Boundaries },
   { key: 'runtimes', Chapter: Runtimes },
   { key: 'family', Chapter: Family },
 ];

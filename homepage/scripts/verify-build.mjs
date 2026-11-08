@@ -129,7 +129,6 @@ function verifyHomepage(html) {
       'schemes',
       'checked',
       'alternatives',
-      'boundaries',
       'runtimes',
       'family',
       'start',
