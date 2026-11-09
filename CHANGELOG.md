@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0](https://github.com/sebastian-software/ferrigura/compare/v0.5.0...v0.6.0) (2026-11-09)
+
+
+### Features
+
+* GitHub as the header's mark, on Ardo 6.4 ([#76](https://github.com/sebastian-software/ferrigura/issues/76)) ([bb2ae20](https://github.com/sebastian-software/ferrigura/commit/bb2ae20f1e83a4f3ae4673549ce487480ca8549d))
+
+
+### Bug Fixes
+
+* **mindmap:** size cloud and bang nodes as Chromium 158 maps their boxes ([a775fac](https://github.com/sebastian-software/ferrigura/commit/a775facf69d4a1e03e8631f0e6653239e6d872ab))
+* **mindmap:** size cloud and bang nodes as Chromium 158 maps their boxes ([cd40108](https://github.com/sebastian-software/ferrigura/commit/cd40108ba7ecd0ab0e217cb70372129a7d19e916))
+* **port:** check pie scopes against the page's color-scheme ([ab4f541](https://github.com/sebastian-software/ferrigura/commit/ab4f5417b38d9afbd45c779a19369a35938aa58e))
+* **port:** check pie scopes against the page's color-scheme ([ef4d988](https://github.com/sebastian-software/ferrigura/commit/ef4d98895a3c156ddf63bdfa640f3d2fb8f6e6ab))
+
 ## [0.5.0](https://github.com/sebastian-software/ferrigura/compare/v0.4.0...v0.5.0) (2026-11-08)
 
 
