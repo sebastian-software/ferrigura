@@ -440,7 +440,8 @@ async function renderOnFreshPage(page, id, source) {
 
 /**
  * A Chromium page with Mermaid initialized with `mermaidConfig` and the
- * bundled faces loaded, all served from 127.0.0.1. As in the geometry check,
+ * bundled faces loaded, under every family name Mermaid measures with, all
+ * served from 127.0.0.1. As in the geometry check,
  * Chromium runs with `--font-render-hinting=none`, in UTC, at a 1200 px
  * viewport, and Math.random is seeded, so the mindmap's layout starts the
  * same way on every run.
@@ -496,13 +497,30 @@ function pageHtml() {
     ['Italic', 400, 'italic'],
     ['BoldItalic', 700, 'italic'],
   ];
-  const fontFaces = faces
-    .map(
-      ([file, weight, style]) =>
-        `@font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-${file}.ttf) format("truetype"); font-weight: ${weight}; font-style: ${style}; }`
+  // Mermaid measures some text in the families it names itself, which each
+  // machine resolves to its own fonts. As in the geometry check (MAPPED_FAMILIES
+  // in tools/port/geometry/common.ts), they all name the bundled face here.
+  const families = [
+    'Lexica Ultralegible',
+    'trebuchet ms',
+    'verdana',
+    'arial',
+    'Helvetica Neue',
+    'Helvetica',
+    'Open Sans',
+  ];
+  const fontFaces = families
+    .flatMap((family) =>
+      faces.map(
+        ([file, weight, style]) =>
+          `@font-face { font-family: "${family}"; src: url(/fonts/LexicaUltralegible-${file}.ttf) format("truetype"); font-weight: ${weight}; font-style: ${style}; }`
+      )
     )
     .join('\n');
-  const loads = faces.map(([, weight, style]) => `${style} ${weight} 16px "Lexica Ultralegible"`);
+  // Every face is loaded before Mermaid measures, or it measures a fallback.
+  const loads = families.flatMap((family) =>
+    faces.map(([, weight, style]) => `${style} ${weight} 16px "${family}"`)
+  );
   return `<!doctype html>
 <html><head><meta charset="utf-8">
 <style>
