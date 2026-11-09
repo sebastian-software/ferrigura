@@ -133,6 +133,8 @@ Its documentation routes are generated from the repository's canonical Markdown;
 edit those source files rather than the ignored generated routes. The authored
 entry guide lives in `homepage/content/`, and the figures of the homepage's
 checks come from the coverage table of `docs/diagrams/README.md`.
+Register a new top-level documentation page in the `featured` map of
+`homepage/scripts/site-pages.mjs` under its navigation section, such as `guide/`.
 
 From `homepage/`, run `pnpm install`, then `pnpm dev` for a local server.
 Every drawing on the homepage is real output of the published `@ferrigura/core`
