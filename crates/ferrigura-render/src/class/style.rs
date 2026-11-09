@@ -129,6 +129,8 @@ fn class_rules(
     globals: &Globals,
 ) -> String {
     let id = format!("#{svg_id}");
+    // `${options.strokeWidth}`, written as the value: the theme declares no custom property for it.
+    let stroke_width = tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned());
     let mut css = palette_rules(&id, look, palette(globals, tokens).as_ref());
     css.push_str(&format!(
         "{id} g.classGroup text{{fill:var(--nodeBorder);stroke:none;font-family:{font};font-size:10px;}}\
@@ -146,14 +148,14 @@ fn class_rules(
          {id} .labelBkg{{background:var(--mainBkg);}}\
          {id} .edgeLabel .label span{{background:var(--mainBkg);}}\
          {id} .classTitle{{font-weight:bolder;}}\
-         {id} .node rect,{id} .node circle,{id} .node ellipse,{id} .node polygon,{id} .node path{{fill:var(--mainBkg);stroke:var(--nodeBorder);stroke-width:var(--strokeWidth);}}\
+         {id} .node rect,{id} .node circle,{id} .node ellipse,{id} .node polygon,{id} .node path{{fill:var(--mainBkg);stroke:var(--nodeBorder);stroke-width:{stroke_width};}}\
          {id} .divider{{stroke:var(--nodeBorder);stroke-width:1;}}\
          {id} g.clickable{{cursor:pointer;}}\
          {id} g.classGroup rect{{fill:var(--mainBkg);stroke:var(--nodeBorder);}}\
          {id} g.classGroup line{{stroke:var(--nodeBorder);stroke-width:1;}}\
          {id} .classLabel .box{{stroke:none;stroke-width:0;fill:var(--mainBkg);opacity:0.5;}}\
          {id} .classLabel .label{{fill:var(--nodeBorder);font-size:10px;}}\
-         {id} .relation{{stroke:var(--lineColor);stroke-width:var(--strokeWidth);fill:none;}}\
+         {id} .relation{{stroke:var(--lineColor);stroke-width:{stroke_width};fill:none;}}\
          {id} .dashed-line{{stroke-dasharray:3;}}\
          {id} .dotted-line{{stroke-dasharray:1 2;}}\
          {id} [id$=\"-compositionStart\"],{id} .composition{{fill:var(--lineColor)!important;stroke:var(--lineColor)!important;stroke-width:1;}}\

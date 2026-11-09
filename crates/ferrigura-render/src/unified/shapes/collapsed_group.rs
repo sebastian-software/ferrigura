@@ -22,9 +22,10 @@ const DOT_RADIUS: f64 = 2.5;
 /// The distance between the centers of two dots.
 const DOT_SPACING: f64 = 10.0;
 
-/// The color attribute of a collapsed group: the `data-color-id` of its palette slot, which
-/// `stampColorSlot` writes on the node's group before the look (`collapsedGroup.ts` 73-77), for
-/// every container type. Empty when the theme has no palette or the container has no slot.
+/// The color attribute of a collapsed group (and of a class box, which stamps its slot the same
+/// way, `classBox.ts` 29): the `data-color-id` of its palette slot, which `stampColorSlot` writes on
+/// the node's group before the look (`collapsedGroup.ts` 73-77), for every container type. Empty
+/// when the theme has no palette or the node has no slot.
 pub(super) fn color_attribute(input: &ShapeInput<'_>) -> String {
     let Some(palette) = palette(input.config.globals, input.config.theme) else {
         return String::new();
