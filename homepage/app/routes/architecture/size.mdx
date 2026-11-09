@@ -1,0 +1,52 @@
+---
+title: Binary size
+description: What the Ferrigura binaries are made of, what each diagram type adds, and how a program that draws fewer types ships less, drawn by Ferrigura from measured numbers.
+---
+
+import { Measured, Size, SizeChart, SizeTable } from '../../components/size';
+
+Ferrigura is a native library, so its size is a question for anyone who ships it: in an npm package, a command-line tool, or a Rust program. This page shows where the bytes go, measured on <Measured />. The charts are Mermaid text that Ferrigura drew itself.
+
+The Node addon that draws every diagram type is <Size of="all" />. Of that, <Size of="core" /> is the core that every diagram needs, and the rest is what the 32 diagram types add. A program that draws only some of them can leave the others out: an addon for sequence diagrams alone is <Size of="sequence" />.
+
+## The core and the diagram types
+
+<SizeChart id="share" />
+
+The core is the build that draws the smallest diagram type, `info`, and nothing else. It holds what every render goes through: the configuration and the themes, the bundled fonts (1.4 MB of them) and the subsetter that embeds the glyphs a drawing uses, the SVG output and, for the addon, the Node binding.
+
+## What each diagram type adds
+
+<SizeChart id="types" />
+
+A type's bar is what its parser, its model, its renderer and the layout engine it reaches add to the core. Most bars also hold the text measurement, about 0.6 MB: shaping with HarfRust and the glyph metrics that wrap and size the labels. The radar, quadrant and packet charts place their text without measuring it, as Mermaid does, which is why their bars are short. Several types share an engine, and each of their bars counts it: flowcharts, class, state, entity relationship, requirement, block, agent flow, use case and swimlane diagrams all lay out with the port of ELK, and mindmaps can, so a build with two of them carries ELK once and is smaller than the core plus both bars.
+
+## Building with fewer types
+
+Each diagram type is a plugin of the renderer ([decision 0020](/architecture/decisions/0020-diagram-types-as-plugins/)). A program that registers only the types it draws links only those; the parsers, renderers and layout engines of the others are left out by the linker, and so is the code that reads their configuration.
+
+In Rust, a renderer made with `Renderer::builder` registers the plugins it is given; see the [Rust library](/reference/rust/). The published npm packages draw every type. A program that builds its own Node addon picks the types with one cargo feature each; see the [Node.js addon](/reference/node/).
+
+<SizeChart id="sets" />
+
+<SizeTable />
+
+## How the release build is tuned
+
+The release profile in `Cargo.toml` links with fat LTO in one codegen unit, strips the symbols and compiles the code that runs once per diagram for size. The layout engines, the browser arithmetic and the text stack stay optimized for speed: compiled for size, they would make renders much slower, while the split costs no measurable time. The command-line tool aborts on a panic and carries no unwinding tables; the addon keeps them, so a panic becomes a JavaScript exception. The [learnings](/architecture/learnings/#size-optimization-costs-render-time-only-in-the-layout-and-text-crates) have the measurements.
+
+Each npm platform package has a size budget that its checks enforce, set per target a few megabytes above its addon ([decision 0016](/architecture/decisions/0016-npm-packages-via-napi/)). A Windows DLL keeps its symbols in a separate PDB file, so stripping does not shrink it, and x86-64 code is larger than arm64: the Windows x64 package is the largest.
+
+## Measure it yourself
+
+`tools/size/measure.mjs` builds the addon once for each diagram type, for the sets above and for every type, builds the command-line tool, and writes the numbers this page draws. Each build is a full LTO link; with five builds at once, a run takes about ten minutes on a 20-core machine.
+
+```sh
+node tools/size/measure.mjs --jobs 5
+```
+
+```sh
+pnpm -C homepage size:write
+```
+
+The second command draws the charts again from the new numbers with the published package. The sizes depend on the platform and the Rust release, which the page names above.
