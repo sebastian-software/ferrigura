@@ -14,17 +14,14 @@
 // temporary directory with lifecycle scripts disabled, so the site's own
 // dependency tree stays untouched. Run the write again after a release.
 //
-// The output is the same on every run of one machine. On another architecture,
-// a few trigonometric results can differ in their last digits (docs/LEARNINGS.md,
-// "fused multiply-adds"), so the check compares numbers within 0.01 there.
+// The output is the same on every run of one machine; on another architecture
+// the check compares numbers within 0.01 (published-output.mjs).
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { format } from 'oxfmt';
+
+import { compareOutput, installPublished } from './published-output.mjs';
 
 const check = process.argv.includes('--check');
 const name = '@ferrigura/core';
@@ -155,22 +152,9 @@ const modeSource = `flowchart TD
 const modeDescription =
   'A guide is written and reviewed. Approval publishes it and the release is announced; requested changes send it back to writing.';
 
-const directory = await mkdtemp(join(tmpdir(), 'ferrigura-homepage-samples-'));
+const packages = await installPublished({ [name]: version }, { quiet: check });
 try {
-  await writeFile(
-    join(directory, 'package.json'),
-    `${JSON.stringify({ private: true, type: 'module', dependencies: { [name]: version } }, null, 2)}\n`
-  );
-  execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], {
-    cwd: directory,
-    stdio: check ? 'ignore' : 'inherit',
-  });
-  const installed = JSON.parse(
-    await readFile(join(directory, 'node_modules', name, 'package.json'), 'utf8')
-  );
-  assert.equal(installed.version, version, `Installed ${name} ${installed.version}`);
-  const require = createRequire(join(directory, 'package.json'));
-  const { Renderer } = await import(pathToFileURL(require.resolve(name)).href);
+  const { Renderer } = await import(pathToFileURL(packages.require.resolve(name)).href);
   const renderer = new Renderer();
 
   const svgs = new Map();
@@ -270,7 +254,7 @@ try {
     console.log(`Wrote ${svgs.size} homepage diagrams rendered by ${name} ${version}.`);
   }
 } finally {
-  await rm(directory, { recursive: true, force: true });
+  await packages.remove();
 }
 
 /** Breaks a fragment of SVG markup at its tags and indents it by depth. */
@@ -294,22 +278,7 @@ function indent(markup) {
   return lines.join('\n');
 }
 
-/** Exact on the recording platform; elsewhere every number may move by 0.01. */
 function compare({ actual, expected, label, exact }) {
   const message = `${label} drifted from ${name} ${version}; run pnpm sample:write`;
-  if (exact) {
-    assert.equal(actual, expected, message);
-    return;
-  }
-  const number = /-?\d[\d.]*/g;
-  assert.equal(actual.replaceAll(number, '#'), expected.replaceAll(number, '#'), message);
-  const left = actual.match(number) ?? [];
-  const right = expected.match(number) ?? [];
-  assert.equal(left.length, right.length, message);
-  left.forEach((value, index) => {
-    const other = right[index];
-    // Version numbers and other dotted runs must match exactly.
-    const near = Math.abs(Number(value) - Number(other)) <= 0.01;
-    assert(value === other || near, `${message}: ${value} ≠ ${other}`);
-  });
+  compareOutput({ actual, expected, label, exact, message });
 }

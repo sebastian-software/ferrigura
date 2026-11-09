@@ -1,0 +1,104 @@
+{
+  "renderedWith": { "@ferrigura/core": "0.4.0", "mermaid": "12.2.0" },
+  "platform": "darwin-arm64",
+  "settings": {
+    "config": {
+      "theme": "redux-color",
+      "htmlLabels": false,
+      "flowchart": { "htmlLabels": false },
+      "fontFamily": "\"Lexica Ultralegible\""
+    },
+    "mermaid": {
+      "theme": "redux-color",
+      "htmlLabels": false,
+      "flowchart": { "htmlLabels": false },
+      "fontFamily": "\"Lexica Ultralegible\"",
+      "startOnLoad": false,
+      "securityLevel": "strict",
+      "deterministicIds": true
+    },
+    "ferrigura": { "colorScheme": "light", "flowchartMode": "mermaid" }
+  },
+  "examples": [
+    {
+      "id": "flowchart",
+      "title": "Flowchart with subgraphs",
+      "description": "A delivery pipeline: a push is built and tested, a green build goes to staging and, after its smoke tests, to production; a failure leads back to a fix.",
+      "source": "flowchart TD\n  subgraph ci [Continuous integration]\n    push[Push to main] --> build[Build] --> tests{Tests pass?}\n  end\n  subgraph cd [Delivery]\n    staging[Deploy to staging] --> smoke{Smoke tests}\n    smoke -->|green| production[Deploy to production]\n  end\n  tests -->|yes| staging\n  tests -->|no| fix[Fix the build]\n  smoke -->|red| rollback[Roll back]\n  rollback -.-> fix\n  fix --> push\n",
+      "ferrigura": "ferrigura-flowchart.svg",
+      "mermaid": "mermaid-flowchart.svg"
+    },
+    {
+      "id": "sequence",
+      "title": "Sequence with blocks and notes",
+      "description": "A user signs in through an identity provider; the app trades the code for a token and then calls the API with it on every page.",
+      "source": "sequenceDiagram\n  autonumber\n  actor User\n  participant App\n  participant Auth as Identity provider\n  participant API\n  User->>App: Open the dashboard\n  App->>Auth: Redirect to sign-in\n  activate Auth\n  Auth-->>User: Sign-in form\n  User->>Auth: Credentials\n  alt Valid credentials\n    Auth-->>App: Authorization code\n  else Invalid credentials\n    Auth-->>User: Error message\n  end\n  deactivate Auth\n  App->>Auth: Exchange the code\n  Auth-->>App: Access token\n  loop Every page\n    App->>API: Request with token\n    API-->>App: JSON\n  end\n  Note over App,API: The token expires after an hour\n",
+      "ferrigura": "ferrigura-sequence.svg",
+      "mermaid": "mermaid-sequence.svg"
+    },
+    {
+      "id": "class",
+      "title": "Class diagram",
+      "description": "A library holds books by one or more authors; each book has copies, a copy can be lent, and a member borrows copies through loans.",
+      "source": "classDiagram\n  direction LR\n  class Library {\n    +String name\n    +add(Book book) void\n    +search(String query) List~Book~\n  }\n  class Book {\n    +String isbn\n    +String title\n    +int year\n  }\n  class Author {\n    +String name\n  }\n  class Copy {\n    +int number\n    +isAvailable() bool\n  }\n  class Lendable {\n    <<interface>>\n    +checkOut() void\n  }\n  class Member {\n    +String id\n    +borrow(Copy copy) Loan\n  }\n  class Loan {\n    +Date due\n    +isOverdue() bool\n  }\n  Library \"1\" *-- \"*\" Book : holds\n  Book \"*\" --> \"1..*\" Author : written by\n  Book \"1\" *-- \"*\" Copy\n  Copy ..|> Lendable\n  Member \"1\" --> \"*\" Loan\n  Loan --> Copy\n",
+      "ferrigura": "ferrigura-class.svg",
+      "mermaid": "mermaid-class.svg"
+    },
+    {
+      "id": "state",
+      "title": "State diagram with composite states",
+      "description": "An order moves from the cart through a checkout of three steps; a choice on the payment sends it to fulfillment or back to the cart.",
+      "source": "stateDiagram-v2\n  [*] --> Cart\n  Cart --> Checkout: check out\n  state Checkout {\n    [*] --> Address\n    Address --> Payment\n    Payment --> Confirmation\n    Confirmation --> [*]\n  }\n  state paid <<choice>>\n  Checkout --> paid\n  paid --> Fulfillment: accepted\n  paid --> Cart: declined\n  state Fulfillment {\n    [*] --> Picking\n    Picking --> Packed\n    Packed --> Shipped\n    Shipped --> [*]\n  }\n  Fulfillment --> Delivered\n  Delivered --> [*]\n  note right of Cart: Items can be added at any time\n",
+      "ferrigura": "ferrigura-state.svg",
+      "mermaid": "mermaid-state.svg"
+    },
+    {
+      "id": "er",
+      "title": "Entity relationship",
+      "description": "A shop schema: customers place orders of line items, each line item names a product, products belong to categories and customers keep addresses.",
+      "source": "erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  ORDER ||--|{ LINE_ITEM : contains\n  PRODUCT ||--o{ LINE_ITEM : \"ordered as\"\n  CATEGORY ||--o{ PRODUCT : groups\n  CUSTOMER ||--o{ ADDRESS : \"ships to\"\n  CUSTOMER {\n    int id PK\n    string name\n    string email UK\n  }\n  ORDER {\n    int id PK\n    int customer_id FK\n    date placed\n    string status\n  }\n  LINE_ITEM {\n    int order_id FK\n    int product_id FK\n    int quantity\n  }\n  PRODUCT {\n    int id PK\n    string title\n    decimal price\n  }\n",
+      "ferrigura": "ferrigura-er.svg",
+      "mermaid": "mermaid-er.svg"
+    },
+    {
+      "id": "gantt",
+      "title": "Gantt chart",
+      "description": "A release plan in three sections: design, then the engine, the command line and its documentation in parallel, then a beta and the release.",
+      "source": "gantt\n  title Release 2.0\n  dateFormat YYYY-MM-DD\n  axisFormat %b %d\n  todayMarker off\n  section Design\n    Requirements   :done, req, 2026-01-05, 5d\n    Architecture   :done, arch, after req, 4d\n  section Build\n    Core engine    :active, core, after arch, 10d\n    Command line   :cli, after arch, 6d\n    Documentation  :docs, after cli, 5d\n  section Ship\n    Beta           :milestone, beta, after core, 0d\n    Release        :crit, release, after docs core, 3d\n",
+      "ferrigura": "ferrigura-gantt.svg",
+      "mermaid": "mermaid-gantt.svg"
+    },
+    {
+      "id": "gitgraph",
+      "title": "Git graph",
+      "description": "A feature branch and a hotfix leave main; the hotfix is merged and tagged, main is merged into the feature, and the feature is merged and tagged.",
+      "source": "gitGraph\n  commit id: \"init\"\n  commit id: \"readme\"\n  branch feature\n  checkout feature\n  commit id: \"parser\"\n  commit id: \"tests\"\n  checkout main\n  branch hotfix\n  checkout hotfix\n  commit id: \"fix crash\"\n  checkout main\n  merge hotfix tag: \"v1.0.1\"\n  checkout feature\n  merge main\n  commit id: \"renderer\"\n  checkout main\n  merge feature tag: \"v1.1.0\"\n",
+      "ferrigura": "ferrigura-gitgraph.svg",
+      "mermaid": "mermaid-gitgraph.svg"
+    },
+    {
+      "id": "mindmap",
+      "title": "Mindmap",
+      "description": "A trip plan around one root: travel, stay, the things to see and the things to pack, each with its own branches.",
+      "source": "mindmap\n  root((Trip to Lisbon))\n    Travel\n      Flight\n      Airport shuttle\n    Stay\n      Hotel in Alfama\n      Late check-out\n    See\n      Tram 28\n      Belém\n        Tower\n        Monastery\n      Sintra day trip\n    Pack\n      Sunscreen\n      Walking shoes\n",
+      "ferrigura": "ferrigura-mindmap.svg",
+      "mermaid": "mermaid-mindmap.svg"
+    },
+    {
+      "id": "pie",
+      "title": "Pie chart",
+      "description": "Where the hours of a sprint went, with the values shown in the legend.",
+      "source": "pie showData\n  title Hours in a sprint\n  \"Features\" : 42\n  \"Bug fixes\" : 18\n  \"Reviews\" : 14\n  \"Meetings\" : 11\n  \"Documentation\" : 7\n",
+      "ferrigura": "ferrigura-pie.svg",
+      "mermaid": "mermaid-pie.svg"
+    },
+    {
+      "id": "xychart",
+      "title": "XY chart",
+      "description": "Monthly downloads over half a year, as bars with a line for the target on top.",
+      "source": "xychart-beta\n  title \"Monthly downloads\"\n  x-axis [Jan, Feb, Mar, Apr, May, Jun]\n  y-axis \"Downloads (thousands)\" 0 --> 50\n  bar [12, 17, 21, 30, 34, 45]\n  line [10, 15, 20, 25, 30, 35]\n",
+      "ferrigura": "ferrigura-xychart.svg",
+      "mermaid": "mermaid-xychart.svg"
+    }
+  ]
+}

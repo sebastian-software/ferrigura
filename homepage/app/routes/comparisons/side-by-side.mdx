@@ -1,0 +1,67 @@
+---
+title: Side by side with Mermaid
+description: Ten everyday diagrams, drawn by Ferrigura and by Mermaid from the same text with the same settings, laid over each other under a divider you can move.
+---
+
+import { SharedConfig, SideBySide, Versions } from '../../components/side-by-side';
+
+Ferrigura's checks compare every drawing with Mermaid's to within 0.05 px. This page lets you look instead: ten everyday diagrams of medium size, each drawn from the same text by both. Each figure lays Ferrigura's drawing over Mermaid's: Ferrigura shows left of the divider, Mermaid right of it. Drag the divider, tap the drawing or use the arrow keys to move between them.
+
+## How the drawings were made
+
+Both sides are the published packages, <Versions />, and nothing is touched up afterwards. Mermaid draws in headless Chromium; Ferrigura draws without a browser. Both get the configuration that the geometry check gives them, because Mermaid's defaults would change the look rather than the drawing: labels as SVG text instead of HTML, Ferrigura's bundled face and the `redux-color` theme, which is one of Mermaid's own.
+
+<SharedConfig />
+
+Flowcharts are drawn in Ferrigura's `mermaid` mode, which keeps Mermaid's edge routing; the default `adaptive` mode is shown on the [homepage](/#flowchart-mode). Ferrigura's drawing is the SVG file as a site would ship it, with its fonts inside. Mermaid's drawing stands in this page, which supplies the face. Each figure links both files, and the diagram text opens below it.
+
+## Where they differ
+
+The positions, sizes and texts agree in all ten. Two diagrams differ in their colors, which the geometry check does not compare:
+
+- **Class diagram.** Mermaid gives each class its own color from the theme; Ferrigura draws every class in black and white.
+- **State diagram.** Ferrigura fills the note dark, so its text cannot be read, and fills the choice and the final states where Mermaid draws them hollow.
+
+## Flowchart
+
+<SideBySide id="flowchart" />
+
+## Sequence diagram
+
+<SideBySide id="sequence" />
+
+## Class diagram
+
+<SideBySide id="class" />
+
+## State diagram
+
+<SideBySide id="state" />
+
+## Entity relationship
+
+<SideBySide id="er" />
+
+## Gantt chart
+
+<SideBySide id="gantt" />
+
+## Git graph
+
+<SideBySide id="gitgraph" />
+
+## Mindmap
+
+<SideBySide id="mindmap" />
+
+## Pie chart
+
+<SideBySide id="pie" />
+
+## XY chart
+
+<SideBySide id="xychart" />
+
+## Render them yourself
+
+`scripts/render-comparison.mjs` in the [homepage's sources](https://github.com/sebastian-software/ferrigura/tree/main/homepage) writes these files on macOS with `pnpm comparison:write`. The site's checks render Ferrigura's side again on every build and Mermaid's on macOS, where the geometry check runs too, because Chromium lays out text a little differently on Linux.

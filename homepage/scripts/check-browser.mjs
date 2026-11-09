@@ -67,6 +67,7 @@ try {
   }
 
   await verifyExample(page, origin);
+  await verifyCompareSlider(page, origin);
   await verifyNavigation(page, origin);
   await verifyHeaderMenu(page, origin);
   await verifySearch(page, origin);
@@ -122,6 +123,46 @@ async function verifyExample(page, origin) {
     );
   }
 }
+/**
+ * The side-by-side page: both drawings line up under the divider, and the
+ * keyboard and a tap move it.
+ */
+async function verifyCompareSlider(page, origin) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(new URL('/comparisons/side-by-side/', origin).href, { waitUntil: 'load' });
+  assert.equal(await page.locator('.fgr-side').count(), 10, 'The page needs ten figures');
+  const slider = page.locator('.fgr-compare').nth(3);
+  await slider.scrollIntoViewIfNeeded();
+  await verifyAlignment(slider);
+  const input = slider.getByRole('slider');
+  await input.focus();
+  await page.keyboard.press('ArrowLeft');
+  assert.equal(await input.inputValue(), '49', 'The arrow keys do not move the divider');
+  await verifyTap(page, slider, input);
+}
+
+/** A tap at a fifth of the width moves the divider there and clips the first drawing. */
+async function verifyTap(page, slider, input) {
+  const stage = await slider.locator('.fgr-compare-stage').boundingBox();
+  await page.mouse.click(stage.x + stage.width * 0.2, stage.y + stage.height / 2);
+  const value = Number(await input.inputValue());
+  assert(Math.abs(value - 20) <= 2, `A tap at 20% puts the divider at ${value}%`);
+  const clip = await slider
+    .locator('.fgr-compare-first')
+    .evaluate((element) => getComputedStyle(element).clipPath);
+  const hidden = Number(/^inset\(\S+ (?:calc\()?([\d.]+)%/.exec(clip)?.[1]);
+  assert(Math.abs(hidden - (100 - value)) < 0.5, `The first drawing is clipped as ${clip}`);
+}
+
+/** Ferrigura's image and Mermaid's SVG take the same box under the divider. */
+async function verifyAlignment(slider) {
+  const first = await slider.locator('.fgr-compare-first img').boundingBox();
+  const second = await slider.locator('.fgr-compare-layer svg').first().boundingBox();
+  assert(first && second, 'A side-by-side drawing has no box');
+  for (const key of ['x', 'y', 'width', 'height'])
+    assert(Math.abs(first[key] - second[key]) < 1, `The two drawings do not line up (${key})`);
+}
+
 /** Below 961px the homepage folds its links into the header menu, which Escape closes. */
 async function verifyHeaderMenu(page, origin) {
   await page.setViewportSize({ width: 390, height: 844 });

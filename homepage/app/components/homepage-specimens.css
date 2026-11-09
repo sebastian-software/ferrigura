@@ -1,8 +1,9 @@
 /*
- * Ferrigura's own specimens on the Monografie homepage (and, for now, one
- * contrast fix on the documentation pages, under `fgr-docs`): the diagram text and
- * its drawing on facing sheets, the file's contents, the per-type checks and
- * the cards. Everything is scoped to `fgr-` classes and takes the package's
+ * Ferrigura's own specimens on the Monografie homepage and the side-by-side
+ * page (and, for now, one contrast fix on the documentation pages, under
+ * `fgr-docs`): the diagram text and its drawing on facing sheets, the file's
+ * contents, the per-type checks, the cards and the drawings next to
+ * Mermaid's. Everything is scoped to `fgr-` classes and takes the package's
  * `--mono-*` tokens; the page system itself lives in ferramenta-family.
  * scripts/verify-build.mjs fails on a selector without an `fgr-` class.
  */
@@ -153,4 +154,148 @@
   .fgr-coverage {
     margin-top: 40px;
   }
+}
+
+/* ---------- Side by side with Mermaid (comparisons/side-by-side) ---------- */
+/* Mermaid's drawings name Ferrigura's bundled face; the page supplies it.
+   scripts/write-site-data.mjs copies the files into public/fonts/. */
+@font-face {
+  font-family: 'Lexica Ultralegible';
+  src: url('/fonts/LexicaUltralegible-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'Lexica Ultralegible';
+  src: url('/fonts/LexicaUltralegible-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'Lexica Ultralegible';
+  src: url('/fonts/LexicaUltralegible-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: block;
+}
+@font-face {
+  font-family: 'Lexica Ultralegible';
+  src: url('/fonts/LexicaUltralegible-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: block;
+}
+.fgr-side {
+  margin: 24px 0 56px;
+}
+.fgr-side > figcaption {
+  max-width: 680px;
+  font: 400 15px/1.55 var(--mono-sans);
+  color: var(--mono-ink-2);
+}
+.fgr-side > .fgr-compare {
+  margin: 20px 0 12px;
+}
+/* Both drawings fill the stage's width, at the same scale. */
+.fgr-side .fgr-side-drawing {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* The reading layout frames images; a drawing stands bare, like Mermaid's. */
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}
+.fgr-side .fgr-side-drawing > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none !important;
+}
+
+/* ---------- The comparison slider (compare-slider.tsx) ---------- */
+.fgr-compare {
+  padding: 16px 20px 20px;
+  background: var(--mono-sheet);
+  box-shadow:
+    0 0 0 1px var(--mono-hair-2),
+    0 18px 36px -28px rgba(38, 35, 31, 0.55),
+    0 2px 4px rgba(38, 35, 31, 0.05);
+}
+.fgr-compare-tags {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--mono-hair-2);
+  font: 500 12.5px/1.4 var(--mono-sans);
+  color: var(--mono-ink-3);
+}
+.fgr-compare-stage {
+  position: relative;
+}
+/* Each layer is opaque, so the first hides the second left of the divider. */
+.fgr-compare-layer {
+  background: var(--mono-sheet);
+}
+.fgr-compare-first {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 calc(100% - var(--fgr-compare-position)) 0 0);
+}
+.fgr-compare-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--fgr-compare-position);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--mono-oxide);
+  pointer-events: none;
+}
+/* The handle: a round grip on the divider, near the top of a tall drawing. */
+.fgr-compare-divider::after {
+  content: '';
+  position: absolute;
+  top: min(50%, 120px);
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--mono-oxide);
+  border-radius: 50%;
+  background: var(--mono-sheet);
+  box-shadow: 0 1px 4px rgba(38, 35, 31, 0.25);
+}
+/* The native range input covers the stage, invisible; it does the work. */
+.fgr-compare-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+  /* A vertical swipe still scrolls the page on a touch screen. */
+  touch-action: pan-y;
+}
+.fgr-compare-input:focus-visible + .fgr-compare-divider::after {
+  outline: 2px solid var(--mono-ink);
+  outline-offset: 3px;
+}
+.fgr-side-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0 0 8px;
+  font: 400 13.5px/1.4 var(--mono-sans);
+}
+.fgr-side-source > summary {
+  cursor: pointer;
+  font: 500 13.5px/1.4 var(--mono-sans);
+  color: var(--mono-ink-2);
 }
