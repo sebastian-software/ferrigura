@@ -299,3 +299,23 @@
   font: 500 13.5px/1.4 var(--mono-sans);
   color: var(--mono-ink-2);
 }
+
+/* ---------- The size page's charts (size.tsx) ---------- */
+.fgr-size {
+  margin: 24px 0 48px;
+}
+.fgr-size > figcaption {
+  max-width: 680px;
+  font: 400 15px/1.55 var(--mono-sans);
+  color: var(--mono-ink-2);
+}
+/* A chart stands bare at the column's width, like the side-by-side drawings. */
+.fgr-size .fgr-size-drawing {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 16px 0 12px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}

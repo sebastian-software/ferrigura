@@ -45,6 +45,12 @@ export const documents = [...new Set([...featured.keys(), ...docs])].map((source
 /** Pages written in homepage/app/routes, each placed after a generated page. */
 const authored = [
   {
+    path: 'architecture/size',
+    title: 'Binary size',
+    section: 'architecture',
+    after: 'architecture/overview',
+  },
+  {
     path: 'comparisons/side-by-side',
     title: 'Side by side with Mermaid',
     section: 'comparisons',

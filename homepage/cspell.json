@@ -33,7 +33,14 @@
     "xychart",
     "Lendable",
     "Alfama",
-    "Belém",
-    "Sintra"
+    "Bel\u00e9m",
+    "Sintra",
+    "agentflow",
+    "cynefin",
+    "ishikawa",
+    "rustc",
+    "sankey",
+    "treemap",
+    "wardley"
   ]
 }
