@@ -49,7 +49,6 @@ export function SideBySide({ id }: { id: string }) {
     <figure className="fgr-side">
       <figcaption>{entry.description}</figcaption>
       <CompareSlider
-        label={entry.title}
         firstLabel={`Ferrigura ${ferrigura}`}
         secondLabel={`Mermaid ${mermaid}`}
         first={
