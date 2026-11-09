@@ -5,7 +5,7 @@ export type RenderOptions = {
   id?: string;
   colorScheme?: 'light' | 'dark' | 'auto';
   /** Flowcharts only. `adaptive` centers ports and draws label backgrounds at full opacity;
-   * `mermaid` preserves the reference's routing and half-opacity label backgrounds. */
+   * `mermaid` preserves the reference's routing. */
   flowchartMode?: 'adaptive' | 'mermaid';
 };
 /** Render Mermaid source to an SVG string. Throws on invalid source or configuration. */

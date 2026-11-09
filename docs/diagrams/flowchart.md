@@ -10,9 +10,9 @@ Flowcharts use adaptive rendering by default ([0019](../decisions/0019-adaptive-
 
 Centering can add bends in dense labeled fan-in and fan-out, as in `visual-check/with-formatting-in-a-node*.mmd`. Use `mermaid` when preserving those routes takes priority. Parents not traversed by a measured labeled edge retain their existing child alignments and port spacing.
 
-Adaptive mode also draws edge-label backgrounds at full opacity, so lines do not show through the text. It keeps the theme's `edgeLabelBackground` color and any explicit alpha channel. Icon and image captions retain their reference styling.
+Both modes draw edge-label backgrounds at full opacity, so lines do not show through the text. It keeps the theme's `edgeLabelBackground` color and any explicit alpha channel. Icon and image captions retain their reference styling.
 
-To preserve the pinned Mermaid reference's routing and half-opacity SVG label backgrounds, choose the per-render compatibility option:
+To preserve the pinned Mermaid reference's routing, choose the per-render compatibility option:
 
 - Rust: `RenderOptions { flowchart_mode: FlowchartMode::Mermaid, ..RenderOptions::default() }`.
 - Node.js: `renderer.render(text, { flowchartMode: 'mermaid' })` or `render(text, config, { flowchartMode: 'mermaid' })`.

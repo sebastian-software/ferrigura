@@ -333,6 +333,14 @@ impl Renderer<'_> {
         let neo = self.conf.neo;
         let rect_source = self.actor_rect(&actor, actor_y, footer);
         let mut rect = rect_source.clone();
+        if neo {
+            // A participant has no glyph above its label. Keep its bottom on the shared
+            // lifeline datum, but size the box to the text and the band's two 6 px gaps.
+            rect.height = actor.actor_text_height.unwrap_or(0.0) + 2.0 * LABEL_LIFELINE_GAP;
+            if !footer {
+                rect.y += actor.height - rect.height;
+            }
+        }
         rect.rx = Some(if neo { 6.0 } else { 3.0 });
         rect.ry = rect.rx;
         let mut group = Element::new("g");
@@ -1231,10 +1239,9 @@ fn draw_menu_item_text(
                 .with(
                     "style",
                     format!(
-                        "text-anchor: start; font-size: {}; font-weight: {}; font-family: {};",
+                        "text-anchor: start; font-size: {}; font-weight: {};",
                         font.size_css(),
-                        number(font.weight),
-                        font.family
+                        number(font.weight)
                     ),
                 )
                 .child(

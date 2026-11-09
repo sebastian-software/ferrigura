@@ -4,14 +4,14 @@ use std::collections::HashMap;
 
 use ferrigura_elk::json::JsonNode;
 
-/// The flowchart's attachment policy and edge-label background treatment.
+/// The flowchart's attachment policy. Both modes draw full-opacity label backgrounds.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum FlowchartMode {
     /// Center ports with label-aware spacing and draw edge-label backgrounds at full opacity.
     /// Theme colors, including explicit transparency, still apply. The default.
     #[default]
     Adaptive,
-    /// Preserve the pinned Mermaid reference's ports, spacing and half-opacity backgrounds.
+    /// Preserve the pinned Mermaid reference's ports and spacing. Label backgrounds remain at full opacity.
     Mermaid,
 }
 

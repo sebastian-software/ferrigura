@@ -81,7 +81,7 @@ ferrigura --config config.json --id pets pets.mmd
 ## Behavior
 
 Flowcharts center their attachment points with label-aware spacing and draw edge-label backgrounds at full opacity by default.
-`--flowchart-mode mermaid` preserves the pinned Mermaid reference's routing and half-opacity label backgrounds;
+`--flowchart-mode mermaid` preserves the pinned Mermaid reference's routing;
 `--flowchart-mode adaptive` selects the default explicitly. Other diagram
 types ignore this option. It is separate from `--config` and the post-processing
 setting `elk.straightenEdges`.

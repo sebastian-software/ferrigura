@@ -64,7 +64,7 @@ pub fn style_sheet_with_fonts(
     globals: &Globals,
     classes: &[FlowClass],
     families: &[EmbeddedFamily],
-    mode: FlowchartMode,
+    _mode: FlowchartMode,
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
@@ -103,11 +103,9 @@ pub fn style_sheet_with_fonts(
         _ => "none".to_owned(),
     };
     // Match Mermaid's normally opaque HTML paragraph backgrounds in the SVG-only default.
-    // Keep the theme's color (and its alpha); only the extra SVG opacity changes.
-    let label_opacity = match mode {
-        FlowchartMode::Adaptive => "1",
-        FlowchartMode::Mermaid => "0.5",
-    };
+    // Routing never changes readability: SVG labels mask the line in both modes.
+    // Keep explicitly authored theme colors, including their alpha channel.
+    let label_opacity = "1";
 
     let mut rules = vec![
         rule(

@@ -506,6 +506,9 @@ impl<'a> Renderer<'a> {
         for element in self.children() {
             element.collect_text(&mut text);
         }
+        // The final SVG decodes the parser's entity placeholders. Subset the glyphs the
+        // viewer will draw, rather than the placeholder characters they replace.
+        let text = ferrigura_syntax::sanitize::decode_references(&decode_entities(&text));
         let (families, font_family) = self.embedded_fonts(&text);
         // The root's font size is the theme's `fontSize` (the base styles read it), not the text's.
         let font_size = input

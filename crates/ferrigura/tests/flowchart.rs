@@ -21,12 +21,7 @@ fn unlabeled_parent_graphs_keep_their_existing_routing() {
         assert_eq!(
             renderer
                 .render_with(text, &options(FlowchartMode::Adaptive))
-                .unwrap()
-                .replacen(
-                    "#routing .edgeLabel rect{opacity:1;",
-                    "#routing .edgeLabel rect{opacity:0.5;",
-                    1
-                ),
+                .unwrap(),
             renderer
                 .render_with(text, &options(FlowchartMode::Mermaid))
                 .unwrap()
@@ -259,10 +254,9 @@ fn options(routing: FlowchartMode) -> RenderOptions {
 }
 
 #[test]
-fn edge_label_backgrounds_follow_the_mode_without_leaking_between_renders() {
+fn edge_label_backgrounds_are_opaque_in_both_routing_modes() {
     let text = "flowchart LR\n A -->|Readable label| B\n";
     let opaque = "#routing .edgeLabel rect{opacity:1;";
-    let translucent = "#routing .edgeLabel rect{opacity:0.5;";
     for theme in [
         "redux-color",
         "redux-dark-color",
@@ -279,13 +273,9 @@ fn edge_label_backgrounds_follow_the_mode_without_leaking_between_renders() {
             .render_with(text, &options(FlowchartMode::Mermaid))
             .unwrap();
         assert!(adaptive.contains(opaque), "{theme}");
-        assert!(compatible.contains(translucent), "{theme}");
-        // One edge has identical geometry. The opacity rule is the entire SVG difference.
-        assert_eq!(
-            adaptive.replacen(opaque, translucent, 1),
-            compatible,
-            "{theme}"
-        );
+        assert!(compatible.contains(opaque), "{theme}");
+        // A single edge needs no attachment changes; the paint is identical too.
+        assert_eq!(adaptive, compatible, "{theme}");
         assert_eq!(
             adaptive,
             renderer

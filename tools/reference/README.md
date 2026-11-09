@@ -29,6 +29,9 @@ The first run takes about half a minute; later runs reuse the build while the pi
 | 09    | With patch 02, `architecture` became a keyword everywhere; it is the header keyword only now                  |
 | 10 | Not a fix: an optional measured-input hook for the adaptive flowchart geometry comparison ([0019](../../docs/decisions/0019-adaptive-flowchart-mode.md)) |
 
+| 11 | SVG flowchart edge labels mask their edges at full opacity, without changing layout |
+| 12 | Neo sequence participant boxes fit their labels while preserving the shared lifeline datum |
+
 A new patch is a diff against the pinned commit with the earlier patches applied, with a header that says what it fixes and, where there is one, the upstream issue. When upstream fixes a bug, its patch goes with the next move of the pin.
 
 ## Moving the pin

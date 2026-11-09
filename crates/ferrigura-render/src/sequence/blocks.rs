@@ -89,10 +89,7 @@ impl Renderer<'_> {
             rect.class = Some("note".to_owned());
             rect
         };
-        let mut rect_element = draw_rect(&rect);
-        if self.conf.neo {
-            rect_element.set("data-look", "neo");
-        }
+        let rect_element = draw_rect(&rect);
         let mut group = Element::new("g")
             .with("data-et", "note")
             .with("data-id", format!("i{}", msg.id))

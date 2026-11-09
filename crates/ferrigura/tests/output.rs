@@ -264,3 +264,101 @@ fn accessible_texts_are_escaped() {
     let out = svg_with(text, None, Some("pie-one"));
     assert!(out.contains("a &lt; b &amp; c</title>"), "{out}");
 }
+
+#[test]
+fn sequence_text_inherits_the_embedded_font_in_standalone_svg() {
+    let svg = render(
+        "sequenceDiagram\n participant App\n participant API\n App->>API: Request\n Note over App,API: The token expires after an hour\n",
+        &Value::from(serde_json::json!({ "fontFamily": "Unavailable Font" })),
+    ).expect("renders");
+    let doc = roxmltree::Document::parse(&svg).expect("valid SVG");
+    let css = doc
+        .descendants()
+        .find(|n| n.has_tag_name("style"))
+        .unwrap()
+        .text()
+        .unwrap();
+    assert!(css.contains("@font-face{font-family:\"fg-"));
+    for text in doc.descendants().filter(|n| n.has_tag_name("text")) {
+        let style = text.attribute("style").unwrap_or_default();
+        assert!(!style.contains("font-family:"), "{style}");
+    }
+    let note = doc
+        .descendants()
+        .find(|n| n.has_tag_name("rect") && n.attribute("class") == Some("note"))
+        .unwrap();
+    assert_eq!(
+        note.attribute("data-look"),
+        None,
+        "Mermaid notes have no neo shadow"
+    );
+    assert_eq!(note.attribute("filter"), None);
+    assert!(
+        doc.descendants().any(|n| n.has_tag_name("rect")
+            && n.attribute("class").is_some_and(|c| c.contains("actor"))
+            && n.attribute("filter").is_some()),
+        "participant shadows remain"
+    );
+}
+
+#[test]
+fn neo_participant_boxes_fit_their_labels_and_touch_the_lifelines() {
+    for (label, expected_height) in [("App", 32.0), ("App<br/>client", 52.0)] {
+        let svg = render(
+            &format!(
+                "sequenceDiagram\n actor User\n participant App as {label}\n User->>App: Open\n"
+            ),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        let doc = roxmltree::Document::parse(&svg).expect("valid SVG");
+        let value = |node: roxmltree::Node<'_, '_>, name| {
+            node.attribute(name).unwrap().parse::<f64>().unwrap()
+        };
+        let top = doc
+            .descendants()
+            .find(|n| {
+                n.has_tag_name("rect")
+                    && n.attribute("name") == Some("App")
+                    && n.attribute("class") == Some("actor actor-top")
+            })
+            .unwrap();
+        assert_eq!(value(top, "height"), expected_height);
+        let line = doc
+            .descendants()
+            .find(|n| n.has_tag_name("line") && n.attribute("name") == Some("App"))
+            .unwrap();
+        assert_eq!(value(top, "y") + value(top, "height"), value(line, "y1"));
+        let bottom = doc
+            .descendants()
+            .find(|n| {
+                n.has_tag_name("rect")
+                    && n.attribute("name") == Some("App")
+                    && n.attribute("class") == Some("actor actor-bottom")
+            })
+            .unwrap();
+        assert_eq!(value(bottom, "height"), expected_height);
+        assert_eq!(value(bottom, "y"), value(line, "y2"));
+    }
+}
+
+#[test]
+fn sequence_fonts_embed_the_decoded_entity_glyphs() {
+    let config = Value::empty_object();
+    let options = RenderOptions {
+        id: Some("entities".to_owned()),
+        ..RenderOptions::default()
+    };
+    let draw = |label| {
+        render_with(
+            &format!("sequenceDiagram\n participant A as {label}\n Note over A: {label}\n"),
+            &config,
+            &options,
+        )
+        .unwrap()
+    };
+    assert_eq!(
+        style_of(&draw("A #lt; B #gt; C")),
+        style_of(&draw("A < B > C"))
+    );
+}

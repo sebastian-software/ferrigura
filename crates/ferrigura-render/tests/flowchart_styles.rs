@@ -163,6 +163,11 @@ const OMITTED_AT_RULES: &[(&str, &str)] = &[(
 /// separately.
 const EXTRAS: &[(&str, &str, &str)] = &[
     (
+        "#flowchart .banner tspan",
+        "background-fill",
+        "an invalid property from Mermaid's color-to-fill substitution; current JSDOM CSSOM drops it",
+    ),
+    (
         "#flowchart text",
         "white-space",
         "text keeps the spaces the measurement counted (decision 0009; pie.rs)",
@@ -393,7 +398,7 @@ fn entries(items: &[Item], custom: &[(String, String)], resolve: bool) -> Vec<En
                         out.push(Entry {
                             selector: selector.clone(),
                             property: property.clone(),
-                            value: value.split_whitespace().collect(),
+                            value: value_key(&value),
                             important: *important,
                         });
                     }
@@ -404,6 +409,28 @@ fn entries(items: &[Item], custom: &[(String, String)], resolve: bool) -> Vec<En
         }
     }
     out
+}
+
+/// JSDOM serializes class colors as rgb(); the renderer retains the equivalent hex spelling.
+fn value_key(value: &str) -> String {
+    let compact: String = value.split_whitespace().collect();
+    let Some(hex) = compact.strip_prefix('#') else {
+        return compact;
+    };
+    let expanded = match hex.len() {
+        3 => hex.chars().flat_map(|c| [c, c]).collect::<String>(),
+        6 => hex.to_owned(),
+        _ => return compact,
+    };
+    match u32::from_str_radix(&expanded, 16) {
+        Ok(rgb) => format!(
+            "rgb({},{},{})",
+            (rgb >> 16) & 255,
+            (rgb >> 8) & 255,
+            rgb & 255
+        ),
+        Err(_) => compact,
+    }
 }
 
 /// The value with each `var(--name)` replaced by the custom property's value.
@@ -540,7 +567,7 @@ fn the_style_sheet_matches_the_reference_rule_by_rule() {
                         expected_entries.push(Entry {
                             selector: selector.clone(),
                             property: property.clone(),
-                            value: value.split_whitespace().collect(),
+                            value: value_key(value),
                             important: *important,
                         });
                     }
