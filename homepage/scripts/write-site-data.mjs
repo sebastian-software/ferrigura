@@ -1,9 +1,9 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Source and output paths come from the repository-owned document manifest. */
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 import { format } from 'oxfmt';
 
-import { documents } from './site-pages.mjs';
+import { documents, pages } from './site-pages.mjs';
 
 const repository = new URL('../../', import.meta.url);
 const routes = new URL('../app/routes/', import.meta.url);
@@ -12,8 +12,12 @@ const destinations = new Map(documents.map(({ source, path }) => [source, `/${pa
 destinations.set('README.md', '/reference/overview/');
 const repoUrl = 'https://github.com/sebastian-software/ferrigura';
 await mkdir(data, { recursive: true });
+// The generated pages are Markdown; the pages written by hand beside them stay.
 for (const section of ['guide', 'reference', 'diagrams', 'architecture', 'comparisons']) {
-  await rm(new URL(`${section}/`, routes), { recursive: true, force: true });
+  const directory = new URL(`${section}/`, routes);
+  const files = await readdir(directory, { recursive: true }).catch(() => []);
+  for (const file of files.filter((name) => name.endsWith('.md')))
+    await rm(new URL(file, directory));
 }
 
 for (const document of documents) {
@@ -55,6 +59,13 @@ const notices = await Promise.all(
   noticeFiles.map(async (name) => `${name}\n\n${await readFile(new URL(name, fontRoot), 'utf8')}`)
 );
 await writeFile(new URL('diagram-fonts.txt', noticeDirectory), notices.join('\n\n'));
+// The face Mermaid's drawings on the side-by-side page name (homepage-specimens.css).
+const fontDirectory = new URL('../public/fonts/', import.meta.url);
+await mkdir(fontDirectory, { recursive: true });
+for (const face of ['Regular', 'Bold', 'Italic', 'BoldItalic']) {
+  const name = `LexicaUltralegible-${face}.ttf`;
+  await writeFile(new URL(name, fontDirectory), await readFile(new URL(`fonts/${name}`, fontRoot)));
+}
 const labels = {
   guide: 'Guide',
   reference: 'Reference',
@@ -75,10 +86,10 @@ const icons = {
 await writeData(
   'navigation.json',
   Object.entries(labels).map(([id, label]) => {
-    const pages = documents
-      .filter((document) => document.section === id)
+    const entries = pages
+      .filter((page) => page.section === id)
       .map(({ path, title }) => ({ title, to: `/${path}/` }));
-    return { id, label, icon: icons[id], to: pages[0].to, pages };
+    return { id, label, icon: icons[id], to: entries[0].to, pages: entries };
   })
 );
 /**

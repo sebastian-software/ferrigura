@@ -42,7 +42,23 @@ export const documents = [...new Set([...featured.keys(), ...docs])].map((source
   const title = titles[path] ?? /^# (.+)$/m.exec(content)?.[1].replaceAll('`', '') ?? source;
   return { source, path, title, section: path.split('/')[0] };
 });
-export const expectedPages = ['index.html', ...documents.map(({ path }) => `${path}/index.html`)];
+/** Pages written in homepage/app/routes, each placed after a generated page. */
+const authored = [
+  {
+    path: 'comparisons/side-by-side',
+    title: 'Side by side with Mermaid',
+    section: 'comparisons',
+    after: 'comparisons/mermaid',
+  },
+];
+/** Every documentation page in the order of the navigation. */
+export const pages = documents.flatMap((document) => [
+  document,
+  ...authored.filter(({ after }) => after === document.path),
+]);
+if (pages.length !== documents.length + authored.length)
+  throw new Error('An authored page follows no generated page.');
+export const expectedPages = ['index.html', ...pages.map(({ path }) => `${path}/index.html`)];
 export function pagePath(page) {
   return `/${page === 'index.html' ? '' : page.replace(/index\.html$/, '')}`;
 }

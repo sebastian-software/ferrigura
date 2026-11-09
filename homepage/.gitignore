@@ -9,6 +9,7 @@ app/routes/guide/
 app/routes/reference/
 app/routes/diagrams/
 app/routes/architecture/
-app/routes/comparisons/
+app/routes/comparisons/*.md
 app/routes/changelog.md
 public/notices/
+public/fonts/

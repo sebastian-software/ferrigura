@@ -1,8 +1,9 @@
 /*
- * Ferrigura's own specimens on the Monografie homepage (and, for now, one
- * contrast fix on the documentation pages, under `fgr-docs`): the diagram text and
- * its drawing on facing sheets, the file's contents, the per-type checks and
- * the cards. Everything is scoped to `fgr-` classes and takes the package's
+ * Ferrigura's own specimens on the Monografie homepage and the side-by-side
+ * page (and, for now, one contrast fix on the documentation pages, under
+ * `fgr-docs`): the diagram text and its drawing on facing sheets, the file's
+ * contents, the per-type checks, the cards and the drawings next to
+ * Mermaid's. Everything is scoped to `fgr-` classes and takes the package's
  * `--mono-*` tokens; the page system itself lives in ferramenta-family.
  * scripts/verify-build.mjs fails on a selector without an `fgr-` class.
  */
@@ -153,4 +154,92 @@
   .fgr-coverage {
     margin-top: 40px;
   }
+}
+
+/* ---------- Side by side with Mermaid (comparisons/side-by-side) ---------- */
+/* Mermaid's drawings name Ferrigura's bundled face; the page supplies it.
+   scripts/write-site-data.mjs copies the files into public/fonts/. */
+@font-face {
+  font-family: 'Lexica Ultralegible';
+  src: url('/fonts/LexicaUltralegible-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'Lexica Ultralegible';
+  src: url('/fonts/LexicaUltralegible-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'Lexica Ultralegible';
+  src: url('/fonts/LexicaUltralegible-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: block;
+}
+@font-face {
+  font-family: 'Lexica Ultralegible';
+  src: url('/fonts/LexicaUltralegible-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: block;
+}
+/* The page has no outline: its figures take the page's whole width, up to
+   Monografie's wide measure, while the text keeps the reading measure. */
+.fgr-docs .ardo-doc-page:has(.fgr-side) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.fgr-docs .ardo-content:has(.fgr-side) {
+  max-width: var(--mono-wide);
+}
+.fgr-docs .mono-prose:has(> .fgr-side) > :not(.fgr-side) {
+  max-width: 680px;
+}
+.fgr-side {
+  margin: 24px 0 56px;
+}
+.fgr-side > figcaption {
+  max-width: 680px;
+  font: 400 15px/1.55 var(--mono-sans);
+  color: var(--mono-ink-2);
+}
+.fgr-side > .mono-facing {
+  margin: 20px 0 12px;
+}
+.fgr-side .mono-sheet {
+  padding: 24px 24px 28px;
+  display: flex;
+  flex-direction: column;
+}
+/* Both drawings fill their sheet's width at most, at the same scale. */
+.fgr-side .fgr-side-drawing {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: auto 0;
+  /* The reading layout frames images; a drawing stands bare, like Mermaid's. */
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.fgr-side .fgr-side-drawing > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none !important;
+}
+.fgr-side-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0 0 8px;
+  font: 400 13.5px/1.4 var(--mono-sans);
+}
+.fgr-side-source > summary {
+  cursor: pointer;
+  font: 500 13.5px/1.4 var(--mono-sans);
+  color: var(--mono-ink-2);
 }
