@@ -69,9 +69,9 @@ for (const page of expectedPages) {
   if (page !== 'index.html')
     fragments.push(
       'class="mono mono-docs fgr-docs"',
-      'class="mono-reading"',
-      'class="mono-section-rail"',
-      'class="mono-guide-navigation"',
+      'class="ardo-sidebar-tabs ',
+      'class="ardo-sidebar-tabs ',
+      'class="ardo-sidebar ',
       'class="mono-prose"',
       'aria-label="Toggle menu"'
     );
