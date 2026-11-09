@@ -49,9 +49,6 @@ const links = [
   <NavLink key="comparisons" to="/comparisons/overview">
     Comparisons
   </NavLink>,
-  <a key="github" href="https://github.com/sebastian-software/ferrigura">
-    GitHub
-  </a>,
 ];
 
 /** Every page on Monografie's Ardo shell; the documentation adds its menu, search and reading layout. */
@@ -62,6 +59,7 @@ export default function Root() {
       name="Ferrigura"
       release={version}
       links={links}
+      repository="https://github.com/sebastian-software/ferrigura"
       sections={sections}
       homeClassName="fgr-site"
       docsClassName="fgr-docs"
