@@ -14,6 +14,10 @@
 // recorded versions. Run the write again after `pnpm sample:write` or a move
 // of the pin.
 //
+// Write on macOS, where the geometry check runs: there the check is exact.
+// Elsewhere Ferrigura's files are compared within 0.01 and Mermaid's by their
+// markup, as Chromium lays out text differently there (compareMarkup).
+//
 // Both sides get the settings the geometry check gives them
 // (tools/port/geometry/common.ts): Mermaid draws its labels as SVG text, in
 // Ferrigura's bundled face, with the redux-color theme that Ferrigura ships;
@@ -362,11 +366,20 @@ if (check) {
   const entries = await readdir(svgDirectory);
   const committed = entries.filter((entry) => entry.endsWith('.svg'));
   assert.deepEqual(committed.toSorted(), [...svgs.keys()].toSorted(), 'The SVG files drifted');
+  let largest = 0;
   for (const [entry, content] of svgs) {
     const actual = await readFile(new URL(entry, svgDirectory), 'utf8');
-    compareOutput({ actual, expected: content, label: entry, exact, message });
+    if (exact || entry.startsWith('ferrigura-'))
+      compareOutput({ actual, expected: content, label: entry, exact, message });
+    else
+      largest = Math.max(
+        largest,
+        compareMarkup({ actual, expected: content, label: entry, message })
+      );
   }
-  const tolerance = exact ? '' : ` (${platform}, numbers within 0.01 of ${recorded.platform})`;
+  const tolerance = exact
+    ? ''
+    : ` (${platform}: Ferrigura's numbers within 0.01 of ${recorded.platform}, Mermaid's markup alike and its numbers within ${largest.toFixed(2)} px)`;
   console.log(
     `Verified ${examples.length} side-by-side diagrams against ${drawnWith}${tolerance}.`
   );
@@ -376,6 +389,32 @@ if (check) {
   for (const [entry, content] of svgs) await writeFile(new URL(entry, svgDirectory), content);
   await writeFile(target, formatted.code);
   console.log(`Wrote ${examples.length} side-by-side diagrams rendered by ${drawnWith}.`);
+}
+
+/**
+ * Mermaid's drawing on another platform than the recording: Chromium lays out
+ * text a little differently on Linux than on macOS (docs/LEARNINGS.md, "Linux
+ * and macOS Chromium lay out text differently"), so every measured width and
+ * the positions that follow from it may move. The markup must match with its
+ * numbers masked; the largest difference is returned for the log.
+ */
+function compareMarkup({ actual, expected, label, message }) {
+  const number = /-?\d[\d.]*/g;
+  assert.equal(
+    actual.replaceAll(number, '#'),
+    expected.replaceAll(number, '#'),
+    `${message}: ${label}`
+  );
+  const left = actual.match(number) ?? [];
+  const right = expected.match(number) ?? [];
+  let largest = 0;
+  for (const [index, value] of left.entries()) {
+    const difference = Math.abs(Number(value) - Number(right[index]));
+    // Version numbers and other dotted runs must match exactly.
+    if (Number.isNaN(difference)) assert.equal(value, right[index], `${message}: ${label}`);
+    else largest = Math.max(largest, difference);
+  }
+  return largest;
 }
 
 /** Every example from both packages, by file name. */
