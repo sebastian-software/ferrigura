@@ -187,17 +187,6 @@
   font-style: italic;
   font-display: block;
 }
-/* The page has no outline: its figures take the page's whole width, up to
-   Monografie's wide measure, while the text keeps the reading measure. */
-.fgr-docs .ardo-doc-page:has(.fgr-side) {
-  grid-template-columns: minmax(0, 1fr);
-}
-.fgr-docs .ardo-content:has(.fgr-side) {
-  max-width: var(--mono-wide);
-}
-.fgr-docs .mono-prose:has(> .fgr-side) > :not(.fgr-side) {
-  max-width: 680px;
-}
 .fgr-side {
   margin: 24px 0 56px;
 }
@@ -206,30 +195,97 @@
   font: 400 15px/1.55 var(--mono-sans);
   color: var(--mono-ink-2);
 }
-.fgr-side > .mono-facing {
+.fgr-side > .fgr-compare {
   margin: 20px 0 12px;
 }
-.fgr-side .mono-sheet {
-  padding: 24px 24px 28px;
-  display: flex;
-  flex-direction: column;
-}
-/* Both drawings fill their sheet's width at most, at the same scale. */
+/* Both drawings fill the stage's width, at the same scale. */
 .fgr-side .fgr-side-drawing {
   display: block;
   width: 100%;
   height: auto;
-  margin: auto 0;
   /* The reading layout frames images; a drawing stands bare, like Mermaid's. */
   border: 0;
   border-radius: 0;
   box-shadow: none;
+  margin: 0;
 }
 .fgr-side .fgr-side-drawing > svg {
   display: block;
   width: 100%;
   height: auto;
   max-width: none !important;
+}
+
+/* ---------- The comparison slider (compare-slider.tsx) ---------- */
+.fgr-compare {
+  padding: 16px 20px 20px;
+  background: var(--mono-sheet);
+  box-shadow:
+    0 0 0 1px var(--mono-hair-2),
+    0 18px 36px -28px rgba(38, 35, 31, 0.55),
+    0 2px 4px rgba(38, 35, 31, 0.05);
+}
+.fgr-compare-tags {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--mono-hair-2);
+  font: 500 12.5px/1.4 var(--mono-sans);
+  color: var(--mono-ink-3);
+}
+.fgr-compare-stage {
+  position: relative;
+}
+/* Each layer is opaque, so the first hides the second left of the divider. */
+.fgr-compare-layer {
+  background: var(--mono-sheet);
+}
+.fgr-compare-first {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 calc(100% - var(--fgr-compare-position)) 0 0);
+}
+.fgr-compare-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--fgr-compare-position);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--mono-oxide);
+  pointer-events: none;
+}
+/* The handle: a round grip on the divider, near the top of a tall drawing. */
+.fgr-compare-divider::after {
+  content: '';
+  position: absolute;
+  top: min(50%, 120px);
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--mono-oxide);
+  border-radius: 50%;
+  background: var(--mono-sheet);
+  box-shadow: 0 1px 4px rgba(38, 35, 31, 0.25);
+}
+/* The native range input covers the stage, invisible; it does the work. */
+.fgr-compare-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+  /* A vertical swipe still scrolls the page on a touch screen. */
+  touch-action: pan-y;
+}
+.fgr-compare-input:focus-visible + .fgr-compare-divider::after {
+  outline: 2px solid var(--mono-ink);
+  outline-offset: 3px;
 }
 .fgr-side-files {
   display: flex;
