@@ -12,7 +12,7 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ferrigura::{ColorScheme, FlowchartMode, RenderOptions, Renderer};
+use ferrigura::{Animation, ColorScheme, FlowchartMode, RenderOptions, Renderer};
 use ferrigura_model::value::Value;
 
 const USAGE: &str = "\
@@ -32,6 +32,11 @@ Options:
                           colour scheme. By default the configured theme decides.
       --flowchart-mode <MODE>
                           `adaptive` (default) or `mermaid` for reference-compatible output
+      --animate           Draw a supported diagram once, one line at a time, with embedded CSS
+      --animation-speed <N>
+                          Positive multiplier of 700 SVG units/s on average; enables animation
+      --animation-order <ORDER>
+                          `source` (default) or `flow` for parallel branches; enables animation
   -o, --output <FILE>     Write the SVG to FILE instead of standard output (one input only)
       --output-dir <DIR>  Write each SVG to DIR/<name>.svg, named after its input file
                           (file inputs only)
@@ -56,6 +61,7 @@ struct Job {
     id: Option<String>,
     scheme: Option<ColorScheme>,
     flowchart_mode: FlowchartMode,
+    animation: Option<Animation>,
     output: Option<PathBuf>,
     output_dir: Option<PathBuf>,
 }
@@ -112,6 +118,23 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
             "--id" => job.id = Some(value(&mut args, &argument)?),
             "--scheme" => job.scheme = Some(scheme(&value(&mut args, &argument)?)?),
             "--flowchart-mode" => job.flowchart_mode = value(&mut args, &argument)?.parse()?,
+            "--animate" => {
+                job.animation.get_or_insert_default();
+            }
+            "--animation-speed" => {
+                let raw = value(&mut args, &argument)?;
+                let speed = raw
+                    .parse()
+                    .map_err(|_| format!("invalid animation speed {raw:?}"))?;
+                let order = job.animation.unwrap_or_default().order;
+                let mut animation = Animation::new(speed).map_err(|error| error.to_string())?;
+                animation.order = order;
+                job.animation = Some(animation);
+            }
+            "--animation-order" => {
+                job.animation.get_or_insert_default().order =
+                    value(&mut args, &argument)?.parse()?;
+            }
             "-o" | "--output" => job.output = Some(value(&mut args, &argument)?.into()),
             "--output-dir" => job.output_dir = Some(value(&mut args, &argument)?.into()),
             "-" => job.inputs.push(Input::Stdin),
@@ -183,6 +206,7 @@ fn run(job: &Job) -> Result<(), String> {
         id: job.id.clone(),
         color_scheme: job.scheme,
         flowchart_mode: job.flowchart_mode,
+        animation: job.animation,
         now: None,
         git_graph_seed: None,
         random_seed: None,

@@ -39,6 +39,10 @@ name = "flowchart"
 path = "crates/ferrigura/tests/flowchart.rs"
 
 [[test]]
+name = "animation"
+path = "crates/ferrigura/tests/animation.rs"
+
+[[test]]
 name = "info"
 path = "crates/ferrigura/tests/info.rs"
 

@@ -2,6 +2,14 @@
 
 The xychart draws lines and bars over a band or a linear x-axis and a linear y-axis. It starts with `xychart` or `xychart-beta`, optionally followed by `horizontal` or `vertical`. ferrigura parses it with a hand-written scanner and recursive-descent grammar in `ferrigura-syntax/src/xychart/`, and draws it with the type's own renderer in `ferrigura-render/src/xychart/`: a port of Mermaid's chart builder, which lays the chart out with its own arithmetic. The unified renderer and the layout engines are not involved.
 
+## Draw animation
+
+The optional [draw animation](../animation.md) render option draws one element
+at a time by default, with a speed multiplier instead of a fixed total duration.
+Bars grow along the value axis and lines trace their points, following the chart's orientation. A legend entry's marker and label appear when its series starts drawing. Axes, background, and title stay visible.
+The SVG carries its own CSS, contains no script, and shows the complete diagram
+when the viewer requests reduced motion.
+
 ## Model
 
 `ferrigura_model::xychart::XyChartDiagram` (`ferrigura-model/src/xychart.rs`) is the DB's state after the parse, before the chart builder runs ([canonical-model.md](../canonical-model.md#xychart) has the conventions that hold for every type):

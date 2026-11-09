@@ -8,6 +8,11 @@ The reference is upstream Mermaid at a pinned commit, with a few patches. `tools
 
 The intentional flowchart default is recorded in [0019](./0019-adaptive-flowchart-mode.md). Test instrumentation exposes layout inputs and outputs without changing ordinary reference renders. For adaptive routing, the harness configures the measured ELK input through such a hook; a separate compatibility run keeps the hook inactive and compares the original input and geometry. The stylesheet comparison checks Mermaid mode against the reference rule by rule; public render tests cover the adaptive background opacity.
 
+The optional draw animation is recorded in [0021](./0021-optional-svg-draw-animation.md).
+It leaves the static render unchanged. Its final geometry and pixels are checked
+against that render, while ordinary geometry runs compare static output with
+the reference.
+
 Every other difference between the reference and ferrigura has exactly one place:
 
 - **ferrigura is behind Mermaid:** a `pending` exception in `tools/port/exceptions.ts`, which names the issue that tracks the fix.

@@ -9,6 +9,41 @@ use std::process::{Command, Output, Stdio};
 const PIE: &str = "pie title Pets\n  \"Dogs\" : 386\n  \"Cats\" : 85\n";
 
 #[test]
+fn animation_is_optional_and_has_validated_speed_and_order() {
+    let text = "flowchart LR\n A --> B\n B --> C\n";
+    let animated = run(&["--id", "drawing", "--animate"], text);
+    assert!(animated.status.success(), "{}", stderr(&animated));
+    assert!(stdout(&animated).contains("data-draw-duration="));
+    let explicit = run(
+        &[
+            "--id",
+            "drawing",
+            "--animation-speed",
+            "1",
+            "--animation-order",
+            "source",
+            "--animate",
+        ],
+        text,
+    );
+    assert_eq!(stdout(&animated), stdout(&explicit));
+    let fast = run(&["--id", "drawing", "--animation-speed", "2"], text);
+    assert!(fast.status.success());
+    assert_ne!(stdout(&animated), stdout(&fast));
+    assert!(!stdout(&run(&["--id", "drawing"], text)).contains("data-draw-style"));
+    for args in [
+        vec!["--animation-speed", "0"],
+        vec!["--animation-speed", "NaN"],
+        vec!["--animation-order", "typo"],
+    ] {
+        assert_eq!(run(&args, text).status.code(), Some(2));
+    }
+    let unsupported = run(&["--animate"], "sequenceDiagram\n A->>B: Hi\n");
+    assert_eq!(unsupported.status.code(), Some(1));
+    assert!(stderr(&unsupported).contains("not supported for this diagram type"));
+}
+
+#[test]
 fn flowchart_mode_selects_the_compatibility_mode_and_rejects_unknown_modes() {
     let text = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
     let adaptive = run(&["--id", "routing"], text);

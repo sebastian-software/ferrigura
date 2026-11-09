@@ -20,6 +20,33 @@ To preserve the pinned Mermaid reference's routing and half-opacity SVG label ba
 
 Use `Adaptive` in Rust or `adaptive` in Node.js and the CLI to select the default explicitly. The option affects only flowcharts, including the `graph` and `flowchart-elk` headers. Other diagram types keep their output. It is a render option, not a front-matter or init configuration key. `elk.straightenEdges` remains a separate post-processing setting for both policies.
 
+## Draw animation
+
+`RenderOptions::animation` optionally adds a one-time draw effect ([0021](../decisions/0021-optional-svg-draw-animation.md)).
+It is disabled by default and is separate from Mermaid's per-edge moving dashes.
+
+- Rust: `animation: Some(Animation::default())` in `RenderOptions`.
+  `Animation::new(1.5)?` selects a speed multiplier; its `order` field accepts
+  `AnimationOrder::Source` or `AnimationOrder::Flow`.
+- Node.js: `renderer.render(text, { animation: {} })`. Optional `speed` defaults
+  to `1`, and `order` defaults to `'source'`.
+- CLI: `ferrigura --animate --animation-speed 1.5 diagram.mmd`.
+  `--animation-order flow` draws parallel branches.
+
+Source order draws one line at a time. Speed multiplies an average of 700 SVG user units per
+second along the final routed path, so adding edges does not accelerate the
+drawing. Each connection eases in and out independently. Nodes fade in over 80 ms when first reached. Flow order draws roots and
+branches in parallel and reveals a node on the first incoming arrival. Return
+edges draw once; rootless and disconnected components start deterministically.
+Subgraph frames and the diagram title stay visible.
+
+The SVG contains embedded CSS and no script. Reduced motion shows the complete
+diagram, and finishing the animation restores the static picture. Masks preserve
+dash patterns, arrowhead gaps and line hops; marker-only paths reveal start and
+end markers at their respective arrivals. Parsing, layout, fonts, colors, links
+and the viewBox retain their static behavior. See [draw animation](../animation.md)
+for the other supported diagram types and the complete option contract.
+
 ## Model
 
 The model, `FlowchartDiagram`, is the state of the reference's flowchart DB (`flowDb.ts`) after the parse, with the DB's names in camelCase. [canonical-model.md](../canonical-model.md) holds the conventions that every model shares (the text rules, `""` for an absent string, `null` for an undefined field); the fields are these.

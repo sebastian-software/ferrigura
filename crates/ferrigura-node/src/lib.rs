@@ -10,7 +10,7 @@
 //! links only those (decision 0020); a text of another type is refused as not registered.
 
 use ferrigura::diagrams::{self, Plugin};
-use ferrigura::{ColorScheme, RenderOptions, RendererBuilder};
+use ferrigura::{Animation, ColorScheme, RenderOptions, RendererBuilder};
 use ferrigura_model::value::Value;
 use napi::{Error, Result, Status};
 use napi_derive::napi;
@@ -18,6 +18,8 @@ use napi_derive::napi;
 /// The options that are not Mermaid configuration.
 #[napi(object)]
 pub struct RenderOptionsInput {
+    /// Optional draw animation. An empty object enables the default speed and source order.
+    pub animation: Option<AnimationInput>,
     /// Flowchart mode: `adaptive` (default) centers ports with label-aware spacing and draws
     /// edge-label backgrounds at full opacity; `mermaid` preserves the pinned reference's output.
     /// Other diagram types ignore it.
@@ -28,6 +30,17 @@ pub struct RenderOptionsInput {
     /// The colors: `light`, `dark`, or `auto` to follow the viewer's color scheme. By default the
     /// configured theme decides.
     pub color_scheme: Option<String>,
+}
+
+/// Options for one-time, script-free SVG draw animation.
+/// Supports flowcharts, Gantt, Git graphs, mind maps, pie charts, and XY charts.
+#[napi(object)]
+pub struct AnimationInput {
+    /// Positive, finite multiplier of 700 SVG user units per second on average. Defaults to 1.
+    /// Each connection, bar, or sector eases in and out independently.
+    pub speed: Option<f64>,
+    /// `source` (default) draws one line at a time; `flow` draws branches in parallel.
+    pub order: Option<String>,
 }
 
 /// Renders a diagram to an SVG document.
@@ -98,6 +111,21 @@ impl Renderer {
 fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
     Ok(match input {
         Some(input) => RenderOptions {
+            animation: input
+                .animation
+                .map(|input| {
+                    let mut animation = Animation::new(input.speed.unwrap_or(1.0))
+                        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+                    animation.order = input
+                        .order
+                        .as_deref()
+                        .map(str::parse)
+                        .transpose()
+                        .map_err(|message| Error::new(Status::InvalidArg, message))?
+                        .unwrap_or_default();
+                    Ok::<_, Error>(animation)
+                })
+                .transpose()?,
             flowchart_mode: input
                 .flowchart_mode
                 .as_deref()

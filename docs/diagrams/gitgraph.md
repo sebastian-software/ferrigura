@@ -2,6 +2,14 @@
 
 A gitGraph diagram draws the history of a repository: branches as lanes, commits along them, and the merges and cherry-picks between them, with commit ids, messages and tags. It starts with the keyword `gitGraph`, optionally with a direction (`gitGraph TB:`, `gitGraph BT:`; `LR` is the default). ferrigura parses it with a hand-written lexer and recursive-descent parser that port the Langium grammar `gitGraph.langium` (`crates/ferrigura-syntax/src/git_graph/`), with a DB that follows `gitGraphAst.ts`, and draws it with a renderer of its own (`crates/ferrigura-render/src/git_graph/`) that ports `gitGraphRenderer.ts` and `styles.js`. There is no layout engine: the positions are arithmetic over the commit order and the branch order.
 
+## Draw animation
+
+The optional [draw animation](../animation.md) render option draws one element
+at a time by default, with a speed multiplier instead of a fixed total duration.
+Connections trace commit history, with commit markers, labels, and tags appearing on arrival. Branch lines, branch labels, and the title stay visible.
+The SVG carries its own CSS, contains no script, and shows the complete diagram
+when the viewer requests reduced motion.
+
 ## Model
 
 `GitGraphDiagram` (`crates/ferrigura-model/src/git_graph.rs`), version 1, is the DB's state after parsing.

@@ -2,6 +2,14 @@
 
 A Gantt diagram draws tasks as bars on a time axis, grouped in sections, with milestones, vertical markers, excluded days, a today marker and an optional title. It starts with the keyword `gantt`. ferrigura parses it with a hand-written parser that ports the Jison grammar `gantt.jison`, the DB `ganttDb.js` and the date rules they rely on (`crates/ferrigura-syntax/src/gantt/`), and draws it with a renderer of its own (`crates/ferrigura-render/src/gantt/`) on ports of d3-time, d3-scale, d3-time-format and d3-axis. There is no layout engine.
 
+## Draw animation
+
+The optional [draw animation](../animation.md) render option draws one element
+at a time by default, with a speed multiplier instead of a fixed total duration.
+Task bars grow along the timeline; milestones and vertical task markers fade in. Axes, sections, excluded days, the today marker, and the title stay visible.
+The SVG carries its own CSS, contains no script, and shows the complete diagram
+when the viewer requests reduced motion.
+
 ## Model
 
 `GanttDiagram` (`crates/ferrigura-model/src/gantt.rs`), version 1, is the DB's state after `getTasks()`, with the dates resolved.

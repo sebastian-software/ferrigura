@@ -37,6 +37,17 @@ const TITLE_FONT_SIZE: f64 = 18.0;
 pub fn render(
     input: &Context<'_, GitGraphDiagram, GitGraphDiagramConfig>,
 ) -> Result<String, RenderError> {
+    render_with_animation(input, None)
+}
+
+/// Renders a gitGraph with optional parent-to-commit connection tracing.
+///
+/// # Errors
+/// Returns the errors of [`render`], or an option error if the speed overflows the timing.
+pub fn render_with_animation(
+    input: &Context<'_, GitGraphDiagram, GitGraphDiagramConfig>,
+    animation: Option<crate::animation::Animation>,
+) -> Result<String, RenderError> {
     let diagram = input.diagram;
     let config = input.section;
     let id = input.id;
@@ -78,8 +89,60 @@ pub fn render(
     if config.show_branches {
         root.push(layout.draw_branches()?);
     }
-    root.push(layout.draw_arrows()?);
-    let (bullets, labels) = layout.draw_commits(true)?;
+    let mut arrows = layout.draw_arrows()?;
+    let mut animator = animation
+        .map(|options| {
+            let nodes: Vec<_> = diagram
+                .commits
+                .iter()
+                .map(|commit| crate::unified::data::Node {
+                    id: commit.id.clone(),
+                    ..Default::default()
+                })
+                .collect();
+            let edges: Vec<_> = diagram
+                .commits
+                .iter()
+                .flat_map(|commit| {
+                    commit
+                        .parents
+                        .iter()
+                        .map(|parent| crate::unified::data::Edge {
+                            start: parent.clone(),
+                            end: commit.id.clone(),
+                            ..Default::default()
+                        })
+                })
+                .collect();
+            let mut lengths = Vec::new();
+            arrows.visit(&mut |element| {
+                if element
+                    .get("class")
+                    .is_some_and(|classes| classes.split_whitespace().any(|class| class == "arrow"))
+                {
+                    lengths.push(crate::unified::path::path_length(
+                        element.get("d").unwrap_or_default(),
+                    ));
+                }
+            });
+            crate::animation::Animator::from_lengths(id, &nodes, &edges, &lengths, options)
+        })
+        .transpose()?;
+    if let Some(animator) = &mut animator {
+        let mut index = 0;
+        arrows.visit_mut(&mut |element| {
+            if element
+                .get("class")
+                .is_some_and(|classes| classes.split_whitespace().any(|class| class == "arrow"))
+            {
+                let d = element.get("d").unwrap_or_default().to_owned();
+                element.set_markup(animator.edge(index, &element.markup(), &d));
+                index += 1;
+            }
+        });
+    }
+    root.push(arrows);
+    let (bullets, labels) = layout.draw_commits_animated(true, animator.as_mut())?;
     root.push(bullets);
     root.push(labels);
 
@@ -152,6 +215,9 @@ pub fn render(
         h = number(view_height),
     );
     root.write_children(&mut out);
+    if let Some(animator) = animator {
+        out.push_str(&animator.finish());
+    }
     out.push_str("</svg>");
     Ok(out)
 }

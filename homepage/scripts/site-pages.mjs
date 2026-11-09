@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 
 const featured = new Map([
   ['homepage/content/getting-started.md', 'guide/getting-started'],
+  ['docs/animation.md', 'guide/animation'],
   ['crates/ferrigura/README.md', 'reference/rust'],
   ['crates/ferrigura-cli/README.md', 'reference/cli'],
   ['crates/ferrigura-node/README.md', 'reference/node'],

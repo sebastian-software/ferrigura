@@ -28,13 +28,36 @@ pub struct Painted {
 }
 
 /// Paints the measured and laid-out diagram. `id` is the diagram's id, which prefixes every DOM id.
-#[must_use]
-pub fn paint(measured: &Measured, id: &str) -> Painted {
+pub fn paint(
+    measured: &Measured,
+    id: &str,
+    animation: Option<crate::animation::Animation>,
+) -> Result<Painted, crate::RenderError> {
     let data: &LayoutData = &measured.data;
+    let mut animator = animation
+        .map(|options| {
+            let lengths: Vec<f64> = data
+                .edges
+                .iter()
+                .map(|edge| {
+                    let d =
+                        curve_path(Curve::Basis, &fix_corners(&edge.points)).unwrap_or_default();
+                    crate::unified::path::path_length(&d)
+                })
+                .collect();
+            crate::animation::Animator::from_lengths(
+                id,
+                &data.nodes,
+                &data.edges,
+                &lengths,
+                options,
+            )
+        })
+        .transpose()?;
     let mut bounds: Option<BBox> = None;
 
     let mut nodes = String::new();
-    for node in &data.nodes {
+    for (index, node) in data.nodes.iter().enumerate() {
         let Some(shape) = measured.shapes.get(&node.id) else {
             continue;
         };
@@ -43,12 +66,16 @@ pub fn paint(measured: &Measured, id: &str) -> Painted {
             &mut bounds,
             shape.extent.unwrap_or(shape.bbox).translate(x, y),
         );
-        nodes.push_str(&node_svg(node, shape, id, LinkForm::Flowchart));
+        let svg = node_svg(node, shape, id, LinkForm::Flowchart);
+        match &mut animator {
+            Some(animator) => nodes.push_str(&animator.node(index, &svg)),
+            None => nodes.push_str(&svg),
+        }
     }
 
     let mut edge_paths = String::new();
     let mut edge_labels = String::new();
-    for edge in &data.edges {
+    for (index, edge) in data.edges.iter().enumerate() {
         if edge.points.is_empty() {
             continue;
         }
@@ -57,15 +84,22 @@ pub fn paint(measured: &Measured, id: &str) -> Painted {
         if let Some(bbox) = path_bounds(&d) {
             cover(&mut bounds, bbox);
         }
-        edge_paths.push_str(&edge_path(edge, &d, id));
+        let svg = edge_path(edge, &d, id);
+        match &mut animator {
+            Some(animator) => edge_paths.push_str(&animator.edge(index, &svg, &d)),
+            None => edge_paths.push_str(&svg),
+        }
         edge_labels.push_str(&empty_edge_label(edge));
     }
 
+    let animation = animator
+        .map(crate::animation::Animator::finish)
+        .unwrap_or_default();
     let root = format!(
-        "{markers}<g class=\"subgraphs\"></g><g class=\"edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g>",
+        "{markers}<g class=\"subgraphs\"></g><g class=\"edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g>{animation}",
         markers = markers::point_markers(id, super::data::DIAGRAM_TYPE),
     );
-    Painted { root, bounds }
+    Ok(Painted { root, bounds })
 }
 
 /// The `path` of an edge (`insertEdge`, `edges.js` 857-901): its id is the diagram's id and the edge's,
