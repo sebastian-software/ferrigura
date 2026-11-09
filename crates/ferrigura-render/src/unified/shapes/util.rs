@@ -293,6 +293,34 @@ pub(super) fn stroke_width(styles: &Styles) -> String {
         .unwrap_or_else(|| "1.3".to_owned())
 }
 
+/// The value of one of the node's declarations, as `stylesMap.get(key)` reads it.
+#[must_use]
+pub(super) fn style_value(styles: &Styles, key: &str) -> Option<String> {
+    styles
+        .entries
+        .iter()
+        .find(|(name, _)| name == key)
+        .map(|(_, value)| value.clone())
+}
+
+/// The fill and the stroke that `userNodeOverrides` gives a rough outline
+/// (`shapes/handDrawnShapeStyles.ts:108-130`): the node's `fill` and `stroke`, else the theme's
+/// `mainBkg` and `nodeBorder`. `None` for a color that neither gives.
+#[must_use]
+pub(super) fn override_colours(
+    input: &ShapeInput<'_>,
+    styles: &Styles,
+) -> (Option<String>, Option<String>) {
+    let theme = input.config.theme;
+    let fill = style_value(styles, "fill")
+        .filter(|value| !value.is_empty())
+        .or_else(|| theme.main_bkg.text());
+    let stroke = style_value(styles, "stroke")
+        .filter(|value| !value.is_empty())
+        .or_else(|| theme.node_border.text());
+    (fill, stroke)
+}
+
 /// The attribute `name="value"` with its leading space, the value escaped.
 #[must_use]
 pub(super) fn attribute(name: &str, value: &str) -> String {

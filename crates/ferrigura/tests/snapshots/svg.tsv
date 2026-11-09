@@ -181,9 +181,9 @@ e2e/diagrams/class-diagram/nightly-check/17a-should-handle-the-direction-stateme
 e2e/diagrams/class-diagram/nightly-check/17b-should-handle-the-direction-statement-with-rl.mmd	4239c8d9257d784b
 e2e/diagrams/class-diagram/nightly-check/18a-should-handle-the-direction-statement-with-lr-2.mmd	12a18b39b8770e63
 e2e/diagrams/class-diagram/nightly-check/18a-should-handle-the-direction-statement-with-lr.mmd	85578a88884673dd
-e2e/diagrams/class-diagram/nightly-check/18b-should-render-a-simple-class-diagram-with-notes-2.mmd	95be47d7e165f92d
-e2e/diagrams/class-diagram/nightly-check/18b-should-render-a-simple-class-diagram-with-notes.mmd	b74c5aa41578a0e9
-e2e/diagrams/class-diagram/nightly-check/19-should-render-a-simple-class-diagram-with-notes.mmd	7eafd1e2de5adf61
+e2e/diagrams/class-diagram/nightly-check/18b-should-render-a-simple-class-diagram-with-notes-2.mmd	32bd5c34d63e3539
+e2e/diagrams/class-diagram/nightly-check/18b-should-render-a-simple-class-diagram-with-notes.mmd	25aa8820aaf5eeb1
+e2e/diagrams/class-diagram/nightly-check/19-should-render-a-simple-class-diagram-with-notes.mmd	eb81518812fa19c9
 e2e/diagrams/class-diagram/nightly-check/2-1-should-render-a-simple-class-diagram-with-different-visibilities.mmd	2d9d4fc45f5257ea
 e2e/diagrams/class-diagram/nightly-check/2-1-should-render-a-simple-class-diagrams-with-cardinality-without-htmllabels-2.mmd	07b327dc227d7460
 e2e/diagrams/class-diagram/nightly-check/2-1-should-render-a-simple-class-diagrams-with-cardinality-without-htmllabels.mmd	100e1a0eb96a2262
@@ -232,7 +232,7 @@ e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-16b-should-handle-the-dire
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-17a-should-handle-the-direction-statement-with-bt.mmd	3e7e0e2929b9c1bb
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-17b-should-handle-the-direction-statement-with-rl.mmd	79ff1dacf99e0f4f
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-18a-should-handle-the-direction-statement-with-lr.mmd	b111df803574ab3d
-e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-18b-should-render-a-simple-class-diagram-with-notes.mmd	23ab45e415912101
+e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-18b-should-render-a-simple-class-diagram-with-notes.mmd	93b0cdad2e697025
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-1-should-render-a-simple-class-diagrams-with-cardinality-without-htmllabels.mmd	100e1a0eb96a2262
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-2-should-render-a-simple-class-diagram-with-different-visibilities.mmd	07b327dc227d7460
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-2-3-should-render-a-simple-class-diagram-with-different-visibilities-without-htmllabels.mmd	07b327dc227d7460
@@ -275,7 +275,7 @@ e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-multiple-cla
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-nested-namespaces-with-dot-notation.mmd	22a7d4ec802873eb
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-syntactically-nested-namespaces.mmd	d7dad66899ed37b6
 e2e/diagrams/class-diagram/nightly-check/handdrawn/hd-should-render-two-classes-with-text-labels.mmd	ff0364b00d67e7d9
-e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-full-class-diagram-with-the-handdrawn-look-2.mmd	7e465e5ac00ec7c9
+e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-full-class-diagram-with-the-handdrawn-look-2.mmd	993bd60cc65df1dd
 e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-full-class-diagram-with-the-handdrawn-look.mmd	c5ea2c0ab1d1449a
 e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-a-custom-theme-and-the-handdrawn-look-2.mmd	100e1a0eb96a2262
 e2e/diagrams/class-diagram/nightly-check/handdrawn/should-render-a-simple-class-diagram-with-a-custom-theme-and-the-handdrawn-look.mmd	07b327dc227d7460
@@ -292,7 +292,7 @@ e2e/diagrams/class-diagram/nightly-check/renders-nested-namespaces-with-dot-nota
 e2e/diagrams/class-diagram/nightly-check/renders-syntactically-nested-namespaces.mmd	1de460ce08b69b56
 e2e/diagrams/class-diagram/nightly-check/should-add-classes-namespaces-2.mmd	785e13ab4d79bcfa
 e2e/diagrams/class-diagram/nightly-check/should-add-classes-namespaces.mmd	c1f8d2a40a294948
-e2e/diagrams/class-diagram/nightly-check/should-add-notes-in-namespaces.mmd	65d29a32fc280070
+e2e/diagrams/class-diagram/nightly-check/should-add-notes-in-namespaces.mmd	59be3e6a46b66f04
 e2e/diagrams/class-diagram/nightly-check/should-handle-an-empty-class-body-with-empty-braces.mmd	cbf6680e4fa92a9b
 e2e/diagrams/class-diagram/nightly-check/should-handle-backticks-for-namespace-and-class-names.mmd	540a31b36d941316
 e2e/diagrams/class-diagram/nightly-check/should-handle-newline-in-string-label.mmd	26411e0491126a19
@@ -302,7 +302,7 @@ e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-a-text-label
 e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-text-label-2.mmd	b7af30df292cfb57
 e2e/diagrams/class-diagram/nightly-check/should-render-a-class-with-text-label.mmd	2d1b4ea09f974763
 e2e/diagrams/class-diagram/nightly-check/should-render-a-full-class-diagram-using-elk.mmd	100e1a0eb96a2262
-e2e/diagrams/class-diagram/nightly-check/should-render-a-full-class-diagram.mmd	f4becf7c08ea6c4d
+e2e/diagrams/class-diagram/nightly-check/should-render-a-full-class-diagram.mmd	8616bab24fe1614d
 e2e/diagrams/class-diagram/nightly-check/should-render-a-namespace-with-a-custom-label-2.mmd	3a1b1ea0f9d70aea
 e2e/diagrams/class-diagram/nightly-check/should-render-a-namespace-with-a-custom-label.mmd	8534e84477a42592
 e2e/diagrams/class-diagram/nightly-check/should-render-a-self-referential-class-diagram-with-multiplicity-labels-fixes-7560.mmd	e0a656282fce5d59
@@ -739,7 +739,7 @@ e2e/diagrams/flowchart/nightly-check/shape-alias/12-all-dbl-circ-double-circle-s
 e2e/diagrams/flowchart/nightly-check/shape-alias/13-all-notched-rectangle-card-notch-rect-should-render-same-shape.mmd	1af3e3c3e74133e1	48ed3f786093a70d
 e2e/diagrams/flowchart/nightly-check/shape-alias/14-all-sm-circ-small-circle-start-should-render-same-shape.mmd	350ba5fc31261a67	e3616afe22872e9f
 e2e/diagrams/flowchart/nightly-check/shape-alias/15-all-lin-rect-lined-rectangle-lin-proc-lined-process-shaded-process-should-render-same-shape.mmd	246f29b87cffd5cd	fe07c30c8df76af1
-e2e/diagrams/flowchart/nightly-check/shape-alias/16-all-fr-circ-framed-circle-stop-should-render-same-shape.mmd	4fda8e45f891119d	67575eee8c028b89
+e2e/diagrams/flowchart/nightly-check/shape-alias/16-all-fr-circ-framed-circle-stop-should-render-same-shape.mmd	198cab2ee862bb2f	b4c0abce10099edb
 e2e/diagrams/flowchart/nightly-check/shape-alias/17-all-comment-brace-l-should-render-same-shape.mmd	1b7f704d99836a95	ad7842e5afaf3229
 e2e/diagrams/flowchart/nightly-check/shape-alias/18-all-fork-join-should-render-same-shape.mmd	2b4aefb541040f57	b67ad35808a29d9f
 e2e/diagrams/flowchart/nightly-check/shape-alias/19-all-bolt-com-link-lightning-bolt-should-render-same-shape.mmd	ec9e9139f702e0ab	e6d808fcd1e9aeeb
@@ -772,8 +772,8 @@ e2e/diagrams/flowchart/nightly-check/shape-themes/03-connect-all-shapes-with-eac
 e2e/diagrams/flowchart/nightly-check/shape-themes/04-connect-all-shapes-with-each-other.mmd	3b3c2254611c10ad	67715afe8aaa22f9
 e2e/diagrams/flowchart/nightly-check/shape-themes/05-connect-all-shapes-with-each-other.mmd	4ca49666288cd1cd	12bfd99794236841
 e2e/diagrams/flowchart/nightly-check/shape-themes/06-connect-all-shapes-with-each-other.mmd	edbe614de0b63997	8bdaabcaae8e7aef
-e2e/diagrams/flowchart/nightly-check/shape-themes/07-connect-all-shapes-with-each-other.mmd	b5c3705046412f6f	cfbed8d07934ae7f
-e2e/diagrams/flowchart/nightly-check/shape-themes/08-connect-all-shapes-with-each-other.mmd	c39ae06ef3b27529	c7a562ebb80e316d
+e2e/diagrams/flowchart/nightly-check/shape-themes/07-connect-all-shapes-with-each-other.mmd	6083e2f1fe36d59b	34a99042b8618423
+e2e/diagrams/flowchart/nightly-check/shape-themes/08-connect-all-shapes-with-each-other.mmd	6e98cd4e7e4866f9	22b35586a4e52e05
 e2e/diagrams/flowchart/nightly-check/shape-themes/09-connect-all-shapes-with-each-other.mmd	527fcd3f40c5931b	7b0294c099a9d853
 e2e/diagrams/flowchart/nightly-check/shape-themes/10-connect-all-shapes-with-each-other.mmd	088c3772a5191b19	92c1a8e5282eed25
 e2e/diagrams/flowchart/nightly-check/shape-themes/11-connect-all-shapes-with-each-other.mmd	b14c170839ae4d43	5f1cd070cbf2a373
@@ -782,8 +782,8 @@ e2e/diagrams/flowchart/nightly-check/shape-themes/13-connect-all-shapes-with-eac
 e2e/diagrams/flowchart/nightly-check/shape-themes/14-connect-all-shapes-with-each-other.mmd	cd13994ad0e9f081	ced8098e9a4d3c4d
 e2e/diagrams/flowchart/nightly-check/shape-themes/15-connect-all-shapes-with-each-other.mmd	2e33fe057f3764d3	e1fbc0046011feb3
 e2e/diagrams/flowchart/nightly-check/shape-themes/16-connect-all-shapes-with-each-other.mmd	ac9752c6e59fca99	e228238bc1cc4325
-e2e/diagrams/flowchart/nightly-check/shape-themes/17-connect-all-shapes-with-each-other.mmd	61a95419a0412b45	96cc18f1fba07429
-e2e/diagrams/flowchart/nightly-check/shape-themes/18-connect-all-shapes-with-each-other.mmd	10aeb463d8040e07	1667c7564264505f
+e2e/diagrams/flowchart/nightly-check/shape-themes/17-connect-all-shapes-with-each-other.mmd	fbbabd53849290d9	0687c74b772143cd
+e2e/diagrams/flowchart/nightly-check/shape-themes/18-connect-all-shapes-with-each-other.mmd	5b746aeaac02f933	d7c36eee24f6ffd3
 e2e/diagrams/flowchart/nightly-check/shape-themes/19-connect-all-shapes-with-each-other.mmd	d51fc46b3a120d59	ed0392549a06b185
 e2e/diagrams/flowchart/nightly-check/shape-themes/20-connect-all-shapes-with-each-other.mmd	da390f15b8cc14b9	641974fe4648a79d
 e2e/diagrams/flowchart/nightly-check/shape-themes/21-connect-all-shapes-with-each-other.mmd	eb0f8fffb111ddeb	eb1991d19d85ae3b
@@ -792,8 +792,8 @@ e2e/diagrams/flowchart/nightly-check/shape-themes/23-connect-all-shapes-with-eac
 e2e/diagrams/flowchart/nightly-check/shape-themes/24-connect-all-shapes-with-each-other.mmd	576796ff489422ab	d0759184d3dbe1db
 e2e/diagrams/flowchart/nightly-check/shape-themes/25-connect-all-shapes-with-each-other.mmd	3eaf0b0acebe8ee1	e2eef54cf6029e05
 e2e/diagrams/flowchart/nightly-check/shape-themes/26-connect-all-shapes-with-each-other.mmd	ece802bcfef873a5	d7c3c435251e9181
-e2e/diagrams/flowchart/nightly-check/shape-themes/27-connect-all-shapes-with-each-other.mmd	6c664110123e10f3	6579b8a15e4006b3
-e2e/diagrams/flowchart/nightly-check/shape-themes/28-connect-all-shapes-with-each-other.mmd	e10a7f75e891e4e9	15c867f15ce40edd
+e2e/diagrams/flowchart/nightly-check/shape-themes/27-connect-all-shapes-with-each-other.mmd	8f00aa4597c757c3	e044545d3a79af83
+e2e/diagrams/flowchart/nightly-check/shape-themes/28-connect-all-shapes-with-each-other.mmd	d1c11a9d3ee5af11	404a8b2766aaa2cd
 e2e/diagrams/flowchart/nightly-check/shape-themes/29-connect-all-shapes-with-each-other.mmd	cdc79c66426e69c3	14603fe6bdd69b5b
 e2e/diagrams/flowchart/nightly-check/shape-themes/30-connect-all-shapes-with-each-other.mmd	89a1b82e042c5c4f	90035299d86a2a8f
 e2e/diagrams/flowchart/nightly-check/shape-themes/31-connect-all-shapes-with-each-other.mmd	13d77ca16945f7f5	39d6a0fddf91fc71
@@ -802,8 +802,8 @@ e2e/diagrams/flowchart/nightly-check/shape-themes/33-connect-all-shapes-with-eac
 e2e/diagrams/flowchart/nightly-check/shape-themes/34-connect-all-shapes-with-each-other.mmd	d2d81a9d15a24bd3	80e5a802ef509e63
 e2e/diagrams/flowchart/nightly-check/shape-themes/35-connect-all-shapes-with-each-other.mmd	921a1abeeafda5d9	8144b810556ac1ed
 e2e/diagrams/flowchart/nightly-check/shape-themes/36-connect-all-shapes-with-each-other.mmd	ea2d390f55400a63	f5061c8f42c7d8d3
-e2e/diagrams/flowchart/nightly-check/shape-themes/37-connect-all-shapes-with-each-other.mmd	a3f74aba741e6b5f	c5fecd13cf38234f
-e2e/diagrams/flowchart/nightly-check/shape-themes/38-connect-all-shapes-with-each-other.mmd	c2fc8c9e73537ae3	e96ff812ec1d341b
+e2e/diagrams/flowchart/nightly-check/shape-themes/37-connect-all-shapes-with-each-other.mmd	66835935a7d68c1b	3cbb2a11f35ad62b
+e2e/diagrams/flowchart/nightly-check/shape-themes/38-connect-all-shapes-with-each-other.mmd	04ef5f8d80d10bd7	4f18273ee482d68f
 e2e/diagrams/flowchart/nightly-check/shape-themes/39-connect-all-shapes-with-each-other.mmd	a97fd1209aa5ffd5	b3d494e9f9f39619
 e2e/diagrams/flowchart/nightly-check/shape-themes/40-connect-all-shapes-with-each-other.mmd	aff7d7e039f10fd5	3bb8b58eda673081
 e2e/diagrams/flowchart/nightly-check/should-keep-the-entry-node-on-top-of-a-recursive-flow-nested-in-a-subgraph-with-keepentrynodeontop-true-7827.mmd	19b294b7c747a198	fd04cb7ad26c47d8
@@ -1698,151 +1698,151 @@ e2e/diagrams/sequence/visual-check/usemaxwidth-true.mmd	79914b739d049062
 e2e/diagrams/sequence/visual-check/v2-usemaxwidth-false.mmd	3fa8ab80885c2ba6
 e2e/diagrams/sequence/visual-check/v2-usemaxwidth-true.mmd	3bc0fb7ab7ba8392
 e2e/diagrams/sequence/visual-check/with-boxes.mmd	b7af75563f9ffc0a
-e2e/diagrams/state-diagram-v2/nightly-check/1433-should-render-a-simple-state-diagram-with-a-title.mmd	2cbc6b0d7f13f1ce
-e2e/diagrams/state-diagram-v2/nightly-check/a-simple-state-diagram-classic-look-default-theme.mmd	3968b82395ebb0ad
-e2e/diagrams/state-diagram-v2/nightly-check/basic-states-neo-look-neo-dark-theme.mmd	be5559afede0730b
-e2e/diagrams/state-diagram-v2/nightly-check/basic-states-neo-look-neo-theme.mmd	3f6f9b7f9d494cd5
-e2e/diagrams/state-diagram-v2/nightly-check/basic-states-neo-look-redux-dark-theme.mmd	25c8be85b2f97a03
-e2e/diagrams/state-diagram-v2/nightly-check/basic-states-neo-look-redux-theme.mmd	ff735e4c5386e7b5
-e2e/diagrams/state-diagram-v2/nightly-check/clickable-state-with-tooltip-handdrawn-look.mmd	f9e6e3a47d4f4a1e
-e2e/diagrams/state-diagram-v2/nightly-check/clickable-state-with-tooltip.mmd	3fd2a366d67dee78
-e2e/diagrams/state-diagram-v2/nightly-check/composite-states-neo-look-neo-dark-theme.mmd	f1e2f2e132092b97
-e2e/diagrams/state-diagram-v2/nightly-check/composite-states-neo-look-neo-theme.mmd	427844e347963e5f
-e2e/diagrams/state-diagram-v2/nightly-check/composite-states-neo-look-redux-dark-theme.mmd	6500be16a7e43c95
-e2e/diagrams/state-diagram-v2/nightly-check/composite-states-neo-look-redux-theme.mmd	1e9c730f277eca07
-e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-handdrawn-look-redux-color-theme.mmd	5e29ba19f3c13f57
-e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-handdrawn-look-redux-dark-color-theme.mmd	e555c1bc6479b105
-e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-redux-color-theme.mmd	ab8919c6f56bd061
-e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-redux-dark-color-theme.mmd	55641c69be03897b
-e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-redux-dark-theme.mmd	4e2840b9b8b8592f
-e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-redux-theme.mmd	0eb78b5c955787e7
-e2e/diagrams/state-diagram-v2/nightly-check/concurrent-states-neo-look-neo-dark-theme.mmd	00bc300a35da1d35
-e2e/diagrams/state-diagram-v2/nightly-check/concurrent-states-neo-look-neo-theme.mmd	3c8cfe7c00a0226d
-e2e/diagrams/state-diagram-v2/nightly-check/concurrent-states-neo-look-redux-dark-theme.mmd	d7eeda40b060eeaf
-e2e/diagrams/state-diagram-v2/nightly-check/concurrent-states-neo-look-redux-theme.mmd	46db2d8eaeb7ac6d
-e2e/diagrams/state-diagram-v2/nightly-check/dark-theme.mmd	a9a1aded6df0b2b9
-e2e/diagrams/state-diagram-v2/nightly-check/default-theme.mmd	7baa89223e0d8bdf
-e2e/diagrams/state-diagram-v2/nightly-check/elk/elk-composite-entry-default-centering.mmd	edad335a5bc9ff38
-e2e/diagrams/state-diagram-v2/nightly-check/elk/elk-notes-keep-their-layout.mmd	bf9e50a4a1d45db8
-e2e/diagrams/state-diagram-v2/nightly-check/elk/elk-start-end-edge-centering.mmd	941bcc26e4a10ffe
-e2e/diagrams/state-diagram-v2/nightly-check/forest-theme.mmd	8ddb166111d7c1b7
-e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-handdrawn-look-redux-color-theme.mmd	5fa9a0960d79d11f
-e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-handdrawn-look-redux-dark-color-theme.mmd	56d0b1f687ee5b3d
-e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-redux-color-theme.mmd	d1ad8cc3d20b428f
-e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-redux-dark-color-theme.mmd	3ac6447fd9ff5987
-e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-redux-dark-theme.mmd	b9ed8b36f68e347f
-e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-redux-theme.mmd	bec1222f9c60009f
-e2e/diagrams/state-diagram-v2/nightly-check/neutral-theme.mmd	74849abcccdcc977
-e2e/diagrams/state-diagram-v2/nightly-check/redux-color-theme.mmd	6702e577d589467b
-e2e/diagrams/state-diagram-v2/nightly-check/redux-dark-color-theme.mmd	b6b24ba0e17d74dd
-e2e/diagrams/state-diagram-v2/nightly-check/redux-dark-theme.mmd	142c717a19f0dbd5
-e2e/diagrams/state-diagram-v2/nightly-check/redux-theme.mmd	c51b684927aa1f33
-e2e/diagrams/state-diagram-v2/nightly-check/regions-inside-nesting-composite-containers-redux-color-theme.mmd	41f14ba76cace083
-e2e/diagrams/state-diagram-v2/nightly-check/regions-inside-nesting-composite-containers-redux-dark-color-theme.mmd	b4087a94e57702d9
-e2e/diagrams/state-diagram-v2/nightly-check/regions-inside-nesting-composite-containers-redux-dark-theme.mmd	bc33c79a114df463
-e2e/diagrams/state-diagram-v2/nightly-check/regions-inside-nesting-composite-containers-redux-theme.mmd	e202b2b53208e45d
-e2e/diagrams/state-diagram-v2/nightly-check/should-align-dividers-correctly.mmd	c9df31021098ef5c
-e2e/diagrams/state-diagram-v2/nightly-check/should-allow-styles-to-take-effect-in-subgraphs.mmd	d817ec98eef02154
-e2e/diagrams/state-diagram-v2/nightly-check/should-let-styles-take-precedence-over-classes.mmd	d5f56345edc17b70
-e2e/diagrams/state-diagram-v2/nightly-check/should-render-edge-labels-correctly-with-multiple-states.mmd	4c8f4192af4f42b6
-e2e/diagrams/state-diagram-v2/nightly-check/should-render-edge-labels-correctly.mmd	0798b4dc15150602
-e2e/diagrams/state-diagram-v2/nightly-check/special-state-types-neo-look-neo-dark-theme.mmd	b7943aeaa4153a2f
-e2e/diagrams/state-diagram-v2/nightly-check/special-state-types-neo-look-neo-theme.mmd	9f15cfaa569b60b5
-e2e/diagrams/state-diagram-v2/nightly-check/special-state-types-neo-look-redux-dark-theme.mmd	503d8a0056e3d897
-e2e/diagrams/state-diagram-v2/nightly-check/special-state-types-neo-look-redux-theme.mmd	d7e7b52603dab895
-e2e/diagrams/state-diagram-v2/nightly-check/states-with-descriptions-neo-look-neo-dark-theme.mmd	afa2a4f9c84a2a31
-e2e/diagrams/state-diagram-v2/nightly-check/states-with-descriptions-neo-look-neo-theme.mmd	0d93bfae63dc80c9
-e2e/diagrams/state-diagram-v2/nightly-check/states-with-descriptions-neo-look-redux-dark-theme.mmd	35fe4fb78ddcee01
-e2e/diagrams/state-diagram-v2/nightly-check/states-with-descriptions-neo-look-redux-theme.mmd	314a71fbdedbd651
-e2e/diagrams/state-diagram-v2/nightly-check/user-styled-composite-containers-redux-color-theme.mmd	59c5cc2dc1247375
-e2e/diagrams/state-diagram-v2/nightly-check/user-styled-composite-containers-redux-dark-color-theme.mmd	6899b7329ef7de3d
-e2e/diagrams/state-diagram-v2/nightly-check/user-styled-composite-containers-redux-dark-theme.mmd	5a5225211f46c949
-e2e/diagrams/state-diagram-v2/nightly-check/user-styled-composite-containers-redux-theme.mmd	c07555e57f4355bf
-e2e/diagrams/state-diagram-v2/nightly-check/user-styled-with-regions-composite-containers-redux-color-theme.mmd	7808d4b83d9c8b55
-e2e/diagrams/state-diagram-v2/nightly-check/user-styled-with-regions-composite-containers-redux-dark-color-theme.mmd	e599b1f25da2f0cd
-e2e/diagrams/state-diagram-v2/nightly-check/user-styled-with-regions-composite-containers-redux-dark-theme.mmd	0572fe717e932d81
-e2e/diagrams/state-diagram-v2/nightly-check/user-styled-with-regions-composite-containers-redux-theme.mmd	9f5713608a9682d5
-e2e/diagrams/state-diagram-v2/nightly-check/v2-can-have-multiple-classes-applied-to-multiple-states.mmd	134624f0c2049b72
-e2e/diagrams/state-diagram-v2/nightly-check/v2-it-should-be-possible-to-use-a-choice.mmd	f14116f58a6c9d02
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-handle-different-rendering-directions-in-composite-states.mmd	f856068a51c28502
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-handle-multiline-notes-with-different-line-breaks.mmd	cfb8c3f172ef901c
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-handle-multiple-arrows-from-one-node-to-another.mmd	bca428f23b1ec5d2
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-handle-multiple-notes-added-to-one-state.mmd	fccb4bb523368a94
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-compact-self-loop-edge.mmd	7915f0e1731770aa
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-long-descriptions-with-additional-descriptions.mmd	12e3dd78773fda96
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-note-with-multiple-lines-in-it.mmd	a5c0aaa3b70a9f7e
+e2e/diagrams/state-diagram-v2/nightly-check/1433-should-render-a-simple-state-diagram-with-a-title.mmd	180a9beecf32170a
+e2e/diagrams/state-diagram-v2/nightly-check/a-simple-state-diagram-classic-look-default-theme.mmd	ce7ee8244e240891
+e2e/diagrams/state-diagram-v2/nightly-check/basic-states-neo-look-neo-dark-theme.mmd	37578e252d444e1f
+e2e/diagrams/state-diagram-v2/nightly-check/basic-states-neo-look-neo-theme.mmd	1009004a92960d4f
+e2e/diagrams/state-diagram-v2/nightly-check/basic-states-neo-look-redux-dark-theme.mmd	9a4e49126c2f5981
+e2e/diagrams/state-diagram-v2/nightly-check/basic-states-neo-look-redux-theme.mmd	37afcf7a8d993241
+e2e/diagrams/state-diagram-v2/nightly-check/clickable-state-with-tooltip-handdrawn-look.mmd	f311ccd202d6b70a
+e2e/diagrams/state-diagram-v2/nightly-check/clickable-state-with-tooltip.mmd	2936c5874087783a
+e2e/diagrams/state-diagram-v2/nightly-check/composite-states-neo-look-neo-dark-theme.mmd	85be7dd20575b1d7
+e2e/diagrams/state-diagram-v2/nightly-check/composite-states-neo-look-neo-theme.mmd	3d074486143ce495
+e2e/diagrams/state-diagram-v2/nightly-check/composite-states-neo-look-redux-dark-theme.mmd	ed6b43829b4aa5eb
+e2e/diagrams/state-diagram-v2/nightly-check/composite-states-neo-look-redux-theme.mmd	1887902381ba30c1
+e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-handdrawn-look-redux-color-theme.mmd	a4f513434c864957
+e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-handdrawn-look-redux-dark-color-theme.mmd	3187b4673525f369
+e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-redux-color-theme.mmd	d4635f390925782d
+e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-redux-dark-color-theme.mmd	d557fd91c927dd1f
+e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-redux-dark-theme.mmd	a4c2e430fa7be1d9
+e2e/diagrams/state-diagram-v2/nightly-check/concurrency-composite-containers-redux-theme.mmd	d7984d0e63a6a0e5
+e2e/diagrams/state-diagram-v2/nightly-check/concurrent-states-neo-look-neo-dark-theme.mmd	b32ef39bfd8ef0b3
+e2e/diagrams/state-diagram-v2/nightly-check/concurrent-states-neo-look-neo-theme.mmd	3ac6e7d4b634e5cf
+e2e/diagrams/state-diagram-v2/nightly-check/concurrent-states-neo-look-redux-dark-theme.mmd	8b1c37317c6cc267
+e2e/diagrams/state-diagram-v2/nightly-check/concurrent-states-neo-look-redux-theme.mmd	0943dfc37c46f767
+e2e/diagrams/state-diagram-v2/nightly-check/dark-theme.mmd	90fc91aa1fc9a589
+e2e/diagrams/state-diagram-v2/nightly-check/default-theme.mmd	7ecda3912b4909ef
+e2e/diagrams/state-diagram-v2/nightly-check/elk/elk-composite-entry-default-centering.mmd	0023487b7cc866e0
+e2e/diagrams/state-diagram-v2/nightly-check/elk/elk-notes-keep-their-layout.mmd	5e2c2c51a9163392
+e2e/diagrams/state-diagram-v2/nightly-check/elk/elk-start-end-edge-centering.mmd	b14b8f3852032140
+e2e/diagrams/state-diagram-v2/nightly-check/forest-theme.mmd	00477e321d7903a1
+e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-handdrawn-look-redux-color-theme.mmd	1084c1ec2c6e24c3
+e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-handdrawn-look-redux-dark-color-theme.mmd	3c4ab812198456c1
+e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-redux-color-theme.mmd	35f7dd703ae14fc1
+e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-redux-dark-color-theme.mmd	3b4c6344ed66958f
+e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-redux-dark-theme.mmd	f710be5242767373
+e2e/diagrams/state-diagram-v2/nightly-check/nested-composite-containers-redux-theme.mmd	7323a4f254af4775
+e2e/diagrams/state-diagram-v2/nightly-check/neutral-theme.mmd	571c773b30d1d6c5
+e2e/diagrams/state-diagram-v2/nightly-check/redux-color-theme.mmd	2d238ed8fb637a7d
+e2e/diagrams/state-diagram-v2/nightly-check/redux-dark-color-theme.mmd	7220bff6aa7a44af
+e2e/diagrams/state-diagram-v2/nightly-check/redux-dark-theme.mmd	23f4894560290f63
+e2e/diagrams/state-diagram-v2/nightly-check/redux-theme.mmd	4dcba5a71b912261
+e2e/diagrams/state-diagram-v2/nightly-check/regions-inside-nesting-composite-containers-redux-color-theme.mmd	85fc060d74251fd1
+e2e/diagrams/state-diagram-v2/nightly-check/regions-inside-nesting-composite-containers-redux-dark-color-theme.mmd	0f124d343217f68f
+e2e/diagrams/state-diagram-v2/nightly-check/regions-inside-nesting-composite-containers-redux-dark-theme.mmd	4e3f1905752c9c87
+e2e/diagrams/state-diagram-v2/nightly-check/regions-inside-nesting-composite-containers-redux-theme.mmd	40aa9d969c8db805
+e2e/diagrams/state-diagram-v2/nightly-check/should-align-dividers-correctly.mmd	2abab6026b4f0084
+e2e/diagrams/state-diagram-v2/nightly-check/should-allow-styles-to-take-effect-in-subgraphs.mmd	35b51890f792c95a
+e2e/diagrams/state-diagram-v2/nightly-check/should-let-styles-take-precedence-over-classes.mmd	d610ac465d055cda
+e2e/diagrams/state-diagram-v2/nightly-check/should-render-edge-labels-correctly-with-multiple-states.mmd	f962acfdfd1b49f8
+e2e/diagrams/state-diagram-v2/nightly-check/should-render-edge-labels-correctly.mmd	39e084a43c440e94
+e2e/diagrams/state-diagram-v2/nightly-check/special-state-types-neo-look-neo-dark-theme.mmd	6bafbcd777a08431
+e2e/diagrams/state-diagram-v2/nightly-check/special-state-types-neo-look-neo-theme.mmd	7bc5057273a0c4cb
+e2e/diagrams/state-diagram-v2/nightly-check/special-state-types-neo-look-redux-dark-theme.mmd	76fdfa1551373643
+e2e/diagrams/state-diagram-v2/nightly-check/special-state-types-neo-look-redux-theme.mmd	046dc4790124e6a3
+e2e/diagrams/state-diagram-v2/nightly-check/states-with-descriptions-neo-look-neo-dark-theme.mmd	44c91908805e48d3
+e2e/diagrams/state-diagram-v2/nightly-check/states-with-descriptions-neo-look-neo-theme.mmd	28e807a1796338b1
+e2e/diagrams/state-diagram-v2/nightly-check/states-with-descriptions-neo-look-redux-dark-theme.mmd	40b5c4ee808c86fb
+e2e/diagrams/state-diagram-v2/nightly-check/states-with-descriptions-neo-look-redux-theme.mmd	9b3b40ca086982c1
+e2e/diagrams/state-diagram-v2/nightly-check/user-styled-composite-containers-redux-color-theme.mmd	db67d9969e292c1b
+e2e/diagrams/state-diagram-v2/nightly-check/user-styled-composite-containers-redux-dark-color-theme.mmd	c41a86b498cd4efb
+e2e/diagrams/state-diagram-v2/nightly-check/user-styled-composite-containers-redux-dark-theme.mmd	6a0389d8c5f82c45
+e2e/diagrams/state-diagram-v2/nightly-check/user-styled-composite-containers-redux-theme.mmd	1dc4f56c9383ed6d
+e2e/diagrams/state-diagram-v2/nightly-check/user-styled-with-regions-composite-containers-redux-color-theme.mmd	9f879778d8d942c3
+e2e/diagrams/state-diagram-v2/nightly-check/user-styled-with-regions-composite-containers-redux-dark-color-theme.mmd	759b84d1a5df41df
+e2e/diagrams/state-diagram-v2/nightly-check/user-styled-with-regions-composite-containers-redux-dark-theme.mmd	f1ffd8e1216cc51f
+e2e/diagrams/state-diagram-v2/nightly-check/user-styled-with-regions-composite-containers-redux-theme.mmd	ebbedb35f8e67eab
+e2e/diagrams/state-diagram-v2/nightly-check/v2-can-have-multiple-classes-applied-to-multiple-states.mmd	05d449b12ca29e14
+e2e/diagrams/state-diagram-v2/nightly-check/v2-it-should-be-possible-to-use-a-choice.mmd	33c0af05aadafd4a
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-handle-different-rendering-directions-in-composite-states.mmd	7ce44ca6e4caf778
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-handle-multiline-notes-with-different-line-breaks.mmd	867d17e388f732be
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-handle-multiple-arrows-from-one-node-to-another.mmd	920795e59e38ed1c
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-handle-multiple-notes-added-to-one-state.mmd	82d345dc0e7a9a94
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-compact-self-loop-edge.mmd	84ee7aee232960d4
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-long-descriptions-with-additional-descriptions.mmd	faa020d88c3488fa
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-note-with-multiple-lines-in-it.mmd	0097e350821f44aa
 e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-info.mmd	1d34c16af9612c59
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams-2.mmd	cebcaa27904cdb96
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams-with-labels.mmd	1109d694c0109e1e
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams.mmd	849ddff7793a14ba
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-single-state-with-short-descriptions.mmd	fb9da5887e42b52e
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-state-diagram-and-set-the-correct-length-of-the-labels.mmd	b2f3e949bfdfbe0e
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-state-with-a-note-together-with-another-state.mmd	72f9f8a966e6e2ec
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-state-with-on-the-left-side-when-so-specified.mmd	075cef16dd5fb7e0
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-state-with-states-in-it.mmd	75bdf3df157861d8
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-states-with-descriptions-including-multi-line-descriptions.mmd	1f2f445a31a3d2e0
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-transition-descriptions-with-new-lines.mmd	797e8ddda188372c
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-forks-and-joins.mmd	237a607ff84a4f0a
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-forks-in-composite-states.mmd	cfc9322c0a22e600
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-multiple-composite-states.mmd	03b0152f6efc17f6
-e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-state-descriptions.mmd	59ea5624816d742a
-e2e/diagrams/state-diagram-v2/nightly-check/v2-simplest-composite-state.mmd	42abd1bc4b7525d2
-e2e/diagrams/state-diagram-v2/nightly-check/v2-state-label-with-names-in-it.mmd	bfe4e227c4680232
-e2e/diagrams/state-diagram-v2/nightly-check/v2-usemaxwidth-false.mmd	0766a1cb7a2dc00e
-e2e/diagrams/state-diagram-v2/nightly-check/v2-usemaxwidth-true.mmd	93ad0c7b18c7a276
-e2e/diagrams/state-diagram-v2/nightly-check/v2-width-of-compound-state-should-grow-with-title-if-title-is-wider.mmd	b1c5b0260fa0ea78
-e2e/diagrams/state-diagram-v2/pr-check/can-have-styles-applied.mmd	00cf96ef6cca1272
-e2e/diagrams/state-diagram-v2/pr-check/composite-with-a-loop-starts-on-its-start-state.mmd	28a947e5fa3043be
-e2e/diagrams/state-diagram-v2/pr-check/should-render-edge-labels-correctly-with-multiple-transitions.mmd	e157f6b6ad23eff6
-e2e/diagrams/state-diagram-v2/pr-check/v2-a-compound-state-should-be-able-to-link-to-itself.mmd	b13954aa36e4ff26
-e2e/diagrams/state-diagram-v2/pr-check/v2-handle-transition-from-one-state-in-a-composite-state-to-a-composite-state.mmd	a0e428d02d04e132
-e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-a-long-descriptions-instead-of-id-when-available.mmd	3cbc116564e61d48
-e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-a-state-with-a-note.mmd	53dbc9fcf1257152
-e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-composite-states.mmd	b724c2030c5f45de
-e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-concurrency-states.mmd	d85f01b8ab763cda
-e2e/diagrams/state-diagram-v2/pr-check/v2-states-can-have-a-class-applied.mmd	05f403720b8f0050
-e2e/diagrams/state-diagram/nightly-check/a-simple-state-diagram-neo-look-neo-dark-theme.mmd	36f1b2efc2f0f5f5
-e2e/diagrams/state-diagram/nightly-check/a-simple-state-diagram-neo-look-neo-theme.mmd	d0a176aba199cb97
-e2e/diagrams/state-diagram/nightly-check/a-simple-state-diagram-neo-look-redux-dark-theme.mmd	1af16fdcd2e9de75
-e2e/diagrams/state-diagram/nightly-check/a-simple-state-diagram-neo-look-redux-theme.mmd	5eb45c12e4cdc6af
-e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-neo-dark-theme.mmd	7146a6d79826ae01
-e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-neo-theme.mmd	d661a19b2b6de8e7
-e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-redux-dark-theme.mmd	fb185dcbe76f93d5
-e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-redux-theme.mmd	ec8fdf1ac90afe1d
-e2e/diagrams/state-diagram/nightly-check/dark-theme.mmd	fee2e7e7ab94dc95
-e2e/diagrams/state-diagram/nightly-check/default-theme.mmd	b083fc1980b09e37
-e2e/diagrams/state-diagram/nightly-check/forest-theme.mmd	59320fc75ac0cd8d
-e2e/diagrams/state-diagram/nightly-check/neutral-theme.mmd	ec73911350e2cf5b
-e2e/diagrams/state-diagram/nightly-check/should-group-all-state-elements-under-a-single-root-g-wrapper.mmd	f1def2cb07726826
-e2e/diagrams/state-diagram/nightly-check/should-handle-multiline-notes-with-different-line-breaks.mmd	e40272ef56f0584a
-e2e/diagrams/state-diagram/nightly-check/should-handle-multiple-arrows-from-one-node-to-another.mmd	ed77de738bcd6fd8
-e2e/diagrams/state-diagram/nightly-check/should-render-a-long-descriptions-instead-of-id-when-available.mmd	2e3b4be522e4b6f8
-e2e/diagrams/state-diagram/nightly-check/should-render-a-long-descriptions-with-additional-descriptions.mmd	48343fdc69b643dc
-e2e/diagrams/state-diagram/nightly-check/should-render-a-note-with-multiple-lines-in-it.mmd	823e23d4b82b7b02
-e2e/diagrams/state-diagram/nightly-check/should-render-a-simple-state-diagram.mmd	c7d5f7e91db3c09d
-e2e/diagrams/state-diagram/nightly-check/should-render-a-simple-state-diagrams-2.mmd	5db5a70421c182ce
-e2e/diagrams/state-diagram/nightly-check/should-render-a-simple-state-diagrams.mmd	28b8ccdb031ba636
-e2e/diagrams/state-diagram/nightly-check/should-render-a-single-state-with-short-descriptions.mmd	7a347dcc31d7bf72
-e2e/diagrams/state-diagram/nightly-check/should-render-a-state-with-a-note.mmd	258fde1abd4db884
-e2e/diagrams/state-diagram/nightly-check/should-render-a-state-with-on-the-left-side-when-so-specified.mmd	e679200f4ef39b22
-e2e/diagrams/state-diagram/nightly-check/should-render-a-transition-descriptions-with-new-lines.mmd	ffa009a7c237a804
-e2e/diagrams/state-diagram/nightly-check/simplest-composite-state.mmd	94d830459b1a9768
-e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-neo-dark-theme.mmd	ecb5e6babf2d1141
-e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-neo-theme.mmd	949e0b71b7d43f07
-e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-redux-dark-theme.mmd	75b9bf09f295272d
-e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-redux-theme.mmd	ae2cf75e218b72a7
-e2e/diagrams/state-diagram/nightly-check/usemaxwidth-false.mmd	20263fc293b9449e
-e2e/diagrams/state-diagram/nightly-check/usemaxwidth-true.mmd	2b8bae3c588f0f9e
-e2e/diagrams/state-diagram/pr-check/should-render-a-simple-state-diagrams-with-labels.mmd	d40aa5bda1ca45de
-e2e/diagrams/state-diagram/pr-check/should-render-a-state-with-a-note-together-with-another-state.mmd	fe69004dfcc5a2dc
-e2e/diagrams/state-diagram/pr-check/should-render-a-state-with-states-in-it.mmd	2dfb393e578eb98c
-e2e/diagrams/state-diagram/pr-check/should-render-a-states-with-descriptions-including-multi-line-descriptions.mmd	1249457a1b984598
-e2e/diagrams/state-diagram/pr-check/should-render-composite-states.mmd	a4f99d1daf729266
-e2e/diagrams/state-diagram/pr-check/should-render-concurrency-states.mmd	c49a88b0a407993e
-e2e/diagrams/state-diagram/pr-check/should-render-forks-and-joins.mmd	273c38bca05b1542
-e2e/diagrams/state-diagram/pr-check/should-render-forks-in-composit-states.mmd	f12b1c53a4c84e40
-e2e/diagrams/state-diagram/pr-check/should-render-multiple-composit-states.mmd	3eb639c167ffccce
-e2e/diagrams/state-diagram/pr-check/should-render-state-descriptions.mmd	7842e31519ec361a
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams-2.mmd	e22f8f7f76d19fd4
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams-with-labels.mmd	bfbae9e5ca05a7b6
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-simple-state-diagrams.mmd	c1bed689a2353ad4
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-single-state-with-short-descriptions.mmd	3a5b3d8dcd07f5e4
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-state-diagram-and-set-the-correct-length-of-the-labels.mmd	0ddf8d6f1ceebeb4
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-state-with-a-note-together-with-another-state.mmd	0a831b1a5e8e0764
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-state-with-on-the-left-side-when-so-specified.mmd	4ef30b138ff5e466
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-state-with-states-in-it.mmd	4a76670d6eb226d6
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-states-with-descriptions-including-multi-line-descriptions.mmd	61af8065462c9024
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-a-transition-descriptions-with-new-lines.mmd	949879d7e7674d1c
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-forks-and-joins.mmd	f99e1588d2be58ca
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-forks-in-composite-states.mmd	0b5edaa86c2aac16
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-multiple-composite-states.mmd	5299013a3f463aa4
+e2e/diagrams/state-diagram-v2/nightly-check/v2-should-render-state-descriptions.mmd	665f6acc5cdb3cda
+e2e/diagrams/state-diagram-v2/nightly-check/v2-simplest-composite-state.mmd	76d6807f7944d404
+e2e/diagrams/state-diagram-v2/nightly-check/v2-state-label-with-names-in-it.mmd	903d720b484967c2
+e2e/diagrams/state-diagram-v2/nightly-check/v2-usemaxwidth-false.mmd	f7e1577c4f1d0ebc
+e2e/diagrams/state-diagram-v2/nightly-check/v2-usemaxwidth-true.mmd	8b8918699ddfdfc4
+e2e/diagrams/state-diagram-v2/nightly-check/v2-width-of-compound-state-should-grow-with-title-if-title-is-wider.mmd	df0e32e971539a8e
+e2e/diagrams/state-diagram-v2/pr-check/can-have-styles-applied.mmd	e348c9bc1c814688
+e2e/diagrams/state-diagram-v2/pr-check/composite-with-a-loop-starts-on-its-start-state.mmd	f0fa4ec4721be334
+e2e/diagrams/state-diagram-v2/pr-check/should-render-edge-labels-correctly-with-multiple-transitions.mmd	7ee6150313c23b5e
+e2e/diagrams/state-diagram-v2/pr-check/v2-a-compound-state-should-be-able-to-link-to-itself.mmd	a03cb4e144621710
+e2e/diagrams/state-diagram-v2/pr-check/v2-handle-transition-from-one-state-in-a-composite-state-to-a-composite-state.mmd	b00e28009177bed2
+e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-a-long-descriptions-instead-of-id-when-available.mmd	dbd2d8fa0453a50a
+e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-a-state-with-a-note.mmd	3861b3fcf90a7b08
+e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-composite-states.mmd	d731fa2ffd695d90
+e2e/diagrams/state-diagram-v2/pr-check/v2-should-render-concurrency-states.mmd	2d28a6a040e56efc
+e2e/diagrams/state-diagram-v2/pr-check/v2-states-can-have-a-class-applied.mmd	d6a0251c4bda5de8
+e2e/diagrams/state-diagram/nightly-check/a-simple-state-diagram-neo-look-neo-dark-theme.mmd	d8feebc1ea29110b
+e2e/diagrams/state-diagram/nightly-check/a-simple-state-diagram-neo-look-neo-theme.mmd	a4a03a9fe5de6f51
+e2e/diagrams/state-diagram/nightly-check/a-simple-state-diagram-neo-look-redux-dark-theme.mmd	125d9b8713738a07
+e2e/diagrams/state-diagram/nightly-check/a-simple-state-diagram-neo-look-redux-theme.mmd	90d63c7ca0e0a929
+e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-neo-dark-theme.mmd	f61a51bf6b401c5b
+e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-neo-theme.mmd	1a8cc365b63488c1
+e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-redux-dark-theme.mmd	101554fa3b7423f3
+e2e/diagrams/state-diagram/nightly-check/a-state-with-a-note-neo-look-redux-theme.mmd	eca1d77ce54ae6f5
+e2e/diagrams/state-diagram/nightly-check/dark-theme.mmd	8d98f8da368e85bd
+e2e/diagrams/state-diagram/nightly-check/default-theme.mmd	f4210754ad9d4cf3
+e2e/diagrams/state-diagram/nightly-check/forest-theme.mmd	c1ebd21c66d673f3
+e2e/diagrams/state-diagram/nightly-check/neutral-theme.mmd	270dd2f1e14f3043
+e2e/diagrams/state-diagram/nightly-check/should-group-all-state-elements-under-a-single-root-g-wrapper.mmd	09862a88bba5b6f2
+e2e/diagrams/state-diagram/nightly-check/should-handle-multiline-notes-with-different-line-breaks.mmd	4b8f038037cacbfa
+e2e/diagrams/state-diagram/nightly-check/should-handle-multiple-arrows-from-one-node-to-another.mmd	1aa6714cf3c6cc24
+e2e/diagrams/state-diagram/nightly-check/should-render-a-long-descriptions-instead-of-id-when-available.mmd	1ef210037cb1a238
+e2e/diagrams/state-diagram/nightly-check/should-render-a-long-descriptions-with-additional-descriptions.mmd	9395b0c2b4c2852a
+e2e/diagrams/state-diagram/nightly-check/should-render-a-note-with-multiple-lines-in-it.mmd	1779514003251a82
+e2e/diagrams/state-diagram/nightly-check/should-render-a-simple-state-diagram.mmd	1572914f880f760f
+e2e/diagrams/state-diagram/nightly-check/should-render-a-simple-state-diagrams-2.mmd	be79d4a4729929fa
+e2e/diagrams/state-diagram/nightly-check/should-render-a-simple-state-diagrams.mmd	4dfdabfc3b3ee1ac
+e2e/diagrams/state-diagram/nightly-check/should-render-a-single-state-with-short-descriptions.mmd	eff9ac1343a801e8
+e2e/diagrams/state-diagram/nightly-check/should-render-a-state-with-a-note.mmd	2f9879f6cec136b4
+e2e/diagrams/state-diagram/nightly-check/should-render-a-state-with-on-the-left-side-when-so-specified.mmd	9111e62614c02aa2
+e2e/diagrams/state-diagram/nightly-check/should-render-a-transition-descriptions-with-new-lines.mmd	c0801d2a019ca094
+e2e/diagrams/state-diagram/nightly-check/simplest-composite-state.mmd	8612ec2b565e7e7c
+e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-neo-dark-theme.mmd	4abe7835085102e3
+e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-neo-theme.mmd	9fe3c1be0612451b
+e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-redux-dark-theme.mmd	5bdbc55decd52b23
+e2e/diagrams/state-diagram/nightly-check/transitions-with-labels-neo-look-redux-theme.mmd	9b498b777ed6765d
+e2e/diagrams/state-diagram/nightly-check/usemaxwidth-false.mmd	9d2d51321dad40fa
+e2e/diagrams/state-diagram/nightly-check/usemaxwidth-true.mmd	1d391ce9fa213854
+e2e/diagrams/state-diagram/pr-check/should-render-a-simple-state-diagrams-with-labels.mmd	366c0c5603368870
+e2e/diagrams/state-diagram/pr-check/should-render-a-state-with-a-note-together-with-another-state.mmd	0d8f9171e31db258
+e2e/diagrams/state-diagram/pr-check/should-render-a-state-with-states-in-it.mmd	37dbd3998ab99bae
+e2e/diagrams/state-diagram/pr-check/should-render-a-states-with-descriptions-including-multi-line-descriptions.mmd	230ed6face97bfcc
+e2e/diagrams/state-diagram/pr-check/should-render-composite-states.mmd	2babc96c4d9988e0
+e2e/diagrams/state-diagram/pr-check/should-render-concurrency-states.mmd	8d247e7439879ba4
+e2e/diagrams/state-diagram/pr-check/should-render-forks-and-joins.mmd	1944a03fb9ba2cfa
+e2e/diagrams/state-diagram/pr-check/should-render-forks-in-composit-states.mmd	5906506987075068
+e2e/diagrams/state-diagram/pr-check/should-render-multiple-composit-states.mmd	a0ef31fae1714270
+e2e/diagrams/state-diagram/pr-check/should-render-state-descriptions.mmd	9286cf641555a0e6
 e2e/diagrams/swimlanes/nightly-check/12-disagree-exits-b-c.mmd	d9c31aa3990755f5
 e2e/diagrams/swimlanes/nightly-check/13-disagree-exits-b-c-d.mmd	96048ad366aa1a35
 e2e/diagrams/swimlanes/nightly-check/14-messy-layout.mmd	91c6795fa10df3ae
@@ -1963,7 +1963,7 @@ e2e/diagrams/treemap/pr-check/9-should-handle-a-complex-example-with-multiple-fe
 e2e/diagrams/usecase/nightly-check/01-basic-use-cases.mmd	f6bb00225dcb0f2b
 e2e/diagrams/usecase/nightly-check/02-system-boundaries.mmd	fbed9c1390a8622f
 e2e/diagrams/usecase/nightly-check/03-actor-variants.mmd	de2630924ddf4c99
-e2e/diagrams/usecase/nightly-check/04-labels-and-notes.mmd	1888b552ac6da1b5
+e2e/diagrams/usecase/nightly-check/04-labels-and-notes.mmd	38d7041ea0e31291
 e2e/diagrams/usecase/nightly-check/05-association-markers.mmd	8f6bbd872b382e35
 e2e/diagrams/usecase/nightly-check/06-uml-relationships.mmd	417521c5794ac3ff
 e2e/diagrams/usecase/nightly-check/07-edge-styles-and-animation.mmd	1c6d48b0c3af3c89
@@ -1980,18 +1980,18 @@ e2e/diagrams/usecase/nightly-check/17-direction-bottom-up.mmd	4ca1d18a253c9e9d
 e2e/diagrams/usecase/nightly-check/18-direction-right-to-left.mmd	8068abb88e9d6a07
 e2e/diagrams/usecase/nightly-check/19-association-label-semantics.mmd	16fa6bc72cc25dfb
 e2e/diagrams/usecase/nightly-check/20-full-featured-order-system.mmd	39b83ddf74fe968a
-e2e/diagrams/usecase/nightly-check/themed-elements-redux-color-theme.mmd	167dbbee3cda4e49
-e2e/diagrams/usecase/nightly-check/themed-elements-redux-dark-color-theme.mmd	3bd833c9efb81f8f
+e2e/diagrams/usecase/nightly-check/themed-elements-redux-color-theme.mmd	29c0d1066321ef3d
+e2e/diagrams/usecase/nightly-check/themed-elements-redux-dark-color-theme.mmd	78247645adda3be7
 e2e/diagrams/usecase/pr-check/complete-hand-drawn-rendering-contract.mmd	92e6dadced9bd1dc
 e2e/diagrams/usecase/pr-check/empty-diagram.mmd	339648da8b91b987
-e2e/diagrams/usecase/pr-check/palette-rotation-redux-color-theme.mmd	51fe36f1be5dcfb9
-e2e/diagrams/usecase/pr-check/palette-rotation-redux-dark-color-theme.mmd	1acf06bd6f75f5d3
+e2e/diagrams/usecase/pr-check/palette-rotation-redux-color-theme.mmd	d2dee14098c28bb9
+e2e/diagrams/usecase/pr-check/palette-rotation-redux-dark-color-theme.mmd	317b4787e1cde57f
 e2e/diagrams/usecase/pr-check/small-representative-visual-snapshot.mmd	a5f33ea767d674ae
-e2e/diagrams/usecase/pr-check/themed-elements-base-theme.mmd	f73417cbdd4cd3eb
-e2e/diagrams/usecase/pr-check/themed-elements-dark-theme.mmd	10c19610fc1ab051
-e2e/diagrams/usecase/pr-check/themed-elements-default-theme.mmd	d4cddd088ebf2a69
-e2e/diagrams/usecase/pr-check/themed-elements-forest-theme.mmd	e0b7cccf2177a49f
-e2e/diagrams/usecase/pr-check/themed-elements-neutral-theme.mmd	3257383f1a4939b9
+e2e/diagrams/usecase/pr-check/themed-elements-base-theme.mmd	ba8e2b7577e771ab
+e2e/diagrams/usecase/pr-check/themed-elements-dark-theme.mmd	5f7fd0439ae42999
+e2e/diagrams/usecase/pr-check/themed-elements-default-theme.mmd	0ff482ef5d60a485
+e2e/diagrams/usecase/pr-check/themed-elements-forest-theme.mmd	aeaa2b31245bdb23
+e2e/diagrams/usecase/pr-check/themed-elements-neutral-theme.mmd	94e93b143144f949
 e2e/diagrams/venn/nightly-check/10-should-render-a-venn-diagram-with-many-text-nodes.mmd	ad8ef213fa802036
 e2e/diagrams/venn/nightly-check/12-should-render-a-two-set-venn-with-asymmetric-sizes.mmd	158edc1dc31a50fb
 e2e/diagrams/venn/nightly-check/13-should-render-a-complex-venn-with-labels-text-nodes-and-styles.mmd	79604004300b06fa
@@ -2092,21 +2092,21 @@ e2e/platform/dev-diagrams/diagrams/sequence-fixes/04-rect-section-background.mmd
 e2e/platform/dev-diagrams/diagrams/sequence-fixes/05-all-three-regressions.mmd	b2bdadc9f109aa7f
 e2e/platform/dev-diagrams/diagrams/sequence-fixes/06-loops-and-labels.mmd	c407acab39768e1a
 e2e/platform/dev-diagrams/diagrams/sequence-fixes/07-multiline-labels.mmd	949523173da31cd4
-e2e/platform/dev-diagrams/diagrams/state-diagram/1-simple-state-diagram.mmd	c3424afd505e99ca
-e2e/platform/dev-diagrams/diagrams/state-diagram/10-state-with-a-note.mmd	a91876f06ee68e7e
-e2e/platform/dev-diagrams/diagrams/state-diagram/11-transitions-with-labels.mmd	09cc10060d7cbafa
-e2e/platform/dev-diagrams/diagrams/state-diagram/2-simple-state-diagram-v2.mmd	406f9d2b873b8b92
-e2e/platform/dev-diagrams/diagrams/state-diagram/3-clickable-state-with-tooltip.mmd	e4c0d5ee4caf9e30
-e2e/platform/dev-diagrams/diagrams/state-diagram/4-simple-two-state-chain.mmd	f5311621af26cd80
-e2e/platform/dev-diagrams/diagrams/state-diagram/5-basic-states-all-pairs.mmd	410c004cb9bb0322
-e2e/platform/dev-diagrams/diagrams/state-diagram/6-states-with-descriptions.mmd	3a276e370ada764c
-e2e/platform/dev-diagrams/diagrams/state-diagram/7-special-state-types-fork-join.mmd	2d5f1f4f004f113a
-e2e/platform/dev-diagrams/diagrams/state-diagram/8-composite-states.mmd	ce5ebe7fdd778e2a
-e2e/platform/dev-diagrams/diagrams/state-diagram/9-concurrent-states.mmd	0e80dd6307f338f2
+e2e/platform/dev-diagrams/diagrams/state-diagram/1-simple-state-diagram.mmd	d86baaf132bc4676
+e2e/platform/dev-diagrams/diagrams/state-diagram/10-state-with-a-note.mmd	6b7fa02912c15b20
+e2e/platform/dev-diagrams/diagrams/state-diagram/11-transitions-with-labels.mmd	d5c9c643c9eba090
+e2e/platform/dev-diagrams/diagrams/state-diagram/2-simple-state-diagram-v2.mmd	2936770dee2018a6
+e2e/platform/dev-diagrams/diagrams/state-diagram/3-clickable-state-with-tooltip.mmd	ee189b5142aa18c2
+e2e/platform/dev-diagrams/diagrams/state-diagram/4-simple-two-state-chain.mmd	9cf8020064081fe4
+e2e/platform/dev-diagrams/diagrams/state-diagram/5-basic-states-all-pairs.mmd	7367213f031db4de
+e2e/platform/dev-diagrams/diagrams/state-diagram/6-states-with-descriptions.mmd	8571e38cc87acba6
+e2e/platform/dev-diagrams/diagrams/state-diagram/7-special-state-types-fork-join.mmd	babec8687481bf3e
+e2e/platform/dev-diagrams/diagrams/state-diagram/8-composite-states.mmd	35ab03a575f71edc
+e2e/platform/dev-diagrams/diagrams/state-diagram/9-concurrent-states.mmd	2fb15b845cc36a4a
 e2e/platform/dev-diagrams/diagrams/use-case/01-basic-use-cases.mmd	140689f5bf0b4207
 e2e/platform/dev-diagrams/diagrams/use-case/02-system-boundaries.mmd	2d1850137d1ccd3d
 e2e/platform/dev-diagrams/diagrams/use-case/03-actor-variants.mmd	3e9463c0c771fd49
-e2e/platform/dev-diagrams/diagrams/use-case/04-labels-and-notes.mmd	973a15bd127d66af
+e2e/platform/dev-diagrams/diagrams/use-case/04-labels-and-notes.mmd	eafde4f03d2e0a53
 e2e/platform/dev-diagrams/diagrams/use-case/05-association-markers.mmd	c486a6af5d9f0acd
 e2e/platform/dev-diagrams/diagrams/use-case/06-uml-relationships.mmd	547a13944d6bcad1
 e2e/platform/dev-diagrams/diagrams/use-case/07-edge-styles-and-animation.mmd	5758029ca369ba47
@@ -2122,7 +2122,7 @@ e2e/platform/dev-diagrams/diagrams/use-case/16-json-order-and-values.mmd	9ffe44f
 e2e/platform/dev-diagrams/diagrams/use-case/17-direction-bottom-up.mmd	d23929cd847364ab
 e2e/platform/dev-diagrams/diagrams/use-case/18-direction-right-to-left.mmd	7a20acb39a2a1235
 e2e/platform/dev-diagrams/diagrams/use-case/19-association-label-semantics.mmd	0845530ce0003389
-e2e/platform/dev-diagrams/diagrams/use-case/20-full-featured-order-system.mmd	2eccbcaa2a984209
+e2e/platform/dev-diagrams/diagrams/use-case/20-full-featured-order-system.mmd	0e16abe6c3787fa7
 e2e/platform/dev-diagrams/diagrams/xychart/should-drop-the-title-when-the-chart-is-too-short.mmd	63232209ff25c9ba
 e2e/platform/dev-diagrams/diagrams/xychart/should-keep-legend-inside-a-wide-chart-scaled-to-fit.mmd	23ee9f705e12bb27
 e2e/platform/dev-diagrams/layout-tests/Company-simp.mmd	a6d98752ae4ed41b	b1bededa1fbc457b
@@ -2148,7 +2148,7 @@ e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/Render-stadium-shape.mmd	e
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/class-generic-no-html-labels.mmd	8d45af379a2b42a1
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/diamond-intersections.mmd	dd052597f767c4ea	ec8a7f649548f25e
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/flowchart-edge-styling.mmd	00e6d08493b4b91d	20c3cea26dec0f75
-e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/full-class-diagram.mmd	d9c592ec003e93cf
+e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/full-class-diagram.mmd	e27a231aeff1ed5b
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/nested-subgraphs-reverse-order.mmd	5109737cd28e008c	3d4870a287746270
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/non-rect-intersections.mmd	e3288e629bb892c9	2af80cc6fd39fe4d
 e2e/platform/dev-diagrams/layout-tests/elk-edge-cases/requirement-label-alignment.mmd	99207c92afbb7b3a
@@ -2180,7 +2180,7 @@ e2e/platform/dev-diagrams/layout-tests/self-loop.mmd	a6ad885e2b43bc99	dfb7551221
 e2e/platform/dev-diagrams/layout-tests/shapes-and-styling.mmd	e7dfc47e42ebd12f	32977334a2df0bb1
 e2e/platform/dev-diagrams/layout-tests/shapes.mmd	8c4b2fc5823e18fb	0c0b2d8841c9cb5b
 e2e/platform/dev-diagrams/layout-tests/simple-graph.mmd	fd96f987a34469c5	59c9e8d94968d9b1
-e2e/platform/dev-diagrams/layout-tests/state-diagram.mmd	47904b81d0d0e05a
+e2e/platform/dev-diagrams/layout-tests/state-diagram.mmd	2067e7fffc4b3b76
 e2e/platform/dev-diagrams/layout-tests/subgraph-labels-2.mmd	8f0c5c59dd97e05e	b3d4a7e42d54ecb4
 e2e/platform/dev-diagrams/layout-tests/subgraph-labels-3.mmd	f3fa59f9705b7aac	46431e66d0059478
 e2e/platform/dev-diagrams/layout-tests/subgraph-labels.mmd	58f418e9e9dfdaac	4461cb98a0cb442a

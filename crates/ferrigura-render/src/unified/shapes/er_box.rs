@@ -242,8 +242,8 @@ fn attribute_table(
     let y = -height / 2.0;
 
     let theme_fill = input.config.theme.main_bkg.text().unwrap_or_default();
-    let fill = style_value(styles, "fill").unwrap_or(theme_fill);
-    let stroke = style_value(styles, "stroke")
+    let fill = util::style_value(styles, "fill").unwrap_or(theme_fill);
+    let stroke = util::style_value(styles, "stroke")
         .unwrap_or_else(|| input.config.theme.node_border.text().unwrap_or_default());
     let stroke_width = util::stroke_width(styles);
     let path_style = (!styles.node.is_empty()).then_some(styles.node.as_str());
@@ -459,15 +459,6 @@ fn cell_group(cell: &Cell, classes: &str, translate: Point, styles: &util::Style
 /// they are joined without a separator, as the reference joins them.
 fn node_css_styles(input: &ShapeInput<'_>) -> String {
     input.node.css_styles.join("")
-}
-
-/// The value of a declaration in the compiled styles of the node, as `stylesMap.get` gives it.
-fn style_value(styles: &util::Styles, key: &str) -> Option<String> {
-    styles
-        .entries
-        .iter()
-        .find(|(name, _)| name == key)
-        .map(|(_, value)| value.clone())
 }
 
 /// The corners of a rectangle as rough.js takes them: top-left, top-right, bottom-right, bottom-left.

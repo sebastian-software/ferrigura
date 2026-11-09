@@ -44,3 +44,47 @@ fn a_state_diagram_title_is_written_at_the_title_margin() {
     assert!(svg.contains("class=\"statediagramTitleText\""), "{svg}");
     assert!(svg.contains(">Machine</text>"), "{svg}");
 }
+
+/// The `<g>` of the node whose id ends with `suffix`, up to the next node.
+fn node<'a>(svg: &'a str, suffix: &str) -> &'a str {
+    let start = svg
+        .find(&format!("{suffix}\" data-look"))
+        .expect("the node is drawn");
+    let rest = &svg[start..];
+    let end = rest[1..]
+        .find("<g class=\"node")
+        .map_or(rest.len(), |end| end + 1);
+    &rest[..end]
+}
+
+#[test]
+fn the_rough_state_shapes_carry_their_colors_as_attributes() {
+    // The state style sheet has no rule for a node's paths, so the reference's presentation
+    // attributes color them: without them, a note, a choice and an end state fill black.
+    let text = "stateDiagram-v2
+  state paid <<choice>>
+  [*] --> Cart
+  Cart --> paid
+  paid --> [*]
+  note right of Cart: Text
+";
+    let svg = render(text, &Value::empty_object()).expect("renders");
+    // The note: `noteBkgColor` and `noteBorderColor` (`note.ts`).
+    let note = node(&svg, "Cart----note-3");
+    assert!(note.contains("fill=\"#fff5ad\""), "{note}");
+    assert!(note.contains("stroke=\"#FACC15\""), "{note}");
+    // The choice: `mainBkg` and `nodeBorder`, a hollow diamond (`choice.ts`).
+    let choice = node(&svg, "state-paid-2");
+    assert!(choice.contains("fill=\"#ffffff\""), "{choice}");
+    assert!(choice.contains("stroke=\"#28253D\""), "{choice}");
+    // The end state: a ring of `mainBkg` around a dot of `stateBorder` (`stateEnd.ts`).
+    let end = node(&svg, "root_end-2");
+    assert!(end.contains("fill=\"#ffffff\""), "{end}");
+    assert!(end.contains("fill=\"#28253D\""), "{end}");
+}
+
+#[test]
+fn the_nested_text_rule_of_a_state_note_is_written_flat() {
+    let svg = render("stateDiagram-v2\n  A --> B\n", &Value::empty_object()).expect("renders");
+    assert!(svg.contains(" .state-note text{"), "{svg}");
+}

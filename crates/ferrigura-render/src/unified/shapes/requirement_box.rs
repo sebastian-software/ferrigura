@@ -162,8 +162,8 @@ pub(super) fn requirement_box(input: &ShapeInput<'_>) -> Result<ShapeOutput, Ren
     // The outline and the divider take the node's fill and stroke, else the theme's (`userNodeOverrides`,
     // `requirementBox.ts` 119-125): roughness 0 and a solid fill for every look but handDrawn.
     let theme_fill = input.config.theme.main_bkg.text().unwrap_or_default();
-    let fill = style_value(&styles, "fill").unwrap_or(theme_fill);
-    let stroke = style_value(&styles, "stroke")
+    let fill = util::style_value(&styles, "fill").unwrap_or(theme_fill);
+    let stroke = util::style_value(&styles, "stroke")
         .unwrap_or_else(|| input.config.theme.node_border.text().unwrap_or_default());
     let stroke_width = util::stroke_width(&styles);
     // Every path takes the node's style when the node has one and the theme has an edge label
@@ -363,15 +363,6 @@ fn color_group_attribute(input: &ShapeInput<'_>) -> String {
     };
     let slot = palette::palette_slot(Some(input.node.color_index.unwrap_or(0)), &palette);
     attribute("data-color-id", &format!("color-{}", slot.unwrap_or(0)))
-}
-
-/// The value of a declaration in the compiled styles of the node, as `stylesMap.get` gives it.
-fn style_value(styles: &util::Styles, key: &str) -> Option<String> {
-    styles
-        .entries
-        .iter()
-        .find(|(name, _)| name == key)
-        .map(|(_, value)| value.clone())
 }
 
 #[cfg(test)]
