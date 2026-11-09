@@ -9,9 +9,12 @@ on:
     types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 
+# Each push to main runs to the end in a group of its own commit: the release reads the run of its
+# exact commit, and a later merge must neither cancel it nor replace it while it waits for a macOS
+# runner. A pull request keeps one group per ref, so a newer run cancels the older one.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
