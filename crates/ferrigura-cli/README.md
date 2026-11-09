@@ -32,8 +32,6 @@ Options:
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
       --compat           Use Mermaid geometry instead of optimized routing and participant boxes
-      --flowchart-mode <MODE>
-                          `adaptive` (default) or `mermaid` for reference-compatible output
   -o, --output <FILE>     Write the SVG to FILE instead of standard output (one input only)
       --output-dir <DIR>  Write each SVG to DIR/<name>.svg, named after its input file
                           (file inputs only)
@@ -81,7 +79,7 @@ ferrigura --config config.json --id pets pets.mmd
 
 ## Behavior
 
-By default, optimized rendering centers flowchart ports and compacts sequence participant boxes. `--compat` preserves Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes. The earlier `--flowchart-mode` remains a flowchart-only override; `--compat` takes precedence.
+By default, optimized rendering centers flowchart ports and compacts sequence participant boxes. `--compat` preserves Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes.
 
 - Several inputs are rendered through one renderer, so the configuration is resolved once. They are rendered in the order given.
 - Rendering stops at the first input that fails. The SVGs of the inputs before it are already written.

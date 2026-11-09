@@ -233,7 +233,7 @@ function runElkExample(
   id: string,
   routing: Options['routing']
 ): { input: ElkElement } | { error: string } {
-  const result = spawnSync(elkBinary, ['--id', id, '--flowchart-mode', routing], {
+  const result = spawnSync(elkBinary, ['--id', id, '--compat', String(routing === 'mermaid')], {
     input: text,
     cwd: root,
     encoding: 'utf8',

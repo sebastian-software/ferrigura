@@ -52,12 +52,6 @@ export interface RenderOptionsInput {
    */
   compat?: boolean
   /**
-   * Flowchart mode: `adaptive` (default) centers ports with label-aware spacing and draws
-   * edge-label backgrounds at full opacity; `mermaid` preserves the pinned reference's output.
-   * Other diagram types ignore it.
-   */
-  flowchartMode?: string
-  /**
    * The id of the SVG element, which scopes its styles. By default it is derived from the text and
    * the configuration, so the same input gives the same id.
    */

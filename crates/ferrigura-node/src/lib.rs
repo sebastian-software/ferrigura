@@ -21,10 +21,6 @@ pub struct RenderOptionsInput {
     /// Mermaid-compatible geometry when true. False (default) enables optimized flowchart routing
     /// and compact sequence participant boxes. Font, color and readability fixes always apply.
     pub compat: Option<bool>,
-    /// Flowchart mode: `adaptive` (default) centers ports with label-aware spacing and draws
-    /// edge-label backgrounds at full opacity; `mermaid` preserves the pinned reference's output.
-    /// Other diagram types ignore it.
-    pub flowchart_mode: Option<String>,
     /// The id of the SVG element, which scopes its styles. By default it is derived from the text and
     /// the configuration, so the same input gives the same id.
     pub id: Option<String>,
@@ -102,13 +98,6 @@ fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
     Ok(match input {
         Some(input) => RenderOptions {
             compat: input.compat.unwrap_or(false),
-            flowchart_mode: input
-                .flowchart_mode
-                .as_deref()
-                .map(str::parse)
-                .transpose()
-                .map_err(|message| Error::new(Status::InvalidArg, message))?
-                .unwrap_or_default(),
             id: input.id,
             color_scheme: input
                 .color_scheme

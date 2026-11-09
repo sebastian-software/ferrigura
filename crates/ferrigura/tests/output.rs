@@ -16,7 +16,6 @@ const PIE: &str = "pie title Sports in Sweden\n  \"Bandy\" : 40\n  \"Ice-Hockey\
 fn svg_with(text: &str, scheme: Option<ColorScheme>, id: Option<&str>) -> String {
     let options = RenderOptions {
         compat: false,
-        flowchart_mode: Default::default(),
         id: id.map(str::to_owned),
         color_scheme: scheme,
         now: None,
@@ -208,7 +207,6 @@ fn an_id_that_is_not_a_css_identifier_is_refused() {
     for bad in ["1pie", "my pie", "a.b", "", "x{}"] {
         let options = RenderOptions {
             compat: false,
-            flowchart_mode: Default::default(),
             id: Some(bad.to_owned()),
             color_scheme: None,
             now: None,
@@ -367,7 +365,7 @@ fn sequence_fonts_embed_the_decoded_entity_glyphs() {
 
 #[test]
 fn compat_switches_optimizations_per_render_without_leaking() {
-    use ferrigura::{FlowchartMode, Renderer};
+    use ferrigura::Renderer;
     let renderer = Renderer::new(&Value::empty_object());
     let optimized = RenderOptions {
         id: Some("mode".to_owned()),
@@ -410,14 +408,6 @@ fn compat_switches_optimizations_per_render_without_leaking() {
     assert_eq!(renderer.render_with(sequence, &optimized).unwrap(), small);
     assert_eq!(renderer.render_with(sequence, &compatible).unwrap(), large);
     let flowchart = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
-    let old = RenderOptions {
-        flowchart_mode: FlowchartMode::Mermaid,
-        ..optimized.clone()
-    };
-    assert_eq!(
-        renderer.render_with(flowchart, &compatible).unwrap(),
-        renderer.render_with(flowchart, &old).unwrap()
-    );
     assert_ne!(
         renderer.render_with(flowchart, &optimized).unwrap(),
         renderer.render_with(flowchart, &compatible).unwrap()

@@ -43,7 +43,7 @@ Returns the SVG document of a diagram as a string.
 - `config` is the configuration that `mermaid.initialize` takes, as an object. Without it, the defaults apply. Front matter and `%%{init}%%` directives in `text` apply on top of it, as in Mermaid.
 - `options` is an object with these optional fields:
   - `id`: the id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id.
-  - `flowchartMode`: `'adaptive'` (default) centers ports with label-aware spacing and draws edge-label backgrounds at full opacity. `'mermaid'` retains the reference's routing and half-opacity label backgrounds. Other diagram types ignore it.
+  - `compat`: `false` (default) uses optimized flowchart routing and compact sequence participant boxes. `true` preserves Mermaid-compatible geometry. Font, fill and readability fixes apply in both modes.
   - `colorScheme`: `'light'`, `'dark'` or `'auto'`. `'auto'` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. By default the configured theme decides the colors.
 
 ```js

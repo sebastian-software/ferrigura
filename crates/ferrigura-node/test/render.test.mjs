@@ -25,14 +25,10 @@ const PIE = 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85\n';
 void test('flowchart routing is adaptive by default and compatibility is per render', () => {
   const text = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
   const renderer = new Renderer();
-  const compatible = renderer.render(text, { flowchartMode: 'mermaid' });
-  assert.equal(renderer.render(text), render(text, {}, { flowchartMode: 'adaptive' }));
+  const compatible = renderer.render(text, { compat: true });
+  assert.equal(renderer.render(text), render(text, {}, { compat: false }));
   assert.notEqual(renderer.render(text), compatible);
-  assert.equal(renderer.render(text, { flowchartMode: 'mermaid' }), compatible);
-  assert.throws(
-    () => renderer.render(text, { flowchartMode: 'typo' }),
-    /expected adaptive or mermaid/
-  );
+  assert.equal(renderer.render(text, { compat: true }), compatible);
 });
 
 void test('renders a pie to an SVG document with a derived id', () => {
@@ -114,9 +110,5 @@ void test('compat selects Mermaid geometry for flowcharts and sequence participa
   assert.equal(renderer.render(sequence, { compat: false }), compact);
   assert.equal(renderer.render(sequence, { compat: true }), compatible);
   const flow = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
-  assert.equal(
-    renderer.render(flow, { compat: true }),
-    renderer.render(flow, { flowchartMode: 'mermaid' })
-  );
   assert.notEqual(renderer.render(flow), renderer.render(flow, { compat: true }));
 });

@@ -28,9 +28,5 @@ void test('compat selects Mermaid geometry for flowcharts and sequence participa
   assert.equal(renderer.render(sequence, { compat: false }), compact);
   assert.equal(renderer.render(sequence, { compat: true }), compatible);
   const flow = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
-  assert.equal(
-    renderer.render(flow, { compat: true }),
-    renderer.render(flow, { flowchartMode: 'mermaid' })
-  );
   assert.notEqual(renderer.render(flow), renderer.render(flow, { compat: true }));
 });

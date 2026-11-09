@@ -218,7 +218,7 @@ fn render_flowchart(
     prepared: &Prepared<'_>,
     options: &RenderOptions,
 ) -> Result<String, RenderError> {
-    with_flowchart(text, prepared, options.flowchart_mode(), flowchart::render)
+    with_flowchart(text, prepared, options.compat, flowchart::render)
 }
 
 /// The timeline.

@@ -6,27 +6,13 @@ use ferrigura_elk::json::JsonNode;
 
 /// The flowchart's attachment policy. Both modes draw full-opacity label backgrounds.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum FlowchartMode {
+pub enum FlowchartRouting {
     /// Center ports with label-aware spacing and draw edge-label backgrounds at full opacity.
     /// Theme colors, including explicit transparency, still apply. The default.
     #[default]
     Adaptive,
     /// Preserve the pinned Mermaid reference's ports and spacing. Label backgrounds remain at full opacity.
     Mermaid,
-}
-
-impl std::str::FromStr for FlowchartMode {
-    type Err = String;
-
-    fn from_str(name: &str) -> Result<Self, Self::Err> {
-        match name {
-            "adaptive" => Ok(Self::Adaptive),
-            "mermaid" => Ok(Self::Mermaid),
-            other => Err(format!(
-                "unknown flowchart mode {other}, expected adaptive or mermaid"
-            )),
-        }
-    }
 }
 
 /// The largest measured edge-label dimensions in a layout container.

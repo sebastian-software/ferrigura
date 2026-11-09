@@ -13,7 +13,7 @@ use ferrigura_model::flowchart::FlowClass;
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
-use super::policy::FlowchartMode;
+use super::policy::FlowchartRouting;
 use crate::context::{Globals, ThemeView};
 use crate::svg::{css_text, escape, font_faces};
 use crate::unified::palette::{Palette, palette};
@@ -49,7 +49,7 @@ pub fn style_sheet(
     theme: ThemeView<'_>,
     globals: &Globals,
     classes: &[FlowClass],
-    mode: FlowchartMode,
+    mode: FlowchartRouting,
 ) -> String {
     style_sheet_with_fonts(svg_id, theme, globals, classes, &[], mode)
 }
@@ -64,7 +64,7 @@ pub fn style_sheet_with_fonts(
     globals: &Globals,
     classes: &[FlowClass],
     families: &[EmbeddedFamily],
-    _mode: FlowchartMode,
+    _mode: FlowchartRouting,
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
@@ -491,7 +491,7 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &[],
-            FlowchartMode::Mermaid,
+            FlowchartRouting::Mermaid,
         );
         assert!(
             sheet.starts_with("#flowchart{--nodeBorder:#28253D;"),
@@ -521,7 +521,7 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &[],
-            FlowchartMode::Mermaid,
+            FlowchartRouting::Mermaid,
         );
         assert!(
             sheet.contains("#flowchart{--nodeBorder:light-dark(#28253D,#FFFFFF);"),
@@ -546,7 +546,7 @@ mod tests {
             },
             &globals("redux-dark-color", "classic"),
             &[],
-            FlowchartMode::Mermaid,
+            FlowchartRouting::Mermaid,
         );
         assert!(!sheet.contains("bkgColor0:"), "{sheet}");
         assert!(sheet.contains("[data-look=\"classic\"][data-color-id=\"color-0\"].cluster:not(.swimlane) rect{stroke:var(--borderColor0);}"), "{sheet}");
@@ -562,7 +562,7 @@ mod tests {
             },
             &globals("default", "neo"),
             &[],
-            FlowchartMode::Mermaid,
+            FlowchartRouting::Mermaid,
         );
         assert!(!sheet.contains("color-0"), "{sheet}");
     }
@@ -589,7 +589,7 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &classes,
-            FlowchartMode::Mermaid,
+            FlowchartRouting::Mermaid,
         );
         assert!(
             sheet.contains(
@@ -619,7 +619,7 @@ mod tests {
             },
             &globals("redux-color", "neo"),
             &classes,
-            FlowchartMode::Mermaid,
+            FlowchartRouting::Mermaid,
         );
         assert!(!sheet.contains(".bad"), "{sheet}");
     }
@@ -707,7 +707,7 @@ mod tests {
             &globals("redux-color", "neo"),
             &[],
             std::slice::from_ref(&family),
-            FlowchartMode::Mermaid,
+            FlowchartRouting::Mermaid,
         );
         assert!(
             sheet.starts_with("@font-face{font-family:\"fg-0123456789abcdef-sans\";"),

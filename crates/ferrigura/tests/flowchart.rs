@@ -1,7 +1,7 @@
 //! Flowcharts through the public entry point: what the root element's box is.
 
 use ferrigura::render;
-use ferrigura::{FlowchartMode, RenderOptions, Renderer, flowchart_elk_stages};
+use ferrigura::{RenderOptions, Renderer, flowchart_elk_stages};
 use ferrigura_model::value::Value;
 
 /// The tolerance of the comparison with the reference, in SVG user units.
@@ -19,12 +19,8 @@ fn unlabeled_parent_graphs_keep_their_existing_routing() {
         ),
     ] {
         assert_eq!(
-            renderer
-                .render_with(text, &options(FlowchartMode::Adaptive))
-                .unwrap(),
-            renderer
-                .render_with(text, &options(FlowchartMode::Mermaid))
-                .unwrap()
+            renderer.render_with(text, &options(false)).unwrap(),
+            renderer.render_with(text, &options(true)).unwrap()
         );
     }
 }
@@ -78,12 +74,7 @@ fn nested_edge_labels_center_their_actual_container_in_every_direction() {
         let text = format!(
             "flowchart {direction}\n subgraph outer[Outer]\n subgraph workflow[Workflow]\n{body} end\n end\n"
         );
-        let stages = flowchart_elk_stages(
-            &text,
-            &Value::empty_object(),
-            &options(FlowchartMode::Adaptive),
-        )
-        .unwrap();
+        let stages = flowchart_elk_stages(&text, &Value::empty_object(), &options(false)).unwrap();
         let input = &stages["elkInput"];
         for id in ["root", "outer"] {
             assert!(
@@ -107,7 +98,7 @@ fn nested_edge_labels_center_their_actual_container_in_every_direction() {
         // In the vertical review loop, all three routes can stay straight inside both frames.
         if matches!(direction, "TD" | "BT") {
             let svg = Renderer::new(&Value::empty_object())
-                .render_with(&text, &options(FlowchartMode::Adaptive))
+                .render_with(&text, &options(false))
                 .unwrap();
             assert_straight_routes(&svg, 3);
         }
@@ -117,12 +108,7 @@ fn nested_edge_labels_center_their_actual_container_in_every_direction() {
 #[test]
 fn local_cross_hierarchy_and_self_loop_labels_use_their_own_containers() {
     let text = "flowchart TD\n subgraph left[Left]\n A -->|Local| B\n A -->|Repeat| A\n end\n subgraph right[Right]\n C --> D\n end\n subgraph plain[Plain]\n E --> F\n end\n B -->|Across| C\n";
-    let stages = flowchart_elk_stages(
-        text,
-        &Value::empty_object(),
-        &options(FlowchartMode::Adaptive),
-    )
-    .unwrap();
+    let stages = flowchart_elk_stages(text, &Value::empty_object(), &options(false)).unwrap();
     let input = &stages["elkInput"];
     for id in ["root", "left", "right"] {
         assert_eq!(
@@ -166,19 +152,14 @@ fn wide_inline_labels_have_room_for_the_neighboring_vertical_route() {
             "subgraph workflow[Workflow]\n direction TB",
         ),
     ] {
-        let stages = flowchart_elk_stages(
-            &text,
-            &Value::empty_object(),
-            &options(FlowchartMode::Adaptive),
-        )
-        .unwrap();
+        let stages = flowchart_elk_stages(&text, &Value::empty_object(), &options(false)).unwrap();
         let gap = elk_node(&stages["elkInput"], "workflow").unwrap()["layoutOptions"]["elk.spacing.portPort"].as_f64().unwrap();
         assert!(
             gap > 60.0,
             "the long label needs more than the 44-unit height-based gap: {gap}"
         );
         let svg = Renderer::new(&Value::empty_object())
-            .render_with(&text, &options(FlowchartMode::Adaptive))
+            .render_with(&text, &options(false))
             .unwrap();
         assert_straight_routes(&svg, 3);
     }
@@ -193,12 +174,7 @@ fn a_merged_subgraphs_inert_direction_does_not_change_the_clearance_axis() {
         "subgraph workflow[Workflow]",
         "subgraph workflow[Workflow]\n direction TB",
     ) + " publish --> outside[Outside]\n";
-    let stages = flowchart_elk_stages(
-        &text,
-        &Value::empty_object(),
-        &options(FlowchartMode::Adaptive),
-    )
-    .unwrap();
+    let stages = flowchart_elk_stages(&text, &Value::empty_object(), &options(false)).unwrap();
     let workflow = elk_node(&stages["elkInput"], "workflow").unwrap();
     assert_eq!(
         workflow["layoutOptions"]["elk.hierarchyHandling"],
@@ -216,12 +192,7 @@ fn existing_nested_diamond_labels_configure_the_inner_graph() {
     let text = include_str!(
         "../../../e2e/diagrams/flowchart/nightly-check/6088-1-should-handle-diamond-shape-intersections.mmd"
     );
-    let stages = flowchart_elk_stages(
-        text,
-        &Value::empty_object(),
-        &options(FlowchartMode::Adaptive),
-    )
-    .unwrap();
+    let stages = flowchart_elk_stages(text, &Value::empty_object(), &options(false)).unwrap();
     let input = &stages["elkInput"];
     assert!(input["layoutOptions"].get("elk.spacing.portPort").is_none());
     assert_eq!(
@@ -240,15 +211,15 @@ fn existing_nested_diamond_labels_configure_the_inner_graph() {
         );
     }
     let svg = Renderer::new(&Value::empty_object())
-        .render_with(text, &options(FlowchartMode::Adaptive))
+        .render_with(text, &options(false))
         .unwrap();
     assert_straight_routes(&svg, 3);
 }
 
-fn options(routing: FlowchartMode) -> RenderOptions {
+fn options(compat: bool) -> RenderOptions {
     RenderOptions {
         id: Some("routing".to_owned()),
-        flowchart_mode: routing,
+        compat,
         ..RenderOptions::default()
     }
 }
@@ -266,21 +237,15 @@ fn edge_label_backgrounds_are_opaque_in_both_routing_modes() {
         "neo-dark",
     ] {
         let renderer = Renderer::new(&Value::from(serde_json::json!({ "theme": theme })));
-        let adaptive = renderer
-            .render_with(text, &options(FlowchartMode::Adaptive))
-            .unwrap();
-        let compatible = renderer
-            .render_with(text, &options(FlowchartMode::Mermaid))
-            .unwrap();
+        let adaptive = renderer.render_with(text, &options(false)).unwrap();
+        let compatible = renderer.render_with(text, &options(true)).unwrap();
         assert!(adaptive.contains(opaque), "{theme}");
         assert!(compatible.contains(opaque), "{theme}");
         // A single edge needs no attachment changes; the paint is identical too.
         assert_eq!(adaptive, compatible, "{theme}");
         assert_eq!(
             adaptive,
-            renderer
-                .render_with(text, &options(FlowchartMode::Adaptive))
-                .unwrap(),
+            renderer.render_with(text, &options(false)).unwrap(),
             "{theme}"
         );
     }
@@ -293,10 +258,7 @@ fn full_opacity_keeps_explicit_theme_background_colors() {
             "themeVariables": { "edgeLabelBackground": color }
         })));
         let svg = renderer
-            .render_with(
-                "flowchart LR\n A -->|Label| B\n",
-                &options(FlowchartMode::Adaptive),
-            )
+            .render_with("flowchart LR\n A -->|Label| B\n", &options(false))
             .unwrap();
         assert!(
             svg.contains(&format!("--edgeLabelBackground:{color};")),
@@ -312,12 +274,7 @@ fn wrapped_labels_increase_the_port_gap_instead_of_using_a_fixed_example_value()
         "Changes",
         "Please revise the complete implementation before submitting again",
     );
-    let stages = flowchart_elk_stages(
-        &text,
-        &Value::empty_object(),
-        &options(FlowchartMode::Adaptive),
-    )
-    .unwrap();
+    let stages = flowchart_elk_stages(&text, &Value::empty_object(), &options(false)).unwrap();
     let gap = stages["elkInput"]["layoutOptions"]["elk.spacing.portPort"]
         .as_f64()
         .unwrap();
@@ -330,12 +287,8 @@ fn wrapped_labels_increase_the_port_gap_instead_of_using_a_fixed_example_value()
 #[test]
 fn adaptive_routing_straightens_the_review_cycle_without_moving_or_resizing_nodes() {
     let renderer = Renderer::new(&Value::empty_object());
-    let adaptive = renderer
-        .render_with(REVIEW, &options(FlowchartMode::Adaptive))
-        .unwrap();
-    let compatible = renderer
-        .render_with(REVIEW, &options(FlowchartMode::Mermaid))
-        .unwrap();
+    let adaptive = renderer.render_with(REVIEW, &options(false)).unwrap();
+    let compatible = renderer.render_with(REVIEW, &options(true)).unwrap();
     assert_eq!(
         adaptive,
         renderer
@@ -382,8 +335,8 @@ fn adaptive_routing_straightens_the_review_cycle_without_moving_or_resizing_node
     );
     let stages =
         |routing| flowchart_elk_stages(REVIEW, &Value::empty_object(), &options(routing)).unwrap();
-    let adaptive = stages(FlowchartMode::Adaptive);
-    let compatible = stages(FlowchartMode::Mermaid);
+    let adaptive = stages(false);
+    let compatible = stages(true);
     for (a, b) in adaptive["elkOutput"]["children"]
         .as_array()
         .unwrap()
@@ -408,30 +361,17 @@ fn adaptive_routing_straightens_the_review_cycle_without_moving_or_resizing_node
 #[test]
 fn routing_is_per_render_and_does_not_affect_other_diagram_types() {
     let renderer = Renderer::new(&Value::empty_object());
-    let first = renderer
-        .render_with(REVIEW, &options(FlowchartMode::Mermaid))
-        .unwrap();
-    renderer
-        .render_with(REVIEW, &options(FlowchartMode::Adaptive))
-        .unwrap();
-    assert_eq!(
-        first,
-        renderer
-            .render_with(REVIEW, &options(FlowchartMode::Mermaid))
-            .unwrap()
-    );
+    let first = renderer.render_with(REVIEW, &options(true)).unwrap();
+    renderer.render_with(REVIEW, &options(false)).unwrap();
+    assert_eq!(first, renderer.render_with(REVIEW, &options(true)).unwrap());
     for text in [
         "classDiagram\n A --> B : calls\n",
         "stateDiagram-v2\n A --> B : next\n",
         "erDiagram\n A ||--o{ B : has\n",
     ] {
         assert_eq!(
-            renderer
-                .render_with(text, &options(FlowchartMode::Mermaid))
-                .unwrap(),
-            renderer
-                .render_with(text, &options(FlowchartMode::Adaptive))
-                .unwrap()
+            renderer.render_with(text, &options(true)).unwrap(),
+            renderer.render_with(text, &options(false)).unwrap()
         );
     }
 }

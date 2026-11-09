@@ -7,7 +7,6 @@
 // Both sides get SVG labels, the bundled face and the redux-color theme.
 // Flowcharts use Mermaid routing; label backgrounds stay opaque in both modes.
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join } from 'node:path';
@@ -16,6 +15,7 @@ import { format } from 'oxfmt';
 import { chromium } from 'playwright';
 
 import { compareOutput, installPublished } from './published-output.mjs';
+import { createSourceRenderer } from './source-renderer.mjs';
 
 const check = process.argv.includes('--check');
 const repository = new URL('../../', import.meta.url);
@@ -312,15 +312,14 @@ const examples = [
 
 assert(check || process.platform === 'darwin', 'Write the side-by-side drawings on macOS.');
 const exact = !check || recorded.platform === platform;
-execFileSync('cargo', ['build', '-q', '-p', 'ferrigura', '--example', 'render'], {
-  cwd: repository,
-  stdio: 'inherit',
-});
 const packages = await installPublished({ mermaid: versions.mermaid }, { quiet: check });
 let svgs;
+let renderer;
 try {
-  svgs = await renderAll(packages, { withMermaid: exact });
+  renderer = await createSourceRenderer(diagramConfig);
+  svgs = await renderAll(packages, { withMermaid: exact }, renderer);
 } finally {
+  await renderer?.remove();
   await packages.remove();
 }
 
@@ -369,37 +368,21 @@ if (check) {
 }
 
 /** Every example from Ferrigura and, where asked, from Mermaid, by file name. */
-async function renderAll({ directory }, { withMermaid }) {
-  const config = join(directory, 'ferrigura-config.json');
-  await writeFile(config, JSON.stringify(diagramConfig));
+async function renderAll({ directory }, { withMermaid }, renderer) {
   const mermaid = withMermaid
     ? await renderMermaid(join(directory, 'node_modules', 'mermaid', 'dist'))
     : new Map();
   const rendered = new Map();
   for (const example of examples) {
-    rendered.set(`ferrigura-${example.id}.svg`, renderFerrigura(config, example));
+    rendered.set(`ferrigura-${example.id}.svg`, renderFerrigura(renderer, example));
     if (withMermaid) rendered.set(`mermaid-${example.id}.svg`, mermaid.get(example.id));
   }
   return rendered;
 }
 
-function renderFerrigura(config, example) {
+function renderFerrigura(renderer, example) {
   const options = { ...ferriguraOptions, id: `ferrigura-${example.id}` };
-  const draw = () =>
-    execFileSync(
-      fileURLToPath(new URL('target/debug/examples/render', repository)),
-      [
-        '--config',
-        config,
-        '--id',
-        options.id,
-        '--scheme',
-        options.colorScheme,
-        '--compat',
-        String(options.compat),
-      ],
-      { cwd: repository, input: example.source, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }
-    );
+  const draw = () => renderer.render(example.source, options);
   const svg = draw();
   assert.equal(svg, draw(), `${example.id} must render the same twice`);
   assert.doesNotMatch(svg, /<foreignObject\b|<script\b/, `${example.id} contains HTML or script`);

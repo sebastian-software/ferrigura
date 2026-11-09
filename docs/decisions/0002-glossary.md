@@ -32,9 +32,6 @@ The renderer that flowchart, class, state, ER and requirement share, and that ot
 **Compatibility mode**:
 The per-render choice between optimized geometry (`compat: false`, the default) and Mermaid-compatible geometry (`compat: true`). It controls adaptive flowchart ports and compact sequence participant boxes. Font, color and readability fixes apply in either mode ([0019](./0019-adaptive-flowchart-mode.md)).
 
-**Flowchart mode**:
-The legacy flowchart-only routing override: adaptive centering or Mermaid-compatible routing, both with full-opacity edge-label backgrounds ([0019](./0019-adaptive-flowchart-mode.md)). Explicit theme color transparency applies in either mode.
-
 **Flowchart routing policy**:
 The choice of how a flowchart attaches its edges to nodes: adaptive centering with label-aware spacing, or the pinned Mermaid reference's attachment behavior ([0019](./0019-adaptive-flowchart-mode.md)). Necessary bends remain in either policy.
 

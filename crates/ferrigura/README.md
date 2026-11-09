@@ -81,7 +81,6 @@ The constructors of `ferrigura::diagrams` are named after the types (`flowchart`
 | `color_scheme`   | `Option<ColorScheme>` | `Light`, `Dark` or `Auto`. `Auto` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. `None` keeps the colors of the configured theme.     |
 | `now`            | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                                                      |
 | `compat`         | `bool`                | `false` (default) enables optimized routing and compact participants. `true` preserves Mermaid-compatible geometry across diagram types.                                                                                                                              |
-| `flowchart_mode` | `FlowchartMode`       | Legacy override; `compat: true` takes precedence. `Adaptive` (default) centers flowchart ports with label-aware spacing and draws edge-label backgrounds at full opacity. `Mermaid` preserves the pinned reference's routing. Other diagram types ignore this option. |
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {

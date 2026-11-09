@@ -9,16 +9,16 @@ use std::process::{Command, Output, Stdio};
 const PIE: &str = "pie title Pets\n  \"Dogs\" : 386\n  \"Cats\" : 85\n";
 
 #[test]
-fn flowchart_mode_selects_the_compatibility_mode_and_rejects_unknown_modes() {
+fn compat_selects_reference_routing_and_the_removed_option_is_rejected() {
     let text = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
     let adaptive = run(&["--id", "routing"], text);
-    let compatible = run(&["--id", "routing", "--flowchart-mode", "mermaid"], text);
+    let compatible = run(&["--id", "routing", "--compat"], text);
     assert!(adaptive.status.success(), "{}", stderr(&adaptive));
     assert!(compatible.status.success(), "{}", stderr(&compatible));
     assert_ne!(stdout(&adaptive), stdout(&compatible));
-    let invalid = run(&["--flowchart-mode", "typo"], "");
+    let invalid = run(&["--flowchart-mode", "mermaid"], "");
     assert_eq!(invalid.status.code(), Some(2));
-    assert!(stderr(&invalid).contains("expected adaptive or mermaid"));
+    assert!(stderr(&invalid).contains("unknown option --flowchart-mode"));
 }
 
 fn run(args: &[&str], input: &str) -> Output {
@@ -247,9 +247,4 @@ fn compat_selects_reference_geometry_across_diagram_types() {
     assert!(compatible.status.success(), "{}", stderr(&compatible));
     assert!(stdout(&optimized).contains("height=\"32\" name=\"App\""));
     assert!(stdout(&compatible).contains("height=\"76\" name=\"App\""));
-    let flow = "flowchart TD\n A -->|Label| B\n B --> A\n";
-    assert_eq!(
-        stdout(&run(&["--id", "mode", "--compat"], flow)),
-        stdout(&run(&["--id", "mode", "--flowchart-mode", "mermaid"], flow))
-    );
 }

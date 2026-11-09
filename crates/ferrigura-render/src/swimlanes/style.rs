@@ -29,7 +29,7 @@ pub fn style_sheet(
         globals,
         classes,
         families,
-        crate::flowchart::policy::FlowchartMode::Mermaid,
+        crate::flowchart::policy::FlowchartRouting::Mermaid,
     );
     css.push_str(&css_text(&lane_rules(id, theme, globals)));
     css

@@ -21,7 +21,7 @@ use ferrigura_model::flowchart::FlowClass;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::context::{Globals, ThemeView};
-use ferrigura_render::flowchart::policy::FlowchartMode;
+use ferrigura_render::flowchart::policy::FlowchartRouting;
 use ferrigura_render::flowchart::style::style_sheet;
 
 const REFERENCE: &str = include_str!("data/flowchart-styles.json");
@@ -531,7 +531,7 @@ fn the_style_sheet_matches_the_reference_rule_by_rule() {
             },
             &Globals::of(&config(theme, look)),
             &classes,
-            FlowchartMode::Mermaid,
+            FlowchartRouting::Mermaid,
         ));
         let actual_items = parse(&sheet);
         let expected_items = parse(case["css"].as_str().expect("css"));

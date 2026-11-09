@@ -1,5 +1,5 @@
 {
-  "renderedWith": { "@ferrigura/core": "0.4.0" },
+  "renderedWith": { "ferrigura": "repository source" },
   "platform": "darwin-arm64",
   "samples": [
     {
