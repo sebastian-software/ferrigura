@@ -17,7 +17,7 @@
       "securityLevel": "strict",
       "deterministicIds": true
     },
-    "ferrigura": { "colorScheme": "light", "flowchartMode": "mermaid" }
+    "ferrigura": { "colorScheme": "light", "compat": true }
   },
   "examples": [
     {

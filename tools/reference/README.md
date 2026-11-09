@@ -16,21 +16,19 @@ The first run takes about half a minute; later runs reuse the build while the pi
 
 ## The patches
 
-| Patch | What it fixes in upstream Mermaid 12.2.0                                                                      |
-| ----- | ------------------------------------------------------------------------------------------------------------- |
-| 01    | `topAxis` in a gantt chart failed to parse (`yy.TopAxis` does not exist)                                      |
-| 02    | A diagram with the graduated `architecture` keyword was detected and then failed to parse                     |
-| 03    | The `wardley-beta` configuration section never applied its `theme`, `look` and `layout`                       |
-| 04    | `defaultConfig.ts` copied the flowchart section into `c4.flowchart`                                           |
-| 05    | Front matter and directives dropped the options only railroad has                                             |
-| 06    | `@{ shape: constructor }` was accepted as a shape, and `__proto__` twice in a subgraph stayed twice           |
-| 07    | Not a fix: a capture hook, `globalThis.__mermaidElkCapture`, that gives the harness each ELK input and layout |
-| 08    | The sankey, packet, xychart and block detectors took any word that starts with the keyword                    |
-| 09    | With patch 02, `architecture` became a keyword everywhere; it is the header keyword only now                  |
-| 10 | Not a fix: an optional measured-input hook for the adaptive flowchart geometry comparison ([0019](../../docs/decisions/0019-adaptive-flowchart-mode.md)) |
-
-| 11 | SVG flowchart edge labels mask their edges at full opacity, without changing layout |
-| 12 | Neo sequence participant boxes fit their labels while preserving the shared lifeline datum |
+| Patch | What it fixes in upstream Mermaid 12.2.0                                                                                                                 |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01    | `topAxis` in a gantt chart failed to parse (`yy.TopAxis` does not exist)                                                                                 |
+| 02    | A diagram with the graduated `architecture` keyword was detected and then failed to parse                                                                |
+| 03    | The `wardley-beta` configuration section never applied its `theme`, `look` and `layout`                                                                  |
+| 04    | `defaultConfig.ts` copied the flowchart section into `c4.flowchart`                                                                                      |
+| 05    | Front matter and directives dropped the options only railroad has                                                                                        |
+| 06    | `@{ shape: constructor }` was accepted as a shape, and `__proto__` twice in a subgraph stayed twice                                                      |
+| 07    | Not a fix: a capture hook, `globalThis.__mermaidElkCapture`, that gives the harness each ELK input and layout                                            |
+| 08    | The sankey, packet, xychart and block detectors took any word that starts with the keyword                                                               |
+| 09    | With patch 02, `architecture` became a keyword everywhere; it is the header keyword only now                                                             |
+| 10    | Not a fix: an optional measured-input hook for the adaptive flowchart geometry comparison ([0019](../../docs/decisions/0019-adaptive-flowchart-mode.md)) |
+| 11    | SVG flowchart edge labels mask their edges at full opacity, without changing layout                                                                      |
 
 A new patch is a diff against the pinned commit with the earlier patches applied, with a header that says what it fixes and, where there is one, the upstream issue. When upstream fixes a bug, its patch goes with the next move of the pin.
 

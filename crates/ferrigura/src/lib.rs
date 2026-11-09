@@ -46,7 +46,12 @@ pub enum ColorScheme {
 /// The options of a render that are not Mermaid configuration.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RenderOptions {
-    /// The flowchart's rendering mode. `Adaptive` centers ports with label-aware spacing and draws
+    /// Use Mermaid-compatible geometry instead of Ferrigura's optimizations. Defaults to false:
+    /// flowchart ports are centered with label-aware spacing and sequence participant boxes fit
+    /// their labels. Font, color and readability fixes apply in both modes.
+    pub compat: bool,
+    /// Legacy flowchart-only override; prefer `compat` for all diagram types. `compat: true`
+    /// always selects Mermaid routing. The flowchart's rendering mode. `Adaptive` centers ports with label-aware spacing and draws
     /// edge-label backgrounds at full opacity. `Mermaid` preserves the pinned reference's output.
     /// Other diagram types ignore it.
     pub flowchart_mode: FlowchartMode,
@@ -70,6 +75,17 @@ pub struct RenderOptions {
     /// interface.
     #[doc(hidden)]
     pub random_seed: Option<u32>,
+}
+
+impl RenderOptions {
+    /// The routing selected by the general compatibility switch and the legacy override.
+    fn flowchart_mode(&self) -> FlowchartMode {
+        if self.compat {
+            FlowchartMode::Mermaid
+        } else {
+            self.flowchart_mode
+        }
+    }
 }
 
 /// A renderer, with the site configuration resolved once.
@@ -520,7 +536,7 @@ pub fn flowchart_elk_stages(
     let stages = with_flowchart(
         text,
         &prepared,
-        options.flowchart_mode,
+        options.flowchart_mode(),
         flowchart::elk_stages,
     )?;
     Ok(serde_json::json!({

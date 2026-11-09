@@ -55,6 +55,8 @@ pub(super) struct Renderer<'a> {
     pub(super) theme: ThemeView<'a>,
     /// The resolved configuration.
     pub(super) conf: Conf,
+    /// Whether participant boxes fit their labels instead of spanning the shared row.
+    pub(super) compact_participants: bool,
     /// The text measurements of this render.
     pub(super) memo: TextMemo,
     /// The actors, boxes, messages and their layout.
@@ -95,6 +97,7 @@ impl<'a> Renderer<'a> {
             id: input.id,
             theme: input.theme,
             conf: Conf::new(input.section, input.globals),
+            compact_participants: false,
             memo: TextMemo::new(),
             layout: Layout::new(input.diagram),
             bounds: Bounds::default(),
@@ -645,7 +648,20 @@ fn stop_y(block: &Block) -> f64 {
 pub fn render(
     input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
 ) -> Result<String, RenderError> {
+    render_with(input, true)
+}
+
+/// Renders with Mermaid participant geometry when `compat` is true; otherwise boxes fit their labels.
+///
+/// # Errors
+///
+/// Returns the same errors as [`render`].
+pub fn render_with(
+    input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
+    compat: bool,
+) -> Result<String, RenderError> {
     let mut renderer = Renderer::new(input);
+    renderer.compact_participants = !compat;
     renderer.draw(&input.diagram.title)?;
     Ok(renderer.write(input))
 }

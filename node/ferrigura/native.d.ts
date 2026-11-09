@@ -47,6 +47,11 @@ export declare function render(text: string, config?: any | undefined | null, op
 /** The options that are not Mermaid configuration. */
 export interface RenderOptionsInput {
   /**
+   * Mermaid-compatible geometry when true. False (default) enables optimized flowchart routing
+   * and compact sequence participant boxes. Font, color and readability fixes always apply.
+   */
+  compat?: boolean
+  /**
    * Flowchart mode: `adaptive` (default) centers ports with label-aware spacing and draws
    * edge-label backgrounds at full opacity; `mermaid` preserves the pinned reference's output.
    * Other diagram types ignore it.

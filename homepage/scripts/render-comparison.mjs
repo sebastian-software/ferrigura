@@ -50,7 +50,7 @@ const mermaidConfig = {
   deterministicIds: true,
 };
 /** Ferrigura's render options: a light page, and Mermaid's flowchart routing. */
-const ferriguraOptions = { colorScheme: 'light', flowchartMode: 'mermaid' };
+const ferriguraOptions = { colorScheme: 'light', compat: true };
 
 /** The examples: everyday diagrams of medium size, one per type. */
 const examples = [
@@ -395,8 +395,8 @@ function renderFerrigura(config, example) {
         options.id,
         '--scheme',
         options.colorScheme,
-        '--flowchart-mode',
-        options.flowchartMode,
+        '--compat',
+        String(options.compat),
       ],
       { cwd: repository, input: example.source, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }
     );

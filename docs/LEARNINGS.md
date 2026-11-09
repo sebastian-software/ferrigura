@@ -296,4 +296,4 @@ Sequence text uses the same top-level family for actors, notes and messages. A l
 
 ### Participant boxes do not need the glyph band
 
-Neo sequence rows reserve a glyph band, label and two gaps for icon participants. A plain participant has no glyph: its rectangle uses the measured label height plus the two label gaps. The header bottom and footer top stay at the existing lifeline datum, so message positions, row height and wrapping do not move (reference patch 12).
+Neo sequence rows reserve a glyph band, label and two gaps for icon participants. In optimized rendering (`compat: false`), a plain participant has no glyph: its rectangle uses the measured label height plus the two label gaps. Compatibility mode keeps the original row-spanning box. The header bottom and footer top stay at the existing lifeline datum, so message positions, row height and wrapping do not move ([0019](./decisions/0019-adaptive-flowchart-mode.md)).

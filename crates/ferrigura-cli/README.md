@@ -31,6 +31,7 @@ Options:
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
+      --compat           Use Mermaid geometry instead of optimized routing and participant boxes
       --flowchart-mode <MODE>
                           `adaptive` (default) or `mermaid` for reference-compatible output
   -o, --output <FILE>     Write the SVG to FILE instead of standard output (one input only)
@@ -80,11 +81,7 @@ ferrigura --config config.json --id pets pets.mmd
 
 ## Behavior
 
-Flowcharts center their attachment points with label-aware spacing and draw edge-label backgrounds at full opacity by default.
-`--flowchart-mode mermaid` preserves the pinned Mermaid reference's routing;
-`--flowchart-mode adaptive` selects the default explicitly. Other diagram
-types ignore this option. It is separate from `--config` and the post-processing
-setting `elk.straightenEdges`.
+By default, optimized rendering centers flowchart ports and compacts sequence participant boxes. `--compat` preserves Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes. The earlier `--flowchart-mode` remains a flowchart-only override; `--compat` takes precedence.
 
 - Several inputs are rendered through one renderer, so the configuration is resolved once. They are rendered in the order given.
 - Rendering stops at the first input that fails. The SVGs of the inputs before it are already written.

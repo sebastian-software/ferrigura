@@ -6,7 +6,7 @@
 
 ferrigura reproduces what the reference does, also where it looks like a bug. The same text renders the same diagram, and fails where the reference fails.
 
-The explicit exception is the flowchart rendering mode ([0019](./0019-adaptive-flowchart-mode.md)): the default centers ports with label-aware spacing; `FlowchartMode::Mermaid` retains the reference's routing. Both modes draw edge-label backgrounds at full opacity, also corrected in the reference by patch 11. Neo sequence participant boxes fit their labels while keeping the shared lifeline datum, also corrected in the reference by patch 12. The rules below apply to that compatibility mode and to all other behavior.
+The general compatibility switch is an explicit exception ([0019](./0019-adaptive-flowchart-mode.md)): the optimized default centers flowchart ports with label-aware spacing and sizes sequence participant boxes to their labels. `compat: true` retains the reference's geometry. Both modes draw flowchart edge-label backgrounds at full opacity, also corrected in the reference by patch 11. The rules below apply to compatibility rendering and to behavior outside these documented optimizations.
 
 - A quirk that changes the output is reproduced, and the probe that showed it becomes a test.
 - A reference bug is fixed in ferrigura only together with a patch on the pinned commit that fixes it in the reference too, so that both sides agree again ([0014](./0014-upstream-reference-at-a-pin.md)).

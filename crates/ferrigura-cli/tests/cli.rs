@@ -238,3 +238,18 @@ fn output_takes_one_input_and_output_dir_takes_files() {
     let output = run(&["--output-dir", "unused", "-"], PIE);
     assert_eq!(output.status.code(), Some(2));
 }
+
+#[test]
+fn compat_selects_reference_geometry_across_diagram_types() {
+    let sequence = "sequenceDiagram\n participant App\n participant API\n App->>API: Request\n";
+    let optimized = run(&["--id", "mode"], sequence);
+    let compatible = run(&["--id", "mode", "--compat"], sequence);
+    assert!(compatible.status.success(), "{}", stderr(&compatible));
+    assert!(stdout(&optimized).contains("height=\"32\" name=\"App\""));
+    assert!(stdout(&compatible).contains("height=\"76\" name=\"App\""));
+    let flow = "flowchart TD\n A -->|Label| B\n B --> A\n";
+    assert_eq!(
+        stdout(&run(&["--id", "mode", "--compat"], flow)),
+        stdout(&run(&["--id", "mode", "--flowchart-mode", "mermaid"], flow))
+    );
+}

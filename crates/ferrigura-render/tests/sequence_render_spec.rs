@@ -1499,12 +1499,11 @@ mod stick_figure_actor_sizing {
     }
 
     #[test]
-    fn fits_participant_boxes_without_shrinking_the_icon_row() {
-        // Reference patch 12 fits the participant box to its label. The icon row and its
-        // lifeline datum keep their original height; the classic box stays unchanged.
+    fn reports_a_height_that_is_not_shrunk_by_the_look() {
+        // Compatibility rendering keeps the shared row height for participant boxes.
         let classic = alone("participant", "classic");
         let neo = alone("participant", "neo");
-        assert!(box_height(participant(&neo, "A")) < box_height(participant(&classic, "A")));
+        assert!(box_height(participant(&neo, "A")) >= box_height(participant(&classic, "A")));
     }
 }
 

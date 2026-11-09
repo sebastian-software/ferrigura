@@ -15,6 +15,7 @@ const PIE: &str = "pie title Sports in Sweden\n  \"Bandy\" : 40\n  \"Ice-Hockey\
 
 fn svg_with(text: &str, scheme: Option<ColorScheme>, id: Option<&str>) -> String {
     let options = RenderOptions {
+        compat: false,
         flowchart_mode: Default::default(),
         id: id.map(str::to_owned),
         color_scheme: scheme,
@@ -206,6 +207,7 @@ fn the_default_id_comes_from_the_text_and_the_configuration() {
 fn an_id_that_is_not_a_css_identifier_is_refused() {
     for bad in ["1pie", "my pie", "a.b", "", "x{}"] {
         let options = RenderOptions {
+            compat: false,
             flowchart_mode: Default::default(),
             id: Some(bad.to_owned()),
             color_scheme: None,
@@ -361,4 +363,74 @@ fn sequence_fonts_embed_the_decoded_entity_glyphs() {
         style_of(&draw("A #lt; B #gt; C")),
         style_of(&draw("A < B > C"))
     );
+}
+
+#[test]
+fn compat_switches_optimizations_per_render_without_leaking() {
+    use ferrigura::{FlowchartMode, Renderer};
+    let renderer = Renderer::new(&Value::empty_object());
+    let optimized = RenderOptions {
+        id: Some("mode".to_owned()),
+        ..RenderOptions::default()
+    };
+    let compatible = RenderOptions {
+        compat: true,
+        ..optimized.clone()
+    };
+    let sequence = "sequenceDiagram\n actor User\n participant App\n User->>App: Open\n";
+    let small = renderer.render_with(sequence, &optimized).unwrap();
+    let large = renderer.render_with(sequence, &compatible).unwrap();
+    let top = |svg: &str| {
+        let doc = roxmltree::Document::parse(svg).unwrap();
+        let rect = doc
+            .descendants()
+            .find(|n| {
+                n.has_tag_name("rect")
+                    && n.attribute("name") == Some("App")
+                    && n.attribute("class") == Some("actor actor-top")
+            })
+            .unwrap();
+        rect.attribute("height").unwrap().to_owned()
+    };
+    assert_eq!(top(&small), "32");
+    assert_eq!(top(&large), "76");
+    let messages = |svg: &str| {
+        let doc = roxmltree::Document::parse(svg).unwrap();
+        doc.descendants()
+            .filter(|n| {
+                n.attribute("class")
+                    .is_some_and(|c| c.starts_with("messageLine") || c.starts_with("actor-line"))
+            })
+            .map(|n| {
+                ["x1", "y1", "x2", "y2", "d"].map(|a| n.attribute(a).unwrap_or_default().to_owned())
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(messages(&small), messages(&large));
+    assert_eq!(renderer.render_with(sequence, &optimized).unwrap(), small);
+    assert_eq!(renderer.render_with(sequence, &compatible).unwrap(), large);
+    let flowchart = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
+    let old = RenderOptions {
+        flowchart_mode: FlowchartMode::Mermaid,
+        ..optimized.clone()
+    };
+    assert_eq!(
+        renderer.render_with(flowchart, &compatible).unwrap(),
+        renderer.render_with(flowchart, &old).unwrap()
+    );
+    assert_ne!(
+        renderer.render_with(flowchart, &optimized).unwrap(),
+        renderer.render_with(flowchart, &compatible).unwrap()
+    );
+    for source in [
+        "pie\n \"A\" : 1\n",
+        "classDiagram\n A --> B\n",
+        "stateDiagram-v2\n A --> B\n",
+        "erDiagram\n A ||--o{ B : uses\n",
+    ] {
+        assert_eq!(
+            renderer.render_with(source, &optimized).unwrap(),
+            renderer.render_with(source, &compatible).unwrap()
+        );
+    }
 }

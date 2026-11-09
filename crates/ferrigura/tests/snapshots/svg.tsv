@@ -1505,199 +1505,199 @@ e2e/diagrams/sankey/nightly-check/outlined-labels.mmd	18d6f214a4789533
 e2e/diagrams/sankey/pr-check/should-render-a-simple-example.mmd	b5b6a9bcdc3e7906
 e2e/diagrams/sankey/pr-check/should-render-complete-financial-flow-with-custom-colors.mmd	cdd5299b72864733
 e2e/diagrams/sankey/pr-check/should-render-labels-with-apple-style-outlined-text.mmd	00a5a39398ad2c73
-e2e/diagrams/sequence/nightly-check/dark-theme.mmd	7898a6f41dd4f1e4
-e2e/diagrams/sequence/nightly-check/default-theme.mmd	8e14a8de8b69bca0
-e2e/diagrams/sequence/nightly-check/forest-theme.mmd	4f074cb04e40ce74
-e2e/diagrams/sequence/nightly-check/neutral-theme.mmd	4c973955ef1e6c24
-e2e/diagrams/sequence/nightly-check/redux-neo-all-participant-types-redux-color-theme.mmd	de4c76a35e843498
-e2e/diagrams/sequence/nightly-check/redux-neo-all-participant-types-redux-dark-color-theme.mmd	1a4198d92d155ebe
-e2e/diagrams/sequence/nightly-check/redux-neo-all-participant-types-redux-dark-theme.mmd	8454e1758ecdcbac
-e2e/diagrams/sequence/nightly-check/redux-neo-all-participant-types-redux-theme.mmd	091c22cf5a29ffa4
-e2e/diagrams/sequence/nightly-check/redux-neo-complex-sequence-with-all-features-redux-color-theme.mmd	99ae8236f8deae88
-e2e/diagrams/sequence/nightly-check/redux-neo-complex-sequence-with-all-features-redux-dark-color-theme.mmd	4cec0f62b47489be
-e2e/diagrams/sequence/nightly-check/redux-neo-complex-sequence-with-all-features-redux-dark-theme.mmd	0fbd317536395a98
-e2e/diagrams/sequence/nightly-check/redux-neo-complex-sequence-with-all-features-redux-theme.mmd	efb73ba8cd7a1926
-e2e/diagrams/sequence/nightly-check/redux-neo-parallel-processes-redux-color-theme.mmd	8474ef735e0ab618
-e2e/diagrams/sequence/nightly-check/redux-neo-parallel-processes-redux-dark-color-theme.mmd	042907a8d2b7604a
-e2e/diagrams/sequence/nightly-check/redux-neo-parallel-processes-redux-dark-theme.mmd	5dbaec469870e3c8
-e2e/diagrams/sequence/nightly-check/redux-neo-parallel-processes-redux-theme.mmd	3ca5299e9f146bac
-e2e/diagrams/sequence/nightly-check/redux-neo-participant-creation-and-destruction-redux-color-theme.mmd	5c8b85409d72c8bc
-e2e/diagrams/sequence/nightly-check/redux-neo-participant-creation-and-destruction-redux-dark-color-theme.mmd	d693276d5652faf4
-e2e/diagrams/sequence/nightly-check/redux-neo-participant-creation-and-destruction-redux-dark-theme.mmd	6f88354ee31fc816
-e2e/diagrams/sequence/nightly-check/redux-neo-participant-creation-and-destruction-redux-theme.mmd	601dce70eee49372
-e2e/diagrams/sequence/nightly-check/redux-neo-with-notes-and-loops-redux-color-theme.mmd	6237a716d9302942
-e2e/diagrams/sequence/nightly-check/redux-neo-with-notes-and-loops-redux-dark-color-theme.mmd	359a09c8fab6799a
-e2e/diagrams/sequence/nightly-check/redux-neo-with-notes-and-loops-redux-dark-theme.mmd	899431549a297b72
-e2e/diagrams/sequence/nightly-check/redux-neo-with-notes-and-loops-redux-theme.mmd	41be4ab22452d54e
-e2e/diagrams/sequence/nightly-check/should-align-multiline-actor-labels-on-the-datum-neo.mmd	560d1c772581b0f8
-e2e/diagrams/sequence/nightly-check/should-be-possible-to-use-actor-symbols-instead-of-boxes.mmd	ea35ce1b87d5d10e
-e2e/diagrams/sequence/nightly-check/should-handle-bidirectional-arrows-with-autonumber.mmd	357ae72d8272262c
-e2e/diagrams/sequence/nightly-check/should-handle-different-line-breaks.mmd	8187dcc6e1ff50ca
-e2e/diagrams/sequence/nightly-check/should-handle-empty-lines.mmd	6dea48bf12e60344
-e2e/diagrams/sequence/nightly-check/should-handle-line-breaks-and-wrap-annotations.mmd	e173ca5d3e2879f2
-e2e/diagrams/sequence/nightly-check/should-handle-mixed-inline-and-external-alias-syntax.mmd	290adf8d22bd1144
-e2e/diagrams/sequence/nightly-check/should-prioritize-external-alias-over-inline-alias.mmd	3c509a04a1dfbbc2
-e2e/diagrams/sequence/nightly-check/should-render-a-sequence-diagram-with-actor-creation-and-destruction-coupled-with-backgrounds-loops-and-notes.mmd	b3d1f85c7d06581b
-e2e/diagrams/sequence/nightly-check/should-render-a-sequence-diagram-with-basic-actor-creation-and-destruction.mmd	7013766041350b82
-e2e/diagrams/sequence/nightly-check/should-render-a-sequence-diagram-with-par-over.mmd	fd78fbcb145bcca4
-e2e/diagrams/sequence/nightly-check/should-render-a-sequence-diagram-with-sequence-numbers-that-are-decimals-and-increase-by-a-decimal-value.mmd	75673208b6028708
-e2e/diagrams/sequence/nightly-check/should-render-a-simple-sequence-diagram.mmd	8c9fa85f150d7538
-e2e/diagrams/sequence/nightly-check/should-render-a-single-and-nested-opt-with-long-test-overflowing.mmd	69120f66239b56a4
-e2e/diagrams/sequence/nightly-check/should-render-a-single-and-nested-opt-with-long-test-wrapping.mmd	dc16e2d730b55396
-e2e/diagrams/sequence/nightly-check/should-render-a-single-and-nested-rects.mmd	c12c7060028f909e
-e2e/diagrams/sequence/nightly-check/should-render-actors-with-inline-alias-in-config-object.mmd	ebc3e664e968af46
-e2e/diagrams/sequence/nightly-check/should-render-actors-with-stereotypes-and-aliases.mmd	12eccce3e0de6066
-e2e/diagrams/sequence/nightly-check/should-render-all-arrow-types-with-autonumbering-left-to-right-only.mmd	b0d36597d982565c
-e2e/diagrams/sequence/nightly-check/should-render-all-arrow-types-with-autonumbering.mmd	7be29ce5188ee6a2
-e2e/diagrams/sequence/nightly-check/should-render-all-message-types-and-arrow-types-in-a-single-comprehensive-test.mmd	17bcf7b021f05ef8
-e2e/diagrams/sequence/nightly-check/should-render-alt-else-section-titles-with-label-box-backgrounds.mmd	ce075f3f43efdc2c
-e2e/diagrams/sequence/nightly-check/should-render-autonumber-when-autonumber-keyword-is-used.mmd	491729f094bc7f70
-e2e/diagrams/sequence/nightly-check/should-render-autonumber-when-configured-with-such.mmd	317f9858015b675a
-e2e/diagrams/sequence/nightly-check/should-render-autonumber-with-different-line-breaks.mmd	89c014112b24f510
-e2e/diagrams/sequence/nightly-check/should-render-bidirectional-arrows-with-autonumbering.mmd	2ed1fa491af06284
-e2e/diagrams/sequence/nightly-check/should-render-bidirectional-arrows.mmd	0105289d6951a8e6
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-circles-on-actor-vertical-lines.mmd	264bf8c032209750
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-dual-normal-ltr.mmd	38f72c221490578c
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-dual-normal-rtl.mmd	b38d806278bb7e2a
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-dual-reverse-ltr.mmd	dc3cc86e24df6a24
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-dual-reverse-rtl.mmd	836f415f2df5064a
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-reverse-normal-ltr.mmd	36459b34745846fe
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-reverse-normal-rtl.mmd	9d74b5d447d1d446
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-reverse-reverse-ltr.mmd	da370f0b2125dae8
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-reverse-reverse-rtl.mmd	77d44d2acf98f1fc
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-with-normal-arrows-left-to-right.mmd	3e2aafb5705c4882
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-with-normal-arrows-right-to-left.mmd	ecc490dca9a958d8
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-with-reverse-arrows-left-to-right.mmd	b60db37bb434aaa6
-e2e/diagrams/sequence/nightly-check/should-render-central-connection-with-reverse-arrows-right-to-left.mmd	afe5508d0a2259aa
-e2e/diagrams/sequence/nightly-check/should-render-central-connections-mixed-with-normal-messages.mmd	66409515e7991ce8
-e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-activations.mmd	a5caf1da587d5e57
-e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-autonumbering.mmd	38a351a9bd5941a6
-e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-bidirectional-arrows-and-autonumber.mmd	8b33182e886799aa
-e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-bidirectional-arrows.mmd	ef4d9ced82d8d9e6
-e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-different-arrow-types.mmd	34b2606877908404
-e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-different-participant-types.mmd	15bd9378f5573bee
-e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-notes.mmd	a0b3dfd25f428264
-e2e/diagrams/sequence/nightly-check/should-render-comprehensive-self-reference-scenario-all-arrow-types-mixed-with-central-connections.mmd	737e3502e58df70e
-e2e/diagrams/sequence/nightly-check/should-render-comprehensive-self-reference-scenario-all-arrow-types-mixed.mmd	1abdad191ec4b734
-e2e/diagrams/sequence/nightly-check/should-render-dark-theme-from-init-directive-and-configure-font-size-24-font.mmd	6e42e65d46747a12
-e2e/diagrams/sequence/nightly-check/should-render-different-actor-fonts-when-configured.mmd	6450f8aab3002a36
-e2e/diagrams/sequence/nightly-check/should-render-different-message-fonts-when-configured.mmd	ba7fef43a3af3d6c
-e2e/diagrams/sequence/nightly-check/should-render-different-note-fonts-when-configured.mmd	879fd237476b98be
-e2e/diagrams/sequence/nightly-check/should-render-different-participant-types-with-alternative-flows.mmd	136025e9f631671e
-e2e/diagrams/sequence/nightly-check/should-render-different-participant-types-with-notes-and-loops.mmd	af0ccf3ff08026bc
-e2e/diagrams/sequence/nightly-check/should-render-different-participant-types-with-wrapping-text.mmd	fc7889e2ec33e466
-e2e/diagrams/sequence/nightly-check/should-render-inline-alias-with-only-alias-field-no-type.mmd	c75fa0584405bbfa
-e2e/diagrams/sequence/nightly-check/should-render-long-actor-descriptions.mmd	33c2dacb70abaf3e
-e2e/diagrams/sequence/nightly-check/should-render-long-messages-from-an-actor-to-the-left-to-one-to-the-right.mmd	545b7e23bb3a9d8c
-e2e/diagrams/sequence/nightly-check/should-render-long-messages-from-an-actor-to-the-right-to-one-to-the-left.mmd	cbf2884c9c049de6
-e2e/diagrams/sequence/nightly-check/should-render-long-messages-from-database-to-collections.mmd	d90688c618c8f1d2
-e2e/diagrams/sequence/nightly-check/should-render-long-messages-from-queue-to-boundary.mmd	f16789c198b94216
-e2e/diagrams/sequence/nightly-check/should-render-long-messages-wrapped-inline-from-an-actor-to-the-left-to-one-to-the-right.mmd	871f777b5e668f94
-e2e/diagrams/sequence/nightly-check/should-render-long-messages-wrapped-inline-from-an-actor-to-the-right-to-one-to-the-left.mmd	0860709af00b852a
-e2e/diagrams/sequence/nightly-check/should-render-long-notes-left-of-actor.mmd	ce7b492d27264fac
-e2e/diagrams/sequence/nightly-check/should-render-long-notes-left-of-boundary.mmd	92a591c5ccb68880
-e2e/diagrams/sequence/nightly-check/should-render-long-notes-over-actor.mmd	e2c0f47f55f7c916
-e2e/diagrams/sequence/nightly-check/should-render-long-notes-over-collections.mmd	317cf5448068179a
-e2e/diagrams/sequence/nightly-check/should-render-long-notes-right-of-actor.mmd	b8d5f5f78ba9d318
-e2e/diagrams/sequence/nightly-check/should-render-long-notes-right-of-entity.mmd	07e69a7483116572
-e2e/diagrams/sequence/nightly-check/should-render-long-notes-wrapped-inline-left-of-actor.mmd	b6bdb50a383a86bc
-e2e/diagrams/sequence/nightly-check/should-render-long-notes-wrapped-inline-over-actor.mmd	1f49555b4a6eec2a
-e2e/diagrams/sequence/nightly-check/should-render-long-notes-wrapped-inline-right-of-actor.mmd	791e1a05bc0aa85e
-e2e/diagrams/sequence/nightly-check/should-render-loops-with-a-slight-margin.mmd	b0c0595c43d428f4
-e2e/diagrams/sequence/nightly-check/should-render-mixed-participants-and-actors-with-stereotypes-and-aliases.mmd	3800cbaa004df3a6
-e2e/diagrams/sequence/nightly-check/should-render-multi-line-messages-aligned-to-the-left-when-configured.mmd	8d0327ce36928288
-e2e/diagrams/sequence/nightly-check/should-render-multi-line-messages-aligned-to-the-right-when-configured.mmd	25623cdaef8ae788
-e2e/diagrams/sequence/nightly-check/should-render-multi-line-notes-aligned-to-the-left-when-configured.mmd	8bc81296fc235976
-e2e/diagrams/sequence/nightly-check/should-render-multi-line-notes-aligned-to-the-right-when-configured.mmd	75fca9bdbb283f5c
-e2e/diagrams/sequence/nightly-check/should-render-notes-aligned-to-the-left-when-configured.mmd	727693da61c31d38
-e2e/diagrams/sequence/nightly-check/should-render-notes-aligned-to-the-right-when-configured.mmd	4ff566cbd62850ce
-e2e/diagrams/sequence/nightly-check/should-render-notes-over-actor-and-boundary.mmd	7f3bd1659935e2fe
-e2e/diagrams/sequence/nightly-check/should-render-notes-over-actors-and-participant.mmd	13f58c1ca0044e7a
-e2e/diagrams/sequence/nightly-check/should-render-parallel-processes-with-different-participant-types.mmd	4ae7a084bec88ace
-e2e/diagrams/sequence/nightly-check/should-render-participant-creation-and-destruction-with-different-types.mmd	67415ee7b74bdd94
-e2e/diagrams/sequence/nightly-check/should-render-participants-with-inline-alias-in-config-object.mmd	104e241615fc58d6
-e2e/diagrams/sequence/nightly-check/should-render-participants-with-stereotypes-and-aliases.mmd	1578b539411ec6a4
-e2e/diagrams/sequence/nightly-check/should-render-rect-around-and-inside-alts.mmd	f1c3d91c6c5ddee0
-e2e/diagrams/sequence/nightly-check/should-render-rect-around-and-inside-breaks.mmd	1bf4e65b95b31862
-e2e/diagrams/sequence/nightly-check/should-render-rect-around-and-inside-criticals.mmd	6b834dc30140afa2
-e2e/diagrams/sequence/nightly-check/should-render-rect-around-and-inside-opts.mmd	bf592dd3e3606bd6
-e2e/diagrams/sequence/nightly-check/should-render-reverse-arrows-with-autonumbering.mmd	5e7343a12b405854
-e2e/diagrams/sequence/nightly-check/should-render-self-ref-reverse-central-connection-dual-no-autonumber.mmd	9daca05f33c18936
-e2e/diagrams/sequence/nightly-check/should-render-self-ref-reverse-central-connection-reverse-autonumber.mmd	edf0a2856fc361a8
-e2e/diagrams/sequence/nightly-check/should-render-self-ref-reverse-central-connection-reverse-no-autonumber.mmd	7edd45e9b9ada294
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-mixed-with-regular-messages-and-autonumber.mmd	54326c139e04dcc0
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-mixed-with-regular-messages-central-connections-and-autonumber.mmd	18e2bacaf66abfb6
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-bidirectional-and-central-connections-with-autonumber.mmd	18eb678360b22012
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-bidirectional-arrows-with-autonumber.mmd	c9a44fe13c3b96fe
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-bidirectional-arrows-without-autonumber.mmd	062857ad98b3a11c
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-dual-with-autonumber.mmd	ffe1e9b2e3a33852
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-dual-without-autonumber.mmd	08026ef91cb49222
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-reverse-with-autonumber.mmd	a9a4a389cf375422
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-reverse-without-autonumber.mmd	ee125f371ced685e
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-with-autonumber.mmd	d59b962a8913fc80
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-without-autonumber.mmd	175e960e5f32bb0e
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-normal-arrows-with-autonumber.mmd	54e16c4012376cfc
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-normal-arrows-without-autonumber.mmd	f050f47577844350
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-reverse-arrows-and-central-connection-with-autonumber.mmd	0d2b3e4706fc02b8
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-reverse-arrows-and-central-connection.mmd	af008cd1be4522c0
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-reverse-arrows-with-autonumber.mmd	7fac91d0cca4862e
-e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-reverse-arrows-without-autonumber.mmd	8ec1f50552d49b94
-e2e/diagrams/sequence/nightly-check/should-render-self-references-reverse-arrows-dual-central-connection-autonumber.mmd	f66e9db6b9e82320
-e2e/diagrams/sequence/nightly-check/should-render-self-references-with-bidirectional-central-connections-no-autonumber.mmd	468c2eadde5f05e8
-e2e/diagrams/sequence/nightly-check/should-render-sequence-rect-with-theme-aware-default-background.mmd	38245a14167f1757
-e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-bottom-dotted.mmd	bf60690fcca16342
-e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-bottom-reverse-dotted.mmd	5c03a1295b3100aa
-e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-bottom-reverse.mmd	65e8419fcbb78cd2
-e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-bottom.mmd	414fd9146789d082
-e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-top-dotted.mmd	cf4f7fcdd8f7d4d0
-e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-top-reverse-dotted.mmd	88361f0ae0525d20
-e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-top-reverse.mmd	2e37c6ada3ec7350
-e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-top.mmd	aac2257af17d32de
-e2e/diagrams/sequence/nightly-check/should-render-stereotypes-with-aliases-and-complex-interactions.mmd	937e9c8c82d54d45
-e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-bottom-dotted.mmd	0852afda6ffcca2e
-e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-bottom-reverse.mmd	2b196a62c74451ca
-e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-bottom.mmd	ca1d9881c50a8d42
-e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-top-dotted.mmd	5077ff2007818620
-e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-top-reverse-dotted.mmd	092e000f786c7860
-e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-top-reverse.mmd	c103de9a044c2e8e
-e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-top.mmd	f0ba4b7dff0eff7e
-e2e/diagrams/sequence/nightly-check/should-render-with-an-init-directive.mmd	dc898dd61a985838
-e2e/diagrams/sequence/nightly-check/should-render-with-wrapping-enabled.mmd	5b556355c0c9be4c
-e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-messages-from-actor-to-database.mmd	f8b5f8eb67acf452
-e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-messages-from-control-to-entity.mmd	905b67376a47a3d8
-e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-notes-left-of-control.mmd	121dcfe455cdbdd2
-e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-notes-over-queue.mmd	407bc5a66c9e6eb6
-e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-notes-right-of-database.mmd	742bdaa0b640fd50
-e2e/diagrams/sequence/nightly-check/should-wrap-directive-long-actor-descriptions.mmd	03eff891d5321778
-e2e/diagrams/sequence/nightly-check/should-wrap-inline-long-actor-descriptions.mmd	d42226115048deae
-e2e/diagrams/sequence/nightly-check/shouldnt-display-unused-participants.mmd	bc86595a57498040
-e2e/diagrams/sequence/nightly-check/v2-classic-all-interaction-types.mmd	fcf9f48328f9edc2
-e2e/diagrams/sequence/nightly-check/v2-classic-all-participant-types.mmd	3476fab7628ddaa0
-e2e/diagrams/sequence/nightly-check/v2-classic-alternative-flows.mmd	719477b62aacbb24
-e2e/diagrams/sequence/nightly-check/v2-classic-boxes-around-groups.mmd	3f75625ddbfd8792
-e2e/diagrams/sequence/nightly-check/v2-classic-loops.mmd	4c2c3c22e4eb9964
-e2e/diagrams/sequence/nightly-check/v2-classic-notes-in-all-positions.mmd	6b791d8f25beebf6
-e2e/diagrams/sequence/nightly-check/v2-classic-parallel-interactions.mmd	a3ecc243cc6f3048
-e2e/diagrams/sequence/nightly-check/v2-classic-participant-creation-and-destruction.mmd	976e8e89bfcac452
-e2e/diagrams/sequence/nightly-check/v2-classic-with-different-font-settings.mmd	24523f1f9596e46c
-e2e/diagrams/sequence/nightly-check/v2-complex-sequence-with-all-features.mmd	5ce9891b887be106
-e2e/diagrams/sequence/nightly-check/v2-with-wrapped-messages-and-notes.mmd	13a96663033bcb00
-e2e/diagrams/sequence/pr-check/should-handle-complex-interactions-between-different-participant-types.mmd	9eea0346c4ea3678
-e2e/diagrams/sequence/pr-check/should-render-a-sequence-diagram-with-various-participant-types.mmd	edb80d63746d7acc
-e2e/diagrams/sequence/pr-check/should-render-actor-and-database-aligned-on-neo.mmd	5a1b6239deabfd74
-e2e/diagrams/sequence/pr-check/should-render-central-connections-with-loops-and-alternatives.mmd	21aadb577779ad16
-e2e/diagrams/sequence/pr-check/should-render-mixed-central-connections-with-autonumber.mmd	479360c61c506886
-e2e/diagrams/sequence/pr-check/should-render-rect-around-and-inside-loops.mmd	5debed1891cef6b0
-e2e/diagrams/sequence/pr-check/should-render-sequence-rect-with-theme-aware-default-background-base-theme.mmd	4a699e117582ef74
-e2e/diagrams/sequence/pr-check/should-render-sequence-rect-with-theme-aware-default-background-dark-theme.mmd	0f713550bf6bc86a
-e2e/diagrams/sequence/pr-check/should-render-stereotypes-with-aliases-in-boxes.mmd	7e3fe97235684296
-e2e/diagrams/sequence/pr-check/should-render-stick-half-arrow-bottom-reverse-dotted.mmd	e2b62c31569613bc
-e2e/diagrams/sequence/visual-check/actor-top-and-bottom-symbols.mmd	4f10d12c932dc2aa
-e2e/diagrams/sequence/visual-check/usemaxwidth-false.mmd	0c917641fefa05b2
-e2e/diagrams/sequence/visual-check/usemaxwidth-true.mmd	7946bc6a9b168658
-e2e/diagrams/sequence/visual-check/v2-usemaxwidth-false.mmd	ebe1b3403a548bee
-e2e/diagrams/sequence/visual-check/v2-usemaxwidth-true.mmd	7270fe07aeccbc6e
-e2e/diagrams/sequence/visual-check/with-boxes.mmd	e28961cb01d027b0
+e2e/diagrams/sequence/nightly-check/dark-theme.mmd	7898a6f41dd4f1e4	4a6dcf40fcb92e50
+e2e/diagrams/sequence/nightly-check/default-theme.mmd	8e14a8de8b69bca0	e1e6a803d94276b0
+e2e/diagrams/sequence/nightly-check/forest-theme.mmd	4f074cb04e40ce74	f9d8f79d05ecd668
+e2e/diagrams/sequence/nightly-check/neutral-theme.mmd	4c973955ef1e6c24	123e981896d939b0
+e2e/diagrams/sequence/nightly-check/redux-neo-all-participant-types-redux-color-theme.mmd	de4c76a35e843498	629a7d9214f46948
+e2e/diagrams/sequence/nightly-check/redux-neo-all-participant-types-redux-dark-color-theme.mmd	1a4198d92d155ebe	9d2c16f867a761d6
+e2e/diagrams/sequence/nightly-check/redux-neo-all-participant-types-redux-dark-theme.mmd	8454e1758ecdcbac	aa7b0f82a022d62c
+e2e/diagrams/sequence/nightly-check/redux-neo-all-participant-types-redux-theme.mmd	091c22cf5a29ffa4	ec74713ae731b388
+e2e/diagrams/sequence/nightly-check/redux-neo-complex-sequence-with-all-features-redux-color-theme.mmd	99ae8236f8deae88	99ae8236f8deae88
+e2e/diagrams/sequence/nightly-check/redux-neo-complex-sequence-with-all-features-redux-dark-color-theme.mmd	4cec0f62b47489be	4cec0f62b47489be
+e2e/diagrams/sequence/nightly-check/redux-neo-complex-sequence-with-all-features-redux-dark-theme.mmd	0fbd317536395a98	0fbd317536395a98
+e2e/diagrams/sequence/nightly-check/redux-neo-complex-sequence-with-all-features-redux-theme.mmd	efb73ba8cd7a1926	efb73ba8cd7a1926
+e2e/diagrams/sequence/nightly-check/redux-neo-parallel-processes-redux-color-theme.mmd	8474ef735e0ab618	dd7fc929ff4af7a6
+e2e/diagrams/sequence/nightly-check/redux-neo-parallel-processes-redux-dark-color-theme.mmd	042907a8d2b7604a	75cf3d85e178f57c
+e2e/diagrams/sequence/nightly-check/redux-neo-parallel-processes-redux-dark-theme.mmd	5dbaec469870e3c8	414375d165c30542
+e2e/diagrams/sequence/nightly-check/redux-neo-parallel-processes-redux-theme.mmd	3ca5299e9f146bac	b69bd5f041684942
+e2e/diagrams/sequence/nightly-check/redux-neo-participant-creation-and-destruction-redux-color-theme.mmd	5c8b85409d72c8bc	d3ae90af224b8826
+e2e/diagrams/sequence/nightly-check/redux-neo-participant-creation-and-destruction-redux-dark-color-theme.mmd	d693276d5652faf4	bf80fe9c919ae00a
+e2e/diagrams/sequence/nightly-check/redux-neo-participant-creation-and-destruction-redux-dark-theme.mmd	6f88354ee31fc816	9a40cf04ac63defc
+e2e/diagrams/sequence/nightly-check/redux-neo-participant-creation-and-destruction-redux-theme.mmd	601dce70eee49372	af4163c324248710
+e2e/diagrams/sequence/nightly-check/redux-neo-with-notes-and-loops-redux-color-theme.mmd	6237a716d9302942	8690d2ab2fc1c96e
+e2e/diagrams/sequence/nightly-check/redux-neo-with-notes-and-loops-redux-dark-color-theme.mmd	359a09c8fab6799a	ecae9ac73e4aede6
+e2e/diagrams/sequence/nightly-check/redux-neo-with-notes-and-loops-redux-dark-theme.mmd	899431549a297b72	d5f33bced72bf5fe
+e2e/diagrams/sequence/nightly-check/redux-neo-with-notes-and-loops-redux-theme.mmd	41be4ab22452d54e	758b2f20d2e0bb76
+e2e/diagrams/sequence/nightly-check/should-align-multiline-actor-labels-on-the-datum-neo.mmd	560d1c772581b0f8	414612511f951edc
+e2e/diagrams/sequence/nightly-check/should-be-possible-to-use-actor-symbols-instead-of-boxes.mmd	ea35ce1b87d5d10e	ea35ce1b87d5d10e
+e2e/diagrams/sequence/nightly-check/should-handle-bidirectional-arrows-with-autonumber.mmd	357ae72d8272262c	3634a74831857886
+e2e/diagrams/sequence/nightly-check/should-handle-different-line-breaks.mmd	8187dcc6e1ff50ca	f5ba219e86a38a7e
+e2e/diagrams/sequence/nightly-check/should-handle-empty-lines.mmd	6dea48bf12e60344	66170ffcbbd1d9aa
+e2e/diagrams/sequence/nightly-check/should-handle-line-breaks-and-wrap-annotations.mmd	e173ca5d3e2879f2	ee3af4c986d6fd1e
+e2e/diagrams/sequence/nightly-check/should-handle-mixed-inline-and-external-alias-syntax.mmd	290adf8d22bd1144	290adf8d22bd1144
+e2e/diagrams/sequence/nightly-check/should-prioritize-external-alias-over-inline-alias.mmd	3c509a04a1dfbbc2	3c509a04a1dfbbc2
+e2e/diagrams/sequence/nightly-check/should-render-a-sequence-diagram-with-actor-creation-and-destruction-coupled-with-backgrounds-loops-and-notes.mmd	b3d1f85c7d06581b	137de71a3517f157
+e2e/diagrams/sequence/nightly-check/should-render-a-sequence-diagram-with-basic-actor-creation-and-destruction.mmd	7013766041350b82	c43bfa63a496d5a2
+e2e/diagrams/sequence/nightly-check/should-render-a-sequence-diagram-with-par-over.mmd	fd78fbcb145bcca4	378de74604568384
+e2e/diagrams/sequence/nightly-check/should-render-a-sequence-diagram-with-sequence-numbers-that-are-decimals-and-increase-by-a-decimal-value.mmd	75673208b6028708	5b36ddf25983be62
+e2e/diagrams/sequence/nightly-check/should-render-a-simple-sequence-diagram.mmd	8c9fa85f150d7538	a0fb98cb3c43b46c
+e2e/diagrams/sequence/nightly-check/should-render-a-single-and-nested-opt-with-long-test-overflowing.mmd	69120f66239b56a4	2890261ae612ce82
+e2e/diagrams/sequence/nightly-check/should-render-a-single-and-nested-opt-with-long-test-wrapping.mmd	dc16e2d730b55396	097b21652b92f4d8
+e2e/diagrams/sequence/nightly-check/should-render-a-single-and-nested-rects.mmd	c12c7060028f909e	cd18f6efdd8a6782
+e2e/diagrams/sequence/nightly-check/should-render-actors-with-inline-alias-in-config-object.mmd	ebc3e664e968af46	ebc3e664e968af46
+e2e/diagrams/sequence/nightly-check/should-render-actors-with-stereotypes-and-aliases.mmd	12eccce3e0de6066	12eccce3e0de6066
+e2e/diagrams/sequence/nightly-check/should-render-all-arrow-types-with-autonumbering-left-to-right-only.mmd	b0d36597d982565c	dfcafdafa45d1a00
+e2e/diagrams/sequence/nightly-check/should-render-all-arrow-types-with-autonumbering.mmd	7be29ce5188ee6a2	522720db1e771fd6
+e2e/diagrams/sequence/nightly-check/should-render-all-message-types-and-arrow-types-in-a-single-comprehensive-test.mmd	17bcf7b021f05ef8	3caba3bbea6f5488
+e2e/diagrams/sequence/nightly-check/should-render-alt-else-section-titles-with-label-box-backgrounds.mmd	ce075f3f43efdc2c	c005a3307de37b36
+e2e/diagrams/sequence/nightly-check/should-render-autonumber-when-autonumber-keyword-is-used.mmd	491729f094bc7f70	ea8619eb60452208
+e2e/diagrams/sequence/nightly-check/should-render-autonumber-when-configured-with-such.mmd	317f9858015b675a	cd46599b08567c6a
+e2e/diagrams/sequence/nightly-check/should-render-autonumber-with-different-line-breaks.mmd	89c014112b24f510	4ac6e46542897936
+e2e/diagrams/sequence/nightly-check/should-render-bidirectional-arrows-with-autonumbering.mmd	2ed1fa491af06284	337de2617df25ec4
+e2e/diagrams/sequence/nightly-check/should-render-bidirectional-arrows.mmd	0105289d6951a8e6	17b097105cfdb200
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-circles-on-actor-vertical-lines.mmd	264bf8c032209750	264bf8c032209750
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-dual-normal-ltr.mmd	38f72c221490578c	69e24343a70c22a8
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-dual-normal-rtl.mmd	b38d806278bb7e2a	a6bac981858f149a
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-dual-reverse-ltr.mmd	dc3cc86e24df6a24	125e535aa8f90170
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-dual-reverse-rtl.mmd	836f415f2df5064a	649cf7e7537caf2e
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-reverse-normal-ltr.mmd	36459b34745846fe	48297d6e2ec063ae
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-reverse-normal-rtl.mmd	9d74b5d447d1d446	8f63e7874991bd72
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-reverse-reverse-ltr.mmd	da370f0b2125dae8	c8277a4e3207ccf4
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-reverse-reverse-rtl.mmd	77d44d2acf98f1fc	0d1a379abd94f524
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-with-normal-arrows-left-to-right.mmd	3e2aafb5705c4882	035c06d3b291b69a
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-with-normal-arrows-right-to-left.mmd	ecc490dca9a958d8	8aa8ad07b52249d4
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-with-reverse-arrows-left-to-right.mmd	b60db37bb434aaa6	bd93710469f0154e
+e2e/diagrams/sequence/nightly-check/should-render-central-connection-with-reverse-arrows-right-to-left.mmd	afe5508d0a2259aa	625b6e36798cc8be
+e2e/diagrams/sequence/nightly-check/should-render-central-connections-mixed-with-normal-messages.mmd	66409515e7991ce8	66409515e7991ce8
+e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-activations.mmd	a5caf1da587d5e57	a5caf1da587d5e57
+e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-autonumbering.mmd	38a351a9bd5941a6	54a8dfe6afb929da
+e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-bidirectional-arrows-and-autonumber.mmd	8b33182e886799aa	85cefb1cf523e5ee
+e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-bidirectional-arrows.mmd	ef4d9ced82d8d9e6	ef4d9ced82d8d9e6
+e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-different-arrow-types.mmd	34b2606877908404	34b2606877908404
+e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-different-participant-types.mmd	15bd9378f5573bee	15bd9378f5573bee
+e2e/diagrams/sequence/nightly-check/should-render-central-connections-with-notes.mmd	a0b3dfd25f428264	a0b3dfd25f428264
+e2e/diagrams/sequence/nightly-check/should-render-comprehensive-self-reference-scenario-all-arrow-types-mixed-with-central-connections.mmd	737e3502e58df70e	ea4014bdcb1aeffa
+e2e/diagrams/sequence/nightly-check/should-render-comprehensive-self-reference-scenario-all-arrow-types-mixed.mmd	1abdad191ec4b734	75fe763c27af9108
+e2e/diagrams/sequence/nightly-check/should-render-dark-theme-from-init-directive-and-configure-font-size-24-font.mmd	6e42e65d46747a12	085e0f9022970c12
+e2e/diagrams/sequence/nightly-check/should-render-different-actor-fonts-when-configured.mmd	6450f8aab3002a36	cc50ee72ca73913c
+e2e/diagrams/sequence/nightly-check/should-render-different-message-fonts-when-configured.mmd	ba7fef43a3af3d6c	df134af889b95e4a
+e2e/diagrams/sequence/nightly-check/should-render-different-note-fonts-when-configured.mmd	879fd237476b98be	cb0033fc4252b530
+e2e/diagrams/sequence/nightly-check/should-render-different-participant-types-with-alternative-flows.mmd	136025e9f631671e	2024c610384889b4
+e2e/diagrams/sequence/nightly-check/should-render-different-participant-types-with-notes-and-loops.mmd	af0ccf3ff08026bc	4a8f493434a87e8e
+e2e/diagrams/sequence/nightly-check/should-render-different-participant-types-with-wrapping-text.mmd	fc7889e2ec33e466	1f60d5d3a9afc210
+e2e/diagrams/sequence/nightly-check/should-render-inline-alias-with-only-alias-field-no-type.mmd	c75fa0584405bbfa	c75fa0584405bbfa
+e2e/diagrams/sequence/nightly-check/should-render-long-actor-descriptions.mmd	33c2dacb70abaf3e	b1ad80ae47a77230
+e2e/diagrams/sequence/nightly-check/should-render-long-messages-from-an-actor-to-the-left-to-one-to-the-right.mmd	545b7e23bb3a9d8c	c714f93173983352
+e2e/diagrams/sequence/nightly-check/should-render-long-messages-from-an-actor-to-the-right-to-one-to-the-left.mmd	cbf2884c9c049de6	893eea6dbae2e95c
+e2e/diagrams/sequence/nightly-check/should-render-long-messages-from-database-to-collections.mmd	d90688c618c8f1d2	d90688c618c8f1d2
+e2e/diagrams/sequence/nightly-check/should-render-long-messages-from-queue-to-boundary.mmd	f16789c198b94216	f16789c198b94216
+e2e/diagrams/sequence/nightly-check/should-render-long-messages-wrapped-inline-from-an-actor-to-the-left-to-one-to-the-right.mmd	871f777b5e668f94	e207ca5494424bec
+e2e/diagrams/sequence/nightly-check/should-render-long-messages-wrapped-inline-from-an-actor-to-the-right-to-one-to-the-left.mmd	0860709af00b852a	9641b176b4b4ef62
+e2e/diagrams/sequence/nightly-check/should-render-long-notes-left-of-actor.mmd	ce7b492d27264fac	d65493ff48dd68ce
+e2e/diagrams/sequence/nightly-check/should-render-long-notes-left-of-boundary.mmd	92a591c5ccb68880	92a591c5ccb68880
+e2e/diagrams/sequence/nightly-check/should-render-long-notes-over-actor.mmd	e2c0f47f55f7c916	b57dd0c9096a5980
+e2e/diagrams/sequence/nightly-check/should-render-long-notes-over-collections.mmd	317cf5448068179a	317cf5448068179a
+e2e/diagrams/sequence/nightly-check/should-render-long-notes-right-of-actor.mmd	b8d5f5f78ba9d318	18d3232a2da80296
+e2e/diagrams/sequence/nightly-check/should-render-long-notes-right-of-entity.mmd	07e69a7483116572	07e69a7483116572
+e2e/diagrams/sequence/nightly-check/should-render-long-notes-wrapped-inline-left-of-actor.mmd	b6bdb50a383a86bc	cd7ec6f5be1f82c4
+e2e/diagrams/sequence/nightly-check/should-render-long-notes-wrapped-inline-over-actor.mmd	1f49555b4a6eec2a	3ffa6be4ffb45078
+e2e/diagrams/sequence/nightly-check/should-render-long-notes-wrapped-inline-right-of-actor.mmd	791e1a05bc0aa85e	17e0b8298fa4f170
+e2e/diagrams/sequence/nightly-check/should-render-loops-with-a-slight-margin.mmd	b0c0595c43d428f4	ca82e72a6c0b22be
+e2e/diagrams/sequence/nightly-check/should-render-mixed-participants-and-actors-with-stereotypes-and-aliases.mmd	3800cbaa004df3a6	3800cbaa004df3a6
+e2e/diagrams/sequence/nightly-check/should-render-multi-line-messages-aligned-to-the-left-when-configured.mmd	8d0327ce36928288	a4f40ca6167490b4
+e2e/diagrams/sequence/nightly-check/should-render-multi-line-messages-aligned-to-the-right-when-configured.mmd	25623cdaef8ae788	7da66cc849ba724c
+e2e/diagrams/sequence/nightly-check/should-render-multi-line-notes-aligned-to-the-left-when-configured.mmd	8bc81296fc235976	17836ed5a4efe324
+e2e/diagrams/sequence/nightly-check/should-render-multi-line-notes-aligned-to-the-right-when-configured.mmd	75fca9bdbb283f5c	750139456911515a
+e2e/diagrams/sequence/nightly-check/should-render-notes-aligned-to-the-left-when-configured.mmd	727693da61c31d38	a024a08093f22f72
+e2e/diagrams/sequence/nightly-check/should-render-notes-aligned-to-the-right-when-configured.mmd	4ff566cbd62850ce	f6c695e8cd8cae90
+e2e/diagrams/sequence/nightly-check/should-render-notes-over-actor-and-boundary.mmd	7f3bd1659935e2fe	7f3bd1659935e2fe
+e2e/diagrams/sequence/nightly-check/should-render-notes-over-actors-and-participant.mmd	13f58c1ca0044e7a	a8f4c68325be08ec
+e2e/diagrams/sequence/nightly-check/should-render-parallel-processes-with-different-participant-types.mmd	4ae7a084bec88ace	cbc46830213ad794
+e2e/diagrams/sequence/nightly-check/should-render-participant-creation-and-destruction-with-different-types.mmd	67415ee7b74bdd94	4bcf41dac3646944
+e2e/diagrams/sequence/nightly-check/should-render-participants-with-inline-alias-in-config-object.mmd	104e241615fc58d6	104e241615fc58d6
+e2e/diagrams/sequence/nightly-check/should-render-participants-with-stereotypes-and-aliases.mmd	1578b539411ec6a4	1578b539411ec6a4
+e2e/diagrams/sequence/nightly-check/should-render-rect-around-and-inside-alts.mmd	f1c3d91c6c5ddee0	aa0f2f4be3fb0190
+e2e/diagrams/sequence/nightly-check/should-render-rect-around-and-inside-breaks.mmd	1bf4e65b95b31862	8cf6ad12b58781e2
+e2e/diagrams/sequence/nightly-check/should-render-rect-around-and-inside-criticals.mmd	6b834dc30140afa2	9c6e5d95bb9e1786
+e2e/diagrams/sequence/nightly-check/should-render-rect-around-and-inside-opts.mmd	bf592dd3e3606bd6	f27b18e256b2ed12
+e2e/diagrams/sequence/nightly-check/should-render-reverse-arrows-with-autonumbering.mmd	5e7343a12b405854	b130eb8b9a758010
+e2e/diagrams/sequence/nightly-check/should-render-self-ref-reverse-central-connection-dual-no-autonumber.mmd	9daca05f33c18936	bf06bfc82636c026
+e2e/diagrams/sequence/nightly-check/should-render-self-ref-reverse-central-connection-reverse-autonumber.mmd	edf0a2856fc361a8	948281c89a879e4c
+e2e/diagrams/sequence/nightly-check/should-render-self-ref-reverse-central-connection-reverse-no-autonumber.mmd	7edd45e9b9ada294	6c3bfb96a0efeed8
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-mixed-with-regular-messages-and-autonumber.mmd	54326c139e04dcc0	94518755503c48b8
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-mixed-with-regular-messages-central-connections-and-autonumber.mmd	18e2bacaf66abfb6	2728e3086d274be8
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-bidirectional-and-central-connections-with-autonumber.mmd	18eb678360b22012	e06c24551ab8511a
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-bidirectional-arrows-with-autonumber.mmd	c9a44fe13c3b96fe	0527615432b1894a
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-bidirectional-arrows-without-autonumber.mmd	062857ad98b3a11c	104d4e165c666594
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-dual-with-autonumber.mmd	ffe1e9b2e3a33852	13574884e3d860de
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-dual-without-autonumber.mmd	08026ef91cb49222	8facc947d194c40e
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-reverse-with-autonumber.mmd	a9a4a389cf375422	6b52c0150830868e
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-reverse-without-autonumber.mmd	ee125f371ced685e	e99bd4f83bd53cee
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-with-autonumber.mmd	d59b962a8913fc80	b9beccf22c949348
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-central-connection-without-autonumber.mmd	175e960e5f32bb0e	99670c2916a2d8de
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-normal-arrows-with-autonumber.mmd	54e16c4012376cfc	fbae5efb03735362
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-normal-arrows-without-autonumber.mmd	f050f47577844350	03ef8f70287832fa
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-reverse-arrows-and-central-connection-with-autonumber.mmd	0d2b3e4706fc02b8	03e3fdd0472cc264
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-reverse-arrows-and-central-connection.mmd	af008cd1be4522c0	46154e46df21b278
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-reverse-arrows-with-autonumber.mmd	7fac91d0cca4862e	61f6c71ab4a79f32
+e2e/diagrams/sequence/nightly-check/should-render-self-reference-with-reverse-arrows-without-autonumber.mmd	8ec1f50552d49b94	ef1a4dbf794dfa5c
+e2e/diagrams/sequence/nightly-check/should-render-self-references-reverse-arrows-dual-central-connection-autonumber.mmd	f66e9db6b9e82320	42a9f69dcd5c60b4
+e2e/diagrams/sequence/nightly-check/should-render-self-references-with-bidirectional-central-connections-no-autonumber.mmd	468c2eadde5f05e8	be6b6323f3c79a1c
+e2e/diagrams/sequence/nightly-check/should-render-sequence-rect-with-theme-aware-default-background.mmd	38245a14167f1757	d433fe51891fd9b5
+e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-bottom-dotted.mmd	bf60690fcca16342	3a4e0d634562326c
+e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-bottom-reverse-dotted.mmd	5c03a1295b3100aa	abe9c44443534414
+e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-bottom-reverse.mmd	65e8419fcbb78cd2	dca10fd5a5db2a18
+e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-bottom.mmd	414fd9146789d082	e9f5b800dc4e67d8
+e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-top-dotted.mmd	cf4f7fcdd8f7d4d0	9471c742bca7b57a
+e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-top-reverse-dotted.mmd	88361f0ae0525d20	edbe3dea6c7b74da
+e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-top-reverse.mmd	2e37c6ada3ec7350	5521b74c763c9c86
+e2e/diagrams/sequence/nightly-check/should-render-solid-half-arrow-top.mmd	aac2257af17d32de	ec1aa1bbd84efca0
+e2e/diagrams/sequence/nightly-check/should-render-stereotypes-with-aliases-and-complex-interactions.mmd	937e9c8c82d54d45	937e9c8c82d54d45
+e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-bottom-dotted.mmd	0852afda6ffcca2e	b82808b648f8e8e0
+e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-bottom-reverse.mmd	2b196a62c74451ca	da2dee66270a41f0
+e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-bottom.mmd	ca1d9881c50a8d42	9a276488683b2658
+e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-top-dotted.mmd	5077ff2007818620	cdb67c707a88e096
+e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-top-reverse-dotted.mmd	092e000f786c7860	2cc97931867b7766
+e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-top-reverse.mmd	c103de9a044c2e8e	01afd2c0d8d6c8b4
+e2e/diagrams/sequence/nightly-check/should-render-stick-half-arrow-top.mmd	f0ba4b7dff0eff7e	9d4cc628a3862318
+e2e/diagrams/sequence/nightly-check/should-render-with-an-init-directive.mmd	dc898dd61a985838	7bab77b46481751c
+e2e/diagrams/sequence/nightly-check/should-render-with-wrapping-enabled.mmd	5b556355c0c9be4c	44d74c2ba5b7dde4
+e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-messages-from-actor-to-database.mmd	f8b5f8eb67acf452	f8b5f8eb67acf452
+e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-messages-from-control-to-entity.mmd	905b67376a47a3d8	905b67376a47a3d8
+e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-notes-left-of-control.mmd	121dcfe455cdbdd2	121dcfe455cdbdd2
+e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-notes-over-queue.mmd	407bc5a66c9e6eb6	407bc5a66c9e6eb6
+e2e/diagrams/sequence/nightly-check/should-render-wrapped-long-notes-right-of-database.mmd	742bdaa0b640fd50	742bdaa0b640fd50
+e2e/diagrams/sequence/nightly-check/should-wrap-directive-long-actor-descriptions.mmd	03eff891d5321778	aa4f78a3e91e2088
+e2e/diagrams/sequence/nightly-check/should-wrap-inline-long-actor-descriptions.mmd	d42226115048deae	5c534ed668c42ea6
+e2e/diagrams/sequence/nightly-check/shouldnt-display-unused-participants.mmd	bc86595a57498040	474f5882eb71a7a4
+e2e/diagrams/sequence/nightly-check/v2-classic-all-interaction-types.mmd	fcf9f48328f9edc2	fcf9f48328f9edc2
+e2e/diagrams/sequence/nightly-check/v2-classic-all-participant-types.mmd	3476fab7628ddaa0	3476fab7628ddaa0
+e2e/diagrams/sequence/nightly-check/v2-classic-alternative-flows.mmd	719477b62aacbb24	719477b62aacbb24
+e2e/diagrams/sequence/nightly-check/v2-classic-boxes-around-groups.mmd	3f75625ddbfd8792	3f75625ddbfd8792
+e2e/diagrams/sequence/nightly-check/v2-classic-loops.mmd	4c2c3c22e4eb9964	4c2c3c22e4eb9964
+e2e/diagrams/sequence/nightly-check/v2-classic-notes-in-all-positions.mmd	6b791d8f25beebf6	6b791d8f25beebf6
+e2e/diagrams/sequence/nightly-check/v2-classic-parallel-interactions.mmd	a3ecc243cc6f3048	a3ecc243cc6f3048
+e2e/diagrams/sequence/nightly-check/v2-classic-participant-creation-and-destruction.mmd	976e8e89bfcac452	976e8e89bfcac452
+e2e/diagrams/sequence/nightly-check/v2-classic-with-different-font-settings.mmd	24523f1f9596e46c	24523f1f9596e46c
+e2e/diagrams/sequence/nightly-check/v2-complex-sequence-with-all-features.mmd	5ce9891b887be106	5ce9891b887be106
+e2e/diagrams/sequence/nightly-check/v2-with-wrapped-messages-and-notes.mmd	13a96663033bcb00	b6ae0b5dcda15534
+e2e/diagrams/sequence/pr-check/should-handle-complex-interactions-between-different-participant-types.mmd	9eea0346c4ea3678	9eea0346c4ea3678
+e2e/diagrams/sequence/pr-check/should-render-a-sequence-diagram-with-various-participant-types.mmd	edb80d63746d7acc	edb80d63746d7acc
+e2e/diagrams/sequence/pr-check/should-render-actor-and-database-aligned-on-neo.mmd	5a1b6239deabfd74	d0f3837e2341ebd0
+e2e/diagrams/sequence/pr-check/should-render-central-connections-with-loops-and-alternatives.mmd	21aadb577779ad16	21aadb577779ad16
+e2e/diagrams/sequence/pr-check/should-render-mixed-central-connections-with-autonumber.mmd	479360c61c506886	c845b7a82f03cc3e
+e2e/diagrams/sequence/pr-check/should-render-rect-around-and-inside-loops.mmd	5debed1891cef6b0	2e693ccf30dd1054
+e2e/diagrams/sequence/pr-check/should-render-sequence-rect-with-theme-aware-default-background-base-theme.mmd	4a699e117582ef74	505dbf260a9c6868
+e2e/diagrams/sequence/pr-check/should-render-sequence-rect-with-theme-aware-default-background-dark-theme.mmd	0f713550bf6bc86a	fb58e45449981992
+e2e/diagrams/sequence/pr-check/should-render-stereotypes-with-aliases-in-boxes.mmd	7e3fe97235684296	7e3fe97235684296
+e2e/diagrams/sequence/pr-check/should-render-stick-half-arrow-bottom-reverse-dotted.mmd	e2b62c31569613bc	edea00ecce8d36f2
+e2e/diagrams/sequence/visual-check/actor-top-and-bottom-symbols.mmd	4f10d12c932dc2aa	a4d58d8fa533482c
+e2e/diagrams/sequence/visual-check/usemaxwidth-false.mmd	0c917641fefa05b2	c3d7e34dcf6f33a6
+e2e/diagrams/sequence/visual-check/usemaxwidth-true.mmd	7946bc6a9b168658	46c4800b6ce5a568
+e2e/diagrams/sequence/visual-check/v2-usemaxwidth-false.mmd	ebe1b3403a548bee	ebe1b3403a548bee
+e2e/diagrams/sequence/visual-check/v2-usemaxwidth-true.mmd	7270fe07aeccbc6e	7270fe07aeccbc6e
+e2e/diagrams/sequence/visual-check/with-boxes.mmd	e28961cb01d027b0	ad5da21ec671d068
 e2e/diagrams/state-diagram-v2/nightly-check/1433-should-render-a-simple-state-diagram-with-a-title.mmd	180a9beecf32170a
 e2e/diagrams/state-diagram-v2/nightly-check/a-simple-state-diagram-classic-look-default-theme.mmd	ce7ee8244e240891
 e2e/diagrams/state-diagram-v2/nightly-check/basic-states-neo-look-neo-dark-theme.mmd	37578e252d444e1f
@@ -2085,13 +2085,13 @@ e2e/platform/dev-diagrams/diagrams/agentflow/12-keep-a-global-scoped-node-outsid
 e2e/platform/dev-diagrams/diagrams/agentflow/13-render-the-input-value-pattern.mmd	07b1aaaaff944b5c
 e2e/platform/dev-diagrams/diagrams/agentflow/14-render-multiple-connector-declarations.mmd	8341c3cee5715760
 e2e/platform/dev-diagrams/diagrams/agentflow/15-support-triage.mmd	2ba936c6f840dac8
-e2e/platform/dev-diagrams/diagrams/sequence-fixes/01-actor-vs-database.mmd	cbecf3aa67908336
-e2e/platform/dev-diagrams/diagrams/sequence-fixes/02-actor-among-all-participant-types.mmd	3f3e35da6fdedb8a
-e2e/platform/dev-diagrams/diagrams/sequence-fixes/03-note-font-weight.mmd	43e4408a1d157c5a
-e2e/platform/dev-diagrams/diagrams/sequence-fixes/04-rect-section-background.mmd	15dd9f5debc56c8a
-e2e/platform/dev-diagrams/diagrams/sequence-fixes/05-all-three-regressions.mmd	bf694c750beea0bf
-e2e/platform/dev-diagrams/diagrams/sequence-fixes/06-loops-and-labels.mmd	295d9fab5fa944f0
-e2e/platform/dev-diagrams/diagrams/sequence-fixes/07-multiline-labels.mmd	0f9d680a834abdba
+e2e/platform/dev-diagrams/diagrams/sequence-fixes/01-actor-vs-database.mmd	cbecf3aa67908336	cbecf3aa67908336
+e2e/platform/dev-diagrams/diagrams/sequence-fixes/02-actor-among-all-participant-types.mmd	3f3e35da6fdedb8a	2ec3a83e9e431068
+e2e/platform/dev-diagrams/diagrams/sequence-fixes/03-note-font-weight.mmd	43e4408a1d157c5a	b56cbdc37e8b7d28
+e2e/platform/dev-diagrams/diagrams/sequence-fixes/04-rect-section-background.mmd	15dd9f5debc56c8a	c9da392a330a451c
+e2e/platform/dev-diagrams/diagrams/sequence-fixes/05-all-three-regressions.mmd	bf694c750beea0bf	bec62464ad948459
+e2e/platform/dev-diagrams/diagrams/sequence-fixes/06-loops-and-labels.mmd	295d9fab5fa944f0	295d9fab5fa944f0
+e2e/platform/dev-diagrams/diagrams/sequence-fixes/07-multiline-labels.mmd	0f9d680a834abdba	961a3583de2de168
 e2e/platform/dev-diagrams/diagrams/state-diagram/1-simple-state-diagram.mmd	d86baaf132bc4676
 e2e/platform/dev-diagrams/diagrams/state-diagram/10-state-with-a-note.mmd	6b7fa02912c15b20
 e2e/platform/dev-diagrams/diagrams/state-diagram/11-transitions-with-labels.mmd	d5c9c643c9eba090

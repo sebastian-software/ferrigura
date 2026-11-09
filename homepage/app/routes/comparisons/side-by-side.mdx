@@ -13,13 +13,13 @@ The drawings come from <Versions />, and nothing is touched up afterwards. Merma
 
 <SharedConfig />
 
-Flowcharts are drawn in Ferrigura's `mermaid` mode, which keeps Mermaid's edge routing; the default `adaptive` mode is shown on the [homepage](/#flowchart-mode). Both drawings stand inline so the browser paints their text in the same context. Ferrigura's SVG embeds its font subsets; the page supplies the same face for Mermaid. Each figure links both files, and the diagram text opens below it.
+These drawings use `{ compat: true }`, which preserves Mermaid-compatible geometry across diagram types. Ferrigura's optimized default (`compat: false`) centers flowchart ports and compacts sequence participant boxes; the routing difference is shown on the [homepage](/#flowchart-mode). Both drawings stand inline so the browser paints their text in the same context. Ferrigura's SVG embeds its font subsets; the page supplies the same face for Mermaid. Each figure links both files, and the diagram text opens below it.
 
 ## Where they differ
 
 Ferrigura draws flowchart edge-label backgrounds at full opacity in both routing modes, so the line does not show through the text. Mermaid's SVG labels use half opacity. This affects paint only, not layout.
 
-Ferrigura's plain sequence participant boxes fit their labels with padding. Mermaid stretches them over the whole row, which reserves space for an icon and its label. The lifeline positions and message layout stay the same. These two corrections are also applied to the pinned reference used by the geometry checks; this page shows the published Mermaid package unchanged.
+The full-opacity correction is also applied to the pinned reference used by the geometry checks. This page shows the published Mermaid package unchanged. Sequence participant boxes keep Mermaid's full row height here because compatibility mode is enabled; optimized rendering fits them to their labels without moving lifelines or messages.
 
 ## Flowchart
 

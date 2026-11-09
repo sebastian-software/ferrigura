@@ -103,3 +103,20 @@ void test('a renderer refuses a colour scheme that is not known, and text that i
   assert.throws(() => renderer.render(PIE, { colorScheme: 'blue' }), /unknown colour scheme blue/);
   assert.throws(() => renderer.render('not a diagram\n'), /no diagram type detected/);
 });
+
+void test('compat selects Mermaid geometry for flowcharts and sequence participants', () => {
+  const renderer = new Renderer();
+  const sequence = 'sequenceDiagram\n participant App\n participant API\n App->>API: Request\n';
+  const compact = renderer.render(sequence);
+  const compatible = renderer.render(sequence, { compat: true });
+  assert.match(compact, /height="32" name="App"/);
+  assert.match(compatible, /height="76" name="App"/);
+  assert.equal(renderer.render(sequence, { compat: false }), compact);
+  assert.equal(renderer.render(sequence, { compat: true }), compatible);
+  const flow = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
+  assert.equal(
+    renderer.render(flow, { compat: true }),
+    renderer.render(flow, { flowchartMode: 'mermaid' })
+  );
+  assert.notEqual(renderer.render(flow), renderer.render(flow, { compat: true }));
+});

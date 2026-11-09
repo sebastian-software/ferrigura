@@ -23,11 +23,9 @@ resolves configuration once; reuse `renderer.render(text, options?)` for many
 blocks. Both return SVG synchronously and throw on engine errors. Give diagrams
 unique IDs when combining them in one document. SVG is not automatically JSX.
 
-Flowcharts center edge attachment points with label-aware spacing and draw edge-label backgrounds at full opacity by default.
-For Mermaid-compatible routing, pass `{ flowchartMode: 'mermaid' }` as the
-render options. Use `'adaptive'` to select the default explicitly. This option
-affects only flowcharts and is separate from Mermaid configuration and
-`elk.straightenEdges`.
+The default `compat: false` enables optimized flowchart routing and compact sequence participant boxes. Pass `{ compat: true }` as render options to preserve Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes. Options belong to each render and cannot be set in Mermaid front matter or init directives.
+
+The earlier `{ flowchartMode: 'mermaid' }` option remains a flowchart-only override. `compat: true` takes precedence over it.
 
 Supported platforms: macOS arm64; Linux x64/arm64 with glibc or musl; Windows
 x64/arm64. Node.js 22.13.0 or newer is required. The main package contains no

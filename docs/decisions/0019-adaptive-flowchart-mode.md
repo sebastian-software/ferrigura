@@ -1,10 +1,16 @@
-# 0019 Adaptive flowchart rendering with an explicit compatibility mode
+# 0019 Optimized rendering with Mermaid compatibility
 
-**Scope:** the edge attachment policy and edge-label backgrounds of flowcharts. It does not change parsing, Mermaid configuration, the ELK engine, or the rendering of other diagram types.
+**Scope:** the per-render compatibility switch and the optimizations it controls: flowchart attachment policy and sequence participant boxes. It does not change parsing, Mermaid configuration or the layout engines.
 
 ## Decision
 
-Flowcharts use `FlowchartMode::Adaptive` by default. `FlowchartMode::Mermaid` preserves the pinned reference's attachment policy. This is a render option, exposed as `flowchart_mode` in Rust, `flowchartMode` in Node.js and `--flowchart-mode` on the command line. It is not a Mermaid configuration key and cannot be set in front matter or an init directive.
+`RenderOptions.compat` defaults to `false`: Ferrigura uses optimized rendering. `compat: true` selects Mermaid-compatible geometry across diagram types. Node.js uses the same `compat` boolean; the CLI uses `--compat`. This is a render option, not a Mermaid configuration key: front matter and init directives cannot set it.
+
+With `compat: false`, flowcharts center their ports with label-aware spacing and neo sequence participant boxes fit their measured labels plus padding. With `compat: true`, flowcharts keep the reference's attachment policy and sequence boxes span the shared row. Compact header bottoms and footer tops remain on the same lifeline datum: message positions, row height and wrapping do not change.
+
+The earlier flowchart-only option remains a legacy override (`flowchart_mode`, `flowchartMode`, `--flowchart-mode`). It affects only flowchart routing when `compat` is false; `compat: true` always selects Mermaid routing. The compatibility switch is the common boundary for renderer optimizations, so callers need only one general option.
+
+Font, fill and unintended-shadow corrections apply in both modes. Flowchart edge-label backgrounds also remain at full opacity in both modes, matching the opaque paragraph background of HTML labels; reference patch 11 applies the same paint-only correction. Explicit theme color transparency still applies.
 
 Adaptive routing changes the measured ELK input, before layout:
 
@@ -24,16 +30,16 @@ Distributed attachment points on differently sized nodes can introduce small ste
 
 Mermaid's normal HTML-label path gives the paragraph inside an edge label its own background color. Its SVG path instead dims the background rectangle to half opacity, allowing the edge to show through the text. Ferrigura always uses SVG text, so full-opacity backgrounds give its default the line masking of Mermaid's HTML labels. The pinned reference carries the same paint-only correction in patch 11. See [the upstream styles](https://github.com/mermaid-js/mermaid/blob/e28fbd9ded0a07ba9569e51be4764c1ad4daa8f6/packages/mermaid/src/diagrams/flowchart/styles.ts).
 
-Adaptive routing is a deliberate choice beyond Mermaid parity. An explicit compatibility mode lets callers retain the reference's attachment policy. Both modes share the paint-only label correction, which is also applied to the pinned reference. Changing ELK itself would make the engine diverge; replacing bends with curves would conceal the attachment offsets.
+Centered flowchart ports and compact participant boxes are deliberate choices beyond Mermaid parity. An explicit compatibility mode lets callers retain the reference's attachment policy. Both modes share the paint-only label correction, which is also applied to the pinned reference. Changing ELK itself would make the engine diverge; replacing bends with curves would conceal the attachment offsets.
 
 ## Consequences
 
-- The public default changes flowchart SVG geometry. Both routing modes use full-opacity edge-label background rectangles. Other diagram types retain their output, including types that share the flowchart parser or unified renderer.
+- The optimized default changes flowchart routing and sequence participant-box geometry. Both modes use full-opacity flowchart edge-label backgrounds. Other diagram types retain their output.
 - The configuration and theme caches remain shared; the rendering mode belongs to each render and cannot leak between calls.
 - Compatibility geometry is compared with the unmodified reference input. Adaptive geometry is compared with the reference after the harness applies the same documented attachment policy to its measured input. ELK layout, clipping and SVG measurement still run on both sides; there is no geometry exception for the policy.
 - The reference's input hook is test instrumentation, inactive without a callback. It does not turn the adaptive policy into a Mermaid bug fix. This is the explicit flowchart exception to [0017](./0017-reproduce-the-reference.md).
-- The stylesheet comparison checks Mermaid mode rule by rule. Public render tests cover the background treatment across the shipped themes and preserve explicit color transparency.
-- Snapshots pin both modes: the default hash is the second column of `svg.tsv`, and flowcharts have a third column for the Mermaid-mode hash.
+- The stylesheet comparison checks Mermaid mode rule by rule. Public render tests cover background treatment across the shipped themes, preserve explicit color transparency and switch both optimizations per render without leaking cached state.
+- Snapshots pin both modes: the default hash is the second column of `svg.tsv`, and flowcharts and sequences have a third column for the compatibility-mode hash.
 
 ## Related
 
