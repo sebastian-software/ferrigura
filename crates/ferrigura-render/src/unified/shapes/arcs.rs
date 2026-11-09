@@ -50,7 +50,8 @@ fn relative_arc_path(arcs: &[RelativeArc]) -> (String, BBox) {
     }
     d.push_str(" H0 V0 Z");
     // The box of the path as the browser computes it: the arcs are conics of Skia, and their extremes are
-    // read in float (`ferrigura-path`, checked against Chromium 151 on its corpus).
+    // read in float (`ferrigura-path`, checked against Chromium 151 on its corpus). The node box is
+    // that box moved by the translation as Chromium maps it (`BBox::translate_f32`).
     let rect = ferrigura_path::bounding_box(&d);
     let bbox = BBox::new(
         rect.x as f64,
@@ -112,7 +113,7 @@ pub(super) fn bang(input: &ShapeInput<'_>) -> Part {
     Part {
         svg,
         after_label: String::new(),
-        bbox: path_box.translate(translate_x, translate_y),
+        bbox: path_box.translate_f32(translate_x, translate_y),
         intersect: Intersect::Rect,
         label_offset: Some(label_offset),
         label: Some(label),
@@ -165,7 +166,7 @@ pub(super) fn cloud(input: &ShapeInput<'_>) -> Part {
     Part {
         svg,
         after_label: String::new(),
-        bbox: path_box.translate(translate_x, translate_y),
+        bbox: path_box.translate_f32(translate_x, translate_y),
         intersect: Intersect::Rect,
         label_offset: Some(label_offset),
         label: Some(label),

@@ -178,6 +178,26 @@ impl BBox {
         Self::new(self.x + dx, self.y + dy, self.width, self.height)
     }
 
+    /// The box of a child moved by its `translate(dx, dy)`, as Chromium maps it into the parent's
+    /// `getBBox`: the offsets are read as the SVG parser reads them, the edges are moved in float32,
+    /// and the width and height are taken again from the moved edges. Chromium 156 moved the box and
+    /// kept its size; since Chromium 158 the width can come out one float32 ulp apart, which the
+    /// mindmap's force layout amplifies into tens of pixels.
+    #[must_use]
+    pub fn translate_f32(self, dx: f64, dy: f64) -> Self {
+        let dx = path_coordinate_f32(dx) as f32;
+        let dy = path_coordinate_f32(dy) as f32;
+        let (x, y) = (self.x as f32, self.y as f32);
+        let (right, bottom) = (x + self.width as f32, y + self.height as f32);
+        let (left, top) = (x + dx, y + dy);
+        Self::new(
+            f64::from(left),
+            f64::from(top),
+            f64::from(right + dx - left),
+            f64::from(bottom + dy - top),
+        )
+    }
+
     /// The smallest box that holds the points, or `None` for no points.
     ///
     /// The points are the coordinates the reference writes into a path's `d`, so each is taken as
@@ -239,6 +259,27 @@ mod tests {
     fn the_union_holds_both_boxes() {
         let union = BBox::new(0.0, 0.0, 10.0, 10.0).union(BBox::new(-5.0, 5.0, 10.0, 20.0));
         assert_eq!(union, BBox::new(-5.0, 0.0, 15.0, 25.0));
+    }
+
+    /// The cloud node "Cloud Node" of `probes/mindmap/p10-all-shapes-classic`: the path's box and the
+    /// node's `getBBox` in Chromium 158. Chromium 156 kept the width, 103.39781951904297.
+    #[test]
+    fn a_translated_box_takes_its_size_from_the_moved_edges() {
+        let path = BBox::new(
+            -8.537_737_846_374_512,
+            -18.594_562_530_517_578,
+            103.397_819_519_042_97,
+            66.616_348_266_601_56,
+        );
+        assert_eq!(
+            path.translate_f32(-41.210_937_5, -13.5),
+            BBox::new(
+                -49.748_676_300_048_83,
+                -32.094_562_530_517_58,
+                103.397_827_148_437_5,
+                66.616_348_266_601_56,
+            )
+        );
     }
 
     /// `svg_number` against Chromium: the `getBBox` height of `M0 0 L0 <text>`, measured in Chromium
