@@ -74,7 +74,7 @@ export function SizeTable() {
   ];
   return (
     // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- A scrollable region needs focus.
-    <div role="region" tabIndex={0} aria-label="Sizes of the builds">
+    <div className="mono-table-region" role="region" tabIndex={0} aria-label="Sizes of the builds">
       <table>
         <thead>
           <tr>
