@@ -64,4 +64,4 @@ The positions, sizes and texts agree in all ten. Two diagrams differ in their co
 
 ## Render them yourself
 
-`scripts/render-comparison.mjs` in the [homepage's sources](https://github.com/sebastian-software/ferrigura/tree/main/homepage) writes these files with `pnpm comparison:write`, and the site's checks render them again and fail when a file no longer matches.
+`scripts/render-comparison.mjs` in the [homepage's sources](https://github.com/sebastian-software/ferrigura/tree/main/homepage) writes these files on macOS with `pnpm comparison:write`. The site's checks render Ferrigura's side again on every build and Mermaid's on macOS, where the geometry check runs too, because Chromium lays out text a little differently on Linux.

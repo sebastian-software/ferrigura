@@ -14,9 +14,12 @@
 // recorded versions. Run the write again after `pnpm sample:write` or a move
 // of the pin.
 //
-// Write on macOS, where the geometry check runs: there the check is exact.
-// Elsewhere Ferrigura's files are compared within 0.01 and Mermaid's by their
-// markup, as Chromium lays out text differently there (compareMarkup).
+// Write on macOS, where the geometry check runs too: Chromium lays out text
+// a little differently on Linux (docs/LEARNINGS.md, "Linux and macOS Chromium
+// lay out text differently"), so Mermaid's drawings are a recording from
+// macOS. On the recording platform the check renders both sides again and
+// compares them exactly; elsewhere it renders Ferrigura's side, compares it
+// within 0.01, and leaves Mermaid's recording as it is.
 //
 // Both sides get the settings the geometry check gives them
 // (tools/port/geometry/common.ts): Mermaid draws its labels as SVG text, in
@@ -330,10 +333,12 @@ const examples = [
   },
 ];
 
+assert(check || process.platform === 'darwin', 'Write the side-by-side drawings on macOS.');
+const exact = !check || recorded.platform === platform;
 const packages = await installPublished(versions, { quiet: check });
 let svgs;
 try {
-  svgs = await renderAll(packages);
+  svgs = await renderAll(packages, { withMermaid: exact });
 } finally {
   await packages.remove();
 }
@@ -353,7 +358,6 @@ assert.equal(formatted.errors.length, 0);
 const drawnWith = `@ferrigura/core ${versions['@ferrigura/core']} and mermaid ${versions.mermaid}`;
 
 if (check) {
-  const exact = recorded.platform === platform;
   const message = `The side-by-side drawings drifted from ${drawnWith}; run pnpm comparison:write`;
   const json = await readFile(target, 'utf8');
   compareOutput({
@@ -363,26 +367,18 @@ if (check) {
     exact,
     message,
   });
+  const files = data.examples.flatMap((example) => [example.ferrigura, example.mermaid]);
   const entries = await readdir(svgDirectory);
   const committed = entries.filter((entry) => entry.endsWith('.svg'));
-  assert.deepEqual(committed.toSorted(), [...svgs.keys()].toSorted(), 'The SVG files drifted');
-  let largest = 0;
+  assert.deepEqual(committed.toSorted(), files.toSorted(), 'The SVG files drifted');
   for (const [entry, content] of svgs) {
     const actual = await readFile(new URL(entry, svgDirectory), 'utf8');
-    if (exact || entry.startsWith('ferrigura-'))
-      compareOutput({ actual, expected: content, label: entry, exact, message });
-    else
-      largest = Math.max(
-        largest,
-        compareMarkup({ actual, expected: content, label: entry, message })
-      );
+    compareOutput({ actual, expected: content, label: entry, exact, message });
   }
-  const tolerance = exact
+  const scope = exact
     ? ''
-    : ` (${platform}: Ferrigura's numbers within 0.01 of ${recorded.platform}, Mermaid's markup alike and its numbers within ${largest.toFixed(2)} px)`;
-  console.log(
-    `Verified ${examples.length} side-by-side diagrams against ${drawnWith}${tolerance}.`
-  );
+    : ` (${platform}: Ferrigura's within 0.01 of ${recorded.platform}; Mermaid's are checked on ${recorded.platform} only)`;
+  console.log(`Verified ${examples.length} side-by-side diagrams against ${drawnWith}${scope}.`);
 } else {
   await rm(svgDirectory, { recursive: true, force: true });
   await mkdir(svgDirectory, { recursive: true });
@@ -391,41 +387,17 @@ if (check) {
   console.log(`Wrote ${examples.length} side-by-side diagrams rendered by ${drawnWith}.`);
 }
 
-/**
- * Mermaid's drawing on another platform than the recording: Chromium lays out
- * text a little differently on Linux than on macOS (docs/LEARNINGS.md, "Linux
- * and macOS Chromium lay out text differently"), so every measured width and
- * the positions that follow from it may move. The markup must match with its
- * numbers masked; the largest difference is returned for the log.
- */
-function compareMarkup({ actual, expected, label, message }) {
-  const number = /-?\d[\d.]*/g;
-  assert.equal(
-    actual.replaceAll(number, '#'),
-    expected.replaceAll(number, '#'),
-    `${message}: ${label}`
-  );
-  const left = actual.match(number) ?? [];
-  const right = expected.match(number) ?? [];
-  let largest = 0;
-  for (const [index, value] of left.entries()) {
-    const difference = Math.abs(Number(value) - Number(right[index]));
-    // Version numbers and other dotted runs must match exactly.
-    if (Number.isNaN(difference)) assert.equal(value, right[index], `${message}: ${label}`);
-    else largest = Math.max(largest, difference);
-  }
-  return largest;
-}
-
-/** Every example from both packages, by file name. */
-async function renderAll({ directory, require }) {
+/** Every example from Ferrigura and, where asked, from Mermaid, by file name. */
+async function renderAll({ directory, require }, { withMermaid }) {
   const { Renderer } = await import(pathToFileURL(require.resolve('@ferrigura/core')).href);
   const renderer = new Renderer(diagramConfig);
-  const mermaid = await renderMermaid(join(directory, 'node_modules', 'mermaid', 'dist'));
+  const mermaid = withMermaid
+    ? await renderMermaid(join(directory, 'node_modules', 'mermaid', 'dist'))
+    : new Map();
   const rendered = new Map();
   for (const example of examples) {
     rendered.set(`ferrigura-${example.id}.svg`, renderFerrigura(renderer, example));
-    rendered.set(`mermaid-${example.id}.svg`, mermaid.get(example.id));
+    if (withMermaid) rendered.set(`mermaid-${example.id}.svg`, mermaid.get(example.id));
   }
   return rendered;
 }
