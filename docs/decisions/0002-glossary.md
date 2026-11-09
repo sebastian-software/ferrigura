@@ -35,6 +35,15 @@ The per-render choice of flowchart routing and edge-label background treatment: 
 **Flowchart routing policy**:
 The choice of how a flowchart attaches its edges to nodes: adaptive centering with label-aware spacing, or the pinned Mermaid reference's attachment behavior ([0019](./0019-adaptive-flowchart-mode.md)). Necessary bends remain in either policy.
 
+**Draw animation**:
+A one-time reveal of a diagram's nodes, connections, bars, or sectors, following a drawing order.
+It is separate from a moving-dash animation on an already visible edge ([0021](./0021-optional-svg-draw-animation.md)).
+
+**Animation speed**:
+A multiplier of the average velocity along a drawn path, bar, or arc. Each
+element eases in and out independently. Longer elements take
+proportionally longer; speed does not specify the duration of the whole diagram.
+
 ### Verification
 
 **Reference**:

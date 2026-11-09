@@ -118,6 +118,13 @@ release-please opens a release pull request from the commit messages on `main`; 
 
 ## The website
 
+The standalone SVG animation preview runs with
+`node tools/animation/preview.mjs` from the repository root, after building the
+Node.js addon. It renders through the checkout's native `animation` option and
+exports the resulting SVG unchanged.
+See [the preview's README](../tools/animation/README.md) for its playback and
+ordering rules.
+
 The Ardo site in `homepage/` uses the shared Ferramenta page systems: Monografie
 for the homepage, with the Monografie header and footer on every page, and the
 Ferra reading layout for the documentation. Its only local stylesheet holds the

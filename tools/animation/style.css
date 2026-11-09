@@ -1,0 +1,280 @@
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #302d2a;
+  background: #f6f4f0;
+  --accent: #853e2f;
+  --muted: #68615a;
+  --border: #d8d3cb;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 32px 40px;
+}
+.wordmark {
+  color: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  font-size: 15px;
+}
+.wordmark span {
+  color: var(--muted);
+  font-weight: 400;
+}
+h1 {
+  font:
+    400 clamp(36px, 5vw, 52px)/1.12 Georgia,
+    serif;
+  letter-spacing: -0.035em;
+  margin: 30px 0 10px;
+}
+header > p {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.workbench {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.settings {
+  padding: 28px 22px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.field {
+  display: grid;
+  gap: 10px;
+}
+label {
+  font-size: 13px;
+  font-weight: 600;
+}
+select,
+button {
+  font: inherit;
+  font-size: 13px;
+}
+select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #b8b0a6;
+  border-radius: 4px;
+}
+.field p,
+.description p,
+.motion-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.field-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+output {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+input[type='range'] {
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.description {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+h2 {
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+button {
+  min-height: 40px;
+  padding: 8px 13px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  background: #fff;
+  color: inherit;
+}
+button:hover:enabled {
+  background: #f6f4f0;
+  border-color: #b8b0a6;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.download {
+  margin-top: auto;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.canvas {
+  min-width: 0;
+  padding: 26px;
+  display: grid;
+  place-items: center;
+  min-height: 570px;
+}
+#drawing {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+#drawing > svg {
+  width: 100%;
+  height: 540px;
+  max-width: 100% !important;
+  min-width: 0;
+  overflow: visible;
+}
+.player {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  border-top: 1px solid var(--border);
+}
+#play {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  min-width: 72px;
+}
+#play:hover:enabled {
+  background: #6e3023;
+}
+.playhead {
+  flex: 1;
+  min-width: 40px;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 24px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 16px;
+}
+footer p {
+  margin: 0;
+}
+details {
+  max-width: 60%;
+}
+summary {
+  cursor: pointer;
+}
+pre {
+  text-align: left;
+  font-size: 12px;
+  max-width: 100%;
+  overflow-x: auto;
+  background: #eeebe5;
+  padding: 14px;
+  color: #302d2a;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 700px) {
+  main {
+    padding: 24px 16px;
+  }
+  .workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 20px;
+    gap: 20px;
+  }
+  .description {
+    border: 0;
+    padding: 0;
+  }
+  .download {
+    margin-top: 0;
+  }
+  .canvas {
+    padding: 24px 18px;
+    min-height: 450px;
+  }
+  #drawing > svg {
+    height: 440px;
+  }
+  .player {
+    flex-wrap: wrap;
+    padding: 16px;
+    gap: 10px;
+  }
+  .playhead {
+    order: 1;
+    flex-basis: calc(100% - 110px);
+  }
+  #time {
+    order: 2;
+    margin-left: auto;
+  }
+  #finish {
+    margin-left: auto;
+  }
+  footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+  details {
+    max-width: 100%;
+    width: 100%;
+  }
+}

@@ -20,7 +20,7 @@ use ferrigura_render::context::Context;
 use ferrigura_render::flowchart;
 use ferrigura_render::kanban::KanbanSections;
 use ferrigura_render::mindmap::MindmapSection;
-use ferrigura_render::pie::render as render_pie_diagram;
+use ferrigura_render::pie::render_with_animation as render_pie_diagram;
 use ferrigura_render::swimlanes::SwimlaneSection;
 use ferrigura_render::unified::Section;
 use ferrigura_render::use_case::UseCaseSection;
@@ -156,17 +156,20 @@ fn read_pie(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json:
 fn render_pie(
     text: &str,
     prepared: &Prepared<'_>,
-    _options: &RenderOptions,
+    options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    render_pie_diagram(&Context {
-        diagram: &pie::parse(text)?,
-        section: &typed_config.pie,
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+    render_pie_diagram(
+        &Context {
+            diagram: &pie::parse(text)?,
+            section: &typed_config.pie,
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
+        },
+        options.animation,
+    )
 }
 
 /// The info diagram.
@@ -218,7 +221,9 @@ fn render_flowchart(
     prepared: &Prepared<'_>,
     options: &RenderOptions,
 ) -> Result<String, RenderError> {
-    with_flowchart(text, prepared, options.flowchart_mode, flowchart::render)
+    with_flowchart(text, prepared, options.flowchart_mode, |input| {
+        flowchart::render_with_animation(input, options.animation)
+    })
 }
 
 /// The timeline.
@@ -305,19 +310,22 @@ fn render_git_graph(
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    git_graph_render::render(&Context {
-        diagram: &git_graph::parse_with(
-            text,
-            &git_graph::Options {
-                auto_id_seed: options.git_graph_seed,
-                ..git_graph::options_of(text)?
-            },
-        )?,
-        section: &typed_config.git_graph,
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+    git_graph_render::render_with_animation(
+        &Context {
+            diagram: &git_graph::parse_with(
+                text,
+                &git_graph::Options {
+                    auto_id_seed: options.git_graph_seed,
+                    ..git_graph::options_of(text)?
+                },
+            )?,
+            section: &typed_config.git_graph,
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
+        },
+        options.animation,
+    )
 }
 
 /// The ER diagram, written `erDiagram`.
@@ -472,16 +480,19 @@ fn render_gantt(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     let now = options.now.unwrap_or_else(|| gantt::Options::default().now);
-    gantt_render::render(&Context {
-        diagram: &gantt::parse_with(text, gantt::Options { now })?,
-        section: &gantt_render::GanttSection {
-            config: &typed_config.gantt,
-            now,
+    gantt_render::render_with_animation(
+        &Context {
+            diagram: &gantt::parse_with(text, gantt::Options { now })?,
+            section: &gantt_render::GanttSection {
+                config: &typed_config.gantt,
+                now,
+            },
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
         },
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+        options.animation,
+    )
 }
 
 /// The mindmap, written `mindmap`.
@@ -503,21 +514,24 @@ fn read_mindmap(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_j
 fn render_mindmap(
     text: &str,
     prepared: &Prepared<'_>,
-    _options: &RenderOptions,
+    options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
-    mindmap_render::render(&Context {
-        diagram: &mindmap::parse(text)?,
-        section: &MindmapSection {
-            mindmap: &typed_config.mindmap,
-            unified: section,
+    mindmap_render::render_with_animation(
+        &Context {
+            diagram: &mindmap::parse(text)?,
+            section: &MindmapSection {
+                mindmap: &typed_config.mindmap,
+                unified: section,
+            },
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
         },
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+        options.animation,
+    )
 }
 
 /// The block diagram, written `block`.
@@ -609,17 +623,20 @@ fn read_xy_chart(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_
 fn render_xy_chart(
     text: &str,
     prepared: &Prepared<'_>,
-    _options: &RenderOptions,
+    options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    xychart_render::render(&Context {
-        diagram: &xychart::parse(text)?,
-        section: &typed_config.xy_chart,
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+    xychart_render::render_with_animation(
+        &Context {
+            diagram: &xychart::parse(text)?,
+            section: &typed_config.xy_chart,
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
+        },
+        options.animation,
+    )
 }
 
 /// The sankey diagram, written `sankey`.

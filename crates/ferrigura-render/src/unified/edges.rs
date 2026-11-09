@@ -460,7 +460,7 @@ fn near(a: Point, b: Point) -> bool {
 }
 
 /// What the paint of an edge holds before the line hops, and what the hops may change.
-struct Painted {
+pub(crate) struct Painted {
     id: String,
     /// The path's `id`: `<diagramId>-<edge id>` (`edges.js` 837 and 860), unless the diagram names
     /// the path itself.
@@ -469,12 +469,12 @@ struct Painted {
     points: String,
     /// The attributes after the markers, each with its leading space.
     path_attributes: String,
-    d: Option<String>,
-    style: String,
-    class: String,
+    pub(crate) d: Option<String>,
+    pub(crate) style: String,
+    pub(crate) class: String,
     look: String,
-    marker_start: Option<String>,
-    marker_end: Option<String>,
+    pub(crate) marker_start: Option<String>,
+    pub(crate) marker_end: Option<String>,
     markers: String,
 }
 
@@ -500,6 +500,20 @@ pub fn paint_paths_with(
     section: &Section<'_>,
     jumps: Option<JumpStyle>,
 ) -> Vec<EdgePath> {
+    prepare_paths(edges, svg_id, diagram_type, section, jumps)
+        .into_iter()
+        .map(|painted| finish_path(painted, None))
+        .collect()
+}
+
+/// The final paths, including line hops, before their SVG is serialized.
+pub(crate) fn prepare_paths(
+    edges: &[Edge],
+    svg_id: &str,
+    diagram_type: &str,
+    section: &Section<'_>,
+    jumps: Option<JumpStyle>,
+) -> Vec<Painted> {
     let default_curve = section.flowchart.curve.clone();
     let mut created = std::collections::HashSet::new();
     let mut painted: Vec<Painted> = edges
@@ -539,22 +553,22 @@ pub fn paint_paths_with(
     }
 
     painted
-        .into_iter()
-        .map(|painted| {
-            let bbox = painted
-                .d
-                .as_deref()
-                .and_then(path_bounds)
-                .unwrap_or_default();
-            let svg = format_path(&painted);
-            EdgePath {
-                id: painted.id,
-                svg,
-                bbox,
-                markers: painted.markers,
-            }
-        })
-        .collect()
+}
+
+/// Finishes a path, optionally with an animated serialization of the same geometry.
+pub(crate) fn finish_path(painted: Painted, svg: Option<String>) -> EdgePath {
+    let bbox = painted
+        .d
+        .as_deref()
+        .and_then(path_bounds)
+        .unwrap_or_default();
+    let svg = svg.unwrap_or_else(|| format_path(&painted));
+    EdgePath {
+        id: painted.id,
+        svg,
+        bbox,
+        markers: painted.markers,
+    }
 }
 
 /// `insertEdge`'s path, before the line hops: the `d`, the style with the neo dash array, the
@@ -691,7 +705,7 @@ fn paint_edge(
 }
 
 /// The `<path>` element of a painted edge.
-fn format_path(painted: &Painted) -> String {
+pub(crate) fn format_path(painted: &Painted) -> String {
     let mut attributes = String::new();
     if let Some(d) = &painted.d {
         attributes.push_str(&format!(" d=\"{}\"", escape(d)));

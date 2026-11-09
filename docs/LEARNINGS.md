@@ -138,6 +138,47 @@ The browser side has float32 in places: `getBBox` returns float32 values, and Bl
 
 ## SVG and Chromium geometry
 
+### Reveal masks preserve an edge's dash pattern
+
+The [draw animation](./decisions/0021-optional-svg-draw-animation.md) reveals each edge through a
+separate stroked mask. Animating the original edge's dash array would replace
+the neo arrowhead gaps, dotted lines, and line-hop spacing. End markers use
+stroke-free carrier paths whose groups fade in on arrival, retaining the
+original marker definitions. Very short `step-end` animations can finish with
+progress just below 1 in Chromium because of floating-point rounding, leaving
+the initial value visible under `fill: both`; a brief linear opacity fade avoids
+that boundary. The end values match the static SVG properties, so backwards fill
+is enough. Releasing masks and opacity effects at completion avoids differences
+in rasterization from retained compositing layers. The preview checks the final
+pixels against the original SVG. Export checks run the standalone SVG with
+JavaScript disabled, since manually seeking an inline preview past its end can
+hide a boundary failure.
+
+Reveal masks need an easing that settles without overshooting: a dash offset
+outside its reveal range can hide a completed part again. Each connection, bar,
+and sector uses its own easing within a duration derived from length and speed.
+Easing the entire diagram would make the boundaries between pie sectors or
+successive bars pass at full speed instead of giving each one a soft finish.
+
+### Rebuilding a loaded Node addon on macOS needs a fresh file
+
+Overwriting a staged `.node` file while a preview process holds its previous
+version can leave new Node processes killed on load, even when
+`codesign --verify` accepts the file. If requiring the build output directly
+works, stop the preview and stage that output through a new file followed by
+an atomic rename, then restart. Replacing the staged file's inode resolves
+this failure without changing the addon or its signature.
+
+### A pie reveal mask must cover both sides of a separator
+
+A wide arc with butt caps clips half the sector stroke at each radial border.
+The border then becomes visibly thicker when the mask releases, even though the
+completed chart matches static output. Tangential extensions past both arc ends,
+sized from the stroke width, include the entire stroke. The browser check
+compares a fully revealed isolated sector with and without its mask for both pie
+and donut. A one-channel rounding difference from mask compositing is allowed;
+the complete diagram still has to match static pixels exactly.
+
 ### The bounding box of a path is Blink's and Skia's, in float
 
 `getBBox()` of an SVG path is `SkPath::computeTightBounds()` of the path that Blink's parser and `SVGPathBuilder` build: numbers are read in `float` by Blink's digit-by-digit parser, relative points become absolute, smooth curves are reflected, and an arc becomes conics from float matrices; the extremes of each curve are found in float. `ferrigura-path` ports that route. It matters for the mindmap's cloud and bang nodes, whose paths size the node, and where the force layout amplifies a one-unit difference into tens of pixels. Of 3,011 generated paths, 81 differ from Chromium, all within 0.05 px but one (0.094 px on a path 293,000 px across), because Chromium takes the macOS libm's float `sin`, `cos`, `tan` and `atan2`, which are not correctly rounded for a few inputs; the port takes the correctly rounded values, the same on every host. Mermaid's cloud and bang paths are not among the 81. The node's own `getBBox` then maps the path's box through the path's `translate`: since Chromium 158 the edges are moved in float and the width is taken again from them (Chromium 156 kept the width), which can move the width by one float ulp; on the mindmaps with every shape the force layout turned that ulp into up to 40 px (`BBox::translate_f32`). **Where:** `crates/ferrigura-path`, `tests/corpus` (written by `pnpm -C tools/port port:path-bounds`).

@@ -50,12 +50,30 @@ struct Slice<'a> {
 ///
 /// Returns an error if a bundled font cannot be read or subset.
 pub fn render(input: &Context<'_, PieDiagram, PieDiagramConfig>) -> Result<String, RenderError> {
+    render_with_animation(input, None)
+}
+
+/// Renders a pie with optional, independently eased clockwise sector reveals.
+///
+/// # Errors
+/// Returns the errors of [`render`], or an option error if the speed overflows the timing.
+pub fn render_with_animation(
+    input: &Context<'_, PieDiagram, PieDiagramConfig>,
+    animation: Option<crate::animation::Animation>,
+) -> Result<String, RenderError> {
+    let mut drawing = animation.map(|options| crate::animation::Drawing::new(input.id, options));
     let tokens = input.theme.light;
     let config = input.section;
     let sections = &input.diagram.sections;
+    let mut sector_times = if animation.is_some() {
+        vec![None; sections.len()]
+    } else {
+        Vec::new()
+    };
     let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
 
     let outer_stroke_width = tokens.pie_outer_stroke_width.px().unwrap_or(2.0);
+    let stroke_padding = tokens.pie_stroke_width.px().unwrap_or(2.0).abs() + 1.0;
     let inner_hole = if config.donut_hole > 0.0 && config.donut_hole <= 0.9 {
         config.donut_hole
     } else {
@@ -207,24 +225,75 @@ pub fn render(input: &Context<'_, PieDiagram, PieDiagramConfig>) -> Result<Strin
         } else if config.highlight_slice == arc.section.label {
             class.push_str(" highlighted");
         }
-        body.push_str(&format!(
+        let svg = format!(
             "<path class=\"{class}\" d=\"{}\"{}{}/>",
             arc_path(inner_radius, radius, arc.start, arc.end),
             attribute("fill", slot_color(tokens, arc.index)),
             attribute("stroke", &tokens.pie_stroke_color),
-        ));
+        );
+        if let Some(drawing) = &mut drawing {
+            let length = radius * (arc.end - arc.start);
+            let timing = drawing.next(length)?;
+            let half = radius / 2.0;
+            let point = |angle: f64| (half * sin(angle), -half * cos(angle));
+            let (x1, y1) = point(arc.start);
+            let (xm, ym) = point((arc.start + arc.end) / 2.0);
+            let (x2, y2) = point(arc.end);
+            // Extend tangentially past both radial borders so the mask includes the whole
+            // stroke. Clipping half of it makes separators thicken when the mask releases.
+            let d = format!(
+                "M{},{}L{},{}A{},{},0,0,1,{},{}A{},{},0,0,1,{},{}L{},{}",
+                number(x1 - stroke_padding * cos(arc.start)),
+                number(y1 - stroke_padding * sin(arc.start)),
+                number(x1),
+                number(y1),
+                number(half),
+                number(half),
+                number(xm),
+                number(ym),
+                number(half),
+                number(half),
+                number(x2),
+                number(y2),
+                number(x2 + stroke_padding * cos(arc.end)),
+                number(y2 + stroke_padding * sin(arc.end))
+            );
+            body.push_str(&drawing.masked(
+                &svg,
+                &d,
+                timing,
+                radius + stroke_padding.max(outer_stroke_width) * 4.0,
+                length,
+            ));
+            sector_times[arc.index] = Some(timing);
+        } else {
+            body.push_str(&svg);
+        }
     }
     for (arc, text) in visible.iter().zip(&slice_labels) {
         let middle = (arc.start + arc.end) / 2.0 - PI / 2.0;
         let (cx, cy) = (label_radius * cos(middle), label_radius * sin(middle));
         let width = layout_width(measure(sans, text, section_size)?);
-        body.push_str(&format!(
+        let svg = format!(
             "<text class=\"slice\"{} x=\"{}\" y=\"{}\">{}</text>",
             attribute("fill", &tokens.pie_section_text_color),
             number(cx - width / 2.0),
             number(cy),
             escape(text)
-        ));
+        );
+        if let Some(drawing) = &mut drawing {
+            let timing = sector_times[arc.index].unwrap();
+            body.push_str(&drawing.fade(
+                &svg,
+                crate::animation::Timing {
+                    start: timing.start + timing.duration * 0.65,
+                    duration: 80.0_f64.min(timing.duration * 0.35),
+                },
+                "label",
+            ));
+        } else {
+            body.push_str(&svg);
+        }
     }
     body.push_str("</g>");
 
@@ -237,8 +306,13 @@ pub fn render(input: &Context<'_, PieDiagram, PieDiagramConfig>) -> Result<Strin
         escape(title)
     ));
 
+    let legend_end = sector_times
+        .iter()
+        .flatten()
+        .map(|timing| timing.end())
+        .fold(0.0, f64::max);
     for (index, label) in legend_labels.iter().enumerate() {
-        body.push_str(&format!(
+        let svg = format!(
             "<g class=\"legend\" transform=\"{}\"><rect class=\"{}\" width=\"{}\" height=\"{}\"{}{}/><text{} x=\"{}\" y=\"{}\">{}</text></g>",
             legend_transform(index),
             slot_class(index),
@@ -250,7 +324,17 @@ pub fn render(input: &Context<'_, PieDiagram, PieDiagramConfig>) -> Result<Strin
             number(LEGEND_RECT_SIZE + LEGEND_SPACING),
             number(LEGEND_RECT_SIZE - LEGEND_SPACING),
             escape(label),
-        ));
+        );
+        if let Some(drawing) = &mut drawing {
+            // Entries for omitted, sub-percent sectors remain available after the drawing.
+            let timing = sector_times[index].unwrap_or(crate::animation::Timing {
+                start: legend_end,
+                duration: 80.0,
+            });
+            body.push_str(&drawing.legend(&svg, timing));
+        } else {
+            body.push_str(&svg);
+        }
     }
     body.push_str("</g>");
 
@@ -275,6 +359,9 @@ pub fn render(input: &Context<'_, PieDiagram, PieDiagramConfig>) -> Result<Strin
         &input.diagram.acc_title,
         &input.diagram.acc_descr,
     );
+    if let Some(drawing) = drawing {
+        body.push_str(&drawing.finish());
+    }
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"{id}\" {size_attributes} viewBox=\"{x} 0 {w} {h}\"{accessible_attributes}>{accessibility}{style}{body}</svg>",
         id = escape(input.id),

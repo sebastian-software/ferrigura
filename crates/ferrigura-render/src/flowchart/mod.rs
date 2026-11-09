@@ -54,11 +54,23 @@ pub fn elk_stages(
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the layout fails.
 pub fn render(input: &Context<'_, FlowchartDiagram, Section<'_>>) -> Result<String, RenderError> {
+    render_with_animation(input, None)
+}
+
+/// Renders a flowchart with an optional, self-contained SVG draw animation.
+///
+/// # Errors
+///
+/// Returns the errors of [`render`], or an option error if the speed makes the timing overflow.
+pub fn render_with_animation(
+    input: &Context<'_, FlowchartDiagram, Section<'_>>,
+    animation: Option<crate::animation::Animation>,
+) -> Result<String, RenderError> {
     let config = Config::of(input);
     let mut measured = measure(input)?;
     pipeline::lay_out(&mut measured, &config)?;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, &config)?;
+    let painted = pipeline::paint_with_animation(&measured, id, &config, animation)?;
     let mut bounds = painted.bounds;
 
     // `insertTitle`: centered over everything drawn so far, `titleTopMargin` above the origin.

@@ -33,6 +33,11 @@ Options:
                           colour scheme. By default the configured theme decides.
       --flowchart-mode <MODE>
                           `adaptive` (default) or `mermaid` for reference-compatible output
+      --animate           Draw a supported diagram once, one line at a time, with embedded CSS
+      --animation-speed <N>
+                          Positive multiplier of 700 SVG units/s on average; enables animation
+      --animation-order <ORDER>
+                          `source` (default) or `flow` for parallel branches; enables animation
   -o, --output <FILE>     Write the SVG to FILE instead of standard output (one input only)
       --output-dir <DIR>  Write each SVG to DIR/<name>.svg, named after its input file
                           (file inputs only)
@@ -79,6 +84,20 @@ ferrigura --config config.json --id pets pets.mmd
 ```
 
 ## Behavior
+
+`--animate` enables a one-time draw effect with speed `1` and one line
+at a time in source order. `--animation-speed 1.5` multiplies drawing velocity;
+it does not set the whole diagram's duration. Each connection, bar, or sector
+eases in and out independently. `--animation-order flow` draws
+branches in parallel. Either setting enables animation, so `--animate` is
+optional when a speed or order is supplied. Invalid speed or order values are
+usage errors. Flowchart, Gantt, Git graph, mind map, pie (including donut), and
+XY chart support this option; other diagram types return a render error. For
+charts, `flow` starts independent elements together. See
+[draw animation](../../docs/animation.md) for each type's behavior.
+
+The SVG contains CSS and masks without JavaScript. Reduced motion shows the
+complete diagram. Without animation options, output remains unchanged.
 
 Flowcharts center their attachment points with label-aware spacing and draw edge-label backgrounds at full opacity by default.
 `--flowchart-mode mermaid` preserves the pinned Mermaid reference's routing and half-opacity label backgrounds;

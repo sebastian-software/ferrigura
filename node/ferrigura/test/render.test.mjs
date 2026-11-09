@@ -17,3 +17,26 @@ test('errors propagate and leave a reused renderer usable', () => {
   assert.throws(() => renderer.render(diagram, { id: '0bad' }));
   assert.match(renderer.render(diagram, { id: 'after' }), /<svg/);
 });
+
+test('draw animation is optional, defaults to source order and validates its options', () => {
+  const renderer = new Renderer();
+  const text = 'flowchart LR\n A --> B\n B --> C\n';
+  const plain = renderer.render(text, { id: 'drawing' });
+  const animated = renderer.render(text, { id: 'drawing', animation: {} });
+  assert.match(animated, /data-draw-duration=/);
+  assert.match(animated, /prefers-reduced-motion:no-preference/);
+  assert.equal(
+    animated,
+    render(text, undefined, { id: 'drawing', animation: { speed: 1, order: 'source' } })
+  );
+  assert.notEqual(animated, renderer.render(text, { id: 'drawing', animation: { speed: 2 } }));
+  for (const speed of [0, -1, NaN, Infinity]) {
+    assert.throws(() => renderer.render(text, { animation: { speed } }), /animation speed/);
+  }
+  assert.throws(() => renderer.render(text, { animation: { order: 'typo' } }), /animation order/);
+  assert.throws(
+    () => renderer.render('sequenceDiagram\n A->>B: Hi\n', { animation: {} }),
+    /not supported for this diagram type/
+  );
+  assert.equal(plain, renderer.render(text, { id: 'drawing' }));
+});
