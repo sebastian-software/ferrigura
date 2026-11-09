@@ -12,6 +12,7 @@ Every push to `main` runs the whole suite, and a change lands only with it green
 - **Snapshots:** `cargo test --release --test snapshots` pins the output of the whole corpus by hashes, taken on aarch64. CI runs it, and the exact Venn corpus test, on a Linux arm64 runner.
 - **npm packages:** the native build matrix and the package checks of `node/` ([0016](./0016-npm-packages-via-napi.md)).
 - **Pull requests** run every job that a Linux or Windows runner can. The geometry runs and the macOS addon build need a macOS runner, which queues for an hour, so a pull request runs them only with the label `ci:macos`; the push to `main` runs them for every merge, and the release reads that run ([0016](./0016-npm-packages-via-napi.md)). CI runs once per pull request, for its merge commit, not again for the push to its branch.
+- **Every push to `main` runs to the end.** Its concurrency group is its own commit, so a later merge neither cancels it nor replaces it while it waits for a macOS runner; the release needs the green run of its exact commit. A pull request keeps one group per ref, and a newer run cancels the older one.
 
 ## Why
 
