@@ -61,6 +61,18 @@ const MAX_TICK_COUNT: f64 = 10_000.0;
 /// while drawing (an excluded day that is not found, a custom tick interval with an unknown
 /// weekday).
 pub fn render(input: &Context<'_, GanttDiagram, GanttSection<'_>>) -> Result<String, RenderError> {
+    render_with_animation(input, None)
+}
+
+/// Renders a gantt with optional task-bar reveals along the time axis.
+///
+/// # Errors
+/// Returns the errors of [`render`], or an option error if the speed overflows the timing.
+pub fn render_with_animation(
+    input: &Context<'_, GanttDiagram, GanttSection<'_>>,
+    animation: Option<crate::animation::Animation>,
+) -> Result<String, RenderError> {
+    let mut drawing = animation.map(|options| crate::animation::Drawing::new(input.id, options));
     let mut chart = Chart::new(input);
     let mut texts = Texts::default();
     let mut body = String::new();
@@ -68,10 +80,13 @@ pub fn render(input: &Context<'_, GanttDiagram, GanttSection<'_>>) -> Result<Str
     body.push_str("<g></g>");
     chart.exclude_group(&mut body)?;
     chart.grid(&mut body, &mut texts)?;
-    chart.draw_rects(&mut body, &mut texts)?;
+    chart.draw_rects(&mut body, &mut texts, drawing.as_mut())?;
     chart.section_labels(&mut body, &mut texts)?;
     chart.today(&mut body);
     chart.title(&mut body, &mut texts);
+    if let Some(drawing) = drawing {
+        body.push_str(&drawing.finish());
+    }
 
     let runs = texts.runs();
     let families = embed_runs(&runs)?;

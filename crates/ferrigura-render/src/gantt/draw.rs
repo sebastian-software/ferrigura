@@ -267,6 +267,7 @@ impl Chart<'_> {
         &mut self,
         out: &mut String,
         texts: &mut Texts,
+        mut drawing: Option<&mut crate::animation::Drawing>,
     ) -> Result<(), RenderError> {
         let vert = self.vert.clone();
         self.array.sort_by_key(|&index| vert[index]);
@@ -302,8 +303,28 @@ impl Chart<'_> {
         // The bars and the labels: all rectangles first, then all texts, in the same group.
         let mut parts: Vec<(usize, String, String)> = Vec::with_capacity(self.array.len());
         for &index in &self.array {
-            let rect = self.bar(index);
-            let text = self.label_element(index, texts)?;
+            let (mut rect, bounds) = self.bar(index);
+            let mut text = self.label_element(index, texts)?;
+            if let Some(drawing) = drawing.as_deref_mut() {
+                let task = &self.model.tasks[index];
+                let timing = if task.milestone || task.vert {
+                    let timing = drawing.next(56.0)?;
+                    rect = drawing.fade(&rect, timing, "milestone");
+                    timing
+                } else {
+                    let (animated, timing) = drawing.bar(&rect, bounds, true)?;
+                    rect = animated;
+                    timing
+                };
+                text = drawing.fade(
+                    &text,
+                    crate::animation::Timing {
+                        start: timing.start + timing.duration * 0.65,
+                        duration: 80.0_f64.min(timing.duration * 0.35),
+                    },
+                    "label",
+                );
+            }
             parts.push((index, rect, text));
         }
         let mut group = String::from("<g>");
@@ -350,7 +371,7 @@ impl Chart<'_> {
     }
 
     /// One task's bar (`rect`), with its attributes in the reference's order.
-    fn bar(&self, index: usize) -> String {
+    fn bar(&self, index: usize) -> (String, crate::unified::geom::BBox) {
         let task = &self.model.tasks[index];
         let conf = self.conf;
         let scale = &self.scale;
@@ -394,7 +415,7 @@ impl Chart<'_> {
             attributes.push_str(&self.colour("stroke", token));
         }
         let class = bar_class(task, section, state_classes(task));
-        format!(
+        let svg = format!(
             "<rect id=\"{}-{}\" rx=\"3\" ry=\"3\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" transform-origin=\"{}px {}px\" class=\"{}\"{}></rect>",
             escape(self.id),
             escape(&task.id),
@@ -406,7 +427,8 @@ impl Chart<'_> {
             number(order * self.gap + tp + 0.5 * bh),
             escape(&class),
             attributes,
-        )
+        );
+        (svg, crate::unified::geom::BBox::new(x, y, width, height))
     }
 
     /// One task's label (`text`), measured as the reference measures it: the width is the text's

@@ -2,6 +2,14 @@
 
 A mindmap draws a tree of nodes from an indented outline, with seven shapes, icons and classes. It starts with `mindmap`. ferrigura parses it with a hand-written scanner and recursive-descent parser in `ferrigura-syntax` (`src/mindmap/`) and draws it with a renderer of the type's own in `ferrigura-render` (`src/mindmap/`) that builds on the unified renderer's shapes, labels and edge paths. The layout is cose-bilkent by default (`ferrigura-cose`), or the tidy tree for `layout: tidy-tree` (`src/unified/tidy_tree.rs`), or ELK Layered for an ELK layout name ([0012](../decisions/0012-layout-engines-ported-exactly.md)). The shared machinery is in [flowchart.md](./flowchart.md); this page covers what is specific to mindmaps.
 
+## Draw animation
+
+The optional [draw animation](../animation.md) render option draws one element
+at a time by default, with a speed multiplier instead of a fixed total duration.
+Connections draw between nodes, revealing each node on arrival. The title stays visible.
+The SVG carries its own CSS, contains no script, and shows the complete diagram
+when the viewer requests reduced motion.
+
 ## Model
 
 `ferrigura_model::mindmap::MindmapDiagram` is the Diagram DB after parsing (`mindmapDb.ts`): `root`, the tree from the first node, or `null` when the text has no node. A node has:

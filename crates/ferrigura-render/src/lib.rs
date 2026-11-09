@@ -9,6 +9,7 @@
 
 pub mod a11y;
 pub mod agentflow;
+pub mod animation;
 pub mod architecture;
 pub mod block;
 pub mod c4;

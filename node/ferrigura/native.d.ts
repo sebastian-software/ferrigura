@@ -30,6 +30,20 @@ export declare class Renderer {
 }
 
 /**
+ * Options for one-time, script-free SVG draw animation.
+ * Supports flowcharts, Gantt, Git graphs, mind maps, pie charts, and XY charts.
+ */
+export interface AnimationInput {
+  /**
+   * Positive, finite multiplier of 700 SVG user units per second on average. Defaults to 1.
+   * Each connection, bar, or sector eases in and out independently.
+   */
+  speed?: number
+  /** `source` (default) draws one line at a time; `flow` draws branches in parallel. */
+  order?: string
+}
+
+/**
  * Renders a diagram to an SVG document.
  *
  * `config` is the configuration that `mermaid.initialize` takes, as an object. Front matter and
@@ -46,6 +60,8 @@ export declare function render(text: string, config?: any | undefined | null, op
 
 /** The options that are not Mermaid configuration. */
 export interface RenderOptionsInput {
+  /** Optional draw animation. An empty object enables the default speed and source order. */
+  animation?: AnimationInput
   /**
    * Mermaid-compatible geometry when true. False (default) enables optimized flowchart routing
    * and compact sequence participant boxes. Font, color and readability fixes always apply.

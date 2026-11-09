@@ -81,6 +81,7 @@ The constructors of `ferrigura::diagrams` are named after the types (`flowchart`
 | `color_scheme`   | `Option<ColorScheme>` | `Light`, `Dark` or `Auto`. `Auto` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. `None` keeps the colors of the configured theme.     |
 | `now`            | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                                                      |
 | `compat`         | `bool`                | `false` (default) enables optimized routing and compact participants. `true` preserves Mermaid-compatible geometry across diagram types.                                                                                                                              |
+| `animation` | `Option<Animation>` | Optional draw animation for flowchart, Gantt, Git graph, mind map, pie, and XY chart. `None` (default) preserves static output; `Some(Animation::default())` draws one line at a time. Unsupported diagram types return an option error. |
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -100,6 +101,39 @@ assert!(svg.contains("id=\"pets\""));
 # Ok(())
 # }
 ```
+
+### Drawing a flowchart over time
+
+```rust
+# fn main() -> Result<(), ferrigura::Error> {
+use ferrigura::{Animation, RenderOptions, Renderer, Value};
+
+let renderer = Renderer::new(&Value::empty_object());
+let svg = renderer.render_with(
+    "flowchart LR\n A[Start] --> B[Done]\n",
+    &RenderOptions {
+        animation: Some(Animation::new(1.5)?),
+        ..RenderOptions::default()
+    },
+)?;
+assert!(svg.contains("data-draw-style"));
+# Ok(())
+# }
+```
+
+`Animation::default()` has speed `1` and `AnimationOrder::Source`, drawing one
+line at a time. Speed multiplies an average of 700 SVG user units per second along each routed
+path. Longer diagrams take proportionally longer, rather than drawing faster.
+The speed must be finite and greater than zero. Set `animation.order` to
+`AnimationOrder::Flow` for parallel branches and first-arrival node reveals.
+Each connection, bar, or sector eases in and out independently within its duration.
+
+The output embeds CSS and masks without JavaScript. Nodes fade in over 80 ms;
+subgraph frames and the title stay visible. The complete drawing is shown when
+the viewer requests reduced motion. Flowchart, Gantt, Git graph, mind map, pie
+(including donut), and XY chart support this option. For charts, `Flow` starts
+independent elements together. See [draw animation](../../docs/animation.md)
+for the behavior of each type.
 
 ## Errors
 

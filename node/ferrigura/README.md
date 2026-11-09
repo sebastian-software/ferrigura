@@ -25,6 +25,31 @@ unique IDs when combining them in one document. SVG is not automatically JSX.
 
 The default `compat: false` enables optimized flowchart routing and compact sequence participant boxes. Pass `{ compat: true }` as render options to preserve Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes. Options belong to each render and cannot be set in Mermaid front matter or init directives.
 
+## Draw animation
+
+```js
+const svg = diagrams.render('flowchart LR\nA[Start] --> B[Done]', {
+  animation: { speed: 1.5 },
+});
+```
+
+`animation: {}` enables a one-time draw effect with speed `1` and order
+`'source'`: one line at a time. Speed is a positive, finite multiplier of an average of 700 SVG
+user units per second along the routed path. Larger diagrams take longer at the
+same speed. Each connection, bar, or sector eases in and out independently.
+Set `order: 'flow'` for parallel branches and first-arrival node
+reveals. Nodes fade in over 80 ms; subgraph frames and the title stay visible.
+
+The SVG embeds CSS and masks without JavaScript and shows the complete drawing
+when the viewer requests reduced motion. Omit `animation` to keep static output
+unchanged. Flowchart, Gantt, Git graph, mind map, pie (including donut), and XY
+chart support this option; other diagram types return an error. For charts,
+`'flow'` starts independent elements together. This is a render option, separate
+from Mermaid configuration. See [draw animation](../../docs/animation.md) for
+the behavior of each type.
+
+## Platforms
+
 Supported platforms: macOS arm64; Linux x64/arm64 with glibc or musl; Windows
 x64/arm64. Node.js 22.13.0 or newer is required. The main package contains no
 native addon. See `NOTICE.md` for layout and bundled-font license texts.

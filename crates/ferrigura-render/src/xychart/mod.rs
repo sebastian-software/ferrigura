@@ -18,7 +18,9 @@ use crate::common::viewbox::configure_svg_size;
 use crate::common::{Element, decode_entities};
 use crate::context::Context;
 use crate::svg::{entity_markup, font_faces};
-use builder::interfaces::{Drawable, HorizontalPos, PathElem, RectElem, TextElem, VerticalPos};
+use builder::interfaces::{
+    Drawable, HorizontalPos, PathElem, PlotData, RectElem, TextElem, VerticalPos,
+};
 
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
@@ -37,6 +39,20 @@ const Y_OFFSET: f64 = 10.0;
 /// Returns an error if the chart has no plot, if a bar's label has no value to read, or if the
 /// bundled font cannot be read.
 pub fn render(input: &Context<'_, XyChartDiagram, XYChartConfig>) -> Result<String, RenderError> {
+    render_with_animation(input, None)
+}
+
+/// Renders an XY chart with optional line traces and baseline-to-value bar reveals.
+///
+/// # Errors
+/// Returns the errors of [`render`], or an option error if the speed overflows the timing.
+pub fn render_with_animation(
+    input: &Context<'_, XyChartDiagram, XYChartConfig>,
+    animation: Option<crate::animation::Animation>,
+) -> Result<String, RenderError> {
+    let mut drawing = animation.map(|options| crate::animation::Drawing::new(input.id, options));
+    let mut plot_times = std::collections::HashMap::new();
+    let mut plot_starts = std::collections::HashMap::new();
     let diagram = input.diagram;
     let tokens = input.theme.light;
     let config = config::chart_config(input.section, diagram.orientation == "horizontal");
@@ -65,27 +81,121 @@ pub fn render(input: &Context<'_, XyChartDiagram, XYChartConfig>) -> Result<Stri
             continue;
         }
         let parent = group_children(&mut main, shape.groups());
+        let plot = shape.groups().first().is_some_and(|group| group == "plot");
+        let plot_id = shape
+            .groups()
+            .get(1)
+            .map(String::as_str)
+            .unwrap_or_default();
+        // Legend markers are grouped by type, but their labels follow plot order.
+        // Match through the original plot index, including plots without a title.
+        let legend_times: Vec<_> = if drawing.is_some()
+            && shape
+                .groups()
+                .first()
+                .is_some_and(|group| group == "legend")
+        {
+            data.plots
+                .iter()
+                .enumerate()
+                .filter(|(_, plot)| {
+                    !plot.title().is_empty()
+                        && match shape {
+                            Drawable::Rect { .. } => matches!(plot, PlotData::Bar { .. }),
+                            Drawable::Path { .. } => matches!(plot, PlotData::Line { .. }),
+                            Drawable::Text { .. } => true,
+                        }
+                })
+                .map(|(index, plot)| {
+                    let kind = match plot {
+                        PlotData::Bar { .. } => "bar",
+                        PlotData::Line { .. } => "line",
+                    };
+                    plot_starts
+                        .get(&format!("{kind}-plot-{index}"))
+                        .copied()
+                        .unwrap_or_default()
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
         match shape {
             Drawable::Rect { data: bars, .. } => {
-                for rect in bars {
-                    parent.push(Node::Element(rect_element(rect)));
+                for (index, rect) in bars.iter().enumerate() {
+                    let mut element = rect_element(rect);
+                    if plot && let Some(drawing) = &mut drawing {
+                        let bounds = crate::unified::geom::BBox::new(
+                            rect.x,
+                            rect.y.unwrap_or(f64::NAN),
+                            rect.width,
+                            rect.height,
+                        );
+                        let (svg, timing) =
+                            drawing.bar(&element.render(), bounds, config.horizontal)?;
+                        element = Element::new("g").raw_text(svg);
+                        plot_starts.entry(plot_id.to_owned()).or_insert(timing);
+                        plot_times.insert(plot_id.to_owned(), timing);
+                    }
+                    element = reveal_legend(element, legend_times.get(index), drawing.as_mut());
+                    parent.push(Node::Element(element));
                 }
                 if config.show_data_label {
                     for label in data_labels(bars, &label_data, &config, &theme)? {
                         texts.push(label.text.clone());
-                        parent.push(Node::Element(label.element()));
+                        let mut element = label.element();
+                        if let (Some(drawing), Some(timing)) =
+                            (&mut drawing, plot_times.get(plot_id))
+                        {
+                            element = Element::new("g").raw_text(drawing.fade(
+                                &element.render(),
+                                crate::animation::Timing {
+                                    start: timing.end(),
+                                    duration: 80.0,
+                                },
+                                "label",
+                            ));
+                        }
+                        parent.push(Node::Element(element));
                     }
                 }
             }
             Drawable::Text { data: items, .. } => {
-                for text in items {
+                for (index, text) in items.iter().enumerate() {
                     texts.push(decode_entities(&text.text));
-                    parent.push(Node::Element(text_element(text)));
+                    let mut element = text_element(text);
+                    if plot
+                        && let (Some(drawing), Some(timing)) =
+                            (&mut drawing, plot_times.get(plot_id))
+                    {
+                        element = Element::new("g").raw_text(drawing.fade(
+                            &element.render(),
+                            crate::animation::Timing {
+                                start: timing.end(),
+                                duration: 80.0,
+                            },
+                            "label",
+                        ));
+                    }
+                    element = reveal_legend(element, legend_times.get(index), drawing.as_mut());
+                    parent.push(Node::Element(element));
                 }
             }
             Drawable::Path { data: paths, .. } => {
-                for path in paths {
-                    parent.push(Node::Element(path_element(path)));
+                for (index, path) in paths.iter().enumerate() {
+                    let mut element = path_element(path);
+                    if plot && let Some(drawing) = &mut drawing {
+                        let (svg, timing) = drawing.path(
+                            &element.render(),
+                            &path.path,
+                            (path.stroke_width * 4.0 + 24.0).max(32.0),
+                        )?;
+                        element = Element::new("g").raw_text(svg);
+                        plot_starts.entry(plot_id.to_owned()).or_insert(timing);
+                        plot_times.insert(plot_id.to_owned(), timing);
+                    }
+                    element = reveal_legend(element, legend_times.get(index), drawing.as_mut());
+                    parent.push(Node::Element(element));
                 }
             }
         }
@@ -167,7 +277,22 @@ pub fn render(input: &Context<'_, XyChartDiagram, XYChartConfig>) -> Result<Stri
     root.push_child(main_element);
     // The group the measurement appends to, which the reference leaves empty.
     root.push_child(Element::new("g").with("class", "mermaid-tmp-group"));
+    if let Some(drawing) = drawing {
+        root.push_child(Element::new("g").raw_text(drawing.finish()));
+    }
     Ok(root.render())
+}
+
+fn reveal_legend(
+    element: Element,
+    timing: Option<&crate::animation::Timing>,
+    drawing: Option<&mut crate::animation::Drawing>,
+) -> Element {
+    if let (Some(timing), Some(drawing)) = (timing, drawing) {
+        Element::new("g").raw_text(drawing.legend(&element.render(), *timing))
+    } else {
+        element
+    }
 }
 
 /// A node of the drawing: a group that holds more nodes, or an element. The groups are the classes

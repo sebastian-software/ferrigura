@@ -19,6 +19,7 @@ pub mod diagrams;
 
 use diagrams::Plugin;
 
+pub use ferrigura_render::animation::{Animation, AnimationOrder};
 /// The diagram types, as the detector names them: what a [`diagrams::Plugin`] draws.
 pub use ferrigura_syntax::DiagramType;
 
@@ -50,6 +51,11 @@ pub struct RenderOptions {
     /// flowchart ports are centered with label-aware spacing and sequence participant boxes fit
     /// their labels. Font, color and readability fixes apply in both modes.
     pub compat: bool,
+    /// Optional one-time SVG draw animation for flowcharts, Gantt, Git graphs, mind maps,
+    /// pie charts, and XY charts. `None` leaves the SVG unchanged.
+    /// The default draws one line at a time, averaging 700 SVG units per second times its speed,
+    /// with independent easing for each section. Other diagram types return an option error.
+    pub animation: Option<Animation>,
     /// The id of the SVG element, which scopes its styles. It must start with an ASCII letter and
     /// contain only ASCII letters, digits, `-` and `_`. By default the id is derived from the text
     /// and the configuration, so the same input gives the same id.
@@ -175,6 +181,21 @@ impl Renderer {
             }));
         };
         let plugin = self.plugin(kind)?;
+        if options.animation.is_some()
+            && !matches!(
+                kind,
+                DiagramType::Flowchart
+                    | DiagramType::Gantt
+                    | DiagramType::GitGraph
+                    | DiagramType::Mindmap
+                    | DiagramType::Pie
+                    | DiagramType::XyChart
+            )
+        {
+            return Err(RenderError::Options(
+                "draw animation is not supported for this diagram type".to_owned(),
+            ));
+        }
         let prepared = self.prepare(text, options, plugin)?;
         plugin.render(text, &prepared, options)
     }

@@ -148,6 +148,14 @@ impl<'a> Layout<'a> {
     /// tags. Returns the `commit-bullets` and `commit-labels` groups, which are empty when the
     /// commits are not drawn.
     pub(super) fn draw_commits(&mut self, modify: bool) -> Result<(Element, Element), RenderError> {
+        self.draw_commits_animated(modify, None)
+    }
+
+    pub(super) fn draw_commits_animated(
+        &mut self,
+        modify: bool,
+        mut animation: Option<&mut crate::animation::Animator>,
+    ) -> Result<(Element, Element), RenderError> {
         let commits = self.commits;
         let mut bullets = Element::group().class("commit-bullets");
         let mut labels = Element::group().class("commit-labels");
@@ -172,9 +180,21 @@ impl<'a> Layout<'a> {
                     .branch_pos
                     .get(commit.branch.as_str())
                     .map_or(0, |branch| branch.index);
-                self.draw_bullet(&mut bullets, commit, at, branch_index);
-                self.draw_label(&mut labels, commit, at, pos)?;
-                self.draw_tags(&mut labels, commit, at, pos)?;
+                if let Some(animation) = animation.as_deref_mut() {
+                    let mut bullet = Element::group();
+                    let mut label = Element::group();
+                    self.draw_bullet(&mut bullet, commit, at, branch_index);
+                    self.draw_label(&mut label, commit, at, pos)?;
+                    self.draw_tags(&mut label, commit, at, pos)?;
+                    bullet.set_markup(animation.node(index, &bullet.markup()));
+                    label.set_markup(animation.node(index, &label.markup()));
+                    bullets.push(bullet);
+                    labels.push(label);
+                } else {
+                    self.draw_bullet(&mut bullets, commit, at, branch_index);
+                    self.draw_label(&mut labels, commit, at, pos)?;
+                    self.draw_tags(&mut labels, commit, at, pos)?;
+                }
             }
             let point = if self.vertical() {
                 Point::new(at.x, at.pos_with_offset)

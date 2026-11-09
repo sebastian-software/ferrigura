@@ -255,6 +255,15 @@ pub fn paint<'a>(
     id: &str,
     config: &Config<'_>,
 ) -> Result<Painted<'a>, RenderError> {
+    paint_with_animation(measured, id, config, None)
+}
+
+pub(crate) fn paint_with_animation<'a>(
+    measured: &'a Measured,
+    id: &str,
+    config: &Config<'_>,
+    animation: Option<crate::animation::Animation>,
+) -> Result<Painted<'a>, RenderError> {
     let data = &measured.data;
     let mut bounds: Option<BBox> = None;
     let mut labels: Vec<&LabelLayout> = Vec::new();
@@ -287,8 +296,14 @@ pub fn paint<'a>(
     }
 
     let mut nodes = String::new();
+    let mut node_parts = Vec::new();
     let mut links = false;
-    for node in data.nodes.iter().filter(|node| !node.is_group) {
+    for (index, node) in data
+        .nodes
+        .iter()
+        .enumerate()
+        .filter(|(_, node)| !node.is_group)
+    {
         let Some(shape) = measured.shapes.get(&node.id) else {
             continue;
         };
@@ -304,7 +319,12 @@ pub fn paint<'a>(
         } else {
             shapes::LinkForm::Flowchart
         };
-        nodes.push_str(&shapes::node_svg(node, shape, id, link_form));
+        let svg = shapes::node_svg(node, shape, id, link_form);
+        if animation.is_some() {
+            node_parts.push((index, svg));
+        } else {
+            nodes.push_str(&svg);
+        }
         labels.extend(shape.label.as_ref());
         labels.extend(shape.texts.iter());
     }
@@ -328,18 +348,30 @@ pub fn paint<'a>(
     };
     let mut edge_paths = String::new();
     let mut coloured_markers = String::new();
-    for path in edges::paint_paths_with(&path_edges, id, &data.diagram_type, &config.section, jumps)
-    {
+    let paths = edges::prepare_paths(&path_edges, id, &data.diagram_type, &config.section, jumps);
+    let mut animator = animation
+        .map(|options| {
+            crate::animation::Animator::new(id, &data.nodes, &path_edges, &paths, options)
+        })
+        .transpose()?;
+    for (index, mut path) in paths.into_iter().enumerate() {
+        let animated = animator
+            .as_mut()
+            .map(|animator| animator.path(index, &mut path));
+        let path = edges::finish_path(path, animated);
         cover(&mut bounds, path.bbox);
         edge_paths.push_str(&path.svg);
         coloured_markers.push_str(&path.markers);
     }
     let mut edge_labels = String::new();
-    for edge in &data.edges {
+    for (index, edge) in data.edges.iter().enumerate() {
         if let Some(label) = measured.edge_labels.get(&edge.id) {
             let painted = edges::paint_label(edge, label, &config.section);
             cover(&mut bounds, painted.bbox);
-            edge_labels.push_str(&painted.svg);
+            match &mut animator {
+                Some(animator) => edge_labels.push_str(&animator.label(index, &painted.svg)),
+                None => edge_labels.push_str(&painted.svg),
+            }
             labels.push(label);
         }
         // `insertEdgeLabel` runs for an edge with a label or a terminal label (`hasEdgeLabel`,
@@ -364,9 +396,18 @@ pub fn paint<'a>(
         .filter_map(|cluster| cluster.label)
         .collect();
 
+    if let Some(animator) = &mut animator {
+        for (index, svg) in node_parts {
+            nodes.push_str(&animator.node(index, &svg));
+        }
+    }
+    let animation = animator
+        .map(crate::animation::Animator::finish)
+        .unwrap_or_default();
+
     Ok(Painted {
         root: format!(
-            "<g class=\"root\"><g class=\"clusters\">{clusters}</g><g class=\"edges edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g></g>"
+            "<g class=\"root\"><g class=\"clusters\">{clusters}</g><g class=\"edges edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g>{animation}</g>"
         ),
         coloured_markers,
         bounds,

@@ -26,6 +26,15 @@ The facade, `ferrigura`, ties it together: `Renderer::new(config)` resolves the 
 
 Render options are separate from Mermaid configuration. `compat` defaults to `false`: flowcharts use adaptive port alignment with label-aware spacing and sequence participant boxes fit their labels. `compat: true` preserves Mermaid-compatible geometry across diagram types ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Flowchart labels have full-opacity backgrounds in either mode. Render options are passed to each plugin per render and do not change the cached configuration.
 
+Flowchart, Gantt, Git graph, mind map, pie, and XY chart accept optional
+[draw animation](./animation.md) ([0021](./decisions/0021-optional-svg-draw-animation.md)).
+Their paint steps pass final paths, bars, or arcs to `ferrigura-render::animation`,
+which computes timing and emits embedded CSS and reveal masks. The default draws
+one line at a time, with length-based timing and independent easing for each
+section. The viewer plays the effect; Rust still
+computes one complete layout without a browser. An absent option keeps the SVG
+unchanged.
+
 ## Crates
 
 A Cargo workspace under `crates/`. Diagram types are modules inside the crates, not crates of their own. A program chooses the types it links through the facade's plugins ([0020](./decisions/0020-diagram-types-as-plugins.md)).

@@ -52,13 +52,27 @@ pub struct MindmapSection<'a> {
 pub fn render(
     input: &Context<'_, MindmapDiagram, MindmapSection<'_>>,
 ) -> Result<String, RenderError> {
+    render_with_animation(input, None)
+}
+
+/// Renders a mindmap with optional root-to-branch draw animation.
+///
+/// # Errors
+/// Returns the errors of [`render`], or an option error if the speed overflows the timing.
+pub fn render_with_animation(
+    input: &Context<'_, MindmapDiagram, MindmapSection<'_>>,
+    animation: Option<crate::animation::Animation>,
+) -> Result<String, RenderError> {
     // A tree without a root draws nothing: the reference returns after the placeholder `svg`
     // (`mindmapRenderer.ts` 53-56), which keeps no class, viewBox or style.
     if input.diagram.root.is_none() {
         return Ok(format!(
-            "<svg xmlns=\"{SVG_NAMESPACE}\" id=\"{id}\"{accessible}><g></g></svg>",
+            "<svg xmlns=\"{SVG_NAMESPACE}\" id=\"{id}\"{accessible}><g></g>{animation}</svg>",
             id = escape(input.id),
             accessible = a11y::root_attributes(input.id, "mindmap", "", ""),
+            animation = animation
+                .map(|options| crate::animation::Drawing::new(input.id, options).finish())
+                .unwrap_or_default(),
         ));
     }
 
@@ -82,7 +96,7 @@ pub fn render(
         }
     }
 
-    let painted = paint::paint(&measured, input.id);
+    let painted = paint::paint(&measured, input.id, animation)?;
 
     // The fonts: every glyph of every label, in the faces the labels use.
     let mut runs: Vec<Run<'_>> = Vec::new();
