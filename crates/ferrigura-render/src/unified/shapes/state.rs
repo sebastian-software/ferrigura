@@ -78,10 +78,31 @@ pub(super) fn state_end(input: &ShapeInput<'_>) -> Part {
     let inner = rough::ellipse(0.0, 0.0, inner_diameter, inner_diameter, rough::Paint::BOTH);
     let filter =
         small_shadow(input, width).map_or_else(String::new, |filter| attribute("style", &filter));
+    // The ring takes the fill of `userNodeOverrides` and the line color; the dot is filled and
+    // stroked with `stateBorder ?? nodeBorder` (`stateEnd.ts` 54-66).
+    let theme = input.config.theme;
+    let (ring_fill, _) = util::override_colours(input, &styles);
+    let ring_stroke = theme.line_color.text();
+    let dot = theme
+        .state_border
+        .text()
+        .or_else(|| theme.node_border.text());
     let svg = format!(
         "<g class=\"outer-path\"{filter}>{}<g>{}</g></g>",
-        rough::paths(&outer, Some(style.as_str()), "2"),
-        rough::paths(&inner, Some(style.as_str()), "2"),
+        rough::coloured(
+            &outer,
+            Some(style.as_str()),
+            "2",
+            ring_fill.as_deref(),
+            ring_stroke.as_deref(),
+        ),
+        rough::coloured(
+            &inner,
+            Some(style.as_str()),
+            "2",
+            dot.as_deref(),
+            dot.as_deref(),
+        ),
     );
     let bbox = outer.bbox.union(inner.bbox);
     Part::without_label(

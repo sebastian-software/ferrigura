@@ -31,6 +31,10 @@ name = "render"
 path = "crates/ferrigura/examples/render.rs"
 
 [[test]]
+name = "class"
+path = "crates/ferrigura/tests/class.rs"
+
+[[test]]
 name = "flowchart"
 path = "crates/ferrigura/tests/flowchart.rs"
 

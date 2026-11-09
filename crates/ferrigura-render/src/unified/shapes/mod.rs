@@ -102,7 +102,7 @@ pub struct ShapeOutput {
     pub group_attributes: String,
     /// The `data-color-id` that the shape's handler stamps on the node's `<g>` (`stampColorSlot`),
     /// with its leading space: before the `data-look`, which `insertNode` sets after the handler.
-    /// The collapsed group's; empty for the other shapes.
+    /// The collapsed group's and the class box's; empty for the other shapes.
     pub colour_slot: String,
     /// The box of the whole node group, in the node's coordinates.
     pub bbox: BBox,
@@ -482,6 +482,9 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
             part
         }
         Kind::ClassBox => {
+            // `classBox` stamps the class's palette slot as the collapsed group does
+            // (`classBox.ts` 29).
+            colour_slot = collapsed_group::color_attribute(input);
             let class_box::ClassBox {
                 part,
                 covered,

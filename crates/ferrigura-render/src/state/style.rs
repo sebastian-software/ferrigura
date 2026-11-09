@@ -6,8 +6,8 @@
 //! Colors follow `docs/decisions/0011-themes-as-css-variables.md`: every color is a custom property declared on the
 //! diagram's id, once for each set of variables, and the rules refer to it with `var(…)`. Where
 //! styles.js writes `a || b`, the rule names the first of the two that the theme gives, which is what
-//! the reference's `undefined` fallback does. The `//` comments and the nested `text` rule of
-//! `.state-note` are not CSS, and are not written.
+//! the reference's `undefined` fallback does. The `//` comments are not CSS, and are not written; the
+//! nested `text` rule of `.state-note` is written flat, as stylis writes it.
 
 use ferrigura_model::state::ClassDef;
 use ferrigura_model::theme::{ThemeTokens, Token};
@@ -342,6 +342,11 @@ fn state_rules(
     add(
         ".state-note",
         &format!("stroke:{note_border};fill:{note_bkg};"),
+    );
+    // The nested `text` rule of `.state-note`, which stylis flattens.
+    add(
+        ".state-note text",
+        &format!("fill:{note_text};stroke:none;font-size:10px;"),
     );
     add(
         ".stateLabel .box",

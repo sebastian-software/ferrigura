@@ -29,9 +29,17 @@ pub(super) fn choice(input: &ShapeInput<'_>) -> Part {
     // `rc.path` of the closed path of the diamond: the fill takes its closing side too.
     let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let style = path_style(node, &styles);
+    // The colors of `userNodeOverrides(node, {})` (`choice.ts` 28).
+    let (fill, stroke) = util::override_colours(input, &styles);
     let svg = format!(
         "<g>{}</g>",
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
+        rough::coloured(
+            &outline,
+            Some(style.as_str()),
+            &stroke_width(&styles),
+            fill.as_deref(),
+            stroke.as_deref(),
+        ),
     );
     Part::without_label(
         svg,

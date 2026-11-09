@@ -782,6 +782,31 @@ pub(super) fn paths(outline: &Outline, style: Option<&str>, stroke_width: &str) 
     )
 }
 
+/// The SVG of a drawing with a fill and a stroke color as presentation attributes, each left out when
+/// it is `None`. The state shapes write them (`note`, `choice`, `stateEnd`): the state diagram's
+/// style sheet has no rule for a node's paths, so the attributes are what colors them.
+#[must_use]
+pub(super) fn coloured(
+    outline: &Outline,
+    style: Option<&str>,
+    stroke_width: &str,
+    fill: Option<&str>,
+    stroke: Option<&str>,
+) -> String {
+    attributed(
+        outline,
+        &Attrs {
+            style,
+            fill: fill.map(|colour| Fill {
+                colour,
+                evenodd: false,
+            }),
+            stroke,
+            stroke_width,
+        },
+    )
+}
+
 /// The SVG of a drawing with its colors as presentation attributes, as the ER, class and state
 /// outlines write them.
 #[must_use]

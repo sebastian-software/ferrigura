@@ -53,11 +53,20 @@ pub(super) fn note(input: &ShapeInput<'_>) -> Part {
     let x = -total_width / 2.0;
     let y = -total_height / 2.0;
     let style = path_style(node, &styles);
-    // `rc.rectangle` at roughness 0: the fill and the doubled stroke of the rectangle.
+    // `rc.rectangle` at roughness 0: the fill and the doubled stroke of the rectangle. The colors
+    // are the theme's note colors whatever the node's declarations say (`note.ts` 31-34): the
+    // options passed to `userNodeOverrides` win over its own.
     let outline = rough::rectangle(x, y, total_width, total_height, rough::Paint::BOTH);
+    let theme = input.config.theme;
     let svg = format!(
         "<g class=\"basic label-container outer-path\">{}</g>",
-        rough::paths(&outline, Some(style.as_str()), &stroke_width(&styles)),
+        rough::coloured(
+            &outline,
+            Some(style.as_str()),
+            &stroke_width(&styles),
+            theme.note_bkg_color.text().as_deref(),
+            theme.note_border_color.text().as_deref(),
+        ),
     );
     let outline_box = BBox::new(x, y, total_width, total_height);
     let label_offset = Point::new(

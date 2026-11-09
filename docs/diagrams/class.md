@@ -79,7 +79,7 @@ Quirks of the reference's grammar that are kept on purpose, because a fix would 
 - `pnpm -C tools/port port:diff class` compares the canonical models on the fixtures, the string literals of the specs and the docs; the reference's header setters run for real.
 - `pnpm -C tools/port port:diff class-data` compares `getData` field by field (`export-class-data.ts`, the `class_data` example); `pnpm -C tools/port port:diff config` compares the `class` section.
 - `pnpm -C tools/port port:geometry class` renders every fixture with both in Chromium and compares geometry; `--filter 'class-diagram/**'` narrows it.
-- Rust: the spec files `class_*_spec.rs` in `ferrigura-syntax/tests` (ported from `classDiagram.spec.ts` and its siblings), `class_db_get_data_spec.rs` and `class_types_display_spec.rs` in `ferrigura-render/tests`, and the unit tests of `terminal.rs`. The class graphs among the captured inputs of `ferrigura-elk` (`tests/corpus/class-diagram__*`) check the layout, including the `TAIL` and `HEAD` labels.
+- Rust: the spec files `class_*_spec.rs` in `ferrigura-syntax/tests` (ported from `classDiagram.spec.ts` and its siblings), `class_db_get_data_spec.rs` and `class_types_display_spec.rs` in `ferrigura-render/tests`, `crates/ferrigura/tests/class.rs` for the palette slots and the relation width, and the unit tests of `terminal.rs`. The class graphs among the captured inputs of `ferrigura-elk` (`tests/corpus/class-diagram__*`) check the layout, including the `TAIL` and `HEAD` labels.
 
 ## Learnings
 
