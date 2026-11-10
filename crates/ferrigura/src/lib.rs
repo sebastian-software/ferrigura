@@ -404,6 +404,10 @@ impl RendererBuilder {
     /// All files remain host inputs; this does not load fonts by name.
     #[must_use]
     pub fn font_fallbacks(mut self, families: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        let families: Vec<String> = families.into_iter().map(Into::into).collect();
+        if families.is_empty() && self.fonts.is_none() {
+            return self;
+        }
         self.fonts
             .get_or_insert_with(FontRegistry::new)
             .set_fallbacks(families);
@@ -851,6 +855,20 @@ mod font_input_tests {
         assert_eq!(
             renderer.view(diagrams::pie()).unwrap().globals.font_family,
             "Chosen"
+        );
+    }
+
+    #[test]
+    fn empty_fallback_options_keep_the_compatible_default_renderer() {
+        let ordinary = Renderer::new(&Value::empty_object());
+        let empty = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font_fallbacks(std::iter::empty::<String>())
+            .build();
+        assert!(empty.fonts.is_none());
+        assert_eq!(
+            ordinary.render("pie\n \"A\": 1").unwrap(),
+            empty.render("pie\n \"A\": 1").unwrap()
         );
     }
 

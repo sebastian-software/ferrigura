@@ -45,6 +45,7 @@ pub fn render(
 ) -> Result<String, RenderError> {
     let id = input.id;
     let config = Config {
+        fonts: input.text_fonts(),
         section: input.section.unified,
         globals: input.globals,
         theme: input.theme.light,

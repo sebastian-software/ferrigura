@@ -17,7 +17,7 @@
 use ferrigura_model::class::ClassMember;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_syntax::sanitize::sanitize_text;
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, measure_box};
+use ferrigura_text::{FontStyle, FontWeight, measure_box};
 
 use super::util::{self, Part};
 use super::{Intersect, ShapeInput, rough};
@@ -122,15 +122,18 @@ fn add_text(
     // `textContent.substring(1)` when the text starts with a backslash (`shapeUtil.ts` 120-122).
     let content = text.strip_prefix('\\').unwrap_or(text);
     let sanitized = sanitize_text(&decode_entities(content));
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = input
+        .config
+        .fonts
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     // `calculateTextWidth(textContent, config) + 50`: the width of the box `getBBox` gives the text,
     // rounded to a pixel.
-    let width = measure_box(sans, content, input.config.globals.font_size)?
+    let width = measure_box(&sans, content, input.config.globals.font_size)?
         .width()
         .round()
         + WRAP_SLACK;
     let spec = LabelSpec {
-        fonts: crate::fonts::FontContext::bundled(),
+        fonts: input.config.fonts.clone(),
         text: &sanitized,
         label_type: LabelType::Markdown,
         width,
