@@ -39,7 +39,9 @@ show those warnings. Registration rejects OpenType-SVG, invalid data, and legacy
 discovery, and downloads are not inputs. Subsets preserve OpenType layout, legacy kerning, and
 color tables, and receive deterministic names derived from their bytes, weights, and styles. CFF
 and CFF2 OpenType fonts embed complete: the subsetter cannot serialize their outlines, so their
-embedded data is larger than a TrueType subset.
+embedded data is larger than a TrueType subset. An embedding rejects different font files with
+the same family, weight, and style in one SVG, including handles retained across a registry
+replacement. The old and new handles remain valid in separate renders.
 
 `Run` has independent text and face lifetimes (`Run<'text, 'face>`), and `Word<'face>` borrows its
 face. Code with explicit lifetime annotations must supply both lifetimes for `Run` and one for

@@ -434,3 +434,72 @@ fn a_registered_cff_font_embeds_with_the_same_advances() {
     .unwrap();
     assert!(embedded[0].css.contains("data:font/otf;base64,"));
 }
+
+#[test]
+fn replacing_a_face_keeps_old_handles_valid_but_rejects_conflicting_embedding() {
+    let mut fonts = registry();
+    let old = fonts
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    fonts
+        .register(
+            "fixture sans",
+            include_bytes!("../fonts/AtkinsonHyperlegibleMono-Regular.ttf").to_vec(),
+            FontWeight::Normal,
+            FontStyle::Normal,
+        )
+        .unwrap();
+    let new = fonts
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    assert_ne!(
+        measure(&old, "AV", 16.0).unwrap(),
+        measure(&new, "AV", 16.0).unwrap()
+    );
+    assert!(
+        embed_runs(&[Run {
+            text: "AV",
+            face: &old
+        }])
+        .is_ok()
+    );
+    assert!(
+        embed_runs(&[Run {
+            text: "AV",
+            face: &new
+        }])
+        .is_ok()
+    );
+    let error = embed_runs(&[
+        Run {
+            text: "AV",
+            face: &old,
+        },
+        Run {
+            text: "AV",
+            face: &new,
+        },
+    ])
+    .unwrap_err();
+    assert!(error.to_string().contains("different font data"));
+    assert!(error.to_string().contains("Fixture Sans"));
+}
+
+#[test]
+fn all_fallback_text_embeds_only_the_face_that_draws_it() {
+    let mut fonts = registry();
+    fonts.set_fallbacks(["Arrows"]);
+    let primary = fonts
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    assert!(!primary.covers('→'));
+    let families = embed_runs(&[Run {
+        text: "→",
+        face: &primary,
+    }])
+    .unwrap();
+    assert_eq!(families.len(), 1);
+    assert_eq!(families[0].source_name, "Arrows");
+    assert_eq!(families[0].css_family, format!("\"{}\"", families[0].name));
+    assert!(families[0].css.contains(&families[0].name));
+}

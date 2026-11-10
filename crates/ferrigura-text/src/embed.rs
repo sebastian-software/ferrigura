@@ -81,6 +81,19 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
         )
     });
     faces.dedup_by(|a, b| same_face(a, b));
+    for pair in faces.windows(2) {
+        if same_family(pair[0], pair[1])
+            && pair[0].weight().css_value() == pair[1].weight().css_value()
+            && pair[0].style() == pair[1].style()
+        {
+            return Err(TextError::Registration(format!(
+                "cannot embed different font data for family {:?}, weight {}, style {} in one SVG",
+                pair[0].family_name(),
+                pair[0].weight().css_value(),
+                pair[0].style().css_keyword()
+            )));
+        }
+    }
     let mut embedded = Vec::new();
     let mut index = 0;
     while index < faces.len() {
