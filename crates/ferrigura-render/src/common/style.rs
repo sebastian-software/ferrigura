@@ -60,7 +60,7 @@ pub fn base_style_sheet(
     let faces = if families.is_empty() {
         String::new()
     } else {
-        font_faces(families)
+        font_faces(svg_id, families)
     };
     let rules = format!(
         "{id}{{font-family:{font_family};font-size:{font_size};fill:var(--textColor);}}\

@@ -64,7 +64,7 @@ pub(super) fn layout(
     cx: &Context<'_>,
     text: &str,
     width: f64,
-    face: &'static Face,
+    face: &Face,
 ) -> Result<Laid, RenderError> {
     let tspans = wrap(text, width, |line| {
         Ok(collapsed_width(face, line, cx.text_size)?)
@@ -141,11 +141,7 @@ fn split_words(text: &str) -> Vec<String> {
 /// The box of the lines with text. Each line's baseline is one `dy` below the previous one with
 /// text; its glyphs run from the ascent above the baseline to the descent below it, and the middle of
 /// the x-height sits on the position (`dominant-baseline: middle`).
-fn extent(
-    cx: &Context<'_>,
-    tspans: &[Tspan],
-    face: &'static Face,
-) -> Result<Option<Extent>, RenderError> {
+fn extent(cx: &Context<'_>, tspans: &[Tspan], face: &Face) -> Result<Option<Extent>, RenderError> {
     let mut y = 0.0;
     let mut extent: Option<Extent> = None;
     for tspan in tspans {

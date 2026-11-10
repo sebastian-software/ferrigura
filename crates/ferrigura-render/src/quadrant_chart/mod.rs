@@ -17,7 +17,7 @@ pub mod builder;
 
 use ferrigura_model::config::QuadrantChartConfig;
 use ferrigura_model::quadrant_chart::QuadrantChartDiagram;
-use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
@@ -40,6 +40,9 @@ const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 pub fn render(
     input: &Context<'_, QuadrantChartDiagram, QuadrantChartConfig>,
 ) -> Result<String, RenderError> {
+    let font_face = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let config = input.section;
     let tokens = input.theme.light;
     let theme = Theme::new(tokens);
@@ -56,18 +59,20 @@ pub fn render(
     let drawn = drawn_text(&chart);
     let runs = [Run {
         text: &drawn,
-        face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+        face: &font_face,
     }];
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = font_face.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     // The diagram's own rules are none (`styles.ts` of the type is `() => ''`), so the sheet is
     // the base one.

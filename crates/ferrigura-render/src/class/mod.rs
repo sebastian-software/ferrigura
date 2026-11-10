@@ -8,8 +8,7 @@ pub mod style;
 
 use ferrigura_model::class::ClassDiagram;
 use ferrigura_text::{
-    FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
-    text_box,
+    FontStyle, FontWeight, Run, embed_runs, measure as measure_text, measure_box, text_box,
 };
 
 use crate::RenderError;
@@ -48,14 +47,19 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
 
     // `utils.insertTitle` (`classRenderer-v3-unified.ts` 68-73): centered over what is drawn, the
     // state section's `titleTopMargin` above the origin.
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let title = &diagram.title;
     let mut title_svg = String::new();
+    let title_font = sans.css_reference().map_or_else(String::new, |family| {
+        format!(" style=\"font-family:{family}\"")
+    });
     if !title.is_empty() {
         let drawn = bounds.unwrap_or_default();
-        let width = measure_text(sans, title, TITLE_FONT_SIZE)?;
-        let ink = measure_box(sans, title, TITLE_FONT_SIZE)?;
-        let text_box = text_box(sans, TITLE_FONT_SIZE)?;
+        let width = measure_text(&sans, title, TITLE_FONT_SIZE)?;
+        let ink = measure_box(&sans, title, TITLE_FONT_SIZE)?;
+        let text_box = text_box(&sans, TITLE_FONT_SIZE)?;
         let margin = input.section.state.title_top_margin as f64;
         let centre = drawn.x + drawn.width / 2.0;
         let baseline = -margin;
@@ -69,7 +73,7 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
             ),
         );
         title_svg = format!(
-            "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"classDiagramTitleText\">{}</text>",
+            "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"classDiagramTitleText\"{title_font}>{}</text>",
             number(centre),
             number(baseline),
             escape(title),
@@ -88,7 +92,7 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
     if !title.is_empty() {
         runs.push(Run {
             text: title,
-            face: sans,
+            face: &sans,
         });
     }
     let families = embed_runs(&runs)?;

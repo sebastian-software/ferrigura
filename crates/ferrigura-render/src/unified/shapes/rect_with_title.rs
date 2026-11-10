@@ -15,7 +15,7 @@ use crate::svg::number;
 use crate::unified::geom::BBox;
 use crate::unified::label::{self, Anchor, LabelLayout, LabelSpec};
 use ferrigura_model::flowchart::LabelType;
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, text_box};
+use ferrigura_text::{FontStyle, FontWeight, text_box};
 
 /// `rectWithTitle.ts`: the outer box, the divider under the title, and the label group with the
 /// title and the rows. The box is the node's size; the label is inside it. The title and the rows
@@ -24,7 +24,7 @@ use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, text_box};
 ///
 /// # Errors
 ///
-/// Returns an error if a bundled font cannot be read.
+/// Returns an error if a font cannot be read.
 pub(super) fn rect_with_title(
     input: &ShapeInput<'_>,
 ) -> Result<(Part, Vec<LabelLayout>), RenderError> {
@@ -42,6 +42,7 @@ pub(super) fn rect_with_title(
     // `createLabel`: plain text, never wrapped, with the title class.
     let text = |text: &str| -> Result<LabelLayout, RenderError> {
         label::layout(&LabelSpec {
+            fonts: input.config.fonts.clone(),
             text,
             label_type: LabelType::Text,
             width: f64::INFINITY,
@@ -68,11 +69,11 @@ pub(super) fn rect_with_title(
     // The rows are measured by their first child: the `<text>`'s first line, whose box is the line's
     // width and the height of a line of the font (`rectWithTitle.ts` 55-63, 88-99).
     let line_width = rows_layout.lines.first().map_or(0.0, |line| line.width);
-    let line_height = text_box(
-        face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
-        rows_layout.font_size,
-    )?
-    .height;
+    let primary = input
+        .config
+        .fonts
+        .face(FontWeight::Normal, FontStyle::Normal)?;
+    let line_height = text_box(&primary, rows_layout.font_size)?.height;
     let title_width = title.bbox.width;
     let title_x = if line_width < title_width {
         0.0
@@ -155,7 +156,7 @@ mod tests {
     fn the_title_and_the_rows_are_texts_of_the_shape() {
         // The font subsets of a diagram cover the texts of its shapes (`ShapeOutput::texts`). The
         // title and the rows are drawn here, so their glyphs must be in the subset: without them
-        // Chromium sets N, w and l of "New line" in a fallback face, 0.8 px wider
+        // Chromium sets N, w and l of "New line" in a fallback face 0.8 px wider
         // (state-diagram/pr-check).
         let mut node = node("rectWithTitle", "classic");
         node.label = "Another Long state description".to_owned();

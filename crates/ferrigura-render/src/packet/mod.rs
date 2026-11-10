@@ -13,7 +13,7 @@ mod style;
 
 use ferrigura_model::config::PacketDiagramConfig;
 use ferrigura_model::packet::{PacketBlock, PacketDiagram};
-use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
@@ -85,6 +85,9 @@ impl Geometry {
 ///
 /// Returns an error if a bundled font cannot be read or subset.
 pub fn render(input: &Context<'_, PacketDiagram, PacketSection>) -> Result<String, RenderError> {
+    let font_face = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let diagram = input.diagram;
     let id = input.id;
     let config = &input.section.config;
@@ -148,17 +151,19 @@ pub fn render(input: &Context<'_, PacketDiagram, PacketSection>) -> Result<Strin
     }
     let families: Vec<EmbeddedFamily> = embed_runs(&[Run {
         text: &texts,
-        face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+        face: &font_face,
     }])?;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = font_face.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     let style = base_style_sheet(
         id,

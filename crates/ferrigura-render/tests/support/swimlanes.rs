@@ -74,6 +74,7 @@ impl Setup {
         let diagram = parse(text).expect("the text parses");
         let section = self.section();
         render(&Context {
+            fonts: None,
             diagram: &diagram,
             section: &section,
             globals: &self.globals,

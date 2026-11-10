@@ -19,9 +19,7 @@ use std::collections::{HashMap, HashSet};
 
 use ferrigura_model::config::VennDiagramConfig;
 use ferrigura_model::venn::{StyleEntry, TextNode, VennDiagram};
-use ferrigura_text::{
-    EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, text_box,
-};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs, text_box};
 use ferrigura_venn::{AreaLayout, Centre, Circle, IntersectionPath};
 
 use crate::RenderError;
@@ -78,6 +76,9 @@ pub struct VennSection<'a> {
 /// for instance an empty diagram or a negative size), if a color of the theme or of a style is not
 /// a color the color functions read, or if a bundled font cannot be read or subset.
 pub fn render(input: &Context<'_, VennDiagram, VennSection<'_>>) -> Result<String, RenderError> {
+    let primary = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let config = input.section.config;
     let diagram = input.diagram;
     let id = input.id;
@@ -354,6 +355,7 @@ pub fn render(input: &Context<'_, VennDiagram, VennSection<'_>>) -> Result<Strin
                 area,
                 nodes,
                 &TextAreaContext {
+                    face: &primary,
                     scale,
                     use_debug_layout: config.use_debug_layout,
                     styles: &styles,
@@ -408,7 +410,7 @@ pub fn render(input: &Context<'_, VennDiagram, VennSection<'_>>) -> Result<Strin
     children.push(drawing);
 
     // The font: the subset of the text the diagram draws, and the family its style sheet names.
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = &primary;
     let collapsed: Vec<String> = texts
         .iter()
         .map(|text| collapse_white_space(text))
@@ -419,15 +421,17 @@ pub fn render(input: &Context<'_, VennDiagram, VennSection<'_>>) -> Result<Strin
         .collect();
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
     let tokens = input.theme.light;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = primary.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let text_size = tokens.font_size.px().unwrap_or(16.0);
     let own = style::own_rules(id, &font_family, &vars.light, vars.dark.as_ref());
     let style_sheet = base_style_sheet(
@@ -620,6 +624,7 @@ impl StyleLookup {
 
 /// What the text areas take from the diagram.
 struct TextAreaContext<'a> {
+    face: &'a ferrigura_text::Face,
     scale: f64,
     use_debug_layout: bool,
     styles: &'a StyleLookup,
@@ -725,12 +730,8 @@ fn text_area(
         };
         let drawn = collapse_white_space(&shown);
         let font_size = 40.0 * scale;
-        let lines: Vec<Line> = text_node_lines(&drawn, box_width, font_size)?;
-        let metrics = text_box(
-            face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
-            font_size,
-        )
-        .map_err(RenderError::Text)?;
+        let lines: Vec<Line> = text_node_lines(context.face, &drawn, box_width, font_size)?;
+        let metrics = text_box(context.face, font_size).map_err(RenderError::Text)?;
         let block = lines.len() as f64 * metrics.height;
         let top = y - block / 2.0;
         let left = x - box_width / 2.0;

@@ -56,6 +56,7 @@ fn draw_with(text: &str, setup: &Setup) -> String {
     let tokens = ThemeTokens::from_value(&variables);
     let globals = Globals::of(&config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.wardley_beta,
         globals: &globals,
@@ -455,6 +456,7 @@ fn the_marker_ids_carry_the_diagram_id() {
     let config = typed(&defaults()).expect("the configuration");
     let globals = Globals::of(&config);
     let markup = render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.wardley_beta,
         globals: &globals,

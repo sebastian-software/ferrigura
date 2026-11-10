@@ -12,8 +12,8 @@ use std::fmt::Write as _;
 
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_text::{
-    Face, FontFamily, FontStyle, FontWeight, Run, TextError, Word, face, fit_line, layout_width,
-    measure, measure_box, measure_words, text_box,
+    Face, FontStyle, FontWeight, Run, TextError, Word, fit_line, layout_width, measure,
+    measure_box, measure_words, text_box,
 };
 
 use super::geom::{BBox, Point};
@@ -46,6 +46,8 @@ pub enum Anchor {
 /// What to lay out: the arguments of `createText`.
 #[derive(Debug, Clone)]
 pub struct LabelSpec<'a> {
+    /// Explicit local fonts and the configured family for this label.
+    pub fonts: crate::fonts::FontContext,
     /// The label text, as the model holds it.
     pub text: &'a str,
     /// How the text is written: plain, a string, or Markdown.
@@ -76,6 +78,8 @@ pub struct LabelSpec<'a> {
 /// One word or styled run of a line, placed.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LabelRun {
+    /// The exact face measured for this run, retained through SVG embedding.
+    pub face: crate::fonts::FontFace,
     /// The text, with the leading space the reference gives every word after the first.
     pub text: String,
     /// The weight.
@@ -136,13 +140,13 @@ impl LabelLayout {
 
     /// The runs of the label, to subset the fonts for.
     #[must_use]
-    pub fn text_runs(&self) -> Vec<Run<'_, 'static>> {
+    pub fn text_runs(&self) -> Vec<Run<'_, '_>> {
         self.lines
             .iter()
             .flat_map(|line| &line.runs)
             .map(|run| Run {
                 text: &run.text,
-                face: face(FontFamily::Sans, run.weight, run.style),
+                face: &run.face,
             })
             .collect()
     }
@@ -231,9 +235,19 @@ impl LabelLayout {
     /// The `<text>` element with `attributes` (empty, or starting with a space) after its style.
     fn text_element_with(&self, text_style: &str, attributes: &str, flat: bool) -> String {
         let line_class = if self.title { "title-row" } else { "row" };
+        let font_style = self
+            .lines
+            .iter()
+            .flat_map(|line| &line.runs)
+            .next()
+            .and_then(|run| run.face.css_reference())
+            .map_or_else(
+                || text_style.to_owned(),
+                |family| format!("{text_style};font-family:{family};"),
+            );
         let mut out = format!(
             r#"<text y="-10.1" text-anchor="start" style="{}"{attributes}>"#,
-            escape(text_style)
+            escape(&font_style)
         );
         for (index, line) in self.lines.iter().enumerate() {
             // Every line starts at its own x, with `text-anchor` start, so the browser never
@@ -259,9 +273,12 @@ impl LabelLayout {
                     FontWeight::Bold => "bold".to_owned(),
                     FontWeight::Number(weight) => weight.to_string(),
                 };
+                let font_family = run.face.css_reference().map_or_else(String::new, |family| {
+                    format!(" style=\"font-family:{family}\"")
+                });
                 let _ = write!(
                     out,
-                    r#"<tspan font-style="{}" class="text-inner-tspan" font-weight="{weight}" x="{}">{}</tspan>"#,
+                    r#"<tspan font-style="{}" class="text-inner-tspan" font-weight="{weight}"{font_family} x="{}">{}</tspan>"#,
                     run.style.css_keyword(),
                     number(run.x),
                     escape(&run.text),
@@ -323,13 +340,35 @@ pub fn layout_inheriting(
     };
 
     let width = spec.width;
+    let fonts = spec
+        .styles
+        .iter()
+        .flat_map(|style| style.split(';'))
+        .filter_map(|declaration| declaration.split_once(':'))
+        .filter(|(property, _)| property.trim().eq_ignore_ascii_case("font-family"))
+        .map(|(_, value)| {
+            let value = value.trim();
+            strip_suffix_ignore_case(value, "!important").map_or(value, str::trim_end)
+        })
+        .next_back()
+        .map_or_else(
+            || spec.fonts.clone(),
+            |family| spec.fonts.with_family(family),
+        );
+    let normal = fonts.face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Normal)?;
+    let strong = fonts.face(inherited.unwrap_or(FontWeight::Bold), FontStyle::Normal)?;
+    let emphasis = fonts.face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Italic)?;
     let mut wrapped: Vec<Vec<Word>> = Vec::new();
     for line in &lines {
         let words: Vec<Word> = line
             .iter()
             .map(|word| Word {
                 text: word.content.clone(),
-                face: word_face(word.kind, inherited),
+                face: match word.kind {
+                    MarkdownWordType::Strong => &strong,
+                    MarkdownWordType::Em => &emphasis,
+                    MarkdownWordType::Normal => &normal,
+                },
             })
             .collect();
         let fits = |line: &[Word]| -> Result<bool, TextError> {
@@ -338,7 +377,7 @@ pub fn layout_inheriting(
         wrapped.extend(fit_line(&words, fits)?);
     }
 
-    let pieces: Vec<Vec<(String, &'static Face)>> = wrapped
+    let pieces: Vec<Vec<(String, &Face)>> = wrapped
         .iter()
         .map(|line| {
             line.iter()
@@ -390,7 +429,7 @@ pub fn layout_inheriting(
 /// [`measure_box`] (the advance, and the glyph outlines where they reach past it), as `getBBox` takes
 /// it; a line without words has no box, so an empty line adds no height.
 fn place(
-    pieces: &[Vec<(String, &'static Face)>],
+    pieces: &[Vec<(String, &Face)>],
     size: f64,
     anchor: Anchor,
 ) -> Result<(Vec<LabelLine>, BBox), TextError> {
@@ -424,6 +463,7 @@ fn place(
                 bbox = Some(bbox.map_or(run_box, |so_far| so_far.union(run_box)));
             }
             runs.push(LabelRun {
+                face: crate::fonts::FontFace::retain(face),
                 text: text.clone(),
                 weight: face.weight(),
                 style: face.style(),
@@ -439,24 +479,6 @@ fn place(
         });
     }
     Ok((lines, bbox.unwrap_or_default()))
-}
-
-/// The face of a word: strong words are bold and emphasis is italic. The label's own weight and
-/// style are not used, because the reference sets `font-weight` and `font-style` on every word's
-/// `tspan` (`createText.ts`), which overrides them; only the font size of the style reaches the
-/// text.
-fn word_face(kind: MarkdownWordType, inherited: Option<FontWeight>) -> &'static Face {
-    let weight = inherited.unwrap_or(if kind == MarkdownWordType::Strong {
-        FontWeight::Bold
-    } else {
-        FontWeight::Normal
-    });
-    let style = if kind == MarkdownWordType::Em {
-        FontStyle::Italic
-    } else {
-        FontStyle::Normal
-    };
-    face(FontFamily::Sans, weight, style)
 }
 
 /// The last `font-size` declaration of a style, in pixels. Only `px` is read; other units leave the
@@ -532,6 +554,7 @@ mod tests {
 
     fn spec<'a>(text: &'a str, label_type: LabelType, styles: &'a [String]) -> LabelSpec<'a> {
         LabelSpec {
+            fonts: crate::fonts::FontContext::bundled(),
             text,
             label_type,
             width: 200.0,

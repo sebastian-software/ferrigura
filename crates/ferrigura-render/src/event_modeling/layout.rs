@@ -117,8 +117,9 @@ pub fn measured(error: MeasureError) -> RenderError {
 
 /// The measurement's style for the name and the data: 16 px bold in the family of the measurement.
 #[must_use]
-pub fn measure_style() -> TextStyle {
+pub fn measure_style(fonts: &crate::fonts::FontContext) -> TextStyle {
     TextStyle {
+        fonts: fonts.clone(),
         font_size: MEASURE_FONT_SIZE,
         font_weight: MEASURE_FONT_WEIGHT,
         font_family: MEASURE_FONT_FAMILY.to_owned(),
@@ -127,9 +128,9 @@ pub fn measure_style() -> TextStyle {
 
 /// The style of `wrapLabel` for the name and the data: the measurement's style, joined with `<br/>`.
 #[must_use]
-pub fn wrap_style() -> WrapStyle {
+pub fn wrap_style(fonts: &crate::fonts::FontContext) -> WrapStyle {
     WrapStyle {
-        text: measure_style(),
+        text: measure_style(fonts),
         join_with: "<br/>".to_owned(),
     }
 }
@@ -140,11 +141,12 @@ pub fn wrap_style() -> WrapStyle {
 ///
 /// Returns an error if the measurement fails (a bundled font cannot be read).
 pub fn box_text(
+    fonts: &crate::fonts::FontContext,
     frame: &Frame,
     data_entities: &[DataEntity],
     memo: &mut TextMemo,
 ) -> Result<BoxText, RenderError> {
-    let style = wrap_style();
+    let style = wrap_style(fonts);
     let name_text = sanitize_text(&frame.entity_name);
     let name = memo
         .wrap_label(&name_text, TEXT_MAX_WIDTH, &style)
@@ -178,7 +180,7 @@ pub fn box_text(
     }
 
     let dimensions = memo
-        .dimensions(&content, &measure_style())
+        .dimensions(&content, &measure_style(fonts))
         .map_err(measured)?;
     // The width is divided by three without rounding, as `db.ts` 385-388 does.
     let width = if data.is_some() {
@@ -229,7 +231,11 @@ fn calculate_x(
 /// # Errors
 ///
 /// Returns an error if a measurement fails, or a frame names a lane the diagram does not have.
-pub fn lay_out(diagram: &EventModelingDiagram, memo: &mut TextMemo) -> Result<Layout, RenderError> {
+pub fn lay_out(
+    fonts: &crate::fonts::FontContext,
+    diagram: &EventModelingDiagram,
+    memo: &mut TextMemo,
+) -> Result<Layout, RenderError> {
     const SWIMLANE_MIN_HEIGHT: f64 = 70.0;
     const SWIMLANE_PADDING: f64 = 15.0;
     const SWIMLANE_GAP: f64 = 10.0;
@@ -261,7 +267,7 @@ pub fn lay_out(diagram: &EventModelingDiagram, memo: &mut TextMemo) -> Result<La
     let mut max_r = 0.0_f64;
 
     for frame in &diagram.frames {
-        let text = box_text(frame, &diagram.data_entities, memo)?;
+        let text = box_text(fonts, frame, &diagram.data_entities, memo)?;
         let lane = lane_position(&lanes, frame.lane)?;
 
         // `decidePositionFrame` adds the box's text padding, then `evolveFramePositioned` clamps

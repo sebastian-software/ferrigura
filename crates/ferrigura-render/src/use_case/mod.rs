@@ -45,6 +45,7 @@ pub fn render(
 ) -> Result<String, RenderError> {
     let id = input.id;
     let config = Config {
+        fonts: input.text_fonts(),
         section: input.section.unified,
         globals: input.globals,
         theme: input.theme.light,
@@ -54,6 +55,15 @@ pub fn render(
     // edges' labels.
     let mut layout = data::layout_data(input.diagram, input.section, input.globals, id);
     layout.diagram_type = markers::USECASE.to_owned();
+    for node in &mut layout.nodes {
+        if let Some(fields) = &mut node.use_case {
+            fields.font_family = match fields.kind {
+                data::Kind::Actor => Some(input.section.usecase.actor_font_family.clone()),
+                data::Kind::UseCase => Some(input.section.usecase.usecase_font_family.clone()),
+                _ => None,
+            };
+        }
+    }
     let mut measured = pipeline::measure(layout, &config)?;
 
     // `annotateUsecaseElements` (`usecaseRenderer.ts` 144-209): the attributes of each node group, written

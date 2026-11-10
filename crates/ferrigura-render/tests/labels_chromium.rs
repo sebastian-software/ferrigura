@@ -88,6 +88,7 @@ fn check(label: &Value, deviation: &mut Deviation) -> Result<(), String> {
         _ => Anchor::Middle,
     };
     let spec = LabelSpec {
+        fonts: ferrigura_render::fonts::FontContext::bundled(),
         text,
         label_type,
         width,

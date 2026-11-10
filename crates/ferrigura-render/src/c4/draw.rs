@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use ferrigura_model::c4::{C4Boundary, C4Diagram, C4Shape};
-use ferrigura_text::{Face as TextFace, FontFamily, FontStyle, FontWeight, face};
+use ferrigura_text::{FontStyle, FontWeight};
 
 use super::config::{Conf, Font};
 use super::grid::Bounds;
@@ -15,6 +15,7 @@ use super::legacy::{self, Face, Legacy, Paint};
 use super::shape::{self, Body, Built, plain};
 use crate::RenderError;
 use crate::common::text::{MeasureError, TextMemo, TextStyle};
+use crate::fonts::FontFace;
 use crate::svg::{escape, number};
 use crate::unified::geom::{CenterBox, Point};
 use crate::unified::shapes::Intersect;
@@ -79,7 +80,7 @@ pub struct Draw<'a> {
     /// The placed boundaries, by alias.
     pub boundaries: HashMap<String, Place>,
     /// Every text the diagram sets, for the font subsets.
-    pub runs: Vec<(String, &'static TextFace)>,
+    pub runs: Vec<(String, FontFace)>,
 }
 
 /// The `[type]` of a boundary, when its type is not empty (`drawInsideBoundary`, line 476).
@@ -94,34 +95,23 @@ fn non_empty(text: Option<&String>) -> Option<&str> {
 }
 
 /// The face of a legacy text: the weight in its CSS spelling, the size and the family token.
-fn legacy_face(size: f64, weight: &str) -> Face<'_> {
+fn legacy_face<'a>(size: f64, weight: &'a str, family: &'a str) -> Face<'a> {
     Face {
         size,
         weight,
-        family: FAMILY,
+        family,
     }
 }
 
-/// The text face of a weight, for the font subsets.
-fn text_face(bold: bool, italic: bool) -> &'static TextFace {
-    face(
-        FontFamily::Sans,
-        if bold {
-            FontWeight::Bold
-        } else {
-            FontWeight::Normal
-        },
-        if italic {
-            FontStyle::Italic
-        } else {
-            FontStyle::Normal
-        },
-    )
-}
-
 /// The text measurement style of a configured font.
-pub fn style_of(font: &Font, size: f64, weight: f64) -> TextStyle {
+pub fn style_of(
+    fonts: &crate::fonts::FontContext,
+    font: &Font,
+    size: f64,
+    weight: f64,
+) -> TextStyle {
     TextStyle {
+        fonts: fonts.with_family(&font.family),
         font_size: size,
         font_weight: weight,
         font_family: font.family.clone(),
@@ -152,10 +142,33 @@ impl Draw<'_> {
     }
 
     /// Records the text of a legacy text for the font subset, line by line.
-    pub fn record_legacy(&mut self, text: &str, bold: bool, italic: bool) {
+    pub fn record_legacy(
+        &mut self,
+        text: &str,
+        font: &Font,
+        bold: bool,
+        italic: bool,
+    ) -> Result<String, RenderError> {
+        let weight = if bold {
+            FontWeight::Bold
+        } else {
+            FontWeight::Number(font.weight_number().clamp(1.0, 1000.0) as u16)
+        };
+        let style = if italic {
+            FontStyle::Italic
+        } else {
+            FontStyle::Normal
+        };
+        let face = self
+            .conf
+            .fonts
+            .with_family(&font.family)
+            .face(weight, style)?;
+        let family = face.css_reference().unwrap_or_else(|| FAMILY.to_owned());
         for line in super::legacy::lines(text) {
-            self.runs.push((line.to_owned(), text_face(bold, italic)));
+            self.runs.push((line.to_owned(), face.clone()));
         }
+        Ok(family)
     }
 
     /// `drawInsideBoundary` (`c4Renderer.ts:435-560`): lays out the child boundaries of the level whose
@@ -188,7 +201,8 @@ impl Draw<'_> {
             };
             let wrap = boundary.wrap && conf.wrap;
             let label_text = plain(&boundary.label)?;
-            let label_style = style_of(&conf.boundary, conf.boundary.size + 2.0, 700.0);
+            let label_style =
+                style_of(&conf.fonts, &conf.boundary, conf.boundary.size + 2.0, 700.0);
             let mut label =
                 legacy::measure(&mut self.memo, &label_text, wrap, &label_style, width_limit)
                     .map_err(text_error)?;
@@ -198,7 +212,12 @@ impl Draw<'_> {
             let boundary_weight = conf.boundary.weight_number();
             let mut type_text: Option<Legacy> = None;
             if let Some(text) = bracketed(boundary.boundary_type.as_ref()) {
-                let style = style_of(&conf.boundary, conf.boundary.size, boundary_weight);
+                let style = style_of(
+                    &conf.fonts,
+                    &conf.boundary,
+                    conf.boundary.size,
+                    boundary_weight,
+                );
                 let mut measured =
                     legacy::measure(&mut self.memo, &text, wrap, &style, width_limit)
                         .map_err(text_error)?;
@@ -208,7 +227,12 @@ impl Draw<'_> {
             }
             let mut descr_text: Option<Legacy> = None;
             if let Some(text) = non_empty(boundary.descr.as_ref()) {
-                let style = style_of(&conf.boundary, conf.boundary.size - 2.0, boundary_weight);
+                let style = style_of(
+                    &conf.fonts,
+                    &conf.boundary,
+                    conf.boundary.size - 2.0,
+                    boundary_weight,
+                );
                 let mut measured = legacy::measure(&mut self.memo, text, wrap, &style, width_limit)
                     .map_err(text_error)?;
                 measured.y = y + 20.0;
@@ -295,7 +319,8 @@ impl Draw<'_> {
             let group = element_group(self.id, &element, centre);
             for section in &element.label.sections {
                 for run in section.layout.text_runs() {
-                    self.runs.push((run.text.to_owned(), run.face));
+                    self.runs
+                        .push((run.text.to_owned(), FontFace::retain(run.face)));
                 }
             }
             self.body.push_str(&group);
@@ -353,26 +378,26 @@ impl Draw<'_> {
 
         let weight = conf.boundary.weight.clone();
         let label_text = label.text.clone();
-        self.record_legacy(&label_text, true, false);
+        let family = self.record_legacy(&label_text, &conf.boundary, true, false)?;
         out.push_str(&legacy::by_tspan(
             &label_text,
             x,
             y + label.y,
             width,
-            legacy_face(conf.boundary.size + 2.0, "bold"),
+            legacy_face(conf.boundary.size + 2.0, "bold", &family),
             Paint {
                 fill: DEFAULT_STROKE,
                 italic: false,
             },
         ));
         if let Some(text) = boundary_type {
-            self.record_legacy(&text.text, false, false);
+            let family = self.record_legacy(&text.text, &conf.boundary, false, false)?;
             out.push_str(&legacy::by_tspan(
                 &text.text,
                 x,
                 y + text.y,
                 width,
-                legacy_face(conf.boundary.size, &weight),
+                legacy_face(conf.boundary.size, &weight, &family),
                 Paint {
                     fill: DEFAULT_STROKE,
                     italic: false,
@@ -380,13 +405,13 @@ impl Draw<'_> {
             ));
         }
         if let Some(text) = descr {
-            self.record_legacy(&text.text, false, false);
+            let family = self.record_legacy(&text.text, &conf.boundary, false, false)?;
             out.push_str(&legacy::by_tspan(
                 &text.text,
                 x,
                 y + text.y,
                 width,
-                legacy_face(conf.boundary.size - 2.0, &weight),
+                legacy_face(conf.boundary.size - 2.0, &weight, &family),
                 Paint {
                     fill: DEFAULT_STROKE,
                     italic: false,

@@ -28,6 +28,11 @@ Arguments:
 
 Options:
   -c, --config <FILE>     The configuration as a JSON object, what `initialize` takes
+      --font <FAMILY=FILE> Register a local font as weight 400, normal; repeat for more families
+      --font-face <FAMILY:WEIGHT:STYLE=FILE>
+                          Register a face with weight 1..1000 and style normal or italic
+      --font-fallback <FAMILY>
+                          Add a registered fallback family, in order; repeat for more families
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
@@ -45,6 +50,35 @@ Options:
 ```
 
 Without a `FILE`, the diagram text is read from standard input. `-` also means standard input.
+
+## Custom fonts
+
+Register a named local file before rendering; no system fonts or network sources
+are discovered:
+
+```sh
+ferrigura --font "Project Sans=./fonts/regular.ttf" diagram.mmd > diagram.svg
+```
+
+`--font` is repeatable and defaults to weight 400 and normal style. The first
+registered family is the default unless `--config` explicitly sets `fontFamily`.
+Use `--font-face "Project Sans:600:italic=./fonts/italic.ttf"` for a face with an
+integer CSS weight from 1 through 1000 and normal or italic style.
+Paths are relative to the process directory and can contain `:` or `=`.
+
+Register fallback faces with `--font` or `--font-face`, then give their names in
+order with repeatable `--font-fallback "Symbols"`. When custom fonts are used,
+the primary CSS family list must resolve to a registered face. Unknown names
+in that list or the explicit fallback chain are skipped; they never trigger
+discovery. A registered fallback can supply an entire label. Font bytes are loaded and validated before input is
+read or output is created; an unreadable or invalid file exits with status 1.
+Malformed font flags exit with status 2.
+
+Mermaid configuration, front matter, and init directives can select registered
+family names, but cannot register paths or URLs. SVG output continues to embed
+its used font data. TrueType faces are subset to used glyphs; CFF/CFF2 faces
+currently embed the complete face and can produce larger SVGs. Without these
+flags, bundled defaults are unchanged.
 
 ## Examples
 

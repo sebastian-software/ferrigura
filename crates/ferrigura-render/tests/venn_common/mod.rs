@@ -87,6 +87,7 @@ pub fn draw(text: &str, options: &Options) -> Result<String, RenderError> {
         globals.look = look.to_owned();
     }
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &VennSection {
             config: &config.venn,

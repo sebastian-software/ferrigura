@@ -35,7 +35,7 @@ cargo build --profile release-node -p ferrigura-node --no-default-features --fea
 
 Node loads the library with `process.dlopen` as above. A text whose type the build leaves out throws an `Error` that names the type and says it is not registered. Under the release profile on macOS arm64, the addon with `sequence` alone is 6.0 MB (2.9 MB gzipped), with `flowchart`, `sequence`, `class`, `state` and `er` 8.1 MB (3.9 MB), with `all` 11.8 MB (5.7 MB).
 
-## render(text, config?, options?)
+## render(text, config?, options?, fonts?)
 
 Returns the SVG document of a diagram as a string.
 
@@ -59,7 +59,7 @@ const svg = render(
 
 `render` throws an `Error` with the message of the render error. It throws for text that is not a diagram or does not parse, for a configuration value of the wrong type, and for a color scheme or an id that is not valid.
 
-## new Renderer(config?)
+## new Renderer(config?, fonts?)
 
 A `Renderer` resolves the configuration once, when it is made, for many renders:
 
@@ -70,6 +70,31 @@ const second = renderer.render('flowchart LR\n  A --> B\n');
 ```
 
 `renderer.render(text, options?)` takes the same `text` and `options` as `render` and gives the same SVG that `render` gives with the same configuration, byte for byte. It throws in the same cases.
+
+## Host-supplied font bytes
+
+The raw addon accepts bytes only. Read files in JavaScript or use the npm facade's
+`path` input; the addon does not read font files, discover system fonts, or fetch
+URLs:
+
+```js
+const fonts = { fonts: [{ family: 'Project Sans', data: new Uint8Array(fontBytes) }] };
+const renderer = new Renderer({}, fonts);
+const svg = renderer.render('flowchart LR\n A[Hello]');
+```
+
+Each face has a family name, required `Uint8Array` data (including `Buffer`), an
+optional integer weight from 1 through 1000 (default 400), and optional style
+`'normal'` (default) or `'italic'`. Font bytes are validated and copied during
+construction. The first registered family is used unless configuration names a
+family explicitly. `fallbacks` lists additional family names in order. The
+primary CSS family list must resolve to a registered face; unknown names in that
+list or fallback chain are skipped without file discovery or network loading.
+The same object is the fourth argument of `render`; per-render SVG options stay
+in the existing third argument. Invalid registration throws immediately. Used
+font data stays embedded: TrueType faces are subset to used glyphs, while
+CFF/CFF2 currently embed the complete face and can produce larger SVGs. Calls
+without fonts preserve bundled defaults.
 
 ## What the addon does not take
 

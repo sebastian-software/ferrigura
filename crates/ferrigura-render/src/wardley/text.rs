@@ -4,9 +4,7 @@
 //! markup of a text is its escaped text with the placeholders decoded; the characters the reader sees
 //! are the font's input.
 
-use ferrigura_text::{
-    FontFamily, FontStyle, FontWeight, Run, face, layout_width, measure_line, text_box,
-};
+use ferrigura_text::{Face, Run, layout_width, measure_line, text_box};
 
 use crate::RenderError;
 use crate::common::Element;
@@ -46,18 +44,18 @@ impl Drawn {
     /// The runs of the subset: one for each weight that draws text. An empty run would embed an
     /// empty subset, so it is left out.
     #[must_use]
-    pub fn runs(&self) -> Vec<Run<'_, '_>> {
+    pub fn runs<'a>(&'a self, regular: &'a Face, bold: &'a Face) -> Vec<Run<'a, 'a>> {
         let mut runs = Vec::with_capacity(2);
         if !self.regular.is_empty() {
             runs.push(Run {
                 text: &self.regular,
-                face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+                face: regular,
             });
         }
         if !self.bold.is_empty() {
             runs.push(Run {
                 text: &self.bold,
-                face: face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal),
+                face: bold,
             });
         }
         runs
@@ -81,10 +79,10 @@ pub fn label(text: &str, attributes: Vec<(&str, String)>) -> Element {
 /// # Errors
 ///
 /// Returns an error if the bundled face cannot be read or shaped.
-pub fn annotation_width(text: &str) -> Result<f64, RenderError> {
+pub fn annotation_width(regular: &Face, text: &str) -> Result<f64, RenderError> {
     let runs = [Run {
         text,
-        face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+        face: regular,
     }];
     Ok(layout_width(measure_line(&runs, ANNOTATION_FONT_SIZE)?))
 }
@@ -95,11 +93,8 @@ pub fn annotation_width(text: &str) -> Result<f64, RenderError> {
 /// # Errors
 ///
 /// Returns an error if the bundled face cannot be read.
-pub fn annotation_height() -> Result<f64, RenderError> {
-    let box_ = text_box(
-        face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
-        ANNOTATION_FONT_SIZE,
-    )?;
+pub fn annotation_height(regular: &Face) -> Result<f64, RenderError> {
+    let box_ = text_box(regular, ANNOTATION_FONT_SIZE)?;
     Ok(box_.height)
 }
 

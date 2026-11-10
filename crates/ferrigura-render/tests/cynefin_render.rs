@@ -47,6 +47,7 @@ fn draw_id(diagram: &CynefinDiagram, setup: &Setup, id: &str) -> String {
         ThemeTokens::from_value(&Theme::ReduxDarkColor.variables(overrides.as_ref()))
     });
     render(&Context {
+        fonts: None,
         diagram,
         section: &config.cynefin,
         globals: &globals,

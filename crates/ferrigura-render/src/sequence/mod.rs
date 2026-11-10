@@ -28,7 +28,7 @@ mod text;
 
 use ferrigura_model::config::SequenceDiagramConfig;
 use ferrigura_model::sequence::{LineType, SequenceDiagram};
-use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 
 use self::blocks::BlockAction;
 use self::bounds::{Bounds, js_round};
@@ -92,11 +92,22 @@ pub(super) struct View {
 
 impl<'a> Renderer<'a> {
     /// The renderer of one diagram, with the configuration applied (`bounds.init`).
-    fn new(input: &Context<'a, SequenceDiagram, SequenceDiagramConfig>) -> Self {
-        Self {
+    fn new(
+        input: &Context<'a, SequenceDiagram, SequenceDiagramConfig>,
+    ) -> Result<Self, RenderError> {
+        let mut conf = Conf::new(input.section, input.globals);
+        for font in [
+            &mut conf.actor_font,
+            &mut conf.note_font,
+            &mut conf.message_font,
+        ] {
+            font.fonts = input.text_fonts().with_family(&font.family);
+            font.css_family = text::face_of(font)?.css_reference();
+        }
+        Ok(Self {
             id: input.id,
             theme: input.theme,
-            conf: Conf::new(input.section, input.globals),
+            conf,
             compact_participants: false,
             memo: TextMemo::new(),
             layout: Layout::new(input.diagram),
@@ -106,7 +117,7 @@ impl<'a> Renderer<'a> {
             front: Vec::new(),
             back: Vec::new(),
             view: None,
-        }
+        })
     }
 
     /// Moves an element to the front of the root (`selection.lower()`), where the reference's
@@ -486,7 +497,10 @@ impl<'a> Renderer<'a> {
 
     /// The root element: its size and view box, its accessibility texts, its style, the empty group
     /// `mermaidAPI` appends, and the drawing (`mermaidAPI.ts`, `setupGraphViewbox.js`).
-    fn write(&self, input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>) -> String {
+    fn write(
+        &self,
+        input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
+    ) -> Result<String, RenderError> {
         let diagram = input.diagram;
         let view = self.view.unwrap_or(View {
             startx: 0.0,
@@ -512,7 +526,7 @@ impl<'a> Renderer<'a> {
         // The final SVG decodes the parser's entity placeholders. Subset the glyphs the
         // viewer will draw, rather than the placeholder characters they replace.
         let text = ferrigura_syntax::sanitize::decode_references(&decode_entities(&text));
-        let (families, font_family) = self.embedded_fonts(&text);
+        let (families, font_family) = self.embedded_fonts(&text)?;
         // The root's font size is the theme's `fontSize` (the base styles read it), not the text's.
         let font_size = input
             .theme
@@ -559,38 +573,32 @@ impl<'a> Renderer<'a> {
         // The entities the parser encoded are decoded in the whole document, as the reference
         // does after rendering (`mermaidAPI.ts:359`), and the references XML does not define are
         // rewritten.
-        xml_references(&decode_entities(&svg))
+        Ok(xml_references(&decode_entities(&svg)))
     }
 
     /// The embedded font faces of the text the diagram draws, and the family name the style
     /// refers to. The regular face is embedded; the bold one as well when a font is heavier.
-    fn embedded_fonts(&self, text: &str) -> (Vec<EmbeddedFamily>, String) {
-        let regular = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
-        let heavy = [
-            &self.conf.actor_font,
-            &self.conf.note_font,
-            &self.conf.message_font,
-        ]
-        .iter()
-        .any(|font| font.weight > 500.0);
-        let mut runs = vec![Run {
-            text,
-            face: regular,
-        }];
-        if heavy {
-            let bold = face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal);
-            runs.push(Run { text, face: bold });
-        }
-        match embed_runs(&runs) {
-            Ok(families) => {
-                let name = families.first().map_or_else(
-                    || self.conf.message_font.family.clone(),
-                    |family| family.css_family.clone(),
-                );
-                (families, name)
-            }
-            Err(_) => (Vec::new(), self.conf.message_font.family.clone()),
-        }
+    fn embedded_fonts(&self, text: &str) -> Result<(Vec<EmbeddedFamily>, String), RenderError> {
+        let regular = self
+            .conf
+            .message_font
+            .fonts
+            .face(FontWeight::Normal, FontStyle::Normal)?;
+        let faces = [
+            regular,
+            text::face_of(&self.conf.actor_font)?,
+            text::face_of(&self.conf.note_font)?,
+            text::face_of(&self.conf.message_font)?,
+        ];
+        let runs: Vec<_> = faces.iter().map(|face| Run { text, face }).collect();
+        let families = embed_runs(&runs)?;
+        let name = faces[0].css_reference().unwrap_or_else(|| {
+            families.first().map_or_else(
+                || self.conf.message_font.family.clone(),
+                |family| family.css_family.clone(),
+            )
+        });
+        Ok((families, name))
     }
 }
 
@@ -660,10 +668,10 @@ pub fn render_with(
     input: &Context<'_, SequenceDiagram, SequenceDiagramConfig>,
     compat: bool,
 ) -> Result<String, RenderError> {
-    let mut renderer = Renderer::new(input);
+    let mut renderer = Renderer::new(input)?;
     renderer.compact_participants = !compat;
     renderer.draw(&input.diagram.title)?;
-    Ok(renderer.write(input))
+    renderer.write(input)
 }
 
 #[cfg(test)]

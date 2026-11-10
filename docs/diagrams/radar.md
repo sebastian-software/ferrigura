@@ -70,3 +70,7 @@ None known for this type.
 - **Numbers are written as JavaScript writes them**: `-0` is `0`, and values below 1e-6 keep their exponent (`6.123233995736766e-15`). The shared writer `svg::number` does it.
 - **`Math.max` and `Math.min` propagate `NaN`**, where Rust's `f64::max` and `f64::min` ignore it (`js_max` and `js_min` in `geometry.rs`).
 - **The axis label's anchor and baseline are chosen with a 0.01 dead zone**, which makes `cos(PI / 2)` (6e-17) a vertical axis.
+
+## Font inputs
+
+Axis labels, legend labels, and the title use the regular design of the resolved global `fontFamily`. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

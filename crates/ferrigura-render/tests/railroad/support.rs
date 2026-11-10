@@ -106,6 +106,7 @@ pub fn render_with(
     };
     let section = RailroadSection { config, detector };
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &section,
         globals: &globals,

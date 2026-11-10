@@ -52,6 +52,8 @@ const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 /// What the parts of the map read in common: the diagram, its configuration, the plot, the colors
 /// and the id of the SVG, which the marker and the arrow ids carry.
 pub struct Canvas<'a> {
+    /// The exact face used for annotation geometry.
+    pub regular: crate::fonts::FontFace,
     /// The parsed map.
     pub diagram: &'a WardleyDiagram,
     /// The `wardley-beta` section of the configuration.
@@ -87,12 +89,21 @@ impl Canvas<'_> {
 pub fn render(
     input: &Context<'_, WardleyDiagram, WardleyDiagramConfig>,
 ) -> Result<String, RenderError> {
+    let regular = input.text_fonts().face(
+        ferrigura_text::FontWeight::Normal,
+        ferrigura_text::FontStyle::Normal,
+    )?;
+    let bold = input.text_fonts().face(
+        ferrigura_text::FontWeight::Bold,
+        ferrigura_text::FontStyle::Normal,
+    )?;
     let diagram = input.diagram;
     let config = input.section;
     // The `size` statement overrides the configuration's size (`wardleyRenderer.ts` 81-82).
     let width = diagram.size.map_or(config.width, |size| size.width.0);
     let height = diagram.size.map_or(config.height, |size| size.height.0);
     let canvas = Canvas {
+        regular,
         diagram,
         config,
         plot: Plot::new(width, height, config.padding),
@@ -135,9 +146,20 @@ pub fn render(
 
     // The bundled face: every character the map shows, in the weights the reference sets it in. Its
     // family names the map's text, and its `@font-face` rules are the only style the output has.
-    let families = embed_runs(&drawn.runs())?;
-    let style = (!families.is_empty()).then(|| font_faces(&families));
-    if let Some(family) = families.first() {
+    let families = embed_runs(&drawn.runs(&canvas.regular, &bold))?;
+    let style = (!families.is_empty()).then(|| {
+        let mut css = font_faces(input.id, &families);
+        if let Some(family) = bold.css_reference() {
+            css.push_str(&format!(
+                "#{} [font-weight=\"bold\"]{{font-family:{family};}}",
+                input.id
+            ));
+        }
+        css
+    });
+    if let Some(family) = canvas.regular.css_reference() {
+        map.set("font-family", family);
+    } else if let Some(family) = families.first() {
         map.set("font-family", family.css_family.clone());
     }
 

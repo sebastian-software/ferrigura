@@ -43,6 +43,11 @@ const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 pub fn render(
     input: &Context<'_, ArchitectureDiagram, ArchitectureDiagramConfig>,
 ) -> Result<String, RenderError> {
+    let fonts = input.text_fonts();
+    let primary = fonts.face(
+        ferrigura_text::FontWeight::Normal,
+        ferrigura_text::FontStyle::Normal,
+    )?;
     let config = input.section;
     let metrics = Metrics {
         icon_size: config.icon_size,
@@ -50,7 +55,7 @@ pub fn render(
         font_size: config.font_size,
     };
     let mut scene = Scene::new(input.diagram, metrics, &mut |text, size| {
-        scene::canvas_width(text, size)
+        scene::canvas_width(&primary, text, size)
     })?;
     let constraints = constraints::constraints(
         input.diagram,
@@ -72,7 +77,7 @@ pub fn render(
     // the node labels at the configuration's `fontSize` (`architectureRenderer.ts` 124-145).
     let tokens = input.theme.light;
     let text_size = tokens.font_size.px().unwrap_or(16.0);
-    let drawing = draw::draw(&scene, input.id, metrics, text_size)?;
+    let drawing = draw::draw(&fonts, &scene, input.id, metrics, text_size)?;
 
     // The fonts: every glyph of every label.
     let mut runs: Vec<Run<'_, '_>> = Vec::new();
@@ -80,15 +85,17 @@ pub fn render(
         runs.extend(label.text_runs());
     }
     let families = embed_runs(&runs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = primary.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let css_font_size = format!("{}px", number(text_size));
     let own_rules = style::own_rules(input.id, input.theme);
     let style_sheet = base_style_sheet(

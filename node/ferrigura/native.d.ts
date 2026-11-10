@@ -4,7 +4,7 @@
 /**
  * A renderer that resolves its configuration once, for many renders.
  *
- * `new Renderer(config?)` takes the configuration that `render` takes as its second argument, and
+ * `new Renderer(config?, fonts?)` takes the configuration that `render` takes as its second argument, and
  * `renderer.render(text, options?)` renders a diagram with it, as `render` does. The configuration is
  * merged onto the defaults when the renderer is made, and the typed view of each diagram type is
  * resolved at its first render; a render then merges only the diagram's own front matter and
@@ -15,8 +15,11 @@ export declare class Renderer {
   /**
    * Resolves the configuration of a renderer. A value of the wrong type is reported by the render
    * that reads it, as `render` reports it.
+   *
+   * # Errors
+   * Throws immediately if supplied font bytes or face metadata are invalid.
    */
-  constructor(config?: any | undefined | null)
+  constructor(config?: any | undefined | null, fonts?: FontOptionsInput | undefined | null)
   /**
    * Renders a diagram to an SVG document, with the configuration of this renderer.
    *
@@ -43,6 +46,26 @@ export interface AnimationInput {
   order?: string
 }
 
+/** One host-supplied face. The JavaScript facade reads local files before calling the addon. */
+export interface FontInput {
+  /** Explicit family name, including spaces when needed. */
+  family: string
+  /** Font bytes, copied into the renderer during construction. */
+  data: Uint8Array
+  /** Integer CSS weight from 1 through 1000. Defaults to 400. */
+  weight?: number
+  /** `normal` (default) or `italic`. */
+  style?: string
+}
+
+/** Renderer-scoped font registration, separate from Mermaid configuration and SVG options. */
+export interface FontOptionsInput {
+  /** Faces registered once before rendering. The first family is the default unless configured. */
+  fonts?: Array<FontInput>
+  /** Registered fallback family names, in order. No files are discovered or downloaded. */
+  fallbacks?: Array<string>
+}
+
 /**
  * Renders a diagram to an SVG document.
  *
@@ -56,7 +79,7 @@ export interface AnimationInput {
  * does not parse, if the configuration holds a value of the wrong type, or if the color scheme or the
  * id is not valid.
  */
-export declare function render(text: string, config?: any | undefined | null, options?: RenderOptionsInput | undefined | null): string
+export declare function render(text: string, config?: any | undefined | null, options?: RenderOptionsInput | undefined | null, fonts?: FontOptionsInput | undefined | null): string
 
 /** The options that are not Mermaid configuration. */
 export interface RenderOptionsInput {

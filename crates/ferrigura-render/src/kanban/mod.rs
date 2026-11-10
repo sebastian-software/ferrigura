@@ -95,6 +95,11 @@ struct SectionLayout<'a> {
 pub fn render(
     input: &Context<'_, KanbanDiagram, KanbanSections<'_>>,
 ) -> Result<String, RenderError> {
+    let fonts = input.text_fonts();
+    let primary = fonts.face(
+        ferrigura_text::FontWeight::Normal,
+        ferrigura_text::FontStyle::Normal,
+    )?;
     let id = input.id;
     let nodes = data::get_data(input.diagram, &input.globals.look);
     let width = section_width(input.section.kanban.section_width);
@@ -110,7 +115,7 @@ pub fn render(
     let mut max_label_height = MIN_LABEL_HEIGHT;
     for node in nodes.iter().filter(|node| node.is_group) {
         let number = sections.len() + 1;
-        let label = layout_label(&node.label, width, text_size, Anchor::Start, false)?;
+        let label = layout_label(&fonts, &node.label, width, text_size, Anchor::Start, false)?;
         max_label_height = max_label_height.max(label.bbox.browser().height);
         sections.push(SectionLayout {
             node,
@@ -137,7 +142,7 @@ pub fn render(
         for item in nodes.iter().filter(|node| {
             !node.is_group && node.parent_id.as_deref() == Some(section.node.id.as_str())
         }) {
-            let labels = item_labels_of(item, item_width, text_size)?;
+            let labels = item_labels_of(&fonts, item, item_width, text_size)?;
             let priority: Option<&Value> = item.priority.as_ref();
             let link = ticket_link(item, &input.section.kanban.ticket_base_url);
             links |= link.is_some();
@@ -209,17 +214,19 @@ pub fn render(
         runs.extend(labels.assigned.text_runs());
     }
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            input
-                .theme
-                .light
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = primary.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                input
+                    .theme
+                    .light
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let css_font_size = format!("{}px", number(text_size));
     let style = base_style_sheet(
         id,
@@ -283,6 +290,7 @@ fn section_width(configured: f64) -> f64 {
 /// The labels of an item (`kanbanItem.ts` 34-81): the title is the item's label, and the ticket and
 /// the assignee are laid out the same way, all at the label width (the item width less 10).
 fn item_labels_of(
+    fonts: &crate::fonts::FontContext,
     item: &DataNode,
     item_width: f64,
     text_size: f64,
@@ -294,6 +302,7 @@ fn item_labels_of(
         // `labelHelper` gives the title a background when the item has an icon (`util.ts` 60-61,
         // `addBackground`); the ticket and the assignee never do (`insertLabel`).
         title: layout_label(
+            fonts,
             &decoded(&item.label),
             label_width,
             text_size,
@@ -301,6 +310,7 @@ fn item_labels_of(
             item.icon.is_some(),
         )?,
         ticket: layout_label(
+            fonts,
             &decoded(item.ticket.as_deref().unwrap_or_default()),
             label_width,
             text_size,
@@ -308,6 +318,7 @@ fn item_labels_of(
             false,
         )?,
         assigned: layout_label(
+            fonts,
             &decoded(item.assigned.as_deref().unwrap_or_default()),
             label_width,
             text_size,
@@ -321,6 +332,7 @@ fn item_labels_of(
 /// start-anchored (the kanban stylesheet does not center `.label text`, so each line starts at the
 /// label's origin).
 fn layout_label(
+    fonts: &crate::fonts::FontContext,
     text: &str,
     width: f64,
     font_size: f64,
@@ -328,6 +340,7 @@ fn layout_label(
     add_background: bool,
 ) -> Result<LabelLayout, RenderError> {
     label::layout(&LabelSpec {
+        fonts: fonts.clone(),
         text,
         label_type: LabelType::Markdown,
         width,

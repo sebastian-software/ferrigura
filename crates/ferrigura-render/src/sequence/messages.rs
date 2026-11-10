@@ -522,7 +522,14 @@ impl Renderer<'_> {
         let text = Element::new("text")
             .with("x", number(autonumber_x))
             .with("y", number(line_start_y + 4.0))
-            .with("font-family", "sans-serif")
+            .with(
+                "font-family",
+                self.conf
+                    .message_font
+                    .css_family
+                    .as_deref()
+                    .unwrap_or("sans-serif"),
+            )
             .with("font-size", font_size)
             .with("text-anchor", "middle")
             .with("class", "sequenceNumber")

@@ -6,9 +6,8 @@
 //! sizes the root `<svg>`, writes the title and the activity line, and embeds the fonts.
 //!
 //! Labels are SVG text, not HTML (decision 0009): the default placement, `fo`, draws
-//! the lines the browser would break the HTML into. Every text is set in the bundled face, as in
-//! the other renderers, so `titleFontFamily` and `taskFontFamily` of the configuration are not read;
-//! the geometry harness pins them to the bundled face on the reference side (`journey-labels.ts`).
+//! the lines the browser would break the HTML into. Host-supplied fonts resolve `titleFontFamily`
+//! and `taskFontFamily` separately; the compatibility path uses the bundled faces.
 
 mod face;
 mod legend;
@@ -18,7 +17,7 @@ pub(crate) mod text;
 
 use ferrigura_model::config::JourneyDiagramConfig;
 use ferrigura_model::journey::JourneyDiagram;
-use ferrigura_text::{Run, embed_runs};
+use ferrigura_text::{FontStyle, FontWeight, Run, embed_runs};
 
 use self::legend::Actors;
 use self::tasks::{Bounds, Context};
@@ -43,6 +42,14 @@ pub fn render(
 ) -> Result<String, RenderError> {
     let diagram = input.diagram;
     let config = input.section;
+    let fonts = input.text_fonts();
+    let regular = fonts.face(FontWeight::Normal, FontStyle::Normal)?;
+    let task = fonts
+        .with_family(&config.task_font_family)
+        .face(FontWeight::Normal, FontStyle::Normal)?;
+    let title_face = fonts
+        .with_family(&config.title_font_family)
+        .face(FontWeight::Bold, FontStyle::Normal)?;
     let id = input.id;
     let tokens = input.theme.light;
     // The root's font size is the theme's, and the legend and labels are measured at it.
@@ -55,13 +62,14 @@ pub fn render(
     let actors = Actors::new(&diagram.actors, &config.actor_colours);
     // The text drawn in the regular face, for the embedded subset (every character drawn is in it).
     let mut texts = Vec::new();
-    let drawn_legend = legend::draw(&actors, config, font_size, &mut texts)?;
+    let drawn_legend = legend::draw(&regular, &actors, config, font_size, &mut texts)?;
 
     // `leftMargin` is the configured margin plus the widest legend line past it.
     let left_margin = config.left_margin as f64 + drawn_legend.max_width;
     let mut bounds = Bounds::default();
     bounds.insert(0.0, 0.0, left_margin, actors.legend_len() as f64 * 50.0);
     let context = Context {
+        face: &task,
         config,
         actors: &actors,
         id,
@@ -77,7 +85,7 @@ pub fn render(
     let (startx, starty, stopx, stopy) = bounds.corners();
     let height = stopy - starty + 2.0 * config.diagram_margin_y as f64;
     let width = left_margin + stopx + 2.0 * config.diagram_margin_x as f64;
-    let title = (!diagram.title.is_empty()).then(|| {
+    let mut title = (!diagram.title.is_empty()).then(|| {
         Element::new("text")
             .with("x", number(left_margin))
             .with("font-size", config.title_font_size.as_str())
@@ -87,6 +95,12 @@ pub fn render(
             .text(diagram.title.as_str())
     });
 
+    if let Some(title) = &mut title
+        && let Some(css) = title_face.css_reference()
+    {
+        title.set("style", format!("font-family:{css};"));
+    }
+
     // The fonts: the regular face for the legend, the labels and the tasks, the bold one for the
     // title. A face is embedded only when a run of it is not empty.
     let regular_text = texts.join(" ");
@@ -94,25 +108,33 @@ pub fn render(
     if !regular_text.is_empty() {
         runs.push(Run {
             text: &regular_text,
-            face: text::regular(),
+            face: &regular,
+        });
+    }
+    if !regular_text.is_empty() && task.css_reference().is_some() {
+        runs.push(Run {
+            text: &regular_text,
+            face: &task,
         });
     }
     if title.is_some() {
         runs.push(Run {
             text: &diagram.title,
-            face: text::bold(),
+            face: &title_face,
         });
     }
     let families = embed_runs(&runs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = regular.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let style = style::style_sheet(id, input.theme, &font_family, &font_size_css, &families);
 
     // The root: the size, the view box and the roles, in the order `mermaidAPI` and the renderer

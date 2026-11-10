@@ -27,6 +27,12 @@ impl FontRegistry {
         Self::default()
     }
 
+    /// Whether no font face has been registered.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.faces.is_empty()
+    }
+
     /// Registers one face from owned TrueType or OpenType bytes.
     ///
     /// A repeated family, numeric weight, and style replaces that face. Family names are matched
@@ -66,6 +72,7 @@ impl FontRegistry {
             ));
         }
         crate::kern::validate(&font)?;
+        let data_fingerprint = crate::embed::fnv1a(&data);
         let face = Face {
             family: FontFamily::Registered,
             family_name: Cow::Owned(family),
@@ -75,6 +82,8 @@ impl FontRegistry {
             font: OnceLock::new(),
             data: FontData::Registered(data.into()),
             fallbacks: Vec::new(),
+            variable: OnceLock::new(),
+            data_fingerprint: Some(data_fingerprint),
         };
         // Validate the shaper too, before replacing a usable face.
         face.font()?;
@@ -112,7 +121,8 @@ impl FontRegistry {
     ///
     /// Names are resolved when [`Self::resolve`] is called, so registration order does not matter.
     /// Unregistered fallback names are skipped. Missing characters are reported by
-    /// [`Self::missing_glyphs`] and stay in the primary face's missing glyph.
+    /// [`Self::missing_glyphs`] and measured with the primary face's missing glyph. SVG viewers
+    /// may choose a system fallback for these characters.
     pub fn set_fallbacks(&mut self, families: impl IntoIterator<Item = impl Into<String>>) {
         self.fallbacks = families.into_iter().map(Into::into).collect();
     }
@@ -144,6 +154,7 @@ impl FontRegistry {
                 "no registered font matches {families:?}; register a font with FontRegistry::register or register_file"
             )))?;
         let mut resolved = (*primary).clone();
+        resolved.variable = OnceLock::new();
         resolved.fallbacks = Vec::new();
         for candidate in &mut candidates {
             if !candidate
@@ -191,6 +202,40 @@ impl FontRegistry {
             .cloned()
     }
 
+    /// A deterministic fingerprint of registered names, designs, bytes, and fallback order.
+    ///
+    /// This is an identity for render caches and SVG ids, not a cryptographic digest.
+    #[must_use]
+    pub fn fingerprint(&self) -> u64 {
+        fn add(hash: &mut u64, bytes: &[u8]) {
+            for byte in bytes {
+                *hash = (*hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
+            }
+        }
+        let mut hash = 0xcbf2_9ce4_8422_2325;
+        let mut faces: Vec<_> = self.faces.iter().collect();
+        faces.sort_by_key(|face| {
+            (
+                face.family_name(),
+                face.weight().css_value(),
+                face.style().css_keyword(),
+            )
+        });
+        for face in faces {
+            add(&mut hash, &(face.family_name().len() as u64).to_le_bytes());
+            add(&mut hash, face.family_name().as_bytes());
+            add(&mut hash, &face.weight().css_value().to_le_bytes());
+            add(&mut hash, face.style().css_keyword().as_bytes());
+            add(&mut hash, &(face.data().len() as u64).to_le_bytes());
+            add(&mut hash, face.data());
+        }
+        for family in &self.fallbacks {
+            add(&mut hash, &(family.len() as u64).to_le_bytes());
+            add(&mut hash, family.as_bytes());
+        }
+        hash
+    }
+
     /// Reports each uncovered character once, in text order, with the primary family name.
     ///
     /// Measurement and embedding retain those characters in the primary face, so its `.notdef`
@@ -220,7 +265,8 @@ impl FontRegistry {
     }
 }
 
-/// An uncovered character, measured and drawn with the primary face's missing glyph.
+/// An uncovered character, measured with the primary face's missing glyph.
+/// SVG viewers may draw a system fallback instead; register coverage for matching layout.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MissingGlyph {
     /// The uncovered Unicode character.

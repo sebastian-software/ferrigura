@@ -7,7 +7,7 @@
 //! `packages/mermaid/package.json`, and the text is the same for every diagram of that build.
 
 use ferrigura_model::info::InfoDiagram;
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
+use ferrigura_text::{FontStyle, FontWeight, Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
@@ -30,22 +30,27 @@ const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 ///
 /// Returns an error if the bundled font cannot be read or subset.
 pub fn render(input: &Context<'_, InfoDiagram, ()>) -> Result<String, RenderError> {
+    let font_face = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let text = format!("v{MERMAID_VERSION}");
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = &font_face;
     let families = embed_runs(&[Run {
         text: &text,
         face: sans,
     }])?;
     let tokens = input.theme.light;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = font_face.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     let style = base_style_sheet(
         input.id,

@@ -36,7 +36,10 @@ const FRAME_CLEARANCE: f64 = 2.0;
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read.
-pub fn measure(edge: &Edge) -> Result<Vec<Terminal>, RenderError> {
+pub fn measure(
+    edge: &Edge,
+    fonts: &crate::fonts::FontContext,
+) -> Result<Vec<Terminal>, RenderError> {
     let candidates = [
         (TerminalKey::StartRight, edge.start_label_right.as_deref()),
         (TerminalKey::EndLeft, edge.end_label_left.as_deref()),
@@ -47,6 +50,7 @@ pub fn measure(edge: &Edge) -> Result<Vec<Terminal>, RenderError> {
             continue;
         };
         let spec = LabelSpec {
+            fonts: fonts.clone(),
             text,
             label_type: LabelType::Markdown,
             width: WRAP_WIDTH,
