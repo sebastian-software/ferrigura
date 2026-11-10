@@ -473,6 +473,7 @@ fn the_reference_elk_inputs_are_rebuilt_exactly() {
         let input = build(
             &data,
             &Config {
+                fonts: ferrigura_render::fonts::FontContext::bundled(),
                 section: Section::of(&config),
                 globals: &globals,
                 theme: &tokens,

@@ -124,10 +124,7 @@ impl From<TextError> for MeasureError {
 /// 300 as 400 (checked in the probe).
 fn face_of(style: &TextStyle) -> Result<crate::fonts::FontFace, TextError> {
     let weight = FontWeight::Number(style.font_weight.clamp(1.0, 1000.0) as u16);
-    style
-        .fonts
-        .with_family(&style.font_family)
-        .face(weight, FontStyle::Normal)
+    style.fonts.face(weight, FontStyle::Normal)
 }
 
 /// Splits a text at its `<br>` tags, as `text.split(lineBreakRegex)` does: the tag is `<br>`,

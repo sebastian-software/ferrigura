@@ -235,7 +235,8 @@ impl Renderer {
                 fonts: self.fonts.as_ref(),
             });
         }
-        let view = View::resolve(&self.site, plugin, &directive).map_err(RenderError::Config)?;
+        let view = View::resolve(&self.site, plugin, &directive, self.fonts.is_some())
+            .map_err(RenderError::Config)?;
         let overrides = self.site.user_theme_variables(&directive);
         let (light_tokens, dark_tokens) = if overrides == self.overrides {
             (
@@ -273,8 +274,13 @@ impl Renderer {
         let resolved = match known {
             Some(resolved) => resolved,
             None => {
-                let resolved =
-                    View::resolve(&self.site, plugin, &Value::empty_object()).map(Arc::new);
+                let resolved = View::resolve(
+                    &self.site,
+                    plugin,
+                    &Value::empty_object(),
+                    self.fonts.is_some(),
+                )
+                .map(Arc::new);
                 lock(&self.views).entry(kind).or_insert(resolved).clone()
             }
         };
@@ -360,7 +366,26 @@ impl RendererBuilder {
             if let Value::Object(config) = &mut self.config {
                 config
                     .entry("fontFamily".into())
-                    .or_insert(Value::String(family));
+                    .or_insert_with(|| Value::String(family.clone()));
+                let primary = config
+                    .get("fontFamily")
+                    .and_then(Value::as_str)
+                    .unwrap_or(&family)
+                    .to_owned();
+                let theme = config
+                    .entry("themeVariables".into())
+                    .or_insert_with(Value::empty_object);
+                if !theme.is_object() {
+                    *theme = Value::empty_object();
+                }
+                if let Value::Object(theme) = theme {
+                    if theme
+                        .get("fontFamily")
+                        .is_none_or(|value| value.is_null() || value.as_str() == Some(""))
+                    {
+                        theme.insert("fontFamily".into(), Value::String(primary));
+                    }
+                }
             }
         }
         Ok(self)
@@ -527,9 +552,31 @@ impl View {
     /// # Errors
     ///
     /// Returns the message of the error when the configuration cannot be read into its types.
-    fn resolve(site: &SiteConfig, plugin: Plugin, directive: &Value) -> Result<Self, String> {
+    fn resolve(
+        site: &SiteConfig,
+        plugin: Plugin,
+        directive: &Value,
+        supplied_fonts: bool,
+    ) -> Result<Self, String> {
         let kind = plugin.kind();
-        let effective = site.effective(Some(kind.config_key()), directive);
+        let mut effective = site.effective(Some(kind.config_key()), directive);
+        if supplied_fonts {
+            let primary = effective
+                .get("themeVariables")
+                .and_then(|theme| theme.get("fontFamily"))
+                .or_else(|| effective.get("fontFamily"))
+                .and_then(Value::as_str)
+                .map(str::to_owned);
+            if let Some(primary) = primary {
+                inherit_font_roles(
+                    &mut effective,
+                    &mut Vec::new(),
+                    site.settings(),
+                    directive,
+                    &primary,
+                );
+            }
+        }
         let mut top = typed_top(&effective).map_err(|error| error.to_string())?;
         // `getData` sets the mindmap's layout to cose-bilkent unless the top-level `layout` is set by the
         // user (`mindmapDb.ts` 361-367): the schema's default, `elk`, does not reach a mindmap.
@@ -555,6 +602,39 @@ impl View {
             effective,
             config,
         })
+    }
+}
+
+/// A supplied primary replaces schema-default role names, while explicit site/diagram roles
+/// remain requests to the registry. Provenance must be checked before the typed view loses it.
+fn inherit_font_roles(
+    value: &mut Value,
+    path: &mut Vec<String>,
+    site: &Value,
+    directive: &Value,
+    primary: &str,
+) {
+    fn requested(source: &Value, path: &[String]) -> bool {
+        path.iter()
+            .try_fold(source, |value, key| value.get(key))
+            .is_some_and(|value| !value.is_null())
+    }
+    let Value::Object(properties) = value else {
+        return;
+    };
+    for (key, child) in properties {
+        path.push(key.clone());
+        if path.len() > 1
+            && (key == "fontFamily" || key.ends_with("FontFamily"))
+            && matches!(child, Value::String(_))
+            && !requested(site, path)
+            && !requested(directive, path)
+        {
+            *child = Value::String(primary.to_owned());
+        } else {
+            inherit_font_roles(child, path, site, directive, primary);
+        }
+        path.pop();
     }
 }
 
@@ -890,6 +970,37 @@ mod font_input_tests {
                 "Fixture"
             );
         }
+    }
+
+    #[test]
+    fn only_implicit_per_type_families_inherit_the_supplied_primary() {
+        let renderer = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        let view = renderer.view(diagrams::journey()).unwrap();
+        assert_eq!(
+            view.effective
+                .get("journey")
+                .and_then(|section| section.get("taskFontFamily"))
+                .and_then(Value::as_str),
+            Some("Fixture")
+        );
+        let config = Value::from(serde_json::json!({"journey":{"taskFontFamily":"Open Sans"}}));
+        let renderer = Renderer::builder(&config)
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        let view = renderer.view(diagrams::journey()).unwrap();
+        assert_eq!(
+            view.effective
+                .get("journey")
+                .and_then(|section| section.get("taskFontFamily"))
+                .and_then(Value::as_str),
+            Some("Open Sans")
+        );
     }
 
     #[test]
