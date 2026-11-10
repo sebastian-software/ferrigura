@@ -13,9 +13,9 @@
 
 use std::collections::HashMap;
 
-use ferrigura_text::{Face, TextError, measure_box, text_box};
-#[cfg(test)]
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, face};
+use ferrigura_text::{
+    Face, FontFamily, FontStyle, FontWeight, TextError, face, measure_box, text_box,
+};
 
 use super::layout::{Measure, TextSize};
 use crate::common::text::collapse_white_space;
@@ -41,9 +41,9 @@ impl TextMeasure {
         }
     }
 
-    /// A measurement at `size` pixels in the regular face.
+    /// A compatibility measurement at `size` pixels in the bundled regular face.
+    /// Renderers with host inputs use [`Self::with_face`] instead.
     #[must_use]
-    #[cfg(test)]
     pub fn new(size: f64) -> Self {
         Self {
             face: crate::fonts::FontFace::retain(face(
