@@ -1,3 +1,7 @@
+import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { render, Renderer } from '../index.mjs';
@@ -52,4 +56,100 @@ test('draw animation is optional, defaults to source order and validates its opt
     /not supported for this diagram type/
   );
   assert.equal(plain, renderer.render(text, { id: 'drawing' }));
+});
+
+const fontPath = fileURLToPath(
+  new URL(
+    '../../../crates/ferrigura-text/fonts/AtkinsonHyperlegibleMono-Regular.ttf',
+    import.meta.url
+  )
+);
+const fontData = readFileSync(fontPath);
+const fontText = 'flowchart LR\n A[Wide WWW narrow iii]\n';
+test('font paths and bytes give the same owned, embedded custom-font output', () => {
+  const options = { id: 'fonts' };
+  const fromFile = new Renderer(undefined, { fonts: [{ family: 'Project Mono', path: fontPath }] });
+  const fromBytes = { fonts: [{ family: 'Project Mono', data: new Uint8Array(fontData) }] };
+  const custom = fromFile.render(fontText, options);
+  assert.match(custom, /data:font\//);
+  assert.notEqual(custom, render(fontText, undefined, options));
+  assert.notEqual(
+    custom.match(/viewBox="([^"]+)"/)[1],
+    render(fontText, undefined, options).match(/viewBox="([^"]+)"/)[1]
+  );
+  assert.notEqual(
+    custom.match(/data:font\/[^;]+;base64,([^"')]+)/)[1],
+    render(fontText, undefined, options).match(/data:font\/[^;]+;base64,([^"')]+)/)[1]
+  );
+  assert.equal(custom, render(fontText, undefined, options, fromBytes));
+  assert.equal(
+    custom,
+    render(fontText, undefined, options, {
+      fonts: [{ family: 'Project Mono', path: fontPath, weight: 400, style: 'normal' }],
+    })
+  );
+  assert.equal(render(fontText), render(fontText, undefined, undefined, {}));
+});
+test('facade rejects ambiguous sources and propagates local-file and registration errors', () => {
+  for (const face of [{ family: 'Missing' }, { family: 'Both', path: fontPath, data: fontData }]) {
+    assert.throws(() => new Renderer(undefined, { fonts: [face] }), /exactly one of path or data/);
+    assert.throws(
+      () => render(fontText, undefined, undefined, { fonts: [face] }),
+      /exactly one of path or data/
+    );
+  }
+  assert.throws(
+    () => new Renderer(undefined, { fonts: [{ family: 'Weight', data: fontData, weight: 1001 }] }),
+    /font weight/
+  );
+  assert.throws(
+    () =>
+      render(fontText, undefined, undefined, {
+        fonts: [{ family: 'Style', data: fontData, style: 'oblique' }],
+      }),
+    /font style/
+  );
+  assert.throws(
+    () => new Renderer(undefined, { fonts: [{ family: 'Absent', path: `${fontPath}.missing` }] }),
+    /ENOENT/
+  );
+  assert.throws(
+    () =>
+      new Renderer(undefined, { fonts: [{ family: 'Invalid', data: Buffer.from('not a font') }] }),
+    /font/i
+  );
+});
+test('an explicitly registered fallback renders an entire label', () => {
+  const root = new URL('../../../crates/ferrigura-text/fonts/', import.meta.url);
+  const fonts = {
+    fonts: [
+      { family: 'Primary', path: fileURLToPath(new URL('LexicaUltralegible-Regular.ttf', root)) },
+      { family: 'Arrows', path: fileURLToPath(new URL('NotoSansMath-Regular-Arrows.ttf', root)) },
+    ],
+    fallbacks: ['Arrows'],
+  };
+  const renderer = new Renderer({ fontFamily: 'Primary' }, fonts);
+  const text = 'flowchart LR\n A["→"]\n';
+  const svg = renderer.render(text);
+  assert.match(svg, /→/);
+  assert.match(svg, /data:font\//);
+  assert.equal(svg, render(text, { fontFamily: 'Primary' }, undefined, fonts));
+});
+
+test('a file is read once when its renderer is constructed', () => {
+  const scratch = mkdtempSync(join(tmpdir(), 'ferrigura-font-'));
+  try {
+    const path = join(scratch, 'owned.ttf');
+    writeFileSync(path, fontData);
+    const renderer = new Renderer(undefined, { fonts: [{ family: 'Project Mono', path }] });
+    unlinkSync(path);
+    assert.equal(
+      renderer.render(fontText),
+      render(fontText, undefined, undefined, {
+        fonts: [{ family: 'Project Mono', data: fontData }],
+      })
+    );
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
 });

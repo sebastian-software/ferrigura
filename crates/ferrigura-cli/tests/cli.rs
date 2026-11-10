@@ -283,3 +283,136 @@ fn compat_selects_reference_geometry_across_diagram_types() {
     assert!(stdout(&optimized).contains("height=\"32\" name=\"App\""));
     assert!(stdout(&compatible).contains("height=\"76\" name=\"App\""));
 }
+
+fn font_file(name: &str) -> String {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../ferrigura-text/fonts")
+        .join(name)
+        .to_str()
+        .expect("UTF-8 fixture path")
+        .to_owned()
+}
+
+#[test]
+fn named_font_files_change_layout_and_embed_the_registered_face() {
+    let input = "flowchart LR\n A[Wide WWW narrow iii]\n";
+    let font = format!(
+        "Project Mono={}",
+        font_file("AtkinsonHyperlegibleMono-Regular.ttf")
+    );
+    let custom = run(&["--font", &font, "--id", "fonts"], input);
+    assert!(custom.status.success(), "{}", stderr(&custom));
+    let ordinary = run(&["--id", "fonts"], input);
+    assert!(
+        stdout(&custom) != stdout(&ordinary),
+        "custom output must differ from bundled defaults"
+    );
+    let custom_svg = stdout(&custom);
+    let ordinary_svg = stdout(&ordinary);
+    let view_box = |svg: &str| {
+        svg.split("viewBox=\"")
+            .nth(1)
+            .unwrap()
+            .split('"')
+            .next()
+            .unwrap()
+            .to_owned()
+    };
+    assert_ne!(
+        view_box(&custom_svg),
+        view_box(&ordinary_svg),
+        "the registered face must drive layout"
+    );
+    assert!(
+        stdout(&custom).contains("data:font/"),
+        "custom font must be embedded"
+    );
+    let explicit = format!(
+        "Project Mono:400:normal={}",
+        font_file("AtkinsonHyperlegibleMono-Regular.ttf")
+    );
+    assert_eq!(
+        stdout(&custom),
+        stdout(&run(&["--font-face", &explicit, "--id", "fonts"], input))
+    );
+    let numeric = format!(
+        "Project Mono:600:italic={}",
+        font_file("AtkinsonHyperlegibleMono-Regular.ttf")
+    );
+    let numeric = run(&["--font-face", &numeric], input);
+    assert!(numeric.status.success(), "{}", stderr(&numeric));
+}
+
+#[test]
+fn registered_fallback_can_draw_an_entire_label() {
+    let primary = format!("Primary={}", font_file("LexicaUltralegible-Regular.ttf"));
+    let fallback = format!("Arrows={}", font_file("NotoSansMath-Regular-Arrows.ttf"));
+    let output = run(
+        &[
+            "--font",
+            &primary,
+            "--font",
+            &fallback,
+            "--font-fallback",
+            "Arrows",
+        ],
+        "flowchart LR\n A[\"→\"]\n",
+    );
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(stdout(&output).contains("→"));
+    assert!(stdout(&output).contains("data:font/"));
+}
+
+#[test]
+fn invalid_font_arguments_are_usage_errors() {
+    for value in [
+        "Family=",
+        "=font.ttf",
+        "Family",
+        "Family:0:normal=font.ttf",
+        "Family:1001:normal=font.ttf",
+        "Family:2.5:normal=font.ttf",
+        "Family:400:oblique=font.ttf",
+    ] {
+        let option = if value.contains(':') {
+            "--font-face"
+        } else {
+            "--font"
+        };
+        let output = run(&[option, value], "");
+        assert_eq!(
+            output.status.code(),
+            Some(2),
+            "{value}: {}",
+            stderr(&output)
+        );
+        assert!(stdout(&output).is_empty());
+    }
+}
+
+#[test]
+fn registration_failure_does_not_touch_output() {
+    let output_file = scratch("font-error-existing.svg", "preserved");
+    let missing = format!(
+        "Project Mono={}",
+        output_file.with_extension("missing").display()
+    );
+    let output = run(
+        &[
+            "--font",
+            &missing,
+            "--output",
+            output_file.to_str().unwrap(),
+        ],
+        PIE,
+    );
+    assert_eq!(output.status.code(), Some(1));
+    assert!(stderr(&output).contains("cannot read font"));
+    assert_eq!(fs::read_to_string(&output_file).unwrap(), "preserved");
+    let corrupt = scratch("font-error-invalid.ttf", "not a font");
+    let corrupt = format!("Project Mono={}", corrupt.display());
+    let output = run(&["--font", &corrupt], PIE);
+    assert_eq!(output.status.code(), Some(1));
+    assert!(stderr(&output).to_ascii_lowercase().contains("font"));
+    assert!(stdout(&output).is_empty());
+}

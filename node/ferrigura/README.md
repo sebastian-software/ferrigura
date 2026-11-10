@@ -18,12 +18,44 @@ const svg = diagrams.render('flowchart LR\nA[Hello] --> B[World]', {
 console.log(svg);
 ```
 
-`render(text, config?, options?)` renders one diagram. `new Renderer(config?)`
+`render(text, config?, options?, fonts?)` renders one diagram. `new Renderer(config?, fonts?)`
 resolves configuration once; reuse `renderer.render(text, options?)` for many
 blocks. Both return SVG synchronously and throw on engine errors. Give diagrams
 unique IDs when combining them in one document. SVG is not automatically JSX.
 
 The default `compat: false` enables optimized flowchart routing and compact sequence participant boxes. Pass `{ compat: true }` as render options to preserve Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes. Options belong to each render and cannot be set in Mermaid front matter or init directives.
+
+## Custom fonts
+
+Register a local file with the renderer, separate from Mermaid configuration:
+
+```js
+const diagrams = new Renderer(
+  {},
+  { fonts: [{ family: 'Project Sans', path: './fonts/regular.ttf' }] }
+);
+const svg = diagrams.render('flowchart LR\n A[Hello]');
+```
+
+Each face takes `family` and exactly one of `path` or `data` (`Uint8Array`,
+including Node.js `Buffer`). The JavaScript facade reads paths synchronously,
+relative to the process directory, and passes bytes to the native addon. The
+renderer owns a copy, so later file or buffer changes do not affect it.
+`weight` defaults to 400 and accepts integers from 1 through 1000; `style` is
+`'normal'` (default) or `'italic'`.
+
+The first registered family is the default unless configuration explicitly sets
+`fontFamily`. Register additional faces and set `fallbacks: ['Symbols']` to name
+an ordered fallback chain. Every family used in custom-font mode must be
+registered, including fallbacks. No system fonts or network sources are loaded.
+
+The same font object is the fourth argument of `render(text, config, options,
+fonts)`. Fonts are renderer initialization inputs; the existing third argument
+and `renderer.render` take only per-render SVG options. Missing files, invalid
+font bytes, unsupported metadata, and ambiguous sources throw before rendering.
+Front matter and init directives can select registered names, but cannot supply
+font files or URLs. Used glyphs remain embedded as subsets. Omitting font
+options preserves the bundled defaults.
 
 ## Draw animation
 

@@ -1,8 +1,8 @@
 //! The `ferrigura` Node addon, Node.js only; there is no WebAssembly build.
 //!
-//! `render(text, config?, options?)` returns the SVG of a Mermaid diagram, with the options of the
+//! `render(text, config?, options?, fonts?)` returns the SVG of a Mermaid diagram, with the options of the
 //! `ferrigura` crate. `Renderer` resolves a configuration once, for many renders:
-//! `new Renderer(config?)`, then `renderer.render(text, options?)`. Both give the same SVG for the
+//! `new Renderer(config?, fonts?)`, then `renderer.render(text, options?)`. Both give the same SVG for the
 //! same configuration, byte for byte.
 //!
 //! The crate has one cargo feature per diagram type, named as its constructor in
@@ -10,10 +10,33 @@
 //! links only those (decision 0020); a text of another type is refused as not registered.
 
 use ferrigura::diagrams::{self, Plugin};
-use ferrigura::{Animation, ColorScheme, RenderOptions, RendererBuilder};
+use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, RendererBuilder};
 use ferrigura_model::value::Value;
+use napi::bindgen_prelude::Uint8Array;
 use napi::{Error, Result, Status};
 use napi_derive::napi;
+
+/// One host-supplied face. The JavaScript facade reads local files before calling the addon.
+#[napi(object)]
+pub struct FontInput {
+    /// Explicit family name, including spaces when needed.
+    pub family: String,
+    /// Font bytes, copied into the renderer during construction.
+    pub data: Uint8Array,
+    /// Integer CSS weight from 1 through 1000. Defaults to 400.
+    pub weight: Option<f64>,
+    /// `normal` (default) or `italic`.
+    pub style: Option<String>,
+}
+
+/// Renderer-scoped font registration, separate from Mermaid configuration and SVG options.
+#[napi(object)]
+pub struct FontOptionsInput {
+    /// Faces registered once before rendering. The first family is the default unless configured.
+    pub fonts: Option<Vec<FontInput>>,
+    /// Registered fallback family names, in order. No files are discovered or downloaded.
+    pub fallbacks: Option<Vec<String>>,
+}
 
 /// The options that are not Mermaid configuration.
 #[napi(object)]
@@ -58,10 +81,11 @@ pub fn render(
     text: String,
     config: Option<serde_json::Value>,
     options: Option<RenderOptionsInput>,
+    fonts: Option<FontOptionsInput>,
 ) -> Result<String> {
     let config = config.map_or_else(Value::empty_object, Value::from);
     let options = render_options(options)?;
-    builder(&config)
+    font_builder(builder(&config), fonts)?
         .shared()
         .render_with(&text, &options)
         .map_err(to_error)
@@ -69,7 +93,7 @@ pub fn render(
 
 /// A renderer that resolves its configuration once, for many renders.
 ///
-/// `new Renderer(config?)` takes the configuration that `render` takes as its second argument, and
+/// `new Renderer(config?, fonts?)` takes the configuration that `render` takes as its second argument, and
 /// `renderer.render(text, options?)` renders a diagram with it, as `render` does. The configuration is
 /// merged onto the defaults when the renderer is made, and the typed view of each diagram type is
 /// resolved at its first render; a render then merges only the diagram's own front matter and
@@ -84,12 +108,15 @@ pub struct Renderer {
 impl Renderer {
     /// Resolves the configuration of a renderer. A value of the wrong type is reported by the render
     /// that reads it, as `render` reports it.
+    ///
+    /// # Errors
+    /// Throws immediately if supplied font bytes or face metadata are invalid.
     #[napi(constructor)]
-    pub fn new(config: Option<serde_json::Value>) -> Self {
+    pub fn new(config: Option<serde_json::Value>, fonts: Option<FontOptionsInput>) -> Result<Self> {
         let config = config.map_or_else(Value::empty_object, Value::from);
-        Self {
-            inner: builder(&config).build(),
-        }
+        Ok(Self {
+            inner: font_builder(builder(&config), fonts)?.build(),
+        })
     }
 
     /// Renders a diagram to an SVG document, with the configuration of this renderer.
@@ -104,6 +131,51 @@ impl Renderer {
         let options = render_options(options)?;
         self.inner.render_with(&text, &options).map_err(to_error)
     }
+}
+
+/// Applies only owned bytes: file and network loading never enter the addon.
+fn font_builder(
+    mut builder: RendererBuilder,
+    input: Option<FontOptionsInput>,
+) -> Result<RendererBuilder> {
+    if let Some(input) = input {
+        for font in input.fonts.unwrap_or_default() {
+            let weight = font.weight.unwrap_or(400.0);
+            if !weight.is_finite() || weight.fract() != 0.0 || !(1.0..=1000.0).contains(&weight) {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "font weight must be an integer from 1 through 1000",
+                ));
+            }
+            let style = match font.style.as_deref().unwrap_or("normal") {
+                "normal" => FontStyle::Normal,
+                "italic" => FontStyle::Italic,
+                _ => {
+                    return Err(Error::new(
+                        Status::InvalidArg,
+                        "font style must be normal or italic",
+                    ));
+                }
+            };
+            builder = builder
+                .font_face(
+                    &font.family,
+                    font.data.to_vec(),
+                    FontWeight::Number(weight as u16),
+                    style,
+                )
+                .map_err(|error| {
+                    Error::new(
+                        Status::InvalidArg,
+                        format!("cannot register font {:?}: {error}", font.family),
+                    )
+                })?;
+        }
+        if let Some(fallbacks) = input.fallbacks {
+            builder = builder.font_fallbacks(fallbacks);
+        }
+    }
+    Ok(builder)
 }
 
 /// The render options of the addon's input.
@@ -332,14 +404,20 @@ mod tests {
     #[cfg(feature = "sequence")]
     #[test]
     fn draws_a_type_whose_feature_is_on() {
-        let svg = render("sequenceDiagram\n  A->>B: Hi\n".to_owned(), None, None).unwrap();
+        let svg = render(
+            "sequenceDiagram\n  A->>B: Hi\n".to_owned(),
+            None,
+            None,
+            None,
+        )
+        .unwrap();
         assert!(svg.starts_with("<svg "));
     }
 
     #[cfg(not(feature = "pie"))]
     #[test]
     fn refuses_a_type_whose_feature_is_off() {
-        let error = render("pie\n  \"Dogs\" : 1\n".to_owned(), None, None).unwrap_err();
+        let error = render("pie\n  \"Dogs\" : 1\n".to_owned(), None, None, None).unwrap_err();
         let message = error.to_string();
         assert!(message.contains("pie"), "{message}");
         assert!(message.contains("not registered"), "{message}");
