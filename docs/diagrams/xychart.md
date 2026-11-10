@@ -94,4 +94,4 @@ The texts of the chart are written as SVG `<text>` with the bundled sans face em
 
 ## Font inputs
 
-Chart title, axis labels and titles, and legend measurements use the regular design of the resolved global `fontFamily`. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+Chart title, axis labels and titles, and legend measurements use the regular design of the resolved global `fontFamily`. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

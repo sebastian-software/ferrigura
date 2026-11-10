@@ -88,4 +88,4 @@ None known: the parser, the DB and the renderer cover every statement of the gra
 
 ## Font inputs
 
-Map text uses the resolved global `fontFamily`, with separate regular and bold bindings for the roles styled bold by the reference. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+Map text uses the resolved global `fontFamily`, with separate regular and bold bindings for the roles styled bold by the reference. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

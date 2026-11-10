@@ -79,4 +79,4 @@ None specific to the type. Fixtures that use scripts the bundled faces lack need
 
 ## Font inputs
 
-Terminal text and rule names are measured in the regular design of the resolved global `fontFamily`, matching the reference’s measurement cache. Rule names are drawn with its bold design. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+Terminal text and rule names are measured in the regular design of the resolved global `fontFamily`, matching the reference’s measurement cache. Rule names are drawn with its bold design. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

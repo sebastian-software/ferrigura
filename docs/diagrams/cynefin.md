@@ -90,4 +90,4 @@ The renderer ports `cynefinRenderer.ts` (`draw`), `cynefinBoundaries.ts` and `st
 
 ## Font inputs
 
-Labels use the resolved global `fontFamily`: regular for items and badges, bold for domain labels and the title, and italic for subtitles. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+Labels use the resolved global `fontFamily`: regular for items and badges, bold for domain labels and the title, and italic for subtitles. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

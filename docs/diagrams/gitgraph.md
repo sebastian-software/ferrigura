@@ -100,4 +100,4 @@ The drawing is built as a tree of elements (`tree.rs`) that knows the box `getBB
 
 ## Font inputs
 
-Text uses the resolved global `fontFamily`. Branch and commit label designs use the theme’s `noteFontWeight`; tag text and the title use the regular design. The reference’s regular-face branch-position measurement is preserved. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+Text uses the resolved global `fontFamily`. Branch and commit label designs use the theme’s `noteFontWeight`; tag text and the title use the regular design. The reference’s regular-face branch-position measurement is preserved. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

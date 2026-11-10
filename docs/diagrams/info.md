@@ -44,4 +44,4 @@ The diagram has no configuration section, so its renderer takes the unit type as
 
 ## Font inputs
 
-The version text uses the resolved global `fontFamily` for measurement and output. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+The version text uses the resolved global `fontFamily` for measurement and output. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

@@ -91,4 +91,4 @@ Defects of the reference that the renderer reproduces:
 
 ## Font inputs
 
-Text uses the resolved global `fontFamily`. Node labels resolve the theme’s `fontWeight`, and the title resolves bold; each role names its measured design in the output. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+Text uses the resolved global `fontFamily`. Node labels resolve the theme’s `fontWeight`, and the title resolves bold; each role names its measured design in the output. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
