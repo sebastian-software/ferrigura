@@ -24,7 +24,7 @@ flowchart LR
 
 The facade, `ferrigura`, ties it together: `Renderer::new(config)` resolves the configuration once, `renderer.render(text)` returns the SVG, and `ferrigura::render(text, config)` is the shorthand. Each diagram type is a plugin of the renderer: `Renderer::new` registers all of them, and `Renderer::builder(config).with(diagrams::sequence())` registers only the types a program draws, so that it links only those; the Node addon picks them with one cargo feature per type, all by default ([0020](./decisions/0020-diagram-types-as-plugins.md)).
 
-Render options are separate from Mermaid configuration. `compat` defaults to `false`: flowcharts use adaptive port alignment with label-aware spacing and sequence participant boxes fit their labels. `compat: true` preserves Mermaid-compatible geometry across diagram types ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Flowchart labels have full-opacity backgrounds in either mode. Render options are passed to each plugin per render and do not change the cached configuration.
+Render options are separate from Mermaid configuration. `compat` defaults to `false`: flowcharts use adaptive port alignment with label-aware spacing and sequence participant boxes fit their labels. `compat: true` preserves Mermaid-compatible geometry across diagram types ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Edge labels drawn by the shared renderer have full-opacity backgrounds in either mode, while preserving explicit theme color transparency. Render options are passed to each plugin per render and do not change the cached configuration.
 
 Flowchart, Gantt, Git graph, mind map, pie, and XY chart accept optional
 [draw animation](./animation.md) ([0021](./decisions/0021-optional-svg-draw-animation.md)).

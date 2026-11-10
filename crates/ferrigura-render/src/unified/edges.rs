@@ -752,7 +752,11 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
         // which an edge label with text has; without one it leaves both as they are.
         Some(_) => {
             let (background, text) = edge_label_styles(&label_style_text(edge));
-            label.svg_with_background(&text, &background)
+            // Every diagram using this label must mask its edge. A shared inline default wins
+            // over the half-opacity rules of individual types without replacing the theme fill
+            // (including its explicit alpha) or a later authored declaration. Reference patch 12
+            // applies the same paint-only correction to `createText`.
+            label.svg_with_background(&text, &format!("opacity:1;{background}"))
         }
         None => label.svg(&label_style_text(edge)),
     };

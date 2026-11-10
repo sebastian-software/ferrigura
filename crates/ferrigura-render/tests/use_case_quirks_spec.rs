@@ -211,8 +211,8 @@ fn e_an_edge_label_is_measured_at_the_theme_font_and_centered_on_its_drawn_box()
         label.contains(" y=\"10\" text-anchor=\"start\">"),
         "the line is drawn at 10 pixels"
     );
-    // `createText` gives the background of an edge label the label's style, empty here.
-    let background = tag(label, "class=\"background\" style=\"\" x=");
+    // The shared opacity default does not change the measured background box.
+    let background = tag(label, "class=\"background\"");
     let measured = number(background, "width") - 4.0;
     let drawn = measured * 10.0 / 14.0;
     let first_line = &label[label
