@@ -46,7 +46,12 @@ const TITLE_HEIGHT: f64 = 60.0;
 /// Returns an error for a named label of a boundary or a relation, an element type without a
 /// palette, a relation whose ends are not drawn, or if a bundled font cannot be read.
 pub fn render(input: &Context<'_, C4Diagram, C4DiagramConfig>) -> Result<String, RenderError> {
-    let conf = config::Conf::new(input.section);
+    let mut conf = config::Conf::new(input.section);
+    conf.fonts = input.text_fonts();
+    let primary = conf.fonts.face(
+        ferrigura_text::FontWeight::Normal,
+        ferrigura_text::FontStyle::Normal,
+    )?;
     let tokens = input.theme.light;
     let radius = tokens
         .radius
@@ -116,36 +121,28 @@ pub fn render(input: &Context<'_, C4Diagram, C4DiagramConfig>) -> Result<String,
     // The font: the subsets of the diagram's text, named once they are made (decision 0010). The title
     // is set in the root's face, so its glyphs are part of the subset too.
     if !title.is_empty() {
-        draw.runs.push((
-            decode_entities(title),
-            crate::fonts::FontFace::retain(ferrigura_text::face(
-                ferrigura_text::FontFamily::Sans,
-                ferrigura_text::FontWeight::Normal,
-                ferrigura_text::FontStyle::Normal,
-            )),
-        ));
+        draw.runs.push((decode_entities(title), primary.clone()));
     }
     let runs: Vec<Run<'_, '_>> = draw
         .runs
         .iter()
-        .map(|(text, face)| Run {
-            text,
-            face: &**face,
-        })
+        .map(|(text, face)| Run { text, face })
         .collect();
     let families = embed_runs(&runs)?;
-    let family_css = families.first().map_or_else(
-        || {
-            format!(
-                "\"{}\"",
-                tokens
-                    .font_family
-                    .text()
-                    .unwrap_or_else(|| "sans-serif".to_owned())
-            )
-        },
-        |family| family.css_family.clone(),
-    );
+    let family_css = primary.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                format!(
+                    "\"{}\"",
+                    tokens
+                        .font_family
+                        .text()
+                        .unwrap_or_else(|| "sans-serif".to_owned())
+                )
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     let person_border = tokens.person_border.text().unwrap_or_default();
     let person_background = tokens.person_bkg.text().unwrap_or_default();

@@ -9,7 +9,7 @@
 //! is laid out at its size in screen pixels, `fontSize * scale`, and the box is divided by the scale
 //! again. At a scale of 1 that changes nothing.
 
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, text_box};
+use ferrigura_text::{FontStyle, FontWeight, text_box};
 
 use crate::RenderError;
 use crate::common::text::collapsed_box;
@@ -28,13 +28,14 @@ pub struct TextBox {
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn max_dimension<S: AsRef<str>>(
+    fonts: &crate::fonts::FontContext,
     texts: &[S],
     font_size: f64,
     scale: f64,
 ) -> Result<TextBox, RenderError> {
     let mut max = TextBox::default();
     for text in texts {
-        let measured = measure(text.as_ref(), font_size, scale)?;
+        let measured = measure(fonts, text.as_ref(), font_size, scale)?;
         max.width = max.width.max(measured.width);
         max.height = max.height.max(measured.height);
     }
@@ -47,14 +48,19 @@ pub fn max_dimension<S: AsRef<str>>(
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn measure(text: &str, font_size: f64, scale: f64) -> Result<TextBox, RenderError> {
+pub fn measure(
+    fonts: &crate::fonts::FontContext,
+    text: &str,
+    font_size: f64,
+    scale: f64,
+) -> Result<TextBox, RenderError> {
     if text.is_empty() {
         return Ok(TextBox::default());
     }
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = fonts.face(FontWeight::Normal, FontStyle::Normal)?;
     let screen_size = font_size * scale;
-    let extent = collapsed_box(sans, text, laid_out_size(screen_size))?;
-    let height = text_box(sans, screen_size)?.height;
+    let extent = collapsed_box(&sans, text, laid_out_size(screen_size))?;
+    let height = text_box(&sans, screen_size)?.height;
     Ok(TextBox {
         width: extent.width() / scale,
         height: height / scale,
@@ -74,7 +80,13 @@ mod tests {
     fn at_a_scale_of_one_the_box_is_the_text_box() {
         // A probe of the reference: `Sales Revenue` at 14 px is 89.734375 wide, and its
         // box is 17 px high. The height is a whole number of pixels.
-        let text = measure("Sales Revenue", 14.0, 1.0).expect("the font reads");
+        let text = measure(
+            &crate::fonts::FontContext::bundled(),
+            "Sales Revenue",
+            14.0,
+            1.0,
+        )
+        .expect("the font reads");
         assert_eq!(text.height, 17.0);
         assert_eq!(text.width, 89.734375);
     }
@@ -82,7 +94,13 @@ mod tests {
     #[test]
     fn a_scaled_svg_measures_the_text_on_the_screen_and_divides_back() {
         // Measured at 6 px (20 px at 0.3) the box is 8 screen pixels: 8 / 0.3 user units.
-        let text = measure("Wide chart scaled down to fit", 20.0, 0.3).expect("the font reads");
+        let text = measure(
+            &crate::fonts::FontContext::bundled(),
+            "Wide chart scaled down to fit",
+            20.0,
+            0.3,
+        )
+        .expect("the font reads");
         assert_eq!(text.height, 8.0 / 0.3);
         assert_eq!(text.width, 255.10416666666669);
     }
@@ -90,7 +108,7 @@ mod tests {
     #[test]
     fn an_empty_text_has_no_box() {
         assert_eq!(
-            measure("", 14.0, 1.0).expect("the font reads"),
+            measure(&crate::fonts::FontContext::bundled(), "", 14.0, 1.0).expect("the font reads"),
             TextBox::default()
         );
     }

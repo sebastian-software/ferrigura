@@ -38,7 +38,7 @@ const CELL_WRAP_MARGIN: f64 = 100.0;
 ///
 /// # Errors
 ///
-/// Returns an error if a bundled font cannot be read.
+/// Returns an error if a font cannot be read.
 pub(super) fn er_box(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
     let node = input.node;
     let fields = node.entity.clone().unwrap_or_default();
@@ -530,8 +530,8 @@ fn vertical_line(x: f64, y1: f64, y2: f64) -> [Point; 4] {
 /// `font_size`, as the box `getBBox` gives it, rounded to a whole pixel. Lines are split at the `<br>` tags (`lineBreakRegex`).
 ///
 /// The reference measures in both `sans-serif` and the configured family and keeps the second unless
-/// the first is larger in every dimension (`utils.ts` 712-720). ferrigura has only the bundled
-/// family, which the second measure is, so the result is the bundled family's width.
+/// the first is larger in every dimension (`utils.ts` 712-720). Ferrigura measures the resolved
+/// configured face directly, so the embedded family has the same width.
 pub(super) fn calculate_text_width(
     text: &str,
     font_size: f64,
@@ -540,14 +540,14 @@ pub(super) fn calculate_text_width(
     if text.is_empty() {
         return Ok(0.0);
     }
-    let bundled = fonts.face(FontWeight::Normal, FontStyle::Normal)?;
+    let resolved = fonts.face(FontWeight::Normal, FontStyle::Normal)?;
     let mut width = 0.0_f64;
     for line in split_at_breaks(text) {
         // An empty line is measured as a zero-width space, which has no advance.
         let measured = if line.is_empty() {
             0.0
         } else {
-            measure_box(&bundled, line, font_size)?.width()
+            measure_box(&resolved, line, font_size)?.width()
         };
         width = width.max(measured);
     }

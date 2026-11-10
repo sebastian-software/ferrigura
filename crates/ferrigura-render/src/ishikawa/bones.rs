@@ -159,7 +159,7 @@ fn cause_style(cx: &Context) -> Style {
         anchor_attribute: "middle",
         anchor: Anchor::Middle,
         baseline: Baseline::Middle,
-        face: cx.regular,
+        face: cx.regular.clone(),
         size: cx.label_size,
         line_height: cx.line_height(),
     }
@@ -246,7 +246,7 @@ pub(super) fn draw_branch(
                 anchor_attribute: "end",
                 anchor: Anchor::End,
                 baseline: Baseline::Middle,
-                face: cx.regular,
+                face: cx.regular.clone(),
                 size: cx.label_size,
                 line_height: cx.line_height(),
             };
@@ -271,7 +271,7 @@ pub(super) fn draw_branch(
                 anchor_attribute: "end",
                 anchor: Anchor::End,
                 baseline: diagonal_label.1,
-                face: cx.regular,
+                face: cx.regular.clone(),
                 size: cx.label_size,
                 line_height: cx.line_height(),
             };

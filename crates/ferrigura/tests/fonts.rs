@@ -93,7 +93,7 @@ fn fallback_only_and_mixed_labels_bind_the_original_requested_face() {
         .font_fallbacks(["Arrows"])
         .build();
     let only = renderer.render("flowchart LR\n A[\"→\"]").unwrap();
-    assert_eq!(only.matches("@font-face{").count(), 1);
+    assert_eq!(only.matches("@font-face{").count(), 2);
     assert!(only.contains("font-family:var(--fg-font-"));
     assert!(only.contains("font-synthesis:none"));
     let mixed = renderer.render("flowchart LR\n A[\"AV → AV\"]").unwrap();
@@ -165,4 +165,91 @@ fn supplied_weight_and_style_fallbacks_keep_distinct_measured_designs() {
     assert_eq!(svg.matches("@font-face{").count(), 3);
     assert!(svg.contains("font-weight:500"));
     assert!(svg.contains("font-weight:800"));
+}
+
+#[test]
+fn a_node_declared_family_measures_and_draws_the_registered_design() {
+    let renderer = Renderer::builder(&Value::empty_object())
+        .with_all()
+        .font("Primary", SANS.to_vec())
+        .unwrap()
+        .font("Other", MONO.to_vec())
+        .unwrap()
+        .build();
+    let styled = renderer
+        .render("flowchart LR\n A[AVATAR width]\n style A font-family:Other")
+        .unwrap();
+    let expected = self::renderer(MONO)
+        .render("flowchart LR\n A[AVATAR width]")
+        .unwrap();
+    assert_eq!(view_box(&styled), view_box(&expected));
+}
+
+#[test]
+fn a_theme_family_override_uses_its_registered_design() {
+    let config = Value::from(serde_json::json!({"themeVariables":{"fontFamily":"Other"}}));
+    let renderer = Renderer::builder(&config)
+        .with_all()
+        .font("Primary", SANS.to_vec())
+        .unwrap()
+        .font("Other", MONO.to_vec())
+        .unwrap()
+        .build();
+    let actual = renderer.render("flowchart LR\n A[AVATAR width]").unwrap();
+    let expected = self::renderer(MONO)
+        .render("flowchart LR\n A[AVATAR width]")
+        .unwrap();
+    assert_eq!(view_box(&actual), view_box(&expected));
+}
+
+#[test]
+fn an_edge_declared_family_binds_the_design_that_measured_its_label() {
+    let renderer = Renderer::builder(&Value::empty_object())
+        .with_all()
+        .font("Primary", SANS.to_vec())
+        .unwrap()
+        .font("Other", MONO.to_vec())
+        .unwrap()
+        .build();
+    let svg = renderer
+        .render("flowchart LR\n A -->|AVATAR| B\n linkStyle 0 font-family:Other")
+        .unwrap();
+    let mut registry = ferrigura::FontRegistry::new();
+    registry
+        .register(
+            "Other",
+            MONO.to_vec(),
+            FontWeight::Normal,
+            FontStyle::Normal,
+        )
+        .unwrap();
+    let other = registry
+        .resolve("Other", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    let binding = format!("font-family:var({})", other.css_variable().unwrap());
+    assert!(svg.contains(&binding), "edge font binding is missing");
+}
+
+#[test]
+fn use_case_actor_and_usecase_families_resolve_their_configured_roles() {
+    let text = "usecase-beta\nactor User(\"AVATAR width\")\nUC(\"AVATAR width\")\nUser --> UC";
+    let configured = |family: &str| {
+        Renderer::builder(&Value::from(serde_json::json!({
+            "usecase":{"actorFontFamily":family,"usecaseFontFamily":family}
+        })))
+        .with_all()
+        .font("Fixture", SANS.to_vec())
+        .unwrap()
+        .font("Other", MONO.to_vec())
+        .unwrap()
+        .build()
+    };
+    let first = configured("Fixture").render(text).unwrap();
+    let second = configured("Other").render(text).unwrap();
+    assert_ne!(view_box(&first), view_box(&second));
+    let error = configured("Missing Role")
+        .render(text)
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("Missing Role"));
 }

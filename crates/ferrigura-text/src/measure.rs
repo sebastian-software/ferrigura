@@ -120,7 +120,7 @@ pub fn layout_width(advance: f64) -> f64 {
 ///
 /// # Errors
 ///
-/// Returns an error if the bundled font cannot be parsed or the shaper rejects the text.
+/// Returns an error if the font cannot be parsed or the shaper rejects the text.
 pub fn measure(face: &Face, text: &str, size: f64) -> Result<f64, TextError> {
     let mut total = 0.0;
     for stretch in fallback_runs(Run { text, face }) {

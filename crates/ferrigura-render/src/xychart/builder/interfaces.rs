@@ -8,6 +8,8 @@
 /// The margins and sizes of the chart, as the reference's `XYChartConfig` gives them.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChartConfig {
+    /// Explicit font inputs for chart measurements.
+    pub fonts: crate::fonts::FontContext,
     pub width: f64,
     /// The scale of the SVG on the screen, at which the texts are measured (`config.rs`).
     pub screen_scale: f64,

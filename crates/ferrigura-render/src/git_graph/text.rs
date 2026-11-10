@@ -4,10 +4,9 @@
 //! (`measure::layout_width`) where the reference centers a label by the browser, and the box of its
 //! glyphs (`bbox::measure_box`) where the reference reads `getBBox`.
 
-use ferrigura_text::{
-    Extent, Face, FontFamily, FontStyle, FontWeight, face, layout_width, measure, measure_box,
-    text_box,
-};
+use ferrigura_text::{Extent, Face, layout_width, measure, measure_box, text_box};
+#[cfg(test)]
+use ferrigura_text::{FontFamily, FontStyle, FontWeight, face};
 
 use super::tree::Element;
 use crate::RenderError;
@@ -15,6 +14,7 @@ use crate::unified::geom::BBox;
 
 /// The regular face: the root's text, the tags and the title.
 #[must_use]
+#[cfg(test)]
 pub fn regular() -> &'static Face {
     face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal)
 }
@@ -23,6 +23,7 @@ pub fn regular() -> &'static Face {
 /// 600. The bundled family has no face between its regular and bold, so 600 takes the bold one, as
 /// Chromium's font matching picks the heavier face for a weight above 500.
 #[must_use]
+#[cfg(test)]
 pub fn bold() -> &'static Face {
     face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal)
 }
@@ -33,7 +34,7 @@ pub fn bold() -> &'static Face {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn width(face: &'static Face, text: &str, size: f64) -> Result<f64, RenderError> {
+pub fn width(face: &Face, text: &str, size: f64) -> Result<f64, RenderError> {
     Ok(layout_width(measure(face, text, size)?))
 }
 
@@ -44,7 +45,7 @@ pub fn width(face: &'static Face, text: &str, size: f64) -> Result<f64, RenderEr
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn extent(face: &'static Face, text: &str, size: f64) -> Result<Extent, RenderError> {
+pub fn extent(face: &Face, text: &str, size: f64) -> Result<Extent, RenderError> {
     Ok(measure_box(face, text, size)?)
 }
 
@@ -104,11 +105,7 @@ fn break_tag_length(text: &str) -> Option<usize> {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn draw_text(
-    text: &str,
-    face: &'static Face,
-    size: f64,
-) -> Result<(Element, BBox), RenderError> {
+pub fn draw_text(text: &str, face: &Face, size: f64) -> Result<(Element, BBox), RenderError> {
     let metrics = text_box(face, size)?;
     let rows = rows(text);
     let mut tspans = Vec::with_capacity(rows.len());
@@ -129,11 +126,19 @@ pub fn draw_text(
         });
     }
     let bounds = bounds.unwrap_or_default();
-    let mut element = Element::text_lines(bounds);
+    let mut element = with_face(Element::text_lines(bounds), face);
     for tspan in tspans {
         element.push(tspan);
     }
     Ok((element, bounds))
+}
+
+/// Binds the exact registered design without changing legacy bundled markup.
+pub fn with_face(mut element: Element, face: &Face) -> Element {
+    if let Some(variable) = face.css_variable() {
+        element = element.attr("style", format!("font-family:var({variable});"));
+    }
+    element
 }
 
 /// The union of two boxes, leaving out an empty one as `getBBox` does.
@@ -154,7 +159,7 @@ fn union_nonempty(a: BBox, b: BBox) -> BBox {
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn line_box(
-    face: &'static Face,
+    face: &Face,
     size: f64,
     x: f64,
     baseline: f64,
@@ -174,7 +179,7 @@ pub fn line_box(
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn line_height(face: &'static Face, size: f64) -> Result<f64, RenderError> {
+pub fn line_height(face: &Face, size: f64) -> Result<f64, RenderError> {
     Ok(text_box(face, size)?.height)
 }
 

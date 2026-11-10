@@ -18,8 +18,7 @@ use ferrigura_model::config::TimelineDiagramConfig;
 use ferrigura_model::theme::ThemeTokens;
 use ferrigura_model::timeline::TimelineDiagram;
 use ferrigura_text::{
-    EmbeddedFamily, Face, FontFamily, FontStyle, FontWeight, Run, TextBox, embed_runs, face,
-    text_box, x_height,
+    EmbeddedFamily, FontStyle, FontWeight, Run, TextBox, embed_runs, text_box, x_height,
 };
 
 use crate::RenderError;
@@ -58,28 +57,36 @@ pub fn render(
 
     // The fonts: the glyphs of every text the diagram draws, in the regular and the bold face.
     let texts = drawn_texts(diagram);
-    let runs = [
+    let mut runs = vec![
         Run {
             text: &texts,
-            face: cx.regular,
+            face: &cx.regular,
         },
         Run {
             text: &texts,
-            face: cx.node_face,
+            face: &cx.node_face,
         },
     ];
+    if !diagram.title.is_empty() && cx.bold.css_reference().is_some() {
+        runs.push(Run {
+            text: &texts,
+            face: &cx.bold,
+        });
+    }
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            input
-                .theme
-                .light
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = cx.regular.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                input
+                    .theme
+                    .light
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let style = base_style_sheet(
         input.id,
         input.theme,
@@ -166,11 +173,11 @@ pub(super) struct Context<'a> {
     /// The CSS font size in pixels, the size the text is measured at.
     pub text_size: f64,
     /// The regular face: the text of the virtual nodes, which sit outside the `section-N` groups.
-    pub regular: &'static Face,
+    pub regular: crate::fonts::FontFace,
     /// The bold face, which the title is set in.
-    pub bold: &'static Face,
+    pub bold: crate::fonts::FontFace,
     /// The face of the node text: the theme's `fontWeight` (600 in the redux themes) takes the bold face.
-    pub node_face: &'static Face,
+    pub node_face: crate::fonts::FontFace,
     /// The ascent of the text box of a line, rounded (`text_box`).
     pub ascent: f64,
     /// The descent of the text box of a line, rounded.
@@ -252,14 +259,18 @@ impl<'a> Context<'a> {
             .text()
             .and_then(|text| text.trim().parse::<f64>().ok())
             .unwrap_or(400.0);
-        let regular = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
-        let bold = face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal);
-        let node_face = if weight > 500.0 { bold } else { regular };
+        let fonts = input.text_fonts();
+        let regular = fonts.face(FontWeight::Normal, FontStyle::Normal)?;
+        let bold = fonts.face(FontWeight::Bold, FontStyle::Normal)?;
+        let node_face = fonts.face(
+            FontWeight::Number(weight.clamp(1.0, 1000.0) as u16),
+            FontStyle::Normal,
+        )?;
         let TextBox {
             ascent, descent, ..
-        } = text_box(node_face, text_size)?;
-        let middle = x_height(node_face, text_size)? / 2.0;
-        let title_size = 4.0 * x_height(regular, text_size)?;
+        } = text_box(&node_face, text_size)?;
+        let middle = x_height(&node_face, text_size)? / 2.0;
+        let title_size = 4.0 * x_height(&regular, text_size)?;
 
         let limit = tokens
             .theme_color_limit
@@ -405,16 +416,19 @@ pub(super) fn title(
 ) -> Result<(Element, Option<BBox>), RenderError> {
     let shown = shown_text(text);
     // The title starts at `x`, and its box is the glyphs' box from there.
-    let ink = collapsed_box(cx.bold, &shown, cx.title_size)?;
+    let ink = collapsed_box(&cx.bold, &shown, cx.title_size)?;
     let TextBox {
         ascent, descent, ..
-    } = text_box(cx.bold, cx.title_size)?;
-    let element = Element::new("text")
+    } = text_box(&cx.bold, cx.title_size)?;
+    let mut element = Element::new("text")
         .with("x", number(x))
         .with("font-size", "4ex")
         .with("font-weight", "bold")
         .with("y", "20")
         .raw_text(markup(text));
+    if let Some(css) = cx.bold.css_reference() {
+        element.set("style", format!("font-family:{css};"));
+    }
     // A title with no glyph, such as one blank, has no box (as a node text with no glyph has none).
     let bounds = (!collapse_white_space(&shown).is_empty()).then_some(BBox {
         x: x + ink.left,

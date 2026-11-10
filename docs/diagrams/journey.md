@@ -50,7 +50,7 @@ Quirks of the reference that the parser keeps on purpose:
 ## Differences from Mermaid
 
 - **`fo` labels are SVG text** ([0009](../decisions/0009-svg-text-labels.md)). The renderer breaks a label where the browser breaks the HTML (after a blank, and after a hyphen followed by a letter), centers each line in the cell, and uses the line box of the font. `<br>` is literal text in this placement, as it is in the reference.
-- **Fonts.** Every text is set in the bundled face, so `titleFontFamily` and `taskFontFamily` are not read; the geometry harness pins them on the reference side (`journey-labels.ts`) ([0010](../decisions/0010-text-measurement-and-fonts.md)).
+- **Bundled fonts.** Without host font inputs, the title and task families retain the bundled compatibility faces; the geometry harness pins them on the reference side (`journey-labels.ts`) ([0010](../decisions/0010-text-measurement-and-fonts.md)).
 - **Only the redux themes are drawn** ([0011](../decisions/0011-themes-as-css-variables.md)).
 - **The number of color types is 7,** the length of the schema's `sectionFills`, whatever the configuration says: the reference reads it once when its module loads.
 
@@ -76,3 +76,7 @@ Quirks of the reference that the parser keeps on purpose:
 - **The bounds use the wrong right edge on purpose.** A task inserts `x + diagramMarginX + taskMargin` (`x + 100`), not `x + width`; the viewBox still contains the last box because the width adds `leftMargin` and `2 · diagramMarginX`.
 - **A CSS rule overrides the attributes.** `line { stroke: textColor }` makes the task lines and the activity line take the text color, not `#666` or `black`, and `.task-type-N` and `.section-type-N` are all gated by `fillType0`.
 - **Widths sit on the 1/64 px grid,** because they are sums of runs rounded up to it: a `leftMargin` of `455.453125` is `150` plus a legend line of `305.453125`.
+
+## Font inputs
+
+The actor legend uses the resolved global `fontFamily`. Unconfigured task and title families inherit the resolved global family. Explicit tasks and sections resolve `taskFontFamily`, while the title resolves `titleFontFamily` in bold. Supplied files determine wrapping, placement, and the SVG font bindings. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

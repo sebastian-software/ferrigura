@@ -85,3 +85,7 @@ None known: the parser, the DB and the renderer cover every statement of the gra
 - **The accelerator's path has line breaks and indentation** in the reference (a template literal). An SVG parser ignores them, and ferrigura keeps them so that the output is the same text.
 - **The DOM order is the order of the `append` calls,** and `insert('rect', 'text')` puts the annotations box's rectangle before its first text. An annotations box with no annotation text leaves an empty `g.wardley-annotations-box`.
 - **Entities.** `encodeEntities` runs before the parse and the whole SVG is decoded afterwards: `Cost #35; here` shows `Cost # here`, `R&amp;D` shows literally, and `a <b>x</b>` in a note is shown as typed because d3's `text` does not parse markup.
+
+## Font inputs
+
+Map text uses the resolved global `fontFamily`, with separate regular and bold bindings for the roles styled bold by the reference. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

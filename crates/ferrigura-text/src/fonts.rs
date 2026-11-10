@@ -164,7 +164,7 @@ impl Face {
                     add(&self.weight().css_value().to_le_bytes());
                     add(self.style().css_keyword().as_bytes());
                     add(&(self.data().len() as u64).to_le_bytes());
-                    add(self.data());
+                    add(&self.data_fingerprint.unwrap_or_default().to_le_bytes());
                     for fallback in &self.fallbacks {
                         if let Some(variable) = fallback.css_variable() {
                             add(variable.as_bytes());

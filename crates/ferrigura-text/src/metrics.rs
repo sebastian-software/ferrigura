@@ -1,9 +1,11 @@
 //! Vertical metrics of a line: the text box browsers draw around it.
 //!
-//! The font's ascent and descent are rounded to whole pixels, each on its own, a tie going down
-//! (28.5 becomes 28), and the text box is built from the rounded values. The size is floored to
-//! 1/100 px first. That is how Chromium lays out SVG text, and with the same rounding the box
-//! matches the browser exactly. The fixture in `tests/fixtures/chromium.json` holds the evidence.
+//! Chromium's macOS TrueType line metrics use normalized 16.16 values from CoreText, scaled to the size,
+//! then rounded independently to whole pixels. Decimal ratios such as Lexica's 0.95 fall just
+//! below a half-pixel tie; exactly representable ratios such as Inter's 1984/2048 round up at a tie.
+//! The size is floored to 1/100 px first. CFF follows its outline-unit precision instead.
+//! These are empirical Chromium/macOS compatibility rules, verified by the retained fixtures;
+//! other SVG viewers can use different line metrics.
 
 use read_fonts::{FontRef, TableProvider};
 
@@ -58,13 +60,33 @@ pub fn font_metrics(face: &Face, size: f64) -> Result<FontMetrics, TextError> {
 /// The text box of `face` at `size` pixels, with ascent and descent rounded to whole pixels.
 ///
 /// The size is first floored to 1/100 px, as Chromium sets SVG text (see `laid_out_size`).
+/// TrueType normalized metrics are truncated to 16.16 before scaling, matching CoreText's line
+/// metrics. CFF metrics retain their outline-unit precision;
+/// Chromium then rounds to the nearest pixel, with exact positive ties going up.
 ///
 /// # Errors
 ///
 /// Returns an error if the font cannot be parsed or has no line metrics.
 pub fn text_box(face: &Face, size: f64) -> Result<TextBox, TextError> {
-    let metrics = font_metrics(face, laid_out_size(size))?;
-    Ok(text_box_from(metrics))
+    let size = f64::from(laid_out_size(size) as f32);
+    let metrics = font_metrics(face, 1.0)?;
+    let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
+    let is_cff = font.cff().is_ok() || font.cff2().is_ok();
+    let normalize = |metric: f64| {
+        if is_cff {
+            metric
+        } else {
+            (metric * 65536.0).trunc() / 65536.0
+        }
+    };
+    let ascent = f64::from((normalize(metrics.ascent) * size) as f32).round();
+    let descent = f64::from((normalize(metrics.descent) * size) as f32).round();
+    Ok(TextBox {
+        ascent,
+        descent,
+        top: ascent,
+        height: ascent + descent,
+    })
 }
 
 /// The x-height of `face` at `size` pixels, unrounded: the `sxHeight` of the OS/2 table scaled to the
@@ -110,10 +132,8 @@ fn laid_out_size(size: f64) -> f64 {
 
 /// Rounds a positive metric to a whole pixel, a tie going down: 28.5 becomes 28, 28.6 becomes 29.
 ///
-/// Chromium does this for both ascent and descent at every whole size tested, and no other rule
-/// fits them all (`tests/fixtures/chromium.json`): round half up misses every tie (10, 30 and 50 px
-/// among them), round half to even misses the ties at 10 and 50 px, and rounding ascent plus
-/// descent together gives a height one pixel too large at 50 px.
+/// This is the compatibility rule of `text_box_from`, which accepts already-scaled metrics.
+/// `text_box` can instead normalize the original face metrics before scaling and rounding.
 fn round_half_down(value: f64) -> f64 {
     if value.fract() == 0.5 {
         value.floor()

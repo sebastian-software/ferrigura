@@ -46,3 +46,16 @@ subsets hold the glyphs a diagram draws, not the whole file.
 under the SIL Open Font License 1.1. The original license is
 `tests/fixtures/OFL-SourceCodePro.md`. This font is a test input and is not compiled into the
 library or included in its published package.
+
+## Variable-font test fixture
+
+`tests/fixtures/Inter-DefaultAxes.ttf` is a test-only subset of Inter's `Inter[opsz,wght].ttf`
+from [google/fonts at 5bb28733cec313b63fbd415b574b5ae35c8aa8b8](https://github.com/google/fonts/tree/5bb28733cec313b63fbd415b574b5ae35c8aa8b8/ofl/inter).
+The source SHA-256 is `29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031`.
+It is Copyright 2020 The Inter Project Authors, under the SIL Open Font License 1.1;
+`tests/fixtures/OFL-Inter.txt` retains the license. The subset is produced with this crate's
+`subset_face` for `Hamburgefontsiv AVATAR iii WWW`, preserving its variation axes and removing
+unused glyphs and hinting. Its SHA-256 is
+`f1db7bde90f908b1849462701b36a4550b111550f72046edea08ed97fbf98f41`.
+It is neither compiled into the library nor included in its published
+package.

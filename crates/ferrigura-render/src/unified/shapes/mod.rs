@@ -177,13 +177,23 @@ impl Intersect {
     }
 }
 
+pub(super) fn node_fonts(node: &Node, config: &Config<'_>) -> crate::fonts::FontContext {
+    node.use_case
+        .as_ref()
+        .and_then(|fields| fields.font_family.as_deref())
+        .map_or_else(
+            || config.fonts.clone(),
+            |family| config.fonts.with_family(family),
+        )
+}
+
 /// Lays out a node's label as `labelHelper` does before it draws the shape: the label text at
 /// `width`, or else the node's wrapping width (`node.width || node.wrappingWidth ||
 /// flowchart.wrappingWidth`). `None` when the shape draws no label.
 ///
 /// # Errors
 ///
-/// Returns an error for a shape name the registry does not know, or if a bundled font cannot be
+/// Returns an error for a shape name the registry does not know, or if a font cannot be
 /// read.
 pub fn node_label(
     node: &Node,
@@ -241,7 +251,7 @@ pub fn node_label(
     // label of an `@{ label }` node, which the DB did not sanitize, is sanitized here.
     let text = sanitize_text(&decode_entities(&node.label));
     let spec = LabelSpec {
-        fonts: config.fonts.clone(),
+        fonts: node_fonts(node, config),
         text: if kind.is_some_and(Kind::empties_label) {
             ""
         } else {

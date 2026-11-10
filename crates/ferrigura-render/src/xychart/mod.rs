@@ -8,7 +8,7 @@ mod config;
 
 use ferrigura_model::config::XYChartConfig;
 use ferrigura_model::xychart::XyChartDiagram;
-use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
@@ -55,7 +55,9 @@ pub fn render_with_animation(
     let mut plot_starts = std::collections::HashMap::new();
     let diagram = input.diagram;
     let tokens = input.theme.light;
-    let config = config::chart_config(input.section, diagram.orientation == "horizontal");
+    let mut config = config::chart_config(input.section, diagram.orientation == "horizontal");
+    config.fonts = input.text_fonts();
+    let primary = config.fonts.face(FontWeight::Normal, FontStyle::Normal)?;
     let theme = config::theme_config(tokens.xy_chart.as_ref());
     let data = config::chart_data(diagram);
 
@@ -205,18 +207,20 @@ pub fn render_with_animation(
     let drawn: String = texts.concat();
     let runs = [Run {
         text: &drawn,
-        face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+        face: &primary,
     }];
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = primary.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
     let style = base_style_sheet(
         input.id,

@@ -97,3 +97,7 @@ The drawing is built as a tree of elements (`tree.rs`) that knows the box `getBB
 - **Colors wrap differently for commits and branches.** Bullets and arrows use a limit of 8 and, in the color themes, skip index 0; branch lines and labels use the theme's `THEME_COLOR_LIMIT` (12) for the redux geometry, so `branch8` to `branch11` have classes of their own while their commits wrap into 1 to 7.
 - **Tags are reversed in place.** The reference reverses the commit's tag list while drawing, so the last tag is the one nearest the commit.
 - **The reference's `getBranchesAsObjArray` fallback is dead:** every branch has a number as its order, so the order is the stable sort by `order`.
+
+## Font inputs
+
+Text uses the resolved global `fontFamily`. Branch and commit label designs use the theme’s `noteFontWeight`; tag text and the title use the regular design. The reference’s regular-face branch-position measurement is preserved. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

@@ -18,7 +18,7 @@ mod time;
 
 use ferrigura_model::config::GanttDiagramConfig;
 use ferrigura_model::gantt::{GanttDiagram, GanttTask};
-use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
@@ -73,7 +73,10 @@ pub fn render_with_animation(
     animation: Option<crate::animation::Animation>,
 ) -> Result<String, RenderError> {
     let mut drawing = animation.map(|options| crate::animation::Drawing::new(input.id, options));
-    let mut chart = Chart::new(input);
+    let mut chart = Chart::new(input)?;
+    let italic = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Italic)?;
     let mut texts = Texts::default();
     let mut body = String::new();
     // `appendDivSvgG` leaves an empty group before the chart's own elements (`mermaidAPI.ts:418`).
@@ -88,18 +91,38 @@ pub fn render_with_animation(
         body.push_str(&drawing.finish());
     }
 
-    let runs = texts.runs();
+    let mut runs = texts.runs(&chart.regular, &italic);
+    runs.extend(
+        texts
+            .custom_runs
+            .iter()
+            .map(|(text, face)| Run { text, face }),
+    );
     let families = embed_runs(&runs)?;
-    let family = families
-        .first()
-        .map(|family: &EmbeddedFamily| family.css_family.clone())
-        .unwrap_or_default();
+    let family = chart.regular.css_reference().unwrap_or_else(|| {
+        families
+            .first()
+            .map(|family: &EmbeddedFamily| family.css_family.clone())
+            .unwrap_or_default()
+    });
     let faces = if families.is_empty() {
         String::new()
     } else {
         font_faces(input.id, &families)
     };
-    let style = style::style_element(input.id, input.theme, &family, &faces);
+    let mut style = style::style_element(input.id, input.theme, &family, &faces);
+    if let Some(css) = chart.regular.css_reference() {
+        style = style.replace(
+            "</style>",
+            &format!("#{} .grid{{font-family:{css};}}</style>", input.id),
+        );
+    }
+    if let Some(css) = italic.css_reference() {
+        style = style.replace(
+            "</style>",
+            &format!("#{} .milestoneText{{font-family:{css};}}</style>", input.id),
+        );
+    }
     let title = input.diagram.acc_title.as_str();
     let description = input.diagram.acc_descr.as_str();
     let accessibility = a11y::children(input.id, title, description);
@@ -130,6 +153,7 @@ pub fn render_with_animation(
 #[derive(Default)]
 pub(super) struct Texts {
     runs: Vec<(String, FontStyle)>,
+    custom_runs: Vec<(String, crate::fonts::FontFace)>,
 }
 
 impl Texts {
@@ -139,12 +163,20 @@ impl Texts {
     }
 
     /// The runs, as the font embedding takes them.
-    fn runs(&self) -> Vec<Run<'_, '_>> {
+    fn runs<'a>(
+        &'a self,
+        regular: &'a ferrigura_text::Face,
+        italic: &'a ferrigura_text::Face,
+    ) -> Vec<Run<'a, 'a>> {
         self.runs
             .iter()
             .map(|(text, style)| Run {
                 text,
-                face: face(FontFamily::Sans, FontWeight::Normal, *style),
+                face: if *style == FontStyle::Italic {
+                    italic
+                } else {
+                    regular
+                },
             })
             .collect()
     }
@@ -152,6 +184,8 @@ impl Texts {
 
 /// The derived values of one chart: the dimensions, the time scale, the task order and the sections.
 pub(super) struct Chart<'a> {
+    pub(super) fonts: crate::fonts::FontContext,
+    pub(super) regular: crate::fonts::FontFace,
     /// The id of the SVG element.
     pub(super) id: &'a str,
     /// The theme the chart draws with.
@@ -190,7 +224,7 @@ pub(super) struct Chart<'a> {
 
 impl<'a> Chart<'a> {
     /// The chart's values, as `draw` computes them before it writes anything.
-    fn new(input: &Context<'a, GanttDiagram, GanttSection<'a>>) -> Self {
+    fn new(input: &Context<'a, GanttDiagram, GanttSection<'a>>) -> Result<Self, RenderError> {
         let model = input.diagram;
         let conf = input.section.config;
         let tasks: &[GanttTask] = &model.tasks;
@@ -266,7 +300,11 @@ impl<'a> Chart<'a> {
         let mut array: Vec<usize> = (0..tasks.len()).collect();
         sort_js(&mut array, |a, b| compare_start(starts[a], starts[b]));
 
-        Self {
+        Ok(Self {
+            fonts: input.text_fonts(),
+            regular: input
+                .text_fonts()
+                .face(FontWeight::Normal, FontStyle::Normal)?,
             id: input.id,
             theme: input.theme,
             now: input.section.now,
@@ -285,7 +323,7 @@ impl<'a> Chart<'a> {
             vert,
             array,
             rows: without_vert.len(),
-        }
+        })
     }
 
     /// Whether any task has a link, so that the root declares the `xlink` namespace.
@@ -313,7 +351,7 @@ impl<'a> Chart<'a> {
 
     /// `textWidth` of a task's label: the width of its text in the sans face at the font size.
     pub(super) fn label_width(&self, plain: &str) -> Result<f64, RenderError> {
-        text::width(plain, self.conf.font_size as f64)
+        text::width(&self.regular, plain, self.conf.font_size as f64)
     }
 }
 

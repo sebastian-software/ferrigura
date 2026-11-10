@@ -69,3 +69,7 @@ None known for this type. A probe the reference cannot render (a cycle gives `ci
 - **Floating-point residue is part of the output**: the justified layout writes `viewBox="0 -2.664530515715871e-14 410 400"`. Only the library's order of operations reproduces it.
 - **`nodeColors` passes the directive filter**: a value must be a hex color, `rgb(…)`, `hsl(…)` or a plain word (`rgba(…)` is removed), and a key that starts with `__` or contains `proto` or `constr` is removed.
 - **A latent bug stays latent**: `height` falls back to the default width, but the merged defaults always provide `height`.
+
+## Font inputs
+
+Node labels and values use the regular design of the resolved global `fontFamily` for their measurements and SVG text. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

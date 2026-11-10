@@ -48,6 +48,14 @@ pub fn render_with_animation(
     input: &Context<'_, GitGraphDiagram, GitGraphDiagramConfig>,
     animation: Option<crate::animation::Animation>,
 ) -> Result<String, RenderError> {
+    let regular = input.text_fonts().face(
+        ferrigura_text::FontWeight::Normal,
+        ferrigura_text::FontStyle::Normal,
+    )?;
+    let mut bold = input.text_fonts().face(
+        ferrigura_text::FontWeight::Bold,
+        ferrigura_text::FontStyle::Normal,
+    )?;
     let diagram = input.diagram;
     let config = input.section;
     let id = input.id;
@@ -58,6 +66,22 @@ pub fn render_with_animation(
     // schemes the light set is the primary one and the dark set is dark.
     let dark_name = theme.dark.is_none() && input.globals.theme.contains("dark");
     let light = Palette::new(theme.light, dark_name);
+    if regular.css_reference().is_some() {
+        let weight = match light.note_font_weight.as_str() {
+            "normal" => 400,
+            "bold" => 700,
+            value => value
+                .parse::<f64>()
+                .ok()
+                .filter(|value| value.is_finite())
+                .map_or(700, |value| value.clamp(1.0, 1000.0) as u16),
+        };
+        bold = input.text_fonts().face(
+            ferrigura_text::FontWeight::Number(weight),
+            ferrigura_text::FontStyle::Normal,
+        )?;
+    }
+
     let dark = match theme.dark {
         Some(dark) => Palette::new(dark, true),
         None => light.clone(),
@@ -74,12 +98,12 @@ pub fn render_with_animation(
     }
 
     // The lanes of the branches, from the widths of their names in the regular face.
-    let mut layout = Layout::new(diagram, config, &light, id, neo);
+    let mut layout = Layout::new(diagram, config, &light, id, neo, &regular, &bold);
     let rotate = config.rotate_commit_label;
     let mut pos = 0.0;
     let branches: Vec<_> = layout.branches().to_vec();
     for (index, &branch) in branches.iter().enumerate() {
-        let (_, bbox) = text::draw_text(&branch.name, text::regular(), light.font_size)?;
+        let (_, bbox) = text::draw_text(&branch.name, &regular, light.font_size)?;
         pos = layout.set_branch_position(&branch.name, pos, index, bbox.width, rotate);
     }
 
@@ -151,11 +175,11 @@ pub fn render_with_animation(
     if !title.is_empty() {
         let drawn = root.local_box().unwrap_or_default();
         // The title is centered by the browser on its advance, and its box is the glyphs' box.
-        let width = text::width(text::regular(), title, TITLE_FONT_SIZE)?;
-        let extent = text::extent(text::regular(), title, TITLE_FONT_SIZE)?;
+        let width = text::width(&regular, title, TITLE_FONT_SIZE)?;
+        let extent = text::extent(&regular, title, TITLE_FONT_SIZE)?;
         let x = drawn.x + drawn.width / 2.0;
         let y = -(config.title_top_margin as f64);
-        let bounds = text::line_box(text::regular(), TITLE_FONT_SIZE, x - width / 2.0, y, extent)?;
+        let bounds = text::line_box(&regular, TITLE_FONT_SIZE, x - width / 2.0, y, extent)?;
         root.push(
             Element::text(title, bounds)
                 .attr("x", number(x))
@@ -172,18 +196,20 @@ pub fn render_with_animation(
     let runs = [
         Run {
             text: &texts,
-            face: text::regular(),
+            face: &regular,
         },
         Run {
             text: &texts,
-            face: text::bold(),
+            face: &bold,
         },
     ];
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
-    let family = families.first().map_or_else(
-        || "\"sans-serif\"".to_owned(),
-        |family| family.css_family.clone(),
-    );
+    let family = regular.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || "\"sans-serif\"".to_owned(),
+            |family| family.css_family.clone(),
+        )
+    });
     let dark_palette = &dark;
     let style = style::style_element(id, theme, &light, dark_palette, &family, &families);
 

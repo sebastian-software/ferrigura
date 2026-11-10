@@ -55,6 +55,7 @@ pub struct Stacked {
 ///
 /// Returns an error if a bundled font cannot be read.
 pub fn layout(
+    fonts: &crate::fonts::FontContext,
     sections: &[(&'static str, String, SectionFont)],
     wrap_width: f64,
 ) -> Result<Stacked, RenderError> {
@@ -62,7 +63,7 @@ pub fn layout(
     for (class, text, font) in sections {
         let shown = sanitize_text(&decode_entities(text));
         let spec = LabelSpec {
-            fonts: crate::fonts::FontContext::bundled(),
+            fonts: fonts.clone(),
             text: &shown,
             label_type: LabelType::String,
             width: wrap_width,
@@ -142,8 +143,11 @@ fn section_group(section: &Section, fill: &str) -> String {
             number(y),
         ));
         for run in &line.runs {
+            let binding = run.face.css_reference().map_or_else(String::new, |css| {
+                format!(" style=\"font-family:{};\"", escape(&css))
+            });
             out.push_str(&format!(
-                "<tspan class=\"text-inner-tspan\">{}</tspan>",
+                "<tspan class=\"text-inner-tspan\"{binding}>{}</tspan>",
                 escape(&run.text),
             ));
         }

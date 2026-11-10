@@ -17,8 +17,7 @@ mod style;
 use ferrigura_model::config::TreeViewDiagramConfig;
 use ferrigura_model::tree_view::{NodeType, TreeViewDiagram, TreeViewNode};
 use ferrigura_text::{
-    EmbeddedFamily, Face, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure_box,
-    text_box,
+    EmbeddedFamily, Face, FontStyle, FontWeight, Run, embed_runs, measure_box, text_box,
 };
 use icons::Icon;
 use style::Options;
@@ -56,23 +55,33 @@ const HIGHLIGHT_MARGIN: f64 = 2.0;
 pub fn render(
     input: &Context<'_, TreeViewDiagram, TreeViewDiagramConfig>,
 ) -> Result<String, RenderError> {
+    let context = input.text_fonts();
+    let fonts = [
+        context.face(FontWeight::Normal, FontStyle::Normal)?,
+        context.face(FontWeight::Bold, FontStyle::Normal)?,
+        context.face(FontWeight::Normal, FontStyle::Italic)?,
+        context.face(FontWeight::Bold, FontStyle::Italic)?,
+    ];
     let diagram = input.diagram;
     let section = input.section;
     let id = input.id;
     let tokens = input.theme.light;
     let options = Options::of(tokens.tree_view.as_ref());
-    let layout = lay_out(&diagram.root, section, options.label_px()?)?;
+    let layout = lay_out(&fonts, &diagram.root, section, options.label_px()?)?;
 
     // The fonts: every character a label or a description draws, in the face it is set in.
-    let texts: Vec<(String, &'static Face)> = layout
+    let texts: Vec<(String, &Face)> = layout
         .rows
         .iter()
         .flat_map(|row| {
-            let label = (shown_text(&row.node.name), face_of(row.bold, row.italic));
+            let label = (
+                shown_text(&row.node.name),
+                face_of(&fonts, row.bold, row.italic),
+            );
             let description = row
                 .description
                 .as_ref()
-                .map(|description| (shown_text(description.text), face_of(false, true)));
+                .map(|description| (shown_text(description.text), face_of(&fonts, false, true)));
             std::iter::once(label).chain(description)
         })
         .collect();
@@ -81,24 +90,29 @@ pub fn render(
         .map(|(text, face)| Run { text, face })
         .collect();
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = fonts[0].css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
-    let style = base_style_sheet(
-        id,
-        input.theme,
-        &font_family,
-        &font_size,
-        &families,
-        &style::own_rules(id, &options),
-    );
+    let mut own = style::own_rules(id, &options);
+    for (selector, face) in [
+        (".treeView-node-dir", &fonts[1]),
+        (".treeView-node-description", &fonts[2]),
+        (".treeView-node-dir.treeView-node-description", &fonts[3]),
+    ] {
+        if let Some(css) = face.css_reference() {
+            own.push_str(&format!("#{id} {selector}{{font-family:{css};}}"));
+        }
+    }
+    let style = base_style_sheet(id, input.theme, &font_family, &font_size, &families, &own);
 
     // The accessible title and description (`mermaidAPI`), which come first in the root.
     let mut accessibility = Vec::new();
@@ -206,6 +220,7 @@ struct Layout<'a> {
 /// `drawTree` (`renderer.ts` 130-216): the rows in document order, the description column, and the
 /// highlight rectangles, in three phases.
 fn lay_out<'a>(
+    fonts: &[crate::fonts::FontFace; 4],
     root: &'a TreeViewNode,
     section: &TreeViewDiagramConfig,
     label_px: f64,
@@ -215,7 +230,7 @@ fn lay_out<'a>(
         width: 0.0,
         height: 0.0,
     };
-    place(&mut layout, root, 0, section, label_px)?;
+    place(fonts, &mut layout, root, 0, section, label_px)?;
 
     // Phase 2: the descriptions share one column, after the right edge of the widest label.
     if layout.rows.iter().any(|row| row.description.is_some()) {
@@ -228,7 +243,7 @@ fn lay_out<'a>(
         for row in &mut layout.rows {
             if let Some(description) = &mut row.description {
                 description.x = x;
-                let width = measure(description.text, false, true, label_px)?.width;
+                let width = measure(fonts, description.text, false, true, label_px)?.width;
                 layout.width = layout.width.max(x + width + section.padding_x);
             }
         }
@@ -250,6 +265,7 @@ fn lay_out<'a>(
 /// `drawNode` (`renderer.ts` 139-161) and the children after it (`processNode`, 182): the row of
 /// `node` at `depth`, then its children, each at the depth below. Returns the row's index.
 fn place<'a>(
+    fonts: &[crate::fonts::FontFace; 4],
     layout: &mut Layout<'a>,
     node: &'a TreeViewNode,
     depth: usize,
@@ -263,7 +279,7 @@ fn place<'a>(
     let classes = label_classes(node);
     let bold = node.node_type == NodeType::Directory || classes.dir;
     let italic = classes.description;
-    let label = measure(&node.name, bold, italic, label_px)?;
+    let label = measure(fonts, &node.name, bold, italic, label_px)?;
     let height = label.height + section.padding_y * 2.0;
     let label_x = indent + section.padding_x + offset;
     let label_right = label_x + label.width;
@@ -294,7 +310,7 @@ fn place<'a>(
     layout.width = layout.width.max(indent + width);
     layout.height += height;
     for child in &node.children {
-        let child_index = place(layout, child, depth + 1, section, label_px)?;
+        let child_index = place(fonts, layout, child, depth + 1, section, label_px)?;
         layout.rows[index].children.push(child_index);
     }
     Ok(index)
@@ -335,14 +351,20 @@ struct Measured {
     height: f64,
 }
 
-fn measure(text: &str, bold: bool, italic: bool, size: f64) -> Result<Measured, RenderError> {
+fn measure(
+    fonts: &[crate::fonts::FontFace; 4],
+    text: &str,
+    bold: bool,
+    italic: bool,
+    size: f64,
+) -> Result<Measured, RenderError> {
     if text.is_empty() {
         return Ok(Measured {
             width: 0.0,
             height: 0.0,
         });
     }
-    let face = face_of(bold, italic);
+    let face = face_of(fonts, bold, italic);
     let width = measure_box(face, text, size)
         .map_err(RenderError::Text)?
         .width();
@@ -351,20 +373,8 @@ fn measure(text: &str, bold: bool, italic: bool, size: f64) -> Result<Measured, 
 }
 
 /// The face of a style: bold or regular, and italic or upright.
-fn face_of(bold: bool, italic: bool) -> &'static Face {
-    face(
-        FontFamily::Sans,
-        if bold {
-            FontWeight::Bold
-        } else {
-            FontWeight::Normal
-        },
-        if italic {
-            FontStyle::Italic
-        } else {
-            FontStyle::Normal
-        },
-    )
+fn face_of(fonts: &[crate::fonts::FontFace; 4], bold: bool, italic: bool) -> &Face {
+    &fonts[usize::from(bold) + 2 * usize::from(italic)]
 }
 
 /// The element of a row and of its trunk, in the order `drawTree` appends them: the row's group, the

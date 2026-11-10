@@ -121,7 +121,8 @@ impl FontRegistry {
     ///
     /// Names are resolved when [`Self::resolve`] is called, so registration order does not matter.
     /// Unregistered fallback names are skipped. Missing characters are reported by
-    /// [`Self::missing_glyphs`] and stay in the primary face's missing glyph.
+    /// [`Self::missing_glyphs`] and measured with the primary face's missing glyph. SVG viewers
+    /// may choose a system fallback for these characters.
     pub fn set_fallbacks(&mut self, families: impl IntoIterator<Item = impl Into<String>>) {
         self.fallbacks = families.into_iter().map(Into::into).collect();
     }
@@ -264,7 +265,8 @@ impl FontRegistry {
     }
 }
 
-/// An uncovered character, measured and drawn with the primary face's missing glyph.
+/// An uncovered character, measured with the primary face's missing glyph.
+/// SVG viewers may draw a system fallback instead; register coverage for matching layout.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MissingGlyph {
     /// The uncovered Unicode character.

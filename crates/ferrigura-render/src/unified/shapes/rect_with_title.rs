@@ -24,7 +24,7 @@ use ferrigura_text::{FontStyle, FontWeight, text_box};
 ///
 /// # Errors
 ///
-/// Returns an error if a bundled font cannot be read.
+/// Returns an error if a font cannot be read.
 pub(super) fn rect_with_title(
     input: &ShapeInput<'_>,
 ) -> Result<(Part, Vec<LabelLayout>), RenderError> {
@@ -156,7 +156,7 @@ mod tests {
     fn the_title_and_the_rows_are_texts_of_the_shape() {
         // The font subsets of a diagram cover the texts of its shapes (`ShapeOutput::texts`). The
         // title and the rows are drawn here, so their glyphs must be in the subset: without them
-        // Chromium sets N, w and l of "New line" in a fallback  0.8 px wider
+        // Chromium sets N, w and l of "New line" in a fallback face 0.8 px wider
         // (state-diagram/pr-check).
         let mut node = node("rectWithTitle", "classic");
         node.label = "Another Long state description".to_owned();

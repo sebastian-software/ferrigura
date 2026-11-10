@@ -27,7 +27,7 @@ use crate::common::style::base_style_sheet;
 use crate::common::viewbox::setup_graph_viewbox;
 use crate::common::{Element, TextMemo};
 use crate::context::Context;
-use crate::journey::text::bold as bold_face;
+
 use crate::svg::number;
 use crate::unified::geom::{BBox, Point};
 
@@ -51,6 +51,15 @@ const BOX_PADDING: f64 = 10.0;
 pub fn render(
     input: &Context<'_, EventModelingDiagram, EventModelingDiagramConfig>,
 ) -> Result<String, RenderError> {
+    let fonts = &input.text_fonts();
+    let regular = fonts.face(
+        ferrigura_text::FontWeight::Normal,
+        ferrigura_text::FontStyle::Normal,
+    )?;
+    let bold = fonts.face(
+        ferrigura_text::FontWeight::Bold,
+        ferrigura_text::FontStyle::Normal,
+    )?;
     let diagram = input.diagram;
     let config = input.section;
     let id = input.id;
@@ -61,41 +70,39 @@ pub fn render(
     let css_font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
 
     let mut memo = TextMemo::new();
-    let layout = layout::lay_out(diagram, &mut memo)?;
-    let boxed_labels = box_labels(&layout, font_size)?;
+    let layout = layout::lay_out(fonts, diagram, &mut memo)?;
+    let boxed_labels = box_labels(fonts, &layout, font_size)?;
 
     // The fonts: the lanes' labels and the names are bold, the code is mono, and every glyph drawn
     // is in an embedded subset.
-    let mut runs: Vec<Run<'_, '_>> = Vec::new();
+    let mut runs: Vec<(String, crate::fonts::FontFace)> = Vec::new();
     for lane in &layout.lanes {
-        runs.push(Run {
-            text: &lane.label,
-            face: bold_face(),
-        });
+        runs.push((lane.label.clone(), bold.clone()));
     }
     for lines in &boxed_labels {
         for line in lines {
             for run in &line.runs {
-                runs.push(Run {
-                    text: &run.text,
-                    face: match line.kind {
-                        LineKind::Name => bold_face(),
-                        LineKind::Code => label::code_face(run.style),
-                    },
-                });
+                let face = match line.kind {
+                    LineKind::Name => bold.clone(),
+                    LineKind::Code => label::code_face(fonts, run.style)?,
+                };
+                runs.push((run.text.clone(), face));
             }
         }
     }
-    let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let run_refs: Vec<_> = runs.iter().map(|(text, face)| Run { text, face }).collect();
+    let families: Vec<EmbeddedFamily> = embed_runs(&run_refs)?;
+    let font_family = regular.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let mono_family = families
         .iter()
         .find(|family| family.family == FontFamily::Mono)
@@ -109,7 +116,7 @@ pub fn render(
         &format!("{}{}", style::tokens(id, input.theme), style::rules(id)),
     );
 
-    let bounds = bounds_of(&layout, font_size)?;
+    let bounds = bounds_of(&bold, &layout, font_size)?;
     let mut root = Element::new("svg")
         .with("id", id)
         .with("width", "100%")
@@ -155,16 +162,22 @@ pub fn render(
         // The empty group `mermaidAPI` appends before the diagram draws.
         .child(Element::new("g"));
     for lane in &layout.lanes {
-        root = root.child(lane_group(lane, layout.max_r, &colours));
+        root = root.child(lane_group(
+            lane,
+            layout.max_r,
+            &colours,
+            bold.css_reference().as_deref(),
+        ));
     }
     for (boxed, lines) in layout.boxes.iter().zip(&boxed_labels) {
         root = root.child(box_group(
+            fonts,
             boxed,
             &layout,
             lines,
             &entities,
             mono_family.as_deref(),
-        ));
+        )?);
     }
     for relation in &layout.relations {
         root = root.child(
@@ -191,7 +204,12 @@ pub fn render(
 }
 
 /// A lane: its background and its label (`renderer.ts` 99-126).
-fn lane_group(lane: &layout::Lane, max_r: f64, colours: &style::Colours) -> Element {
+fn lane_group(
+    lane: &layout::Lane,
+    max_r: f64,
+    colours: &style::Colours,
+    family: Option<&str>,
+) -> Element {
     Element::new("g")
         .with("class", "em-swimlane")
         .child(
@@ -205,7 +223,7 @@ fn lane_group(lane: &layout::Lane, max_r: f64, colours: &style::Colours) -> Elem
                 .with("stroke", colours.swimlane_stroke.as_str()),
         )
         .child(
-            Element::new("text")
+            font_binding(Element::new("text"), family)
                 .with("font-weight", "bold")
                 .with("x", number(LANE_LABEL_X))
                 .with("y", number(lane.y + 30.0))
@@ -213,15 +231,23 @@ fn lane_group(lane: &layout::Lane, max_r: f64, colours: &style::Colours) -> Elem
         )
 }
 
+fn font_binding(mut element: Element, family: Option<&str>) -> Element {
+    if let Some(family) = family {
+        element.set("style", format!("font-family:{family};"));
+    }
+    element
+}
+
 /// A box: its rectangle in its lane, and its text (`renderer.ts` 12-50). The text is a `switch`
 /// holding SVG text (decision 0009), where the reference has a `foreignObject`.
 fn box_group(
+    fonts: &crate::fonts::FontContext,
     boxed: &Boxed,
     layout: &Layout,
     lines: &[LabelLine],
     entities: &style::EntityColours,
     mono_family: Option<&str>,
-) -> Element {
+) -> Result<Element, RenderError> {
     let lane = &layout.lanes[boxed.lane];
     let visual = entities.of(&boxed.entity_type);
     let (fill_token, stroke_token) = style::box_token(&boxed.entity_type);
@@ -262,13 +288,21 @@ fn box_group(
                     }
                 }
             }
+            let face = match line.kind {
+                LineKind::Name => fonts.face(
+                    ferrigura_text::FontWeight::Bold,
+                    ferrigura_text::FontStyle::Normal,
+                )?,
+                LineKind::Code => label::code_face(fonts, run.style)?,
+            };
+            let tspan = font_binding(tspan, face.css_reference().as_deref());
             text = text.child(tspan.text(run.text.as_str()));
         }
     }
-    Element::new("g")
+    Ok(Element::new("g")
         .with("class", "em-box")
         .child(rect)
-        .child(Element::new("switch").child(text))
+        .child(Element::new("switch").child(text)))
 }
 
 /// The arrowhead of the relations, a marker of the diagram's id, written last (`renderer.ts`
@@ -292,7 +326,11 @@ fn arrowhead(id: &str, colours: &style::Colours) -> Element {
 
 /// The lines of every box, in the box order: the cell of each box's text is the box's
 /// `foreignObject` (`renderer.ts` 30-33).
-fn box_labels(layout: &Layout, font_size: f64) -> Result<Vec<Vec<LabelLine>>, RenderError> {
+fn box_labels(
+    fonts: &crate::fonts::FontContext,
+    layout: &Layout,
+    font_size: f64,
+) -> Result<Vec<Vec<LabelLine>>, RenderError> {
     layout
         .boxes
         .iter()
@@ -304,7 +342,7 @@ fn box_labels(layout: &Layout, font_size: f64) -> Result<Vec<Vec<LabelLine>>, Re
                 width: boxed.width - 2.0 * BOX_PADDING,
                 height: boxed.height - 2.0 * BOX_PADDING,
             };
-            label::lines_of(&boxed.text, cell, font_size)
+            label::lines_of(fonts, &boxed.text, cell, font_size)
         })
         .collect()
 }
@@ -312,7 +350,11 @@ fn box_labels(layout: &Layout, font_size: f64) -> Result<Vec<Vec<LabelLine>>, Re
 /// The box of the content, as `getBBox` takes it on the root: the lanes' rectangles, the lanes'
 /// labels, the boxes' rectangles and the relations' points, rounded to float32 (`setupGraphViewbox`).
 /// A box's text is not in it: the reference's `foreignObject` is inside the box's rectangle.
-fn bounds_of(layout: &Layout, font_size: f64) -> Result<BBox, RenderError> {
+fn bounds_of(
+    bold_face: &ferrigura_text::Face,
+    layout: &Layout,
+    font_size: f64,
+) -> Result<BBox, RenderError> {
     let mut bounds: Option<BBox> = None;
     let mut include = |extra: BBox| {
         if extra.is_empty() {
@@ -323,8 +365,8 @@ fn bounds_of(layout: &Layout, font_size: f64) -> Result<BBox, RenderError> {
     let lane_width = layout.max_r + SWIMLANE_PADDING;
     for lane in &layout.lanes {
         include(BBox::new(0.0, lane.y, lane_width, lane.height));
-        let extent = measure_box(bold_face(), &lane.label, font_size)?;
-        let metrics = text_box(bold_face(), font_size)?;
+        let extent = measure_box(bold_face, &lane.label, font_size)?;
+        let metrics = text_box(bold_face, font_size)?;
         let baseline = lane.y + 30.0;
         include(BBox::new(
             LANE_LABEL_X + extent.left,

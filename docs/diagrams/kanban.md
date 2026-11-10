@@ -83,3 +83,7 @@ None known for this type.
 - **Each item's empty ticket and assignee labels are written**, as empty `g.label` groups with a background rectangle and an empty text; an item's height is 17 plus 20 for one line.
 - **Duplicate DOM ids** occur in the fixtures (a repeated section id), so a harness that pairs elements by id must pair them by position.
 - **`getData` sanitizes labels a second time** and drops the fields of sections that only items use.
+
+## Font inputs
+
+Section and item labels use the resolved global `fontFamily`, including the faces selected for Markdown weight and style. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
