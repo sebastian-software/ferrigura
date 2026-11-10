@@ -118,17 +118,20 @@ pub fn render(input: &Context<'_, C4Diagram, C4DiagramConfig>) -> Result<String,
     if !title.is_empty() {
         draw.runs.push((
             decode_entities(title),
-            ferrigura_text::face(
+            crate::fonts::FontFace::retain(ferrigura_text::face(
                 ferrigura_text::FontFamily::Sans,
                 ferrigura_text::FontWeight::Normal,
                 ferrigura_text::FontStyle::Normal,
-            ),
+            )),
         ));
     }
     let runs: Vec<Run<'_, '_>> = draw
         .runs
         .iter()
-        .map(|(text, face)| Run { text, face })
+        .map(|(text, face)| Run {
+            text,
+            face: &**face,
+        })
         .collect();
     let families = embed_runs(&runs)?;
     let family_css = families.first().map_or_else(

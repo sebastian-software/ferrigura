@@ -30,6 +30,7 @@ impl Font {
     #[must_use]
     pub fn text_style(&self) -> TextStyle {
         TextStyle {
+            fonts: crate::fonts::FontContext::bundled(),
             font_size: self.size,
             font_weight: self.weight,
             font_family: self.family.clone(),

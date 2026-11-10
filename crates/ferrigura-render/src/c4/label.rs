@@ -62,6 +62,7 @@ pub fn layout(
     for (class, text, font) in sections {
         let shown = sanitize_text(&decode_entities(text));
         let spec = LabelSpec {
+            fonts: crate::fonts::FontContext::bundled(),
             text: &shown,
             label_type: LabelType::String,
             width: wrap_width,

@@ -20,6 +20,7 @@ pub mod cynefin;
 pub mod er;
 pub mod event_modeling;
 pub mod flowchart;
+pub mod fonts;
 pub mod gantt;
 pub mod git_graph;
 pub mod info;

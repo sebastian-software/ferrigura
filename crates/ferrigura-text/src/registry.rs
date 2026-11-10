@@ -72,6 +72,7 @@ impl FontRegistry {
             ));
         }
         crate::kern::validate(&font)?;
+        let data_fingerprint = crate::embed::fnv1a(&data);
         let face = Face {
             family: FontFamily::Registered,
             family_name: Cow::Owned(family),
@@ -81,6 +82,8 @@ impl FontRegistry {
             font: OnceLock::new(),
             data: FontData::Registered(data.into()),
             fallbacks: Vec::new(),
+            variable: OnceLock::new(),
+            data_fingerprint: Some(data_fingerprint),
         };
         // Validate the shaper too, before replacing a usable face.
         face.font()?;
@@ -150,6 +153,7 @@ impl FontRegistry {
                 "no registered font matches {families:?}; register a font with FontRegistry::register or register_file"
             )))?;
         let mut resolved = (*primary).clone();
+        resolved.variable = OnceLock::new();
         resolved.fallbacks = Vec::new();
         for candidate in &mut candidates {
             if !candidate

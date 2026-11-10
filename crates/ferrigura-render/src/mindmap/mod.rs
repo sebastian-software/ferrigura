@@ -80,6 +80,7 @@ pub fn render_with_animation(
     // every node's shape and label, and the sizes of their groups.
     let data = data::layout_data(input.diagram, input.globals, input.section.mindmap);
     let unified = Config {
+        fonts: input.text_fonts(),
         section: input.section.unified,
         globals: input.globals,
         theme: input.theme.light,

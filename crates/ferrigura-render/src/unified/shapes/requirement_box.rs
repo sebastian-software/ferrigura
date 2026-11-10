@@ -296,7 +296,11 @@ impl Builder<'_, '_> {
         if raw.is_empty() {
             return Ok(0.0);
         }
-        let width = calculate_text_width(raw, self.input.config.globals.font_size)? + WRAP_MARGIN;
+        let width = calculate_text_width(
+            raw,
+            self.input.config.globals.font_size,
+            &self.input.config.fonts,
+        )? + WRAP_MARGIN;
         let text = sanitize_text(&decode_entities(raw));
         let declarations: Vec<String> = style
             .split(';')
@@ -305,6 +309,7 @@ impl Builder<'_, '_> {
             .collect();
         let label = label::layout_inheriting(
             &LabelSpec {
+                fonts: self.input.config.fonts.clone(),
                 text: &text,
                 label_type: LabelType::Markdown,
                 width,

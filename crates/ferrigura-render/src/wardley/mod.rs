@@ -136,7 +136,7 @@ pub fn render(
     // The bundled face: every character the map shows, in the weights the reference sets it in. Its
     // family names the map's text, and its `@font-face` rules are the only style the output has.
     let families = embed_runs(&drawn.runs())?;
-    let style = (!families.is_empty()).then(|| font_faces(&families));
+    let style = (!families.is_empty()).then(|| font_faces(input.id, &families));
     if let Some(family) = families.first() {
         map.set("font-family", family.css_family.clone());
     }

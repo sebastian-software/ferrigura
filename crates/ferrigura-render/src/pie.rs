@@ -16,8 +16,7 @@ use ferrigura_model::config::PieDiagramConfig;
 use ferrigura_model::pie::{PieDiagram, PieSection};
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::{
-    EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, layout_width,
-    measure, measure_box,
+    EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs, layout_width, measure, measure_box,
 };
 
 use crate::RenderError;
@@ -70,7 +69,9 @@ pub fn render_with_animation(
     } else {
         Vec::new()
     };
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
 
     let outer_stroke_width = tokens.pie_outer_stroke_width.px().unwrap_or(2.0);
     let stroke_padding = tokens.pie_stroke_width.px().unwrap_or(2.0).abs() + 1.0;
@@ -107,7 +108,8 @@ pub fn render_with_animation(
     // The legend's widths are the boxes its `getBoundingClientRect` gives (`pieRenderer.ts` 183-188).
     let mut longest_text_width: f64 = 0.0;
     for label in &legend_labels {
-        longest_text_width = longest_text_width.max(measure_box(sans, label, legend_size)?.width());
+        longest_text_width =
+            longest_text_width.max(measure_box(&sans, label, legend_size)?.width());
     }
 
     let legend_height = LEGEND_RECT_SIZE + LEGEND_SPACING;
@@ -164,12 +166,12 @@ pub fn render_with_animation(
     let title_advance = if title.is_empty() {
         0.0
     } else {
-        layout_width(measure(sans, title, title_size)?)
+        layout_width(measure(&sans, title, title_size)?)
     };
     let title_width = if title.is_empty() {
         0.0
     } else {
-        measure_box(sans, title, title_size)?.width()
+        measure_box(&sans, title, title_size)?.width()
     };
     let title_left = PIE_WIDTH / 2.0 - title_width / 2.0;
     let title_right = PIE_WIDTH / 2.0 + title_width / 2.0;
@@ -186,19 +188,21 @@ pub fn render_with_animation(
     let mut runs: Vec<Run<'_, '_>> = Vec::new();
     runs.push(Run {
         text: title,
-        face: sans,
+        face: &sans,
     });
     for label in legend_labels.iter().chain(&slice_labels) {
         runs.push(Run {
             text: label,
-            face: sans,
+            face: &sans,
         });
     }
     let families = embed_runs(&runs)?;
-    let family_name = families.first().map_or_else(
-        || "\"sans-serif\"".to_owned(),
-        |family| family.css_family.clone(),
-    );
+    let family_name = sans.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || "\"sans-serif\"".to_owned(),
+            |family| family.css_family.clone(),
+        )
+    });
 
     let mut body = String::new();
     // `appendDivSvgG` leaves an empty group before the diagram's own elements (`mermaidAPI.ts:418`).
@@ -273,7 +277,7 @@ pub fn render_with_animation(
     for (arc, text) in visible.iter().zip(&slice_labels) {
         let middle = (arc.start + arc.end) / 2.0 - PI / 2.0;
         let (cx, cy) = (label_radius * cos(middle), label_radius * sin(middle));
-        let width = layout_width(measure(sans, text, section_size)?);
+        let width = layout_width(measure(&sans, text, section_size)?);
         let svg = format!(
             "<text class=\"slice\"{} x=\"{}\" y=\"{}\">{}</text>",
             attribute("fill", &tokens.pie_section_text_color),
@@ -488,7 +492,7 @@ fn style_element(
     let faces = if families.is_empty() {
         String::new()
     } else {
-        font_faces(families)
+        font_faces(id, families)
     };
     let rules = format!(
         "#{id} .pieCircle{{stroke: var(--pieStrokeColor);stroke-width: {stroke_width};opacity: {opacity};}}\

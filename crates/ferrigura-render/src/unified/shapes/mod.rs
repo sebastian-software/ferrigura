@@ -241,6 +241,7 @@ pub fn node_label(
     // label of an `@{ label }` node, which the DB did not sanitize, is sanitized here.
     let text = sanitize_text(&decode_entities(&node.label));
     let spec = LabelSpec {
+        fonts: config.fonts.clone(),
         text: if kind.is_some_and(Kind::empties_label) {
             ""
         } else {

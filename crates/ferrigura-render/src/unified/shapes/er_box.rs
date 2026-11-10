@@ -14,7 +14,7 @@ use ferrigura_model::er::ErAttribute;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_syntax::class::parse_generic_types;
 use ferrigura_syntax::sanitize::sanitize_text;
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, measure_box};
+use ferrigura_text::{FontStyle, FontWeight, measure_box};
 
 use super::rough::{self, Fill};
 use super::util::{self, attribute};
@@ -80,8 +80,11 @@ fn plain_box(
     let min_width = er.min_entity_width as f64;
     // `calculateTextWidth(node.label) + 2 * labelPaddingX < minEntityWidth` widens the node
     // (`erBox.ts` 61-65).
-    let node_width = (calculate_text_width(label_text, input.config.globals.font_size)?
-        + padding * 2.0
+    let node_width = (calculate_text_width(
+        label_text,
+        input.config.globals.font_size,
+        &input.config.fonts,
+    )? + padding * 2.0
         < min_width)
         .then_some(min_width);
 
@@ -397,7 +400,8 @@ fn cell(input: &ShapeInput<'_>, text: &str, styles: &util::Styles) -> Result<Cel
     } else {
         generic.replace('<', "&lt;").replace('>', "&gt;")
     };
-    let width = calculate_text_width(&parsed, input.config.globals.font_size)? + CELL_WRAP_MARGIN;
+    let width = calculate_text_width(&parsed, input.config.globals.font_size, &input.config.fonts)?
+        + CELL_WRAP_MARGIN;
     let flat = parsed.contains("&lt;") || parsed.contains("&gt;");
     Ok(Cell {
         label: label_layout(input, &parsed, styles, width, LabelType::Markdown)?,
@@ -422,6 +426,7 @@ fn label_layout(
         .map(str::to_owned)
         .collect();
     label::layout(&LabelSpec {
+        fonts: input.config.fonts.clone(),
         text,
         label_type,
         width,
@@ -527,18 +532,22 @@ fn vertical_line(x: f64, y1: f64, y2: f64) -> [Point; 4] {
 /// The reference measures in both `sans-serif` and the configured family and keeps the second unless
 /// the first is larger in every dimension (`utils.ts` 712-720). ferrigura has only the bundled
 /// family, which the second measure is, so the result is the bundled family's width.
-pub(super) fn calculate_text_width(text: &str, font_size: f64) -> Result<f64, RenderError> {
+pub(super) fn calculate_text_width(
+    text: &str,
+    font_size: f64,
+    fonts: &crate::fonts::FontContext,
+) -> Result<f64, RenderError> {
     if text.is_empty() {
         return Ok(0.0);
     }
-    let bundled = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let bundled = fonts.face(FontWeight::Normal, FontStyle::Normal)?;
     let mut width = 0.0_f64;
     for line in split_at_breaks(text) {
         // An empty line is measured as a zero-width space, which has no advance.
         let measured = if line.is_empty() {
             0.0
         } else {
-            measure_box(bundled, line, font_size)?.width()
+            measure_box(&bundled, line, font_size)?.width()
         };
         width = width.max(measured);
     }
@@ -586,12 +595,17 @@ mod tests {
 
     #[test]
     fn an_empty_text_is_zero_wide() {
-        assert_eq!(calculate_text_width("", 16.0).expect("measures"), 0.0);
+        assert_eq!(
+            calculate_text_width("", 16.0, &crate::fonts::FontContext::bundled())
+                .expect("measures"),
+            0.0
+        );
     }
 
     #[test]
     fn the_width_is_rounded_to_a_whole_pixel() {
-        let width = calculate_text_width("AUTHOR", 16.0).expect("measures");
+        let width = calculate_text_width("AUTHOR", 16.0, &crate::fonts::FontContext::bundled())
+            .expect("measures");
         assert_eq!(width, width.round());
         assert!(width > 0.0);
     }

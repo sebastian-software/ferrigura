@@ -500,6 +500,15 @@ fn all_fallback_text_embeds_only_the_face_that_draws_it() {
     .unwrap();
     assert_eq!(families.len(), 1);
     assert_eq!(families[0].source_name, "Arrows");
+    assert!(
+        families[0]
+            .variables
+            .iter()
+            .any(
+                |(name, value)| Some(name.as_str()) == primary.css_variable()
+                    && value == &families[0].css_family
+            )
+    );
     assert_eq!(families[0].css_family, format!("\"{}\"", families[0].name));
     assert!(families[0].css.contains(&families[0].name));
 }

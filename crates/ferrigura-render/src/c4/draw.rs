@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use ferrigura_model::c4::{C4Boundary, C4Diagram, C4Shape};
-use ferrigura_text::{Face as TextFace, FontFamily, FontStyle, FontWeight, face};
+use ferrigura_text::{FontFamily, FontStyle, FontWeight, face};
 
 use super::config::{Conf, Font};
 use super::grid::Bounds;
@@ -15,6 +15,7 @@ use super::legacy::{self, Face, Legacy, Paint};
 use super::shape::{self, Body, Built, plain};
 use crate::RenderError;
 use crate::common::text::{MeasureError, TextMemo, TextStyle};
+use crate::fonts::FontFace;
 use crate::svg::{escape, number};
 use crate::unified::geom::{CenterBox, Point};
 use crate::unified::shapes::Intersect;
@@ -79,7 +80,7 @@ pub struct Draw<'a> {
     /// The placed boundaries, by alias.
     pub boundaries: HashMap<String, Place>,
     /// Every text the diagram sets, for the font subsets.
-    pub runs: Vec<(String, &'static TextFace)>,
+    pub runs: Vec<(String, FontFace)>,
 }
 
 /// The `[type]` of a boundary, when its type is not empty (`drawInsideBoundary`, line 476).
@@ -103,8 +104,8 @@ fn legacy_face(size: f64, weight: &str) -> Face<'_> {
 }
 
 /// The text face of a weight, for the font subsets.
-fn text_face(bold: bool, italic: bool) -> &'static TextFace {
-    face(
+fn text_face(bold: bool, italic: bool) -> FontFace {
+    FontFace::retain(face(
         FontFamily::Sans,
         if bold {
             FontWeight::Bold
@@ -116,12 +117,13 @@ fn text_face(bold: bool, italic: bool) -> &'static TextFace {
         } else {
             FontStyle::Normal
         },
-    )
+    ))
 }
 
 /// The text measurement style of a configured font.
 pub fn style_of(font: &Font, size: f64, weight: f64) -> TextStyle {
     TextStyle {
+        fonts: crate::fonts::FontContext::bundled(),
         font_size: size,
         font_weight: weight,
         font_family: font.family.clone(),
@@ -295,7 +297,8 @@ impl Draw<'_> {
             let group = element_group(self.id, &element, centre);
             for section in &element.label.sections {
                 for run in section.layout.text_runs() {
-                    self.runs.push((run.text.to_owned(), run.face));
+                    self.runs
+                        .push((run.text.to_owned(), FontFace::retain(run.face)));
                 }
             }
             self.body.push_str(&group);

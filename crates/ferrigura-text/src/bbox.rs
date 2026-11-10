@@ -91,28 +91,43 @@ pub fn measure_line_box(runs: &[Run<'_, '_>], size: f64) -> Result<Extent, TextE
     Ok(extent)
 }
 
-/// The glyph outlines of one face, read from its `loca` and `glyf` tables.
-struct Outlines<'a> {
-    loca: read_fonts::tables::loca::Loca<'a>,
-    glyf: read_fonts::tables::glyf::Glyf<'a>,
+/// TrueType retains the reference's stated bounds; CFF/CFF2 use their interpreted charstrings.
+enum Outlines<'a> {
+    TrueType {
+        loca: read_fonts::tables::loca::Loca<'a>,
+        glyf: read_fonts::tables::glyf::Glyf<'a>,
+    },
+    PostScript(read_fonts::model::metrics::GlyphMetrics<'a>),
 }
 
 impl<'a> Outlines<'a> {
     fn of(face: &'a Face) -> Result<Self, TextError> {
         let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
-        Ok(Self {
-            loca: font.loca(None).map_err(|_| TextError::InvalidFont)?,
-            glyf: font.glyf().map_err(|_| TextError::InvalidFont)?,
-        })
+        if let (Ok(loca), Ok(glyf)) = (font.loca(None), font.glyf()) {
+            return Ok(Self::TrueType { loca, glyf });
+        }
+        if font.cff().is_ok() || font.cff2().is_ok() {
+            return Ok(Self::PostScript(face.font()?.glyph_metrics()));
+        }
+        Err(TextError::InvalidFont)
     }
 
-    /// The horizontal bounds of a glyph's outline in font units, or `None` for a glyph without one
-    /// (a space).
+    /// Horizontal bounds in font units, or None for an empty outline.
     fn bounds(&self, glyph: u32) -> Result<Option<(f64, f64)>, TextError> {
-        let outline = self
-            .loca
-            .get_glyf(GlyphId::new(glyph), &self.glyf)
-            .map_err(|_| TextError::InvalidFont)?;
-        Ok(outline.map(|outline| (f64::from(outline.x_min()), f64::from(outline.x_max()))))
+        match self {
+            Self::TrueType { loca, glyf } => {
+                let outline = loca
+                    .get_glyf(GlyphId::new(glyph), glyf)
+                    .map_err(|_| TextError::InvalidFont)?;
+                Ok(outline.map(|outline| (f64::from(outline.x_min()), f64::from(outline.x_max()))))
+            }
+            Self::PostScript(metrics) => {
+                let bounds = metrics
+                    .extents_exact(GlyphId::new(glyph))
+                    .ok_or(TextError::InvalidFont)?;
+                let left = bounds.x_bearing.to_f64();
+                Ok(Some((left, left + bounds.width.to_f64())))
+            }
+        }
     }
 }

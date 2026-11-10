@@ -232,7 +232,7 @@ impl Renderer {
                 light_tokens: Cow::Borrowed(&self.light_tokens),
                 dark_tokens: Cow::Borrowed(&self.dark_tokens),
                 scheme,
-                fonts: self.fonts.as_deref(),
+                fonts: self.fonts.as_ref(),
             });
         }
         let view = View::resolve(&self.site, plugin, &directive).map_err(RenderError::Config)?;
@@ -262,7 +262,7 @@ impl Renderer {
             light_tokens,
             dark_tokens,
             scheme,
-            fonts: self.fonts.as_deref(),
+            fonts: self.fonts.as_ref(),
         })
     }
 
@@ -353,10 +353,15 @@ impl RendererBuilder {
             weight,
             style,
         )?;
-        if first && let Value::Object(config) = &mut self.config {
-            config
-                .entry("fontFamily".into())
-                .or_insert(Value::String(family));
+        if first {
+            if !self.config.is_object() {
+                self.config = Value::empty_object();
+            }
+            if let Value::Object(config) = &mut self.config {
+                config
+                    .entry("fontFamily".into())
+                    .or_insert(Value::String(family));
+            }
         }
         Ok(self)
     }
@@ -399,6 +404,10 @@ impl RendererBuilder {
     /// All files remain host inputs; this does not load fonts by name.
     #[must_use]
     pub fn font_fallbacks(mut self, families: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        let families: Vec<String> = families.into_iter().map(Into::into).collect();
+        if families.is_empty() && self.fonts.is_none() {
+            return self;
+        }
         self.fonts
             .get_or_insert_with(FontRegistry::new)
             .set_fallbacks(families);
@@ -551,7 +560,7 @@ impl View {
 
 /// What a render needs besides its diagram: see [`Renderer::prepare`].
 struct Prepared<'a> {
-    fonts: Option<&'a FontRegistry>,
+    fonts: Option<&'a Arc<FontRegistry>>,
     id: String,
     view: Arc<View>,
     light_tokens: Cow<'a, ThemeTokens>,
@@ -847,6 +856,40 @@ mod font_input_tests {
             renderer.view(diagrams::pie()).unwrap().globals.font_family,
             "Chosen"
         );
+    }
+
+    #[test]
+    fn empty_fallback_options_keep_the_compatible_default_renderer() {
+        let ordinary = Renderer::new(&Value::empty_object());
+        let empty = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font_fallbacks(std::iter::empty::<String>())
+            .build();
+        assert!(empty.fonts.is_none());
+        assert_eq!(
+            ordinary.render("pie\n \"A\": 1").unwrap(),
+            empty.render("pie\n \"A\": 1").unwrap()
+        );
+    }
+
+    #[test]
+    fn ignored_root_config_values_still_choose_the_first_supplied_family() {
+        for config in [
+            Value::Null,
+            Value::Bool(true),
+            Value::String("ignored".into()),
+        ] {
+            assert!(Renderer::new(&config).render("pie\n \"A\": 1").is_ok());
+            let renderer = Renderer::builder(&config)
+                .with_all()
+                .font("Fixture", SANS.to_vec())
+                .unwrap()
+                .build();
+            assert_eq!(
+                renderer.view(diagrams::pie()).unwrap().globals.font_family,
+                "Fixture"
+            );
+        }
     }
 
     #[test]

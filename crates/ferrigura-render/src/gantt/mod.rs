@@ -97,7 +97,7 @@ pub fn render_with_animation(
     let faces = if families.is_empty() {
         String::new()
     } else {
-        font_faces(&families)
+        font_faces(input.id, &families)
     };
     let style = style::style_element(input.id, input.theme, &family, &faces);
     let title = input.diagram.acc_title.as_str();

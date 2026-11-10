@@ -307,7 +307,7 @@ pub fn style_sheet(
     let faces = if families.is_empty() {
         String::new()
     } else {
-        font_faces(families)
+        font_faces(svg_id, families)
     };
     css_text(&format!(
         "{faces}{}{}",
