@@ -21,9 +21,9 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 
 use base64::Engine;
-use read_fonts::FontRef;
 use read_fonts::collections::IntSet;
 use read_fonts::types::{NameId, Tag};
+use read_fonts::{FontRef, TableProvider};
 use skera::{DEFAULT_LAYOUT_FEATURES, Plan, SubsetFlags, subset_font};
 
 use crate::error::TextError;
@@ -37,6 +37,12 @@ pub struct EmbeddedFamily {
     pub family: FontFamily,
     /// The host-registered family name, or the bundled face identifier.
     pub source_name: String,
+    /// The exact supplied design's weight. Bundled family groups use `None`.
+    pub weight: Option<u16>,
+    /// The exact supplied design's style. Bundled family groups use `None`.
+    pub style: Option<FontStyle>,
+    /// Identity of the supplied font file, distinguishing retained registry versions.
+    pub data_fingerprint: Option<u64>,
     /// The family name the labels refer to, such as `fg-0123456789abcdef-sans`.
     pub name: String,
     /// The `font-family` value of the text set in this family, quoted for CSS: the family name, then
@@ -101,7 +107,12 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
     while index < faces.len() {
         let primary = faces[index];
         let mut subsets = Vec::new();
-        while index < faces.len() && same_family(primary, faces[index]) {
+        while index < faces.len()
+            && same_family(primary, faces[index])
+            && (primary.family() != FontFamily::Registered
+                || (primary.weight().css_value() == faces[index].weight().css_value()
+                    && primary.style() == faces[index].style()))
+        {
             let face = faces[index];
             let characters: BTreeSet<char> = stretches
                 .iter()
@@ -112,10 +123,14 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
             index += 1;
         }
         let name = family_name(primary.family(), &subsets);
-        let css = font_face_rules(&name, &subsets);
+        let css = font_face_rules(&name, &subsets)?;
         embedded.push(EmbeddedFamily {
             family: primary.family(),
             source_name: primary.family_name().to_owned(),
+            data_fingerprint: primary.data_fingerprint(),
+            weight: (primary.family() == FontFamily::Registered)
+                .then(|| primary.weight().css_value()),
+            style: (primary.family() == FontFamily::Registered).then(|| primary.style()),
             name,
             css_family: String::new(),
             css,
@@ -123,11 +138,9 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
         });
     }
     for index in 0..embedded.len() {
-        let primary = faces.iter().find(|face| {
-            face.family() == embedded[index].family
-                && (face.family() != FontFamily::Registered
-                    || face.family_name() == embedded[index].source_name)
-        });
+        let primary = faces
+            .iter()
+            .find(|face| matches_embedded(face, &embedded[index]));
         let fallback_names: Vec<String> = if embedded[index].family == FontFamily::Registered {
             primary
                 .into_iter()
@@ -135,12 +148,7 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
                 .filter_map(|fallback| {
                     embedded
                         .iter()
-                        .find(|family| {
-                            family.family == FontFamily::Registered
-                                && family
-                                    .source_name
-                                    .eq_ignore_ascii_case(fallback.family_name())
-                        })
+                        .find(|family| matches_embedded(fallback, family))
                         .map(|family| family.name.clone())
                 })
                 .collect()
@@ -178,10 +186,7 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
             .filter_map(|face| {
                 embedded
                     .iter()
-                    .find(|family| {
-                        family.family == face.family()
-                            && family.source_name.eq_ignore_ascii_case(face.family_name())
-                    })
+                    .find(|family| matches_embedded(face, family))
                     .map(|family| format!("\"{}\"", family.name))
             })
             .collect();
@@ -203,6 +208,15 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
 pub fn subset_face(face: &Face, text: &str) -> Result<Vec<u8>, TextError> {
     let characters: BTreeSet<char> = text.chars().collect();
     subset_characters(face, &characters)
+}
+
+fn matches_embedded(face: &Face, family: &EmbeddedFamily) -> bool {
+    family.family == face.family()
+        && (face.family() != FontFamily::Registered
+            || (family.source_name.eq_ignore_ascii_case(face.family_name())
+                && family.data_fingerprint == face.data_fingerprint()
+                && family.weight == Some(face.weight().css_value())
+                && family.style == Some(face.style())))
 }
 
 fn same_face(a: &Face, b: &Face) -> bool {
@@ -343,7 +357,7 @@ fn canonical_bytes(subsets: &[(&Face, Vec<u8>)]) -> Vec<u8> {
 /// 64-bit FNV-1a. It is deterministic on every platform and needs no dependency. It is not a
 /// cryptographic hash: a collision would only mix two subsets under one name, and the name is not
 /// a security boundary.
-fn fnv1a(bytes: &[u8]) -> u64 {
+pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
     const OFFSET_BASIS: u64 = 0xcbf2_9ce4_8422_2325;
     const PRIME: u64 = 0x0000_0100_0000_01b3;
     bytes.iter().fold(OFFSET_BASIS, |hash, byte| {
@@ -351,7 +365,7 @@ fn fnv1a(bytes: &[u8]) -> u64 {
     })
 }
 
-fn font_face_rules(name: &str, subsets: &[(&Face, Vec<u8>)]) -> String {
+fn font_face_rules(name: &str, subsets: &[(&Face, Vec<u8>)]) -> Result<String, TextError> {
     let mut css = String::new();
     for (face, data) in subsets {
         let encoded = base64::engine::general_purpose::STANDARD.encode(data);
@@ -360,12 +374,44 @@ fn font_face_rules(name: &str, subsets: &[(&Face, Vec<u8>)]) -> String {
         } else {
             "ttf"
         };
+        let variations = variation_defaults(face)?;
         let _ = write!(
             css,
-            "@font-face{{font-family:\"{name}\";font-weight:{};font-style:{};src:url(data:font/{format};base64,{encoded})}}",
+            "@font-face{{font-family:\"{name}\";font-weight:{};font-style:{};{variations}src:url(data:font/{format};base64,{encoded})}}",
             face.weight().css_value(),
             face.style().css_keyword(),
         );
     }
-    css
+    Ok(css)
+}
+
+/// A variable font is measured at its default location. Per-face descriptors freeze that same
+/// location in the browser, including wght/opsz axes that CSS otherwise changes automatically.
+fn variation_defaults(face: &Face) -> Result<String, TextError> {
+    let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
+    if font.table_data(Tag::new(b"fvar")).is_none() {
+        return Ok(String::new());
+    }
+    let fvar = font.fvar().map_err(|_| TextError::InvalidFont)?;
+    let axes = fvar.axes().map_err(|_| TextError::InvalidFont)?;
+    let mut settings = Vec::new();
+    for axis in axes {
+        let mut tag = String::new();
+        for byte in axis.axis_tag().to_be_bytes() {
+            if !(0x20..=0x7e).contains(&byte) {
+                return Err(TextError::InvalidFont);
+            }
+            if byte == b'"' || byte == b'\\' {
+                let _ = write!(tag, "\\{byte:02x} ");
+            } else {
+                tag.push(char::from(byte));
+            }
+        }
+        settings.push(format!("\"{tag}\" {}", axis.default_value().to_f64()));
+    }
+    if settings.is_empty() {
+        Ok(String::new())
+    } else {
+        Ok(format!("font-variation-settings:{};", settings.join(",")))
+    }
 }

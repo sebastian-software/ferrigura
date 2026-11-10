@@ -178,13 +178,13 @@ pub fn measure_for(
     let mut edge_labels = HashMap::new();
     let font_size = config.theme.font_size.px().unwrap_or(DEFAULT_FONT_SIZE);
     for edge in &mut data.edges {
-        if let Some(label) = edges::label(edge, font_size)? {
+        if let Some(label) = edges::label(edge, font_size, &config.fonts)? {
             let (width, height) = edges::label_size(&label);
             edge.width = Some(width);
             edge.height = Some(height);
             edge_labels.insert(edge.id.clone(), label);
         }
-        edge.terminals = terminal::measure(edge)?;
+        edge.terminals = terminal::measure(edge, &config.fonts)?;
     }
 
     Ok(Measured {

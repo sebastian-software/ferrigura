@@ -16,8 +16,7 @@ pub mod style;
 use ferrigura_model::config::SwimlaneDiagramConfig;
 use ferrigura_model::swimlanes::SwimlanesDiagram;
 use ferrigura_text::{
-    FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
-    text_box,
+    FontStyle, FontWeight, Run, embed_runs, measure as measure_text, measure_box, text_box,
 };
 
 use crate::RenderError;
@@ -82,6 +81,7 @@ pub fn render(
 ) -> Result<String, RenderError> {
     let engine = engine_of(&input.globals.layout)?;
     let config = Config {
+        fonts: input.text_fonts(),
         section: input.section.unified,
         globals: input.globals,
         theme: input.theme.light,
@@ -113,14 +113,19 @@ pub fn render(
     let mut bounds = painted.bounds;
 
     // `insertTitle`: centered over everything drawn so far, `titleTopMargin` above the origin.
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let title = &input.diagram.title;
     let mut title_svg = String::new();
+    let title_font = sans.css_reference().map_or_else(String::new, |family| {
+        format!(" style=\"font-family:{family}\"")
+    });
     if !title.is_empty() {
         let drawn = bounds.unwrap_or_default();
-        let width = measure_text(sans, title, TITLE_FONT_SIZE)?;
-        let ink = measure_box(sans, title, TITLE_FONT_SIZE)?;
-        let text_box = text_box(sans, TITLE_FONT_SIZE)?;
+        let width = measure_text(&sans, title, TITLE_FONT_SIZE)?;
+        let ink = measure_box(&sans, title, TITLE_FONT_SIZE)?;
+        let text_box = text_box(&sans, TITLE_FONT_SIZE)?;
         let baseline = -(config.section.flowchart.title_top_margin as f64);
         // `text-anchor: middle` at the center (`utils.ts`, `insertTitle`), as the flowchart's title.
         let x = drawn.x + drawn.width / 2.0;
@@ -134,7 +139,7 @@ pub fn render(
             ),
         );
         title_svg = format!(
-            "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"flowchartTitleText\">{}</text>",
+            "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"flowchartTitleText\"{title_font}>{}</text>",
             number(x),
             number(baseline),
             escape(title)
@@ -148,7 +153,7 @@ pub fn render(
     if !title.is_empty() {
         runs.push(Run {
             text: title,
-            face: sans,
+            face: &sans,
         });
     }
     let families = embed_runs(&runs)?;

@@ -274,13 +274,17 @@ fn declarations(style: &str) -> Vec<String> {
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read.
-pub fn label(edge: &Edge, font_size: f64) -> Result<Option<LabelLayout>, RenderError> {
+pub fn label(
+    edge: &Edge,
+    font_size: f64,
+    fonts: &crate::fonts::FontContext,
+) -> Result<Option<LabelLayout>, RenderError> {
     if edge.label.is_empty() {
         return Ok(None);
     }
     let styles = declarations(&label_style_text(edge));
     let spec = LabelSpec {
-        fonts: crate::fonts::FontContext::bundled(),
+        fonts: fonts.clone(),
         text: &edge.label,
         label_type: edge.label_type,
         width: 200.0,

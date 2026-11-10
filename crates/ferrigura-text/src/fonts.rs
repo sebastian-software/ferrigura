@@ -109,6 +109,7 @@ pub struct Face {
     pub(crate) family_name: Cow<'static, str>,
     pub(crate) fallbacks: Vec<Arc<Face>>,
     pub(crate) variable: OnceLock<String>,
+    pub(crate) data_fingerprint: Option<u64>,
     /// Parsed on first use, then shared by every measurement of this face.
     pub(crate) font: OnceLock<Option<Font>>,
     pub(crate) data: FontData,
@@ -130,6 +131,13 @@ impl Face {
     #[must_use]
     pub fn family_name(&self) -> &str {
         &self.family_name
+    }
+
+    /// The supplied file's deterministic identity. Bundled compatibility faces return `None`.
+    /// This is a render identity, not a cryptographic digest.
+    #[must_use]
+    pub fn data_fingerprint(&self) -> Option<u64> {
+        self.data_fingerprint
     }
 
     /// A stable CSS variable for a supplied face and its fallback chain.
@@ -238,6 +246,7 @@ static UNRESOLVED_REGISTERED: Face = Face {
     family_name: Cow::Borrowed(""),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(&[]),
 };
@@ -250,6 +259,7 @@ static LEXICA_REGULAR: Face = Face {
     family_name: Cow::Borrowed("Lexica Ultralegible"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-Regular.ttf")),
 };
@@ -262,6 +272,7 @@ static LEXICA_ITALIC: Face = Face {
     family_name: Cow::Borrowed("Lexica Ultralegible"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-Italic.ttf")),
 };
@@ -274,6 +285,7 @@ static LEXICA_BOLD: Face = Face {
     family_name: Cow::Borrowed("Lexica Ultralegible"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-Bold.ttf")),
 };
@@ -286,6 +298,7 @@ static LEXICA_BOLD_ITALIC: Face = Face {
     family_name: Cow::Borrowed("Lexica Ultralegible"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-BoldItalic.ttf")),
 };
@@ -298,6 +311,7 @@ static ATKINSON_MONO_REGULAR: Face = Face {
     family_name: Cow::Borrowed("Atkinson Hyperlegible Mono"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/AtkinsonHyperlegibleMono-Regular.ttf"
@@ -312,6 +326,7 @@ static ATKINSON_MONO_ITALIC: Face = Face {
     family_name: Cow::Borrowed("Atkinson Hyperlegible Mono"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/AtkinsonHyperlegibleMono-Italic.ttf"
@@ -326,6 +341,7 @@ static ATKINSON_MONO_BOLD: Face = Face {
     family_name: Cow::Borrowed("Atkinson Hyperlegible Mono"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!("../fonts/AtkinsonHyperlegibleMono-Bold.ttf")),
 };
@@ -338,6 +354,7 @@ static ATKINSON_MONO_BOLD_ITALIC: Face = Face {
     family_name: Cow::Borrowed("Atkinson Hyperlegible Mono"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/AtkinsonHyperlegibleMono-BoldItalic.ttf"
@@ -355,6 +372,7 @@ static NOTO_MATH_ARROWS: Face = Face {
     family_name: Cow::Borrowed("Noto Sans Math"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!("../fonts/NotoSansMath-Regular-Arrows.ttf")),
 };
@@ -369,6 +387,7 @@ static NOTO_SANS_SYMBOLS2_TEXT: Face = Face {
     family_name: Cow::Borrowed("Noto Sans Symbols 2"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/NotoSansSymbols2-Regular-TextSymbols.ttf"
@@ -385,6 +404,7 @@ static TWEMOJI_EMOJI: Face = Face {
     family_name: Cow::Borrowed("Twemoji Mozilla"),
     fallbacks: Vec::new(),
     variable: OnceLock::new(),
+    data_fingerprint: None,
     font: OnceLock::new(),
     data: FontData::Bundled(include_bytes!("../fonts/TwemojiMozilla-COLRv0-Emoji.ttf")),
 };

@@ -72,6 +72,7 @@ impl FontRegistry {
             ));
         }
         crate::kern::validate(&font)?;
+        let data_fingerprint = crate::embed::fnv1a(&data);
         let face = Face {
             family: FontFamily::Registered,
             family_name: Cow::Owned(family),
@@ -82,6 +83,7 @@ impl FontRegistry {
             data: FontData::Registered(data.into()),
             fallbacks: Vec::new(),
             variable: OnceLock::new(),
+            data_fingerprint: Some(data_fingerprint),
         };
         // Validate the shaper too, before replacing a usable face.
         face.font()?;

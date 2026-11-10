@@ -303,7 +303,7 @@ pub(super) fn insert_edges(
             ],
             ..Edge::default()
         };
-        let label = edges::label(&edge, font)?;
+        let label = edges::label(&edge, font, &context.unified.fonts)?;
         built.push((edge, model.id.clone(), label));
     }
 

@@ -14,8 +14,7 @@ use crate::context::Context;
 use crate::unified::{Config, Section};
 use ferrigura_model::er::ErDiagram;
 use ferrigura_text::{
-    FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
-    text_box,
+    FontStyle, FontWeight, Run, embed_runs, measure as measure_text, measure_box, text_box,
 };
 
 use crate::RenderError;
@@ -60,7 +59,9 @@ pub fn render(input: &Context<'_, ErDiagram, Section<'_>>) -> Result<String, Ren
 
     // `utils.insertTitle` (`erRenderer-unified.ts` 71-76): centered over the drawing, at
     // `-titleTopMargin`, in the theme's font size.
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let title = &input.diagram.title;
     let font_size = input
         .theme
@@ -69,11 +70,14 @@ pub fn render(input: &Context<'_, ErDiagram, Section<'_>>) -> Result<String, Ren
         .px()
         .unwrap_or(DEFAULT_FONT_SIZE);
     let mut title_svg = String::new();
+    let title_font = sans.css_reference().map_or_else(String::new, |family| {
+        format!(" style=\"font-family:{family}\"")
+    });
     if !title.is_empty() {
         let drawn = bounds.unwrap_or_default();
-        let width = measure_text(sans, title, font_size)?;
-        let ink = measure_box(sans, title, font_size)?;
-        let text_box = text_box(sans, font_size)?;
+        let width = measure_text(&sans, title, font_size)?;
+        let ink = measure_box(&sans, title, font_size)?;
+        let text_box = text_box(&sans, font_size)?;
         let baseline = -(input.section.er.title_top_margin as f64);
         let centre = drawn.x + drawn.width / 2.0;
         cover(
@@ -86,7 +90,7 @@ pub fn render(input: &Context<'_, ErDiagram, Section<'_>>) -> Result<String, Ren
             ),
         );
         title_svg = format!(
-            "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"erDiagramTitleText\">{}</text>",
+            "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"erDiagramTitleText\"{title_font}>{}</text>",
             number(centre),
             number(baseline),
             escape(title)
@@ -100,7 +104,7 @@ pub fn render(input: &Context<'_, ErDiagram, Section<'_>>) -> Result<String, Ren
     if !title.is_empty() {
         runs.push(Run {
             text: title,
-            face: sans,
+            face: &sans,
         });
     }
     let families = embed_runs(&runs)?;

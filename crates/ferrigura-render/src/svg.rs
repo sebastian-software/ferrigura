@@ -146,7 +146,7 @@ pub fn font_faces(id: &str, families: &[EmbeddedFamily]) -> String {
         .map(|(name, value)| format!("{name}:{value};"))
         .collect();
     if !variables.is_empty() {
-        css.push_str(&format!("#{id}{{{variables}}}"));
+        css.push_str(&format!("#{id}{{font-synthesis:none;{variables}}}"));
     }
     css
 }
