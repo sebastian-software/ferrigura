@@ -253,3 +253,68 @@ fn use_case_actor_and_usecase_families_resolve_their_configured_roles() {
         .to_string();
     assert!(error.contains("Missing Role"));
 }
+
+#[test]
+fn title_only_journey_retains_the_primary_for_relative_ex_size() {
+    let mut registry = ferrigura::FontRegistry::new();
+    registry
+        .register(
+            "Fixture",
+            SANS.to_vec(),
+            FontWeight::Normal,
+            FontStyle::Normal,
+        )
+        .unwrap();
+    let regular = registry
+        .resolve("Fixture", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    let renderer = Renderer::builder(&Value::empty_object())
+        .with_all()
+        .font("Fixture", SANS.to_vec())
+        .unwrap()
+        .font_face(
+            "Fixture",
+            MONO.to_vec(),
+            FontWeight::Bold,
+            FontStyle::Normal,
+        )
+        .unwrap()
+        .build();
+    let svg = renderer
+        .render("journey\n title AVATAR width\n section Empty")
+        .unwrap();
+    assert!(svg.contains("font-size=\"4ex\""));
+    assert!(svg.contains(&format!("{}:", regular.css_variable().unwrap())));
+    assert_eq!(svg.matches("@font-face{").count(), 2);
+}
+
+#[test]
+fn sequence_number_role_stays_regular_and_keeps_compatibility_sizes() {
+    let config = Value::from(serde_json::json!({"sequence":{"messageFontWeight":700}}));
+    let supplied = Renderer::builder(&config)
+        .with_all()
+        .font("Fixture", SANS.to_vec())
+        .unwrap()
+        .font_face(
+            "Fixture",
+            MONO.to_vec(),
+            FontWeight::Bold,
+            FontStyle::Normal,
+        )
+        .unwrap()
+        .build();
+    let compatible = Renderer::new(&config);
+    for (index, size) in [(1, "12px"), (1000, "9px"), (100000, "7px")] {
+        let text = format!("sequenceDiagram\n autonumber {index}\n A->>B: AVATAR");
+        for (renderer, family) in [(&supplied, "inherit"), (&compatible, "sans-serif")] {
+            let svg = renderer.render(&text).unwrap();
+            let doc = roxmltree::Document::parse(&svg).unwrap();
+            let number = doc
+                .descendants()
+                .find(|node| node.attribute("class") == Some("sequenceNumber"))
+                .unwrap();
+            assert_eq!(number.attribute("font-family"), Some(family));
+            assert_eq!(number.attribute("font-size"), Some(size));
+        }
+    }
+}

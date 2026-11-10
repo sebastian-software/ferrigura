@@ -105,9 +105,15 @@ pub fn render(
     // title. A face is embedded only when a run of it is not empty.
     let regular_text = texts.join(" ");
     let mut runs = Vec::new();
-    if !regular_text.is_empty() {
+    // The title's `ex` size uses the root's regular face even when there is no legend or task.
+    // A metrics-only space keeps that supplied primary in the cascade without drawing text.
+    if !regular_text.is_empty() || (title.is_some() && regular.css_reference().is_some()) {
         runs.push(Run {
-            text: &regular_text,
+            text: if regular_text.is_empty() {
+                " "
+            } else {
+                &regular_text
+            },
             face: &regular,
         });
     }

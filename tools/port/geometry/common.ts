@@ -755,7 +755,17 @@ window.renderReference = async function (id, text, clock, site, tidyTree, pin) {
   }
   try {
     const result = await mermaid.render(id, text);
-    return { ok: true, svg: result.svg, error: null, elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
+    // Sequence numbers hardcode generic sans-serif, outside the configured font. Pin only the
+    // returned reference text to the registered fixture; production SVG measurement stays intact.
+    let referenceSvg = result.svg;
+    if (referenceSvg.includes('class="sequenceNumber"')) {
+      const container = document.createElement('template');
+      container.innerHTML = referenceSvg;
+      const numbers = container.content.querySelectorAll('svg[aria-roledescription="sequence"] text.sequenceNumber[font-family="sans-serif"]');
+      for (const number of numbers) number.setAttribute('font-family', ${JSON.stringify(FORCED_SETTINGS.fontFamily)});
+      if (numbers.length) referenceSvg = container.innerHTML;
+    }
+    return { ok: true, svg: referenceSvg, error: null, elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
   } catch (error) {
     return { ok: false, svg: null, error: String((error && error.message) || error), elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
   } finally {

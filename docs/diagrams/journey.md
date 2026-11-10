@@ -80,3 +80,7 @@ Quirks of the reference that the parser keeps on purpose:
 ## Font inputs
 
 The actor legend uses the resolved global `fontFamily`. Unconfigured task and title families inherit the resolved global family. Explicit tasks and sections resolve `taskFontFamily`, while the title resolves `titleFontFamily` in bold. Supplied files determine wrapping, placement, and the SVG font bindings. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+
+The title's relative `ex` size uses the regular primary's x-height. A title-only supplied-font
+render retains that primary for root metrics, even when the visible title uses a distinct bold
+design and there are no tasks or legend entries.
