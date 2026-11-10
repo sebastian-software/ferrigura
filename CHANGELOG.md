@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/sebastian-software/ferrigura/compare/v0.6.0...v0.7.0) (2026-11-10)
+
+
+### Features
+
+* add a general compat option and fix diagram styling ([#85](https://github.com/sebastian-software/ferrigura/issues/85)) ([ce5d30f](https://github.com/sebastian-software/ferrigura/commit/ce5d30fed54325fefe51d13f16bb8b313114e124))
+* **fonts:** render with host-supplied fonts across Rust, CLI and Node ([#94](https://github.com/sebastian-software/ferrigura/issues/94)) ([a9877dd](https://github.com/sebastian-software/ferrigura/commit/a9877dd25a537d1e1ca58f6deee86a8e5c8a1dd5))
+* **render:** add optional SVG draw animation ([#86](https://github.com/sebastian-software/ferrigura/issues/86)) ([0966dcb](https://github.com/sebastian-software/ferrigura/commit/0966dcbb105aae94d06976618e659a28620937be))
+* **text:** measure and embed explicit local fonts ([#93](https://github.com/sebastian-software/ferrigura/issues/93)) ([69f1b63](https://github.com/sebastian-software/ferrigura/commit/69f1b635485d91c74a3620fc4f0e0174359a7fef))
+
+
+### Bug Fixes
+
+* **fonts:** preserve regular metrics in sequence and journey ([#96](https://github.com/sebastian-software/ferrigura/issues/96)) ([01b8eb2](https://github.com/sebastian-software/ferrigura/commit/01b8eb239eb501c6a9ea553cf8b8857320044599))
+* **render:** mask edge labels consistently across diagram types ([#95](https://github.com/sebastian-software/ferrigura/issues/95)) ([375fc03](https://github.com/sebastian-software/ferrigura/commit/375fc03bd7ce308eabc87f1c9d12bff6a5cc9941))
+* **render:** match Mermaid's class and state colors ([8560f29](https://github.com/sebastian-software/ferrigura/commit/8560f29f09655a76950ade9bbf1f22da6a6fb17d))
+* **site:** let the size table scroll on narrow screens ([f51b8ee](https://github.com/sebastian-software/ferrigura/commit/f51b8ee0a6790912ddfb7c7fe903cc2cf5830d94))
+
 ## [0.6.0](https://github.com/sebastian-software/ferrigura/compare/v0.5.0...v0.6.0) (2026-11-09)
 
 
