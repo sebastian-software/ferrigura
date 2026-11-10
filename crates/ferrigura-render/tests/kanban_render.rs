@@ -46,6 +46,7 @@ fn draw(text: &str, id: &str, kanban: &[(&str, Value)]) -> String {
         mindmap: &config.mindmap,
     };
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &sections,
         globals: &Globals::of(&config),

@@ -40,6 +40,7 @@ fn draw_with(text: &str, quadrant_chart: &[(&str, Value)]) -> String {
     let tokens = ThemeTokens::from_value(&variables);
     let globals = Globals::of(&config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.quadrant_chart,
         globals: &globals,

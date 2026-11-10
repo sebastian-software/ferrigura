@@ -305,6 +305,7 @@ fn render_svg_with(text: &str, config: &MermaidConfig, variables: &Value) -> Str
     .expect("the diagram parses");
     let tokens = ThemeTokens::from_value(variables);
     sequence::render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.sequence,
         globals: &Globals::of(config),

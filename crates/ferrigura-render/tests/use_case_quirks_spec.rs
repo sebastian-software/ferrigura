@@ -32,6 +32,7 @@ fn draw(text: &str, configure: impl FnOnce(&mut MermaidConfig)) -> String {
     };
     let tokens = ThemeTokens::from_value(&Theme::ReduxColor.variables(None));
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &section,
         globals: &globals,

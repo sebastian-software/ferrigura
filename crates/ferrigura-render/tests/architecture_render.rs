@@ -82,6 +82,7 @@ fn draw(text: &str, id: &str, settings: &[(&str, Value)]) -> Result<String, Rend
     let tokens = ThemeTokens::from_value(&variables);
     let globals = Globals::of(&config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.architecture,
         globals: &globals,

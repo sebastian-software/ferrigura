@@ -27,6 +27,12 @@ impl FontRegistry {
         Self::default()
     }
 
+    /// Whether no font face has been registered.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.faces.is_empty()
+    }
+
     /// Registers one face from owned TrueType or OpenType bytes.
     ///
     /// A repeated family, numeric weight, and style replaces that face. Family names are matched
@@ -189,6 +195,40 @@ impl FontRegistry {
                 )
             })
             .cloned()
+    }
+
+    /// A deterministic fingerprint of registered names, designs, bytes, and fallback order.
+    ///
+    /// This is an identity for render caches and SVG ids, not a cryptographic digest.
+    #[must_use]
+    pub fn fingerprint(&self) -> u64 {
+        fn add(hash: &mut u64, bytes: &[u8]) {
+            for byte in bytes {
+                *hash = (*hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
+            }
+        }
+        let mut hash = 0xcbf2_9ce4_8422_2325;
+        let mut faces: Vec<_> = self.faces.iter().collect();
+        faces.sort_by_key(|face| {
+            (
+                face.family_name(),
+                face.weight().css_value(),
+                face.style().css_keyword(),
+            )
+        });
+        for face in faces {
+            add(&mut hash, &(face.family_name().len() as u64).to_le_bytes());
+            add(&mut hash, face.family_name().as_bytes());
+            add(&mut hash, &face.weight().css_value().to_le_bytes());
+            add(&mut hash, face.style().css_keyword().as_bytes());
+            add(&mut hash, &(face.data().len() as u64).to_le_bytes());
+            add(&mut hash, face.data());
+        }
+        for family in &self.fallbacks {
+            add(&mut hash, &(family.len() as u64).to_le_bytes());
+            add(&mut hash, family.as_bytes());
+        }
+        hash
     }
 
     /// Reports each uncovered character once, in text order, with the primary family name.

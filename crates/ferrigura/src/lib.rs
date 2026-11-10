@@ -19,6 +19,8 @@ pub mod diagrams;
 
 use diagrams::Plugin;
 
+pub use ferrigura_text::{FontRegistry, FontStyle, FontWeight};
+
 pub use ferrigura_render::animation::{Animation, AnimationOrder};
 /// The diagram types, as the detector names them: what a [`diagrams::Plugin`] draws.
 pub use ferrigura_syntax::DiagramType;
@@ -121,6 +123,8 @@ pub struct Renderer {
     views: Mutex<HashMap<DiagramType, Result<Arc<View>, String>>>,
     /// The diagram types this renderer draws, one plugin per kind.
     plugins: Vec<Plugin>,
+    /// Explicit host fonts; `None` preserves the bundled defaults.
+    fonts: Option<Arc<FontRegistry>>,
 }
 
 impl Renderer {
@@ -141,6 +145,7 @@ impl Renderer {
         RendererBuilder {
             config: config.clone(),
             plugins: Vec::new(),
+            fonts: None,
         }
     }
 
@@ -227,6 +232,7 @@ impl Renderer {
                 light_tokens: Cow::Borrowed(&self.light_tokens),
                 dark_tokens: Cow::Borrowed(&self.dark_tokens),
                 scheme,
+                fonts: self.fonts.as_deref(),
             });
         }
         let view = View::resolve(&self.site, plugin, &directive).map_err(RenderError::Config)?;
@@ -256,6 +262,7 @@ impl Renderer {
             light_tokens,
             dark_tokens,
             scheme,
+            fonts: self.fonts.as_deref(),
         })
     }
 
@@ -297,6 +304,8 @@ pub struct RendererBuilder {
     config: Value,
     /// The plugins registered so far, one per kind.
     plugins: Vec<Plugin>,
+    /// Fonts registered by the host.
+    fonts: Option<FontRegistry>,
 }
 
 impl RendererBuilder {
@@ -314,6 +323,88 @@ impl RendererBuilder {
         diagrams::all().into_iter().fold(self, Self::with)
     }
 
+    /// Registers a regular upright face from owned local TTF or OTF bytes.
+    ///
+    /// The first registered family becomes the site font family when the configuration does not
+    /// explicitly set `fontFamily`. Diagram configuration still chooses names only.
+    ///
+    /// # Errors
+    /// Returns a typed text error when the font or its metadata is invalid.
+    pub fn font(self, family: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, Error> {
+        self.font_face(family, bytes, FontWeight::Normal, FontStyle::Normal)
+    }
+
+    /// Registers one design with an explicit CSS weight and style.
+    ///
+    /// # Errors
+    /// Returns a typed text error when the font or its metadata is invalid.
+    pub fn font_face(
+        mut self,
+        family: impl Into<String>,
+        bytes: impl Into<Vec<u8>>,
+        weight: FontWeight,
+        style: FontStyle,
+    ) -> Result<Self, Error> {
+        let family = family.into();
+        let first = self.fonts.as_ref().is_none_or(FontRegistry::is_empty);
+        self.fonts.get_or_insert_with(FontRegistry::new).register(
+            family.clone(),
+            bytes,
+            weight,
+            style,
+        )?;
+        if first && let Value::Object(config) = &mut self.config {
+            config
+                .entry("fontFamily".into())
+                .or_insert(Value::String(family));
+        }
+        Ok(self)
+    }
+
+    /// Reads and registers a regular upright face from a local file immediately.
+    ///
+    /// # Errors
+    /// Returns a typed text error if reading or registration fails.
+    pub fn font_file(
+        self,
+        family: impl Into<String>,
+        path: impl AsRef<std::path::Path>,
+    ) -> Result<Self, Error> {
+        self.font_file_face(family, path, FontWeight::Normal, FontStyle::Normal)
+    }
+
+    /// Reads and registers a local face with an explicit CSS weight and style.
+    ///
+    /// # Errors
+    /// Returns a typed text error if reading or registration fails.
+    pub fn font_file_face(
+        self,
+        family: impl Into<String>,
+        path: impl AsRef<std::path::Path>,
+        weight: FontWeight,
+        style: FontStyle,
+    ) -> Result<Self, Error> {
+        let path = path.as_ref();
+        let bytes = std::fs::read(path).map_err(|error| {
+            ferrigura_text::TextError::Registration(format!(
+                "cannot read font {}: {error}",
+                path.display()
+            ))
+        })?;
+        self.font_face(family, bytes, weight, style)
+    }
+
+    /// Sets the fallback family names after each requested CSS family list.
+    ///
+    /// All files remain host inputs; this does not load fonts by name.
+    #[must_use]
+    pub fn font_fallbacks(mut self, families: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.fonts
+            .get_or_insert_with(FontRegistry::new)
+            .set_fallbacks(families);
+        self
+    }
+
     /// The renderer of this configuration and these plugins, kept for the next call. A renderer that
     /// is kept already is returned; otherwise it is made as [`build`](Self::build) makes it and kept,
     /// in the place of the least recently used one once a handful are kept. [`render`] uses it with
@@ -321,6 +412,9 @@ impl RendererBuilder {
     /// it so that the configuration is not resolved again. The order of registration does not matter.
     #[must_use]
     pub fn shared(self) -> Arc<Renderer> {
+        if self.fonts.is_some() {
+            return Arc::new(self.build());
+        }
         let mut kinds: Vec<DiagramType> = self.plugins.iter().map(Plugin::kind).collect();
         kinds.sort_unstable_by(|a, b| a.config_key().cmp(b.config_key()));
         if let Some(renderer) = kept(&self.config, &kinds) {
@@ -344,6 +438,7 @@ impl RendererBuilder {
     /// Resolves the configuration and makes the renderer. This does not fail; see [`Renderer::new`].
     #[must_use]
     pub fn build(self) -> Renderer {
+        let font_fingerprint = self.fonts.as_ref().map(FontRegistry::fingerprint);
         let site = SiteConfig::new(Some(&self.config));
         let overrides = site.user_theme_variables(&Value::empty_object());
         Renderer {
@@ -353,11 +448,18 @@ impl RendererBuilder {
             dark_tokens: ThemeTokens::from_value(
                 &Theme::ReduxDarkColor.variables_shared(Some(&overrides)),
             ),
-            configuration: serde_json::to_string(&self.config).unwrap_or_default(),
+            configuration: {
+                let mut configuration = serde_json::to_string(&self.config).unwrap_or_default();
+                if let Some(fingerprint) = font_fingerprint {
+                    configuration.push_str(&format!(";fonts={fingerprint:016x}"));
+                }
+                configuration
+            },
             overrides,
             site,
             views: Mutex::new(HashMap::new()),
             plugins: self.plugins,
+            fonts: self.fonts.map(Arc::new),
         }
     }
 }
@@ -449,6 +551,7 @@ impl View {
 
 /// What a render needs besides its diagram: see [`Renderer::prepare`].
 struct Prepared<'a> {
+    fonts: Option<&'a FontRegistry>,
     id: String,
     view: Arc<View>,
     light_tokens: Cow<'a, ThemeTokens>,
@@ -561,6 +664,7 @@ fn with_flowchart<T>(
         FlowchartRouting::Adaptive
     };
     step(&Context {
+        fonts: prepared.fonts,
         diagram: &diagram,
         section: &section,
         globals: &prepared.view.globals,
@@ -690,5 +794,74 @@ mod tests {
         ));
         let object = Value::Object(BTreeMap::from([("a".to_owned(), Value::Number(-0.0))]));
         assert!(!identical(&object, &Value::empty_object()));
+    }
+}
+
+#[cfg(test)]
+mod font_input_tests {
+    use super::*;
+    const SANS: &[u8] = include_bytes!("../../ferrigura-text/fonts/LexicaUltralegible-Regular.ttf");
+    const MONO: &[u8] =
+        include_bytes!("../../ferrigura-text/fonts/AtkinsonHyperlegibleMono-Regular.ttf");
+
+    #[test]
+    fn font_inputs_are_owned_and_validated_by_the_builder() {
+        let renderer = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        assert!(renderer.fonts.is_some());
+        assert_eq!(
+            renderer.view(diagrams::pie()).unwrap().globals.font_family,
+            "Fixture"
+        );
+        assert!(matches!(
+            Renderer::builder(&Value::empty_object()).font("Broken", vec![1, 2]),
+            Err(Error::Text(_))
+        ));
+    }
+
+    #[test]
+    fn explicit_family_is_kept_and_fallback_order_does_not_change_default_selection() {
+        let renderer = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font_fallbacks(["Symbols"])
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        assert_eq!(
+            renderer.view(diagrams::pie()).unwrap().globals.font_family,
+            "Fixture"
+        );
+        let config = Value::Object(std::collections::BTreeMap::from([(
+            "fontFamily".into(),
+            Value::String("Chosen".into()),
+        )]));
+        let renderer = Renderer::builder(&config)
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        assert_eq!(
+            renderer.view(diagrams::pie()).unwrap().globals.font_family,
+            "Chosen"
+        );
+    }
+
+    #[test]
+    fn supplied_bytes_change_svg_identity_and_do_not_reuse_a_config_only_cache() {
+        let first = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .shared();
+        let second = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Fixture", MONO.to_vec())
+            .unwrap()
+            .shared();
+        assert!(!Arc::ptr_eq(&first, &second));
+        assert_ne!(first.configuration, second.configuration);
     }
 }

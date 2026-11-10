@@ -37,6 +37,7 @@ pub fn draw_configured(text: &str, site: Option<&Value>) -> Result<String, Rende
     let tokens = ThemeTokens::from_value(&variables);
     let globals = Globals::of(&config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.tree_view,
         globals: &globals,
@@ -61,6 +62,7 @@ pub fn draw_section(text: &str, section: &TreeViewDiagramConfig) -> Result<Strin
     let globals = Globals::of(&config);
     let tokens = ThemeTokens::from_value(&Theme::ReduxColor.variables(None));
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section,
         globals: &globals,

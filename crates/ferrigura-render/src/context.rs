@@ -11,6 +11,8 @@ use ferrigura_model::theme::ThemeTokens;
 /// the id. `Section` is the configuration section of the diagram type (`()` for a diagram without
 /// one).
 pub struct Context<'a, Model, Section> {
+    /// Explicit host font inputs. `None` preserves the bundled compatibility defaults.
+    pub fonts: Option<&'a ferrigura_text::FontRegistry>,
     /// The parsed diagram.
     pub diagram: &'a Model,
     /// The section of the configuration that the diagram type reads.

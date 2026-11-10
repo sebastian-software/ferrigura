@@ -21,6 +21,7 @@ fn draw(config: &MermaidConfig) -> String {
     let tokens = ThemeTokens::from_value(&variables);
     let globals = Globals::of(config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.c4,
         globals: &globals,
