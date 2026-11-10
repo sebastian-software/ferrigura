@@ -1,6 +1,6 @@
 //! ferrigura's own output, pinned (`docs/decisions/0015-differential-testing.md`). Every `.mmd` of the corpus is
 //! rendered under three configurations and four color schemes, and one hash over its twelve SVGs (or
-//! errors) is compared with `snapshots/svg.tsv`. Flowcharts have a third column that independently
+//! errors) is compared with `snapshots/svg.tsv`. Flowcharts and sequences have a third column that independently
 //! pins the twelve Mermaid-compatible renders. Any change of the output fails the test, the ones the
 //! geometry check cannot see included (markup, styles, embedded fonts).
 //!
@@ -23,7 +23,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use ferrigura::{Animation, AnimationOrder, ColorScheme, FlowchartMode, RenderOptions, Renderer};
+use ferrigura::{Animation, AnimationOrder, ColorScheme, RenderOptions, Renderer};
 use ferrigura_model::value::Value;
 
 /// The clock of the gantt dates, fixed as in the corpus comparisons.
@@ -173,7 +173,7 @@ fn fnv1a(hash: u64, bytes: &[u8]) -> u64 {
 fn renders(
     text: &str,
     renderers: &[(&'static str, Renderer)],
-    routing: FlowchartMode,
+    compat: bool,
 ) -> Vec<(String, String)> {
     let mut out = Vec::with_capacity(renderers.len() * SCHEMES.len());
     for (config, renderer) in renderers {
@@ -181,7 +181,7 @@ fn renders(
             let options = RenderOptions {
                 now: Some(NOW),
                 color_scheme,
-                flowchart_mode: routing,
+                compat,
                 ..RenderOptions::default()
             };
             let result = match renderer.render_with(text, &options) {
@@ -245,18 +245,18 @@ fn the_output_of_the_corpus_is_unchanged() {
                         .expect("a corpus file in the repository")
                         .to_string_lossy()
                         .replace('\\', "/");
-                    let mut hash = hash(&renders(&text, &renderers, FlowchartMode::Adaptive));
+                    let mut hash = hash(&renders(&text, &renderers, false));
                     // A third column pins the compatibility mode separately, so updating the new
                     // default cannot silently bless a change in Mermaid-compatible output.
-                    if ferrigura_syntax::detect(&text)
-                        == Some(ferrigura_syntax::DiagramType::Flowchart)
-                    {
+                    if matches!(
+                        ferrigura_syntax::detect(&text),
+                        Some(
+                            ferrigura_syntax::DiagramType::Flowchart
+                                | ferrigura_syntax::DiagramType::Sequence
+                        )
+                    ) {
                         hash.push('\t');
-                        hash.push_str(&self::hash(&renders(
-                            &text,
-                            &renderers,
-                            FlowchartMode::Mermaid,
-                        )));
+                        hash.push_str(&self::hash(&renders(&text, &renderers, true)));
                     }
                     hashes.lock().expect("hashes").push((name, hash));
                 }
@@ -310,7 +310,7 @@ fn the_output_of_the_corpus_is_unchanged() {
         let text = std::fs::read_to_string(root.join(name)).expect("a corpus file");
         let folder = head.join(name);
         std::fs::create_dir_all(&folder).expect("the review folder");
-        for (label, result) in renders(&text, &renderers, FlowchartMode::Adaptive) {
+        for (label, result) in renders(&text, &renderers, false) {
             std::fs::write(folder.join(format!("{label}.svg")), result).expect("a review render");
         }
     }

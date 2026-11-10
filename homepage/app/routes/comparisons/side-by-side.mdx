@@ -9,18 +9,17 @@ Ferrigura's checks compare every drawing with Mermaid's to within 0.05 px. This 
 
 ## How the drawings were made
 
-Both sides are the published packages, <Versions />, and nothing is touched up afterwards. Mermaid draws in headless Chromium; Ferrigura draws without a browser. Both get the configuration that the geometry check gives them, because Mermaid's defaults would change the look rather than the drawing: labels as SVG text instead of HTML, Ferrigura's bundled face and the `redux-color` theme, which is one of Mermaid's own.
+The drawings come from <Versions />, and nothing is touched up afterwards. Mermaid draws in headless Chromium; Ferrigura draws without a browser. Both get the configuration that the geometry check gives them, because Mermaid's defaults would change the look rather than the drawing: labels as SVG text instead of HTML, Ferrigura's bundled face and the `redux-color` theme, which is one of Mermaid's own.
 
 <SharedConfig />
 
-Flowcharts are drawn in Ferrigura's `mermaid` mode, which keeps Mermaid's edge routing; the default `adaptive` mode is shown on the [homepage](/#flowchart-mode). Ferrigura's drawing is the SVG file as a site would ship it, with its fonts inside. Mermaid's drawing stands in this page, which supplies the face. Each figure links both files, and the diagram text opens below it.
+These drawings use `{ compat: true }`, which preserves Mermaid-compatible geometry across diagram types. Ferrigura's optimized default (`compat: false`) centers flowchart ports and compacts sequence participant boxes; the routing difference is shown on the [homepage](/#flowchart-mode). Both drawings stand inline so the browser paints their text in the same context. Ferrigura's SVG embeds its font subsets; the page supplies the same face for Mermaid. Each figure links both files, and the diagram text opens below it.
 
 ## Where they differ
 
-The positions, sizes and texts agree in all ten. Two diagrams differ in their colors, which the geometry check does not compare:
+Ferrigura draws flowchart edge-label backgrounds at full opacity in both routing modes, so the line does not show through the text. Mermaid's SVG labels use half opacity. This affects paint only, not layout.
 
-- **Class diagram.** Mermaid gives each class its own color from the theme; Ferrigura draws every class in black and white.
-- **State diagram.** Ferrigura fills the note dark, so its text cannot be read, and fills the choice and the final states where Mermaid draws them hollow.
+The full-opacity correction is also applied to the pinned reference used by the geometry checks. This page shows the published Mermaid package unchanged. Sequence participant boxes keep Mermaid's full row height here because compatibility mode is enabled; optimized rendering fits them to their labels without moving lifelines or messages.
 
 ## Flowchart
 
@@ -64,4 +63,4 @@ The positions, sizes and texts agree in all ten. Two diagrams differ in their co
 
 ## Render them yourself
 
-`scripts/render-comparison.mjs` in the [homepage's sources](https://github.com/sebastian-software/ferrigura/tree/main/homepage) writes these files on macOS with `pnpm comparison:write`. The site's checks render Ferrigura's side again on every build and Mermaid's on macOS, where the geometry check runs too, because Chromium lays out text a little differently on Linux.
+`scripts/render-comparison.mjs` in the [homepage's sources](https://github.com/sebastian-software/ferrigura/tree/main/homepage) renders the current Ferrigura source and the published Mermaid package on macOS with `pnpm comparison:write`. The site's checks render Ferrigura's side again on every build and Mermaid's on macOS, where the geometry check runs too, because Chromium lays out text a little differently on Linux.

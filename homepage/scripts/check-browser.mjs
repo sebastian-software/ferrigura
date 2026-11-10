@@ -131,6 +131,7 @@ async function verifyCompareSlider(page, origin) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(new URL('/comparisons/side-by-side/', origin).href, { waitUntil: 'load' });
   assert.equal(await page.locator('.fgr-side').count(), 10, 'The page needs ten figures');
+  await verifyComparisonFonts(page);
   const slider = page.locator('.fgr-compare').nth(3);
   await slider.scrollIntoViewIfNeeded();
   await verifyAlignment(slider);
@@ -139,6 +140,33 @@ async function verifyCompareSlider(page, origin) {
   await page.keyboard.press('ArrowLeft');
   assert.equal(await input.inputValue(), '49', 'The arrow keys do not move the divider');
   await verifyTap(page, slider, input);
+}
+
+/** Standalone subsets and regular flowchart text stay active in the inline comparison. */
+async function verifyComparisonFonts(page) {
+  await page.evaluate(() => document.fonts.ready);
+  const fonts = await page
+    .locator('.fgr-side')
+    .nth(1)
+    .locator(
+      '.fgr-compare-first text.actor, .fgr-compare-first text.noteText, .fgr-compare-first text.messageText'
+    )
+    .evaluateAll((texts) => texts.map((text) => getComputedStyle(text).fontFamily));
+  assert(
+    fonts.length > 0 && fonts.every((family) => family.includes('fg-')),
+    'Sequence labels must use the embedded font'
+  );
+  for (const layer of ['.fgr-compare-first', '.fgr-compare-layer:first-child']) {
+    const weight = await page
+      .locator('.fgr-side')
+      .first()
+      .locator(`${layer} text`)
+      .filter({ hasText: 'Tests pass?' })
+      .evaluate(
+        (text) => getComputedStyle(text.querySelector('.text-inner-tspan') ?? text).fontWeight
+      );
+    assert.equal(weight, '400', 'Both flowcharts use regular text');
+  }
 }
 
 /** A tap at a fifth of the width moves the divider there and clips the first drawing. */
@@ -154,9 +182,9 @@ async function verifyTap(page, slider, input) {
   assert(Math.abs(hidden - (100 - value)) < 0.5, `The first drawing is clipped as ${clip}`);
 }
 
-/** Ferrigura's image and Mermaid's SVG take the same box under the divider. */
+/** Both SVGs take the same box under the divider. */
 async function verifyAlignment(slider) {
-  const first = await slider.locator('.fgr-compare-first img').boundingBox();
+  const first = await slider.locator('.fgr-compare-first svg').boundingBox();
   const second = await slider.locator('.fgr-compare-layer svg').first().boundingBox();
   assert(first && second, 'A side-by-side drawing has no box');
   for (const key of ['x', 'y', 'width', 'height'])

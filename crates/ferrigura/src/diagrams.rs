@@ -221,7 +221,7 @@ fn render_flowchart(
     prepared: &Prepared<'_>,
     options: &RenderOptions,
 ) -> Result<String, RenderError> {
-    with_flowchart(text, prepared, options.flowchart_mode, |input| {
+    with_flowchart(text, prepared, options.compat, |input| {
         flowchart::render_with_animation(input, options.animation)
     })
 }
@@ -408,22 +408,25 @@ fn read_sequence(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_
 fn render_sequence(
     text: &str,
     prepared: &Prepared<'_>,
-    _options: &RenderOptions,
+    options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    sequence_render::render(&Context {
-        diagram: &sequence::parse_with(
-            text,
-            sequence::Options {
-                wrap: sequence_wrap(&prepared.view.effective),
-            },
-        )?,
-        section: &typed_config.sequence,
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+    sequence_render::render_with(
+        &Context {
+            diagram: &sequence::parse_with(
+                text,
+                sequence::Options {
+                    wrap: sequence_wrap(&prepared.view.effective),
+                },
+            )?,
+            section: &typed_config.sequence,
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
+        },
+        options.compat,
+    )
 }
 
 /// The state diagram, written `stateDiagram` or `stateDiagram-v2`.

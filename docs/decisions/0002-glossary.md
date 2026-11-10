@@ -29,8 +29,8 @@ _Avoid_: skin, palette (for the whole set)
 **Unified renderer**:
 The renderer that flowchart, class, state, ER and requirement share, and that other types such as mindmap and block build on: the port of Mermaid's `rendering-util`, with its shapes, clusters, edges and layout algorithms (`ferrigura-render`, `src/unified`).
 
-**Flowchart mode**:
-The per-render choice of flowchart routing and edge-label background treatment: adaptive centering with full-opacity backgrounds, or Mermaid-compatible routing with half-opacity backgrounds ([0019](./0019-adaptive-flowchart-mode.md)). Explicit theme color transparency applies in either mode.
+**Compatibility mode**:
+The per-render choice between optimized geometry (`compat: false`, the default) and Mermaid-compatible geometry (`compat: true`). It controls adaptive flowchart ports and compact sequence participant boxes. Font, color and readability fixes apply in either mode ([0019](./0019-adaptive-flowchart-mode.md)).
 
 **Flowchart routing policy**:
 The choice of how a flowchart attaches its edges to nodes: adaptive centering with label-aware spacing, or the pinned Mermaid reference's attachment behavior ([0019](./0019-adaptive-flowchart-mode.md)). Necessary bends remain in either policy.

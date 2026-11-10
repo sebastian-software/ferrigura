@@ -10,13 +10,13 @@ Flowcharts use adaptive rendering by default ([0019](../decisions/0019-adaptive-
 
 Centering can add bends in dense labeled fan-in and fan-out, as in `visual-check/with-formatting-in-a-node*.mmd`. Use `mermaid` when preserving those routes takes priority. Parents not traversed by a measured labeled edge retain their existing child alignments and port spacing.
 
-Adaptive mode also draws edge-label backgrounds at full opacity, so lines do not show through the text. It keeps the theme's `edgeLabelBackground` color and any explicit alpha channel. Icon and image captions retain their reference styling.
+Both modes draw edge-label backgrounds at full opacity, so lines do not show through the text. It keeps the theme's `edgeLabelBackground` color and any explicit alpha channel. Icon and image captions retain their reference styling.
 
-To preserve the pinned Mermaid reference's routing and half-opacity SVG label backgrounds, choose the per-render compatibility option:
+To preserve the pinned Mermaid reference's routing, choose the per-render compatibility option:
 
-- Rust: `RenderOptions { flowchart_mode: FlowchartMode::Mermaid, ..RenderOptions::default() }`.
-- Node.js: `renderer.render(text, { flowchartMode: 'mermaid' })` or `render(text, config, { flowchartMode: 'mermaid' })`.
-- CLI: `ferrigura --flowchart-mode mermaid diagram.mmd`.
+- Rust: `RenderOptions { compat: true, ..RenderOptions::default() }`.
+- Node.js: `renderer.render(text, { compat: true })` or `render(text, config, { compat: true })`.
+- CLI: `ferrigura --compat diagram.mmd`.
 
 Use `Adaptive` in Rust or `adaptive` in Node.js and the CLI to select the default explicitly. The option affects only flowcharts, including the `graph` and `flowchart-elk` headers. Other diagram types keep their output. It is a render option, not a front-matter or init configuration key. `elk.straightenEdges` remains a separate post-processing setting for both policies.
 
@@ -245,7 +245,7 @@ Terminal labels, `slideTerminalLabelsOffFrames` and the like are in `terminal.rs
 
 ## Differences from Mermaid
 
-- **Flowchart rendering** centers ports with label-aware spacing and draws edge-label backgrounds at full opacity by default. The explicit `mermaid` render option preserves the reference's attachment policy and half-opacity label backgrounds ([0019](../decisions/0019-adaptive-flowchart-mode.md)).
+- **Flowchart rendering** centers ports with label-aware spacing and draws edge-label backgrounds at full opacity by default. The general `compat: true` render option preserves the reference's attachment policy ([0019](../decisions/0019-adaptive-flowchart-mode.md)).
 
 - **Labels are SVG text, not HTML** ([0009](../decisions/0009-svg-text-labels.md)). `htmlLabels: true` is drawn as SVG text too, and the geometry runs compare against the reference with `htmlLabels: false`.
 - **Fonts are bundled and embedded** ([0010](../decisions/0010-text-measurement-and-fonts.md)), so every text run is placed at an explicit `x`.

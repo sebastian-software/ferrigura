@@ -1,40 +1,21 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Paths are a fresh temporary directory and fixed files in this repository. */
-// Renders the diagrams of the side-by-side page twice, with the published
-// @ferrigura/core and with the published mermaid package in headless Chromium,
-// and writes app/data/comparison.json and the SVG files in
-// app/data/comparison/. The page imports them; nobody edits them by hand.
-//
-//   node scripts/render-comparison.mjs          # write the files
-//   node scripts/render-comparison.mjs --check  # fail when they drifted
-//
-// Writing renders with the Ferrigura release the homepage's drawings come
-// from (app/data/diagram-samples.json, written by render-diagram-samples.mjs)
-// and the Mermaid release the port is checked against (tools/reference/pin),
-// and records both in `renderedWith`; the check renders again with the
-// recorded versions. Run the write again after `pnpm sample:write` or a move
-// of the pin.
-//
-// Write on macOS, where the geometry check runs too: Chromium lays out text
-// a little differently on Linux (docs/LEARNINGS.md, "Linux and macOS Chromium
-// lay out text differently"), so Mermaid's drawings are a recording from
-// macOS. On the recording platform the check renders both sides again and
-// compares them exactly; elsewhere it renders Ferrigura's side, compares it
-// within 0.01, and leaves Mermaid's recording as it is.
-//
-// Both sides get the settings the geometry check gives them
-// (tools/port/geometry/common.ts): Mermaid draws its labels as SVG text, in
-// Ferrigura's bundled face, with the redux-color theme that Ferrigura ships;
-// flowcharts are drawn in Ferrigura's Mermaid mode. The page shows Mermaid's
-// SVG unchanged and declares the face for it.
+// Renders this repository's Ferrigura source and the published Mermaid at the
+// reference pin. The committed drawings are checked against their generators;
+// fixes on main are visible without waiting for the next npm release.
+// Write on macOS, where the geometry checks run. Other platforms check only
+// Ferrigura's deterministic output, with the existing numeric tolerance.
+// Both sides get SVG labels, the bundled face and the redux-color theme.
+// Flowcharts use Mermaid routing; label backgrounds stay opaque in both modes.
 import assert from 'node:assert/strict';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { format } from 'oxfmt';
 import { chromium } from 'playwright';
 
 import { compareOutput, installPublished } from './published-output.mjs';
+import { createSourceRenderer } from './source-renderer.mjs';
 
 const check = process.argv.includes('--check');
 const repository = new URL('../../', import.meta.url);
@@ -42,15 +23,11 @@ const target = new URL('../app/data/comparison.json', import.meta.url);
 const svgDirectory = new URL('../app/data/comparison/', import.meta.url);
 const fontDirectory = new URL('crates/ferrigura-text/fonts/', repository);
 const recorded = check ? JSON.parse(await readFile(target, 'utf8')) : undefined;
-// The release the homepage's drawings come from, so both pages show the same one.
-const homepageSamples = JSON.parse(
-  await readFile(new URL('../app/data/diagram-samples.json', import.meta.url), 'utf8')
-);
 const pin = await readFile(new URL('tools/reference/pin', repository), 'utf8');
 const pinnedMermaid = /^release mermaid@(\S+)$/m.exec(pin)?.[1];
 assert(pinnedMermaid, 'tools/reference/pin names no Mermaid release');
 const versions = recorded?.renderedWith ?? {
-  '@ferrigura/core': homepageSamples.renderedWith['@ferrigura/core'],
+  ferrigura: 'repository source',
   mermaid: pinnedMermaid,
 };
 const platform = `${process.platform}-${process.arch}`;
@@ -73,7 +50,7 @@ const mermaidConfig = {
   deterministicIds: true,
 };
 /** Ferrigura's render options: a light page, and Mermaid's flowchart routing. */
-const ferriguraOptions = { colorScheme: 'light', flowchartMode: 'mermaid' };
+const ferriguraOptions = { colorScheme: 'light', compat: true };
 
 /** The examples: everyday diagrams of medium size, one per type. */
 const examples = [
@@ -335,11 +312,14 @@ const examples = [
 
 assert(check || process.platform === 'darwin', 'Write the side-by-side drawings on macOS.');
 const exact = !check || recorded.platform === platform;
-const packages = await installPublished(versions, { quiet: check });
+const packages = await installPublished({ mermaid: versions.mermaid }, { quiet: check });
 let svgs;
+let renderer;
 try {
-  svgs = await renderAll(packages, { withMermaid: exact });
+  renderer = await createSourceRenderer(diagramConfig);
+  svgs = await renderAll(packages, { withMermaid: exact }, renderer);
 } finally {
+  await renderer?.remove();
   await packages.remove();
 }
 
@@ -355,7 +335,7 @@ const data = {
 };
 const formatted = await format('comparison.json', JSON.stringify(data));
 assert.equal(formatted.errors.length, 0);
-const drawnWith = `@ferrigura/core ${versions['@ferrigura/core']} and mermaid ${versions.mermaid}`;
+const drawnWith = `Ferrigura (${versions.ferrigura}) and mermaid ${versions.mermaid}`;
 
 if (check) {
   const message = `The side-by-side drawings drifted from ${drawnWith}; run pnpm comparison:write`;
@@ -388,9 +368,7 @@ if (check) {
 }
 
 /** Every example from Ferrigura and, where asked, from Mermaid, by file name. */
-async function renderAll({ directory, require }, { withMermaid }) {
-  const { Renderer } = await import(pathToFileURL(require.resolve('@ferrigura/core')).href);
-  const renderer = new Renderer(diagramConfig);
+async function renderAll({ directory }, { withMermaid }, renderer) {
   const mermaid = withMermaid
     ? await renderMermaid(join(directory, 'node_modules', 'mermaid', 'dist'))
     : new Map();
@@ -404,12 +382,9 @@ async function renderAll({ directory, require }, { withMermaid }) {
 
 function renderFerrigura(renderer, example) {
   const options = { ...ferriguraOptions, id: `ferrigura-${example.id}` };
-  const svg = renderer.render(example.source, options);
-  assert.equal(
-    svg,
-    renderer.render(example.source, options),
-    `${example.id} must render the same twice`
-  );
+  const draw = () => renderer.render(example.source, options);
+  const svg = draw();
+  assert.equal(svg, draw(), `${example.id} must render the same twice`);
   assert.doesNotMatch(svg, /<foreignObject\b|<script\b/, `${example.id} contains HTML or script`);
   return svg;
 }

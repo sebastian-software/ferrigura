@@ -1,0 +1,15 @@
+Keep SVG edge labels readable by masking their edges at full opacity. This changes paint only; HTML labels already have an opaque paragraph background.
+
+diff --git a/packages/mermaid/src/diagrams/flowchart/styles.ts b/packages/mermaid/src/diagrams/flowchart/styles.ts
+index e0286b7..4107af0 100644
+--- a/packages/mermaid/src/diagrams/flowchart/styles.ts
++++ b/packages/mermaid/src/diagrams/flowchart/styles.ts
+@@ -212,7 +212,7 @@ const getStyles = (options: FlowChartStyleOptions) =>
+       background-color: ${options.edgeLabelBackground};
+     }
+     rect {
+-      opacity: 0.5;
++      opacity: 1;
+       background-color: ${options.edgeLabelBackground};
+       fill: ${options.edgeLabelBackground};
+     }

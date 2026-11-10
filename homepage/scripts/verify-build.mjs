@@ -102,13 +102,13 @@ for (const page of expectedPages) {
 }
 
 function verifyHomepage(html) {
-  const core = samples.renderedWith['@ferrigura/core'];
+  const renderingSource = samples.renderedWith.ferrigura;
   const required = [
     `v${site.version}`,
     'class="mono fgr-site"',
     'data-product="ferrigura"',
     'Mermaid diagrams, drawn without a browser.',
-    `Real output of @ferrigura/core ${core}`,
+    `Real output of Ferrigura (${renderingSource})`,
     // The drawings that stand on the page before any choice is made.
     'id="homepage-flowchart"',
     'id="homepage-mode-adaptive"',
@@ -176,5 +176,5 @@ execFileSync(
   { cwd: repository, stdio: 'inherit' }
 );
 console.log(
-  `Verified the Monografie shell on all ${expectedPages.length} pages and the homepage's drawings from @ferrigura/core ${samples.renderedWith['@ferrigura/core']}.`
+  `Verified the Monografie shell on all ${expectedPages.length} pages and the homepage's drawings from Ferrigura (${samples.renderedWith.ferrigura}).`
 );

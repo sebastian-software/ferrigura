@@ -868,7 +868,10 @@ mod sequence_diagram_apa_rendering {
         assert!(!message_texts.is_empty());
         for text in message_texts {
             let style = text.attr("style").unwrap_or_default();
-            assert!(style.contains("font-family: Menlo"), "style: {style}");
+            assert!(
+                !style.contains("font-family:"),
+                "embedded family is inherited: {style}"
+            );
             assert!(style.contains("font-size: 18px"), "style: {style}");
         }
         assert_eq!(edges.stopx, rightmost_actor_edge(&svg));
@@ -1066,17 +1069,12 @@ mod svg_draw {
     #[test]
     fn should_read_config_at_render_time_for_each_rect_2() {
         // Reference: svgDraw.spec.js:42. The reference reads the look for each rectangle as it draws
-        // it. A render has one look, so every note rectangle of a neo diagram is marked, and none of
-        // a classic one.
+        // it. The renderer's drawNote does not mark notes: they have no neo shadow.
         let text = "sequenceDiagram\nAlice->Bob: hi\nNote right of Bob: a\nNote left of Alice: b";
         let neo_svg = render(text, &look_config("neo"));
         let marked = note_rects(&neo_svg);
         assert_eq!(marked.len(), 2);
-        assert!(
-            marked
-                .iter()
-                .all(|rect| rect.attr("data-look") == Some("neo"))
-        );
+        assert!(marked.iter().all(|rect| rect.attr("data-look").is_none()));
         let classic_svg = render(text, &look_config("classic"));
         let plain = note_rects(&classic_svg);
         assert_eq!(plain.len(), 2);
@@ -1470,8 +1468,8 @@ mod stick_figure_actor_sizing {
         // Reference: actorSizing.spec.ts:118. The neo head is smaller than the classic one.
         //
         // The reference's second clause (the same box height on both looks) holds under its
-        // jsdom mock only: in the real pipeline a neo participant's box is taller than a classic
-        // one (see `reports_a_height_that_is_not_shrunk_by_the_look`), so it is not restated here.
+        // jsdom mock only: the compact neo participant box is shorter than a classic
+        // one (see `fits_participant_boxes_without_shrinking_the_icon_row`), so it is not restated here.
         let classic = alone("actor", "classic");
         let neo = alone("actor", "neo");
         let classic_head =
@@ -1502,10 +1500,7 @@ mod stick_figure_actor_sizing {
 
     #[test]
     fn reports_a_height_that_is_not_shrunk_by_the_look() {
-        // Reference: actorSizing.spec.ts:150. The reference's assertion is that the height the look
-        // reports is the input height, 65 on both looks, under its mocked measurement. In the real
-        // pipeline a neo participant's box is 76 high and a classic one 65: the look grows the box and
-        // does not shrink it, which is what is restated here.
+        // Compatibility rendering keeps the shared row height for participant boxes.
         let classic = alone("participant", "classic");
         let neo = alone("participant", "neo");
         assert!(box_height(participant(&neo, "A")) >= box_height(participant(&classic, "A")));

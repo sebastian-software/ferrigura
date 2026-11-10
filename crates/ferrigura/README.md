@@ -1,6 +1,6 @@
 # ferrigura
 
-ferrigura renders Mermaid diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0, checked against Mermaid run in Chromium. Flowcharts use adaptive port alignment with label-aware spacing and full-opacity edge-label backgrounds by default; `FlowchartMode::Mermaid` preserves the reference's routing and half-opacity label backgrounds.
+ferrigura renders Mermaid diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0, checked against Mermaid run in Chromium. The optimized default centers flowchart ports and compacts sequence participant boxes. `RenderOptions { compat: true, ..Default::default() }` selects Mermaid-compatible geometry; font, fill and readability fixes apply in both modes.
 
 The repository is [sebastian-software/ferrigura](https://github.com/sebastian-software/ferrigura).
 
@@ -75,12 +75,12 @@ The constructors of `ferrigura::diagrams` are named after the types (`flowchart`
 
 `render_with` and `Renderer::render_with` take a `RenderOptions` as well. It holds what is not Mermaid configuration:
 
-| Field          | Type                  | Meaning                                                                                                                                                                                                                                        |
-| -------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`           | `Option<String>`      | The id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id. |
-| `color_scheme` | `Option<ColorScheme>` | `Light`, `Dark` or `Auto`. `Auto` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. `None` keeps the colors of the configured theme.                                                                        |
-| `now`          | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                               |
-| `flowchart_mode` | `FlowchartMode` | `Adaptive` (default) centers flowchart ports with label-aware spacing and draws edge-label backgrounds at full opacity. `Mermaid` preserves the pinned reference's routing and half-opacity label backgrounds. Other diagram types ignore this option. |
+| Field            | Type                  | Meaning                                                                                                                                                                                                                                                               |
+| ---------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | `Option<String>`      | The id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id.                        |
+| `color_scheme`   | `Option<ColorScheme>` | `Light`, `Dark` or `Auto`. `Auto` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. `None` keeps the colors of the configured theme.     |
+| `now`            | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                                                      |
+| `compat`         | `bool`                | `false` (default) enables optimized routing and compact participants. `true` preserves Mermaid-compatible geometry across diagram types.                                                                                                                              |
 | `animation` | `Option<Animation>` | Optional draw animation for flowchart, Gantt, Git graph, mind map, pie, and XY chart. `None` (default) preserves static output; `Some(Animation::default())` draws one line at a time. Unsupported diagram types return an option error. |
 
 ```rust

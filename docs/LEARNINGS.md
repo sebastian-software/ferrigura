@@ -325,8 +325,16 @@ Where an engine's numbers must match, the port keeps the source's expression tre
 
 ### HTML and SVG edge-label backgrounds differ
 
-Mermaid's HTML-label path gives the paragraph inside an edge label its own background color. The SVG-label path applies an additional opacity of 0.5 to its background rectangle. Changing `edgeLabelBackground` to an opaque color does not remove that multiplier. Ferrigura's adaptive flowchart mode uses full-opacity rectangles with the same theme color; Mermaid mode retains the multiplier. The theme color's explicit alpha channel still applies ([0019](./decisions/0019-adaptive-flowchart-mode.md)).
+Mermaid's HTML-label path gives the paragraph inside an edge label its own background color. The SVG-label path applies an additional opacity of 0.5 to its background rectangle. Changing `edgeLabelBackground` to an opaque color does not remove that multiplier. Ferrigura uses full-opacity rectangles with the same theme color in both routing modes; reference patch 11 removes the multiplier without changing geometry. The theme color's explicit alpha channel still applies ([0019](./decisions/0019-adaptive-flowchart-mode.md)).
 
 ### Edge storage does not identify the layout container
 
 The flowchart input stores every edge on the root. ELK imports the edge into the lowest common ancestor of its endpoints, or the parent of a self-loop. A policy based on the current `edges` array therefore applies nested labels to the wrong graph. Adaptive routing resolves that containment and the intermediate containers on both endpoint branches before deriving each parent's label-aware port spacing ([0019](./decisions/0019-adaptive-flowchart-mode.md)).
+
+### Sequence labels inherit the embedded subset
+
+Sequence text uses the same top-level family for actors, notes and messages. A local `font-family` declaration with the configured family overrides the root's unique embedded subset; an external SVG then falls back to the viewer's serif face. Text inherits the root family while retaining its local size and weight. The subset collects decoded entity glyphs: subsetting the parser's placeholders instead leaves literal angle brackets to a fallback font. Standalone SVG tests exercise a family unavailable to the viewer. Sequence notes do not carry `data-look="neo"`: the reference's `drawNote` does not mark them, and marking them adds an unintended shadow.
+
+### Participant boxes do not need the glyph band
+
+Neo sequence rows reserve a glyph band, label and two gaps for icon participants. In optimized rendering (`compat: false`), a plain participant has no glyph: its rectangle uses the measured label height plus the two label gaps. Compatibility mode keeps the original row-spanning box. The header bottom and footer top stay at the existing lifeline datum, so message positions, row height and wrapping do not move ([0019](./decisions/0019-adaptive-flowchart-mode.md)).

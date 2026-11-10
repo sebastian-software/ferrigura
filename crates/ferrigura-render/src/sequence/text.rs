@@ -94,8 +94,7 @@ pub fn line_count(text: &str) -> usize {
 /// Font properties go into one `style` attribute, as d3's `style` calls do.
 fn font_style(font: &Font) -> String {
     format!(
-        "font-family: {}; font-size: {}; font-weight: {};",
-        font.family,
+        "font-size: {}; font-weight: {};",
         font.size_css(),
         number(font.weight)
     )
@@ -244,10 +243,9 @@ pub fn draw_label_by_tspan(
                 .with(
                     "style",
                     format!(
-                        "text-anchor: middle; font-size: {}; font-weight: {}; font-family: {};",
+                        "text-anchor: middle; font-size: {}; font-weight: {};",
                         font.size_css(),
-                        number(font.weight),
-                        font.family
+                        number(font.weight)
                     ),
                 )
                 .child(
@@ -330,7 +328,8 @@ mod tests {
         assert_eq!(text.get("class"), Some("noteText"));
         assert_eq!(text_of(text), "One fine text message");
         let style = text.get("style").expect("the text has a style");
-        assert!(style.contains("font-family: courier;"), "{style}");
+        // The root names the embedded subset; a local system family would override it.
+        assert!(!style.contains("font-family:"), "{style}");
         assert!(style.contains("font-size: 10px;"), "{style}");
         assert!(style.contains("font-weight: 500;"), "{style}");
     }

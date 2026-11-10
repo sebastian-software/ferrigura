@@ -15,8 +15,8 @@ const PIE: &str = "pie title Sports in Sweden\n  \"Bandy\" : 40\n  \"Ice-Hockey\
 
 fn svg_with(text: &str, scheme: Option<ColorScheme>, id: Option<&str>) -> String {
     let options = RenderOptions {
+        compat: false,
         animation: None,
-        flowchart_mode: Default::default(),
         id: id.map(str::to_owned),
         color_scheme: scheme,
         now: None,
@@ -207,8 +207,8 @@ fn the_default_id_comes_from_the_text_and_the_configuration() {
 fn an_id_that_is_not_a_css_identifier_is_refused() {
     for bad in ["1pie", "my pie", "a.b", "", "x{}"] {
         let options = RenderOptions {
+            compat: false,
             animation: None,
-            flowchart_mode: Default::default(),
             id: Some(bad.to_owned()),
             color_scheme: None,
             now: None,
@@ -265,4 +265,164 @@ fn accessible_texts_are_escaped() {
     let text = "pie\n  accTitle: a < b & c\n  \"Bandy\" : 40\n";
     let out = svg_with(text, None, Some("pie-one"));
     assert!(out.contains("a &lt; b &amp; c</title>"), "{out}");
+}
+
+#[test]
+fn sequence_text_inherits_the_embedded_font_in_standalone_svg() {
+    let svg = render(
+        "sequenceDiagram\n participant App\n participant API\n App->>API: Request\n Note over App,API: The token expires after an hour\n",
+        &Value::from(serde_json::json!({ "fontFamily": "Unavailable Font" })),
+    ).expect("renders");
+    let doc = roxmltree::Document::parse(&svg).expect("valid SVG");
+    let css = doc
+        .descendants()
+        .find(|n| n.has_tag_name("style"))
+        .unwrap()
+        .text()
+        .unwrap();
+    assert!(css.contains("@font-face{font-family:\"fg-"));
+    for text in doc.descendants().filter(|n| n.has_tag_name("text")) {
+        let style = text.attribute("style").unwrap_or_default();
+        assert!(!style.contains("font-family:"), "{style}");
+    }
+    let note = doc
+        .descendants()
+        .find(|n| n.has_tag_name("rect") && n.attribute("class") == Some("note"))
+        .unwrap();
+    assert_eq!(
+        note.attribute("data-look"),
+        None,
+        "Mermaid notes have no neo shadow"
+    );
+    assert_eq!(note.attribute("filter"), None);
+    assert!(
+        doc.descendants().any(|n| n.has_tag_name("rect")
+            && n.attribute("class").is_some_and(|c| c.contains("actor"))
+            && n.attribute("filter").is_some()),
+        "participant shadows remain"
+    );
+}
+
+#[test]
+fn neo_participant_boxes_fit_their_labels_and_touch_the_lifelines() {
+    for (label, expected_height) in [("App", 32.0), ("App<br/>client", 52.0)] {
+        let svg = render(
+            &format!(
+                "sequenceDiagram\n actor User\n participant App as {label}\n User->>App: Open\n"
+            ),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        let doc = roxmltree::Document::parse(&svg).expect("valid SVG");
+        let value = |node: roxmltree::Node<'_, '_>, name| {
+            node.attribute(name).unwrap().parse::<f64>().unwrap()
+        };
+        let top = doc
+            .descendants()
+            .find(|n| {
+                n.has_tag_name("rect")
+                    && n.attribute("name") == Some("App")
+                    && n.attribute("class") == Some("actor actor-top")
+            })
+            .unwrap();
+        assert_eq!(value(top, "height"), expected_height);
+        let line = doc
+            .descendants()
+            .find(|n| n.has_tag_name("line") && n.attribute("name") == Some("App"))
+            .unwrap();
+        assert_eq!(value(top, "y") + value(top, "height"), value(line, "y1"));
+        let bottom = doc
+            .descendants()
+            .find(|n| {
+                n.has_tag_name("rect")
+                    && n.attribute("name") == Some("App")
+                    && n.attribute("class") == Some("actor actor-bottom")
+            })
+            .unwrap();
+        assert_eq!(value(bottom, "height"), expected_height);
+        assert_eq!(value(bottom, "y"), value(line, "y2"));
+    }
+}
+
+#[test]
+fn sequence_fonts_embed_the_decoded_entity_glyphs() {
+    let config = Value::empty_object();
+    let options = RenderOptions {
+        id: Some("entities".to_owned()),
+        ..RenderOptions::default()
+    };
+    let draw = |label| {
+        render_with(
+            &format!("sequenceDiagram\n participant A as {label}\n Note over A: {label}\n"),
+            &config,
+            &options,
+        )
+        .unwrap()
+    };
+    assert_eq!(
+        style_of(&draw("A #lt; B #gt; C")),
+        style_of(&draw("A < B > C"))
+    );
+}
+
+#[test]
+fn compat_switches_optimizations_per_render_without_leaking() {
+    use ferrigura::Renderer;
+    let renderer = Renderer::new(&Value::empty_object());
+    let optimized = RenderOptions {
+        id: Some("mode".to_owned()),
+        ..RenderOptions::default()
+    };
+    let compatible = RenderOptions {
+        compat: true,
+        ..optimized.clone()
+    };
+    let sequence = "sequenceDiagram\n actor User\n participant App\n User->>App: Open\n";
+    let small = renderer.render_with(sequence, &optimized).unwrap();
+    let large = renderer.render_with(sequence, &compatible).unwrap();
+    let top = |svg: &str| {
+        let doc = roxmltree::Document::parse(svg).unwrap();
+        let rect = doc
+            .descendants()
+            .find(|n| {
+                n.has_tag_name("rect")
+                    && n.attribute("name") == Some("App")
+                    && n.attribute("class") == Some("actor actor-top")
+            })
+            .unwrap();
+        rect.attribute("height").unwrap().to_owned()
+    };
+    assert_eq!(top(&small), "32");
+    assert_eq!(top(&large), "76");
+    let messages = |svg: &str| {
+        let doc = roxmltree::Document::parse(svg).unwrap();
+        doc.descendants()
+            .filter(|n| {
+                n.attribute("class")
+                    .is_some_and(|c| c.starts_with("messageLine") || c.starts_with("actor-line"))
+            })
+            .map(|n| {
+                ["x1", "y1", "x2", "y2", "d"].map(|a| n.attribute(a).unwrap_or_default().to_owned())
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(messages(&small), messages(&large));
+    assert_eq!(renderer.render_with(sequence, &optimized).unwrap(), small);
+    assert_eq!(renderer.render_with(sequence, &compatible).unwrap(), large);
+    let flowchart = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
+    assert_ne!(
+        renderer.render_with(flowchart, &optimized).unwrap(),
+        renderer.render_with(flowchart, &compatible).unwrap()
+    );
+    for source in [
+        "pie\n \"A\" : 1\n",
+        "classDiagram\n A --> B\n",
+        "stateDiagram-v2\n A --> B\n",
+        "erDiagram\n A ||--o{ B : uses\n",
+    ] {
+        assert_eq!(
+            renderer.render_with(source, &optimized).unwrap(),
+            renderer.render_with(source, &compatible).unwrap()
+        );
+    }
 }

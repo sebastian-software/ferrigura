@@ -18,6 +18,19 @@ test('errors propagate and leave a reused renderer usable', () => {
   assert.match(renderer.render(diagram, { id: 'after' }), /<svg/);
 });
 
+void test('compat selects Mermaid geometry for flowcharts and sequence participants', () => {
+  const renderer = new Renderer();
+  const sequence = 'sequenceDiagram\n participant App\n participant API\n App->>API: Request\n';
+  const compact = renderer.render(sequence);
+  const compatible = renderer.render(sequence, { compat: true });
+  assert.match(compact, /height="32" name="App"/);
+  assert.match(compatible, /height="76" name="App"/);
+  assert.equal(renderer.render(sequence, { compat: false }), compact);
+  assert.equal(renderer.render(sequence, { compat: true }), compatible);
+  const flow = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
+  assert.notEqual(renderer.render(flow), renderer.render(flow, { compat: true }));
+});
+
 test('draw animation is optional, defaults to source order and validates its options', () => {
   const renderer = new Renderer();
   const text = 'flowchart LR\n A --> B\n B --> C\n';

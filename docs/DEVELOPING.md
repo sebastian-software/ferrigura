@@ -137,10 +137,11 @@ Register a new top-level documentation page in the `featured` map of
 `homepage/scripts/site-pages.mjs` under its navigation section, such as `guide/`.
 
 From `homepage/`, run `pnpm install`, then `pnpm dev` for a local server.
-Every drawing on the homepage is real output of the published `@ferrigura/core`
-package: `pnpm sample:write` installs the version of `node/ferrigura/package.json`
-from npm, renders the diagrams into `homepage/app/data/` and records the version;
-run it again after a release. `pnpm verify` checks those drawings against the
-recorded version, the website source, rendered links and browser behavior. No
+Every Ferrigura drawing is generated from the current Rust source through
+`homepage/scripts/source-renderer.mjs`. Run `pnpm sample:write` to refresh the
+homepage specimens, and `pnpm comparison:write` on macOS to refresh the
+side-by-side page with the published Mermaid reference too. Commit generated
+files with changes that move the output. `pnpm verify` checks the drawings
+against the source, website code, rendered links and browser behavior. No
 Mermaid runtime is shipped to render them in the visitor's browser. GitHub
 Actions deploys the site from `main` to GitHub Pages.

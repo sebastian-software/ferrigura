@@ -12,7 +12,7 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ferrigura::{Animation, ColorScheme, FlowchartMode, RenderOptions, Renderer};
+use ferrigura::{Animation, ColorScheme, RenderOptions, Renderer};
 use ferrigura_model::value::Value;
 
 const USAGE: &str = "\
@@ -30,8 +30,7 @@ Options:
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
-      --flowchart-mode <MODE>
-                          `adaptive` (default) or `mermaid` for reference-compatible output
+      --compat           Use Mermaid geometry instead of optimized routing and participant boxes
       --animate           Draw a supported diagram once, one line at a time, with embedded CSS
       --animation-speed <N>
                           Positive multiplier of 700 SVG units/s on average; enables animation
@@ -60,7 +59,7 @@ struct Job {
     config: Option<PathBuf>,
     id: Option<String>,
     scheme: Option<ColorScheme>,
-    flowchart_mode: FlowchartMode,
+    compat: bool,
     animation: Option<Animation>,
     output: Option<PathBuf>,
     output_dir: Option<PathBuf>,
@@ -117,7 +116,7 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
             "-c" | "--config" => job.config = Some(value(&mut args, &argument)?.into()),
             "--id" => job.id = Some(value(&mut args, &argument)?),
             "--scheme" => job.scheme = Some(scheme(&value(&mut args, &argument)?)?),
-            "--flowchart-mode" => job.flowchart_mode = value(&mut args, &argument)?.parse()?,
+            "--compat" => job.compat = true,
             "--animate" => {
                 job.animation.get_or_insert_default();
             }
@@ -205,7 +204,7 @@ fn run(job: &Job) -> Result<(), String> {
     let options = RenderOptions {
         id: job.id.clone(),
         color_scheme: job.scheme,
-        flowchart_mode: job.flowchart_mode,
+        compat: job.compat,
         animation: job.animation,
         now: None,
         git_graph_seed: None,

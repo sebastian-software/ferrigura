@@ -26,7 +26,7 @@ pub use ferrigura_syntax::DiagramType;
 /// The configuration and the values of Mermaid's `initialize` object, front matter and directives.
 pub use ferrigura_model::value::Value;
 pub use ferrigura_render::RenderError as Error;
-pub use ferrigura_render::flowchart::policy::FlowchartMode;
+use ferrigura_render::flowchart::policy::FlowchartRouting;
 
 /// The color scheme of the output.
 ///
@@ -47,15 +47,15 @@ pub enum ColorScheme {
 /// The options of a render that are not Mermaid configuration.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RenderOptions {
+    /// Use Mermaid-compatible geometry instead of Ferrigura's optimizations. Defaults to false:
+    /// flowchart ports are centered with label-aware spacing and sequence participant boxes fit
+    /// their labels. Font, color and readability fixes apply in both modes.
+    pub compat: bool,
     /// Optional one-time SVG draw animation for flowcharts, Gantt, Git graphs, mind maps,
     /// pie charts, and XY charts. `None` leaves the SVG unchanged.
     /// The default draws one line at a time, averaging 700 SVG units per second times its speed,
     /// with independent easing for each section. Other diagram types return an option error.
     pub animation: Option<Animation>,
-    /// The flowchart's rendering mode. `Adaptive` centers ports with label-aware spacing and draws
-    /// edge-label backgrounds at full opacity. `Mermaid` preserves the pinned reference's output.
-    /// Other diagram types ignore it.
-    pub flowchart_mode: FlowchartMode,
     /// The id of the SVG element, which scopes its styles. It must start with an ASCII letter and
     /// contain only ASCII letters, digits, `-` and `_`. By default the id is derived from the text
     /// and the configuration, so the same input gives the same id.
@@ -538,12 +538,7 @@ pub fn flowchart_elk_stages(
     }
     let renderer = Renderer::builder(config).with_all().shared();
     let prepared = renderer.prepare(text, options, diagrams::flowchart())?;
-    let stages = with_flowchart(
-        text,
-        &prepared,
-        options.flowchart_mode,
-        flowchart::elk_stages,
-    )?;
+    let stages = with_flowchart(text, &prepared, options.compat, flowchart::elk_stages)?;
     Ok(serde_json::json!({
         "elkInput": stages.input,
         "elkOutput": stages.output,
@@ -554,13 +549,17 @@ pub fn flowchart_elk_stages(
 fn with_flowchart<T>(
     text: &str,
     prepared: &Prepared<'_>,
-    mode: FlowchartMode,
+    compat: bool,
     step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
     let diagram = ferrigura_syntax::flowchart::parse(text)
         .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
     let mut section = Section::of(&prepared.view.config);
-    section.flowchart_mode = mode;
+    section.flowchart_routing = if compat {
+        FlowchartRouting::Mermaid
+    } else {
+        FlowchartRouting::Adaptive
+    };
     step(&Context {
         diagram: &diagram,
         section: &section,

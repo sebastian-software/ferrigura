@@ -6,7 +6,7 @@
 
 The reference is upstream Mermaid at a pinned commit, with a few patches. `tools/reference/pin` names the commit and the newest Mermaid release it contains; `tools/reference/patches/` holds the patches, applied in the order of their names; `tools/reference/setup.sh` fetches the commit, applies the patches and builds it in `target/reference/<commit>`.
 
-The intentional flowchart default is recorded in [0019](./0019-adaptive-flowchart-mode.md). Test instrumentation exposes layout inputs and outputs without changing ordinary reference renders. For adaptive routing, the harness configures the measured ELK input through such a hook; a separate compatibility run keeps the hook inactive and compares the original input and geometry. The stylesheet comparison checks Mermaid mode against the reference rule by rule; public render tests cover the adaptive background opacity.
+The intentional flowchart default is recorded in [0019](./0019-adaptive-flowchart-mode.md). Test instrumentation exposes layout inputs and outputs without changing ordinary reference renders. For adaptive routing, the harness configures the measured ELK input through such a hook; a separate compatibility run keeps the hook inactive and compares the original input and geometry. The stylesheet comparison checks Mermaid mode against the reference rule by rule; public render tests cover background opacity in both modes.
 
 The optional draw animation is recorded in [0021](./0021-optional-svg-draw-animation.md).
 It leaves the static render unchanged. Its final geometry and pixels are checked

@@ -141,7 +141,7 @@ pub fn render_with_animation(
         input.globals,
         &diagram.classes,
         &families,
-        input.section.flowchart_mode,
+        input.section.flowchart_routing,
     );
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",

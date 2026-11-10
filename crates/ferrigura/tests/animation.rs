@@ -1,8 +1,6 @@
 //! The public draw option: native, deterministic SVG with unchanged static geometry.
 
-use ferrigura::{
-    Animation, AnimationOrder, ColorScheme, FlowchartMode, RenderOptions, Renderer, Value,
-};
+use ferrigura::{Animation, AnimationOrder, ColorScheme, RenderOptions, Renderer, Value};
 
 const TEXT: &str = "flowchart TD\n subgraph group[Work]\n A[Start] edge@-->|go| B{Review}\n B -.-> A\n end\n B <--> C[Done]\n click A href \"https://example.com\"\n linkStyle 0 stroke:#f00,stroke-width:4px\n";
 
@@ -24,11 +22,11 @@ fn paths(svg: &str) -> Vec<(String, String, String)> {
 #[test]
 fn enabling_animation_preserves_geometry_styles_links_and_font_subsets() {
     let renderer = Renderer::new(&Value::empty_object());
-    for mode in [FlowchartMode::Adaptive, FlowchartMode::Mermaid] {
+    for compat in [false, true] {
         for order in [AnimationOrder::Source, AnimationOrder::Flow] {
             let mut options = RenderOptions {
                 id: Some("draw-test".to_owned()),
-                flowchart_mode: mode,
+                compat,
                 color_scheme: Some(ColorScheme::Auto),
                 ..RenderOptions::default()
             };

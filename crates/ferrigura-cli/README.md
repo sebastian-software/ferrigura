@@ -31,8 +31,7 @@ Options:
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
-      --flowchart-mode <MODE>
-                          `adaptive` (default) or `mermaid` for reference-compatible output
+      --compat           Use Mermaid geometry instead of optimized routing and participant boxes
       --animate           Draw a supported diagram once, one line at a time, with embedded CSS
       --animation-speed <N>
                           Positive multiplier of 700 SVG units/s on average; enables animation
@@ -99,11 +98,7 @@ charts, `flow` starts independent elements together. See
 The SVG contains CSS and masks without JavaScript. Reduced motion shows the
 complete diagram. Without animation options, output remains unchanged.
 
-Flowcharts center their attachment points with label-aware spacing and draw edge-label backgrounds at full opacity by default.
-`--flowchart-mode mermaid` preserves the pinned Mermaid reference's routing and half-opacity label backgrounds;
-`--flowchart-mode adaptive` selects the default explicitly. Other diagram
-types ignore this option. It is separate from `--config` and the post-processing
-setting `elk.straightenEdges`.
+By default, optimized rendering centers flowchart ports and compacts sequence participant boxes. `--compat` preserves Mermaid-compatible geometry across diagram types. Font, fill and readability fixes apply in both modes.
 
 - Several inputs are rendered through one renderer, so the configuration is resolved once. They are rendered in the order given.
 - Rendering stops at the first input that fails. The SVGs of the inputs before it are already written.

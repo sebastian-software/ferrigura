@@ -233,7 +233,7 @@ function runElkExample(
   id: string,
   routing: Options['routing']
 ): { input: ElkElement } | { error: string } {
-  const result = spawnSync(elkBinary, ['--id', id, '--flowchart-mode', routing], {
+  const result = spawnSync(elkBinary, ['--id', id, '--compat', String(routing === 'mermaid')], {
     input: text,
     cwd: root,
     encoding: 'utf8',
@@ -365,7 +365,13 @@ async function main(): Promise<void> {
         result.reason = excluded;
         console.log(`– ${file}  excluded: ${excluded}`);
       } else {
-        const rendered = renderFerrigura(text, id, undefined, undefined, options.routing);
+        const rendered = renderFerrigura(
+          text,
+          id,
+          undefined,
+          undefined,
+          options.routing === 'mermaid'
+        );
         if ('error' in rendered) {
           result.class = 'not rendered';
           result.reason = rendered.error;
