@@ -235,7 +235,12 @@ fn font_input(raw: &str, explicit_face: bool) -> Result<FontInput, String> {
             "italic" => FontStyle::Italic,
             _ => return Err("font style must be normal or italic".to_owned()),
         };
-        (family, FontWeight::Number(weight), style)
+        let weight = match weight {
+            400 => FontWeight::Normal,
+            700 => FontWeight::Bold,
+            weight => FontWeight::Number(weight),
+        };
+        (family, weight, style)
     } else {
         (specification, FontWeight::Normal, FontStyle::Normal)
     };

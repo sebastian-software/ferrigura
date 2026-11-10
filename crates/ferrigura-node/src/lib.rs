@@ -147,6 +147,11 @@ fn font_builder(
                     "font weight must be an integer from 1 through 1000",
                 ));
             }
+            let weight = match weight as u16 {
+                400 => FontWeight::Normal,
+                700 => FontWeight::Bold,
+                weight => FontWeight::Number(weight),
+            };
             let style = match font.style.as_deref().unwrap_or("normal") {
                 "normal" => FontStyle::Normal,
                 "italic" => FontStyle::Italic,
@@ -158,12 +163,7 @@ fn font_builder(
                 }
             };
             builder = builder
-                .font_face(
-                    &font.family,
-                    font.data.to_vec(),
-                    FontWeight::Number(weight as u16),
-                    style,
-                )
+                .font_face(&font.family, font.data.to_vec(), weight, style)
                 .map_err(|error| {
                     Error::new(
                         Status::InvalidArg,
