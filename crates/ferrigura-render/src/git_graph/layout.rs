@@ -54,6 +54,8 @@ struct CommitOffset {
 /// The state of one drawing: the branches and commits, their positions, and the lanes the
 /// arrows use.
 pub(super) struct Layout<'a> {
+    regular: &'a Face,
+    bold: &'a Face,
     commits: &'a [GitGraphCommit],
     commit_index: HashMap<&'a str, usize>,
     branches: Vec<&'a GitGraphBranch>,
@@ -77,6 +79,8 @@ impl<'a> Layout<'a> {
         palette: &'a Palette,
         id: &'a str,
         neo: bool,
+        regular: &'a Face,
+        bold: &'a Face,
     ) -> Self {
         let mut branches: Vec<&GitGraphBranch> = diagram.branches.iter().collect();
         branches.sort_by(|a, b| {
@@ -91,6 +95,8 @@ impl<'a> Layout<'a> {
             .map(|(index, commit)| (commit.id.as_str(), index))
             .collect();
         Self {
+            regular,
+            bold,
             commits: &diagram.commits,
             commit_index,
             branches,
@@ -535,9 +541,9 @@ impl<'a> Layout<'a> {
             return Ok(());
         }
         let size = self.palette.commit_label_font_size;
-        let extent = text::extent(text::bold(), &commit.id, size)?;
+        let extent = text::extent(self.bold, &commit.id, size)?;
         let width = extent.width();
-        let height = text::line_height(text::bold(), size)?;
+        let height = text::line_height(self.bold, size)?;
         let vertical = self.vertical();
         let (bkg_x, bkg_y, text_x, text_y) = if vertical {
             (
@@ -559,12 +565,13 @@ impl<'a> Layout<'a> {
         let mut bkg = Element::rect(bkg_x, bkg_y, width + 2.0 * PY, height + 2.0 * PY)
             .class("commit-label-bkg")
             .attr("fill", "transparent");
-        let text_box = text::line_box(text::bold(), size, text_x, text_y, extent)?;
+        let text_box = text::line_box(self.bold, size, text_x, text_y, extent)?;
         let mut label = Element::text(&commit.id, text_box)
             .attr("x", crate::svg::number(text_x))
             .attr("y", crate::svg::number(text_y))
             .class("commit-label")
             .attr("fill", self.palette.node_border());
+        label = text::with_face(label, self.bold);
         let mut wrapper = Element::group();
         if vertical {
             if rotate {
@@ -596,7 +603,7 @@ impl<'a> Layout<'a> {
         if commit.tags.is_empty() {
             return Ok(());
         }
-        let face: &'static Face = text::regular();
+        let face: &Face = self.regular;
         let size = self.palette.tag_label_font_size;
         let mut extents = Vec::with_capacity(commit.tags.len());
         let mut max_width = 0.0_f64;
@@ -681,6 +688,7 @@ impl<'a> Layout<'a> {
                 .attr("y", crate::svg::number(text_y))
                 .class("tag-label")
                 .attr("fill", self.palette.tag_label_color());
+            label = text::with_face(label, self.regular);
             if vertical {
                 polygon = polygon.transform(rotation.clone());
                 hole = hole.transform(rotation);
@@ -878,7 +886,7 @@ impl<'a> Layout<'a> {
             );
             self.lanes.push(spine_y);
 
-            let (label, bbox) = text::draw_text(&branch.name, text::bold(), font_size)?;
+            let (label, bbox) = text::draw_text(&branch.name, self.bold, font_size)?;
             let rotate_offset = if rotate { 30.0 } else { 0.0 };
             let box_width = bbox.width + 18.0 + LABEL_PADDING_X;
             let box_height = bbox.height + 4.0 + LABEL_PADDING_Y;

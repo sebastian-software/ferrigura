@@ -7,7 +7,9 @@
 //! opportunities of the text, each line centered in the cell, and the line box of the font.
 
 use ferrigura_model::config::JourneyDiagramConfig;
-use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, face, text_box};
+use ferrigura_text::{Face, text_box};
+#[cfg(test)]
+use ferrigura_text::{FontFamily, FontStyle, FontWeight, face};
 
 use crate::RenderError;
 use crate::common::Element;
@@ -16,15 +18,13 @@ use crate::svg::number;
 
 /// The regular face: the legend, the sections, the tasks and their labels.
 #[must_use]
+#[cfg(test)]
 pub fn regular() -> &'static Face {
     face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal)
 }
 
 /// The bold face: the title, which the reference sets with `font-weight="bold"`.
 #[must_use]
-pub fn bold() -> &'static Face {
-    face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal)
-}
 
 /// The width of a text as `getBoundingClientRect().width` reports it for an SVG `text` in the
 /// regular face ([`collapsed_box`]): the box of the glyphs, which is wider than the advance where a
@@ -34,8 +34,8 @@ pub fn bold() -> &'static Face {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn svg_width(text: &str, size: f64) -> Result<f64, RenderError> {
-    Ok(collapsed_box(regular(), text, size)?.width())
+pub fn svg_width(face: &Face, text: &str, size: f64) -> Result<f64, RenderError> {
+    Ok(collapsed_box(face, text, size)?.width())
 }
 
 /// One line of a laid-out label: its text without the blank that ends it, and its width.
@@ -79,11 +79,7 @@ fn pieces(collapsed: &str) -> Vec<String> {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub(crate) fn min_content_width_in(
-    face: &'static Face,
-    text: &str,
-    size: f64,
-) -> Result<f64, RenderError> {
+pub(crate) fn min_content_width_in(face: &Face, text: &str, size: f64) -> Result<f64, RenderError> {
     let mut widest: f64 = 0.0;
     for piece in pieces(&collapse_white_space(text)) {
         widest = widest.max(collapsed_width(face, piece.trim_end(), size)?);
@@ -100,6 +96,7 @@ pub(crate) fn min_content_width_in(
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
+#[cfg(test)]
 pub fn break_lines(text: &str, cell_width: f64, size: f64) -> Result<Vec<Line>, RenderError> {
     break_lines_in(regular(), text, cell_width, size)
 }
@@ -111,7 +108,7 @@ pub fn break_lines(text: &str, cell_width: f64, size: f64) -> Result<Vec<Line>, 
 ///
 /// Returns an error if the bundled font cannot be read.
 pub(crate) fn break_lines_in(
-    face: &'static Face,
+    face: &Face,
     text: &str,
     cell_width: f64,
     size: f64,
@@ -184,6 +181,8 @@ impl Placement {
 /// and the sizes of the text.
 #[derive(Debug, Clone, Copy)]
 pub struct Label<'a> {
+    /// The exact face used by this label's configured task family.
+    pub face: &'a Face,
     /// The text, as the reader sees it.
     pub text: &'a str,
     /// The box the text sits in.
@@ -210,11 +209,20 @@ pub struct Label<'a> {
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn label(placement: Placement, label: &Label<'_>) -> Result<Vec<Element>, RenderError> {
-    match placement {
-        Placement::Fo => Ok(vec![fo_label(label)?]),
-        Placement::Tspan => Ok(tspan_label(label)),
-        Placement::Old => Ok(vec![old_label(label)]),
+    let mut elements = match placement {
+        Placement::Fo => vec![fo_label(label)?],
+        Placement::Tspan => tspan_label(label),
+        Placement::Old => vec![old_label(label)],
+    };
+    if let Some(variable) = label.face.css_variable() {
+        for element in &mut elements {
+            element.visit_mut(&mut |element| {
+                let style = element.get("style").unwrap_or_default();
+                element.set("style", format!("{style}font-family:var({variable});"));
+            });
+        }
     }
+    Ok(elements)
 }
 
 /// The `fo` label: each line of the browser's layout, as a `tspan` at its own position.
@@ -230,12 +238,12 @@ fn fo_label(label: &Label<'_>) -> Result<Element, RenderError> {
     // the widened cell. Measured in Chromium, with the word `reallyvery…` of 270.797 px in a 150 px
     // cell, the line `A` starts at 550 + (270.797 - 8.766) / 2 = 681.016, as the reference puts it.
     let width = cell.width.max(min_content_width_in(
-        regular(),
+        label.face,
         label.text,
         label.font_size,
     )?);
-    let lines = break_lines(label.text, width, label.font_size)?;
-    let metrics = text_box(regular(), label.font_size)?;
+    let lines = break_lines_in(label.face, label.text, width, label.font_size)?;
+    let metrics = text_box(label.face, label.font_size)?;
     let block = lines.len() as f64 * metrics.height;
     let top = if block < cell.height {
         cell.y + (cell.height - block) / 2.0

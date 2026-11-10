@@ -65,7 +65,7 @@ impl<'a> ChartLegend<'a> {
         let font = self.config.legend_font_size;
         let layout = Layout::of(font);
         let titles: Vec<&str> = self.visible.iter().map(|plot| plot.title()).collect();
-        let text = max_dimension(&titles, font, self.config.screen_scale)?;
+        let text = max_dimension(&self.config.fonts, &titles, font, self.config.screen_scale)?;
         let count = self.visible.len() as f64;
         let width_required = self.config.legend_padding * 2.0
             + layout.marker_size

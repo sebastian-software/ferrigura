@@ -59,6 +59,7 @@ enum Domain {
 /// An axis: its range, its position, its ticks and its labels.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Axis {
+    fonts: crate::fonts::FontContext,
     domain: Domain,
     screen_scale: f64,
     title: String,
@@ -83,6 +84,12 @@ fn or_nan(value: Option<f64>) -> f64 {
 }
 
 impl Axis {
+    /// Applies the chart's host font inputs to axis measurements.
+    pub fn with_fonts(mut self, fonts: crate::fonts::FontContext) -> Self {
+        self.fonts = fonts;
+        self
+    }
+
     /// `getAxis(data, config, theme)`: a band axis for a band of categories, else a linear one.
     #[must_use]
     pub fn new(
@@ -101,6 +108,7 @@ impl Axis {
             0.0
         };
         Self {
+            fonts: crate::fonts::FontContext::bundled(),
             domain,
             screen_scale,
             title: title.clone(),
@@ -232,7 +240,12 @@ impl Axis {
     /// `getLabelDimension()`: the largest tick label at the label font size.
     fn label_dimension(&self) -> Result<TextBox, RenderError> {
         let texts: Vec<String> = self.tick_values().iter().map(Tick::text).collect();
-        max_dimension(&texts, self.config.label_font_size, self.screen_scale)
+        max_dimension(
+            &self.fonts,
+            &texts,
+            self.config.label_font_size,
+            self.screen_scale,
+        )
     }
 
     /// `recalculateOuterPaddingToDrawBar()`: the outer padding that leaves room for a bar, half of
@@ -297,6 +310,7 @@ impl Axis {
         }
         if config.show_title && !self.title.is_empty() {
             let space = max_dimension(
+                &self.fonts,
                 &[self.title.as_str()],
                 config.title_font_size,
                 self.screen_scale,
@@ -340,6 +354,7 @@ impl Axis {
         }
         if config.show_title && !self.title.is_empty() {
             let space = max_dimension(
+                &self.fonts,
                 &[self.title.as_str()],
                 config.title_font_size,
                 self.screen_scale,

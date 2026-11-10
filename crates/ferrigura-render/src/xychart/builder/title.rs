@@ -40,6 +40,7 @@ impl<'a> ChartTitle<'a> {
     /// Returns an error if the bundled font cannot be read.
     pub fn calculate_space(&mut self, available: Dimension) -> Result<Dimension, RenderError> {
         let title = max_dimension(
+            &self.config.fonts,
             &[self.data.title.as_str()],
             self.config.title_font_size,
             self.config.screen_scale,

@@ -24,7 +24,7 @@ use std::cmp::Ordering;
 
 use ferrigura_model::theme::{Family, ThemeTokens};
 use ferrigura_model::treemap::{TreemapDiagram, TreemapNode};
-use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
@@ -245,6 +245,8 @@ struct Section {
 /// `valueFormat` with a `$` names an invalid specifier and a value is formatted with it.
 pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<String, RenderError> {
     let settings = input.section;
+    let fonts = &input.text_fonts();
+    let primary = fonts.face(FontWeight::Normal, FontStyle::Normal)?;
     let tokens = input.theme.light;
     let id = input.id;
     let diagram = input.diagram;
@@ -323,7 +325,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
 
     // The section labels and values (`renderer.ts` 218-309), with the label fitted to the header.
     let mut section_groups = Vec::with_capacity(sections.len());
-    let mut section_runs: Vec<(String, &'static ferrigura_text::Face)> = Vec::new();
+    let mut section_runs: Vec<(String, crate::fonts::FontFace)> = Vec::new();
     for section in &mut sections {
         let root = section.depth == 0;
         let label_color = if root {
@@ -345,7 +347,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             section.name.clone()
         };
         if !root {
-            fit_section_label(section, settings)?;
+            fit_section_label(fonts, section, settings)?;
         }
         if settings.show_values {
             section.value_text = if section.value != 0.0 && !section.value.is_nan() {
@@ -363,15 +365,17 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             };
         }
     }
-    for section in &sections {
+    for section in &mut sections {
+        bind_style(fonts, &mut section.label_style, Font::BOLD)?;
+        bind_style(fonts, &mut section.value_style, Font::ITALIC)?;
         section_runs.push((
             section.label.clone(),
-            face_of(font_of(&section.label_style, Font::BOLD)),
+            face_of(fonts, font_of(&section.label_style, Font::BOLD))?,
         ));
         if settings.show_values && !section.value_text.is_empty() {
             section_runs.push((
                 section.value_text.clone(),
-                face_of(font_of(&section.value_style, Font::ITALIC)),
+                face_of(fonts, font_of(&section.value_style, Font::ITALIC))?,
             ));
         }
         section_groups.push(section_group(id, section, settings.show_values));
@@ -391,7 +395,8 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
         let fill = fill_scale.apply(key).to_owned();
         let styles = styles_to_string(node.data.css_compiled_styles.as_deref().unwrap_or_default());
         let label_color = label_scale.apply(&leaf_name).to_owned();
-        let draw = leaf_draw(
+        let mut draw = leaf_draw(
+            fonts,
             &LeafInput {
                 name: &leaf_name,
                 width: node.x1 - node.x0,
@@ -404,6 +409,10 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             },
             &format,
         )?;
+        bind_style(fonts, &mut draw.label_style, Font::REGULAR)?;
+        if let Some(value) = &mut draw.value {
+            bind_style(fonts, &mut value.style, Font::REGULAR)?;
+        }
         leaf_draws.push(draw.clone());
         leaf_groups.push(leaf_group(id, index, node, &fill, &styles, &draw));
     }
@@ -412,6 +421,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
     let mut bounds: Option<BBox> = None;
     if !title.is_empty() {
         let title_box = line_box(
+            fonts,
             title,
             (width / 2.0, TITLE_Y),
             14.0,
@@ -440,6 +450,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
         include(
             &mut bounds,
             line_box(
+                fonts,
                 &section.label,
                 (x + 6.0, y + SECTION_HEADER_HEIGHT / 2.0),
                 label_size,
@@ -452,6 +463,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             include(
                 &mut bounds,
                 line_box(
+                    fonts,
                     &section.value_text,
                     (
                         x + valid(section.x1 - section.x0 - 10.0),
@@ -474,6 +486,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             include(
                 &mut bounds,
                 line_box(
+                    fonts,
                     &leaf.label,
                     (
                         x + valid((node.x1 - node.x0) / 2.0),
@@ -492,6 +505,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             include(
                 &mut bounds,
                 line_box(
+                    fonts,
                     &value.text,
                     (x + valid((node.x1 - node.x0) / 2.0), y + valid(value.y)),
                     size_of(&value.style, sizes.base_value),
@@ -504,36 +518,38 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
     }
 
     // The fonts: every text the diagram draws, in the faces it is drawn in.
-    let mut runs: Vec<(String, &'static ferrigura_text::Face)> = section_runs
+    let mut runs: Vec<(String, crate::fonts::FontFace)> = section_runs
         .into_iter()
         .map(|(text, face)| (shown_text(&text), face))
         .collect();
     if !title.is_empty() {
-        runs.push((shown_text(title), face_of(Font::REGULAR)));
+        runs.push((shown_text(title), face_of(fonts, Font::REGULAR)?));
     }
     for leaf in &leaf_draws {
         runs.push((
             shown_text(&leaf.label),
-            face_of(font_of(&leaf.label_style, Font::REGULAR)),
+            face_of(fonts, font_of(&leaf.label_style, Font::REGULAR))?,
         ));
         if let Some(value) = &leaf.value {
             runs.push((
                 shown_text(&value.text),
-                face_of(font_of(&value.style, Font::REGULAR)),
+                face_of(fonts, font_of(&value.style, Font::REGULAR))?,
             ));
         }
     }
     let run_refs: Vec<Run<'_, '_>> = runs.iter().map(|(text, face)| Run { text, face }).collect();
     let families: Vec<EmbeddedFamily> = embed_runs(&run_refs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = primary.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let css_font_size = format!("{}px", number(tokens.font_size.px().unwrap_or(16.0)));
     let style = base_style_sheet(
         id,
@@ -661,8 +677,23 @@ fn include(bounds: &mut Option<BBox>, extra: Option<BBox>) {
 }
 
 /// The face the text of a font is drawn in, from the bundled sans faces.
-fn face_of(font: Font) -> &'static ferrigura_text::Face {
-    face(FontFamily::Sans, font.weight, font.style)
+fn face_of(
+    fonts: &crate::fonts::FontContext,
+    font: Font,
+) -> Result<crate::fonts::FontFace, RenderError> {
+    Ok(fonts.face(font.weight, font.style)?)
+}
+
+/// Selects a supplied design directly while retaining the reference's weight/style cascade.
+fn bind_style(
+    fonts: &crate::fonts::FontContext,
+    style: &mut Inline,
+    default: Font,
+) -> Result<(), RenderError> {
+    if let Some(css) = face_of(fonts, font_of(style, default))?.css_reference() {
+        style.set("font-family", &css);
+    }
+    Ok(())
 }
 
 /// The font of a text: the attribute's font, where its inline style does not say otherwise.
@@ -739,7 +770,11 @@ fn first_font_size(style: &Inline) -> String {
 
 /// Fits a section's label into its header (`renderer.ts` 240-283): the label is cut to the room the
 /// header leaves, with `...` after it, and emptied when even the ellipsis does not fit.
-fn fit_section_label(section: &mut Section, settings: &TreemapSettings) -> Result<(), RenderError> {
+fn fit_section_label(
+    fonts: &crate::fonts::FontContext,
+    section: &mut Section,
+    settings: &TreemapSettings,
+) -> Result<(), RenderError> {
     let total_header_width = section.x1 - section.x0;
     let space = if settings.show_values && section.value != 0.0 && !section.value.is_nan() {
         let value_ends_at = total_header_width - 10.0;
@@ -755,7 +790,7 @@ fn fit_section_label(section: &mut Section, settings: &TreemapSettings) -> Resul
     let size = size_of(&section.label_style, 12.0);
     let original = section.name.clone();
     // `if (width > available)`: a NaN room (from a NaN width) cuts nothing.
-    if advance(&original, size, font)?.partial_cmp(&available) != Some(Ordering::Greater) {
+    if advance(fonts, &original, size, font)?.partial_cmp(&available) != Some(Ordering::Greater) {
         return Ok(());
     }
     let characters: Vec<char> = original.chars().collect();
@@ -767,14 +802,14 @@ fn fit_section_label(section: &mut Section, settings: &TreemapSettings) -> Resul
         length -= 1;
         if length == 0 {
             section.label = "...".to_owned();
-            if advance("...", size, font)? > available {
+            if advance(fonts, "...", size, font)? > available {
                 section.label.clear();
             }
             break;
         }
         let shown: String = characters[..length].iter().collect::<String>() + "...";
         section.label = shown;
-        if advance(&section.label, size, font)? <= available {
+        if advance(fonts, &section.label, size, font)? <= available {
             break;
         }
     }
@@ -812,7 +847,11 @@ struct LeafValue {
 }
 
 /// Fits a leaf's label and value into its box (`renderer.ts` 383-524).
-fn leaf_draw(input: &LeafInput<'_>, format: &ValueFormat) -> Result<LeafDraw, RenderError> {
+fn leaf_draw(
+    fonts: &crate::fonts::FontContext,
+    input: &LeafInput<'_>,
+    format: &ValueFormat,
+) -> Result<LeafDraw, RenderError> {
     let sizes = input.sizes;
     let label_style_text = format!(
         "text-anchor: middle; dominant-baseline: middle; font-size: {}px;fill:{};{}",
@@ -822,7 +861,14 @@ fn leaf_draw(input: &LeafInput<'_>, format: &ValueFormat) -> Result<LeafDraw, Re
     );
     let mut label_style = Inline::parse(&label_style_text);
     let label = input.name.to_owned();
-    fit_leaf_label(&label, input.width, input.height, sizes, &mut label_style)?;
+    fit_leaf_label(
+        fonts,
+        &label,
+        input.width,
+        input.height,
+        sizes,
+        &mut label_style,
+    )?;
     let label_hidden = label_style.get("display").as_deref() == Some("none");
 
     // The value's text is formatted when the node has one, whether or not it is drawn.
@@ -867,6 +913,7 @@ fn leaf_draw(input: &LeafInput<'_>, format: &ValueFormat) -> Result<LeafDraw, Re
                 let available_width = input.width - 2.0 * sizes.padding;
                 let max_bottom = input.height - CELL_BOTTOM_PADDING;
                 let too_wide = advance(
+                    fonts,
                     &value.text,
                     size_of(&value.style, actual),
                     font_of(&value.style, Font::REGULAR),
@@ -896,6 +943,7 @@ fn leaf_draw(input: &LeafInput<'_>, format: &ValueFormat) -> Result<LeafDraw, Re
 /// label and its value are no taller, and hide it when it still does not fit (`renderer.ts`
 /// 383-455). `label_style` carries the font size the loops set.
 fn fit_leaf_label(
+    fonts: &crate::fonts::FontContext,
     text: &str,
     node_width: f64,
     node_height: f64,
@@ -910,6 +958,7 @@ fn fit_leaf_label(
     }
     let measure = |style: &Inline| -> Result<f64, RenderError> {
         advance(
+            fonts,
             text,
             size_of(style, sizes.base_label),
             font_of(style, Font::REGULAR),
@@ -1148,7 +1197,15 @@ mod tests {
     fn a_leaf_too_small_for_its_label_hides_it() {
         let sizes = LeafSizes::of(3);
         let mut style = Inline::parse("font-size: 38px");
-        fit_leaf_label("Label", 10.0, 10.0, sizes, &mut style).expect("fits");
+        fit_leaf_label(
+            &crate::fonts::FontContext::bundled(),
+            "Label",
+            10.0,
+            10.0,
+            sizes,
+            &mut style,
+        )
+        .expect("fits");
         assert_eq!(style.get("display").as_deref(), Some("none"));
     }
 }

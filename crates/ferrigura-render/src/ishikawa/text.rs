@@ -71,7 +71,7 @@ fn layout_unit(length: f64) -> f64 {
 
 /// How a label is set: its class, its anchor and baseline as the stylesheet computes them, its face,
 /// the size it is drawn at, and the distance between its lines.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Style {
     /// The `class` attribute.
     pub class: &'static str,
@@ -83,7 +83,7 @@ pub struct Style {
     /// The baseline the layout uses, as the stylesheet computes it.
     pub baseline: Baseline,
     /// The face the lines are set in.
-    pub face: &'static Face,
+    pub face: crate::fonts::FontFace,
     /// The size the lines are drawn at, from the stylesheet.
     pub size: f64,
     /// The distance between two lines (`fontSize * 1.05` of the configuration, `ishikawaRenderer.ts`
@@ -117,8 +117,8 @@ impl Label {
         let lines: Vec<String> = split_lines(text).into_iter().map(str::to_owned).collect();
         let line_height = style.line_height;
         let y = y - ((lines.len() as f64 - 1.0) * line_height) / 2.0;
-        let top = baseline_top(style.face, style.size, style.baseline)?;
-        let height = text_box(style.face, style.size)?.height;
+        let top = baseline_top(&style.face, style.size, style.baseline)?;
+        let height = text_box(&style.face, style.size)?.height;
         let mut bbox: Option<BBox> = None;
         // A `dy` belongs to the characters of its `tspan`, so an empty line takes no step: the pen
         // moves one line step for each line after the first that has characters.
@@ -134,12 +134,12 @@ impl Label {
                 steps += 1;
             }
             // The anchor shifts the line by its advance: the snapped advance, centered or at its end.
-            let advance = layout_width(measure(style.face, line, style.size)?);
+            let advance = layout_width(measure(&style.face, line, style.size)?);
             let offset = match style.anchor {
                 Anchor::Middle => -advance / 2.0,
                 Anchor::End => -advance,
             };
-            let ink = measure_box(style.face, line, style.size)?;
+            let ink = measure_box(&style.face, line, style.size)?;
             let line_top = y + steps as f64 * line_height + top;
             let line_box = BBox::new(x + offset + ink.left, line_top, ink.width(), height);
             bbox = Some(match bbox {
@@ -166,6 +166,9 @@ impl Label {
             .with("x", number(self.x))
             .with("y", number(self.y))
             .with("fill", fill);
+        if let Some(css) = self.style.face.css_reference() {
+            text.set("style", format!("font-family:{css};"));
+        }
         for (index, line) in self.lines.iter().enumerate() {
             let dy = if index == 0 {
                 0.0
@@ -184,10 +187,10 @@ impl Label {
 
     /// The runs of the label's lines, for the font subset of the diagram.
     #[must_use]
-    pub fn runs(&self) -> Vec<(String, &'static Face)> {
+    pub fn runs(&self) -> Vec<(String, crate::fonts::FontFace)> {
         self.lines
             .iter()
-            .map(|line| (line.clone(), self.style.face))
+            .map(|line| (line.clone(), self.style.face.clone()))
             .collect()
     }
 }
@@ -297,7 +300,7 @@ pub fn utf16_length(text: &str) -> usize {
 
 /// The runs of the given labels, as the font subset of a diagram takes them.
 #[must_use]
-pub fn as_runs<'a>(texts: &'a [(String, &'static Face)]) -> Vec<Run<'a, 'static>> {
+pub fn as_runs(texts: &[(String, crate::fonts::FontFace)]) -> Vec<Run<'_, '_>> {
     texts
         .iter()
         .map(|(text, face)| Run { text, face })
@@ -370,7 +373,7 @@ mod tests {
             anchor_attribute: "middle",
             anchor: Anchor::Middle,
             baseline: Baseline::Middle,
-            face: regular(),
+            face: crate::fonts::FontFace::retain(regular()),
             size: 14.0,
             line_height: 16.8,
         };
@@ -388,7 +391,7 @@ mod tests {
             anchor_attribute: "middle",
             anchor: Anchor::Middle,
             baseline: Baseline::Middle,
-            face: regular(),
+            face: crate::fonts::FontFace::retain(regular()),
             size: 14.0,
             line_height: 16.8,
         };

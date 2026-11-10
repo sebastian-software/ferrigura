@@ -13,7 +13,7 @@ use std::fmt::Write as _;
 use ferrigura_model::architecture::Direction;
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_syntax::sanitize::sanitize_text;
-use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, face, x_height};
+use ferrigura_text::{FontStyle, FontWeight, x_height};
 
 use super::geometry::{Affine, Box2};
 use super::icons;
@@ -78,14 +78,10 @@ struct Text {
     bounds: Box2,
 }
 
-/// The regular sans face of the labels.
-fn sans() -> &'static Face {
-    face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal)
-}
-
 /// Lays out a label as `createText` does with `useHtmlLabels: false`: a Markdown label, wrapped at
 /// `width` and anchored on `x = 0`, and the box that its element's baseline gives it.
 fn text(
+    fonts: &crate::fonts::FontContext,
     label_text: &str,
     width: f64,
     anchor: Anchor,
@@ -93,7 +89,7 @@ fn text(
     baseline: Baseline,
 ) -> Result<Text, RenderError> {
     let layout = label::layout(&LabelSpec {
-        fonts: crate::fonts::FontContext::bundled(),
+        fonts: fonts.clone(),
         text: label_text,
         label_type: LabelType::Markdown,
         width,
@@ -108,7 +104,10 @@ fn text(
     let raw = layout.bbox;
     let shift = match baseline {
         Baseline::Middle => {
-            let half = x_height(sans(), font_size)? / 2.0;
+            let half = x_height(
+                &*fonts.face(FontWeight::Normal, FontStyle::Normal)?,
+                font_size,
+            )? / 2.0;
             (half * 64.0).round() / 64.0
         }
         Baseline::Alphabetic => 0.0,
@@ -351,6 +350,7 @@ fn resolve_icon(name: &str) -> Option<&'static str> {
 ///
 /// Returns an error if a label cannot be laid out.
 pub fn draw(
+    fonts: &crate::fonts::FontContext,
     scene: &Scene,
     diagram_id: &str,
     metrics: Metrics,
@@ -448,7 +448,7 @@ pub fn draw(
             } else {
                 Baseline::Middle
             };
-            let label = text(title, width, Anchor::Middle, text_size, baseline)?;
+            let label = text(fonts, title, width, Anchor::Middle, text_size, baseline)?;
             let (transform, matrix) = if axis_x {
                 (
                     format!("translate({}, {})", number(mid_x), number(mid_y)),
@@ -495,6 +495,7 @@ pub fn draw(
         let mut content = Box2::EMPTY;
         if let Some(title) = &node.label {
             let label = text(
+                fonts,
                 title,
                 icon_size * TITLE_WIDTH_FACTOR,
                 Anchor::Middle,
@@ -633,7 +634,14 @@ pub fn draw(
             shifted_y1 += metrics.font_size / 2.0 - 1.0 - 2.0;
         }
         if let Some(title) = &node.label {
-            let label = text(title, w, Anchor::Start, text_size, Baseline::Alphabetic)?;
+            let label = text(
+                fonts,
+                title,
+                w,
+                Anchor::Start,
+                text_size,
+                Baseline::Alphabetic,
+            )?;
             let (tx, ty) = (shifted_x1 + half_icon + 4.0, shifted_y1 + half_icon + 2.0);
             groups_bounds.include_box(label.bounds.translate(tx, ty));
             container.push_str(&text_group(

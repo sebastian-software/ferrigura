@@ -18,14 +18,12 @@
 //! browser decodes them, so the drawn text is the text the reader sees; the measured text keeps them.
 
 use ferrigura_syntax::decode_entities;
-use ferrigura_text::{
-    Face, FontFamily, FontStyle, FontWeight, TextBox, face, layout_width, measure, text_box,
-};
+use ferrigura_text::{FontStyle, FontWeight, TextBox, layout_width, measure, text_box};
 
 use super::layout::BoxText;
 use crate::RenderError;
 use crate::common::text::collapsed_width;
-use crate::journey::text::{bold, regular, split_br};
+use crate::journey::text::split_br;
 
 /// The widest a code block is: `max-width` of the `code` element (`db.ts` 376-378).
 const CODE_MAX_WIDTH: f64 = 430.0;
@@ -41,11 +39,12 @@ pub struct Style {
     pub italic: bool,
 }
 
-/// The mono face of a style: the `code` element's family, in the weight and slant of the run.
-#[must_use]
-pub fn code_face(style: Style) -> &'static Face {
-    face(
-        FontFamily::Mono,
+/// The exact registered code design, or the legacy bundled mono design.
+pub fn code_face(
+    fonts: &crate::fonts::FontContext,
+    style: Style,
+) -> Result<crate::fonts::FontFace, ferrigura_text::TextError> {
+    fonts.mono(
         if style.bold {
             FontWeight::Bold
         } else {
@@ -57,12 +56,6 @@ pub fn code_face(style: Style) -> &'static Face {
             FontStyle::Normal
         },
     )
-}
-
-/// The mono face of the code block itself, which is the strut of its lines.
-#[must_use]
-pub fn mono() -> &'static Face {
-    code_face(Style::default())
 }
 
 /// The cell of a box's text: the `foreignObject` of the reference (`renderer.ts` 30-33).
@@ -253,10 +246,14 @@ fn push_glyph(runs: &mut Vec<LineRun>, character: char, style: Style) {
 /// # Errors
 ///
 /// Returns an error if the mono faces cannot be read.
-pub fn line_width(glyphs: &[Glyph], size: f64) -> Result<f64, RenderError> {
+pub fn line_width(
+    fonts: &crate::fonts::FontContext,
+    glyphs: &[Glyph],
+    size: f64,
+) -> Result<f64, RenderError> {
     let mut total = 0.0;
     for run in grouped(glyphs) {
-        total += layout_width(measure(code_face(run.style), &run.text, size)?);
+        total += layout_width(measure(&*code_face(fonts, run.style)?, &run.text, size)?);
     }
     Ok(total)
 }
@@ -289,12 +286,17 @@ fn pieces(glyphs: &[Glyph]) -> Vec<Vec<Glyph>> {
 /// # Errors
 ///
 /// Returns an error if the mono faces cannot be read.
-fn break_code(glyphs: &[Glyph], width: f64, size: f64) -> Result<Vec<Vec<Glyph>>, RenderError> {
+fn break_code(
+    fonts: &crate::fonts::FontContext,
+    glyphs: &[Glyph],
+    width: f64,
+    size: f64,
+) -> Result<Vec<Vec<Glyph>>, RenderError> {
     let mut lines = Vec::new();
     let mut current: Vec<Glyph> = Vec::new();
     for piece in pieces(glyphs) {
         let candidate: Vec<Glyph> = current.iter().chain(&piece).copied().collect();
-        if current.is_empty() || line_width(&candidate, size)? <= width {
+        if current.is_empty() || line_width(fonts, &candidate, size)? <= width {
             current = candidate;
         } else {
             lines.push(current);
@@ -313,10 +315,14 @@ fn break_code(glyphs: &[Glyph], width: f64, size: f64) -> Result<Vec<Vec<Glyph>>
 /// # Errors
 ///
 /// Returns an error if the mono faces cannot be read.
-fn widest_piece(glyphs: &[Glyph], size: f64) -> Result<f64, RenderError> {
+fn widest_piece(
+    fonts: &crate::fonts::FontContext,
+    glyphs: &[Glyph],
+    size: f64,
+) -> Result<f64, RenderError> {
     let mut widest = 0.0_f64;
     for piece in pieces(glyphs) {
-        widest = widest.max(line_width(&piece, size)?);
+        widest = widest.max(line_width(fonts, &piece, size)?);
     }
     Ok(widest)
 }
@@ -400,13 +406,18 @@ fn floor_layout_unit(length: f64) -> f64 {
 /// # Errors
 ///
 /// Returns an error if a bundled font cannot be read or shaped.
-pub fn lines_of(text: &BoxText, cell: Cell, size: f64) -> Result<Vec<LabelLine>, RenderError> {
-    let bold_face = bold();
+pub fn lines_of(
+    fonts: &crate::fonts::FontContext,
+    text: &BoxText,
+    cell: Cell,
+    size: f64,
+) -> Result<Vec<LabelLine>, RenderError> {
+    let bold_face = fonts.face(FontWeight::Bold, FontStyle::Normal)?;
     // The strut of a name line is the span's font, the regular face; the strut of a code line is the
     // code block's, the mono face.
-    let strut = text_box(regular(), size)?;
-    let mono_strut = text_box(mono(), size)?;
-    let name_box = text_box(bold_face, size)?;
+    let strut = text_box(&*fonts.face(FontWeight::Normal, FontStyle::Normal)?, size)?;
+    let mono_strut = text_box(&*code_face(fonts, Style::default())?, size)?;
+    let name_box = text_box(&bold_face, size)?;
     let (name_ascent, name_height) = line_box(&[strut, name_box]);
     let blank = |text: TextBox| Entry {
         kind: None,
@@ -458,11 +469,11 @@ pub fn lines_of(text: &BoxText, cell: Cell, size: f64) -> Result<Vec<LabelLine>,
     // at 430 px, its own max-width, and the cell grows to hold the widest of its lines.
     let mut name_widest = 0.0_f64;
     for piece in &name_pieces {
-        name_widest = name_widest.max(collapsed_width(bold_face, piece, size)?);
+        name_widest = name_widest.max(collapsed_width(&bold_face, piece, size)?);
     }
     let mut code_widest = 0.0_f64;
     for (_, glyphs) in &segments {
-        code_widest = code_widest.max(widest_piece(glyphs, size)?);
+        code_widest = code_widest.max(widest_piece(fonts, glyphs, size)?);
     }
     let cell_width = cell
         .width
@@ -473,7 +484,7 @@ pub fn lines_of(text: &BoxText, cell: Cell, size: f64) -> Result<Vec<LabelLine>,
         let lines = if *empty_source {
             Vec::new()
         } else {
-            break_code(glyphs, break_width, size)?
+            break_code(fonts, glyphs, break_width, size)?
         };
         if lines.is_empty() {
             entries.push(blank(mono_strut));
@@ -488,7 +499,7 @@ pub fn lines_of(text: &BoxText, cell: Cell, size: f64) -> Result<Vec<LabelLine>,
             // A line is as tall as its strut and its runs' faces: a bold or italic run may be taller.
             let mut boxes = vec![mono_strut];
             for run in &runs {
-                boxes.push(text_box(code_face(run.style), size)?);
+                boxes.push(text_box(&*code_face(fonts, run.style)?, size)?);
             }
             let (ascent, height) = line_box(&boxes);
             entries.push(Entry {
@@ -517,7 +528,7 @@ pub fn lines_of(text: &BoxText, cell: Cell, size: f64) -> Result<Vec<LabelLine>,
         if let Some(kind) = entry.kind {
             let x = match kind {
                 LineKind::Name => {
-                    let width = collapsed_width(bold_face, &entry.runs[0].text, size)?;
+                    let width = collapsed_width(&bold_face, &entry.runs[0].text, size)?;
                     left + floor_layout_unit((cell_width - width) / 2.0)
                 }
                 LineKind::Code => left,
@@ -637,8 +648,13 @@ mod tests {
     fn a_code_line_breaks_at_a_newline_only_when_it_does_not_fit() {
         // The blank joins, `&nbsp;`, do not break; the newline is a blank that does.
         let text = styled("productId:&nbsp;7,\n&nbsp;quantity:&nbsp;1");
-        assert_eq!(break_code(&text, 500.0, 14.0).unwrap().len(), 1);
-        let lines = break_code(&text, 60.0, 14.0).unwrap();
+        assert_eq!(
+            break_code(&crate::fonts::FontContext::bundled(), &text, 500.0, 14.0)
+                .unwrap()
+                .len(),
+            1
+        );
+        let lines = break_code(&crate::fonts::FontContext::bundled(), &text, 60.0, 14.0).unwrap();
         let texts: Vec<String> = lines
             .iter()
             .map(|line| grouped(line).iter().map(|run| run.text.clone()).collect())
@@ -649,9 +665,22 @@ mod tests {
     #[test]
     fn a_bold_run_is_measured_in_the_bold_face() {
         // The width of a line is the sum of its runs, each in its own face and snapped.
-        let plain_width = line_width(&styled("abc"), 14.0).unwrap();
-        let bold_width = line_width(&styled("<b>abc</b>"), 14.0).unwrap();
-        let sum = layout_width(measure(code_face(bold_style()), "abc", 14.0).unwrap());
+        let plain_width =
+            line_width(&crate::fonts::FontContext::bundled(), &styled("abc"), 14.0).unwrap();
+        let bold_width = line_width(
+            &crate::fonts::FontContext::bundled(),
+            &styled("<b>abc</b>"),
+            14.0,
+        )
+        .unwrap();
+        let sum = layout_width(
+            measure(
+                &*code_face(&crate::fonts::FontContext::bundled(), bold_style()).unwrap(),
+                "abc",
+                14.0,
+            )
+            .unwrap(),
+        );
         assert_eq!(bold_width, sum);
         assert!(plain_width > 0.0);
     }
