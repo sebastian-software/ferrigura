@@ -49,6 +49,37 @@ assert!(flowchart.starts_with("<svg "));
 
 A `Renderer` is `Send` and `Sync`, so one renderer can serve renders on several threads at once. For the same configuration, its output is the output of `render`, byte for byte.
 
+## Supplying local fonts
+
+The host can register owned TTF or OTF bytes or read explicit local files. No system-font lookup
+or download occurs. The first registered family becomes the primary when the configuration has
+no family; configured family names are registration aliases, including CSS family lists.
+
+```rust,no_run
+# fn main() -> Result<(), ferrigura::Error> {
+use ferrigura::{Renderer, Value};
+let renderer = Renderer::builder(&Value::empty_object())
+    .with_all()
+    .font_file("My Text", "fonts/Text-Regular.ttf")?
+    .font_file("My Symbols", "fonts/Symbols.ttf")?
+    .font_fallbacks(["My Symbols"])
+    .build();
+let svg = renderer.render("flowchart LR\n A[Hello →]")?;
+# Ok(())
+# }
+```
+
+`font` and `font_file` register weight 400, upright. `font_face` and `font_file_face` additionally
+accept `FontWeight` and `FontStyle`; weights from 1 through 1000 use `FontWeight::Number`.
+Registration errors are returned immediately. Registered designs and their fallback chain belong
+to this renderer; a missing configured primary name fails with registration guidance. Empty font
+options preserve the compatible bundled defaults.
+
+Implicit per-type families inherit the primary; explicit per-type settings and label
+`font-family` declarations resolve registered aliases. Code roles require an explicit `monospace`
+alias. [Font inputs and renderer roles](https://github.com/sebastian-software/ferrigura/blob/main/docs/fonts.md)
+describes fallback, variation defaults, supported roles and viewer coverage limits.
+
 ## Choosing the diagram types
 
 Every diagram type is a plugin of the renderer. `Renderer::new` registers all 33; a builder registers only the types a program draws, and the parsers, renderers and layout engines of the other types are then not linked into it, since nothing refers to them. A program that draws sequence diagrams alone is about half the size of one that draws every type.

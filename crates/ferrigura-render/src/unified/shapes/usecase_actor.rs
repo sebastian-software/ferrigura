@@ -162,7 +162,7 @@ pub(super) fn insert_label(
     let text = sanitize_text(&decode_entities(text));
     let styles = declarations(label_style);
     label::layout(&LabelSpec {
-        fonts: input.config.fonts.clone(),
+        fonts: super::node_fonts(input.node, input.config),
         text: &text,
         label_type: LabelType::Text,
         width,

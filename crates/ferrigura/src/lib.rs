@@ -378,13 +378,12 @@ impl RendererBuilder {
                 if !theme.is_object() {
                     *theme = Value::empty_object();
                 }
-                if let Value::Object(theme) = theme {
-                    if theme
+                if let Value::Object(theme) = theme
+                    && theme
                         .get("fontFamily")
                         .is_none_or(|value| value.is_null() || value.as_str() == Some(""))
-                    {
-                        theme.insert("fontFamily".into(), Value::String(primary));
-                    }
+                {
+                    theme.insert("fontFamily".into(), Value::String(primary));
                 }
             }
         }

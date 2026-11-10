@@ -486,7 +486,7 @@ fn replacing_a_face_keeps_old_handles_valid_but_rejects_conflicting_embedding() 
 }
 
 #[test]
-fn all_fallback_text_embeds_only_the_face_that_draws_it() {
+fn all_fallback_text_retains_the_primary_line_metrics() {
     let mut fonts = registry();
     fonts.set_fallbacks(["Arrows"]);
     let primary = fonts
@@ -498,17 +498,94 @@ fn all_fallback_text_embeds_only_the_face_that_draws_it() {
         face: &primary,
     }])
     .unwrap();
-    assert_eq!(families.len(), 1);
-    assert_eq!(families[0].source_name, "Arrows");
+    assert_eq!(families.len(), 2);
+    let origin = families
+        .iter()
+        .find(|family| family.source_name == "Fixture Sans")
+        .unwrap();
+    let fallback = families
+        .iter()
+        .find(|family| family.source_name == "Arrows")
+        .unwrap();
+    assert_eq!(
+        origin.css_family,
+        format!("\"{}\", \"{}\"", origin.name, fallback.name)
+    );
     assert!(
-        families[0]
-            .variables
+        families
             .iter()
+            .flat_map(|family| &family.variables)
             .any(
                 |(name, value)| Some(name.as_str()) == primary.css_variable()
-                    && value == &families[0].css_family
+                    && value == &origin.css_family
             )
     );
-    assert_eq!(families[0].css_family, format!("\"{}\"", families[0].name));
-    assert!(families[0].css.contains(&families[0].name));
+}
+
+#[test]
+fn resolving_a_warmed_fallback_as_primary_resets_its_chain_identity() {
+    let mut fonts = registry();
+    fonts.set_fallbacks(["Fixture Mono"]);
+    let first = fonts
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    let _ = first.css_variable();
+    fonts.set_fallbacks(["Arrows"]);
+    let warmed = fonts
+        .resolve("Fixture Mono", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    let mut clean = registry();
+    clean.set_fallbacks(["Arrows"]);
+    let expected = clean
+        .resolve("Fixture Mono", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    assert_eq!(warmed.css_variable(), expected.css_variable());
+    clean.set_fallbacks(std::iter::empty::<String>());
+    let no_chain = clean
+        .resolve("Fixture Mono", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    assert_ne!(warmed.css_variable(), no_chain.css_variable());
+}
+
+#[test]
+fn variable_faces_embed_the_default_axes_and_keep_exact_tie_metrics() {
+    let mut fonts = FontRegistry::new();
+    fonts
+        .register(
+            "Variable",
+            include_bytes!("fixtures/Inter-DefaultAxes.ttf").to_vec(),
+            FontWeight::Bold,
+            FontStyle::Normal,
+        )
+        .unwrap();
+    let face = fonts
+        .resolve("Variable", FontWeight::Bold, FontStyle::Normal)
+        .unwrap();
+    let families = embed_runs(&[Run {
+        text: "Hamburgefontsiv",
+        face: &face,
+    }])
+    .unwrap();
+    assert!(families[0].css.contains("font-variation-settings:"));
+    assert!(families[0].css.contains("\"wght\" 400"));
+    assert!(families[0].css.contains("\"opsz\" 14"));
+    assert_eq!(text_box(&face, 16.0).unwrap().ascent, 16.0);
+}
+
+#[test]
+fn cff_line_metrics_keep_their_own_fractional_tie_precision() {
+    let mut fonts = FontRegistry::new();
+    fonts
+        .register(
+            "Code",
+            include_bytes!("fixtures/SourceCodePro-Regular.otf").to_vec(),
+            FontWeight::Normal,
+            FontStyle::Normal,
+        )
+        .unwrap();
+    let face = fonts
+        .resolve("Code", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    assert_eq!(text_box(&face, 62.5).unwrap().ascent, 62.0);
+    assert!(measure_box(&face, "jf AVATAR", 16.0).unwrap().width() > 0.0);
 }

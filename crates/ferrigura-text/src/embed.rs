@@ -67,12 +67,21 @@ pub struct EmbeddedFamily {
 ///
 /// # Errors
 ///
-/// Returns an error if a bundled face cannot be parsed or subsetting fails.
+/// Returns an error if a face cannot be parsed or subsetting fails.
 pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError> {
     // The stretches each run is set in, after the fallback to the symbol face: a subset holds the
     // characters drawn in its face, and no other.
     let stretches: Vec<Run<'_, '_>> = runs.iter().flat_map(|run| fallback_runs(*run)).collect();
     let mut faces: Vec<&Face> = stretches.iter().map(|run| run.face).collect();
+    // SVG line boxes use the first family's metrics even when every character falls back.
+    // Keep supplied primary faces in the cascade; a space gives the metrics-only subset a cmap.
+    let metric_faces: Vec<&Face> = runs
+        .iter()
+        .map(|run| run.face)
+        .filter(|face| face.family() == FontFamily::Registered)
+        .filter(|face| !faces.iter().any(|drawn| same_face(face, drawn)))
+        .collect();
+    faces.extend(metric_faces.iter().copied());
     faces.sort_by_key(|face| {
         (
             family_order(face.family()),
@@ -114,11 +123,14 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
                     && primary.style() == faces[index].style()))
         {
             let face = faces[index];
-            let characters: BTreeSet<char> = stretches
+            let mut characters: BTreeSet<char> = stretches
                 .iter()
                 .filter(|run| same_face(run.face, face))
                 .flat_map(|run| run.text.chars())
                 .collect();
+            if metric_faces.iter().any(|metric| same_face(metric, face)) {
+                characters.insert(' ');
+            }
             subsets.push((face, subset_characters(face, &characters)?));
             index += 1;
         }
@@ -204,7 +216,7 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
 ///
 /// # Errors
 ///
-/// Returns an error if the bundled face cannot be parsed or subsetting fails.
+/// Returns an error if the face cannot be parsed or subsetting fails.
 pub fn subset_face(face: &Face, text: &str) -> Result<Vec<u8>, TextError> {
     let characters: BTreeSet<char> = text.chars().collect();
     subset_characters(face, &characters)

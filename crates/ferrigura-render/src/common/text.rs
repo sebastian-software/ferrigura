@@ -47,7 +47,7 @@ use crate::svg::number;
 /// `font_size` is in pixels: the reference writes it as `${fontSize}px`. `font_weight` is the CSS
 /// number (400 is normal, 700 bold). `font_family` is the configured family as the reference's
 /// CSS takes it, quotes included (the harness forces `"Lexica Ultralegible"`); it is part of the
-/// memo key and is measured in the bundled sans face.
+/// memo key; `fonts` independently selects the actual measured and embedded face.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TextStyle {
     /// Explicit font inputs used to resolve the requested family and weight.
@@ -98,7 +98,7 @@ pub enum MeasureError {
     /// The reference throws `svg element not in render tree` for a line with no glyphs (only white
     /// space), so its renderer fails too.
     NotInRenderTree,
-    /// The bundled font could not be read or shaped.
+    /// The font could not be read or shaped.
     Text(TextError),
 }
 
@@ -213,7 +213,7 @@ pub fn collapse_white_space(text: &str) -> String {
 ///
 /// # Errors
 ///
-/// Returns an error if the bundled font cannot be read.
+/// Returns an error if the font cannot be read.
 pub fn collapsed_width(face: &Face, text: &str, size: f64) -> Result<f64, TextError> {
     let collapsed = collapse_white_space(text);
     if collapsed.is_empty() {
@@ -229,7 +229,7 @@ pub fn collapsed_width(face: &Face, text: &str, size: f64) -> Result<f64, TextEr
 ///
 /// # Errors
 ///
-/// Returns an error if the bundled font cannot be read.
+/// Returns an error if the font cannot be read.
 pub fn collapsed_box(face: &Face, text: &str, size: f64) -> Result<Extent, TextError> {
     let collapsed = collapse_white_space(text);
     if collapsed.is_empty() {

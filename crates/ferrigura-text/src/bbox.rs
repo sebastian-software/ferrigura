@@ -42,7 +42,7 @@ impl Extent {
 ///
 /// # Errors
 ///
-/// Returns an error if the bundled font cannot be read or shaped.
+/// Returns an error if the font cannot be read or shaped.
 pub fn measure_box(face: &Face, text: &str, size: f64) -> Result<Extent, TextError> {
     measure_line_box(&[Run { text, face }], size)
 }
@@ -56,7 +56,7 @@ pub fn measure_box(face: &Face, text: &str, size: f64) -> Result<Extent, TextErr
 ///
 /// # Errors
 ///
-/// Returns an error if a bundled font cannot be read or shaped.
+/// Returns an error if a font cannot be read or shaped.
 pub fn measure_line_box(runs: &[Run<'_, '_>], size: f64) -> Result<Extent, TextError> {
     let mut extent = Extent::default();
     let mut start = 0.0_f64;
