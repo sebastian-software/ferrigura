@@ -17,6 +17,10 @@ use crate::context::Globals;
 /// pixels and its weight.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Font {
+    /// Host font inputs while the original family remains the measurement memo key.
+    pub fonts: crate::fonts::FontContext,
+    /// The resolved family binding used only in output CSS.
+    pub css_family: Option<String>,
     /// The family, quotes included, as the reference's CSS takes it.
     pub family: String,
     /// The size in pixels.
@@ -30,7 +34,7 @@ impl Font {
     #[must_use]
     pub fn text_style(&self) -> TextStyle {
         TextStyle {
-            fonts: crate::fonts::FontContext::bundled(),
+            fonts: self.fonts.clone(),
             font_size: self.size,
             font_weight: self.weight,
             font_family: self.family.clone(),
@@ -114,6 +118,8 @@ impl Conf {
         let family = globals.font_family.clone();
         let size = globals.font_size;
         let font = |weight: Option<&Value>| Font {
+            fonts: crate::fonts::FontContext::bundled(),
+            css_family: None,
             family: family.clone(),
             size,
             weight: weight.and_then(number_of).unwrap_or(400.0),

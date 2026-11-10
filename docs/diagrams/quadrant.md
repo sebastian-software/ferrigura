@@ -75,3 +75,7 @@ Texts go through the DB's `sanitizeText`; `sanitize.rs` ports the DOMPurify pass
 - **A text is `decode_entities(escape(text))`**, the whole-SVG pass of `mermaidAPI.ts`. The font subset takes the characters the reader sees, so the apostrophe and the quote are in it, not their `&#39;` and `&quot;` markup.
 - **The root writes `width` first, then the namespace, then `height` or `style`**, as the reference does; `title` and `desc` are the first children when the texts are set.
 - **The builder's own defaults swap `chartWidth` and `chartHeight`**, and its `||` fallbacks turn a 0 into the default; both only apply before `getQuadrantData` replaces them, so they have no effect.
+
+## Font inputs
+
+Chart labels, axes, points, and the title use the regular design of the resolved global `fontFamily`. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

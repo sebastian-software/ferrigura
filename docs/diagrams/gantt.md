@@ -103,3 +103,7 @@ The renderer ports `ganttRenderer.js` and `styles.js`. `mod.rs` sizes the diagra
 - **A single `D` in `dateFormat` changes the axis format to `%d`,** and the axis format and tick text keep their blanks (`' %d/%m'` gives `' 07/01'`).
 - **The harness page has no body margin,** so the reference's container is the 1200 px viewport. Without that, every fixture without `useWidth` would differ in width.
 - **d3-axis offsets by the device pixel ratio.** The offset is 0.5 at a ratio of 1 and 0 above it; the reference's own end-to-end baselines are taken at a ratio of 2.
+
+## Font inputs
+
+Labels, section names, title, and axis ticks use the resolved global `fontFamily`. Milestone labels use its italic design; clickable task labels use its bold design, or bold italic for a milestone. The reference’s regular-face task-width measurement is preserved. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

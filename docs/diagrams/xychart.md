@@ -91,3 +91,7 @@ The texts of the chart are written as SVG `<text>` with the bundled sans face em
 - **The DOM keeps an empty `<g>` before `main` and an empty `g.mermaid-tmp-group` last**, because the geometry key counts siblings.
 - **Text is written escaped, and the entity placeholders are decoded on the markup**: a title `A &amp; B` appears as `A &amp;amp; B`, and `#quot;hi#quot;` reads as `"hi"`.
 - **An inverted y-range** (`y-axis 10 --> 0`) puts 0 at the top, and the labels are still written in ascending order.
+
+## Font inputs
+
+Chart title, axis labels and titles, and legend measurements use the regular design of the resolved global `fontFamily`. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

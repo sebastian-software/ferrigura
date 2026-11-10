@@ -17,6 +17,7 @@
     "format": "tsx format.ts",
     "format:check": "tsx format.ts --check",
     "test": "tsx --test geometry/coverage.test.ts",
+    "test:custom-font-renderers": "tsx geometry/custom-font-renderers.ts",
     "port:diff": "tsx diff.ts",
     "port:status": "tsx status.ts",
     "port:check-header": "tsx check-header.ts",

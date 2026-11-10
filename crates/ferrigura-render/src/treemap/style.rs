@@ -111,6 +111,7 @@ pub fn colour_as_fill(label: &str) -> String {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Inline {
     declarations: Vec<Declaration>,
+    font_binding: Option<String>,
 }
 
 /// One declaration of an inline style.
@@ -157,7 +158,10 @@ impl Inline {
                 None => declarations.push(declaration),
             }
         }
-        Self { declarations }
+        Self {
+            declarations,
+            font_binding: None,
+        }
     }
 
     /// `style(name, value)`: the first declaration of the name takes the value, without the flag,
@@ -196,10 +200,24 @@ impl Inline {
             .map(|declaration| declaration.value.clone())
     }
 
+    /// Binds a resolved host design without changing the original measurement family.
+    pub fn bind_font(&mut self, css: String) {
+        self.font_binding = Some(css);
+    }
+
     /// The attribute text: `name: value`, with ` !important` where it has the flag, joined by `; `.
     #[must_use]
     pub fn to_attribute(&self) -> String {
-        self.declarations
+        let mut declarations = self.declarations.clone();
+        if let Some(css) = &self.font_binding {
+            declarations.retain(|declaration| declaration.name != "font-family");
+            declarations.push(Declaration {
+                name: "font-family".into(),
+                value: css.clone(),
+                important: false,
+            });
+        }
+        declarations
             .iter()
             .map(|declaration| {
                 let flag = if declaration.important {

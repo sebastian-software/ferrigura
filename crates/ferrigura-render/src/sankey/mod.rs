@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use ferrigura_model::config::SankeyDiagramConfig;
 use ferrigura_model::sankey::SankeyDiagram;
 use ferrigura_model::value::Value;
-use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, Run, embed_runs, face, text_box};
+use ferrigura_text::{Face, FontStyle, FontWeight, Run, embed_runs, text_box};
 
 use crate::RenderError;
 use crate::a11y;
@@ -78,11 +78,14 @@ struct Label {
 pub fn render(
     input: &Context<'_, SankeyDiagram, SankeyDiagramConfig>,
 ) -> Result<String, RenderError> {
+    let font_face = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let config = input.section;
     let tokens = input.theme.light;
     let id = input.id;
     let diagram = input.diagram;
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = &font_face;
 
     let show_values = config.show_values;
     let width = config.width;
@@ -139,15 +142,17 @@ pub fn render(
         .collect();
     let runs: Vec<Run<'_, '_>> = drawn.iter().map(|text| Run { text, face: sans }).collect();
     let families = embed_runs(&runs)?;
-    let font_family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = font_face.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let text_size = tokens.font_size.px().unwrap_or(16.0);
     let schemes = Schemes::new(input.theme);
     let style = base_style_sheet(
@@ -483,7 +488,7 @@ fn label_box(
     x: f64,
     baseline: f64,
     anchor: &str,
-    sans: &'static Face,
+    sans: &Face,
 ) -> Result<Option<BBox>, RenderError> {
     let extent = collapsed_box(sans, text, LABEL_SIZE)?;
     if extent.width() <= 0.0 {

@@ -1239,9 +1239,12 @@ fn draw_menu_item_text(
                 .with(
                     "style",
                     format!(
-                        "text-anchor: start; font-size: {}; font-weight: {};",
+                        "text-anchor: start; font-size: {}; font-weight: {};{}",
                         font.size_css(),
-                        number(font.weight)
+                        number(font.weight),
+                        font.css_family
+                            .as_ref()
+                            .map_or_else(String::new, |family| format!(" font-family: {family};"))
                     ),
                 )
                 .child(

@@ -31,6 +31,10 @@ name = "render"
 path = "crates/ferrigura/examples/render.rs"
 
 [[test]]
+name = "custom_font_renderers"
+path = "crates/ferrigura/tests/custom_font_renderers.rs"
+
+[[test]]
 name = "class"
 path = "crates/ferrigura/tests/class.rs"
 

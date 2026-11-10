@@ -7,7 +7,7 @@
 //! descent (`ferrigura_text::text_box`). Chromium measures the drawn text itself, so the markup
 //! only has to carry the attributes the reference sets.
 
-use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, face, text_box};
+use ferrigura_text::{FontStyle, FontWeight, text_box};
 
 use super::conf::Font;
 use crate::RenderError;
@@ -31,15 +31,12 @@ pub fn measure_error(error: MeasureError) -> RenderError {
     }
 }
 
-/// The face a font of the diagram is set in: the bundled sans, bold from weight 500 up.
-#[must_use]
-pub fn face_of(font: &Font) -> &'static Face {
-    let weight = if font.weight > 500.0 {
-        FontWeight::Bold
-    } else {
-        FontWeight::Normal
-    };
-    face(FontFamily::Sans, weight, FontStyle::Normal)
+/// The actual configured design, including numeric weights between named styles.
+pub fn face_of(font: &Font) -> Result<crate::fonts::FontFace, ferrigura_text::TextError> {
+    font.fonts.with_family(&font.family).face(
+        FontWeight::Number(font.weight.clamp(1.0, 1000.0) as u16),
+        FontStyle::Normal,
+    )
 }
 
 /// The height of one line of a font: the `getBBox().height` of a `<text>` with that line.
@@ -48,7 +45,7 @@ pub fn face_of(font: &Font) -> &'static Face {
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn line_height(font: &Font) -> Result<f64, RenderError> {
-    Ok(text_box(face_of(font), font.size)?.height)
+    Ok(text_box(&*face_of(font)?, font.size)?.height)
 }
 
 /// `calculateTextDimensions(text, font)`: the memoized measurement of a text.
@@ -93,11 +90,15 @@ pub fn line_count(text: &str) -> usize {
 /// The style of a text element: the attributes `drawText` gives it, in the order it sets them.
 /// Font properties go into one `style` attribute, as d3's `style` calls do.
 fn font_style(font: &Font) -> String {
-    format!(
+    let mut style = format!(
         "font-size: {}; font-weight: {};",
         font.size_css(),
         number(font.weight)
-    )
+    );
+    if let Some(family) = &font.css_family {
+        style.push_str(&format!(" font-family: {family};"));
+    }
+    style
 }
 
 /// The options of `drawText` (`svgDraw.js`, the `textData` of the reference): what the reference
@@ -242,11 +243,7 @@ pub fn draw_label_by_tspan(
                 .with("y", number(y))
                 .with(
                     "style",
-                    format!(
-                        "text-anchor: middle; font-size: {}; font-weight: {};",
-                        font.size_css(),
-                        number(font.weight)
-                    ),
+                    format!("text-anchor: middle; {}", font_style(font)),
                 )
                 .child(
                     Element::new("tspan")
@@ -272,6 +269,8 @@ mod tests {
     /// The font of the spec's text: `courier`, as the spec names it.
     fn courier(size: f64) -> Font {
         Font {
+            fonts: crate::fonts::FontContext::bundled(),
+            css_family: None,
             family: "courier".to_owned(),
             size,
             weight: 500.0,

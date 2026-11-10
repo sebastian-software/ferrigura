@@ -488,8 +488,19 @@ impl Chart<'_> {
             FontStyle::Normal
         };
         texts.push(&text.plain, style);
+        let custom_style =
+            if self.regular.css_reference().is_some() && class_tokens.contains(&"clickable") {
+                let face = self.fonts.face(ferrigura_text::FontWeight::Bold, style)?;
+                let css = face
+                    .css_reference()
+                    .map_or_else(String::new, |css| format!(" style=\"font-family:{css};\""));
+                texts.custom_runs.push((text.plain.clone(), face));
+                css
+            } else {
+                String::new()
+            };
         Ok(format!(
-            "<text id=\"{}-{}-text\" font-size=\"{}\" x=\"{}\" y=\"{}\" class=\"{}\"{}>{}</text>",
+            "<text id=\"{}-{}-text\" font-size=\"{}\" x=\"{}\" y=\"{}\" class=\"{}\"{}{}>{}</text>",
             escape(self.id),
             escape(&task.id),
             number(font),
@@ -497,6 +508,7 @@ impl Chart<'_> {
             number(y),
             escape(&class),
             fill,
+            custom_style,
             text.xml,
         ))
     }
