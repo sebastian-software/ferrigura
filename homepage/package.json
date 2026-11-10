@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "ardo": "^6.4.1",
-    "ferramenta-family": "github:sebastian-software/ferramenta#70d696962356af5a100c970f0f4b0187fdafcccf&path:/packages/family"
+    "ferramenta-family": "github:sebastian-software/ferramenta#70d696962356af5a100c970f0f4b0187fdafcccf&path:/packages/family",
+    "react-compare-slider": "^4.0.0"
   },
   "devDependencies": {
     "axe-core": "4.14.0",

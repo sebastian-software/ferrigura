@@ -216,7 +216,7 @@
   max-width: none !important;
 }
 
-/* ---------- The comparison slider (compare-slider.tsx) ---------- */
+/* ---------- The comparison slider (compare-slider.tsx, react-compare-slider) ---------- */
 .fgr-compare {
   padding: 16px 20px 20px;
   background: var(--mono-sheet);
@@ -235,57 +235,9 @@
   font: 500 12.5px/1.4 var(--mono-sans);
   color: var(--mono-ink-3);
 }
-.fgr-compare-stage {
-  position: relative;
-}
 /* Each layer is opaque, so the first hides the second left of the divider. */
 .fgr-compare-layer {
   background: var(--mono-sheet);
-}
-.fgr-compare-first {
-  position: absolute;
-  inset: 0;
-  clip-path: inset(0 calc(100% - var(--fgr-compare-position)) 0 0);
-}
-.fgr-compare-divider {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--fgr-compare-position);
-  width: 2px;
-  margin-left: -1px;
-  background: var(--mono-oxide);
-  pointer-events: none;
-}
-/* The handle: a round grip on the divider, near the top of a tall drawing. */
-.fgr-compare-divider::after {
-  content: '';
-  position: absolute;
-  top: min(50%, 120px);
-  left: 50%;
-  width: 28px;
-  height: 28px;
-  transform: translate(-50%, -50%);
-  border: 2px solid var(--mono-oxide);
-  border-radius: 50%;
-  background: var(--mono-sheet);
-  box-shadow: 0 1px 4px rgba(38, 35, 31, 0.25);
-}
-/* The native range input covers the stage, invisible; it does the work. */
-.fgr-compare-input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: ew-resize;
-  /* A vertical swipe still scrolls the page on a touch screen. */
-  touch-action: pan-y;
-}
-.fgr-compare-input:focus-visible + .fgr-compare-divider::after {
-  outline: 2px solid var(--mono-ink);
-  outline-offset: 3px;
 }
 .fgr-side-files {
   display: flex;
