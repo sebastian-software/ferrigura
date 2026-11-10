@@ -6,7 +6,7 @@
 
 ferrigura reproduces what the reference does, also where it looks like a bug. The same text renders the same diagram, and fails where the reference fails.
 
-The general compatibility switch is an explicit exception ([0019](./0019-adaptive-flowchart-mode.md)): the optimized default centers flowchart ports with label-aware spacing and sizes sequence participant boxes to their labels. `compat: true` retains the reference's geometry. Both modes draw flowchart edge-label backgrounds at full opacity, also corrected in the reference by patch 11. The optional draw animation is another explicit addition ([0021](./0021-optional-svg-draw-animation.md)); it leaves static output unchanged. The rules below apply without that animation to compatibility rendering and to behavior outside these documented optimizations.
+The general compatibility switch is an explicit exception ([0019](./0019-adaptive-flowchart-mode.md)): the optimized default centers flowchart ports with label-aware spacing and sizes sequence participant boxes to their labels. `compat: true` retains the reference's geometry. Both modes draw shared edge-label backgrounds at full opacity, also corrected in the reference by patches 11 and 12. The optional draw animation is another explicit addition ([0021](./0021-optional-svg-draw-animation.md)); it leaves static output unchanged. The rules below apply without that animation to compatibility rendering and to behavior outside these documented optimizations.
 
 - A quirk that changes the output is reproduced, and the probe that showed it becomes a test.
 - A reference bug is fixed in ferrigura only together with a patch on the pinned commit that fixes it in the reference too, so that both sides agree again ([0014](./0014-upstream-reference-at-a-pin.md)).

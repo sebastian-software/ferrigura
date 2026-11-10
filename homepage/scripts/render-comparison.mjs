@@ -5,7 +5,7 @@
 // Write on macOS, where the geometry checks run. Other platforms check only
 // Ferrigura's deterministic output, with the existing numeric tolerance.
 // Both sides get SVG labels, the bundled face and the redux-color theme.
-// Flowcharts use Mermaid routing; label backgrounds stay opaque in both modes.
+// Flowcharts use Mermaid routing; shared edge-label backgrounds stay opaque in both modes.
 import assert from 'node:assert/strict';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';

@@ -65,6 +65,8 @@ Configuration read: the `agentflow` section's `titleTopMargin` (25), `diagramPad
 - The reference's conformance runner is not ported; its eight fixture pairs are ported as specs.
 - The layout data is not compared with the reference's by a run of its own; the geometry run checks the result.
 
+Edge-label backgrounds use the shared full-opacity default in both render modes, preserving explicit theme color transparency. Reference patch 12 applies the same paint-only correction without changing layout ([0019](../decisions/0019-adaptive-flowchart-mode.md)).
+
 ## Checking it
 
 - `pnpm -C tools/port port:diff agentflow` compares the models on the inputs of the fixtures, the spec literals, the documentation and the explicit cases of `cases.ts`; `pnpm -C tools/port port:diff config` includes agentflow's configuration. `exceptions.ts` has no agentflow entry.

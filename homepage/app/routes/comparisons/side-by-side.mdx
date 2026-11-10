@@ -17,7 +17,7 @@ These drawings use `{ compat: true }`, which preserves Mermaid-compatible geomet
 
 ## Where they differ
 
-Ferrigura draws flowchart edge-label backgrounds at full opacity in both routing modes, so the line does not show through the text. Mermaid's SVG labels use half opacity. This affects paint only, not layout.
+Ferrigura draws shared edge-label backgrounds at full opacity in both render modes, so lines do not show through the text. This applies to flowchart, class, state, entity relationship, requirement, use case, agentflow and block diagrams. Each type keeps its theme's background color, including any explicitly configured transparency. Published Mermaid applies half opacity to some SVG labels, including flowcharts and state diagrams. This affects paint only, not layout.
 
 The full-opacity correction is also applied to the pinned reference used by the geometry checks. This page shows the published Mermaid package unchanged. Sequence participant boxes keep Mermaid's full row height here because compatibility mode is enabled; optimized rendering fits them to their labels without moving lifelines or messages.
 
