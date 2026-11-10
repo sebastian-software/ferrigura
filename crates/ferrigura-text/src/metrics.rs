@@ -68,7 +68,7 @@ pub fn font_metrics(face: &Face, size: f64) -> Result<FontMetrics, TextError> {
 ///
 /// Returns an error if the font cannot be parsed or has no line metrics.
 pub fn text_box(face: &Face, size: f64) -> Result<TextBox, TextError> {
-    let size = laid_out_size(size);
+    let size = f64::from(laid_out_size(size) as f32);
     let metrics = font_metrics(face, 1.0)?;
     let font = FontRef::new(face.data()).map_err(|_| TextError::InvalidFont)?;
     let is_cff = font.cff().is_ok() || font.cff2().is_ok();

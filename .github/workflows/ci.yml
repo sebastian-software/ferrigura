@@ -202,6 +202,10 @@ jobs:
       - name: Build the reference (upstream Mermaid at the pin, with its patches)
         run: echo "REFERENCE_ROOT=$(tools/reference/setup.sh)" >> "$GITHUB_ENV"
       - run: pnpm -C tools/port exec playwright install chromium
+      - name: Registered font metrics and embedded designs in Chromium
+        run: pnpm -C tools/port exec tsx text/registered-fonts.ts
+      - name: Supplied font families across custom renderers in Chromium
+        run: pnpm -C tools/port run test:custom-font-renderers
       - name: Pie geometry against the reference in Chromium
         run: pnpm -C tools/port port:geometry-pie
       - name: Scoped styles of several pies in one page

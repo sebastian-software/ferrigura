@@ -57,6 +57,7 @@ for (const size of [16, 32]) {
 for (const [name, size, path] of [
   ['cff-tie', 62.5, join(fixtureDir, 'SourceCodePro-Regular.otf')],
   ['mono-tie', 62.5, join(fontDir, 'AtkinsonHyperlegibleMono-Regular.ttf')],
+  ['sans-size-stage', 165.79, join(fontDir, 'LexicaUltralegible-Regular.ttf')],
   ['sans-tie', 30, join(fontDir, 'LexicaUltralegible-Regular.ttf')],
 ] as const)
   cases.push({

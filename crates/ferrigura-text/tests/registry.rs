@@ -589,3 +589,12 @@ fn cff_line_metrics_keep_their_own_fractional_tie_precision() {
     assert_eq!(text_box(&face, 62.5).unwrap().ascent, 62.0);
     assert!(measure_box(&face, "jf AVATAR", 16.0).unwrap().width() > 0.0);
 }
+
+#[test]
+fn browser_line_metrics_round_the_font_size_before_scaling() {
+    let fonts = registry();
+    let face = fonts
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    assert_eq!(text_box(&face, 165.79).unwrap().ascent, 157.0);
+}
