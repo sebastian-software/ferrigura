@@ -416,3 +416,30 @@ fn registration_failure_does_not_touch_output() {
     assert!(stderr(&output).to_ascii_lowercase().contains("font"));
     assert!(stdout(&output).is_empty());
 }
+
+#[test]
+fn diagram_metadata_cannot_register_font_files_or_urls() {
+    let primary = format!("Primary={}", font_file("LexicaUltralegible-Regular.ttf"));
+    for path in [
+        "diagram-controlled-font.ttf",
+        "https://example.invalid/font.ttf",
+    ] {
+        let directive = serde_json::json!({
+            "fontFamily": "Injected",
+            "fonts": [{ "family": "Injected", "path": path }]
+        });
+        let inputs = [
+            format!("%%{{init: {directive}}}%%\nflowchart LR\n A[Hello]\n"),
+            format!("---\nconfig: {directive}\n---\nflowchart LR\n A[Hello]\n"),
+        ];
+        for input in inputs {
+            let output = run(&["--font", &primary], &input);
+            assert_eq!(output.status.code(), Some(1));
+            let message = stderr(&output);
+            assert!(message.contains("Injected"), "{message}");
+            assert!(message.contains("register"), "{message}");
+            assert!(!message.contains("cannot read font"), "{message}");
+            assert!(stdout(&output).is_empty());
+        }
+    }
+}

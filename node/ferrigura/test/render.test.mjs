@@ -166,3 +166,28 @@ test('empty host font options preserve bundled defaults', () => {
     assert.equal(new Renderer(undefined, fonts).render(text), baseline);
   }
 });
+
+test('diagram metadata selects registered names without loading its own font sources', () => {
+  const fonts = { fonts: [{ family: 'Primary', data: fontData }] };
+  for (const path of ['diagram-controlled-font.ttf', 'https://example.invalid/font.ttf']) {
+    const directive = JSON.stringify({
+      fontFamily: 'Injected',
+      fonts: [{ family: 'Injected', path }],
+    });
+    const inputs = [
+      `%%{init: ${directive}}%%\nflowchart LR\n A[Hello]\n`,
+      `---\nconfig: ${directive}\n---\nflowchart LR\n A[Hello]\n`,
+    ];
+    for (const text of inputs) {
+      assert.throws(
+        () => render(text, undefined, undefined, fonts),
+        (error) => {
+          assert.match(error.message, /Injected/);
+          assert.match(error.message, /register/);
+          assert.doesNotMatch(error.message, /ENOENT|cannot read font/);
+          return true;
+        }
+      );
+    }
+  }
+});
