@@ -523,7 +523,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             ));
         }
     }
-    let run_refs: Vec<Run<'_>> = runs.iter().map(|(text, face)| Run { text, face }).collect();
+    let run_refs: Vec<Run<'_, '_>> = runs.iter().map(|(text, face)| Run { text, face }).collect();
     let families: Vec<EmbeddedFamily> = embed_runs(&run_refs)?;
     let font_family = families.first().map_or_else(
         || {

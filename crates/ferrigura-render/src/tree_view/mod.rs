@@ -76,7 +76,7 @@ pub fn render(
             std::iter::once(label).chain(description)
         })
         .collect();
-    let runs: Vec<Run<'_>> = texts
+    let runs: Vec<Run<'_, '_>> = texts
         .iter()
         .map(|(text, face)| Run { text, face })
         .collect();

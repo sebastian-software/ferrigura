@@ -297,7 +297,7 @@ pub fn utf16_length(text: &str) -> usize {
 
 /// The runs of the given labels, as the font subset of a diagram takes them.
 #[must_use]
-pub fn as_runs<'a>(texts: &'a [(String, &'static Face)]) -> Vec<Run<'a>> {
+pub fn as_runs<'a>(texts: &'a [(String, &'static Face)]) -> Vec<Run<'a, 'static>> {
     texts
         .iter()
         .map(|(text, face)| Run { text, face })

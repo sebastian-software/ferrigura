@@ -38,3 +38,11 @@ package.
 A diagram's labels embed a subset of these faces (`embed_runs`) under a family name of their own.
 A subset is a cut of the bundled file and is under the same licence as the file. The embedded
 subsets hold the glyphs a diagram draws, not the whole file.
+
+## CFF test fixture
+
+`tests/fixtures/SourceCodePro-Regular.otf` is Adobe's Source Code Pro Regular, from
+[adobe-fonts/source-code-pro](https://github.com/adobe-fonts/source-code-pro/tree/803b7e23ec97ae58b6232ea76519a76d428ba268),
+under the SIL Open Font License 1.1. The original license is
+`tests/fixtures/OFL-SourceCodePro.md`. This font is a test input and is not compiled into the
+library or included in its published package.

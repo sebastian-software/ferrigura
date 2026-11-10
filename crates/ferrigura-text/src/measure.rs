@@ -11,11 +11,11 @@ use crate::fonts::{Face, FontFamily, FontStyle, FontWeight, face};
 
 /// One run of text set in one face, for [`measure_line`].
 #[derive(Debug, Clone, Copy)]
-pub struct Run<'a> {
+pub struct Run<'a, 'f> {
     /// The text of the run.
     pub text: &'a str,
     /// The face the run is set in.
-    pub face: &'static Face,
+    pub face: &'f Face,
 }
 
 /// The faces a text's font-family list falls back to, in order, after the text's own face: the
@@ -51,20 +51,34 @@ pub fn fallback_faces() -> [&'static Face; 3] {
 /// it. Every measurement and every embedded subset goes through it, so a viewer draws the characters
 /// in the face they were measured in.
 #[must_use]
-pub fn fallback_runs(run: Run<'_>) -> Vec<Run<'_>> {
-    if run.text.is_empty() || !matches!(run.face.family(), FontFamily::Sans | FontFamily::Mono) {
+pub fn fallback_runs<'a, 'f>(run: Run<'a, 'f>) -> Vec<Run<'a, 'f>> {
+    if run.text.is_empty()
+        || !matches!(
+            run.face.family(),
+            FontFamily::Sans | FontFamily::Mono | FontFamily::Registered
+        )
+    {
         return vec![run];
     }
-    let fallbacks = fallback_faces();
+    let fallbacks: Vec<&Face> = if run.face.family() == FontFamily::Registered {
+        run.face
+            .registered_fallbacks()
+            .iter()
+            .map(AsRef::as_ref)
+            .collect()
+    } else {
+        fallback_faces().into_iter().collect()
+    };
     let mut stretches = Vec::new();
     let mut start = 0;
-    let mut current: &'static Face = run.face;
+    let mut current: &Face = run.face;
     for (index, character) in run.text.char_indices() {
         let chosen = if run.face.covers(character) {
             run.face
         } else {
             fallbacks
-                .into_iter()
+                .iter()
+                .copied()
                 .find(|fallback| fallback.covers(character))
                 .unwrap_or(run.face)
         };
@@ -107,7 +121,7 @@ pub fn layout_width(advance: f64) -> f64 {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be parsed or the shaper rejects the text.
-pub fn measure(face: &'static Face, text: &str, size: f64) -> Result<f64, TextError> {
+pub fn measure(face: &Face, text: &str, size: f64) -> Result<f64, TextError> {
     let mut total = 0.0;
     for stretch in fallback_runs(Run { text, face }) {
         total += advance(stretch.face.font()?, stretch.text, size)?;
@@ -139,7 +153,7 @@ pub fn measure_data(data: &[u8], text: &str, size: f64) -> Result<f64, TextError
 /// # Errors
 ///
 /// Returns the first error [`measure`] reports for a run.
-pub fn measure_line(runs: &[Run<'_>], size: f64) -> Result<f64, TextError> {
+pub fn measure_line(runs: &[Run<'_, '_>], size: f64) -> Result<f64, TextError> {
     let mut total = 0.0;
     for run in runs {
         total += measure(run.face, run.text, size)?;

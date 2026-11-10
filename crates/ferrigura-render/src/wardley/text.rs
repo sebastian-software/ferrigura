@@ -46,7 +46,7 @@ impl Drawn {
     /// The runs of the subset: one for each weight that draws text. An empty run would embed an
     /// empty subset, so it is left out.
     #[must_use]
-    pub fn runs(&self) -> Vec<Run<'_>> {
+    pub fn runs(&self) -> Vec<Run<'_, '_>> {
         let mut runs = Vec::with_capacity(2);
         if !self.regular.is_empty() {
             runs.push(Run {

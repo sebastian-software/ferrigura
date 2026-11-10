@@ -183,7 +183,7 @@ pub fn render_with_animation(
         .collect();
 
     // Every text the diagram draws, to subset the font once for the whole diagram.
-    let mut runs: Vec<Run<'_>> = Vec::new();
+    let mut runs: Vec<Run<'_, '_>> = Vec::new();
     runs.push(Run {
         text: title,
         face: sans,

@@ -125,7 +125,7 @@ pub fn render(input: &Context<'_, C4Diagram, C4DiagramConfig>) -> Result<String,
             ),
         ));
     }
-    let runs: Vec<Run<'_>> = draw
+    let runs: Vec<Run<'_, '_>> = draw
         .runs
         .iter()
         .map(|(text, face)| Run { text, face })

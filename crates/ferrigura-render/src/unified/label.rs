@@ -136,7 +136,7 @@ impl LabelLayout {
 
     /// The runs of the label, to subset the fonts for.
     #[must_use]
-    pub fn text_runs(&self) -> Vec<Run<'_>> {
+    pub fn text_runs(&self) -> Vec<Run<'_, 'static>> {
         self.lines
             .iter()
             .flat_map(|line| &line.runs)
@@ -255,8 +255,9 @@ impl LabelLayout {
             }
             for run in &line.runs {
                 let weight = match run.weight {
-                    FontWeight::Normal => "normal",
-                    FontWeight::Bold => "bold",
+                    FontWeight::Normal => "normal".to_owned(),
+                    FontWeight::Bold => "bold".to_owned(),
+                    FontWeight::Number(weight) => weight.to_string(),
                 };
                 let _ = write!(
                     out,

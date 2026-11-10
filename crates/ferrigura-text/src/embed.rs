@@ -27,7 +27,7 @@ use read_fonts::types::{NameId, Tag};
 use skera::{DEFAULT_LAYOUT_FEATURES, Plan, SubsetFlags, subset_font};
 
 use crate::error::TextError;
-use crate::fonts::{FACES, Face, FontFamily, FontStyle};
+use crate::fonts::{Face, FontFamily, FontStyle};
 use crate::measure::{Run, fallback_runs};
 
 /// The embedded subsets of one font family in one diagram.
@@ -35,6 +35,8 @@ use crate::measure::{Run, fallback_runs};
 pub struct EmbeddedFamily {
     /// The family whose faces are embedded.
     pub family: FontFamily,
+    /// The host-registered family name, or the bundled face identifier.
+    pub source_name: String,
     /// The family name the labels refer to, such as `fg-0123456789abcdef-sans`.
     pub name: String,
     /// The `font-family` value of the text set in this family, quoted for CSS: the family name, then
@@ -58,67 +60,106 @@ pub struct EmbeddedFamily {
 /// # Errors
 ///
 /// Returns an error if a bundled face cannot be parsed or subsetting fails.
-pub fn embed_runs(runs: &[Run<'_>]) -> Result<Vec<EmbeddedFamily>, TextError> {
+pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError> {
     // The stretches each run is set in, after the fallback to the symbol face: a subset holds the
     // characters drawn in its face, and no other.
-    let stretches: Vec<Run<'_>> = runs.iter().flat_map(|run| fallback_runs(*run)).collect();
+    let stretches: Vec<Run<'_, '_>> = runs.iter().flat_map(|run| fallback_runs(*run)).collect();
+    let mut faces: Vec<&Face> = stretches.iter().map(|run| run.face).collect();
+    faces.sort_by_key(|face| {
+        (
+            family_order(face.family()),
+            if face.family() == FontFamily::Registered {
+                face.family_name().to_ascii_lowercase()
+            } else {
+                String::new()
+            },
+            face.weight().css_value(),
+            match face.style() {
+                FontStyle::Normal => 0,
+                FontStyle::Italic => 1,
+            },
+        )
+    });
+    faces.dedup_by(|a, b| same_face(a, b));
+    for pair in faces.windows(2) {
+        if same_family(pair[0], pair[1])
+            && pair[0].weight().css_value() == pair[1].weight().css_value()
+            && pair[0].style() == pair[1].style()
+        {
+            return Err(TextError::Registration(format!(
+                "cannot embed different font data for family {:?}, weight {}, style {} in one SVG",
+                pair[0].family_name(),
+                pair[0].weight().css_value(),
+                pair[0].style().css_keyword()
+            )));
+        }
+    }
     let mut embedded = Vec::new();
-    for family in [
-        FontFamily::Sans,
-        FontFamily::Mono,
-        FontFamily::Arrows,
-        FontFamily::TextSymbols,
-        FontFamily::Emoji,
-    ] {
-        let mut subsets: Vec<(&'static Face, Vec<u8>)> = Vec::new();
-        for face in FACES.iter().copied().filter(|f| f.family() == family) {
-            let used = stretches.iter().any(|run| same_face(run.face, face));
-            if !used {
-                continue;
-            }
+    let mut index = 0;
+    while index < faces.len() {
+        let primary = faces[index];
+        let mut subsets = Vec::new();
+        while index < faces.len() && same_family(primary, faces[index]) {
+            let face = faces[index];
             let characters: BTreeSet<char> = stretches
                 .iter()
                 .filter(|run| same_face(run.face, face))
                 .flat_map(|run| run.text.chars())
                 .collect();
             subsets.push((face, subset_characters(face, &characters)?));
+            index += 1;
         }
-        if subsets.is_empty() {
-            continue;
-        }
-        let name = family_name(family, &subsets);
+        let name = family_name(primary.family(), &subsets);
         let css = font_face_rules(&name, &subsets);
         embedded.push(EmbeddedFamily {
-            family,
+            family: primary.family(),
+            source_name: primary.family_name().to_owned(),
             name,
             css_family: String::new(),
             css,
         });
     }
-    // The text of a text family is set in its own family and then in each fallback family the
-    // diagram embeds, in the order of `fallback_faces`; a fallback family is set in itself.
-    let fallbacks: Vec<String> = [
-        FontFamily::Arrows,
-        FontFamily::TextSymbols,
-        FontFamily::Emoji,
-    ]
-    .into_iter()
-    .filter_map(|family| {
-        embedded
+    for index in 0..embedded.len() {
+        let primary = faces.iter().find(|face| {
+            face.family() == embedded[index].family
+                && (face.family() != FontFamily::Registered
+                    || face.family_name() == embedded[index].source_name)
+        });
+        let fallback_names: Vec<String> = if embedded[index].family == FontFamily::Registered {
+            primary
+                .into_iter()
+                .flat_map(|face| face.registered_fallbacks())
+                .filter_map(|fallback| {
+                    embedded
+                        .iter()
+                        .find(|family| {
+                            family.family == FontFamily::Registered
+                                && family
+                                    .source_name
+                                    .eq_ignore_ascii_case(fallback.family_name())
+                        })
+                        .map(|family| family.name.clone())
+                })
+                .collect()
+        } else if matches!(embedded[index].family, FontFamily::Sans | FontFamily::Mono) {
+            [
+                FontFamily::Arrows,
+                FontFamily::TextSymbols,
+                FontFamily::Emoji,
+            ]
             .iter()
-            .find(|embedded| embedded.family == family)
-            .map(|embedded| embedded.name.clone())
-    })
-    .collect();
-    for family in &mut embedded {
-        let names: Vec<String> = match family.family {
-            FontFamily::Sans | FontFamily::Mono => std::iter::once(family.name.clone())
-                .chain(fallbacks.iter().cloned())
-                .collect(),
-            _ => vec![family.name.clone()],
+            .filter_map(|fallback| {
+                embedded
+                    .iter()
+                    .find(|family| family.family == *fallback)
+                    .map(|family| family.name.clone())
+            })
+            .collect()
+        } else {
+            Vec::new()
         };
-        family.css_family = names
-            .iter()
+        embedded[index].css_family = std::iter::once(embedded[index].name.clone())
+            .chain(fallback_names)
             .map(|name| format!("\"{name}\""))
             .collect::<Vec<_>>()
             .join(", ");
@@ -127,7 +168,8 @@ pub fn embed_runs(runs: &[Run<'_>]) -> Result<Vec<EmbeddedFamily>, TextError> {
 }
 
 /// The subset of `face` to the characters of `text`, with the default layout features, the legacy
-/// `kern` table and no hinting.
+/// `kern` table and no hinting. CFF and CFF2 fonts are returned complete because the subsetter
+/// cannot serialize their outlines; embedding preserves their appearance and advances.
 ///
 /// # Errors
 ///
@@ -138,7 +180,27 @@ pub fn subset_face(face: &Face, text: &str) -> Result<Vec<u8>, TextError> {
 }
 
 fn same_face(a: &Face, b: &Face) -> bool {
-    a.family() == b.family() && a.weight() == b.weight() && a.style() == b.style()
+    same_family(a, b)
+        && a.weight().css_value() == b.weight().css_value()
+        && a.style() == b.style()
+        && a.data() == b.data()
+}
+
+fn same_family(a: &Face, b: &Face) -> bool {
+    a.family() == b.family()
+        && (a.family() != FontFamily::Registered
+            || a.family_name().eq_ignore_ascii_case(b.family_name()))
+}
+
+fn family_order(family: FontFamily) -> u8 {
+    match family {
+        FontFamily::Sans => 0,
+        FontFamily::Mono => 1,
+        FontFamily::Arrows => 2,
+        FontFamily::TextSymbols => 3,
+        FontFamily::Emoji => 4,
+        FontFamily::Registered => 5,
+    }
 }
 
 /// The white space that SVG text collapses: the browser draws each run of it as one space, so a
@@ -194,6 +256,17 @@ fn subset_data(
     name_ids: &IntSet<NameId>,
 ) -> Result<Vec<u8>, TextError> {
     let font = FontRef::new(data).map_err(|_| TextError::InvalidFont)?;
+    if font.table_data(Tag::new(b"SVG ")).is_some() {
+        return Err(TextError::Registration(
+            "OpenType-SVG fonts are not supported".into(),
+        ));
+    }
+    // skera does not serialize CFF outlines. Keep the complete font instead of returning an
+    // invalid subset without outlines. This also preserves CFF subroutines and CFF2 variations.
+    if font.table_data(Tag::new(b"CFF ")).is_some() || font.table_data(Tag::new(b"CFF2")).is_some()
+    {
+        return Ok(data.to_vec());
+    }
     // Every script and the default layout features, so kerning and ligatures are kept.
     let mut scripts = IntSet::empty();
     scripts.invert();
@@ -214,11 +287,12 @@ fn subset_data(
         name_ids,
         &languages,
     );
-    subset_font(&font, &plan).map_err(|error| TextError::Subset(error.to_string()))
+    let subset = subset_font(&font, &plan).map_err(|error| TextError::Subset(error.to_string()))?;
+    crate::kern::restore(&font, subset, &plan)
 }
 
 /// The family name of a set of subsets: the hash of each face's weight, style and bytes.
-fn family_name(family: FontFamily, subsets: &[(&'static Face, Vec<u8>)]) -> String {
+fn family_name(family: FontFamily, subsets: &[(&Face, Vec<u8>)]) -> String {
     let hash = fnv1a(&canonical_bytes(subsets));
     format!("fg-{hash:016x}-{}", family.css_suffix())
 }
@@ -226,7 +300,7 @@ fn family_name(family: FontFamily, subsets: &[(&'static Face, Vec<u8>)]) -> Stri
 /// The bytes the family hash covers, face by face: the weight, the style, the length of the subset
 /// and the subset itself. Fixed-width integers are little-endian, so the bytes do not depend on the
 /// platform.
-fn canonical_bytes(subsets: &[(&'static Face, Vec<u8>)]) -> Vec<u8> {
+fn canonical_bytes(subsets: &[(&Face, Vec<u8>)]) -> Vec<u8> {
     let mut bytes = Vec::new();
     for (face, data) in subsets {
         bytes.extend_from_slice(&face.weight().css_value().to_le_bytes());
@@ -251,13 +325,18 @@ fn fnv1a(bytes: &[u8]) -> u64 {
     })
 }
 
-fn font_face_rules(name: &str, subsets: &[(&'static Face, Vec<u8>)]) -> String {
+fn font_face_rules(name: &str, subsets: &[(&Face, Vec<u8>)]) -> String {
     let mut css = String::new();
     for (face, data) in subsets {
         let encoded = base64::engine::general_purpose::STANDARD.encode(data);
+        let format = if data.starts_with(b"OTTO") {
+            "otf"
+        } else {
+            "ttf"
+        };
         let _ = write!(
             css,
-            "@font-face{{font-family:\"{name}\";font-weight:{};font-style:{};src:url(data:font/ttf;base64,{encoded})}}",
+            "@font-face{{font-family:\"{name}\";font-weight:{};font-style:{};src:url(data:font/{format};base64,{encoded})}}",
             face.weight().css_value(),
             face.style().css_keyword(),
         );

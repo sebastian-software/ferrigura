@@ -66,7 +66,7 @@ pub fn render(
 
     // The fonts: the lanes' labels and the names are bold, the code is mono, and every glyph drawn
     // is in an embedded subset.
-    let mut runs: Vec<Run<'_>> = Vec::new();
+    let mut runs: Vec<Run<'_, '_>> = Vec::new();
     for lane in &layout.lanes {
         runs.push(Run {
             text: &lane.label,

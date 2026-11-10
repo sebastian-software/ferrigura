@@ -413,7 +413,7 @@ pub fn render(input: &Context<'_, VennDiagram, VennSection<'_>>) -> Result<Strin
         .iter()
         .map(|text| collapse_white_space(text))
         .collect();
-    let runs: Vec<Run<'_>> = collapsed
+    let runs: Vec<Run<'_, '_>> = collapsed
         .iter()
         .map(|text| Run { text, face: sans })
         .collect();

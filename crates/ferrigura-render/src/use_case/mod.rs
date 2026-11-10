@@ -162,7 +162,7 @@ pub fn render(
 
 /// The font subsets of the diagram: every label's runs, in the faces they are set in.
 fn font_families(painted: &Painted<'_>) -> Result<Vec<EmbeddedFamily>, RenderError> {
-    let runs: Vec<Run<'_>> = painted
+    let runs: Vec<Run<'_, '_>> = painted
         .all_labels()
         .flat_map(|label| label.text_runs())
         .collect();
