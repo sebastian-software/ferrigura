@@ -130,6 +130,7 @@ fn add_text(
         .round()
         + WRAP_SLACK;
     let spec = LabelSpec {
+        fonts: crate::fonts::FontContext::bundled(),
         text: &sanitized,
         label_type: LabelType::Markdown,
         width,

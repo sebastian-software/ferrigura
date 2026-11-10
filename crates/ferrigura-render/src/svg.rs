@@ -134,12 +134,21 @@ pub fn number(value: f64) -> String {
 
 /// The `@font-face` rules of the embedded families, in the order given.
 #[must_use]
-pub fn font_faces(families: &[EmbeddedFamily]) -> String {
-    families
+pub fn font_faces(id: &str, families: &[EmbeddedFamily]) -> String {
+    let mut css = families
         .iter()
         .map(|family| family.css.as_str())
         .collect::<Vec<_>>()
-        .join("\n")
+        .join("\n");
+    let variables: String = families
+        .iter()
+        .flat_map(|family| &family.variables)
+        .map(|(name, value)| format!("{name}:{value};"))
+        .collect();
+    if !variables.is_empty() {
+        css.push_str(&format!("#{id}{{{variables}}}"));
+    }
+    css
 }
 
 /// The path of an annular sector, as `d3-shape`'s `arc` writes it: the outer arc from `start` to

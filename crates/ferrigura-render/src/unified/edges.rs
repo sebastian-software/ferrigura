@@ -280,6 +280,7 @@ pub fn label(edge: &Edge, font_size: f64) -> Result<Option<LabelLayout>, RenderE
     }
     let styles = declarations(&label_style_text(edge));
     let spec = LabelSpec {
+        fonts: crate::fonts::FontContext::bundled(),
         text: &edge.label,
         label_type: edge.label_type,
         width: 200.0,

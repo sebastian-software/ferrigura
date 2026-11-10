@@ -46,6 +46,8 @@ pub enum Anchor {
 /// What to lay out: the arguments of `createText`.
 #[derive(Debug, Clone)]
 pub struct LabelSpec<'a> {
+    /// Explicit local fonts and the configured family for this label.
+    pub fonts: crate::fonts::FontContext,
     /// The label text, as the model holds it.
     pub text: &'a str,
     /// How the text is written: plain, a string, or Markdown.
@@ -532,6 +534,7 @@ mod tests {
 
     fn spec<'a>(text: &'a str, label_type: LabelType, styles: &'a [String]) -> LabelSpec<'a> {
         LabelSpec {
+            fonts: crate::fonts::FontContext::bundled(),
             text,
             label_type,
             width: 200.0,

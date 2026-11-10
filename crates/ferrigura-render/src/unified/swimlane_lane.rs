@@ -39,6 +39,7 @@ pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
     let theme = config.theme;
     let styles = style_list(&node.label_style);
     let title = label::layout(&LabelSpec {
+        fonts: crate::fonts::FontContext::bundled(),
         text: &node.label,
         label_type: node.label_type,
         width: node.width.unwrap_or(DEFAULT_TITLE_WIDTH),

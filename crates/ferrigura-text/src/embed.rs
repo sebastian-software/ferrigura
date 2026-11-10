@@ -48,6 +48,8 @@ pub struct EmbeddedFamily {
     /// One `@font-face` rule for each face of the family the diagram uses. Each rule names
     /// [`EmbeddedFamily::name`] and holds the subset as a base64 TTF data URL.
     pub css: String,
+    /// Stable supplied-face variables and their subset family lists, scoped by the SVG writer.
+    pub variables: Vec<(String, String)>,
 }
 
 /// Subsets the faces that `runs` use, to the characters each run draws with them, and returns one
@@ -117,6 +119,7 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
             name,
             css_family: String::new(),
             css,
+            variables: Vec::new(),
         });
     }
     for index in 0..embedded.len() {
@@ -163,6 +166,29 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
             .map(|name| format!("\"{name}\""))
             .collect::<Vec<_>>()
             .join(", ");
+    }
+    // Bind original requested faces, not only the stretches: all glyphs may have fallen back.
+    let mut variables = std::collections::BTreeMap::new();
+    for run in runs {
+        let Some(variable) = run.face.css_variable() else {
+            continue;
+        };
+        let names: Vec<_> = std::iter::once(run.face)
+            .chain(run.face.registered_fallbacks().iter().map(AsRef::as_ref))
+            .filter_map(|face| {
+                embedded
+                    .iter()
+                    .find(|family| {
+                        family.family == face.family()
+                            && family.source_name.eq_ignore_ascii_case(face.family_name())
+                    })
+                    .map(|family| format!("\"{}\"", family.name))
+            })
+            .collect();
+        variables.insert(variable.to_owned(), names.join(", "));
+    }
+    if let Some(first) = embedded.first_mut() {
+        first.variables = variables.into_iter().collect();
     }
     Ok(embedded)
 }

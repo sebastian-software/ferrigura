@@ -51,6 +51,7 @@ pub(crate) fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderE
     let font_size = config.theme.font_size.px().unwrap_or(DEFAULT_FONT_SIZE);
     let label_declarations = super::usecase_actor::declarations(&styles.label);
     let title = label::layout(&LabelSpec {
+        fonts: crate::fonts::FontContext::bundled(),
         text: &node.label,
         label_type: node.label_type,
         width: TITLE_WIDTH,

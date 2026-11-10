@@ -328,6 +328,7 @@ fn layout_label(
     add_background: bool,
 ) -> Result<LabelLayout, RenderError> {
     label::layout(&LabelSpec {
+        fonts: crate::fonts::FontContext::bundled(),
         text,
         label_type: LabelType::Markdown,
         width,

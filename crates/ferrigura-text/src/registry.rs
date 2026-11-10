@@ -81,6 +81,7 @@ impl FontRegistry {
             font: OnceLock::new(),
             data: FontData::Registered(data.into()),
             fallbacks: Vec::new(),
+            variable: OnceLock::new(),
         };
         // Validate the shaper too, before replacing a usable face.
         face.font()?;
@@ -150,6 +151,7 @@ impl FontRegistry {
                 "no registered font matches {families:?}; register a font with FontRegistry::register or register_file"
             )))?;
         let mut resolved = (*primary).clone();
+        resolved.variable = OnceLock::new();
         resolved.fallbacks = Vec::new();
         for candidate in &mut candidates {
             if !candidate

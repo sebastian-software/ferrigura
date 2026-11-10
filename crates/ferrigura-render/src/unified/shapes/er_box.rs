@@ -422,6 +422,7 @@ fn label_layout(
         .map(str::to_owned)
         .collect();
     label::layout(&LabelSpec {
+        fonts: crate::fonts::FontContext::bundled(),
         text,
         label_type,
         width,

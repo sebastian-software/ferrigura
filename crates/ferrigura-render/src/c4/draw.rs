@@ -122,6 +122,7 @@ fn text_face(bold: bool, italic: bool) -> &'static TextFace {
 /// The text measurement style of a configured font.
 pub fn style_of(font: &Font, size: f64, weight: f64) -> TextStyle {
     TextStyle {
+        fonts: crate::fonts::FontContext::bundled(),
         font_size: size,
         font_weight: weight,
         font_family: font.family.clone(),

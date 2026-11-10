@@ -42,6 +42,7 @@ pub(super) fn rect_with_title(
     // `createLabel`: plain text, never wrapped, with the title class.
     let text = |text: &str| -> Result<LabelLayout, RenderError> {
         label::layout(&LabelSpec {
+            fonts: crate::fonts::FontContext::bundled(),
             text,
             label_type: LabelType::Text,
             width: f64::INFINITY,

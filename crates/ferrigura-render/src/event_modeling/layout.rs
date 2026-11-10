@@ -119,6 +119,7 @@ pub fn measured(error: MeasureError) -> RenderError {
 #[must_use]
 pub fn measure_style() -> TextStyle {
     TextStyle {
+        fonts: crate::fonts::FontContext::bundled(),
         font_size: MEASURE_FONT_SIZE,
         font_weight: MEASURE_FONT_WEIGHT,
         font_family: MEASURE_FONT_FAMILY.to_owned(),

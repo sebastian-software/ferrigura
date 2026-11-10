@@ -305,6 +305,7 @@ impl Builder<'_, '_> {
             .collect();
         let label = label::layout_inheriting(
             &LabelSpec {
+                fonts: crate::fonts::FontContext::bundled(),
                 text: &text,
                 label_type: LabelType::Markdown,
                 width,

@@ -79,7 +79,7 @@ pub fn style_sheet(
     let faces = if families.is_empty() {
         String::new()
     } else {
-        font_faces(families)
+        font_faces(svg_id, families)
     };
     let mut css = custom_properties(svg_id, theme, globals);
     css.push_str(&format!(

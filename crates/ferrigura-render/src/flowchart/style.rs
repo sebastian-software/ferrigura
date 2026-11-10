@@ -240,7 +240,7 @@ pub fn style_sheet_with_fonts(
     let faces = if families.is_empty() {
         String::new()
     } else {
-        font_faces(families)
+        font_faces(svg_id, families)
     };
     css_text(&format!(
         "{faces}{}{}",
@@ -693,6 +693,7 @@ mod tests {
     #[test]
     fn embedded_fonts_are_named_by_the_rules_and_declared_first() {
         let family = ferrigura_text::EmbeddedFamily {
+            variables: Vec::new(),
             source_name: "Lexica Ultralegible".to_owned(),
             family: ferrigura_text::FontFamily::Sans,
             name: "fg-0123456789abcdef-sans".to_owned(),

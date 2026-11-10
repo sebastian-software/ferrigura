@@ -229,7 +229,7 @@ pub fn render_with_animation(
     let faces = if families.is_empty() {
         String::new()
     } else {
-        font_faces(&families)
+        font_faces(input.id, &families)
     };
 
     let title = decode_entities(&diagram.acc_title);

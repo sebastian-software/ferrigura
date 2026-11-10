@@ -36,8 +36,7 @@
 use std::collections::HashMap;
 
 use ferrigura_text::{
-    Extent, Face, FontFamily, FontStyle, FontWeight, TextError, face, layout_width, measure,
-    measure_box, text_box,
+    Extent, Face, FontStyle, FontWeight, TextError, layout_width, measure, measure_box, text_box,
 };
 
 use super::is_js_whitespace;
@@ -51,6 +50,8 @@ use crate::svg::number;
 /// memo key and is measured in the bundled sans face.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TextStyle {
+    /// Explicit font inputs used to resolve the requested family and weight.
+    pub fonts: crate::fonts::FontContext,
     /// The font size in pixels.
     pub font_size: f64,
     /// The CSS font weight.
@@ -121,13 +122,12 @@ impl From<TextError> for MeasureError {
 /// The face a style is measured in. `font-weight` above 500 takes the bold face, as the CSS font
 /// matching of Chromium does with the two faces that exist (400 and 700): 600 measures as 700 and
 /// 300 as 400 (checked in the probe).
-fn face_of(style: &TextStyle) -> &'static Face {
-    let weight = if style.font_weight > 500.0 {
-        FontWeight::Bold
-    } else {
-        FontWeight::Normal
-    };
-    face(FontFamily::Sans, weight, FontStyle::Normal)
+fn face_of(style: &TextStyle) -> Result<crate::fonts::FontFace, TextError> {
+    let weight = FontWeight::Number(style.font_weight.clamp(1.0, 1000.0) as u16);
+    style
+        .fonts
+        .with_family(&style.font_family)
+        .face(weight, FontStyle::Normal)
 }
 
 /// Splits a text at its `<br>` tags, as `text.split(lineBreakRegex)` does: the tag is `<br>`,
@@ -244,18 +244,18 @@ pub fn collapsed_box(face: &'static Face, text: &str, size: f64) -> Result<Exten
 /// The width and the height of one line, before rounding: the width of the box `getBBox` gives it,
 /// and the text box.
 fn line_metrics(line: &str, style: &TextStyle) -> Result<(f64, f64), MeasureError> {
-    let face = face_of(style);
+    let face = face_of(style)?;
     let size = style.font_size;
     if line.is_empty() {
         // `line || ZERO_WIDTH_SPACE`: the zero-width space has no advance, and the box of one line.
-        return Ok((0.0, text_box(face, size)?.height));
+        return Ok((0.0, text_box(&face, size)?.height));
     }
     let shown = collapse_white_space(line);
     if shown.is_empty() {
         return Err(MeasureError::NotInRenderTree);
     }
-    let width = measure_box(face, &shown, laid_out_size(size))?.width();
-    Ok((width, text_box(face, size)?.height))
+    let width = measure_box(&face, &shown, laid_out_size(size))?.width();
+    Ok((width, text_box(&face, size)?.height))
 }
 
 /// The size Chromium lays SVG text out at: floored to 1/100 px. The probe shows the advance of a
@@ -480,6 +480,7 @@ mod tests {
 
     fn style(size: f64) -> TextStyle {
         TextStyle {
+            fonts: crate::fonts::FontContext::bundled(),
             font_size: size,
             font_weight: 400.0,
             font_family: "\"Lexica Ultralegible\"".to_owned(),

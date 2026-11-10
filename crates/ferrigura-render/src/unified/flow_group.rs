@@ -45,6 +45,7 @@ pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
             _ => f64::INFINITY,
         };
         Some(label::layout(&LabelSpec {
+            fonts: crate::fonts::FontContext::bundled(),
             text: &node.label,
             label_type: node.label_type,
             width,

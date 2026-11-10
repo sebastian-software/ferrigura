@@ -86,6 +86,7 @@ fn rect(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
         _ => f64::INFINITY,
     };
     let title = label::layout(&LabelSpec {
+        fonts: crate::fonts::FontContext::bundled(),
         text: &node.label,
         label_type: node.label_type,
         width,
@@ -165,6 +166,7 @@ fn colour_slot(node: &Node, config: &Config<'_>) -> (Option<usize>, String) {
 fn rounded_with_title(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
     let (_, color_id) = colour_slot(node, config);
     let title = label::layout(&LabelSpec {
+        fonts: crate::fonts::FontContext::bundled(),
         text: &node.label,
         label_type: LabelType::Text,
         width: f64::INFINITY,

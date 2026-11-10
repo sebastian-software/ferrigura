@@ -47,6 +47,7 @@ pub fn measure(edge: &Edge) -> Result<Vec<Terminal>, RenderError> {
             continue;
         };
         let spec = LabelSpec {
+            fonts: crate::fonts::FontContext::bundled(),
             text,
             label_type: LabelType::Markdown,
             width: WRAP_WIDTH,

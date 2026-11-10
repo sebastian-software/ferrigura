@@ -232,7 +232,7 @@ impl Renderer {
                 light_tokens: Cow::Borrowed(&self.light_tokens),
                 dark_tokens: Cow::Borrowed(&self.dark_tokens),
                 scheme,
-                fonts: self.fonts.as_deref(),
+                fonts: self.fonts.as_ref(),
             });
         }
         let view = View::resolve(&self.site, plugin, &directive).map_err(RenderError::Config)?;
@@ -262,7 +262,7 @@ impl Renderer {
             light_tokens,
             dark_tokens,
             scheme,
-            fonts: self.fonts.as_deref(),
+            fonts: self.fonts.as_ref(),
         })
     }
 
@@ -353,10 +353,15 @@ impl RendererBuilder {
             weight,
             style,
         )?;
-        if first && let Value::Object(config) = &mut self.config {
-            config
-                .entry("fontFamily".into())
-                .or_insert(Value::String(family));
+        if first {
+            if !self.config.is_object() {
+                self.config = Value::empty_object();
+            }
+            if let Value::Object(config) = &mut self.config {
+                config
+                    .entry("fontFamily".into())
+                    .or_insert(Value::String(family));
+            }
         }
         Ok(self)
     }
@@ -551,7 +556,7 @@ impl View {
 
 /// What a render needs besides its diagram: see [`Renderer::prepare`].
 struct Prepared<'a> {
-    fonts: Option<&'a FontRegistry>,
+    fonts: Option<&'a Arc<FontRegistry>>,
     id: String,
     view: Arc<View>,
     light_tokens: Cow<'a, ThemeTokens>,
@@ -847,6 +852,26 @@ mod font_input_tests {
             renderer.view(diagrams::pie()).unwrap().globals.font_family,
             "Chosen"
         );
+    }
+
+    #[test]
+    fn ignored_root_config_values_still_choose_the_first_supplied_family() {
+        for config in [
+            Value::Null,
+            Value::Bool(true),
+            Value::String("ignored".into()),
+        ] {
+            assert!(Renderer::new(&config).render("pie\n \"A\": 1").is_ok());
+            let renderer = Renderer::builder(&config)
+                .with_all()
+                .font("Fixture", SANS.to_vec())
+                .unwrap()
+                .build();
+            assert_eq!(
+                renderer.view(diagrams::pie()).unwrap().globals.font_family,
+                "Fixture"
+            );
+        }
     }
 
     #[test]

@@ -93,6 +93,7 @@ fn text(
     baseline: Baseline,
 ) -> Result<Text, RenderError> {
     let layout = label::layout(&LabelSpec {
+        fonts: crate::fonts::FontContext::bundled(),
         text: label_text,
         label_type: LabelType::Markdown,
         width,
