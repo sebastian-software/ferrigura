@@ -30,7 +30,13 @@ impl<Model, Section> Context<'_, Model, Section> {
     /// The primary configured family and explicit font inputs for this render.
     #[must_use]
     pub fn text_fonts(&self) -> crate::fonts::FontContext {
-        crate::fonts::FontContext::new(self.fonts, &self.globals.font_family)
+        let family = self
+            .theme
+            .light
+            .font_family
+            .text()
+            .unwrap_or_else(|| self.globals.font_family.clone());
+        crate::fonts::FontContext::new(self.fonts, &family)
     }
 }
 

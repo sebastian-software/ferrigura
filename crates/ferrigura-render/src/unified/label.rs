@@ -340,15 +340,24 @@ pub fn layout_inheriting(
     };
 
     let width = spec.width;
-    let normal = spec
-        .fonts
-        .face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Normal)?;
-    let strong = spec
-        .fonts
-        .face(inherited.unwrap_or(FontWeight::Bold), FontStyle::Normal)?;
-    let emphasis = spec
-        .fonts
-        .face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Italic)?;
+    let fonts = spec
+        .styles
+        .iter()
+        .flat_map(|style| style.split(';'))
+        .filter_map(|declaration| declaration.split_once(':'))
+        .filter(|(property, _)| property.trim().eq_ignore_ascii_case("font-family"))
+        .map(|(_, value)| {
+            let value = value.trim();
+            strip_suffix_ignore_case(value, "!important").map_or(value, str::trim_end)
+        })
+        .next_back()
+        .map_or_else(
+            || spec.fonts.clone(),
+            |family| spec.fonts.with_family(family),
+        );
+    let normal = fonts.face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Normal)?;
+    let strong = fonts.face(inherited.unwrap_or(FontWeight::Bold), FontStyle::Normal)?;
+    let emphasis = fonts.face(inherited.unwrap_or(FontWeight::Normal), FontStyle::Italic)?;
     let mut wrapped: Vec<Vec<Word>> = Vec::new();
     for line in &lines {
         let words: Vec<Word> = line

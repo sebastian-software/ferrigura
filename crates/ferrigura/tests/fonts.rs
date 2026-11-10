@@ -166,3 +166,66 @@ fn supplied_weight_and_style_fallbacks_keep_distinct_measured_designs() {
     assert!(svg.contains("font-weight:500"));
     assert!(svg.contains("font-weight:800"));
 }
+
+#[test]
+fn a_node_declared_family_measures_and_draws_the_registered_design() {
+    let renderer = Renderer::builder(&Value::empty_object())
+        .with_all()
+        .font("Primary", SANS.to_vec())
+        .unwrap()
+        .font("Other", MONO.to_vec())
+        .unwrap()
+        .build();
+    let styled = renderer
+        .render("flowchart LR\n A[AVATAR width]\n style A font-family:Other")
+        .unwrap();
+    let expected = self::renderer(MONO)
+        .render("flowchart LR\n A[AVATAR width]")
+        .unwrap();
+    assert_eq!(view_box(&styled), view_box(&expected));
+}
+
+#[test]
+fn a_theme_family_override_uses_its_registered_design() {
+    let config = Value::from(serde_json::json!({"themeVariables":{"fontFamily":"Other"}}));
+    let renderer = Renderer::builder(&config)
+        .with_all()
+        .font("Primary", SANS.to_vec())
+        .unwrap()
+        .font("Other", MONO.to_vec())
+        .unwrap()
+        .build();
+    let actual = renderer.render("flowchart LR\n A[AVATAR width]").unwrap();
+    let expected = self::renderer(MONO)
+        .render("flowchart LR\n A[AVATAR width]")
+        .unwrap();
+    assert_eq!(view_box(&actual), view_box(&expected));
+}
+
+#[test]
+fn an_edge_declared_family_binds_the_design_that_measured_its_label() {
+    let renderer = Renderer::builder(&Value::empty_object())
+        .with_all()
+        .font("Primary", SANS.to_vec())
+        .unwrap()
+        .font("Other", MONO.to_vec())
+        .unwrap()
+        .build();
+    let svg = renderer
+        .render("flowchart LR\n A -->|AVATAR| B\n linkStyle 0 font-family:Other")
+        .unwrap();
+    let mut registry = ferrigura::FontRegistry::new();
+    registry
+        .register(
+            "Other",
+            MONO.to_vec(),
+            FontWeight::Normal,
+            FontStyle::Normal,
+        )
+        .unwrap();
+    let other = registry
+        .resolve("Other", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    let binding = format!("font-family:var({})", other.css_variable().unwrap());
+    assert!(svg.contains(&binding), "edge font binding is missing");
+}
