@@ -1,0 +1,19 @@
+Give every nonempty SVG edge-label background full opacity in the shared createText path. State, block and agentflow styles otherwise halve it even when the theme color is opaque. Preserve the fill's explicit alpha and authored declarations. This changes paint only, without resizing or moving labels; patch 11 keeps the flowchart stylesheet comparison consistent.
+
+diff --git a/packages/mermaid/src/rendering-util/createText.ts b/packages/mermaid/src/rendering-util/createText.ts
+--- a/packages/mermaid/src/rendering-util/createText.ts
++++ b/packages/mermaid/src/rendering-util/createText.ts
+@@ -399,7 +399,11 @@ export const createText = async (
+         .replace(/background:/g, 'fill:');
+       select(svgLabel)
+         .select('rect')
+-        .attr('style', edgeLabelRectStyle.replace(/background:/g, 'fill:'));
++        .attr(
++          'style',
++          (text && addSvgBackground ? 'opacity:1;' : '') +
++            edgeLabelRectStyle.replace(/background:/g, 'fill:')
++        );
+-
++
+       // for text, update fill color with `color`
+       const edgeLabelTextStyle = style

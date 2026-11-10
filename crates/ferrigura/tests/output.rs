@@ -426,3 +426,60 @@ fn compat_switches_optimizations_per_render_without_leaking() {
         );
     }
 }
+
+#[test]
+fn edge_labels_mask_their_lines_across_diagram_types_and_render_modes() {
+    let sources = [
+        "flowchart LR\n A -->|readable| B\n",
+        "classDiagram\n A --> B : readable\n",
+        "stateDiagram-v2\n A --> B : readable\n",
+        "erDiagram\n A ||--o{ B : readable\n",
+        "agentflow-beta LR\n A -->|readable| B\n",
+        "block\n A -- \"readable\" --> B\n",
+        "usecase-beta\n actor A\n B(Read)\n A -- \"readable\" --> B\n",
+        "requirementDiagram\n requirement A {\n id: 1\n text: Readable\n risk: low\n verifymethod: test\n }\n element B {\n type: hardware\n }\n B - satisfies -> A\n",
+    ];
+    for source in sources {
+        for look in ["classic", "neo"] {
+            for scheme in [ColorScheme::Light, ColorScheme::Dark, ColorScheme::Auto] {
+                for compat in [false, true] {
+                    let svg = render_with(
+                        source,
+                        &Value::from(serde_json::json!({ "look": look })),
+                        &RenderOptions {
+                            compat,
+                            color_scheme: Some(scheme),
+                            ..RenderOptions::default()
+                        },
+                    )
+                    .expect("renders");
+                    let doc = roxmltree::Document::parse(&svg).expect("valid SVG");
+                    let backgrounds: Vec<_> = doc
+                        .descendants()
+                        .filter(|node| {
+                            node.has_tag_name("rect")
+                                && node.attribute("class") == Some("background")
+                                && node.attribute("width").is_some()
+                                && node.ancestors().any(|ancestor| {
+                                    ancestor.attribute("class") == Some("edgeLabel")
+                                })
+                        })
+                        .collect();
+                    assert!(!backgrounds.is_empty(), "no edge label: {source}");
+                    for background in backgrounds {
+                        // A shared inline default must win over the per-type half-opacity CSS.
+                        // Keep fill in the theme, so explicitly transparent colors still apply.
+                        let style = background.attribute("style").unwrap_or_default();
+                        assert!(
+                            style
+                                .split(';')
+                                .any(|declaration| declaration == "opacity:1"),
+                            "{source}, {look}, {scheme:?}, compat={compat}: {style}"
+                        );
+                        assert!(!style.contains("fill:"), "{style}");
+                    }
+                }
+            }
+        }
+    }
+}

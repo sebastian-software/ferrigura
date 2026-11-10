@@ -326,7 +326,7 @@ Where an engine's numbers must match, the port keeps the source's expression tre
 
 ### HTML and SVG edge-label backgrounds differ
 
-Mermaid's HTML-label path gives the paragraph inside an edge label its own background color. The SVG-label path applies an additional opacity of 0.5 to its background rectangle. Changing `edgeLabelBackground` to an opaque color does not remove that multiplier. Ferrigura uses full-opacity rectangles with the same theme color in both routing modes; reference patch 11 removes the multiplier without changing geometry. The theme color's explicit alpha channel still applies ([0019](./decisions/0019-adaptive-flowchart-mode.md)).
+Mermaid's HTML-label path gives the paragraph inside an edge label its own background color. The SVG-label path applies an additional opacity of 0.5 to its background rectangle. Changing `edgeLabelBackground` to an opaque color does not remove that multiplier. Ferrigura applies full opacity once in the shared edge-label painter, retaining each type's theme fill in both render modes. State, block and agentflow otherwise repeat the same half-opacity bug as flowcharts. Reference patch 12 applies the shared correction in `createText`; patch 11 also corrects the flowchart stylesheet. Neither changes geometry. The theme color's explicit alpha channel still applies ([0019](./decisions/0019-adaptive-flowchart-mode.md)).
 
 ### Edge storage does not identify the layout container
 

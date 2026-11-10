@@ -67,6 +67,8 @@ Quirks of the reference that are kept on purpose:
 - The unified edge drawing takes the `flowchart` section's `curve` for state diagrams; the reference reads a `curve` at the top level of its configuration, which no configuration sets. The two agree unless a user sets `flowchart.curve` for a state diagram.
 - Fixtures with `look: handDrawn` are not compared in the geometry run.
 
+Edge-label backgrounds use the shared full-opacity default in both render modes, preserving explicit theme color transparency. Reference patch 12 applies the same paint-only correction without changing layout ([0019](../decisions/0019-adaptive-flowchart-mode.md)).
+
 ## Checking it
 
 - `pnpm -C tools/port port:diff state` compares the canonical models on both fixture folders (`state-diagram`, `state-diagram-v2`), the state inputs of `e2e/platform/dev-diagrams`, the specs and the docs; the reference's detector runs first.

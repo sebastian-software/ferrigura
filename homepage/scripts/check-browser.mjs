@@ -132,6 +132,7 @@ async function verifyCompareSlider(page, origin) {
   await page.goto(new URL('/comparisons/side-by-side/', origin).href, { waitUntil: 'load' });
   assert.equal(await page.locator('.fgr-side').count(), 10, 'The page needs ten figures');
   await verifyComparisonFonts(page);
+  await verifyComparisonLabels(page);
   const slider = page.locator('.fgr-compare').nth(3);
   await slider.scrollIntoViewIfNeeded();
   await verifyAlignment(slider);
@@ -140,6 +141,27 @@ async function verifyCompareSlider(page, origin) {
   await page.keyboard.press('ArrowLeft');
   assert.equal(await input.inputValue(), '49', 'The arrow keys do not move the divider');
   await verifyTap(page, slider, input);
+}
+
+/** Shared SVG edge-label backgrounds mask lines in every graph specimen. */
+async function verifyComparisonLabels(page) {
+  for (const type of ['flowchart', 'class', 'state', 'er']) {
+    const backgrounds = await page
+      .locator(`#ferrigura-${type} .edgeLabel rect.background[width]`)
+      .evaluateAll((rectangles) =>
+        rectangles.map((rectangle) => ({
+          opacity: getComputedStyle(rectangle).opacity,
+          fillOpacity: getComputedStyle(rectangle).fillOpacity,
+          fill: getComputedStyle(rectangle).fill,
+        }))
+      );
+    assert(backgrounds.length > 0, `${type} needs edge labels`);
+    for (const background of backgrounds) {
+      assert.equal(background.opacity, '1', `${type} labels must mask their lines`);
+      assert.equal(background.fillOpacity, '1', `${type} labels must keep the theme fill`);
+      assert.notEqual(background.fill, 'none', `${type} labels need a background`);
+    }
+  }
 }
 
 /** Standalone subsets and regular flowchart text stay active in the inline comparison. */
