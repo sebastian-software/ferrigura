@@ -46,15 +46,17 @@ renderer owns a copy, so later file or buffer changes do not affect it.
 
 The first registered family is the default unless configuration explicitly sets
 `fontFamily`. Register additional faces and set `fallbacks: ['Symbols']` to name
-an ordered fallback chain. Every family used in custom-font mode must be
-registered, including fallbacks. No system fonts or network sources are loaded.
+an ordered fallback chain. The primary CSS family list must resolve to a
+registered face. Unknown names in that list or fallback chain are skipped; they
+never trigger system-font discovery or network loading.
 
 The same font object is the fourth argument of `render(text, config, options,
 fonts)`. Fonts are renderer initialization inputs; the existing third argument
 and `renderer.render` take only per-render SVG options. Missing files, invalid
 font bytes, unsupported metadata, and ambiguous sources throw before rendering.
 Front matter and init directives can select registered names, but cannot supply
-font files or URLs. Used glyphs remain embedded as subsets. Omitting font
+font files or URLs. TrueType faces embed subsets of used glyphs; CFF/CFF2
+currently embed the complete face and can produce larger SVGs. Omitting font
 options preserves the bundled defaults.
 
 ## Draw animation

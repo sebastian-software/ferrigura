@@ -31,6 +31,9 @@ function fontInputs(options) {
           `font ${JSON.stringify(face.family)} needs exactly one of path or data`
         );
       }
+      if (path != null && typeof path !== 'string') {
+        throw new TypeError('font path must be a string');
+      }
       return { ...face, data: path == null ? data : readFileSync(path) };
     }),
   };

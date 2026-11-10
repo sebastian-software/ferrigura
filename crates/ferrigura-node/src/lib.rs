@@ -171,7 +171,9 @@ fn font_builder(
                     )
                 })?;
         }
-        if let Some(fallbacks) = input.fallbacks {
+        if let Some(fallbacks) = input.fallbacks
+            && !fallbacks.is_empty()
+        {
             builder = builder.font_fallbacks(fallbacks);
         }
     }

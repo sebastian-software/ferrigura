@@ -176,3 +176,12 @@ void test('font registration errors are eager and numeric metadata stays bounded
     /font style/
   );
 });
+
+void test('empty host font options preserve bundled defaults', () => {
+  const text = 'pie\n"Defaults" : 1\n';
+  const baseline = render(text);
+  for (const fonts of [{}, { fonts: [] }, { fallbacks: [] }, { fonts: [], fallbacks: [] }]) {
+    assert.equal(render(text, undefined, undefined, fonts), baseline);
+    assert.equal(new Renderer(undefined, fonts).render(text), baseline);
+  }
+});

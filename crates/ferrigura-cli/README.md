@@ -68,14 +68,17 @@ Paths are relative to the process directory and can contain `:` or `=`.
 
 Register fallback faces with `--font` or `--font-face`, then give their names in
 order with repeatable `--font-fallback "Symbols"`. When custom fonts are used,
-every requested or fallback family must be explicitly registered. A fallback
-can supply an entire label. Font bytes are loaded and validated before input is
+the primary CSS family list must resolve to a registered face. Unknown names
+in that list or the explicit fallback chain are skipped; they never trigger
+discovery. A registered fallback can supply an entire label. Font bytes are loaded and validated before input is
 read or output is created; an unreadable or invalid file exits with status 1.
 Malformed font flags exit with status 2.
 
 Mermaid configuration, front matter, and init directives can select registered
 family names, but cannot register paths or URLs. SVG output continues to embed
-its used font subsets. Without these flags, bundled defaults are unchanged.
+its used font data. TrueType faces are subset to used glyphs; CFF/CFF2 faces
+currently embed the complete face and can produce larger SVGs. Without these
+flags, bundled defaults are unchanged.
 
 ## Examples
 

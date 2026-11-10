@@ -27,7 +27,7 @@ export type FontFace = {
 /** Font registration belongs to renderer initialization, not per-render SVG options. */
 export type FontOptions = {
   fonts?: readonly FontFace[];
-  /** Ordered fallback family names. Every family must be explicitly registered. */
+  /** Ordered fallback names, resolved only against registered faces. */
   fallbacks?: readonly string[];
 };
 /** Render Mermaid source to an SVG string. Throws on invalid source or configuration. */

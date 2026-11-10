@@ -87,10 +87,14 @@ Each face has a family name, required `Uint8Array` data (including `Buffer`), an
 optional integer weight from 1 through 1000 (default 400), and optional style
 `'normal'` (default) or `'italic'`. Font bytes are validated and copied during
 construction. The first registered family is used unless configuration names a
-family explicitly. `fallbacks` lists additional registered family names in order.
+family explicitly. `fallbacks` lists additional family names in order. The
+primary CSS family list must resolve to a registered face; unknown names in that
+list or fallback chain are skipped without file discovery or network loading.
 The same object is the fourth argument of `render`; per-render SVG options stay
 in the existing third argument. Invalid registration throws immediately. Used
-font subsets stay embedded, and calls without fonts preserve bundled defaults.
+font data stays embedded: TrueType faces are subset to used glyphs, while
+CFF/CFF2 currently embed the complete face and can produce larger SVGs. Calls
+without fonts preserve bundled defaults.
 
 ## What the addon does not take
 

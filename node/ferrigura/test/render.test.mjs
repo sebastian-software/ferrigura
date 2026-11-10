@@ -110,6 +110,10 @@ test('facade rejects ambiguous sources and propagates local-file and registratio
     /font style/
   );
   assert.throws(
+    () => new Renderer(undefined, { fonts: [{ family: 'Invalid Path', path: 0 }] }),
+    /font path must be a string/
+  );
+  assert.throws(
     () => new Renderer(undefined, { fonts: [{ family: 'Absent', path: `${fontPath}.missing` }] }),
     /ENOENT/
   );
@@ -151,5 +155,14 @@ test('a file is read once when its renderer is constructed', () => {
     );
   } finally {
     rmSync(scratch, { recursive: true, force: true });
+  }
+});
+
+test('empty host font options preserve bundled defaults', () => {
+  const text = 'pie\n"Defaults" : 1\n';
+  const baseline = render(text);
+  for (const fonts of [{}, { fonts: [] }, { fallbacks: [] }, { fonts: [], fallbacks: [] }]) {
+    assert.equal(render(text, undefined, undefined, fonts), baseline);
+    assert.equal(new Renderer(undefined, fonts).render(text), baseline);
   }
 });
