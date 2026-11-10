@@ -473,10 +473,9 @@ export type JsonValue =
 /**
  * The font families the reference names in its own code instead of the configured font:
  * eventmodeling measures in `"trebuchet ms", verdana, arial` (the classic default), cytoscape (the
- * architecture labels) in `Helvetica Neue, Helvetica`, and C4 in `"Open Sans"`. ferrigura ships one
- * face and measures with it (decision 0010), so the page maps these names onto the same Lexica files:
- * the reference then measures the same text in the same font, and what it computes is unchanged
- * (`docs/LEARNINGS.md`, "Where the reference names a font, both sides measure the bundled one").
+ * architecture labels) in `Helvetica Neue, Helvetica`, and C4 in `"Open Sans"`. The use-case
+ * configuration fixture requests Georgia. Both hosts map these aliases onto the same explicitly
+ * registered local fixture files, so each measures the same text in the same font (decision 0010).
  */
 export const MAPPED_FAMILIES: readonly string[] = [
   'trebuchet ms',
@@ -485,6 +484,7 @@ export const MAPPED_FAMILIES: readonly string[] = [
   'Helvetica Neue',
   'Helvetica',
   'Open Sans',
+  'Georgia',
 ];
 
 const TEXT_FONT = process.env.FERRIGURA_GEOMETRY_FONT ?? 'lexica';
