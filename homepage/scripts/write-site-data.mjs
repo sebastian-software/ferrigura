@@ -29,7 +29,12 @@ for (const document of documents) {
   );
   const destination = new URL(`${document.path}.md`, routes);
   await mkdir(new URL('.', destination), { recursive: true });
-  await writeFile(destination, `---\ntitle: ${JSON.stringify(document.title)}\n---\n${content}`);
+  const heading = await format('frontmatter.yaml', `title: ${JSON.stringify(document.title)}\n`, {
+    printWidth: 100,
+    singleQuote: true,
+  });
+  if (heading.errors.length) throw new Error(`Cannot format ${document.source} front matter`);
+  await writeFile(destination, `---\n${heading.code}---\n${content}`);
 }
 
 const cargo = await readFile(new URL('Cargo.toml', repository), 'utf8');
