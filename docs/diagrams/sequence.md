@@ -91,4 +91,9 @@ The renderer ports `sequenceRenderer.ts`, `svgDraw.js`, `styles.js` and `actorBa
 
 ## Font inputs
 
-The resolved global `fontFamily` supplies actor, note, and message roles, as the reference’s top-level configuration overrides their section families. `actorFontWeight`, `noteFontWeight`, and `messageFontWeight` select the supplied design for each role. Sequence numbers use the message role’s binding. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+The resolved global `fontFamily` supplies actor, note, and message roles, as the reference’s top-level configuration overrides their section families. `actorFontWeight`, `noteFontWeight`, and `messageFontWeight` select the supplied design for each role. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
+
+Autonumbers use the regular primary independently of `messageFontWeight`. Supplied-font output
+inherits the embedded regular root family; compatible no-input output retains the reference's
+literal `sans-serif`. The geometry harness pins only the reference's autonumber family to its
+explicit fixture, so system sans-serif metrics cannot enter the supplied-font comparison.

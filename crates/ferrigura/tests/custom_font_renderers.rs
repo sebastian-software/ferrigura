@@ -265,7 +265,10 @@ fn export_custom_renderer_browser_fixtures() {
     std::fs::create_dir_all(&directory).unwrap();
     let mut files = Vec::new();
     for (variant, bytes, bold) in [("sans", SANS, MONO), ("mono", MONO, SANS)] {
-        let renderer = Renderer::builder(&config())
+        let proof_config = Value::from(serde_json::json!({
+            "fontFamily":"Fixture", "sequence":{"messageFontWeight":700}
+        }));
+        let renderer = Renderer::builder(&proof_config)
             .with_all()
             .font("Fixture", bytes.to_vec())
             .unwrap()

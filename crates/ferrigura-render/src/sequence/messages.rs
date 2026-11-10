@@ -524,11 +524,13 @@ impl Renderer<'_> {
             .with("y", number(line_start_y + 4.0))
             .with(
                 "font-family",
-                self.conf
-                    .message_font
-                    .css_family
-                    .as_deref()
-                    .unwrap_or("sans-serif"),
+                // The reference's number is regular sans, independent of messageFontWeight.
+                // Supplied mode inherits the resolved regular root; compatibility keeps its name.
+                if self.conf.message_font.css_family.is_some() {
+                    "inherit"
+                } else {
+                    "sans-serif"
+                },
             )
             .with("font-size", font_size)
             .with("text-anchor", "middle")

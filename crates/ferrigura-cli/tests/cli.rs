@@ -2,7 +2,7 @@
 //! for a diagram or configuration that does not render, and 2 for a command line that does not parse.
 
 use std::fs;
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 
@@ -56,6 +56,16 @@ fn compat_selects_reference_routing_and_the_removed_option_is_rejected() {
     assert!(stderr(&invalid).contains("unknown option --flowchart-mode"));
 }
 
+#[test]
+fn argument_errors_are_captured_when_stdin_closes_early() {
+    // Larger than a pipe buffer: the rejected command cannot consume this before exiting.
+    let input = "x".repeat(8 * 1024 * 1024);
+    let output = run(&["--not-an-option"], &input);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(stdout(&output).is_empty());
+    assert!(stderr(&output).contains("unknown option --not-an-option"));
+}
+
 fn run(args: &[&str], input: &str) -> Output {
     let mut child = Command::new(env!("CARGO_BIN_EXE_ferrigura"))
         .args(args)
@@ -64,12 +74,19 @@ fn run(args: &[&str], input: &str) -> Output {
         .stderr(Stdio::piped())
         .spawn()
         .expect("the binary starts");
-    child
+    let write_result = child
         .stdin
         .take()
         .expect("standard input is piped")
-        .write_all(input.as_bytes())
-        .expect("the input is written");
+        .write_all(input.as_bytes());
+    if let Err(error) = write_result {
+        // Usage errors can close stdin before it is written; callers still check the child result.
+        assert_eq!(
+            error.kind(),
+            ErrorKind::BrokenPipe,
+            "the input is written: {error}"
+        );
+    }
     child.wait_with_output().expect("the binary finishes")
 }
 
