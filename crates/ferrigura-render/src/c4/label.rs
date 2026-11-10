@@ -143,8 +143,11 @@ fn section_group(section: &Section, fill: &str) -> String {
             number(y),
         ));
         for run in &line.runs {
+            let binding = run.face.css_reference().map_or_else(String::new, |css| {
+                format!(" style=\"font-family:{};\"", escape(&css))
+            });
             out.push_str(&format!(
-                "<tspan class=\"text-inner-tspan\">{}</tspan>",
+                "<tspan class=\"text-inner-tspan\"{binding}>{}</tspan>",
                 escape(&run.text),
             ));
         }

@@ -679,7 +679,7 @@ mod tests {
         .unwrap();
         let sum = layout_width(
             measure(
-                &*code_face(&crate::fonts::FontContext::bundled(), bold_style()).unwrap(),
+                &code_face(&crate::fonts::FontContext::bundled(), bold_style()).unwrap(),
                 "abc",
                 14.0,
             )

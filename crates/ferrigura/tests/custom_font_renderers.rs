@@ -223,3 +223,94 @@ fn explicit_c4_family_roles_remain_strict_after_global_inheritance() {
     assert!(error.contains("MissingPerson"), "{error}");
     assert!(error.contains("register"), "{error}");
 }
+
+#[test]
+fn c4_section_markup_keeps_each_measured_run_design() {
+    let renderer = Renderer::builder(&config())
+        .with_all()
+        .font("Fixture", SANS.to_vec())
+        .unwrap()
+        .font_face(
+            "Fixture",
+            MONO.to_vec(),
+            FontWeight::Bold,
+            FontStyle::Normal,
+        )
+        .unwrap()
+        .build();
+    let svg = renderer.render(CASES[5].1).unwrap();
+    let document = roxmltree::Document::parse(&svg).unwrap();
+    let binding = |class| {
+        document
+            .descendants()
+            .find(|node| node.attribute("class") == Some(class))
+            .unwrap()
+            .descendants()
+            .find(|node| node.attribute("class") == Some("text-inner-tspan"))
+            .unwrap()
+            .attribute("style")
+            .unwrap()
+    };
+    assert!(binding("c4-name").starts_with("font-family:var(--fg-font-"));
+    assert_ne!(binding("c4-name"), binding("c4-type"));
+}
+
+/// The browser harness consumes these exact public-API fixtures, including their role inheritance.
+/// Distinct regular/bold/italic designs expose CSS that accidentally inherits the primary family.
+#[test]
+#[ignore = "exports fixtures for pnpm -C tools/port test:custom-font-renderers"]
+fn export_custom_renderer_browser_fixtures() {
+    let directory =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target/custom-font-renderers");
+    std::fs::create_dir_all(&directory).unwrap();
+    let mut files = Vec::new();
+    for (variant, bytes, bold) in [("sans", SANS, MONO), ("mono", MONO, SANS)] {
+        let renderer = Renderer::builder(&config())
+            .with_all()
+            .font("Fixture", bytes.to_vec())
+            .unwrap()
+            .font_face(
+                "Fixture",
+                bold.to_vec(),
+                FontWeight::Bold,
+                FontStyle::Normal,
+            )
+            .unwrap()
+            .font_face(
+                "Fixture",
+                MONO.to_vec(),
+                FontWeight::Normal,
+                FontStyle::Italic,
+            )
+            .unwrap()
+            .font_face(
+                "Fixture",
+                MONO.to_vec(),
+                FontWeight::Bold,
+                FontStyle::Italic,
+            )
+            .unwrap()
+            .font("monospace", bytes.to_vec())
+            .unwrap()
+            .build();
+        for (kind, text) in CASES {
+            let svg = renderer
+                .render_with(
+                    text,
+                    &RenderOptions {
+                        id: Some("custom-font-proof".into()),
+                        ..RenderOptions::default()
+                    },
+                )
+                .unwrap_or_else(|error| panic!("{kind}: {error}"));
+            let file = format!("{kind}-{variant}.svg");
+            std::fs::write(directory.join(&file), svg).unwrap();
+            files.push(file);
+        }
+    }
+    std::fs::write(
+        directory.join("fixtures.json"),
+        serde_json::to_string(&files).unwrap(),
+    )
+    .unwrap();
+}
