@@ -137,7 +137,7 @@ pub fn render(
         .iter()
         .map(|label| collapse_white_space(&label.text))
         .collect();
-    let runs: Vec<Run<'_>> = drawn.iter().map(|text| Run { text, face: sans }).collect();
+    let runs: Vec<Run<'_, '_>> = drawn.iter().map(|text| Run { text, face: sans }).collect();
     let families = embed_runs(&runs)?;
     let font_family = families.first().map_or_else(
         || {

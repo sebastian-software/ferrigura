@@ -99,7 +99,7 @@ pub fn render_with_animation(
     let painted = paint::paint(&measured, input.id, animation)?;
 
     // The fonts: every glyph of every label, in the faces the labels use.
-    let mut runs: Vec<Run<'_>> = Vec::new();
+    let mut runs: Vec<Run<'_, '_>> = Vec::new();
     for node in &measured.data.nodes {
         if let Some(shape) = measured.shapes.get(&node.id) {
             if let Some(label) = &shape.label {

@@ -75,7 +75,7 @@ pub fn render(
     let drawing = draw::draw(&scene, input.id, metrics, text_size)?;
 
     // The fonts: every glyph of every label.
-    let mut runs: Vec<Run<'_>> = Vec::new();
+    let mut runs: Vec<Run<'_, '_>> = Vec::new();
     for label in &drawing.labels {
         runs.extend(label.text_runs());
     }

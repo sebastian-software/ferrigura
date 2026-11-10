@@ -185,7 +185,7 @@ pub fn render(input: &Context<'_, BlockDiagram, BlockSection<'_>>) -> Result<Str
         format!("height=\"{}\" width=\"{}\"", number(height), number(width))
     };
 
-    let texts: Vec<Run<'_>> = drawing
+    let texts: Vec<Run<'_, '_>> = drawing
         .labels
         .iter()
         .flat_map(crate::unified::label::LabelLayout::text_runs)

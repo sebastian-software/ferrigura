@@ -103,7 +103,7 @@ pub fn render_with_animation(
         );
     }
 
-    let mut runs: Vec<Run<'_>> = painted
+    let mut runs: Vec<Run<'_, '_>> = painted
         .all_labels()
         .flat_map(|label| label.text_runs())
         .collect();

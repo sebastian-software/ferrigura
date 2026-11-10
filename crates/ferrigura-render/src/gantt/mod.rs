@@ -139,7 +139,7 @@ impl Texts {
     }
 
     /// The runs, as the font embedding takes them.
-    fn runs(&self) -> Vec<Run<'_>> {
+    fn runs(&self) -> Vec<Run<'_, '_>> {
         self.runs
             .iter()
             .map(|(text, style)| Run {

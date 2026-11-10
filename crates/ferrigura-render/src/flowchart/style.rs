@@ -693,6 +693,7 @@ mod tests {
     #[test]
     fn embedded_fonts_are_named_by_the_rules_and_declared_first() {
         let family = ferrigura_text::EmbeddedFamily {
+            source_name: "Lexica Ultralegible".to_owned(),
             family: ferrigura_text::FontFamily::Sans,
             name: "fg-0123456789abcdef-sans".to_owned(),
             css_family: "\"fg-0123456789abcdef-sans\"".to_owned(),

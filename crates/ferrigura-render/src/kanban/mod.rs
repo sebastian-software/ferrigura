@@ -199,7 +199,7 @@ pub fn render(
     }
 
     // The fonts: every glyph of every label, in the faces the labels use.
-    let mut runs: Vec<Run<'_>> = Vec::new();
+    let mut runs: Vec<Run<'_, '_>> = Vec::new();
     for section in &sections {
         runs.extend(section.label.text_runs());
     }

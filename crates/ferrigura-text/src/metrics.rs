@@ -36,8 +36,9 @@ pub struct TextBox {
 
 /// The unrounded vertical metrics of `face` at `size` pixels.
 ///
-/// The typographic metrics are used when the font asks for them, and the `hhea` metrics
-/// otherwise, as browsers choose them.
+/// The typographic metrics are used when `USE_TYPO_METRICS` is set; otherwise the first
+/// nonzero `hhea` or typographic metrics are used, with the OS/2 win metrics as the final
+/// fallback. The selection is independent of the host operating system.
 ///
 /// # Errors
 ///
@@ -45,12 +46,7 @@ pub struct TextBox {
 pub fn font_metrics(face: &Face, size: f64) -> Result<FontMetrics, TextError> {
     let font = face.font()?;
     let metrics = font.metrics();
-    let line = if metrics.use_typo_metrics {
-        metrics.typo_line.or(metrics.hhea_line)
-    } else {
-        metrics.hhea_line.or(metrics.typo_line)
-    }
-    .ok_or(TextError::MissingLineMetrics)?;
+    let line = metrics.h_line().ok_or(TextError::MissingLineMetrics)?;
     let units_per_em = f64::from(metrics.units_per_em);
     Ok(FontMetrics {
         ascent: line.ascender.to_f64() * size / units_per_em,
