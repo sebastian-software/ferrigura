@@ -1126,7 +1126,15 @@ mod tests {
         let diagram = diagram(Direction::LR, Vec::new());
         let config = GitGraphDiagramConfig::default();
         let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
-        let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
+        let mut layout = Layout::new(
+            &diagram,
+            &config,
+            &palette,
+            "id",
+            false,
+            crate::git_graph::text::regular(),
+            crate::git_graph::text::bold(),
+        );
 
         let pos = layout.set_branch_position("main", 0.0, 0, 10.0, true);
         assert_eq!(pos, 90.0);
@@ -1147,7 +1155,15 @@ mod tests {
         let diagram = diagram(Direction::TB, Vec::new());
         let config = GitGraphDiagramConfig::default();
         let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
-        let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
+        let mut layout = Layout::new(
+            &diagram,
+            &config,
+            &palette,
+            "id",
+            false,
+            crate::git_graph::text::regular(),
+            crate::git_graph::text::bold(),
+        );
 
         let pos = layout.set_branch_position("main", 0.0, 0, 34.9921875, true);
         assert_eq!(pos, 107.49609375);
@@ -1208,7 +1224,15 @@ mod tests {
         let diagram = diagram(Direction::TB, fixture());
         let config = GitGraphDiagramConfig::default();
         let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
-        let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
+        let mut layout = Layout::new(
+            &diagram,
+            &config,
+            &palette,
+            "id",
+            false,
+            crate::git_graph::text::regular(),
+            crate::git_graph::text::bold(),
+        );
         lanes(
             &mut layout,
             &[
@@ -1253,7 +1277,15 @@ mod tests {
         let diagram = diagram(Direction::LR, fixture());
         let config = GitGraphDiagramConfig::default();
         let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
-        let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
+        let mut layout = Layout::new(
+            &diagram,
+            &config,
+            &palette,
+            "id",
+            false,
+            crate::git_graph::text::regular(),
+            crate::git_graph::text::bold(),
+        );
         lanes(
             &mut layout,
             &[
@@ -1362,7 +1394,15 @@ mod tests {
         let config = GitGraphDiagramConfig::default();
         let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
         let commits = parallel_fixture();
-        let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
+        let mut layout = Layout::new(
+            &diagram,
+            &config,
+            &palette,
+            "id",
+            false,
+            crate::git_graph::text::regular(),
+            crate::git_graph::text::bold(),
+        );
         lanes(
             &mut layout,
             &[
@@ -1399,7 +1439,15 @@ mod tests {
         let diagram = diagram(Direction::BT, parallel_fixture());
         let config = GitGraphDiagramConfig::default();
         let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
-        let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
+        let mut layout = Layout::new(
+            &diagram,
+            &config,
+            &palette,
+            "id",
+            false,
+            crate::git_graph::text::regular(),
+            crate::git_graph::text::bold(),
+        );
         lanes(
             &mut layout,
             &[
@@ -1431,7 +1479,15 @@ mod tests {
         let diagram = diagram(Direction::LR, Vec::new());
         let config = GitGraphDiagramConfig::default();
         let palette = Palette::new(&ThemeTokens::from_value(&Value::empty_object()), false);
-        let mut layout = Layout::new(&diagram, &config, &palette, "id", false);
+        let mut layout = Layout::new(
+            &diagram,
+            &config,
+            &palette,
+            "id",
+            false,
+            crate::git_graph::text::regular(),
+            crate::git_graph::text::bold(),
+        );
         layout.commit_pos.insert("parent1", Point::new(1.0, 1.0));
         layout.commit_pos.insert("parent2", Point::new(2.0, 2.0));
         layout.commit_pos.insert("parent3", Point::new(3.0, 3.0));

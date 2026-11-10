@@ -91,7 +91,13 @@ pub fn render_with_animation(
         body.push_str(&drawing.finish());
     }
 
-    let runs = texts.runs(&chart.regular, &italic);
+    let mut runs = texts.runs(&chart.regular, &italic);
+    runs.extend(
+        texts
+            .custom_runs
+            .iter()
+            .map(|(text, face)| Run { text, face }),
+    );
     let families = embed_runs(&runs)?;
     let family = chart.regular.css_reference().unwrap_or_else(|| {
         families
@@ -105,6 +111,12 @@ pub fn render_with_animation(
         font_faces(input.id, &families)
     };
     let mut style = style::style_element(input.id, input.theme, &family, &faces);
+    if let Some(css) = chart.regular.css_reference() {
+        style = style.replace(
+            "</style>",
+            &format!("#{} .grid{{font-family:{css};}}</style>", input.id),
+        );
+    }
     if let Some(css) = italic.css_reference() {
         style = style.replace(
             "</style>",
@@ -141,6 +153,7 @@ pub fn render_with_animation(
 #[derive(Default)]
 pub(super) struct Texts {
     runs: Vec<(String, FontStyle)>,
+    custom_runs: Vec<(String, crate::fonts::FontFace)>,
 }
 
 impl Texts {
@@ -171,6 +184,7 @@ impl Texts {
 
 /// The derived values of one chart: the dimensions, the time scale, the task order and the sections.
 pub(super) struct Chart<'a> {
+    pub(super) fonts: crate::fonts::FontContext,
     pub(super) regular: crate::fonts::FontFace,
     /// The id of the SVG element.
     pub(super) id: &'a str,
@@ -287,6 +301,7 @@ impl<'a> Chart<'a> {
         sort_js(&mut array, |a, b| compare_start(starts[a], starts[b]));
 
         Ok(Self {
+            fonts: input.text_fonts(),
             regular: input
                 .text_fonts()
                 .face(FontWeight::Normal, FontStyle::Normal)?,

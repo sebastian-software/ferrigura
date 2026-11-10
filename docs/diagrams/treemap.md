@@ -47,8 +47,8 @@ The facade passes `TreemapSettings::of(&effective)`: the typed configuration has
 ## Differences from Mermaid
 
 - **Label truncation counts characters**, where the reference counts UTF-16 units, so an astral character may be cut differently. This is not probed.
-- **A font family in a class** that is not one of the families the harness maps is measured in the bundled face; the reference measures it in that font.
-- **Text outside the bundled faces** is measured with the face's `.notdef`; the geometry run leaves such fixtures out ([0010](../decisions/0010-text-measurement-and-fonts.md)).
+- **Without host font inputs, a font family in a class** is measured in the bundled face; the reference measures it in that font.
+- **Without a registered fallback, text outside the bundled faces** uses the compatibility fallback behavior; the geometry run leaves such fixtures out ([0010](../decisions/0010-text-measurement-and-fonts.md)).
 - **Colors** are custom properties with presentation attributes ([0011](../decisions/0011-themes-as-css-variables.md)).
 
 ## Known gaps
@@ -74,3 +74,7 @@ The facade passes `TreemapSettings::of(&effective)`: the typed configuration has
 - **The simple and the complex constants** switch at more than 20 leaves (base label 38, base value 28, minimum label 8 versus 16, 14, 4).
 - **The section's value is the sum after `sum`**, the root included; the leaf's `class` ends in `x` (`leaf0x`, `leaf1 ccx` for a class `cc`).
 - **`d3-hierarchy`'s sum order matters**: children are summed from the last to the first, which fixes the floating-point result.
+
+## Font inputs
+
+The resolved global `fontFamily` supplies ordinary labels and the title. A class’s `font-family`, numeric `font-weight`, and `font-style` select the actual registered design for fitting, bounds, and output. The requested class family stays separate from the emitted CSS binding. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

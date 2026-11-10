@@ -88,3 +88,7 @@ The renderer ports `sequenceRenderer.ts`, `svgDraw.js`, `styles.js` and `actorBa
 - **DOMPurify sees the output.** Every security level but `loose` and `sandbox` sanitizes the SVG string, which drops `use` elements.
 - **Lowered groups change the document order.** The reference draws the `rect` backgrounds and the lifeline groups and moves them to the front of the root with `lower()`. The geometry key counts siblings in document order, so an element in the wrong place shows as a difference.
 - **The unknown actor type is quiet.** The switch in `drawActor` has no default, so the diagram still reserves the actor's column.
+
+## Font inputs
+
+The resolved global `fontFamily` supplies actor, note, and message roles, as the reference’s top-level configuration overrides their section families. `actorFontWeight`, `noteFontWeight`, and `messageFontWeight` select the supplied design for each role. Sequence numbers use the message role’s binding. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

@@ -377,7 +377,7 @@ mod tests {
             size: 14.0,
             line_height: 16.8,
         };
-        let label = Label::new(style, "Empty line<br><br>cause", 0.0, 0.0).unwrap();
+        let label = Label::new(style.clone(), "Empty line<br><br>cause", 0.0, 0.0).unwrap();
         assert!((label.bbox.height - 33.8).abs() < 1e-9, "{:?}", label.bbox);
         // A label of empty lines alone has the empty box at the origin, as `getBBox` gives it.
         let blank = Label::new(style, "<br>", 40.0, 40.0).unwrap();

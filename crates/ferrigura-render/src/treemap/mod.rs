@@ -370,12 +370,18 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
         bind_style(fonts, &mut section.value_style, Font::ITALIC)?;
         section_runs.push((
             section.label.clone(),
-            face_of(fonts, font_of(&section.label_style, Font::BOLD))?,
+            face_of(
+                &fonts_of(fonts, &section.label_style),
+                font_of(&section.label_style, Font::BOLD),
+            )?,
         ));
         if settings.show_values && !section.value_text.is_empty() {
             section_runs.push((
                 section.value_text.clone(),
-                face_of(fonts, font_of(&section.value_style, Font::ITALIC))?,
+                face_of(
+                    &fonts_of(fonts, &section.value_style),
+                    font_of(&section.value_style, Font::ITALIC),
+                )?,
             ));
         }
         section_groups.push(section_group(id, section, settings.show_values));
@@ -450,7 +456,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
         include(
             &mut bounds,
             line_box(
-                fonts,
+                &fonts_of(fonts, &section.label_style),
                 &section.label,
                 (x + 6.0, y + SECTION_HEADER_HEIGHT / 2.0),
                 label_size,
@@ -463,7 +469,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             include(
                 &mut bounds,
                 line_box(
-                    fonts,
+                    &fonts_of(fonts, &section.value_style),
                     &section.value_text,
                     (
                         x + valid(section.x1 - section.x0 - 10.0),
@@ -486,7 +492,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             include(
                 &mut bounds,
                 line_box(
-                    fonts,
+                    &fonts_of(fonts, &leaf.label_style),
                     &leaf.label,
                     (
                         x + valid((node.x1 - node.x0) / 2.0),
@@ -505,7 +511,7 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
             include(
                 &mut bounds,
                 line_box(
-                    fonts,
+                    &fonts_of(fonts, &value.style),
                     &value.text,
                     (x + valid((node.x1 - node.x0) / 2.0), y + valid(value.y)),
                     size_of(&value.style, sizes.base_value),
@@ -528,12 +534,18 @@ pub fn render(input: &Context<'_, TreemapDiagram, TreemapSettings>) -> Result<St
     for leaf in &leaf_draws {
         runs.push((
             shown_text(&leaf.label),
-            face_of(fonts, font_of(&leaf.label_style, Font::REGULAR))?,
+            face_of(
+                &fonts_of(fonts, &leaf.label_style),
+                font_of(&leaf.label_style, Font::REGULAR),
+            )?,
         ));
         if let Some(value) = &leaf.value {
             runs.push((
                 shown_text(&value.text),
-                face_of(fonts, font_of(&value.style, Font::REGULAR))?,
+                face_of(
+                    &fonts_of(fonts, &value.style),
+                    font_of(&value.style, Font::REGULAR),
+                )?,
             ));
         }
     }
@@ -690,22 +702,32 @@ fn bind_style(
     style: &mut Inline,
     default: Font,
 ) -> Result<(), RenderError> {
-    if let Some(css) = face_of(fonts, font_of(style, default))?.css_reference() {
-        style.set("font-family", &css);
+    if let Some(css) = face_of(&fonts_of(fonts, style), font_of(style, default))?.css_reference() {
+        style.bind_font(css);
     }
     Ok(())
 }
 
+/// Keeps a class's requested family separate from its resolved output binding.
+fn fonts_of(fonts: &crate::fonts::FontContext, style: &Inline) -> crate::fonts::FontContext {
+    style
+        .get("font-family")
+        .map_or_else(|| fonts.clone(), |family| fonts.with_family(&family))
+}
+
 /// The font of a text: the attribute's font, where its inline style does not say otherwise.
 fn font_of(style: &Inline, attribute: Font) -> Font {
-    let weight = match style.get("font-weight") {
-        Some(value) if value == "bold" || value.parse::<f64>().is_ok_and(|n| n >= 600.0) => {
-            FontWeight::Bold
-        }
-        Some(value) if value == "normal" || value.parse::<f64>().is_ok_and(|n| n < 600.0) => {
-            FontWeight::Normal
-        }
-        _ => attribute.weight,
+    let weight = match style.get("font-weight").as_deref() {
+        Some("bold") => FontWeight::Bold,
+        Some("normal") => FontWeight::Normal,
+        Some(value) => value
+            .parse::<f64>()
+            .ok()
+            .filter(|value| value.is_finite())
+            .map_or(attribute.weight, |value| {
+                FontWeight::Number(value.clamp(1.0, 1000.0) as u16)
+            }),
+        None => attribute.weight,
     };
     let style_of = match style.get("font-style") {
         Some(value) if value == "italic" || value == "oblique" => FontStyle::Italic,
@@ -786,6 +808,7 @@ fn fit_section_label(
         total_header_width - 6.0 - 6.0
     };
     let available = math_max(15.0, space);
+    let fonts = &fonts_of(fonts, &section.label_style);
     let font = font_of(&section.label_style, Font::BOLD);
     let size = size_of(&section.label_style, 12.0);
     let original = section.name.clone();
@@ -913,7 +936,7 @@ fn leaf_draw(
                 let available_width = input.width - 2.0 * sizes.padding;
                 let max_bottom = input.height - CELL_BOTTOM_PADDING;
                 let too_wide = advance(
-                    fonts,
+                    &fonts_of(fonts, &value.style),
                     &value.text,
                     size_of(&value.style, actual),
                     font_of(&value.style, Font::REGULAR),
@@ -958,7 +981,7 @@ fn fit_leaf_label(
     }
     let measure = |style: &Inline| -> Result<f64, RenderError> {
         advance(
-            fonts,
+            &fonts_of(fonts, style),
             text,
             size_of(style, sizes.base_label),
             font_of(style, Font::REGULAR),

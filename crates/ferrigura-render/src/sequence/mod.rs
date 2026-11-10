@@ -590,13 +590,7 @@ impl<'a> Renderer<'a> {
             text::face_of(&self.conf.note_font)?,
             text::face_of(&self.conf.message_font)?,
         ];
-        let runs: Vec<_> = faces
-            .iter()
-            .map(|face| Run {
-                text,
-                face: &**face,
-            })
-            .collect();
+        let runs: Vec<_> = faces.iter().map(|face| Run { text, face }).collect();
         let families = embed_runs(&runs)?;
         let name = faces[0].css_reference().unwrap_or_else(|| {
             families.first().map_or_else(

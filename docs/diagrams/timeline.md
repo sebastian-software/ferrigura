@@ -88,3 +88,7 @@ Defects of the reference that the renderer reproduces:
 - **The bold face is chosen by weight 600.** `.section-N text` sets 600 and Chromium picks the bold face, so every drawn node is measured bold; only the pre-pass measures regular.
 - **The viewBox comes from the drawn boxes,** not from the layout constants: it is the union of path boxes, text boxes and line extents, without `<style>`, `<defs>` or markers.
 - **Redux or classic is decided by the theme's name,** in four places, not by the look.
+
+## Font inputs
+
+Text uses the resolved global `fontFamily`. Node labels resolve the theme’s `fontWeight`, and the title resolves bold; each role names its measured design in the output. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

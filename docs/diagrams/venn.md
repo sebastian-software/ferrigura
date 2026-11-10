@@ -102,3 +102,7 @@ Errors carry positions against the original input, including the front matter; t
 - **Venn's own defaults.** The `venn` section defaults `theme` to `redux-color` and `look` to `neo`, and these reach the top level for a venn diagram only. `useMaxWidth`, `width`, `height` and `padding` are read from the venn section alone; a top-level value does not reach the renderer. The `classic` and `neo` looks give identical output.
 - **Themes without `venn1` to `venn8`** give flat circles in `primaryColor`; the two shipped themes set the eight slots from their border color array.
 - **A text node needs its area in the layout.** `text A,C` with no `union A,C` is stored by the DB and dropped by the renderer.
+
+## Font inputs
+
+Set, intersection, free-text, and title labels use the regular design of the resolved global `fontFamily`, including free-text wrapping. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

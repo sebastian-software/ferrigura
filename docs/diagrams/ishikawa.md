@@ -90,3 +90,7 @@ The renderer ports `ishikawaRenderer.ts` (`draw`) and `ishikawaStyles.ts`. `mod.
 - **The weight 600 is the bold face.** `Blurry` is 39.3125 px wide at 600 and 35.40625 px at 400 in the bundled face.
 - **A header with no statement draws almost nothing.** The reference returns before the layout, so there is no `g.ishikawa` and no viewBox on the root.
 - **Layout and drawing take different font sizes.** Spacing follows `fontSize` of the configuration, the labels follow the theme's, and mixing them shifts every label by a fraction.
+
+## Font inputs
+
+Cause labels use the resolved global `fontFamily`; the head label resolves weight 600 in the same family. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

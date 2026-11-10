@@ -23,9 +23,6 @@ pub fn regular() -> &'static Face {
     face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal)
 }
 
-/// The bold face: the title, which the reference sets with `font-weight="bold"`.
-#[must_use]
-
 /// The width of a text as `getBoundingClientRect().width` reports it for an SVG `text` in the
 /// regular face ([`collapsed_box`]): the box of the glyphs, which is wider than the advance where a
 /// glyph's outline reaches past it. The reference measures the legend this way (`journeyRenderer.ts`

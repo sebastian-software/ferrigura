@@ -416,7 +416,11 @@ pub fn lines_of(
     // The strut of a name line is the span's font, the regular face; the strut of a code line is the
     // code block's, the mono face.
     let strut = text_box(&*fonts.face(FontWeight::Normal, FontStyle::Normal)?, size)?;
-    let mono_strut = text_box(&*code_face(fonts, Style::default())?, size)?;
+    let mono_strut = if text.data.is_some() {
+        text_box(&*code_face(fonts, Style::default())?, size)?
+    } else {
+        strut
+    };
     let name_box = text_box(&bold_face, size)?;
     let (name_ascent, name_height) = line_box(&[strut, name_box]);
     let blank = |text: TextBox| Entry {

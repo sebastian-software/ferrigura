@@ -52,7 +52,7 @@ pub fn render_with_animation(
         ferrigura_text::FontWeight::Normal,
         ferrigura_text::FontStyle::Normal,
     )?;
-    let bold = input.text_fonts().face(
+    let mut bold = input.text_fonts().face(
         ferrigura_text::FontWeight::Bold,
         ferrigura_text::FontStyle::Normal,
     )?;
@@ -66,6 +66,22 @@ pub fn render_with_animation(
     // schemes the light set is the primary one and the dark set is dark.
     let dark_name = theme.dark.is_none() && input.globals.theme.contains("dark");
     let light = Palette::new(theme.light, dark_name);
+    if regular.css_reference().is_some() {
+        let weight = match light.note_font_weight.as_str() {
+            "normal" => 400,
+            "bold" => 700,
+            value => value
+                .parse::<f64>()
+                .ok()
+                .filter(|value| value.is_finite())
+                .map_or(700, |value| value.clamp(1.0, 1000.0) as u16),
+        };
+        bold = input.text_fonts().face(
+            ferrigura_text::FontWeight::Number(weight),
+            ferrigura_text::FontStyle::Normal,
+        )?;
+    }
+
     let dark = match theme.dark {
         Some(dark) => Palette::new(dark, true),
         None => light.clone(),

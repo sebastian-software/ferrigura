@@ -6,9 +6,8 @@
 //! sizes the root `<svg>`, writes the title and the activity line, and embeds the fonts.
 //!
 //! Labels are SVG text, not HTML (decision 0009): the default placement, `fo`, draws
-//! the lines the browser would break the HTML into. Every text is set in the bundled face, as in
-//! the other renderers, so `titleFontFamily` and `taskFontFamily` of the configuration are not read;
-//! the geometry harness pins them to the bundled face on the reference side (`journey-labels.ts`).
+//! the lines the browser would break the HTML into. Host-supplied fonts resolve `titleFontFamily`
+//! and `taskFontFamily` separately; the compatibility path uses the bundled faces.
 
 mod face;
 mod legend;
@@ -96,10 +95,10 @@ pub fn render(
             .text(diagram.title.as_str())
     });
 
-    if let Some(title) = &mut title {
-        if let Some(css) = title_face.css_reference() {
-            title.set("style", format!("font-family:{css};"));
-        }
+    if let Some(title) = &mut title
+        && let Some(css) = title_face.css_reference()
+    {
+        title.set("style", format!("font-family:{css};"));
     }
 
     // The fonts: the regular face for the legend, the labels and the tasks, the bold one for the

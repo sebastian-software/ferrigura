@@ -41,3 +41,7 @@ The diagram has no configuration section, so its renderer takes the unit type as
 
 - **The reference's SVG always starts with an empty group.** `mermaidAPI` appends it before any renderer draws (`appendDivSvgG`), so every renderer writes `<g></g>` first, and the geometry key counts it.
 - **The root's attributes come in the order the reference sets them:** `id`, `width`, `xmlns`, then the size from `setupGraphViewbox`, then the roles. The info diagram has nothing else, which makes it the plainest example of that order.
+
+## Font inputs
+
+The version text uses the resolved global `fontFamily` for measurement and output. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

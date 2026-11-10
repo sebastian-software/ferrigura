@@ -60,3 +60,7 @@ None known for this type.
 - **A label placeholder is decoded to the character it stands for** (`#amp;` is shown as `&`); any other `&` or `<` is shown as written.
 - **The root attribute order** is the reference's (`width`, namespace, then `height` or `style`).
 - **The unreachable guard stays**: the word-length guard `word.length <= bitsPerRow + 1` cannot trigger for a whole `bitsPerRow` of 1 or more; it is kept as written, because whether a fractional value reaches it is not established.
+
+## Font inputs
+
+Field labels, bit numbers, and the title use the regular design of the resolved global `fontFamily`. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

@@ -76,3 +76,7 @@ None specific to the type. Fixtures that use scripts the bundled faces lack need
 - **Inert and dead settings.** `compactMode` and `showMarkers` are read and never used (the markers are always drawn), the `railroad-comment` rules and the comment colors style no element, `.railroad-group` is empty, and `look` is not read.
 - **The title is never drawn.** The accessibility title and description become `title` and `desc` with ids `chart-title-<id>` and `chart-desc-<id>`; the diagram title, and a description in the front matter, appear nowhere.
 - **The DB sanitizes after the label is made.** A PEG lookahead's special is built from the unsanitized operand and sanitized afterward with the rest of the rule.
+
+## Font inputs
+
+Terminal text and rule names are measured in the regular design of the resolved global `fontFamily`, matching the reference’s measurement cache. Rule names are drawn with its bold design. With host-supplied fonts, every requested family must be registered; diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).
