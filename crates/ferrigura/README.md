@@ -106,13 +106,13 @@ The constructors of `ferrigura::diagrams` are named after the types (`flowchart`
 
 `render_with` and `Renderer::render_with` take a `RenderOptions` as well. It holds what is not Mermaid configuration:
 
-| Field            | Type                  | Meaning                                                                                                                                                                                                                                                               |
-| ---------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | `Option<String>`      | The id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id.                        |
-| `color_scheme`   | `Option<ColorScheme>` | `Light`, `Dark` or `Auto`. `Auto` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. `None` keeps the colors of the configured theme.     |
-| `now`            | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                                                      |
-| `compat`         | `bool`                | `false` (default) enables optimized routing and compact participants. `true` preserves Mermaid-compatible geometry across diagram types.                                                                                                                              |
-| `animation` | `Option<Animation>` | Optional draw animation for flowchart, Gantt, Git graph, mind map, pie, and XY chart. `None` (default) preserves static output; `Some(Animation::default())` draws one line at a time. Unsupported diagram types return an option error. |
+| Field          | Type                  | Meaning                                                                                                                                                                                                                                                           |
+| -------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`           | `Option<String>`      | The id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id.                    |
+| `color_scheme` | `Option<ColorScheme>` | `Light`, `Dark` or `Auto`. `Auto` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. `None` keeps the colors of the configured theme. |
+| `now`          | `Option<i64>`         | The current time in milliseconds since the epoch, for the dates that depend on it: the today marker of a gantt chart and the dates without a day. `None` reads the system clock.                                                                                  |
+| `compat`       | `bool`                | `false` (default) enables optimized routing and compact participants. `true` preserves Mermaid-compatible geometry across diagram types.                                                                                                                          |
+| `animation`    | `Option<Animation>`   | Optional draw animation for flowchart, Gantt, Git graph, mind map, pie, and XY chart. `None` (default) preserves static output; `Some(Animation::default())` draws one line at a time. Unsupported diagram types return an option error.                          |
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -168,7 +168,7 @@ for the behavior of each type.
 
 ## Errors
 
-The functions return `ferrigura::Error`, which implements `std::error::Error`. An error is returned for text that is not a diagram or does not parse, for a configuration value of the wrong type, for an option that is not valid (such as an `id` that is not a CSS identifier), and for a bundled font that cannot be read.
+The functions return `ferrigura::Error`, which implements `std::error::Error`. An error is returned for text that is not a diagram or does not parse, for a configuration value of the wrong type, for an option that is not valid (such as an `id` that is not a CSS identifier), and for font registration, resolution, reading or measurement that fails. In supplied-font mode, an unresolved family list returns an error naming the family and explaining registration. Without host font inputs, the bundled compatibility defaults remain.
 
 ## Configuration
 
@@ -250,24 +250,25 @@ ferrigura renders 33 diagram types. The header keyword of each is the one Mermai
 ## How the output differs from Mermaid
 
 - Labels are SVG `text` and `tspan` elements, not HTML in `foreignObject`. Markdown in labels (bold, italic, code and line breaks) is written as styled text runs. `htmlLabels` is accepted, and labels are drawn as SVG text either way.
-- Text is measured in bundled fonts: Lexica Ultralegible (regular, italic, bold and bold italic) and Atkinson Hyperlegible Mono for code. The SVG embeds the glyphs that it draws as subsets of these faces, in `@font-face` rules with data URIs, so a viewer draws the text that was measured.
-- Characters that the text faces lack are set in bundled symbol faces: the arrows (U+2190 to U+21FF), the text-default symbols of U+2600 to U+27BF that the symbol face covers, and the emoji with emoji presentation.
+- Text is measured with the host-registered designs and explicit fallback chain. Without host font inputs, the compatible defaults remain Lexica Ultralegible (regular, italic, bold and bold italic) and Atkinson Hyperlegible Mono for code. The SVG embeds the selected faces in `@font-face` data URIs: TrueType outlines are subset, while CFF and CFF2 faces embed complete.
+- Supplied-font renders use registered fallback faces. The no-input compatibility path keeps its bundled symbol fallbacks: the arrows (U+2190 to U+21FF), the text-default symbols of U+2600 to U+27BF that the symbol face covers, and the emoji with emoji presentation.
 - Colors are CSS custom properties, declared on the diagram's own id. Each element also carries its concrete color as a presentation attribute, for viewers that do not read custom properties.
 - Each diagram's styles are scoped to its id, so several SVG diagrams can share one page.
 - There is no browser and no JavaScript at run time. Interactive parts of Mermaid, such as click callbacks and the `loose` and `sandbox` security levels, have no meaning here.
 - The output is SVG only.
-- The library does not print warnings. A fallback, such as one of the layout fallbacks below, is silent.
+- The library does not print warnings. The low-level registry exposes uncovered-character diagnostics through `FontRegistry::missing_glyphs`; layout fallbacks remain silent.
 
 Layouts: flowcharts, class, state, ER, requirement, agentflow and use case diagrams use ELK Layered. Mindmaps use cose-bilkent by default, and Mermaid's tidy tree with `layout: tidy-tree`. Architecture diagrams use fcose. Venn diagrams use the layout of venn.js 2.0.0, and swimlanes have their own layout.
 
-The geometry of the output (node and label boxes, edge paths and the viewBox) is compared with Mermaid 12.2.0 run in Chromium, on macOS. It agrees within 0.05 px on every fixture that the comparison covers. The comparison leaves out a fixture only for a stated reason, such as `look: handDrawn`, a layout algorithm other than ELK Layered, or a character that no bundled face covers.
+The geometry of the output (node and label boxes, edge paths and the viewBox) is compared with Mermaid 12.2.0 run in Chromium, on macOS. It agrees within 0.05 px on every fixture that the comparison covers. The comparison leaves out a fixture only for a stated reason, such as `look: handDrawn`, a layout algorithm other than ELK Layered, or a character that no registered fixture face covers.
+
+Registered primary and fallback faces can extend glyph coverage beyond the compatible defaults. An uncovered character is measured with the primary face’s missing glyph, while an SVG viewer may substitute a system font with different metrics. Matching layout requires coverage; coverage alone does not establish complete shaping or bidirectional layout for every writing system. See [font inputs](../../docs/fonts.md) for the contract.
 
 ## Not supported yet
 
 - `look: handDrawn`. Shapes take the `classic` geometry as plain SVG elements, without the hand-drawn strokes.
 - Math in labels (`$$...$$`, KaTeX). It is not typeset.
 - Mermaid's classic themes (`default`, `dark`, `forest` and `neutral`). A theme name that is not one of the two shipped themes gives one of them, as described above.
-- Text in CJK, kana and Arabic, and emoji that the bundled faces do not cover. There is no fallback font yet.
 - Images and icon packs. In flowcharts an image is not read, so an image shape needs `assetWidth` and `assetHeight`. Icon packs are not supported.
 - ELK layout algorithms other than `elk.layered`. A diagram that names another one is laid out with `elk.layered`.
 - Swimlane diagrams with `ignoreCrossLaneEdges: false` or `automaticLaneOrdering: true`. The render fails with an error that names the option.
