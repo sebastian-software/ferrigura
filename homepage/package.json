@@ -29,7 +29,7 @@
     "eslint": "^10.11.0",
     "eslint-config-setup": "^0.6.0",
     "jiti": "^2.7.0",
-    "oxfmt": "0.77.0",
+    "oxfmt": "0.78.0",
     "oxlint": "^1.85.0",
     "playwright": "1.65.0",
     "typescript": "^6.0.3",
