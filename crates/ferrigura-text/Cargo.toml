@@ -14,9 +14,9 @@ keywords = ["ferrigura", "text", "font", "measurement", "svg"]
 
 [dependencies]
 base64 = "0.23.1"
-harfrust = "0.15.0"
-read-fonts = "0.46.0"
-skera = "0.9.0"
+harfrust = "0.16.0"
+read-fonts = "0.47.0"
+skera = "0.10.0"
 write-fonts = { version = "0.55.0", default-features = false }
 unicode-segmentation = "1.13.3"
 
