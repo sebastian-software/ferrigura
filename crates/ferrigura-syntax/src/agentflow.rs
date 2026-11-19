@@ -102,11 +102,24 @@ pub fn parse(text: &str) -> Result<AgentflowDiagram, ParseError> {
 ///
 /// As [`parse`].
 pub fn parse_with_max_edges(raw: &str, max_edges: usize) -> Result<AgentflowDiagram, ParseError> {
+    parse_with_limits(raw, max_edges, MAX_TEXT_SIZE)
+}
+
+/// Parses with the given edge and comment-preserving text limits.
+///
+/// # Errors
+///
+/// As [`parse`].
+pub fn parse_with_limits(
+    raw: &str,
+    max_edges: usize,
+    max_text_size: usize,
+) -> Result<AgentflowDiagram, ParseError> {
     let prepared = prepare(raw)?;
     // `Diagram.fromText` gives the parser the text with its comments, unless that is longer than
     // `maxTextSize`; the text without them is then the one parsed.
     let with_comments = remove_directives(&prepared.text);
-    let source = if with_comments.encode_utf16().count() > MAX_TEXT_SIZE {
+    let source = if with_comments.encode_utf16().count() > max_text_size {
         cleanup_comments(&with_comments)
     } else {
         with_comments

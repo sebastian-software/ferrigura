@@ -225,8 +225,7 @@ impl<'v> Ctx<'v> {
         for i in 0..self.visible.len() {
             let first = self.visible[i];
             let first_points = self.pts(replacements, first);
-            for j in (i + 1)..self.visible.len() {
-                let second = self.visible[j];
+            for &second in &self.visible[i + 1..] {
                 let pair_count = crossings_between(
                     &segments_for(&first_points),
                     &segments_for(&self.pts(replacements, second)),
@@ -278,8 +277,7 @@ impl<'v> Ctx<'v> {
             } else {
                 &base.segments[first]
             };
-            for j in (i + 1)..self.visible.len() {
-                let second = self.visible[j];
+            for &second in &self.visible[i + 1..] {
                 if first != edge && second != edge {
                     continue;
                 }

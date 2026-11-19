@@ -683,12 +683,17 @@ impl LabelDummySwitcher {
         let label_width = graph.nodes[info.label_dummy].size.x;
         let mut widest_layer = info.leftmost_layer_id;
         let mut widest_width = 0.0;
-        for layer in info.leftmost_layer_id..=info.rightmost_layer_id {
+        for (offset, &layer_width) in self.layer_widths
+            [info.leftmost_layer_id..=info.rightmost_layer_id]
+            .iter()
+            .enumerate()
+        {
+            let layer = info.leftmost_layer_id + offset;
             // A layer that is wide enough already is the answer.
-            if label_width <= self.layer_widths[layer] {
+            if label_width <= layer_width {
                 return Ok(layer);
             }
-            let mut potential_width = self.layer_widths[layer];
+            let mut potential_width = layer_width;
             // Java keeps the last unassigned label that covers this layer. Because `infos` is
             // sorted by descending width, that is the narrowest of them, not the widest; this is
             // ported as it is.

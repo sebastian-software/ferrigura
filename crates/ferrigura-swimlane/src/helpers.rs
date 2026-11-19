@@ -318,8 +318,7 @@ pub fn write_back_to_layout_data(
         let mut max_x = f64::NEG_INFINITY;
         let mut min_y = f64::INFINITY;
         let mut max_y = f64::NEG_INFINITY;
-        for child_index in 0..layout.nodes.len() {
-            let child = &layout.nodes[child_index];
+        for child in &layout.nodes {
             if child.parent_id.as_deref() != Some(group_id.as_str()) {
                 continue;
             }

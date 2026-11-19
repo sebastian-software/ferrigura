@@ -178,7 +178,7 @@ impl Renderer {
     ///
     /// Returns the errors of [`render_with`].
     pub fn render_with(&self, text: &str, options: &RenderOptions) -> Result<String, RenderError> {
-        self.limits(text)?;
+        let (max_text, max_edges) = self.limits(text)?;
         let Some(kind) = detect(text) else {
             return Err(RenderError::Parse(ParseError {
                 line: 1,
@@ -202,11 +202,11 @@ impl Renderer {
                 "draw animation is not supported for this diagram type".to_owned(),
             ));
         }
-        let prepared = self.prepare(text, options, plugin)?;
+        let prepared = self.prepare(text, options, plugin, max_text, max_edges)?;
         plugin.render(text, &prepared, options)
     }
 
-    fn limits(&self, text: &str) -> Result<usize, RenderError> {
+    fn limits(&self, text: &str) -> Result<(usize, usize), RenderError> {
         let read = |key: &str, default: usize| -> Result<usize, RenderError> {
             match self.site.settings().get(key) {
                 None => Ok(default),
@@ -226,12 +226,12 @@ impl Renderer {
         };
         let max_text = read("maxTextSize", 50_000)?;
         let max_edges = read("maxEdges", 500)?;
-        if text.encode_utf16().count() > max_text {
+        if text.encode_utf16().take(max_text.saturating_add(1)).count() > max_text {
             return Err(RenderError::Options(format!(
                 "diagram text exceeds maxTextSize of {max_text} UTF-16 code units"
             )));
         }
-        Ok(max_edges)
+        Ok((max_text, max_edges))
     }
 
     /// What a render needs besides its diagram, as `mermaidAPI` resolves it before it calls the
@@ -246,8 +246,9 @@ impl Renderer {
         text: &str,
         options: &RenderOptions,
         plugin: Plugin,
+        max_text: usize,
+        max_edges: usize,
     ) -> Result<Prepared<'_>, RenderError> {
-        let max_edges = self.limits(text)?;
         let id = match &options.id {
             Some(id) if valid_id(id) => id.clone(),
             Some(id) => return Err(RenderError::Options(format!("invalid id {id:?}"))),
@@ -258,6 +259,7 @@ impl Renderer {
         if is_empty_object(&directive) {
             return Ok(Prepared {
                 id,
+                max_text,
                 max_edges,
                 view: self.view(plugin)?,
                 light_tokens: Cow::Borrowed(&self.light_tokens),
@@ -290,6 +292,7 @@ impl Renderer {
         };
         Ok(Prepared {
             id,
+            max_text,
             max_edges,
             view: Arc::new(view),
             light_tokens,
@@ -671,6 +674,7 @@ fn inherit_font_roles(
 
 /// What a render needs besides its diagram: see [`Renderer::prepare`].
 struct Prepared<'a> {
+    max_text: usize,
     max_edges: usize,
     fonts: Option<&'a Arc<FontRegistry>>,
     id: String,
@@ -753,6 +757,8 @@ pub fn flowchart_elk_stages(
     config: &Value,
     options: &RenderOptions,
 ) -> Result<serde_json::Value, RenderError> {
+    let renderer = Renderer::builder(config).with_all().shared();
+    let (max_text, max_edges) = renderer.limits(text)?;
     if detect(text) != Some(DiagramType::Flowchart) {
         return Err(RenderError::Parse(ParseError {
             line: 1,
@@ -760,8 +766,7 @@ pub fn flowchart_elk_stages(
             message: "not a flowchart".to_owned(),
         }));
     }
-    let renderer = Renderer::builder(config).with_all().shared();
-    let prepared = renderer.prepare(text, options, diagrams::flowchart())?;
+    let prepared = renderer.prepare(text, options, diagrams::flowchart(), max_text, max_edges)?;
     let stages = with_flowchart(text, &prepared, options.compat, flowchart::elk_stages)?;
     Ok(serde_json::json!({
         "elkInput": stages.input,
