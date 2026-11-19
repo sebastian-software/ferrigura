@@ -172,14 +172,22 @@ fn fnv1a(hash: u64, bytes: &[u8]) -> u64 {
 /// The twelve renders of one text, labeled `<configuration>-<scheme>`: the SVG, or the error.
 fn renders(
     text: &str,
-    renderers: &[(&'static str, Renderer)],
+    renderers: &[(&'static str, Renderer, String)],
     compat: bool,
 ) -> Vec<(String, String)> {
     let mut out = Vec::with_capacity(renderers.len() * SCHEMES.len());
-    for (config, renderer) in renderers {
+    for (config, renderer, original_config) in renderers {
+        // Keep the baseline IDs derived from the original appearance configuration. The extra
+        // text allowance below is a test harness setting, not an SVG appearance change.
+        let hash = fnv1a(
+            fnv1a(fnv1a(0xcbf2_9ce4_8422_2325, text.as_bytes()), &[0xff]),
+            original_config.as_bytes(),
+        );
+        let id = format!("ferrigura-{hash:016x}");
         for (scheme, color_scheme) in SCHEMES {
             let options = RenderOptions {
                 now: Some(NOW),
+                id: Some(id.clone()),
                 color_scheme,
                 compat,
                 ..RenderOptions::default()
@@ -219,9 +227,17 @@ fn the_output_of_the_corpus_is_unchanged() {
         collect(&root.join(folder), &mut files);
     }
     files.sort();
-    let renderers: Vec<(&'static str, Renderer)> = configurations(root)
+    // These checked-in corpus files are trusted and include large performance fixtures. A finite
+    // allowance keeps their SVG baselines covered without changing the public default of 50,000.
+    let renderers: Vec<(&'static str, Renderer, String)> = configurations(root)
         .into_iter()
-        .map(|(name, config)| (name, Renderer::new(&config)))
+        .map(|(name, mut config)| {
+            let original = serde_json::to_string(&config).expect("configuration serializes");
+            if let Value::Object(settings) = &mut config {
+                settings.insert("maxTextSize".to_owned(), Value::Number(300_000.0));
+            }
+            (name, Renderer::new(&config), original)
+        })
         .collect();
 
     let threads = std::thread::available_parallelism()
