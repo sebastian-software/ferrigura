@@ -65,7 +65,7 @@ The renderer ports `renderer.ts`, `styles.js` and the text of `db.ts` (`calculat
 
 - The tags that DOMPurify keeps and the data can reach, beyond bold, italic and the plain ones, are not drawn as the reference draws them: `sub` and `sup` (a shifted baseline and a smaller size), `small` and `big` (a size), `kbd` (the machine's `monospace`) and the block tags `p` and `div` (each starts a line). No probe passes through them yet; `u`, `s`, `span`, `mark` and `code` are within tolerance.
 - The browser's per-glyph rounding of advances is not emulated; it shows as one layout unit (1/64 px) on some lines.
-- The configuration's `maxTextSize` is not read by the parse pipeline, for any type; a directive that sets it is not honored.
+- The rendering facade checks the host `maxTextSize` before parsing; the lower-level parser retains its own comment handling described above.
 - The `accTitle` and `accDescr` elements and the order of the `aria-labelledby` attributes are not compared with the reference (the harness skips `title` and `desc`).
 
 ## Checking it

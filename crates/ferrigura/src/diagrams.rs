@@ -973,7 +973,7 @@ fn render_agentflow(
     let section = Section::of(&prepared.view.config);
     agentflow_render::render(&Context {
         fonts: prepared.fonts,
-        diagram: &agentflow::parse(text)?,
+        diagram: &agentflow::parse_with_max_edges(text, prepared.max_edges)?,
         section: &AgentflowSection {
             agentflow: &typed_config.agentflow,
             unified: section,

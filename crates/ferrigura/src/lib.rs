@@ -178,6 +178,7 @@ impl Renderer {
     ///
     /// Returns the errors of [`render_with`].
     pub fn render_with(&self, text: &str, options: &RenderOptions) -> Result<String, RenderError> {
+        self.limits(text)?;
         let Some(kind) = detect(text) else {
             return Err(RenderError::Parse(ParseError {
                 line: 1,
@@ -205,6 +206,34 @@ impl Renderer {
         plugin.render(text, &prepared, options)
     }
 
+    fn limits(&self, text: &str) -> Result<usize, RenderError> {
+        let read = |key: &str, default: usize| -> Result<usize, RenderError> {
+            match self.site.settings().get(key) {
+                None => Ok(default),
+                Some(Value::Number(n))
+                    if n.is_finite()
+                        && *n >= 0.0
+                        && n.fract() == 0.0
+                        && *n <= 9_007_199_254_740_991.0
+                        && *n < usize::MAX as f64 =>
+                {
+                    Ok(*n as usize)
+                }
+                Some(_) => Err(RenderError::Config(format!(
+                    "{key} must be a non-negative safe integer"
+                ))),
+            }
+        };
+        let max_text = read("maxTextSize", 50_000)?;
+        let max_edges = read("maxEdges", 500)?;
+        if text.encode_utf16().count() > max_text {
+            return Err(RenderError::Options(format!(
+                "diagram text exceeds maxTextSize of {max_text} UTF-16 code units"
+            )));
+        }
+        Ok(max_edges)
+    }
+
     /// What a render needs besides its diagram, as `mermaidAPI` resolves it before it calls the
     /// diagram's renderer: the id, the configuration in the diagram's scope, and the tokens of the
     /// schemes that the render draws.
@@ -218,6 +247,7 @@ impl Renderer {
         options: &RenderOptions,
         plugin: Plugin,
     ) -> Result<Prepared<'_>, RenderError> {
+        let max_edges = self.limits(text)?;
         let id = match &options.id {
             Some(id) if valid_id(id) => id.clone(),
             Some(id) => return Err(RenderError::Options(format!("invalid id {id:?}"))),
@@ -228,6 +258,7 @@ impl Renderer {
         if is_empty_object(&directive) {
             return Ok(Prepared {
                 id,
+                max_edges,
                 view: self.view(plugin)?,
                 light_tokens: Cow::Borrowed(&self.light_tokens),
                 dark_tokens: Cow::Borrowed(&self.dark_tokens),
@@ -259,6 +290,7 @@ impl Renderer {
         };
         Ok(Prepared {
             id,
+            max_edges,
             view: Arc::new(view),
             light_tokens,
             dark_tokens,
@@ -639,6 +671,7 @@ fn inherit_font_roles(
 
 /// What a render needs besides its diagram: see [`Renderer::prepare`].
 struct Prepared<'a> {
+    max_edges: usize,
     fonts: Option<&'a Arc<FontRegistry>>,
     id: String,
     view: Arc<View>,
@@ -743,8 +776,13 @@ fn with_flowchart<T>(
     compat: bool,
     step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
-    let diagram = ferrigura_syntax::flowchart::parse(text)
-        .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
+    let diagram = ferrigura_syntax::flowchart::parse_with(
+        text,
+        ferrigura_syntax::flowchart::Options {
+            max_edges: prepared.max_edges,
+        },
+    )
+    .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
     let mut section = Section::of(&prepared.view.config);
     section.flowchart_routing = if compat {
         FlowchartRouting::Mermaid
