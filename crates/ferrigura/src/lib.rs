@@ -215,7 +215,7 @@ impl Renderer {
                         && *n >= 0.0
                         && n.fract() == 0.0
                         && *n <= 9_007_199_254_740_991.0
-                        && *n < usize::MAX as f64 =>
+                        && *n <= usize::MAX as f64 =>
                 {
                     Ok(*n as usize)
                 }
