@@ -486,3 +486,31 @@ fn host_limits_are_enforced() {
         );
     }
 }
+
+#[test]
+fn fixed_clock_matches_library_and_validates_milliseconds() {
+    let text = "gantt\n dateFormat HH:mm\n section Work\n Task :a, 00:00, 30d\n";
+    let args = ["--now", "1705276800000"];
+    let first = run(&args, text);
+    assert!(first.status.success(), "{}", stderr(&first));
+    assert_eq!(stdout(&first), stdout(&run(&args, text)));
+    let renderer = ferrigura::Renderer::builder(&ferrigura_model::value::Value::empty_object())
+        .with_all()
+        .build();
+    let expected = renderer
+        .render_with(
+            text,
+            &ferrigura::RenderOptions {
+                now: Some(1705276800000),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    assert_eq!(stdout(&first), format!("{expected}\n"));
+    assert!(expected.contains("class=\"today\""));
+    assert!(expected.contains("2024-01-15"));
+    assert_ne!(stdout(&first), stdout(&run(&["--now", "1705276800"], text)));
+    for invalid in ["1.5", "NaN", "8640000000000001"] {
+        assert_eq!(run(&["--now", invalid], "").status.code(), Some(2));
+    }
+}

@@ -16,6 +16,8 @@ export type RenderOptions = {
   /** SVG namespace; starts with an ASCII letter and contains letters, digits, - or _. */
   id?: string;
   colorScheme?: 'light' | 'dark' | 'auto';
+  /** UTC milliseconds since the Unix epoch, an integer within ±8640000000000000. Defaults to the system clock. */
+  now?: number;
 };
 /** One explicit font face. File paths are read by JavaScript, relative to the process directory. */
 export type FontFace = {

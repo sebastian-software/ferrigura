@@ -148,3 +148,7 @@ By default, optimized rendering centers flowchart ports and compacts sequence pa
 |    0 | Success, and also `--help` and `--version`.                                                                                         |
 |    1 | A diagram or the configuration does not render, or a file cannot be read or written.                                                |
 |    2 | The command line does not parse: an unknown option, an option without its value, an unknown color scheme, or options that conflict. |
+
+Use `--now 1704067200000` to fix the clock for reproducible Gantt output.
+The value is an integer number of UTC milliseconds since the Unix epoch within
+±8640000000000000. Without `--now`, the system clock is used.

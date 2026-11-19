@@ -209,3 +209,15 @@ test('host limits apply to text and flowchart edges', () => {
   for (const maxEdges of [1, 2]) assert.match(render(agent, { maxEdges }), /<svg/);
   assert.throws(() => render(text, { maxEdges: -1 }), /maxEdges/);
 });
+
+void test('fixed UTC milliseconds make Gantt output repeatable across entry points', () => {
+  const text = 'gantt\n dateFormat HH:mm\n section Work\n Task :a, 00:00, 30d\n';
+  const now = 1705276800000;
+  const svg = render(text, {}, { now });
+  assert.equal(render(text, {}, { now }), svg);
+  assert.equal(new Renderer().render(text, { now }), svg);
+  assert.notEqual(render(text, {}, { now: now / 1000 }), svg);
+  for (const invalid of [NaN, Infinity, 1.5, 8640000000000001]) {
+    assert.throws(() => render(text, {}, { now: invalid }), /now must be integer/);
+  }
+});

@@ -52,6 +52,8 @@ pub struct RenderOptionsInput {
     /// The colors: `light`, `dark`, or `auto` to follow the viewer's color scheme. By default the
     /// configured theme decides.
     pub color_scheme: Option<String>,
+    /// Fixed UTC time in integer milliseconds since the Unix epoch.
+    pub now: Option<f64>,
 }
 
 /// Options for one-time, script-free SVG draw animation.
@@ -206,7 +208,19 @@ fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
                 .as_deref()
                 .map(color_scheme)
                 .transpose()?,
-            now: None,
+            now: input
+                .now
+                .map(|now| {
+                    if !now.is_finite() || now.fract() != 0.0 || now.abs() > 8_640_000_000_000_000.0
+                    {
+                        return Err(Error::new(
+                            Status::InvalidArg,
+                            "now must be integer Unix milliseconds within ±8640000000000000",
+                        ));
+                    }
+                    Ok(now as i64)
+                })
+                .transpose()?,
             git_graph_seed: None,
             random_seed: None,
         },
