@@ -100,4 +100,6 @@ export interface RenderOptionsInput {
    * configured theme decides.
    */
   colorScheme?: string
+  /** Fixed UTC time in integer milliseconds since the Unix epoch. */
+  now?: number
 }

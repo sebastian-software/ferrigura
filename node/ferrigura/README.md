@@ -91,3 +91,8 @@ native addon. See `NOTICE.md` for layout and bundled-font license texts.
 The published addon draws all 33 diagram types. To ship fewer, build the
 [addon crate](https://github.com/sebastian-software/ferrigura/blob/main/crates/ferrigura-node/README.md)
 with the features of the types you draw.
+
+For reproducible Gantt output, pass `{ now: 1704067200000 }` as the render
+options to `render` or `Renderer.render`. `now` is an integer number of UTC
+milliseconds since the Unix epoch within ±8640000000000000. When omitted,
+the system clock is used.

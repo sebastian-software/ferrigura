@@ -1,5 +1,6 @@
 import { render, Renderer, type FontOptions, type RenderOptions } from '../index.mjs';
 const options: RenderOptions = {
+  now: 1704067200000,
   id: 'example',
   colorScheme: 'auto',
   compat: true,

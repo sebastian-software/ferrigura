@@ -32,6 +32,7 @@ Options:
                           Register a face with weight 1..1000 and style normal or italic
       --font-fallback <FAMILY>
                           Add a registered fallback family, in order; repeat for more families
+      --now <MILLISECONDS> Fixed UTC time as integer milliseconds since the Unix epoch
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
@@ -53,7 +54,7 @@ Options:
 enum Command {
     Help,
     Version,
-    Render(Job),
+    Render(Box<Job>),
 }
 
 /// A render: the inputs, the options, and where the SVGs go.
@@ -65,6 +66,7 @@ struct Job {
     fonts: Vec<FontInput>,
     font_fallbacks: Vec<String>,
     id: Option<String>,
+    now: Option<i64>,
     scheme: Option<ColorScheme>,
     compat: bool,
     animation: Option<Animation>,
@@ -141,6 +143,18 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
                 }
                 job.font_fallbacks.push(family);
             }
+            "--now" => {
+                let raw = value(&mut args, &argument)?;
+                job.now = Some(
+                    raw.parse::<i64>()
+                        .ok()
+                        .filter(|n| (-8_640_000_000_000_000..=8_640_000_000_000_000).contains(n))
+                        .ok_or_else(|| {
+                            "--now must be integer Unix milliseconds within ±8640000000000000"
+                                .to_owned()
+                        })?,
+                );
+            }
             "--id" => job.id = Some(value(&mut args, &argument)?),
             "--scheme" => job.scheme = Some(scheme(&value(&mut args, &argument)?)?),
             "--compat" => job.compat = true,
@@ -203,7 +217,7 @@ impl Job {
                 }
             }
         }
-        Ok(Command::Render(self))
+        Ok(Command::Render(Box::new(self)))
     }
 }
 
@@ -286,7 +300,7 @@ fn run(job: &Job) -> Result<(), String> {
         color_scheme: job.scheme,
         compat: job.compat,
         animation: job.animation,
-        now: None,
+        now: job.now,
         git_graph_seed: None,
         random_seed: None,
     };
@@ -385,7 +399,7 @@ mod tests {
 
     fn job(list: &[&str]) -> Job {
         match parse_args(args(list)) {
-            Ok(Command::Render(job)) => job,
+            Ok(Command::Render(job)) => *job,
             other => panic!("expected a render, got {other:?}"),
         }
     }
