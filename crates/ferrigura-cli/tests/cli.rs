@@ -460,3 +460,29 @@ fn diagram_metadata_cannot_register_font_files_or_urls() {
         }
     }
 }
+
+#[test]
+fn host_limits_are_enforced() {
+    let text = "flowchart LR\n A --> B\n B --> C\n";
+    for limit in [1, 2, 3] {
+        let config = scratch("limits.json", &format!(r#"{{"maxEdges":{limit}}}"#));
+        for mode in [&[][..], &["--compat"][..]] {
+            let mut args = vec!["--config", config.to_str().unwrap()];
+            args.extend_from_slice(mode);
+            let output = run(&args, text);
+            assert_eq!(output.status.success(), limit >= 2, "{}", stderr(&output));
+        }
+    }
+    let text = "%% 😀\npie\n\"A\": 1";
+    let length = text.encode_utf16().count();
+    for limit in [length - 1, length, length + 1] {
+        let config = scratch("text-limit.json", &format!(r#"{{"maxTextSize":{limit}}}"#));
+        let output = run(&["--config", config.to_str().unwrap()], text);
+        assert_eq!(
+            output.status.success(),
+            limit >= length,
+            "{}",
+            stderr(&output)
+        );
+    }
+}

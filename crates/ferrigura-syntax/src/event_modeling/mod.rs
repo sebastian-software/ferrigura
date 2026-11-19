@@ -25,7 +25,7 @@ use crate::text::{newline_then_space_to_newline, strip_leading_space};
 
 /// The default `maxTextSize`: a text whose comment-preserving form is longer than this (in UTF-16
 /// units, as JavaScript counts) is parsed without its comment lines. The configuration's own
-/// `maxTextSize` is not read by the crate's pipeline.
+/// `maxTextSize` can be supplied through [`parse_with_max_text_size`].
 const MAX_TEXT_SIZE: usize = 50_000;
 
 /// Parses an event modeling diagram and returns its model.
@@ -36,7 +36,19 @@ const MAX_TEXT_SIZE: usize = 50_000;
 /// already uses, at the later frame's keyword. Positions count the lines of the original input,
 /// front matter included.
 pub fn parse(raw: &str) -> Result<EventModelingDiagram, ParseError> {
-    let parsed = parse_tree(raw)?;
+    parse_with_max_text_size(raw, MAX_TEXT_SIZE)
+}
+
+/// Parses with the supplied comment-preserving text limit.
+///
+/// # Errors
+///
+/// As [`parse`].
+pub fn parse_with_max_text_size(
+    raw: &str,
+    max_text_size: usize,
+) -> Result<EventModelingDiagram, ParseError> {
+    let parsed = parse_tree(raw, max_text_size)?;
     let source = Source::new(&parsed.text, parsed.line_offset);
     check_frame_ids(&parsed.ast, source)?;
     let state = db::state(&parsed.ast);
@@ -49,7 +61,7 @@ pub fn parse(raw: &str) -> Result<EventModelingDiagram, ParseError> {
 ///
 /// A lexer or grammar error, as [`parse`] reports it.
 pub fn parse_ast(raw: &str) -> Result<EventModel, ParseError> {
-    parse_tree(raw).map(|parsed| parsed.ast)
+    parse_tree(raw, MAX_TEXT_SIZE).map(|parsed| parsed.ast)
 }
 
 /// The syntax tree with the text it was read from, and what positions need.
@@ -63,11 +75,11 @@ struct Parsed {
     front_matter_title: Option<String>,
 }
 
-fn parse_tree(raw: &str) -> Result<Parsed, ParseError> {
+fn parse_tree(raw: &str, max_text_size: usize) -> Result<Parsed, ParseError> {
     let prepared = prepare(raw)?;
     // The DB keeps the comment lines (`preserveCommentsWhenParsing`), unless the text is too long.
     let with_comments = remove_directives(&prepared.text);
-    let source_text = if with_comments.encode_utf16().count() > MAX_TEXT_SIZE {
+    let source_text = if with_comments.encode_utf16().count() > max_text_size {
         cleanup_comments(&with_comments)
     } else {
         with_comments

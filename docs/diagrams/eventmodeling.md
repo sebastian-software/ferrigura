@@ -24,7 +24,7 @@ Left out are the box geometry and texts (they need the measured text, and `data`
 
 ## Parsing
 
-`event_modeling::parse` runs the steps of `Diagram.fromText`: it prepares the text (line breaks, quote rewriting, front matter and its title), removes directives, keeps the comment lines (this DB sets `preserveCommentsWhenParsing`) unless the text is longer than the default `maxTextSize` of 50 000 UTF-16 units, encodes entities and adds a line break. The scanner and the grammar build a syntax tree, the DB places the frames and creates the relations, and the model holds the result ([0007](../decisions/0007-hand-written-parsers.md)). Positions in errors count the lines of the original input, front matter included.
+`event_modeling::parse` runs the steps of `Diagram.fromText`: it prepares the text (line breaks, quote rewriting, front matter and its title), removes directives, keeps the comment lines (this DB sets `preserveCommentsWhenParsing`) unless the text is longer than the configured `maxTextSize` (50,000 UTF-16 units by default), encodes entities and adds a line break. The scanner and the grammar build a syntax tree, the DB places the frames and creates the relations, and the model holds the result ([0007](../decisions/0007-hand-written-parsers.md)). Positions in errors count the lines of the original input, front matter included.
 
 The scanner runs the terminals of the Chevrotain lexer in the order Langium builds them, and the first that matches wins: the keywords (longest first), `EM_ID`, `EM_FID` (one to three digits), the inline data, the data block, the `accDescr`, `accTitle` and `title` tokens, white space, and the hidden YAML, directive and comment terminals. Each regular expression is matched by hand as JavaScript runs it at the current position. A word keyword is a token only when the identifier run that starts there is exactly the keyword, and `eventmodeling` also needs `%%`, white space or the end after it. The grammar is `eventmodeling` followed by statements, each starting with a token no other statement starts with.
 
@@ -65,7 +65,7 @@ The renderer ports `renderer.ts`, `styles.js` and the text of `db.ts` (`calculat
 
 - The tags that DOMPurify keeps and the data can reach, beyond bold, italic and the plain ones, are not drawn as the reference draws them: `sub` and `sup` (a shifted baseline and a smaller size), `small` and `big` (a size), `kbd` (the machine's `monospace`) and the block tags `p` and `div` (each starts a line). No probe passes through them yet; `u`, `s`, `span`, `mark` and `code` are within tolerance.
 - The browser's per-glyph rounding of advances is not emulated; it shows as one layout unit (1/64 px) on some lines.
-- The configuration's `maxTextSize` is not read by the parse pipeline, for any type; a directive that sets it is not honored.
+- The rendering facade checks the host `maxTextSize` before parsing and passes it to the comment handling described above. Direct syntax-crate calls use the default unless a limit is supplied.
 - The `accTitle` and `accDescr` elements and the order of the `aria-labelledby` attributes are not compared with the reference (the harness skips `title` and `desc`).
 
 ## Checking it

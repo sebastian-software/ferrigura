@@ -939,7 +939,7 @@ fn render_event_modeling(
     let id = prepared.id.as_str();
     event_modeling_render::render(&Context {
         fonts: prepared.fonts,
-        diagram: &event_modeling::parse(text)?,
+        diagram: &event_modeling::parse_with_max_text_size(text, prepared.max_text)?,
         section: &typed_config.eventmodeling,
         globals: &prepared.view.globals,
         theme: prepared.theme(),
@@ -973,7 +973,7 @@ fn render_agentflow(
     let section = Section::of(&prepared.view.config);
     agentflow_render::render(&Context {
         fonts: prepared.fonts,
-        diagram: &agentflow::parse(text)?,
+        diagram: &agentflow::parse_with_limits(text, prepared.max_edges, prepared.max_text)?,
         section: &AgentflowSection {
             agentflow: &typed_config.agentflow,
             unified: section,

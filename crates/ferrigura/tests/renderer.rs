@@ -160,3 +160,60 @@ fn configurations_that_differ_only_in_the_sign_of_zero_have_their_own_ids() {
             .expect("the pie renders")
     );
 }
+
+#[test]
+fn host_limits_apply_to_raw_text_and_edges() {
+    let text = "%% 😀\npie\n\"A\": 1";
+    let length = text.encode_utf16().count();
+    for limit in [length, length + 1] {
+        assert!(render(text, &value(&format!(r#"{{"maxTextSize":{limit}}}"#))).is_ok());
+    }
+    assert!(
+        render(
+            text,
+            &value(&format!(r#"{{"maxTextSize":{}}}"#, length - 1))
+        )
+        .unwrap_err()
+        .to_string()
+        .contains("maxTextSize")
+    );
+    let directed = "---\nconfig:\n  maxTextSize: 9999\n---\npie\n\"A\": 1";
+    assert!(
+        render(directed, &value(r#"{"maxTextSize":20,"secure":[]}"#))
+            .unwrap_err()
+            .to_string()
+            .contains("maxTextSize")
+    );
+    for invalid in ["-1", "1.5", "null", "\"1\""] {
+        assert!(
+            render(text, &value(&format!(r#"{{"maxEdges":{invalid}}}"#)))
+                .unwrap_err()
+                .to_string()
+                .contains("maxEdges")
+        );
+    }
+    let agent = "agentflow-beta TB\n a[\"A\"]\n b[\"B\"]\n a --> b\n";
+    assert!(
+        render(agent, &value(r#"{"maxEdges":0}"#))
+            .unwrap_err()
+            .to_string()
+            .contains("Edge limit")
+    );
+    assert!(render(agent, &value(r#"{"maxEdges":1}"#)).is_ok());
+    assert!(render(agent, &value(r#"{"maxEdges":2}"#)).is_ok());
+    let flow = "---\nconfig:\n  maxEdges: 99\n---\nflowchart LR\n A --> B\n B --> C\n";
+    for compat in [false, true] {
+        let options = RenderOptions {
+            compat,
+            ..RenderOptions::default()
+        };
+        assert!(render_with(flow, &value(r#"{"maxEdges":2,"secure":[]}"#), &options).is_ok());
+        assert!(render_with(flow, &value(r#"{"maxEdges":3}"#), &options).is_ok());
+        assert!(
+            render_with(flow, &value(r#"{"maxEdges":1,"secure":[]}"#), &options)
+                .unwrap_err()
+                .to_string()
+                .contains("Edge limit")
+        );
+    }
+}

@@ -191,3 +191,21 @@ test('diagram metadata selects registered names without loading its own font sou
     }
   }
 });
+
+test('host limits apply to text and flowchart edges', () => {
+  const text = '%% 😀\npie\n"A": 1';
+  for (const maxTextSize of [text.length, text.length + 1]) {
+    assert.match(render(text, { maxTextSize }), /<svg/);
+  }
+  assert.throws(() => render(text, { maxTextSize: text.length - 1 }), /maxTextSize/);
+  const flow = '---\nconfig:\n  maxEdges: 99\n---\nflowchart LR\n A --> B\n B --> C\n';
+  for (const compat of [false, true]) {
+    assert.match(render(flow, { maxEdges: 2, secure: [] }, { compat }), /<svg/);
+    assert.match(render(flow, { maxEdges: 3 }, { compat }), /<svg/);
+    assert.throws(() => render(flow, { maxEdges: 1, secure: [] }, { compat }), /Edge limit/);
+  }
+  const agent = 'agentflow-beta TB\n a["A"]\n b["B"]\n a --> b\n';
+  assert.throws(() => render(agent, { maxEdges: 0 }), /Edge limit/);
+  for (const maxEdges of [1, 2]) assert.match(render(agent, { maxEdges }), /<svg/);
+  assert.throws(() => render(text, { maxEdges: -1 }), /maxEdges/);
+});

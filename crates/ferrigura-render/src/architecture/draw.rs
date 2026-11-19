@@ -485,8 +485,7 @@ pub fn draw(
     // `drawServices` (svgDraw.ts 276-362), then `drawJunctions` (364-389).
     let mut services_markup = String::new();
     let mut services_bounds = Box2::EMPTY;
-    for index in 0..scene.nodes.len() {
-        let node = &scene.nodes[index];
+    for node in &scene.nodes {
         if node.kind != Kind::Service {
             continue;
         }
@@ -559,8 +558,7 @@ pub fn draw(
         ));
         services_bounds.include_box(content.transformed(&Affine::translate(x, y)));
     }
-    for index in 0..scene.nodes.len() {
-        let node = &scene.nodes[index];
+    for node in &scene.nodes {
         if node.kind != Kind::Junction {
             continue;
         }
@@ -593,8 +591,7 @@ pub fn draw(
     let mut groups_markup = String::new();
     let mut groups_bounds = Box2::EMPTY;
     let icon_size_group = metrics.padding * 0.75;
-    for index in 0..scene.nodes.len() {
-        let node = &scene.nodes[index];
+    for (index, node) in scene.nodes.iter().enumerate() {
         if node.kind != Kind::Group {
             continue;
         }
