@@ -190,7 +190,10 @@ void test('fixed Gantt clock agrees with the CLI', () => {
   const text = 'gantt\n dateFormat HH:mm\n section Work\n Task :a, 00:00, 30d\n';
   const now = 1705276800000;
   execFileSync('cargo', ['build', '-q', '-p', 'ferrigura-cli'], { cwd: root, stdio: 'inherit' });
-  const cli = execFileSync(join(root, 'target/debug/ferrigura'), ['--now', String(now)], { input: text, encoding: 'utf8' });
+  const cli = execFileSync(join(root, 'target/debug/ferrigura'), ['--now', String(now)], {
+    input: text,
+    encoding: 'utf8',
+  });
   assert.equal(cli, `${render(text, {}, { now })}\n`);
   assert.equal(new Renderer().render(text, { now }), render(text, {}, { now }));
 });
