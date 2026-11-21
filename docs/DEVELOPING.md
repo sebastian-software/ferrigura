@@ -49,6 +49,20 @@ RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace
 cargo test --workspace
 ```
 
+The normal robustness test uses one small corpus seed per registered diagram type, three
+character-boundary truncations per seed, strict XML parsing, and selected numeric geometry checks.
+It also checks small and moderate nesting and subsequent renders for state leakage. To repeat the
+cases in four separate child
+processes with a shared 30-second deadline, run:
+
+```bash
+cargo test -p ferrigura --test robustness extended_robustness_in_bounded_children -- --ignored
+```
+
+The parent kills and reaps a child on timeout. This is a bounded regression check, not a memory
+limit or cancellation inside `render`; services can apply their own process limits
+([architecture](./ARCHITECTURE.md#limits)).
+
 The addon crate with one diagram type, so that its features keep compiling:
 
 ```bash
@@ -72,6 +86,8 @@ On an aarch64 machine (CI uses a Linux arm64 runner), the output of the whole co
 ```bash
 cargo test --release --test snapshots
 ```
+
+The native matrix also captures the replay test's representative SVGs and publishes a report comparing each target with Linux arm64. The report records ordered elements, labels, embedded font styles and data hashes, and numeric geometry differences without applying a cross-target tolerance. A pull request includes macOS when it has the `ci:macos` label; a main or manually dispatched run includes all seven targets. The individual `native-replay-*` artifacts contain the captured SVGs.
 
 A release build links with fat LTO in one codegen unit and takes minutes where a debug build takes seconds; iterate with the dev profile and reserve `--release` for the snapshots and the artifacts.
 
@@ -110,7 +126,7 @@ pnpm install --frozen-lockfile --ignore-scripts
 pnpm build
 ```
 
-Then `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check` and `pnpm pack:check`; the last installs the packed facade and the host's platform package into a fresh project. A local run exercises only the host's binary; CI builds and checks all seven targets ([0016](./decisions/0016-npm-packages-via-napi.md)).
+Then `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check` and `pnpm pack:check`; the last installs the packed facade and the host's platform package into a fresh project, runs the consumer smoke test, and typechecks the public API examples against the installed package. A local run exercises only the host's binary; CI builds and checks all seven targets ([0016](./decisions/0016-npm-packages-via-napi.md)).
 
 ## Releases
 

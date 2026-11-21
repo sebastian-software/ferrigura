@@ -2,7 +2,7 @@
 
 `ferrigura-render` lays out the diagrams of ferrigura and writes them as SVG: the renderers of each diagram type, the shapes, the edges and the style sheets. It uses the layout engines of the other crates, `ferrigura-elk`, `ferrigura-cose`, `ferrigura-swimlane` and `ferrigura-venn`, and the text measurement of `ferrigura-text`.
 
-This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate, which calls it.
+This [Ferrigura](https://github.com/sebastian-software/ferrigura) implementation crate exposes an experimental API. The [`ferrigura` facade](https://crates.io/crates/ferrigura) provides the [supported Rust API](https://github.com/sebastian-software/ferrigura/blob/main/docs/decisions/0022-stable-public-api.md).
 
 ## License
 

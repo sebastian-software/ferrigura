@@ -286,6 +286,11 @@ jobs:
           FERRIGURA_RUST_TARGET: ${{ matrix.target }}
       - run: pnpm test && pnpm typecheck && pnpm lint && pnpm format:check && pnpm pack:check
         if: matrix.native
+      - name: Capture native replay
+        if: matrix.native
+        run: |
+          mkdir -p replay
+          node scripts/render-replay.mjs A > replay/${{ matrix.id }}.json
       # Derive the exact floor from the published facade so dependency automation cannot bump it.
       - name: Read the minimum Node version
         id: minimum-node
@@ -317,4 +322,40 @@ jobs:
             pnpm install --frozen-lockfile --ignore-scripts
             pnpm test
             pnpm pack:check
+            mkdir -p replay
+            node scripts/render-replay.mjs A > replay/${{ matrix.id }}.json
           '
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-replay-${{ matrix.id }}
+          path: node/replay/${{ matrix.id }}.json
+          if-no-files-found: error
+
+  native-replay-report:
+    needs: [native-matrix, native-npm]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: tools/port/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: tools/port/.node-version
+      - run: pnpm -C tools/port install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: native-replay-*
+          path: replay-artifacts
+          merge-multiple: true
+      - name: Compare captured SVGs
+        env:
+          REPLAY_MATRIX: ${{ needs.native-matrix.outputs.matrix }}
+        run: |
+          node tools/port/compare-native-replays.mjs replay-artifacts replay-report.md
+          cat replay-report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-comparison-report
+          path: replay-report.md
+          if-no-files-found: error

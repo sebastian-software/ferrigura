@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.1](https://github.com/sebastian-software/ferrigura/compare/v0.8.0...v0.8.1) (2026-11-21)
+
+
+### Bug Fixes
+
+* **deps:** update rust napi to v3.16.2 ([#103](https://github.com/sebastian-software/ferrigura/issues/103)) ([2415cc8](https://github.com/sebastian-software/ferrigura/commit/2415cc82228682fd8f617de78698bdf42dce6ff7))
+* **deps:** update the Rust text stack together ([#114](https://github.com/sebastian-software/ferrigura/issues/114)) ([7485fa4](https://github.com/sebastian-software/ferrigura/commit/7485fa4610556581260454aa58d5794abd176f74))
+* honor effective wrapping in C4 diagrams ([#118](https://github.com/sebastian-software/ferrigura/issues/118)) ([b6fab8d](https://github.com/sebastian-software/ferrigura/commit/b6fab8d062184845604c4ff7465188ca35340b4d))
+* **venn:** include fmin license and attribution ([#113](https://github.com/sebastian-software/ferrigura/issues/113)) ([9346f2e](https://github.com/sebastian-software/ferrigura/commit/9346f2eaf37c423a35b6310b38a3bb21dba10b5b))
+
 ## [0.8.0](https://github.com/sebastian-software/ferrigura/compare/v0.7.0...v0.8.0) (2026-11-19)
 
 
