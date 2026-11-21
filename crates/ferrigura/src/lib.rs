@@ -125,6 +125,7 @@ pub struct Renderer {
     plugins: Vec<Plugin>,
     /// Explicit host fonts; `None` preserves the bundled defaults.
     fonts: Option<Arc<FontRegistry>>,
+    subset_cache: Arc<ferrigura_text::SubsetCache>,
 }
 
 impl Renderer {
@@ -178,6 +179,16 @@ impl Renderer {
     ///
     /// Returns the errors of [`render_with`].
     pub fn render_with(&self, text: &str, options: &RenderOptions) -> Result<String, RenderError> {
+        ferrigura_text::with_subset_cache(&self.subset_cache, || {
+            self.render_with_cache(text, options)
+        })
+    }
+
+    fn render_with_cache(
+        &self,
+        text: &str,
+        options: &RenderOptions,
+    ) -> Result<String, RenderError> {
         let (max_text, max_edges) = self.limits(text)?;
         let Some((source, kind)) = preprocess::prepare(text)
             .ok()
@@ -536,6 +547,7 @@ impl RendererBuilder {
             views: Mutex::new(HashMap::new()),
             plugins: self.plugins,
             fonts: self.fonts.map(Arc::new),
+            subset_cache: Arc::default(),
         }
     }
 }
@@ -1078,5 +1090,42 @@ mod font_input_tests {
             .shared();
         assert!(!Arc::ptr_eq(&first, &second));
         assert_ne!(first.configuration, second.configuration);
+    }
+}
+
+#[cfg(test)]
+mod subset_cache_tests {
+    use super::*;
+
+    #[test]
+    fn repeated_distinct_diagrams_and_concurrent_renders_match_uncached_svg() {
+        let renderer = Renderer::new(&Value::empty_object());
+        let options = RenderOptions {
+            id: Some("test".into()),
+            now: Some(1_700_000_000_000),
+            ..RenderOptions::default()
+        };
+        let diagrams = [
+            "pie\n  \"Alpha\" : 1\n  \"Beta\" : 2\n",
+            "pie\n  \"Beta\" : 1\n  \"Alpha\" : 2\n",
+        ];
+        let expected: Vec<_> = diagrams
+            .iter()
+            .map(|text| renderer.render_with_cache(text, &options).unwrap())
+            .collect();
+        std::thread::scope(|scope| {
+            for _ in 0..4 {
+                let renderer = &renderer;
+                let options = &options;
+                let expected = &expected;
+                scope.spawn(move || {
+                    for _ in 0..5 {
+                        for (text, expected) in diagrams.iter().zip(expected) {
+                            assert_eq!(&renderer.render_with(text, options).unwrap(), expected);
+                        }
+                    }
+                });
+            }
+        });
     }
 }

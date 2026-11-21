@@ -17,8 +17,9 @@
 //! `fg-0123456789abcdef-sans`. Equal subsets get equal names, and the hash is computed over the
 //! subset bytes and their weight and style, so a different subset gets a different name.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::fmt::Write as _;
+use std::sync::{Arc, Mutex};
 
 use base64::Engine;
 use read_fonts::collections::IntSet;
@@ -29,6 +30,65 @@ use skera::{DEFAULT_LAYOUT_FEATURES, Plan, SubsetFlags, subset_font};
 use crate::error::TextError;
 use crate::fonts::{Face, FontFamily, FontStyle};
 use crate::measure::{Run, fallback_runs};
+
+/// Subsets retained by one reusable renderer. The budget includes keys and values; font data is
+/// shared with the renderer's immutable registry, not copied into the cache.
+#[derive(Default)]
+#[doc(hidden)]
+pub struct SubsetCache(Mutex<CacheState>);
+
+#[derive(Default)]
+struct CacheState {
+    entries: HashMap<CacheKey, CacheEntry>,
+    bytes: usize,
+    clock: u64,
+}
+
+#[derive(Hash, PartialEq, Eq)]
+struct CacheKey {
+    data_address: usize,
+    data_len: usize,
+    characters: Box<[char]>,
+}
+
+struct CacheEntry {
+    // A weak reference keeps the allocation identity unique without retaining the font bytes.
+    _data: Option<std::sync::Weak<Vec<u8>>>,
+    subset: Arc<[u8]>,
+    charge: usize,
+    used: u64,
+}
+
+impl std::fmt::Debug for SubsetCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SubsetCache").finish_non_exhaustive()
+    }
+}
+
+// The shorthand keeps several renderers. Bound each one and also cap the number of hash entries.
+// Reserve space for the maximum map allocation even after eviction, since HashMap retains capacity.
+const CACHE_BUDGET: usize = 1024 * 1024 - 256 * 256;
+const CACHE_ENTRIES: usize = 256;
+// Accounts conservatively for the map bucket, Arc header and per-entry bookkeeping.
+const ENTRY_OVERHEAD: usize = 256;
+
+thread_local! {
+    static ACTIVE_CACHE: std::cell::RefCell<Option<Arc<SubsetCache>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Runs a render with its subset cache, restoring any outer scope on return or unwind.
+#[doc(hidden)]
+pub fn with_subset_cache<T>(cache: &Arc<SubsetCache>, render: impl FnOnce() -> T) -> T {
+    struct Restore(Option<Arc<SubsetCache>>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            ACTIVE_CACHE.with(|active| *active.borrow_mut() = self.0.take());
+        }
+    }
+    let previous = ACTIVE_CACHE.with(|active| active.borrow_mut().replace(cache.clone()));
+    let _restore = Restore(previous);
+    render()
+}
 
 /// The embedded subsets of one font family in one diagram.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -94,7 +154,7 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
             if metric_faces.iter().any(|metric| same_face(metric, face)) {
                 characters.insert(' ');
             }
-            subsets.push((face, subset_characters(face, &characters)?));
+            subsets.push((face, cached_subset(face, &characters)?));
             index += 1;
         }
         let name = family_name(primary.family(), &subsets);
@@ -280,6 +340,76 @@ fn family_order(family: FontFamily) -> u8 {
 /// text with a line break or a tab needs the space glyph even when it has no space of its own.
 const COLLAPSED_WHITE_SPACE: [char; 3] = ['\n', '\r', '\t'];
 
+fn cached_subset(face: &Face, characters: &BTreeSet<char>) -> Result<Arc<[u8]>, TextError> {
+    let cache = ACTIVE_CACHE.with(|active| active.borrow().clone());
+    let Some(cache) = cache else {
+        return subset_characters(face, characters).map(Arc::from);
+    };
+    let mut normalized = characters.clone();
+    if COLLAPSED_WHITE_SPACE.iter().any(|c| normalized.contains(c)) {
+        normalized.insert(' ');
+    }
+    let (data_address, data_owner) = match &face.data {
+        crate::fonts::FontData::Bundled(data) => (data.as_ptr() as usize, None),
+        crate::fonts::FontData::Registered(data) => {
+            (Arc::as_ptr(data) as usize, Some(Arc::downgrade(data)))
+        }
+    };
+    let key = CacheKey {
+        data_address,
+        data_len: face.data().len(),
+        characters: normalized.into_iter().collect(),
+    };
+    {
+        let mut state = cache.0.lock().unwrap_or_else(|e| e.into_inner());
+        state.clock = state.clock.wrapping_add(1);
+        let now = state.clock;
+        if let Some(entry) = state.entries.get_mut(&key) {
+            entry.used = now;
+            return Ok(entry.subset.clone());
+        }
+    }
+    let subset: Arc<[u8]> = subset_characters(face, characters)?.into();
+    let charge = ENTRY_OVERHEAD
+        .saturating_add(key.characters.len() * std::mem::size_of::<char>())
+        .saturating_add(subset.len());
+    if charge <= CACHE_BUDGET {
+        let mut state = cache.0.lock().unwrap_or_else(|e| e.into_inner());
+        if !state.entries.contains_key(&key) {
+            while state.entries.len() >= CACHE_ENTRIES || state.bytes + charge > CACHE_BUDGET {
+                let Some(oldest) = state
+                    .entries
+                    .iter()
+                    .min_by_key(|(_, entry)| entry.used)
+                    .map(|(key, _)| CacheKey {
+                        data_address: key.data_address,
+                        data_len: key.data_len,
+                        characters: key.characters.clone(),
+                    })
+                else {
+                    break;
+                };
+                if let Some(entry) = state.entries.remove(&oldest) {
+                    state.bytes -= entry.charge;
+                }
+            }
+            state.clock = state.clock.wrapping_add(1);
+            let used = state.clock;
+            state.bytes += charge;
+            state.entries.insert(
+                key,
+                CacheEntry {
+                    _data: data_owner,
+                    subset: subset.clone(),
+                    charge,
+                    used,
+                },
+            );
+        }
+    }
+    Ok(subset)
+}
+
 fn subset_characters(face: &Face, characters: &BTreeSet<char>) -> Result<Vec<u8>, TextError> {
     let mut unicodes = IntSet::empty();
     for character in characters {
@@ -365,7 +495,7 @@ fn subset_data(
 }
 
 /// The family name of a set of subsets: the hash of each face's weight, style and bytes.
-fn family_name(family: FontFamily, subsets: &[(&Face, Vec<u8>)]) -> String {
+fn family_name(family: FontFamily, subsets: &[(&Face, Arc<[u8]>)]) -> String {
     let hash = fnv1a(&canonical_bytes(subsets));
     format!("fg-{hash:016x}-{}", family.css_suffix())
 }
@@ -373,7 +503,7 @@ fn family_name(family: FontFamily, subsets: &[(&Face, Vec<u8>)]) -> String {
 /// The bytes the family hash covers, face by face: the weight, the style, the length of the subset
 /// and the subset itself. Fixed-width integers are little-endian, so the bytes do not depend on the
 /// platform.
-fn canonical_bytes(subsets: &[(&Face, Vec<u8>)]) -> Vec<u8> {
+fn canonical_bytes(subsets: &[(&Face, Arc<[u8]>)]) -> Vec<u8> {
     let mut bytes = Vec::new();
     for (face, data) in subsets {
         bytes.extend_from_slice(&face.weight().css_value().to_le_bytes());
@@ -398,7 +528,7 @@ pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
     })
 }
 
-fn font_face_rules(name: &str, subsets: &[(&Face, Vec<u8>)]) -> Result<String, TextError> {
+fn font_face_rules(name: &str, subsets: &[(&Face, Arc<[u8]>)]) -> Result<String, TextError> {
     let mut css = String::new();
     for (face, data) in subsets {
         let encoded = base64::engine::general_purpose::STANDARD.encode(data);
@@ -498,5 +628,138 @@ mod selection_tests {
                 .iter()
                 .any(|face| face.family_name() == "arrows")
         );
+    }
+}
+
+#[cfg(test)]
+mod cache_tests {
+    use super::*;
+    use crate::{FontFamily, FontStyle, FontWeight, Run, face};
+
+    fn regular() -> &'static Face {
+        face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal)
+    }
+    fn bold() -> &'static Face {
+        face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal)
+    }
+
+    #[test]
+    fn cache_preserves_output_and_normalizes_effective_characters() {
+        let cache = Arc::new(SubsetCache::default());
+        for text in ["", "a\nb", "a\n b", "→", "Hello"] {
+            let runs = [Run {
+                text,
+                face: regular(),
+            }];
+            let expected = embed_runs(&runs).unwrap();
+            let actual = with_subset_cache(&cache, || embed_runs(&runs).unwrap());
+            assert_eq!(expected, actual);
+        }
+        let state = cache.0.lock().unwrap();
+        // The two newline inputs have the same effective Unicode set.
+        assert_eq!(state.entries.len(), 4);
+        assert!(state.bytes <= CACHE_BUDGET);
+    }
+
+    #[test]
+    fn cache_distinguishes_font_data_and_stays_bounded() {
+        let cache = Arc::new(SubsetCache::default());
+        with_subset_cache(&cache, || {
+            for n in 0..300 {
+                let text = format!("A{n}{}", char::from_u32(0x1000 + n).unwrap());
+                for face in [regular(), bold()] {
+                    let runs = [Run { text: &text, face }];
+                    assert_eq!(embed_runs(&runs).unwrap(), embed_without_cache(&runs));
+                }
+            }
+        });
+        let state = cache.0.lock().unwrap();
+        assert!(state.entries.len() <= CACHE_ENTRIES);
+        assert!(state.bytes <= CACHE_BUDGET);
+    }
+
+    fn embed_without_cache(runs: &[Run<'_, '_>]) -> Vec<EmbeddedFamily> {
+        let saved = ACTIVE_CACHE.with(|active| active.borrow_mut().take());
+        let result = embed_runs(runs).unwrap();
+        ACTIVE_CACHE.with(|active| *active.borrow_mut() = saved);
+        result
+    }
+
+    #[test]
+    fn registered_faces_keep_aliases_and_do_not_pin_font_data() {
+        use crate::FontRegistry;
+        let cache = Arc::new(SubsetCache::default());
+        let weak = {
+            let mut registry = FontRegistry::new();
+            registry
+                .register(
+                    "primary",
+                    regular().data().to_vec(),
+                    FontWeight::Normal,
+                    FontStyle::Normal,
+                )
+                .unwrap();
+            registry
+                .register(
+                    "arrows",
+                    face(FontFamily::Arrows, FontWeight::Normal, FontStyle::Normal)
+                        .data()
+                        .to_vec(),
+                    FontWeight::Normal,
+                    FontStyle::Normal,
+                )
+                .unwrap();
+            registry.set_fallbacks(["arrows"]);
+            let primary = registry
+                .resolve("primary", FontWeight::Normal, FontStyle::Normal)
+                .unwrap();
+            let weak = match &primary.data {
+                crate::fonts::FontData::Registered(data) => Arc::downgrade(data),
+                _ => unreachable!(),
+            };
+            for text in ["", "→", "Hello →"] {
+                let runs = [Run {
+                    text,
+                    face: &primary,
+                }];
+                let expected = embed_runs(&runs).unwrap();
+                assert_eq!(
+                    with_subset_cache(&cache, || embed_runs(&runs).unwrap()),
+                    expected
+                );
+            }
+            weak
+        };
+        assert!(weak.upgrade().is_none());
+    }
+
+    #[test]
+    fn scopes_restore_on_unwind_and_concurrent_renders_share_safely() {
+        let cache = Arc::new(SubsetCache::default());
+        let inner = Arc::new(SubsetCache::default());
+        with_subset_cache(&cache, || {
+            let _ =
+                std::panic::catch_unwind(|| with_subset_cache(&inner, || panic!("test unwind")));
+            ACTIVE_CACHE
+                .with(|active| assert!(Arc::ptr_eq(active.borrow().as_ref().unwrap(), &cache)));
+        });
+        ACTIVE_CACHE.with(|active| assert!(active.borrow().is_none()));
+        std::thread::scope(|scope| {
+            for _ in 0..8 {
+                let cache = &cache;
+                scope.spawn(move || {
+                    with_subset_cache(cache, || {
+                        let runs = [Run {
+                            text: "concurrent",
+                            face: regular(),
+                        }];
+                        for _ in 0..10 {
+                            assert_eq!(embed_runs(&runs).unwrap(), embed_without_cache(&runs));
+                        }
+                    })
+                });
+            }
+        });
+        assert!(cache.0.lock().unwrap().bytes <= CACHE_BUDGET);
     }
 }
