@@ -101,6 +101,57 @@ fn fallback_only_and_mixed_labels_bind_the_original_requested_face() {
 }
 
 #[test]
+fn fallback_chains_belong_to_each_renderer() {
+    let builder = || {
+        Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Primary", SANS.to_vec())
+            .unwrap()
+            .font("Arrows", ARROWS.to_vec())
+            .unwrap()
+    };
+    let with_fallback = builder().font_fallbacks(["Arrows"]).build();
+    let without_fallback = builder().build();
+    let text = "flowchart LR\n A[\"AV → AV\"]";
+    let covered = with_fallback.render(text).unwrap();
+    let uncovered = without_fallback.render(text).unwrap();
+    assert_eq!(covered.matches("@font-face{").count(), 2);
+    assert_eq!(uncovered.matches("@font-face{").count(), 1);
+    assert_ne!(covered, uncovered);
+    assert_eq!(with_fallback.render(text).unwrap(), covered);
+    assert_eq!(without_fallback.render(text).unwrap(), uncovered);
+}
+
+#[test]
+fn facade_registry_preflights_known_label_text() {
+    let mut fonts = ferrigura::FontRegistry::new();
+    fonts
+        .register(
+            "Primary",
+            SANS.to_vec(),
+            FontWeight::Normal,
+            FontStyle::Normal,
+        )
+        .unwrap();
+    fonts
+        .register(
+            "Arrows",
+            ARROWS.to_vec(),
+            FontWeight::Normal,
+            FontStyle::Normal,
+        )
+        .unwrap();
+    fonts.set_fallbacks(["Arrows"]);
+    let face = fonts
+        .resolve("Primary", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    let missing = ferrigura::FontRegistry::missing_glyphs(&face, "A → 漢");
+    assert_eq!(missing.len(), 1);
+    assert_eq!(missing[0].character, '漢');
+    assert_eq!(missing[0].family, "Primary");
+}
+
+#[test]
 fn missing_registered_primary_names_fail_with_registration_guidance() {
     let config = Value::from(serde_json::json!({"fontFamily":"Unregistered"}));
     let renderer = Renderer::builder(&config)

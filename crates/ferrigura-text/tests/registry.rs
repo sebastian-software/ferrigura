@@ -228,6 +228,26 @@ fn missing_glyphs_are_observable_and_remain_in_the_primary_face() {
 }
 
 #[test]
+fn registered_fallback_preflight_reports_uncovered_scripts_once_in_order() {
+    let mut fonts = registry();
+    fonts.set_fallbacks(["Arrows"]);
+    let face = fonts
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    // The arrow is covered by the registered fallback; CJK and Arabic are not.
+    let missing = FontRegistry::missing_glyphs(&face, "A → 漢م漢\n");
+    assert_eq!(
+        missing
+            .iter()
+            .map(|item| item.character)
+            .collect::<Vec<_>>(),
+        ['漢', 'م']
+    );
+    assert!(missing.iter().all(|item| item.family == "Fixture Sans"));
+    assert!(FontRegistry::missing_glyphs(&face, "A →").is_empty());
+}
+
+#[test]
 fn color_tables_survive_registration_and_embedding() {
     use read_fonts::{FontRef, TableProvider};
     let fonts = registry();
