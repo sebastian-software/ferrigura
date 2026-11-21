@@ -61,6 +61,19 @@ fn registry() -> FontRegistry {
 }
 
 #[test]
+fn missing_glyph_diagnostic_names_each_codepoint() {
+    let error = ferrigura_text::TextError::MissingGlyph {
+        sequence: "e\u{301}\u{200d}😀".into(),
+        family: "Fixture Sans".into(),
+        byte_offset: 4,
+    };
+    assert_eq!(
+        error.to_string(),
+        "selected font for \"Fixture Sans\" cannot shape \"e\\u{301}\\u{200d}😀\" (U+0065 U+0301 U+200D U+1F600) at text byte 4"
+    );
+}
+
+#[test]
 fn visible_grapheme_preflight_uses_registered_fallback_and_reports_offsets() {
     use ferrigura_text::{TextError, checked_fallback_runs};
     let mut fonts = registry();

@@ -37,10 +37,19 @@ impl fmt::Display for TextError {
                 sequence,
                 family,
                 byte_offset,
-            } => write!(
-                f,
-                "selected font for {family:?} cannot shape {sequence:?} at text byte {byte_offset}"
-            ),
+            } => {
+                write!(
+                    f,
+                    "selected font for {family:?} cannot shape {sequence:?} ("
+                )?;
+                for (index, character) in sequence.chars().enumerate() {
+                    if index > 0 {
+                        f.write_str(" ")?;
+                    }
+                    write!(f, "U+{:04X}", u32::from(character))?;
+                }
+                write!(f, ") at text byte {byte_offset}")
+            }
             Self::InvalidFont => write!(f, "the font data does not parse"),
             Self::MissingLineMetrics => write!(f, "the font has no line metrics"),
             Self::Shape(error) => write!(f, "shaping failed: {error:?}"),
