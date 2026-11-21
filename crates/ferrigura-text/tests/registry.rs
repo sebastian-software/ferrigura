@@ -618,3 +618,33 @@ fn browser_line_metrics_round_the_font_size_before_scaling() {
         .unwrap();
     assert_eq!(text_box(&face, 165.79).unwrap().ascent, 157.0);
 }
+
+#[test]
+fn entity_placeholders_use_only_registered_faces_for_measurement() {
+    let mut fonts = registry();
+    fonts.set_fallbacks(["Arrows", "Emoji"]);
+    let mono = fonts
+        .resolve("Fixture Mono", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    let sans = fonts
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    let encoded = "using ﬂ°lt¶ßbrﬂ°gt¶ß";
+    let decoded = "using <br>";
+    let missing = FontRegistry::missing_glyphs(&mono, encoded);
+    assert_eq!(
+        missing
+            .iter()
+            .map(|item| item.character)
+            .collect::<Vec<_>>(),
+        vec!['ﬂ']
+    );
+    assert!(FontRegistry::missing_glyphs(&sans, encoded).is_empty());
+    assert!(FontRegistry::missing_glyphs(&mono, decoded).is_empty());
+    let runs = fallback_runs(Run {
+        text: encoded,
+        face: &mono,
+    });
+    assert_eq!(runs.len(), 1);
+    assert!(std::ptr::eq(runs[0].face, mono.as_ref()));
+}

@@ -4,9 +4,11 @@
  * (`tools/port/fonts/bundled.ts`), so the rule follows what ferrigura can draw.
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { faceCoverage, labelCoverage, unicodeRange } from '../fonts/bundled.ts';
+import { placeholderCoverageWarnings } from './measurement-coverage.ts';
 import { exclusionReason, uncoveredCharacters, uncoveredScriptReason } from './common.ts';
 
 /** A flowchart with the given node text. */
@@ -87,5 +89,32 @@ describe('the exclusion by coverage', () => {
       exclusionReason('---\nconfig:\n  look: handDrawn\n---\nflowchart LR\n  A --> B\n') ?? '',
       /^look handDrawn/
     );
+  });
+});
+
+describe('internal measurement coverage', () => {
+  it('reports missing placeholder glyphs for Mono without excluding the fixture', () => {
+    const source = 'sequenceDiagram\n  A->>B: using #lt;br#gt;';
+    assert.deepEqual(uncoveredCharacters(source), []);
+    assert.deepEqual(placeholderCoverageWarnings(source, 'lexica'), []);
+    const warnings = placeholderCoverageWarnings(source, 'mono');
+    assert.equal(warnings.length, 4);
+    assert.ok(warnings.every((warning) => warning.includes('U+FB02 ﬂ')));
+    assert.equal(exclusionReason(source), null);
+  });
+  it('diagnoses the actual sequence line-break fixture for Mono and not Lexica', () => {
+    const source = readFileSync(
+      new URL(
+        '../../../e2e/diagrams/sequence/nightly-check/should-handle-different-line-breaks.mmd',
+        import.meta.url
+      ),
+      'utf8'
+    );
+    assert.deepEqual(placeholderCoverageWarnings(source, 'lexica'), []);
+    assert.equal(placeholderCoverageWarnings(source, 'mono').length, 4);
+  });
+  it('recognizes numeric and already encoded placeholders without treating ordinary hashes as entities', () => {
+    assert.equal(placeholderCoverageWarnings('A #123; ﬂ°amp¶ß', 'mono').length, 4);
+    assert.deepEqual(placeholderCoverageWarnings('A #123 and #abc', 'mono'), []);
   });
 });
