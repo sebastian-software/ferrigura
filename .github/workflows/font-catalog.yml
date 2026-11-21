@@ -45,8 +45,5 @@ jobs:
           node-version-file: tools/port/.node-version
       - name: Publish immutable objects and verify the public endpoint
         env:
-          FONT_STORAGE_HOSTNAME: ${{ vars.FONT_STORAGE_HOSTNAME }}
-          FONT_STORAGE_ZONE: ${{ vars.FONT_STORAGE_ZONE }}
-          FONT_STORAGE_ACCESS_KEY: ${{ secrets.FONT_STORAGE_ACCESS_KEY }}
-          FONT_CATALOG_BASE_URL: ${{ vars.FONT_CATALOG_BASE_URL }}
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
         run: node tools/font-catalog/run.mjs publish

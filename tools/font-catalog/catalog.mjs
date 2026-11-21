@@ -8,6 +8,62 @@ export const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const SOURCE = 'https://raw.githubusercontent.com/jacobxperez/lexica-ultralegible/';
 const PATH = /^fonts\/lexica-ultralegible\/1\.0\.0\/[0-9a-f]{64}\.(?:ttf|woff2|txt)$/;
 const SHA = /^[0-9a-f]{64}$/;
+export const PUBLIC_BASE = 'https://assets.sebastian-software.com/ferrigura';
+const ZONE = 'sebastian-websites-assets';
+
+// Management access is read-only. The storage password stays in this process and is never logged.
+export async function sharedStoragePassword(key, fetchImpl = fetch) {
+  if (!key || /[\r\n]/.test(key)) throw new Error('BUNNY_API_KEY is required');
+  const get = async (path) => {
+    const response = await fetchImpl(`https://api.bunny.net${path}`, {
+      method: 'GET',
+      headers: { AccessKey: key, Accept: 'application/json' },
+      redirect: 'error',
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!response.ok) throw new Error(`Bunny management GET failed: HTTP ${response.status}`);
+    try {
+      return await response.json();
+    } catch {
+      throw new Error('Invalid Bunny management response');
+    }
+  };
+  const matches = [];
+  for (let page = 1; page <= 100; page += 1) {
+    const result = await get(`/pullzone?perPage=1000&page=${page}`);
+    const items = Array.isArray(result) ? result : result?.Items;
+    if (!Array.isArray(items)) throw new Error('Invalid pull-zone listing');
+    matches.push(...items.filter((item) => item.Name === ZONE));
+    if (
+      Array.isArray(result) ||
+      result.HasMoreItems === false ||
+      (Number.isInteger(result.TotalItems) && page * 1000 >= result.TotalItems)
+    )
+      break;
+    if (items.length === 0 || page === 100) throw new Error('Incomplete pull-zone listing');
+  }
+  if (matches.length !== 1 || !Number.isSafeInteger(matches[0].Id) || matches[0].Id < 1)
+    throw new Error('Shared pull zone not uniquely found');
+  const pull = await get(`/pullzone/${matches[0].Id}`);
+  if (
+    pull.Id !== matches[0].Id ||
+    pull.Name !== ZONE ||
+    !Number.isSafeInteger(pull.StorageZoneId) ||
+    pull.StorageZoneId < 1 ||
+    !pull.Hostnames?.some((host) => host.Value === 'assets.sebastian-software.com')
+  )
+    throw new Error('Shared pull zone has an unexpected origin or hostname');
+  const storage = await get(`/storagezone/${pull.StorageZoneId}`);
+  if (
+    storage.Id !== pull.StorageZoneId ||
+    storage.Name !== ZONE ||
+    typeof storage.Password !== 'string' ||
+    !storage.Password ||
+    /[\r\n]/.test(storage.Password)
+  )
+    throw new Error('Shared storage zone does not match');
+  return storage.Password;
+}
 
 export async function readCatalog() {
   const bytes = await readFile(catalogFile);
@@ -110,12 +166,8 @@ export async function prepare(directory, fetchImpl = fetch) {
   return objects;
 }
 
-export async function uploadImmutable({ hostname, zone, accessKey, objects, fetchImpl = fetch }) {
-  if (
-    !/^(?:[a-z0-9-]+\.)?storage\.bunnycdn\.com$/.test(hostname || '') ||
-    !/^[a-z0-9-]+$/.test(zone || '') ||
-    !accessKey
-  )
+export async function uploadImmutable({ accessKey, objects, fetchImpl = fetch }) {
+  if (!accessKey || /[\r\n]/.test(accessKey))
     throw new Error('Storage configuration is incomplete');
   for (const [path, bytes] of objects) {
     const basename = path.split('/').at(-1);
@@ -128,7 +180,7 @@ export async function uploadImmutable({ hostname, zone, accessKey, objects, fetc
       throw new Error(`Invalid immutable object: ${path}`);
   }
   for (const [path, bytes] of objects) {
-    const url = `https://${hostname}/${zone}/${path}`;
+    const url = `https://storage.bunnycdn.com/${ZONE}/ferrigura/${path}`;
     const get = () =>
       fetchImpl(url, {
         headers: { AccessKey: accessKey },
@@ -176,11 +228,12 @@ export async function verifyPublic(base, objects, fetchImpl = fetch) {
     });
     const actual = await bounded(response, bytes.length);
     if (!actual.equals(bytes)) throw new Error(`Public integrity mismatch: ${path}`);
-    if (response.headers.get('access-control-allow-origin') !== '*')
+    if (path.endsWith('.woff2') && response.headers.get('access-control-allow-origin') !== '*')
       throw new Error(`Missing public CORS: ${path}`);
     if (
-      !/\bimmutable\b/.test(response.headers.get('cache-control') || '') ||
-      !/\bmax-age=31536000\b/.test(response.headers.get('cache-control') || '')
+      path.endsWith('.woff2') &&
+      (!/\bimmutable\b/.test(response.headers.get('cache-control') || '') ||
+        !/\bmax-age=31536000\b/.test(response.headers.get('cache-control') || ''))
     )
       throw new Error(`Missing immutable cache: ${path}`);
     const expected = path.endsWith('.woff2')
