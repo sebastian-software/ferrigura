@@ -109,6 +109,7 @@ pub(super) struct PairCandidate {
     path: Vec<Point>,
     segments: Vec<OrthogonalSegment>,
     shared_track_conflicts: Vec<usize>,
+    replacement_affected: f64,
     total_bends: f64,
     length: f64,
 }
@@ -535,7 +536,7 @@ impl<'v> Ctx<'v> {
                     {
                         continue;
                     }
-                    best = best_for_pair(self, &scoring, first, second, best);
+                    best = best_for_pair(&scoring, first, second, best);
                 }
             }
         }
@@ -569,6 +570,7 @@ fn pair_candidates_for(
         path: Vec<Point>,
         segments: Vec<OrthogonalSegment>,
         crossings: f64,
+        replacement_affected: f64,
         bends: f64,
         length: f64,
     }
@@ -603,6 +605,7 @@ fn pair_candidates_for(
             path: candidate,
             segments: candidate_segments,
             crossings,
+            replacement_affected,
             bends,
             length,
         });
@@ -636,6 +639,7 @@ fn pair_candidates_for(
                 &candidate.segments,
                 base,
             ),
+            replacement_affected: candidate.replacement_affected,
             total_bends: candidate.bends,
             length: candidate.length,
             path: candidate.path,
@@ -672,7 +676,6 @@ fn shared_track_conflicts_for(
 
 /// `pairCrossingCount(current, firstEdge, firstCandidate, secondEdge, secondCandidate, baseSegments)`.
 fn pair_crossing_count(
-    ctx: &Ctx,
     current: &Snapshot,
     first: (usize, &PairCandidate),
     second: (usize, &PairCandidate),
@@ -692,16 +695,14 @@ fn pair_crossing_count(
         }
     }
 
-    let mut replacement_affected =
-        crossings_between(&first_candidate.segments, &second_candidate.segments);
-    for &other in &ctx.visible {
-        if other == first_edge || other == second_edge {
-            continue;
-        }
-        let other_segments = &base.segments[other];
-        replacement_affected += crossings_between(&first_candidate.segments, other_segments)
-            + crossings_between(&second_candidate.segments, other_segments);
-    }
+    // Each total includes the partner's original path. Remove those two counts,
+    // then count the candidate pair once. Counts are integral and exact in f64
+    // while the number of segment pairs is below 2^53.
+    let replacement_affected = first_candidate.replacement_affected
+        - crossings_between(&first_candidate.segments, &base.segments[second_edge])
+        + second_candidate.replacement_affected
+        - crossings_between(&second_candidate.segments, &base.segments[first_edge])
+        + crossings_between(&first_candidate.segments, &second_candidate.segments);
 
     current.count - current_affected + replacement_affected
 }
@@ -733,7 +734,6 @@ fn pair_score_is_better(candidate: &PairScore, best: &PairScore) -> bool {
 
 /// `scorePairReplacement(...)`: the score of one pair of candidates, when it removes crossings.
 fn score_pair(
-    ctx: &Ctx,
     scoring: &Scoring,
     first: &PairOption,
     first_candidate: &PairCandidate,
@@ -741,7 +741,6 @@ fn score_pair(
     second_candidate: &PairCandidate,
 ) -> Option<PairScore> {
     let crossings = pair_crossing_count(
-        ctx,
         scoring.current,
         (first.edge, first_candidate),
         (second.edge, second_candidate),
@@ -772,7 +771,6 @@ fn score_pair(
 
 /// `bestScoreForOptionPair(context, first, second, best)`.
 fn best_for_pair(
-    ctx: &Ctx,
     scoring: &Scoring,
     first: &PairOption,
     second: &PairOption,
@@ -786,14 +784,9 @@ fn best_for_pair(
             {
                 continue;
             }
-            if let Some(score) = score_pair(
-                ctx,
-                scoring,
-                first,
-                first_candidate,
-                second,
-                second_candidate,
-            ) && pair_score_is_better(&score, &best)
+            if let Some(score) =
+                score_pair(scoring, first, first_candidate, second, second_candidate)
+                && pair_score_is_better(&score, &best)
             {
                 best = score;
             }
@@ -848,6 +841,74 @@ mod packed_bounds_tests {
     use super::*;
     use crate::direction::geometry::segment_hits_any_rect;
     use crate::model::Rect;
+
+    #[test]
+    fn cached_pair_crossings_match_full_rescan() {
+        fn seg(a: (f64, f64), b: (f64, f64)) -> Vec<OrthogonalSegment> {
+            segments_for(&[Point { x: a.0, y: a.1 }, Point { x: b.0, y: b.1 }])
+        }
+        // Both candidates cross the partner's original route, each other, and
+        // an unrelated route. The unrelated pair also crosses in the base.
+        let paths = vec![
+            seg((0.0, 1.0), (10.0, 1.0)),
+            seg((1.0, 0.0), (1.0, 10.0)),
+            seg((0.0, 4.0), (10.0, 4.0)),
+            seg((4.0, 0.0), (4.0, 10.0)),
+        ];
+        let base = Base {
+            segments: paths,
+            bends: vec![],
+            lengths: vec![],
+        };
+        let mut pairs = Vec::new();
+        for i in 0..4 {
+            for j in i + 1..4 {
+                let count = crossings_between(&base.segments[i], &base.segments[j]);
+                if count > 0.0 {
+                    pairs.push(Pair {
+                        first: i,
+                        second: j,
+                        count,
+                    });
+                }
+            }
+        }
+        let current = Snapshot {
+            count: pairs.iter().map(|p| p.count).sum(),
+            pairs,
+            edge_set: HashSet::new(),
+            edges: vec![],
+        };
+        let make = |edge: usize, segments: Vec<OrthogonalSegment>| PairCandidate {
+            replacement_affected: (0..4)
+                .filter(|&i| i != edge)
+                .map(|i| crossings_between(&segments, &base.segments[i]))
+                .sum(),
+            segments,
+            path: vec![],
+            shared_track_conflicts: vec![],
+            total_bends: 0.0,
+            length: 0.0,
+        };
+        for first in [seg((0.0, 3.0), (10.0, 3.0)), seg((0.0, 6.0), (10.0, 6.0))] {
+            for second in [seg((3.0, 0.0), (3.0, 10.0)), seg((6.0, 0.0), (6.0, 10.0))] {
+                let first = make(0, first.clone());
+                let second = make(1, second);
+                let expected = crossings_between(&first.segments, &second.segments)
+                    + (2..4)
+                        .map(|i| {
+                            crossings_between(&first.segments, &base.segments[i])
+                                + crossings_between(&second.segments, &base.segments[i])
+                        })
+                        .sum::<f64>()
+                    + crossings_between(&base.segments[2], &base.segments[3]);
+                assert_eq!(
+                    pair_crossing_count(&current, (0, &first), (1, &second), &base),
+                    expected
+                );
+            }
+        }
+    }
 
     #[test]
     fn matches_original_scan_with_duplicate_ids_and_non_finite_values() {
