@@ -1,0 +1,52 @@
+name: Font catalog
+
+on:
+  pull_request:
+    paths:
+      - 'tools/font-catalog/**'
+      - 'tools/port/fonts/catalog-browser.mjs'
+      - '.github/workflows/font-catalog.yml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish the reviewed catalog to the configured asset platform'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: tools/port/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: tools/port/.node-version
+      - run: pnpm -C tools/port install --frozen-lockfile
+      - run: pnpm -C tools/port exec playwright install --with-deps chromium
+      - run: node --test tools/font-catalog/catalog.test.mjs
+      - run: node tools/font-catalog/run.mjs prepare
+      - run: node tools/port/fonts/catalog-browser.mjs
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: tools/port/.node-version
+      - name: Publish immutable objects and verify the public endpoint
+        env:
+          FONT_STORAGE_HOSTNAME: ${{ vars.FONT_STORAGE_HOSTNAME }}
+          FONT_STORAGE_ZONE: ${{ vars.FONT_STORAGE_ZONE }}
+          FONT_STORAGE_ACCESS_KEY: ${{ secrets.FONT_STORAGE_ACCESS_KEY }}
+          FONT_CATALOG_BASE_URL: ${{ vars.FONT_CATALOG_BASE_URL }}
+        run: node tools/font-catalog/run.mjs publish
