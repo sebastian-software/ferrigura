@@ -124,7 +124,7 @@ pnpm install --frozen-lockfile --ignore-scripts
 pnpm build
 ```
 
-Then `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check` and `pnpm pack:check`; the last installs the packed facade and the host's platform package into a fresh project. A local run exercises only the host's binary; CI builds and checks all seven targets ([0016](./decisions/0016-npm-packages-via-napi.md)).
+Then `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check` and `pnpm pack:check`; the last installs the packed facade and the host's platform package into a fresh project, runs the consumer smoke test, and typechecks the public API examples against the installed package. A local run exercises only the host's binary; CI builds and checks all seven targets ([0016](./decisions/0016-npm-packages-via-napi.md)).
 
 ## Releases
 
