@@ -238,9 +238,9 @@ impl FontRegistry {
 
     /// Reports each uncovered character once, in text order, with the primary family name.
     ///
-    /// Measurement and embedding retain those characters in the primary face, so its `.notdef`
-    /// glyph is drawn. This explicit diagnostic lets a host surface warnings without process-global
-    /// logging or callbacks during layout.
+    /// Measurement retains uncovered characters in the primary face and uses its `.notdef`
+    /// glyph. A viewer may draw a system fallback instead. This explicit diagnostic lets a host
+    /// surface warnings without process-global logging or callbacks during layout.
     #[must_use]
     pub fn missing_glyphs(face: &Face, text: &str) -> Vec<MissingGlyph> {
         let mut missing = Vec::new();
