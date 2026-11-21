@@ -19,8 +19,10 @@ pub(super) const ANCHOR: f64 = 20.0;
 /// `resolveRenderedOrthogonalCrossings(edges, nodeByIdMap)`.
 pub fn resolve_rendered_orthogonal_crossings(data: &mut LayoutData) {
     edit_points(data, |view, points| {
+        let cache: Vec<std::cell::OnceCell<Vec<Vec<Point>>>> =
+            (0..view.edges.len()).map(|_| Default::default()).collect();
         for _ in 0..MAX_ITERATIONS {
-            let step = match Ctx::new(view, points) {
+            let step = match Ctx::new(view, points, &cache) {
                 Some(ctx) => ctx.step(),
                 None => return,
             };
@@ -66,6 +68,7 @@ impl Outside {
 
 /// The context of one iteration: the layout, the real nodes with their centers, and the outer tracks.
 pub(super) struct Ctx<'v> {
+    pub(super) cache: &'v [std::cell::OnceCell<Vec<Vec<Point>>>],
     pub(super) view: &'v View<'v>,
     pub(super) points: &'v Points,
     /// `nodeInfoById`: the real nodes by id.
@@ -137,7 +140,11 @@ fn manhattan_length(points: &[Point]) -> f64 {
 
 impl<'v> Ctx<'v> {
     /// The context of an iteration, or `None` when the layout has no real node (the pass then returns).
-    pub(super) fn new(view: &'v View<'v>, points: &'v Points) -> Option<Ctx<'v>> {
+    pub(super) fn new(
+        view: &'v View<'v>,
+        points: &'v Points,
+        cache: &'v [std::cell::OnceCell<Vec<Vec<Point>>>],
+    ) -> Option<Ctx<'v>> {
         let mut real_nodes: Vec<NodeBoundsInfo> = Vec::new();
         for index in view.node_indices() {
             let node = &view.nodes[index];
@@ -179,6 +186,7 @@ impl<'v> Ctx<'v> {
         };
 
         Some(Ctx {
+            cache,
             view,
             points,
             node_info,
@@ -353,15 +361,6 @@ impl<'v> Ctx<'v> {
         groups
     }
 
-    /// `pathHitsNode(edge, path)`: the path runs through a real node that is not an endpoint, with a 2 unit
-    /// margin.
-    pub(super) fn path_hits_node(&self, edge: usize, path: &[Point]) -> bool {
-        let endpoints = endpoint_ids(&self.view.edges[edge]);
-        segments_for(path).iter().any(|segment| {
-            segment_hits_any_rect(segment.a, segment.b, &self.real_rects, &endpoints, -2.0)
-        })
-    }
-
     /// `pathHasSegmentConflict(edge, path)`: the path shares a track with a visible edge other than `edge`, with
     /// the segments of the other edges taken from `base`.
     fn segments_conflict_with(
@@ -435,9 +434,10 @@ impl<'v> Ctx<'v> {
         let base = self.base();
         for &edge in &current.edges {
             let current_edge_bends = count_orthogonal_bends(&self.pts(&empty, edge), EPS) as f64;
+            let bounds = prepare_bounds(&self.real_rects, &endpoint_ids(&self.view.edges[edge]));
             for candidate in candidate_paths_for(self, edge) {
-                let candidate_hits_node = self.path_hits_node(edge, &candidate);
                 let candidate_segments = segments_for(&candidate);
+                let candidate_hits_node = segments_hit_node(&bounds, &candidate_segments);
                 let candidate_has_segment_conflict = !candidate_hits_node
                     && self.segments_conflict_with(edge, &candidate_segments, &base);
                 if candidate_hits_node || candidate_has_segment_conflict {
@@ -458,7 +458,7 @@ impl<'v> Ctx<'v> {
                 {
                     continue;
                 }
-                best = Some((edge, candidate));
+                best = Some((edge, candidate.into_owned()));
                 best_crossings = candidate_crossings;
                 best_bends = candidate_bends;
             }
@@ -575,9 +575,10 @@ fn pair_candidates_for(
 
     let mut seen: HashSet<String> = HashSet::new();
     let mut scored: Vec<Scored> = Vec::new();
+    let bounds = prepare_bounds(&ctx.real_rects, &endpoint_ids(&ctx.view.edges[edge]));
     for raw in candidate_paths_for(ctx, edge) {
         let candidate = simplified(&raw);
-        if ctx.path_hits_node(edge, &candidate) {
+        if segments_hit_node(&bounds, &segments_for(&candidate)) {
             continue;
         }
         let key = path_key(&candidate);
@@ -799,4 +800,128 @@ fn best_for_pair(
         }
     }
     best
+}
+
+// One edge's endpoint-filtered bounds, retained only while its candidates are scored.
+#[derive(Default)]
+struct PackedBounds {
+    left: Vec<f64>,
+    right: Vec<f64>,
+    top: Vec<f64>,
+    bottom: Vec<f64>,
+}
+
+fn prepare_bounds(rects: &[RectEntry], endpoints: &[&str]) -> PackedBounds {
+    let mut bounds = PackedBounds::default();
+    for entry in rects {
+        if !endpoints.contains(&entry.id.as_str()) {
+            bounds.left.push(entry.rect.left - 2.0);
+            bounds.right.push(entry.rect.right + 2.0);
+            bounds.top.push(entry.rect.top - 2.0);
+            bounds.bottom.push(entry.rect.bottom + 2.0);
+        }
+    }
+    bounds
+}
+
+fn packed_bounds_hit(bounds: &PackedBounds, a: Point, b: Point) -> bool {
+    let min_x = crate::math::js_min(a.x, b.x);
+    let max_x = crate::math::js_max(a.x, b.x);
+    let min_y = crate::math::js_min(a.y, b.y);
+    let max_y = crate::math::js_max(a.y, b.y);
+    (0..bounds.left.len()).any(|i| {
+        max_x > bounds.left[i]
+            && min_x < bounds.right[i]
+            && max_y > bounds.top[i]
+            && min_y < bounds.bottom[i]
+    })
+}
+
+fn segments_hit_node(bounds: &PackedBounds, segments: &[OrthogonalSegment]) -> bool {
+    segments
+        .iter()
+        .any(|segment| packed_bounds_hit(bounds, segment.a, segment.b))
+}
+
+#[cfg(test)]
+mod packed_bounds_tests {
+    use super::*;
+    use crate::direction::geometry::segment_hits_any_rect;
+    use crate::model::Rect;
+
+    #[test]
+    fn matches_original_scan_with_duplicate_ids_and_non_finite_values() {
+        let rects = vec![
+            RectEntry {
+                id: "end".into(),
+                rect: Rect {
+                    left: 0.0,
+                    right: 10.0,
+                    top: 0.0,
+                    bottom: 10.0,
+                },
+            },
+            RectEntry {
+                id: "end".into(),
+                rect: Rect {
+                    left: -20.0,
+                    right: 20.0,
+                    top: -20.0,
+                    bottom: 20.0,
+                },
+            },
+            RectEntry {
+                id: "".into(),
+                rect: Rect {
+                    left: 20.0,
+                    right: 30.0,
+                    top: 0.0,
+                    bottom: 10.0,
+                },
+            },
+            RectEntry {
+                id: "nan".into(),
+                rect: Rect {
+                    left: f64::NAN,
+                    right: 30.0,
+                    top: 0.0,
+                    bottom: 10.0,
+                },
+            },
+        ];
+        for endpoints in [&[][..], &["end"][..]] {
+            let bounds = prepare_bounds(&rects, endpoints);
+            for (a, b) in [
+                (Point { x: 18.0, y: 5.0 }, Point { x: 18.0, y: 5.0 }),
+                (Point { x: 18.1, y: 5.0 }, Point { x: 18.1, y: 5.0 }),
+                (
+                    Point {
+                        x: f64::NAN,
+                        y: 5.0,
+                    },
+                    Point { x: 21.0, y: 5.0 },
+                ),
+                (
+                    Point {
+                        x: f64::INFINITY,
+                        y: 5.0,
+                    },
+                    Point {
+                        x: -f64::INFINITY,
+                        y: 5.0,
+                    },
+                ),
+            ] {
+                assert_eq!(
+                    packed_bounds_hit(&bounds, a, b),
+                    segment_hits_any_rect(a, b, &rects, endpoints, -2.0)
+                );
+            }
+        }
+        assert!(!packed_bounds_hit(
+            &prepare_bounds(&[], &[]),
+            Point { x: 0.0, y: 0.0 },
+            Point { x: 1.0, y: 1.0 }
+        ));
+    }
 }

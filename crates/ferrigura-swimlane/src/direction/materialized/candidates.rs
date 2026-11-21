@@ -17,7 +17,23 @@ const SIDES: [RectSide; 4] = [
 ];
 
 /// `candidatePathsFor(edge)`: the candidate paths of an edge, with no dedup and no node test.
-pub(super) fn candidate_paths_for(ctx: &Ctx, edge: usize) -> Vec<Vec<Point>> {
+pub(super) fn candidate_paths_for<'a>(
+    ctx: &'a Ctx<'_>,
+    edge: usize,
+) -> impl Iterator<Item = std::borrow::Cow<'a, [Point]>> {
+    let fixed = ctx.cache[edge].get_or_init(|| static_candidates(ctx, edge));
+    let terminal = if ctx.info(ctx.view.edges[edge].start.as_deref()).is_some() {
+        terminal_preserving_outer_track_candidates(ctx, edge)
+    } else {
+        Vec::new()
+    };
+    fixed
+        .iter()
+        .map(|path| std::borrow::Cow::Borrowed(path.as_slice()))
+        .chain(terminal.into_iter().map(std::borrow::Cow::Owned))
+}
+
+fn static_candidates(ctx: &Ctx, edge: usize) -> Vec<Vec<Point>> {
     let edge_ref = &ctx.view.edges[edge];
     let (Some(src_node), Some(dst_node)) = (
         ctx.info(edge_ref.start.as_deref()),
@@ -36,7 +52,7 @@ pub(super) fn candidate_paths_for(ctx: &Ctx, edge: usize) -> Vec<Vec<Point>> {
             ));
         }
     }
-    candidates.extend(terminal_preserving_outer_track_candidates(ctx, edge));
+
     candidates
 }
 
