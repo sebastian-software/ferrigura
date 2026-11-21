@@ -1,7 +1,7 @@
 /** Host-side, opt-in catalog resolution. The renderer itself never accesses the network. */
 import { createHash, randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
-import { lstat, mkdir, open, rename, unlink, writeFile } from 'node:fs/promises';
+import { link, lstat, mkdir, open, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const DEFAULT_HASH = '33a0a2fac7f3c0f43e2b38ef79d482e3cc4c75fc3730e241c28a73bef79eeaa8';
@@ -135,7 +135,14 @@ async function verifiedBytes({ cacheDir, hash, size, limit, url, offline }) {
   const temporary = join(dir, `.${hash}.${randomUUID()}.tmp`);
   try {
     await writeFile(temporary, bytes, { flag: 'wx' });
-    await rename(temporary, path);
+    try {
+      // Publish without replacing a concurrent writer's open file (Windows rejects that rename).
+      await link(temporary, path);
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      // Another process won the race. Never trust or overwrite its object without verifying it.
+      return await verifiedBytes({ cacheDir, hash, size, limit, url, offline: true });
+    }
   } finally {
     await unlink(temporary).catch((error) => {
       if (error.code !== 'ENOENT') throw error;

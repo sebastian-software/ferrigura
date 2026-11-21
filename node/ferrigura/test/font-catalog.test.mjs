@@ -325,6 +325,30 @@ test('concurrent resolutions publish complete objects and leave no temporary fil
   assert.deepEqual(names.sort(), [f.catalog.manifestSha256, hash(bytes)].sort());
 });
 
+test('a concurrent cache object is verified instead of overwritten', async (t) => {
+  const bytes = Buffer.from('shared font');
+  const f = await fixture(t, [{ family: 'One', version: '1', faces: [face(bytes)] }]);
+  const original = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = original;
+  });
+  const corrupt = Buffer.alloc(bytes.length, 0x78);
+  const cached = join(f.directory, 'sha256', hash(bytes));
+  globalThis.fetch = async (url, options) => {
+    if (new URL(url).pathname === '/manifest.json') return original(url, options);
+    // Simulate a different writer creating the destination after our cache miss.
+    await writeFile(cached, corrupt, { flag: 'wx' });
+    return new Response(bytes);
+  };
+  await assert.rejects(
+    resolveCatalogFonts({ cacheDir: f.directory, catalog: f.catalog, families: ['One'] }),
+    /cached object .*wrong SHA-256/
+  );
+  assert.deepEqual(await readFile(cached), corrupt);
+  const names = await (await import('node:fs/promises')).readdir(join(f.directory, 'sha256'));
+  assert.deepEqual(names.sort(), [f.catalog.manifestSha256, hash(bytes)].sort());
+});
+
 test('cancels rejected HTTP response bodies and sets a timeout signal', async (t) => {
   const f = await fixture(t, [{ family: 'One', version: '1', faces: [face(Buffer.from('font'))] }]);
   const original = globalThis.fetch;
