@@ -9,7 +9,7 @@
 pub mod geometry;
 mod style;
 
-use ferrigura_jsmath::{cos, sin};
+use ferrigura_jsmath::sin_cos;
 use ferrigura_model::config::RadarDiagramConfig;
 use ferrigura_model::radar::{Graticule, RadarDiagram};
 use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
@@ -22,7 +22,7 @@ use crate::common::{Element, shown_text};
 use crate::context::Context;
 use crate::svg::number;
 use geometry::{
-    Point, axis_angle, closed_round_curve, js_max, js_min, point_angle, relative_radius, tick_count,
+    Point, axis_angle, closed_round_curve, js_max, js_min, relative_radius, tick_count,
 };
 use style::{Options, Style};
 
@@ -74,9 +74,11 @@ pub fn render(
             number(config.margin_top + config.height / 2.0)
         ),
     );
-    draw_graticule(&mut frame, diagram, radius, light);
-    draw_axes(&mut frame, diagram, radius, config, light);
-    draw_curves(&mut frame, diagram, radius, config, &style);
+    let n = diagram.axes.len();
+    let directions: Vec<_> = (0..n).map(|i| sin_cos(axis_angle(i, n))).collect();
+    draw_graticule(&mut frame, diagram, radius, light, &directions);
+    draw_axes(&mut frame, diagram, radius, config, light, &directions);
+    draw_curves(&mut frame, diagram, radius, config, &style, &directions);
     if diagram.options.show_legend {
         draw_legend(&mut frame, diagram, config, &style);
     }
@@ -187,19 +189,22 @@ fn max_value(diagram: &RadarDiagram) -> f64 {
 
 /// `drawGraticule` (`renderer.ts` 64-93): one circle or polygon for each tick, the first at the
 /// smallest radius.
-fn draw_graticule(group: &mut Element, diagram: &RadarDiagram, radius: f64, options: &Options) {
+fn draw_graticule(
+    group: &mut Element,
+    diagram: &RadarDiagram,
+    radius: f64,
+    options: &Options,
+    directions: &[(f64, f64)],
+) {
     let ticks = diagram.options.ticks;
-    let count = diagram.axes.len();
     for index in 0..tick_count(ticks) {
         let r = (radius * (index + 1) as f64) / ticks;
         let element = match diagram.options.graticule {
             Graticule::Circle => Element::new("circle").with("r", number(r)),
             Graticule::Polygon => {
-                let points = (0..count)
-                    .map(|j| {
-                        let angle = axis_angle(j, count);
-                        format!("{},{}", number(r * cos(angle)), number(r * sin(angle)))
-                    })
+                let points = directions
+                    .iter()
+                    .map(|&(s, c)| format!("{},{}", number(r * c), number(r * s)))
                     .collect::<Vec<_>>()
                     .join(" ");
                 Element::new("polygon").with("points", points)
@@ -229,12 +234,9 @@ fn draw_axes(
     radius: f64,
     config: &RadarDiagramConfig,
     options: &Options,
+    directions: &[(f64, f64)],
 ) {
-    let count = diagram.axes.len();
-    for (index, axis) in diagram.axes.iter().enumerate() {
-        let angle = axis_angle(index, count);
-        let cos_a = cos(angle);
-        let sin_a = sin(angle);
+    for (axis, &(sin_a, cos_a)) in diagram.axes.iter().zip(directions) {
         group.push_child(
             Element::new("line")
                 .with("x1", "0")
@@ -287,6 +289,7 @@ fn draw_curves(
     radius: f64,
     config: &RadarDiagramConfig,
     style: &Style,
+    directions: &[(f64, f64)],
 ) {
     let count = diagram.axes.len();
     let min = diagram.options.min;
@@ -298,14 +301,10 @@ fn draw_curves(
         let points: Vec<Point> = curve
             .entries
             .iter()
-            .enumerate()
-            .map(|(point, entry)| {
-                let angle = point_angle(point, count);
+            .zip(directions)
+            .map(|(entry, &(s, c))| {
                 let r = relative_radius(*entry, min, max, radius);
-                Point {
-                    x: r * cos(angle),
-                    y: r * sin(angle),
-                }
+                Point { x: r * c, y: r * s }
             })
             .collect();
         let class = format!("radarCurve-{index}");

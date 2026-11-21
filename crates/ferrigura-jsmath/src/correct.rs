@@ -530,6 +530,19 @@ fn sign_of(x: f64, value: f64) -> f64 {
     if x < 0.0 { -value } else { value }
 }
 
+/// `sin(x)` and `cos(x)`, correctly rounded with a shared range reduction.
+#[must_use]
+pub fn sin_cos(x: f64) -> (f64, f64) {
+    if !x.is_finite() {
+        return (f64::NAN, f64::NAN);
+    }
+    if x.abs() < TINY {
+        return (x, 1.);
+    }
+    let (s, c) = sin_cos_of(x.abs());
+    (sign_of(x, round_value(s)), round_value(c))
+}
+
 /// `sin(x)`, correctly rounded.
 #[must_use]
 pub fn sin(x: f64) -> f64 {
@@ -740,6 +753,36 @@ fn ln_fx(x: f64) -> Fx {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn paired_trigonometry_matches_separate_operations() {
+        let mut state = 0x921f_b544_42d1_8469_u64;
+        let cases = [
+            0.0,
+            -0.0,
+            f64::MIN_POSITIVE,
+            -f64::MIN_POSITIVE,
+            TINY,
+            -TINY,
+            std::f64::consts::FRAC_PI_2,
+            -std::f64::consts::PI,
+            f64::MAX,
+            -f64::MAX,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            f64::NAN,
+        ];
+        for x in cases.into_iter().chain((0..10_000).map(|_| {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            f64::from_bits(state)
+        })) {
+            let (s, c) = sin_cos(x);
+            assert_eq!(s.to_bits(), sin(x).to_bits(), "sin({x:?})");
+            assert_eq!(c.to_bits(), cos(x).to_bits(), "cos({x:?})");
+        }
+    }
 
     #[test]
     fn division_matches_restoring() {

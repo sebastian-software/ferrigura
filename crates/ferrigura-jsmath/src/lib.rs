@@ -65,7 +65,7 @@ mod trig;
 mod words;
 
 pub use atan::{atan, atan2};
-pub use correct::{acos, asin, cos, log, log10, sin, tan};
+pub use correct::{acos, asin, cos, log, log10, sin, sin_cos, tan};
 pub use fused::CONTRACTS;
 pub use hypot::hypot;
 pub use pow::pow;

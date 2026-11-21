@@ -28,8 +28,8 @@ pub fn axis_angle(index: usize, count: usize) -> f64 {
 }
 
 /// The angle of the point `index` of a curve with `count` entries (`renderer.ts` 154). The reference
-/// writes the factors in another order than the axes', and the two can differ in the last bit, so both
-/// are kept as written.
+/// writes the factors in another order than the axes'. Multiplication by two is exact for every
+/// `usize` index and for PI, so both orders round identically before the shared division.
 #[must_use]
 pub fn point_angle(index: usize, count: usize) -> f64 {
     (2.0 * PI * index as f64) / count as f64 - PI / 2.0
@@ -107,5 +107,24 @@ pub fn js_min(a: f64, b: f64) -> f64 {
         f64::NAN
     } else {
         a.min(b)
+    }
+}
+
+#[cfg(test)]
+mod angle_equivalence_tests {
+    use super::{axis_angle, point_angle};
+
+    #[test]
+    fn axis_and_curve_angles_match_bitwise() {
+        let indices = [0, 1, 2, 3, 7, 16, 255, 1024, usize::MAX / 2, usize::MAX];
+        for index in indices {
+            for count in [1, 3, 16, 255, usize::MAX] {
+                assert_eq!(
+                    axis_angle(index, count).to_bits(),
+                    point_angle(index, count).to_bits(),
+                    "index {index}, count {count}"
+                );
+            }
+        }
     }
 }
