@@ -6,4 +6,4 @@ This [Ferrigura](https://github.com/sebastian-software/ferrigura) implementation
 
 ## License
 
-The crate is MIT-licensed. Its ported parts keep the licenses of their sources: V8's BSD-style license (`LICENSE-V8`), the Apache-2.0 license with the LLVM exception of llvm-libc (`LICENSE-LLVM`), and fdlibm's notice. `NOTICE.md` lists each part and its license.
+The crate is MIT-licensed. Its ported parts keep the licenses of their sources: V8's BSD-style license (`LICENSE-V8`), the Apache-2.0 license with the LLVM exception of llvm-libc (`LICENSE-LLVM`), fdlibm's notice, and the MIT-licensed CORE-MATH `acos` fast path (`LICENSE-CORE-MATH`). `NOTICE.md` lists each part and its license.

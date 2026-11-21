@@ -24,8 +24,9 @@
 //! were taken on arm64 and are checked on targets that fuse; other targets are not checked.
 //!
 //! **Correct rounding.** The seven functions computed in `correct.rs` return the correctly rounded value by
-//! Ziv's method: they compute to 256 fraction bits with an error bound of `(|v| + 1) * 2^-180`, and round
-//! when both bounds round to the same double. Chromium's results are correctly rounded on every input the
+//! Ziv's method: their fixed-point paths compute to 256 fraction bits with an error bound of `(|v| + 1) * 2^-180`, and round
+//! when both bounds round to the same double. `acos` first tries a CORE-MATH interval test and
+//! falls back to fixed point when its bounds do not agree. Chromium's results are correctly rounded on every input the
 //! probe checked (about 270,000 inputs, against mpmath at 300 bits; `log10` on 200,000, against Python's
 //! `decimal` at 80 digits), so the two agree.
 //!
@@ -34,7 +35,8 @@
 //!
 //! The source of each function names the file it ports. Licenses and sources are in `NOTICE.md`: the
 //! llvm-libc ports (`atan`, `atan2`) are Apache-2.0 WITH LLVM-exception, and the V8 and fdlibm code is under
-//! V8's BSD-style license and fdlibm's notice (below); the rest of the crate is MIT. Nothing is `unsafe`,
+//! V8's BSD-style license and fdlibm's notice (below); the rest of the crate is MIT, including the
+//! CORE-MATH `acos` fast path (see `LICENSE-CORE-MATH`). Nothing is `unsafe`,
 //! and the crate has no dependencies.
 //!
 //! The fdlibm code is adapted from fdlibm (<http://www.netlib.org/fdlibm>), with this notice from
@@ -49,6 +51,7 @@
 
 #![forbid(unsafe_code)]
 
+mod acos_fast;
 mod atan;
 mod constants;
 mod correct;

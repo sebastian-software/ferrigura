@@ -14,8 +14,8 @@
 //!
 //! The constants are in `constants.rs` (`CR_*`), computed with mpmath from `2/pi`, `pi/2` and `ln 2`, and
 //! with Python's `decimal` from `1/ln 10`.
-//! CORE-MATH (MIT) has correctly rounded versions of these functions as well; this module is its own
-//! code, not a port of them, and the probe is the check of it.
+//! The `acos` fast path is adapted from CORE-MATH; ambiguous results use this module’s
+//! fixed-point evaluator. The other evaluators here are independently written.
 
 use crate::constants::{CR_INV_LN10, CR_LN2, CR_PI_OVER_2, CR_TWO_OVER_PI};
 
@@ -639,6 +639,13 @@ pub fn asin(x: f64) -> f64 {
 /// `acos(x)`, correctly rounded: `pi/2 - asin(x)`.
 #[must_use]
 pub fn acos(x: f64) -> f64 {
+    if let Some(result) = crate::acos_fast::fast_acos(x) {
+        return result;
+    }
+    acos_fixed(x)
+}
+
+fn acos_fixed(x: f64) -> f64 {
     if x.is_nan() || x.abs() > 1.0 {
         return f64::NAN;
     }
@@ -784,6 +791,57 @@ mod tests {
             let a = Fx(a);
             let d = Fx(d);
             assert_eq!(a.div(d), a.div_restoring(d), "case {case}: {a:?} / {d:?}");
+        }
+    }
+
+    #[test]
+    fn acos_fast_matches_fixed_point() {
+        // Include the upstream fast-path error-bound examples and both signs.
+        let examples = [
+            0x3fe3e827a2cd6d51_u64,
+            0x3f37cb54339263fb,
+            0x3fdfda6fee396f80,
+        ];
+        let mut state = 0x7e31_6993_c190_bd17_u64;
+        let mut fast = 0;
+        let mut fallback = 0;
+        for bits in examples
+            .into_iter()
+            .flat_map(|x| [x, x | (1 << 63)])
+            .chain((0..20_000).map(|_| {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                // Uniformly cover the domain, including both reduction branches.
+                let value = ((state >> 11) as f64) * (2.0 / ((1_u64 << 53) as f64)) - 1.0;
+                value.to_bits()
+            }))
+        {
+            let x = f64::from_bits(bits);
+            if let Some(result) = crate::acos_fast::fast_acos(x) {
+                fast += 1;
+                assert_eq!(result.to_bits(), acos_fixed(x).to_bits(), "x={x:?}");
+            } else {
+                fallback += 1;
+                assert_eq!(acos(x).to_bits(), acos_fixed(x).to_bits());
+            }
+        }
+        assert!(fast > 0 && fallback > 0);
+    }
+
+    #[test]
+    fn acos_core_math_hard_cases_match_chromium() {
+        // CORE-MATH acos.wc inputs, with outputs captured from Chromium 151.
+        for (input, expected) in [
+            (0x3feffffffffffdc0, 0x3e98000000000024),
+            (0xbfeffffffffffdc0, 0x400921fb24442d18),
+            (0x3fedffff776c7505, 0x3fd6bf3ba258567b),
+            (0xbfedffff776c7505, 0x40064a13dff92249),
+            (0x3fefffffffffffff, 0x3e50000000000000),
+            (0xbfefffffffffffff, 0x400921fb52442d18),
+        ] {
+            let x = f64::from_bits(input);
+            assert_eq!(acos(x).to_bits(), expected, "x={x:?}");
         }
     }
 
