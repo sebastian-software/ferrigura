@@ -235,6 +235,11 @@
   font: 500 12.5px/1.4 var(--mono-sans);
   color: var(--mono-ink-3);
 }
+/* Keep keyboard focus visible on the grip, even over a detailed drawing. */
+.fgr-compare-stage [role='slider']:focus-visible .__rcs-handle-button {
+  outline: 2px solid var(--mono-ink);
+  outline-offset: 3px;
+}
 /* Each layer is opaque, so the first hides the second left of the divider. */
 .fgr-compare-layer {
   background: var(--mono-sheet);

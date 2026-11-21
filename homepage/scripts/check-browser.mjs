@@ -68,6 +68,7 @@ try {
 
   await verifyExample(page, origin);
   await verifyCompareSlider(page, origin);
+  await verifySliderTouch(browser, origin);
   await verifyNavigation(page, origin);
   await verifyHeaderMenu(page, origin);
   await verifySearch(page, origin);
@@ -139,6 +140,7 @@ async function verifyCompareSlider(page, origin) {
   const handle = slider.getByRole('slider');
   await handle.focus();
   await page.keyboard.press('ArrowLeft');
+  await verifySliderFocus(slider);
   assert.equal(await handle.getAttribute('aria-valuenow'), '48', 'The arrow keys do not move it');
   assert.match(
     await handle.getAttribute('aria-label'),
@@ -148,11 +150,58 @@ async function verifyCompareSlider(page, origin) {
   await verifySliderClick(page, slider, handle);
 }
 
+async function verifySliderFocus(slider) {
+  const outline = await slider
+    .locator('.__rcs-handle-button')
+    .evaluate((element) => getComputedStyle(element).outlineStyle);
+  assert.notEqual(outline, 'none', 'Keyboard focus must be visible on the grip');
+}
+
 async function verifySliderClick(page, slider, handle) {
   const stage = await slider.locator('.fgr-compare-stage').boundingBox();
   await page.mouse.click(stage.x + stage.width * 0.2, stage.y + stage.height / 2);
   const value = Number(await handle.getAttribute('aria-valuenow'));
   assert(Math.abs(value - 20) <= 2, `A click at 20% puts the divider at ${value}%`);
+}
+
+/** A touch on the visible grip moves the divider and its clipping edge. */
+async function verifySliderTouch(browser, origin) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto(new URL('/comparisons/side-by-side/', origin).href, { waitUntil: 'load' });
+    const slider = page.locator('.fgr-compare').first();
+    await slider.scrollIntoViewIfNeeded();
+    const handle = slider.getByRole('slider');
+    await dragSliderTouch(context, page, slider);
+    const value = Number(await handle.getAttribute('aria-valuenow'));
+    assert(value > 50, `Touch drag did not move the divider: ${value}`);
+    const clip = await slider
+      .locator('[data-rcs-item="itemOne"]')
+      .evaluate((element) => getComputedStyle(element).clipPath);
+    const clippedAt = Number(/clamp\([^,]+,\s*([\d.]+)%/.exec(clip)?.[1]);
+    assert(Math.abs(clippedAt - value) < 1, `The first drawing is clipped as ${clip}`);
+  } finally {
+    await context.close();
+  }
+}
+
+async function dragSliderTouch(context, page, slider) {
+  const grip = await slider.locator('.__rcs-handle-button').boundingBox();
+  assert(grip, 'The touch grip must have a box');
+  const x = grip.x + grip.width / 2;
+  const y = grip.y + grip.height / 2;
+  const client = await context.newCDPSession(page);
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  await client.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ x: x + 50, y }],
+  });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
 
 /** Shared SVG edge-label backgrounds mask lines in every graph specimen. */
