@@ -58,6 +58,16 @@ pub fn measure_box(face: &Face, text: &str, size: f64) -> Result<Extent, TextErr
 ///
 /// Returns an error if a font cannot be read or shaped.
 pub fn measure_line_box(runs: &[Run<'_, '_>], size: f64) -> Result<Extent, TextError> {
+    measure_line_metrics(runs, size).map(|(_, extent)| extent)
+}
+
+/// Returns the snapped line advance and its ink-inclusive extent in one shaping pass.
+/// Each run is snapped independently, just as in [`measure_line_box`].
+///
+/// # Errors
+///
+/// Returns an error if a font cannot be read or shaped.
+pub fn measure_line_metrics(runs: &[Run<'_, '_>], size: f64) -> Result<(f64, Extent), TextError> {
     let mut extent = Extent::default();
     let mut start = 0.0_f64;
     for run in runs {
@@ -88,7 +98,7 @@ pub fn measure_line_box(runs: &[Run<'_, '_>], size: f64) -> Result<Extent, TextE
         extent.right = extent.right.max(start + advance);
         start += advance;
     }
-    Ok(extent)
+    Ok((start, extent))
 }
 
 /// TrueType retains the reference's stated bounds; CFF/CFF2 use their interpreted charstrings.

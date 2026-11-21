@@ -3,7 +3,9 @@
 
 mod support;
 
-use ferrigura_text::{Run, layout_width, measure, measure_box, measure_line_box};
+use ferrigura_text::{
+    Run, layout_width, measure, measure_box, measure_line_box, measure_line_metrics,
+};
 use serde_json::Value;
 use support::{chromium, entries, face_for, number, size_of, style_of, text_of};
 
@@ -50,6 +52,10 @@ fn lines_have_the_boxes_and_advances_chromium_gives_them() {
             advance += layout_width(measure(face, text, size).expect("run measures"));
         }
         let extent = measure_line_box(&borrowed, size).expect("line measures");
+        let (combined_advance, combined_extent) =
+            measure_line_metrics(&borrowed, size).expect("line metrics");
+        assert_eq!(combined_advance, advance, "combined advance for {runs:?}");
+        assert_eq!(combined_extent, extent, "combined extent for {runs:?}");
         let x = anchor_shift(anchor, advance) + extent.left;
         let width = extent.width();
 

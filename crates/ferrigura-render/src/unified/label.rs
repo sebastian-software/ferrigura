@@ -8,12 +8,13 @@
 //! `text-anchor` start (decisions 0009 and 0010). See
 //! `docs/diagrams/flowchart.md#labels`.
 
+use std::collections::HashMap;
 use std::fmt::Write as _;
 
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_text::{
     Face, FontStyle, FontWeight, Run, TextError, Word, fit_line, layout_width, measure,
-    measure_box, measure_words, text_box,
+    measure_line_metrics, text_box,
 };
 
 use super::geom::{BBox, Point};
@@ -371,8 +372,42 @@ pub fn layout_inheriting(
                 },
             })
             .collect();
+        // Cache only original words. Wrapping also tries transient prefixes and
+        // suffixes of oversized words; retaining those could use quadratic space.
+        let mut advances: HashMap<*const Face, HashMap<String, [Option<f64>; 2]>> = HashMap::new();
+        for word in &words {
+            advances
+                .entry(std::ptr::from_ref(word.face))
+                .or_default()
+                .entry(word.text.clone())
+                .or_insert([None; 2]);
+        }
         let fits = |line: &[Word]| -> Result<bool, TextError> {
-            Ok(measure_words(line, wrap_size, decode_html_entities)? <= width)
+            let mut total = 0.0;
+            for (index, word) in line.iter().enumerate() {
+                let variant = usize::from(index != 0);
+                let cached = advances
+                    .get_mut(&std::ptr::from_ref(word.face))
+                    .and_then(|words| words.get_mut(word.text.as_str()));
+                let advance = if let Some(value) = cached.as_ref().and_then(|entry| entry[variant])
+                {
+                    value
+                } else {
+                    let shown = decode_html_entities(&word.text);
+                    let text = if variant == 0 {
+                        shown
+                    } else {
+                        format!(" {shown}")
+                    };
+                    let value = layout_width(measure(word.face, &text, wrap_size)?);
+                    if let Some(entry) = cached {
+                        entry[variant] = Some(value);
+                    }
+                    value
+                };
+                total += advance;
+            }
+            Ok(total <= width)
         };
         wrapped.extend(fit_line(&words, fits)?);
     }
@@ -426,7 +461,7 @@ pub fn layout_inheriting(
 /// starts on the 1/64 px grid where the run before it ends, and a line's width is the sum of its
 /// runs. A centered line starts at minus half its width, a start-anchored line at zero. The box is the
 /// union of the runs' boxes, each from the run's ascent to its descent horizontally from its
-/// [`measure_box`] (the advance, and the glyph outlines where they reach past it), as `getBBox` takes
+/// [`ferrigura_text::measure_box`] (the advance, and the glyph outlines where they reach past it), as `getBBox` takes
 /// it; a line without words has no box, so an empty line adds no height.
 fn place(
     pieces: &[Vec<(String, &Face)>],
@@ -439,9 +474,9 @@ fn place(
         let baseline = size * (1.0 + LINE_HEIGHT * index as f64);
         let mut widths = Vec::with_capacity(line.len());
         for (text, face) in line {
-            widths.push(layout_width(measure(face, text, size)?));
+            widths.push(measure_line_metrics(&[Run { text, face }], size)?);
         }
-        let width: f64 = widths.iter().sum();
+        let width: f64 = widths.iter().map(|(width, _)| *width).sum();
         let mut x = match anchor {
             Anchor::Middle => -width / 2.0,
             Anchor::Start | Anchor::Origin => 0.0,
@@ -450,9 +485,8 @@ fn place(
         // spaces, so the `getBBox` of its `<text>` is empty (`er-diagram/nightly-check`, blank labels).
         let blank = line.iter().all(|(text, _)| text.chars().all(|c| c == ' '));
         let mut runs = Vec::with_capacity(line.len());
-        for ((text, face), run_width) in line.iter().zip(widths) {
+        for ((text, face), (run_width, ink)) in line.iter().zip(widths) {
             let metrics = text_box(face, size)?;
-            let ink = measure_box(face, text, size)?;
             let run_box = BBox::new(
                 x + ink.left,
                 baseline - metrics.ascent,
