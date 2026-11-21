@@ -3,7 +3,7 @@
 
 mod support;
 
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, Run, face, measure, measure_line};
+use ferrigura_text::{Run, measure, measure_line};
 use support::{
     CHROMIUM_TOLERANCE, chromium, entries, face_for, number, size_of, style_of, text_of,
 };
@@ -41,8 +41,8 @@ fn mixed_runs_agree_with_chromium() {
 
 #[test]
 fn a_line_is_the_sum_of_its_runs() {
-    let regular = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
-    let bold = face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal);
+    let regular = face_for("sans-regular");
+    let bold = face_for("sans-bold");
     let line = [
         Run {
             text: "Type ",
@@ -62,8 +62,8 @@ fn a_line_is_the_sum_of_its_runs() {
 fn no_kerning_crosses_a_change_of_face() {
     // In one face the pair A V is kerned, so the word is narrower than its letters. Split into two
     // faces, the pair is measured apart, as Chromium draws it.
-    let regular = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
-    let bold = face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal);
+    let regular = face_for("sans-regular");
+    let bold = face_for("sans-bold");
     let kerned = measure(regular, "AV", 16.0).expect("measures");
     let apart = measure(regular, "A", 16.0).expect("measures")
         + measure(regular, "V", 16.0).expect("measures");
