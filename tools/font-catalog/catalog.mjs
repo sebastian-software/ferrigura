@@ -88,6 +88,25 @@ export async function readCatalog(input) {
     ['Noto Sans Symbols 2', ['notofonts/symbols', '25b00f0d3f40873a005287514ba2a48558655314']],
     ['Inter', ['rsms/inter', 'e3a3d4c57d5ecc01453a575621882a384c1995a3']],
   ]);
+  const entries = new Map([
+    [
+      'Lexica Ultralegible',
+      /^(?:LICENSE\.txt|fonts\/(?:ttf|web)\/LexicaUltralegible-(?:Regular|Italic|Bold|BoldItalic)\.(?:ttf|woff2))$/,
+    ],
+    [
+      'Atkinson Hyperlegible Mono',
+      /^(?:OFL\.txt|fonts\/(?:ttf|webfonts)\/AtkinsonHyperlegibleMono-(?:Regular|Italic|Bold|BoldItalic)\.(?:ttf|woff2))$/,
+    ],
+    ['Noto Sans Math', /^(?:OFL\.txt|NotoSansMath\/googlefonts\/ttf\/NotoSansMath-Regular\.ttf)$/],
+    [
+      'Noto Sans Symbols 2',
+      /^(?:OFL\.txt|NotoSansSymbols2\/googlefonts\/ttf\/NotoSansSymbols2-Regular\.ttf)$/,
+    ],
+    [
+      'Inter',
+      /^(?:LICENSE\.txt|extras\/(?:ttf|woff-hinted)\/Inter-(?:Regular|Italic|Bold|BoldItalic)\.(?:ttf|woff2))$/,
+    ],
+  ]);
   const seenFamilies = new Set();
   const paths = new Set();
   const assets = [];
@@ -148,6 +167,7 @@ export async function readCatalog(input) {
         asset.size < 1 ||
         asset.size > 8 * 1024 * 1024 ||
         typeof asset.sourcePath !== 'string' ||
+        !entries.get(family.family).test(asset.sourcePath) ||
         !/^[A-Za-z0-9._/-]+$/.test(asset.sourcePath) ||
         asset.sourcePath.split('/').some((part) => part === '..' || part === '' || part === '.')
       )
