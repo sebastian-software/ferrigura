@@ -837,7 +837,7 @@ fn segments_hit_node(bounds: &PackedBounds, segments: &[OrthogonalSegment]) -> b
 }
 
 #[cfg(test)]
-mod packed_bounds_tests {
+mod tests {
     use super::*;
     use crate::direction::geometry::segment_hits_any_rect;
     use crate::model::Rect;
@@ -890,8 +890,18 @@ mod packed_bounds_tests {
             total_bends: 0.0,
             length: 0.0,
         };
-        for first in [seg((0.0, 3.0), (10.0, 3.0)), seg((0.0, 6.0), (10.0, 6.0))] {
-            for second in [seg((3.0, 0.0), (3.0, 10.0)), seg((6.0, 0.0), (6.0, 10.0))] {
+        for first in [
+            seg((0.0, 3.0), (10.0, 3.0)),
+            seg((0.0, 6.0), (2.0, 6.0)),
+            seg((7.0, 6.0), (9.0, 6.0)),
+            seg((3.0, 6.0), (5.0, 6.0)),
+        ] {
+            for second in [
+                seg((3.0, 0.0), (3.0, 10.0)),
+                seg((6.0, 0.0), (6.0, 2.0)),
+                seg((8.0, 7.0), (8.0, 9.0)),
+                seg((6.0, 3.0), (6.0, 5.0)),
+            ] {
                 let first = make(0, first.clone());
                 let second = make(1, second);
                 let expected = crossings_between(&first.segments, &second.segments)
