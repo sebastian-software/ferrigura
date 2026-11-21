@@ -3,6 +3,8 @@ import { FALLBACK_FILES, LEXICA_FILES, MONO_FILES, faceCoverage } from '../fonts
 
 export type FixtureFont = 'lexica' | 'mono';
 
+let fallbackCoverage: Set<number> | undefined;
+
 /**
  * A conservative scan of possible measured placeholders, not a parser. Mermaid encodes #name; and
  * #123; before parsing; source that already contains the sentinel can also reach measurement. The
@@ -14,7 +16,7 @@ export function placeholderCoverageWarnings(source: string, font: FixtureFont): 
   );
   const placeholders = text.match(/ﬂ°°?\w+¶ß/g) ?? [];
   if (placeholders.length === 0) return [];
-  const fallback = new Set(FALLBACK_FILES.flatMap((file) => [...faceCoverage(file)]));
+  fallbackCoverage ??= new Set(FALLBACK_FILES.flatMap((file) => [...faceCoverage(file)]));
   const faces = font === 'mono' ? MONO_FILES : LEXICA_FILES;
   const warnings: string[] = [];
   for (const file of faces) {
@@ -22,7 +24,7 @@ export function placeholderCoverageWarnings(source: string, font: FixtureFont): 
     const missing = new Set<string>();
     for (const character of placeholders.join('')) {
       const code = character.codePointAt(0)!;
-      if (!covered.has(code) && !fallback.has(code)) {
+      if (!covered.has(code) && !fallbackCoverage.has(code)) {
         missing.add(`U+${code.toString(16).toUpperCase().padStart(4, '0')} ${character}`);
       }
     }

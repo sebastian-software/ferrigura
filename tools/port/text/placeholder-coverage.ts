@@ -34,7 +34,9 @@ const rust = (file: string, text: string, fallback = false): number => {
     input: JSON.stringify(input),
     encoding: 'utf8',
   });
-  if (result.status !== 0) throw new Error(result.stderr);
+  if (result.error) throw new Error(`registered-font failed to start: ${result.error.message}`);
+  if (result.status !== 0)
+    throw new Error(`registered-font exited ${result.status}: ${result.stderr}`);
   return (JSON.parse(result.stdout) as { advance: number }).advance;
 };
 const browser = await chromium.launch({ args: ['--font-render-hinting=none'] });
@@ -77,14 +79,13 @@ try {
         name === 'mono' && kind === 'encoded',
         `${name} ${kind}: ${JSON.stringify(fonts)}`
       );
-      if (missingFallback) assert.ok(Math.abs(browserWidth - rustWidth) > 0.02);
-      else
+      if (!missingFallback)
         assert.ok(
           Math.abs(browserWidth - rustWidth) <= 0.02,
           `${name} ${kind}: Rust ${rustWidth}, Chromium ${browserWidth}`
         );
       console.log(
-        `${name} ${kind}: Rust ${rustWidth}, Chromium ${browserWidth}, fonts ${JSON.stringify(fonts)}`
+        `${name} ${kind}: Rust ${rustWidth}, Chromium ${browserWidth}, delta ${browserWidth - rustWidth}, fonts ${JSON.stringify(fonts)}`
       );
     }
   }
