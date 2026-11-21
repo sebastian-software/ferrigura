@@ -93,6 +93,27 @@ test('host-only TTFs require integrity and MIME but not browser headers', async 
     new Map([[ttfPath, payload]]),
     async () => new Response(payload, { headers: { 'content-type': 'font/ttf' } })
   );
+  await verifyPublic(
+    'https://assets.example.org',
+    new Map([[ttfPath, payload]]),
+    async () => new Response(payload, { headers: { 'content-type': 'application/octet-stream' } })
+  );
+  await assert.rejects(
+    verifyPublic(
+      'https://assets.example.org',
+      new Map([[ttfPath, payload]]),
+      async () => new Response(payload, { headers: { 'content-type': 'text/html' } })
+    ),
+    /content type/
+  );
+  await assert.rejects(
+    verifyPublic(
+      'https://assets.example.org',
+      new Map([[ttfPath, payload]]),
+      async () => new Response('wrong', { headers: { 'content-type': 'application/octet-stream' } })
+    ),
+    /integrity/
+  );
 });
 
 test('public verification requires bytes, CORS, MIME and immutable caching', async () => {
