@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "families": [
+    {
+      "family": "Lexica Ultralegible",
+      "version": "1.0.0",
+      "source": "https://github.com/jacobxperez/lexica-ultralegible/tree/198700e57554026460c7dfd547ac91d910b8b0f5",
+      "license": {
+        "spdx": "OFL-1.1",
+        "path": "fonts/lexica-ultralegible/1.0.0/f32d22b3908fcad2c86a74000614ec22e6a7f66ea7e867e616026a27aebdc143.txt",
+        "sha256": "f32d22b3908fcad2c86a74000614ec22e6a7f66ea7e867e616026a27aebdc143",
+        "sourcePath": "LICENSE.txt",
+        "size": 4352
+      },
+      "faces": [
+        {
+          "weight": 400,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/lexica-ultralegible/1.0.0/588403d7e45996371969fc5fc287937a4beeef69c6409c87ea68f4d6fdca21f4.ttf",
+            "sha256": "588403d7e45996371969fc5fc287937a4beeef69c6409c87ea68f4d6fdca21f4",
+            "sourcePath": "fonts/ttf/LexicaUltralegible-Regular.ttf",
+            "size": 72108
+          },
+          "web": {
+            "path": "fonts/lexica-ultralegible/1.0.0/17b1cd87f1ad7e69831308a142a0d286e9940df0d30704050f7156d660870a07.woff2",
+            "sha256": "17b1cd87f1ad7e69831308a142a0d286e9940df0d30704050f7156d660870a07",
+            "sourcePath": "fonts/web/LexicaUltralegible-Regular.woff2",
+            "size": 26328
+          }
+        },
+        {
+          "weight": 400,
+          "style": "italic",
+          "renderer": {
+            "path": "fonts/lexica-ultralegible/1.0.0/12b1e2a8ab52a322869b09c6da39dbfd0257ea01c3147fd27889606e3f2f9d8e.ttf",
+            "sha256": "12b1e2a8ab52a322869b09c6da39dbfd0257ea01c3147fd27889606e3f2f9d8e",
+            "sourcePath": "fonts/ttf/LexicaUltralegible-Italic.ttf",
+            "size": 72140
+          },
+          "web": {
+            "path": "fonts/lexica-ultralegible/1.0.0/aa18eae407ed4d6b7fefabd24fc9a0e07b602c36816a3a234bd8baa454a58f7f.woff2",
+            "sha256": "aa18eae407ed4d6b7fefabd24fc9a0e07b602c36816a3a234bd8baa454a58f7f",
+            "sourcePath": "fonts/web/LexicaUltralegible-Italic.woff2",
+            "size": 27464
+          }
+        },
+        {
+          "weight": 700,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/lexica-ultralegible/1.0.0/d59de12fd9785e27cc26dbd4337aca5a69dc73b49af9a19c14eb143966b4bbf4.ttf",
+            "sha256": "d59de12fd9785e27cc26dbd4337aca5a69dc73b49af9a19c14eb143966b4bbf4",
+            "sourcePath": "fonts/ttf/LexicaUltralegible-Bold.ttf",
+            "size": 70156
+          },
+          "web": {
+            "path": "fonts/lexica-ultralegible/1.0.0/c82c092e6eb3a8252eacd13fdda696342baa498b0ee920dfd746d867d27c57f1.woff2",
+            "sha256": "c82c092e6eb3a8252eacd13fdda696342baa498b0ee920dfd746d867d27c57f1",
+            "sourcePath": "fonts/web/LexicaUltralegible-Bold.woff2",
+            "size": 26120
+          }
+        },
+        {
+          "weight": 700,
+          "style": "italic",
+          "renderer": {
+            "path": "fonts/lexica-ultralegible/1.0.0/351401f2de965114f56332be8a15cb0990892464609a76c426eb158b915868a0.ttf",
+            "sha256": "351401f2de965114f56332be8a15cb0990892464609a76c426eb158b915868a0",
+            "sourcePath": "fonts/ttf/LexicaUltralegible-BoldItalic.ttf",
+            "size": 69416
+          },
+          "web": {
+            "path": "fonts/lexica-ultralegible/1.0.0/b7227b9b918c4be8d9b75470db1673db749c57da1087f216763d64698b144c2f.woff2",
+            "sha256": "b7227b9b918c4be8d9b75470db1673db749c57da1087f216763d64698b144c2f",
+            "sourcePath": "fonts/web/LexicaUltralegible-BoldItalic.woff2",
+            "size": 26156
+          }
+        }
+      ],
+      "sourceCommit": "198700e57554026460c7dfd547ac91d910b8b0f5"
+    }
+  ]
+}
