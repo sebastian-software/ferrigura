@@ -20,6 +20,7 @@ cargo install --path crates/ferrigura-cli
 Renders Mermaid diagrams to SVG.
 
 Usage: ferrigura [OPTIONS] [FILE]...
+       ferrigura fonts fetch [OPTIONS] FAMILY...
 
 Arguments:
   [FILE]...  The diagram texts. Standard input is read when no FILE is given, or for `-`. Several
@@ -28,6 +29,7 @@ Arguments:
 
 Options:
   -c, --config <FILE>     The configuration as a JSON object, what `initialize` takes
+      --font-lock <FILE>  Register the verified faces from a local font lock
       --font <FAMILY=FILE> Register a local font as weight 400, normal; repeat for more families
       --font-face <FAMILY:WEIGHT:STYLE=FILE>
                           Register a face with weight 1..1000 and style normal or italic
@@ -52,6 +54,27 @@ Options:
 Without a `FILE`, the diagram text is read from standard input. `-` also means standard input.
 
 ## Custom fonts
+
+The host can fetch explicitly selected catalog families before rendering:
+
+```sh
+ferrigura fonts fetch "Lexica Ultralegible" "Noto Sans Math" --fallback "Noto Sans Math"
+ferrigura --font-lock ferrigura-fonts.lock.json diagram.mmd > diagram.svg
+```
+
+Fetching verifies the pinned catalog and every face with SHA-256, stores them in
+`.ferrigura-font-cache/sha256/`, and writes a local lock with absolute cache paths.
+The first family is the default; other selected families become fallbacks only when
+named with repeatable `--fallback` options, in order. Family names match without ASCII
+case differences. Add another registered name with `--alias "monospace=Atkinson Hyperlegible Mono"`
+when a diagram needs that font role.
+
+Use `--cache DIR` and `--lock FILE` to choose locations, or `--offline` to require
+already verified cache entries. `--manifest URL --sha256 HEX --base URL` selects a
+different pinned HTTPS catalog and its same-origin asset base; the base ends in `/`.
+Run `ferrigura fonts fetch --help` for the options. Rendering reads and verifies the
+local lock and face files; it does not fetch fonts or accept URLs from a diagram. The
+lock's absolute paths are local to the machine that created it.
 
 Register a named local file before rendering; no system fonts or network sources
 are discovered:

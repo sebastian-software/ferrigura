@@ -514,3 +514,29 @@ fn fixed_clock_matches_library_and_validates_milliseconds() {
         assert_eq!(run(&["--now", invalid], "").status.code(), Some(2));
     }
 }
+
+#[test]
+fn a_verified_font_lock_renders_and_rejects_changed_bytes() {
+    use sha2::{Digest, Sha256};
+    let source = font_file("LexicaUltralegible-Regular.ttf");
+    let bytes = fs::read(&source).unwrap();
+    let hash: String = Sha256::digest(&bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    let font_path = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("catalog-lock-font.ttf");
+    fs::write(&font_path, &bytes).unwrap();
+    let document = serde_json::json!({"schemaVersion":1,"families":["Fixture"],"fallbacks":[],"faces":[{"family":"Fixture","weight":400,"style":"normal","sha256":hash,"size":bytes.len(),"path":font_path}]});
+    let lock = scratch("catalog-lock.json", &document.to_string());
+    let rendered = run(
+        &["--font-lock", lock.to_str().unwrap()],
+        "flowchart LR\n A[Hello]\n",
+    );
+    assert!(rendered.status.success(), "{}", stderr(&rendered));
+    assert!(stdout(&rendered).contains("data:font/"));
+    fs::write(&font_path, b"tampered").unwrap();
+    let rejected = run(&["--font-lock", lock.to_str().unwrap()], PIE);
+    assert_eq!(rejected.status.code(), Some(1));
+    assert!(stderr(&rejected).contains("integrity"));
+    assert!(stdout(&rejected).is_empty());
+}
