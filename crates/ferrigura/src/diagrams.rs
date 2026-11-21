@@ -776,7 +776,12 @@ fn render_c4(
     let id = prepared.id.as_str();
     c4_render::render(&Context {
         fonts: prepared.fonts,
-        diagram: &c4::parse(text)?,
+        diagram: &c4::parse_with(
+            text,
+            c4::Options {
+                wrap: matches!(prepared.view.effective.get("wrap"), Some(Value::Bool(true))),
+            },
+        )?,
         section: &typed_config.c4,
         globals: &prepared.view.globals,
         theme: prepared.theme(),
