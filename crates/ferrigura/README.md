@@ -4,6 +4,8 @@ ferrigura renders Mermaid diagram text to SVG in Rust, without a browser. It is 
 
 The repository is [sebastian-software/ferrigura](https://github.com/sebastian-software/ferrigura).
 
+This crate is the supported Rust facade, including diagram plugin selection. The [1.x compatibility promise](https://github.com/sebastian-software/ferrigura/blob/main/docs/decisions/0022-stable-public-api.md) defines its scope.
+
 ## Installation
 
 Add the library with Cargo:

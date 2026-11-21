@@ -2,7 +2,7 @@
 
 `ferrigura-elk` is the ELK Layered layout of the Eclipse Layout Kernel, ported from its Java sources. It covers the options that Mermaid sets, and its results are compared with elkjs 0.9.3 on the same ELK JSON graphs. The other ELK algorithms are not ported.
 
-This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate.
+This [Ferrigura](https://github.com/sebastian-software/ferrigura) implementation crate exposes an experimental API. The [`ferrigura` facade](https://crates.io/crates/ferrigura) provides the [supported Rust API](https://github.com/sebastian-software/ferrigura/blob/main/docs/decisions/0022-stable-public-api.md).
 
 ## The source pin
 

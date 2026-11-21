@@ -39,6 +39,8 @@ unchanged.
 
 A Cargo workspace under `crates/`. Diagram types are modules inside the crates, not crates of their own. A program chooses the types it links through the facade's plugins ([0020](./decisions/0020-diagram-types-as-plugins.md)).
 
+The implementation crates expose experimental APIs. The documented `ferrigura` facade and its plugins carry the [1.x compatibility promise](./decisions/0022-stable-public-api.md).
+
 | Crate                | Does                                                                                                                        | License                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `ferrigura`          | The facade: `Renderer`, `render`, `RenderOptions`; the repository's root package                                            | MIT                                                     |
