@@ -122,6 +122,8 @@ pub(crate) struct Layout {
     pub repulsion_range: f64,
     /// `grid[i][j]`: the nodes in each repulsion cell.
     pub grid: Vec<Vec<Vec<usize>>>,
+    /// Scratch membership flags for one neighborhood search.
+    pub surrounding_marks: Vec<bool>,
 
     // CoSELayout.
     pub ideal_edge_length: f64,
@@ -172,6 +174,7 @@ impl Layout {
             max_node_displacement: 0.0,
             repulsion_range: 0.0,
             grid: Vec::new(),
+            surrounding_marks: Vec::new(),
             ideal_edge_length,
             gravity_constant: k.gravity_strength,
             compound_gravity_constant: k.compound_gravity_strength,

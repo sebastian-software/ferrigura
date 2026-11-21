@@ -44,7 +44,7 @@ impl Layout {
     /// elasticity. Overlapping ends exert no force, and a zero length is skipped.
     fn calc_spring_force(&mut self, edge: usize) {
         self.update_edge_length(edge);
-        let e = self.model.edges[edge].clone();
+        let e = &self.model.edges[edge];
         if e.overlapping {
             return;
         }
@@ -71,6 +71,7 @@ impl Layout {
             self.update_grid();
         }
         let nodes = self.model.all_nodes();
+        self.surrounding_marks.resize(self.model.nodes.len(), false);
         let mut processed = vec![false; self.model.nodes.len()];
         for node in nodes {
             self.calculate_repulsion_force_of_a_node(
@@ -133,9 +134,9 @@ impl Layout {
         force_update: bool,
     ) {
         if (self.total_iterations % 10.0 == 1.0 && grid_update_allowed) || force_update {
-            let mut surrounding: Vec<usize> = Vec::new();
-            let mut in_surrounding = vec![false; self.model.nodes.len()];
-            let a = self.model.nodes[node].clone();
+            let mut surrounding = std::mem::take(&mut self.model.nodes[node].surrounding);
+            surrounding.clear();
+            let a = &self.model.nodes[node];
             let rect_a = a.rect;
             let owner_a = a.owner;
             let grid_x = self.grid.len() as i64;
@@ -149,12 +150,11 @@ impl Layout {
                     if i < 0 || j < 0 || i >= grid_x || j >= grid_y {
                         continue;
                     }
-                    let cell = self.grid[i as usize][j as usize].clone();
-                    for b in cell {
+                    for &b in &self.grid[i as usize][j as usize] {
                         if self.model.nodes[b].owner != owner_a || node == b {
                             continue;
                         }
-                        if !processed[b] && !in_surrounding[b] {
+                        if !processed[b] && !self.surrounding_marks[b] {
                             let rect_b = self.model.nodes[b].rect;
                             let distance_x = (rect_a.center_x() - rect_b.center_x()).abs()
                                 - ((rect_a.width / 2.0) + (rect_b.width / 2.0));
@@ -164,11 +164,15 @@ impl Layout {
                                 && distance_y <= self.repulsion_range
                             {
                                 surrounding.push(b);
-                                in_surrounding[b] = true;
+                                self.surrounding_marks[b] = true;
                             }
                         }
                     }
                 }
+            }
+            // Only accepted neighbors were marked; clear those for the next search.
+            for &neighbor in &surrounding {
+                self.surrounding_marks[neighbor] = false;
             }
             self.model.nodes[node].surrounding = surrounding;
         }
@@ -270,5 +274,44 @@ impl Layout {
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fcose::layout::{Constants, Constraints};
+    use crate::fcose::model::Model;
+    use crate::fcose::rng::Mulberry32;
+    use crate::geometry::RectD;
+
+    #[test]
+    fn repeated_neighborhood_searches_keep_first_seen_order_and_clear_marks() {
+        let mut model = Model::new();
+        for i in 0..3 {
+            model.add_node(
+                0,
+                &i.to_string(),
+                RectD::new(i as f64 * 20.0, 0.0, 10.0, 10.0),
+                None,
+            );
+        }
+        let mut layout = Layout::new(
+            model,
+            Constants::new(50.0, 100.0),
+            false,
+            Mulberry32::new(1),
+            Constraints::default(),
+        );
+        layout.repulsion_range = 100.0;
+        layout.grid = vec![vec![vec![0, 2, 1], vec![1, 2]]];
+        layout.surrounding_marks.resize(3, false);
+        for _ in 0..2 {
+            layout.calculate_repulsion_force_of_a_node(0, &[false; 3], false, true);
+            assert_eq!(layout.model.nodes[0].surrounding, [2, 1]);
+            assert!(layout.surrounding_marks.iter().all(|marked| !marked));
+        }
+        layout.calculate_repulsion_force_of_a_node(1, &[false; 3], false, true);
+        assert_eq!(layout.model.nodes[1].surrounding, [0, 2]);
     }
 }
