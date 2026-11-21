@@ -42,11 +42,10 @@ pub(crate) struct FixedNodeConstraint {
     pub position: PointD,
 }
 
-/// The state `initConstraintVariables` sets on the layout (`this.idToNodeMap`, `this.fixedNodeSet`,
-/// and the rest of `CoSELayout.js` 326-582) and `updateDisplacements` reads. Maps and sets keep
-/// the source's insertion order.
+/// Setup state for `initConstraintVariables` (`CoSELayout.js` 326-582). Maps and sets keep the
+/// source's insertion order; the relaxed path discards them after compiling the tick state.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct ConstraintVars {
+struct ConstraintScratch {
     /// `idToNodeMap`: every node, compounds included, by id (`CoSELayout.js` 326-335).
     id_to_node: HashMap<String, usize>,
     /// `fixedNodeSet` (`CoSELayout.js` 327, 358).
@@ -72,6 +71,234 @@ pub(crate) struct ConstraintVars {
     fixed_components_on_horizontal: Vec<bool>,
     components_on_vertical: Vec<Vec<String>>,
     fixed_components_on_vertical: Vec<bool>,
+}
+
+/// Tick state; setup's string maps are retained only for the non-relaxed path.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct ConstraintVars {
+    compiled: CompiledConstraints,
+    legacy: Option<Box<ConstraintScratch>>,
+}
+
+/// Node and dummy group handles preserve the first-member rule without looking up IDs per tick.
+#[derive(Clone, Debug)]
+enum Members {
+    Node(usize),
+    Group(Vec<usize>),
+}
+
+impl Members {
+    fn first(&self) -> usize {
+        match self {
+            Self::Node(node) => *node,
+            Self::Group(nodes) => *nodes.first().expect("a dummy group has no members"),
+        }
+    }
+
+    fn for_each(&self, mut f: impl FnMut(usize)) {
+        match self {
+            Self::Node(node) => f(*node),
+            Self::Group(nodes) => nodes.iter().copied().for_each(f),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Axis {
+    Horizontal,
+    Vertical,
+}
+
+impl Axis {
+    fn get(self, point: PointD) -> f64 {
+        match self {
+            Self::Horizontal => point.x,
+            Self::Vertical => point.y,
+        }
+    }
+
+    fn set(self, point: &mut PointD, value: f64) {
+        match self {
+            Self::Horizontal => point.x = value,
+            Self::Vertical => point.y = value,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct CompiledAlignment {
+    nodes: Vec<usize>,
+    fixed: bool,
+}
+
+impl CompiledAlignment {
+    fn apply(&self, model: &mut Model, axis: Axis) {
+        let mut total = 0.0;
+        if !self.fixed {
+            for &node in &self.nodes {
+                let displacement = model.nodes[node].displacement;
+                total += axis.get(displacement);
+            }
+        }
+        let average = total / self.nodes.len() as f64;
+        for &node in &self.nodes {
+            axis.set(&mut model.nodes[node].displacement, average);
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct CompiledEdge {
+    other: Option<usize>,
+    gap: f64,
+    forward: bool,
+}
+
+#[derive(Clone, Debug, Default)]
+struct CompiledAxis {
+    order: Vec<usize>,
+    members: Vec<Members>,
+    fixed: Vec<bool>,
+    edges: Vec<Vec<CompiledEdge>>,
+    positions: Vec<f64>,
+}
+
+impl CompiledAxis {
+    fn new(
+        ids: &[String],
+        dummy: &JsMap<Vec<String>>,
+        fixed: &JsSet,
+        edges: &JsMap<Vec<RelativeEdge>>,
+        positions: &JsMap<f64>,
+        nodes: &HashMap<String, usize>,
+    ) -> Self {
+        let indices: HashMap<&str, usize> = ids
+            .iter()
+            .enumerate()
+            .map(|(i, id)| (id.as_str(), i))
+            .collect();
+        let members = ids
+            .iter()
+            .map(|id| match dummy.get(id) {
+                Some(group) => Members::Group(group.iter().map(|id| node_of(nodes, id)).collect()),
+                None => Members::Node(node_of(nodes, id)),
+            })
+            .collect();
+        let compiled_edges = ids
+            .iter()
+            .map(|id| {
+                edges
+                    .get(id)
+                    .expect("every relative node has a constraint list")
+                    .iter()
+                    .map(|edge| {
+                        let (other, gap, forward) = match edge {
+                            RelativeEdge::Forward { id, gap } => (id, *gap, true),
+                            RelativeEdge::Backward { id, gap } => (id, *gap, false),
+                        };
+                        CompiledEdge {
+                            other: indices.get(other.as_str()).copied(),
+                            gap,
+                            forward,
+                        }
+                    })
+                    .collect()
+            })
+            .collect();
+        Self {
+            order: (0..ids.len()).collect(),
+            members,
+            fixed: ids.iter().map(|id| fixed.has(id)).collect(),
+            edges: compiled_edges,
+            positions: ids.iter().map(|id| value_or_nan(positions, id)).collect(),
+        }
+    }
+
+    fn update(&mut self, model: &mut Model, axis: Axis) {
+        for &index in &self.order {
+            if self.fixed[index] {
+                continue;
+            }
+            let first = self.members[index].first();
+            let mut displacement = axis.get(model.nodes[first].displacement);
+            for edge in &self.edges[index] {
+                let other = edge.other.map_or(f64::NAN, |i| self.positions[i]);
+                let current = self.positions[index];
+                let diff = if edge.forward {
+                    (other - current) - displacement
+                } else {
+                    (current - other) + displacement
+                };
+                if diff < edge.gap {
+                    if edge.forward {
+                        displacement -= edge.gap - diff;
+                    } else {
+                        displacement += edge.gap - diff;
+                    }
+                }
+            }
+            self.positions[index] += displacement;
+            self.members[index].for_each(|node| {
+                axis.set(&mut model.nodes[node].displacement, displacement);
+            });
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct CompiledConstraints {
+    fixed: Vec<usize>,
+    vertical: Vec<CompiledAlignment>,
+    horizontal: Vec<CompiledAlignment>,
+    relative_horizontal: CompiledAxis,
+    relative_vertical: CompiledAxis,
+}
+
+impl CompiledConstraints {
+    fn new(vars: &ConstraintScratch, layout: &Layout) -> Self {
+        let alignment = |lists: Option<&Vec<Vec<String>>>| {
+            lists
+                .into_iter()
+                .flatten()
+                .map(|list| CompiledAlignment {
+                    nodes: list
+                        .iter()
+                        .map(|id| node_of(&vars.id_to_node, id))
+                        .collect(),
+                    fixed: list.iter().any(|id| vars.fixed_node_set.has(id)),
+                })
+                .collect()
+        };
+        let alignments = layout.constraints.alignment.as_ref();
+        Self {
+            fixed: layout
+                .fixed_node_constraint
+                .as_ref()
+                .into_iter()
+                .flatten()
+                .map(|data| node_of(&vars.id_to_node, &data.node_id))
+                .collect(),
+            vertical: alignment(alignments.and_then(|a| a.vertical.as_ref())),
+            horizontal: alignment(alignments.and_then(|a| a.horizontal.as_ref())),
+            relative_horizontal: CompiledAxis::new(
+                &vars.nodes_in_relative_horizontal,
+                &vars.dummy_to_node_vertical,
+                &vars.fixed_nodes_on_horizontal,
+                &vars.node_to_relative_horizontal,
+                &vars.node_to_temp_position_horizontal,
+                &vars.id_to_node,
+            ),
+            // The reference checks the horizontal fixed set on both axes.
+            relative_vertical: CompiledAxis::new(
+                &vars.nodes_in_relative_vertical,
+                &vars.dummy_to_node_horizontal,
+                &vars.fixed_nodes_on_horizontal,
+                &vars.node_to_relative_vertical,
+                &vars.node_to_temp_position_vertical,
+                &vars.id_to_node,
+            ),
+        }
+    }
 }
 
 /// `{right: id, gap}` or `{bottom: id, gap}` (`CoSELayout.js` 466, 493): the node that comes after
@@ -1323,7 +1550,7 @@ fn component_sources(
 
 /// `CoSELayout.prototype.shuffle` (`CoSELayout.js` 421-430): from the last index down to two
 /// thirds of the length, each index swaps with a random index at or below it.
-fn shuffle(array: &mut [String], rng: &mut Mulberry32) {
+fn shuffle<T>(array: &mut [T], rng: &mut Mulberry32) {
     let bound = 2.0 * array.len() as f64 / 3.0;
     let mut i = array.len() as i64 - 1;
     while (i as f64) >= bound {
@@ -1337,7 +1564,7 @@ fn shuffle(array: &mut [String], rng: &mut Mulberry32) {
 /// sets and the per-axis components that `updateDisplacements` and the spring embedder read.
 pub(crate) fn init_constraint_variables(layout: &mut Layout) {
     let all_nodes = layout.model.all_nodes();
-    let mut vars = ConstraintVars::default();
+    let mut vars = ConstraintScratch::default();
 
     // CoSELayout.js 325-335: idToNodeMap holds every node, compounds included.
     for &node in &all_nodes {
@@ -1543,7 +1770,11 @@ pub(crate) fn init_constraint_variables(layout: &mut Layout) {
         }
     }
 
-    layout.constraint_vars = vars;
+    let compiled = CompiledConstraints::new(&vars, layout);
+    layout.constraint_vars = ConstraintVars {
+        compiled,
+        legacy: (!RELAX_MOVEMENT_ON_CONSTRAINTS).then(|| Box::new(vars)),
+    };
 }
 
 /// `CoSELayout.prototype.updateDisplacements` (`CoSELayout.js` 588-800): the displacements of the
@@ -1555,192 +1786,32 @@ pub(crate) fn update_displacements(layout: &mut Layout) {
     let vars = &mut layout.constraint_vars;
     let rng = &mut layout.rng;
     let constraints = &layout.constraints;
-    let fixed_node_constraint = &layout.fixed_node_constraint;
 
-    // CoSELayout.js 590-596: a fixed node does not move.
-    if let Some(fixed) = fixed_node_constraint {
-        for data in fixed {
-            let node = node_of(&vars.id_to_node, &data.node_id);
-            model.nodes[node].displacement = PointD::new(0.0, 0.0);
-        }
+    // The fixed nodes and alignment members are resolved once, in source order.
+    for &node in &vars.compiled.fixed {
+        model.nodes[node].displacement = PointD::new(0.0, 0.0);
     }
-
-    // CoSELayout.js 598-632: the nodes of an alignment list share their mean displacement; a list
-    // with a fixed node gets zero.
-    if let Some(alignment) = &constraints.alignment {
-        if let Some(vertical) = &alignment.vertical {
-            for list in vertical {
-                let mut total = 0.0;
-                for node_id in list {
-                    if vars.fixed_node_set.has(node_id) {
-                        total = 0.0;
-                        break;
-                    }
-                    total += model.nodes[node_of(&vars.id_to_node, node_id)]
-                        .displacement
-                        .x;
-                }
-                let average = total / list.len() as f64;
-                for node_id in list {
-                    model.nodes[node_of(&vars.id_to_node, node_id)]
-                        .displacement
-                        .x = average;
-                }
-            }
-        }
-        if let Some(horizontal) = &alignment.horizontal {
-            for list in horizontal {
-                let mut total = 0.0;
-                for node_id in list {
-                    if vars.fixed_node_set.has(node_id) {
-                        total = 0.0;
-                        break;
-                    }
-                    total += model.nodes[node_of(&vars.id_to_node, node_id)]
-                        .displacement
-                        .y;
-                }
-                let average = total / list.len() as f64;
-                for node_id in list {
-                    model.nodes[node_of(&vars.id_to_node, node_id)]
-                        .displacement
-                        .y = average;
-                }
-            }
-        }
+    for alignment in &vars.compiled.vertical {
+        alignment.apply(model, Axis::Horizontal);
+    }
+    for alignment in &vars.compiled.horizontal {
+        alignment.apply(model, Axis::Vertical);
     }
 
     if constraints.relative.is_some() {
         if RELAX_MOVEMENT_ON_CONSTRAINTS {
-            // CoSELayout.js 639-642: the order of each list is reshuffled every tenth iteration.
             if total_iterations % 10.0 == 0.0 {
-                shuffle(&mut vars.nodes_in_relative_horizontal, rng);
-                shuffle(&mut vars.nodes_in_relative_vertical, rng);
+                shuffle(&mut vars.compiled.relative_horizontal.order, rng);
+                shuffle(&mut vars.compiled.relative_vertical.order, rng);
             }
-
-            // CoSELayout.js 644-677
-            for node_id in &vars.nodes_in_relative_horizontal {
-                if vars.fixed_nodes_on_horizontal.has(node_id) {
-                    continue;
-                }
-                let mut displacement = match vars.dummy_to_node_vertical.get(node_id) {
-                    Some(actual) => {
-                        model.nodes[node_of(&vars.id_to_node, first_id(actual))]
-                            .displacement
-                            .x
-                    }
-                    None => {
-                        model.nodes[node_of(&vars.id_to_node, node_id)]
-                            .displacement
-                            .x
-                    }
-                };
-                for edge in vars
-                    .node_to_relative_horizontal
-                    .get(node_id)
-                    .expect("every relative node has a constraint list")
-                {
-                    match edge {
-                        RelativeEdge::Forward { id, gap } => {
-                            let diff = (value_or_nan(&vars.node_to_temp_position_horizontal, id)
-                                - value_or_nan(&vars.node_to_temp_position_horizontal, node_id))
-                                - displacement;
-                            if diff < *gap {
-                                displacement -= *gap - diff;
-                            }
-                        }
-                        RelativeEdge::Backward { id, gap } => {
-                            let diff =
-                                (value_or_nan(&vars.node_to_temp_position_horizontal, node_id)
-                                    - value_or_nan(&vars.node_to_temp_position_horizontal, id))
-                                    + displacement;
-                            if diff < *gap {
-                                displacement += *gap - diff;
-                            }
-                        }
-                    }
-                }
-                let temp =
-                    value_or_nan(&vars.node_to_temp_position_horizontal, node_id) + displacement;
-                vars.node_to_temp_position_horizontal.set(node_id, temp);
-                match vars.dummy_to_node_vertical.get(node_id) {
-                    Some(actual) => {
-                        for member in actual {
-                            model.nodes[node_of(&vars.id_to_node, member)]
-                                .displacement
-                                .x = displacement;
-                        }
-                    }
-                    None => {
-                        model.nodes[node_of(&vars.id_to_node, node_id)]
-                            .displacement
-                            .x = displacement;
-                    }
-                }
-            }
-
-            // CoSELayout.js 679-711. The source tests `fixedNodesOnHorizontal` here, not the
-            // vertical set, and the port keeps that.
-            for node_id in &vars.nodes_in_relative_vertical {
-                if vars.fixed_nodes_on_horizontal.has(node_id) {
-                    continue;
-                }
-                let mut displacement = match vars.dummy_to_node_horizontal.get(node_id) {
-                    Some(actual) => {
-                        model.nodes[node_of(&vars.id_to_node, first_id(actual))]
-                            .displacement
-                            .y
-                    }
-                    None => {
-                        model.nodes[node_of(&vars.id_to_node, node_id)]
-                            .displacement
-                            .y
-                    }
-                };
-                for edge in vars
-                    .node_to_relative_vertical
-                    .get(node_id)
-                    .expect("every relative node has a constraint list")
-                {
-                    match edge {
-                        RelativeEdge::Forward { id, gap } => {
-                            let diff = (value_or_nan(&vars.node_to_temp_position_vertical, id)
-                                - value_or_nan(&vars.node_to_temp_position_vertical, node_id))
-                                - displacement;
-                            if diff < *gap {
-                                displacement -= *gap - diff;
-                            }
-                        }
-                        RelativeEdge::Backward { id, gap } => {
-                            let diff =
-                                (value_or_nan(&vars.node_to_temp_position_vertical, node_id)
-                                    - value_or_nan(&vars.node_to_temp_position_vertical, id))
-                                    + displacement;
-                            if diff < *gap {
-                                displacement += *gap - diff;
-                            }
-                        }
-                    }
-                }
-                let temp =
-                    value_or_nan(&vars.node_to_temp_position_vertical, node_id) + displacement;
-                vars.node_to_temp_position_vertical.set(node_id, temp);
-                match vars.dummy_to_node_horizontal.get(node_id) {
-                    Some(actual) => {
-                        for member in actual {
-                            model.nodes[node_of(&vars.id_to_node, member)]
-                                .displacement
-                                .y = displacement;
-                        }
-                    }
-                    None => {
-                        model.nodes[node_of(&vars.id_to_node, node_id)]
-                            .displacement
-                            .y = displacement;
-                    }
-                }
-            }
+            vars.compiled
+                .relative_horizontal
+                .update(model, Axis::Horizontal);
+            vars.compiled
+                .relative_vertical
+                .update(model, Axis::Vertical);
         } else {
+            let vars = vars.legacy.as_ref().expect("non-relaxed constraint state");
             // CoSELayout.js 714-797: every component takes the mean displacement of its nodes, or
             // zero when it has a fixed node.
             for (component, &fixed) in vars
@@ -1867,5 +1938,157 @@ pub(crate) fn update_displacements(layout: &mut Layout) {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod compiled_tests {
+    use super::*;
+
+    #[test]
+    fn fixed_groups_keep_the_reference_axis_membership() {
+        use crate::fcose::layout::{Constants, Constraints};
+        let mut model = Model::new();
+        for id in ["a", "b", "c"] {
+            model.add_node(0, id, RectD::new(0.0, 0.0, 10.0, 10.0), None);
+        }
+        let constraints = Constraints {
+            alignment: Some(AlignmentConstraint {
+                horizontal: Some(vec![vec!["a".into(), "b".into()]]),
+                vertical: None,
+            }),
+            relative: Some(vec![RelativeConstraint {
+                top: Some("b".into()),
+                bottom: Some("c".into()),
+                gap: Some(5.0),
+                ..Default::default()
+            }]),
+        };
+        let mut layout = Layout::new(
+            model,
+            Constants::new(50.0, 100.0),
+            false,
+            Mulberry32::new(1),
+            constraints,
+        );
+        layout.fixed_node_constraint = Some(vec![FixedNodeConstraint {
+            node_id: "a".into(),
+            position: PointD::new(0.0, 0.0),
+        }]);
+        init_constraint_variables(&mut layout);
+        assert!(layout.constraint_vars.compiled.horizontal[0].fixed);
+        // The source checks the horizontal fixed set for vertical relative motion.
+        assert!(!layout.constraint_vars.compiled.relative_vertical.fixed[0]);
+        layout.model.nodes[0].displacement.y = 2.0;
+        layout.model.nodes[1].displacement.y = 4.0;
+        layout.constraint_vars.compiled.horizontal[0].apply(&mut layout.model, Axis::Vertical);
+        assert_eq!(layout.model.nodes[0].displacement.y, 0.0);
+        assert_eq!(layout.model.nodes[1].displacement.y, 0.0);
+    }
+
+    #[test]
+    fn shuffled_handles_follow_the_same_order_and_rng_as_ids() {
+        let mut ids = vec!["a", "b", "c", "d", "e", "f"];
+        let mut handles = vec![0, 1, 2, 3, 4, 5];
+        let mut id_rng = Mulberry32::new(42);
+        let mut handle_rng = Mulberry32::new(42);
+        for _ in 0..5 {
+            shuffle(&mut ids, &mut id_rng);
+            shuffle(&mut handles, &mut handle_rng);
+            assert_eq!(
+                ids,
+                handles
+                    .iter()
+                    .map(|&i| ["a", "b", "c", "d", "e", "f"][i])
+                    .collect::<Vec<_>>()
+            );
+        }
+        assert_eq!(id_rng.next_f64(), handle_rng.next_f64());
+    }
+
+    #[test]
+    fn relative_groups_use_the_first_member_and_keep_neighbor_order() {
+        let mut model = Model::new();
+        for id in ["a", "b", "c"] {
+            model.add_node(0, id, RectD::new(0.0, 0.0, 10.0, 10.0), None);
+        }
+        model.nodes[0].displacement.x = 1.0;
+        model.nodes[1].displacement.x = 9.0;
+        let nodes = [
+            ("a".to_owned(), 0),
+            ("b".to_owned(), 1),
+            ("c".to_owned(), 2),
+        ]
+        .into_iter()
+        .collect();
+        let mut dummy = JsMap::default();
+        dummy.set("dummy0", vec!["a".into(), "b".into()]);
+        let mut edges = JsMap::default();
+        edges.set(
+            "dummy0",
+            vec![RelativeEdge::Forward {
+                id: "c".into(),
+                gap: 5.0,
+            }],
+        );
+        edges.set(
+            "c",
+            vec![RelativeEdge::Backward {
+                id: "dummy0".into(),
+                gap: 5.0,
+            }],
+        );
+        let mut positions = JsMap::default();
+        positions.set("dummy0", 0.0);
+        positions.set("c", 4.0);
+        let mut axis = CompiledAxis::new(
+            &["dummy0".into(), "c".into()],
+            &dummy,
+            &JsSet::default(),
+            &edges,
+            &positions,
+            &nodes,
+        );
+        axis.update(&mut model, Axis::Horizontal);
+        assert_eq!(model.nodes[0].displacement.x, -1.0);
+        assert_eq!(model.nodes[1].displacement.x, -1.0);
+        assert_eq!(model.nodes[2].displacement.x, 0.0);
+        assert_eq!(axis.positions, [-1.0, 4.0]);
+    }
+
+    #[test]
+    fn missing_relative_positions_stay_nan_and_fixed_handles_do_not_move() {
+        let mut model = Model::new();
+        model.add_node(0, "a", RectD::new(0.0, 0.0, 10.0, 10.0), None);
+        model.nodes[0].displacement.y = 3.0;
+        let nodes = [("a".to_owned(), 0)].into_iter().collect();
+        let mut edges = JsMap::default();
+        edges.set(
+            "a",
+            vec![RelativeEdge::Forward {
+                id: "absent".into(),
+                gap: 1.0,
+            }],
+        );
+        let mut positions = JsMap::default();
+        positions.set("a", 0.0);
+        let mut fixed = JsSet::default();
+        fixed.add("a");
+        let mut axis = CompiledAxis::new(
+            &["a".into()],
+            &JsMap::default(),
+            &fixed,
+            &edges,
+            &positions,
+            &nodes,
+        );
+        assert!(axis.edges[0][0].other.is_none());
+        axis.update(&mut model, Axis::Vertical);
+        assert_eq!(model.nodes[0].displacement.y, 3.0);
+        assert_eq!(axis.positions[0], 0.0);
+        axis.fixed[0] = false;
+        axis.update(&mut model, Axis::Vertical);
+        assert_eq!(model.nodes[0].displacement.y, 3.0);
+        assert_eq!(axis.positions[0], 3.0);
     }
 }
