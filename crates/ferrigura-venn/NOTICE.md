@@ -1,7 +1,7 @@
-# Notice: sources and licences of ferrigura-venn
+# Notice: sources and licenses of ferrigura-venn
 
-The crate is MIT-licensed, as its sources are. It ports the layout of `@upsetjs/venn.js` 2.0.0, an
-MIT package (`LICENSE`, the copyright lines of Ben Frederickson and Samuel Gratzl), which Mermaid
+The crate combines MIT-licensed venn.js with BSD-3-Clause-licensed fmin. It ports the layout of
+`@upsetjs/venn.js` 2.0.0, an MIT package (`LICENSE`, the copyright lines of Ben Frederickson and Samuel Gratzl), which Mermaid
 12.2.0 bundles. What runs is the package's `build/venn.esm.js`, which inlines the `fmin` functions
 the layout calls (build lines 262-622). The port follows that build, the code that runs.
 
@@ -31,10 +31,16 @@ and the UTF-16 order of strings.
 
 ## fmin
 
-The `fmin` package is a devDependency of venn.js at 0.0.4, with a yarn patch (`package.json` of the
-venn.js package, line 82). Neither the package nor the patch is in the repository: only the bundle's
-copy of its functions is, and that copy is what the port follows. Its licence and copyright line are
-**unverified**: `LICENSE` lists only the copyright of venn.js.
+The inlined functions come from `fmin` 0.0.4, Copyright 2016 Ben Frederickson,
+under BSD-3-Clause; its complete license is in `LICENSE-fmin`. The published
+[npm tarball](https://registry.npmjs.org/fmin/-/fmin-0.0.4.tgz) has SHA-512
+`18379b05d8b35ba8351792b19bfcbf0f46ca8dcf3305e21e1845e9803b867a333279a69fb8b90a651c44cd62aa7a10d18a9c50f21d1c2e1743442b31e93d2de3`.
+The [venn.js 2.0.0 package manifest](https://github.com/upsetjs/venn.js/blob/350c835aab4a92a7570963c28f725cf9f6e5f258/package.json)
+selects that version with a [Yarn patch](https://github.com/upsetjs/venn.js/blob/350c835aab4a92a7570963c28f725cf9f6e5f258/.yarn/patches/fmin-npm-0.0.4-e439f499bd.patch).
+The patch declares the reduction loop variable in `nelderMead` and adjusts module
+metadata. The bundled `bisect`, `zeros`, `dot`, `norm2`, `scale`, `weightedSum`,
+`nelderMead`, `wolfeLineSearch`, and `conjugateGradient` match the corresponding
+published source functions after that patch, apart from removed `export` keywords.
 
 ## The corpus
 

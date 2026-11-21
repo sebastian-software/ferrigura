@@ -6,14 +6,15 @@
 
 ferrigura is MIT-licensed, as Mermaid is: it ports Mermaid, and Mermaid's copyright notice stays in `LICENSE` beside ferrigura's. Code ported from another source keeps that source's license:
 
-| Crate                                                                        | License                                                 | Ported or bundled from                                                          |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ferrigura-elk`                                                              | EPL-2.0                                                 | ELK's Java sources                                                              |
-| `ferrigura-jsmath`                                                           | MIT AND Apache-2.0 WITH LLVM-exception AND BSD-3-Clause | llvm-libc and V8 (fdlibm)                                                       |
-| `ferrigura-path`                                                             | MIT AND BSD-3-Clause                                    | Chromium and Skia                                                               |
-| `ferrigura-text`                                                             | MIT AND OFL-1.1 AND CC-BY-4.0                           | the bundled fonts and Twemoji                                                   |
-| `ferrigura-cose`, `ferrigura-venn`, `ferrigura-swimlane`, `ferrigura-render` | MIT                                                     | MIT sources: cose-bilkent and fcose, venn.js, Mermaid's swimlane layout, marked |
-| all others                                                                   | MIT                                                     | Mermaid                                                                         |
+| Crate                                                      | License                                                 | Ported or bundled from                                    |
+| ---------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------- |
+| `ferrigura-elk`                                            | EPL-2.0                                                 | ELK's Java sources                                        |
+| `ferrigura-jsmath`                                         | MIT AND Apache-2.0 WITH LLVM-exception AND BSD-3-Clause | llvm-libc and V8 (fdlibm)                                 |
+| `ferrigura-path`                                           | MIT AND BSD-3-Clause                                    | Chromium and Skia                                         |
+| `ferrigura-text`                                           | MIT AND OFL-1.1 AND CC-BY-4.0                           | the bundled fonts and Twemoji                             |
+| `ferrigura-venn`                                           | MIT AND BSD-3-Clause                                    | venn.js and its inlined fmin functions                    |
+| `ferrigura-cose`, `ferrigura-swimlane`, `ferrigura-render` | MIT                                                     | cose-bilkent and fcose, Mermaid's swimlane layout, marked |
+| all others                                                 | MIT                                                     | Mermaid                                                   |
 
 - A crate that ports or bundles anything carries a `NOTICE.md` that names each part, where it lives in the crate, its source and version, and its license, with the license texts beside it (`LICENSE-*`).
 - Code under a license that is not compatible with MIT for redistribution in one crate lives in a crate of its own under that license: ELK's EPL-2.0 is the case, and a port is a derivative work.

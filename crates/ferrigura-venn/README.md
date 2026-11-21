@@ -6,4 +6,4 @@ This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrig
 
 ## License
 
-MIT, as the workspace and as `@upsetjs/venn.js` is (the `LICENSE` file). `NOTICE.md` lists the copyright lines and the source lines that each function is ported from.
+MIT AND BSD-3-Clause: `@upsetjs/venn.js` is MIT (`LICENSE`), and the inlined `fmin` functions are BSD-3-Clause (`LICENSE-fmin`). `NOTICE.md` lists the sources and copyright notices.
