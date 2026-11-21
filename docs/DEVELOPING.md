@@ -87,6 +87,8 @@ On an aarch64 machine (CI uses a Linux arm64 runner), the output of the whole co
 cargo test --release --test snapshots
 ```
 
+The native matrix also captures the replay test's representative SVGs and publishes a report comparing each target with Linux arm64. The report records ordered elements, labels, embedded font styles and data hashes, and numeric geometry differences without applying a cross-target tolerance. A pull request includes macOS when it has the `ci:macos` label; a main or manually dispatched run includes all seven targets. The individual `native-replay-*` artifacts contain the captured SVGs.
+
 A release build links with fat LTO in one codegen unit and takes minutes where a debug build takes seconds; iterate with the dev profile and reserve `--release` for the snapshots and the artifacts.
 
 ## Checking a change against the reference
