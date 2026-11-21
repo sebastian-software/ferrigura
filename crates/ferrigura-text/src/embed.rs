@@ -316,7 +316,7 @@ fn same_face(a: &Face, b: &Face) -> bool {
     same_family(a, b)
         && a.weight().css_value() == b.weight().css_value()
         && a.style() == b.style()
-        && a.data() == b.data()
+        && (std::ptr::eq(a.data(), b.data()) || a.data() == b.data())
 }
 
 fn same_family(a: &Face, b: &Face) -> bool {

@@ -61,6 +61,36 @@ fn registry() -> FontRegistry {
 }
 
 #[test]
+fn embedding_groups_shared_and_separately_registered_equal_faces() {
+    let first = registry()
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    let second = registry()
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    assert!(!std::ptr::eq(first.data(), second.data()));
+    let runs = [
+        Run {
+            text: "A",
+            face: &first,
+        },
+        Run {
+            text: "B",
+            face: &first,
+        },
+        Run {
+            text: "C",
+            face: &second,
+        },
+    ];
+    let combined = [Run {
+        text: "ABC",
+        face: &first,
+    }];
+    assert_eq!(embed_runs(&runs).unwrap(), embed_runs(&combined).unwrap());
+}
+
+#[test]
 fn a_resolved_face_outlives_its_registry_and_supplied_bytes() {
     let face = {
         let mut fonts = registry();
