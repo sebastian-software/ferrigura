@@ -86,6 +86,11 @@ fn verified(bytes: &[u8], hash: &str, size: Option<u64>) -> Result<(), String> {
     Ok(())
 }
 fn bounded_read(path: &Path, limit: u64) -> Result<Vec<u8>, String> {
+    let metadata = fs::symlink_metadata(path)
+        .map_err(|e| format!("cannot inspect {}: {e}", path.display()))?;
+    if !metadata.file_type().is_file() {
+        return Err(format!("{} is not a regular file", path.display()));
+    }
     let file = fs::File::open(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
     if !file.metadata().map_err(|e| e.to_string())?.is_file() {
         return Err(format!("{} is not a regular file", path.display()));
@@ -144,10 +149,14 @@ where
         return Err("invalid SHA-256".into());
     }
     let path = cache.join("sha256").join(hash);
-    if path.exists() {
-        let bytes = bounded_read(&path, limit)?;
-        verified(&bytes, hash, size)?;
-        return Ok((path, bytes));
+    match fs::symlink_metadata(&path) {
+        Ok(_) => {
+            let bytes = bounded_read(&path, limit)?;
+            verified(&bytes, hash, size)?;
+            return Ok((path, bytes));
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(format!("cannot inspect {}: {error}", path.display())),
     }
     if offline {
         return Err(format!("offline cache misses {hash}"));
@@ -360,8 +369,8 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
     }
     let mut selected = Vec::new();
     for (family, weight, style, asset_hash, size, url) in assets {
-        let (file, _) = cached(&cache, &asset_hash, Some(size), offline, LIMIT, || {
-            download(&url, LIMIT)
+        let (file, _) = cached(&cache, &asset_hash, Some(size), offline, size, || {
+            download(&url, size)
         })?;
         let absolute = fs::canonicalize(file).map_err(|e| e.to_string())?;
         selected.push(json!({"family":family,"weight":weight,"style":style,"sha256":asset_hash,"size":size,"path":absolute}));
@@ -554,6 +563,15 @@ mod tests {
         assert!(checked_url("http://example.invalid/").is_err());
         assert!(verified(b"bad", &"0".repeat(64), Some(3)).is_err());
         assert!(verified(b"data", &digest(b"data"), Some(5)).is_err());
+        let dir =
+            std::env::temp_dir().join(format!("ferrigura-catalog-small-{}", std::process::id()));
+        assert!(
+            cached(&dir, &digest(b"data"), Some(1), false, 1, || Ok(
+                b"data".to_vec()
+            ))
+            .is_err()
+        );
+        assert!(!dir.exists());
         let oversized = std::env::temp_dir().join(format!(
             "ferrigura-catalog-oversized-{}",
             std::process::id()
@@ -562,6 +580,31 @@ mod tests {
         file.set_len(MANIFEST_LIMIT + 1).unwrap();
         assert!(bounded_read(&oversized, MANIFEST_LIMIT).is_err());
         fs::remove_file(oversized).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn offline_cache_and_lock_reject_fifos_and_symlinks() {
+        use std::os::unix::fs::symlink;
+        let dir =
+            std::env::temp_dir().join(format!("ferrigura-catalog-fifo-{}", std::process::id()));
+        fs::create_dir_all(dir.join("sha256")).unwrap();
+        let hash = "0".repeat(64);
+        let fifo = dir.join("sha256").join(&hash);
+        assert!(
+            std::process::Command::new("mkfifo")
+                .arg(&fifo)
+                .status()
+                .unwrap()
+                .success()
+        );
+        let error = cached(&dir, &hash, None, true, MANIFEST_LIMIT, || unreachable!()).unwrap_err();
+        assert!(error.contains("not a regular file"));
+        assert!(read_lock(&fifo).unwrap_err().contains("not a regular file"));
+        let link = dir.join("linked-lock");
+        symlink(&fifo, &link).unwrap();
+        assert!(read_lock(&link).unwrap_err().contains("not a regular file"));
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
