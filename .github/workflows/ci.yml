@@ -83,6 +83,17 @@ jobs:
       - name: Node addon
         run: node --test crates/ferrigura-node/test/render.test.mjs
 
+  # The declared MSRV must build the public Rust library and CLI with the committed lockfile.
+  minimum-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build with the declared minimum Rust
+        run: |
+          version=$(cargo metadata --locked --no-deps --format-version 1 | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(p["rust_version"] for p in data["packages"] if p["name"] == "ferrigura"))')
+          rustup toolchain install "$version" --profile minimal
+          cargo +"$version" build --locked -p ferrigura -p ferrigura-cli
+
   snapshots:
     # ferrigura's own output against crates/ferrigura/tests/snapshots/svg.tsv. The manifest holds the
     # aarch64 renders (ferrigura_jsmath rounds with fused multiply-adds there), so this runs on an arm64
@@ -273,11 +284,20 @@ jobs:
           FERRIGURA_RUST_TARGET: ${{ matrix.target }}
       - run: pnpm test && pnpm typecheck && pnpm lint && pnpm format:check && pnpm pack:check
         if: matrix.native
+      # Derive the exact floor from the published facade so dependency automation cannot bump it.
+      - name: Read the minimum Node version
+        id: minimum-node
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          node -e 'const range = require("./ferrigura/package.json").engines.node; const match = /^>=(\d+\.\d+\.\d+)$/.exec(range); if (!match) throw new Error(`Expected an exact Node floor, got ${range}`); console.log(`version=${match[1]}`)' >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         with:
-          node-version: '22.23.5'
-      - name: Test native addon on Node 22
+          node-version: ${{ steps.minimum-node.outputs.version }}
+      - name: Test the packed consumer on the minimum Node
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: pnpm pack:check
+      - name: Test native addon on the minimum Node
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         run: node --test ferrigura/test/*.test.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7

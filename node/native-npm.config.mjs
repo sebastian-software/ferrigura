@@ -22,13 +22,13 @@ export default {
     platformMaxUnpackedSize: { default: 16_000_000, 'win32-x64-msvc': 22_000_000 },
   },
   consumer: {
-    smoke: `import { render } from '@ferrigura/core'; const result = render('graph TD; A-->B'); if (!result.includes('<svg')) throw new Error('SVG mismatch');`,
+    smoke: `import { render, Renderer } from '@ferrigura/core'; import manifest from '@ferrigura/core/package.json' with { type: 'json' }; const text = 'graph TD; A-->B'; const renderer = new Renderer(); if (!manifest.version || !render(text).includes('<svg') || !renderer.render(text).includes('<svg') || !renderer.render(text).includes('<svg')) throw new Error('Packed consumer mismatch');`,
   },
   release: {
     repository: 'https://github.com/sebastian-software/ferrigura',
     tagPrefix: 'v',
     ci: {
-      requiredJobs: ['lint', 'test', 'rust', 'snapshots', 'port-geometry'],
+      requiredJobs: ['lint', 'test', 'rust', 'minimum-rust', 'snapshots', 'port-geometry'],
       platformJobs: NATIVE_TARGETS.map(({ id }) => ({
         pattern: `^native-npm \\(.*${id}`,
         label: `native-npm ${id}`,
