@@ -30,6 +30,10 @@ jobs:
           node-version-file: tools/port/.node-version
       - run: pnpm -C tools/port install --frozen-lockfile
       - run: pnpm -C tools/port exec playwright install --with-deps chromium
+      - run: |
+          python3 -m venv "$RUNNER_TEMP/font-catalog-venv"
+          "$RUNNER_TEMP/font-catalog-venv/bin/python" -m pip install -r tools/font-catalog/requirements.txt
+          echo "FONT_CATALOG_PYTHON=$RUNNER_TEMP/font-catalog-venv/bin/python" >> "$GITHUB_ENV"
       - run: node --test tools/font-catalog/catalog.test.mjs
       - run: node tools/font-catalog/run.mjs prepare
       - run: node tools/port/fonts/catalog-browser.mjs
@@ -43,6 +47,10 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: tools/port/.node-version
+      - run: |
+          python3 -m venv "$RUNNER_TEMP/font-catalog-venv"
+          "$RUNNER_TEMP/font-catalog-venv/bin/python" -m pip install -r tools/font-catalog/requirements.txt
+          echo "FONT_CATALOG_PYTHON=$RUNNER_TEMP/font-catalog-venv/bin/python" >> "$GITHUB_ENV"
       - name: Publish immutable objects and verify the public endpoint
         env:
           BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
