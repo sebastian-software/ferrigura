@@ -1157,14 +1157,14 @@ pub fn path_length(d: &str) -> f64 {
                 2.0 * (p1.x - c.x),
                 2.0 * (p1.y - c.y),
             ),
-            Segment::Cubic(p0, c1, c2, p1) => simpson(2000, |t| {
-                let s = 1.0 - t;
-                let dx = 3.0
-                    * (s * s * (c1.x - p0.x) + 2.0 * s * t * (c2.x - c1.x) + t * t * (p1.x - c2.x));
-                let dy = 3.0
-                    * (s * s * (c1.y - p0.y) + 2.0 * s * t * (c2.y - c1.y) + t * t * (p1.y - c2.y));
-                hypot(dx, dy)
-            }),
+            Segment::Cubic(p0, c1, c2, p1) => ferrigura_path::cubic_length(
+                c1.x - p0.x,
+                c1.y - p0.y,
+                c2.x - c1.x,
+                c2.y - c1.y,
+                p1.x - c2.x,
+                p1.y - c2.y,
+            ),
             Segment::Arc {
                 from,
                 to,

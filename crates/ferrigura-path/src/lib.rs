@@ -52,4 +52,4 @@ pub fn bounding_box(d: &str) -> Rect {
     }
 }
 
-pub use length::quadratic_length;
+pub use length::{cubic_length, quadratic_length};
