@@ -10,6 +10,15 @@ pub enum TextError {
     InvalidFont,
     /// A font registration or resolution failed.
     Registration(String),
+    /// A selected face shaped part of a visible grapheme to a missing glyph.
+    MissingGlyph {
+        /// The grapheme containing the missing glyph.
+        sequence: String,
+        /// The requested family list.
+        family: String,
+        /// The UTF-8 byte offset in the supplied text, not a source-document position.
+        byte_offset: usize,
+    },
     /// The font has no line metrics, so no text box can be derived from it.
     MissingLineMetrics,
     /// The shaper rejected the text.
@@ -24,6 +33,23 @@ impl fmt::Display for TextError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Registration(message) => f.write_str(message),
+            Self::MissingGlyph {
+                sequence,
+                family,
+                byte_offset,
+            } => {
+                write!(
+                    f,
+                    "selected font for {family:?} cannot shape {sequence:?} ("
+                )?;
+                for (index, character) in sequence.chars().enumerate() {
+                    if index > 0 {
+                        f.write_str(" ")?;
+                    }
+                    write!(f, "U+{:04X}", u32::from(character))?;
+                }
+                write!(f, ") at text byte {byte_offset}")
+            }
             Self::InvalidFont => write!(f, "the font data does not parse"),
             Self::MissingLineMetrics => write!(f, "the font has no line metrics"),
             Self::Shape(error) => write!(f, "shaping failed: {error:?}"),

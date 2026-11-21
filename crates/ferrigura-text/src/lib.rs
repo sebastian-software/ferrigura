@@ -36,6 +36,8 @@ pub use embed::{
 };
 pub use error::TextError;
 pub use fonts::{Face, FontFamily, FontStyle, FontWeight, face};
+#[doc(hidden)]
+pub use measure::checked_fallback_runs;
 pub use measure::{
     Run, fallback_faces, fallback_runs, layout_width, measure, measure_data, measure_line,
 };
