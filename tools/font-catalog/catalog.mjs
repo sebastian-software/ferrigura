@@ -243,7 +243,11 @@ export async function verifyPublic(base, objects, fetchImpl = fetch) {
         : path.endsWith('.json')
           ? 'application/json'
           : 'text/plain';
-    if ((response.headers.get('content-type') || '').split(';')[0] !== expected)
+    const actualType = (response.headers.get('content-type') || '').split(';')[0];
+    if (
+      actualType !== expected &&
+      !(path.endsWith('.ttf') && actualType === 'application/octet-stream')
+    )
       throw new Error(`Incorrect content type: ${path}`);
   }
 }
