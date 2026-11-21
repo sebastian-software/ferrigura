@@ -163,3 +163,6 @@ fn every_rendered_svg_is_well_formed_xml() {
         failures.join("\n")
     );
 }
+
+#[path = "accessibility.rs"]
+mod accessibility;
