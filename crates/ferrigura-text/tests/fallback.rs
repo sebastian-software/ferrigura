@@ -7,7 +7,7 @@ mod support;
 use base64::Engine;
 use ferrigura_text::{
     FontFamily, FontStyle, FontWeight, Run, embed_runs, face, fallback_runs, layout_width, measure,
-    measure_box, measure_data, measure_line_box, text_box, wrap_line,
+    measure_box, measure_data, measure_line_box, measure_line_metrics, text_box, wrap_line,
 };
 use serde_json::Value;
 use support::{chromium, entries, face_for, number, size_of, style_of, text_of};
@@ -143,6 +143,13 @@ fn lines_with_arrows_have_the_boxes_and_advances_chromium_gives_them() {
             advance += layout_width(measure(face, text, size).expect("run measures"));
         }
         let extent = measure_line_box(&borrowed, size).expect("line measures");
+        let (combined_advance, combined_extent) =
+            measure_line_metrics(&borrowed, size).expect("line metrics");
+        assert_eq!(
+            (combined_advance, combined_extent),
+            (advance, extent),
+            "{label}"
+        );
         let x = anchor_shift(anchor, advance) + extent.left;
         let width = extent.width();
 
