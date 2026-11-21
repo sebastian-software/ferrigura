@@ -9,8 +9,8 @@ use crate::geometry::{PointD, calc_separation_amount, intersection_clip, sign};
 impl Layout {
     /// `FDLayout.calcSpringForces` (`FDLayout.js` 112-122): every edge of `getAllEdges`, in order.
     pub(crate) fn calc_spring_forces(&mut self) {
-        for edge in self.model.all_edges() {
-            self.calc_spring_force(edge);
+        for i in 0..self.edge_order.len() {
+            self.calc_spring_force(self.edge_order[i]);
         }
     }
 
@@ -70,10 +70,11 @@ impl Layout {
         if self.total_iterations % 10.0 == 1.0 && grid_update_allowed {
             self.update_grid();
         }
-        let nodes = self.model.all_nodes();
+
         self.surrounding_marks.resize(self.model.nodes.len(), false);
         let mut processed = vec![false; self.model.nodes.len()];
-        for node in nodes {
+        for i in 0..self.node_order.len() {
+            let node = self.node_order[i];
             self.calculate_repulsion_force_of_a_node(
                 node,
                 &processed,
@@ -96,8 +97,8 @@ impl Layout {
         self.grid = vec![vec![Vec::new(); size_y]; size_x];
         let left = self.model.graphs[root].left;
         let top = self.model.graphs[root].top;
-        for node in self.model.all_nodes() {
-            self.add_node_to_grid(node, left, top);
+        for i in 0..self.node_order.len() {
+            self.add_node_to_grid(self.node_order[i], left, top);
         }
     }
 
@@ -234,9 +235,8 @@ impl Layout {
     /// `FDLayout.calcGravitationalForces` (`FDLayout.js` 169-178): the nodes set at the start of
     /// the layout, in their order.
     pub(crate) fn calc_gravitational_forces(&mut self) {
-        let nodes = self.nodes_with_gravity.clone();
-        for node in nodes {
-            self.calc_gravitational_force(node);
+        for i in 0..self.nodes_with_gravity.len() {
+            self.calc_gravitational_force(self.nodes_with_gravity[i]);
         }
     }
 

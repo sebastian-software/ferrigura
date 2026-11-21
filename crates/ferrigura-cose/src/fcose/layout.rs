@@ -124,6 +124,10 @@ pub(crate) struct Layout {
     pub grid: Vec<Vec<Vec<usize>>>,
     /// Scratch membership flags for one neighborhood search.
     pub surrounding_marks: Vec<bool>,
+    /// Graph-manager traversal order; membership is complete before layout starts.
+    pub node_order: Vec<usize>,
+    /// Intra-graph edges followed by inter-graph edges, in graph-manager order.
+    pub edge_order: Vec<usize>,
 
     // CoSELayout.
     pub ideal_edge_length: f64,
@@ -156,6 +160,8 @@ impl Layout {
         let max_iterations = k.max_iterations;
         let initial_cooling_factor = k.initial_cooling_factor;
         Layout {
+            node_order: model.all_nodes(),
+            edge_order: model.all_edges(),
             model,
             randomize,
             rng,
@@ -360,15 +366,14 @@ impl Layout {
     /// `CoSELayout.moveNodes` (`CoSELayout.js` 298-322): every node computes its displacement,
     /// the constraints adjust them when there are any, then every node moves.
     fn move_nodes(&mut self) {
-        let nodes = self.model.all_nodes();
-        for &node in &nodes {
-            self.calculate_displacement(node);
+        for i in 0..self.node_order.len() {
+            self.calculate_displacement(self.node_order[i]);
         }
         if self.constraints.any() {
             crate::fcose::constraints::update_displacements(self);
         }
-        for &node in &nodes {
-            self.move_node(node);
+        for i in 0..self.node_order.len() {
+            self.move_node(self.node_order[i]);
         }
     }
 
@@ -399,8 +404,8 @@ impl Layout {
     /// `CoSENode.propogateDisplacementToChildren` (`CoSENode.js` 51-68): the leaves below a
     /// compound get its displacement added.
     fn propagate_displacement(&mut self, graph: usize, dx: f64, dy: f64) {
-        let nodes = self.model.graphs[graph].nodes.clone();
-        for node in nodes {
+        for i in 0..self.model.graphs[graph].nodes.len() {
+            let node = self.model.graphs[graph].nodes[i];
             match self.model.nodes[node].child {
                 None => {
                     self.model.nodes[node].displacement.x += dx;
