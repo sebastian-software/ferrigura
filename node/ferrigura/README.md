@@ -59,6 +59,35 @@ font files or URLs. TrueType faces embed subsets of used glyphs; CFF/CFF2
 currently embed the complete face and can produce larger SVGs. Omitting font
 options preserves the bundled defaults.
 
+## Resolve catalog fonts
+
+The host can resolve a named catalog family before rendering. The default catalog is pinned to
+an immutable manifest containing Lexica Ultralegible, Atkinson Hyperlegible Mono, Inter, Noto Sans
+Math and Noto Sans Symbols 2. This helper fetches only when called explicitly.
+
+```js
+import { Renderer } from '@ferrigura/core';
+import { resolveCatalogFonts } from '@ferrigura/core/font-catalog';
+
+const fonts = await resolveCatalogFonts({
+  families: ['Lexica Ultralegible'],
+  cacheDir: './.cache/ferrigura-fonts',
+});
+const diagrams = new Renderer({}, fonts);
+```
+
+A selection can be `{ family: 'Catalog Name', alias: 'monospace' }` to register a local alias.
+Additional selected families do not automatically become fallbacks: set `fallbacks` to an ordered
+list of selected aliases when needed. Every face in each selected family is registered. Set
+`offline: true` to require an already populated cache. Cached files are verified on every read;
+missing or corrupt entries fail rather than silently using another face.
+
+To use a different catalog, pass `catalog: { manifestUrl, manifestSha256, assetBase }` with a
+reviewed SHA-256 of the raw manifest. Font paths resolve against `assetBase`, which must use the
+same HTTPS origin as `manifestUrl`; redirects are rejected. The catalog and each font are bounded
+and checked by SHA-256, with font length checked too. The cache stores both kinds of object as
+`sha256/<digest>`. The renderer never fetches fonts or interprets URLs from diagram text.
+
 ## Draw animation
 
 ```js

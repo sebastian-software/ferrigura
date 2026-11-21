@@ -33,3 +33,18 @@ new Renderer({}, { fonts: [{ family: 'Missing' }] });
 new Renderer({}, { fonts: [{ family: 'Ambiguous', data: new Uint8Array(), path: '/font.ttf' }] });
 // @ts-expect-error Only normal and italic styles are supported.
 new Renderer({}, { fonts: [{ family: 'Style', data: new Uint8Array(), style: 'oblique' }] });
+
+import { resolveCatalogFonts, type CatalogFontOptions } from '../font-catalog.mjs';
+const catalogOptions: CatalogFontOptions = {
+  families: ['Lexica Ultralegible', { family: 'Mono', alias: 'monospace' }],
+  cacheDir: '/cache/fonts',
+  fallbacks: ['monospace'],
+};
+const resolvedFonts: Promise<FontOptions> = resolveCatalogFonts(catalogOptions);
+void resolvedFonts;
+resolveCatalogFonts({
+  families: ['X'],
+  cacheDir: '/cache',
+  // @ts-expect-error The immutable catalog override needs a SHA-256 pin.
+  catalog: { manifestUrl: 'https://x.test/c.json', assetBase: 'https://x.test/' },
+});

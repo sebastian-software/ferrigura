@@ -7,5 +7,5 @@
     "target": "ES2022",
     "types": ["node"]
   },
-  "include": ["ferrigura/index.d.mts", "ferrigura/test/*.mts"]
+  "include": ["ferrigura/index.d.mts", "ferrigura/font-catalog.d.mts", "ferrigura/test/*.mts"]
 }
