@@ -221,3 +221,45 @@ void test('fixed UTC milliseconds make Gantt output repeatable across entry poin
     assert.throws(() => render(text, {}, { now: invalid }), /now must be integer/);
   }
 });
+
+test('truncated and Unicode diagrams do not affect later renders', () => {
+  const renderer = new Renderer();
+  const control = 'pie\n"Cats": 2\n"Dogs": 3\n';
+  const expected = renderer.render(control);
+  const seeds = [
+    'flowchart LR\nA[Grüße 🦀] --> B{Done}\n',
+    'sequenceDiagram\nAlice->>Bob: こんにちは 🦀\n',
+    'pie title Café\n"猫": 2\n"犬": 3\n',
+    'stateDiagram-v2\n[*] --> Ready\nReady --> [*]\n',
+    'classDiagram\nclass Animal\nAnimal : +String name\n',
+  ];
+  const cases = [
+    '---\nconfig: [unterminated\n---\nflowchart LR\nA-->B',
+    '---\nconfig:\n  flowchart:\n    padding: [wrong, type]\n---\nflowchart LR\nA-->B',
+    'flowchart LR\nsubgraph outer\nsubgraph inner\nA -->',
+    'sequenceDiagram\nAlice->>Bob: <&\0\n',
+  ];
+  const baselines = seeds.map((seed) => renderer.render(seed));
+  for (const seed of seeds) {
+    const characters = Array.from(seed);
+    for (let end = 0; end < characters.length; end += 7) {
+      cases.push(characters.slice(0, end).join(''));
+    }
+    cases.push(seed);
+  }
+  for (const text of cases) {
+    let svg;
+    let succeeded = false;
+    try {
+      svg = renderer.render(text);
+      succeeded = true;
+    } catch (error) {
+      assert.ok(error instanceof Error, `ordinary error for ${JSON.stringify(text)}`);
+    }
+    if (succeeded) assert.match(svg, /^<svg\b/);
+    assert.equal(renderer.render(control), expected, `after ${JSON.stringify(text)}`);
+    for (const [index, seed] of seeds.entries()) {
+      assert.equal(renderer.render(seed), baselines[index], `after ${JSON.stringify(text)}`);
+    }
+  }
+});
