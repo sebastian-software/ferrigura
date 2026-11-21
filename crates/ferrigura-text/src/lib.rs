@@ -31,7 +31,9 @@ pub mod registry;
 pub mod wrap;
 
 pub use bbox::{Extent, measure_box, measure_line_box, measure_line_metrics};
-pub use embed::{EmbeddedFamily, cut_font, embed_runs, subset_face};
+pub use embed::{
+    EmbeddedFamily, SubsetCache, cut_font, embed_runs, subset_face, with_subset_cache,
+};
 pub use error::TextError;
 pub use fonts::{Face, FontFamily, FontStyle, FontWeight, face};
 pub use measure::{
