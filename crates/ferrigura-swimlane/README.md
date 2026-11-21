@@ -2,7 +2,7 @@
 
 `ferrigura-swimlane` is the swimlane layout of Mermaid 12.2.0, ported from its layout engine: the Sugiyama phases, the orthogonal router and the geometry passes of the default path. The options `ignoreCrossLaneEdges: false` and `automaticLaneOrdering: true` are not ported, and a layout with them is refused with an error.
 
-This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate.
+This [Ferrigura](https://github.com/sebastian-software/ferrigura) implementation crate exposes an experimental API. The [`ferrigura` facade](https://crates.io/crates/ferrigura) provides the [supported Rust API](https://github.com/sebastian-software/ferrigura/blob/main/docs/decisions/0022-stable-public-api.md).
 
 ## License
 

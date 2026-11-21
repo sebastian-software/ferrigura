@@ -2,7 +2,7 @@
 
 `ferrigura-text` measures text with explicit local or bundled fonts, wraps lines the way Mermaid wraps its labels, and embeds subsets of the fonts in the SVG, so that a viewer draws the text that was measured. It bundles the faces that ferrigura uses: Lexica Ultralegible, Atkinson Hyperlegible Mono, and the symbol and emoji faces.
 
-This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate.
+This [Ferrigura](https://github.com/sebastian-software/ferrigura) implementation crate exposes an experimental API. The [`ferrigura` facade](https://crates.io/crates/ferrigura) provides the [supported Rust API](https://github.com/sebastian-software/ferrigura/blob/main/docs/decisions/0022-stable-public-api.md).
 
 ## Registering local fonts
 

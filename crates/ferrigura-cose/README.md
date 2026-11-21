@@ -2,7 +2,7 @@
 
 `ferrigura-cose` holds two force-directed layouts ported from their JavaScript sources: cytoscape-cose-bilkent 4.1.0, on the tree path that Mermaid's mindmaps use, and cytoscape-fcose 2.2.0, which architecture diagrams use. Each layout is checked against the JavaScript engine on captured layout inputs.
 
-This crate is a part of [ferrigura](https://github.com/sebastian-software/ferrigura). Its API may change between versions. To render diagrams, use the `ferrigura` crate.
+This [Ferrigura](https://github.com/sebastian-software/ferrigura) implementation crate exposes an experimental API. The [`ferrigura` facade](https://crates.io/crates/ferrigura) provides the [supported Rust API](https://github.com/sebastian-software/ferrigura/blob/main/docs/decisions/0022-stable-public-api.md).
 
 ## What is ported
 

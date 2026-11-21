@@ -21,6 +21,7 @@ A new decision that is hard to reverse gets the next free number. Code comments 
 | [0003](./0003-conventional-commits.md)    | Commit messages follow Conventional Commits; `feat` and `fix` are for what the packages show |
 | [0004](./0004-one-version-one-release.md) | All crates and npm packages share one version, one changelog and one tag                     |
 | [0005](./0005-quality-gates.md)           | Every change keeps the whole suite green, and output changes are deliberate                  |
+| [0022](./0022-stable-public-api.md)       | The 1.x promise covers the documented facade, plugins, CLI, and npm package                  |
 
 ## Architecture
 
