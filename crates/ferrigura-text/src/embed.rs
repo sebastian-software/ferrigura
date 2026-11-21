@@ -69,48 +69,11 @@ pub struct EmbeddedFamily {
 ///
 /// Returns an error if a face cannot be parsed or subsetting fails.
 pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError> {
-    // The stretches each run is set in, after the fallback to the symbol face: a subset holds the
-    // characters drawn in its face, and no other.
-    let stretches: Vec<Run<'_, '_>> = runs.iter().flat_map(|run| fallback_runs(*run)).collect();
-    let mut faces: Vec<&Face> = stretches.iter().map(|run| run.face).collect();
-    // SVG line boxes use the first family's metrics even when every character falls back.
-    // Keep supplied primary faces in the cascade; a space gives the metrics-only subset a cmap.
-    let metric_faces: Vec<&Face> = runs
-        .iter()
-        .map(|run| run.face)
-        .filter(|face| face.family() == FontFamily::Registered)
-        .filter(|face| !faces.iter().any(|drawn| same_face(face, drawn)))
-        .collect();
-    faces.extend(metric_faces.iter().copied());
-    faces.sort_by_key(|face| {
-        (
-            family_order(face.family()),
-            if face.family() == FontFamily::Registered {
-                face.family_name().to_ascii_lowercase()
-            } else {
-                String::new()
-            },
-            face.weight().css_value(),
-            match face.style() {
-                FontStyle::Normal => 0,
-                FontStyle::Italic => 1,
-            },
-        )
-    });
-    faces.dedup_by(|a, b| same_face(a, b));
-    for pair in faces.windows(2) {
-        if same_family(pair[0], pair[1])
-            && pair[0].weight().css_value() == pair[1].weight().css_value()
-            && pair[0].style() == pair[1].style()
-        {
-            return Err(TextError::Registration(format!(
-                "cannot embed different font data for family {:?}, weight {}, style {} in one SVG",
-                pair[0].family_name(),
-                pair[0].weight().css_value(),
-                pair[0].style().css_keyword()
-            )));
-        }
-    }
+    let SelectedRuns {
+        stretches,
+        faces,
+        metric_faces,
+    } = select_runs(runs)?;
     let mut embedded = Vec::new();
     let mut index = 0;
     while index < faces.len() {
@@ -208,6 +171,64 @@ pub fn embed_runs(runs: &[Run<'_, '_>]) -> Result<Vec<EmbeddedFamily>, TextError
         first.variables = variables.into_iter().collect();
     }
     Ok(embedded)
+}
+
+/// The actual fallback stretches and faces selected for a set of measured runs. Keeping this
+/// separate from serialization lets font output share the same selection without subsetting.
+struct SelectedRuns<'a, 'f> {
+    stretches: Vec<Run<'a, 'f>>,
+    faces: Vec<&'f Face>,
+    metric_faces: Vec<&'f Face>,
+}
+
+fn select_runs<'a, 'f>(runs: &[Run<'a, 'f>]) -> Result<SelectedRuns<'a, 'f>, TextError> {
+    // The stretches each run is set in, after the fallback to the symbol face: a subset holds the
+    // characters drawn in its face, and no other.
+    let stretches: Vec<Run<'_, '_>> = runs.iter().flat_map(|run| fallback_runs(*run)).collect();
+    let mut faces: Vec<&Face> = stretches.iter().map(|run| run.face).collect();
+    // SVG line boxes use the first family's metrics even when every character falls back.
+    // Keep supplied primary faces in the cascade; a space gives the metrics-only subset a cmap.
+    let metric_faces: Vec<&Face> = runs
+        .iter()
+        .map(|run| run.face)
+        .filter(|face| face.family() == FontFamily::Registered)
+        .filter(|face| !faces.iter().any(|drawn| same_face(face, drawn)))
+        .collect();
+    faces.extend(metric_faces.iter().copied());
+    faces.sort_by_key(|face| {
+        (
+            family_order(face.family()),
+            if face.family() == FontFamily::Registered {
+                face.family_name().to_ascii_lowercase()
+            } else {
+                String::new()
+            },
+            face.weight().css_value(),
+            match face.style() {
+                FontStyle::Normal => 0,
+                FontStyle::Italic => 1,
+            },
+        )
+    });
+    faces.dedup_by(|a, b| same_face(a, b));
+    for pair in faces.windows(2) {
+        if same_family(pair[0], pair[1])
+            && pair[0].weight().css_value() == pair[1].weight().css_value()
+            && pair[0].style() == pair[1].style()
+        {
+            return Err(TextError::Registration(format!(
+                "cannot embed different font data for family {:?}, weight {}, style {} in one SVG",
+                pair[0].family_name(),
+                pair[0].weight().css_value(),
+                pair[0].style().css_keyword()
+            )));
+        }
+    }
+    Ok(SelectedRuns {
+        stretches,
+        faces,
+        metric_faces,
+    })
 }
 
 /// The subset of `face` to the characters of `text`, with the default layout features, the legacy
@@ -425,5 +446,57 @@ fn variation_defaults(face: &Face) -> Result<String, TextError> {
         Ok(String::new())
     } else {
         Ok(format!("font-variation-settings:{};", settings.join(",")))
+    }
+}
+
+#[cfg(test)]
+mod selection_tests {
+    use super::select_runs;
+    use crate::{FontRegistry, FontStyle, FontWeight, Run};
+
+    #[test]
+    fn selection_preserves_fallback_stretches_and_primary_line_metrics() {
+        let mut registry = FontRegistry::new();
+        let fonts = concat!(env!("CARGO_MANIFEST_DIR"), "/fonts/");
+        for (name, file) in [
+            ("primary", "LexicaUltralegible-Regular.ttf"),
+            ("arrows", "NotoSansMath-Regular-Arrows.ttf"),
+        ] {
+            registry
+                .register_file(
+                    name,
+                    format!("{fonts}{file}"),
+                    FontWeight::Normal,
+                    FontStyle::Normal,
+                )
+                .unwrap();
+        }
+        registry.set_fallbacks(["arrows"]);
+        let primary = registry
+            .resolve("primary", FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        let runs = [Run {
+            text: "→",
+            face: &primary,
+        }];
+        let selected = select_runs(&runs).unwrap();
+        assert_eq!(selected.stretches.len(), 1);
+        assert_eq!(selected.stretches[0].text, "→");
+        assert_eq!(selected.stretches[0].face.family_name(), "arrows");
+        assert_eq!(selected.metric_faces.len(), 1);
+        assert_eq!(selected.metric_faces[0].family_name(), "primary");
+        assert_eq!(selected.faces.len(), 2);
+        assert!(
+            selected
+                .faces
+                .iter()
+                .any(|face| face.family_name() == "primary")
+        );
+        assert!(
+            selected
+                .faces
+                .iter()
+                .any(|face| face.family_name() == "arrows")
+        );
     }
 }
