@@ -872,7 +872,14 @@ pub fn rounded_corner(prev: Point, curr: Point, next: Point, radius: f64) -> Opt
     if angle < EPSILON || (PI - angle).abs() < EPSILON {
         return None;
     }
-    let cut_len = js_min3(radius / sin(angle / 2.0), len1 / 2.0, len2 / 2.0);
+    static RIGHT: std::sync::LazyLock<f64> =
+        std::sync::LazyLock::new(|| sin(std::f64::consts::FRAC_PI_2 / 2.0));
+    let half_sine = if angle == std::f64::consts::FRAC_PI_2 {
+        *RIGHT
+    } else {
+        sin(angle / 2.0)
+    };
+    let cut_len = js_min3(radius / half_sine, len1 / 2.0, len2 / 2.0);
     Some(RoundedCorner {
         start: Point::new(curr.x - nx1 * cut_len, curr.y - ny1 * cut_len),
         end: Point::new(curr.x + nx2 * cut_len, curr.y + ny2 * cut_len),
@@ -1384,6 +1391,18 @@ mod tests {
             path,
             "M0,0L0,32.928932188134524Q0,40 7.0710678118654755,40L60,40"
         );
+    }
+
+    #[test]
+    fn right_and_near_right_bends_preserve_half_angle_rounding() {
+        for x in [-1e-12, 0.0, 1e-12] {
+            let next = p(x, 100.0);
+            let length = hypot(next.x, next.y);
+            let angle = acos((next.x / length).clamp(-1.0, 1.0));
+            let expected = js_min3(5.0 / sin(angle / 2.0), 50.0, length / 2.0);
+            let corner = rounded_corner(p(-100.0, 0.0), p(0.0, 0.0), next, 5.0).unwrap();
+            assert_eq!(corner.cut_len.to_bits(), expected.to_bits());
+        }
     }
 
     #[test]
