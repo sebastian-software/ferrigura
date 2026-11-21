@@ -49,6 +49,20 @@ RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace
 cargo test --workspace
 ```
 
+The normal robustness test uses one small corpus seed per registered diagram type, three
+character-boundary truncations per seed, strict XML parsing, and selected numeric geometry checks.
+It also checks small and moderate nesting and subsequent renders for state leakage. To repeat the
+cases in four separate child
+processes with a shared 30-second deadline, run:
+
+```bash
+cargo test -p ferrigura --test robustness extended_robustness_in_bounded_children -- --ignored
+```
+
+The parent kills and reaps a child on timeout. This is a bounded regression check, not a memory
+limit or cancellation inside `render`; services can apply their own process limits
+([architecture](./ARCHITECTURE.md#limits)).
+
 The addon crate with one diagram type, so that its features keep compiling:
 
 ```bash
