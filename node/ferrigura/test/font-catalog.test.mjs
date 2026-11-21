@@ -261,7 +261,15 @@ test('rejects non-regular cache entries without following symlinks', async (t) =
   await rm(cached, { recursive: true });
   const other = join(f.directory, 'other');
   await writeFile(other, f.manifest);
-  await symlink(other, cached);
+  try {
+    await symlink(other, cached);
+  } catch (error) {
+    if (process.platform === 'win32' && ['EPERM', 'EACCES'].includes(error.code)) {
+      t.diagnostic('Symlink creation is unavailable; directory rejection was still checked');
+      return;
+    }
+    throw error;
+  }
   await assert.rejects(resolveCatalogFonts(options), /not a regular file|ELOOP/);
   await unlink(cached);
 });
