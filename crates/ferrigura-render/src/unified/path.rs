@@ -1151,13 +1151,12 @@ pub fn path_length(d: &str) -> f64 {
         total += match segment {
             Segment::Move(_) => 0.0,
             Segment::Line(a, b) => a.distance(b),
-            Segment::Quadratic(p0, c, p1) => simpson(2000, |t| {
-                let d1 = Point::new(2.0 * (c.x - p0.x), 2.0 * (c.y - p0.y));
-                let d2 = Point::new(2.0 * (p1.x - c.x), 2.0 * (p1.y - c.y));
-                let dx = (1.0 - t) * d1.x + t * d2.x;
-                let dy = (1.0 - t) * d1.y + t * d2.y;
-                hypot(dx, dy)
-            }),
+            Segment::Quadratic(p0, c, p1) => ferrigura_path::quadratic_length(
+                2.0 * (c.x - p0.x),
+                2.0 * (c.y - p0.y),
+                2.0 * (p1.x - c.x),
+                2.0 * (p1.y - c.y),
+            ),
             Segment::Cubic(p0, c1, c2, p1) => simpson(2000, |t| {
                 let s = 1.0 - t;
                 let dx = 3.0

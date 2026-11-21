@@ -18,6 +18,7 @@
 
 mod bounds;
 mod builder;
+mod length;
 mod number;
 mod segments;
 mod skia;
@@ -50,3 +51,5 @@ pub fn bounding_box(d: &str) -> Rect {
         None => Rect::default(),
     }
 }
+
+pub use length::quadratic_length;
