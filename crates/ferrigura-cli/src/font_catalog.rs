@@ -105,7 +105,7 @@ fn bounded_read(path: &Path, limit: u64) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
-fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
+fn write_temporary(path: &Path, bytes: &[u8]) -> Result<PathBuf, String> {
     static NEXT: AtomicU64 = AtomicU64::new(0);
     let dir = path
         .parent()
@@ -126,12 +126,53 @@ fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
         file.write_all(bytes).map_err(|e| e.to_string())?;
         file.sync_all().map_err(|e| e.to_string())?;
         drop(file);
-        fs::rename(&temp, path).map_err(|e| e.to_string())
+        Ok(())
     })();
     if result.is_err() {
         let _ = fs::remove_file(&temp);
     }
+    result.map(|()| temp)
+}
+
+fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    let temp = write_temporary(path, bytes)?;
+    let result = fs::rename(&temp, path).map_err(|e| e.to_string());
+    if result.is_err() {
+        let _ = fs::remove_file(&temp);
+    }
     result
+}
+
+fn publish_cache(
+    path: &Path,
+    bytes: &[u8],
+    hash: &str,
+    size: Option<u64>,
+    limit: u64,
+) -> Result<Vec<u8>, String> {
+    let temp = write_temporary(path, bytes)?;
+    let result = match fs::hard_link(&temp, path) {
+        Ok(()) => Ok(bytes.to_vec()),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            bounded_read(path, limit).and_then(|winner| {
+                verified(&winner, hash, size)?;
+                Ok(winner)
+            })
+        }
+        Err(error) => Err(format!("cannot publish {}: {error}", path.display())),
+    };
+    let cleanup =
+        fs::remove_file(&temp).map_err(|e| format!("cannot remove {}: {e}", temp.display()));
+    match result {
+        Ok(winner) => {
+            cleanup?;
+            Ok(winner)
+        }
+        Err(error) => {
+            let _ = cleanup;
+            Err(error)
+        }
+    }
 }
 
 fn cached<F>(
@@ -166,8 +207,8 @@ where
         return Err("catalog download exceeds size limit".into());
     }
     verified(&bytes, hash, size)?;
-    atomic_write(&path, &bytes)?;
-    Ok((path, bytes))
+    let winner = publish_cache(&path, &bytes, hash, size, limit)?;
+    Ok((path, winner))
 }
 fn download(url: &Url, limit: u64) -> Result<Vec<u8>, String> {
     let agent: ureq::Agent = ureq::Agent::config_builder()
@@ -475,6 +516,43 @@ pub fn read_lock(path: &Path) -> Result<(Vec<LockedFace>, Vec<String>), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn concurrent_cache_writers_share_the_verified_winner_without_clobbering() {
+        use std::sync::{Arc, Barrier};
+        let dir = std::env::temp_dir().join(format!("ferrigura-cache-race-{}", std::process::id()));
+        let bytes = b"immutable font data";
+        let hash = digest(bytes);
+        let barrier = Arc::new(Barrier::new(8));
+        std::thread::scope(|scope| {
+            let mut handles = Vec::new();
+            for _ in 0..8 {
+                let barrier = Arc::clone(&barrier);
+                let dir = &dir;
+                let hash = &hash;
+                handles.push(scope.spawn(move || {
+                    cached(dir, hash, Some(bytes.len() as u64), false, LIMIT, || {
+                        barrier.wait();
+                        Ok(bytes.to_vec())
+                    })
+                    .unwrap()
+                }));
+            }
+            for handle in handles {
+                let (path, result) = handle.join().unwrap();
+                assert_eq!(result, bytes);
+                assert_eq!(path, dir.join("sha256").join(&hash));
+            }
+        });
+        let path = dir.join("sha256").join(&hash);
+        assert_eq!(fs::read(&path).unwrap(), bytes);
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 1);
+        fs::write(&path, b"corrupt winner").unwrap();
+        assert!(publish_cache(&path, bytes, &hash, Some(bytes.len() as u64), LIMIT).is_err());
+        assert_eq!(fs::read(&path).unwrap(), b"corrupt winner");
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 1);
+        fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn offline_selection_lock_alias_fallback_and_corruption() {
