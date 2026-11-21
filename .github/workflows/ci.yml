@@ -253,7 +253,7 @@ jobs:
           package_json_file: node/package.json
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24.22.3'
+          node-version: '26.13.1'
       - run: pnpm -C node install --frozen-lockfile --ignore-scripts
       - id: matrix
         working-directory: node
@@ -279,7 +279,7 @@ jobs:
           package_json_file: node/package.json
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24.22.3'
+          node-version: '26.13.1'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm native:check
       - name: Build native addon
@@ -331,7 +331,7 @@ jobs:
             mkdir -p replay
             node scripts/render-replay.mjs A > replay/${{ matrix.id }}.json
           '
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: native-replay-${{ matrix.id }}
           path: node/replay/${{ matrix.id }}.json
@@ -349,7 +349,7 @@ jobs:
         with:
           node-version-file: tools/port/.node-version
       - run: pnpm -C tools/port install --frozen-lockfile --ignore-scripts
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: native-replay-*
           path: replay-artifacts
@@ -360,7 +360,7 @@ jobs:
         run: |
           node tools/port/compare-native-replays.mjs replay-artifacts replay-report.md
           cat replay-report.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: native-comparison-report
           path: replay-report.md
