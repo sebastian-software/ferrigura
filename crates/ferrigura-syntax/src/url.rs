@@ -87,10 +87,8 @@ pub fn sanitize_url(url: &str) -> String {
 /// The reference then lowercases the protocol and the hostname of the `URL` object. The WHATWG
 /// parser already stores both in lowercase, so the two assignments change nothing.
 ///
-/// The `url` crate (2.5.8) parses two inputs differently from node 24, and this port keeps its
-/// result. A `^` in the path is not percent-encoded (node gives `%5E`). A `xn--` label whose
-/// punycode does not decode is rejected, where node keeps the label, so the reference's URL
-/// becomes `about:blank` here.
+/// The `url` crate rejects an `xn--` label whose punycode does not decode, where node 24 keeps the
+/// label, so the reference's URL becomes `about:blank` here.
 fn normalize_http(candidate: &str) -> String {
     match ::url::Url::parse(candidate) {
         Ok(parsed) => parsed.to_string(),
@@ -469,6 +467,7 @@ mod tests {
             "https://example.com/%E4%BD%A0",
             "https://example.com/%E4%BD%A0",
         ),
+        ("https://example.com/a^b", "https://example.com/a%5Eb"),
         ("https://example.com/%zz", "https://example.com/%zz"),
         ("https://example.com/%", "https://example.com/%"),
         ("https://example.com/%E2%82", "https://example.com/%E2%82"),
