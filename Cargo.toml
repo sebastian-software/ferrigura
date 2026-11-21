@@ -83,6 +83,10 @@ name = "snapshots"
 path = "crates/ferrigura/tests/snapshots.rs"
 
 [[test]]
+name = "robustness"
+path = "crates/ferrigura/tests/robustness.rs"
+
+[[test]]
 name = "well_formed"
 path = "crates/ferrigura/tests/well_formed.rs"
 
