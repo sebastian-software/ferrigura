@@ -14,6 +14,7 @@ keywords = ["ferrigura", "mermaid", "diagram", "config"]
 
 [dependencies]
 ferroni.workspace = true
+ryu-js = "1.0.3"
 serde.workspace = true
 serde_json.workspace = true
 
