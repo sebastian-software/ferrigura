@@ -274,3 +274,28 @@ fn c4_wrap_uses_the_effective_top_level_configuration() {
         1
     );
 }
+
+#[test]
+fn malformed_source_and_options_keep_error_precedence() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let options = RenderOptions {
+        id: Some("invalid id".to_owned()),
+        ..RenderOptions::default()
+    };
+    let invalid_yaml = "---\nconfig: [\n---\npie\n\"a\": 1";
+    assert!(
+        renderer
+            .render_with(invalid_yaml, &options)
+            .unwrap_err()
+            .to_string()
+            .contains("no diagram type detected")
+    );
+    let valid = "---\ntitle: Test\n---\npie\n\"a\": 1";
+    assert!(
+        renderer
+            .render_with(valid, &options)
+            .unwrap_err()
+            .to_string()
+            .contains("invalid id")
+    );
+}

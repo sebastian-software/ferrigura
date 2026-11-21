@@ -64,6 +64,14 @@ pub fn parse_with_warnings(
     options: &Options,
 ) -> Result<(GitGraphDiagram, Vec<String>), ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared_with_warnings(&prepared, options)
+}
+
+/// Parses an already prepared source with its warnings.
+pub fn parse_prepared_with_warnings(
+    prepared: &crate::preprocess::Prepared,
+    options: &Options,
+) -> Result<(GitGraphDiagram, Vec<String>), ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let ast = grammar::parse_text(Source::new(&text, prepared.line_offset))?;
@@ -89,8 +97,13 @@ pub fn parse_ast(text: &str) -> Result<GitGraph, ParseError> {
 /// The DB settings of a text: `gitGraph.mainBranchName` and `gitGraph.mainBranchOrder` from its
 /// configuration, with the defaults where it gives none.
 pub fn options_of(raw: &str) -> Result<Options, ParseError> {
+    Ok(options_from_config(&config::read(raw)?))
+}
+
+/// Reads parser options from the source configuration.
+#[must_use]
+pub fn options_from_config(settings: &ferrigura_model::value::Value) -> Options {
     let defaults = Options::default();
-    let settings = config::read(raw)?;
     let section = settings.get("gitGraph");
     let main_branch_name = section
         .and_then(|s| s.get("mainBranchName"))
@@ -100,11 +113,11 @@ pub fn options_of(raw: &str) -> Result<Options, ParseError> {
         .and_then(|s| s.get("mainBranchOrder"))
         .and_then(|v| v.as_f64())
         .unwrap_or(defaults.main_branch_order);
-    Ok(Options {
+    Options {
         main_branch_name,
         main_branch_order,
         auto_id_seed: None,
-    })
+    }
 }
 
 /// The DB calls of `gitGraphParser.ts`'s `populate`: the header texts, the direction, then each
@@ -144,4 +157,12 @@ fn populate(ast: &GitGraph, db: &mut Db, source: Source<'_>) -> Result<(), Parse
         result.map_err(|message| source.error(statement.offset, message))?;
     }
     Ok(())
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    options: &Options,
+) -> Result<GitGraphDiagram, ParseError> {
+    parse_prepared_with_warnings(prepared, options).map(|(diagram, _)| diagram)
 }

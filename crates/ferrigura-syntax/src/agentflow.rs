@@ -116,6 +116,15 @@ pub fn parse_with_limits(
     max_text_size: usize,
 ) -> Result<AgentflowDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared, max_edges, max_text_size)
+}
+
+/// Parses an already prepared source with the given limits.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    max_edges: usize,
+    max_text_size: usize,
+) -> Result<AgentflowDiagram, ParseError> {
     // `Diagram.fromText` gives the parser the text with its comments, unless that is longer than
     // `maxTextSize`; the text without them is then the one parsed.
     let with_comments = remove_directives(&prepared.text);

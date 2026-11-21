@@ -32,6 +32,11 @@ use scanner::{Spanned, Token, scan};
 /// placeholder is not ASCII).
 pub fn parse(raw: &str) -> Result<SankeyDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(prepared: &crate::preprocess::Prepared) -> Result<SankeyDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = prepare_text_for_parsing(&(encode_entities(&cleaned) + "\n"));
     let source = Source::new(&text, prepared.line_offset);

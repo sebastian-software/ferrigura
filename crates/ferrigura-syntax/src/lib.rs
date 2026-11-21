@@ -20,7 +20,7 @@ pub mod flowchart;
 pub mod gantt;
 pub mod git_graph;
 mod lexer;
-mod preprocess;
+pub mod preprocess;
 mod scan;
 mod text;
 pub mod url;
@@ -291,6 +291,12 @@ pub enum Diagram {
 #[must_use]
 pub fn detect(text: &str) -> Option<DiagramType> {
     let prepared = preprocess::prepare(text).ok()?;
+    detect_prepared(&prepared)
+}
+
+/// Detects a diagram from an already prepared source.
+#[must_use]
+pub fn detect_prepared(prepared: &preprocess::Prepared) -> Option<DiagramType> {
     // `preprocessDiagram` removes the directives and the comment lines and trims the start
     // (`preprocess.ts` 58-65); `detectType` then strips a front matter block once more
     // (`detectType.ts` 15-18), which finds one that blank lines or comments kept from the start.

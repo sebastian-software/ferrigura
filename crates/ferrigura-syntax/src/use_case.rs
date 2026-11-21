@@ -29,6 +29,13 @@ use crate::preprocess::{cleanup_comments, encode_entities, prepare, remove_direc
 /// Returns the first lexer, parser or model error, at its position in the original input.
 pub fn parse(text: &str) -> Result<UseCaseDiagram, ParseError> {
     let prepared = prepare(text)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+) -> Result<UseCaseDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let source = encode_entities(&cleaned) + "\n";
     let error = |offset: usize, message: &str| {

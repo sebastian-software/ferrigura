@@ -65,6 +65,14 @@ pub fn parse(raw: &str) -> Result<ClassDiagram, ParseError> {
 /// `Diagram.fromText` gives it to the parser.
 pub fn parse_with(raw: &str, options: Options) -> Result<ClassDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared, options)
+}
+
+/// Parses an already prepared source with the given options.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+) -> Result<ClassDiagram, ParseError> {
     let cleaned = clean_comments(&remove_directives(&prepared.text));
     let mut db = db::ClassDb::new(options);
     // `Diagram.ts` sets the front matter's title before the parser runs, and only when it is set.

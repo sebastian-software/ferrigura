@@ -14,15 +14,23 @@ use ferrigura_model::value::Value;
 
 use crate::text::{is_js_space, is_line_term, is_word};
 use crate::yaml::Yaml;
-use crate::{DiagramType, ParseError, detect, preprocess};
+use crate::{DiagramType, ParseError, detect_prepared, preprocess};
 
 /// Reads the configuration that the text carries; see the module documentation. An `init` directive
 /// with arguments, in a text that no diagram type is detected in, is an error.
 pub fn read(text: &str) -> Result<Value, ParseError> {
     let prepared = preprocess::prepare(text)?;
-    let front_matter = front_matter_config(&prepared.front_matter);
+    let diagram = detect_prepared(&prepared);
+    read_prepared(&prepared, diagram)
+}
 
-    let diagram = detect(text).map(DiagramType::config_key);
+/// Reads configuration from a prepared source and its detected diagram type.
+pub fn read_prepared(
+    prepared: &preprocess::Prepared,
+    diagram: Option<DiagramType>,
+) -> Result<Value, ParseError> {
+    let front_matter = front_matter_config(&prepared.front_matter);
+    let diagram = diagram.map(DiagramType::config_key);
     let mut directive =
         detect_init(&prepared.text, diagram)?.unwrap_or_else(|| Value::Object(Map::new()));
     if let (Some(wrap), Value::Object(map)) = (detect_wrap(&prepared.text), &mut directive) {

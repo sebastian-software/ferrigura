@@ -18,6 +18,13 @@ use crate::preprocess::{cleanup_comments, encode_entities, prepare, remove_direc
 /// Parses a treemap diagram and returns its model.
 pub fn parse(raw: &str) -> Result<TreemapDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+) -> Result<TreemapDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);

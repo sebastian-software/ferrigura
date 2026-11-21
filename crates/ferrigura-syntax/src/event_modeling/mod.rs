@@ -48,7 +48,16 @@ pub fn parse_with_max_text_size(
     raw: &str,
     max_text_size: usize,
 ) -> Result<EventModelingDiagram, ParseError> {
-    let parsed = parse_tree(raw, max_text_size)?;
+    let prepared = prepare(raw)?;
+    parse_prepared(&prepared, max_text_size)
+}
+
+/// Parses an already prepared source with the given text limit.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    max_text_size: usize,
+) -> Result<EventModelingDiagram, ParseError> {
+    let parsed = parse_tree(prepared, max_text_size)?;
     let source = Source::new(&parsed.text, parsed.line_offset);
     check_frame_ids(&parsed.ast, source)?;
     let state = db::state(&parsed.ast);
@@ -61,7 +70,7 @@ pub fn parse_with_max_text_size(
 ///
 /// A lexer or grammar error, as [`parse`] reports it.
 pub fn parse_ast(raw: &str) -> Result<EventModel, ParseError> {
-    parse_tree(raw, MAX_TEXT_SIZE).map(|parsed| parsed.ast)
+    parse_tree(&prepare(raw)?, MAX_TEXT_SIZE).map(|parsed| parsed.ast)
 }
 
 /// The syntax tree with the text it was read from, and what positions need.
@@ -75,8 +84,10 @@ struct Parsed {
     front_matter_title: Option<String>,
 }
 
-fn parse_tree(raw: &str, max_text_size: usize) -> Result<Parsed, ParseError> {
-    let prepared = prepare(raw)?;
+fn parse_tree(
+    prepared: &crate::preprocess::Prepared,
+    max_text_size: usize,
+) -> Result<Parsed, ParseError> {
     // The DB keeps the comment lines (`preserveCommentsWhenParsing`), unless the text is too long.
     let with_comments = remove_directives(&prepared.text);
     let source_text = if with_comments.encode_utf16().count() > max_text_size {
@@ -92,7 +103,7 @@ fn parse_tree(raw: &str, max_text_size: usize) -> Result<Parsed, ParseError> {
         ast,
         text,
         line_offset: prepared.line_offset,
-        front_matter_title: prepared.title,
+        front_matter_title: prepared.title.clone(),
     })
 }
 

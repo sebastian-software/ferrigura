@@ -21,6 +21,13 @@ use scanner::{Header, Spanned, Token, tokenize};
 /// Parses a timeline, with its front matter, and returns its model.
 pub fn parse(raw: &str) -> Result<TimelineDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+) -> Result<TimelineDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);

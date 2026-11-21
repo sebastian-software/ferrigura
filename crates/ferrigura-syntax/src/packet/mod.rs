@@ -37,8 +37,17 @@ pub fn parse(raw: &str) -> Result<PacketDiagram, ParseError> {
 /// `getConfig` reads during the parse: the site's configuration, the front matter's and the
 /// directives'. The rows depend on its `bitsPerRow`.
 pub fn parse_with(raw: &str, configured: &Value) -> Result<PacketDiagram, ParseError> {
-    let bits_per_row = BitsPerRow::of(&bits_per_row_value(configured));
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared, configured)
+}
+
+/// Parses an already prepared source with the given options.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    configured: &Value,
+) -> Result<PacketDiagram, ParseError> {
+    let bits_per_row = BitsPerRow::of(&bits_per_row_value(configured));
+
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);

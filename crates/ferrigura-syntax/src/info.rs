@@ -18,6 +18,11 @@ use crate::preprocess::prepare;
 /// Parses an info diagram, with its front matter, and returns its model.
 pub fn parse(raw: &str) -> Result<InfoDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(prepared: &crate::preprocess::Prepared) -> Result<InfoDiagram, ParseError> {
     let source = Source::new(&prepared.text, prepared.line_offset);
     let mut cursor = Cursor::new(source, lex(&source)?);
 
