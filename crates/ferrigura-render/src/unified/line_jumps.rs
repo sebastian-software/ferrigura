@@ -156,11 +156,11 @@ fn crossing_sits_in_rounded_corner(edge: &EdgeGeom, seg_index: usize, t: f64) ->
 pub fn find_edge_intersections(edges: &[EdgeGeom]) -> Vec<Crossing> {
     let mut crossings = Vec::new();
     for i in 0..edges.len() {
-        let segments_a = segments(&edges[i].points);
         for j in i + 1..edges.len() {
-            let segments_b = segments(&edges[j].points);
-            for (si, &seg_a) in segments_a.iter().enumerate() {
-                for (sj, &seg_b) in segments_b.iter().enumerate() {
+            for (si, &[a1, a2]) in edges[i].points.array_windows::<2>().enumerate() {
+                for (sj, &[b1, b2]) in edges[j].points.array_windows::<2>().enumerate() {
+                    let seg_a = (a1, a2);
+                    let seg_b = (b1, b2);
                     let Some((point, t_a, t_b)) =
                         segment_intersection(seg_a.0, seg_a.1, seg_b.0, seg_b.1)
                     else {
