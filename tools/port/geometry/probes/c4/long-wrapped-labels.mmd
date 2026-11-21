@@ -1,0 +1,12 @@
+---
+config:
+  wrap: true
+  c4:
+    wrap: true
+---
+C4Context
+System_Boundary(boundary, "A very long boundary label that should wrap over multiple lines when wrapping is enabled and continues with more words to exceed the available width of the screen and show the wrapping behavior clearly for everyone reading this diagram") {
+  System(first, "First system")
+  System(second, "Second system")
+  Rel(first, second, "A very long relationship label that should wrap over multiple lines when wrapping is enabled and continues with more words to exceed the available width of the screen and show the wrapping behavior clearly for everyone reading this diagram")
+}
