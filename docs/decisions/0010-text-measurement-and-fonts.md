@@ -15,8 +15,7 @@
 
 Supplied fonts belong to each immutable renderer, including their owned bytes, fallback chain,
 and CSS identities. Local registration and explicit fallback are supported for 1.0. Concurrent
-renderers cannot change one another's selection. Their caches
-include the supplied inputs. Global and per-type family settings resolve registered aliases;
+renderers cannot change one another's selection. Their caches include the supplied inputs. Global and per-type family settings resolve registered aliases;
 implicit per-type defaults inherit the global primary, while explicit unknown names fail with
 registration guidance. [The font API](../fonts.md) defines the host-facing contract.
 
@@ -35,7 +34,10 @@ Weighed and not chosen: naming a font family without embedding it (smaller, but 
 
 - `@font-face` rules are global to an HTML page, so two diagrams with different subsets under one family name would break each other's labels; hence the unique names per subset.
 - WebKit lays SVG text out from unkerned per-character widths and paints it kerned, so it can place a kerned run away from where it was measured. The labels of the unified renderer are therefore placed run by run with an explicit `x` and `text-anchor="start"` (`ferrigura-render/src/unified/label.rs`); the custom renderers keep the reference's `middle` and `end` anchors for their titles and labels, which WebKit may draw slightly off.
-- CJK, kana, Arabic and the emoji and symbols the bundled faces lack need registered fallback fonts. Coverage does not by itself establish shaping or bidirectional layout. The Rust host can preflight known labels with `FontRegistry::missing_glyphs`; rendering, the CLI and Node do not emit missing-glyph warnings ([font inputs](../fonts.md)).
+- CJK, kana, Arabic and the emoji and symbols the bundled faces lack need registered fallback fonts.
+  Coverage does not by itself establish shaping or bidirectional layout. The Rust host can preflight
+  known labels with `FontRegistry::missing_glyphs`; rendering, the CLI and Node do not emit
+  missing-glyph warnings ([font inputs](../fonts.md)).
 - The reference loads the same font files as web fonts for the geometry comparison ([0015](./0015-differential-testing.md)).
 
 ## Related
