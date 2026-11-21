@@ -92,6 +92,7 @@ A release build links with fat LTO in one codegen unit and takes minutes where a
 ## Checking a change against the reference
 
 - **A parser change:** `pnpm -C tools/port port:diff <type>` compares the canonical models of ferrigura and the reference on every input of the type.
+- **Accessibility metadata:** `pnpm -C tools/port exec tsx geometry/accessibility.ts` compares roles, accessible texts and their ID references with the reference on one case per registered type, with and without metadata. It uses a fresh reference page per render because Mermaid shares some diagram state. The test in `crates/ferrigura/tests/accessibility.rs` also checks two distinct SVG IDs and repeated renderer use.
 - **A renderer change:** `pnpm -C tools/port port:geometry <type>` renders the fixtures and probes with both in Chromium and compares the geometry; `--filter <text>` narrows the fixtures and `--images <dir>` writes side-by-side PNGs.
 - **Flowchart routing:** `pnpm -C tools/port port:geometry-flowchart` checks Mermaid-compatible output. Run it again with `--routing adaptive` to compare the adaptive default against the reference with the same attachment policy ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Both runs are CI gates.
 - **A change to shared code** (text, the unified renderer, configuration) must not move the output of other types: run the snapshots, and `tools/snapshots/diff.sh` shows which renders moved.

@@ -125,3 +125,141 @@ fn metadata_references_remain_local_and_do_not_leak_between_renders() {
         );
     }
 }
+
+/// The same selected corpus cases are compared with the pinned reference by the port harness.
+#[test]
+fn accessibility_across_registered_kinds() {
+    use ferrigura::diagrams;
+    use std::path::Path;
+    let cases: serde_json::Value =
+        serde_json::from_str(include_str!("accessibility-cases.json")).unwrap();
+    let renderer = Renderer::new(&Value::empty_object());
+    let mut seen = HashSet::new();
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    for case in cases.as_array().unwrap() {
+        let path = case["path"].as_str().unwrap();
+        let mode = case["mode"].as_str().unwrap();
+        let original = std::fs::read_to_string(root.join(path)).unwrap();
+        let body = original
+            .strip_prefix("---\n")
+            .and_then(|s| s.split_once("\n---\n").map(|(_, body)| body))
+            .unwrap_or(&original);
+        let clean = body
+            .lines()
+            .filter(|line| !line.trim_start().starts_with("%%"))
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n";
+        let kind = ferrigura_syntax::detect(&clean).unwrap_or_else(|| panic!("{path}: detection"));
+        assert!(seen.insert(kind), "{path}: duplicate kind {kind:?}");
+        let make = |title: &str, description: &str| {
+            if mode == "unsupported" {
+                return clean.clone();
+            }
+            let (head, tail) = clean.split_once('\n').unwrap();
+            if mode == "eventmodeling" {
+                format!("{head} accTitle: {title}\n{tail}\ntf 99 ui X accDescr: {description}\n")
+            } else {
+                format!("{head}\naccTitle: {title}\naccDescr: {description}\n{tail}")
+            }
+        };
+        let first = render(
+            &renderer,
+            &make("First & title", "First description"),
+            "all-one",
+        );
+        let second = render(
+            &renderer,
+            &make("Second & title", "Second description"),
+            "all-two",
+        );
+        let both = format!("<root>{first}{second}</root>");
+        let parsed = Document::parse(&both).unwrap_or_else(|error| panic!("{path}: {error}"));
+        let svgs: Vec<_> = parsed
+            .root_element()
+            .children()
+            .filter(Node::is_element)
+            .collect();
+        assert_eq!(svgs.len(), 2, "{path}");
+        for (svg, id, title, description) in [
+            (svgs[0], "all-one", "First & title", "First description"),
+            (svgs[1], "all-two", "Second & title", "Second description"),
+        ] {
+            assert_eq!(svg.attribute("id"), Some(id), "{path}");
+            assert_eq!(
+                svg.attribute("role"),
+                Some("graphics-document document"),
+                "{path}"
+            );
+            let expected_title = match mode {
+                "unsupported" | "omitted" | "c4" => None,
+                "eventmodeling" => Some(format!("accTitle: {title}")),
+                _ => Some(title.to_owned()),
+            };
+            let expected_desc = match mode {
+                "unsupported" | "omitted" => None,
+                "eventmodeling" => Some(format!(" accDescr: {description}")),
+                _ => Some(description.to_owned()),
+            };
+            for (attr, tag, expected) in [
+                ("aria-labelledby", "title", expected_title),
+                ("aria-describedby", "desc", expected_desc),
+            ] {
+                if let Some(expected) = expected {
+                    let reference = svg
+                        .attribute(attr)
+                        .unwrap_or_else(|| panic!("{path}: {id} {attr}"));
+                    let matches: Vec<_> = parsed
+                        .descendants()
+                        .filter(|node| node.attribute("id") == Some(reference))
+                        .collect();
+                    assert_eq!(matches.len(), 1, "{path}: {id} {attr} globally");
+                    assert!(
+                        matches[0].ancestors().any(|ancestor| ancestor == svg),
+                        "{path}: {id} {attr} local"
+                    );
+                    assert_eq!(matches[0].tag_name().name(), tag, "{path}: {id} {attr}");
+                    assert_eq!(
+                        matches[0].text(),
+                        Some(expected.as_str()),
+                        "{path}: {id} {attr}"
+                    );
+                } else {
+                    assert_eq!(svg.attribute(attr), None, "{path}: {id} {attr}");
+                }
+            }
+        }
+        let empty = render(&renderer, &clean, "all-empty");
+        let doc = Document::parse(&empty).unwrap();
+        assert_eq!(
+            doc.root_element().attribute("aria-labelledby"),
+            None,
+            "{path}: leakage"
+        );
+        assert_eq!(
+            doc.root_element().attribute("aria-describedby"),
+            None,
+            "{path}: leakage"
+        );
+    }
+    let registered: HashSet<_> = diagrams::all().iter().map(diagrams::Plugin::kind).collect();
+    assert_eq!(
+        seen, registered,
+        "every registered kind has an accessibility case"
+    );
+}
+
+#[test]
+fn an_explicitly_cleared_railroad_title_has_no_reference() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "railroad-beta\naccTitle: Named\naccTitle:\nr = terminal(\"a\") ;\n";
+    let svg = render(&renderer, text, "empty-title");
+    let parsed = Document::parse(&svg).unwrap();
+    assert_eq!(parsed.root_element().attribute("aria-labelledby"), None);
+    assert!(
+        !parsed
+            .root_element()
+            .children()
+            .any(|node| node.has_tag_name("title"))
+    );
+}
