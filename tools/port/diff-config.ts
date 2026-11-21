@@ -231,7 +231,7 @@ const inputs: ConfigInput[] = [
     text: testCase.text,
     site: testCase.site,
     group: 'case',
-    expectedScope: 'pie',
+    expectedScope: testCase.scope ?? 'pie',
   })),
 ].map((input, id) => ({ ...input, id }));
 

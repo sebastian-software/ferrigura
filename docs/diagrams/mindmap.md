@@ -75,7 +75,6 @@ Quirks of the reference that are kept on purpose:
 
 ## Known gaps
 
-- A configuration that puts an array in place of the `mindmap` section is merged element by element by `assignWithDepth` in the reference (`mindmap: [{padding: 3}]` gives padding 3); the configuration layer's merge does not do that.
 - The error texts of Jison and of the engine's `TypeError` are not reproduced; the differential compares acceptance, and the DB's own message exactly.
 - Icons are not drawn, as in the reference.
 
