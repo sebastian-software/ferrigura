@@ -42,6 +42,8 @@ import {
   writeSideBySide,
 } from './common.js';
 
+import { placeholderCoverageWarnings, type FixtureFont } from './measurement-coverage.js';
+
 const fixtureDir = join(root, 'e2e/diagrams/pie');
 
 const ANGLE_TOLERANCE = 1e-5;
@@ -119,6 +121,7 @@ interface PieResult {
   ok: boolean;
   worst: number | null;
   problems: string[];
+  warnings: string[];
 }
 
 interface Box {
@@ -219,15 +222,32 @@ async function main(): Promise<void> {
       const id = `ref-${slugOf(file)}`;
       const source = await readFile(join(fixtureDir, file), 'utf8');
       const text = patchText(source);
+      const warnings = placeholderCoverageWarnings(
+        source,
+        (process.env.FERRIGURA_GEOMETRY_FONT ?? 'lexica') as FixtureFont
+      );
+      for (const warning of warnings) console.log(`! ${file}  ${warning}`);
       const reference = await renderReference(page, id, text);
       if (!reference.ok || reference.svg === null) {
-        results.push({ fixture: file, ok: false, worst: null, problems: [reference.error ?? ''] });
+        results.push({
+          fixture: file,
+          ok: false,
+          worst: null,
+          problems: [reference.error ?? ''],
+          warnings,
+        });
         console.log(`✗ ${file}  reference failed: ${reference.error}`);
         continue;
       }
       const rendered = renderFerrigura(text, id);
       if ('error' in rendered) {
-        results.push({ fixture: file, ok: false, worst: null, problems: [rendered.error] });
+        results.push({
+          fixture: file,
+          ok: false,
+          worst: null,
+          problems: [rendered.error],
+          warnings,
+        });
         console.log(`✗ ${file}  not rendered: ${rendered.error}`);
         continue;
       }
@@ -242,7 +262,7 @@ async function main(): Promise<void> {
         });
       }
       const { worst, problems } = compare(jsGeometry, rsGeometry);
-      results.push({ fixture: file, ok: problems.length === 0, worst, problems });
+      results.push({ fixture: file, ok: problems.length === 0, worst, problems, warnings });
       console.log(
         `${problems.length === 0 ? '✓' : '✗'} ${file}  worst ${(worst * 100).toFixed(1)}% of tolerance`
       );

@@ -63,6 +63,7 @@ import {
   type FixtureClass,
   type FixtureResult,
 } from './common.js';
+import { placeholderCoverageWarnings, type FixtureFont } from './measurement-coverage.js';
 import {
   compareElkInput,
   compareGeometry,
@@ -325,7 +326,10 @@ async function main(): Promise<void> {
         reason: null,
         worstPercent: null,
         problems: [],
-        warnings: [],
+        warnings: placeholderCoverageWarnings(
+          fixtureSource,
+          (process.env.FERRIGURA_GEOMETRY_FONT ?? 'lexica') as FixtureFont
+        ),
         elk: {
           status: elkProblem === null ? 'not compared' : 'not available',
           referenceCalls: 0,
@@ -333,6 +337,7 @@ async function main(): Promise<void> {
         },
       };
       results.push(result);
+      for (const warning of result.warnings) console.log(`! ${file}  ${warning}`);
 
       // Remove the previous measured SVG so duplicate node/marker ids cannot affect the next draw.
       await page.evaluate(() => {

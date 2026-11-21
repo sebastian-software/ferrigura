@@ -215,6 +215,8 @@ jobs:
       - run: pnpm -C tools/port exec playwright install chromium
       - name: Registered font metrics and embedded designs in Chromium
         run: pnpm -C tools/port exec tsx text/registered-fonts.ts
+      - name: Internal placeholder coverage and browser fallback
+        run: pnpm -C tools/port run test:placeholder-coverage
       - name: Supplied font families across custom renderers in Chromium
         run: pnpm -C tools/port run test:custom-font-renderers
       - name: Pie geometry against the reference in Chromium

@@ -87,6 +87,7 @@ import {
   type FixtureClass,
   type FixtureResult,
 } from './common.js';
+import { placeholderCoverageWarnings, type FixtureFont } from './measurement-coverage.js';
 import { compareDiagrams, type DiagramGeometry } from './diagram-compare.js';
 import {
   compareLabels,
@@ -391,12 +392,16 @@ async function main(): Promise<void> {
         reason: null,
         worstPercent: null,
         problems: [],
-        warnings: [],
+        warnings: placeholderCoverageWarnings(
+          source,
+          (process.env.FERRIGURA_GEOMETRY_FONT ?? 'lexica') as FixtureFont
+        ),
         roledescription: null,
         elements: 0,
         elkCalls: 0,
       };
       results.push(result);
+      for (const warning of result.warnings) console.log(`! ${file}  ${warning}`);
 
       const clock = { now: Date.now(), seed: 1 };
       const reference = await renderReference(page, id, text, clock, pinFamily);
