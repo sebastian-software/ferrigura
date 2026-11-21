@@ -21,6 +21,7 @@
     "test:custom-font-renderers": "tsx geometry/custom-font-renderers.ts",
     "port:diff": "tsx diff.ts",
     "port:status": "tsx status.ts",
+    "test:font-alias-browser": "tsx geometry/font-alias-browser.ts",
     "port:check-header": "tsx check-header.ts",
     "port:jsmath": "tsx jsmath-probe.ts",
     "port:text-fixture": "tsx text/chromium-fixture.ts",
