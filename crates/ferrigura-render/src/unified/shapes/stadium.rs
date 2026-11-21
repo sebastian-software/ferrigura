@@ -14,6 +14,27 @@ use crate::unified::geom::Point;
 /// The points that sample each semicircular end.
 const ARC_POINTS: usize = 50;
 
+/// Reuse the two fixed sweeps; retain the reference's angle and point arithmetic.
+fn arc_points(center_x: f64, radius: f64, right: bool) -> impl Iterator<Item = Point> {
+    type Directions = [(f64, f64); ARC_POINTS];
+    static LEFT: std::sync::OnceLock<Directions> = std::sync::OnceLock::new();
+    static RIGHT: std::sync::OnceLock<Directions> = std::sync::OnceLock::new();
+    let (table, start_degrees, end_degrees) = if right {
+        (&RIGHT, 270.0, 450.0)
+    } else {
+        (&LEFT, 90.0, 270.0)
+    };
+    let directions = table.get_or_init(|| {
+        let start = start_degrees * PI / 180.0;
+        let end = end_degrees * PI / 180.0;
+        let step = (end - start) / (ARC_POINTS - 1) as f64;
+        std::array::from_fn(|i| ferrigura_jsmath::sin_cos(start + i as f64 * step))
+    });
+    directions
+        .iter()
+        .map(move |&(s, c)| Point::new(-(center_x + radius * c), -(0.0 + radius * s)))
+}
+
 /// The size of the stadium around a label: its height is the label's plus the vertical padding,
 /// and its width is the widest of three bounds (`stadiumDimensions`).
 fn dimensions(label_width: f64, label_height: f64, pad_x: f64, pad_y: f64) -> (f64, f64) {
@@ -48,23 +69,9 @@ pub(super) fn stadium(input: &ShapeInput<'_>) -> Part {
         Point::new(-w / 2.0 + radius, -h / 2.0),
         Point::new(w / 2.0 - radius, -h / 2.0),
     ];
-    points.extend(util::generate_circle_points(
-        -w / 2.0 + radius,
-        0.0,
-        radius,
-        ARC_POINTS,
-        90.0,
-        270.0,
-    ));
+    points.extend(arc_points(-w / 2.0 + radius, radius, false));
     points.push(Point::new(w / 2.0 - radius, h / 2.0));
-    points.extend(util::generate_circle_points(
-        w / 2.0 - radius,
-        0.0,
-        radius,
-        ARC_POINTS,
-        270.0,
-        450.0,
-    ));
+    points.extend(arc_points(w / 2.0 - radius, radius, true));
 
     let outline = rough::closed_polygon(&points, rough::Paint::BOTH);
     let svg = format!(
@@ -115,6 +122,25 @@ mod tests {
             &node,
             &LabelLayout::of_box(BBox::new(-width / 2.0, 0.0, width, height)),
         )
+    }
+
+    #[test]
+    fn fixed_sweeps_match_the_original_point_calculation_bit_for_bit() {
+        for (start_degrees, end_degrees) in [(90.0, 270.0), (270.0, 450.0)] {
+            for (center, radius) in [(-41.25, 22.5), (0.0, 0.0), (1.0e6, 0.125)] {
+                let actual: Vec<_> = arc_points(center, radius, start_degrees == 270.0).collect();
+                let start = start_degrees * PI / 180.0;
+                let end = end_degrees * PI / 180.0;
+                let step = (end - start) / (ARC_POINTS - 1) as f64;
+                for (index, point) in actual.iter().enumerate() {
+                    let angle = start + index as f64 * step;
+                    let x = -(center + radius * ferrigura_jsmath::cos(angle));
+                    let y = -(0.0 + radius * ferrigura_jsmath::sin(angle));
+                    assert_eq!(point.x.to_bits(), x.to_bits());
+                    assert_eq!(point.y.to_bits(), y.to_bits());
+                }
+            }
+        }
     }
 
     // stadium.spec.ts, "stadium geometry".

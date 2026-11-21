@@ -2,7 +2,7 @@
 //! `styles2String` splits them, the node's classes, and the attribute and path strings that the
 //! handlers share. See `docs/diagrams/flowchart.md#shapes`.
 
-use ferrigura_jsmath::{cos, sin};
+use ferrigura_jsmath::sin;
 use ferrigura_model::theme::Token;
 use ferrigura_model::value::Value;
 
@@ -372,10 +372,8 @@ pub(super) fn generate_circle_points(
     let step = (end - start) / (count - 1) as f64;
     (0..count)
         .map(|index| {
-            let angle = start + index as f64 * step;
-            let x = center_x + radius * cos(angle);
-            let y = center_y + radius * sin(angle);
-            Point::new(-x, -y)
+            let (s, c) = ferrigura_jsmath::sin_cos(start + index as f64 * step);
+            Point::new(-(center_x + radius * c), -(center_y + radius * s))
         })
         .collect()
 }
