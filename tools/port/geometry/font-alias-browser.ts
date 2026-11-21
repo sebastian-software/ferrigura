@@ -50,15 +50,12 @@ try {
       page.evaluate(async () => {
         await document.fonts.ready;
         return [...document.querySelectorAll<SVGTextContentElement>('text,tspan')]
-          .filter((node) =>
-            [...node.childNodes].some(
-              (child) => child.nodeType === Node.TEXT_NODE && child.textContent?.trim()
-            )
-          )
+          .filter((node) => node.textContent?.trim())
           .map((node) => {
             const box = node.getBBox();
             return {
               text: node.textContent,
+              nested: Boolean(node.querySelector('tspan')),
               box: [box.x, box.y, box.width, box.height],
               advance: node.getComputedTextLength(),
             };
@@ -94,6 +91,12 @@ try {
       return result;
     };
     const embedded = await capture();
+    if (file === 'markdown') {
+      assert.ok(
+        embedded.some((node) => node.nested),
+        'Markdown must cover an enclosing text container'
+      );
+    }
     const embeddedFonts = await platformFonts();
     assert.ok(embedded.length, `${file} must render text`);
     const count = await page.evaluate(
@@ -142,19 +145,23 @@ try {
       `${file} must use registered fonts`
     );
     assert.equal(named.length, embedded.length);
+    let maxBoxDelta = 0;
+    let maxAdvanceDelta = 0;
     for (let i = 0; i < embedded.length; i++) {
       assert.equal(named[i].text, embedded[i].text, `${file} text ${i}`);
-      for (let j = 0; j < 4; j++)
-        assert.ok(
-          Math.abs(named[i].box[j] - embedded[i].box[j]) < 0.05,
-          `${file} text ${i} box ${j}: ${named[i].box[j]} vs ${embedded[i].box[j]}`
-        );
-      assert.ok(
-        Math.abs(named[i].advance - embedded[i].advance) < 0.05,
-        `${file} text ${i} advance`
-      );
+      assert.equal(named[i].nested, embedded[i].nested, `${file} nesting ${i}`);
+      for (let j = 0; j < 4; j++) {
+        const delta = Math.abs(named[i].box[j] - embedded[i].box[j]);
+        maxBoxDelta = Math.max(maxBoxDelta, delta);
+        assert.equal(delta, 0, `${file} text ${i} box ${j}`);
+      }
+      const delta = Math.abs(named[i].advance - embedded[i].advance);
+      maxAdvanceDelta = Math.max(maxAdvanceDelta, delta);
+      assert.equal(delta, 0, `${file} text ${i} advance`);
     }
-    console.log(`PASS ${file}: ${embedded.length} text elements, ${count} designs`);
+    console.log(
+      `PASS ${file}: ${embedded.length} text elements (${embedded.filter((node) => node.nested).length} containers), ${count} designs; max box delta ${maxBoxDelta}, advance delta ${maxAdvanceDelta}`
+    );
   }
 } finally {
   await browser.close();
