@@ -60,6 +60,11 @@ use crate::svg::{escape, number};
 use registry::Kind;
 pub(crate) use util::styles_from_array;
 
+/// Whether the shape uses its resolved layout direction.
+pub(super) fn uses_direction(node: &Node) -> bool {
+    registry::resolve_node(node) == Some(Kind::ForkJoin)
+}
+
 /// Stands for the diagram's id in a shape's markup, for the inline filter of a small shape. The
 /// id is not known when a shape is drawn, so `node_svg` replaces it. It is not a valid identifier
 /// character, so it cannot clash with an id.
