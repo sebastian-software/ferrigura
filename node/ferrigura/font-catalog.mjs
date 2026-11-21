@@ -34,13 +34,16 @@ function originOf(value) {
   if (
     url.username ||
     url.password ||
+    url.search ||
     url.hash ||
     !(
       url.protocol === 'https:' ||
       (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
     )
   ) {
-    throw new TypeError('manifestUrl must use HTTPS or loopback HTTP');
+    throw new TypeError(
+      'manifestUrl must use HTTPS or loopback HTTP and contain no credentials, query or fragment'
+    );
   }
   return url.origin;
 }

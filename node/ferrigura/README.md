@@ -84,7 +84,7 @@ missing or corrupt entries fail rather than silently using another face.
 
 To use a different catalog, pass `catalog: { manifestUrl, manifestSha256, assetBase }` with a
 reviewed SHA-256 of the raw manifest. Font paths resolve against `assetBase`, which must use the
-same HTTPS origin as `manifestUrl`; redirects are rejected. The catalog and each font are bounded
+same HTTPS origin as `manifestUrl`; credentials, query strings, fragments and redirects are rejected. The catalog and each font are bounded
 and checked by SHA-256, with font length checked too. The cache stores both kinds of object as
 `sha256/<digest>`. The renderer never fetches fonts or interprets URLs from diagram text.
 

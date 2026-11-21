@@ -125,6 +125,13 @@ test('rejects wrong pins, offline misses, redirects and off-origin URLs', async 
     }),
     /allowed origin/
   );
+  await assert.rejects(
+    resolveCatalogFonts({
+      ...opts,
+      catalog: { ...f.catalog, manifestUrl: `${f.catalog.manifestUrl}?token=secret` },
+    }),
+    (error) => /manifestUrl/.test(error.message) && !error.message.includes('secret')
+  );
   f.routes.set('/manifest.json', { redirect: 'https://elsewhere.test/redirect' });
   await assert.rejects(resolveCatalogFonts(opts), /HTTP 302/);
 });
