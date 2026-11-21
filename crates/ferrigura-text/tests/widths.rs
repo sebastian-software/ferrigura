@@ -54,7 +54,7 @@ fn the_fixture_covers_every_face() {
 
 #[test]
 fn kerning_pairs_make_a_word_narrower_than_its_letters() {
-    let face = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let face = face_for("sans-regular");
     for word in ["AVATAR", "Type", "WAVE", "Yo", "Te", "LT"] {
         let letters: f64 = word
             .chars()
@@ -70,7 +70,7 @@ fn kerning_pairs_make_a_word_narrower_than_its_letters() {
 
 #[test]
 fn a_leading_space_adds_its_advance() {
-    let face = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let face = face_for("sans-regular");
     let plain = measure(face, "leading", 16.0).expect("measures");
     let spaced = measure(face, " leading", 16.0).expect("measures");
     assert!(spaced > plain, "{spaced} should exceed {plain}");
@@ -78,14 +78,14 @@ fn a_leading_space_adds_its_advance() {
 
 #[test]
 fn widths_scale_linearly_with_the_size() {
-    let face = face(FontFamily::Mono, FontWeight::Normal, FontStyle::Normal);
+    let face = face_for("mono-regular");
     let at_16 = measure(face, "Hyperlegible", 16.0).expect("measures");
     let at_32 = measure(face, "Hyperlegible", 32.0).expect("measures");
     assert!((at_32 - 2.0 * at_16).abs() < 1e-9, "{at_16} {at_32}");
 }
 
 #[test]
-fn measuring_the_bundled_bytes_matches_the_face() {
+fn measuring_registered_fixture_bytes_matches_the_face() {
     let reference = chromium();
     for entry in entries(&reference, "widths").iter().take(40) {
         let text = text_of(entry);
@@ -94,5 +94,17 @@ fn measuring_the_bundled_bytes_matches_the_face() {
         let through_face = measure(found, text, size).expect("measures");
         let through_bytes = measure_data(found.data(), text, size).expect("measures");
         assert_eq!(through_face, through_bytes, "{text:?}");
+    }
+}
+
+#[test]
+fn measuring_the_bundled_bytes_matches_the_default_face() {
+    let found = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    for text in ["AVATAR", "leading space", "Hyperlegible"] {
+        assert_eq!(
+            measure(found, text, 16.0).expect("face measures"),
+            measure_data(found.data(), text, 16.0).expect("bytes measure"),
+            "{text:?}"
+        );
     }
 }
