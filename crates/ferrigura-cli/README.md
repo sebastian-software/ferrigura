@@ -20,6 +20,7 @@ cargo install --path crates/ferrigura-cli
 Renders Mermaid diagrams to SVG.
 
 Usage: ferrigura [OPTIONS] [FILE]...
+       ferrigura fonts fetch [OPTIONS] FAMILY...
 
 Arguments:
   [FILE]...  The diagram texts. Standard input is read when no FILE is given, or for `-`. Several
@@ -28,6 +29,7 @@ Arguments:
 
 Options:
   -c, --config <FILE>     The configuration as a JSON object, what `initialize` takes
+      --font-lock <FILE>  Register the verified faces from a local font lock
       --font <FAMILY=FILE> Register a local font as weight 400, normal; repeat for more families
       --font-face <FAMILY:WEIGHT:STYLE=FILE>
                           Register a face with weight 1..1000 and style normal or italic
