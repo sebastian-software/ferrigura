@@ -9,7 +9,7 @@ export const cases = [
   },
   {
     name: 'architecture',
-    text: '---\nconfig:\n  architecture:\n    randomize: true\n---\narchitecture-beta\n group g1(cloud)[Left]\n group g2(cloud)[Right]\n service a(server)[A] in g1\n service b(database)[B] in g1\n service c(disk)[C] in g2\n service d(internet)[D]\n a:R -- L:c\n b:T -- B:a\n c:B -- T:d\n d:L -[Link]- R:b\n',
+    text: '---\nconfig:\n  architecture:\n    randomize: true\n    seed: 7\n---\narchitecture-beta\n group g1(cloud)[Left]\n group g2(cloud)[Right]\n service a(server)[A] in g1\n service b(database)[B] in g1\n service c(disk)[C] in g2\n service d(internet)[D]\n a:R -- L:c\n b:T -- B:a\n c:B -- T:d\n d:L -[Link]- R:b\n',
   },
   { name: 'font', text: 'flowchart LR\n A[Wide WWW narrow iii]\n', font: true },
 ];

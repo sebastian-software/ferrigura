@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
@@ -26,6 +27,11 @@ for (const target of targets) {
     assert.equal(typeof data[name], 'string', `${target}/${name}: missing SVG`);
     const document = new JSDOM(data[name], { contentType: 'image/svg+xml' }).window.document;
     assert.equal(document.documentElement.localName, 'svg', `${target}/${name}: invalid SVG`);
+    assert.equal(
+      document.documentElement.namespaceURI,
+      'http://www.w3.org/2000/svg',
+      `${target}/${name}: invalid SVG namespace`
+    );
     assert.equal(document.documentElement.id, `${name}A`, `${target}/${name}: wrong SVG id`);
     fixtures.set(name, [...document.querySelectorAll('*')]);
   }
@@ -78,6 +84,30 @@ for (const target of targets.filter((id) => id !== base)) {
         .filter((element) => element.localName === 'text')
         .map((element) => element.textContent);
     const text = JSON.stringify(labels(left)) === JSON.stringify(labels(right));
+    const fonts = (elements) => {
+      const styles = elements
+        .filter((element) => element.localName === 'style')
+        .map((element) => element.textContent)
+        .join('\n');
+      const faces = styles.match(/@font-face\s*\{[^}]*\}/g) ?? [];
+      const data = [];
+      const declarations = faces.map((face) =>
+        face.replace(
+          /data:(font\/[^;]+);base64,([A-Za-z0-9+/=]+)/g,
+          (match, mediaType, payload) => {
+            data.push(createHash('sha256').update(Buffer.from(payload, 'base64')).digest('hex'));
+            return `data:${mediaType};base64,<embedded>`;
+          }
+        )
+      );
+      return { declarations, data };
+    };
+    const leftFonts = fonts(left);
+    const rightFonts = fonts(right);
+    const fontStyles =
+      JSON.stringify(leftFonts.declarations) === JSON.stringify(rightFonts.declarations);
+    const fontData = JSON.stringify(leftFonts.data) === JSON.stringify(rightFonts.data);
+
     let max = 0;
     let where = 'none';
     let compared = 0;
@@ -111,7 +141,7 @@ for (const target of targets.filter((id) => id !== base)) {
       }
     }
     report.push(
-      `- ${name}: ordered elements ${tags ? 'match' : 'differ'} (${left.length}/${right.length}); text labels ${text ? 'match' : 'differ'}; numeric values compared ${compared}, max absolute delta ${max} at ${where}, incompatible geometry attributes ${incompatible}.`
+      `- ${name}: ordered elements ${tags ? 'match' : 'differ'} (${left.length}/${right.length}); text labels ${text ? 'match' : 'differ'}; font styles ${fontStyles ? 'match' : 'differ'}; embedded font data ${fontData ? 'match' : 'differ'} (${leftFonts.data.join(',') || 'none'} / ${rightFonts.data.join(',') || 'none'}); numeric values compared ${compared}, max absolute delta ${max} at ${where}, incompatible geometry attributes ${incompatible}.`
     );
   }
   report.push('');
