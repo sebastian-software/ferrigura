@@ -55,7 +55,6 @@ Texts go through the DB's `sanitizeText`; `sanitize.rs` ports the DOMPurify pass
 
 ## Known gaps
 
-- Front matter that js-yaml rejects but `yaml.rs` accepts (a control character, a malformed mapping) is accepted. The gap is in the shared reader and concerns every type with front matter.
 - The browser's style form of the color keywords and of `rgba()` in a border is not reproduced; no fixture uses them.
 
 ## Checking it

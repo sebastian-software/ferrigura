@@ -56,7 +56,6 @@ Quirks of the reference that are kept on purpose:
 ## Known gaps
 
 - Fixtures with `look: handDrawn` are not compared in the geometry run, and two malformed fixtures that the reference itself rejects are reported as reference failures.
-- Front matter YAML that the reference's reader rejects and the shared reader accepts (a value after a key-less `:`) is accepted here; it is a gap of `yaml.rs`, shared by every type.
 
 ## Checking it
 

@@ -68,7 +68,7 @@ The texts of the chart are written as SVG `<text>` with the bundled sans face em
 ## Known gaps
 
 - The chart builder's unit specs in Mermaid (`chartBuilder/*.spec.ts`) are not ported: they measure without a DOM group, a fallback ferrigura never takes. The fixtures check the layout.
-- A directive in a text no detector takes, and front matter that js-yaml rejects but `yaml.rs` accepts, are the shared readers' differences, not this type's.
+- A directive in a text no detector takes is a shared reader difference, not this type's.
 
 ## Checking it
 
