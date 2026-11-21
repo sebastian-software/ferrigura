@@ -477,6 +477,33 @@ SOFTWARE.
 
 
 
+## crates/ferrigura-jsmath/LICENSE-CORE-MATH
+
+Copyright (c) 2024-2025 Alexei Sibidanov.
+
+This file is part of the CORE-MATH project
+(https://core-math.gitlabpages.inria.fr/).
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+
 ## crates/ferrigura-jsmath/LICENSE-LLVM
 
 ==============================================================================
@@ -832,16 +859,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # Notice: sources and licences of ferrigura-jsmath
 
 The crate is MIT-licensed (see `LICENSE`). Parts of it are ported from other sources, and each part
-keeps the licence of its source. `LICENSE-LLVM` and `LICENSE-V8` carry the licence texts.
+keeps the licence of its source. `LICENSE-LLVM`, `LICENSE-V8`, and `LICENSE-CORE-MATH` carry the license texts.
 
 ## The default functions (Chromium 151)
 
-| Function                                            | Where                                                                        | Source                                                                                                                                                                        | Licence                                         | Depends on the target's fused multiply-adds?                                                              |
-| --------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `sin`, `cos`, `tan`, `asin`, `acos`, `log`, `log10` | `src/correct.rs`, constants in `src/constants.rs` (`CR_*`)                   | Written for this crate: a correctly rounded evaluator (Ziv's method, 384-bit fixed point). No code is copied. The constants were computed with mpmath and Python's `decimal`. | MIT (this crate)                                | No. The fixed-point arithmetic is integer arithmetic, and the results are the correctly rounded values.   |
-| `atan`, `atan2`                                     | `src/atan.rs` (the table `ATAN_I`, `atan_eval`, `dd_div`, the special cases) | llvm-libc: `libc/src/__support/math/atan.h`, `atan2.h`, `atan_utils.h`, and the `FPUtil` helpers they use. Reproduced step by step.                                           | Apache-2.0 WITH LLVM-exception (`LICENSE-LLVM`) | Yes. llvm-libc uses fused multiply-adds where its `LIBC_TARGET_CPU_HAS_FMA` is set, which is `CONTRACTS`. |
-| `pow`                                               | `src/pow.rs`                                                                 | V8's `src/numbers/ieee754.cc` (the special cases around `std::pow`), and the platform's `pow`                                                                                 | BSD-style (`LICENSE-V8`)                        | The platform's `pow` decides it.                                                                          |
-| `hypot`                                             | `src/hypot.rs`                                                               | V8's `src/builtins/math.tq` (`FastMathHypot`, the two-argument form)                                                                                                          | BSD-style (`LICENSE-V8`)                        | No.                                                                                                       |
+| Function                                            | Where                                                                        | Source                                                                                                                                                                                                                                                                                                 | Licence                                         | Depends on the target's fused multiply-adds?                                                              |
+| --------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `sin`, `cos`, `tan`, `asin`, `acos`, `log`, `log10` | `src/correct.rs`, constants in `src/constants.rs` (`CR_*`)                   | Written for this crate: a correctly rounded evaluator (Ziv's method, 384-bit fixed point). The constants were computed with mpmath and Python's `decimal`. `acos` first uses the CORE-MATH fast rounding test (`src/acos_fast.rs`, commit 7457819), falling back to fixed point for ambiguous results. | MIT (this crate)                                | No. The `acos` fast path uses explicit fused operations on every target; other arithmetic is fixed point. |
+| `atan`, `atan2`                                     | `src/atan.rs` (the table `ATAN_I`, `atan_eval`, `dd_div`, the special cases) | llvm-libc: `libc/src/__support/math/atan.h`, `atan2.h`, `atan_utils.h`, and the `FPUtil` helpers they use. Reproduced step by step.                                                                                                                                                                    | Apache-2.0 WITH LLVM-exception (`LICENSE-LLVM`) | Yes. llvm-libc uses fused multiply-adds where its `LIBC_TARGET_CPU_HAS_FMA` is set, which is `CONTRACTS`. |
+| `pow`                                               | `src/pow.rs`                                                                 | V8's `src/numbers/ieee754.cc` (the special cases around `std::pow`), and the platform's `pow`                                                                                                                                                                                                          | BSD-style (`LICENSE-V8`)                        | The platform's `pow` decides it.                                                                          |
+| `hypot`                                             | `src/hypot.rs`                                                               | V8's `src/builtins/math.tq` (`FastMathHypot`, the two-argument form)                                                                                                                                                                                                                                   | BSD-style (`LICENSE-V8`)                        | No.                                                                                                       |
 
 ## The `node` module (V8 13.6, Node 24)
 
