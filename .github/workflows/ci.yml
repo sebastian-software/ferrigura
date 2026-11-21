@@ -83,7 +83,7 @@ jobs:
       - name: Node addon
         run: node --test crates/ferrigura-node/test/render.test.mjs
 
-  # The declared MSRV must build the public Rust library and CLI with the committed lockfile.
+  # The declared MSRV must build the library and CLI and compile the facade examples.
   minimum-rust:
     runs-on: ubuntu-latest
     steps:
@@ -93,6 +93,7 @@ jobs:
           version=$(cargo metadata --locked --no-deps --format-version 1 | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(p["rust_version"] for p in data["packages"] if p["name"] == "ferrigura"))')
           rustup toolchain install "$version" --profile minimal
           cargo +"$version" build --locked -p ferrigura -p ferrigura-cli
+          cargo +"$version" test --locked -p ferrigura --doc
 
   snapshots:
     # ferrigura's own output against crates/ferrigura/tests/snapshots/svg.tsv. The manifest holds the
