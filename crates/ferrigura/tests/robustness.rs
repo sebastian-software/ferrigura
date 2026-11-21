@@ -51,6 +51,55 @@ fn truncated_and_unicode_inputs_leave_the_renderer_usable() {
     }
 }
 
+/// Scans SVG number lists, where a sign or a second decimal point can start the next number.
+fn contains_non_finite(value: &str) -> bool {
+    if value.contains("NaN") || value.contains("Infinity") || value.contains("inf") {
+        return true;
+    }
+    let bytes = value.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        let start = i;
+        if matches!(bytes[i], b'+' | b'-') {
+            i += 1;
+        }
+        let mut digits = 0;
+        while i < bytes.len() && bytes[i].is_ascii_digit() {
+            i += 1;
+            digits += 1;
+        }
+        if i < bytes.len() && bytes[i] == b'.' {
+            i += 1;
+            while i < bytes.len() && bytes[i].is_ascii_digit() {
+                i += 1;
+                digits += 1;
+            }
+        }
+        if digits == 0 {
+            i = start + 1;
+            continue;
+        }
+        if i < bytes.len() && matches!(bytes[i], b'e' | b'E') {
+            let exponent = i;
+            i += 1;
+            if i < bytes.len() && matches!(bytes[i], b'+' | b'-') {
+                i += 1;
+            }
+            let first_digit = i;
+            while i < bytes.len() && bytes[i].is_ascii_digit() {
+                i += 1;
+            }
+            if i == first_digit {
+                i = exponent;
+            }
+        }
+        if value[start..i].parse::<f64>().is_ok_and(|n| !n.is_finite()) {
+            return true;
+        }
+    }
+    false
+}
+
 /// Checks numeric geometry attributes, including path and transform lists, for non-finite values.
 fn finite_geometry(svg: &str, source: &str, context: &str) {
     let doc = roxmltree::Document::parse(svg).unwrap_or_else(|e| panic!("{context}: {e}"));
@@ -76,15 +125,7 @@ fn finite_geometry(svg: &str, source: &str, context: &str) {
                     | "points"
                     | "transform"
                     | "stroke-width"
-            ) && (attr.value().contains("NaN")
-                || attr.value().contains("Infinity")
-                || attr
-                    .value()
-                    .split(|c: char| {
-                        !(c.is_ascii_digit() || matches!(c, '.' | '-' | '+' | 'e' | 'E'))
-                    })
-                    .filter_map(|token| token.parse::<f64>().ok())
-                    .any(|value| !value.is_finite()))
+            ) && contains_non_finite(attr.value())
             {
                 non_finite.push((node.tag_name().name(), attr.name(), attr.value()));
             }
@@ -97,6 +138,7 @@ fn finite_geometry(svg: &str, source: &str, context: &str) {
     } else {
         &[]
     };
+    non_finite.sort_unstable();
     assert_eq!(non_finite, expected, "{context}: non-finite geometry");
 }
 
@@ -198,25 +240,22 @@ fn every_registered_kind_handles_bounded_truncations() {
 /// Opt in to repeating the fixed corpus cases in isolated processes. A timeout kills and reaps the
 /// child; the synchronous renderer itself does not offer cancellation.
 #[test]
+#[ignore = "extended: repeated corpus renders in child processes"]
 fn extended_robustness_in_bounded_children() {
     use std::{
         process::Command,
         thread,
         time::{Duration, Instant},
     };
-    if std::env::var_os("FERRIGURA_ROBUSTNESS_EXTENDED").is_none() {
-        return;
-    }
     const RUNS: usize = 4;
     let deadline = Instant::now() + Duration::from_secs(30);
     for run in 0..RUNS {
         let mut child = Command::new(std::env::current_exe().expect("test executable"))
             .args([
-                "--exact",
-                "every_registered_kind_handles_bounded_truncations",
+                "--skip",
+                "extended_robustness_in_bounded_children",
                 "--test-threads=1",
             ])
-            .env_remove("FERRIGURA_ROBUSTNESS_EXTENDED")
             .spawn()
             .expect("start robustness child");
         loop {
@@ -225,7 +264,15 @@ fn extended_robustness_in_bounded_children() {
                 break;
             }
             if Instant::now() >= deadline {
-                child.kill().expect("stop timed-out robustness child");
+                if let Err(error) = child.kill() {
+                    assert!(
+                        child
+                            .try_wait()
+                            .expect("check child after kill race")
+                            .is_some(),
+                        "failed to stop child: {error}"
+                    );
+                }
                 child.wait().expect("reap timed-out robustness child");
                 panic!("robustness children exceeded 30 seconds at run {run}");
             }
@@ -240,6 +287,10 @@ fn geometry_check_detects_non_finite_numbers_in_numeric_attributes() {
         r#"<svg><rect x="NaN"/></svg>"#,
         r#"<svg><rect width="1e309"/></svg>"#,
         r#"<svg><path d="M0,NaN"/></svg>"#,
+        r#"<svg><rect x="inf"/></svg>"#,
+        r#"<svg><rect x="-inf"/></svg>"#,
+        r#"<svg><path d="M0-1e309"/></svg>"#,
+        r#"<svg><path d="M.2.3e309"/></svg>"#,
     ] {
         assert!(std::panic::catch_unwind(|| finite_geometry(svg, "example", "example")).is_err());
     }
@@ -248,4 +299,62 @@ fn geometry_check_detects_non_finite_numbers_in_numeric_attributes() {
         "example",
         "example",
     );
+}
+
+#[test]
+fn small_and_moderate_nesting_stays_isolated() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let control = renderer.render(CONTROL).unwrap();
+    for depth in [2, 8] {
+        let mut flow = String::from("flowchart TD\n");
+        let mut state = String::from("stateDiagram-v2\n");
+        let mut block = String::from("block\n");
+        let mut mindmap = String::from("mindmap\nroot(Root)\n");
+        let mut tree = String::from("treeView-beta\n");
+        for n in 0..depth {
+            flow.push_str(&format!("subgraph g{n}\n"));
+            state.push_str(&format!("state s{n} {{\n"));
+            block.push_str(&format!("block:g{n}\n"));
+            mindmap.push_str(&format!("{}n{n}\n", "  ".repeat(n + 1)));
+            tree.push_str(&format!("{}n{n}/\n", "  ".repeat(n + 1)));
+        }
+        flow.push_str("A --> B\n");
+        state.push_str("[*] --> Ready\n");
+        block.push_str("leaf\n");
+        tree.push_str(&format!("{}leaf\n", "  ".repeat(depth + 1)));
+        for _ in 0..depth {
+            flow.push_str("end\n");
+            state.push_str("}\n");
+            block.push_str("end\n");
+        }
+        for (kind, source) in [
+            ("flowchart", flow),
+            ("state", state),
+            ("block", block),
+            ("mindmap", mindmap),
+            ("treeView", tree),
+        ] {
+            let baseline = renderer
+                .render(&source)
+                .unwrap_or_else(|e| panic!("{kind} depth {depth}: {e}"));
+            finite_geometry(&baseline, &source, &format!("{kind} depth {depth}"));
+            let truncated = source
+                .trim_end_matches('\n')
+                .rsplit_once('\n')
+                .map_or("", |(prefix, _)| prefix);
+            if let Ok(svg) = renderer.render(truncated) {
+                finite_geometry(&svg, truncated, &format!("{kind} depth {depth} truncated"));
+            }
+            assert_eq!(
+                renderer.render(&source).unwrap(),
+                baseline,
+                "{kind} depth {depth}"
+            );
+            assert_eq!(
+                renderer.render(CONTROL).unwrap(),
+                control,
+                "{kind} depth {depth}"
+            );
+        }
+    }
 }
