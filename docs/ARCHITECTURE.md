@@ -51,7 +51,7 @@ A Cargo workspace under `crates/`. Diagram types are modules inside the crates, 
 | `ferrigura-elk`      | ELK Layered, ported from Java                                                                                               | EPL-2.0                                                 |
 | `ferrigura-cose`     | cose-bilkent and fcose                                                                                                      | MIT                                                     |
 | `ferrigura-swimlane` | Mermaid's swimlane layout                                                                                                   | MIT                                                     |
-| `ferrigura-venn`     | The layout of `@upsetjs/venn.js`                                                                                            | MIT                                                     |
+| `ferrigura-venn`     | The layout of `@upsetjs/venn.js`                                                                                            | MIT AND BSD-3-Clause                                    |
 | `ferrigura-jsmath`   | JavaScript's `Math` as V8 computes it, bit for bit                                                                          | MIT AND Apache-2.0 WITH LLVM-exception AND BSD-3-Clause |
 | `ferrigura-path`     | Chromium's bounding box of an SVG path, bit for bit                                                                         | MIT AND BSD-3-Clause                                    |
 
