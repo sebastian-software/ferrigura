@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "ardo": "^6.6.0",
-    "ferramenta-family": "3.0.0"
+    "ferramenta-family": "3.0.0",
+    "react-compare-slider": "^4.0.0"
   },
   "devDependencies": {
     "axe-core": "4.14.0",

@@ -73,6 +73,8 @@ Licenses follow the sources of the ported code ([0013](./decisions/0013-licenses
 
 What ferrigura does not do, on purpose or not yet:
 
+Rendering is synchronous. The host-controlled `maxTextSize` and `maxEdges` limits bound input size and flowchart edges, but do not impose a time or memory deadline. A service accepting untrusted diagrams can run renders in a separate process with its own time and memory limits and terminate that process when needed.
+
 - **Out of scope:** browsers and WebAssembly, raster output, Mermaid's JavaScript API and callbacks ([0006](./decisions/0006-rust-only-no-browser.md)); HTML labels and math in labels ([0009](./decisions/0009-svg-text-labels.md)); `look: handDrawn`; the dagre layout and the ELK algorithms other than Layered ([0012](./decisions/0012-layout-engines-ported-exactly.md)); Mermaid's classic themes ([0011](./decisions/0011-themes-as-css-variables.md)).
 - **Font coverage:** hosts can register primary and fallback faces beyond the bundled compatibility defaults ([font inputs](./fonts.md)). An uncovered character is measured with the primary missing glyph; viewers may substitute another font. Character coverage alone does not establish complete shaping or bidirectional layout for every writing system.
 - **Not yet:** flowchart images and icon packs. The [diagram pages](./diagrams/README.md) list what each type still lacks.
