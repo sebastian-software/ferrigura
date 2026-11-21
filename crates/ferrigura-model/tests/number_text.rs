@@ -42,3 +42,21 @@ fn tiny_and_huge_numbers_take_an_exponent() {
     );
     assert_eq!(number_text(-0.0), "0");
 }
+
+#[test]
+fn special_values_and_halfway_rounding_match_javascript() {
+    for (value, expected) in [
+        (0.0, "0"),
+        (-0.0, "0"),
+        (f64::NAN, "NaN"),
+        (f64::INFINITY, "Infinity"),
+        (f64::NEG_INFINITY, "-Infinity"),
+        (f64::from_bits(0x4318_46c2_5aad_e001), "1708300000000000.2"),
+        (1e-7, "1e-7"),
+        (1e-6, "0.000001"),
+        (1e20, "100000000000000000000"),
+        (1e21, "1e+21"),
+    ] {
+        assert_eq!(number_text(value), expected);
+    }
+}
