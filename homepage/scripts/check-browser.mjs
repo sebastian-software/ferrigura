@@ -68,6 +68,7 @@ try {
 
   await verifyExample(page, origin);
   await verifyCompareSlider(page, origin);
+  await verifySliderTouch(browser, origin);
   await verifyNavigation(page, origin);
   await verifyHeaderMenu(page, origin);
   await verifySearch(page, origin);
@@ -125,7 +126,7 @@ async function verifyExample(page, origin) {
 }
 /**
  * The side-by-side page: both drawings line up under the divider, and the
- * keyboard and a tap move it.
+ * keyboard and a click move it.
  */
 async function verifyCompareSlider(page, origin) {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -136,11 +137,71 @@ async function verifyCompareSlider(page, origin) {
   const slider = page.locator('.fgr-compare').nth(3);
   await slider.scrollIntoViewIfNeeded();
   await verifyAlignment(slider);
-  const input = slider.getByRole('slider');
-  await input.focus();
+  const handle = slider.getByRole('slider');
+  await handle.focus();
   await page.keyboard.press('ArrowLeft');
-  assert.equal(await input.inputValue(), '49', 'The arrow keys do not move the divider');
-  await verifyTap(page, slider, input);
+  await verifySliderFocus(slider);
+  assert.equal(await handle.getAttribute('aria-valuenow'), '48', 'The arrow keys do not move it');
+  assert.match(
+    await handle.getAttribute('aria-label'),
+    /left of the divider.*right of it/,
+    'The slider must name both drawings'
+  );
+  await verifySliderClick(page, slider, handle);
+}
+
+async function verifySliderFocus(slider) {
+  const outline = await slider
+    .locator('.__rcs-handle-button')
+    .evaluate((element) => getComputedStyle(element).outlineStyle);
+  assert.notEqual(outline, 'none', 'Keyboard focus must be visible on the grip');
+}
+
+async function verifySliderClick(page, slider, handle) {
+  const stage = await slider.locator('.fgr-compare-stage').boundingBox();
+  await page.mouse.click(stage.x + stage.width * 0.2, stage.y + stage.height / 2);
+  const value = Number(await handle.getAttribute('aria-valuenow'));
+  assert(Math.abs(value - 20) <= 2, `A click at 20% puts the divider at ${value}%`);
+}
+
+/** A touch on the visible grip moves the divider and its clipping edge. */
+async function verifySliderTouch(browser, origin) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto(new URL('/comparisons/side-by-side/', origin).href, { waitUntil: 'load' });
+    const slider = page.locator('.fgr-compare').first();
+    await slider.scrollIntoViewIfNeeded();
+    const handle = slider.getByRole('slider');
+    await dragSliderTouch(context, page, slider);
+    const value = Number(await handle.getAttribute('aria-valuenow'));
+    assert(value > 50, `Touch drag did not move the divider: ${value}`);
+    const clip = await slider
+      .locator('[data-rcs-item="itemOne"]')
+      .evaluate((element) => getComputedStyle(element).clipPath);
+    const clippedAt = Number(/clamp\([^,]+,\s*([\d.]+)%/.exec(clip)?.[1]);
+    assert(Math.abs(clippedAt - value) < 1, `The first drawing is clipped as ${clip}`);
+  } finally {
+    await context.close();
+  }
+}
+
+async function dragSliderTouch(context, page, slider) {
+  const grip = await slider.locator('.__rcs-handle-button').boundingBox();
+  assert(grip, 'The touch grip must have a box');
+  const x = grip.x + grip.width / 2;
+  const y = grip.y + grip.height / 2;
+  const client = await context.newCDPSession(page);
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  await client.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ x: x + 50, y }],
+  });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
 
 /** Shared SVG edge-label backgrounds mask lines in every graph specimen. */
@@ -171,14 +232,14 @@ async function verifyComparisonFonts(page) {
     .locator('.fgr-side')
     .nth(1)
     .locator(
-      '.fgr-compare-first text.actor, .fgr-compare-first text.noteText, .fgr-compare-first text.messageText'
+      '[data-rcs-item="itemOne"] text.actor, [data-rcs-item="itemOne"] text.noteText, [data-rcs-item="itemOne"] text.messageText'
     )
     .evaluateAll((texts) => texts.map((text) => getComputedStyle(text).fontFamily));
   assert(
     fonts.length > 0 && fonts.every((family) => family.includes('fg-')),
     'Sequence labels must use the embedded font'
   );
-  for (const layer of ['.fgr-compare-first', '.fgr-compare-layer:first-child']) {
+  for (const layer of ['[data-rcs-item="itemOne"]', '[data-rcs-item="itemTwo"]']) {
     const weight = await page
       .locator('.fgr-side')
       .first()
@@ -191,23 +252,10 @@ async function verifyComparisonFonts(page) {
   }
 }
 
-/** A tap at a fifth of the width moves the divider there and clips the first drawing. */
-async function verifyTap(page, slider, input) {
-  const stage = await slider.locator('.fgr-compare-stage').boundingBox();
-  await page.mouse.click(stage.x + stage.width * 0.2, stage.y + stage.height / 2);
-  const value = Number(await input.inputValue());
-  assert(Math.abs(value - 20) <= 2, `A tap at 20% puts the divider at ${value}%`);
-  const clip = await slider
-    .locator('.fgr-compare-first')
-    .evaluate((element) => getComputedStyle(element).clipPath);
-  const hidden = Number(/^inset\(\S+ (?:calc\()?([\d.]+)%/.exec(clip)?.[1]);
-  assert(Math.abs(hidden - (100 - value)) < 0.5, `The first drawing is clipped as ${clip}`);
-}
-
 /** Both SVGs take the same box under the divider. */
 async function verifyAlignment(slider) {
-  const first = await slider.locator('.fgr-compare-first svg').boundingBox();
-  const second = await slider.locator('.fgr-compare-layer svg').first().boundingBox();
+  const first = await slider.locator('.fgr-compare-layer svg').first().boundingBox();
+  const second = await slider.locator('.fgr-compare-layer svg').last().boundingBox();
   assert(first && second, 'A side-by-side drawing has no box');
   for (const key of ['x', 'y', 'width', 'height'])
     assert(Math.abs(first[key] - second[key]) < 1, `The two drawings do not line up (${key})`);
