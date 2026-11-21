@@ -36,7 +36,7 @@ pub fn paint(
     let data: &LayoutData = &measured.data;
     let mut animator = animation
         .map(|options| {
-            let lengths: Vec<f64> = data
+            let lengths: Vec<_> = data
                 .edges
                 .iter()
                 .map(|edge| {
@@ -45,13 +45,7 @@ pub fn paint(
                     crate::unified::path::path_length(&d)
                 })
                 .collect();
-            crate::animation::Animator::from_lengths(
-                id,
-                &data.nodes,
-                &data.edges,
-                &lengths,
-                options,
-            )
+            crate::animation::Animator::from_lengths(id, &data.nodes, &data.edges, lengths, options)
         })
         .transpose()?;
     let mut bounds: Option<BBox> = None;
