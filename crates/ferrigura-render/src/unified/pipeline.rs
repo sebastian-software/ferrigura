@@ -87,12 +87,11 @@ impl Painted<'_> {
 
 /// The nearest `dir` of the node or one of its subgraphs, else the diagram's direction, as
 /// `resolveNodeDir` in `createGraph.ts` finds it.
-fn node_dir(data: &LayoutData, index: usize) -> Option<&str> {
-    let by_id: HashMap<&str, &Node> = data
-        .nodes
-        .iter()
-        .map(|node| (node.id.as_str(), node))
-        .collect();
+fn node_dir<'a>(
+    data: &'a LayoutData,
+    index: usize,
+    by_id: &HashMap<&str, &'a Node>,
+) -> Option<&'a str> {
     let mut current = Some(&data.nodes[index]);
     let mut seen = std::collections::HashSet::new();
     while let Some(node) = current {
@@ -132,6 +131,30 @@ pub fn measure_for(
 ) -> Result<Measured, RenderError> {
     edges::prepare(&mut data);
 
+    // Direction is only consumed by fork/join shapes. Resolve those before mutating sizes,
+    // building the parent index once instead of once per node.
+    let directions = if data
+        .nodes
+        .iter()
+        .any(|node| !node.is_group && shapes::uses_direction(node))
+    {
+        let by_id: HashMap<&str, &Node> = data
+            .nodes
+            .iter()
+            .map(|node| (node.id.as_str(), node))
+            .collect();
+        data.nodes
+            .iter()
+            .enumerate()
+            .map(|(index, node)| {
+                (!node.is_group && shapes::uses_direction(node))
+                    .then(|| node_dir(&data, index, &by_id).map(str::to_owned))
+                    .flatten()
+            })
+            .collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
     let anchor = node_anchor(&data.diagram_type);
     let mut shapes = HashMap::new();
     for index in 0..data.nodes.len() {
@@ -164,7 +187,7 @@ pub fn measure_for(
             node,
             label: label.as_ref(),
             config,
-            dir: node_dir(&data, index),
+            dir: directions.get(index).and_then(Option::as_deref),
         })?;
         let id = node.id.clone();
         // `insertMeasuredNode` takes the node's size from the `getBBox` of its group (createGraph.ts
@@ -424,3 +447,51 @@ pub fn cover(bounds: &mut Option<BBox>, bbox: BBox) {
 
 /// The font size of labels when the theme has none.
 const DEFAULT_FONT_SIZE: f64 = 16.0;
+
+#[cfg(test)]
+mod direction_tests {
+    use super::*;
+
+    #[test]
+    fn node_direction_preserves_parent_lookup_and_fallbacks() {
+        let node = |id: &str, parent: Option<&str>, dir: Option<&str>| Node {
+            id: id.into(),
+            parent_id: parent.map(str::to_owned),
+            dir: dir.map(str::to_owned),
+            ..Node::default()
+        };
+        let data = LayoutData {
+            direction: "TB".into(),
+            nodes: vec![
+                node("own", None, Some("RL")),
+                node("leaf", Some("group"), None),
+                node("group", None, Some("LR")),
+                node("parentless", None, None),
+                node("missing", Some("absent"), None),
+                node("cycle1", Some("cycle2"), None),
+                node("cycle2", Some("cycle1"), None),
+            ],
+            ..LayoutData::default()
+        };
+        let by_id = data.nodes.iter().map(|n| (n.id.as_str(), n)).collect();
+        assert_eq!(node_dir(&data, 0, &by_id), Some("RL"));
+        assert_eq!(node_dir(&data, 1, &by_id), Some("LR"));
+        assert_eq!(node_dir(&data, 3, &by_id), None);
+        assert_eq!(node_dir(&data, 4, &by_id), Some("TB"));
+        assert_eq!(node_dir(&data, 5, &by_id), Some("TB"));
+    }
+
+    #[test]
+    fn direction_consumers_include_all_fork_join_aliases() {
+        for shape in ["fork", "join", "forkJoin"] {
+            assert!(shapes::uses_direction(&Node {
+                shape: shape.into(),
+                ..Node::default()
+            }));
+        }
+        assert!(!shapes::uses_direction(&Node {
+            shape: "rect".into(),
+            ..Node::default()
+        }));
+    }
+}
