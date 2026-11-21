@@ -2276,6 +2276,7 @@ tools/port/geometry/probes/architecture/p11-accessibility-and-markup.mmd	be898e6
 tools/port/geometry/probes/architecture/p12-larger-diagram.mmd	159f733c34d6eb6f
 tools/port/geometry/probes/architecture/p13-icon-text.mmd	ea0fd8f25ef72fad
 tools/port/geometry/probes/architecture/p14-symbol-arrows.mmd	ed4e9d0b2dd5b0e1
+tools/port/geometry/probes/c4/long-wrapped-labels.mmd	7eae26edf0e33075
 tools/port/geometry/probes/cynefin/p01-entities-and-markup-in-labels.mmd	54e5bb74afb1af4b
 tools/port/geometry/probes/cynefin/p02-empty-and-spaced-labels.mmd	1195ae87bbedd001
 tools/port/geometry/probes/cynefin/p03-zero-padding-title.mmd	c28ac845f9bad02d
