@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/sebastian-software/ferrigura/compare/v0.7.0...v0.8.0) (2026-11-19)
+
+
+### Features
+
+* expose a fixed render clock ([#111](https://github.com/sebastian-software/ferrigura/issues/111)) ([7560d14](https://github.com/sebastian-software/ferrigura/commit/7560d14d564d4f8f82854fec4916514598829eaa))
+
+
+### Bug Fixes
+
+* enforce host input and edge limits ([#109](https://github.com/sebastian-software/ferrigura/issues/109)) ([3047a07](https://github.com/sebastian-software/ferrigura/commit/3047a07feef6d155c255946bf92e5a237cd95b89))
+
 ## [0.7.0](https://github.com/sebastian-software/ferrigura/compare/v0.6.0...v0.7.0) (2026-11-10)
 
 
