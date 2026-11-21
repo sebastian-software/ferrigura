@@ -54,7 +54,7 @@ struct CacheKey {
 struct CacheEntry {
     // A weak reference keeps the allocation identity unique without retaining the font bytes.
     _data: Option<std::sync::Weak<Vec<u8>>>,
-    subset: Arc<[u8]>,
+    subset: Arc<Vec<u8>>,
     charge: usize,
     used: u64,
 }
@@ -340,10 +340,10 @@ fn family_order(family: FontFamily) -> u8 {
 /// text with a line break or a tab needs the space glyph even when it has no space of its own.
 const COLLAPSED_WHITE_SPACE: [char; 3] = ['\n', '\r', '\t'];
 
-fn cached_subset(face: &Face, characters: &BTreeSet<char>) -> Result<Arc<[u8]>, TextError> {
+fn cached_subset(face: &Face, characters: &BTreeSet<char>) -> Result<Arc<Vec<u8>>, TextError> {
     let cache = ACTIVE_CACHE.with(|active| active.borrow().clone());
     let Some(cache) = cache else {
-        return subset_characters(face, characters).map(Arc::from);
+        return subset_characters(face, characters).map(Arc::new);
     };
     let mut normalized = characters.clone();
     if COLLAPSED_WHITE_SPACE.iter().any(|c| normalized.contains(c)) {
@@ -369,10 +369,10 @@ fn cached_subset(face: &Face, characters: &BTreeSet<char>) -> Result<Arc<[u8]>, 
             return Ok(entry.subset.clone());
         }
     }
-    let subset: Arc<[u8]> = subset_characters(face, characters)?.into();
+    let subset = Arc::new(subset_characters(face, characters)?);
     let charge = ENTRY_OVERHEAD
         .saturating_add(key.characters.len() * std::mem::size_of::<char>())
-        .saturating_add(subset.len());
+        .saturating_add(subset.capacity());
     if charge <= CACHE_BUDGET {
         let mut state = cache.0.lock().unwrap_or_else(|e| e.into_inner());
         if !state.entries.contains_key(&key) {
@@ -495,7 +495,7 @@ fn subset_data(
 }
 
 /// The family name of a set of subsets: the hash of each face's weight, style and bytes.
-fn family_name(family: FontFamily, subsets: &[(&Face, Arc<[u8]>)]) -> String {
+fn family_name(family: FontFamily, subsets: &[(&Face, Arc<Vec<u8>>)]) -> String {
     let hash = fnv1a(&canonical_bytes(subsets));
     format!("fg-{hash:016x}-{}", family.css_suffix())
 }
@@ -503,7 +503,7 @@ fn family_name(family: FontFamily, subsets: &[(&Face, Arc<[u8]>)]) -> String {
 /// The bytes the family hash covers, face by face: the weight, the style, the length of the subset
 /// and the subset itself. Fixed-width integers are little-endian, so the bytes do not depend on the
 /// platform.
-fn canonical_bytes(subsets: &[(&Face, Arc<[u8]>)]) -> Vec<u8> {
+fn canonical_bytes(subsets: &[(&Face, Arc<Vec<u8>>)]) -> Vec<u8> {
     let mut bytes = Vec::new();
     for (face, data) in subsets {
         bytes.extend_from_slice(&face.weight().css_value().to_le_bytes());
@@ -528,10 +528,10 @@ pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
     })
 }
 
-fn font_face_rules(name: &str, subsets: &[(&Face, Arc<[u8]>)]) -> Result<String, TextError> {
+fn font_face_rules(name: &str, subsets: &[(&Face, Arc<Vec<u8>>)]) -> Result<String, TextError> {
     let mut css = String::new();
     for (face, data) in subsets {
-        let encoded = base64::engine::general_purpose::STANDARD.encode(data);
+        let encoded = base64::engine::general_purpose::STANDARD.encode(data.as_slice());
         let format = if data.starts_with(b"OTTO") {
             "otf"
         } else {
