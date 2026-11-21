@@ -21,13 +21,13 @@
     "verify": "pnpm sample:check && pnpm comparison:check && pnpm size:check && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build && pnpm browser:check"
   },
   "dependencies": {
-    "ardo": "^6.6.0",
+    "ardo": "^6.9.0",
     "ferramenta-family": "3.0.0",
     "react-compare-slider": "^4.0.0"
   },
   "devDependencies": {
-    "axe-core": "4.14.0",
-    "eslint": "^10.11.0",
+    "axe-core": "4.14.1",
+    "eslint": "^10.15.0",
     "eslint-config-setup": "^0.6.0",
     "jiti": "^2.7.0",
     "oxfmt": "0.79.0",
