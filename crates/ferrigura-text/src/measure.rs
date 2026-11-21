@@ -3,11 +3,15 @@
 //! The width of a run is the sum of its shaped advances, so kerning and ligatures are included,
 //! as they are in the browser. Shaping a run never crosses the run's own boundaries.
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
 use harfrust::font::Font;
 use harfrust::{Buffer, ShapeOptions, ShaperFont, shape};
 
 use crate::error::TextError;
-use crate::fonts::{Face, FontFamily, FontStyle, FontWeight, face};
+use crate::fonts::{Face, FontData, FontFamily, FontStyle, FontWeight, face};
 
 /// One run of text set in one face, for [`measure_line`].
 #[derive(Debug, Clone, Copy)]
@@ -124,7 +128,9 @@ pub fn layout_width(advance: f64) -> f64 {
 pub fn measure(face: &Face, text: &str, size: f64) -> Result<f64, TextError> {
     let mut total = 0.0;
     for stretch in fallback_runs(Run { text, face }) {
-        total += advance(stretch.face.font()?, stretch.text, size)?;
+        let font = stretch.face.font()?;
+        let shaped = shape_face(stretch.face, stretch.text)?;
+        total += shaped.advance as f64 * size / f64::from(font.units_per_em());
     }
     Ok(total)
 }
@@ -184,6 +190,98 @@ pub(crate) struct ShapedRun {
     pub(crate) advance: i64,
 }
 
+const MAX_ENTRIES: usize = 1024;
+const MAX_BYTES: usize = 1024 * 1024;
+
+#[derive(Default)]
+struct ShapeCache {
+    faces: HashMap<(usize, usize), FaceCache>,
+    entries: usize,
+    bytes: usize,
+}
+
+struct FaceCache {
+    // Keep registered font bytes alive while their address is used as identity.
+    _data: FontData,
+    runs: HashMap<String, Rc<ShapedRun>>,
+}
+
+thread_local! {
+    static CACHE: RefCell<Option<ShapeCache>> = const { RefCell::new(None) };
+}
+
+/// Runs one render with a bounded cache of shaped runs. Nested scopes are independent.
+pub fn render_scope<T>(f: impl FnOnce() -> T) -> T {
+    struct Restore(Option<ShapeCache>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            CACHE.with(|cache| *cache.borrow_mut() = self.0.take());
+        }
+    }
+    let previous = CACHE.with(|cache| cache.replace(Some(ShapeCache::default())));
+    let _restore = Restore(previous);
+    f()
+}
+
+pub(crate) enum Shaped {
+    Owned(ShapedRun),
+    Shared(Rc<ShapedRun>),
+}
+
+impl std::ops::Deref for Shaped {
+    type Target = ShapedRun;
+    fn deref(&self) -> &ShapedRun {
+        match self {
+            Self::Owned(run) => run,
+            Self::Shared(run) => run,
+        }
+    }
+}
+
+pub(crate) fn shape_face(face: &Face, text: &str) -> Result<Shaped, TextError> {
+    let data = face.data();
+    let key = (data.as_ptr() as usize, data.len());
+    if let Some(hit) = CACHE.with(|cache| {
+        cache
+            .borrow()
+            .as_ref()?
+            .faces
+            .get(&key)?
+            .runs
+            .get(text)
+            .cloned()
+    }) {
+        return Ok(Shaped::Shared(hit));
+    }
+    let shaped = shape_run(face.font()?, text)?;
+    Ok(CACHE.with(|cache| {
+        if let Some(cache) = cache.borrow_mut().as_mut() {
+            let bytes = 256usize.saturating_add(text.len()).saturating_add(
+                shaped
+                    .glyphs
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<PlacedGlyph>()),
+            );
+            if cache.entries < MAX_ENTRIES && bytes <= MAX_BYTES.saturating_sub(cache.bytes) {
+                let shaped = Rc::new(shaped);
+                cache
+                    .faces
+                    .entry(key)
+                    .or_insert_with(|| FaceCache {
+                        _data: face.data.clone(),
+                        runs: HashMap::new(),
+                    })
+                    .runs
+                    .insert(text.to_owned(), Rc::clone(&shaped));
+                cache.entries += 1;
+                cache.bytes += bytes;
+                return Shaped::Shared(shaped);
+            }
+        }
+        Shaped::Owned(shaped)
+    }))
+}
+
 /// Shapes `text` with the font's default features, and reports where each glyph is drawn.
 pub(crate) fn shape_run(font: &Font, text: &str) -> Result<ShapedRun, TextError> {
     let shaper = ShaperFont::new(font);
@@ -209,6 +307,78 @@ pub(crate) fn shape_run(font: &Font, text: &str) -> Result<ShapedRun, TextError>
 #[cfg(test)]
 mod tests {
     use super::layout_width;
+
+    #[test]
+    fn scoped_shapes_reuse_and_restore_after_nested_panic() {
+        use super::{CACHE, render_scope, shape_face};
+        use crate::fonts::{FontFamily, FontStyle, FontWeight, face};
+        let face = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+        render_scope(|| {
+            let first = shape_face(face, "office →").unwrap();
+            let hit = shape_face(face, "office →").unwrap();
+            assert!(
+                matches!((&first, &hit), (super::Shaped::Shared(a), super::Shaped::Shared(b)) if std::rc::Rc::ptr_eq(a, b))
+            );
+            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                render_scope(|| {
+                    let inner = shape_face(face, "office →").unwrap();
+                    assert!(
+                        matches!((&first, &inner), (super::Shaped::Shared(a), super::Shaped::Shared(b)) if !std::rc::Rc::ptr_eq(a, b))
+                    );
+                    panic!("test unwind");
+                })
+            }));
+            let restored = shape_face(face, "office →").unwrap();
+            assert!(
+                matches!((&first, &restored), (super::Shaped::Shared(a), super::Shaped::Shared(b)) if std::rc::Rc::ptr_eq(a, b))
+            );
+        });
+        CACHE.with(|cache| assert!(cache.borrow().is_none()));
+    }
+
+    #[test]
+    fn scoped_results_match_direct_shapes_across_faces_and_threads() {
+        use super::{Run, fallback_runs, render_scope, shape_face, shape_run};
+        use crate::fonts::{FontFamily, FontStyle, FontWeight, face};
+        std::thread::scope(|scope| {
+            for _ in 0..2 {
+                scope.spawn(|| {
+                    render_scope(|| {
+                        for style in [FontStyle::Normal, FontStyle::Italic] {
+                            let face = face(FontFamily::Sans, FontWeight::Normal, style);
+                            for stretch in fallback_runs(Run {
+                                face,
+                                text: "office → ☀",
+                            }) {
+                                let expected =
+                                    shape_run(stretch.face.font().unwrap(), stretch.text).unwrap();
+                                assert_eq!(
+                                    *shape_face(stretch.face, stretch.text).unwrap(),
+                                    expected
+                                );
+                                assert_eq!(
+                                    *shape_face(stretch.face, stretch.text).unwrap(),
+                                    expected
+                                );
+                            }
+                        }
+                    })
+                });
+            }
+        });
+    }
+
+    #[test]
+    fn oversized_runs_are_not_cached() {
+        use super::{CACHE, render_scope, shape_face};
+        use crate::fonts::{FontFamily, FontStyle, FontWeight, face};
+        let face = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+        render_scope(|| {
+            let text = "a".repeat(70_000);
+            shape_face(face, &text).unwrap();
+            CACHE.with(|cache| assert_eq!(cache.borrow().as_ref().unwrap().entries, 0));
+        });
+    }
 
     #[test]
     fn a_width_is_rounded_up_to_the_layout_unit() {

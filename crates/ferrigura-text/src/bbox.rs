@@ -17,7 +17,7 @@ use read_fonts::{FontRef, TableProvider};
 
 use crate::error::TextError;
 use crate::fonts::Face;
-use crate::measure::{Run, fallback_runs, layout_width, shape_run};
+use crate::measure::{Run, fallback_runs, layout_width, shape_face};
 
 /// The horizontal extent of a line, relative to the start of its first run: the left edge and the
 /// right edge in pixels, as `getBBox` reports them (`x` and `x + width`).
@@ -78,7 +78,7 @@ pub fn measure_line_metrics(runs: &[Run<'_, '_>], size: f64) -> Result<(f64, Ext
         for stretch in fallback_runs(*run) {
             let font = stretch.face.font()?;
             let units_per_em = f64::from(font.units_per_em());
-            let shaped = shape_run(font, stretch.text)?;
+            let shaped = shape_face(stretch.face, stretch.text)?;
             if !shaped.glyphs.is_empty() {
                 let outlines = Outlines::of(stretch.face)?;
                 for placed in &shaped.glyphs {
