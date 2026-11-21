@@ -136,8 +136,86 @@ impl Fx {
         Fx(out)
     }
 
-    /// The quotient, truncated towards zero in the last place (restoring division, bit by bit).
+    /// The quotient, truncated towards zero in the last place.
     fn div(self, other: Fx) -> Fx {
+        let negative = self.is_neg() != other.is_neg();
+        let a = self.abs().0;
+        let d = other.abs().0;
+        let n = d.iter().rposition(|&x| x != 0).expect("division by zero") + 1;
+        let mut numerator = [0u64; 11];
+        numerator[4..10].copy_from_slice(&a);
+        let mut quotient = [0u64; 10];
+        if n == 1 {
+            let mut rem = 0u128;
+            for i in (0..10).rev() {
+                let value = (rem << 64) | u128::from(numerator[i]);
+                quotient[i] = (value / u128::from(d[0])) as u64;
+                rem = value % u128::from(d[0]);
+            }
+        } else {
+            // Knuth's Algorithm D normalizes the leading divisor limb's high bit.
+            // The extra numerator limb holds the carry, including when the shift is zero.
+            let shift = d[n - 1].leading_zeros();
+            let mut divisor = [0u64; 6];
+            if shift == 0 {
+                divisor[..n].copy_from_slice(&d[..n]);
+            } else {
+                let mut carry = 0;
+                for i in 0..n {
+                    divisor[i] = (d[i] << shift) | carry;
+                    carry = d[i] >> (64 - shift);
+                }
+                carry = 0;
+                for limb in &mut numerator[..10] {
+                    let next = *limb >> (64 - shift);
+                    *limb = (*limb << shift) | carry;
+                    carry = next;
+                }
+                numerator[10] = carry;
+            }
+            let base = 1u128 << 64;
+            let top = u128::from(divisor[n - 1]);
+            for j in (0..=10 - n).rev() {
+                let value = (u128::from(numerator[j + n]) << 64) | u128::from(numerator[j + n - 1]);
+                let mut q = (value / top).min(base - 1);
+                let mut r = value - q * top;
+                while r < base
+                    && q * u128::from(divisor[n - 2]) > (r << 64) + u128::from(numerator[j + n - 2])
+                {
+                    q -= 1;
+                    r += top;
+                }
+                let mut borrow = 0u128;
+                for i in 0..n {
+                    let product = q * u128::from(divisor[i]) + borrow;
+                    let (difference, underflow) = numerator[j + i].overflowing_sub(product as u64);
+                    numerator[j + i] = difference;
+                    borrow = (product >> 64) + u128::from(underflow);
+                }
+                let (high, underflow) = numerator[j + n].overflowing_sub(borrow as u64);
+                numerator[j + n] = high;
+                if underflow {
+                    q -= 1;
+                    let mut carry = 0u128;
+                    for i in 0..n {
+                        let sum = u128::from(numerator[j + i]) + u128::from(divisor[i]) + carry;
+                        numerator[j + i] = sum as u64;
+                        carry = sum >> 64;
+                    }
+                    numerator[j + n] = numerator[j + n].wrapping_add(carry as u64);
+                }
+                quotient[j] = q as u64;
+            }
+        }
+        let mut out = [0u64; 6];
+        out.copy_from_slice(&quotient[..6]);
+        let result = Fx(out);
+        if negative { result.neg() } else { result }
+    }
+
+    /// The quotient, truncated towards zero in the last place (restoring division, bit by bit).
+    #[cfg(test)]
+    fn div_restoring(self, other: Fx) -> Fx {
         let negative = self.is_neg() != other.is_neg();
         let a = self.abs().0;
         let d = other.abs().0;
@@ -269,6 +347,7 @@ fn shr_limbs(value: u64, shift: usize) -> [u64; 6] {
     out
 }
 
+#[cfg(test)]
 fn ge(a: &[u64], b: &[u64]) -> bool {
     for i in (0..a.len()).rev() {
         if a[i] != b[i] {
@@ -278,6 +357,7 @@ fn ge(a: &[u64], b: &[u64]) -> bool {
     true
 }
 
+#[cfg(test)]
 fn sub_in_place(a: &mut [u64], b: &[u64]) {
     let mut borrow = 0u64;
     for i in 0..a.len() {
@@ -653,6 +733,104 @@ fn ln_fx(x: f64) -> Fx {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn division_matches_restoring() {
+        let mut state = 0x921f_b544_42d1_8469u64;
+        let mut random = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        // The dividend shifted by 256 is one below the divisor: the trial
+        // quotient digit is one, so subtraction must add the divisor back.
+        for low in [0, 1, 2] {
+            let a = Fx([1, 0, 0, 0, 0, 0]);
+            let d = Fx([low, 0, 0, 0, 1, 0]);
+            assert_eq!(a.div(d), a.div_restoring(d), "low limb {low}");
+        }
+        for case in 0..30_000 {
+            let mut a = [0; 6];
+            let mut d = [0; 6];
+            for limb in &mut a {
+                *limb = random();
+            }
+            let len = case % 6 + 1;
+            for limb in &mut d[..len] {
+                *limb = random();
+            }
+            // Cover normalization shifts, powers of two, near-equal limbs, and
+            // quotient estimates near the base as well as general random limbs.
+            match case % 8 {
+                0 => d[len - 1] = 1,
+                1 => d[len - 1] = u64::MAX,
+                2 => d[len - 1] = 1 << 63,
+                3 => {
+                    d[..len].fill(u64::MAX);
+                }
+                4 => {
+                    d[..len].fill(0);
+                    d[len - 1] = 1;
+                }
+                5 => {
+                    a = d;
+                }
+                _ => {}
+            }
+            if d == [0; 6] {
+                d[0] = 1;
+            }
+            let a = Fx(a);
+            let d = Fx(d);
+            assert_eq!(a.div(d), a.div_restoring(d), "case {case}: {a:?} / {d:?}");
+        }
+    }
+
+    // Generated independently with 400-digit decimal arithmetic and an atan series.
+    #[test]
+    fn acos_endpoint_vectors() {
+        for (input, expected) in [
+            (0x0000000000000000, 0x3ff921fb54442d18),
+            (0x8000000000000000, 0x3ff921fb54442d18),
+            (0x0000000000000001, 0x3ff921fb54442d18),
+            (0x8000000000000001, 0x3ff921fb54442d18),
+            (0x0000000000000002, 0x3ff921fb54442d18),
+            (0x8000000000000002, 0x3ff921fb54442d18),
+            (0x000fffffffffffff, 0x3ff921fb54442d18),
+            (0x800fffffffffffff, 0x3ff921fb54442d18),
+            (0x0010000000000000, 0x3ff921fb54442d18),
+            (0x8010000000000000, 0x3ff921fb54442d18),
+            (0x3c90000000000000, 0x3ff921fb54442d18),
+            (0xbc90000000000000, 0x3ff921fb54442d19),
+            (0x3fdfffffffffffff, 0x3ff0c152382d7366),
+            (0xbfdfffffffffffff, 0x4000c152382d7365),
+            (0x3fe0000000000000, 0x3ff0c152382d7366),
+            (0xbfe0000000000000, 0x4000c152382d7366),
+            (0x3fe0000000000001, 0x3ff0c152382d7365),
+            (0xbfe0000000000001, 0x4000c152382d7366),
+            (0x3fe6a09e667f3bcc, 0x3fe921fb54442d19),
+            (0xbfe6a09e667f3bcc, 0x4002d97c7f3321d2),
+            (0x3fe6a09e667f3bcd, 0x3fe921fb54442d18),
+            (0xbfe6a09e667f3bcd, 0x4002d97c7f3321d2),
+            (0x3fe6a09e667f3bce, 0x3fe921fb54442d16),
+            (0xbfe6a09e667f3bce, 0x4002d97c7f3321d3),
+            (0x3feffffffffffffd, 0x3e5bb67ae8584cab),
+            (0xbfeffffffffffffd, 0x400921fb50cd5dbb),
+            (0x3feffffffffffffe, 0x3e56a09e667f3bcd),
+            (0xbfeffffffffffffe, 0x400921fb5170194b),
+            (0x3fefffffffffffff, 0x3e50000000000000),
+            (0xbfefffffffffffff, 0x400921fb52442d18),
+            (0x3ff0000000000000, 0x0000000000000000),
+            (0xbff0000000000000, 0x400921fb54442d18),
+        ] {
+            assert_eq!(
+                acos(f64::from_bits(input)).to_bits(),
+                expected,
+                "input {input:016x}"
+            );
+        }
+    }
 
     #[test]
     fn fixed_point_round_trip() {
