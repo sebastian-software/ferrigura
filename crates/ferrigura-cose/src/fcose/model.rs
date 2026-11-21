@@ -379,8 +379,8 @@ impl Model {
         let mut right = -INTEGER_MAX;
         let mut top = INTEGER_MAX;
         let mut bottom = -INTEGER_MAX;
-        let nodes = self.graphs[graph].nodes.clone();
-        for &n in &nodes {
+        for i in 0..self.graphs[graph].nodes.len() {
+            let n = self.graphs[graph].nodes[i];
             if recursive && self.nodes[n].child.is_some() {
                 self.update_node_bounds(n);
             }
@@ -441,7 +441,7 @@ impl Model {
             .filter(|&c| !self.graphs[c].nodes.is_empty())
         {
             self.update_graph_bounds(child, true);
-            let g = self.graphs[child].clone();
+            let g = &self.graphs[child];
             let rect = &mut self.nodes[node].rect;
             rect.x = g.left;
             rect.y = g.top;
