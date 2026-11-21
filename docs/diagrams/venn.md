@@ -75,7 +75,6 @@ Errors carry positions against the original input, including the front matter; t
 
 - `look: handDrawn` is not drawn; the fixtures that use it are excluded from the geometry run (`EXCLUDED_LOOK`).
 - On a target without fused multiply-adds (x86-64), the layout is exact only up to the last bits of `atan2`: the simplex then takes slightly different steps, and the captured cases agree within 0.1 (the largest difference measured is 0.042). The snapshots are taken on aarch64 ([0012](../decisions/0012-layout-engines-ported-exactly.md)).
-- The license of `fmin`, which venn.js bundles, is unverified: venn.js's `LICENSE` lists only its own copyright (`NOTICE.md`).
 - No `pending` or `unsupported` exceptions exist for this type (`tools/port/exceptions.ts`).
 
 ## Checking it

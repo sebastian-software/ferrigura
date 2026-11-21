@@ -6,8 +6,8 @@ readme = "README.md"
 include = ["/src/**", "/Cargo.toml", "/README.md", "/LICENSE*", "/NOTICE.md"]
 edition.workspace = true
 rust-version.workspace = true
-# MIT for the crate, as the sources are (NOTICE.md).
-license = "MIT"
+# venn.js is MIT; its inlined fmin functions are BSD-3-Clause (NOTICE.md).
+license = "MIT AND BSD-3-Clause"
 repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/ferrigura-venn"
