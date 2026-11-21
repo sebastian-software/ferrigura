@@ -40,9 +40,9 @@ const TWO_POW_52: f64 = 4_503_599_627_370_496.0;
 /// - Otherwise the sign is `-` when `x < 0`, so `-0` gives `"0.0"` but `-0.04` gives `"-0.0"`, and the number
 ///   is `n / 10^digits` for the integer `n` nearest to `|x|`. A tie goes to the larger `n`, so the rounding is
 ///   half up in magnitude: `(0.25).toFixed(1)` is `"0.3"` and `(-2.5).toFixed(0)` is `"-3"`. The decision uses
-///   the exact binary value: `format!("{:.1100}")` writes the exact expansion of the double, and the first digit
-///   after the last one kept decides (5 or more rounds up). The rounding of `format!` itself (ties to even) is
-///   not used for the decision.
+///   the exact binary value: small precisions use integer arithmetic on the binary significand, while the
+///   fallback uses the exact decimal expansion and its first discarded digit. Neither path relies on
+///   floating-point rounding to make the decision.
 ///
 /// # Panics
 ///
@@ -63,6 +63,40 @@ pub fn to_fixed(x: f64, digits: u32) -> String {
     let magnitude = x.abs();
     if magnitude >= 1e21 {
         return format!("{sign}{}", exponent_form(magnitude));
+    }
+
+    // For the routing precisions, round the exact binary value as an integer. The
+    // significand times 1000 fits in 63 bits, and values below 1e21 need at
+    // most 80 bits after shifting. No floating-point multiplication is involved.
+    if digits <= 3 {
+        let bits = magnitude.to_bits();
+        let exponent = ((bits >> 52) & 0x7ff) as i32;
+        let fraction = bits & ((1_u64 << 52) - 1);
+        let significand = if exponent == 0 {
+            fraction
+        } else {
+            fraction | (1_u64 << 52)
+        };
+        let shift = exponent.max(1) - 1023 - 52;
+        let scale = 10_u128.pow(digits);
+        let scaled = u128::from(significand) * scale;
+        let rounded = if shift >= 0 {
+            scaled << shift
+        } else if shift <= -128 {
+            0
+        } else {
+            // The highest discarded bit decides rounding, including exact ties.
+            (scaled >> -shift) + ((scaled >> (-shift - 1)) & 1)
+        };
+        let integer = rounded / scale;
+        if digits == 0 {
+            return format!("{sign}{integer}");
+        }
+        return format!(
+            "{sign}{integer}.{:0width$}",
+            rounded % scale,
+            width = digits as usize
+        );
     }
 
     let digits = digits as usize;
@@ -997,6 +1031,49 @@ mod tests {
 
     fn fixed(x: f64, digits: u32) -> String {
         to_fixed(x, digits)
+    }
+
+    #[test]
+    fn small_precisions_match_exact_decimal_rounding() {
+        // Compare the fast path to the original exact decimal expansion across
+        // exponents, signs, subnormals and neighbors of rounding boundaries.
+        let mut values = vec![0.0, -0.0, f64::from_bits(1), 1e21_f64.next_down()];
+        for x in [0.0005_f64, 0.005, 0.05, 0.5, 1.005, 999.9995] {
+            values.extend([x.next_down(), x, x.next_up(), -x]);
+        }
+        let mut bits = 0x1234_5678_9abc_def0_u64;
+        for _ in 0..5000 {
+            bits = bits.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let x = f64::from_bits(bits);
+            if x.is_finite() && x.abs() < 1e21 {
+                values.push(x);
+            }
+        }
+        for x in values {
+            for digits in 0..=3_usize {
+                let exact = format!("{:.*}", EXACT_DIGITS, x.abs());
+                let (integer, fraction) = exact.split_once('.').unwrap();
+                let mut kept: Vec<u8> = integer
+                    .bytes()
+                    .chain(fraction.bytes().take(digits))
+                    .collect();
+                if fraction.as_bytes()[digits] >= b'5' {
+                    increment_decimal(&mut kept);
+                }
+                let split = kept.len() - digits;
+                let sign = if x < 0.0 { "-" } else { "" };
+                let expected = if digits == 0 {
+                    format!("{sign}{}", ascii(&kept))
+                } else {
+                    format!("{sign}{}.{}", ascii(&kept[..split]), ascii(&kept[split..]))
+                };
+                assert_eq!(
+                    to_fixed(x, digits as u32),
+                    expected,
+                    "{x:e}, {digits} digits"
+                );
+            }
+        }
     }
 
     #[test]
