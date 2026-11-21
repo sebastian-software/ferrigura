@@ -14,7 +14,7 @@ pub mod text;
 
 use ferrigura_model::config::RailroadDiagramConfig;
 use ferrigura_model::railroad::RailroadDiagram;
-use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
@@ -54,6 +54,12 @@ pub struct RailroadSection<'a> {
 pub fn render(
     input: &Context<'_, RailroadDiagram, RailroadSection<'_>>,
 ) -> Result<String, RenderError> {
+    let regular = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
+    let bold = input
+        .text_fonts()
+        .face(FontWeight::Bold, FontStyle::Normal)?;
     let id = input.id;
     let tokens = input.theme.light;
     let options = Options::new(input.section.config, input.theme);
@@ -61,7 +67,7 @@ pub fn render(
     let drawing = if input.diagram.rules.is_empty() {
         None
     } else {
-        let mut measure = TextMeasure::new(options.font_size);
+        let mut measure = TextMeasure::with_face(options.font_size, regular.clone());
         Some(layout::draw_rules(
             &input.diagram.rules,
             &options.spacing,
@@ -82,34 +88,33 @@ pub fn render(
     if !text.regular.is_empty() {
         runs.push(Run {
             text: &text.regular,
-            face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+            face: &regular,
         });
     }
     if !text.bold.is_empty() {
         runs.push(Run {
             text: &text.bold,
-            face: face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal),
+            face: &bold,
         });
     }
     let families: Vec<EmbeddedFamily> = embed_runs(&runs)?;
-    let family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let family = regular.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let theme_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
-    let style = base_style_sheet(
-        id,
-        input.theme,
-        &family,
-        &theme_size,
-        &families,
-        &style::own_rules(id, &options, &family),
-    );
+    let mut own = style::own_rules(id, &options, &family);
+    if let Some(css) = bold.css_reference() {
+        own.push_str(&format!("#{id} .railroad-rule-name{{font-family:{css};}}"));
+    }
+    let style = base_style_sheet(id, input.theme, &family, &theme_size, &families, &own);
 
     // `draw` (`railroadRenderer.ts` 638-666): the class, then the size, then the viewBox, on the root
     // that `mermaidAPI` made with its id, width and namespace.

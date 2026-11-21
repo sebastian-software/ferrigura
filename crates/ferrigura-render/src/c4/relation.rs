@@ -5,7 +5,7 @@
 use ferrigura_model::c4::C4Relation;
 
 use super::config::Conf;
-use super::draw::{DEFAULT_STROKE, Draw, FAMILY, Place, style_of, text_error};
+use super::draw::{DEFAULT_STROKE, Draw, Place, style_of, text_error};
 use super::legacy::{self, Face, Legacy, Paint};
 use super::shape::plain;
 use crate::RenderError;
@@ -83,6 +83,7 @@ impl Draw<'_> {
         let conf = self.conf;
         let dynamic = model.c4_type == "C4Dynamic";
         let message = style_of(
+            &conf.fonts,
             &conf.message,
             conf.message.size,
             conf.message.weight_number(),
@@ -128,7 +129,7 @@ impl Draw<'_> {
 
         let mut out = String::from("<g>");
         for (index, (rel, measured)) in model.rels.iter().zip(measured).enumerate() {
-            out.push_str(&self.relation(index == 0, rel, measured));
+            out.push_str(&self.relation(index == 0, rel, measured)?);
         }
         out.push_str("</g>");
         Ok(out)
@@ -136,7 +137,12 @@ impl Draw<'_> {
 
     /// One relation's line or curve, its label and its techn. The first relation is a `line`, the
     /// others a `path` (`svgDraw.ts:39-86`).
-    fn relation(&mut self, first: bool, rel: &C4Relation, measured: Measured) -> String {
+    fn relation(
+        &mut self,
+        first: bool,
+        rel: &C4Relation,
+        measured: Measured,
+    ) -> Result<String, RenderError> {
         let conf: &Conf = self.conf;
         let id = escape(self.id);
         let text_colour = non_empty(rel.text_color.as_deref()).unwrap_or(DEFAULT_STROKE);
@@ -182,13 +188,13 @@ impl Draw<'_> {
         // The labels sit at the middle of the two ends, offset by the relation's offsets.
         let mid_x = start.x.min(end.x) + (end.x - start.x).abs() / 2.0 + offset_x;
         let mid_y = start.y.min(end.y) + (end.y - start.y).abs() / 2.0 + offset_y;
+        let label_width = measured.label.width;
+        let family = self.record_legacy(&measured.label.text, &conf.message, false, false)?;
         let face = Face {
             size: conf.message.size,
-            weight: conf.message.weight.as_str(),
-            family: FAMILY,
+            weight: &conf.message.weight,
+            family: &family,
         };
-        let label_width = measured.label.width;
-        self.record_legacy(&measured.label.text, false, false);
         out.push_str(&legacy::by_tspan(
             &measured.label.text,
             mid_x,
@@ -202,7 +208,12 @@ impl Draw<'_> {
         ));
         if let Some(techn) = &measured.techn {
             let text = format!("[{}]", techn.text);
-            self.record_legacy(&text, false, true);
+            let italic_family = self.record_legacy(&text, &conf.message, false, true)?;
+            let face = Face {
+                size: conf.message.size,
+                weight: &conf.message.weight,
+                family: &italic_family,
+            };
             let y = start.y.min(end.y)
                 + (end.y - start.y).abs() / 2.0
                 + conf.message.size
@@ -220,7 +231,7 @@ impl Draw<'_> {
                 },
             ));
         }
-        out
+        Ok(out)
     }
 }
 

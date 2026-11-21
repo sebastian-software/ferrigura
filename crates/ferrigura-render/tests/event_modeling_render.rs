@@ -31,6 +31,7 @@ fn draw(text: &str) -> String {
     let tokens = ThemeTokens::from_value(&variables);
     let globals = Globals::of(&config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.eventmodeling,
         globals: &globals,

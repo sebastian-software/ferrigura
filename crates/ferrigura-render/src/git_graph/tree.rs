@@ -120,6 +120,7 @@ pub struct Element {
     bounds: Bounds,
     content: Option<String>,
     children: Vec<Element>,
+    replacement: Option<String>,
 }
 
 impl Element {
@@ -133,6 +134,7 @@ impl Element {
             bounds: Bounds::Children,
             content: None,
             children: Vec::new(),
+            replacement: None,
         }
     }
 
@@ -146,6 +148,7 @@ impl Element {
             bounds: Bounds::None,
             content: None,
             children: Vec::new(),
+            replacement: None,
         }
     }
 
@@ -272,6 +275,7 @@ impl Element {
             bounds: Bounds::Own(bounds),
             content: None,
             children: Vec::new(),
+            replacement: None,
         }
     }
 
@@ -331,6 +335,10 @@ impl Element {
 
     /// Writes the element as markup, with its children.
     pub fn write(&self, out: &mut String) {
+        if let Some(markup) = &self.replacement {
+            out.push_str(markup);
+            return;
+        }
         out.push('<');
         out.push_str(self.tag);
         for (name, value) in &self.attributes {
@@ -348,6 +356,38 @@ impl Element {
             child.write(out);
         }
         out.push_str(&format!("</{}>", self.tag));
+    }
+
+    pub(super) fn get(&self, name: &str) -> Option<&str> {
+        self.attributes
+            .iter()
+            .find(|(key, _)| *key == name)
+            .map(|(_, value)| value.as_str())
+    }
+
+    pub(super) fn markup(&self) -> String {
+        let mut markup = String::new();
+        self.write(&mut markup);
+        markup
+    }
+
+    // Keep the measured tree for bounds and fonts; only serialization changes.
+    pub(super) fn set_markup(&mut self, markup: String) {
+        self.replacement = Some(markup);
+    }
+
+    pub(super) fn visit(&self, visit: &mut dyn FnMut(&Self)) {
+        visit(self);
+        for child in &self.children {
+            child.visit(visit);
+        }
+    }
+
+    pub(super) fn visit_mut(&mut self, visit: &mut dyn FnMut(&mut Self)) {
+        visit(self);
+        for child in &mut self.children {
+            child.visit_mut(visit);
+        }
     }
 }
 

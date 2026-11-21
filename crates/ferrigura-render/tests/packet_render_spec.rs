@@ -39,6 +39,7 @@ fn draw_configured(text: &str, site: Option<&Value>, variables: &Value) -> Strin
         bits_per_row: ferrigura_syntax::packet::bits_per_row(&configured),
     };
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &section,
         globals: &globals,

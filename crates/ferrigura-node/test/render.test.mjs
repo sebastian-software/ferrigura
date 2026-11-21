@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -25,14 +26,10 @@ const PIE = 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85\n';
 void test('flowchart routing is adaptive by default and compatibility is per render', () => {
   const text = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
   const renderer = new Renderer();
-  const compatible = renderer.render(text, { flowchartMode: 'mermaid' });
-  assert.equal(renderer.render(text), render(text, {}, { flowchartMode: 'adaptive' }));
+  const compatible = renderer.render(text, { compat: true });
+  assert.equal(renderer.render(text), render(text, {}, { compat: false }));
   assert.notEqual(renderer.render(text), compatible);
-  assert.equal(renderer.render(text, { flowchartMode: 'mermaid' }), compatible);
-  assert.throws(
-    () => renderer.render(text, { flowchartMode: 'typo' }),
-    /expected adaptive or mermaid/
-  );
+  assert.equal(renderer.render(text, { compat: true }), compatible);
 });
 
 void test('renders a pie to an SVG document with a derived id', () => {
@@ -102,4 +99,101 @@ void test('a renderer refuses a colour scheme that is not known, and text that i
   const renderer = new Renderer();
   assert.throws(() => renderer.render(PIE, { colorScheme: 'blue' }), /unknown colour scheme blue/);
   assert.throws(() => renderer.render('not a diagram\n'), /no diagram type detected/);
+});
+
+void test('compat selects Mermaid geometry for flowcharts and sequence participants', () => {
+  const renderer = new Renderer();
+  const sequence = 'sequenceDiagram\n participant App\n participant API\n App->>API: Request\n';
+  const compact = renderer.render(sequence);
+  const compatible = renderer.render(sequence, { compat: true });
+  assert.match(compact, /height="32" name="App"/);
+  assert.match(compatible, /height="76" name="App"/);
+  assert.equal(renderer.render(sequence, { compat: false }), compact);
+  assert.equal(renderer.render(sequence, { compat: true }), compatible);
+  const flow = 'flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n';
+  assert.notEqual(renderer.render(flow), renderer.render(flow, { compat: true }));
+});
+
+const FONT_DATA = readFileSync(
+  join(root, 'crates/ferrigura-text/fonts/AtkinsonHyperlegibleMono-Regular.ttf')
+);
+const FONT_TEXT = 'flowchart LR\n A[Wide WWW narrow iii]\n';
+void test('host byte arrays register owned faces and default to weight 400 normal', () => {
+  const bytes = new Uint8Array(FONT_DATA);
+  const fonts = { fonts: [{ family: 'Project Mono', data: bytes }] };
+  const renderer = new Renderer(undefined, fonts);
+  const custom = renderer.render(FONT_TEXT, { id: 'fonts' });
+  assert.notEqual(custom, render(FONT_TEXT, undefined, { id: 'fonts' }));
+  assert.notEqual(
+    custom.match(/viewBox="([^"]+)"/)[1],
+    render(FONT_TEXT, undefined, { id: 'fonts' }).match(/viewBox="([^"]+)"/)[1]
+  );
+  assert.notEqual(
+    custom.match(/data:font\/[^;]+;base64,([^"')]+)/)[1],
+    render(FONT_TEXT, undefined, { id: 'fonts' }).match(/data:font\/[^;]+;base64,([^"')]+)/)[1]
+  );
+  assert.match(custom, /data:font\//);
+  assert.equal(custom, render(FONT_TEXT, undefined, { id: 'fonts' }, fonts));
+  assert.equal(
+    custom,
+    render(
+      FONT_TEXT,
+      undefined,
+      { id: 'fonts' },
+      { fonts: [{ family: 'Project Mono', data: FONT_DATA, weight: 400, style: 'normal' }] }
+    )
+  );
+  bytes.fill(0);
+  assert.equal(custom, renderer.render(FONT_TEXT, { id: 'fonts' }));
+  assert.match(
+    new Renderer(undefined, {
+      fonts: [{ family: 'Numeric Weight', data: FONT_DATA, weight: 600, style: 'italic' }],
+    }).render(FONT_TEXT),
+    /data:font\//
+  );
+});
+void test('font registration errors are eager and numeric metadata stays bounded', () => {
+  assert.throws(
+    () => new Renderer(undefined, { fonts: [{ family: 'Broken', data: Buffer.from('invalid') }] }),
+    /font/i
+  );
+  for (const weight of [1, 600, 1000]) {
+    assert.doesNotThrow(
+      () => new Renderer(undefined, { fonts: [{ family: 'Weight', data: FONT_DATA, weight }] })
+    );
+  }
+  for (const weight of [0, 1001, 2.5, NaN, Infinity]) {
+    assert.throws(
+      () => new Renderer(undefined, { fonts: [{ family: 'Weight', data: FONT_DATA, weight }] }),
+      /font weight/
+    );
+  }
+  assert.throws(
+    () =>
+      render(FONT_TEXT, undefined, undefined, {
+        fonts: [{ family: 'Style', data: FONT_DATA, style: 'oblique' }],
+      }),
+    /font style/
+  );
+});
+
+void test('empty host font options preserve bundled defaults', () => {
+  const text = 'pie\n"Defaults" : 1\n';
+  const baseline = render(text);
+  for (const fonts of [{}, { fonts: [] }, { fallbacks: [] }, { fonts: [], fallbacks: [] }]) {
+    assert.equal(render(text, undefined, undefined, fonts), baseline);
+    assert.equal(new Renderer(undefined, fonts).render(text), baseline);
+  }
+});
+
+void test('fixed Gantt clock agrees with the CLI', () => {
+  const text = 'gantt\n dateFormat HH:mm\n section Work\n Task :a, 00:00, 30d\n';
+  const now = 1705276800000;
+  execFileSync('cargo', ['build', '-q', '-p', 'ferrigura-cli'], { cwd: root, stdio: 'inherit' });
+  const cli = execFileSync(join(root, 'target/debug/ferrigura'), ['--now', String(now)], {
+    input: text,
+    encoding: 'utf8',
+  });
+  assert.equal(cli, `${render(text, {}, { now })}\n`);
+  assert.equal(new Renderer().render(text, { now }), render(text, {}, { now }));
 });

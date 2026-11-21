@@ -19,13 +19,16 @@ pub mod diagrams;
 
 use diagrams::Plugin;
 
+pub use ferrigura_text::{FontRegistry, FontStyle, FontWeight};
+
+pub use ferrigura_render::animation::{Animation, AnimationOrder};
 /// The diagram types, as the detector names them: what a [`diagrams::Plugin`] draws.
 pub use ferrigura_syntax::DiagramType;
 
 /// The configuration and the values of Mermaid's `initialize` object, front matter and directives.
 pub use ferrigura_model::value::Value;
 pub use ferrigura_render::RenderError as Error;
-pub use ferrigura_render::flowchart::policy::FlowchartMode;
+use ferrigura_render::flowchart::policy::FlowchartRouting;
 
 /// The color scheme of the output.
 ///
@@ -46,10 +49,15 @@ pub enum ColorScheme {
 /// The options of a render that are not Mermaid configuration.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RenderOptions {
-    /// The flowchart's rendering mode. `Adaptive` centers ports with label-aware spacing and draws
-    /// edge-label backgrounds at full opacity. `Mermaid` preserves the pinned reference's output.
-    /// Other diagram types ignore it.
-    pub flowchart_mode: FlowchartMode,
+    /// Use Mermaid-compatible geometry instead of Ferrigura's optimizations. Defaults to false:
+    /// flowchart ports are centered with label-aware spacing and sequence participant boxes fit
+    /// their labels. Font, color and readability fixes apply in both modes.
+    pub compat: bool,
+    /// Optional one-time SVG draw animation for flowcharts, Gantt, Git graphs, mind maps,
+    /// pie charts, and XY charts. `None` leaves the SVG unchanged.
+    /// The default draws one line at a time, averaging 700 SVG units per second times its speed,
+    /// with independent easing for each section. Other diagram types return an option error.
+    pub animation: Option<Animation>,
     /// The id of the SVG element, which scopes its styles. It must start with an ASCII letter and
     /// contain only ASCII letters, digits, `-` and `_`. By default the id is derived from the text
     /// and the configuration, so the same input gives the same id.
@@ -115,6 +123,8 @@ pub struct Renderer {
     views: Mutex<HashMap<DiagramType, Result<Arc<View>, String>>>,
     /// The diagram types this renderer draws, one plugin per kind.
     plugins: Vec<Plugin>,
+    /// Explicit host fonts; `None` preserves the bundled defaults.
+    fonts: Option<Arc<FontRegistry>>,
 }
 
 impl Renderer {
@@ -135,6 +145,7 @@ impl Renderer {
         RendererBuilder {
             config: config.clone(),
             plugins: Vec::new(),
+            fonts: None,
         }
     }
 
@@ -167,6 +178,7 @@ impl Renderer {
     ///
     /// Returns the errors of [`render_with`].
     pub fn render_with(&self, text: &str, options: &RenderOptions) -> Result<String, RenderError> {
+        let (max_text, max_edges) = self.limits(text)?;
         let Some(kind) = detect(text) else {
             return Err(RenderError::Parse(ParseError {
                 line: 1,
@@ -175,8 +187,51 @@ impl Renderer {
             }));
         };
         let plugin = self.plugin(kind)?;
-        let prepared = self.prepare(text, options, plugin)?;
+        if options.animation.is_some()
+            && !matches!(
+                kind,
+                DiagramType::Flowchart
+                    | DiagramType::Gantt
+                    | DiagramType::GitGraph
+                    | DiagramType::Mindmap
+                    | DiagramType::Pie
+                    | DiagramType::XyChart
+            )
+        {
+            return Err(RenderError::Options(
+                "draw animation is not supported for this diagram type".to_owned(),
+            ));
+        }
+        let prepared = self.prepare(text, options, plugin, max_text, max_edges)?;
         plugin.render(text, &prepared, options)
+    }
+
+    fn limits(&self, text: &str) -> Result<(usize, usize), RenderError> {
+        let read = |key: &str, default: usize| -> Result<usize, RenderError> {
+            match self.site.settings().get(key) {
+                None => Ok(default),
+                Some(Value::Number(n))
+                    if n.is_finite()
+                        && *n >= 0.0
+                        && n.fract() == 0.0
+                        && *n <= 9_007_199_254_740_991.0
+                        && *n <= usize::MAX as f64 =>
+                {
+                    Ok(*n as usize)
+                }
+                Some(_) => Err(RenderError::Config(format!(
+                    "{key} must be a non-negative safe integer"
+                ))),
+            }
+        };
+        let max_text = read("maxTextSize", 50_000)?;
+        let max_edges = read("maxEdges", 500)?;
+        if text.encode_utf16().take(max_text.saturating_add(1)).count() > max_text {
+            return Err(RenderError::Options(format!(
+                "diagram text exceeds maxTextSize of {max_text} UTF-16 code units"
+            )));
+        }
+        Ok((max_text, max_edges))
     }
 
     /// What a render needs besides its diagram, as `mermaidAPI` resolves it before it calls the
@@ -191,6 +246,8 @@ impl Renderer {
         text: &str,
         options: &RenderOptions,
         plugin: Plugin,
+        max_text: usize,
+        max_edges: usize,
     ) -> Result<Prepared<'_>, RenderError> {
         let id = match &options.id {
             Some(id) if valid_id(id) => id.clone(),
@@ -202,13 +259,17 @@ impl Renderer {
         if is_empty_object(&directive) {
             return Ok(Prepared {
                 id,
+                max_text,
+                max_edges,
                 view: self.view(plugin)?,
                 light_tokens: Cow::Borrowed(&self.light_tokens),
                 dark_tokens: Cow::Borrowed(&self.dark_tokens),
                 scheme,
+                fonts: self.fonts.as_ref(),
             });
         }
-        let view = View::resolve(&self.site, plugin, &directive).map_err(RenderError::Config)?;
+        let view = View::resolve(&self.site, plugin, &directive, self.fonts.is_some())
+            .map_err(RenderError::Config)?;
         let overrides = self.site.user_theme_variables(&directive);
         let (light_tokens, dark_tokens) = if overrides == self.overrides {
             (
@@ -231,10 +292,13 @@ impl Renderer {
         };
         Ok(Prepared {
             id,
+            max_text,
+            max_edges,
             view: Arc::new(view),
             light_tokens,
             dark_tokens,
             scheme,
+            fonts: self.fonts.as_ref(),
         })
     }
 
@@ -245,8 +309,13 @@ impl Renderer {
         let resolved = match known {
             Some(resolved) => resolved,
             None => {
-                let resolved =
-                    View::resolve(&self.site, plugin, &Value::empty_object()).map(Arc::new);
+                let resolved = View::resolve(
+                    &self.site,
+                    plugin,
+                    &Value::empty_object(),
+                    self.fonts.is_some(),
+                )
+                .map(Arc::new);
                 lock(&self.views).entry(kind).or_insert(resolved).clone()
             }
         };
@@ -276,6 +345,8 @@ pub struct RendererBuilder {
     config: Value,
     /// The plugins registered so far, one per kind.
     plugins: Vec<Plugin>,
+    /// Fonts registered by the host.
+    fonts: Option<FontRegistry>,
 }
 
 impl RendererBuilder {
@@ -293,6 +364,115 @@ impl RendererBuilder {
         diagrams::all().into_iter().fold(self, Self::with)
     }
 
+    /// Registers a regular upright face from owned local TTF or OTF bytes.
+    ///
+    /// The first registered family becomes the site font family when the configuration does not
+    /// explicitly set `fontFamily`. Diagram configuration still chooses names only.
+    ///
+    /// # Errors
+    /// Returns a typed text error when the font or its metadata is invalid.
+    pub fn font(self, family: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, Error> {
+        self.font_face(family, bytes, FontWeight::Normal, FontStyle::Normal)
+    }
+
+    /// Registers one design with an explicit CSS weight and style.
+    ///
+    /// # Errors
+    /// Returns a typed text error when the font or its metadata is invalid.
+    pub fn font_face(
+        mut self,
+        family: impl Into<String>,
+        bytes: impl Into<Vec<u8>>,
+        weight: FontWeight,
+        style: FontStyle,
+    ) -> Result<Self, Error> {
+        let family = family.into();
+        let first = self.fonts.as_ref().is_none_or(FontRegistry::is_empty);
+        self.fonts.get_or_insert_with(FontRegistry::new).register(
+            family.clone(),
+            bytes,
+            weight,
+            style,
+        )?;
+        if first {
+            if !self.config.is_object() {
+                self.config = Value::empty_object();
+            }
+            if let Value::Object(config) = &mut self.config {
+                config
+                    .entry("fontFamily".into())
+                    .or_insert_with(|| Value::String(family.clone()));
+                let primary = config
+                    .get("fontFamily")
+                    .and_then(Value::as_str)
+                    .unwrap_or(&family)
+                    .to_owned();
+                let theme = config
+                    .entry("themeVariables".into())
+                    .or_insert_with(Value::empty_object);
+                if !theme.is_object() {
+                    *theme = Value::empty_object();
+                }
+                if let Value::Object(theme) = theme
+                    && theme
+                        .get("fontFamily")
+                        .is_none_or(|value| value.is_null() || value.as_str() == Some(""))
+                {
+                    theme.insert("fontFamily".into(), Value::String(primary));
+                }
+            }
+        }
+        Ok(self)
+    }
+
+    /// Reads and registers a regular upright face from a local file immediately.
+    ///
+    /// # Errors
+    /// Returns a typed text error if reading or registration fails.
+    pub fn font_file(
+        self,
+        family: impl Into<String>,
+        path: impl AsRef<std::path::Path>,
+    ) -> Result<Self, Error> {
+        self.font_file_face(family, path, FontWeight::Normal, FontStyle::Normal)
+    }
+
+    /// Reads and registers a local face with an explicit CSS weight and style.
+    ///
+    /// # Errors
+    /// Returns a typed text error if reading or registration fails.
+    pub fn font_file_face(
+        self,
+        family: impl Into<String>,
+        path: impl AsRef<std::path::Path>,
+        weight: FontWeight,
+        style: FontStyle,
+    ) -> Result<Self, Error> {
+        let path = path.as_ref();
+        let bytes = std::fs::read(path).map_err(|error| {
+            ferrigura_text::TextError::Registration(format!(
+                "cannot read font {}: {error}",
+                path.display()
+            ))
+        })?;
+        self.font_face(family, bytes, weight, style)
+    }
+
+    /// Sets the fallback family names after each requested CSS family list.
+    ///
+    /// All files remain host inputs; this does not load fonts by name.
+    #[must_use]
+    pub fn font_fallbacks(mut self, families: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        let families: Vec<String> = families.into_iter().map(Into::into).collect();
+        if families.is_empty() && self.fonts.is_none() {
+            return self;
+        }
+        self.fonts
+            .get_or_insert_with(FontRegistry::new)
+            .set_fallbacks(families);
+        self
+    }
+
     /// The renderer of this configuration and these plugins, kept for the next call. A renderer that
     /// is kept already is returned; otherwise it is made as [`build`](Self::build) makes it and kept,
     /// in the place of the least recently used one once a handful are kept. [`render`] uses it with
@@ -300,6 +480,9 @@ impl RendererBuilder {
     /// it so that the configuration is not resolved again. The order of registration does not matter.
     #[must_use]
     pub fn shared(self) -> Arc<Renderer> {
+        if self.fonts.is_some() {
+            return Arc::new(self.build());
+        }
         let mut kinds: Vec<DiagramType> = self.plugins.iter().map(Plugin::kind).collect();
         kinds.sort_unstable_by(|a, b| a.config_key().cmp(b.config_key()));
         if let Some(renderer) = kept(&self.config, &kinds) {
@@ -323,6 +506,7 @@ impl RendererBuilder {
     /// Resolves the configuration and makes the renderer. This does not fail; see [`Renderer::new`].
     #[must_use]
     pub fn build(self) -> Renderer {
+        let font_fingerprint = self.fonts.as_ref().map(FontRegistry::fingerprint);
         let site = SiteConfig::new(Some(&self.config));
         let overrides = site.user_theme_variables(&Value::empty_object());
         Renderer {
@@ -332,11 +516,18 @@ impl RendererBuilder {
             dark_tokens: ThemeTokens::from_value(
                 &Theme::ReduxDarkColor.variables_shared(Some(&overrides)),
             ),
-            configuration: serde_json::to_string(&self.config).unwrap_or_default(),
+            configuration: {
+                let mut configuration = serde_json::to_string(&self.config).unwrap_or_default();
+                if let Some(fingerprint) = font_fingerprint {
+                    configuration.push_str(&format!(";fonts={fingerprint:016x}"));
+                }
+                configuration
+            },
             overrides,
             site,
             views: Mutex::new(HashMap::new()),
             plugins: self.plugins,
+            fonts: self.fonts.map(Arc::new),
         }
     }
 }
@@ -395,9 +586,31 @@ impl View {
     /// # Errors
     ///
     /// Returns the message of the error when the configuration cannot be read into its types.
-    fn resolve(site: &SiteConfig, plugin: Plugin, directive: &Value) -> Result<Self, String> {
+    fn resolve(
+        site: &SiteConfig,
+        plugin: Plugin,
+        directive: &Value,
+        supplied_fonts: bool,
+    ) -> Result<Self, String> {
         let kind = plugin.kind();
-        let effective = site.effective(Some(kind.config_key()), directive);
+        let mut effective = site.effective(Some(kind.config_key()), directive);
+        if supplied_fonts {
+            let primary = effective
+                .get("themeVariables")
+                .and_then(|theme| theme.get("fontFamily"))
+                .or_else(|| effective.get("fontFamily"))
+                .and_then(Value::as_str)
+                .map(str::to_owned);
+            if let Some(primary) = primary {
+                inherit_font_roles(
+                    &mut effective,
+                    &mut Vec::new(),
+                    site.settings(),
+                    directive,
+                    &primary,
+                );
+            }
+        }
         let mut top = typed_top(&effective).map_err(|error| error.to_string())?;
         // `getData` sets the mindmap's layout to cose-bilkent unless the top-level `layout` is set by the
         // user (`mindmapDb.ts` 361-367): the schema's default, `elk`, does not reach a mindmap.
@@ -426,8 +639,44 @@ impl View {
     }
 }
 
+/// A supplied primary replaces schema-default role names, while explicit site/diagram roles
+/// remain requests to the registry. Provenance must be checked before the typed view loses it.
+fn inherit_font_roles(
+    value: &mut Value,
+    path: &mut Vec<String>,
+    site: &Value,
+    directive: &Value,
+    primary: &str,
+) {
+    fn requested(source: &Value, path: &[String]) -> bool {
+        path.iter()
+            .try_fold(source, |value, key| value.get(key))
+            .is_some_and(|value| !value.is_null())
+    }
+    let Value::Object(properties) = value else {
+        return;
+    };
+    for (key, child) in properties {
+        path.push(key.clone());
+        if path.len() > 1
+            && (key == "fontFamily" || key.ends_with("FontFamily"))
+            && matches!(child, Value::String(_))
+            && !requested(site, path)
+            && !requested(directive, path)
+        {
+            *child = Value::String(primary.to_owned());
+        } else {
+            inherit_font_roles(child, path, site, directive, primary);
+        }
+        path.pop();
+    }
+}
+
 /// What a render needs besides its diagram: see [`Renderer::prepare`].
 struct Prepared<'a> {
+    max_text: usize,
+    max_edges: usize,
+    fonts: Option<&'a Arc<FontRegistry>>,
     id: String,
     view: Arc<View>,
     light_tokens: Cow<'a, ThemeTokens>,
@@ -508,6 +757,8 @@ pub fn flowchart_elk_stages(
     config: &Value,
     options: &RenderOptions,
 ) -> Result<serde_json::Value, RenderError> {
+    let renderer = Renderer::builder(config).with_all().shared();
+    let (max_text, max_edges) = renderer.limits(text)?;
     if detect(text) != Some(DiagramType::Flowchart) {
         return Err(RenderError::Parse(ParseError {
             line: 1,
@@ -515,14 +766,8 @@ pub fn flowchart_elk_stages(
             message: "not a flowchart".to_owned(),
         }));
     }
-    let renderer = Renderer::builder(config).with_all().shared();
-    let prepared = renderer.prepare(text, options, diagrams::flowchart())?;
-    let stages = with_flowchart(
-        text,
-        &prepared,
-        options.flowchart_mode,
-        flowchart::elk_stages,
-    )?;
+    let prepared = renderer.prepare(text, options, diagrams::flowchart(), max_text, max_edges)?;
+    let stages = with_flowchart(text, &prepared, options.compat, flowchart::elk_stages)?;
     Ok(serde_json::json!({
         "elkInput": stages.input,
         "elkOutput": stages.output,
@@ -533,14 +778,24 @@ pub fn flowchart_elk_stages(
 fn with_flowchart<T>(
     text: &str,
     prepared: &Prepared<'_>,
-    mode: FlowchartMode,
+    compat: bool,
     step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
-    let diagram = ferrigura_syntax::flowchart::parse(text)
-        .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
+    let diagram = ferrigura_syntax::flowchart::parse_with(
+        text,
+        ferrigura_syntax::flowchart::Options {
+            max_edges: prepared.max_edges,
+        },
+    )
+    .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;
     let mut section = Section::of(&prepared.view.config);
-    section.flowchart_mode = mode;
+    section.flowchart_routing = if compat {
+        FlowchartRouting::Mermaid
+    } else {
+        FlowchartRouting::Adaptive
+    };
     step(&Context {
+        fonts: prepared.fonts,
         diagram: &diagram,
         section: &section,
         globals: &prepared.view.globals,
@@ -670,5 +925,139 @@ mod tests {
         ));
         let object = Value::Object(BTreeMap::from([("a".to_owned(), Value::Number(-0.0))]));
         assert!(!identical(&object, &Value::empty_object()));
+    }
+}
+
+#[cfg(test)]
+mod font_input_tests {
+    use super::*;
+    const SANS: &[u8] = include_bytes!("../../ferrigura-text/fonts/LexicaUltralegible-Regular.ttf");
+    const MONO: &[u8] =
+        include_bytes!("../../ferrigura-text/fonts/AtkinsonHyperlegibleMono-Regular.ttf");
+
+    #[test]
+    fn font_inputs_are_owned_and_validated_by_the_builder() {
+        let renderer = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        assert!(renderer.fonts.is_some());
+        assert_eq!(
+            renderer.view(diagrams::pie()).unwrap().globals.font_family,
+            "Fixture"
+        );
+        assert!(matches!(
+            Renderer::builder(&Value::empty_object()).font("Broken", vec![1, 2]),
+            Err(Error::Text(_))
+        ));
+    }
+
+    #[test]
+    fn explicit_family_is_kept_and_fallback_order_does_not_change_default_selection() {
+        let renderer = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font_fallbacks(["Symbols"])
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        assert_eq!(
+            renderer.view(diagrams::pie()).unwrap().globals.font_family,
+            "Fixture"
+        );
+        let config = Value::Object(std::collections::BTreeMap::from([(
+            "fontFamily".into(),
+            Value::String("Chosen".into()),
+        )]));
+        let renderer = Renderer::builder(&config)
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        assert_eq!(
+            renderer.view(diagrams::pie()).unwrap().globals.font_family,
+            "Chosen"
+        );
+    }
+
+    #[test]
+    fn empty_fallback_options_keep_the_compatible_default_renderer() {
+        let ordinary = Renderer::new(&Value::empty_object());
+        let empty = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font_fallbacks(std::iter::empty::<String>())
+            .build();
+        assert!(empty.fonts.is_none());
+        assert_eq!(
+            ordinary.render("pie\n \"A\": 1").unwrap(),
+            empty.render("pie\n \"A\": 1").unwrap()
+        );
+    }
+
+    #[test]
+    fn ignored_root_config_values_still_choose_the_first_supplied_family() {
+        for config in [
+            Value::Null,
+            Value::Bool(true),
+            Value::String("ignored".into()),
+        ] {
+            assert!(Renderer::new(&config).render("pie\n \"A\": 1").is_ok());
+            let renderer = Renderer::builder(&config)
+                .with_all()
+                .font("Fixture", SANS.to_vec())
+                .unwrap()
+                .build();
+            assert_eq!(
+                renderer.view(diagrams::pie()).unwrap().globals.font_family,
+                "Fixture"
+            );
+        }
+    }
+
+    #[test]
+    fn only_implicit_per_type_families_inherit_the_supplied_primary() {
+        let renderer = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        let view = renderer.view(diagrams::journey()).unwrap();
+        assert_eq!(
+            view.effective
+                .get("journey")
+                .and_then(|section| section.get("taskFontFamily"))
+                .and_then(Value::as_str),
+            Some("Fixture")
+        );
+        let config = Value::from(serde_json::json!({"journey":{"taskFontFamily":"Open Sans"}}));
+        let renderer = Renderer::builder(&config)
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .build();
+        let view = renderer.view(diagrams::journey()).unwrap();
+        assert_eq!(
+            view.effective
+                .get("journey")
+                .and_then(|section| section.get("taskFontFamily"))
+                .and_then(Value::as_str),
+            Some("Open Sans")
+        );
+    }
+
+    #[test]
+    fn supplied_bytes_change_svg_identity_and_do_not_reuse_a_config_only_cache() {
+        let first = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Fixture", SANS.to_vec())
+            .unwrap()
+            .shared();
+        let second = Renderer::builder(&Value::empty_object())
+            .with_all()
+            .font("Fixture", MONO.to_vec())
+            .unwrap()
+            .shared();
+        assert!(!Arc::ptr_eq(&first, &second));
+        assert_ne!(first.configuration, second.configuration);
     }
 }

@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
-          version: 2026.11.4
+          version: 2026.11.5
           install_args: --locked
       - run: mise run readme:check
 
@@ -202,6 +202,10 @@ jobs:
       - name: Build the reference (upstream Mermaid at the pin, with its patches)
         run: echo "REFERENCE_ROOT=$(tools/reference/setup.sh)" >> "$GITHUB_ENV"
       - run: pnpm -C tools/port exec playwright install chromium
+      - name: Registered font metrics and embedded designs in Chromium
+        run: pnpm -C tools/port exec tsx text/registered-fonts.ts
+      - name: Supplied font families across custom renderers in Chromium
+        run: pnpm -C tools/port run test:custom-font-renderers
       - name: Pie geometry against the reference in Chromium
         run: pnpm -C tools/port port:geometry-pie
       - name: Scoped styles of several pies in one page
@@ -230,7 +234,7 @@ jobs:
           package_json_file: node/package.json
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '26.13.0'
+          node-version: '24.22.2'
       - run: pnpm -C node install --frozen-lockfile --ignore-scripts
       - id: matrix
         working-directory: node
@@ -256,7 +260,7 @@ jobs:
           package_json_file: node/package.json
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '26.13.0'
+          node-version: '24.22.2'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm native:check
       - name: Build native addon
@@ -269,6 +273,20 @@ jobs:
           FERRIGURA_RUST_TARGET: ${{ matrix.target }}
       - run: pnpm test && pnpm typecheck && pnpm lint && pnpm format:check && pnpm pack:check
         if: matrix.native
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        with:
+          node-version: '22.13.0'
+      - name: Test native addon on Node 22
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: node --test ferrigura/test/*.test.mjs
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        with:
+          node-version: '26.13.0'
+      - name: Test native addon on Node 26
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: node --test ferrigura/test/*.test.mjs
       - name: Exercise the musl addon in Alpine
         if: matrix.libc == 'musl'
         run: |

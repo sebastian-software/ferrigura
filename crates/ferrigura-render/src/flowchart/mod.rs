@@ -13,8 +13,7 @@ pub mod style;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_text::{
-    FontFamily, FontStyle, FontWeight, Run, embed_runs, face, measure as measure_text, measure_box,
-    text_box,
+    FontStyle, FontWeight, Run, embed_runs, measure as measure_text, measure_box, text_box,
 };
 
 use crate::RenderError;
@@ -54,22 +53,39 @@ pub fn elk_stages(
 ///
 /// Returns an error if a bundled font cannot be read, a shape is unknown, or the layout fails.
 pub fn render(input: &Context<'_, FlowchartDiagram, Section<'_>>) -> Result<String, RenderError> {
+    render_with_animation(input, None)
+}
+
+/// Renders a flowchart with an optional, self-contained SVG draw animation.
+///
+/// # Errors
+///
+/// Returns the errors of [`render`], or an option error if the speed makes the timing overflow.
+pub fn render_with_animation(
+    input: &Context<'_, FlowchartDiagram, Section<'_>>,
+    animation: Option<crate::animation::Animation>,
+) -> Result<String, RenderError> {
     let config = Config::of(input);
     let mut measured = measure(input)?;
     pipeline::lay_out(&mut measured, &config)?;
     let id = input.id;
-    let painted = pipeline::paint(&measured, id, &config)?;
+    let painted = pipeline::paint_with_animation(&measured, id, &config, animation)?;
     let mut bounds = painted.bounds;
 
     // `insertTitle`: centered over everything drawn so far, `titleTopMargin` above the origin.
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+    let sans = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let title = &input.diagram.title;
     let mut title_svg = String::new();
+    let title_font = sans.css_reference().map_or_else(String::new, |family| {
+        format!(" style=\"font-family:{family}\"")
+    });
     if !title.is_empty() {
         let drawn = bounds.unwrap_or_default();
-        let width = measure_text(sans, title, TITLE_FONT_SIZE)?;
-        let ink = measure_box(sans, title, TITLE_FONT_SIZE)?;
-        let text_box = text_box(sans, TITLE_FONT_SIZE)?;
+        let width = measure_text(&sans, title, TITLE_FONT_SIZE)?;
+        let ink = measure_box(&sans, title, TITLE_FONT_SIZE)?;
+        let text_box = text_box(&sans, TITLE_FONT_SIZE)?;
         let baseline = -(config.section.flowchart.title_top_margin as f64);
         // `text-anchor: middle` at the center (`utils.ts`, `insertTitle`): the title's box starts half
         // its advance left of the center, and its glyphs' box is the box `getBBox` gives.
@@ -84,21 +100,21 @@ pub fn render(input: &Context<'_, FlowchartDiagram, Section<'_>>) -> Result<Stri
             ),
         );
         title_svg = format!(
-            "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"flowchartTitleText\">{}</text>",
+            "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"flowchartTitleText\"{title_font}>{}</text>",
             number(x),
             number(baseline),
             escape(title)
         );
     }
 
-    let mut runs: Vec<Run<'_>> = painted
+    let mut runs: Vec<Run<'_, '_>> = painted
         .all_labels()
         .flat_map(|label| label.text_runs())
         .collect();
     if !title.is_empty() {
         runs.push(Run {
             text: title,
-            face: sans,
+            face: &sans,
         });
     }
     let families = embed_runs(&runs)?;
@@ -129,7 +145,7 @@ pub fn render(input: &Context<'_, FlowchartDiagram, Section<'_>>) -> Result<Stri
         input.globals,
         &diagram.classes,
         &families,
-        input.section.flowchart_mode,
+        input.section.flowchart_routing,
     );
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",

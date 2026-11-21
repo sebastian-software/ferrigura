@@ -3,6 +3,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 
 const featured = new Map([
   ['homepage/content/getting-started.md', 'guide/getting-started'],
+  ['docs/animation.md', 'guide/animation'],
+  ['docs/fonts.md', 'guide/fonts'],
   ['crates/ferrigura/README.md', 'reference/rust'],
   ['crates/ferrigura-cli/README.md', 'reference/cli'],
   ['crates/ferrigura-node/README.md', 'reference/node'],
@@ -44,6 +46,12 @@ export const documents = [...new Set([...featured.keys(), ...docs])].map((source
 });
 /** Pages written in homepage/app/routes, each placed after a generated page. */
 const authored = [
+  {
+    path: 'architecture/size',
+    title: 'Binary size',
+    section: 'architecture',
+    after: 'architecture/overview',
+  },
   {
     path: 'comparisons/side-by-side',
     title: 'Side by side with Mermaid',

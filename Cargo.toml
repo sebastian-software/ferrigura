@@ -4,7 +4,7 @@
 [package]
 name = "ferrigura"
 description = "Render Mermaid diagram text to SVG, without a browser"
-version = "0.6.0"
+version = "0.7.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -31,12 +31,24 @@ name = "render"
 path = "crates/ferrigura/examples/render.rs"
 
 [[test]]
+name = "custom_font_renderers"
+path = "crates/ferrigura/tests/custom_font_renderers.rs"
+
+[[test]]
 name = "class"
 path = "crates/ferrigura/tests/class.rs"
 
 [[test]]
+name = "fonts"
+path = "crates/ferrigura/tests/fonts.rs"
+
+[[test]]
 name = "flowchart"
 path = "crates/ferrigura/tests/flowchart.rs"
+
+[[test]]
+name = "animation"
+path = "crates/ferrigura/tests/animation.rs"
 
 [[test]]
 name = "info"
@@ -75,9 +87,10 @@ name = "well_formed"
 path = "crates/ferrigura/tests/well_formed.rs"
 
 [dependencies]
-ferrigura-model = { path = "crates/ferrigura-model", version = "0.6.0" }
-ferrigura-render = { path = "crates/ferrigura-render", version = "0.6.0" }
-ferrigura-syntax = { path = "crates/ferrigura-syntax", version = "0.6.0" }
+ferrigura-text = { path = "crates/ferrigura-text", version = "0.7.0" }
+ferrigura-model = { path = "crates/ferrigura-model", version = "0.7.0" }
+ferrigura-render = { path = "crates/ferrigura-render", version = "0.7.0" }
+ferrigura-syntax = { path = "crates/ferrigura-syntax", version = "0.7.0" }
 serde_json.workspace = true
 
 [dev-dependencies]

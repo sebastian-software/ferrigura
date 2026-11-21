@@ -20,11 +20,20 @@ flowchart LR
 3. **Model** (`ferrigura-model`): the DB's state as the canonical model of the type, the form the harness compares with the reference ([0008](./decisions/0008-canonical-model-and-typed-views.md), [canonical-model.md](./canonical-model.md)).
 4. **Configuration and theme** (`ferrigura-model`, `ferrigura`): defaults per process, the site configuration and theme per `Renderer`, the diagram's front matter and directives per render; the renderer receives a typed, read-only `Context` ([0008](./decisions/0008-canonical-model-and-typed-views.md), [0011](./decisions/0011-themes-as-css-variables.md)).
 5. **Lay out and render** (`ferrigura-render`): either a renderer of the type's own (sequence, gantt, pie, timeline and the other chart-like types) or the unified renderer, which builds the layout data as Mermaid's `getData()` does and lays it out with one of the ported engines ([0012](./decisions/0012-layout-engines-ported-exactly.md)).
-6. **Text** (`ferrigura-text`): every label is measured and wrapped with the bundled fonts, written as SVG text, and the glyphs used are embedded as font subsets ([0009](./decisions/0009-svg-text-labels.md), [0010](./decisions/0010-text-measurement-and-fonts.md)).
+6. **Text** (`ferrigura-text`): every label is measured and wrapped with the render-owned supplied fonts or compatible bundled defaults, written as SVG text, with TrueType subsets or complete CFF/CFF2 faces embedded ([0009](./decisions/0009-svg-text-labels.md), [0010](./decisions/0010-text-measurement-and-fonts.md)).
 
 The facade, `ferrigura`, ties it together: `Renderer::new(config)` resolves the configuration once, `renderer.render(text)` returns the SVG, and `ferrigura::render(text, config)` is the shorthand. Each diagram type is a plugin of the renderer: `Renderer::new` registers all of them, and `Renderer::builder(config).with(diagrams::sequence())` registers only the types a program draws, so that it links only those; the Node addon picks them with one cargo feature per type, all by default ([0020](./decisions/0020-diagram-types-as-plugins.md)).
 
-Render options are separate from Mermaid configuration. Flowcharts use adaptive port alignment with label-aware spacing and full-opacity edge-label backgrounds by default; the per-render Mermaid-compatible mode preserves the reference's input and output ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Both use the same ELK engine.
+Render options are separate from Mermaid configuration. `compat` defaults to `false`: flowcharts use adaptive port alignment with label-aware spacing and sequence participant boxes fit their labels. `compat: true` preserves Mermaid-compatible geometry across diagram types ([0019](./decisions/0019-adaptive-flowchart-mode.md)). Edge labels drawn by the shared renderer have full-opacity backgrounds in either mode, while preserving explicit theme color transparency. Render options are passed to each plugin per render and do not change the cached configuration.
+
+Flowchart, Gantt, Git graph, mind map, pie, and XY chart accept optional
+[draw animation](./animation.md) ([0021](./decisions/0021-optional-svg-draw-animation.md)).
+Their paint steps pass final paths, bars, or arcs to `ferrigura-render::animation`,
+which computes timing and emits embedded CSS and reveal masks. The default draws
+one line at a time, with length-based timing and independent easing for each
+section. The viewer plays the effect; Rust still
+computes one complete layout without a browser. An absent option keeps the SVG
+unchanged.
 
 ## Crates
 
@@ -55,6 +64,7 @@ Licenses follow the sources of the ported code ([0013](./decisions/0013-licenses
 | `node/`           | The npm packages: the facade `@ferrigura/core` and the platform packages ([0016](./decisions/0016-npm-packages-via-napi.md))                                                                                          |
 | `tools/port`      | The harness: the differential runs against the reference, the geometry runs in Chromium, the corpus capture tools, and the lint and format setup of the repository ([0015](./decisions/0015-differential-testing.md)) |
 | `tools/reference` | The pin, the patches and `setup.sh`, which build the reference ([0014](./decisions/0014-upstream-reference-at-a-pin.md))                                                                                              |
+| `tools/size`      | `measure.mjs`, which measures what each diagram type adds to the Node addon for the [size page](https://ferrigura.dev/architecture/size/)                                                                             |
 | `tools/snapshots` | `diff.sh`, which shows which renders a change moved                                                                                                                                                                   |
 | `tools/release`   | `publish-crates.sh`, for publishing a release by hand ([0004](./decisions/0004-one-version-one-release.md))                                                                                                           |
 | `e2e/diagrams`    | The fixtures: the `.mmd` corpus the harness and the tests render; `e2e/platform/dev-diagrams` holds more inputs                                                                                                       |
@@ -64,4 +74,5 @@ Licenses follow the sources of the ported code ([0013](./decisions/0013-licenses
 What ferrigura does not do, on purpose or not yet:
 
 - **Out of scope:** browsers and WebAssembly, raster output, Mermaid's JavaScript API and callbacks ([0006](./decisions/0006-rust-only-no-browser.md)); HTML labels and math in labels ([0009](./decisions/0009-svg-text-labels.md)); `look: handDrawn`; the dagre layout and the ELK algorithms other than Layered ([0012](./decisions/0012-layout-engines-ported-exactly.md)); Mermaid's classic themes ([0011](./decisions/0011-themes-as-css-variables.md)).
-- **Not yet:** fallback fonts for the scripts the bundled faces do not cover (CJK, kana, Arabic, some emoji and symbols) must be registered by the user ([0010](./decisions/0010-text-measurement-and-fonts.md)); flowchart images and icon packs. The [diagram pages](./diagrams/README.md) list what each type still lacks.
+- **Font coverage:** hosts can register primary and fallback faces beyond the bundled compatibility defaults ([font inputs](./fonts.md)). An uncovered character is measured with the primary missing glyph; viewers may substitute another font. Character coverage alone does not establish complete shaping or bidirectional layout for every writing system.
+- **Not yet:** flowchart images and icon packs. The [diagram pages](./diagrams/README.md) list what each type still lacks.

@@ -14,7 +14,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { dirname, extname, join } from 'node:path';
+import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { JSON_SCHEMA, load } from 'js-yaml';
@@ -49,7 +49,10 @@ export const PATH_SAMPLES = 16;
  * are tested that way, with the reference's own SVG as the "ferrigura" output.
  */
 const renderOverride = process.env.FERRIGURA_RENDER;
-export const renderBinary = renderOverride ?? join(root, 'target/debug/examples/render');
+const targetDir = process.env.CARGO_TARGET_DIR
+  ? resolve(root, process.env.CARGO_TARGET_DIR)
+  : join(root, 'target');
+export const renderBinary = renderOverride ?? join(targetDir, 'debug/examples/render');
 
 /** Builds the `render` example, unless `FERRIGURA_RENDER` replaces it. */
 export function buildRenderExample(): void {
@@ -410,14 +413,17 @@ export function renderFerrigura(
   id: string,
   now?: number,
   seed?: number,
-  flowchartMode: 'adaptive' | 'mermaid' = 'mermaid'
+  compat = true
 ): { svg: string } | { error: string } {
   // The site configuration goes through a file of this process, so parallel runs do not share it.
   const configPath = join(workDir, `site-config-${process.pid}.json`);
   mkdirSync(workDir, { recursive: true });
   writeFileSync(configPath, JSON.stringify(forcedSiteConfig(text)));
   const args = ['--id', id, '--config', configPath];
-  args.push('--flowchart-mode', flowchartMode);
+  const fontsPath = join(workDir, `font-inputs-${process.pid}.json`);
+  writeFileSync(fontsPath, JSON.stringify(fixtureFonts()));
+  args.push('--fonts', fontsPath);
+  args.push('--compat', String(compat));
   if (now !== undefined) args.push('--now', String(Math.trunc(now)));
   // The seed of the reference's random numbers: the generated gitGraph ids (commits, merges and
   // cherry-picks without an `id:`) are drawn from the same generator.
@@ -467,10 +473,9 @@ export type JsonValue =
 /**
  * The font families the reference names in its own code instead of the configured font:
  * eventmodeling measures in `"trebuchet ms", verdana, arial` (the classic default), cytoscape (the
- * architecture labels) in `Helvetica Neue, Helvetica`, and C4 in `"Open Sans"`. ferrigura ships one
- * face and measures with it (decision 0010), so the page maps these names onto the same Lexica files:
- * the reference then measures the same text in the same font, and what it computes is unchanged
- * (`docs/LEARNINGS.md`, "Where the reference names a font, both sides measure the bundled one").
+ * architecture labels) in `Helvetica Neue, Helvetica`, and C4 in `"Open Sans"`. The use-case
+ * configuration fixture requests Georgia. Both hosts map these aliases onto the same explicitly
+ * registered local fixture files, so each measures the same text in the same font (decision 0010).
  */
 export const MAPPED_FAMILIES: readonly string[] = [
   'trebuchet ms',
@@ -479,14 +484,54 @@ export const MAPPED_FAMILIES: readonly string[] = [
   'Helvetica Neue',
   'Helvetica',
   'Open Sans',
+  'Georgia',
 ];
+
+const TEXT_FONT = process.env.FERRIGURA_GEOMETRY_FONT ?? 'lexica';
+if (!['lexica', 'mono'].includes(TEXT_FONT))
+  throw new Error('FERRIGURA_GEOMETRY_FONT must be lexica or mono');
 
 const LEXICA_FACES: readonly { file: string; weight: number; style: string }[] = [
   { file: 'LexicaUltralegible-Regular.ttf', weight: 400, style: 'normal' },
   { file: 'LexicaUltralegible-Bold.ttf', weight: 700, style: 'normal' },
   { file: 'LexicaUltralegible-Italic.ttf', weight: 400, style: 'italic' },
   { file: 'LexicaUltralegible-BoldItalic.ttf', weight: 700, style: 'italic' },
-];
+].map((face) => ({
+  ...face,
+  file:
+    TEXT_FONT === 'mono'
+      ? face.file.replace('LexicaUltralegible', 'AtkinsonHyperlegibleMono')
+      : face.file,
+}));
+
+/** Explicit fixture registrations for the Rust host, from the same files the page loads. */
+function fixtureFonts(): {
+  fonts: { family: string; path: string; weight: number; style: string }[];
+  fallbacks: string[];
+} {
+  const fonts = ['Lexica Ultralegible', 'sans-serif', ...MAPPED_FAMILIES].flatMap((family) =>
+    LEXICA_FACES.map((face) => ({
+      family,
+      path: join(fontDir, face.file),
+      weight: face.weight,
+      style: face.style,
+    }))
+  );
+  for (const family of ['Atkinson Hyperlegible Mono', 'monospace']) {
+    for (const face of LEXICA_FACES) {
+      const file = face.file.replace('LexicaUltralegible', 'AtkinsonHyperlegibleMono');
+      fonts.push({ family, path: join(fontDir, file), weight: face.weight, style: face.style });
+    }
+  }
+  for (const [family, file] of [
+    ['Noto Sans Math', 'NotoSansMath-Regular-Arrows.ttf'],
+    ['Noto Sans Symbols 2', TEXT_SYMBOLS_FILE],
+    ['Twemoji Mozilla', EMOJI_FILE],
+  ]) {
+    fonts.push({ family, path: join(fontDir, file), weight: 400, style: 'normal' });
+  }
+  return { fonts, fallbacks: ['Noto Sans Math', 'Noto Sans Symbols 2', 'Twemoji Mozilla'] };
+}
 
 /** The `@font-face` rules of a family name that the page maps onto the bundled faces. */
 function mappedFaces(family: string): string {
@@ -567,10 +612,7 @@ export function pageHtml(measure: string): string {
   return `<!doctype html>
 <html><head><meta charset="utf-8">
 <style>
-@font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Regular.ttf) format("truetype"); font-weight: 400; font-style: normal; }
-@font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Bold.ttf) format("truetype"); font-weight: 700; font-style: normal; }
-@font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-Italic.ttf) format("truetype"); font-weight: 400; font-style: italic; }
-@font-face { font-family: "Lexica Ultralegible"; src: url(/fonts/LexicaUltralegible-BoldItalic.ttf) format("truetype"); font-weight: 700; font-style: italic; }
+${mappedFaces('Lexica Ultralegible')}
 ${MAPPED_FAMILIES.map(mappedFaces).join('\n')}
 ${MONO_FACES}
 ${SYMBOL_FACE}
@@ -713,7 +755,17 @@ window.renderReference = async function (id, text, clock, site, tidyTree, pin) {
   }
   try {
     const result = await mermaid.render(id, text);
-    return { ok: true, svg: result.svg, error: null, elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
+    // Sequence numbers hardcode generic sans-serif, outside the configured font. Pin only the
+    // returned reference text to the registered fixture; production SVG measurement stays intact.
+    let referenceSvg = result.svg;
+    if (referenceSvg.includes('class="sequenceNumber"')) {
+      const container = document.createElement('template');
+      container.innerHTML = referenceSvg;
+      const numbers = container.content.querySelectorAll('svg[aria-roledescription="sequence"] text.sequenceNumber[font-family="sans-serif"]');
+      for (const number of numbers) number.setAttribute('font-family', ${JSON.stringify(FORCED_SETTINGS.fontFamily)});
+      if (numbers.length) referenceSvg = container.innerHTML;
+    }
+    return { ok: true, svg: referenceSvg, error: null, elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
   } catch (error) {
     return { ok: false, svg: null, error: String((error && error.message) || error), elk: window.__elkCalls, tidyTree: window.__tidyTreeCalls };
   } finally {

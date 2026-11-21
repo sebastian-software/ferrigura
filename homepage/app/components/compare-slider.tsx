@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'ardo/react';
 
-import { ReactCompareSlider, ReactCompareSliderHandle } from 'react-compare-slider';
+import { Handle, HandleRoot, Item, Provider, Root } from 'react-compare-slider/components';
+import { useReactCompareSlider } from 'react-compare-slider/hooks';
 
 /** The handle in the page's accent, on the sheet's color, so it shows on a white drawing. */
 const handleStyle: CSSProperties & Record<'--rcs-handle-color', string> = {
@@ -12,6 +13,7 @@ const buttonStyle: CSSProperties = {
 };
 
 export type CompareSliderProps = {
+  label: string;
   /** Shown left of the divider. */
   first: ReactNode;
   firstLabel: string;
@@ -26,20 +28,35 @@ export type CompareSliderProps = {
  * moves the divider by pointer, touch and the arrow keys; on a touch screen
  * only the handle moves it, so a swipe elsewhere still scrolls the page.
  */
-export function CompareSlider({ first, firstLabel, second, secondLabel }: CompareSliderProps) {
+export function CompareSlider({
+  label,
+  first,
+  firstLabel,
+  second,
+  secondLabel,
+}: CompareSliderProps) {
+  const slider = useReactCompareSlider({ keyboardIncrement: '2%' });
   return (
     <div className="fgr-compare">
       <div className="fgr-compare-tags" aria-hidden="true">
         <span>← {firstLabel}</span>
         <span>{secondLabel} →</span>
       </div>
-      <ReactCompareSlider
-        className="fgr-compare-stage"
-        itemOne={<div className="fgr-compare-layer">{first}</div>}
-        itemTwo={<div className="fgr-compare-layer">{second}</div>}
-        keyboardIncrement="2%"
-        handle={<ReactCompareSliderHandle style={handleStyle} buttonStyle={buttonStyle} />}
-      />
+      <Provider {...slider}>
+        <Root className="fgr-compare-stage">
+          <Item item="itemOne">
+            <div className="fgr-compare-layer">{first}</div>
+          </Item>
+          <Item item="itemTwo">
+            <div className="fgr-compare-layer">{second}</div>
+          </Item>
+          <HandleRoot
+            aria-label={`${label}: ${firstLabel} left of the divider, ${secondLabel} right of it`}
+          >
+            <Handle style={handleStyle} buttonStyle={buttonStyle} />
+          </HandleRoot>
+        </Root>
+      </Provider>
     </div>
   );
 }

@@ -19,6 +19,7 @@ fn draw(text: &str, section: serde_json::Value) -> Result<String, RenderError> {
         .expect("the defaults are typed");
     let globals = Globals::of(&config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &settings,
         globals: &globals,

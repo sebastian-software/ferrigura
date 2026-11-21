@@ -119,6 +119,7 @@ fn build_scene(
     let globals = Globals::of(config);
     let tokens = ThemeTokens::from_value(theme);
     let unified = Config {
+        fonts: ferrigura_render::fonts::FontContext::bundled(),
         section: Section::of(config),
         globals: &globals,
         theme: &tokens,

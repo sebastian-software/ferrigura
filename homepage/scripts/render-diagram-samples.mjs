@@ -1,37 +1,20 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Paths are a fresh temporary directory and fixed files in this repository. */
-// Renders every diagram on the homepage with the published @ferrigura/core
-// package and writes app/data/diagram-samples.json and the SVG files in
-// app/data/diagrams/. The page imports them; nobody edits them by hand.
-//
-//   node scripts/render-diagram-samples.mjs          # write the files
-//   node scripts/render-diagram-samples.mjs --check  # fail when they drifted
-//
-// Writing renders with the version the site documents (node/ferrigura/package.json)
-// and records it in `renderedWith`. The check renders again with the recorded
-// version, so a release pull request that bumps the manifest before npm has the
-// new version still passes; the page keeps crediting the release that produced
-// its diagrams until the next write. The package installs from npm into a
-// temporary directory with lifecycle scripts disabled, so the site's own
-// dependency tree stays untouched. Run the write again after a release.
-//
-// The output is the same on every run of one machine; on another architecture
-// the check compares numbers within 0.01 (published-output.mjs).
+// Renders every homepage diagram from the current Rust source. The generated
+// files are checked against the same source; callers use the single compat
+// option for optimized and Mermaid-compatible drawings.
+// Coordinates may differ by 0.01 on another architecture (published-output.mjs).
 import assert from 'node:assert/strict';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
 import { format } from 'oxfmt';
 
-import { compareOutput, installPublished } from './published-output.mjs';
+import { compareOutput } from './published-output.mjs';
+import { createSourceRenderer } from './source-renderer.mjs';
 
 const check = process.argv.includes('--check');
-const name = '@ferrigura/core';
+const provenance = 'Ferrigura (repository source)';
 const target = new URL('../app/data/diagram-samples.json', import.meta.url);
 const svgDirectory = new URL('../app/data/diagrams/', import.meta.url);
 const recorded = check ? JSON.parse(await readFile(target, 'utf8')) : undefined;
-const manifest = JSON.parse(
-  await readFile(new URL('../../node/ferrigura/package.json', import.meta.url), 'utf8')
-);
-const version = recorded?.renderedWith[name] ?? manifest.version;
 const platform = `${process.platform}-${process.arch}`;
 
 /** The gallery: one everyday diagram of six types, each with a plain description. */
@@ -152,11 +135,8 @@ const modeSource = `flowchart TD
 const modeDescription =
   'A guide is written and reviewed. Approval publishes it and the release is announced; requested changes send it back to writing.';
 
-const packages = await installPublished({ [name]: version }, { quiet: check });
+const renderer = await createSourceRenderer();
 try {
-  const { Renderer } = await import(pathToFileURL(packages.require.resolve(name)).href);
-  const renderer = new Renderer();
-
   const svgs = new Map();
   /** Renders twice, checks the contract the page describes, and keeps the file. */
   const render = (file, source, options) => {
@@ -181,8 +161,8 @@ try {
   const modes = {
     source: modeSource,
     description: modeDescription,
-    adaptive: render('mode-adaptive', modeSource, { flowchartMode: 'adaptive' }),
-    mermaid: render('mode-mermaid', modeSource, { flowchartMode: 'mermaid' }),
+    adaptive: render('mode-adaptive', modeSource, { compat: false }),
+    mermaid: render('mode-mermaid', modeSource, { compat: true }),
   };
   assert.notEqual(
     svgs.get(modes.adaptive),
@@ -223,7 +203,7 @@ try {
   // a coordinate may change the file's size by a few bytes.
   if (!exact) file.bytes = recorded.file.bytes;
   const data = {
-    renderedWith: { [name]: version },
+    renderedWith: { ferrigura: 'repository source' },
     platform: check ? recorded.platform : platform,
     samples,
     modes,
@@ -244,17 +224,17 @@ try {
       compare({ actual, expected: content, label: entry, exact });
     }
     console.log(
-      `Verified ${svgs.size} homepage diagrams against ${name} ${version}${exact ? '' : ` (${platform}, numbers within 0.01 of ${recorded.platform})`}.`
+      `Verified ${svgs.size} homepage diagrams against ${provenance}${exact ? '' : ` (${platform}, numbers within 0.01 of ${recorded.platform})`}.`
     );
   } else {
     await rm(svgDirectory, { recursive: true, force: true });
     await mkdir(svgDirectory, { recursive: true });
     for (const [entry, content] of svgs) await writeFile(new URL(entry, svgDirectory), content);
     await writeFile(target, formatted.code);
-    console.log(`Wrote ${svgs.size} homepage diagrams rendered by ${name} ${version}.`);
+    console.log(`Wrote ${svgs.size} homepage diagrams rendered by ${provenance}.`);
   }
 } finally {
-  await packages.remove();
+  await renderer.remove();
 }
 
 /** Breaks a fragment of SVG markup at its tags and indents it by depth. */
@@ -279,6 +259,6 @@ function indent(markup) {
 }
 
 function compare({ actual, expected, label, exact }) {
-  const message = `${label} drifted from ${name} ${version}; run pnpm sample:write`;
+  const message = `${label} drifted from ${provenance}; run pnpm sample:write`;
   compareOutput({ actual, expected, label, exact, message });
 }

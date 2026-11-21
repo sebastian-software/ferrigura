@@ -8,6 +8,8 @@ use std::fmt;
 pub enum TextError {
     /// The font data does not parse as a font.
     InvalidFont,
+    /// A font registration or resolution failed.
+    Registration(String),
     /// The font has no line metrics, so no text box can be derived from it.
     MissingLineMetrics,
     /// The shaper rejected the text.
@@ -21,6 +23,7 @@ pub enum TextError {
 impl fmt::Display for TextError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Registration(message) => f.write_str(message),
             Self::InvalidFont => write!(f, "the font data does not parse"),
             Self::MissingLineMetrics => write!(f, "the font has no line metrics"),
             Self::Shape(error) => write!(f, "shaping failed: {error:?}"),

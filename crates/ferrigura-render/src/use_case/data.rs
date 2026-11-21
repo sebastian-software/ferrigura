@@ -51,6 +51,8 @@ impl Kind {
 pub struct NodeFields {
     /// The `data-usecase-kind` of the node.
     pub kind: Kind,
+    /// The resolved render-only actor or use-case font role.
+    pub font_family: Option<String>,
     /// The glyph of an actor (`None` for the other nodes).
     pub actor: Option<ActorType>,
     /// Whether the node has the `business` metadata.
@@ -78,6 +80,7 @@ impl Default for NodeFields {
     fn default() -> Self {
         Self {
             kind: Kind::UseCase,
+            font_family: None,
             actor: None,
             business: false,
             stereotype: None,
@@ -372,6 +375,7 @@ pub fn layout_data(
         node.color_index = Some(color_index);
         node.wrapping_width = Some(config.wrapping_width);
         node.use_case = Some(NodeFields {
+            font_family: None,
             kind: Kind::Actor,
             actor: Some(variant),
             business: actor.business,
@@ -484,6 +488,7 @@ pub fn layout_data(
         node.min_width = Some(config.min_node_width);
         let accessible_label = accessible_label(&raw, note.label_type);
         node.use_case = Some(NodeFields {
+            font_family: None,
             kind: Kind::Note,
             actor: None,
             business: false,
@@ -536,6 +541,7 @@ pub fn layout_data(
         node.wrapping_width = Some(config.wrapping_width);
         node.min_width = Some(config.min_node_width);
         node.use_case = Some(NodeFields {
+            font_family: None,
             kind: Kind::Json,
             actor: None,
             business: false,
@@ -583,6 +589,7 @@ pub fn layout_data(
         node.color_index = Some(boundary_color_index);
         boundary_color_index += 1;
         node.use_case = Some(NodeFields {
+            font_family: None,
             kind: Kind::Boundary,
             actor: None,
             business: false,

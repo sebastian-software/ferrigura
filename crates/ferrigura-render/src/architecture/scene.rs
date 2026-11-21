@@ -20,7 +20,7 @@
 //! position, as cytoscape's dirty flags would.
 
 use ferrigura_model::architecture::{ArchitectureDiagram, Direction};
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, measure};
+use ferrigura_text::{Face, measure};
 
 use super::geometry::{Box2, js_max3, js_min3};
 use crate::RenderError;
@@ -643,7 +643,6 @@ fn ceil(width: f64) -> f64 {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read or shaped.
-pub fn canvas_width(text: &str, size: f64) -> Result<f64, RenderError> {
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+pub fn canvas_width(sans: &Face, text: &str, size: f64) -> Result<f64, RenderError> {
     Ok(measure(sans, text, size)?)
 }

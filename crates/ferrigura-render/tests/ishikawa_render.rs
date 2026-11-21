@@ -42,6 +42,7 @@ fn draw(text: &str, id: &str, look: Option<&str>) -> Result<String, RenderError>
     let tokens = ThemeTokens::from_value(&variables);
     let globals = Globals::of(&config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.ishikawa,
         globals: &globals,

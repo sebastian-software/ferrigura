@@ -28,6 +28,7 @@ fn draw(text: &str, now: i64, gantt: &[(&str, Value)]) -> String {
     let variables = Theme::ReduxColor.variables(None);
     let tokens = ThemeTokens::from_value(&variables);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &GanttSection {
             config: &config.gantt,

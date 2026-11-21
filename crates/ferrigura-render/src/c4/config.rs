@@ -47,6 +47,8 @@ pub struct ElementConf {
 /// The C4 configuration, with the values the renderer reads, in the reference's units.
 #[derive(Debug, Clone)]
 pub struct Conf {
+    /// Host font inputs shared by the configured C4 font roles.
+    pub fonts: crate::fonts::FontContext,
     /// The schema section, for the element table.
     section: C4DiagramConfig,
     /// `diagramMarginX`: the margin of the screen and the gap between boundaries.
@@ -78,6 +80,7 @@ impl Conf {
     pub fn new(section: &C4DiagramConfig) -> Self {
         let section = section.clone();
         Self {
+            fonts: crate::fonts::FontContext::bundled(),
             diagram_margin_x: section.diagram_margin_x as f64,
             diagram_margin_y: section.diagram_margin_y as f64,
             shape_margin: section.c4_shape_margin as f64,

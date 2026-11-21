@@ -141,13 +141,14 @@ export function Modes() {
       <p>
         Ferrigura&rsquo;s adaptive mode centers the ports and leaves room for the labels, so the
         layout engine can draw those arrows straight. It also gives the labels a solid background.
-        Necessary bends remain, and in a complex graph the nodes can move. Where a diagram needs the
-        exact drawing of Mermaid, the Mermaid mode keeps it.
+        Necessary bends remain, and in a complex graph the nodes can move. Use{' '}
+        <code>compat: true</code> to preserve Mermaid-compatible geometry.
       </p>
       <ModeSheets />
       <p>
         The mode is an option of each render, not a setting in the diagram text, so one renderer can
-        draw both. It affects flowcharts only.{' '}
+        draw both. The same <code>compat</code> switch also controls compact sequence participant
+        boxes.{' '}
         <Link to="/architecture/decisions/0019-adaptive-flowchart-mode/">
           Why adaptive is the default
         </Link>

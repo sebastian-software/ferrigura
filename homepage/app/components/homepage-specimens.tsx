@@ -21,12 +21,12 @@ import modeMermaid from '../data/diagrams/mode-mermaid.svg?raw';
 import schemeDark from '../data/diagrams/scheme-dark.svg?raw';
 import schemeLight from '../data/diagrams/scheme-light.svg?raw';
 import { nodeVersion, rustVersion } from '../version';
-import { core, grouped } from './homepage-data';
+import { grouped, renderingSource } from './homepage-data';
 
 /* Every drawing here is real output of the published npm package, written by
    scripts/render-diagram-samples.mjs into app/data/; nothing is drawn by hand. */
 
-const credit = `Real output of @ferrigura/core ${core}`;
+const credit = `Real output of Ferrigura (${renderingSource})`;
 
 // The gallery's other drawings load when a visitor asks for them; the ones on
 // the page from the start are imported above.
@@ -168,10 +168,10 @@ export function ModeSheets() {
   return (
     <figure className="mono-wide fgr-pair">
       <MonoFacing>
-        <MonoSheet label="Adaptive, the default" meta="flowchartMode: 'adaptive'">
+        <MonoSheet label="Adaptive, the default" meta="compat: false">
           <Drawing svg={modeAdaptive} label={`${modes.description} Drawn in adaptive mode.`} />
         </MonoSheet>
-        <MonoSheet label="Mermaid-compatible" meta="flowchartMode: 'mermaid'">
+        <MonoSheet label="Mermaid-compatible" meta="compat: true">
           <Drawing svg={modeMermaid} label={`${modes.description} Drawn in Mermaid mode.`} />
         </MonoSheet>
       </MonoFacing>

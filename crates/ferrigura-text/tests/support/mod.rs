@@ -2,8 +2,9 @@
 
 #![allow(dead_code)]
 
-use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, face};
+use ferrigura_text::{Face, FontRegistry, FontStyle, FontWeight};
 use serde_json::Value;
+use std::sync::{Arc, OnceLock};
 
 /// The largest difference allowed between a width or box measured here and in Chromium.
 ///
@@ -36,24 +37,73 @@ pub fn entries(reference: &Value, section: &str) -> Vec<Value> {
         .clone()
 }
 
-/// The bundled face for a style name of the fixture, such as `sans-bolditalic`.
+/// The explicitly registered fixture face for a style name, such as `sans-bolditalic`.
 pub fn face_for(style: &str) -> &'static Face {
-    let (family, rest) = style
-        .split_once('-')
-        .unwrap_or_else(|| panic!("unknown style {style}"));
-    let family = match family {
-        "sans" => FontFamily::Sans,
-        "mono" => FontFamily::Mono,
-        _ => panic!("unknown family in {style}"),
-    };
-    let (weight, slant) = match rest {
-        "regular" => (FontWeight::Normal, FontStyle::Normal),
-        "italic" => (FontWeight::Normal, FontStyle::Italic),
-        "bold" => (FontWeight::Bold, FontStyle::Normal),
-        "bolditalic" => (FontWeight::Bold, FontStyle::Italic),
-        _ => panic!("unknown style {style}"),
-    };
-    face(family, weight, slant)
+    static FACES: OnceLock<Vec<(String, Arc<Face>)>> = OnceLock::new();
+    let faces = FACES.get_or_init(|| {
+        let mut registry = FontRegistry::new();
+        let mut choices = Vec::new();
+        for (family, prefix) in [
+            ("sans", "LexicaUltralegible"),
+            ("mono", "AtkinsonHyperlegibleMono"),
+        ] {
+            for (suffix, file_style, weight, style) in [
+                ("regular", "Regular", FontWeight::Normal, FontStyle::Normal),
+                ("italic", "Italic", FontWeight::Normal, FontStyle::Italic),
+                ("bold", "Bold", FontWeight::Bold, FontStyle::Normal),
+                (
+                    "bolditalic",
+                    "BoldItalic",
+                    FontWeight::Bold,
+                    FontStyle::Italic,
+                ),
+            ] {
+                registry
+                    .register_file(
+                        family,
+                        format!(
+                            "{}/fonts/{prefix}-{file_style}.ttf",
+                            env!("CARGO_MANIFEST_DIR")
+                        ),
+                        weight,
+                        style,
+                    )
+                    .expect("fixture registers");
+                choices.push((format!("{family}-{suffix}"), family, weight, style));
+            }
+        }
+        for (family, file) in [
+            ("arrows", "NotoSansMath-Regular-Arrows.ttf"),
+            ("symbols", "NotoSansSymbols2-Regular-TextSymbols.ttf"),
+            ("emoji", "TwemojiMozilla-COLRv0-Emoji.ttf"),
+        ] {
+            registry
+                .register_file(
+                    family,
+                    format!("{}/fonts/{file}", env!("CARGO_MANIFEST_DIR")),
+                    FontWeight::Normal,
+                    FontStyle::Normal,
+                )
+                .expect("fallback fixture registers");
+        }
+        registry.set_fallbacks(["arrows", "symbols", "emoji"]);
+        choices
+            .into_iter()
+            .map(|(name, family, weight, style)| {
+                (
+                    name,
+                    registry
+                        .resolve(family, weight, style)
+                        .expect("fixture resolves"),
+                )
+            })
+            .collect()
+    });
+    &faces
+        .iter()
+        .find(|(name, _)| name == style)
+        .unwrap_or_else(|| panic!("unknown fixture style {style}"))
+        .1
 }
 
 /// The text of a fixture entry.

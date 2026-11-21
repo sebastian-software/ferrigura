@@ -20,6 +20,7 @@ fn draw_schemes(text: &str, light: &Value, dark: Option<&Value>) -> String {
     let dark_tokens = dark.map(ThemeTokens::from_value);
     let globals = Globals::of(&config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.radar,
         globals: &globals,

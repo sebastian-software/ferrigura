@@ -136,6 +136,7 @@ pub struct Legend {
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn draw(
+    face: &ferrigura_text::Face,
     actors: &Actors,
     config: &JourneyDiagramConfig,
     size: f64,
@@ -156,10 +157,10 @@ pub fn draw(
             actor.position,
             None,
         ));
-        let lines = wrap(&actor.name, max_label_width, size)?;
+        let lines = wrap(face, &actor.name, max_label_width, size)?;
         for (index, line) in lines.iter().enumerate() {
             let shown = split_line_breaks(line).join(" ");
-            let line_width = svg_width(&shown, size)?;
+            let line_width = svg_width(face, &shown, size)?;
             texts.push(shown);
             elements.push(draw_text(&TextData {
                 x: 40.0,
@@ -213,8 +214,13 @@ pub fn actor_circle(
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn wrap(name: &str, max_width: f64, size: f64) -> Result<Vec<String>, RenderError> {
-    if svg_width(name, size)? <= max_width {
+pub fn wrap(
+    face: &ferrigura_text::Face,
+    name: &str,
+    max_width: f64,
+    size: f64,
+) -> Result<Vec<String>, RenderError> {
+    if svg_width(face, name, size)? <= max_width {
         return Ok(vec![name.to_owned()]);
     }
     let mut lines = Vec::new();
@@ -225,7 +231,7 @@ pub fn wrap(name: &str, max_width: f64, size: f64) -> Result<Vec<String>, Render
         } else {
             format!("{current} {word}")
         };
-        if svg_width(&test, size)? <= max_width {
+        if svg_width(face, &test, size)? <= max_width {
             current = test;
             continue;
         }
@@ -233,11 +239,11 @@ pub fn wrap(name: &str, max_width: f64, size: f64) -> Result<Vec<String>, Render
             lines.push(std::mem::take(&mut current));
         }
         current = word.to_owned();
-        if svg_width(word, size)? > max_width {
+        if svg_width(face, word, size)? > max_width {
             let mut broken = String::new();
             for character in word.chars() {
                 broken.push(character);
-                if svg_width(&format!("{broken}-"), size)? > max_width {
+                if svg_width(face, &format!("{broken}-"), size)? > max_width {
                     // `brokenWord.slice(0, -1) + '-'`: the piece without the character that
                     // overflowed, then the hyphen.
                     broken.pop();
@@ -292,7 +298,7 @@ mod tests {
     /// (Lexica 14 px) and a maximum of 320 px.
     #[test]
     fn a_long_name_wraps_at_the_spaces() {
-        let lines = wrap(
+        let lines = wrap(super::super::text::regular(),
             "This is a long label that will be split into multiple lines to test the wrapping functionality",
             320.0,
             14.0,
@@ -311,8 +317,17 @@ mod tests {
     /// hyphen, and the stray hyphen of a first character too wide with its hyphen.
     #[test]
     fn a_word_too_wide_is_broken_with_hyphens() {
-        let lines = wrap("Supercalifragilisticexpialidocious", 100.0, 14.0).expect("measures");
+        let lines = wrap(
+            super::super::text::regular(),
+            "Supercalifragilisticexpialidocious",
+            100.0,
+            14.0,
+        )
+        .expect("measures");
         assert_eq!(lines, ["Supercalifragili-", "sticexpialidoci-", "ous",]);
-        assert_eq!(wrap("AB", 5.0, 14.0).expect("measures"), ["-", "A-", "B"]);
+        assert_eq!(
+            wrap(super::super::text::regular(), "AB", 5.0, 14.0).expect("measures"),
+            ["-", "A-", "B"]
+        );
     }
 }

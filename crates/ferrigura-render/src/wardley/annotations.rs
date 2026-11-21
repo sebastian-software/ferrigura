@@ -135,9 +135,9 @@ fn annotations_box(
     // The widest line's advance (`getComputedTextLength`) and the text box's height (`getBBox`).
     let mut max_width = 0.0;
     for line in &lines {
-        max_width = math_max(max_width, annotation_width(line)?);
+        max_width = math_max(max_width, annotation_width(&canvas.regular, line)?);
     }
-    let max_height = annotation_height()?;
+    let max_height = annotation_height(&canvas.regular)?;
     let box_width = max_width + BOX_PADDING * 2.0 + BOX_BUFFER;
     let box_height = lines.len() as f64 * BOX_LINE_HEIGHT + BOX_PADDING * 2.0 + max_height / 2.0;
 

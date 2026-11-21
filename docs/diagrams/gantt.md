@@ -2,6 +2,14 @@
 
 A Gantt diagram draws tasks as bars on a time axis, grouped in sections, with milestones, vertical markers, excluded days, a today marker and an optional title. It starts with the keyword `gantt`. ferrigura parses it with a hand-written parser that ports the Jison grammar `gantt.jison`, the DB `ganttDb.js` and the date rules they rely on (`crates/ferrigura-syntax/src/gantt/`), and draws it with a renderer of its own (`crates/ferrigura-render/src/gantt/`) on ports of d3-time, d3-scale, d3-time-format and d3-axis. There is no layout engine.
 
+## Draw animation
+
+The optional [draw animation](../animation.md) render option draws one element
+at a time by default, with a speed multiplier instead of a fixed total duration.
+Task bars grow along the timeline; milestones and vertical task markers fade in. Axes, sections, excluded days, the today marker, and the title stay visible.
+The SVG carries its own CSS, contains no script, and shows the complete diagram
+when the viewer requests reduced motion.
+
 ## Model
 
 `GanttDiagram` (`crates/ferrigura-model/src/gantt.rs`), version 1, is the DB's state after `getTasks()`, with the dates resolved.
@@ -95,3 +103,7 @@ The renderer ports `ganttRenderer.js` and `styles.js`. `mod.rs` sizes the diagra
 - **A single `D` in `dateFormat` changes the axis format to `%d`,** and the axis format and tick text keep their blanks (`' %d/%m'` gives `' 07/01'`).
 - **The harness page has no body margin,** so the reference's container is the 1200 px viewport. Without that, every fixture without `useWidth` would differ in width.
 - **d3-axis offsets by the device pixel ratio.** The offset is 0.5 at a ratio of 1 and 0 above it; the reference's own end-to-end baselines are taken at a ratio of 2.
+
+## Font inputs
+
+Labels, section names, title, and axis ticks use the resolved global `fontFamily`. Milestone labels use its italic design; clickable task labels use its bold design, or bold italic for a milestone. The reference’s regular-face task-width measurement is preserved. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

@@ -63,6 +63,8 @@ Quirks of the reference that are kept on purpose:
 
 - A site configuration's `dompurifyConfig` is not read by the sanitizer, which runs DOMPurify's default configuration once where the reference's `sanitizeMore` runs `removeScript` first; the one spec that tests it is ignored.
 
+Edge-label backgrounds use the shared full-opacity default in both render modes, preserving explicit theme color transparency. Reference patch 12 applies the same paint-only correction without changing layout ([0019](../decisions/0019-adaptive-flowchart-mode.md)).
+
 ## Checking it
 
 - `pnpm -C tools/port port:diff block` compares the canonical models on the fixtures, the string literals of the specs and the Markdown examples, and the explicit cases of `cases.ts` (one per quirk above); generated ids are replaced by placeholders (`normalizeGenerated` in `export-block.ts`, `normalize_block_ids` in the `canonical` example).

@@ -1,5 +1,5 @@
 {
-  "renderedWith": { "@ferrigura/core": "0.4.0", "mermaid": "12.2.0" },
+  "renderedWith": { "ferrigura": "repository source", "mermaid": "12.2.0" },
   "platform": "darwin-arm64",
   "settings": {
     "config": {
@@ -17,7 +17,7 @@
       "securityLevel": "strict",
       "deterministicIds": true
     },
-    "ferrigura": { "colorScheme": "light", "flowchartMode": "mermaid" }
+    "ferrigura": { "colorScheme": "light", "compat": true }
   },
   "examples": [
     {

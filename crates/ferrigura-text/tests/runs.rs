@@ -23,7 +23,7 @@ fn mixed_runs_agree_with_chromium() {
             .map(|run| (text_of(run), style_of(run)))
             .collect();
         let faces: Vec<_> = runs.iter().map(|(_, style)| face_for(style)).collect();
-        let parts: Vec<Run<'_>> = runs
+        let parts: Vec<Run<'_, '_>> = runs
             .iter()
             .zip(&faces)
             .map(|((text, _), face)| Run { text, face })

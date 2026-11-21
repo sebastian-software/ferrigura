@@ -292,7 +292,11 @@ pub fn build(conf: &Conf, radius: f64, shape: &C4Shape) -> Result<Built, RenderE
         Kind::TiltedCylinder => (conf.width - padding / 2.0).max(QUEUE_MIN_WIDTH),
         _ => conf.width,
     };
-    let stacked = label::layout(&sections, wrap_width(conf, node_width))?;
+    let stacked = label::layout(
+        &conf.fonts.with_family(&palette.font.family),
+        &sections,
+        wrap_width(conf, node_width),
+    )?;
     let (text_width, text_height) = (stacked.width, stacked.height);
 
     let (width, height, label_translate, body, intersect) = match kind {

@@ -8,7 +8,8 @@ app/data/coverage.json
 app/routes/guide/
 app/routes/reference/
 app/routes/diagrams/
-app/routes/architecture/
+# The generated pages are Markdown; the pages written by hand beside them are MDX.
+app/routes/architecture/**/*.md
 app/routes/comparisons/*.md
 app/routes/changelog.md
 public/notices/

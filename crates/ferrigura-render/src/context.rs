@@ -11,6 +11,8 @@ use ferrigura_model::theme::ThemeTokens;
 /// the id. `Section` is the configuration section of the diagram type (`()` for a diagram without
 /// one).
 pub struct Context<'a, Model, Section> {
+    /// Explicit host font inputs. `None` preserves the bundled compatibility defaults.
+    pub fonts: Option<&'a std::sync::Arc<ferrigura_text::FontRegistry>>,
     /// The parsed diagram.
     pub diagram: &'a Model,
     /// The section of the configuration that the diagram type reads.
@@ -22,6 +24,20 @@ pub struct Context<'a, Model, Section> {
     /// The id of the SVG element. It scopes every selector and prefixes the element ids, so it must
     /// be a CSS identifier.
     pub id: &'a str,
+}
+
+impl<Model, Section> Context<'_, Model, Section> {
+    /// The primary configured family and explicit font inputs for this render.
+    #[must_use]
+    pub fn text_fonts(&self) -> crate::fonts::FontContext {
+        let family = self
+            .theme
+            .light
+            .font_family
+            .text()
+            .unwrap_or_else(|| self.globals.font_family.clone());
+        crate::fonts::FontContext::new(self.fonts, &family)
+    }
 }
 
 /// The global options that renderers read, taken from the top level of the configuration and

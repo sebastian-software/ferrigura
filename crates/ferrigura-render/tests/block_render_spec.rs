@@ -18,6 +18,7 @@ fn render_text(text: &str, config: &MermaidConfig) -> Result<String, RenderError
         unified: Section::of(config),
     };
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &sections,
         globals: &Globals::of(config),
@@ -123,6 +124,7 @@ fn a_composite_takes_the_dark_cluster_colors_under_the_dark_scheme() {
         unified: Section::of(&config),
     };
     let svg = render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &sections,
         globals: &Globals::of(&config),

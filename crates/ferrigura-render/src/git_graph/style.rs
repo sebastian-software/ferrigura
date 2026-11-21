@@ -33,7 +33,7 @@ pub fn style_element(
     let faces = if families.is_empty() {
         String::new()
     } else {
-        font_faces(families)
+        font_faces(id, families)
     };
     format!(
         "<style>{}{tokens}{}</style>",

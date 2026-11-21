@@ -131,6 +131,8 @@ async function verifyCompareSlider(page, origin) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(new URL('/comparisons/side-by-side/', origin).href, { waitUntil: 'load' });
   assert.equal(await page.locator('.fgr-side').count(), 10, 'The page needs ten figures');
+  await verifyComparisonFonts(page);
+  await verifyComparisonLabels(page);
   const slider = page.locator('.fgr-compare').nth(3);
   await slider.scrollIntoViewIfNeeded();
   await verifyAlignment(slider);
@@ -138,16 +140,73 @@ async function verifyCompareSlider(page, origin) {
   await handle.focus();
   await page.keyboard.press('ArrowLeft');
   assert.equal(await handle.getAttribute('aria-valuenow'), '48', 'The arrow keys do not move it');
+  assert.match(
+    await handle.getAttribute('aria-label'),
+    /left of the divider.*right of it/,
+    'The slider must name both drawings'
+  );
+  await verifySliderClick(page, slider, handle);
+}
+
+async function verifySliderClick(page, slider, handle) {
   const stage = await slider.locator('.fgr-compare-stage').boundingBox();
   await page.mouse.click(stage.x + stage.width * 0.2, stage.y + stage.height / 2);
   const value = Number(await handle.getAttribute('aria-valuenow'));
   assert(Math.abs(value - 20) <= 2, `A click at 20% puts the divider at ${value}%`);
 }
 
-/** Ferrigura's image and Mermaid's SVG take the same box under the divider. */
+/** Shared SVG edge-label backgrounds mask lines in every graph specimen. */
+async function verifyComparisonLabels(page) {
+  for (const type of ['flowchart', 'class', 'state', 'er']) {
+    const backgrounds = await page
+      .locator(`#ferrigura-${type} .edgeLabel rect.background[width]`)
+      .evaluateAll((rectangles) =>
+        rectangles.map((rectangle) => ({
+          opacity: getComputedStyle(rectangle).opacity,
+          fillOpacity: getComputedStyle(rectangle).fillOpacity,
+          fill: getComputedStyle(rectangle).fill,
+        }))
+      );
+    assert(backgrounds.length > 0, `${type} needs edge labels`);
+    for (const background of backgrounds) {
+      assert.equal(background.opacity, '1', `${type} labels must mask their lines`);
+      assert.equal(background.fillOpacity, '1', `${type} labels must keep the theme fill`);
+      assert.notEqual(background.fill, 'none', `${type} labels need a background`);
+    }
+  }
+}
+
+/** Standalone subsets and regular flowchart text stay active in the inline comparison. */
+async function verifyComparisonFonts(page) {
+  await page.evaluate(() => document.fonts.ready);
+  const fonts = await page
+    .locator('.fgr-side')
+    .nth(1)
+    .locator(
+      '[data-rcs-item="itemOne"] text.actor, [data-rcs-item="itemOne"] text.noteText, [data-rcs-item="itemOne"] text.messageText'
+    )
+    .evaluateAll((texts) => texts.map((text) => getComputedStyle(text).fontFamily));
+  assert(
+    fonts.length > 0 && fonts.every((family) => family.includes('fg-')),
+    'Sequence labels must use the embedded font'
+  );
+  for (const layer of ['[data-rcs-item="itemOne"]', '[data-rcs-item="itemTwo"]']) {
+    const weight = await page
+      .locator('.fgr-side')
+      .first()
+      .locator(`${layer} text`)
+      .filter({ hasText: 'Tests pass?' })
+      .evaluate(
+        (text) => getComputedStyle(text.querySelector('.text-inner-tspan') ?? text).fontWeight
+      );
+    assert.equal(weight, '400', 'Both flowcharts use regular text');
+  }
+}
+
+/** Both SVGs take the same box under the divider. */
 async function verifyAlignment(slider) {
-  const first = await slider.locator('.fgr-compare-layer img').boundingBox();
-  const second = await slider.locator('.fgr-compare-layer svg').first().boundingBox();
+  const first = await slider.locator('.fgr-compare-layer svg').first().boundingBox();
+  const second = await slider.locator('.fgr-compare-layer svg').last().boundingBox();
   assert(first && second, 'A side-by-side drawing has no box');
   for (const key of ['x', 'y', 'width', 'height'])
     assert(Math.abs(first[key] - second[key]) < 1, `The two drawings do not line up (${key})`);

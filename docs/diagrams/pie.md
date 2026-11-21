@@ -2,6 +2,14 @@
 
 A pie diagram draws labeled values as slices of a circle, with a legend and an optional title. It starts with the keyword `pie`, optionally followed by `showData` to print the values in the legend. ferrigura parses it with a hand-written parser on the shared `logos` lexer (`crates/ferrigura-syntax/src/pie.rs`) that follows the Langium grammar `pie.langium` and the DB of `pieDb.ts`, and draws it with a renderer of its own (`crates/ferrigura-render/src/pie.rs`). There is no layout engine: the layout is arithmetic, with the slice angles of d3's pie.
 
+## Draw animation
+
+The optional [draw animation](../animation.md) render option draws one element
+at a time by default, with a speed multiplier instead of a fixed total duration.
+Sectors reveal clockwise with independent easing, timed by outer perimeter arc length, including donut charts. Each legend entry appears with its sector; entries for omitted, sub-percent sectors appear after the visible sectors. The outer circle and title stay visible. Reveal masks extend past radial borders to include their complete strokes, keeping separators the same thickness when the masks release.
+The SVG carries its own CSS, contains no script, and shows the complete diagram
+when the viewer requests reduced motion.
+
 ## Model
 
 `PieDiagram` (`crates/ferrigura-model/src/pie.rs`), version 1, with these fields:

@@ -34,7 +34,7 @@ use ferrigura_model::config::{
 use ferrigura_model::theme::ThemeTokens;
 
 use crate::context::{Context, Globals};
-use crate::flowchart::policy::FlowchartMode;
+use crate::flowchart::policy::FlowchartRouting;
 
 /// The sections of the configuration that the unified renderer reads, borrowed from the view that the
 /// facade resolves. The `flowchart` section gives the layout's spacing, the curve and the title
@@ -45,7 +45,7 @@ use crate::flowchart::policy::FlowchartMode;
 #[derive(Debug, Clone, Copy)]
 pub struct Section<'a> {
     /// The flowchart's rendering mode. Other diagram types ignore it.
-    pub flowchart_mode: FlowchartMode,
+    pub flowchart_routing: FlowchartRouting,
     /// The `flowchart` section.
     pub flowchart: &'a FlowchartDiagramConfig,
     /// The `elk` section.
@@ -64,7 +64,7 @@ impl<'a> Section<'a> {
     #[must_use]
     pub fn of(config: &'a MermaidConfig) -> Self {
         Self {
-            flowchart_mode: FlowchartMode::Mermaid,
+            flowchart_routing: FlowchartRouting::Mermaid,
             flowchart: &config.flowchart,
             elk: &config.elk,
             class: &config.class,
@@ -77,8 +77,10 @@ impl<'a> Section<'a> {
 /// What the unified renderer reads besides its diagram: its sections, the global options and the
 /// light theme as tokens. A diagram makes it from its context, and the pipeline, the shapes and the
 /// clusters take it by reference.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Config<'a> {
+    /// Explicit font inputs and the configured primary family.
+    pub fonts: crate::fonts::FontContext,
     /// The configuration sections.
     pub section: Section<'a>,
     /// The global options.
@@ -93,6 +95,7 @@ impl<'a> Config<'a> {
     #[must_use]
     pub fn of<Model>(input: &Context<'a, Model, Section<'a>>) -> Self {
         Self {
+            fonts: input.text_fonts(),
             section: *input.section,
             globals: input.globals,
             theme: input.theme.light,
@@ -123,6 +126,7 @@ impl Fixture {
     /// The configuration of the fixture, as the renderer reads it.
     pub(crate) fn config(&self) -> Config<'_> {
         Config {
+            fonts: crate::fonts::FontContext::bundled(),
             section: Section::of(&self.config),
             globals: &self.globals,
             theme: &self.theme,

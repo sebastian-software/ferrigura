@@ -24,7 +24,7 @@ Left out are the box geometry and texts (they need the measured text, and `data`
 
 ## Parsing
 
-`event_modeling::parse` runs the steps of `Diagram.fromText`: it prepares the text (line breaks, quote rewriting, front matter and its title), removes directives, keeps the comment lines (this DB sets `preserveCommentsWhenParsing`) unless the text is longer than the default `maxTextSize` of 50 000 UTF-16 units, encodes entities and adds a line break. The scanner and the grammar build a syntax tree, the DB places the frames and creates the relations, and the model holds the result ([0007](../decisions/0007-hand-written-parsers.md)). Positions in errors count the lines of the original input, front matter included.
+`event_modeling::parse` runs the steps of `Diagram.fromText`: it prepares the text (line breaks, quote rewriting, front matter and its title), removes directives, keeps the comment lines (this DB sets `preserveCommentsWhenParsing`) unless the text is longer than the configured `maxTextSize` (50,000 UTF-16 units by default), encodes entities and adds a line break. The scanner and the grammar build a syntax tree, the DB places the frames and creates the relations, and the model holds the result ([0007](../decisions/0007-hand-written-parsers.md)). Positions in errors count the lines of the original input, front matter included.
 
 The scanner runs the terminals of the Chevrotain lexer in the order Langium builds them, and the first that matches wins: the keywords (longest first), `EM_ID`, `EM_FID` (one to three digits), the inline data, the data block, the `accDescr`, `accTitle` and `title` tokens, white space, and the hidden YAML, directive and comment terminals. Each regular expression is matched by hand as JavaScript runs it at the current position. A word keyword is a token only when the identifier run that starts there is exactly the keyword, and `eventmodeling` also needs `%%`, white space or the end after it. The grammar is `eventmodeling` followed by statements, each starting with a token no other statement starts with.
 
@@ -57,7 +57,7 @@ The renderer ports `renderer.ts`, `styles.js` and the text of `db.ts` (`calculat
 
 ## Differences from Mermaid
 
-- The box text is SVG text, not HTML in a `foreignObject` ([0009](../decisions/0009-svg-text-labels.md)), and the fonts are the bundled faces: the names in Lexica Ultralegible and the data in Atkinson Hyperlegible Mono ([0010](../decisions/0010-text-measurement-and-fonts.md)). The reference's `code` element takes the machine's `monospace`; the harness pins it to the bundled mono face so both sides lay the code out in one face.
+- The box text is SVG text, not HTML in a `foreignObject` ([0009](../decisions/0009-svg-text-labels.md)), and the default fonts are the bundled faces: names in Lexica Ultralegible and data in Atkinson Hyperlegible Mono ([0010](../decisions/0010-text-measurement-and-fonts.md)). The reference's `code` element takes the machine's `monospace`; the harness pins it to the bundled mono face so both sides lay the code out in one face.
 - Error messages are ferrigura's own, with the position in the original input; the duplicate-frame message is `frame id "01" is already used by an earlier frame`, where the reference counts the front matter out of its line number ([0007](../decisions/0007-hand-written-parsers.md)).
 - A data cut can split a surrogate pair (`{ 😀}` cut before the closing brace). The reference keeps the lone surrogate; a Rust `String` cannot, so ferrigura writes U+FFFD. No input of the comparison has one.
 
@@ -65,7 +65,7 @@ The renderer ports `renderer.ts`, `styles.js` and the text of `db.ts` (`calculat
 
 - The tags that DOMPurify keeps and the data can reach, beyond bold, italic and the plain ones, are not drawn as the reference draws them: `sub` and `sup` (a shifted baseline and a smaller size), `small` and `big` (a size), `kbd` (the machine's `monospace`) and the block tags `p` and `div` (each starts a line). No probe passes through them yet; `u`, `s`, `span`, `mark` and `code` are within tolerance.
 - The browser's per-glyph rounding of advances is not emulated; it shows as one layout unit (1/64 px) on some lines.
-- The configuration's `maxTextSize` is not read by the parse pipeline, for any type; a directive that sets it is not honored.
+- The rendering facade checks the host `maxTextSize` before parsing and passes it to the comment handling described above. Direct syntax-crate calls use the default unless a limit is supplied.
 - The `accTitle` and `accDescr` elements and the order of the `aria-labelledby` attributes are not compared with the reference (the harness skips `title` and `desc`).
 
 ## Checking it
@@ -76,7 +76,7 @@ The renderer ports `renderer.ts`, `styles.js` and the text of `db.ts` (`calculat
 
 ## Learnings
 
-- **Boxes are sized in one font and drawn in another size.** The measurement is 16 px bold in a family list named in code, not the configured font, and the text is drawn at the root's size (14 px in the redux themes), so a box is larger than its text. The configured `fontFamily` never reaches the measurement; ferrigura measures in the bundled face and the harness maps the reference's family names onto it, so both sides measure the same text.
+- **Boxes are sized in one font and drawn in another size.** The measurement is 16 px bold in a family list named in code, not the configured font, and the text is drawn at the root's size (14 px in the redux themes), so a box is larger than its text. Without host font inputs, ferrigura measures in the bundled face and the harness maps the reference's family names onto it, so both sides measure the same text. Host-supplied mode uses the resolved primary face while retaining the reference’s measurement key.
 - **The measurement reads the literal markup.** The width and height come from the whole string including `<b>`, `<code style="…">`, `&nbsp;` and the entity placeholders, split on `<br>`; an empty line becomes U+200B and still has its height. The reference measures twice, in `sans-serif` and in the named family, and takes the second unless the first is larger in all three values, which is never the case in practice because its height is smaller.
 - **Heights do not depend on the text:** 19 px per line in the named family on the reference machine, 18 px in `sans-serif`. Wrapping, by contrast, depends on the widths, so a stubbed measurement (the reference's own spec stubs `getBBox` to 100 by 20) cannot test it.
 - **`getBBox` of the root is float32.** The lane rectangle's width is a double (`540.3333333333334`), but the viewBox and `max-width` use the float32 value plus the padding (`600.3333129882812`), so the root's box is rounded to float32 before the padding is added.
@@ -85,3 +85,7 @@ The renderer ports `renderer.ts`, `styles.js` and the text of `db.ts` (`calculat
 - **A newline in a data block is a break opportunity,** because the reference writes the block's own newline into the HTML while `&nbsp;` does not break; a block of several lines can show one more line than the measurement counted.
 - **The harness leaves `foreignObject` sizes out,** so the box rectangles carry the same numbers and show a size error; the text is compared as labels.
 - **Dead code in the reference:** `findSwimlaneByNamespace` can never find a lane, and `rowHeight`, `boxDefaultY` and `boxTextFontWeight` are read by nothing.
+
+## Font inputs
+
+The resolved global `fontFamily` supplies lane and box names, with the appropriate bold design. Code data uses the explicitly registered `monospace` family and resolves its bold and italic runs separately. Box sizing retains the reference’s literal-markup memo key and 16 px bold measurement while using the supplied primary face. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

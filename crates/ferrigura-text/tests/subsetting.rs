@@ -112,7 +112,7 @@ fn different_subsets_get_different_family_names() {
         text: "Hello",
         face: bold(),
     }];
-    let name = |runs: &[Run<'_>]| embed_runs(runs).expect("embeds")[0].name.clone();
+    let name = |runs: &[Run<'_, '_>]| embed_runs(runs).expect("embeds")[0].name.clone();
     assert_ne!(name(&base), name(&more));
     assert_ne!(name(&base), name(&other_face));
     assert_ne!(name(&more), name(&other_face));

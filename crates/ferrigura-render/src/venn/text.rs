@@ -4,7 +4,7 @@
 
 use crate::RenderError;
 use crate::common::is_js_whitespace;
-use crate::journey::text::{Line, break_lines_in, min_content_width_in, regular};
+use crate::journey::text::{Line, break_lines_in, min_content_width_in};
 
 /// `label.split(/\s+/)`: the runs of white space separate the words, and a white space at either
 /// end gives an empty word at that end, as JavaScript's split does.
@@ -55,11 +55,11 @@ pub(super) fn set_label_text(label: &str) -> String {
 ///
 /// Returns an error if the bundled font cannot be read.
 pub(super) fn text_node_lines(
+    face: &ferrigura_text::Face,
     text: &str,
     box_width: f64,
     size: f64,
 ) -> Result<Vec<Line>, RenderError> {
-    let face = regular();
     let width = box_width.max(min_content_width_in(face, text, size)?);
     break_lines_in(face, text, width, size)
 }

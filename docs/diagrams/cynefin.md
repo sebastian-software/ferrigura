@@ -87,3 +87,7 @@ The renderer ports `cynefinRenderer.ts` (`draw`), `cynefinBoundaries.ts` and `st
 - **Entities are placeholders until the whole SVG is decoded.** `#amp;` is `ﬂ°amp¶ß` in the DB and shows as `&`; `#35;` shows as `#`. The decoding cannot tell where a placeholder came from, so an item holding `ﬂ°amp¶ß` literally shows `&` too.
 - **The redux themes have no `cynefin` block,** so the reference draws the default theme's colors in both schemes: pastel backgrounds with `#131300` labels even in the dark one.
 - **Chevrotain's first-match lexer decides the grammar's edges:** the names without a word end, the colon form of the header without its guard, and the title terminals that take leading blanks all follow from the order of the terminals, not from the grammar text.
+
+## Font inputs
+
+Labels use the resolved global `fontFamily`: regular for items and badges, bold for domain labels and the title, and italic for subtitles. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

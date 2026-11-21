@@ -20,12 +20,12 @@ use crate::measure::{layout_width, measure};
 
 /// A word of a line: its text and the face it is set in.
 #[derive(Debug, Clone)]
-pub struct Word {
+pub struct Word<'a> {
     /// The text of the word. Wrapping splits it into graphemes, and it is measured as the caller
     /// shows it.
     pub text: String,
     /// The face the word is set in.
-    pub face: &'static Face,
+    pub face: &'a Face,
 }
 
 /// `splitTextToChars` in `splitText.ts`: the grapheme clusters of `text`.
@@ -76,7 +76,10 @@ pub fn measure_words(
 /// # Errors
 ///
 /// Returns the first error `fits` reports.
-pub fn split_word_to_fit_width<F>(word: &Word, fits: &mut F) -> Result<(Word, Word), TextError>
+pub fn split_word_to_fit_width<'a, F>(
+    word: &Word<'a>,
+    fits: &mut F,
+) -> Result<(Word<'a>, Word<'a>), TextError>
 where
     F: FnMut(&[Word]) -> Result<bool, TextError>,
 {
@@ -123,7 +126,10 @@ where
 ///
 /// Returns [`TextError::NewlineInLine`] if a word holds a newline, as the reference throws for
 /// it, or the first error `fits` reports.
-pub fn split_line_to_fit_width<F>(line: &[Word], fits: &mut F) -> Result<Vec<Vec<Word>>, TextError>
+pub fn split_line_to_fit_width<'a, F>(
+    line: &[Word<'a>],
+    fits: &mut F,
+) -> Result<Vec<Vec<Word<'a>>>, TextError>
 where
     F: FnMut(&[Word]) -> Result<bool, TextError>,
 {
@@ -178,7 +184,7 @@ where
 /// # Errors
 ///
 /// Returns the errors of [`split_line_to_fit_width`] and of `fits`.
-pub fn fit_line<F>(line: &[Word], mut fits: F) -> Result<Vec<Vec<Word>>, TextError>
+pub fn fit_line<'a, F>(line: &[Word<'a>], mut fits: F) -> Result<Vec<Vec<Word<'a>>>, TextError>
 where
     F: FnMut(&[Word]) -> Result<bool, TextError>,
 {
@@ -199,7 +205,7 @@ where
 /// Returns an error if the face cannot be shaped.
 pub fn wrap_line(
     text: &str,
-    face: &'static Face,
+    face: &Face,
     size: f64,
     max_width: f64,
 ) -> Result<Vec<String>, TextError> {

@@ -1,5 +1,5 @@
 {
-  "renderedWith": { "@ferrigura/core": "0.4.0" },
+  "renderedWith": { "ferrigura": "repository source" },
   "platform": "darwin-arm64",
   "samples": [
     {
@@ -59,7 +59,7 @@
   },
   "file": {
     "sample": "flowchart",
-    "bytes": 30425,
+    "bytes": 30465,
     "fontFaces": 1,
     "fontBytes": 3748,
     "textElements": 10,

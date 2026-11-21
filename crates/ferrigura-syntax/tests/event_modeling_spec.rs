@@ -154,3 +154,14 @@ fn should_handle_all_entity_types() {
     tf 10 readmodel ReadModel2";
     assert!(parse(text).is_ok());
 }
+
+#[test]
+fn comment_preservation_uses_the_supplied_text_limit() {
+    let text = "eventmodeling\ntf 01 ui UI\n%% comment\nrf 01 evt Event";
+    let kept = ferrigura_syntax::event_modeling::parse_with_max_text_size(text, text.len())
+        .expect_err("duplicate frame");
+    let stripped = ferrigura_syntax::event_modeling::parse_with_max_text_size(text, 1)
+        .expect_err("duplicate frame");
+    assert_eq!(kept.line, 4);
+    assert_eq!(stripped.line, 3);
+}

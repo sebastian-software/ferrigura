@@ -21,7 +21,7 @@ use ferrigura_model::flowchart::FlowClass;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_model::value::Value;
 use ferrigura_render::context::{Globals, ThemeView};
-use ferrigura_render::flowchart::policy::FlowchartMode;
+use ferrigura_render::flowchart::policy::FlowchartRouting;
 use ferrigura_render::flowchart::style::style_sheet;
 
 const REFERENCE: &str = include_str!("data/flowchart-styles.json");
@@ -162,6 +162,11 @@ const OMITTED_AT_RULES: &[(&str, &str)] = &[(
 /// declarations are not listed here: they are the sheet's values, not rules, and the test reads them
 /// separately.
 const EXTRAS: &[(&str, &str, &str)] = &[
+    (
+        "#flowchart .banner tspan",
+        "background-fill",
+        "an invalid property from Mermaid's color-to-fill substitution; current JSDOM CSSOM drops it",
+    ),
     (
         "#flowchart text",
         "white-space",
@@ -393,7 +398,7 @@ fn entries(items: &[Item], custom: &[(String, String)], resolve: bool) -> Vec<En
                         out.push(Entry {
                             selector: selector.clone(),
                             property: property.clone(),
-                            value: value.split_whitespace().collect(),
+                            value: value_key(&value),
                             important: *important,
                         });
                     }
@@ -404,6 +409,28 @@ fn entries(items: &[Item], custom: &[(String, String)], resolve: bool) -> Vec<En
         }
     }
     out
+}
+
+/// JSDOM serializes class colors as rgb(); the renderer retains the equivalent hex spelling.
+fn value_key(value: &str) -> String {
+    let compact: String = value.split_whitespace().collect();
+    let Some(hex) = compact.strip_prefix('#') else {
+        return compact;
+    };
+    let expanded = match hex.len() {
+        3 => hex.chars().flat_map(|c| [c, c]).collect::<String>(),
+        6 => hex.to_owned(),
+        _ => return compact,
+    };
+    match u32::from_str_radix(&expanded, 16) {
+        Ok(rgb) => format!(
+            "rgb({},{},{})",
+            (rgb >> 16) & 255,
+            (rgb >> 8) & 255,
+            rgb & 255
+        ),
+        Err(_) => compact,
+    }
 }
 
 /// The value with each `var(--name)` replaced by the custom property's value.
@@ -504,7 +531,7 @@ fn the_style_sheet_matches_the_reference_rule_by_rule() {
             },
             &Globals::of(&config(theme, look)),
             &classes,
-            FlowchartMode::Mermaid,
+            FlowchartRouting::Mermaid,
         ));
         let actual_items = parse(&sheet);
         let expected_items = parse(case["css"].as_str().expect("css"));
@@ -540,7 +567,7 @@ fn the_style_sheet_matches_the_reference_rule_by_rule() {
                         expected_entries.push(Entry {
                             selector: selector.clone(),
                             property: property.clone(),
-                            value: value.split_whitespace().collect(),
+                            value: value_key(value),
                             important: *important,
                         });
                     }

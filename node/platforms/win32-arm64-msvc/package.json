@@ -1,6 +1,6 @@
 {
   "name": "@ferrigura/win32-arm64-msvc",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": false,
   "description": "Native aarch64-pc-windows-msvc binary for ferrigura",
   "license": "MIT",

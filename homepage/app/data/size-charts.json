@@ -1,0 +1,27 @@
+{
+  "renderedWith": { "@ferrigura/core": "0.4.0" },
+  "platform": "darwin-arm64",
+  "charts": [
+    {
+      "id": "types",
+      "title": "What each diagram type adds",
+      "description": "The addon with one diagram type, less the core (4.6 MB), in kB. Types that share a layout engine each count it here; together they carry it once.",
+      "source": "%%{init: {\"xyChart\": {\"height\": 872, \"width\": 720}, \"themeVariables\": {\"xyChart\": {\"plotColorPalette\": \"#b5512e\"}}}}%%\nxychart-beta horizontal\n  x-axis [\"Swimlanes\", \"Agent flow\", \"Use case\", \"Class\", \"Flowchart\", \"State\", \"Entity relationship\", \"Requirement\", \"Mindmap\", \"Block\", \"C4\", \"Architecture\", \"Sequence\", \"Gantt\", \"Venn\", \"Kanban\", \"Git graph\", \"Wardley map\", \"Treemap\", \"Railroad\", \"XY chart\", \"Event modeling\", \"User journey\", \"Timeline\", \"Sankey\", \"Cynefin\", \"Tree view\", \"Ishikawa\", \"Pie\", \"Radar\", \"Quadrant chart\", \"Packet\"]\n  y-axis \"kB added to the core\" 0 --> 3500\n  bar [3409, 2946, 2847, 2830, 2698, 2665, 2615, 2599, 2549, 1555, 1439, 1406, 1390, 1274, 1142, 1108, 1042, 1042, 1026, 1026, 1009, 1009, 1009, 993, 993, 976, 976, 960, 827, 182, 182, 165]\n",
+      "file": "types.svg"
+    },
+    {
+      "id": "sets",
+      "title": "The addon by the types it draws",
+      "description": "Builds of the addon with the cargo features of a few type sets, in MB, stripped. The core is the build with the info diagram alone.",
+      "source": "%%{init: {\"xyChart\": {\"height\": 300, \"width\": 720}, \"themeVariables\": {\"xyChart\": {\"plotColorPalette\": \"#b5512e\"}}}}%%\nxychart-beta horizontal\n  x-axis [\"Core\", \"Sequence diagrams\", \"Flowcharts\", \"Five common types\", \"Every type\"]\n  y-axis \"MB\" 0 --> 13\n  bar [4.6, 6, 7.3, 8.1, 11.8]\n",
+      "file": "sets.svg"
+    },
+    {
+      "id": "share",
+      "title": "Core and diagram types in the full addon",
+      "description": "The published addon, which draws every type, split into the core and what the 32 other types add together, in MB.",
+      "source": "pie showData\n  \"Core\" : 4.6\n  \"Diagram types\" : 7.2\n",
+      "file": "share.svg"
+    }
+  ]
+}

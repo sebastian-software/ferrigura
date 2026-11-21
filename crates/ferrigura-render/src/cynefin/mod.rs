@@ -57,7 +57,7 @@ pub fn render(
 
     // The texts first: their runs give the fonts, and the elements are the same whichever order they
     // are built in.
-    let mut runs = Vec::new();
+    let mut runs = draw::Runs::new(&input.text_fonts())?;
     let backgrounds = draw::backgrounds(width, height, &light);
     let boundaries = draw::boundaries(width, height, seed, config.boundary_amplitude, &light);
     let confusion = draw::confusion(width, height, &light);
@@ -99,6 +99,7 @@ pub fn render(
 
     let families = embed_runs(
         &runs
+            .texts
             .iter()
             .map(|(text, face)| Run {
                 text: text.as_str(),
@@ -106,18 +107,32 @@ pub fn render(
             })
             .collect::<Vec<_>>(),
     )?;
-    let font_family = families.first().map_or_else(
-        || {
-            input
-                .theme
-                .light
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
-    let own_rules = style::own_rules(input.id, &light, dark.as_ref());
+    let font_family = runs.regular.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                input
+                    .theme
+                    .light
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
+    let mut own_rules = style::own_rules(input.id, &light, dark.as_ref());
+    if let Some(css) = runs.bold.css_reference() {
+        own_rules.push_str(&format!(
+            "#{} .cynefinDomainLabel,#{} .cynefinTitle{{font-family:{css};}}",
+            input.id, input.id
+        ));
+    }
+    if let Some(css) = runs.italic.css_reference() {
+        own_rules.push_str(&format!(
+            "#{} .cynefinSubtitle{{font-family:{css};}}",
+            input.id
+        ));
+    }
     let style = base_style_sheet(
         input.id,
         input.theme,

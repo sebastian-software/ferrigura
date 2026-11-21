@@ -20,7 +20,7 @@ use std::f64::consts::PI;
 use ferrigura_jsmath::{cos, sin};
 use ferrigura_model::config::IshikawaDiagramConfig;
 use ferrigura_model::ishikawa::{IshikawaDiagram, IshikawaNode};
-use ferrigura_text::{EmbeddedFamily, Face, FontFamily, FontStyle, FontWeight, embed_runs, face};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
@@ -75,8 +75,8 @@ pub(super) struct Context {
     /// The size the labels are drawn at: the theme's `fontSize`, from the stylesheet.
     pub label_size: f64,
     /// The faces: the regular one for the labels and the bold one for the head (weight 600).
-    pub regular: &'static Face,
-    pub bold: &'static Face,
+    pub regular: crate::fonts::FontFace,
+    pub bold: crate::fonts::FontFace,
     /// The colors of the presentation attributes, the light scheme's.
     pub line: String,
     pub main: String,
@@ -99,7 +99,7 @@ pub(super) struct Drawing {
     /// The union of everything drawn, in the user space of the diagram (`getBBox` of the root).
     bounds: Option<BBox>,
     /// The text of every label and the face it is set in.
-    runs: Vec<(String, &'static Face)>,
+    runs: Vec<(String, crate::fonts::FontFace)>,
 }
 
 impl Drawing {
@@ -141,8 +141,12 @@ pub fn render(
         FONT_SIZE_DEFAULT
     };
     let label_size = tokens.font_size.px().unwrap_or(FONT_SIZE_DEFAULT);
-    let regular = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
-    let bold = face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal);
+    let regular = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
+    let bold = input
+        .text_fonts()
+        .face(FontWeight::Number(600), FontStyle::Normal)?;
     let context = Context {
         cos_a: cos(ANGLE),
         sin_a: sin(ANGLE),
@@ -179,15 +183,17 @@ pub fn render(
 
     // The fonts: every line of every label, in the face each one is set in.
     let families: Vec<EmbeddedFamily> = embed_runs(&as_runs(&drawing.runs))?;
-    let family = families.first().map_or_else(
-        || {
-            tokens
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let family = context.regular.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                tokens
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let label_size_css = tokens.font_size.text().unwrap_or_else(|| "14px".to_owned());
     let sheet = style::sheet(id, input.theme, &family, &label_size_css, &families);
 
@@ -372,7 +378,7 @@ fn head(
         anchor_attribute: "start",
         anchor: Anchor::Middle,
         baseline: Baseline::Middle,
-        face: context.bold,
+        face: context.bold.clone(),
         size: HEAD_LABEL_SIZE,
         line_height: context.line_height(),
     };
@@ -481,13 +487,17 @@ mod tests {
     }
 
     fn test_context() -> Context {
-        let regular = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+        let regular = crate::fonts::FontFace::retain(ferrigura_text::face(
+            ferrigura_text::FontFamily::Sans,
+            FontWeight::Normal,
+            FontStyle::Normal,
+        ));
         Context {
             cos_a: cos(ANGLE),
             sin_a: sin(ANGLE),
             font_size: 16.0,
             label_size: 14.0,
-            regular,
+            regular: regular.clone(),
             bold: regular,
             line: "#333".to_owned(),
             main: "#fff".to_owned(),

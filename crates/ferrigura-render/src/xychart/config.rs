@@ -40,6 +40,7 @@ fn screen_scale(width: f64) -> f64 {
 /// of the header, else the configuration's `chartOrientation`).
 pub fn chart_config(xy: &XYChartConfig, horizontal: bool) -> ChartConfig {
     ChartConfig {
+        fonts: crate::fonts::FontContext::bundled(),
         width: xy.width,
         screen_scale: screen_scale(xy.width),
         height: xy.height,

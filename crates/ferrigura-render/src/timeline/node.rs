@@ -56,7 +56,7 @@ pub(super) fn virtual_height(
     width: f64,
     padding: f64,
 ) -> Result<f64, RenderError> {
-    let laid = text::layout(cx, descr, width, cx.regular)?;
+    let laid = text::layout(cx, descr, width, &cx.regular)?;
     Ok(extent_height(laid.extent) + cx.node_font_size * 1.1 * 0.5 + padding)
 }
 
@@ -78,7 +78,7 @@ pub(super) fn draw(
     // `section = (fullSection % maxSections) - 1`: section 0 has the class `section--1`.
     let slot = full_section % cx.limit;
     let section = slot as i64 - 1;
-    let laid = text::layout(cx, spec.descr, spec.width, cx.node_face)?;
+    let laid = text::layout(cx, spec.descr, spec.width, &cx.node_face)?;
     let mut height = extent_height(laid.extent) + cx.node_font_size * 1.1 * 0.5 + spec.padding;
     height = height.max(spec.max_height);
     let width = spec.width + 2.0 * spec.padding;
@@ -108,6 +108,9 @@ pub(super) fn draw(
         .with("dominant-baseline", "middle")
         .with("text-anchor", "middle")
         .with("fill", cx.primary.node_border.as_str());
+    if let Some(css) = cx.node_face.css_reference() {
+        text.set("style", format!("font-family:{css};"));
+    }
     for tspan in &laid.tspans {
         text = text.child(
             Element::new("tspan")

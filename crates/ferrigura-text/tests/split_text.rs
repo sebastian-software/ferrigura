@@ -14,7 +14,7 @@ fn normal() -> &'static ferrigura_text::Face {
 }
 
 /// `getLineFromString` of the spec: the word segments of a string, each a normal word.
-fn line_from_string(text: &str) -> Vec<Word> {
+fn line_from_string(text: &str) -> Vec<Word<'_>> {
     split_line_to_words(text)
         .into_iter()
         .map(|content| Word {

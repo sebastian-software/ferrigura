@@ -24,7 +24,7 @@ use crate::common::text::collapse_white_space;
 /// sans face (decision 0010), at the configured size. The rule names are measured in the regular
 /// weight, as the reference does, though they are drawn in bold (`.railroad-rule-name`).
 pub struct TextMeasure {
-    face: &'static Face,
+    face: crate::fonts::FontFace,
     size: f64,
     /// The measurements of the texts so far, by text: `measureText` caches them the same way
     /// (`railroadRenderer.ts` 64, 75-77 and 90), so one text has one measurement.
@@ -32,11 +32,25 @@ pub struct TextMeasure {
 }
 
 impl TextMeasure {
-    /// A measurement at `size` pixels in the regular face.
+    /// Measures with the resolved face owned by this render.
+    pub fn with_face(size: f64, face: crate::fonts::FontFace) -> Self {
+        Self {
+            face,
+            size,
+            cache: HashMap::new(),
+        }
+    }
+
+    /// A compatibility measurement at `size` pixels in the bundled regular face.
+    /// Renderers with host inputs use [`Self::with_face`] instead.
     #[must_use]
     pub fn new(size: f64) -> Self {
         Self {
-            face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+            face: crate::fonts::FontFace::retain(face(
+                FontFamily::Sans,
+                FontWeight::Normal,
+                FontStyle::Normal,
+            )),
             size,
             cache: HashMap::new(),
         }
@@ -48,7 +62,7 @@ impl Measure for TextMeasure {
         if let Some(size) = self.cache.get(text) {
             return Ok(*size);
         }
-        let size = measure_text(self.face, text, self.size)?;
+        let size = measure_text(&self.face, text, self.size)?;
         self.cache.insert(text.to_owned(), size);
         Ok(size)
     }
@@ -58,7 +72,7 @@ impl Measure for TextMeasure {
 ///
 /// A text with no glyph (the empty string, or only white space, which SVG collapses away) has the
 /// empty box, 0 by 0 (geometry probe `c12-emptyterminal`).
-fn measure_text(face: &'static Face, text: &str, size: f64) -> Result<TextSize, TextError> {
+fn measure_text(face: &Face, text: &str, size: f64) -> Result<TextSize, TextError> {
     let collapsed = collapse_white_space(text);
     if collapsed.is_empty() {
         return Ok(TextSize {

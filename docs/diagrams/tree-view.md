@@ -102,3 +102,7 @@ The root's `viewBox` is `-lineThickness/2 0 width height`; `configureSvgSize` th
 - The description column is the same for every row, also for rows without a description.
 - Every rule of the real render is scoped with the diagram's id. Calling the reference's `getStyles` on its own leaves the first rule, `.treeView-node-label`, without a scope; that is an artifact of calling it directly, not of a render.
 - `themeVariables.treeView` is honored from the init directive as well as from the front matter.
+
+## Font inputs
+
+Labels use the resolved global `fontFamily`: regular for files, bold for directories, italic for descriptions, and bold italic when both classes apply. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

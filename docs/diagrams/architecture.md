@@ -116,3 +116,7 @@ The renderer ports `architectureRenderer.ts` (`draw`), `svgDraw.ts`, `architectu
 - **The libm domain is small here.** The cooling uses `pow` of small integers and two `log` constants, which agree between V8 and the platform's libm; `ferrigura-jsmath` is used anyway, since V8's `Math.log` differs from the platform's in about 2 percent of random inputs.
 - **cytoscape's compound size includes labels,** and a compound's box includes its margin of 2 px for each label; the component center for relocation is `eles.boundingBox()` with labels and edges, which the renderer computes, so label metrics belong to the renderer's bounds and the engine measures none.
 - **The reference's own `svgDraw.spec.ts` fails in jsdom** because cytoscape's canvas renderer has no 2D context there; ferrigura's port of its checks does not need one.
+
+## Font inputs
+
+Labels use the resolved global `fontFamily`, including the faces selected for Markdown weight and style. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

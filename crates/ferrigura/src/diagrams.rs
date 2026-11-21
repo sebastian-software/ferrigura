@@ -20,7 +20,7 @@ use ferrigura_render::context::Context;
 use ferrigura_render::flowchart;
 use ferrigura_render::kanban::KanbanSections;
 use ferrigura_render::mindmap::MindmapSection;
-use ferrigura_render::pie::render as render_pie_diagram;
+use ferrigura_render::pie::render_with_animation as render_pie_diagram;
 use ferrigura_render::swimlanes::SwimlaneSection;
 use ferrigura_render::unified::Section;
 use ferrigura_render::use_case::UseCaseSection;
@@ -156,17 +156,21 @@ fn read_pie(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_json:
 fn render_pie(
     text: &str,
     prepared: &Prepared<'_>,
-    _options: &RenderOptions,
+    options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    render_pie_diagram(&Context {
-        diagram: &pie::parse(text)?,
-        section: &typed_config.pie,
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+    render_pie_diagram(
+        &Context {
+            fonts: prepared.fonts,
+            diagram: &pie::parse(text)?,
+            section: &typed_config.pie,
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
+        },
+        options.animation,
+    )
 }
 
 /// The info diagram.
@@ -190,6 +194,7 @@ fn render_info(
 ) -> Result<String, RenderError> {
     let id = prepared.id.as_str();
     info_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &info::parse(text)?,
         section: &(),
         globals: &prepared.view.globals,
@@ -218,7 +223,9 @@ fn render_flowchart(
     prepared: &Prepared<'_>,
     options: &RenderOptions,
 ) -> Result<String, RenderError> {
-    with_flowchart(text, prepared, options.flowchart_mode, flowchart::render)
+    with_flowchart(text, prepared, options.compat, |input| {
+        flowchart::render_with_animation(input, options.animation)
+    })
 }
 
 /// The timeline.
@@ -244,6 +251,7 @@ fn render_timeline(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     timeline_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &timeline::parse(text)?,
         section: &typed_config.timeline,
         globals: &prepared.view.globals,
@@ -275,6 +283,7 @@ fn render_journey(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     journey_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &journey::parse(text)?,
         section: &typed_config.journey,
         globals: &prepared.view.globals,
@@ -305,19 +314,23 @@ fn render_git_graph(
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    git_graph_render::render(&Context {
-        diagram: &git_graph::parse_with(
-            text,
-            &git_graph::Options {
-                auto_id_seed: options.git_graph_seed,
-                ..git_graph::options_of(text)?
-            },
-        )?,
-        section: &typed_config.git_graph,
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+    git_graph_render::render_with_animation(
+        &Context {
+            fonts: prepared.fonts,
+            diagram: &git_graph::parse_with(
+                text,
+                &git_graph::Options {
+                    auto_id_seed: options.git_graph_seed,
+                    ..git_graph::options_of(text)?
+                },
+            )?,
+            section: &typed_config.git_graph,
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
+        },
+        options.animation,
+    )
 }
 
 /// The ER diagram, written `erDiagram`.
@@ -343,6 +356,7 @@ fn render_er(
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
     er_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &er::parse(text)?,
         section: &section,
         globals: &prepared.view.globals,
@@ -374,6 +388,7 @@ fn render_class(
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
     class_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &class::parse(text)?,
         section: &section,
         globals: &prepared.view.globals,
@@ -400,22 +415,26 @@ fn read_sequence(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_
 fn render_sequence(
     text: &str,
     prepared: &Prepared<'_>,
-    _options: &RenderOptions,
+    options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    sequence_render::render(&Context {
-        diagram: &sequence::parse_with(
-            text,
-            sequence::Options {
-                wrap: sequence_wrap(&prepared.view.effective),
-            },
-        )?,
-        section: &typed_config.sequence,
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+    sequence_render::render_with(
+        &Context {
+            fonts: prepared.fonts,
+            diagram: &sequence::parse_with(
+                text,
+                sequence::Options {
+                    wrap: sequence_wrap(&prepared.view.effective),
+                },
+            )?,
+            section: &typed_config.sequence,
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
+        },
+        options.compat,
+    )
 }
 
 /// The state diagram, written `stateDiagram` or `stateDiagram-v2`.
@@ -441,6 +460,7 @@ fn render_state(
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
     state_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &state::parse(text)?,
         section: &section,
         globals: &prepared.view.globals,
@@ -472,16 +492,20 @@ fn render_gantt(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     let now = options.now.unwrap_or_else(|| gantt::Options::default().now);
-    gantt_render::render(&Context {
-        diagram: &gantt::parse_with(text, gantt::Options { now })?,
-        section: &gantt_render::GanttSection {
-            config: &typed_config.gantt,
-            now,
+    gantt_render::render_with_animation(
+        &Context {
+            fonts: prepared.fonts,
+            diagram: &gantt::parse_with(text, gantt::Options { now })?,
+            section: &gantt_render::GanttSection {
+                config: &typed_config.gantt,
+                now,
+            },
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
         },
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+        options.animation,
+    )
 }
 
 /// The mindmap, written `mindmap`.
@@ -503,21 +527,25 @@ fn read_mindmap(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_j
 fn render_mindmap(
     text: &str,
     prepared: &Prepared<'_>,
-    _options: &RenderOptions,
+    options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
-    mindmap_render::render(&Context {
-        diagram: &mindmap::parse(text)?,
-        section: &MindmapSection {
-            mindmap: &typed_config.mindmap,
-            unified: section,
+    mindmap_render::render_with_animation(
+        &Context {
+            fonts: prepared.fonts,
+            diagram: &mindmap::parse(text)?,
+            section: &MindmapSection {
+                mindmap: &typed_config.mindmap,
+                unified: section,
+            },
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
         },
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+        options.animation,
+    )
 }
 
 /// The block diagram, written `block`.
@@ -545,6 +573,7 @@ fn render_block(
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
     block_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &block::parse(text)?,
         section: &BlockSection {
             block: &typed_config.block,
@@ -583,6 +612,7 @@ fn render_packet(
         bits_per_row: packet::bits_per_row(&prepared.view.effective),
     };
     packet_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &packet::parse_with(text, &prepared.view.effective)?,
         section: &section,
         globals: &prepared.view.globals,
@@ -609,17 +639,21 @@ fn read_xy_chart(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_
 fn render_xy_chart(
     text: &str,
     prepared: &Prepared<'_>,
-    _options: &RenderOptions,
+    options: &RenderOptions,
 ) -> Result<String, RenderError> {
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
-    xychart_render::render(&Context {
-        diagram: &xychart::parse(text)?,
-        section: &typed_config.xy_chart,
-        globals: &prepared.view.globals,
-        theme: prepared.theme(),
-        id,
-    })
+    xychart_render::render_with_animation(
+        &Context {
+            fonts: prepared.fonts,
+            diagram: &xychart::parse(text)?,
+            section: &typed_config.xy_chart,
+            globals: &prepared.view.globals,
+            theme: prepared.theme(),
+            id,
+        },
+        options.animation,
+    )
 }
 
 /// The sankey diagram, written `sankey`.
@@ -645,6 +679,7 @@ fn render_sankey(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     sankey_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &sankey::parse(text)?,
         section: &typed_config.sankey,
         globals: &prepared.view.globals,
@@ -676,6 +711,7 @@ fn render_quadrant_chart(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     quadrant_chart_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &quadrant_chart::parse(text)?,
         section: &typed_config.quadrant_chart,
         globals: &prepared.view.globals,
@@ -707,6 +743,7 @@ fn render_requirement(
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
     requirement_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &requirement::parse(text)?,
         section: &section,
         globals: &prepared.view.globals,
@@ -738,6 +775,7 @@ fn render_c4(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     c4_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &c4::parse(text)?,
         section: &typed_config.c4,
         globals: &prepared.view.globals,
@@ -770,6 +808,7 @@ fn render_kanban(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     kanban_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &kanban::parse(text)?,
         section: &KanbanSections {
             kanban: &typed_config.kanban,
@@ -804,6 +843,7 @@ fn render_architecture(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     architecture_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &architecture::parse(text)?,
         section: &typed_config.architecture,
         globals: &prepared.view.globals,
@@ -834,6 +874,7 @@ fn render_treemap(
     let id = prepared.id.as_str();
     let section = treemap_render::TreemapSettings::of(&prepared.view.effective);
     treemap_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &treemap::parse(text)?,
         section: &section,
         globals: &prepared.view.globals,
@@ -865,6 +906,7 @@ fn render_ishikawa(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     ishikawa_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &ishikawa::parse(text)?,
         section: &typed_config.ishikawa,
         globals: &prepared.view.globals,
@@ -896,7 +938,8 @@ fn render_event_modeling(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     event_modeling_render::render(&Context {
-        diagram: &event_modeling::parse(text)?,
+        fonts: prepared.fonts,
+        diagram: &event_modeling::parse_with_max_text_size(text, prepared.max_text)?,
         section: &typed_config.eventmodeling,
         globals: &prepared.view.globals,
         theme: prepared.theme(),
@@ -929,7 +972,8 @@ fn render_agentflow(
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
     agentflow_render::render(&Context {
-        diagram: &agentflow::parse(text)?,
+        fonts: prepared.fonts,
+        diagram: &agentflow::parse_with_limits(text, prepared.max_edges, prepared.max_text)?,
         section: &AgentflowSection {
             agentflow: &typed_config.agentflow,
             unified: section,
@@ -963,6 +1007,7 @@ fn render_cynefin(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     cynefin_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &cynefin::parse(text)?,
         section: &typed_config.cynefin,
         globals: &prepared.view.globals,
@@ -994,6 +1039,7 @@ fn render_radar(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     radar_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &radar::parse(text)?,
         section: &typed_config.radar,
         globals: &prepared.view.globals,
@@ -1025,6 +1071,7 @@ fn render_railroad(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     railroad_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &railroad::parse(text)?,
         section: &railroad_render::RailroadSection {
             config: &typed_config.railroad,
@@ -1061,6 +1108,7 @@ fn render_swimlanes(
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
     swimlanes_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &swimlanes::parse(text)?,
         section: &SwimlaneSection {
             swimlane: &typed_config.swimlane,
@@ -1095,6 +1143,7 @@ fn render_tree_view(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     tree_view_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &tree_view::parse(text)?,
         section: &typed_config.tree_view,
         globals: &prepared.view.globals,
@@ -1128,6 +1177,7 @@ fn render_use_case(
     let id = prepared.id.as_str();
     let section = Section::of(&prepared.view.config);
     use_case_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &use_case::parse(text)?,
         section: &UseCaseSection {
             usecase: &typed_config.usecase,
@@ -1162,6 +1212,7 @@ fn render_venn(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     venn_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &venn::parse(text)?,
         section: &venn_render::VennSection {
             config: &typed_config.venn,
@@ -1196,6 +1247,7 @@ fn render_wardley(
     let typed_config = &prepared.view.config;
     let id = prepared.id.as_str();
     wardley_render::render(&Context {
+        fonts: prepared.fonts,
         diagram: &wardley::parse(text)?,
         section: &typed_config.wardley_beta,
         globals: &prepared.view.globals,

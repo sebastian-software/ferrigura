@@ -12,7 +12,7 @@ mod style;
 use ferrigura_jsmath::{cos, sin};
 use ferrigura_model::config::RadarDiagramConfig;
 use ferrigura_model::radar::{Graticule, RadarDiagram};
-use ferrigura_text::{EmbeddedFamily, FontFamily, FontStyle, FontWeight, Run, embed_runs, face};
+use ferrigura_text::{EmbeddedFamily, FontStyle, FontWeight, Run, embed_runs};
 
 use crate::RenderError;
 use crate::a11y;
@@ -51,6 +51,9 @@ const AXIS_EPSILON: f64 = 0.01;
 pub fn render(
     input: &Context<'_, RadarDiagram, RadarDiagramConfig>,
 ) -> Result<String, RenderError> {
+    let font_face = input
+        .text_fonts()
+        .face(FontWeight::Normal, FontStyle::Normal)?;
     let diagram = input.diagram;
     let id = input.id;
     let config = input.section;
@@ -104,19 +107,21 @@ pub fn render(
     }
     let families: Vec<EmbeddedFamily> = embed_runs(&[Run {
         text: &texts,
-        face: face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+        face: &font_face,
     }])?;
-    let font_family = families.first().map_or_else(
-        || {
-            input
-                .theme
-                .light
-                .font_family
-                .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+    let font_family = font_face.css_reference().unwrap_or_else(|| {
+        families.first().map_or_else(
+            || {
+                input
+                    .theme
+                    .light
+                    .font_family
+                    .text()
+                    .unwrap_or_else(|| "sans-serif".to_owned())
+            },
+            |family| family.css_family.clone(),
+        )
+    });
     let font_size = input
         .theme
         .light

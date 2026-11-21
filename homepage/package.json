@@ -15,12 +15,14 @@
     "sample:check": "node scripts/render-diagram-samples.mjs --check",
     "comparison:write": "node scripts/render-comparison.mjs",
     "comparison:check": "node scripts/render-comparison.mjs --check",
+    "size:write": "node scripts/render-size.mjs",
+    "size:check": "node scripts/render-size.mjs --check",
     "browser:check": "node scripts/check-browser.mjs",
-    "verify": "pnpm sample:check && pnpm comparison:check && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build && pnpm browser:check"
+    "verify": "pnpm sample:check && pnpm comparison:check && pnpm size:check && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build && pnpm browser:check"
   },
   "dependencies": {
-    "ardo": "^6.4.1",
-    "ferramenta-family": "github:sebastian-software/ferramenta#70d696962356af5a100c970f0f4b0187fdafcccf&path:/packages/family",
+    "ardo": "^6.6.0",
+    "ferramenta-family": "3.0.0",
     "react-compare-slider": "^4.0.0"
   },
   "devDependencies": {
@@ -28,9 +30,9 @@
     "eslint": "^10.11.0",
     "eslint-config-setup": "^0.6.0",
     "jiti": "^2.7.0",
-    "oxfmt": "0.77.0",
+    "oxfmt": "0.78.0",
     "oxlint": "^1.85.0",
-    "playwright": "1.65.0",
+    "playwright": "1.65.1",
     "typescript": "^6.0.3",
     "vite": "^8.3.0"
   },

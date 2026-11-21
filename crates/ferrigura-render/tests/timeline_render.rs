@@ -23,6 +23,7 @@ fn draw(text: &str, id: &str) -> String {
     let variables = Theme::ReduxColor.variables(None);
     let tokens = ThemeTokens::from_value(&variables);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.timeline,
         globals: &Globals::of(&config),

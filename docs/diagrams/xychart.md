@@ -2,6 +2,14 @@
 
 The xychart draws lines and bars over a band or a linear x-axis and a linear y-axis. It starts with `xychart` or `xychart-beta`, optionally followed by `horizontal` or `vertical`. ferrigura parses it with a hand-written scanner and recursive-descent grammar in `ferrigura-syntax/src/xychart/`, and draws it with the type's own renderer in `ferrigura-render/src/xychart/`: a port of Mermaid's chart builder, which lays the chart out with its own arithmetic. The unified renderer and the layout engines are not involved.
 
+## Draw animation
+
+The optional [draw animation](../animation.md) render option draws one element
+at a time by default, with a speed multiplier instead of a fixed total duration.
+Bars grow along the value axis and lines trace their points, following the chart's orientation. A legend entry's marker and label appear when its series starts drawing. Axes, background, and title stay visible.
+The SVG carries its own CSS, contains no script, and shows the complete diagram
+when the viewer requests reduced motion.
+
 ## Model
 
 `ferrigura_model::xychart::XyChartDiagram` (`ferrigura-model/src/xychart.rs`) is the DB's state after the parse, before the chart builder runs ([canonical-model.md](../canonical-model.md#xychart) has the conventions that hold for every type):
@@ -83,3 +91,7 @@ The texts of the chart are written as SVG `<text>` with the bundled sans face em
 - **The DOM keeps an empty `<g>` before `main` and an empty `g.mermaid-tmp-group` last**, because the geometry key counts siblings.
 - **Text is written escaped, and the entity placeholders are decoded on the markup**: a title `A &amp; B` appears as `A &amp;amp; B`, and `#quot;hi#quot;` reads as `"hi"`.
 - **An inverted y-range** (`y-axis 10 --> 0`) puts 0 at the top, and the labels are still written in ascending order.
+
+## Font inputs
+
+Chart title, axis labels and titles, and legend measurements use the regular design of the resolved global `fontFamily`. With host-supplied fonts, each selected family list must contain a registered family; fallback uses only registered files. Diagram text only selects names and never loads files. Without host font inputs, the bundled compatibility output is unchanged ([font contract](../decisions/0010-text-measurement-and-fonts.md)).

@@ -117,3 +117,11 @@ The grammar's rules are in [Parsing](#parsing). These are the ones that the rend
 - **JavaScript's number text.** A JSON cell shows `String(value)`: `Infinity`, `0` for `-0`, the shortest digits that read back (an exact tie takes the even digit), exponent form outside 1e-6 to 1e21, and an integer above 2^53 rounded (`12345678901234567890` is `12345678901234567000`). `serde_json`'s default text is not that, so `json.rs` formats the number itself.
 - **The business marker's chord** is computed with V8's `cos` and `sin` of `π/3` (`ferrigura-jsmath`) and a plain `sqrt`, which is exact.
 - **Entities.** `#35;`-style entities reach the model as placeholders and are decoded at render time, in the label path. The reference's e2e viewer decodes entities before parsing, which is why the geometry harness does so for the fixtures that write them.
+
+## Supplied fonts
+
+In supplied-font mode, `usecase.actorFontFamily` and `usecase.usecaseFontFamily` resolve registered
+aliases before label measurement, including actor stereotypes. Their implicit defaults inherit
+the global primary. Explicit unknown family lists fail with registration guidance. Label
+`font-family` declarations still override the configured role. Without supplied fonts the
+compatible bundled behavior is retained.

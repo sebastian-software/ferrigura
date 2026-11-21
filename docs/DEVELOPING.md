@@ -118,6 +118,13 @@ release-please opens a release pull request from the commit messages on `main`; 
 
 ## The website
 
+The standalone SVG animation preview runs with
+`node tools/animation/preview.mjs` from the repository root, after building the
+Node.js addon. It renders through the checkout's native `animation` option and
+exports the resulting SVG unchanged.
+See [the preview's README](../tools/animation/README.md) for its playback and
+ordering rules.
+
 The Ardo site in `homepage/` uses the shared Ferramenta page systems: Monografie
 for the homepage, with the Monografie header and footer on every page, and the
 Ferra reading layout for the documentation. Its only local stylesheet holds the
@@ -126,12 +133,30 @@ Its documentation routes are generated from the repository's canonical Markdown;
 edit those source files rather than the ignored generated routes. The authored
 entry guide lives in `homepage/content/`, and the figures of the homepage's
 checks come from the coverage table of `docs/diagrams/README.md`.
+Register a new top-level documentation page in the `featured` map of
+`homepage/scripts/site-pages.mjs` under its navigation section, such as `guide/`.
 
 From `homepage/`, run `pnpm install`, then `pnpm dev` for a local server.
-Every drawing on the homepage is real output of the published `@ferrigura/core`
-package: `pnpm sample:write` installs the version of `node/ferrigura/package.json`
-from npm, renders the diagrams into `homepage/app/data/` and records the version;
-run it again after a release. `pnpm verify` checks those drawings against the
-recorded version, the website source, rendered links and browser behavior. No
+Every Ferrigura drawing is generated from the current Rust source through
+`homepage/scripts/source-renderer.mjs`. Run `pnpm sample:write` to refresh the
+homepage specimens, and `pnpm comparison:write` on macOS to refresh the
+side-by-side page with the published Mermaid reference too. Commit generated
+files with changes that move the output. `pnpm verify` checks the drawings
+against the source, website code, rendered links and browser behavior. No
 Mermaid runtime is shipped to render them in the visitor's browser. GitHub
 Actions deploys the site from `main` to GitHub Pages.
+
+## Font-input proofs
+
+The geometry harness registers the same local fixture files in the Rust host and the reference
+browser. This exercises supplied-font mode. `FERRIGURA_GEOMETRY_FONT=mono` switches both hosts to
+Atkinson Hyperlegible Mono for a second physical primary. Default-output compatibility remains
+covered separately by the unchanged corpus and animation snapshots.
+
+From `tools/port`, run `node --import tsx text/registered-fonts.ts` to compare real embedded
+TrueType, CFF, variable default-instance, mixed-design and fallback-only metrics with Chromium.
+It checks advances, ink extents and line metrics and writes `target/geometry/registered-fonts`.
+Run `pnpm run test:custom-font-renderers` for all 22 custom renderers with two supplied primary
+files; it checks loaded, computed font families and design roles and writes
+`target/custom-font-renderers/computed-fonts.json`. Both commands use explicit local fixtures,
+including licensed test-only OTF and variable fonts; they do not fetch fonts.

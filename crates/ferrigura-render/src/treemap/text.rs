@@ -7,7 +7,7 @@
 //! section labels and italic for the section values. The fitting loops read the advance at the
 //! current font size; a width that is a fraction of a pixel off can flip a decision.
 
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, text_box, x_height};
+use ferrigura_text::{FontStyle, FontWeight, text_box, x_height};
 
 use crate::RenderError;
 use crate::common::text::{collapse_white_space, collapsed_box, collapsed_width};
@@ -71,9 +71,14 @@ impl Font {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub fn advance(text: &str, size: f64, font: Font) -> Result<f64, RenderError> {
-    let face = face(FontFamily::Sans, font.weight, font.style);
-    Ok(collapsed_width(face, text, size)?)
+pub fn advance(
+    fonts: &crate::fonts::FontContext,
+    text: &str,
+    size: f64,
+    font: Font,
+) -> Result<f64, RenderError> {
+    let face = fonts.face(font.weight, font.style)?;
+    Ok(collapsed_width(&face, text, size)?)
 }
 
 /// The `getBBox` of one line of `text`, drawn at `(x, y)` with the anchor and the baseline, or
@@ -84,6 +89,7 @@ pub fn advance(text: &str, size: f64, font: Font) -> Result<f64, RenderError> {
 ///
 /// Returns an error if the bundled font cannot be read.
 pub fn line_box(
+    fonts: &crate::fonts::FontContext,
     text: &str,
     (x, y): (f64, f64),
     size: f64,
@@ -94,18 +100,18 @@ pub fn line_box(
     if collapse_white_space(text).is_empty() {
         return Ok(None);
     }
-    let face = face(FontFamily::Sans, font.weight, font.style);
-    let ink = collapsed_box(face, text, size)?;
-    let width = collapsed_width(face, text, size)?;
+    let face = fonts.face(font.weight, font.style)?;
+    let ink = collapsed_box(&face, text, size)?;
+    let width = collapsed_width(&face, text, size)?;
     let shift = match anchor {
         Anchor::Start => 0.0,
         Anchor::Middle => width / 2.0,
         Anchor::End => width,
     };
-    let metrics = text_box(face, size)?;
+    let metrics = text_box(&face, size)?;
     let baseline_y = y + match baseline {
         // The x-height is laid out in 1/64 px (14 px gives 6.9375, not 6.944), and the middle is half of it.
-        Baseline::Middle => layout_unit((x_height(face, size)?) / 2.0),
+        Baseline::Middle => layout_unit((x_height(&face, size)?) / 2.0),
         // The hanging baseline is four fifths of the ascent, in the same layout unit (23 px: 17.59375).
         Baseline::Hanging => layout_unit(0.8 * metrics.ascent),
     };
@@ -128,6 +134,7 @@ mod tests {
     /// The box of a line, which the tests expect to have one.
     fn boxed(text: &str, x: f64, anchor: Anchor) -> BBox {
         match line_box(
+            &crate::fonts::FontContext::bundled(),
             text,
             (x, 50.0),
             12.0,
@@ -147,8 +154,18 @@ mod tests {
 
     #[test]
     fn a_text_with_no_glyph_has_no_box_and_no_advance() {
-        assert_eq!(advance("  ", 12.0, Font::REGULAR).ok(), Some(0.0));
+        assert_eq!(
+            advance(
+                &crate::fonts::FontContext::bundled(),
+                "  ",
+                12.0,
+                Font::REGULAR
+            )
+            .ok(),
+            Some(0.0)
+        );
         let boxed = line_box(
+            &crate::fonts::FontContext::bundled(),
             " ",
             (0.0, 0.0),
             12.0,
@@ -161,14 +178,32 @@ mod tests {
 
     #[test]
     fn a_bold_label_is_wider_than_the_regular_one() {
-        let regular = advance("Label", 12.0, Font::REGULAR).unwrap_or(0.0);
-        let bold = advance("Label", 12.0, Font::BOLD).unwrap_or(0.0);
+        let regular = advance(
+            &crate::fonts::FontContext::bundled(),
+            "Label",
+            12.0,
+            Font::REGULAR,
+        )
+        .unwrap_or(0.0);
+        let bold = advance(
+            &crate::fonts::FontContext::bundled(),
+            "Label",
+            12.0,
+            Font::BOLD,
+        )
+        .unwrap_or(0.0);
         assert!(bold > regular);
     }
 
     #[test]
     fn a_centered_line_is_shifted_by_half_its_advance() {
-        let width = advance("Label", 12.0, Font::REGULAR).unwrap_or(0.0);
+        let width = advance(
+            &crate::fonts::FontContext::bundled(),
+            "Label",
+            12.0,
+            Font::REGULAR,
+        )
+        .unwrap_or(0.0);
         let centered = boxed("Label", 100.0, Anchor::Middle);
         let start = boxed("Label", 100.0, Anchor::Start);
         assert!((start.x - centered.x - width / 2.0).abs() < 0.5);

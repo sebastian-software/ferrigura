@@ -5,21 +5,42 @@
 
 use ferrigura_model::cynefin::CynefinDiagram;
 use ferrigura_model::value::Value;
-use ferrigura_text::{Face, TextError};
+use ferrigura_text::{FontStyle, FontWeight, TextError};
 
 use super::boundary;
 use super::layout::{self, Domain, ITEM_HEIGHT, ITEM_PITCH, MAX_CONFUSION_ITEMS};
 use super::style::{Options, attribute_text};
-use super::text::{badge_width, bold, italic, markup, regular};
+use super::text::{badge_width, markup};
 use crate::common::d3::js_number;
 use crate::common::{Element, shown_text};
 
 /// The text runs the diagram draws, with their faces: the characters of each go into the font subsets.
-pub(super) type Runs = Vec<(String, &'static Face)>;
+pub(super) struct Runs {
+    pub regular: crate::fonts::FontFace,
+    pub bold: crate::fonts::FontFace,
+    pub italic: crate::fonts::FontFace,
+    pub texts: Vec<(String, crate::fonts::FontFace)>,
+}
 
-/// Records the characters a text shows, in the face it is set in.
-fn record(runs: &mut Runs, text: &str, face: &'static Face) {
-    runs.push((shown_text(text), face));
+impl Runs {
+    pub fn new(fonts: &crate::fonts::FontContext) -> Result<Self, TextError> {
+        Ok(Self {
+            regular: fonts.face(FontWeight::Normal, FontStyle::Normal)?,
+            bold: fonts.face(FontWeight::Bold, FontStyle::Normal)?,
+            italic: fonts.face(FontWeight::Normal, FontStyle::Italic)?,
+            texts: Vec::new(),
+        })
+    }
+}
+
+/// Records the exact design used for each drawn text role.
+fn record(runs: &mut Runs, text: &str, style: u8) {
+    let face = match style {
+        1 => &runs.bold,
+        2 => &runs.italic,
+        _ => &runs.regular,
+    };
+    runs.texts.push((shown_text(text), face.clone()));
 }
 
 /// A number as the reference's attributes write it.
@@ -152,7 +173,7 @@ pub(super) fn labels(
             &light.label_color,
             domain.label(),
         ));
-        record(runs, domain.label(), bold());
+        record(runs, domain.label(), 1);
     }
     let y = if show {
         height / 2.0 - 10.0
@@ -168,7 +189,7 @@ pub(super) fn labels(
         &light.label_color,
         Domain::Confusion.label(),
     ));
-    record(runs, Domain::Confusion.label(), bold());
+    record(runs, Domain::Confusion.label(), 1);
     group
 }
 
@@ -187,7 +208,7 @@ pub(super) fn subtitles(width: f64, height: f64, light: &Options, runs: &mut Run
             &light.text_color,
             domain.model(),
         ));
-        record(runs, domain.model(), italic());
+        record(runs, domain.model(), 2);
         group.push_child(text(
             "cynefinSubtitle",
             place.cx,
@@ -197,7 +218,7 @@ pub(super) fn subtitles(width: f64, height: f64, light: &Options, runs: &mut Run
             &light.text_color,
             domain.practice(),
         ));
-        record(runs, domain.practice(), italic());
+        record(runs, domain.practice(), 2);
     }
     group.push_child(text(
         "cynefinSubtitle",
@@ -208,7 +229,7 @@ pub(super) fn subtitles(width: f64, height: f64, light: &Options, runs: &mut Run
         &light.text_color,
         Domain::Confusion.practice(),
     ));
-    record(runs, Domain::Confusion.practice(), italic());
+    record(runs, Domain::Confusion.practice(), 2);
     group
 }
 
@@ -306,9 +327,9 @@ fn badge(
     size: f64,
     runs: &mut Runs,
 ) -> Result<Element, TextError> {
-    let width = badge_width(spec.label, size)?;
+    let width = badge_width(&runs.regular, spec.label, size)?;
     let x = spec.cx - width / 2.0;
-    record(runs, spec.label, regular());
+    record(runs, spec.label, 0);
     let class = if spec.overflow {
         "cynefinItemOverflow"
     } else {
@@ -412,7 +433,7 @@ pub(super) fn arrows(
         group.push_child(line);
 
         if let Some(label) = &transition.label {
-            record(runs, label, regular());
+            record(runs, label, 0);
             group.push_child(text(
                 "cynefinArrowLabel",
                 cpx,
@@ -439,7 +460,7 @@ pub(super) fn title(
     if title.is_empty() {
         return None;
     }
-    record(runs, title, bold());
+    record(runs, title, 1);
     Some(text(
         "cynefinTitle",
         width / 2.0,

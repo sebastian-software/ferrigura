@@ -32,6 +32,7 @@ fn draw_with(text: &str, xy_chart: &[(&str, Value)], dark: bool) -> Result<Strin
     let tokens = ThemeTokens::from_value(&variables);
     let globals = Globals::of(&config);
     render(&Context {
+        fonts: None,
         diagram: &diagram,
         section: &config.xy_chart,
         globals: &globals,

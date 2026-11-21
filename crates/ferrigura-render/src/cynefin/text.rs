@@ -5,7 +5,7 @@
 //! (`mermaidAPI.ts` 359), so an entity placeholder of the DB (`ﬂ°amp¶ß`) is written as `&amp;` and
 //! shows as `&`; the badge is measured before that, on the placeholder text. Both are kept here.
 
-use ferrigura_text::{Face, FontFamily, FontStyle, FontWeight, TextError, face};
+use ferrigura_text::{Face, TextError};
 
 use crate::common::text::collapsed_box;
 use crate::svg::entity_markup;
@@ -26,13 +26,8 @@ pub(super) fn markup(text: &str) -> String {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub(super) fn label_width(label: &str, size: f64) -> Result<f64, TextError> {
-    let measured = collapsed_box(
-        face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
-        label,
-        size,
-    )?
-    .width();
+pub(super) fn label_width(face: &Face, label: &str, size: f64) -> Result<f64, TextError> {
+    let measured = collapsed_box(face, label, size)?.width();
     if measured > 0.0 {
         Ok(measured)
     } else {
@@ -46,26 +41,8 @@ pub(super) fn label_width(label: &str, size: f64) -> Result<f64, TextError> {
 /// # Errors
 ///
 /// Returns an error if the bundled font cannot be read.
-pub(super) fn badge_width(label: &str, size: f64) -> Result<f64, TextError> {
-    Ok(label_width(label, size)? + ITEM_PADDING_X * 2.0)
-}
-
-/// The regular face of the item and arrow texts.
-#[must_use]
-pub(super) fn regular() -> &'static Face {
-    face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal)
-}
-
-/// The italic face of the subtitles.
-#[must_use]
-pub(super) fn italic() -> &'static Face {
-    face(FontFamily::Sans, FontWeight::Normal, FontStyle::Italic)
-}
-
-/// The bold face of the labels and the title.
-#[must_use]
-pub(super) fn bold() -> &'static Face {
-    face(FontFamily::Sans, FontWeight::Bold, FontStyle::Normal)
+pub(super) fn badge_width(face: &Face, label: &str, size: f64) -> Result<f64, TextError> {
+    Ok(label_width(face, label, size)? + ITEM_PADDING_X * 2.0)
 }
 
 #[cfg(test)]

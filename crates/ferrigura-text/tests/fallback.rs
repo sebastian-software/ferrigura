@@ -128,7 +128,8 @@ fn lines_with_arrows_have_the_boxes_and_advances_chromium_gives_them() {
         let size = size_of(entry);
         let anchor = entry["anchor"].as_str().expect("request has an anchor");
         let runs = runs_of(entry);
-        let borrowed: Vec<Run<'_>> = runs.iter().map(|(text, face)| Run { text, face }).collect();
+        let borrowed: Vec<Run<'_, '_>> =
+            runs.iter().map(|(text, face)| Run { text, face }).collect();
         let label = format!(
             "{:?} at {size} px, {anchor}",
             runs.iter()

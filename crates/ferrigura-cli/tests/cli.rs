@@ -2,23 +2,68 @@
 //! for a diagram or configuration that does not render, and 2 for a command line that does not parse.
 
 use std::fs;
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 
 const PIE: &str = "pie title Pets\n  \"Dogs\" : 386\n  \"Cats\" : 85\n";
 
 #[test]
-fn flowchart_mode_selects_the_compatibility_mode_and_rejects_unknown_modes() {
+fn animation_is_optional_and_has_validated_speed_and_order() {
+    let text = "flowchart LR\n A --> B\n B --> C\n";
+    let animated = run(&["--id", "drawing", "--animate"], text);
+    assert!(animated.status.success(), "{}", stderr(&animated));
+    assert!(stdout(&animated).contains("data-draw-duration="));
+    let explicit = run(
+        &[
+            "--id",
+            "drawing",
+            "--animation-speed",
+            "1",
+            "--animation-order",
+            "source",
+            "--animate",
+        ],
+        text,
+    );
+    assert_eq!(stdout(&animated), stdout(&explicit));
+    let fast = run(&["--id", "drawing", "--animation-speed", "2"], text);
+    assert!(fast.status.success());
+    assert_ne!(stdout(&animated), stdout(&fast));
+    assert!(!stdout(&run(&["--id", "drawing"], text)).contains("data-draw-style"));
+    for args in [
+        vec!["--animation-speed", "0"],
+        vec!["--animation-speed", "NaN"],
+        vec!["--animation-order", "typo"],
+    ] {
+        assert_eq!(run(&args, text).status.code(), Some(2));
+    }
+    let unsupported = run(&["--animate"], "sequenceDiagram\n A->>B: Hi\n");
+    assert_eq!(unsupported.status.code(), Some(1));
+    assert!(stderr(&unsupported).contains("not supported for this diagram type"));
+}
+
+#[test]
+fn compat_selects_reference_routing_and_the_removed_option_is_rejected() {
     let text = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
     let adaptive = run(&["--id", "routing"], text);
-    let compatible = run(&["--id", "routing", "--flowchart-mode", "mermaid"], text);
+    let compatible = run(&["--id", "routing", "--compat"], text);
     assert!(adaptive.status.success(), "{}", stderr(&adaptive));
     assert!(compatible.status.success(), "{}", stderr(&compatible));
     assert_ne!(stdout(&adaptive), stdout(&compatible));
-    let invalid = run(&["--flowchart-mode", "typo"], "");
+    let invalid = run(&["--flowchart-mode", "mermaid"], "");
     assert_eq!(invalid.status.code(), Some(2));
-    assert!(stderr(&invalid).contains("expected adaptive or mermaid"));
+    assert!(stderr(&invalid).contains("unknown option --flowchart-mode"));
+}
+
+#[test]
+fn argument_errors_are_captured_when_stdin_closes_early() {
+    // Larger than a pipe buffer: the rejected command cannot consume this before exiting.
+    let input = "x".repeat(8 * 1024 * 1024);
+    let output = run(&["--not-an-option"], &input);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(stdout(&output).is_empty());
+    assert!(stderr(&output).contains("unknown option --not-an-option"));
 }
 
 fn run(args: &[&str], input: &str) -> Output {
@@ -29,12 +74,19 @@ fn run(args: &[&str], input: &str) -> Output {
         .stderr(Stdio::piped())
         .spawn()
         .expect("the binary starts");
-    child
+    let write_result = child
         .stdin
         .take()
         .expect("standard input is piped")
-        .write_all(input.as_bytes())
-        .expect("the input is written");
+        .write_all(input.as_bytes());
+    if let Err(error) = write_result {
+        // Usage errors can close stdin before it is written; callers still check the child result.
+        assert_eq!(
+            error.kind(),
+            ErrorKind::BrokenPipe,
+            "the input is written: {error}"
+        );
+    }
     child.wait_with_output().expect("the binary finishes")
 }
 
@@ -237,4 +289,228 @@ fn output_takes_one_input_and_output_dir_takes_files() {
     );
     let output = run(&["--output-dir", "unused", "-"], PIE);
     assert_eq!(output.status.code(), Some(2));
+}
+
+#[test]
+fn compat_selects_reference_geometry_across_diagram_types() {
+    let sequence = "sequenceDiagram\n participant App\n participant API\n App->>API: Request\n";
+    let optimized = run(&["--id", "mode"], sequence);
+    let compatible = run(&["--id", "mode", "--compat"], sequence);
+    assert!(compatible.status.success(), "{}", stderr(&compatible));
+    assert!(stdout(&optimized).contains("height=\"32\" name=\"App\""));
+    assert!(stdout(&compatible).contains("height=\"76\" name=\"App\""));
+}
+
+fn font_file(name: &str) -> String {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../ferrigura-text/fonts")
+        .join(name)
+        .to_str()
+        .expect("UTF-8 fixture path")
+        .to_owned()
+}
+
+#[test]
+fn named_font_files_change_layout_and_embed_the_registered_face() {
+    let input = "flowchart LR\n A[Wide WWW narrow iii]\n";
+    let font = format!(
+        "Project Mono={}",
+        font_file("AtkinsonHyperlegibleMono-Regular.ttf")
+    );
+    let custom = run(&["--font", &font, "--id", "fonts"], input);
+    assert!(custom.status.success(), "{}", stderr(&custom));
+    let ordinary = run(&["--id", "fonts"], input);
+    assert!(
+        stdout(&custom) != stdout(&ordinary),
+        "custom output must differ from bundled defaults"
+    );
+    let custom_svg = stdout(&custom);
+    let ordinary_svg = stdout(&ordinary);
+    let view_box = |svg: &str| {
+        svg.split("viewBox=\"")
+            .nth(1)
+            .unwrap()
+            .split('"')
+            .next()
+            .unwrap()
+            .to_owned()
+    };
+    assert_ne!(
+        view_box(&custom_svg),
+        view_box(&ordinary_svg),
+        "the registered face must drive layout"
+    );
+    assert!(
+        stdout(&custom).contains("data:font/"),
+        "custom font must be embedded"
+    );
+    let explicit = format!(
+        "Project Mono:400:normal={}",
+        font_file("AtkinsonHyperlegibleMono-Regular.ttf")
+    );
+    assert_eq!(
+        stdout(&custom),
+        stdout(&run(&["--font-face", &explicit, "--id", "fonts"], input))
+    );
+    let numeric = format!(
+        "Project Mono:600:italic={}",
+        font_file("AtkinsonHyperlegibleMono-Regular.ttf")
+    );
+    let numeric = run(&["--font-face", &numeric], input);
+    assert!(numeric.status.success(), "{}", stderr(&numeric));
+}
+
+#[test]
+fn registered_fallback_can_draw_an_entire_label() {
+    let primary = format!("Primary={}", font_file("LexicaUltralegible-Regular.ttf"));
+    let fallback = format!("Arrows={}", font_file("NotoSansMath-Regular-Arrows.ttf"));
+    let output = run(
+        &[
+            "--font",
+            &primary,
+            "--font",
+            &fallback,
+            "--font-fallback",
+            "Arrows",
+        ],
+        "flowchart LR\n A[\"→\"]\n",
+    );
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(stdout(&output).contains("→"));
+    assert!(stdout(&output).contains("data:font/"));
+}
+
+#[test]
+fn invalid_font_arguments_are_usage_errors() {
+    for value in [
+        "Family=",
+        "=font.ttf",
+        "Family",
+        "Family:0:normal=font.ttf",
+        "Family:1001:normal=font.ttf",
+        "Family:2.5:normal=font.ttf",
+        "Family:400:oblique=font.ttf",
+    ] {
+        let option = if value.contains(':') {
+            "--font-face"
+        } else {
+            "--font"
+        };
+        let output = run(&[option, value], "");
+        assert_eq!(
+            output.status.code(),
+            Some(2),
+            "{value}: {}",
+            stderr(&output)
+        );
+        assert!(stdout(&output).is_empty());
+    }
+}
+
+#[test]
+fn registration_failure_does_not_touch_output() {
+    let output_file = scratch("font-error-existing.svg", "preserved");
+    let missing = format!(
+        "Project Mono={}",
+        output_file.with_extension("missing").display()
+    );
+    let output = run(
+        &[
+            "--font",
+            &missing,
+            "--output",
+            output_file.to_str().unwrap(),
+        ],
+        PIE,
+    );
+    assert_eq!(output.status.code(), Some(1));
+    assert!(stderr(&output).contains("cannot read font"));
+    assert_eq!(fs::read_to_string(&output_file).unwrap(), "preserved");
+    let corrupt = scratch("font-error-invalid.ttf", "not a font");
+    let corrupt = format!("Project Mono={}", corrupt.display());
+    let output = run(&["--font", &corrupt], PIE);
+    assert_eq!(output.status.code(), Some(1));
+    assert!(stderr(&output).to_ascii_lowercase().contains("font"));
+    assert!(stdout(&output).is_empty());
+}
+
+#[test]
+fn diagram_metadata_cannot_register_font_files_or_urls() {
+    let primary = format!("Primary={}", font_file("LexicaUltralegible-Regular.ttf"));
+    for path in [
+        "diagram-controlled-font.ttf",
+        "https://example.invalid/font.ttf",
+    ] {
+        let directive = serde_json::json!({
+            "fontFamily": "Injected",
+            "fonts": [{ "family": "Injected", "path": path }]
+        });
+        let inputs = [
+            format!("%%{{init: {directive}}}%%\nflowchart LR\n A[Hello]\n"),
+            format!("---\nconfig: {directive}\n---\nflowchart LR\n A[Hello]\n"),
+        ];
+        for input in inputs {
+            let output = run(&["--font", &primary], &input);
+            assert_eq!(output.status.code(), Some(1));
+            let message = stderr(&output);
+            assert!(message.contains("Injected"), "{message}");
+            assert!(message.contains("register"), "{message}");
+            assert!(!message.contains("cannot read font"), "{message}");
+            assert!(stdout(&output).is_empty());
+        }
+    }
+}
+
+#[test]
+fn host_limits_are_enforced() {
+    let text = "flowchart LR\n A --> B\n B --> C\n";
+    for limit in [1, 2, 3] {
+        let config = scratch("limits.json", &format!(r#"{{"maxEdges":{limit}}}"#));
+        for mode in [&[][..], &["--compat"][..]] {
+            let mut args = vec!["--config", config.to_str().unwrap()];
+            args.extend_from_slice(mode);
+            let output = run(&args, text);
+            assert_eq!(output.status.success(), limit >= 2, "{}", stderr(&output));
+        }
+    }
+    let text = "%% 😀\npie\n\"A\": 1";
+    let length = text.encode_utf16().count();
+    for limit in [length - 1, length, length + 1] {
+        let config = scratch("text-limit.json", &format!(r#"{{"maxTextSize":{limit}}}"#));
+        let output = run(&["--config", config.to_str().unwrap()], text);
+        assert_eq!(
+            output.status.success(),
+            limit >= length,
+            "{}",
+            stderr(&output)
+        );
+    }
+}
+
+#[test]
+fn fixed_clock_matches_library_and_validates_milliseconds() {
+    let text = "gantt\n dateFormat HH:mm\n section Work\n Task :a, 00:00, 30d\n";
+    let args = ["--now", "1705276800000"];
+    let first = run(&args, text);
+    assert!(first.status.success(), "{}", stderr(&first));
+    assert_eq!(stdout(&first), stdout(&run(&args, text)));
+    let renderer = ferrigura::Renderer::builder(&ferrigura_model::value::Value::empty_object())
+        .with_all()
+        .build();
+    let expected = renderer
+        .render_with(
+            text,
+            &ferrigura::RenderOptions {
+                now: Some(1705276800000),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    assert_eq!(stdout(&first), format!("{expected}\n"));
+    assert!(expected.contains("class=\"today\""));
+    assert!(expected.contains("2024-01-15"));
+    assert_ne!(stdout(&first), stdout(&run(&["--now", "1705276800"], text)));
+    for invalid in ["1.5", "NaN", "8640000000000001"] {
+        assert_eq!(run(&["--now", invalid], "").status.code(), Some(2));
+    }
 }

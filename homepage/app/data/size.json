@@ -1,0 +1,268 @@
+{
+  "measuredWith": {
+    "commit": "068b6ec",
+    "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
+    "platform": "darwin-arm64",
+    "profile": "release-node"
+  },
+  "cli": {
+    "bytes": 9998624,
+    "gzip": 4992418
+  },
+  "core": {
+    "bytes": 4603792,
+    "gzip": 2226434
+  },
+  "types": [
+    {
+      "type": "pie",
+      "bytes": 5431216,
+      "gzip": 2635848,
+      "adds": 827424,
+      "addsGzip": 409414
+    },
+    {
+      "type": "flowchart",
+      "bytes": 7301616,
+      "gzip": 3533727,
+      "adds": 2697824,
+      "addsGzip": 1307293
+    },
+    {
+      "type": "timeline",
+      "bytes": 5596416,
+      "gzip": 2690296,
+      "adds": 992624,
+      "addsGzip": 463862
+    },
+    {
+      "type": "journey",
+      "bytes": 5612976,
+      "gzip": 2700340,
+      "adds": 1009184,
+      "addsGzip": 473906
+    },
+    {
+      "type": "git_graph",
+      "bytes": 5646112,
+      "gzip": 2721462,
+      "adds": 1042320,
+      "addsGzip": 495028
+    },
+    {
+      "type": "er",
+      "bytes": 7218992,
+      "gzip": 3500004,
+      "adds": 2615200,
+      "addsGzip": 1273570
+    },
+    {
+      "type": "class",
+      "bytes": 7433920,
+      "gzip": 3593413,
+      "adds": 2830128,
+      "addsGzip": 1366979
+    },
+    {
+      "type": "sequence",
+      "bytes": 5993312,
+      "gzip": 2873612,
+      "adds": 1389520,
+      "addsGzip": 647178
+    },
+    {
+      "type": "state",
+      "bytes": 7268576,
+      "gzip": 3523637,
+      "adds": 2664784,
+      "addsGzip": 1297203
+    },
+    {
+      "type": "gantt",
+      "bytes": 5877648,
+      "gzip": 2830083,
+      "adds": 1273856,
+      "addsGzip": 603649
+    },
+    {
+      "type": "mindmap",
+      "bytes": 7152864,
+      "gzip": 3467704,
+      "adds": 2549072,
+      "addsGzip": 1241270
+    },
+    {
+      "type": "block",
+      "bytes": 6158944,
+      "gzip": 2983880,
+      "adds": 1555152,
+      "addsGzip": 757446
+    },
+    {
+      "type": "packet",
+      "bytes": 4769008,
+      "gzip": 2284539,
+      "adds": 165216,
+      "addsGzip": 58105
+    },
+    {
+      "type": "xy_chart",
+      "bytes": 5613072,
+      "gzip": 2709021,
+      "adds": 1009280,
+      "addsGzip": 482587
+    },
+    {
+      "type": "sankey",
+      "bytes": 5596416,
+      "gzip": 2689337,
+      "adds": 992624,
+      "addsGzip": 462903
+    },
+    {
+      "type": "quadrant_chart",
+      "bytes": 4785584,
+      "gzip": 2295690,
+      "adds": 181792,
+      "addsGzip": 69256
+    },
+    {
+      "type": "requirement",
+      "bytes": 7202528,
+      "gzip": 3495134,
+      "adds": 2598736,
+      "addsGzip": 1268700
+    },
+    {
+      "type": "c4",
+      "bytes": 6042800,
+      "gzip": 2854464,
+      "adds": 1439008,
+      "addsGzip": 628030
+    },
+    {
+      "type": "kanban",
+      "bytes": 5712192,
+      "gzip": 2755607,
+      "adds": 1108400,
+      "addsGzip": 529173
+    },
+    {
+      "type": "architecture",
+      "bytes": 6009888,
+      "gzip": 2885721,
+      "adds": 1406096,
+      "addsGzip": 659287
+    },
+    {
+      "type": "treemap",
+      "bytes": 5629552,
+      "gzip": 2712120,
+      "adds": 1025760,
+      "addsGzip": 485686
+    },
+    {
+      "type": "ishikawa",
+      "bytes": 5563360,
+      "gzip": 2674406,
+      "adds": 959568,
+      "addsGzip": 447972
+    },
+    {
+      "type": "event_modeling",
+      "bytes": 5613056,
+      "gzip": 2701742,
+      "adds": 1009264,
+      "addsGzip": 475308
+    },
+    {
+      "type": "agentflow",
+      "bytes": 7549696,
+      "gzip": 3641617,
+      "adds": 2945904,
+      "addsGzip": 1415183
+    },
+    {
+      "type": "cynefin",
+      "bytes": 5579936,
+      "gzip": 2689369,
+      "adds": 976144,
+      "addsGzip": 462935
+    },
+    {
+      "type": "radar",
+      "bytes": 4785600,
+      "gzip": 2296141,
+      "adds": 181808,
+      "addsGzip": 69707
+    },
+    {
+      "type": "railroad",
+      "bytes": 5629552,
+      "gzip": 2704557,
+      "adds": 1025760,
+      "addsGzip": 478123
+    },
+    {
+      "type": "swimlanes",
+      "bytes": 8012480,
+      "gzip": 3884627,
+      "adds": 3408688,
+      "addsGzip": 1658193
+    },
+    {
+      "type": "tree_view",
+      "bytes": 5579920,
+      "gzip": 2685928,
+      "adds": 976128,
+      "addsGzip": 459494
+    },
+    {
+      "type": "use_case",
+      "bytes": 7450656,
+      "gzip": 3615271,
+      "adds": 2846864,
+      "addsGzip": 1388837
+    },
+    {
+      "type": "venn",
+      "bytes": 5745360,
+      "gzip": 2770724,
+      "adds": 1141568,
+      "addsGzip": 544290
+    },
+    {
+      "type": "wardley",
+      "bytes": 5646096,
+      "gzip": 2718653,
+      "adds": 1042304,
+      "addsGzip": 492219
+    }
+  ],
+  "sets": [
+    {
+      "label": "Sequence diagrams",
+      "features": ["sequence"],
+      "bytes": 5993312,
+      "gzip": 2873612
+    },
+    {
+      "label": "Flowcharts",
+      "features": ["flowchart"],
+      "bytes": 7301616,
+      "gzip": 3533727
+    },
+    {
+      "label": "Five common types",
+      "features": ["flowchart", "sequence", "class", "state", "er"],
+      "bytes": 8095408,
+      "gzip": 3919284
+    },
+    {
+      "label": "Every type",
+      "features": ["all"],
+      "bytes": 11799728,
+      "gzip": 5666611
+    }
+  ]
+}

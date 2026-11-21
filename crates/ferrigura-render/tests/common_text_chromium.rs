@@ -27,6 +27,7 @@ fn fixture() -> Value {
 
 fn style_of(entry: &Value) -> TextStyle {
     TextStyle {
+        fonts: ferrigura_render::fonts::FontContext::bundled(),
         font_size: entry["fontSize"].as_f64().expect("font size"),
         font_weight: entry["fontWeight"].as_f64().expect("font weight"),
         font_family: entry["fontFamily"].as_str().unwrap_or(FAMILY).to_owned(),

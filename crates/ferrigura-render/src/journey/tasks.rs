@@ -64,6 +64,8 @@ impl Bounds {
 /// What the sections and tasks are drawn with.
 #[derive(Debug, Clone, Copy)]
 pub struct Context<'a> {
+    /// The exact face of task and section labels.
+    pub face: &'a ferrigura_text::Face,
     /// The journey's configuration.
     pub config: &'a JourneyDiagramConfig,
     /// The actors, with their colors and positions.
@@ -193,6 +195,7 @@ fn section(
     let label_elements = label(
         ctx.placement,
         &Label {
+            face: ctx.face,
             text: name,
             cell: Cell {
                 x,
@@ -274,6 +277,7 @@ fn task_group(
     let label_elements = label(
         ctx.placement,
         &Label {
+            face: ctx.face,
             text: &task.task,
             cell: Cell {
                 x,

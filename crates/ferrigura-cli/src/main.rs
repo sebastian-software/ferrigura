@@ -12,7 +12,7 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ferrigura::{ColorScheme, FlowchartMode, RenderOptions, Renderer};
+use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, Renderer};
 use ferrigura_model::value::Value;
 
 const USAGE: &str = "\
@@ -27,11 +27,21 @@ Arguments:
 
 Options:
   -c, --config <FILE>     The configuration as a JSON object, what `initialize` takes
+      --font <FAMILY=FILE> Register a local font as weight 400, normal; repeat for more families
+      --font-face <FAMILY:WEIGHT:STYLE=FILE>
+                          Register a face with weight 1..1000 and style normal or italic
+      --font-fallback <FAMILY>
+                          Add a registered fallback family, in order; repeat for more families
+      --now <MILLISECONDS> Fixed UTC time as integer milliseconds since the Unix epoch
       --id <ID>           The id of the SVG element, which scopes its styles
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
-      --flowchart-mode <MODE>
-                          `adaptive` (default) or `mermaid` for reference-compatible output
+      --compat           Use Mermaid geometry instead of optimized routing and participant boxes
+      --animate           Draw a supported diagram once, one line at a time, with embedded CSS
+      --animation-speed <N>
+                          Positive multiplier of 700 SVG units/s on average; enables animation
+      --animation-order <ORDER>
+                          `source` (default) or `flow` for parallel branches; enables animation
   -o, --output <FILE>     Write the SVG to FILE instead of standard output (one input only)
       --output-dir <DIR>  Write each SVG to DIR/<name>.svg, named after its input file
                           (file inputs only)
@@ -44,7 +54,7 @@ Options:
 enum Command {
     Help,
     Version,
-    Render(Job),
+    Render(Box<Job>),
 }
 
 /// A render: the inputs, the options, and where the SVGs go.
@@ -53,11 +63,24 @@ struct Job {
     /// The inputs in the order given; standard input when none is.
     inputs: Vec<Input>,
     config: Option<PathBuf>,
+    fonts: Vec<FontInput>,
+    font_fallbacks: Vec<String>,
     id: Option<String>,
+    now: Option<i64>,
     scheme: Option<ColorScheme>,
-    flowchart_mode: FlowchartMode,
+    compat: bool,
+    animation: Option<Animation>,
     output: Option<PathBuf>,
     output_dir: Option<PathBuf>,
+}
+
+/// One explicitly named local face, read before diagram input or output.
+#[derive(Debug, PartialEq, Eq)]
+struct FontInput {
+    family: String,
+    path: PathBuf,
+    weight: FontWeight,
+    style: FontStyle,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -109,9 +132,49 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
             "-h" | "--help" => return Ok(Command::Help),
             "-V" | "--version" => return Ok(Command::Version),
             "-c" | "--config" => job.config = Some(value(&mut args, &argument)?.into()),
+            "--font" | "--font-face" => {
+                let raw = value(&mut args, &argument)?;
+                job.fonts.push(font_input(&raw, argument == "--font-face")?);
+            }
+            "--font-fallback" => {
+                let family = value(&mut args, &argument)?;
+                if family.trim().is_empty() {
+                    return Err("--font-fallback needs a family name".to_owned());
+                }
+                job.font_fallbacks.push(family);
+            }
+            "--now" => {
+                let raw = value(&mut args, &argument)?;
+                job.now = Some(
+                    raw.parse::<i64>()
+                        .ok()
+                        .filter(|n| (-8_640_000_000_000_000..=8_640_000_000_000_000).contains(n))
+                        .ok_or_else(|| {
+                            "--now must be integer Unix milliseconds within ±8640000000000000"
+                                .to_owned()
+                        })?,
+                );
+            }
             "--id" => job.id = Some(value(&mut args, &argument)?),
             "--scheme" => job.scheme = Some(scheme(&value(&mut args, &argument)?)?),
-            "--flowchart-mode" => job.flowchart_mode = value(&mut args, &argument)?.parse()?,
+            "--compat" => job.compat = true,
+            "--animate" => {
+                job.animation.get_or_insert_default();
+            }
+            "--animation-speed" => {
+                let raw = value(&mut args, &argument)?;
+                let speed = raw
+                    .parse()
+                    .map_err(|_| format!("invalid animation speed {raw:?}"))?;
+                let order = job.animation.unwrap_or_default().order;
+                let mut animation = Animation::new(speed).map_err(|error| error.to_string())?;
+                animation.order = order;
+                job.animation = Some(animation);
+            }
+            "--animation-order" => {
+                job.animation.get_or_insert_default().order =
+                    value(&mut args, &argument)?.parse()?;
+            }
             "-o" | "--output" => job.output = Some(value(&mut args, &argument)?.into()),
             "--output-dir" => job.output_dir = Some(value(&mut args, &argument)?.into()),
             "-" => job.inputs.push(Input::Stdin),
@@ -154,12 +217,56 @@ impl Job {
                 }
             }
         }
-        Ok(Command::Render(self))
+        Ok(Command::Render(Box::new(self)))
     }
 }
 
 fn value(args: &mut impl Iterator<Item = String>, option: &str) -> Result<String, String> {
     args.next().ok_or_else(|| format!("{option} needs a value"))
+}
+
+fn font_input(raw: &str, explicit_face: bool) -> Result<FontInput, String> {
+    let (specification, path) = raw
+        .split_once('=')
+        .ok_or_else(|| "a font needs FAMILY=FILE or FAMILY:WEIGHT:STYLE=FILE".to_owned())?;
+    if path.is_empty() {
+        return Err("a font needs a file path".to_owned());
+    }
+    let (family, weight, style) = if explicit_face {
+        let (family_weight, style) = specification
+            .rsplit_once(':')
+            .ok_or_else(|| "--font-face needs FAMILY:WEIGHT:STYLE=FILE".to_owned())?;
+        let (family, weight) = family_weight
+            .rsplit_once(':')
+            .ok_or_else(|| "--font-face needs FAMILY:WEIGHT:STYLE=FILE".to_owned())?;
+        let weight = weight
+            .parse::<u16>()
+            .ok()
+            .filter(|weight| (1..=1000).contains(weight))
+            .ok_or_else(|| "font weight must be an integer from 1 through 1000".to_owned())?;
+        let style = match style {
+            "normal" => FontStyle::Normal,
+            "italic" => FontStyle::Italic,
+            _ => return Err("font style must be normal or italic".to_owned()),
+        };
+        let weight = match weight {
+            400 => FontWeight::Normal,
+            700 => FontWeight::Bold,
+            weight => FontWeight::Number(weight),
+        };
+        (family, weight, style)
+    } else {
+        (specification, FontWeight::Normal, FontStyle::Normal)
+    };
+    if family.trim().is_empty() {
+        return Err("a font needs a family name".to_owned());
+    }
+    Ok(FontInput {
+        family: family.to_owned(),
+        path: path.into(),
+        weight,
+        style,
+    })
 }
 
 fn scheme(name: &str) -> Result<ColorScheme, String> {
@@ -178,12 +285,22 @@ fn run(job: &Job) -> Result<(), String> {
         Some(path) => read_config(path)?,
         None => Value::empty_object(),
     };
-    let renderer = Renderer::new(&config);
+    let mut builder = Renderer::builder(&config).with_all();
+    for font in &job.fonts {
+        builder = builder
+            .font_file_face(&font.family, &font.path, font.weight, font.style)
+            .map_err(|error| format!("cannot register font {:?}: {error}", font.family))?;
+    }
+    if !job.font_fallbacks.is_empty() {
+        builder = builder.font_fallbacks(&job.font_fallbacks);
+    }
+    let renderer = builder.build();
     let options = RenderOptions {
         id: job.id.clone(),
         color_scheme: job.scheme,
-        flowchart_mode: job.flowchart_mode,
-        now: None,
+        compat: job.compat,
+        animation: job.animation,
+        now: job.now,
         git_graph_seed: None,
         random_seed: None,
     };
@@ -282,9 +399,33 @@ mod tests {
 
     fn job(list: &[&str]) -> Job {
         match parse_args(args(list)) {
-            Ok(Command::Render(job)) => job,
+            Ok(Command::Render(job)) => *job,
             other => panic!("expected a render, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn font_options_preserve_spaces_paths_and_fallback_order() {
+        let parsed = job(&[
+            "--font",
+            "Project Sans=C:\\fonts\\regular.ttf",
+            "--font-face",
+            "Project Sans:600:italic=C:\\fonts\\italic.ttf",
+            "--font-fallback",
+            "Symbols One",
+            "--font-fallback",
+            "Symbols Two",
+        ]);
+        assert_eq!(parsed.fonts.len(), 2);
+        assert_eq!(parsed.fonts[0].family, "Project Sans");
+        assert_eq!(
+            parsed.fonts[0].path,
+            PathBuf::from("C:\\fonts\\regular.ttf")
+        );
+        assert_eq!(parsed.fonts[0].weight.css_value(), 400);
+        assert_eq!(parsed.fonts[1].weight.css_value(), 600);
+        assert_eq!(parsed.fonts[1].style, FontStyle::Italic);
+        assert_eq!(parsed.font_fallbacks, ["Symbols One", "Symbols Two"]);
     }
 
     #[test]

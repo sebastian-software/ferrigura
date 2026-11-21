@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Draw the flow — ferrigura</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.mjs"></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <a class="wordmark" href="/"
+          >ferrigura<span aria-hidden="true"> / </span><span>motion study</span></a
+        >
+        <h1>Draw the flow.</h1>
+        <p>Watch diagrams take shape, one element at a time.</p>
+      </header>
+      <section class="workbench" aria-label="Diagram animation preview">
+        <aside class="settings" aria-label="Animation settings">
+          <div class="field">
+            <label for="sample">Diagram</label>
+            <select id="sample">
+              <option value="request">Request &amp; cache</option>
+              <option value="review">Review &amp; return</option>
+              <option value="styles">Shapes &amp; styles</option>
+              <option value="gantt">Gantt — release plan</option>
+              <option value="gitgraph">Git Graph — branching</option>
+              <option value="mindmap">MindMap — release</option>
+              <option value="pie">Pie — rendering work</option>
+              <option value="donut">Pie — donut</option>
+              <option value="xychart">XY — bars &amp; line</option>
+              <option value="xy-horizontal">XY — horizontal bars</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="order">Drawing order</label>
+            <select id="order">
+              <option value="source">One line at a time</option>
+              <option value="flow">Follow the flow</option>
+            </select>
+            <p id="order-note">Each section draws with a soft start and finish.</p>
+          </div>
+          <div class="field">
+            <div class="field-heading">
+              <label for="speed">Speed</label><output id="speed-value" for="speed">1×</output>
+            </div>
+            <input id="speed" type="range" min="0.5" max="2.5" step="0.25" value="1" />
+          </div>
+          <div class="description">
+            <h2 id="diagram-title">Loading diagram…</h2>
+            <p id="diagram-description"></p>
+          </div>
+          <p id="motion-note" class="motion-note" hidden>
+            Reduced motion is on. The complete diagram is shown.
+          </p>
+          <button id="download" class="download" type="button" disabled>
+            Download animated SVG <span aria-hidden="true">↗</span>
+          </button>
+        </aside>
+        <div class="canvas">
+          <div id="drawing" aria-label="Diagram"></div>
+          <p id="error" role="alert" hidden></p>
+        </div>
+        <div class="player" aria-label="Playback controls">
+          <button id="play" type="button" disabled>Play</button>
+          <button id="replay" type="button" disabled>Replay</button>
+          <div class="playhead">
+            <label class="sr-only" for="progress">Animation progress</label>
+            <input id="progress" type="range" min="0" max="1000" step="1" value="1000" disabled />
+          </div>
+          <output id="time" for="progress">0.0 / 0.0 s</output>
+          <button id="finish" type="button" disabled>Show all</button>
+        </div>
+      </section>
+      <footer>
+        <p id="status" role="status">Loading the preview…</p>
+        <details>
+          <summary>Mermaid source</summary>
+          <pre id="source"></pre>
+        </details>
+      </footer>
+      <noscript
+        >This preview needs JavaScript for its controls. The downloaded SVG uses embedded CSS
+        animation.</noscript
+      >
+    </main>
+  </body>
+</html>

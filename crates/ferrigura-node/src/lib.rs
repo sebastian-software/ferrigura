@@ -1,8 +1,8 @@
 //! The `ferrigura` Node addon, Node.js only; there is no WebAssembly build.
 //!
-//! `render(text, config?, options?)` returns the SVG of a Mermaid diagram, with the options of the
+//! `render(text, config?, options?, fonts?)` returns the SVG of a Mermaid diagram, with the options of the
 //! `ferrigura` crate. `Renderer` resolves a configuration once, for many renders:
-//! `new Renderer(config?)`, then `renderer.render(text, options?)`. Both give the same SVG for the
+//! `new Renderer(config?, fonts?)`, then `renderer.render(text, options?)`. Both give the same SVG for the
 //! same configuration, byte for byte.
 //!
 //! The crate has one cargo feature per diagram type, named as its constructor in
@@ -10,24 +10,61 @@
 //! links only those (decision 0020); a text of another type is refused as not registered.
 
 use ferrigura::diagrams::{self, Plugin};
-use ferrigura::{ColorScheme, RenderOptions, RendererBuilder};
+use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, RendererBuilder};
 use ferrigura_model::value::Value;
+use napi::bindgen_prelude::Uint8Array;
 use napi::{Error, Result, Status};
 use napi_derive::napi;
+
+/// One host-supplied face. The JavaScript facade reads local files before calling the addon.
+#[napi(object)]
+pub struct FontInput {
+    /// Explicit family name, including spaces when needed.
+    pub family: String,
+    /// Font bytes, copied into the renderer during construction.
+    pub data: Uint8Array,
+    /// Integer CSS weight from 1 through 1000. Defaults to 400.
+    pub weight: Option<f64>,
+    /// `normal` (default) or `italic`.
+    pub style: Option<String>,
+}
+
+/// Renderer-scoped font registration, separate from Mermaid configuration and SVG options.
+#[napi(object)]
+pub struct FontOptionsInput {
+    /// Faces registered once before rendering. The first family is the default unless configured.
+    pub fonts: Option<Vec<FontInput>>,
+    /// Registered fallback family names, in order. No files are discovered or downloaded.
+    pub fallbacks: Option<Vec<String>>,
+}
 
 /// The options that are not Mermaid configuration.
 #[napi(object)]
 pub struct RenderOptionsInput {
-    /// Flowchart mode: `adaptive` (default) centers ports with label-aware spacing and draws
-    /// edge-label backgrounds at full opacity; `mermaid` preserves the pinned reference's output.
-    /// Other diagram types ignore it.
-    pub flowchart_mode: Option<String>,
+    /// Optional draw animation. An empty object enables the default speed and source order.
+    pub animation: Option<AnimationInput>,
+    /// Mermaid-compatible geometry when true. False (default) enables optimized flowchart routing
+    /// and compact sequence participant boxes. Font, color and readability fixes always apply.
+    pub compat: Option<bool>,
     /// The id of the SVG element, which scopes its styles. By default it is derived from the text and
     /// the configuration, so the same input gives the same id.
     pub id: Option<String>,
     /// The colors: `light`, `dark`, or `auto` to follow the viewer's color scheme. By default the
     /// configured theme decides.
     pub color_scheme: Option<String>,
+    /// Fixed UTC time in integer milliseconds since the Unix epoch.
+    pub now: Option<f64>,
+}
+
+/// Options for one-time, script-free SVG draw animation.
+/// Supports flowcharts, Gantt, Git graphs, mind maps, pie charts, and XY charts.
+#[napi(object)]
+pub struct AnimationInput {
+    /// Positive, finite multiplier of 700 SVG user units per second on average. Defaults to 1.
+    /// Each connection, bar, or sector eases in and out independently.
+    pub speed: Option<f64>,
+    /// `source` (default) draws one line at a time; `flow` draws branches in parallel.
+    pub order: Option<String>,
 }
 
 /// Renders a diagram to an SVG document.
@@ -46,10 +83,11 @@ pub fn render(
     text: String,
     config: Option<serde_json::Value>,
     options: Option<RenderOptionsInput>,
+    fonts: Option<FontOptionsInput>,
 ) -> Result<String> {
     let config = config.map_or_else(Value::empty_object, Value::from);
     let options = render_options(options)?;
-    builder(&config)
+    font_builder(builder(&config), fonts)?
         .shared()
         .render_with(&text, &options)
         .map_err(to_error)
@@ -57,7 +95,7 @@ pub fn render(
 
 /// A renderer that resolves its configuration once, for many renders.
 ///
-/// `new Renderer(config?)` takes the configuration that `render` takes as its second argument, and
+/// `new Renderer(config?, fonts?)` takes the configuration that `render` takes as its second argument, and
 /// `renderer.render(text, options?)` renders a diagram with it, as `render` does. The configuration is
 /// merged onto the defaults when the renderer is made, and the typed view of each diagram type is
 /// resolved at its first render; a render then merges only the diagram's own front matter and
@@ -72,12 +110,15 @@ pub struct Renderer {
 impl Renderer {
     /// Resolves the configuration of a renderer. A value of the wrong type is reported by the render
     /// that reads it, as `render` reports it.
+    ///
+    /// # Errors
+    /// Throws immediately if supplied font bytes or face metadata are invalid.
     #[napi(constructor)]
-    pub fn new(config: Option<serde_json::Value>) -> Self {
+    pub fn new(config: Option<serde_json::Value>, fonts: Option<FontOptionsInput>) -> Result<Self> {
         let config = config.map_or_else(Value::empty_object, Value::from);
-        Self {
-            inner: builder(&config).build(),
-        }
+        Ok(Self {
+            inner: font_builder(builder(&config), fonts)?.build(),
+        })
     }
 
     /// Renders a diagram to an SVG document, with the configuration of this renderer.
@@ -94,24 +135,92 @@ impl Renderer {
     }
 }
 
+/// Applies only owned bytes: file and network loading never enter the addon.
+fn font_builder(
+    mut builder: RendererBuilder,
+    input: Option<FontOptionsInput>,
+) -> Result<RendererBuilder> {
+    if let Some(input) = input {
+        for font in input.fonts.unwrap_or_default() {
+            let weight = font.weight.unwrap_or(400.0);
+            if !weight.is_finite() || weight.fract() != 0.0 || !(1.0..=1000.0).contains(&weight) {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "font weight must be an integer from 1 through 1000",
+                ));
+            }
+            let weight = match weight as u16 {
+                400 => FontWeight::Normal,
+                700 => FontWeight::Bold,
+                weight => FontWeight::Number(weight),
+            };
+            let style = match font.style.as_deref().unwrap_or("normal") {
+                "normal" => FontStyle::Normal,
+                "italic" => FontStyle::Italic,
+                _ => {
+                    return Err(Error::new(
+                        Status::InvalidArg,
+                        "font style must be normal or italic",
+                    ));
+                }
+            };
+            builder = builder
+                .font_face(&font.family, font.data.to_vec(), weight, style)
+                .map_err(|error| {
+                    Error::new(
+                        Status::InvalidArg,
+                        format!("cannot register font {:?}: {error}", font.family),
+                    )
+                })?;
+        }
+        if let Some(fallbacks) = input.fallbacks
+            && !fallbacks.is_empty()
+        {
+            builder = builder.font_fallbacks(fallbacks);
+        }
+    }
+    Ok(builder)
+}
+
 /// The render options of the addon's input.
 fn render_options(input: Option<RenderOptionsInput>) -> Result<RenderOptions> {
     Ok(match input {
         Some(input) => RenderOptions {
-            flowchart_mode: input
-                .flowchart_mode
-                .as_deref()
-                .map(str::parse)
-                .transpose()
-                .map_err(|message| Error::new(Status::InvalidArg, message))?
-                .unwrap_or_default(),
+            animation: input
+                .animation
+                .map(|input| {
+                    let mut animation = Animation::new(input.speed.unwrap_or(1.0))
+                        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+                    animation.order = input
+                        .order
+                        .as_deref()
+                        .map(str::parse)
+                        .transpose()
+                        .map_err(|message| Error::new(Status::InvalidArg, message))?
+                        .unwrap_or_default();
+                    Ok::<_, Error>(animation)
+                })
+                .transpose()?,
+            compat: input.compat.unwrap_or(false),
             id: input.id,
             color_scheme: input
                 .color_scheme
                 .as_deref()
                 .map(color_scheme)
                 .transpose()?,
-            now: None,
+            now: input
+                .now
+                .map(|now| {
+                    if !now.is_finite() || now.fract() != 0.0 || now.abs() > 8_640_000_000_000_000.0
+                    {
+                        return Err(Error::new(
+                            Status::InvalidArg,
+                            "now must be integer Unix milliseconds within ±8640000000000000",
+                        ));
+                    }
+                    Ok(now as i64)
+                })
+                .transpose()?,
             git_graph_seed: None,
             random_seed: None,
         },
@@ -311,14 +420,20 @@ mod tests {
     #[cfg(feature = "sequence")]
     #[test]
     fn draws_a_type_whose_feature_is_on() {
-        let svg = render("sequenceDiagram\n  A->>B: Hi\n".to_owned(), None, None).unwrap();
+        let svg = render(
+            "sequenceDiagram\n  A->>B: Hi\n".to_owned(),
+            None,
+            None,
+            None,
+        )
+        .unwrap();
         assert!(svg.starts_with("<svg "));
     }
 
     #[cfg(not(feature = "pie"))]
     #[test]
     fn refuses_a_type_whose_feature_is_off() {
-        let error = render("pie\n  \"Dogs\" : 1\n".to_owned(), None, None).unwrap_err();
+        let error = render("pie\n  \"Dogs\" : 1\n".to_owned(), None, None, None).unwrap_err();
         let message = error.to_string();
         assert!(message.contains("pie"), "{message}");
         assert!(message.contains("not registered"), "{message}");

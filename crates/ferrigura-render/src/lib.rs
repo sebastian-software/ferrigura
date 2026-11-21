@@ -9,6 +9,7 @@
 
 pub mod a11y;
 pub mod agentflow;
+pub mod animation;
 pub mod architecture;
 pub mod block;
 pub mod c4;
@@ -19,6 +20,7 @@ pub mod cynefin;
 pub mod er;
 pub mod event_modeling;
 pub mod flowchart;
+pub mod fonts;
 pub mod gantt;
 pub mod git_graph;
 pub mod info;

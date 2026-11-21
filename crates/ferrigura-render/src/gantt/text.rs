@@ -1,7 +1,7 @@
 //! The text of labels, as the reference's SVG holds it: the entity codes of the input, the line
 //! breaks of section names, and the width of a run as `getBBox` reports it.
 
-use ferrigura_text::{FontFamily, FontStyle, FontWeight, face, measure_box};
+use ferrigura_text::{Face, measure_box};
 
 use crate::RenderError;
 use crate::svg::{escape, xml_references};
@@ -163,8 +163,7 @@ fn line_break_at(raw: &str, start: usize) -> Option<usize> {
 /// The width of a run of text in the sans face at `size` pixels, as `getBBox().width` reports it: the
 /// box of the glyphs, which is the advance and the outlines where they reach past it
 /// ([`measure_box`]), of the text as the browser lays it out (see [`laid_out`]).
-pub(crate) fn width(plain: &str, size: f64) -> Result<f64, RenderError> {
-    let sans = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal);
+pub(crate) fn width(sans: &Face, plain: &str, size: f64) -> Result<f64, RenderError> {
     Ok(measure_box(sans, &laid_out(plain), size)?.width())
 }
 

@@ -65,13 +65,15 @@ impl<'a> Orchestrator<'a> {
                 &config.x_axis,
                 &theme.x_axis,
                 config.screen_scale,
-            ),
+            )
+            .with_fonts(config.fonts.clone()),
             y_axis: Axis::new(
                 &data.y_axis,
                 &config.y_axis,
                 &theme.y_axis,
                 config.screen_scale,
-            ),
+            )
+            .with_fonts(config.fonts.clone()),
         }
     }
 
