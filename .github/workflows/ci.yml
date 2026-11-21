@@ -40,9 +40,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         with:
-          version: 2026.11.5
+          version: 2026.11.10
           install_args: --locked
       - run: mise run readme:check
 
@@ -82,6 +82,17 @@ jobs:
           node-version-file: tools/port/.node-version
       - name: Node addon
         run: node --test crates/ferrigura-node/test/render.test.mjs
+
+  # The declared MSRV must build the public Rust library and CLI with the committed lockfile.
+  minimum-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build with the declared minimum Rust
+        run: |
+          version=$(cargo metadata --locked --no-deps --format-version 1 | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(p["rust_version"] for p in data["packages"] if p["name"] == "ferrigura"))')
+          rustup toolchain install "$version" --profile minimal
+          cargo +"$version" build --locked -p ferrigura -p ferrigura-cli
 
   snapshots:
     # ferrigura's own output against crates/ferrigura/tests/snapshots/svg.tsv. The manifest holds the
@@ -234,7 +245,7 @@ jobs:
           package_json_file: node/package.json
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24.22.2'
+          node-version: '24.22.3'
       - run: pnpm -C node install --frozen-lockfile --ignore-scripts
       - id: matrix
         working-directory: node
@@ -260,7 +271,7 @@ jobs:
           package_json_file: node/package.json
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24.22.2'
+          node-version: '24.22.3'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm native:check
       - name: Build native addon
@@ -273,17 +284,26 @@ jobs:
           FERRIGURA_RUST_TARGET: ${{ matrix.target }}
       - run: pnpm test && pnpm typecheck && pnpm lint && pnpm format:check && pnpm pack:check
         if: matrix.native
+      # Derive the exact floor from the published facade so dependency automation cannot bump it.
+      - name: Read the minimum Node version
+        id: minimum-node
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          node -e 'const range = require("./ferrigura/package.json").engines.node; const match = /^>=(\d+\.\d+\.\d+)$/.exec(range); if (!match) throw new Error(`Expected an exact Node floor, got ${range}`); console.log(`version=${match[1]}`)' >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         with:
-          node-version: '22.13.0'
-      - name: Test native addon on Node 22
+          node-version: ${{ steps.minimum-node.outputs.version }}
+      - name: Test the packed consumer on the minimum Node
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: pnpm pack:check
+      - name: Test native addon on the minimum Node
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         run: node --test ferrigura/test/*.test.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         with:
-          node-version: '26.13.0'
+          node-version: '26.13.1'
       - name: Test native addon on Node 26
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         run: node --test ferrigura/test/*.test.mjs
