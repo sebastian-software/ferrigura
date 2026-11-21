@@ -29,8 +29,7 @@ fn truncated_and_unicode_inputs_leave_the_renderer_usable() {
         for (end, _) in seed.char_indices().step_by(7).chain([(seed.len(), '\0')]) {
             let text = &seed[..end];
             if let Ok(svg) = renderer.render(text) {
-                roxmltree::Document::parse(&svg)
-                    .unwrap_or_else(|error| panic!("invalid XML for {text:?}: {error}"));
+                finite_geometry(&svg, text, &format!("{text:?}"));
             }
             assert_eq!(renderer.render(seed).unwrap(), baseline, "after {text:?}");
             assert_eq!(
@@ -42,8 +41,7 @@ fn truncated_and_unicode_inputs_leave_the_renderer_usable() {
     }
     for text in invalid {
         if let Ok(svg) = renderer.render(text) {
-            roxmltree::Document::parse(&svg)
-                .unwrap_or_else(|error| panic!("invalid XML for {text:?}: {error}"));
+            finite_geometry(&svg, text, &format!("{text:?}"));
         }
         assert_eq!(
             renderer.render(CONTROL).unwrap(),
@@ -51,6 +49,55 @@ fn truncated_and_unicode_inputs_leave_the_renderer_usable() {
             "after {text:?}"
         );
     }
+}
+
+/// Checks numeric geometry attributes, including path and transform lists, for non-finite values.
+fn finite_geometry(svg: &str, source: &str, context: &str) {
+    let doc = roxmltree::Document::parse(svg).unwrap_or_else(|e| panic!("{context}: {e}"));
+    let mut non_finite = Vec::new();
+    for node in doc.descendants().filter(roxmltree::Node::is_element) {
+        for attr in node.attributes() {
+            if matches!(
+                attr.name(),
+                "x" | "y"
+                    | "x1"
+                    | "y1"
+                    | "x2"
+                    | "y2"
+                    | "cx"
+                    | "cy"
+                    | "r"
+                    | "rx"
+                    | "ry"
+                    | "width"
+                    | "height"
+                    | "viewBox"
+                    | "d"
+                    | "points"
+                    | "transform"
+                    | "stroke-width"
+            ) && (attr.value().contains("NaN")
+                || attr.value().contains("Infinity")
+                || attr
+                    .value()
+                    .split(|c: char| {
+                        !(c.is_ascii_digit() || matches!(c, '.' | '-' | '+' | 'e' | 'E'))
+                    })
+                    .filter_map(|token| token.parse::<f64>().ok())
+                    .any(|value| !value.is_finite()))
+            {
+                non_finite.push((node.tag_name().name(), attr.name(), attr.value()));
+            }
+        }
+    }
+    // The pinned reference also renders this title-only Gantt with these two NaN endpoints.
+    // Keep the exception tied to the complete input and the exact element and attributes.
+    let expected: &[(&str, &str, &str)] = if source == "gantt\n  title Te" {
+        &[("line", "x1", "NaN"), ("line", "x2", "NaN")]
+    } else {
+        &[]
+    };
+    assert_eq!(non_finite, expected, "{context}: non-finite geometry");
 }
 
 /// A compact corpus fixture per registered kind. Paths are explicit so a new fixture cannot change
@@ -120,7 +167,7 @@ fn every_registered_kind_handles_bounded_truncations() {
         let baseline = renderer
             .render_with(source, &options)
             .unwrap_or_else(|e| panic!("{path}: {e}"));
-        roxmltree::Document::parse(&baseline).unwrap_or_else(|e| panic!("{path}: {e}"));
+        finite_geometry(&baseline, source, path);
         let offsets: Vec<usize> = source.char_indices().map(|(i, _)| i).collect();
         for index in [
             offsets.len() / 3,
@@ -129,8 +176,7 @@ fn every_registered_kind_handles_bounded_truncations() {
         ] {
             let text = &source[..offsets[index]];
             if let Ok(svg) = renderer.render_with(text, &options) {
-                roxmltree::Document::parse(&svg)
-                    .unwrap_or_else(|e| panic!("{path} at {}: {e}", offsets[index]));
+                finite_geometry(&svg, text, &format!("{path} at {}", offsets[index]));
             }
             assert_eq!(
                 renderer.render_with(source, &options).unwrap(),
@@ -147,4 +193,59 @@ fn every_registered_kind_handles_bounded_truncations() {
         }
     }
     assert_eq!(exercised, registered, "seed each registered diagram kind");
+}
+
+/// Opt in to repeating the fixed corpus cases in isolated processes. A timeout kills and reaps the
+/// child; the synchronous renderer itself does not offer cancellation.
+#[test]
+fn extended_robustness_in_bounded_children() {
+    use std::{
+        process::Command,
+        thread,
+        time::{Duration, Instant},
+    };
+    if std::env::var_os("FERRIGURA_ROBUSTNESS_EXTENDED").is_none() {
+        return;
+    }
+    const RUNS: usize = 4;
+    let deadline = Instant::now() + Duration::from_secs(30);
+    for run in 0..RUNS {
+        let mut child = Command::new(std::env::current_exe().expect("test executable"))
+            .args([
+                "--exact",
+                "every_registered_kind_handles_bounded_truncations",
+                "--test-threads=1",
+            ])
+            .env_remove("FERRIGURA_ROBUSTNESS_EXTENDED")
+            .spawn()
+            .expect("start robustness child");
+        loop {
+            if let Some(status) = child.try_wait().expect("poll robustness child") {
+                assert!(status.success(), "robustness child {run} failed: {status}");
+                break;
+            }
+            if Instant::now() >= deadline {
+                child.kill().expect("stop timed-out robustness child");
+                child.wait().expect("reap timed-out robustness child");
+                panic!("robustness children exceeded 30 seconds at run {run}");
+            }
+            thread::sleep(Duration::from_millis(25));
+        }
+    }
+}
+
+#[test]
+fn geometry_check_detects_non_finite_numbers_in_numeric_attributes() {
+    for svg in [
+        r#"<svg><rect x="NaN"/></svg>"#,
+        r#"<svg><rect width="1e309"/></svg>"#,
+        r#"<svg><path d="M0,NaN"/></svg>"#,
+    ] {
+        assert!(std::panic::catch_unwind(|| finite_geometry(svg, "example", "example")).is_err());
+    }
+    finite_geometry(
+        r#"<svg><text>NaN is a label</text></svg>"#,
+        "example",
+        "example",
+    );
 }

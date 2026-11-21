@@ -84,7 +84,7 @@ The renderer ports `ganttRenderer.js` and `styles.js`. `mod.rs` sizes the diagra
 - `legacy_parse` leaves out the V8 forms `Jan 1 2014`, `2014/1`, `1/6`, `1.5`, signed years and `Y-M` with a one-digit year; the differential run reports an input that reaches one.
 - `.taskText.clickable` is bold in the style sheet, but the embedded faces are regular, so Chromium synthesizes the bold.
 - A `weekday` that is not a day name makes the reference's tick function undefined and throw; ferrigura returns a render error.
-- A task whose dates cannot be resolved is drawn with `NaN` in `x`, `width` and `transform-origin`, as the reference does; no fixture has one.
+- A task whose dates cannot be resolved is drawn with `NaN` in `x`, `width` and `transform-origin`, as the reference does; no fixture has one. A title-only Gantt (`gantt\n  title Te`) also has `NaN` for the today line's `x1` and `x2`, as in the pinned reference.
 
 ## Checking it
 
