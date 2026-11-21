@@ -37,6 +37,22 @@ use data::{Datum, datums, ensure_pairwise_subsets, js_max, js_min, js_min_all, s
 use style::Declarations;
 use text::{set_label_text, text_node_lines};
 
+#[cfg(test)]
+thread_local! {
+    static LAYOUT_CALLS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+// Retain the second solve where its input, errors, or random starts can differ
+// from the chart. The chart reports whether its solver drew random numbers.
+fn needs_text_layout(areas: &[ferrigura_venn::Area], has_text: bool, drew_random: bool) -> bool {
+    has_text
+        || drew_random
+        || areas.is_empty()
+        || areas
+            .iter()
+            .any(|area| !area.size.is_finite() || area.size <= 0.0)
+}
+
 /// The XML namespace of the root element.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 
@@ -76,6 +92,13 @@ pub struct VennSection<'a> {
 /// for instance an empty diagram or a negative size), if a color of the theme or of a style is not
 /// a color the color functions read, or if a bundled font cannot be read or subset.
 pub fn render(input: &Context<'_, VennDiagram, VennSection<'_>>) -> Result<String, RenderError> {
+    render_with_layout(input, false)
+}
+
+fn render_with_layout(
+    input: &Context<'_, VennDiagram, VennSection<'_>>,
+    force_layout: bool,
+) -> Result<String, RenderError> {
     let primary = input
         .text_fonts()
         .face(FontWeight::Normal, FontStyle::Normal)?;
@@ -105,10 +128,23 @@ pub fn render(input: &Context<'_, VennDiagram, VennSection<'_>>) -> Result<Strin
         })
         .collect();
     let mut random = random::seeded(input.section.seed);
-    let chart = ferrigura_venn::chart(&areas, width, chart_height, CHART_PADDING, &mut random)
-        .map_err(layout_error)?;
-    let layout = ferrigura_venn::layout(&areas, width, chart_height, config.padding, &mut random)
-        .map_err(layout_error)?;
+    #[cfg(test)]
+    LAYOUT_CALLS.with(|count| count.set(count.get() + 1));
+    let mut drew_random = false;
+    let chart = ferrigura_venn::chart(&areas, width, chart_height, CHART_PADDING, &mut || {
+        drew_random = true;
+        random()
+    })
+    .map_err(layout_error)?;
+    let layout =
+        if force_layout || needs_text_layout(&areas, !diagram.text_nodes.is_empty(), drew_random) {
+            #[cfg(test)]
+            LAYOUT_CALLS.with(|count| count.set(count.get() + 1));
+            ferrigura_venn::layout(&areas, width, chart_height, config.padding, &mut random)
+                .map_err(layout_error)?
+        } else {
+            Vec::new()
+        };
 
     let circles: HashMap<&str, Circle> = chart
         .circles
@@ -782,4 +818,74 @@ fn text_area(
 /// A length rounded down to the layout unit of 1/64 px, as Chromium keeps a position.
 fn floor_layout_unit(length: f64) -> f64 {
     (length * 64.0 + 1e-6).floor() / 64.0
+}
+
+#[cfg(test)]
+mod deferred_layout_tests {
+    use super::*;
+    use crate::context::{Globals, ThemeView};
+    use ferrigura_model::config::{defaults, typed};
+    use ferrigura_model::theme::{Theme, ThemeTokens};
+    use ferrigura_model::value::Value;
+
+    #[test]
+    fn deferred_layout_matches_the_original_render_and_errors() {
+        let cases = [
+            "venn-beta\n  set A\n  set B\n  union A, B\n",
+            "venn-beta\n  set A\n  set B\n  set C\n  union A, B, C\n",
+            "venn-beta\n  set A\n  set B\n  set C\n",
+            "venn-beta\n  set A\n  set B\n  set C\n  set D\n",
+            "venn-beta\n  set A: 0\n  set B\n  union A, B\n",
+            "venn-beta\n  set A: 0\n",
+            "venn-beta\n  set A: -5\n  set B\n  union A, B\n",
+            "venn-beta\n",
+            "venn-beta\n  set A\n  set B\n  union A, B\n    text \"Hello\"\n",
+        ];
+        for padding in [0.0, 20.0] {
+            let mut config =
+                typed(&Value::from(serde_json::to_value(defaults()).unwrap())).unwrap();
+            config.venn.padding = padding;
+            let tokens = ThemeTokens::from_value(&Theme::ReduxColor.variables(None));
+            let globals = Globals::of(&config);
+            for seed in [1, 17] {
+                for source in cases {
+                    let diagram = ferrigura_syntax::venn::parse(source).unwrap();
+                    let section = VennSection {
+                        config: &config.venn,
+                        seed,
+                    };
+                    let context = Context {
+                        fonts: None,
+                        diagram: &diagram,
+                        section: &section,
+                        globals: &globals,
+                        theme: ThemeView {
+                            light: &tokens,
+                            dark: None,
+                        },
+                        id: "venn1",
+                    };
+                    LAYOUT_CALLS.with(|count| count.set(0));
+                    let actual = render_with_layout(&context, false);
+                    let expected = if source.contains("set D")
+                        || source.contains(": 0")
+                        || source.contains(": -5")
+                        || source == "venn-beta\n"
+                        || !diagram.text_nodes.is_empty()
+                    {
+                        2
+                    } else {
+                        1
+                    };
+                    LAYOUT_CALLS.with(|count| assert_eq!(count.get(), expected, "{source}"));
+                    let original = render_with_layout(&context, true);
+                    assert_eq!(
+                        format!("{actual:?}"),
+                        format!("{original:?}"),
+                        "{source}, padding {padding}, seed {seed}"
+                    );
+                }
+            }
+        }
+    }
 }
