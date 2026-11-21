@@ -93,5 +93,9 @@ completed diagram or automatically warn from Rust rendering, the CLI, or Node. F
 bundled fallback chain.
 
 Invalid font data, unsupported OpenType-SVG and unsupported legacy kerning formats return typed
-text errors. WOFF/WOFF2, host font discovery, automatic downloads, font catalogs, and a no-embedding
-output mode are outside this API.
+text errors. WOFF/WOFF2, host font discovery, automatic downloads, and a no-embedding output mode
+are outside this API.
+
+Hosts can explicitly prepare local font inputs from the pinned catalog. The CLI's `fonts fetch`
+command writes a verified local lock for `--font-lock`; see the [CLI guide](../crates/ferrigura-cli/README.md#custom-fonts).
+It fetches only when the host asks; diagram text and rendering do not initiate network requests.

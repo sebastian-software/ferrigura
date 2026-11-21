@@ -23,6 +23,9 @@ doc = false
 ferrigura = { path = "../..", version = "0.8.2" }
 ferrigura-model = { path = "../ferrigura-model", version = "0.8.2" }
 serde_json.workspace = true
+sha2 = "0.11.1"
+ureq = { version = "3.5.2", default-features = false, features = ["rustls"] }
+url = "2.5.9"
 
 [package.metadata.docs.rs]
 all-features = true

@@ -15,10 +15,13 @@ use std::process::ExitCode;
 use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, Renderer};
 use ferrigura_model::value::Value;
 
+mod font_catalog;
+
 const USAGE: &str = "\
 Renders Mermaid diagrams to SVG.
 
 Usage: ferrigura [OPTIONS] [FILE]...
+       ferrigura fonts fetch [OPTIONS] FAMILY...
 
 Arguments:
   [FILE]...  The diagram texts. Standard input is read when no FILE is given, or for `-`. Several
@@ -27,6 +30,7 @@ Arguments:
 
 Options:
   -c, --config <FILE>     The configuration as a JSON object, what `initialize` takes
+      --font-lock <FILE>  Register the verified faces from a local font lock
       --font <FAMILY=FILE> Register a local font as weight 400, normal; repeat for more families
       --font-face <FAMILY:WEIGHT:STYLE=FILE>
                           Register a face with weight 1..1000 and style normal or italic
@@ -54,6 +58,7 @@ Options:
 enum Command {
     Help,
     Version,
+    FontFetch(Vec<String>),
     Render(Box<Job>),
 }
 
@@ -64,6 +69,7 @@ struct Job {
     inputs: Vec<Input>,
     config: Option<PathBuf>,
     fonts: Vec<FontInput>,
+    font_lock: Option<PathBuf>,
     font_fallbacks: Vec<String>,
     id: Option<String>,
     now: Option<i64>,
@@ -109,6 +115,13 @@ fn main() -> ExitCode {
             println!("ferrigura {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
+        Ok(Command::FontFetch(args)) => match font_catalog::fetch(args.into_iter()) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(message) => {
+                eprintln!("ferrigura: {message}");
+                ExitCode::FAILURE
+            }
+        },
         Ok(Command::Render(job)) => match run(&job) {
             Ok(()) => ExitCode::SUCCESS,
             Err(message) => {
@@ -126,12 +139,19 @@ fn main() -> ExitCode {
 /// Reads the command line. Help and version end the parse at the option that asks for them.
 fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String> {
     let mut job = Job::default();
-    let mut args = args.into_iter();
+    let values: Vec<String> = args.into_iter().collect();
+    if values.first().is_some_and(|arg| arg == "fonts")
+        && values.get(1).is_some_and(|arg| arg == "fetch")
+    {
+        return Ok(Command::FontFetch(values.into_iter().skip(2).collect()));
+    }
+    let mut args = values.into_iter();
     while let Some(argument) = args.next() {
         match argument.as_str() {
             "-h" | "--help" => return Ok(Command::Help),
             "-V" | "--version" => return Ok(Command::Version),
             "-c" | "--config" => job.config = Some(value(&mut args, &argument)?.into()),
+            "--font-lock" => job.font_lock = Some(value(&mut args, &argument)?.into()),
             "--font" | "--font-face" => {
                 let raw = value(&mut args, &argument)?;
                 job.fonts.push(font_input(&raw, argument == "--font-face")?);
@@ -286,13 +306,24 @@ fn run(job: &Job) -> Result<(), String> {
         None => Value::empty_object(),
     };
     let mut builder = Renderer::builder(&config).with_all();
+    let mut fallback_families = Vec::new();
+    if let Some(path) = &job.font_lock {
+        let (fonts, fallbacks) = font_catalog::read_lock(path)?;
+        for (family, data, weight, style) in fonts {
+            builder = builder
+                .font_face(&family, data, weight, style)
+                .map_err(|error| format!("cannot register font {family:?}: {error}"))?;
+        }
+        fallback_families = fallbacks;
+    }
     for font in &job.fonts {
         builder = builder
             .font_file_face(&font.family, &font.path, font.weight, font.style)
             .map_err(|error| format!("cannot register font {:?}: {error}", font.family))?;
     }
-    if !job.font_fallbacks.is_empty() {
-        builder = builder.font_fallbacks(&job.font_fallbacks);
+    fallback_families.extend(job.font_fallbacks.iter().cloned());
+    if !fallback_families.is_empty() {
+        builder = builder.font_fallbacks(&fallback_families);
     }
     let renderer = builder.build();
     let options = RenderOptions {
