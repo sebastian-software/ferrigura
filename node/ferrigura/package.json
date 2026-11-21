@@ -12,6 +12,8 @@
   "files": [
     "index.mjs",
     "index.d.mts",
+    "font-catalog.mjs",
+    "font-catalog.d.mts",
     "native-runtime.mjs",
     "native-runtime.d.mts",
     "native.d.ts",
@@ -27,6 +29,10 @@
     ".": {
       "types": "./index.d.mts",
       "default": "./index.mjs"
+    },
+    "./font-catalog": {
+      "types": "./font-catalog.d.mts",
+      "default": "./font-catalog.mjs"
     },
     "./package.json": "./package.json"
   },

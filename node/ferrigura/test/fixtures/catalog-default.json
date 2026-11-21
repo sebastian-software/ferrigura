@@ -1,0 +1,321 @@
+{
+  "schemaVersion": 1,
+  "families": [
+    {
+      "family": "Lexica Ultralegible",
+      "version": "1.0.0",
+      "source": "https://github.com/jacobxperez/lexica-ultralegible/tree/198700e57554026460c7dfd547ac91d910b8b0f5",
+      "license": {
+        "spdx": "OFL-1.1",
+        "path": "fonts/lexica-ultralegible/1.0.0/f32d22b3908fcad2c86a74000614ec22e6a7f66ea7e867e616026a27aebdc143.txt",
+        "sha256": "f32d22b3908fcad2c86a74000614ec22e6a7f66ea7e867e616026a27aebdc143",
+        "sourcePath": "LICENSE.txt",
+        "size": 4352
+      },
+      "faces": [
+        {
+          "weight": 400,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/lexica-ultralegible/1.0.0/588403d7e45996371969fc5fc287937a4beeef69c6409c87ea68f4d6fdca21f4.ttf",
+            "sha256": "588403d7e45996371969fc5fc287937a4beeef69c6409c87ea68f4d6fdca21f4",
+            "sourcePath": "fonts/ttf/LexicaUltralegible-Regular.ttf",
+            "size": 72108
+          },
+          "web": {
+            "path": "fonts/lexica-ultralegible/1.0.0/17b1cd87f1ad7e69831308a142a0d286e9940df0d30704050f7156d660870a07.woff2",
+            "sha256": "17b1cd87f1ad7e69831308a142a0d286e9940df0d30704050f7156d660870a07",
+            "sourcePath": "fonts/web/LexicaUltralegible-Regular.woff2",
+            "size": 26328
+          }
+        },
+        {
+          "weight": 400,
+          "style": "italic",
+          "renderer": {
+            "path": "fonts/lexica-ultralegible/1.0.0/12b1e2a8ab52a322869b09c6da39dbfd0257ea01c3147fd27889606e3f2f9d8e.ttf",
+            "sha256": "12b1e2a8ab52a322869b09c6da39dbfd0257ea01c3147fd27889606e3f2f9d8e",
+            "sourcePath": "fonts/ttf/LexicaUltralegible-Italic.ttf",
+            "size": 72140
+          },
+          "web": {
+            "path": "fonts/lexica-ultralegible/1.0.0/aa18eae407ed4d6b7fefabd24fc9a0e07b602c36816a3a234bd8baa454a58f7f.woff2",
+            "sha256": "aa18eae407ed4d6b7fefabd24fc9a0e07b602c36816a3a234bd8baa454a58f7f",
+            "sourcePath": "fonts/web/LexicaUltralegible-Italic.woff2",
+            "size": 27464
+          }
+        },
+        {
+          "weight": 700,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/lexica-ultralegible/1.0.0/d59de12fd9785e27cc26dbd4337aca5a69dc73b49af9a19c14eb143966b4bbf4.ttf",
+            "sha256": "d59de12fd9785e27cc26dbd4337aca5a69dc73b49af9a19c14eb143966b4bbf4",
+            "sourcePath": "fonts/ttf/LexicaUltralegible-Bold.ttf",
+            "size": 70156
+          },
+          "web": {
+            "path": "fonts/lexica-ultralegible/1.0.0/c82c092e6eb3a8252eacd13fdda696342baa498b0ee920dfd746d867d27c57f1.woff2",
+            "sha256": "c82c092e6eb3a8252eacd13fdda696342baa498b0ee920dfd746d867d27c57f1",
+            "sourcePath": "fonts/web/LexicaUltralegible-Bold.woff2",
+            "size": 26120
+          }
+        },
+        {
+          "weight": 700,
+          "style": "italic",
+          "renderer": {
+            "path": "fonts/lexica-ultralegible/1.0.0/351401f2de965114f56332be8a15cb0990892464609a76c426eb158b915868a0.ttf",
+            "sha256": "351401f2de965114f56332be8a15cb0990892464609a76c426eb158b915868a0",
+            "sourcePath": "fonts/ttf/LexicaUltralegible-BoldItalic.ttf",
+            "size": 69416
+          },
+          "web": {
+            "path": "fonts/lexica-ultralegible/1.0.0/b7227b9b918c4be8d9b75470db1673db749c57da1087f216763d64698b144c2f.woff2",
+            "sha256": "b7227b9b918c4be8d9b75470db1673db749c57da1087f216763d64698b144c2f",
+            "sourcePath": "fonts/web/LexicaUltralegible-BoldItalic.woff2",
+            "size": 26156
+          }
+        }
+      ],
+      "sourceCommit": "198700e57554026460c7dfd547ac91d910b8b0f5"
+    },
+    {
+      "family": "Atkinson Hyperlegible Mono",
+      "version": "2.001",
+      "source": "https://github.com/googlefonts/atkinson-hyperlegible-next-mono/tree/154d50362016cc3e873eb21d242cd0772384c8f9",
+      "sourceCommit": "154d50362016cc3e873eb21d242cd0772384c8f9",
+      "license": {
+        "spdx": "OFL-1.1",
+        "path": "fonts/atkinson-hyperlegible-mono/2.001/1ebb31cf7393164f20d10c1d48406cddb5314feff8465531cf1e4ba37e9dd740.txt",
+        "sha256": "1ebb31cf7393164f20d10c1d48406cddb5314feff8465531cf1e4ba37e9dd740",
+        "sourcePath": "OFL.txt",
+        "size": 4436
+      },
+      "faces": [
+        {
+          "weight": 400,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/atkinson-hyperlegible-mono/2.001/2c9a7b9fabebd5c746a808d8a1ef2f52e618850caad6ec4fd9f5c48f56e1c1af.ttf",
+            "sha256": "2c9a7b9fabebd5c746a808d8a1ef2f52e618850caad6ec4fd9f5c48f56e1c1af",
+            "sourcePath": "fonts/ttf/AtkinsonHyperlegibleMono-Regular.ttf",
+            "size": 52020
+          },
+          "web": {
+            "path": "fonts/atkinson-hyperlegible-mono/2.001/3b916de5c5247c5fa9736aad6c2673f1b0b0381ab306dcddfcee4a184a842a51.woff2",
+            "sha256": "3b916de5c5247c5fa9736aad6c2673f1b0b0381ab306dcddfcee4a184a842a51",
+            "sourcePath": "fonts/webfonts/AtkinsonHyperlegibleMono-Regular.woff2",
+            "size": 22328
+          }
+        },
+        {
+          "weight": 400,
+          "style": "italic",
+          "renderer": {
+            "path": "fonts/atkinson-hyperlegible-mono/2.001/356060ab70ae62e4460dd824ec1b734af24e5c3355a8302700151d35d1382dd4.ttf",
+            "sha256": "356060ab70ae62e4460dd824ec1b734af24e5c3355a8302700151d35d1382dd4",
+            "sourcePath": "fonts/ttf/AtkinsonHyperlegibleMono-Italic.ttf",
+            "size": 54248
+          },
+          "web": {
+            "path": "fonts/atkinson-hyperlegible-mono/2.001/298a41e6e49f031f28d5e256db8cd3ab57e66048619744189e972f56fe612883.woff2",
+            "sha256": "298a41e6e49f031f28d5e256db8cd3ab57e66048619744189e972f56fe612883",
+            "sourcePath": "fonts/webfonts/AtkinsonHyperlegibleMono-Italic.woff2",
+            "size": 23868
+          }
+        },
+        {
+          "weight": 700,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/atkinson-hyperlegible-mono/2.001/51ad68fafd7ec68051f64983c9c23182a7084268b5cdb0a154dbd53ade079da6.ttf",
+            "sha256": "51ad68fafd7ec68051f64983c9c23182a7084268b5cdb0a154dbd53ade079da6",
+            "sourcePath": "fonts/ttf/AtkinsonHyperlegibleMono-Bold.ttf",
+            "size": 53544
+          },
+          "web": {
+            "path": "fonts/atkinson-hyperlegible-mono/2.001/039936edaa268366426a7f0ca8014da637b8bf8da24859afbd85a5b313e9315e.woff2",
+            "sha256": "039936edaa268366426a7f0ca8014da637b8bf8da24859afbd85a5b313e9315e",
+            "sourcePath": "fonts/webfonts/AtkinsonHyperlegibleMono-Bold.woff2",
+            "size": 22656
+          }
+        },
+        {
+          "weight": 700,
+          "style": "italic",
+          "renderer": {
+            "path": "fonts/atkinson-hyperlegible-mono/2.001/1286feda7848b1078576f2293201dff9428dad309c63220ed0825b771994a9a6.ttf",
+            "sha256": "1286feda7848b1078576f2293201dff9428dad309c63220ed0825b771994a9a6",
+            "sourcePath": "fonts/ttf/AtkinsonHyperlegibleMono-BoldItalic.ttf",
+            "size": 55616
+          },
+          "web": {
+            "path": "fonts/atkinson-hyperlegible-mono/2.001/9b78044aa42ec51b2e9e036a3bc301874e9407d0ba0e35ece18c252eb6b8a763.woff2",
+            "sha256": "9b78044aa42ec51b2e9e036a3bc301874e9407d0ba0e35ece18c252eb6b8a763",
+            "sourcePath": "fonts/webfonts/AtkinsonHyperlegibleMono-BoldItalic.woff2",
+            "size": 23996
+          }
+        }
+      ]
+    },
+    {
+      "family": "Noto Sans Math",
+      "version": "3.000",
+      "source": "https://github.com/notofonts/math/tree/00e9941d95b2a355399a66f3990ffde6e4985676",
+      "sourceCommit": "00e9941d95b2a355399a66f3990ffde6e4985676",
+      "license": {
+        "spdx": "OFL-1.1",
+        "path": "fonts/noto-sans-math/3.000/c9c63b8ed6cf76b2ce0c58b241acfc1195c2c928334c989c7047cbdac58773d9.txt",
+        "sha256": "c9c63b8ed6cf76b2ce0c58b241acfc1195c2c928334c989c7047cbdac58773d9",
+        "sourcePath": "OFL.txt",
+        "size": 4380
+      },
+      "faces": [
+        {
+          "weight": 400,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/noto-sans-math/3.000/fe380412e05c2cca4b712644c58ed38ed7b1e3153bc483a8b38725fa487b8830.ttf",
+            "sha256": "fe380412e05c2cca4b712644c58ed38ed7b1e3153bc483a8b38725fa487b8830",
+            "sourcePath": "NotoSansMath/googlefonts/ttf/NotoSansMath-Regular.ttf",
+            "size": 1015684
+          },
+          "web": {
+            "path": "fonts/noto-sans-math/3.000/0be0e8454804bd707283c33d8e49fffce60161893e8d64ffbb9c5ab4e21e64e1.woff2",
+            "sha256": "0be0e8454804bd707283c33d8e49fffce60161893e8d64ffbb9c5ab4e21e64e1",
+            "sourcePath": "NotoSansMath/googlefonts/ttf/NotoSansMath-Regular.ttf",
+            "size": 344500,
+            "encoding": "woff2-fonttools-4.60.2-brotli-1.2.1"
+          }
+        }
+      ],
+      "archive": {
+        "url": "https://github.com/notofonts/math/releases/download/NotoSansMath-v3.000/NotoSansMath-v3.000.zip",
+        "sha256": "ac351837b41f8a897f020b97fb0f075ad574c1e9669fb5839ada1f92fd748356",
+        "size": 2498094
+      }
+    },
+    {
+      "family": "Noto Sans Symbols 2",
+      "version": "2.008",
+      "source": "https://github.com/notofonts/symbols/tree/25b00f0d3f40873a005287514ba2a48558655314",
+      "sourceCommit": "25b00f0d3f40873a005287514ba2a48558655314",
+      "license": {
+        "spdx": "OFL-1.1",
+        "path": "fonts/noto-sans-symbols-2/2.008/b118dd41337806a5d4797052c77caf3bd096aed783e5eb21b4d11154351e1ac0.txt",
+        "sha256": "b118dd41337806a5d4797052c77caf3bd096aed783e5eb21b4d11154351e1ac0",
+        "sourcePath": "OFL.txt",
+        "size": 4383
+      },
+      "faces": [
+        {
+          "weight": 400,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/noto-sans-symbols-2/2.008/7d5fb73b7ca67a6798101741f5d280a3d016a56a197afcd4199dbb57b4b82a21.ttf",
+            "sha256": "7d5fb73b7ca67a6798101741f5d280a3d016a56a197afcd4199dbb57b4b82a21",
+            "sourcePath": "NotoSansSymbols2/googlefonts/ttf/NotoSansSymbols2-Regular.ttf",
+            "size": 1233128
+          },
+          "web": {
+            "path": "fonts/noto-sans-symbols-2/2.008/c3f8f54889474d6924bfbc84339ab10c731d4c5c697340e03d099ab83c39a647.woff2",
+            "sha256": "c3f8f54889474d6924bfbc84339ab10c731d4c5c697340e03d099ab83c39a647",
+            "sourcePath": "NotoSansSymbols2/googlefonts/ttf/NotoSansSymbols2-Regular.ttf",
+            "size": 395972,
+            "encoding": "woff2-fonttools-4.60.2-brotli-1.2.1"
+          }
+        }
+      ],
+      "archive": {
+        "url": "https://github.com/notofonts/symbols/releases/download/NotoSansSymbols2-v2.008/NotoSansSymbols2-v2.008.zip",
+        "sha256": "346c930bbe8eb946701a05c54e9c11a2094dee1d93c387bf1771c0a3e335688f",
+        "size": 2331441
+      }
+    },
+    {
+      "family": "Inter",
+      "version": "4.1",
+      "source": "https://github.com/rsms/inter/tree/e3a3d4c57d5ecc01453a575621882a384c1995a3",
+      "sourceCommit": "e3a3d4c57d5ecc01453a575621882a384c1995a3",
+      "license": {
+        "spdx": "OFL-1.1",
+        "path": "fonts/inter/4.1/262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a.txt",
+        "sha256": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a",
+        "sourcePath": "LICENSE.txt",
+        "size": 4380
+      },
+      "faces": [
+        {
+          "weight": 400,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/inter/4.1/40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82.ttf",
+            "sha256": "40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82",
+            "sourcePath": "extras/ttf/Inter-Regular.ttf",
+            "size": 411640
+          },
+          "web": {
+            "path": "fonts/inter/4.1/338239f6b590b8ced3bf857654d32da3fd3663294cd3003651ed57aa3abd7aa1.woff2",
+            "sha256": "338239f6b590b8ced3bf857654d32da3fd3663294cd3003651ed57aa3abd7aa1",
+            "sourcePath": "extras/woff-hinted/Inter-Regular.woff2",
+            "size": 140944
+          }
+        },
+        {
+          "weight": 400,
+          "style": "italic",
+          "renderer": {
+            "path": "fonts/inter/4.1/bbc051dd204b5019a1aa0bc0ae2aa8a05ab13e7a3f979fa357631dc7feb6833a.ttf",
+            "sha256": "bbc051dd204b5019a1aa0bc0ae2aa8a05ab13e7a3f979fa357631dc7feb6833a",
+            "sourcePath": "extras/ttf/Inter-Italic.ttf",
+            "size": 417388
+          },
+          "web": {
+            "path": "fonts/inter/4.1/2ed981074b03731b7f89346ee81ca027961381c830ad831abf28eca269f6eb74.woff2",
+            "sha256": "2ed981074b03731b7f89346ee81ca027961381c830ad831abf28eca269f6eb74",
+            "sourcePath": "extras/woff-hinted/Inter-Italic.woff2",
+            "size": 147360
+          }
+        },
+        {
+          "weight": 700,
+          "style": "normal",
+          "renderer": {
+            "path": "fonts/inter/4.1/288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f.ttf",
+            "sha256": "288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f",
+            "sourcePath": "extras/ttf/Inter-Bold.ttf",
+            "size": 420428
+          },
+          "web": {
+            "path": "fonts/inter/4.1/98c66e49c299c5675426bf5562b1876c2b6b9bd8dc90a8922a49703ed4848813.woff2",
+            "sha256": "98c66e49c299c5675426bf5562b1876c2b6b9bd8dc90a8922a49703ed4848813",
+            "sourcePath": "extras/woff-hinted/Inter-Bold.woff2",
+            "size": 144636
+          }
+        },
+        {
+          "weight": 700,
+          "style": "italic",
+          "renderer": {
+            "path": "fonts/inter/4.1/948405a16cdc62701da5f4005ed068ca5f4d27061d98f7974ccfc37831d9581d.ttf",
+            "sha256": "948405a16cdc62701da5f4005ed068ca5f4d27061d98f7974ccfc37831d9581d",
+            "sourcePath": "extras/ttf/Inter-BoldItalic.ttf",
+            "size": 425296
+          },
+          "web": {
+            "path": "fonts/inter/4.1/3bb07493d5cecdc45082e41693b35b0c6f59236c1d941faddf068301209d2edf.woff2",
+            "sha256": "3bb07493d5cecdc45082e41693b35b0c6f59236c1d941faddf068301209d2edf",
+            "sourcePath": "extras/woff-hinted/Inter-BoldItalic.woff2",
+            "size": 151544
+          }
+        }
+      ],
+      "archive": {
+        "url": "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip",
+        "sha256": "9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e",
+        "size": 33707794
+      }
+    }
+  ]
+}

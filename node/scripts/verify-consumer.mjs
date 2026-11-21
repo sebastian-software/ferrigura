@@ -17,7 +17,22 @@ await verifyPackedConsumer({
       const localImport = "from '../index.mjs'";
       assert(source.includes(localImport), 'The TypeScript fixture must import the local entry');
       const installedFixture = join(consumer, 'types.mts');
-      await writeFile(installedFixture, source.replace(localImport, "from '@ferrigura/core'"));
+      const catalogImport = "from '../font-catalog.mjs'";
+      assert(
+        source.includes(catalogImport),
+        'The TypeScript fixture must import the catalog entry'
+      );
+      await writeFile(
+        installedFixture,
+        source
+          .replace(localImport, "from '@ferrigura/core'")
+          .replace(catalogImport, "from '@ferrigura/core/font-catalog'")
+      );
+      run(process.execPath, [
+        '--input-type=module',
+        '-e',
+        "const m = await import('@ferrigura/core/font-catalog'); if (typeof m.resolveCatalogFonts !== 'function') throw Error('missing catalog export')",
+      ]);
       run(process.execPath, [
         compiler,
         '--noEmit',
