@@ -1,6 +1,6 @@
 # Local font inputs
 
-Font files are host inputs. Rust accepts owned bytes or explicit local files through
+Local primary and fallback font registration is supported for 1.0. Font files are host inputs. Rust accepts owned bytes or explicit local files through
 `Renderer::builder`; the CLI accepts repeated `--font FAMILY=FILE`,
 `--font-face FAMILY:WEIGHT:STYLE=FILE`, and `--font-fallback FAMILY` flags. The Node facade accepts
 `fonts` entries with one `data` or `path` value and an ordered `fallbacks` list. JavaScript reads
@@ -58,9 +58,38 @@ weight/style choose designs, not variation coordinates.
 
 Uncovered characters are measured with the primary face's missing glyph. SVG viewers may instead
 draw system fallback with different metrics. Hosts requiring deterministic layout should provide
-coverage and check `FontRegistry::missing_glyphs`; it reports each uncovered Unicode character and
-family. A primary face remains in the embedded cascade for line metrics even if every visible
+coverage and check known label text with `FontRegistry::missing_glyphs` for the corresponding
+resolved registered face. A primary face remains in the embedded cascade for line metrics even if every visible
 character uses an explicit fallback.
+
+### Checking known labels for missing glyphs
+
+`FontRegistry::missing_glyphs` is an explicit Rust preflight, not a warning emitted by a render.
+Build a registry with the same files, names, fallback order, weight, and style as the renderer, then
+resolve the family list used by each label and check its text:
+
+```rust,no_run
+use ferrigura::{FontRegistry, FontStyle, FontWeight};
+
+let mut fonts = FontRegistry::new();
+fonts.register_file("Project Sans", "fonts/primary.ttf", FontWeight::Normal, FontStyle::Normal)?;
+fonts.register_file("Project Arrows", "fonts/arrows.ttf", FontWeight::Normal, FontStyle::Normal)?;
+fonts.set_fallbacks(["Project Arrows"]);
+let face = fonts.resolve("Project Sans", FontWeight::Normal, FontStyle::Normal)?;
+for missing in FontRegistry::missing_glyphs(&face, "A → 漢") {
+    eprintln!("{missing}");
+}
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+The result names each uncovered character once in text order and its primary family; control
+characters are omitted. The host decides whether to display or log it. The registry in this example
+is separate from the renderer, so keep their inputs in sync. Check the actual label text and each
+font role, weight, and style the diagram uses: checking raw diagram source does not identify generated
+labels, internal measurement placeholders, or every resolved face. The method checks character coverage, not shaping or bidirectional
+layout. It does not inspect a completed diagram or automatically warn from Rust rendering, the CLI,
+or Node. For bundled defaults, this supplied-font registry preflight is not a complete check of the
+bundled fallback chain.
 
 Invalid font data, unsupported OpenType-SVG and unsupported legacy kerning formats return typed
 text errors. WOFF/WOFF2, host font discovery, automatic downloads, font catalogs, and a no-embedding
