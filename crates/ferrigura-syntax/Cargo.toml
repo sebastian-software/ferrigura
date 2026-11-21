@@ -17,7 +17,7 @@ ferrigura-model = { path = "../ferrigura-model", version = "0.8.1" }
 indexmap.workspace = true
 ferroni.workspace = true
 logos.workspace = true
-url = "2"
+url = "2.5.9"
 serde_json.workspace = true
 
 [dev-dependencies]
