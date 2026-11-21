@@ -318,3 +318,5 @@ fn sequence_number_role_stays_regular_and_keeps_compatibility_sizes() {
         }
     }
 }
+
+mod font_alias_browser_fixtures;
