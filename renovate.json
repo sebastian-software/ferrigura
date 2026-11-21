@@ -82,7 +82,14 @@
     {
       "description": "The other Rust crates.",
       "matchManagers": ["cargo"],
-      "matchPackageNames": ["!harfrust", "!read-fonts", "!skera", "!write-fonts", "!napi", "!napi-derive"],
+      "matchPackageNames": [
+        "!harfrust",
+        "!read-fonts",
+        "!skera",
+        "!write-fonts",
+        "!napi",
+        "!napi-derive"
+      ],
       "groupName": "Rust crates",
       "semanticCommitType": "fix",
       "dependencyDashboardApproval": false
