@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.8.2](https://github.com/sebastian-software/ferrigura/compare/v0.8.1...v0.8.2) (2026-11-21)
+
+
+### Bug Fixes
+
+* **deps:** update URL parsing to 2.5.9 ([#164](https://github.com/sebastian-software/ferrigura/issues/164)) ([be8a0a7](https://github.com/sebastian-software/ferrigura/commit/be8a0a7fe4000c49f001ad8e4001c889f69c788d))
+
+
+### Performance Improvements
+
+* batch quadratic length samples ([#174](https://github.com/sebastian-software/ferrigura/issues/174)) ([1c15781](https://github.com/sebastian-software/ferrigura/commit/1c15781bbc4a8e2f86ec041835fa23fe25cf468d))
+* compile fCoSE constraints before simulation ([#145](https://github.com/sebastian-software/ferrigura/issues/145)) ([e985573](https://github.com/sebastian-software/ferrigura/commit/e9855738242f088f225efa00f51b85e42d321c93))
+* **cose:** reuse graph traversal during layout ([#153](https://github.com/sebastian-software/ferrigura/issues/153)) ([7ae27d2](https://github.com/sebastian-software/ferrigura/commit/7ae27d2bf0b174d31c4ce8eff2ab26f0898bd5a4))
+* **fcose:** reuse repulsion neighborhood storage ([#144](https://github.com/sebastian-software/ferrigura/issues/144)) ([20f1f0c](https://github.com/sebastian-software/ferrigura/commit/20f1f0c4b83ce8e7d3044d217689c2fa6aeb6815))
+* **flowchart:** reuse fixed geometry angles ([#172](https://github.com/sebastian-software/ferrigura/issues/172)) ([e4bedaf](https://github.com/sebastian-software/ferrigura/commit/e4bedafebab7aff5fee06e55f9cf8119f7ee8a15))
+* **jsmath:** speed up correctly rounded acos ([#154](https://github.com/sebastian-software/ferrigura/issues/154)) ([96689a9](https://github.com/sebastian-software/ferrigura/commit/96689a9a5af335d774dc71f9020970eaad65dc41))
+* **jsmath:** speed up fixed-point division ([#139](https://github.com/sebastian-software/ferrigura/issues/139)) ([5439b2a](https://github.com/sebastian-software/ferrigura/commit/5439b2ad376cbbe33afc626fda3cc8a124336c79))
+* prepare diagram sources once per render ([#142](https://github.com/sebastian-software/ferrigura/issues/142)) ([df0b29a](https://github.com/sebastian-software/ferrigura/commit/df0b29a478afff200b694373d813ddafb77684ab))
+* **radar:** reuse chart directions ([#166](https://github.com/sebastian-software/ferrigura/issues/166)) ([284a7ec](https://github.com/sebastian-software/ferrigura/commit/284a7eca61da56d830a03fe38c6f6ec94f76fbb4))
+* reuse animated path lengths ([#167](https://github.com/sebastian-software/ferrigura/issues/167)) ([7ecd6cd](https://github.com/sebastian-software/ferrigura/commit/7ecd6cd52e117993b9b86d92f5c499cc5234ec36))
+* reuse shaped text within a render ([#160](https://github.com/sebastian-software/ferrigura/issues/160)) ([f6fc797](https://github.com/sebastian-software/ferrigura/commit/f6fc797d5d9481c3936bcce2d18cc1f3916bd899))
+* **swimlane:** reuse candidate crossing totals ([#168](https://github.com/sebastian-software/ferrigura/issues/168)) ([79b98a2](https://github.com/sebastian-software/ferrigura/commit/79b98a292c76a39212ffb85ef1c4142ead30ccf4))
+* **swimlane:** reuse crossing repair geometry ([#155](https://github.com/sebastian-software/ferrigura/issues/155)) ([25c2a94](https://github.com/sebastian-software/ferrigura/commit/25c2a94da420b9afa9732674bd270e3206d58ef1))
+* **swimlane:** speed up route key rounding ([#138](https://github.com/sebastian-software/ferrigura/issues/138)) ([5899e64](https://github.com/sebastian-software/ferrigura/commit/5899e64f96ca3120fa42ce7914daf818aaadfc57))
+* **text:** reuse font subsets across renders ([#161](https://github.com/sebastian-software/ferrigura/issues/161)) ([22427a6](https://github.com/sebastian-software/ferrigura/commit/22427a6275331ebb07ba0cf1fadf4367ae8ca8af))
+* **text:** reuse label shaping results ([#141](https://github.com/sebastian-software/ferrigura/issues/141)) ([2eed139](https://github.com/sebastian-software/ferrigura/commit/2eed139ee63d01521c2523d2787963a57376f0e3))
+* **text:** skip repeated font byte comparisons ([#171](https://github.com/sebastian-software/ferrigura/issues/171)) ([6050009](https://github.com/sebastian-software/ferrigura/commit/6050009cd357ee528012f24ed9d8fe31b1b408e2))
+* **venn:** skip unused text layout ([#143](https://github.com/sebastian-software/ferrigura/issues/143)) ([81d3d8f](https://github.com/sebastian-software/ferrigura/commit/81d3d8fd7fab7c8ab97ccef01c6c9ee1a2c24177))
+
 ## [0.8.1](https://github.com/sebastian-software/ferrigura/compare/v0.8.0...v0.8.1) (2026-11-21)
 
 
