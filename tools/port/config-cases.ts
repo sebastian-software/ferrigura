@@ -9,10 +9,23 @@ export interface ConfigCase {
   text: string;
   /** The `initialize` settings the text runs with. */
   site?: Record<string, unknown>;
+  /** The expected diagram scope, when not pie. */
+  scope?: string;
 }
 
 export const configCases: ConfigCase[] = [
   { source: 'config case: no configuration', text: 'pie\n"a": 1' },
+  {
+    source: 'config case: mindmap array in initialize settings',
+    text: 'mindmap\n  root(Root)\n    Child',
+    site: { mindmap: [{ padding: 3 }] },
+    scope: 'mindmap',
+  },
+  {
+    source: 'config case: mindmap array in front matter',
+    text: '---\nconfig:\n  mindmap:\n    - padding: 3\n---\nmindmap\n  root(Root)\n    Child',
+    scope: 'mindmap',
+  },
   {
     source: 'config case: front matter config',
     text: '---\nconfig:\n  theme: dark\n  look: neo\n---\npie\n"a": 1',
