@@ -13,7 +13,7 @@ use ferrigura_render::RenderError;
 use ferrigura_render::context::{Context, Globals, ThemeView};
 use ferrigura_render::flowchart;
 use ferrigura_render::unified::Section;
-use ferrigura_syntax::{ParseError, config, detect};
+use ferrigura_syntax::{ParseError, config, detect_prepared, preprocess};
 
 pub mod diagrams;
 
@@ -179,7 +179,10 @@ impl Renderer {
     /// Returns the errors of [`render_with`].
     pub fn render_with(&self, text: &str, options: &RenderOptions) -> Result<String, RenderError> {
         let (max_text, max_edges) = self.limits(text)?;
-        let Some(kind) = detect(text) else {
+        let Some((source, kind)) = preprocess::prepare(text)
+            .ok()
+            .and_then(|source| detect_prepared(&source).map(|kind| (source, kind)))
+        else {
             return Err(RenderError::Parse(ParseError {
                 line: 1,
                 column: 1,
@@ -202,8 +205,8 @@ impl Renderer {
                 "draw animation is not supported for this diagram type".to_owned(),
             ));
         }
-        let prepared = self.prepare(text, options, plugin, max_text, max_edges)?;
-        plugin.render(text, &prepared, options)
+        let prepared = self.prepare(text, source, options, plugin, max_text, max_edges)?;
+        plugin.render(&prepared, options)
     }
 
     fn limits(&self, text: &str) -> Result<(usize, usize), RenderError> {
@@ -244,6 +247,7 @@ impl Renderer {
     fn prepare(
         &self,
         text: &str,
+        source: preprocess::Prepared,
         options: &RenderOptions,
         plugin: Plugin,
         max_text: usize,
@@ -254,10 +258,12 @@ impl Renderer {
             Some(id) => return Err(RenderError::Options(format!("invalid id {id:?}"))),
             None => derived_id(text, &self.configuration),
         };
-        let directive = config::read(text)?;
+        let directive = config::read_prepared(&source, Some(plugin.kind()))?;
         let scheme = options.color_scheme;
         if is_empty_object(&directive) {
             return Ok(Prepared {
+                source,
+                directive,
                 id,
                 max_text,
                 max_edges,
@@ -291,6 +297,8 @@ impl Renderer {
             )
         };
         Ok(Prepared {
+            source,
+            directive,
             id,
             max_text,
             max_edges,
@@ -674,6 +682,8 @@ fn inherit_font_roles(
 
 /// What a render needs besides its diagram: see [`Renderer::prepare`].
 struct Prepared<'a> {
+    source: preprocess::Prepared,
+    directive: Value,
     max_text: usize,
     max_edges: usize,
     fonts: Option<&'a Arc<FontRegistry>>,
@@ -759,15 +769,25 @@ pub fn flowchart_elk_stages(
 ) -> Result<serde_json::Value, RenderError> {
     let renderer = Renderer::builder(config).with_all().shared();
     let (max_text, max_edges) = renderer.limits(text)?;
-    if detect(text) != Some(DiagramType::Flowchart) {
+    let Some(source) = preprocess::prepare(text)
+        .ok()
+        .filter(|source| detect_prepared(source) == Some(DiagramType::Flowchart))
+    else {
         return Err(RenderError::Parse(ParseError {
             line: 1,
             column: 1,
             message: "not a flowchart".to_owned(),
         }));
-    }
-    let prepared = renderer.prepare(text, options, diagrams::flowchart(), max_text, max_edges)?;
-    let stages = with_flowchart(text, &prepared, options.compat, flowchart::elk_stages)?;
+    };
+    let prepared = renderer.prepare(
+        text,
+        source,
+        options,
+        diagrams::flowchart(),
+        max_text,
+        max_edges,
+    )?;
+    let stages = with_flowchart(&prepared, options.compat, flowchart::elk_stages)?;
     Ok(serde_json::json!({
         "elkInput": stages.input,
         "elkOutput": stages.output,
@@ -776,13 +796,12 @@ pub fn flowchart_elk_stages(
 
 /// Parses a flowchart and hands it, with its sections, globals and theme, to `step`.
 fn with_flowchart<T>(
-    text: &str,
     prepared: &Prepared<'_>,
     compat: bool,
     step: impl FnOnce(&Context<'_, FlowchartDiagram, Section<'_>>) -> Result<T, RenderError>,
 ) -> Result<T, RenderError> {
-    let diagram = ferrigura_syntax::flowchart::parse_with(
-        text,
+    let diagram = ferrigura_syntax::flowchart::parse_prepared(
+        &prepared.source,
         ferrigura_syntax::flowchart::Options {
             max_edges: prepared.max_edges,
         },

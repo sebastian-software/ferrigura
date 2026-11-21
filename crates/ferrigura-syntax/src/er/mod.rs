@@ -22,6 +22,11 @@ pub use db::{ErDb, Member};
 /// Parses an ER diagram with its front matter, as `Diagram.fromText` does.
 pub fn parse(raw: &str) -> Result<ErDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(prepared: &crate::preprocess::Prepared) -> Result<ErDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let mut db = ErDb::new();

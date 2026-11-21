@@ -37,6 +37,13 @@ pub fn parse(raw: &str) -> Result<BlockDiagram, ParseError> {
 /// As [`parse`].
 pub fn parse_with_warnings(raw: &str) -> Result<(BlockDiagram, Vec<String>), ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared_with_warnings(&prepared)
+}
+
+/// Parses an already prepared source with its warnings.
+pub fn parse_prepared_with_warnings(
+    prepared: &crate::preprocess::Prepared,
+) -> Result<(BlockDiagram, Vec<String>), ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);
@@ -45,4 +52,9 @@ pub fn parse_with_warnings(raw: &str) -> Result<(BlockDiagram, Vec<String>), Par
     let mut db = db::Db::new();
     db.populate_root(items, source)?;
     Ok(db.into_model())
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(prepared: &crate::preprocess::Prepared) -> Result<BlockDiagram, ParseError> {
+    parse_prepared_with_warnings(prepared).map(|(diagram, _)| diagram)
 }

@@ -32,6 +32,13 @@ pub use self::box_drawing::{BoxDrawing, is_box_drawing_format, preprocess_box_dr
 /// original text, or one of the two box-drawing errors. Both are rejections.
 pub fn parse(raw: &str) -> Result<TreeViewDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+) -> Result<TreeViewDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let line_offset = prepared.line_offset;

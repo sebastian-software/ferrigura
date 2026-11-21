@@ -24,3 +24,11 @@ use crate::flowchart::{self, FlowchartError};
 pub fn parse(text: &str) -> Result<SwimlanesDiagram, ParseError> {
     flowchart::parse(text).map_err(|FlowchartError::Syntax(error)| error)
 }
+
+/// Parses an already prepared swimlane source.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+) -> Result<SwimlanesDiagram, ParseError> {
+    flowchart::parse_prepared(prepared, flowchart::Options::default())
+        .map_err(|FlowchartError::Syntax(error)| error)
+}

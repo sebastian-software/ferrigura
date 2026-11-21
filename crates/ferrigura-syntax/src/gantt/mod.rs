@@ -68,6 +68,14 @@ pub fn parse(raw: &str) -> Result<GanttDiagram, ParseError> {
 /// Parses a gantt diagram and compiles its dates, as the reference's `parse` and `getTasks` do.
 pub fn parse_with(raw: &str, options: Options) -> Result<GanttDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared, options)
+}
+
+/// Parses an already prepared source with the given options.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+) -> Result<GanttDiagram, ParseError> {
     // `Diagram.fromText`: the directives and comment lines go, then the entities are encoded and a
     // line break is added for the grammar.
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));

@@ -14,7 +14,7 @@ use ferrigura_model::config::effective;
 use ferrigura_model::value::Value;
 use ferrigura_model::xychart::XyChartDiagram;
 
-use crate::config::read;
+use crate::config;
 use crate::error::{ParseError, Source};
 use crate::preprocess::{cleanup_comments, encode_entities, prepare, remove_directives};
 use crate::text::{js_number, js_trim};
@@ -33,14 +33,22 @@ const REDUX_COLOR_PALETTE: &str =
 /// original input.
 pub fn parse(raw: &str) -> Result<XyChartDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    let directive = config::read_prepared(&prepared, crate::detect_prepared(&prepared))?;
+    parse_prepared(&prepared, &directive)
+}
+
+/// Parses a previously prepared XY chart source with its source configuration.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    directive: &Value,
+) -> Result<XyChartDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);
 
     // `clear()` of the DB reads the configuration that the text carries, as `Diagram.fromText`
     // leaves it after the directives and the front matter.
-    let directive = read(raw)?;
-    let resolved = effective(None, Some("xyChart"), &directive);
+    let resolved = effective(None, Some("xyChart"), directive);
     let orientation = resolved
         .get("xyChart")
         .and_then(|section| section.get("chartOrientation"))

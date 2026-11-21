@@ -24,6 +24,11 @@ use crate::sanitize::sanitize_text;
 /// `Diagram.fromText` gives the text to the parser, and returns its model.
 pub fn parse(raw: &str) -> Result<StateDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(prepared: &crate::preprocess::Prepared) -> Result<StateDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     // `setDiagramTitle` sanitizes the front matter's title.

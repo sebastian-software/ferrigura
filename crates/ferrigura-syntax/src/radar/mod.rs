@@ -27,6 +27,11 @@ use crate::preprocess::{cleanup_comments, encode_entities, prepare, remove_direc
 /// rejections, and the message and the position say why.
 pub fn parse(raw: &str) -> Result<RadarDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(prepared: &crate::preprocess::Prepared) -> Result<RadarDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);

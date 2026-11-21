@@ -12,21 +12,21 @@ use crate::yaml::{self, Yaml};
 
 /// Text prepared for the lexer.
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Prepared {
+pub struct Prepared {
     /// The text after front matter removal, with CRLF and CR normalized to LF.
-    pub text: String,
+    pub(crate) text: String,
     /// The `title` of the front matter, if it is truthy and its string is not empty.
-    pub title: Option<String>,
+    pub(crate) title: Option<String>,
     /// The fields of the front matter's YAML mapping, in order. Empty when there is no front
     /// matter, or when its document is not a mapping, as `extractFrontMatter` treats it.
-    pub front_matter: Vec<(String, Yaml)>,
+    pub(crate) front_matter: Vec<(String, Yaml)>,
     /// Number of lines removed with the front matter, so positions can be reported against the
     /// original input.
-    pub line_offset: usize,
+    pub(crate) line_offset: usize,
 }
 
 /// Normalizes line breaks and quotes HTML attributes, then removes the front matter and reads it.
-pub(crate) fn prepare(raw: &str) -> Result<Prepared, ParseError> {
+pub fn prepare(raw: &str) -> Result<Prepared, ParseError> {
     let normalized = quote_html_attributes(&raw.replace("\r\n", "\n").replace('\r', "\n"));
     let chars: Vec<char> = normalized.chars().collect();
     let Some(front_matter) = match_front_matter(&chars) else {

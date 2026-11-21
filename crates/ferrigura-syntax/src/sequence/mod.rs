@@ -31,6 +31,14 @@ pub fn parse(raw: &str) -> Result<SequenceDiagram, ParseError> {
 /// Parses a sequence diagram with the given options.
 pub fn parse_with(raw: &str, options: Options) -> Result<SequenceDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared, options)
+}
+
+/// Parses an already prepared source with the given options.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+) -> Result<SequenceDiagram, ParseError> {
     // `preprocessDiagram` removes the directives and the comment lines; `Diagram.fromText` encodes
     // the entities and adds the line break that the grammar expects at the end.
     let directives_removed = remove_directives(&prepared.text);

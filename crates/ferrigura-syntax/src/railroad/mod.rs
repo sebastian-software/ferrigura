@@ -26,6 +26,13 @@ use scanner::Syntax;
 /// original input.
 pub fn parse(raw: &str) -> Result<RailroadDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+) -> Result<RailroadDiagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let body = strip_front_matter(&cleaned);
     let text = encode_entities(&cleaned) + "\n";
@@ -45,10 +52,13 @@ pub fn parse(raw: &str) -> Result<RailroadDiagram, ParseError> {
 /// that does not prepare, or has no header, gives the IR id, which is the one the detector of
 /// `railroad-beta` names for any text it accepts.
 pub fn detector_id(raw: &str) -> &'static str {
-    let body = prepare(raw).map_or_else(
-        |_| String::new(),
-        |prepared| strip_front_matter(&cleanup_comments(&remove_directives(&prepared.text))),
-    );
+    prepare(raw).map_or("railroad", |prepared| detector_id_prepared(&prepared))
+}
+
+/// Returns the detector ID of an already prepared source.
+#[must_use]
+pub fn detector_id_prepared(prepared: &crate::preprocess::Prepared) -> &'static str {
+    let body = strip_front_matter(&cleanup_comments(&remove_directives(&prepared.text)));
     syntax_of(crate::skip_hidden_prefix(&body)).map_or("railroad", Syntax::detector_id)
 }
 

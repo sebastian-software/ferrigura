@@ -24,8 +24,17 @@ use scanner::{Spanned, Token, scan};
 /// The error position is the token the grammar rejects, counted from the first line of the original
 /// input. A DB error (a node without a parent) is reported at the node.
 pub fn parse(raw: &str) -> Result<MindmapDiagram, ParseError> {
-    let settings = settings_of(raw)?;
     let prepared = prepare(raw)?;
+    let directive = config::read_prepared(&prepared, crate::detect_prepared(&prepared))?;
+    parse_prepared(&prepared, &directive)
+}
+
+/// Parses an already prepared source with its source configuration.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    directive: &Value,
+) -> Result<MindmapDiagram, ParseError> {
+    let settings = settings_of(directive);
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);
@@ -53,9 +62,8 @@ pub fn parse(raw: &str) -> Result<MindmapDiagram, ParseError> {
 
 /// The settings the DB reads when it adds a node: `mindmap.padding` and `mindmap.maxNodeWidth` of
 /// the configuration the text carries, with the defaults of the reference.
-fn settings_of(raw: &str) -> Result<Settings, ParseError> {
+fn settings_of(settings: &Value) -> Settings {
     let defaults = Settings::default();
-    let settings = config::read(raw)?;
     let section = settings.get("mindmap");
     // `conf.mindmap?.padding ?? default`: a missing or null value takes the default. The merge of
     // the configuration (`assignWithDepth`) does not put an array or an object in place of a number,
@@ -66,10 +74,10 @@ fn settings_of(raw: &str) -> Result<Settings, ParseError> {
             .filter(|value| !matches!(value, Value::Null | Value::Array(_) | Value::Object(_)))
             .cloned()
     };
-    Ok(Settings {
+    Settings {
         padding: read("padding").unwrap_or(defaults.padding),
         max_node_width: read("maxNodeWidth").unwrap_or(defaults.max_node_width),
-    })
+    }
 }
 
 /// A statement of the grammar, with the offset of its first token. The DB calls it makes are

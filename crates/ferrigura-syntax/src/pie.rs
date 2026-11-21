@@ -29,6 +29,11 @@ struct Slice {
 /// The error position is the first problem in the source, counted from its first line.
 pub fn parse(raw: &str) -> Result<PieDiagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared)
+}
+
+/// Parses a previously prepared pie source.
+pub fn parse_prepared(prepared: &crate::preprocess::Prepared) -> Result<PieDiagram, ParseError> {
     let source = Source::new(&prepared.text, prepared.line_offset);
     let mut cursor = Cursor::new(source, lex(&source)?);
 
@@ -63,7 +68,7 @@ pub fn parse(raw: &str) -> Result<PieDiagram, ParseError> {
     let mut diagram = PieDiagram::new();
     // The grammar's title wins when it has one; otherwise the front matter's title is kept.
     diagram.title = if header.title.is_empty() {
-        prepared.title.unwrap_or_default()
+        prepared.title.clone().unwrap_or_default()
     } else {
         header.title
     };

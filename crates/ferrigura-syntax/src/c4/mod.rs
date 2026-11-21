@@ -39,6 +39,14 @@ pub fn parse(raw: &str) -> Result<C4Diagram, ParseError> {
 /// The same as [`parse`].
 pub fn parse_with(raw: &str, options: Options) -> Result<C4Diagram, ParseError> {
     let prepared = prepare(raw)?;
+    parse_prepared(&prepared, options)
+}
+
+/// Parses an already prepared source with the given options.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+) -> Result<C4Diagram, ParseError> {
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = encode_entities(&cleaned) + "\n";
     let source = Source::new(&text, prepared.line_offset);

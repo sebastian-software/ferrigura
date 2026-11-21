@@ -85,11 +85,19 @@ pub fn parse_with_warnings(
     options: Options,
 ) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
     let prepared = prepare(raw).map_err(FlowchartError::Syntax)?;
+    parse_prepared_with_warnings(&prepared, options)
+}
+
+/// Parses an already prepared source with its warnings.
+pub fn parse_prepared_with_warnings(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+) -> Result<(FlowchartDiagram, Vec<String>), FlowchartError> {
     // `Diagram.fromText` encodes the entities and adds a line break before the parser sees the
     // text; the parser's own wrapper then closes the braces.
     let cleaned = cleanup_comments(&remove_directives(&prepared.text));
     let text = close_braces(&(encode_entities(&cleaned) + "\n"));
-    let title = prepared.title.unwrap_or_default();
+    let title = prepared.title.clone().unwrap_or_default();
     grammar::parse_text(&text, prepared.line_offset, title, options)
 }
 
@@ -112,4 +120,12 @@ pub(crate) fn close_braces(text: &str) -> String {
     }
     out.push_str(rest);
     out
+}
+
+/// Parses an already prepared source.
+pub fn parse_prepared(
+    prepared: &crate::preprocess::Prepared,
+    options: Options,
+) -> Result<FlowchartDiagram, FlowchartError> {
+    parse_prepared_with_warnings(prepared, options).map(|(diagram, _)| diagram)
 }
