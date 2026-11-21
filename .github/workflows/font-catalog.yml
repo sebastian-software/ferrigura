@@ -20,6 +20,8 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      FONT_CATALOG_PYTHON: ${{ runner.temp }}/font-catalog-venv/bin/python
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -30,6 +32,7 @@ jobs:
           node-version-file: tools/port/.node-version
       - run: pnpm -C tools/port install --frozen-lockfile
       - run: pnpm -C tools/port exec playwright install --with-deps chromium
+      - run: python3 -m venv "$RUNNER_TEMP/font-catalog-venv" && "$FONT_CATALOG_PYTHON" -m pip install -r tools/font-catalog/requirements.txt
       - run: node --test tools/font-catalog/catalog.test.mjs
       - run: node tools/font-catalog/run.mjs prepare
       - run: node tools/port/fonts/catalog-browser.mjs
@@ -38,11 +41,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
     needs: verify
     runs-on: ubuntu-latest
+    env:
+      FONT_CATALOG_PYTHON: ${{ runner.temp }}/font-catalog-venv/bin/python
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: tools/port/.node-version
+      - run: python3 -m venv "$RUNNER_TEMP/font-catalog-venv" && "$FONT_CATALOG_PYTHON" -m pip install -r tools/font-catalog/requirements.txt
       - name: Publish immutable objects and verify the public endpoint
         env:
           BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}

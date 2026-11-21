@@ -5,7 +5,10 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { readCatalog } from '../../font-catalog/catalog.mjs';
 
-const { family, assets } = await readCatalog();
+const { families, assets } = await readCatalog();
+const faces = families.flatMap((family) =>
+  family.faces.map((face) => ({ ...face, family: family.family }))
+);
 const directory = resolve('target/font-catalog');
 const allowed = new Set(assets.map((asset) => `/${asset.path}`));
 const listen = (server) =>
@@ -41,7 +44,7 @@ try {
     async ({ faces, origin }) => {
       const result = [];
       for (const face of faces) {
-        const name = `${face.weight}-${face.style}`;
+        const name = `${face.family}-${face.weight}-${face.style}`;
         const ttf = new FontFace(`ttf-${name}`, `url(${origin}/${face.renderer.path})`, {
           weight: String(face.weight),
           style: face.style,
@@ -56,7 +59,13 @@ try {
         const context = document.createElement('canvas').getContext('2d');
         const metrics = (font) => {
           context.font = `${face.style} ${face.weight} 32px "${font}"`;
-          const box = context.measureText('Hamburgefontsiv AVATAR office italic αβγ ﬂ');
+          const sample =
+            face.family === 'Noto Sans Math'
+              ? '∑∞√∫∂'
+              : face.family === 'Noto Sans Symbols 2'
+                ? '☀♥☂♜♬'
+                : 'Hamburgefontsiv AVATAR office italic αβγ ﬂ';
+          const box = context.measureText(sample);
           return [
             box.width,
             box.actualBoundingBoxLeft,
@@ -80,7 +89,7 @@ try {
       }
       return { result, denied };
     },
-    { faces: family.faces, origin: `http://127.0.0.1:${assetPort}` }
+    { faces, origin: `http://127.0.0.1:${assetPort}` }
   );
   assert(result.denied, 'A cross-origin request without CORS must fail');
   for (const face of result.result) {

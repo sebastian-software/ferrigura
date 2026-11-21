@@ -58,9 +58,24 @@ test('management errors never include the response body', async () => {
 
 test('catalog paths encode the full pinned hash', async () => {
   const { assets, manifestPath, bytes } = await readCatalog();
-  assert.equal(assets.length, 9);
+  assert.equal(assets.length, 33);
   assert(manifestPath.includes(hash(bytes)));
   for (const asset of assets) assert(asset.path.includes(asset.sha256));
+});
+
+test('catalog rejects duplicate families, duplicate designs and unsafe archive paths', async () => {
+  const { catalog } = await readCatalog();
+  const parse = (data) => readCatalog(Buffer.from(JSON.stringify(data)));
+  const duplicateFamily = structuredClone(catalog);
+  duplicateFamily.families[1] = duplicateFamily.families[0];
+  await assert.rejects(parse(duplicateFamily), /Invalid family/);
+  const duplicateFace = structuredClone(catalog);
+  duplicateFace.families[0].faces[1] = duplicateFace.families[0].faces[0];
+  await assert.rejects(parse(duplicateFace), /Invalid face/);
+  const traversal = structuredClone(catalog);
+  traversal.families[2].faces[0].renderer.sourcePath = '../outside.ttf';
+  traversal.families[2].faces[0].web.sourcePath = '../outside.ttf';
+  await assert.rejects(parse(traversal), /Invalid asset/);
 });
 
 test('preparation refuses source bytes that do not match the pinned hash', async () => {
