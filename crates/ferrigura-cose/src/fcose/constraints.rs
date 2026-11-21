@@ -42,9 +42,8 @@ pub(crate) struct FixedNodeConstraint {
     pub position: PointD,
 }
 
-/// The state `initConstraintVariables` sets on the layout (`this.idToNodeMap`, `this.fixedNodeSet`,
-/// and the rest of `CoSELayout.js` 326-582) and `updateDisplacements` reads. Maps and sets keep
-/// the source's insertion order.
+/// Setup state for `initConstraintVariables` (`CoSELayout.js` 326-582). Maps and sets keep the
+/// source's insertion order; the relaxed path discards them after compiling the tick state.
 #[derive(Clone, Debug, Default)]
 struct ConstraintScratch {
     /// `idToNodeMap`: every node, compounds included, by id (`CoSELayout.js` 326-335).
