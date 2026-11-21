@@ -85,7 +85,7 @@ impl Plugin {
         prepared: &Prepared<'_>,
         options: &RenderOptions,
     ) -> Result<String, RenderError> {
-        (self.render)(prepared, options)
+        ferrigura_text::measure::render_scope(|| (self.render)(prepared, options))
     }
 }
 
