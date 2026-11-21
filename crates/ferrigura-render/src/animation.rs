@@ -257,6 +257,7 @@ impl Plan {
 pub(crate) struct Animator {
     prefix: String,
     plan: Plan,
+    lengths: Vec<f64>,
     definitions: String,
     keyframes: String,
     rules: String,
@@ -271,24 +272,23 @@ impl Animator {
         paths: &[Painted],
         options: Animation,
     ) -> Result<Self, RenderError> {
-        let lengths: Vec<f64> = paths
+        let lengths = paths
             .iter()
             .map(|path| path.d.as_deref().map_or(0.0, path_length))
             .collect();
-        Self::from_lengths(id, nodes, edges, &lengths, options)
+        Self::from_lengths(id, nodes, edges, lengths, options)
     }
 
     pub(crate) fn from_lengths(
         id: &str,
         nodes: &[Node],
         edges: &[Edge],
-        lengths: &[f64],
+        lengths: Vec<f64>,
         options: Animation,
     ) -> Result<Self, RenderError> {
-        Ok(Self::with_plan(
-            id,
-            Plan::new(nodes, edges, lengths, options)?,
-        ))
+        let mut animator = Self::with_plan(id, Plan::new(nodes, edges, &lengths, options)?);
+        animator.lengths = lengths;
+        Ok(animator)
     }
 
     fn with_plan(id: &str, plan: Plan) -> Self {
@@ -299,6 +299,7 @@ impl Animator {
         Self {
             prefix,
             plan,
+            lengths: Vec::new(),
             definitions: String::new(),
             keyframes,
             rules: String::new(),
@@ -375,12 +376,12 @@ impl Animator {
         }
         format!(
             "{}{arrows}",
-            self.masked(&format_path(path), &d, timing, 32.0, path_length(&d))
+            self.masked(&format_path(path), &d, timing, 32.0, self.lengths[index])
         )
     }
 
     pub(crate) fn edge(&mut self, index: usize, svg: &str, d: &str) -> String {
-        self.masked(svg, d, self.plan.edges[index], 32.0, path_length(d))
+        self.masked(svg, d, self.plan.edges[index], 32.0, self.lengths[index])
     }
 
     fn masked(&mut self, svg: &str, d: &str, timing: Timing, width: f64, length: f64) -> String {
@@ -548,6 +549,23 @@ impl Drawing {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn masks_use_the_planned_length_at_the_original_edge_index() {
+        let (nodes, edges) = graph(&["a", "b", "c"], &[("a", "b"), ("b", "c")]);
+        let mut animator = Animator::from_lengths(
+            "test",
+            &nodes,
+            &edges,
+            vec![3.0, 123.0],
+            Animation::default(),
+        )
+        .unwrap();
+        // The first edge may be skipped by the painter; the next retains its original index.
+        animator.edge(1, "<path/>", "M0,0L6,8");
+        let definitions = animator.finish();
+        assert!(definitions.contains("data-draw-length=\"123\""));
+    }
 
     fn graph(ids: &[&str], links: &[(&str, &str)]) -> (Vec<Node>, Vec<Edge>) {
         let nodes = ids

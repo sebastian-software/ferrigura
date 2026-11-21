@@ -149,7 +149,7 @@ pub fn render_with_animation(
                     ));
                 }
             });
-            crate::animation::Animator::from_lengths(id, &nodes, &edges, &lengths, options)
+            crate::animation::Animator::from_lengths(id, &nodes, &edges, lengths, options)
         })
         .transpose()?;
     if let Some(animator) = &mut animator {
