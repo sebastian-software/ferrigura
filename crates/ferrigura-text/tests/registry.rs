@@ -61,6 +61,75 @@ fn registry() -> FontRegistry {
 }
 
 #[test]
+fn visible_grapheme_preflight_uses_registered_fallback_and_reports_offsets() {
+    use ferrigura_text::{TextError, checked_fallback_runs};
+    let mut fonts = registry();
+    let without_fallback = fonts
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    assert!(matches!(
+        checked_fallback_runs(
+            Run {
+                face: &without_fallback,
+                text: "→"
+            },
+            "Fixture Sans"
+        ),
+        Err(TextError::MissingGlyph { .. })
+    ));
+    fonts.set_fallbacks(["Arrows", "Emoji"]);
+    let face = fonts
+        .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)
+        .unwrap();
+    assert!(
+        checked_fallback_runs(
+            Run {
+                face: &face,
+                text: "A →\n"
+            },
+            "Fixture Sans, Arrows"
+        )
+        .is_ok()
+    );
+    assert_eq!(
+        checked_fallback_runs(
+            Run {
+                face: &face,
+                text: "A → 漢"
+            },
+            "Fixture Sans, Arrows"
+        )
+        .map(|_| ()),
+        Err(TextError::MissingGlyph {
+            sequence: "漢".into(),
+            family: "Fixture Sans, Arrows".into(),
+            byte_offset: 6,
+        })
+    );
+    checked_fallback_runs(
+        Run {
+            face: &face,
+            text: "e\u{301} A\u{fe0f} A\u{200d}B A\u{200b}B 😀\u{200d}😀",
+        },
+        "Fixture Sans",
+    )
+    .unwrap();
+    // The current selector can split one grapheme across faces. Validate and return those exact
+    // runs, rather than finding a different face that can shape the grapheme on its own.
+    let selected = checked_fallback_runs(
+        Run {
+            face: &face,
+            text: "→\u{fe0f}",
+        },
+        "Fixture Sans, Arrows",
+    )
+    .unwrap();
+    assert_eq!(selected.len(), 2);
+    assert_eq!(selected[0].face.family_name(), "Arrows");
+    assert_eq!(selected[1].face.family_name(), "Fixture Sans");
+}
+
+#[test]
 fn embedding_groups_shared_and_separately_registered_equal_faces() {
     let first = registry()
         .resolve("Fixture Sans", FontWeight::Normal, FontStyle::Normal)

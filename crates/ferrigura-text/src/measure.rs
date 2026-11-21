@@ -9,6 +9,7 @@ use std::rc::Rc;
 
 use harfrust::font::Font;
 use harfrust::{Buffer, ShapeOptions, ShaperFont, shape};
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::error::TextError;
 use crate::fonts::{Face, FontData, FontFamily, FontStyle, FontWeight, face};
@@ -38,6 +39,45 @@ pub fn fallback_faces() -> [&'static Face; 3] {
         ),
         face(FontFamily::Emoji, FontWeight::Normal, FontStyle::Normal),
     ]
+}
+
+/// Resolves the same fallback runs as measurement and checks their shaped glyphs.
+///
+/// This internal preflight must receive visible text, not measurement-only placeholders. Its
+/// offsets are relative to the run. It does not validate bidi layout or viewer font selection.
+///
+/// # Errors
+/// Returns a missing-glyph error for a visible grapheme that shapes to glyph zero.
+#[doc(hidden)]
+pub fn checked_fallback_runs<'a, 'f>(
+    run: Run<'a, 'f>,
+    requested_family: &str,
+) -> Result<Vec<Run<'a, 'f>>, TextError> {
+    let resolved = fallback_runs(run);
+    let mut start = 0;
+    for stretch in &resolved {
+        let shaped = shape_face(stretch.face, stretch.text)?;
+        for glyph in &shaped.glyphs {
+            if glyph.glyph != 0 {
+                continue;
+            }
+            let offset = start + glyph.cluster as usize;
+            let (byte_offset, sequence) = run
+                .text
+                .grapheme_indices(true)
+                .find(|(index, sequence)| *index <= offset && offset < *index + sequence.len())
+                .ok_or_else(|| TextError::Registration("invalid shaped cluster offset".into()))?;
+            if !sequence.chars().all(char::is_control) {
+                return Err(TextError::MissingGlyph {
+                    sequence: sequence.to_owned(),
+                    family: requested_family.to_owned(),
+                    byte_offset,
+                });
+            }
+        }
+        start += stretch.text.len();
+    }
+    Ok(resolved)
 }
 
 /// The stretches of a run as a browser sets them with the run's font-family list, which is the
@@ -177,6 +217,8 @@ fn advance(font: &Font, text: &str, size: f64) -> Result<f64, TextError> {
 pub(crate) struct PlacedGlyph {
     /// The glyph id in the font the run was shaped in.
     pub(crate) glyph: u32,
+    /// UTF-8 byte offset of the source shaping cluster within the run.
+    pub(crate) cluster: u32,
     /// The x of the glyph's origin from the start of the run, in font units: the pen position plus
     /// the glyph's own offset.
     pub(crate) x: i64,
@@ -294,6 +336,7 @@ pub(crate) fn shape_run(font: &Font, text: &str) -> Result<ShapedRun, TextError>
     for (info, position) in buffer.glyph_infos().iter().zip(buffer.glyph_positions()) {
         glyphs.push(PlacedGlyph {
             glyph: info.glyph_id,
+            cluster: info.cluster,
             x: pen + i64::from(position.x_offset),
         });
         pen += i64::from(position.x_advance);
