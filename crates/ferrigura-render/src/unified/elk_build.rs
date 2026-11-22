@@ -114,7 +114,7 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         layout_options: Some(root_options),
         children: root_children
             .iter()
-            .map(|&position| to_json(&arena, position))
+            .map(|&position| to_json(&mut arena, position))
             .collect(),
         edges,
         ..JsonNode::default()
@@ -1100,14 +1100,16 @@ fn apply_cyclic_entry_constraint(
 
 /// The elkjs node of an arena position, with its children (the `nodeDb` objects of the reference,
 /// in the order elkjs reads them).
-fn to_json(arena: &[Work], position: usize) -> JsonNode {
-    let work = &arena[position];
+fn to_json(arena: &mut [Work], position: usize) -> JsonNode {
+    // add_vertices allocates a fresh position for each occurrence, even for duplicate IDs.
+    // Each position therefore belongs to exactly one parent and can be consumed here.
+    let work = std::mem::take(&mut arena[position]);
     JsonNode {
-        id: work.id.clone(),
+        id: work.id,
         width: (!work.is_group).then_some(work.width),
         height: (!work.is_group).then_some(work.height),
-        layout_options: work.layout_options.clone(),
-        labels: work.labels.clone(),
+        layout_options: work.layout_options,
+        labels: work.labels,
         children: work
             .children
             .iter()
@@ -1889,6 +1891,29 @@ mod tests {
             assert_eq!(edge.labels[0].width, Some(22.0));
             assert_eq!(edge.labels[0].height, Some(10.0));
             assert_eq!(edge.labels[0].text.as_deref(), Some("go"));
+        }
+
+        #[test]
+        fn duplicate_groups_each_keep_their_children_and_orphans_stay_unreachable() {
+            let data = LayoutData {
+                nodes: vec![
+                    subgraph("group", None, Some((44.0, 16.0))),
+                    subgraph("group", None, Some((44.0, 16.0))),
+                    node("child", Some("group")),
+                    node("orphan", Some("missing")),
+                ],
+                ..LayoutData::default()
+            };
+            let graph = build(&data, &MermaidConfig::default()).graph;
+            assert_eq!(graph.children.len(), 2);
+            for group in &graph.children {
+                assert_eq!(group.id, "group");
+                assert_eq!(group.children.len(), 1);
+                assert_eq!(group.children[0].id, "child");
+            }
+            assert!(graph.children[0].labels.is_empty());
+            assert_eq!(graph.children[1].labels[0].text.as_deref(), Some("group"));
+            assert!(find(&graph, "orphan").is_none());
         }
 
         #[test]
