@@ -248,16 +248,17 @@ pub fn lay_out(measured: &mut Measured, config: &Config<'_>) -> Result<ElkStages
     let elk = elk_build::build(&measured.data, config);
     let layout = ferrigura_elk::layout(&elk.graph, false)
         .map_err(|error| RenderError::Layout(error.to_string()))?;
-    let intersects = measured
-        .shapes
-        .iter()
-        .map(|(id, shape)| (id.clone(), shape.intersect.clone()))
-        .collect();
-    elk_apply::apply(
+    let crossing = |id: &str, node, probe| {
+        measured
+            .shapes
+            .get(id)
+            .map(|shape| shape.intersect.intersect(node, probe))
+    };
+    elk_apply::apply_with_crossing(
         &mut measured.data,
         &layout.graph,
         &elk.state,
-        &intersects,
+        &crossing,
         config.section.elk.straighten_edges,
     );
     Ok(ElkStages {
