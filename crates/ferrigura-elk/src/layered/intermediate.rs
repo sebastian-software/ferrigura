@@ -606,19 +606,21 @@ fn sort_by_input_model(
                     crate::java::sort::sort_by(&mut ports, |&a, &b| comparator.compare(view, a, b));
                 }
                 graph.nodes[node].ports = ports;
-                let names: Vec<String> = graph.nodes[node]
-                    .ports
-                    .iter()
-                    .map(|&port| port_name(graph, port))
-                    .collect();
-                progress.log(
-                    monitor,
-                    format!(
-                        "Node {} ports: [{}]",
-                        graph.node_name(node),
-                        names.join(", ")
-                    ),
-                );
+                if progress.is_logging_enabled() {
+                    let names: Vec<String> = graph.nodes[node]
+                        .ports
+                        .iter()
+                        .map(|&port| port_name(graph, port))
+                        .collect();
+                    progress.log(
+                        monitor,
+                        format!(
+                            "Node {} ports: [{}]",
+                            graph.node_name(node),
+                            names.join(", ")
+                        ),
+                    );
+                }
             }
         }
         let mut comparator = crate::layered::preserveorder::ModelOrderNodeComparator::new(
@@ -632,19 +634,21 @@ fn sort_by_input_model(
             crate::java::sort::sort_by(&mut members, |&a, &b| comparator.compare(view, a, b));
         }
         graph.layers[layer_index] = members;
-        let names: Vec<String> = graph.layers[layer_index]
-            .iter()
-            .map(|&node| graph.node_name(node))
-            .collect();
-        progress.log(
-            monitor,
-            format!(
-                "Layer {}: L_{}[{}]",
-                layer_index,
-                layer_index,
-                names.join(", ")
-            ),
-        );
+        if progress.is_logging_enabled() {
+            let names: Vec<String> = graph.layers[layer_index]
+                .iter()
+                .map(|&node| graph.node_name(node))
+                .collect();
+            progress.log(
+                monitor,
+                format!(
+                    "Layer {}: L_{}[{}]",
+                    layer_index,
+                    layer_index,
+                    names.join(", ")
+                ),
+            );
+        }
     }
     Ok(())
 }
