@@ -24,6 +24,7 @@ ferrigura-syntax = { path = "../ferrigura-syntax", version = "0.8.2" }
 ferrigura-text = { path = "../ferrigura-text", version = "0.8.2" }
 ferrigura-venn = { path = "../ferrigura-venn", version = "0.8.2" }
 ferroni.workspace = true
+memchr = "2.8.3"
 serde.workspace = true
 serde_json.workspace = true
 

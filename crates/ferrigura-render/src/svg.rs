@@ -125,6 +125,15 @@ pub fn css_text(css: &str) -> String {
         .replace('>', "&gt;")
 }
 
+/// Escape owned style text, retaining its allocation when no XML escaping is needed.
+pub(crate) fn css_text_owned(css: String) -> String {
+    if memchr::memchr3(b'&', b'<', b'>', css.as_bytes()).is_some() {
+        css_text(&css)
+    } else {
+        css
+    }
+}
+
 /// A number as the reference writes it in an attribute: JavaScript's `String(number)`, written by
 /// [`ferrigura_model::value::number_text`], which the theme tokens read with.
 #[must_use]
@@ -261,6 +270,16 @@ pub fn arc_path(inner: f64, outer: f64, start: f64, end: f64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn owned_css_escapes_xml_and_reuses_safe_text() {
+        let safe = String::from("a{content:\"é\"}");
+        let ptr = safe.as_ptr();
+        let escaped = css_text_owned(safe);
+        assert_eq!(escaped.as_ptr(), ptr);
+        assert_eq!(escaped, "a{content:\"é\"}");
+        assert_eq!(css_text_owned("&<>é".into()), "&amp;&lt;&gt;é");
+    }
 
     #[test]
     fn escapes_markup_and_quotes() {

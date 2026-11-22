@@ -233,6 +233,7 @@ dependencies = [
  "ferrigura-text",
  "ferrigura-venn",
  "ferroni",
+ "memchr",
  "serde",
  "serde_json",
 ]

@@ -15,7 +15,7 @@ use ferrigura_text::EmbeddedFamily;
 
 use super::policy::FlowchartRouting;
 use crate::context::{Globals, ThemeView};
-use crate::svg::{css_text, escape, font_faces};
+use crate::svg::{css_text, css_text_owned, escape, font_faces};
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens of the rules, each declared as a custom property on the diagram's id, in the order
@@ -242,7 +242,7 @@ pub fn style_sheet_with_fonts(
     } else {
         font_faces(svg_id, families)
     };
-    css_text(&format!(
+    css_text_owned(format!(
         "{faces}{}{}",
         custom_properties(svg_id, theme, globals),
         rules.concat()
