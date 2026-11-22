@@ -72,6 +72,7 @@ impl FontRegistry {
             ));
         }
         crate::kern::validate(&font)?;
+        let embed_whole = crate::embed::requires_whole_font(&font);
         let data_fingerprint = crate::embed::fnv1a(&data);
         let face = Face {
             family: FontFamily::Registered,
@@ -80,7 +81,10 @@ impl FontRegistry {
             style,
             file_name: Cow::Borrowed(""),
             font: OnceLock::new(),
-            data: FontData::Registered(data.into()),
+            data: FontData::Registered {
+                bytes: data.into(),
+                embed_whole,
+            },
             fallbacks: Vec::new(),
             variable: OnceLock::new(),
             data_fingerprint: Some(data_fingerprint),

@@ -341,6 +341,13 @@ fn family_order(family: FontFamily) -> u8 {
 const COLLAPSED_WHITE_SPACE: [char; 3] = ['\n', '\r', '\t'];
 
 fn cached_subset(face: &Face, characters: &BTreeSet<char>) -> Result<Arc<Vec<u8>>, TextError> {
+    if let crate::fonts::FontData::Registered {
+        bytes: data,
+        embed_whole: true,
+    } = &face.data
+    {
+        return Ok(data.clone());
+    }
     let cache = ACTIVE_CACHE.with(|active| active.borrow().clone());
     let Some(cache) = cache else {
         return subset_characters(face, characters).map(Arc::new);
@@ -351,7 +358,7 @@ fn cached_subset(face: &Face, characters: &BTreeSet<char>) -> Result<Arc<Vec<u8>
     }
     let (data_address, data_owner) = match &face.data {
         crate::fonts::FontData::Bundled(data) => (data.as_ptr() as usize, None),
-        crate::fonts::FontData::Registered(data) => {
+        crate::fonts::FontData::Registered { bytes: data, .. } => {
             (Arc::as_ptr(data) as usize, Some(Arc::downgrade(data)))
         }
     };
@@ -466,8 +473,7 @@ fn subset_data(
     }
     // skera does not serialize CFF outlines. Keep the complete font instead of returning an
     // invalid subset without outlines. This also preserves CFF subroutines and CFF2 variations.
-    if font.table_data(Tag::new(b"CFF ")).is_some() || font.table_data(Tag::new(b"CFF2")).is_some()
-    {
+    if requires_whole_font(&font) {
         return Ok(data.to_vec());
     }
     // Every script and the default layout features, so kerning and ligatures are kept.
@@ -492,6 +498,10 @@ fn subset_data(
     );
     let subset = subset_font(&font, &plan).map_err(|error| TextError::Subset(error.to_string()))?;
     crate::kern::restore(&font, subset, &plan)
+}
+
+pub(crate) fn requires_whole_font(font: &FontRef<'_>) -> bool {
+    font.table_data(Tag::new(b"CFF ")).is_some() || font.table_data(Tag::new(b"CFF2")).is_some()
 }
 
 /// The family name of a set of subsets: the hash of each face's weight, style and bytes.
@@ -686,6 +696,35 @@ mod cache_tests {
     }
 
     #[test]
+    fn registered_cff_reuses_font_bytes_without_cache_entries() {
+        let mut registry = crate::FontRegistry::new();
+        let data = include_bytes!("../tests/fixtures/SourceCodePro-Regular.otf");
+        registry
+            .register("cff", data.to_vec(), FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        let face = registry
+            .resolve("cff", FontWeight::Normal, FontStyle::Normal)
+            .unwrap();
+        let crate::fonts::FontData::Registered {
+            bytes: original,
+            embed_whole: true,
+        } = &face.data
+        else {
+            panic!("expected CFF");
+        };
+        let cache = Arc::new(SubsetCache::default());
+        with_subset_cache(&cache, || {
+            for text in ["alpha", "beta", "gamma"] {
+                let characters = text.chars().collect();
+                let embedded = cached_subset(&face, &characters).unwrap();
+                assert!(Arc::ptr_eq(original, &embedded));
+                assert_eq!(embedded.as_slice(), subset_face(&face, text).unwrap());
+            }
+        });
+        assert!(cache.0.lock().unwrap().entries.is_empty());
+    }
+
+    #[test]
     fn registered_faces_keep_aliases_and_do_not_pin_font_data() {
         use crate::FontRegistry;
         let cache = Arc::new(SubsetCache::default());
@@ -714,7 +753,7 @@ mod cache_tests {
                 .resolve("primary", FontWeight::Normal, FontStyle::Normal)
                 .unwrap();
             let weak = match &primary.data {
-                crate::fonts::FontData::Registered(data) => Arc::downgrade(data),
+                crate::fonts::FontData::Registered { bytes: data, .. } => Arc::downgrade(data),
                 _ => unreachable!(),
             };
             for text in ["", "→", "Hello →"] {

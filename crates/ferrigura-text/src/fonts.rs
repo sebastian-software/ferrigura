@@ -96,7 +96,10 @@ impl FontStyle {
 #[derive(Clone)]
 pub(crate) enum FontData {
     Bundled(&'static [u8]),
-    Registered(Arc<Vec<u8>>),
+    Registered {
+        bytes: Arc<Vec<u8>>,
+        embed_whole: bool,
+    },
 }
 
 /// One font file and the choice it answers to.
@@ -186,7 +189,7 @@ impl Face {
         self.font
             .get_or_init(|| match &self.data {
                 FontData::Bundled(data) => Font::new(*data, 0),
-                FontData::Registered(data) => {
+                FontData::Registered { bytes: data, .. } => {
                     Font::new(data.clone() as Arc<dyn AsRef<[u8]> + Send + Sync>, 0)
                 }
             })
@@ -231,7 +234,7 @@ impl Face {
     pub fn data(&self) -> &[u8] {
         match &self.data {
             FontData::Bundled(data) => data,
-            FontData::Registered(data) => data,
+            FontData::Registered { bytes: data, .. } => data,
         }
     }
 }
