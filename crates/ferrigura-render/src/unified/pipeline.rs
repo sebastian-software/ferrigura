@@ -248,6 +248,31 @@ pub fn lay_out(measured: &mut Measured, config: &Config<'_>) -> Result<ElkStages
     let elk = elk_build::build(&measured.data, config);
     let layout = ferrigura_elk::layout(&elk.graph, false)
         .map_err(|error| RenderError::Layout(error.to_string()))?;
+    apply_layout(measured, config, &layout.graph, &elk.state);
+    Ok(ElkStages {
+        input: elk.graph,
+        output: layout.graph,
+    })
+}
+
+/// Lays out a diagram without retaining diagnostic ELK stages.
+pub(crate) fn lay_out_for_render(
+    measured: &mut Measured,
+    config: &Config<'_>,
+) -> Result<(), RenderError> {
+    let elk = elk_build::build(&measured.data, config);
+    let layout = ferrigura_elk::layout_owned(elk.graph, false)
+        .map_err(|error| RenderError::Layout(error.to_string()))?;
+    apply_layout(measured, config, &layout.graph, &elk.state);
+    Ok(())
+}
+
+fn apply_layout(
+    measured: &mut Measured,
+    config: &Config<'_>,
+    graph: &JsonNode,
+    state: &elk_build::ElkState,
+) {
     let crossing = |id: &str, node, probe| {
         measured
             .shapes
@@ -256,15 +281,11 @@ pub fn lay_out(measured: &mut Measured, config: &Config<'_>) -> Result<ElkStages
     };
     elk_apply::apply_with_crossing(
         &mut measured.data,
-        &layout.graph,
-        &elk.state,
+        graph,
+        state,
         &crossing,
         config.section.elk.straighten_edges,
     );
-    Ok(ElkStages {
-        input: elk.graph,
-        output: layout.graph,
-    })
 }
 
 /// Paints a laid-out diagram in the order of `paintLayoutData`: the clusters in the order

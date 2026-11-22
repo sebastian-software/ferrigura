@@ -89,7 +89,7 @@ pub fn render(input: &Context<'_, RequirementDiagram, Section<'_>>) -> Result<St
     check_names(input.diagram)?;
     let config = Config::of(input);
     let mut measured = measure(input, &config)?;
-    pipeline::lay_out(&mut measured, &config)?;
+    pipeline::lay_out_for_render(&mut measured, &config)?;
     let id = input.id;
     let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;

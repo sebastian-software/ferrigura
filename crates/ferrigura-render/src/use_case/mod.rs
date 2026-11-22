@@ -92,7 +92,7 @@ pub fn render(
         }
     }
 
-    pipeline::lay_out(&mut measured, &config)?;
+    pipeline::lay_out_for_render(&mut measured, &config)?;
     let painted = pipeline::paint(&measured, id, &config)?;
     let bounds = painted.bounds;
 

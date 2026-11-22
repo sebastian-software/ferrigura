@@ -32,21 +32,34 @@ pub struct Layout {
 
 /// Lays out an elkjs JSON graph the way `elk.layout(graph, { logging })` does.
 pub fn layout(graph: &json::JsonNode, logging: bool) -> Result<Layout, LayoutError> {
-    let mut elk = graph::json_import::import_graph(graph)?;
+    layout_impl(std::borrow::Cow::Borrowed(graph), logging)
+}
+
+/// Lays out an owned graph, reusing it for the output.
+///
+/// # Errors
+///
+/// Returns an error if the graph cannot be imported or laid out.
+pub fn layout_owned(graph: json::JsonNode, logging: bool) -> Result<Layout, LayoutError> {
+    layout_impl(std::borrow::Cow::Owned(graph), logging)
+}
+
+fn layout_impl(
+    graph: std::borrow::Cow<'_, json::JsonNode>,
+    logging: bool,
+) -> Result<Layout, LayoutError> {
+    let mut elk = graph::json_import::import_graph(&graph)?;
     let (mut progress, root) = core::util::progress::ProgressMonitor::new(logging);
     core::recursive::layout(&mut elk, &mut progress, root)?;
     let trace = progress.trace(root);
-    let mut output = graph.clone();
-    output.width = Some(elk.shape.width);
-    output.height = Some(elk.shape.height);
-    write_level(&mut output, &elk);
+    let mut graph = graph.into_owned();
+    graph.width = Some(elk.shape.width);
+    graph.height = Some(elk.shape.height);
+    write_level(&mut graph, &elk);
     let mut edges = HashMap::new();
     collect_edges(&elk, &mut edges);
-    write_edges(&mut output, &edges);
-    Ok(Layout {
-        graph: output,
-        trace,
-    })
+    write_edges(&mut graph, &edges);
+    Ok(Layout { graph, trace })
 }
 
 /// Writes the layout of the children of one level into their JSON: each child with its position,

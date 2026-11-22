@@ -191,3 +191,29 @@ fn report_agreement_on_supported_cases() {
         }
     }
 }
+
+#[test]
+fn owned_layout_matches_borrowed_graph_trace_and_errors() {
+    for name in corpus_names() {
+        let case = corpus_case(&name);
+        let input: JsonNode = serde_json::from_value(case["input"].clone()).unwrap();
+        for logging in [false, true] {
+            let borrowed = ferrigura_elk::layout(&input, logging);
+            let owned = ferrigura_elk::layout_owned(input.clone(), logging);
+            match (borrowed, owned) {
+                (Ok(borrowed), Ok(owned)) => {
+                    assert_eq!(
+                        serde_json::to_value(borrowed.graph).unwrap(),
+                        serde_json::to_value(owned.graph).unwrap(),
+                        "{name}"
+                    );
+                    assert_eq!(borrowed.trace.to_json(), owned.trace.to_json(), "{name}");
+                }
+                (Err(borrowed), Err(owned)) => {
+                    assert_eq!(borrowed.to_string(), owned.to_string(), "{name}")
+                }
+                _ => panic!("owned and borrowed layouts disagree for {name}"),
+            }
+        }
+    }
+}

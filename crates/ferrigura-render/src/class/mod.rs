@@ -41,7 +41,7 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
     // `classRenderer-v3-unified.ts` 59: the diagram type names the markers and their class.
     data.diagram_type = markers::CLASS.to_owned();
     let mut measured = pipeline::measure(data, &config)?;
-    pipeline::lay_out(&mut measured, &config)?;
+    pipeline::lay_out_for_render(&mut measured, &config)?;
     let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;
 

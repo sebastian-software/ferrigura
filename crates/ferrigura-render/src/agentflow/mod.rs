@@ -57,7 +57,7 @@ pub fn render(
     let palette_len = input.theme.light.border_color_array.texts().len();
     let data = data::get_data(input.diagram, input.section, input.globals, palette_len);
     let mut measured = pipeline::measure(data, &config)?;
-    pipeline::lay_out(&mut measured, &config)?;
+    pipeline::lay_out_for_render(&mut measured, &config)?;
     let id = input.id;
     let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;

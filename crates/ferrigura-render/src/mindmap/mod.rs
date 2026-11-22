@@ -93,7 +93,7 @@ pub fn render_with_animation(
         layout::Layout::CoseBilkent => layout::cose(&mut measured.data)?,
         layout::Layout::TidyTree => layout::tidy(&mut measured.data)?,
         layout::Layout::Elk => {
-            pipeline::lay_out(&mut measured, &unified)?;
+            pipeline::lay_out_for_render(&mut measured, &unified)?;
         }
     }
 
