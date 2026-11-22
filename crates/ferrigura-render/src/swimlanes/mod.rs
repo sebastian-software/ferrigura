@@ -103,7 +103,7 @@ pub fn render(
         }
         Engine::Elk => {
             let mut measured = pipeline::measure(data, &config)?;
-            pipeline::lay_out(&mut measured, &config)?;
+            pipeline::lay_out_for_render(&mut measured, &config)?;
             measured
         }
     };

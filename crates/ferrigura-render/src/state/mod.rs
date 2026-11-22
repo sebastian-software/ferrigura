@@ -45,7 +45,7 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
     let config = Config::of(input);
     let mut measured = measure(input, &config)?;
     apply_links(&mut measured.data, &input.diagram.links);
-    pipeline::lay_out(&mut measured, &config)?;
+    pipeline::lay_out_for_render(&mut measured, &config)?;
     let id = input.id;
     let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;

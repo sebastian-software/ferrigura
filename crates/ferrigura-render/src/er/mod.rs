@@ -52,7 +52,7 @@ fn measure(
 pub fn render(input: &Context<'_, ErDiagram, Section<'_>>) -> Result<String, RenderError> {
     let config = Config::of(input);
     let mut measured = measure(input, &config)?;
-    pipeline::lay_out(&mut measured, &config)?;
+    pipeline::lay_out_for_render(&mut measured, &config)?;
     let id = input.id;
     let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;

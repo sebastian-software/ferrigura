@@ -67,7 +67,7 @@ pub fn render_with_animation(
 ) -> Result<String, RenderError> {
     let config = Config::of(input);
     let mut measured = measure(input)?;
-    pipeline::lay_out(&mut measured, &config)?;
+    pipeline::lay_out_for_render(&mut measured, &config)?;
     let id = input.id;
     let painted = pipeline::paint_with_animation(&measured, id, &config, animation)?;
     let mut bounds = painted.bounds;

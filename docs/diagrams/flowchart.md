@@ -138,12 +138,12 @@ The steps follow the reference's `flowRenderer-v3-unified.ts`, `rendering-util/r
 2. **`edges::prepare`** gives each edge its arrow types, classes, styles and curve (`applyElkEdgeRenderData`).
 3. **`pipeline::measure`** (`createGraphWithElements`) lays out every label and draws every shape to measure it.
 4. **`elk_build::build`** (`buildElkGraphFromLayoutData`) makes the elkjs graph.
-5. **`ferrigura_elk::layout`** runs ELK Layered.
+5. **`ferrigura_elk::layout_owned`** runs ELK Layered, reusing the input graph for the result. The diagnostic `layout` entry retains the input.
 6. **`elk_apply::apply`** (`applyElkLayoutResult` and its helpers, `elk/geometry.ts`) turns ELK's result into positions, frames and edge points.
 7. **`pipeline::paint`** (`paintLayoutData`) writes the clusters, the edge paths, the edge labels and the nodes, then the line hops.
 8. **`flowchart::render`** writes the root `svg`: the style sheet, the font subsets, the markers, the look definitions, the title and the viewBox.
 
-The other unified diagrams build their own layout data and call the same `measure`, `lay_out` and `paint`.
+The other unified diagrams build their own layout data and call the same `measure`, `lay_out_for_render` and `paint`. The diagnostic `lay_out` entry also returns the ELK input and output stages.
 
 ### Layout data
 
