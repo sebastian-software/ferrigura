@@ -76,6 +76,50 @@ pub struct Painted<'a> {
     pub links: bool,
 }
 
+#[derive(Debug)]
+pub(crate) struct RootParts {
+    clusters: String,
+    edge_paths: String,
+    edge_labels: String,
+    nodes: String,
+    animation: String,
+}
+
+impl RootParts {
+    pub(crate) fn slices(&self) -> [&str; 11] {
+        [
+            "<g class=\"root\"><g class=\"clusters\">",
+            &self.clusters,
+            "</g><g class=\"edges edgePaths\">",
+            &self.edge_paths,
+            "</g><g class=\"edgeLabels\">",
+            &self.edge_labels,
+            "</g><g class=\"nodes\">",
+            &self.nodes,
+            "</g>",
+            &self.animation,
+            "</g>",
+        ]
+    }
+}
+
+pub(crate) struct PaintedParts<'a> {
+    pub root: RootParts,
+    pub coloured_markers: String,
+    pub bounds: Option<BBox>,
+    pub cluster_labels: Vec<LabelLayout>,
+    pub labels: Vec<&'a LabelLayout>,
+    pub links: bool,
+}
+
+impl PaintedParts<'_> {
+    pub(crate) fn all_labels(&self) -> impl Iterator<Item = &LabelLayout> {
+        self.cluster_labels
+            .iter()
+            .chain(self.labels.iter().copied())
+    }
+}
+
 impl Painted<'_> {
     /// Every label that was drawn: the cluster titles, then the node and edge labels.
     pub fn all_labels(&self) -> impl Iterator<Item = &LabelLayout> {
@@ -300,7 +344,15 @@ pub fn paint<'a>(
     id: &str,
     config: &Config<'_>,
 ) -> Result<Painted<'a>, RenderError> {
-    paint_with_animation(measured, id, config, None)
+    let parts = paint_with_animation(measured, id, config, None)?;
+    Ok(Painted {
+        root: parts.root.slices().concat(),
+        coloured_markers: parts.coloured_markers,
+        bounds: parts.bounds,
+        cluster_labels: parts.cluster_labels,
+        labels: parts.labels,
+        links: parts.links,
+    })
 }
 
 pub(crate) fn paint_with_animation<'a>(
@@ -308,7 +360,7 @@ pub(crate) fn paint_with_animation<'a>(
     id: &str,
     config: &Config<'_>,
     animation: Option<crate::animation::Animation>,
-) -> Result<Painted<'a>, RenderError> {
+) -> Result<PaintedParts<'a>, RenderError> {
     let data = &measured.data;
     let mut bounds: Option<BBox> = None;
     let mut labels: Vec<&LabelLayout> = Vec::new();
@@ -450,10 +502,14 @@ pub(crate) fn paint_with_animation<'a>(
         .map(crate::animation::Animator::finish)
         .unwrap_or_default();
 
-    Ok(Painted {
-        root: format!(
-            "<g class=\"root\"><g class=\"clusters\">{clusters}</g><g class=\"edges edgePaths\">{edge_paths}</g><g class=\"edgeLabels\">{edge_labels}</g><g class=\"nodes\">{nodes}</g>{animation}</g>"
-        ),
+    Ok(PaintedParts {
+        root: RootParts {
+            clusters,
+            edge_paths,
+            edge_labels,
+            nodes,
+            animation,
+        },
         coloured_markers,
         bounds,
         cluster_labels,

@@ -147,19 +147,39 @@ pub fn render_with_animation(
         &families,
         input.section.flowchart_routing,
     );
-    Ok(format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
+    let header = format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>",
         id = escape(id),
         xlink = xlink_declaration(painted.links),
         x = number(drawn.x - padding),
         y = number(drawn.y - padding),
         w = number(view_width),
         h = number(view_height),
-        markers = edges::markers(id),
-        root = painted.root,
-        coloured_markers = painted.coloured_markers,
-        defs = style::look_defs(id, input.theme, input.globals),
-    ))
+    );
+    let markers = edges::markers(id);
+    let defs = style::look_defs(id, input.theme, input.globals);
+    let before = [
+        header.as_str(),
+        &accessibility,
+        "<style>",
+        &style,
+        "</style><g>",
+        &markers,
+    ];
+    let root = painted.root.slices();
+    let after = [
+        painted.coloured_markers.as_str(),
+        "</g>",
+        &title_svg,
+        &defs,
+        "</svg>",
+    ];
+    let slices = before.into_iter().chain(root).chain(after);
+    let mut svg = String::with_capacity(slices.clone().map(str::len).sum());
+    for part in slices {
+        svg.push_str(part);
+    }
+    Ok(svg)
 }
 
 /// The font size of the title: `.flowchartTitleText` in the flowchart styles.
