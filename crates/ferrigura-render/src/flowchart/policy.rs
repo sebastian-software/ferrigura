@@ -151,30 +151,50 @@ fn apply_centering(
     }
 }
 
-/// Gives a flowchart in the design mode more room than the reference's spacings do
-/// (`docs/decisions/0023-design-mode.md`): a wider base value at the root, and a group padding with a
-/// row for the title. The options are ELK's own; the engine lays the graph out as it does any other.
-pub(crate) fn relax(graph: &mut JsonNode) {
-    graph.layout_options.get_or_insert_default().insert(
+/// The node placement of the design mode: ELK's network simplex placement, which lines nodes up so
+/// that edges run straight where the reference's Brandes & Koepf placement leaves a step.
+const DESIGN_PLACEMENT: &str = "NETWORK_SIMPLEX";
+
+/// Gives a flowchart in the design mode more room than the reference's spacings do, and straighter
+/// edges (`docs/decisions/0023-design-mode.md`): a wider base value at the root, a group padding with
+/// a row for the title, and, when `place` is set, the network simplex node placement in every
+/// graph. The options are ELK's own; the engine lays the graph out as it does any other.
+pub(crate) fn relax(graph: &mut JsonNode, place: bool) {
+    let options = graph.layout_options.get_or_insert_default();
+    options.insert(
         "spacing.baseValue".to_owned(),
         crate::design::ROOT_SPACING.into(),
     );
+    if place {
+        options.insert(
+            "elk.layered.nodePlacement.strategy".to_owned(),
+            DESIGN_PLACEMENT.into(),
+        );
+    }
     for child in &mut graph.children {
-        relax_groups(child);
+        relax_groups(child, place);
     }
 }
 
-/// Sets the design mode's padding on every group below a node.
-fn relax_groups(node: &mut JsonNode) {
+/// Sets the design mode's padding, and its node placement when `place` is set, on every group below
+/// a node.
+fn relax_groups(node: &mut JsonNode, place: bool) {
     if node.children.is_empty() {
         return;
     }
-    node.layout_options.get_or_insert_default().insert(
+    let options = node.layout_options.get_or_insert_default();
+    options.insert(
         "elk.padding".to_owned(),
         crate::design::GROUP_PADDING.into(),
     );
+    if place {
+        options.insert(
+            "elk.layered.nodePlacement.strategy".to_owned(),
+            DESIGN_PLACEMENT.into(),
+        );
+    }
     for child in &mut node.children {
-        relax_groups(child);
+        relax_groups(child, place);
     }
 }
 
@@ -200,7 +220,7 @@ mod tests {
                 group("outer", vec![leaf("b"), group("inner", vec![leaf("c")])]),
             ],
         );
-        relax(&mut graph);
+        relax(&mut graph, true);
         let option = |node: &JsonNode, name: &str| {
             node.layout_options
                 .as_ref()
@@ -212,6 +232,22 @@ mod tests {
             Some(crate::design::ROOT_SPACING.into())
         );
         assert_eq!(option(&graph, "elk.padding"), None);
+        let placement = "elk.layered.nodePlacement.strategy";
+        assert_eq!(option(&graph, placement), Some("NETWORK_SIMPLEX".into()));
+        assert_eq!(option(&graph.children[0], placement), None);
+        assert_eq!(
+            option(&graph.children[1], placement),
+            Some("NETWORK_SIMPLEX".into())
+        );
+        // A configured placement strategy is the user's: the mode leaves it alone.
+        let mut kept = group("root", vec![group("outer", vec![leaf("b")])]);
+        relax(&mut kept, false);
+        assert_eq!(option(&kept, placement), None);
+        assert_eq!(option(&kept.children[0], placement), None);
+        assert_eq!(
+            option(&kept.children[0], "elk.padding"),
+            Some(crate::design::GROUP_PADDING.into())
+        );
         assert_eq!(option(&graph.children[0], "elk.padding"), None);
         let outer = &graph.children[1];
         assert_eq!(

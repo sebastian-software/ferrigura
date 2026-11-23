@@ -16,6 +16,7 @@ use crate::error::LayoutError;
 use crate::graph::{ElkEdgeSection, ElkNode, Shape};
 use crate::layered::lgraph::LGraph;
 use crate::layered::options;
+use crate::layered::p4nodes::network_simplex;
 
 /// `applyLayout(lgraph)` for a root without nested graphs.
 pub fn apply_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutError> {
@@ -189,11 +190,12 @@ fn apply_graph_layout(graph: &LGraph, root: &mut ElkNode) -> Result<(), LayoutEr
         child.shape.x = node.position.x + offset.x;
         child.shape.y = node.position.y + offset.y;
         // `applyNodeLayout`: a node with size constraints, or with a nested graph, takes the size
-        // the layout gave it.
+        // the layout gave it, and so does a node that network simplex placement may resize.
         if !child
             .properties
             .enum_set_is_empty(options::NODE_SIZE_CONSTRAINTS)
             || node.nested_graph.is_some()
+            || network_simplex::takes_size_from_layout(graph, index)
         {
             child.shape.width = node.size.x;
             child.shape.height = node.size.y;

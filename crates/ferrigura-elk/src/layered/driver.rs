@@ -406,6 +406,9 @@ fn module_name(step: &Step) -> Result<&'static str, LayoutError> {
             PhaseStep::NodePlacement(NodePlacementStrategy::BRANDES_KOEPF) => {
                 "org.eclipse.elk.alg.layered.p4nodes.bk.BKNodePlacer"
             }
+            PhaseStep::NodePlacement(NodePlacementStrategy::NETWORK_SIMPLEX) => {
+                "org.eclipse.elk.alg.layered.p4nodes.NetworkSimplexPlacer"
+            }
             PhaseStep::EdgeRouting(EdgeRouting::ORTHOGONAL | EdgeRouting::UNDEFINED) => {
                 "org.eclipse.elk.alg.layered.p5edges.OrthogonalEdgeRouter"
             }
