@@ -70,6 +70,22 @@ fn frame_x(svg: &str) -> f64 {
         .expect("a number")
 }
 
+/// The part of an SVG that holds its nodes.
+fn nodes(svg: &str) -> &str {
+    &svg[svg.find("<g class=\"nodes\">").expect("the nodes")..]
+}
+
+/// The part of an SVG that holds its edge paths.
+fn edges(svg: &str) -> &str {
+    let from = svg
+        .find("<g class=\"edges edgePaths\">")
+        .expect("the edges");
+    &svg[from..from
+        + svg[from..]
+            .find("<g class=\"edgeLabels\">")
+            .expect("the labels")]
+}
+
 /// The style sheet of an SVG.
 fn style_sheet(svg: &str) -> &str {
     let start = svg.find("<style>").expect("a style sheet") + "<style>".len();
@@ -78,7 +94,7 @@ fn style_sheet(svg: &str) -> &str {
 }
 
 #[test]
-fn the_design_mode_keeps_the_geometry_of_the_default_rendering() {
+fn the_design_mode_keeps_the_nodes_and_routes_of_the_default_rendering() {
     let renderer = Renderer::new(&Value::empty_object());
     for scheme in [
         None,
@@ -93,25 +109,119 @@ fn the_design_mode_keeps_the_geometry_of_the_default_rendering() {
             without_title_transforms(&plain),
             without_title_transforms(&designed),
         );
-        for name in [
-            "viewBox",
-            "transform",
-            "data-points",
-            "d",
-            "points",
-            "x",
-            "y",
-            "width",
-            "height",
-            "r",
-        ] {
+        // The drawing's box, every position, and the points of every route.
+        assert_eq!(
+            attribute_values(&plain, "viewBox")[0],
+            attribute_values(&designed, "viewBox")[0],
+            "the box with {scheme:?}"
+        );
+        for name in ["transform", "data-points"] {
             assert_eq!(
                 attribute_values(&plain, name),
                 attribute_values(&designed, name),
                 "{name} with {scheme:?}"
             );
         }
+        // The outline of every node.
+        let (plain, designed) = (nodes(&plain), nodes(&designed));
+        for name in ["d", "points", "x", "y", "width", "height", "r"] {
+            assert_eq!(
+                attribute_values(plain, name),
+                attribute_values(designed, name),
+                "{name} of the nodes with {scheme:?}"
+            );
+        }
     }
+}
+
+#[test]
+fn an_edge_turns_on_a_wider_radius_through_the_same_points() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let plain = renderer.render_with(FLOW, &default(None)).unwrap();
+    let designed = renderer.render_with(FLOW, &design(None)).unwrap();
+    let (plain, designed) = (edges(&plain), edges(&designed));
+    assert_eq!(
+        attribute_values(plain, "data-points"),
+        attribute_values(designed, "data-points")
+    );
+    // The first edge turns twice: its corners start 5 before the turn by default, 10 in the mode.
+    let turn = |svg: &str| attribute_values(svg, "d")[0].matches('Q').count();
+    assert_eq!(turn(plain), 2);
+    assert_eq!(turn(designed), 2);
+    assert_ne!(
+        attribute_values(plain, "d"),
+        attribute_values(designed, "d")
+    );
+    // A straight edge is the same path.
+    let straight = "flowchart TD\n  A --> B\n";
+    let plain = renderer.render_with(straight, &default(None)).unwrap();
+    let designed = renderer.render_with(straight, &design(None)).unwrap();
+    assert_eq!(
+        attribute_values(edges(&plain), "d"),
+        attribute_values(edges(&designed), "d")
+    );
+}
+
+#[test]
+fn the_arrowheads_are_the_modes_own() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let plain = renderer.render_with(FLOW, &default(None)).unwrap();
+    let designed = renderer.render_with(FLOW, &design(None)).unwrap();
+    let head = "id=\"d_flowchart-v2-pointEnd-margin\" class=\"marker flowchart-v2\" viewBox=";
+    assert!(plain.contains(&format!("{head}\"0 0 11.5 14\"")));
+    assert!(designed.contains(&format!("{head}\"0 0 10 9\" refX=\"10\" refY=\"4.5\"")));
+    assert!(designed.contains("<path d=\"M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z\""));
+    // The other markers are the reference's.
+    let circle = "id=\"d_flowchart-v2-circleEnd-margin\"";
+    let definition = |svg: &str| {
+        let at = svg.find(circle).expect("the circle marker");
+        svg[at..at + svg[at..].find("</marker>").expect("its end")].to_owned()
+    };
+    assert_eq!(definition(&plain), definition(&designed));
+    // A colored edge takes a colored copy of the mode's arrowhead.
+    let coloured = format!("{FLOW}  linkStyle 0 stroke:#d33\n");
+    let designed = renderer.render_with(&coloured, &design(None)).unwrap();
+    let at = designed
+        .find("id=\"d_flowchart-v2-pointEnd-margin__d33\"")
+        .expect("the colored marker");
+    assert!(designed[at..].starts_with(
+        "id=\"d_flowchart-v2-pointEnd-margin__d33\" class=\"marker flowchart-v2\" viewBox=\"0 0 10 9\""
+    ));
+    // A thick edge stays slimmer than its arrowhead.
+    assert!(style_sheet(&designed).contains("#d .edge-thickness-thick{stroke-width:3px;}"));
+}
+
+#[test]
+fn an_edge_label_sits_in_a_chip() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let plain = renderer.render_with(FLOW, &default(None)).unwrap();
+    let designed = renderer.render_with(FLOW, &design(None)).unwrap();
+    let background = |svg: &str| {
+        let labels = &svg[svg.find("<g class=\"edgeLabels\">").expect("the labels")..];
+        let labels = &labels[..labels.find("<g class=\"nodes\">").expect("the nodes")];
+        let number = |name: &str| -> f64 { attribute_values(labels, name)[0].parse().unwrap() };
+        (
+            number("x"),
+            number("width"),
+            number("height"),
+            attribute_values(labels, "rx")
+                .first()
+                .copied()
+                .map(str::to_owned),
+        )
+    };
+    let (x, width, height, radius) = background(&plain);
+    let (chip_x, chip_width, chip_height, chip_radius) = background(&designed);
+    assert_eq!(radius, None);
+    assert_eq!(chip_radius.as_deref(), Some("6"));
+    assert_eq!(chip_x, x - 5.0);
+    assert_eq!(chip_width, width + 10.0);
+    assert_eq!(chip_height, height);
+    assert!(
+        style_sheet(&designed).contains(
+            "#d .edgeLabel rect.background{stroke:var(--clusterBorder);stroke-width:1px;}"
+        )
+    );
 }
 
 #[test]
@@ -178,7 +288,8 @@ fn outlines_are_hairlines_and_corners_are_round() {
     assert!(sheet.contains("stroke:var(--nodeBorder);stroke-width:1.25px;"));
     assert!(!sheet.contains("stroke-width:2px"));
     // Three rectangle nodes and the frame of the subgraph.
-    assert_eq!(attribute_values(&svg, "rx"), ["12", "8", "8", "8"]);
+    assert_eq!(attribute_values(nodes(&svg), "rx"), ["8", "8", "8"]);
+    assert!(svg.contains("<rect rx=\"12\" ry=\"12\""));
     assert!(svg.contains("<feDropShadow dx=\"0\" dy=\"1\" stdDeviation=\"1.5\""));
 }
 

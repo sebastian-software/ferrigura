@@ -24,11 +24,23 @@ pub const NODE_STROKE_WIDTH: &str = "1.25px";
 /// The stroke width of an edge of normal thickness.
 pub const EDGE_STROKE_WIDTH: &str = "1.5px";
 
+/// The stroke width of a thick edge: twice the normal one, and still slimmer than the arrowhead.
+pub const THICK_EDGE_STROKE_WIDTH: &str = "3px";
+
 /// The corner radius of a rectangular node.
 pub const NODE_RADIUS: f64 = 8.0;
 
 /// The corner radius of a group frame.
 pub const GROUP_RADIUS: f64 = 12.0;
+
+/// The corner radius of a rounded edge: twice the reference's, so that a turn reads as a curve.
+pub const EDGE_RADIUS: f64 = 10.0;
+
+/// The room an edge label's chip adds to the left and the right of its background.
+pub const CHIP_PADDING: f64 = 5.0;
+
+/// The corner radius of an edge label's chip.
+pub const CHIP_RADIUS: f64 = 6.0;
 
 /// The theme variables of the mode for a tone, as an object of `themeVariables`. The user's own
 /// variables are merged on top, key by key.

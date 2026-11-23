@@ -28,18 +28,21 @@ The design mode draws a flowchart in ferrigura's own look ([0023](../decisions/0
 - Node.js: `renderer.render(text, { design: true })` or `render(text, config, { design: true })`.
 - CLI: `ferrigura --design diagram.mmd`.
 
-| Element                        | Design mode                                                                                      |
-| ------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Node outline                   | 1.25 px in the node border color                                                                 |
-| Edge                           | 1.5 px in a dark gray, so that nodes stand in front of their connections                         |
-| Rectangle                      | Corner radius 8                                                                                  |
-| Subgraph frame                 | Neutral fill, its own border, corner radius 12, no shadow; the theme's palette is not used       |
-| Subgraph title                 | At the left of the frame, 16 from its edge, and moved right past every edge that crosses its row |
-| Shadow                         | 1 px down, blurred by 1.5                                                                        |
-| Edge label                     | The title's muted color on the background color                                                  |
-| Stadium, circle, double circle | Role `terminal`: filled with the accent color, with light text                                   |
-| Diamond                        | Role `decision`: a warm tint with its own outline and text color                                 |
-| Cylinder                       | Role `data`: a green tint with its own outline and text color                                    |
+| Element                        | Design mode                                                                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Node outline                   | 1.25 px in the node border color                                                                                            |
+| Edge                           | 1.5 px in a dark gray, so that nodes stand in front of their connections                                                    |
+| Rectangle                      | Corner radius 8                                                                                                             |
+| Subgraph frame                 | Neutral fill, its own border, corner radius 12, no shadow; the theme's palette is not used                                  |
+| Subgraph title                 | At the left of the frame, 16 from its edge, and moved right past every edge that crosses its row                            |
+| Shadow                         | 1 px down, blurred by 1.5                                                                                                   |
+| Edge corner                    | Radius 10 on a rounded edge, through the same points; a line hop uses it too                                                |
+| Arrowhead                      | The `point` arrowhead of the neo look is 10 long and 9 wide with a notch at the back; circles and crosses are the default's |
+| Thick edge                     | 3 px                                                                                                                        |
+| Edge label                     | The title's muted color in a chip: the background 5 wider on each side, corner radius 6, a thin outline                     |
+| Stadium, circle, double circle | Role `terminal`: filled with the accent color, with light text                                                              |
+| Diamond                        | Role `decision`: a warm tint with its own outline and text color                                                            |
+| Cylinder                       | Role `data`: a green tint with its own outline and text color                                                               |
 
 A node with a role carries `data-role` on its group, which the style sheet matches. The mode's rules come before the `classDef` rules, so a class or a `style` statement of the diagram overrides a role's colors. The user's `themeVariables` override the mode's colors key by key: `mainBkg`, `nodeBorder`, `lineColor`, `textColor`, `nodeTextColor`, `titleColor`, `clusterBkg`, `clusterBorder`, `edgeLabelBackground` and `background`. The role colors are fixed.
 
@@ -49,7 +52,7 @@ With `colorScheme: auto` the SVG carries the light and the dark set as `light-da
 
 Both color sets are held to contrast ratios by a test: 4.5 to 1 for text on its ground, 3 to 1 for outlines and edges on the mode's `background` and inside a subgraph.
 
-The subroutine, the other polygons and the marker sizes keep the default look's geometry.
+The subroutine and the other polygons keep the default look's outline.
 
 ## Draw animation
 

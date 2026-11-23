@@ -335,7 +335,7 @@ pub fn label_size(label: &LabelLayout) -> (f64, f64) {
 /// The `d` of an edge, as `insertEdge` builds it for the points after layout: `rounded` through
 /// `generateRoundedPath`, otherwise the d3 curve with the marker accessors on the corner-fixed
 /// points. `None` when the curve has no points.
-fn path_data(edge: &Edge, curve_name: &str) -> Option<String> {
+fn path_data(edge: &Edge, curve_name: &str, radius: f64) -> Option<String> {
     let line_data: Vec<Point> = edge
         .points
         .iter()
@@ -345,7 +345,7 @@ fn path_data(edge: &Edge, curve_name: &str) -> Option<String> {
     let (start, end) = (&edge.arrow_type_start, &edge.arrow_type_end);
     if curve_name == "rounded" {
         let offset = apply_marker_offsets(&line_data, start, end);
-        return Some(generate_rounded_path(&offset, ROUNDED_RADIUS));
+        return Some(generate_rounded_path(&offset, radius));
     }
     let fixed = fix_corners(&line_data);
     let accessor = line_with_offset(&fixed, start, end);
@@ -520,10 +520,27 @@ pub(crate) fn prepare_paths(
     jumps: Option<JumpStyle>,
 ) -> Vec<Painted> {
     let default_curve = section.flowchart.curve.clone();
+    // The design mode turns an edge on a wider radius and draws its own arrowheads.
+    let design = section.design.is_some();
+    let radius = if design {
+        crate::design::EDGE_RADIUS
+    } else {
+        ROUNDED_RADIUS
+    };
     let mut created = std::collections::HashSet::new();
     let mut painted: Vec<Painted> = edges
         .iter()
-        .map(|edge| paint_edge(edge, svg_id, diagram_type, &default_curve, &mut created))
+        .map(|edge| {
+            paint_edge(
+                edge,
+                svg_id,
+                diagram_type,
+                &default_curve,
+                radius,
+                design,
+                &mut created,
+            )
+        })
         .collect();
 
     if let Some(style) = jumps {
@@ -542,6 +559,7 @@ pub(crate) fn prepare_paths(
                 arrow_type_start: edges[index].arrow_type_start.clone(),
                 arrow_type_end: edges[index].arrow_type_end.clone(),
                 style: painted[index].style.clone(),
+                corner_radius: radius,
             })
             .collect();
         let config = LineJumpConfig {
@@ -583,10 +601,12 @@ fn paint_edge(
     svg_id: &str,
     diagram_type: &str,
     default_curve: &str,
+    radius: f64,
+    design: bool,
     created: &mut std::collections::HashSet<String>,
 ) -> Painted {
     let curve_name = edge.curve.as_deref().unwrap_or(default_curve);
-    let d = path_data(edge, curve_name);
+    let d = path_data(edge, curve_name, radius);
 
     let stroke = stroke_classes(&edge.thickness, &edge.pattern);
     let animation = if edge.animate == Some(true) {
@@ -674,13 +694,14 @@ fn paint_edge(
             Some(colour) => {
                 let colored = markers::coloured_id(&id, colour);
                 if created.insert(colored.clone()) {
-                    markers_out.push_str(&markers::coloured_marker(
+                    markers_out.push_str(&markers::coloured_marker_for(
                         svg_id,
                         diagram_type,
                         kind,
                         start,
                         margin,
                         colour,
+                        design,
                     ));
                 }
                 Some(format!("url(#{colored})"))
@@ -752,6 +773,22 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
     let y = edge.y.unwrap_or(0.0) + margin / 2.0;
     let text = label.bbox;
     let (text_x, text_y) = (text.x + text.width / 2.0, text.y + text.height / 2.0);
+    // The design mode draws the background as a chip: wider than the text, with round corners.
+    let chip = label
+        .background
+        .filter(|_| section.design.is_some())
+        .map(|background| {
+            let padding = crate::design::CHIP_PADDING;
+            (
+                BBox::new(
+                    background.x - padding,
+                    background.y,
+                    background.width + 2.0 * padding,
+                    background.height,
+                ),
+                crate::design::CHIP_RADIUS,
+            )
+        });
     let inner = match label.background {
         // `createText` restyles the background and the text of a label that has a background,
         // which an edge label with text has; without one it leaves both as they are.
@@ -761,12 +798,12 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
             // over the half-opacity rules of individual types without replacing the theme fill
             // (including its explicit alpha) or a later authored declaration. Reference patch 12
             // applies the same paint-only correction to `createText`.
-            label.svg_with_background(&text, &format!("opacity:1;{background}"))
+            label.svg_with_background_in(&text, &format!("opacity:1;{background}"), chip)
         }
         None => label.svg(&label_style_text(edge)),
     };
     let group = match label.background {
-        Some(background) => text.union(background),
+        Some(background) => text.union(chip.map_or(background, |(chip, _)| chip)),
         None => text,
     };
     let absolute = group.translate(x - text_x, y - text_y);
@@ -788,6 +825,12 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
 #[must_use]
 pub fn markers(svg_id: &str) -> String {
     markers::markers(svg_id, markers::FLOWCHART)
+}
+
+/// [`markers()`], with the arrowheads of the design mode when `design` is set.
+#[must_use]
+pub fn markers_for(svg_id: &str, design: bool) -> String {
+    markers::markers_for(svg_id, markers::FLOWCHART, design)
 }
 
 #[cfg(test)]

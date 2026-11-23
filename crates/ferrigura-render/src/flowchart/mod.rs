@@ -157,7 +157,7 @@ pub fn render_with_animation(
         w = number(view_width),
         h = number(view_height),
     );
-    let markers = edges::markers(id);
+    let markers = edges::markers_for(id, input.section.design.is_some());
     let defs = style::look_defs_for(id, input.theme, input.globals, input.section.design);
     let before = [
         header.as_str(),

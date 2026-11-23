@@ -40,6 +40,7 @@ fn edge(id: &str, points: &[(f64, f64)]) -> EdgeGeom {
         arrow_type_start: "none".to_owned(),
         arrow_type_end: "none".to_owned(),
         style: String::new(),
+        corner_radius: ferrigura_render::unified::path::ROUNDED_RADIUS,
     }
 }
 

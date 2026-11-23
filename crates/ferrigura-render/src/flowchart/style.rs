@@ -85,12 +85,13 @@ pub fn style_sheet_with_fonts(
         tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned())
     );
     // The design mode draws hairlines: an outline lighter than an edge, both lighter than the theme's.
-    let (stroke_width, edge_width) = match design {
+    let (stroke_width, edge_width, thick_width) = match design {
         Some(_) => (
             design::NODE_STROKE_WIDTH.to_owned(),
             design::EDGE_STROKE_WIDTH.to_owned(),
+            design::THICK_EDGE_STROKE_WIDTH,
         ),
-        None => (stroke_width.clone(), stroke_width),
+        None => (stroke_width.clone(), stroke_width, "3.5px"),
     };
     let text_colour = if tokens.node_text_color.is_absent() {
         "textColor"
@@ -137,7 +138,7 @@ pub fn style_sheet_with_fonts(
         ),
         rule(
             &format!("{id} .edge-thickness-thick"),
-            "stroke-width:3.5px;",
+            &format!("stroke-width:{thick_width};"),
         ),
         rule(&format!("{id} .edge-pattern-solid"), "stroke-dasharray:0;"),
         rule(
@@ -333,6 +334,10 @@ fn design_rules(id: &str) -> String {
     css.push_str(&rule(
         &format!("{id} .edgeLabel .label text"),
         "fill:var(--titleColor);",
+    ));
+    css.push_str(&rule(
+        &format!("{id} .edgeLabel rect.background"),
+        "stroke:var(--clusterBorder);stroke-width:1px;",
     ));
     css.push_str(&rule(
         &format!("{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow"),

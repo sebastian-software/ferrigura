@@ -183,9 +183,32 @@ impl LabelLayout {
     /// 391-401).
     #[must_use]
     pub fn svg_with_background(&self, text_style: &str, background_style: &str) -> String {
+        self.svg_with_background_in(text_style, background_style, None)
+    }
+
+    /// [`LabelLayout::svg_with_background`], with the background drawn as the given box with the
+    /// given corner radius when there is one: the chip of an edge label in the design mode.
+    #[must_use]
+    pub fn svg_with_background_in(
+        &self,
+        text_style: &str,
+        background_style: &str,
+        chip: Option<(BBox, f64)>,
+    ) -> String {
+        let background = match chip {
+            Some((chip, radius)) => format!(
+                r#"<rect class="background" style="{}" rx="{radius}" ry="{radius}" x="{}" y="{}" width="{}" height="{}"></rect>"#,
+                escape(background_style),
+                number(chip.x),
+                number(chip.y),
+                number(chip.width),
+                number(chip.height),
+                radius = number(radius),
+            ),
+            None => self.background_rect_with(background_style),
+        };
         format!(
-            "<g>{}{}</g>",
-            self.background_rect_with(background_style),
+            "<g>{background}{}</g>",
             self.text_element_with(text_style, "", false)
         )
     }
