@@ -658,10 +658,10 @@ mod direction_tests {
             ..LayoutData::default()
         };
         let sides = busiest_sides(&data);
-        // `a` has three edges out: 2 * 20 + 2 * 12 along its height, from left to right.
-        assert_eq!(sides[0], (64.0, true));
+        // `a` has three edges out: 2 * 20 + 2 * 24 along its height, from left to right.
+        assert_eq!(sides[0], (88.0, true));
         // `b` has three edges in; its self-loop does not count.
-        assert_eq!(sides[1], (64.0, true));
+        assert_eq!(sides[1], (88.0, true));
         // `c` has one edge on each side and needs nothing; its group runs from top to bottom.
         assert_eq!(sides[3], (0.0, false));
     }

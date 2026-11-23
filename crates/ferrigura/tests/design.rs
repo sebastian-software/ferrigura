@@ -88,11 +88,11 @@ fn a_node_gives_the_edges_of_its_busiest_side_room() {
     let plain = renderer.render_with(across, &default(None)).unwrap();
     let designed = renderer.render_with(across, &design(None)).unwrap();
     let (width, height) = node_size(&plain, "E");
-    // 20 for each edge after the first, and 12 at both ends of the side.
-    assert_eq!(node_size(&designed, "E"), (width, 84.0));
-    assert_eq!(node_size(&designed, "A"), (width, 64.0));
+    // 20 for each edge after the first, and 24 at both ends of the side.
+    assert_eq!(node_size(&designed, "E"), (width, 108.0));
+    assert_eq!(node_size(&designed, "A"), (width, 88.0));
     assert_eq!(node_size(&designed, "F"), (width, height));
-    assert!(height < 64.0);
+    assert!(height < 88.0);
 
     // From top to bottom the side runs along the width, which a node usually has already.
     let down = across.replace("flowchart LR", "flowchart TD");
@@ -103,8 +103,64 @@ fn a_node_gives_the_edges_of_its_busiest_side_room() {
     let plain = renderer.render_with(many, &default(None)).unwrap();
     let designed = renderer.render_with(many, &design(None)).unwrap();
     let (width, height) = node_size(&plain, "Z");
-    assert!(width < 184.0);
-    assert_eq!(node_size(&designed, "Z"), (184.0, height));
+    assert!(width < 208.0);
+    assert_eq!(node_size(&designed, "Z"), (208.0, height));
+}
+
+#[test]
+fn the_edges_of_a_side_meet_the_node_around_its_middle() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // Three edges leave `A`, and four meet `E`.
+    let across = "flowchart LR\n  A[Alpha] --> E[Echo]\n  B[Beta] --> E\n  C[Gamma] --> E\n  D[Delta] --> E\n  A --> F[Foxtrot]\n  A --> G[Golf]\n";
+    let designed = renderer.render_with(across, &design(None)).unwrap();
+    // Where the edges with the given ids start or end, along the layer, in order.
+    let places = |svg: &str, ids: &[&str], end: bool, along_y: bool| -> Vec<f64> {
+        let mut places: Vec<f64> = ids
+            .iter()
+            .map(|id| {
+                let points = route(svg, id);
+                let point = if end {
+                    points[points.len() - 1]
+                } else {
+                    points[0]
+                };
+                if along_y { point.1 } else { point.0 }
+            })
+            .collect();
+        places.sort_by(f64::total_cmp);
+        places
+    };
+    // Neighbors are 20 apart.
+    let assert_bundle = |places: &[f64]| {
+        for pair in places.windows(2) {
+            assert!((pair[1] - pair[0] - 20.0).abs() < 1e-6, "{places:?}");
+        }
+    };
+    let out = places(&designed, &["L_A_E_0", "L_A_F_0", "L_A_G_0"], false, true);
+    assert_bundle(&out);
+    let into = places(
+        &designed,
+        &["L_A_E_0", "L_B_E_0", "L_C_E_0", "L_D_E_0"],
+        true,
+        true,
+    );
+    assert_bundle(&into);
+    // `A` is 88 high for its three edges: the outer ones are 24 from its corners, not on them.
+    assert_eq!(node_size(&designed, "A").1, 88.0);
+    assert!((out[2] - out[0] - (88.0 - 2.0 * 24.0)).abs() < 1e-6);
+
+    // From top to bottom the side runs along the width, and a node is wider than its edges need:
+    // they still sit 20 apart, around the middle.
+    let down = across.replace("flowchart LR", "flowchart TD");
+    let designed = renderer.render_with(&down, &design(None)).unwrap();
+    let out = places(&designed, &["L_A_E_0", "L_A_F_0", "L_A_G_0"], false, false);
+    assert_bundle(&out);
+    let (width, _) = node_size(&designed, "A");
+    assert!(width > 88.0);
+    // The default rendering spreads them over the side.
+    let plain = renderer.render_with(&down, &default(None)).unwrap();
+    let spread = places(&plain, &["L_A_E_0", "L_A_F_0", "L_A_G_0"], false, false);
+    assert!(spread[1] - spread[0] > 20.0 + 1e-6, "{spread:?}");
 }
 
 /// The points of the route of the edge with the given id.
