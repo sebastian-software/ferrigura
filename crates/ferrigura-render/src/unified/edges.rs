@@ -339,7 +339,7 @@ pub fn label_size(label: &LabelLayout) -> (f64, f64) {
 /// The `d` of an edge, as `insertEdge` builds it for the points after layout: `rounded` through
 /// `generateRoundedPath`, otherwise the d3 curve with the marker accessors on the corner-fixed
 /// points. `None` when the curve has no points.
-fn path_data(edge: &Edge, curve_name: &str, radius: f64) -> Option<String> {
+fn path_data(edge: &Edge, curve_name: &str, radius: f64, design: bool) -> Option<String> {
     let line_data: Vec<Point> = edge
         .points
         .iter()
@@ -348,6 +348,12 @@ fn path_data(edge: &Edge, curve_name: &str, radius: f64) -> Option<String> {
         .collect();
     let (start, end) = (&edge.arrow_type_start, &edge.arrow_type_end);
     if curve_name == "rounded" {
+        // The design mode turns every corner on the same radius.
+        let line_data = if design {
+            without_points_on_a_line(&line_data)
+        } else {
+            line_data
+        };
         let offset = apply_marker_offsets(&line_data, start, end);
         return Some(generate_rounded_path(&offset, radius));
     }
@@ -357,6 +363,31 @@ fn path_data(edge: &Edge, curve_name: &str, radius: f64) -> Option<String> {
         Curve::from_name(curve_name).unwrap_or(Curve::Basis),
         &accessor,
     )
+}
+
+/// The points of a route without those that lie on the straight line between their neighbors.
+///
+/// The layout keeps such points where a route passes a layer or leaves the box of a shape that is
+/// no rectangle. A corner beside one is rounded with less than its radius, because a corner takes
+/// at most half of each part that meets in it (`rounded_corner`).
+fn without_points_on_a_line(points: &[Point]) -> Vec<Point> {
+    let mut kept: Vec<Point> = Vec::with_capacity(points.len());
+    for (index, &point) in points.iter().enumerate() {
+        let on_a_line = match (kept.last(), points.get(index + 1)) {
+            (Some(&before), Some(&after)) => {
+                let cross = (point.x - before.x) * (after.y - point.y)
+                    - (point.y - before.y) * (after.x - point.x);
+                let along = (point.x - before.x) * (after.x - point.x)
+                    + (point.y - before.y) * (after.y - point.y);
+                cross.abs() < 1e-9 && along > 0.0
+            }
+            _ => false,
+        };
+        if !on_a_line {
+            kept.push(point);
+        }
+    }
+    kept
 }
 
 /// `strokeClasses` of `insertEdge`: the thickness and the pattern classes of the edge.
@@ -560,7 +591,14 @@ pub(crate) fn prepare_paths(
             .iter()
             .map(|&index| EdgeGeom {
                 id: edges[index].id.clone(),
-                points: edges[index].points.clone(),
+                // The hops are cut into the path that `path_data` drew.
+                points: if design
+                    && edges[index].curve.as_deref().unwrap_or(&default_curve) == "rounded"
+                {
+                    without_points_on_a_line(&edges[index].points)
+                } else {
+                    edges[index].points.clone()
+                },
                 curve: edges[index].curve.clone(),
                 arrow_type_start: edges[index].arrow_type_start.clone(),
                 arrow_type_end: edges[index].arrow_type_end.clone(),
@@ -608,7 +646,7 @@ fn paint_edge(
     created: &mut std::collections::HashSet<String>,
 ) -> Painted {
     let curve_name = edge.curve.as_deref().unwrap_or(default_curve);
-    let d = path_data(edge, curve_name, radius);
+    let d = path_data(edge, curve_name, radius, design);
     let geometry = d.as_deref().map(PathGeometry::parse).unwrap_or_default();
 
     let stroke = stroke_classes(&edge.thickness, &edge.pattern);
@@ -1137,7 +1175,7 @@ mod tests {
         };
         // How far before the corner at (0, 50) the turn starts.
         let cut = |radius: f64| -> f64 {
-            let d = path_data(&edge, "rounded", radius).expect("a path");
+            let d = path_data(&edge, "rounded", radius, false).expect("a path");
             let start = d
                 .strip_prefix("M0,0L0,")
                 .and_then(|rest| rest.split_once('Q'))
@@ -1148,6 +1186,53 @@ mod tests {
         // `generateRoundedPath` cuts a right angle at the radius times the square root of two.
         assert!((cut(ROUNDED_RADIUS) - 5.0 * std::f64::consts::SQRT_2).abs() < 1e-9);
         assert!((cut(crate::design::EDGE_RADIUS) - 10.0 * std::f64::consts::SQRT_2).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_point_on_a_straight_part_does_not_shorten_the_turn_of_the_design_mode() {
+        // The layout left a point 24 before the corner at (0, 50), on the straight part.
+        let edge = Edge {
+            points: vec![
+                Point::new(0.0, 0.0),
+                Point::new(0.0, 26.0),
+                Point::new(0.0, 50.0),
+                Point::new(50.0, 50.0),
+            ],
+            ..Edge::default()
+        };
+        let radius = crate::design::EDGE_RADIUS;
+        // The default draws through every point, and the turn takes half of the short part.
+        assert_eq!(
+            path_data(&edge, "rounded", radius, false).as_deref(),
+            Some("M0,0L0,26L0,38Q0,50 12,50L50,50")
+        );
+        // The design mode turns on its radius, as it does without the point.
+        let designed = path_data(&edge, "rounded", radius, true).expect("a path");
+        let start: f64 = designed
+            .strip_prefix("M0,0L0,")
+            .and_then(|rest| rest.split_once('Q'))
+            .map(|(y, _)| y.parse().expect("a number"))
+            .expect("a turn");
+        assert!((50.0 - start - 10.0 * std::f64::consts::SQRT_2).abs() < 1e-9);
+
+        // A point at which the route turns back is no point of a straight part, and stays.
+        let back = [
+            Point::new(0.0, 0.0),
+            Point::new(0.0, 50.0),
+            Point::new(0.0, 20.0),
+        ];
+        assert_eq!(without_points_on_a_line(&back), back);
+        // Several points in a row on one line go, and the ends stay.
+        let line = [
+            Point::new(0.0, 0.0),
+            Point::new(10.0, 0.0),
+            Point::new(20.0, 0.0),
+            Point::new(30.0, 0.0),
+        ];
+        assert_eq!(
+            without_points_on_a_line(&line),
+            [Point::new(0.0, 0.0), Point::new(30.0, 0.0)]
+        );
     }
 
     #[test]
