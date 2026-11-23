@@ -406,6 +406,63 @@ fn an_edge_label_interrupts_its_edge() {
 }
 
 #[test]
+fn the_gap_of_a_label_interrupts_no_edge_beside_it() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // Edges between the same two nodes run 20 apart in the mode. A label of one line fits between
+    // them, and the layout moves an edge aside for a higher one.
+    let one_line = "flowchart LR\n  A[Draft] --> B{Review}\n  B -->|approved| C[Published]\n  B -->|changes| A\n";
+    let three_lines = "flowchart LR\n  A[Draft] --> B{Review}\n  B -->|approved| C[Published]\n  B -->|changes<br/>requested<br/>again| A\n  A -->|second<br/>look| B\n";
+    let down = "flowchart TD\n  A[Author] -- submits draft --> R[Reviewer]\n  R -- requests changes --> A\n  R -- approves --> P[Publish]\n";
+    for text in [one_line, three_lines, down] {
+        let designed = renderer.render_with(text, &design(None)).unwrap();
+        let mask = &designed[designed
+            .find("<mask id=\"d-label-gaps\"")
+            .expect("the mask")..];
+        let mask = &mask[..mask.find("</mask>").expect("the mask's end")];
+        let number = |rect: &str, name: &str| -> f64 {
+            attribute_values(rect, name)[0].parse().expect("a number")
+        };
+        let gaps: Vec<(f64, f64, f64, f64)> = mask
+            .split("<rect")
+            .filter(|rect| rect.contains("fill=\"black\""))
+            .map(|rect| {
+                (
+                    number(rect, "x"),
+                    number(rect, "y"),
+                    number(rect, "width"),
+                    number(rect, "height"),
+                )
+            })
+            .collect();
+        let edges: Vec<&str> = designed
+            .match_indices(" data-id=\"L_")
+            .map(|(at, _)| {
+                let rest = &designed[at + " data-id=\"".len()..];
+                &rest[..rest.find('"').expect("the id's end")]
+            })
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        assert!(!gaps.is_empty() && edges.len() >= 3, "{text}");
+        for &(x, y, width, height) in &gaps {
+            // The routes are orthogonal, so a part of a route crosses the box when their extents
+            // overlap.
+            let crossing = edges
+                .iter()
+                .filter(|edge| {
+                    route(&designed, edge).windows(2).any(|part| {
+                        let (left, right) = (part[0].0.min(part[1].0), part[0].0.max(part[1].0));
+                        let (top, bottom) = (part[0].1.min(part[1].1), part[0].1.max(part[1].1));
+                        right > x && left < x + width && bottom > y && top < y + height
+                    })
+                })
+                .count();
+            assert_eq!(crossing, 1, "the gap at {x}, {y} in {text}");
+        }
+    }
+}
+
+#[test]
 fn a_group_title_sits_at_the_left_and_clear_of_the_edges() {
     let renderer = Renderer::new(&Value::empty_object());
     let designed = renderer.render_with(FLOW, &design(None)).unwrap();
