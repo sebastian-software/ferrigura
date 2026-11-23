@@ -26,7 +26,7 @@ import { grouped, renderingSource } from './homepage-data';
 /* Every drawing here is real output of the published npm package, written by
    scripts/render-diagram-samples.mjs into app/data/; nothing is drawn by hand. */
 
-const credit = `Real output of Ferrigura (${renderingSource})`;
+export const credit = `Real output of Ferrigura (${renderingSource})`;
 
 // The gallery's other drawings load when a visitor asks for them; the ones on
 // the page from the start are imported above.
@@ -36,6 +36,7 @@ const drawings = import.meta.glob<string>(
     '!../data/diagrams/flowchart.svg',
     '!../data/diagrams/mode-*.svg',
     '!../data/diagrams/scheme-*.svg',
+    '!../data/diagrams/design-*.svg',
   ],
   { query: '?raw', import: 'default' }
 );
@@ -59,7 +60,15 @@ function firstSample() {
 const first = firstSample();
 
 /** Build-time SVG from the published package, never visitor input. */
-function Drawing({ svg, label, className }: { svg: string; label: string; className?: string }) {
+export function Drawing({
+  svg,
+  label,
+  className,
+}: {
+  svg: string;
+  label: string;
+  className?: string;
+}) {
   return (
     <div
       className={className === undefined ? 'fgr-drawing' : `fgr-drawing ${className}`}
@@ -71,7 +80,7 @@ function Drawing({ svg, label, className }: { svg: string; label: string; classN
   );
 }
 
-function Source({ children, label }: { children: string; label: string }) {
+export function Source({ children, label }: { children: string; label: string }) {
   return (
     // A long line scrolls inside the sheet; the keyboard can reach it.
     // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- A scrollable region needs focus.

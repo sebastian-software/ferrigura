@@ -26,9 +26,23 @@
   margin-bottom: 44px;
 }
 /* The type choices wrap on a phone instead of widening the page. */
-.fgr-gallery .mono-seg {
+.fgr-gallery .mono-seg,
+.fgr-design .mono-seg {
   flex-wrap: wrap;
   max-width: 100%;
+}
+.fgr-design > .mono-facing {
+  margin-top: 20px;
+}
+/* Two wide drawings stand one above the other, each at the sheet's full width. */
+.fgr-stacked > .mono-facing {
+  grid-template-columns: minmax(0, 1fr);
+}
+.fgr-stacked > .mono-facing::before {
+  display: none;
+}
+.fgr-stacked > .mono-facing .mono-sheet + .mono-sheet {
+  border-top: 1px solid var(--mono-hair);
 }
 .fgr-gallery > .mono-facing,
 .fgr-file > .mono-facing,

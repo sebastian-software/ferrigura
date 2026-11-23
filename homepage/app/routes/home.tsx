@@ -13,7 +13,7 @@ import { displayName, WORKSHOP } from 'ferramenta-family/registry';
 
 import { Alternatives, Checked, Family, Runtimes } from '../components/feature-sections';
 import { grouped, tool } from '../components/homepage-data';
-import { Explainer, Modes, Schemes, Text } from '../components/story-sections';
+import { Design, Explainer, Modes, Schemes, Text } from '../components/story-sections';
 import coverage from '../data/coverage.json';
 import { nodeVersion, releaseLine, rustVersion } from '../version';
 
@@ -88,6 +88,7 @@ function Opening() {
 // Keys are written out: minified builds do not keep function names.
 const chapters = [
   { key: 'explainer', Chapter: Explainer },
+  { key: 'design', Chapter: Design },
   { key: 'text', Chapter: Text },
   { key: 'modes', Chapter: Modes },
   { key: 'schemes', Chapter: Schemes },

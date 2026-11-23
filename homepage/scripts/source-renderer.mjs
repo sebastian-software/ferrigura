@@ -27,6 +27,7 @@ export async function createSourceRenderer(config = {}) {
     remove,
     render(source, options = {}) {
       const args = ['--config', configPath, '--compat', String(options.compat ?? false)];
+      if (options.design !== undefined) args.push('--design', String(options.design));
       if (options.id !== undefined) args.push('--id', options.id);
       if (options.colorScheme !== undefined) args.push('--scheme', options.colorScheme);
       return execFileSync(binary, args, {
