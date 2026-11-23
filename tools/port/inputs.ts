@@ -91,13 +91,23 @@ async function walk(
   filter: (path: string) => boolean
 ): Promise<string[]> {
   const found: string[] = [];
-  const entries = await readdir(join(root, dir), { withFileTypes: true, recursive: true });
-  for (const entry of entries) {
-    if (!entry.isFile()) continue;
-    const path = join(entry.parentPath, entry.name);
-    const repoRelative = relative(root, path);
-    if (repoRelative.includes('node_modules') || repoRelative.includes('/dist/')) continue;
-    if (filter(repoRelative)) found.push(repoRelative);
+  // The folders are read one by one, and `node_modules` is not entered: a workspace links its
+  // packages into each other's `node_modules` in a circle, and a recursive `readdir` that takes
+  // such a link for a folder fails with ELOOP.
+  const folders = [join(root, dir)];
+  for (let index = 0; index < folders.length; index += 1) {
+    const folder = folders[index] ?? '';
+    for (const entry of await readdir(folder, { withFileTypes: true })) {
+      const path = join(folder, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules') folders.push(path);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      const repoRelative = relative(root, path);
+      if (repoRelative.includes('node_modules') || repoRelative.includes('/dist/')) continue;
+      if (filter(repoRelative)) found.push(repoRelative);
+    }
   }
   return found.sort();
 }
