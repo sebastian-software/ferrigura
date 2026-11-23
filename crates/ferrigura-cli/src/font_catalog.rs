@@ -23,7 +23,7 @@ fn digest(bytes: &[u8]) -> String {
         .map(|byte| format!("{byte:02x}"))
         .collect()
 }
-fn valid_hash(hash: &str) -> bool {
+pub(crate) fn valid_hash(hash: &str) -> bool {
     hash.len() == 64
         && hash
             .bytes()
@@ -79,7 +79,7 @@ fn asset_url(base: &Url, path: &str) -> Result<Url, String> {
     }
     Ok(url)
 }
-fn verified(bytes: &[u8], hash: &str, size: Option<u64>) -> Result<(), String> {
+pub(crate) fn verified(bytes: &[u8], hash: &str, size: Option<u64>) -> Result<(), String> {
     if !valid_hash(hash) || size.is_some_and(|n| n != bytes.len() as u64) || digest(bytes) != hash {
         return Err(format!("font catalog integrity check failed for {hash}"));
     }
@@ -244,6 +244,8 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
     let mut cache = PathBuf::from(".ferrigura-font-cache");
     let mut lock = PathBuf::from("ferrigura-fonts.lock.json");
     let mut offline = false;
+    let mut protected = false;
+    let mut override_base = false;
     let mut families = Vec::new();
     let mut requested_fallbacks = Vec::new();
     let mut aliases = Vec::new();
@@ -253,7 +255,7 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
         match arg.as_str() {
             "-h" | "--help" => {
                 println!(
-                    "Usage: ferrigura fonts fetch [OPTIONS] FAMILY...\n\nFetch pinned catalog faces into a local cache and write a font lock. The first family is the default.\n\n  --fallback FAMILY       Add a selected family or alias to the fallback chain; repeat in order\n  --alias ALIAS=FAMILY    Register another name for a selected family; repeat as needed\n  --cache DIR             Cache directory (default: .ferrigura-font-cache)\n  --lock FILE             Output lock (default: ferrigura-fonts.lock.json)\n  --offline               Use only verified cached data\n  --manifest URL          Immutable HTTPS catalog URL; requires --sha256\n  --sha256 HEX            Expected manifest SHA-256; requires --manifest\n  --base URL              HTTPS asset base on the catalog origin, ending in /\n\nRender without network access using --font-lock FILE."
+                    "Usage: ferrigura fonts fetch [OPTIONS] FAMILY...\n\nFetch pinned catalog faces into a local cache and write a font lock. The first family is the default.\n\n  --fallback FAMILY       Add a selected family or alias to the fallback chain; repeat in order\n  --alias ALIAS=FAMILY    Register another name for a selected family; repeat as needed\n  --cache DIR             Cache directory (default: .ferrigura-font-cache)\n  --lock FILE             Output lock (default: ferrigura-fonts.lock.json)\n  --offline               Use only verified cached data\n  --protected             Authorize protected downloads with FERRIGURA_DOWNLOAD_TOKEN\n  --manifest URL          Immutable HTTPS catalog URL; requires --sha256\n  --sha256 HEX            Expected manifest SHA-256; requires --manifest\n  --base URL              HTTPS asset base on the catalog origin, ending in /\n\nRender without network access using --font-lock FILE."
                 );
                 return Ok(());
             }
@@ -265,10 +267,14 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
                 hash = crate::value(&mut args, &arg)?;
                 override_hash = true;
             }
-            "--base" => base = crate::value(&mut args, &arg)?,
+            "--base" => {
+                base = crate::value(&mut args, &arg)?;
+                override_base = true;
+            }
             "--cache" => cache = crate::value(&mut args, &arg)?.into(),
             "--lock" => lock = crate::value(&mut args, &arg)?.into(),
             "--offline" => offline = true,
+            "--protected" => protected = true,
             "--fallback" => requested_fallbacks.push(crate::value(&mut args, &arg)?),
             "--alias" => {
                 let raw = crate::value(&mut args, &arg)?;
@@ -284,6 +290,9 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
     }
     if override_manifest != override_hash {
         return Err("--manifest and --sha256 must be supplied together".into());
+    }
+    if protected && (override_manifest || override_base) {
+        return Err("--protected cannot be used with a custom catalog or asset base".into());
     }
     if families.is_empty() {
         return Err("provide at least one font family".into());
@@ -304,7 +313,11 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
         return Err("manifest and asset base must share an origin, and base must end in /".into());
     }
     let (_, manifest_bytes) = cached(&cache, &hash, None, offline, MANIFEST_LIMIT, || {
-        download(&manifest, MANIFEST_LIMIT)
+        if protected {
+            crate::protected::fetch(manifest.path(), &hash, None, MANIFEST_LIMIT)
+        } else {
+            download(&manifest, MANIFEST_LIMIT)
+        }
     })?;
     let document: Value = serde_json::from_slice(&manifest_bytes)
         .map_err(|e| format!("invalid catalog JSON: {e}"))?;
@@ -411,7 +424,11 @@ pub fn fetch(args: impl Iterator<Item = String>) -> Result<(), String> {
     let mut selected = Vec::new();
     for (family, weight, style, asset_hash, size, url) in assets {
         let (file, _) = cached(&cache, &asset_hash, Some(size), offline, size, || {
-            download(&url, size)
+            if protected {
+                crate::protected::fetch(url.path(), &asset_hash, Some(size), size)
+            } else {
+                download(&url, size)
+            }
         })?;
         let absolute = fs::canonicalize(file).map_err(|e| e.to_string())?;
         selected.push(json!({"family":family,"weight":weight,"style":style,"sha256":asset_hash,"size":size,"path":absolute}));

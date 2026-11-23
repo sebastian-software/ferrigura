@@ -76,6 +76,13 @@ Run `ferrigura fonts fetch --help` for the options. Rendering reads and verifies
 local lock and face files; it does not fetch fonts or accept URLs from a diagram. The
 lock's absolute paths are local to the machine that created it.
 
+To use protected downloads, set `FERRIGURA_DOWNLOAD_TOKEN` in the environment and pass
+`--protected` to `fonts fetch`. The token is needed only for cache misses; verified cached
+files can be reused without it, including with `--offline`. Protected fetching is available
+for the built-in catalog only and does not fall back to public downloads. Custom catalog
+and asset-base options cannot be combined with `--protected`. Without that option, the
+existing public catalog path remains available.
+
 Register a named local file before rendering; no system fonts or network sources
 are discovered:
 

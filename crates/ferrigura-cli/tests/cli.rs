@@ -540,3 +540,112 @@ fn a_verified_font_lock_renders_and_rejects_changed_bytes() {
     assert!(stderr(&rejected).contains("integrity"));
     assert!(stdout(&rejected).is_empty());
 }
+
+#[test]
+fn protected_catalog_reuses_warm_cache_without_token_or_network() {
+    use sha2::{Digest, Sha256};
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("protected-font-cache");
+    let store = dir.join("sha256");
+    fs::create_dir_all(&store).unwrap();
+    let manifest = fs::read(format!(
+        "{}/../../tools/font-catalog/catalog.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap();
+    let hash = |data: &[u8]| -> String {
+        Sha256::digest(data)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect()
+    };
+    fs::write(store.join(hash(&manifest)), manifest).unwrap();
+    for name in ["Regular", "Italic", "Bold", "BoldItalic"] {
+        let bytes = fs::read(font_file(&format!("LexicaUltralegible-{name}.ttf"))).unwrap();
+        fs::write(store.join(hash(&bytes)), bytes).unwrap();
+    }
+    let lock = dir.join("font-lock.json");
+    for offline in [false, true] {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_ferrigura"));
+        command.env_remove("FERRIGURA_DOWNLOAD_TOKEN").args([
+            "fonts",
+            "fetch",
+            "--protected",
+            "--cache",
+            dir.to_str().unwrap(),
+            "--lock",
+            lock.to_str().unwrap(),
+            "Lexica Ultralegible",
+        ]);
+        if offline {
+            command.arg("--offline");
+        }
+        let output = command.output().unwrap();
+        assert!(output.status.success(), "{}", stderr(&output));
+    }
+    let cold = dir.join("cold");
+    let output = Command::new(env!("CARGO_BIN_EXE_ferrigura"))
+        .env_remove("FERRIGURA_DOWNLOAD_TOKEN")
+        .args([
+            "fonts",
+            "fetch",
+            "--protected",
+            "--cache",
+            cold.to_str().unwrap(),
+            "Lexica Ultralegible",
+        ])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(stderr(&output).contains("FERRIGURA_DOWNLOAD_TOKEN"));
+    assert!(!cold.exists());
+    let output = Command::new(env!("CARGO_BIN_EXE_ferrigura"))
+        .env_remove("FERRIGURA_DOWNLOAD_TOKEN")
+        .args([
+            "fonts",
+            "fetch",
+            "--protected",
+            "--offline",
+            "--cache",
+            cold.to_str().unwrap(),
+            "Lexica Ultralegible",
+        ])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(stderr(&output).contains("offline cache misses"));
+    assert!(!cold.exists());
+    let mut custom = Command::new(env!("CARGO_BIN_EXE_ferrigura"));
+    let output = custom
+        .env("FERRIGURA_DOWNLOAD_TOKEN", "do-not-log-this")
+        .args([
+            "fonts",
+            "fetch",
+            "--protected",
+            "--base",
+            "https://mirror.invalid/",
+            "Lexica Ultralegible",
+        ])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(!stderr(&output).contains("do-not-log-this"));
+    assert!(stderr(&output).contains("custom catalog"));
+    let output = Command::new(env!("CARGO_BIN_EXE_ferrigura"))
+        .env("FERRIGURA_DOWNLOAD_TOKEN", "do-not-log-this")
+        .args([
+            "fonts",
+            "fetch",
+            "--protected",
+            "--manifest",
+            "https://mirror.invalid/catalog.json",
+            "--sha256",
+            &"0".repeat(64),
+            "Lexica Ultralegible",
+        ])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(stderr(&output).contains("custom catalog"));
+    assert!(!stderr(&output).contains("do-not-log-this"));
+    fs::remove_dir_all(dir).unwrap();
+}
