@@ -548,14 +548,15 @@ fn layer_size_and_graph_height(graph: &mut LGraph) -> Result<(), LayoutError> {
     Ok(())
 }
 
+/// `LayeredOptions.SPACING_PORTS_SURROUNDING`.
+const SPACING_PORTS_SURROUNDING: crate::core::data::OptionId =
+    crate::core::data::OptionId::of("org.eclipse.elk.spacing.portsSurrounding");
+
 /// `LayeredOptions.SPACING_PORTS_SURROUNDING` of the graph.
 fn ports_surrounding(graph: &LGraph) -> Result<crate::core::math::Spacing, LayoutError> {
-    match graph
-        .properties
-        .value_or_default("org.eclipse.elk.spacing.portsSurrounding")
-    {
+    match graph.properties.value_or_default(SPACING_PORTS_SURROUNDING) {
         Some(crate::core::data::OptionValue::Margin(spacing))
-        | Some(crate::core::data::OptionValue::Padding(spacing)) => Ok(spacing),
+        | Some(crate::core::data::OptionValue::Padding(spacing)) => Ok(*spacing),
         _ => Err(LayoutError::Format(
             "org.eclipse.elk.spacing.portsSurrounding is not a margin".to_string(),
         )),

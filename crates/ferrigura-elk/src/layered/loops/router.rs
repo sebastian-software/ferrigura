@@ -7,6 +7,7 @@
 //! beside the routing slots, and the node margins that make room for both. The bend points are
 //! relative to the node; the post-processor moves them to the drawing.
 
+use crate::core::data::OptionId;
 use crate::core::data::enums::PortSide;
 use crate::core::math::{KVector, Spacing};
 use crate::layered::LayoutError;
@@ -77,7 +78,7 @@ pub fn route_self_loops(
 
 /// `LGraphUtil.getIndividualOrInherited` for a spacing: the graph's value, which is the only one
 /// there is, as individual spacings are not ported.
-fn required(graph: &LGraph, id: &str) -> Result<f64, LayoutError> {
+fn required(graph: &LGraph, id: OptionId) -> Result<f64, LayoutError> {
     graph
         .properties
         .double_of(id)

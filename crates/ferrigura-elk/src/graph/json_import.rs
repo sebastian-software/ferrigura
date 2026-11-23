@@ -194,12 +194,12 @@ fn transform_properties(
 
 /// `setOption`: suffix lookup, then parse; unknown keys and unparsable text are ignored.
 fn set_option(holder: &mut PropertyHolder, key: &str, text: &str) -> Result<(), LayoutError> {
-    let Some(spec) = option_by_suffix(key) else {
+    let Some(option) = option_by_suffix(key) else {
         return Ok(());
     };
-    match parse_value(spec, text) {
+    match parse_value(option.spec(), text) {
         Ok(Some(value)) => {
-            holder.set(spec.id, Some(value));
+            holder.set(option, Some(value));
             Ok(())
         }
         Ok(None) => Ok(()),
@@ -262,6 +262,7 @@ fn transform_label(json: &JsonLabel) -> Result<ElkLabel, LayoutError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::data::OptionId;
     use crate::core::data::enums::Direction;
     use serde_json::json;
 
@@ -284,12 +285,12 @@ mod tests {
         assert_eq!(node.id, "root");
         assert_eq!(
             node.properties
-                .enum_of::<Direction>("org.eclipse.elk.direction"),
+                .enum_of::<Direction>(OptionId::of("org.eclipse.elk.direction")),
             Some(Direction::RIGHT)
         );
         assert_eq!(
             node.properties
-                .double_of("org.eclipse.elk.layered.spacing.baseValue"),
+                .double_of(OptionId::of("org.eclipse.elk.layered.spacing.baseValue")),
             Some(40.0)
         );
         assert_eq!(node.children[0].shape.width, 50.0);

@@ -2,7 +2,7 @@
 //! Java code, as the comments say; each comment gives the step that produces the value.
 
 use crate::core::data::enums::{NodeType, PortAlignment, PortSide};
-use crate::core::data::{OptionValue, option_by_id};
+use crate::core::data::{OptionId, OptionValue, option_by_id};
 use crate::core::math::{KVector, Spacing};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::{LGraph, LNode, LPort};
@@ -63,7 +63,7 @@ fn add_port(
     index
 }
 
-fn set_alignment(graph: &mut LGraph, node: usize, id: &'static str, name: &str) {
+fn set_alignment(graph: &mut LGraph, node: usize, id: OptionId, name: &str) {
     graph.nodes[node].properties.set(
         id,
         Some(OptionValue::Enum {
@@ -76,7 +76,7 @@ fn set_alignment(graph: &mut LGraph, node: usize, id: &'static str, name: &str) 
 fn set_enum_set(
     graph: &mut LGraph,
     node: usize,
-    id: &'static str,
+    id: OptionId,
     class: &'static str,
     names: &[&str],
 ) {
@@ -89,7 +89,7 @@ fn set_enum_set(
     );
 }
 
-fn set_enum(graph: &mut LGraph, node: usize, id: &'static str, class: &'static str, name: &str) {
+fn set_enum(graph: &mut LGraph, node: usize, id: OptionId, class: &'static str, name: &str) {
     graph.nodes[node].properties.set(
         id,
         Some(OptionValue::Enum {
@@ -556,7 +556,11 @@ fn the_option_ids_are_in_the_registry() {
         options::PORT_CONSTRAINTS,
         options::SPACING_LABEL_LABEL,
     ] {
-        assert!(option_by_id(id).is_some(), "{id} is not registered");
+        assert_eq!(
+            option_by_id(id.name()),
+            Some(id),
+            "{id} does not round-trip"
+        );
     }
 }
 

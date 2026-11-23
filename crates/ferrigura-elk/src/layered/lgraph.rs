@@ -242,6 +242,10 @@ pub struct LLabel {
     /// `InternalProperties.ORIGIN` of a label: its index among the labels of its ELK edge, so
     /// that the position can be written back to the right label.
     pub origin: Option<usize>,
+    /// `InternalProperties.LABEL_SIDE` of an edge label, `UNKNOWN` until the side is chosen.
+    pub side: LabelSide,
+    /// `LabelDummySwitcher.INCLUDE_LABEL`: the label counts in the layer width of its dummy.
+    pub include_label: bool,
 }
 
 /// The root layered graph, `LGraph`.

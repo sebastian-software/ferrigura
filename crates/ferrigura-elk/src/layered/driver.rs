@@ -208,7 +208,8 @@ fn review_and_correct_hierarchical_processors(graphs: &mut [LGraph]) -> Result<(
         .enum_with_default::<CrossingMinimizationStrategy>(options::CROSSING_MINIMIZATION_STRATEGY);
     let root_type = graphs[0]
         .properties
-        .value_or_default(options::CROSSING_MINIMIZATION_GREEDY_SWITCH_HIERARCHICAL_TYPE);
+        .value_or_default(options::CROSSING_MINIMIZATION_GREEDY_SWITCH_HIERARCHICAL_TYPE)
+        .cloned();
     for graph in graphs.iter_mut() {
         let strategy = graph
             .properties

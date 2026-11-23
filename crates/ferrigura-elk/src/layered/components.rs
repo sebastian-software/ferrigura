@@ -17,6 +17,7 @@
 
 use std::collections::HashMap;
 
+use crate::core::data::OptionId;
 use crate::core::data::enums::GraphProperties;
 use crate::core::math::KVector;
 use crate::error::LayoutError;
@@ -25,16 +26,17 @@ use crate::layered::lgraph::{LGraph, LabelId};
 use crate::layered::options;
 
 /// `LayeredOptions.SEPARATE_CONNECTED_COMPONENTS`'s id, read through the options module.
-const SEPARATE_CONNECTED_COMPONENTS: &str = options::SEPARATE_CONNECTED_COMPONENTS;
+const SEPARATE_CONNECTED_COMPONENTS: OptionId = options::SEPARATE_CONNECTED_COMPONENTS;
 /// `CoreOptions.ASPECT_RATIO` (`org.eclipse.elk.aspectRatio`); its layered default is 1.6.
-const ASPECT_RATIO: &str = "org.eclipse.elk.aspectRatio";
+const ASPECT_RATIO: OptionId = OptionId::of("org.eclipse.elk.aspectRatio");
 /// `CoreOptions.SPACING_COMPONENT_COMPONENT`, with its default of 20.
-const SPACING_COMPONENT_COMPONENT: &str = "org.eclipse.elk.spacing.componentComponent";
+const SPACING_COMPONENT_COMPONENT: OptionId =
+    OptionId::of("org.eclipse.elk.spacing.componentComponent");
 /// `LayeredOptions.COMPACTION_CONNECTED_COMPONENTS`, which is off by default.
-const COMPACTION_CONNECTED_COMPONENTS: &str =
-    "org.eclipse.elk.layered.compaction.connectedComponents";
+const COMPACTION_CONNECTED_COMPONENTS: OptionId =
+    OptionId::of("org.eclipse.elk.layered.compaction.connectedComponents");
 /// `CoreOptions.PRIORITY`, which is 0 unless set.
-const PRIORITY: &str = "org.eclipse.elk.priority";
+const PRIORITY: OptionId = OptionId::of("org.eclipse.elk.priority");
 
 /// Whether the graph is split into its connected components: `separateConnectedComponents`, which
 /// is on unless it is set to false.
