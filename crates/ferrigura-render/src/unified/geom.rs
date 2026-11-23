@@ -1,5 +1,7 @@
 //! Points and boxes shared by the flowchart modules. Coordinates are SVG user units, y down.
 
+use std::fmt::Write as _;
+
 use ferrigura_jsmath::hypot;
 
 /// A point.
@@ -41,7 +43,10 @@ pub fn browser_f32(value: f64) -> f64 {
 /// parser parses it. See `svg_number`.
 #[must_use]
 pub fn path_coordinate_f32(value: f64) -> f64 {
-    f64::from(svg_number(&value.to_string()))
+    // Room for the digits of a coordinate, so that writing them does not grow the buffer.
+    let mut text = String::with_capacity(32);
+    let _ = write!(text, "{value}");
+    f64::from(svg_number(&text))
 }
 
 /// The height of a sloped rectangle's outline as the browser's `getBBox` gives it, from the

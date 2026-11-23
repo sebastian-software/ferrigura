@@ -4,7 +4,7 @@
 //! had and takes the new value. Attribute order does not change the geometry, but the shared helpers
 //! keep it, so the markup reads as the reference's does and the tests can compare it.
 
-use crate::svg::escape;
+use crate::svg::escape_into;
 
 /// What an element holds between its tags.
 #[derive(Debug, Clone, PartialEq)]
@@ -136,25 +136,38 @@ impl Element {
     /// element with neither text nor children is written with `/>`.
     #[must_use]
     pub fn render(&self) -> String {
-        let mut out = format!("<{}", self.tag);
+        let mut out = String::new();
+        self.render_into(&mut out);
+        out
+    }
+
+    /// Appends the markup of the element, as [`Element::render`] writes it, to `out`.
+    pub fn render_into(&self, out: &mut String) {
+        out.push('<');
+        out.push_str(self.tag);
         for (name, value) in &self.attributes {
-            out.push_str(&format!(" {name}=\"{}\"", escape(value)));
+            out.push(' ');
+            out.push_str(name);
+            out.push_str("=\"");
+            escape_into(out, value);
+            out.push('"');
         }
         if matches!(self.content, Content::Empty) && self.children.is_empty() {
             out.push_str("/>");
-            return out;
+            return;
         }
         out.push('>');
         match &self.content {
             Content::Empty => {}
-            Content::Text(text) => out.push_str(&escape(text)),
+            Content::Text(text) => escape_into(out, text),
             Content::Raw(text) => out.push_str(text),
         }
         for child in &self.children {
-            out.push_str(&child.render());
+            child.render_into(out);
         }
-        out.push_str(&format!("</{}>", self.tag));
-        out
+        out.push_str("</");
+        out.push_str(self.tag);
+        out.push('>');
     }
 }
 

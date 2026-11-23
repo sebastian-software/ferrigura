@@ -13,18 +13,29 @@ use crate::common::d3::d3_number;
 #[must_use]
 pub fn escape(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
-    for c in text.chars() {
-        match c {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            '\'' => out.push_str("&#39;"),
-            other if !is_xml_char(other) => out.push('\u{fffd}'),
-            other => out.push(other),
-        }
-    }
+    escape_into(&mut out, text);
     out
+}
+
+/// Appends the text to `out`, escaped as [`escape`] escapes it. The runs between the characters
+/// that need a replacement are copied whole.
+pub fn escape_into(out: &mut String, text: &str) {
+    let mut start = 0;
+    for (at, c) in text.char_indices() {
+        let replacement = match c {
+            '&' => "&amp;",
+            '<' => "&lt;",
+            '>' => "&gt;",
+            '"' => "&quot;",
+            '\'' => "&#39;",
+            other if !is_xml_char(other) => "\u{fffd}",
+            _ => continue,
+        };
+        out.push_str(&text[start..at]);
+        out.push_str(replacement);
+        start = at + c.len_utf8();
+    }
+    out.push_str(&text[start..]);
 }
 
 /// The markup of a text as the reference's final pass leaves it, for an XML parser: the text

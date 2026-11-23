@@ -9,6 +9,8 @@
 //! the reference's `undefined` fallback does. The `//` comments are not CSS, and are not written; the
 //! nested `text` rule of `.state-note` is written flat, as stylis writes it.
 
+use std::fmt::Write as _;
+
 use ferrigura_model::state::ClassDef;
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
@@ -553,11 +555,14 @@ fn colour(names: &[(&str, &Token)]) -> String {
 
 /// One rule under the diagram's id: the selectors of `selectors`, each scoped to `id`.
 fn scoped(id: &str, selectors: &str, declarations: &str) -> String {
-    let scoped: Vec<String> = selectors
-        .split(',')
-        .map(|selector| format!("{id} {}", selector.trim()))
-        .collect();
-    rule(&scoped.join(","), declarations)
+    let mut scoped = String::new();
+    for (index, selector) in selectors.split(',').enumerate() {
+        if index > 0 {
+            scoped.push(',');
+        }
+        let _ = write!(scoped, "{id} {}", selector.trim());
+    }
+    rule(&scoped, declarations)
 }
 
 /// One rule: the selector and its declarations, in braces.

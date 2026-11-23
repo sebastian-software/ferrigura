@@ -19,11 +19,13 @@
 //! `docs/diagrams/flowchart.md#shapes`.
 
 use std::f64::consts::PI;
+use std::fmt::Write as _;
 
 use ferrigura_jsmath::{asin, cos, pow, sin, tan};
+use ferrigura_model::value::NumberText;
 
 use super::util::attribute;
-use crate::svg::{escape, number};
+use crate::svg::escape;
 use crate::unified::geom::{BBox, Point};
 
 /// rough.js's default `curveStepCount`.
@@ -827,21 +829,23 @@ pub(super) fn attributed(outline: &Outline, attrs: &Attrs<'_>) -> String {
                 format!(" fill=\"{}\"{rule}", escape(fill.colour))
             })
             .unwrap_or_default();
-        out.push_str(&format!(
+        let _ = write!(
+            out,
             "<path d=\"{}\" stroke=\"none\" stroke-width=\"0\"{colour}{style}/>",
             data(fill),
-        ));
+        );
     }
     if let Some(stroke) = &outline.stroke {
         let colour = attrs
             .stroke
             .map(|stroke| format!(" stroke=\"{}\"", escape(stroke)))
             .unwrap_or_default();
-        out.push_str(&format!(
+        let _ = write!(
+            out,
             "<path d=\"{}\" fill=\"none\"{colour} stroke-width=\"{}\" stroke-dasharray=\"0 0\"{style}/>",
             data(stroke),
             escape(attrs.stroke_width),
-        ));
+        );
     }
     out
 }
@@ -854,19 +858,21 @@ pub(super) fn data(ops: &[Op]) -> String {
         if !out.is_empty() {
             out.push(' ');
         }
-        match *op {
-            Op::Move(point) => out.push_str(&format!("M{} {}", number(point.x), number(point.y))),
-            Op::Line(point) => out.push_str(&format!("L{} {}", number(point.x), number(point.y))),
-            Op::Curve(c1, c2, end) => out.push_str(&format!(
+        // Writing to a `String` cannot fail.
+        let _ = match *op {
+            Op::Move(point) => write!(out, "M{} {}", NumberText(point.x), NumberText(point.y)),
+            Op::Line(point) => write!(out, "L{} {}", NumberText(point.x), NumberText(point.y)),
+            Op::Curve(c1, c2, end) => write!(
+                out,
                 "C{} {}, {} {}, {} {}",
-                number(c1.x),
-                number(c1.y),
-                number(c2.x),
-                number(c2.y),
-                number(end.x),
-                number(end.y),
-            )),
-        }
+                NumberText(c1.x),
+                NumberText(c1.y),
+                NumberText(c2.x),
+                NumberText(c2.y),
+                NumberText(end.x),
+                NumberText(end.y),
+            ),
+        };
     }
     out
 }

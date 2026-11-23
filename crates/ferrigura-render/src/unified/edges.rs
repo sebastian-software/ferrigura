@@ -7,8 +7,10 @@
 //! marker offsets. The other curves come from d3's line with the marker accessors, as the
 //! reference draws a straight fallback edge. Node clipping is off for ELK (`skipIntersect`).
 
+use std::fmt::Write as _;
+
 use base64::Engine as _;
-use ferrigura_model::value::Value;
+use ferrigura_model::value::{NumberText, Value};
 
 use super::Section;
 use super::data::{Edge, LayoutData};
@@ -236,24 +238,26 @@ fn without_declarations(style: &str, name: &str) -> String {
 /// points as `[{"x":…,"y":…},…]` in base64, with `null` for a number that JSON cannot hold.
 #[must_use]
 pub fn data_points(points: &[Point]) -> String {
-    let json_number = |value: f64| {
+    let push_number = |json: &mut String, value: f64| {
         if value.is_finite() {
-            js_number(value)
+            let _ = write!(json, "{}", NumberText(value));
         } else {
-            "null".to_owned()
+            json.push_str("null");
         }
     };
-    let items: Vec<String> = points
-        .iter()
-        .map(|point| {
-            format!(
-                "{{\"x\":{},\"y\":{}}}",
-                json_number(point.x),
-                json_number(point.y)
-            )
-        })
-        .collect();
-    base64::engine::general_purpose::STANDARD.encode(format!("[{}]", items.join(",")))
+    let mut json = String::from("[");
+    for (index, point) in points.iter().enumerate() {
+        if index > 0 {
+            json.push(',');
+        }
+        json.push_str("{\"x\":");
+        push_number(&mut json, point.x);
+        json.push_str(",\"y\":");
+        push_number(&mut json, point.y);
+        json.push('}');
+    }
+    json.push(']');
+    base64::engine::general_purpose::STANDARD.encode(json)
 }
 
 /// The declarations of a label style string, as the label layout reads them.
@@ -711,29 +715,31 @@ fn paint_edge(
 
 /// The `<path>` element of a painted edge.
 pub(crate) fn format_path(painted: &Painted) -> String {
-    let mut attributes = String::new();
+    let mut path = String::from("<path");
     if let Some(d) = &painted.d {
-        attributes.push_str(&format!(" d=\"{}\"", escape(d)));
+        let _ = write!(path, " d=\"{}\"", escape(d));
     }
-    attributes.push_str(&format!(" id=\"{}\"", escape(&painted.path_id)));
-    attributes.push_str(&format!(" class=\"{}\"", escape(&painted.class)));
-    attributes.push_str(&format!(" style=\"{}\"", escape(&painted.style)));
-    attributes.push_str(&format!(
+    let _ = write!(path, " id=\"{}\"", escape(&painted.path_id));
+    let _ = write!(path, " class=\"{}\"", escape(&painted.class));
+    let _ = write!(path, " style=\"{}\"", escape(&painted.style));
+    let _ = write!(
+        path,
         " data-edge=\"true\" data-et=\"edge\" data-id=\"{}\" data-points=\"{}\"",
         escape(&painted.id),
         painted.points
-    ));
+    );
     if !painted.look.is_empty() {
-        attributes.push_str(&format!(" data-look=\"{}\"", escape(&painted.look)));
+        let _ = write!(path, " data-look=\"{}\"", escape(&painted.look));
     }
     if let Some(marker) = &painted.marker_start {
-        attributes.push_str(&format!(" marker-start=\"{}\"", escape(marker)));
+        let _ = write!(path, " marker-start=\"{}\"", escape(marker));
     }
     if let Some(marker) = &painted.marker_end {
-        attributes.push_str(&format!(" marker-end=\"{}\"", escape(marker)));
+        let _ = write!(path, " marker-end=\"{}\"", escape(marker));
     }
-    attributes.push_str(&painted.path_attributes);
-    format!("<path{attributes}/>")
+    path.push_str(&painted.path_attributes);
+    path.push_str("/>");
+    path
 }
 
 /// Paints an edge's label at its laid-out position, as `positionRenderedEdgeLabel` does: the

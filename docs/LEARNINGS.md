@@ -120,7 +120,7 @@ V8's C++ and llvm-libc are compiled with the compiler's contraction, which fuses
 
 ### Numbers become text the way JavaScript writes them
 
-`String(number)` is the shortest digits that read back as the number, in plain notation from `1e-6` up to `1e21` and in exponent notation outside that (`1.8369701987210297e-14`, `1e+21`), with both zeros as `0`. When two shortest candidates are equally near, JavaScript takes the even digit and Rust may take the other (`1708300000000000.25` is `...0.2` in JavaScript and `...0.3` in Rust), so `number_text` uses Ryū-js to preserve JavaScript’s rounding and spelling. Every number the SVG shows goes through it. **Where:** `ferrigura-model`, `value.rs` (`number_text`), checked against Node on a table written by `tools/port/number-text-table.ts`.
+`String(number)` is the shortest digits that read back as the number, in plain notation from `1e-6` up to `1e21` and in exponent notation outside that (`1.8369701987210297e-14`, `1e+21`), with both zeros as `0`. When two shortest candidates are equally near, JavaScript takes the even digit and Rust may take the other (`1708300000000000.25` is `...0.2` in JavaScript and `...0.3` in Rust), so `number_text` uses Ryū-js to preserve JavaScript’s rounding and spelling. Every number the SVG shows goes through it, or through `NumberText`, which writes the same text into a buffer. **Where:** `ferrigura-model`, `value.rs` (`number_text`, `NumberText`), checked against Node on a table written by `tools/port/number-text-table.ts`.
 
 ### Numbers are read exactly, and the browser works in float32
 
