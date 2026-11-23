@@ -8,7 +8,7 @@
 //! with its own markers, style sheet and title.
 
 use std::borrow::Cow;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use ferrigura_elk::json::JsonNode;
 use ferrigura_model::flowchart::LabelType;
@@ -360,12 +360,13 @@ pub fn node_anchor(diagram_type: &str) -> Anchor {
 ///
 /// Returns an error if the layout fails.
 pub fn lay_out(measured: &mut Measured, config: &Config<'_>) -> Result<ElkStages, RenderError> {
-    let (elk, output) = lay_out_graph(measured, config)?;
-    apply_layout(measured, config, &output, &elk.state);
-    stretch_nodes(measured, config)?;
+    let elk = elk_build::build(&measured.data, config);
+    let layout = ferrigura_elk::layout(&elk.graph, false)
+        .map_err(|error| RenderError::Layout(error.to_string()))?;
+    apply_layout(measured, config, &layout.graph, &elk.state);
     Ok(ElkStages {
         input: elk.graph,
-        output,
+        output: layout.graph,
     })
 }
 
@@ -374,122 +375,10 @@ pub(crate) fn lay_out_for_render(
     measured: &mut Measured,
     config: &Config<'_>,
 ) -> Result<(), RenderError> {
-    if config.section.design.is_some() {
-        return lay_out(measured, config).map(|_| ());
-    }
     let elk = elk_build::build(&measured.data, config);
     let layout = ferrigura_elk::layout_owned(elk.graph, false)
         .map_err(|error| RenderError::Layout(error.to_string()))?;
     apply_layout(measured, config, &layout.graph, &elk.state);
-    Ok(())
-}
-
-/// The layouts the design mode runs at most before it lets no node stretch.
-const STRETCH_ROUNDS: usize = 3;
-
-/// The graph handed to ELK and the graph it returned.
-///
-/// The design mode lets the layout stretch a node so that its edges run straight
-/// ([`elk_build::stretching`]). The layout knows no limit for that, so the mode sets one
-/// ([`crate::design::STRETCH_LIMIT`]): a node the layout stretched further keeps its own size, and
-/// the diagram is laid out again. After [`STRETCH_ROUNDS`] layouts, no node stretches.
-fn lay_out_graph(
-    measured: &Measured,
-    config: &Config<'_>,
-) -> Result<(elk_build::ElkInput, JsonNode), RenderError> {
-    let stretching = if config.section.design.is_some() {
-        elk_build::stretching(&measured.data)
-    } else {
-        HashSet::new()
-    };
-    let mut rigid: HashSet<String> = HashSet::new();
-    let mut round = 0;
-    loop {
-        let elk = elk_build::build_with(&measured.data, config, &rigid);
-        let output = ferrigura_elk::layout(&elk.graph, false)
-            .map_err(|error| RenderError::Layout(error.to_string()))?
-            .graph;
-        let over = overstretched(&measured.data, &output, &stretching, &rigid);
-        if over.is_empty() {
-            return Ok((elk, output));
-        }
-        round += 1;
-        if round == STRETCH_ROUNDS {
-            rigid.extend(stretching.iter().map(|&id| id.to_owned()));
-        } else {
-            rigid.extend(over);
-        }
-    }
-}
-
-/// The nodes the layout stretched past [`crate::design::STRETCH_LIMIT`], among the nodes it may
-/// stretch: `stretching` without `rigid`.
-fn overstretched(
-    data: &LayoutData,
-    output: &JsonNode,
-    stretching: &HashSet<&str>,
-    rigid: &HashSet<String>,
-) -> Vec<String> {
-    if stretching.len() == rigid.len() {
-        return Vec::new();
-    }
-    let mut sizes = HashMap::new();
-    leaf_sizes(output, &mut sizes);
-    let over = |laid_out: f64, drawn: Option<f64>| {
-        laid_out > drawn.unwrap_or(0.0) * crate::design::STRETCH_LIMIT
-    };
-    data.nodes
-        .iter()
-        .filter(|node| stretching.contains(node.id.as_str()) && !rigid.contains(&node.id))
-        .filter(|node| {
-            sizes.get(node.id.as_str()).is_some_and(|&(width, height)| {
-                over(width, node.width) || over(height, node.height)
-            })
-        })
-        .map(|node| node.id.clone())
-        .collect()
-}
-
-/// The size the layout gave every node without children, by id.
-fn leaf_sizes<'a>(node: &'a JsonNode, sizes: &mut HashMap<&'a str, (f64, f64)>) {
-    for child in &node.children {
-        if child.children.is_empty() {
-            sizes.insert(
-                child.id.as_str(),
-                (child.width.unwrap_or(0.0), child.height.unwrap_or(0.0)),
-            );
-        } else {
-            leaf_sizes(child, sizes);
-        }
-    }
-}
-
-/// Draws again every node the layout of the design mode stretched, at the size the layout gave it:
-/// the shape was drawn before the layout, at its own size.
-fn stretch_nodes(measured: &mut Measured, config: &Config<'_>) -> Result<(), RenderError> {
-    if config.section.design.is_none() {
-        return Ok(());
-    }
-    let anchor = node_anchor(&measured.data.diagram_type);
-    for node in &measured.data.nodes {
-        if node.is_group || !shapes::stretches(node) {
-            continue;
-        }
-        let Some(shape) = measured.shapes.get_mut(&node.id) else {
-            continue;
-        };
-        let grew = |laid_out: Option<f64>, drawn: f64| laid_out.is_some_and(|size| size > drawn);
-        if !grew(node.width, shape.bbox.width) && !grew(node.height, shape.bbox.height) {
-            continue;
-        }
-        let label = shapes::node_label(node, config, None, anchor)?;
-        *shape = shapes::draw(&ShapeInput {
-            node,
-            label: label.as_ref(),
-            config,
-            dir: None,
-        })?;
-    }
     Ok(())
 }
 
@@ -775,58 +664,6 @@ mod direction_tests {
         assert_eq!(sides[1], (64.0, true));
         // `c` has one edge on each side and needs nothing; its group runs from top to bottom.
         assert_eq!(sides[3], (0.0, false));
-    }
-
-    #[test]
-    fn a_node_stretched_past_the_limit_is_named() {
-        let node = |id: &str, width: f64, height: f64| Node {
-            id: id.into(),
-            width: Some(width),
-            height: Some(height),
-            ..Node::default()
-        };
-        let data = LayoutData {
-            nodes: vec![
-                node("a", 100.0, 40.0),
-                node("b", 100.0, 40.0),
-                node("c", 100.0, 40.0),
-                node("d", 100.0, 40.0),
-            ],
-            ..LayoutData::default()
-        };
-        let laid_out = |id: &str, width: f64, height: f64| JsonNode {
-            id: id.into(),
-            width: Some(width),
-            height: Some(height),
-            ..JsonNode::default()
-        };
-        let output = JsonNode {
-            children: vec![
-                // At the limit of 2.5 times its height.
-                laid_out("a", 100.0, 100.0),
-                // Past the limit along its height.
-                laid_out("b", 100.0, 101.0),
-                JsonNode {
-                    id: "group".into(),
-                    children: vec![
-                        // Past the limit along its width, inside a group.
-                        laid_out("c", 260.0, 40.0),
-                        // Past the limit, and not a node the layout may stretch.
-                        laid_out("d", 300.0, 40.0),
-                    ],
-                    ..JsonNode::default()
-                },
-            ],
-            ..JsonNode::default()
-        };
-        let stretching = HashSet::from(["a", "b", "c"]);
-        assert_eq!(
-            overstretched(&data, &output, &stretching, &HashSet::new()),
-            ["b", "c"]
-        );
-        // A node that keeps its size already is not named again.
-        let rigid = HashSet::from(["b".to_owned()]);
-        assert_eq!(overstretched(&data, &output, &stretching, &rigid), ["c"]);
     }
 
     #[test]

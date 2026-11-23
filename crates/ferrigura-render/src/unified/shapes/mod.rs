@@ -66,15 +66,6 @@ pub(super) fn uses_direction(node: &Node) -> bool {
     registry::resolve_node(node) == Some(Kind::ForkJoin)
 }
 
-/// Whether a node's shape can be drawn at any size at least its own: the rectangles. The design mode
-/// lets the layout stretch such a node so that its edges run straight.
-pub(super) fn stretches(node: &Node) -> bool {
-    matches!(
-        registry::resolve_node(node),
-        Some(Kind::SquareRect | Kind::RoundedRect)
-    )
-}
-
 /// Stands for the diagram's id in a shape's markup, for the inline filter of a small shape. The
 /// id is not known when a shape is drawn, so `node_svg` replaces it. It is not a valid identifier
 /// character, so it cannot clash with an id.

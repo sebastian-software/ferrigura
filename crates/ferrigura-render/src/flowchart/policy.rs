@@ -1,6 +1,6 @@
 //! Flowchart rendering mode and attachment policy (decision 0019).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use ferrigura_elk::json::JsonNode;
 
@@ -155,16 +155,11 @@ fn apply_centering(
 /// that edges run straight where the reference's Brandes & Koepf placement leaves a step.
 const DESIGN_PLACEMENT: &str = "NETWORK_SIMPLEX";
 
-/// The node flexibility of a node the design mode lets the placement stretch: the node grows along
-/// its layer until its edges run straight.
-const DESIGN_FLEXIBILITY: &str = "NODE_SIZE";
-
 /// Gives a flowchart in the design mode more room than the reference's spacings do, and straighter
 /// edges (`docs/decisions/0023-design-mode.md`): a wider base value at the root, a group padding with
 /// a row for the title, and, when `place` is set, the network simplex node placement in every
-/// graph, which may stretch the nodes `stretches` names. The options are ELK's own; the engine
-/// lays the graph out as it does any other.
-pub(crate) fn relax(graph: &mut JsonNode, place: bool, stretches: &HashSet<&str>) {
+/// graph. The options are ELK's own; the engine lays the graph out as it does any other.
+pub(crate) fn relax(graph: &mut JsonNode, place: bool) {
     let options = graph.layout_options.get_or_insert_default();
     options.insert(
         "spacing.baseValue".to_owned(),
@@ -177,20 +172,14 @@ pub(crate) fn relax(graph: &mut JsonNode, place: bool, stretches: &HashSet<&str>
         );
     }
     for child in &mut graph.children {
-        relax_below(child, place, stretches);
+        relax_groups(child, place);
     }
 }
 
-/// Sets the design mode's padding, and its node placement when `place` is set, on every group at
-/// or below a node, and the node flexibility on every leaf that may stretch.
-fn relax_below(node: &mut JsonNode, place: bool, stretches: &HashSet<&str>) {
+/// Sets the design mode's padding, and its node placement when `place` is set, on every group below
+/// a node.
+fn relax_groups(node: &mut JsonNode, place: bool) {
     if node.children.is_empty() {
-        if place && stretches.contains(node.id.as_str()) {
-            node.layout_options.get_or_insert_default().insert(
-                "elk.layered.nodePlacement.networkSimplex.nodeFlexibility".to_owned(),
-                DESIGN_FLEXIBILITY.into(),
-            );
-        }
         return;
     }
     let options = node.layout_options.get_or_insert_default();
@@ -205,7 +194,7 @@ fn relax_below(node: &mut JsonNode, place: bool, stretches: &HashSet<&str>) {
         );
     }
     for child in &mut node.children {
-        relax_below(child, place, stretches);
+        relax_groups(child, place);
     }
 }
 
@@ -214,7 +203,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn relaxing_sets_the_spacing_the_padding_the_placement_and_the_stretch() {
+    fn relaxing_sets_the_root_spacing_and_the_padding_of_every_group() {
         let leaf = |id: &str| JsonNode {
             id: id.to_owned(),
             ..JsonNode::default()
@@ -231,7 +220,7 @@ mod tests {
                 group("outer", vec![leaf("b"), group("inner", vec![leaf("c")])]),
             ],
         );
-        relax(&mut graph, true, &HashSet::from(["a", "c"]));
+        relax(&mut graph, true);
         let option = |node: &JsonNode, name: &str| {
             node.layout_options
                 .as_ref()
@@ -250,25 +239,11 @@ mod tests {
             option(&graph.children[1], placement),
             Some("NETWORK_SIMPLEX".into())
         );
-        // The placement may stretch the leaves it was given, and no other.
-        let flexibility = "elk.layered.nodePlacement.networkSimplex.nodeFlexibility";
-        assert_eq!(
-            option(&graph.children[0], flexibility),
-            Some("NODE_SIZE".into())
-        );
-        assert_eq!(option(&graph.children[1].children[0], flexibility), None);
-        assert_eq!(
-            option(&graph.children[1].children[1].children[0], flexibility),
-            Some("NODE_SIZE".into())
-        );
-        assert_eq!(option(&graph.children[1], flexibility), None);
-        // A configured placement strategy is the user's: the mode leaves it alone, and stretches
-        // nothing.
+        // A configured placement strategy is the user's: the mode leaves it alone.
         let mut kept = group("root", vec![group("outer", vec![leaf("b")])]);
-        relax(&mut kept, false, &HashSet::from(["b"]));
+        relax(&mut kept, false);
         assert_eq!(option(&kept, placement), None);
         assert_eq!(option(&kept.children[0], placement), None);
-        assert_eq!(option(&kept.children[0].children[0], flexibility), None);
         assert_eq!(
             option(&kept.children[0], "elk.padding"),
             Some(crate::design::GROUP_PADDING.into())
