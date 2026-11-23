@@ -18,7 +18,7 @@ use crate::core::data::enums::{
     SizeConstraint, SizeOptions,
 };
 use crate::core::data::property::PropertyHolder;
-use crate::core::data::{JavaEnum, OptionValue};
+use crate::core::data::{JavaEnum, OptionId, OptionValue};
 use crate::core::math::{KVector, Spacing};
 use crate::layered::LayoutError;
 use crate::layered::lgraph::LGraph;
@@ -32,19 +32,24 @@ use super::labels::NodeLabelCell;
 const DEFAULT_MIN_WIDTH: f64 = 20.0;
 const DEFAULT_MIN_HEIGHT: f64 = 20.0;
 
-pub(super) const PORT_LABELS_PLACEMENT: &str = "org.eclipse.elk.portLabels.placement";
-pub(super) const NODE_LABELS_PLACEMENT: &str = "org.eclipse.elk.nodeLabels.placement";
-pub(super) const NODE_LABELS_PADDING: &str = "org.eclipse.elk.nodeLabels.padding";
-pub(super) const SPACING_PORTS_SURROUNDING: &str = "org.eclipse.elk.spacing.portsSurrounding";
-pub(super) const SPACING_INDIVIDUAL: &str = "org.eclipse.elk.spacing.individual";
-pub(super) const PORT_ALIGNMENT_NORTH: &str = "org.eclipse.elk.portAlignment.north";
-pub(super) const PORT_ALIGNMENT_EAST: &str = "org.eclipse.elk.portAlignment.east";
-pub(super) const PORT_ALIGNMENT_SOUTH: &str = "org.eclipse.elk.portAlignment.south";
-pub(super) const PORT_ALIGNMENT_WEST: &str = "org.eclipse.elk.portAlignment.west";
+pub(super) const PORT_LABELS_PLACEMENT: OptionId =
+    OptionId::of("org.eclipse.elk.portLabels.placement");
+pub(super) const NODE_LABELS_PLACEMENT: OptionId =
+    OptionId::of("org.eclipse.elk.nodeLabels.placement");
+pub(super) const NODE_LABELS_PADDING: OptionId = OptionId::of("org.eclipse.elk.nodeLabels.padding");
+pub(super) const SPACING_PORTS_SURROUNDING: OptionId =
+    OptionId::of("org.eclipse.elk.spacing.portsSurrounding");
+pub(super) const SPACING_INDIVIDUAL: OptionId = OptionId::of("org.eclipse.elk.spacing.individual");
+pub(super) const PORT_ALIGNMENT_NORTH: OptionId =
+    OptionId::of("org.eclipse.elk.portAlignment.north");
+pub(super) const PORT_ALIGNMENT_EAST: OptionId = OptionId::of("org.eclipse.elk.portAlignment.east");
+pub(super) const PORT_ALIGNMENT_SOUTH: OptionId =
+    OptionId::of("org.eclipse.elk.portAlignment.south");
+pub(super) const PORT_ALIGNMENT_WEST: OptionId = OptionId::of("org.eclipse.elk.portAlignment.west");
 
 /// `org.eclipse.elk.portAlignment.default` (`Core.melk`, `option ^default`). Its unset value is the
 /// melk default, DISTRIBUTED: the layered JUSTIFIED does not apply to it, as it targets nodes.
-const PORT_ALIGNMENT_DEFAULT: &str = "org.eclipse.elk.portAlignment.default";
+const PORT_ALIGNMENT_DEFAULT: OptionId = OptionId::of("org.eclipse.elk.portAlignment.default");
 
 /// `PortContext`: a port of the node, with the position that the placement computes for it.
 #[derive(Debug, Clone)]
@@ -112,7 +117,7 @@ pub(super) struct NodeContext {
 /// not read the `EnumSet.of(...)` defaults, so the defaults are given here.
 pub(super) fn enum_set<E: JavaEnum>(
     props: &PropertyHolder,
-    id: &str,
+    id: OptionId,
     default: &[E],
 ) -> Result<Vec<E>, LayoutError> {
     match props.get(id) {
@@ -130,9 +135,9 @@ pub(super) fn enum_set<E: JavaEnum>(
 
 /// A spacing option of the graph, with its default. The node's own individual spacings are
 /// rejected before this is called, so the value is the graph's (`getIndividualOrInherited`).
-fn spacing_option(props: &PropertyHolder, id: &str) -> Result<Spacing, LayoutError> {
+fn spacing_option(props: &PropertyHolder, id: OptionId) -> Result<Spacing, LayoutError> {
     match props.value_or_default(id) {
-        Some(OptionValue::Margin(spacing) | OptionValue::Padding(spacing)) => Ok(spacing),
+        Some(OptionValue::Margin(spacing) | OptionValue::Padding(spacing)) => Ok(*spacing),
         _ => Err(LayoutError::Format(format!(
             "{id} is not a margin or padding"
         ))),
@@ -140,7 +145,7 @@ fn spacing_option(props: &PropertyHolder, id: &str) -> Result<Spacing, LayoutErr
 }
 
 /// A number option of the graph, with its default.
-fn number_option(props: &PropertyHolder, id: &str) -> Result<f64, LayoutError> {
+fn number_option(props: &PropertyHolder, id: OptionId) -> Result<f64, LayoutError> {
     props
         .double_of(id)
         .ok_or_else(|| LayoutError::Format(format!("{id} is not a number")))
@@ -149,7 +154,7 @@ fn number_option(props: &PropertyHolder, id: &str) -> Result<f64, LayoutError> {
 /// A port alignment option of a node; `None` when the node does not set it.
 fn alignment_option(
     props: &PropertyHolder,
-    id: &str,
+    id: OptionId,
 ) -> Result<Option<PortAlignment>, LayoutError> {
     match props.get(id) {
         None => Ok(None),
@@ -295,7 +300,7 @@ impl NodeContext {
             .contains(&SizeConstraint::MINIMUM_SIZE)
             .then(|| {
                 let mut minimum = match props.value_or_default(options::NODE_SIZE_MINIMUM) {
-                    Some(OptionValue::Vector(vector)) => vector,
+                    Some(OptionValue::Vector(vector)) => *vector,
                     _ => KVector::default(),
                 };
                 if size_options.contains(&SizeOptions::DEFAULT_MINIMUM_SIZE) {

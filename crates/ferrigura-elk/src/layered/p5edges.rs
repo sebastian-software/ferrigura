@@ -14,6 +14,7 @@
 
 pub(in crate::layered) mod orthogonal;
 
+use crate::core::data::OptionId;
 use crate::core::data::enums::{GraphProperties, NodeType, PortSide};
 use crate::java::random::Random;
 use crate::layered::LayoutError;
@@ -116,7 +117,7 @@ fn route_layers(graph: &mut LGraph, random: &mut Option<Random>) -> Result<(), L
 
 /// The spacing option of the router. Java reads it unconditionally; a graph without it cannot
 /// be laid out the way Java would lay it out.
-fn required_spacing(graph: &LGraph, id: &'static str) -> Result<f64, LayoutError> {
+fn required_spacing(graph: &LGraph, id: OptionId) -> Result<f64, LayoutError> {
     graph
         .properties
         .double_of(id)

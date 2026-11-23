@@ -11,6 +11,9 @@
 //! `.` boundary or as the whole id. Parsing follows `LayoutOptionData.parseValue`:
 //! a value that does not parse gives no value, and the option is left unset.
 
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
 use crate::core::math::{KVector, Spacing};
 
 pub mod enums;
@@ -92,44 +95,133 @@ pub enum OptionValue {
     Algorithm(String),
 }
 
-/// Does `suffix` name `id`: equal to it, or the tail after a `.`?
-fn suffix_matches(id: &str, suffix: &str) -> bool {
-    id.ends_with(suffix)
-        && (suffix.len() == id.len() || id.as_bytes()[id.len() - suffix.len() - 1] == b'.')
+/// A registered option, by its position in [`OPTIONS`].
+///
+/// [`OPTIONS`] is sorted by id, so ordering options by `OptionId` orders them by
+/// id, as Java's `MapPropertyHolder` and its string keys do. Property holders are
+/// keyed by it, so that reading an option compares integers, not long ids.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct OptionId(u16);
+
+impl OptionId {
+    /// The option with this full id, for constants: an id that is not registered
+    /// stops the build, so a misspelled id can never read a default at run time.
+    /// At run time, [`option_by_id`] is the lookup.
+    pub const fn of(id: &str) -> OptionId {
+        let mut index = 0;
+        while index < OPTIONS.len() {
+            if const_str_eq(OPTIONS[index].id, id) {
+                return OptionId(index as u16);
+            }
+            index += 1;
+        }
+        panic!("the option id is not registered");
+    }
+
+    /// The registry entry of this option.
+    pub fn spec(self) -> &'static OptionSpec {
+        &OPTIONS[self.index()]
+    }
+
+    /// The full option id.
+    pub fn name(self) -> &'static str {
+        self.spec().id
+    }
+
+    /// The position in [`OPTIONS`], for tables indexed by option.
+    pub fn index(self) -> usize {
+        usize::from(self.0)
+    }
+}
+
+impl std::fmt::Display for OptionId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+/// `str` equality for constant evaluation, where `==` on strings is not available.
+const fn const_str_eq(a: &str, b: &str) -> bool {
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut index = 0;
+    while index < a.len() {
+        if a[index] != b[index] {
+            return false;
+        }
+        index += 1;
+    }
+    true
 }
 
 /// The option with exactly this full id.
-pub fn option_by_id(id: &str) -> Option<&'static OptionSpec> {
-    OPTIONS.iter().find(|spec| spec.id == id)
+pub fn option_by_id(id: &str) -> Option<OptionId> {
+    OPTIONS
+        .binary_search_by(|spec| spec.id.cmp(id))
+        .ok()
+        .map(|index| OptionId(index as u16))
 }
 
 /// `getOptionDataBySuffix`: the one option whose id ends with `suffix`.
 ///
+/// A suffix names an id when it equals the id or is its tail after a `.`.
 /// Returns `None` for an empty suffix, for no match, and for more than one
 /// match. Legacy ids are consulted only when no current id matches, as in ELK.
-pub fn option_by_suffix(suffix: &str) -> Option<&'static OptionSpec> {
+pub fn option_by_suffix(suffix: &str) -> Option<OptionId> {
+    // Every graph element names its options by suffix, so the suffixes of all ids
+    // are indexed once instead of matched against the whole registry per key.
+    static SUFFIXES: LazyLock<[HashMap<&'static str, SuffixMatch>; 2]> = LazyLock::new(|| {
+        [
+            suffix_index(|spec| std::slice::from_ref(&spec.id)),
+            suffix_index(|spec| spec.legacy_ids),
+        ]
+    });
     if suffix.is_empty() {
         return None;
     }
-    unique_match(suffix, |spec| std::slice::from_ref(&spec.id))
-        .or_else(|| unique_match(suffix, |spec| spec.legacy_ids))
+    let [current, legacy] = &*SUFFIXES;
+    let unique = |index: &HashMap<&'static str, SuffixMatch>| match index.get(suffix) {
+        Some(SuffixMatch::Unique(option)) => Some(*option),
+        Some(SuffixMatch::Ambiguous) | None => None,
+    };
+    unique(current).or_else(|| unique(legacy))
 }
 
-/// The option whose ids (as given by `ids_of`) are matched by `suffix`, if exactly one is.
-fn unique_match<'a>(
-    suffix: &str,
-    ids_of: impl Fn(&'static OptionSpec) -> &'a [&'static str],
-) -> Option<&'static OptionSpec> {
-    let mut found = None;
-    for spec in OPTIONS {
-        if ids_of(spec).iter().any(|id| suffix_matches(id, suffix)) {
-            if found.is_some() {
-                return None;
+/// What a suffix names in a [`suffix_index`].
+#[derive(Debug, Clone, Copy)]
+enum SuffixMatch {
+    Unique(OptionId),
+    Ambiguous,
+}
+
+/// Every suffix of the ids `ids_of` gives for each option: the id itself and each
+/// tail after a `.`, with the one option it names or with [`SuffixMatch::Ambiguous`].
+fn suffix_index(
+    ids_of: impl Fn(&'static OptionSpec) -> &'static [&'static str],
+) -> HashMap<&'static str, SuffixMatch> {
+    let mut index = HashMap::new();
+    for (position, spec) in OPTIONS.iter().enumerate() {
+        let option = OptionId(position as u16);
+        for &id in ids_of(spec) {
+            let tails = id
+                .match_indices('.')
+                .map(|(dot, _)| &id[dot + 1..])
+                .chain([id]);
+            for tail in tails {
+                index
+                    .entry(tail)
+                    .and_modify(|found| {
+                        if !matches!(found, SuffixMatch::Unique(other) if *other == option) {
+                            *found = SuffixMatch::Ambiguous;
+                        }
+                    })
+                    .or_insert(SuffixMatch::Unique(option));
             }
-            found = Some(spec);
         }
     }
-    found
+    index
 }
 
 /// `LayoutOptionData.parseValue` for an option kind.
@@ -236,6 +328,13 @@ fn constructor_default(kind: &OptionKind, text: &str) -> Option<OptionValue> {
     }
 }
 
+/// The value an unset option reads as, [`default_value`] parsed once per process.
+pub fn option_default(id: OptionId) -> Option<&'static OptionValue> {
+    static DEFAULTS: LazyLock<Vec<Option<OptionValue>>> =
+        LazyLock::new(|| OPTIONS.iter().map(default_value).collect());
+    DEFAULTS[id.index()].as_ref()
+}
+
 /// The value an unset option reads as. An option that targets parents takes the
 /// layered algorithm's `supports` value from Layered.melk, which elkjs reads in
 /// place of the melk default; every other option takes its melk default. This
@@ -312,14 +411,65 @@ mod tests {
     use super::*;
 
     #[test]
+    fn options_are_sorted_by_id_so_option_ids_sort_like_ids() {
+        assert!(OPTIONS.windows(2).all(|pair| pair[0].id < pair[1].id));
+        for (index, spec) in OPTIONS.iter().enumerate() {
+            let id = option_by_id(spec.id).expect("registered option");
+            assert_eq!((id.index(), id.name()), (index, spec.id));
+        }
+        assert!(option_by_id("org.eclipse.elk.nonexistent").is_none());
+    }
+
+    /// `getOptionDataBySuffix` as ELK writes it: a scan of the registry per key.
+    fn suffix_by_scan(suffix: &str) -> Option<OptionId> {
+        let matches = |id: &str| {
+            id.ends_with(suffix)
+                && (suffix.len() == id.len() || id.as_bytes()[id.len() - suffix.len() - 1] == b'.')
+        };
+        let unique = |ids_of: &dyn Fn(&OptionSpec) -> &[&str]| {
+            let mut found = None;
+            for (index, spec) in OPTIONS.iter().enumerate() {
+                if ids_of(spec).iter().any(|id| matches(id)) {
+                    if found.is_some() {
+                        return None;
+                    }
+                    found = Some(OptionId(index as u16));
+                }
+            }
+            found
+        };
+        if suffix.is_empty() {
+            return None;
+        }
+        unique(&|spec| std::slice::from_ref(&spec.id)).or_else(|| unique(&|spec| spec.legacy_ids))
+    }
+
+    #[test]
+    fn the_suffix_index_agrees_with_a_registry_scan() {
+        let mut keys = vec![
+            "", "layered", "spacing", "elk", "org", "nodeNode", "Node", "x.y",
+        ];
+        for spec in OPTIONS {
+            for id in std::iter::once(&spec.id).chain(spec.legacy_ids) {
+                for start in 0..id.len() {
+                    keys.push(&id[start..]);
+                }
+            }
+        }
+        for key in keys {
+            assert_eq!(option_by_suffix(key), suffix_by_scan(key), "suffix {key:?}");
+        }
+    }
+
+    #[test]
     fn suffixes_resolve_only_when_unique() {
         // `spacing.baseValue` is registered by Layered only; `nodeNode` by Core only.
         assert_eq!(
-            option_by_suffix("spacing.baseValue").map(|spec| spec.id),
+            option_by_suffix("spacing.baseValue").map(OptionId::name),
             Some("org.eclipse.elk.layered.spacing.baseValue")
         );
         assert_eq!(
-            option_by_suffix("spacing.nodeNode").map(|spec| spec.id),
+            option_by_suffix("spacing.nodeNode").map(OptionId::name),
             Some("org.eclipse.elk.spacing.nodeNode")
         );
         assert!(option_by_suffix("").is_none());
@@ -328,15 +478,14 @@ mod tests {
 
     #[test]
     fn integer_options_reject_fractions_like_java() {
-        let spec =
-            option_by_id("org.eclipse.elk.layered.layering.coffmanGraham.layerBound").unwrap();
+        let spec = OptionId::of("org.eclipse.elk.layered.layering.coffmanGraham.layerBound").spec();
         assert_eq!(parse_value(spec, "4").unwrap(), Some(OptionValue::Int(4)));
         assert_eq!(parse_value(spec, "4.0").unwrap(), None);
     }
 
     #[test]
     fn padding_default_is_the_all_sides_constructor() {
-        let padding = option_by_id("org.eclipse.elk.padding").unwrap();
+        let padding = OptionId::of("org.eclipse.elk.padding").spec();
         assert_eq!(
             melk_default_value(padding),
             Some(OptionValue::Padding(Spacing {
@@ -350,7 +499,7 @@ mod tests {
 
     #[test]
     fn mermaid_values_parse() {
-        let padding = option_by_id("org.eclipse.elk.padding").unwrap();
+        let padding = OptionId::of("org.eclipse.elk.padding").spec();
         assert_eq!(
             parse_value(padding, "[top=24,left=24,bottom=24,right=24]").unwrap(),
             Some(OptionValue::Padding(Spacing {
@@ -360,7 +509,7 @@ mod tests {
                 right: 24.0
             }))
         );
-        let flag = option_by_id("org.eclipse.elk.expandNodes").unwrap();
+        let flag = OptionId::of("org.eclipse.elk.expandNodes").spec();
         assert_eq!(
             parse_value(flag, "TRUE").unwrap(),
             Some(OptionValue::Boolean(true))

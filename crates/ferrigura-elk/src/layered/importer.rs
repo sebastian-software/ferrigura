@@ -11,12 +11,12 @@
 
 use std::collections::{BTreeSet, HashMap, VecDeque};
 
-use crate::core::data::OptionValue;
 use crate::core::data::enums::{
     ComponentOrderingStrategy, EdgeLabelPlacement, GraphProperties, HierarchyHandling,
     OrderingStrategy, PortConstraints, PortSide,
 };
 use crate::core::data::property::PropertyHolder;
+use crate::core::data::{OptionId, OptionValue};
 use crate::core::math::KVector;
 use crate::error::LayoutError;
 use crate::graph::{ElkEdge, ElkNode, ElkPort};
@@ -99,7 +99,7 @@ fn create_graph(
     };
     // `ElkGraphImporter`: the root's padding is the margin the drawing keeps inside the root node.
     graph.padding = match root.properties.value_or_default(options::PADDING) {
-        Some(OptionValue::Padding(spacing)) => spacing,
+        Some(OptionValue::Padding(spacing)) => *spacing,
         _ => {
             return Err(LayoutError::Unsupported(
                 "a root without a padding value".to_string(),
@@ -130,7 +130,7 @@ fn create_graph(
             .properties
             .value_or_default(options::NODE_SIZE_MINIMUM)
         {
-            Some(OptionValue::Vector(vector)) => vector,
+            Some(OptionValue::Vector(vector)) => *vector,
             _ => KVector::default(),
         };
         let mut names = match root.properties.get(options::NODE_SIZE_CONSTRAINTS) {
@@ -227,7 +227,7 @@ pub fn import_compound(
     let top = create_graph(root, parent, chain)?;
     // `parentGraphDirection`: every nested graph takes the direction of the top graph, whatever its
     // own node asks for.
-    let direction = top.properties.value_or_default(options::DIRECTION);
+    let direction = top.properties.value_or_default(options::DIRECTION).cloned();
     let mut graphs = vec![top];
     // Where each ELK node went, by its path of child indices from `root`: its graph and its index.
     let mut node_map: HashMap<Vec<usize>, (usize, usize)> = HashMap::new();
@@ -574,6 +574,7 @@ fn import_node_labels(node: &ElkNode, graph: &mut LGraph) -> Vec<LabelId> {
             properties: label.properties.clone(),
             end_label_edge: None,
             origin: Some(index),
+            ..LLabel::default()
         });
         labels.push(id);
     }
@@ -603,6 +604,7 @@ fn label_probe(node: &ElkNode, parent: Option<&PropertyHolder>) -> LGraph {
             properties: label.properties.clone(),
             end_label_edge: None,
             origin: None,
+            ..LLabel::default()
         }));
     }
     probe.nodes.push(LNode {
@@ -895,6 +897,7 @@ fn edge_labels(edge: &ElkEdge, graph_properties: &mut BTreeSet<GraphProperties>)
             properties,
             end_label_edge: None,
             origin: Some(index),
+            ..LLabel::default()
         });
     }
     labels
@@ -903,7 +906,7 @@ fn edge_labels(edge: &ElkEdge, graph_properties: &mut BTreeSet<GraphProperties>)
 /// `ElkGraphImporter.needsModelOrderBasedOnParent`: whether the graph's options use the input order.
 fn needs_model_order_based_on_parent(root: &ElkNode) -> bool {
     let props = &root.properties;
-    let strategy_is = |id: &str, name: &str| {
+    let strategy_is = |id: OptionId, name: &str| {
         props.value_or_default(id).is_some_and(|value| match value {
             crate::core::data::OptionValue::Enum { name: found, .. } => found == name,
             _ => false,
