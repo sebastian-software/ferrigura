@@ -12,6 +12,7 @@ pub mod policy;
 pub mod style;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
+use ferrigura_model::value::NumberText;
 use ferrigura_text::{
     FontStyle, FontWeight, Run, embed_runs, measure as measure_text, measure_box, text_box,
 };
@@ -19,7 +20,7 @@ use ferrigura_text::{
 use crate::RenderError;
 use crate::a11y;
 use crate::context::Context;
-use crate::svg::{escape, number, xlink_declaration};
+use crate::svg::{escape, xlink_declaration};
 use crate::unified::geom::BBox;
 use crate::unified::pipeline::{self, Measured, cover};
 use crate::unified::{Config, Section, edges, markers};
@@ -101,8 +102,8 @@ pub fn render_with_animation(
         );
         title_svg = format!(
             "<text text-anchor=\"middle\" x=\"{}\" y=\"{}\" class=\"flowchartTitleText\"{title_font}>{}</text>",
-            number(x),
-            number(baseline),
+            NumberText(x),
+            NumberText(baseline),
             escape(title)
         );
     }
@@ -126,13 +127,13 @@ pub fn render_with_animation(
     let size_attributes = if config.section.flowchart.use_max_width {
         format!(
             "width=\"100%\" style=\"max-width: {}px;\"",
-            number(view_width)
+            NumberText(view_width)
         )
     } else {
         format!(
             "height=\"{}\" width=\"{}\"",
-            number(view_height),
-            number(view_width)
+            NumberText(view_height),
+            NumberText(view_width)
         )
     };
     let diagram = input.diagram;
@@ -152,10 +153,10 @@ pub fn render_with_animation(
         "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>",
         id = escape(id),
         xlink = xlink_declaration(painted.links),
-        x = number(drawn.x - padding),
-        y = number(drawn.y - padding),
-        w = number(view_width),
-        h = number(view_height),
+        x = NumberText(drawn.x - padding),
+        y = NumberText(drawn.y - padding),
+        w = NumberText(view_width),
+        h = NumberText(view_height),
     );
     let markers = edges::markers_for(id, input.section.design.is_some());
     let defs = style::look_defs_for(id, input.theme, input.globals, input.section.design);
