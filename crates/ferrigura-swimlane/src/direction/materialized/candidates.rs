@@ -260,7 +260,7 @@ fn add_vertical_pair_candidates(
 
 /// `dedupeCandidatePaths(candidates)`: the first of each path, by its key, that has two points or more.
 fn dedupe_candidate_paths(candidates: Vec<Vec<Point>>) -> Vec<Vec<Point>> {
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = PathSet::default();
     let mut result = Vec::new();
     for candidate in candidates {
         let candidate = dedupe_consecutive_points(&candidate, EPS);

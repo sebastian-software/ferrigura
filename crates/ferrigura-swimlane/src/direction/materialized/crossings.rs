@@ -575,7 +575,7 @@ fn pair_candidates_for(
         length: f64,
     }
 
-    let mut seen: HashSet<PathKey> = HashSet::new();
+    let mut seen = PathSet::default();
     let mut scored: Vec<Scored> = Vec::new();
     let bounds = prepare_bounds(&ctx.real_rects, &endpoint_ids(&ctx.view.edges[edge]));
     for raw in candidate_paths_for(ctx, edge) {

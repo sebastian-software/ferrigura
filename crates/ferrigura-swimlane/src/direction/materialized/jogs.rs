@@ -1,8 +1,6 @@
 //! `shortcutRedundantOrthogonalJogs` (`materializedGeometry.ts:1587-1833`): a route that goes out and back by a
 //! jog of two bends is replaced by a shorter route with fewer bends, when the shorter route keeps clear.
 
-use std::collections::HashSet;
-
 use ferrigura_jsmath::hypot;
 
 use super::common::*;
@@ -75,7 +73,7 @@ fn shortcut_candidates_at(points: &[Point], index: usize) -> Vec<Vec<Point>> {
             .collect()
     };
 
-    let mut seen = HashSet::new();
+    let mut seen = PathSet::default();
     let mut result = Vec::new();
     for raw in raw_candidates {
         let candidate = simplified(&raw);
