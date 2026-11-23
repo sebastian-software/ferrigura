@@ -84,20 +84,31 @@ export function looksLikeType(type: string, text: string): boolean {
   return detectors[type].test(body);
 }
 
-/** The files under `dir` of the checkout at `root` that pass `filter`, relative to `root`. */
+/**
+ * The files under `dir` of the checkout at `root` that pass `filter`, relative to `root`.
+ *
+ * Dependency and build folders are not entered: the reference checkout links its workspace packages
+ * into each other's `node_modules`, and following those links never ends. Links are not followed
+ * anywhere else either, so every file is found once, under its own path.
+ */
 async function walk(
   root: string,
   dir: string,
   filter: (path: string) => boolean
 ): Promise<string[]> {
   const found: string[] = [];
-  const entries = await readdir(join(root, dir), { withFileTypes: true, recursive: true });
-  for (const entry of entries) {
-    if (!entry.isFile()) continue;
-    const path = join(entry.parentPath, entry.name);
-    const repoRelative = relative(root, path);
-    if (repoRelative.includes('node_modules') || repoRelative.includes('/dist/')) continue;
-    if (filter(repoRelative)) found.push(repoRelative);
+  const pending = [join(root, dir)];
+  for (let folder = pending.pop(); folder !== undefined; folder = pending.pop()) {
+    for (const entry of await readdir(folder, { withFileTypes: true })) {
+      const path = join(folder, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && entry.name !== 'dist') pending.push(path);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      const repoRelative = relative(root, path);
+      if (filter(repoRelative)) found.push(repoRelative);
+    }
   }
   return found.sort();
 }
