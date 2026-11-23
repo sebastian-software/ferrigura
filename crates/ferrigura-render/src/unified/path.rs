@@ -1007,184 +1007,211 @@ enum Segment {
     },
 }
 
-/// Parses the path commands this crate writes: `M`, `L`, `Q`, `C`, `A` and `Z`, absolute, with
-/// numbers separated by commas or spaces.
-fn parse_segments(d: &str) -> Vec<Segment> {
-    let mut numbers: Vec<f64> = Vec::new();
-    let mut command = ' ';
-    let mut current = Point::default();
-    let mut subpath_start = Point::default();
-    let mut segments = Vec::new();
-    let mut flush = |command: char, numbers: &mut Vec<f64>| {
-        let mut values = numbers.drain(..);
-        let mut next = || values.next().unwrap_or(0.0);
-        match command {
-            'M' => {
-                let p = Point::new(next(), next());
-                current = p;
-                subpath_start = p;
-                segments.push(Segment::Move(p));
+/// A path's `d` read back into segments, to be measured by [`PathGeometry::bounds`] and
+/// [`PathGeometry::length`].
+///
+/// The measures read the numbers as they stand in the text, not the doubles the text was written
+/// from, so a path is parsed from its `d`; parsing it once serves every measure taken of it.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct PathGeometry {
+    segments: Vec<Segment>,
+}
+
+impl PathGeometry {
+    /// Parses the path commands this crate writes: `M`, `L`, `Q`, `C`, `A` and `Z`, absolute,
+    /// with numbers separated by commas or spaces.
+    #[must_use]
+    pub fn parse(d: &str) -> Self {
+        let mut numbers: Vec<f64> = Vec::new();
+        let mut command = ' ';
+        let mut current = Point::default();
+        let mut subpath_start = Point::default();
+        let mut segments = Vec::new();
+        let mut flush = |command: char, numbers: &mut Vec<f64>| {
+            let mut values = numbers.drain(..);
+            let mut next = || values.next().unwrap_or(0.0);
+            match command {
+                'M' => {
+                    let p = Point::new(next(), next());
+                    current = p;
+                    subpath_start = p;
+                    segments.push(Segment::Move(p));
+                }
+                'L' => {
+                    let p = Point::new(next(), next());
+                    segments.push(Segment::Line(current, p));
+                    current = p;
+                }
+                'Q' => {
+                    let c = Point::new(next(), next());
+                    let p = Point::new(next(), next());
+                    segments.push(Segment::Quadratic(current, c, p));
+                    current = p;
+                }
+                'C' => {
+                    let c1 = Point::new(next(), next());
+                    let c2 = Point::new(next(), next());
+                    let p = Point::new(next(), next());
+                    segments.push(Segment::Cubic(current, c1, c2, p));
+                    current = p;
+                }
+                'A' => {
+                    let rx = next();
+                    let ry = next();
+                    let rotation = next();
+                    let large = next() != 0.0;
+                    let sweep = next() != 0.0;
+                    let p = Point::new(next(), next());
+                    segments.push(Segment::Arc {
+                        from: current,
+                        to: p,
+                        rx,
+                        ry,
+                        rotation,
+                        large,
+                        sweep,
+                    });
+                    current = p;
+                }
+                'Z' => {
+                    segments.push(Segment::Line(current, subpath_start));
+                    current = subpath_start;
+                }
+                _ => {}
             }
-            'L' => {
-                let p = Point::new(next(), next());
-                segments.push(Segment::Line(current, p));
-                current = p;
+        };
+        // Commands and numbers are ASCII, so the text is read byte by byte; the bytes of any other
+        // character are skipped like a separator.
+        let bytes = d.as_bytes();
+        let mut i = 0;
+        while i < bytes.len() {
+            let c = bytes[i];
+            if c.is_ascii_alphabetic() {
+                if command != ' ' && (command != 'Z' || !numbers.is_empty()) {
+                    flush(command, &mut numbers);
+                }
+                command = char::from(c);
+                if c == b'Z' {
+                    flush('Z', &mut numbers);
+                    command = ' ';
+                }
+                i += 1;
+            } else if c == b'-' || c == b'+' || c == b'.' || c.is_ascii_digit() {
+                let start = i;
+                i += 1;
+                while i < bytes.len() {
+                    let b = bytes[i];
+                    let exponent_sign =
+                        (b == b'-' || b == b'+') && matches!(bytes[i - 1], b'e' | b'E');
+                    if b.is_ascii_digit() || b == b'.' || b == b'e' || b == b'E' || exponent_sign {
+                        i += 1;
+                    } else {
+                        break;
+                    }
+                }
+                numbers.push(d[start..i].parse().unwrap_or(0.0));
+            } else {
+                i += 1;
             }
-            'Q' => {
-                let c = Point::new(next(), next());
-                let p = Point::new(next(), next());
-                segments.push(Segment::Quadratic(current, c, p));
-                current = p;
-            }
-            'C' => {
-                let c1 = Point::new(next(), next());
-                let c2 = Point::new(next(), next());
-                let p = Point::new(next(), next());
-                segments.push(Segment::Cubic(current, c1, c2, p));
-                current = p;
-            }
-            'A' => {
-                let rx = next();
-                let ry = next();
-                let rotation = next();
-                let large = next() != 0.0;
-                let sweep = next() != 0.0;
-                let p = Point::new(next(), next());
-                segments.push(Segment::Arc {
-                    from: current,
-                    to: p,
+        }
+        if command != ' ' && command != 'Z' {
+            flush(command, &mut numbers);
+        }
+        Self { segments }
+    }
+
+    /// The tight box of the path, as `getBBox` gives it: the end points and the extremes of
+    /// every curve. `None` for a path without segments.
+    #[must_use]
+    pub fn bounds(&self) -> Option<BBox> {
+        let mut points: Vec<Point> = Vec::with_capacity(2 * self.segments.len());
+        for &segment in &self.segments {
+            match segment {
+                Segment::Move(p) => points.push(p),
+                Segment::Line(a, b) => {
+                    points.push(a);
+                    points.push(b);
+                }
+                Segment::Quadratic(p0, c, p1) => {
+                    points.push(p0);
+                    points.push(p1);
+                    for t in quadratic_extremes(p0, c, p1) {
+                        points.push(quadratic_point(p0, c, p1, t));
+                    }
+                }
+                Segment::Cubic(p0, c1, c2, p1) => {
+                    points.push(p0);
+                    points.push(p1);
+                    for t in cubic_extremes(p0, c1, c2, p1) {
+                        points.push(cubic_point(p0, c1, c2, p1, t));
+                    }
+                }
+                Segment::Arc {
+                    from,
+                    to,
                     rx,
                     ry,
                     rotation,
                     large,
                     sweep,
-                });
-                current = p;
-            }
-            'Z' => {
-                segments.push(Segment::Line(current, subpath_start));
-                current = subpath_start;
-            }
-            _ => {}
-        }
-    };
-    let bytes: Vec<char> = d.chars().collect();
-    let mut i = 0;
-    while i < bytes.len() {
-        let c = bytes[i];
-        if c.is_ascii_alphabetic() {
-            if command != ' ' && (command != 'Z' || !numbers.is_empty()) {
-                flush(command, &mut numbers);
-            }
-            command = c;
-            if c == 'Z' {
-                flush('Z', &mut numbers);
-                command = ' ';
-            }
-            i += 1;
-        } else if c == '-' || c == '+' || c == '.' || c.is_ascii_digit() {
-            let start = i;
-            i += 1;
-            while i < bytes.len() {
-                let d = bytes[i];
-                let exponent_sign = (d == '-' || d == '+') && matches!(bytes[i - 1], 'e' | 'E');
-                if d.is_ascii_digit() || d == '.' || d == 'e' || d == 'E' || exponent_sign {
-                    i += 1;
-                } else {
-                    break;
+                } => {
+                    points.push(from);
+                    points.push(to);
+                    points.extend(arc_extremes(from, to, rx, ry, rotation, large, sweep));
                 }
             }
-            let text: String = bytes[start..i].iter().collect();
-            numbers.push(text.parse().unwrap_or(0.0));
-        } else {
-            i += 1;
         }
+        BBox::from_points(points)
     }
-    if command != ' ' && command != 'Z' {
-        flush(command, &mut numbers);
+
+    /// The length of the path, as `getTotalLength` gives it, computed by composite Simpson rules
+    /// over each curve. Browsers flatten curves with their own tolerance, so the digits differ.
+    #[must_use]
+    pub fn length(&self) -> f64 {
+        let mut total = 0.0;
+        for &segment in &self.segments {
+            total += match segment {
+                Segment::Move(_) => 0.0,
+                Segment::Line(a, b) => a.distance(b),
+                Segment::Quadratic(p0, c, p1) => ferrigura_path::quadratic_length(
+                    2.0 * (c.x - p0.x),
+                    2.0 * (c.y - p0.y),
+                    2.0 * (p1.x - c.x),
+                    2.0 * (p1.y - c.y),
+                ),
+                Segment::Cubic(p0, c1, c2, p1) => ferrigura_path::cubic_length(
+                    c1.x - p0.x,
+                    c1.y - p0.y,
+                    c2.x - c1.x,
+                    c2.y - c1.y,
+                    p1.x - c2.x,
+                    p1.y - c2.y,
+                ),
+                Segment::Arc {
+                    from,
+                    to,
+                    rx,
+                    ry,
+                    rotation,
+                    large,
+                    sweep,
+                } => arc_length(from, to, rx, ry, rotation, large, sweep),
+            };
+        }
+        total
     }
-    segments
 }
 
-/// The tight box of a path, as `getBBox` gives it: the end points and the extremes of every
-/// curve. `None` for a path without segments.
+/// The tight box of a path's `d`: [`PathGeometry::bounds`] for a path measured once.
 #[must_use]
 pub fn path_bounds(d: &str) -> Option<BBox> {
-    let mut points: Vec<Point> = Vec::new();
-    for segment in parse_segments(d) {
-        match segment {
-            Segment::Move(p) => points.push(p),
-            Segment::Line(a, b) => {
-                points.push(a);
-                points.push(b);
-            }
-            Segment::Quadratic(p0, c, p1) => {
-                points.push(p0);
-                points.push(p1);
-                for t in quadratic_extremes(p0, c, p1) {
-                    points.push(quadratic_point(p0, c, p1, t));
-                }
-            }
-            Segment::Cubic(p0, c1, c2, p1) => {
-                points.push(p0);
-                points.push(p1);
-                for t in cubic_extremes(p0, c1, c2, p1) {
-                    points.push(cubic_point(p0, c1, c2, p1, t));
-                }
-            }
-            Segment::Arc {
-                from,
-                to,
-                rx,
-                ry,
-                rotation,
-                large,
-                sweep,
-            } => {
-                points.push(from);
-                points.push(to);
-                points.extend(arc_extremes(from, to, rx, ry, rotation, large, sweep));
-            }
-        }
-    }
-    BBox::from_points(points)
+    PathGeometry::parse(d).bounds()
 }
 
-/// The length of a path, as `getTotalLength` gives it, computed by composite Simpson rules over
-/// each curve. Browsers flatten curves with their own tolerance, so the digits differ.
+/// The length of a path's `d`: [`PathGeometry::length`] for a path measured once.
 #[must_use]
 pub fn path_length(d: &str) -> f64 {
-    let mut total = 0.0;
-    for segment in parse_segments(d) {
-        total += match segment {
-            Segment::Move(_) => 0.0,
-            Segment::Line(a, b) => a.distance(b),
-            Segment::Quadratic(p0, c, p1) => ferrigura_path::quadratic_length(
-                2.0 * (c.x - p0.x),
-                2.0 * (c.y - p0.y),
-                2.0 * (p1.x - c.x),
-                2.0 * (p1.y - c.y),
-            ),
-            Segment::Cubic(p0, c1, c2, p1) => ferrigura_path::cubic_length(
-                c1.x - p0.x,
-                c1.y - p0.y,
-                c2.x - c1.x,
-                c2.y - c1.y,
-                p1.x - c2.x,
-                p1.y - c2.y,
-            ),
-            Segment::Arc {
-                from,
-                to,
-                rx,
-                ry,
-                rotation,
-                large,
-                sweep,
-            } => arc_length(from, to, rx, ry, rotation, large, sweep),
-        };
-    }
-    total
+    PathGeometry::parse(d).length()
 }
 
 /// The composite Simpson rule over `[0, 1]` with `steps` intervals.
