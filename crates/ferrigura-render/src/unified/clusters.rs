@@ -9,6 +9,7 @@
 
 use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::theme::ThemeTokens;
+use ferrigura_model::value::NumberText;
 
 use super::Config;
 use super::data::{Edge, Node};
@@ -16,7 +17,7 @@ use super::geom::{BBox, Point};
 use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use super::palette::{self as style, Palette};
 use crate::RenderError;
-use crate::svg::{escape, number};
+use crate::svg::escape;
 
 /// The wrap width of a Markdown title that the layout has not sized yet (`createText`'s default).
 const MARKDOWN_TITLE_WIDTH: f64 = 200.0;
@@ -130,7 +131,7 @@ fn rect(node: &Node, config: &Config<'_>, edges: &[Edge]) -> Result<Cluster, Ren
         stroke = config.theme.cluster_border.text();
         radius = format!(
             " rx=\"{0}\" ry=\"{0}\"",
-            number(crate::design::GROUP_RADIUS)
+            NumberText(crate::design::GROUP_RADIUS)
         );
     }
     let color_id = slot.map_or_else(String::new, |slot| {
@@ -156,12 +157,12 @@ fn rect(node: &Node, config: &Config<'_>, edges: &[Edge]) -> Result<Cluster, Ren
         classes = escape(&node.css_classes),
         id = escape(&node.dom_id),
         look = escape(&node.look),
-        x = number(bbox.x),
-        y = number(bbox.y),
-        width = number(bbox.width),
-        height = number(bbox.height),
-        tx = number(frame.title.x),
-        ty = number(frame.title.y),
+        x = NumberText(bbox.x),
+        y = NumberText(bbox.y),
+        width = NumberText(bbox.width),
+        height = NumberText(bbox.height),
+        tx = NumberText(frame.title.x),
+        ty = NumberText(frame.title.y),
         title = title.svg(""),
     );
     Ok(Cluster {
@@ -239,14 +240,14 @@ fn rounded_with_title(node: &Node, config: &Config<'_>) -> Result<Cluster, Rende
         id = escape(&node.dom_id),
         node_id = escape(&node.id),
         look = escape(&node.look),
-        outer_x = number(outer_x),
-        outer_y = number(outer_y),
-        width = number(width),
-        height = number(height),
-        inner_y = number(inner_y),
-        inner_height = number(inner_height),
-        label_x = number(label_x),
-        label_y = number(label_y),
+        outer_x = NumberText(outer_x),
+        outer_y = NumberText(outer_y),
+        width = NumberText(width),
+        height = NumberText(height),
+        inner_y = NumberText(inner_y),
+        inner_height = NumberText(inner_height),
+        label_x = NumberText(label_x),
+        label_y = NumberText(label_y),
         title = title.svg(""),
     );
     Ok(Cluster {
@@ -268,10 +269,10 @@ fn note_group(node: &Node) -> Cluster {
     let svg = format!(
         "<g class=\"note-cluster\" id=\"{id}\"><rect x=\"{x}\" y=\"{y}\" width=\"{width}\" height=\"{height}\" fill=\"none\"/></g>",
         id = escape(&node.dom_id),
-        x = number(x),
-        y = number(y),
-        width = number(width),
-        height = number(height),
+        x = NumberText(x),
+        y = NumberText(y),
+        width = NumberText(width),
+        height = NumberText(height),
     );
     Cluster {
         svg,
@@ -295,10 +296,10 @@ fn divider(node: &Node, config: &Config<'_>) -> Cluster {
         classes = escape(&node.css_classes),
         id = escape(&node.dom_id),
         look = escape(&node.look),
-        x = number(x),
-        y = number(y),
-        width = number(width),
-        height = number(height),
+        x = NumberText(x),
+        y = NumberText(y),
+        width = NumberText(width),
+        height = NumberText(height),
     );
     Cluster {
         svg,

@@ -8,6 +8,7 @@
 //! as every container's is, and the palette's rules color the frame.
 
 use ferrigura_model::flowchart::LabelType;
+use ferrigura_model::value::NumberText;
 
 use super::Config;
 use super::clusters::Cluster;
@@ -17,7 +18,7 @@ use super::label::{self, Anchor, LabelSpec};
 use super::palette as style;
 use crate::RenderError;
 use crate::common::js_trim;
-use crate::svg::{escape, number};
+use crate::svg::escape;
 
 /// The wrap width of a Markdown title that the layout has not sized yet (`createText`'s default).
 const MARKDOWN_TITLE_WIDTH: f64 = 200.0;
@@ -111,8 +112,8 @@ pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
         (Some(title), Some((origin, box_))) => (
             format!(
                 " transform=\"translate({}, {})\"",
-                number(origin.x),
-                number(origin.y)
+                NumberText(origin.x),
+                NumberText(origin.y)
             ),
             title.svg(""),
             box_,
@@ -134,11 +135,11 @@ pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
          </g>",
         id = escape(&node.dom_id),
         look = escape(&node.look),
-        radius = number(RADIUS),
-        x = number(bbox.x),
-        y = number(bbox.y),
-        width = number(bbox.width),
-        height = number(bbox.height),
+        radius = NumberText(RADIUS),
+        x = NumberText(bbox.x),
+        y = NumberText(bbox.y),
+        width = NumberText(bbox.width),
+        height = NumberText(bbox.height),
     );
     Ok(Cluster {
         svg,

@@ -1,6 +1,6 @@
 //! Points and boxes shared by the flowchart modules. Coordinates are SVG user units, y down.
 
-use std::fmt::Write as _;
+use std::fmt::{self, Write as _};
 
 use ferrigura_jsmath::hypot;
 
@@ -43,10 +43,52 @@ pub fn browser_f32(value: f64) -> f64 {
 /// parser parses it. See `svg_number`.
 #[must_use]
 pub fn path_coordinate_f32(value: f64) -> f64 {
-    // Room for the digits of a coordinate, so that writing them does not grow the buffer.
-    let mut text = String::with_capacity(32);
-    let _ = write!(text, "{value}");
-    f64::from(svg_number(&text))
+    let mut text = StackText::new();
+    if write!(text, "{value}").is_ok()
+        && let Ok(digits) = std::str::from_utf8(text.as_bytes())
+    {
+        return f64::from(svg_number(digits));
+    }
+    // A write that does not fit takes the heap path, so no input changes the result.
+    let mut digits = String::with_capacity(32);
+    let _ = write!(digits, "{value}");
+    f64::from(svg_number(&digits))
+}
+
+/// The longest text `{}` gives for an `f64`. Rust writes no exponent, so the smallest subnormal
+/// `-5e-324` is `-0.`, 323 zeros and a `5`: 327 bytes, the longest of all. `f64::MAX` takes 310
+/// bytes and the non-finite values are shorter, so this capacity holds every value.
+const STACK_TEXT_CAPACITY: usize = 328;
+
+/// The text of a number written by `{}`, in a buffer on the stack, so that formatting a coordinate
+/// takes no heap allocation. A write that does not fit fails and leaves the buffer as it was
+/// before that write.
+struct StackText {
+    bytes: [u8; STACK_TEXT_CAPACITY],
+    len: usize,
+}
+
+impl StackText {
+    const fn new() -> Self {
+        Self {
+            bytes: [0; STACK_TEXT_CAPACITY],
+            len: 0,
+        }
+    }
+
+    fn as_bytes(&self) -> &[u8] {
+        &self.bytes[..self.len]
+    }
+}
+
+impl fmt::Write for StackText {
+    fn write_str(&mut self, text: &str) -> fmt::Result {
+        let end = self.len + text.len();
+        let slot = self.bytes.get_mut(self.len..end).ok_or(fmt::Error)?;
+        slot.copy_from_slice(text.as_bytes());
+        self.len = end;
+        Ok(())
+    }
 }
 
 /// The height of a sloped rectangle's outline as the browser's `getBBox` gives it, from the
@@ -324,6 +366,44 @@ mod tests {
         ];
         for &(text, expected) in measured {
             assert_eq!(svg_number(text), expected, "{text}");
+        }
+    }
+
+    /// `path_coordinate_f32` returns what the `String` path it replaced returned, bit for bit.
+    #[test]
+    fn path_coordinate_matches_the_formatted_text() {
+        let values = [
+            0.0,
+            -0.0,
+            1e-320,
+            -1e-320,
+            f64::from_bits(1),
+            1e-7,
+            0.1,
+            -0.1,
+            1.5,
+            -1.5,
+            123_456.789,
+            -123_456.789,
+            1e21,
+            1e300,
+            f64::MAX,
+            -f64::MAX,
+            f64::MIN_POSITIVE,
+            -f64::MIN_POSITIVE,
+            f64::NAN,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+        ];
+        for value in values {
+            let expected = f64::from(svg_number(&format!("{value}")));
+            // `svg_number` does not parse `NaN` or `inf` to a float, it reads their letters as
+            // digits, so the expected value of a non-finite input is a number; the bits must match it.
+            assert_eq!(
+                path_coordinate_f32(value).to_bits(),
+                expected.to_bits(),
+                "{value}"
+            );
         }
     }
 

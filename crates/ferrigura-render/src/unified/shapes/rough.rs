@@ -853,7 +853,9 @@ pub(super) fn attributed(outline: &Outline, attrs: &Attrs<'_>) -> String {
 /// The data of an op list, as `opsToPath` writes it.
 #[must_use]
 pub(super) fn data(ops: &[Op]) -> String {
-    let mut out = String::new();
+    // A move or a line writes about 20 bytes and a curve about 60, so this estimate saves most
+    // of the regrowth without reserving much more than a plain line list needs.
+    let mut out = String::with_capacity(ops.len() * 32);
     for op in ops {
         if !out.is_empty() {
             out.push(' ');
