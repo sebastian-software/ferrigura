@@ -29,6 +29,11 @@ impl PropertyHolder {
         Self::default()
     }
 
+    /// Room for `additional` more values, so that setting them does not grow the vector step by step.
+    pub fn reserve(&mut self, additional: usize) {
+        self.values.reserve(additional);
+    }
+
     /// The position of `id` in `values`, or where it would be inserted.
     fn position(&self, id: OptionId) -> Result<usize, usize> {
         self.values.binary_search_by_key(&id, |(key, _)| *key)

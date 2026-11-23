@@ -21,7 +21,7 @@ use crate::core::data::property::PropertyHolder;
 use crate::core::data::{option_by_suffix, parse_value};
 use crate::error::LayoutError;
 use crate::graph::{ElkEdge, ElkLabel, ElkNode, ElkPort, Shape};
-use crate::json::{JsonEdge, JsonLabel, JsonNode, JsonPort, option_pairs_of};
+use crate::json::{JsonEdge, JsonLabel, JsonNode, JsonPort, LayoutOptions, string_val};
 
 /// `transformNode` for the root, with no parent, and then the edges of every level.
 pub fn import_graph(root: &JsonNode) -> Result<ElkNode, LayoutError> {
@@ -179,15 +179,25 @@ fn transform_edge(json: &JsonEdge) -> Result<ElkEdge, LayoutError> {
 }
 
 /// `transformProperties`: `layoutOptions` if present, else `properties`.
+///
+/// Every value is converted to its text before the first option is set, so a value that has no
+/// text is reported even when an earlier key names an option type that is not ported.
 fn transform_properties(
-    layout_options: Option<&crate::json::LayoutOptions>,
-    properties: Option<&crate::json::LayoutOptions>,
+    layout_options: Option<&LayoutOptions>,
+    properties: Option<&LayoutOptions>,
     holder: &mut PropertyHolder,
 ) -> Result<(), LayoutError> {
-    let pairs = option_pairs_of(layout_options, properties)
+    let Some(options) = layout_options.or(properties) else {
+        return Ok(());
+    };
+    let texts = options
+        .values()
+        .map(string_val)
+        .collect::<Result<Vec<_>, _>>()
         .map_err(|error| LayoutError::Format(error.message().to_string()))?;
-    for (key, text) in pairs {
-        set_option(holder, &key, &text)?;
+    holder.reserve(options.len());
+    for (key, text) in options.keys().zip(&texts) {
+        set_option(holder, key, text)?;
     }
     Ok(())
 }
@@ -262,8 +272,8 @@ fn transform_label(json: &JsonLabel) -> Result<ElkLabel, LayoutError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::data::OptionId;
     use crate::core::data::enums::Direction;
+    use crate::core::data::{OptionId, OptionValue};
     use serde_json::json;
 
     fn parse(value: serde_json::Value) -> JsonNode {
@@ -322,5 +332,97 @@ mod tests {
             import_graph(&at_ports),
             Err(LayoutError::Unsupported(_))
         ));
+    }
+
+    #[test]
+    fn layout_options_win_over_properties() {
+        let root = parse(json!({
+            "id": "root",
+            "layoutOptions": { "spacing.baseValue": 40 },
+            "properties": { "spacing.baseValue": 10, "elk.direction": "DOWN" }
+        }));
+        let node = import_graph(&root).unwrap();
+        let base_value = OptionId::of("org.eclipse.elk.layered.spacing.baseValue");
+        assert_eq!(node.properties.double_of(base_value), Some(40.0));
+        assert!(
+            !node
+                .properties
+                .has(OptionId::of("org.eclipse.elk.direction"))
+        );
+        let fallback = parse(json!({
+            "id": "root",
+            "properties": { "spacing.baseValue": 10 }
+        }));
+        let node = import_graph(&fallback).unwrap();
+        assert_eq!(node.properties.double_of(base_value), Some(10.0));
+    }
+
+    #[test]
+    fn numbers_and_booleans_are_read_through_their_javascript_text() {
+        let root = parse(json!({
+            "id": "root",
+            "layoutOptions": {
+                "layered.thoroughness": 7.0,
+                "spacing.nodeNode": 0.5,
+                "elk.separateConnectedComponents": false,
+                "elk.spacing.edgeEdge": "not a number"
+            }
+        }));
+        let node = import_graph(&root).unwrap();
+        let properties = &node.properties;
+        assert_eq!(
+            properties.int_of(OptionId::of("org.eclipse.elk.layered.thoroughness")),
+            Some(7)
+        );
+        assert_eq!(
+            properties.double_of(OptionId::of("org.eclipse.elk.spacing.nodeNode")),
+            Some(0.5)
+        );
+        assert_eq!(
+            properties.get(OptionId::of("org.eclipse.elk.separateConnectedComponents")),
+            Some(&OptionValue::Boolean(false))
+        );
+        assert!(!properties.has(OptionId::of("org.eclipse.elk.spacing.edgeEdge")));
+    }
+
+    #[test]
+    fn a_later_key_for_the_same_option_overwrites_the_earlier_one() {
+        let root = parse(json!({
+            "id": "root",
+            "layoutOptions": {
+                "org.eclipse.elk.spacing.nodeNode": 20,
+                "spacing.nodeNode": 30
+            }
+        }));
+        let node = import_graph(&root).unwrap();
+        assert_eq!(
+            node.properties
+                .double_of(OptionId::of("org.eclipse.elk.spacing.nodeNode")),
+            Some(30.0)
+        );
+    }
+
+    #[test]
+    fn values_without_text_are_reported_before_unsupported_option_types() {
+        let unsupported = parse(json!({
+            "id": "root",
+            "layoutOptions": { "elk.junctionPoints": "(1,2)" }
+        }));
+        assert!(matches!(
+            import_graph(&unsupported),
+            Err(LayoutError::Unsupported(message))
+                if message == "option org.eclipse.elk.junctionPoints of type KVectorChain"
+        ));
+        for value in [json!(null), json!([1]), json!({ "a": 1 })] {
+            let root = parse(json!({
+                "id": "root",
+                "layoutOptions": { "elk.junctionPoints": "(1,2)", "elk.direction": value }
+            }));
+            let expected = format!("Unsupported layout option value: {value}.");
+            assert!(matches!(
+                import_graph(&root),
+                Err(LayoutError::Format(message)) if message == expected
+            ));
+        }
     }
 }
