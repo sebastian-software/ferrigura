@@ -4,7 +4,7 @@
 
 ## Decision
 
-`compat` is the only render-mode option. `RenderOptions.compat` defaults to `false`: Ferrigura uses optimized rendering. `compat: true` selects Mermaid-compatible geometry across diagram types. Node.js uses the same `compat` boolean; the CLI uses `--compat`. This is a render option, not a Mermaid configuration key: front matter and init directives cannot set it.
+`compat` is the only option that selects the geometry; the design mode is a separate paint option that excludes it ([0023](./0023-design-mode.md)). `RenderOptions.compat` defaults to `false`: Ferrigura uses optimized rendering. `compat: true` selects Mermaid-compatible geometry across diagram types. Node.js uses the same `compat` boolean; the CLI uses `--compat`. This is a render option, not a Mermaid configuration key: front matter and init directives cannot set it.
 
 With `compat: false`, flowcharts center their ports with label-aware spacing and neo sequence participant boxes fit their measured labels plus padding. With `compat: true`, flowcharts keep the reference's attachment policy and sequence boxes span the shared row. Compact header bottoms and footer tops remain on the same lifeline datum: message positions, row height and wrapping do not change.
 

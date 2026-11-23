@@ -20,6 +20,34 @@ To preserve the pinned Mermaid reference's routing, choose the per-render compat
 
 Use `Adaptive` in Rust or `adaptive` in Node.js and the CLI to select the default explicitly. The option affects only flowcharts, including the `graph` and `flowchart-elk` headers. Other diagram types keep their output. It is a render option, not a front-matter or init configuration key. `elk.straightenEdges` remains a separate post-processing setting for both policies.
 
+## Design mode
+
+The design mode draws a flowchart in ferrigura's own look ([0023](../decisions/0023-design-mode.md)). It changes paint only: node sizes, positions, routes and label positions are those of the default rendering.
+
+- Rust: `RenderOptions { design: true, ..RenderOptions::default() }`.
+- Node.js: `renderer.render(text, { design: true })` or `render(text, config, { design: true })`.
+- CLI: `ferrigura --design diagram.mmd`.
+
+| Element                        | Design mode                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------ |
+| Node outline                   | 1.25 px in the node border color                                                           |
+| Edge                           | 1.5 px in a mid gray, so that nodes stand in front of their connections                    |
+| Rectangle                      | Corner radius 8                                                                            |
+| Subgraph frame                 | Neutral fill, its own border, corner radius 12, no shadow; the theme's palette is not used |
+| Shadow                         | 1 px down, blurred by 1.5                                                                  |
+| Edge label                     | The title's muted color on the background color                                            |
+| Stadium, circle, double circle | Role `terminal`: filled with the accent color, with light text                             |
+| Diamond                        | Role `decision`: a warm tint with its own outline and text color                           |
+| Cylinder                       | Role `data`: a green tint with its own outline and text color                              |
+
+A node with a role carries `data-role` on its group, which the style sheet matches. The mode's rules come before the `classDef` rules, so a class or a `style` statement of the diagram overrides a role's colors. The user's `themeVariables` override the mode's colors key by key: `mainBkg`, `nodeBorder`, `lineColor`, `textColor`, `nodeTextColor`, `titleColor`, `clusterBkg`, `clusterBorder`, `edgeLabelBackground` and `background`. The role colors are fixed.
+
+With `colorScheme: auto` the SVG carries the light and the dark set as `light-dark()` values, as the default rendering does. Without a color scheme, a configured theme whose name ends in `dark` selects the dark set.
+
+`design` and `compat` cannot be combined. The draw animation works in the design mode. The mode is a render option, not a front-matter or init configuration key.
+
+The subroutine, the other polygons and the marker sizes keep the default look's geometry; the group title stays centered on the frame's top edge, where an edge can cross it.
+
 ## Draw animation
 
 `RenderOptions::animation` optionally adds a one-time draw effect ([0021](../decisions/0021-optional-svg-draw-animation.md)).

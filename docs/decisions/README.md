@@ -39,6 +39,7 @@ A new decision that is hard to reverse gets the next free number. Code comments 
 | [0019](./0019-adaptive-flowchart-mode.md)         | Optimized rendering by default, with one general switch for Mermaid-compatible geometry             |
 | [0020](./0020-diagram-types-as-plugins.md)        | Diagram types are plugins of the renderer; a program links only the types it registers              |
 | [0021](./0021-optional-svg-draw-animation.md) | Supported diagrams can carry optional, script-free draw animation with length-based speed and per-section easing |
+| [0023](./0023-design-mode.md) | An optional design mode draws ferrigura's own look; it changes paint only and excludes `compat` |
 
 ## Verification
 

@@ -36,6 +36,15 @@ pub(crate) fn palette(globals: &Globals, theme: &ThemeTokens) -> Option<Palette>
     })
 }
 
+/// The palette a unified diagram draws with: the theme's, and none in the design mode, where color
+/// follows a node's role and a group stays neutral (`docs/decisions/0023-design-mode.md`).
+pub(crate) fn palette_of(config: &super::Config<'_>) -> Option<Palette> {
+    if config.section.design.is_some() {
+        return None;
+    }
+    palette(config.globals, config.theme)
+}
+
 /// The palette slot of an element with a color index: the index wrapped to the palette, as
 /// `stampColorSlot` writes it.
 pub(crate) fn palette_slot(index: Option<u32>, palette: &Palette) -> Option<usize> {

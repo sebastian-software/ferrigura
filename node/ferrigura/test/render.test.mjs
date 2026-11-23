@@ -22,6 +22,19 @@ test('errors propagate and leave a reused renderer usable', () => {
   assert.match(renderer.render(diagram, { id: 'after' }), /<svg/);
 });
 
+void test('design draws flowcharts in the design mode and rejects what it does not support', () => {
+  const renderer = new Renderer();
+  const flow = 'flowchart TD\n A([Start]) --> B{Review}\n B --> C[(Store)]\n';
+  const designed = renderer.render(flow, { design: true });
+  assert.match(designed, /data-role="terminal"/);
+  assert.match(designed, /data-role="decision"/);
+  assert.match(designed, /data-role="data"/);
+  assert.equal(renderer.render(flow, { design: false }), renderer.render(flow));
+  assert.doesNotMatch(renderer.render(flow), /data-role/);
+  assert.throws(() => renderer.render(flow, { design: true, compat: true }), /compat/);
+  assert.throws(() => renderer.render('pie\n "a" : 1\n', { design: true }), /design mode/);
+});
+
 void test('compat selects Mermaid geometry for flowcharts and sequence participants', () => {
   const renderer = new Renderer();
   const sequence = 'sequenceDiagram\n participant App\n participant API\n App->>API: Request\n';
@@ -241,7 +254,7 @@ test('truncated and Unicode diagrams do not affect later renders', () => {
   ];
   const baselines = seeds.map((seed) => renderer.render(seed));
   for (const seed of seeds) {
-    const characters = Array.from(seed);
+    const characters = [...seed];
     for (let end = 0; end < characters.length; end += 7) {
       cases.push(characters.slice(0, end).join(''));
     }

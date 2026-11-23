@@ -51,6 +51,10 @@ name = "animation"
 path = "crates/ferrigura/tests/animation.rs"
 
 [[test]]
+name = "design"
+path = "crates/ferrigura/tests/design.rs"
+
+[[test]]
 name = "info"
 path = "crates/ferrigura/tests/info.rs"
 

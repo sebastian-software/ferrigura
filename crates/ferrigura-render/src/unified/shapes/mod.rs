@@ -56,6 +56,7 @@ use super::geom::{BBox, CenterBox, Point};
 use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::RenderError;
 use crate::common::decode_entities;
+use crate::design::Role;
 use crate::svg::{escape, number};
 use registry::Kind;
 pub(crate) use util::styles_from_array;
@@ -528,13 +529,29 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         after_label: part.after_label,
         label_offset: part.label_offset,
         label: part.label,
-        group_attributes: String::new(),
+        group_attributes: role_attribute(input, kind),
         colour_slot,
         bbox,
         intersect: part.intersect,
         extent,
         texts,
     })
+}
+
+/// The `data-role` of a node in the design mode, with its leading space: the meaning its shape
+/// carries, which the style sheet colors (`docs/decisions/0023-design-mode.md`). Empty outside the
+/// mode and for a shape without a role.
+fn role_attribute(input: &ShapeInput<'_>, kind: Kind) -> String {
+    if input.config.section.design.is_none() {
+        return String::new();
+    }
+    let role = match kind {
+        Kind::Stadium | Kind::Circle | Kind::DoubleCircle => Role::Terminal,
+        Kind::Question => Role::Decision,
+        Kind::Cylinder => Role::Data,
+        _ => return String::new(),
+    };
+    format!(" data-role=\"{}\"", role.name())
 }
 
 /// The error for a shape name that the registry does not know.

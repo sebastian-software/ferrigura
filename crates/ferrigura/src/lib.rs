@@ -4,13 +4,14 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hasher;
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 
 use ferrigura_model::config::{MermaidConfig, SiteConfig, typed_top};
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::theme::{Theme, ThemeTokens};
 use ferrigura_render::RenderError;
 use ferrigura_render::context::{Context, Globals, ThemeView};
+use ferrigura_render::design::{self, Tone};
 use ferrigura_render::flowchart;
 use ferrigura_render::unified::Section;
 use ferrigura_syntax::{ParseError, config, detect_prepared, preprocess};
@@ -53,6 +54,12 @@ pub struct RenderOptions {
     /// flowchart ports are centered with label-aware spacing and sequence participant boxes fit
     /// their labels. Font, color and readability fixes apply in both modes.
     pub compat: bool,
+    /// Draw in the design mode: ferrigura's own look, with hairline outlines, color by the role of
+    /// a node, rounded corners and soft shadows. The mode changes paint only: sizes, positions and
+    /// routes stay those of the default rendering. Flowcharts support it; other diagram types
+    /// return an option error, and so does the combination with `compat`. The user's
+    /// `themeVariables` and `classDef` styles still apply on top.
+    pub design: bool,
     /// Optional one-time SVG draw animation for flowcharts, Gantt, Git graphs, mind maps,
     /// pie charts, and XY charts. `None` leaves the SVG unchanged.
     /// The default draws one line at a time, averaging 700 SVG units per second times its speed,
@@ -118,6 +125,9 @@ pub struct Renderer {
     light_tokens: ThemeTokens,
     /// The tokens of `redux-dark-color` with the overrides: the dark scheme.
     dark_tokens: ThemeTokens,
+    /// The light and the dark tokens of the design mode with the overrides, made at the first render
+    /// in that mode.
+    design_tokens: OnceLock<(ThemeTokens, ThemeTokens)>,
     /// The views of the diagram types, made at their first render. A view that cannot be resolved
     /// keeps its error, which the render reports as it always has.
     views: Mutex<HashMap<DiagramType, Result<Arc<View>, String>>>,
@@ -216,6 +226,18 @@ impl Renderer {
                 "draw animation is not supported for this diagram type".to_owned(),
             ));
         }
+        if options.design {
+            if options.compat {
+                return Err(RenderError::Options(
+                    "the design mode cannot be combined with compat".to_owned(),
+                ));
+            }
+            if kind != DiagramType::Flowchart {
+                return Err(RenderError::Options(
+                    "the design mode is not supported for this diagram type".to_owned(),
+                ));
+            }
+        }
         let prepared = self.prepare(text, source, options, plugin, max_text, max_edges)?;
         plugin.render(&prepared, options)
     }
@@ -272,15 +294,28 @@ impl Renderer {
         let directive = config::read_prepared(&source, Some(plugin.kind()))?;
         let scheme = options.color_scheme;
         if is_empty_object(&directive) {
+            let view = self.view(plugin)?;
+            let (light_tokens, dark_tokens) = if options.design {
+                let (light, dark) = self
+                    .design_tokens
+                    .get_or_init(|| design_tokens(&self.overrides));
+                (Cow::Borrowed(light), Cow::Borrowed(dark))
+            } else {
+                (
+                    Cow::Borrowed(&self.light_tokens),
+                    Cow::Borrowed(&self.dark_tokens),
+                )
+            };
             return Ok(Prepared {
                 source,
                 directive,
                 id,
                 max_text,
                 max_edges,
-                view: self.view(plugin)?,
-                light_tokens: Cow::Borrowed(&self.light_tokens),
-                dark_tokens: Cow::Borrowed(&self.dark_tokens),
+                design: options.design.then(|| design_tone(scheme, &view)),
+                view,
+                light_tokens,
+                dark_tokens,
                 scheme,
                 fonts: self.fonts.as_ref(),
             });
@@ -288,7 +323,10 @@ impl Renderer {
         let view = View::resolve(&self.site, plugin, &directive, self.fonts.is_some())
             .map_err(RenderError::Config)?;
         let overrides = self.site.user_theme_variables(&directive);
-        let (light_tokens, dark_tokens) = if overrides == self.overrides {
+        let (light_tokens, dark_tokens) = if options.design {
+            let (light, dark) = design_tokens(&overrides);
+            (Cow::Owned(light), Cow::Owned(dark))
+        } else if overrides == self.overrides {
             (
                 Cow::Borrowed(&self.light_tokens),
                 Cow::Borrowed(&self.dark_tokens),
@@ -313,6 +351,7 @@ impl Renderer {
             id,
             max_text,
             max_edges,
+            design: options.design.then(|| design_tone(scheme, &view)),
             view: Arc::new(view),
             light_tokens,
             dark_tokens,
@@ -542,6 +581,7 @@ impl RendererBuilder {
                 }
                 configuration
             },
+            design_tokens: OnceLock::new(),
             overrides,
             site,
             views: Mutex::new(HashMap::new()),
@@ -704,13 +744,25 @@ struct Prepared<'a> {
     light_tokens: Cow<'a, ThemeTokens>,
     dark_tokens: Cow<'a, ThemeTokens>,
     scheme: Option<ColorScheme>,
+    /// The tone of the design mode, when the render draws in it. The two token sets are then the
+    /// mode's own, both computed.
+    design: Option<Tone>,
 }
 
 impl Prepared<'_> {
     /// The theme of the render as typed tokens: the configured theme, or the scheme that the color
-    /// scheme chooses, with the light scheme as the primary one when the render draws both.
+    /// scheme chooses, with the light scheme as the primary one when the render draws both. In the
+    /// design mode without a color scheme, the configured theme chooses the tone.
     fn theme(&self) -> ThemeView<'_> {
         match self.scheme {
+            None if self.design == Some(Tone::Dark) => ThemeView {
+                light: &self.dark_tokens,
+                dark: None,
+            },
+            None if self.design.is_some() => ThemeView {
+                light: &self.light_tokens,
+                dark: None,
+            },
             None => ThemeView {
                 light: &self.view.configured_tokens,
                 dark: None,
@@ -746,6 +798,37 @@ fn scheme_tokens(theme: Theme, drawn: bool, overrides: &Value) -> ThemeTokens {
         ThemeTokens::from_value(&theme.variables_shared(Some(overrides)))
     } else {
         ThemeTokens::from_value(&Value::empty_object())
+    }
+}
+
+/// The light and the dark tokens of the design mode: the shipped themes with the mode's variables
+/// laid under the user's overrides, which win key by key.
+fn design_tokens(overrides: &Value) -> (ThemeTokens, ThemeTokens) {
+    let tokens = |theme: Theme, tone: Tone| {
+        let mut variables = design::theme_variables(tone);
+        if let (Value::Object(variables), Value::Object(overrides)) = (&mut variables, overrides) {
+            for (name, value) in overrides {
+                variables.insert(name.clone(), value.clone());
+            }
+        }
+        ThemeTokens::from_value(&theme.variables_shared(Some(&variables)))
+    };
+    (
+        tokens(Theme::ReduxColor, Tone::Light),
+        tokens(Theme::ReduxDarkColor, Tone::Dark),
+    )
+}
+
+/// The tone of the one token set a render in the design mode draws with: the color scheme's, and the
+/// configured theme's without one. A render with both schemes draws with the light set.
+fn design_tone(scheme: Option<ColorScheme>, view: &View) -> Tone {
+    match scheme {
+        Some(ColorScheme::Dark) => Tone::Dark,
+        Some(ColorScheme::Light | ColorScheme::Auto) => Tone::Light,
+        None => match Theme::from_name(&view.globals.theme) {
+            Theme::ReduxDarkColor => Tone::Dark,
+            Theme::ReduxColor => Tone::Light,
+        },
     }
 }
 
@@ -825,6 +908,7 @@ fn with_flowchart<T>(
     } else {
         FlowchartRouting::Adaptive
     };
+    section.design = prepared.design;
     step(&Context {
         fonts: prepared.fonts,
         diagram: &diagram,

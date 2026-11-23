@@ -42,6 +42,7 @@ Options:
       --scheme <SCHEME>   The colours: `light`, `dark`, or `auto` to follow the viewer's
                           colour scheme. By default the configured theme decides.
       --compat           Use Mermaid geometry instead of optimized routing and participant boxes
+      --design           Draw flowcharts in the design mode: ferrigura's own look, paint only
       --animate           Draw a supported diagram once, one line at a time, with embedded CSS
       --animation-speed <N>
                           Positive multiplier of 700 SVG units/s on average; enables animation
@@ -76,6 +77,7 @@ struct Job {
     now: Option<i64>,
     scheme: Option<ColorScheme>,
     compat: bool,
+    design: bool,
     animation: Option<Animation>,
     output: Option<PathBuf>,
     output_dir: Option<PathBuf>,
@@ -179,6 +181,7 @@ fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Command, String
             "--id" => job.id = Some(value(&mut args, &argument)?),
             "--scheme" => job.scheme = Some(scheme(&value(&mut args, &argument)?)?),
             "--compat" => job.compat = true,
+            "--design" => job.design = true,
             "--animate" => {
                 job.animation.get_or_insert_default();
             }
@@ -331,6 +334,7 @@ fn run(job: &Job) -> Result<(), String> {
         id: job.id.clone(),
         color_scheme: job.scheme,
         compat: job.compat,
+        design: job.design,
         animation: job.animation,
         now: job.now,
         git_graph_seed: None,

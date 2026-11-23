@@ -44,6 +44,7 @@ Returns the SVG document of a diagram as a string.
 - `options` is an object with these optional fields:
   - `id`: the id of the SVG element, which scopes its styles. It must start with an ASCII letter and contain only ASCII letters, digits, `-` and `_`. By default it is derived from the text and the configuration, so the same input gives the same id.
   - `compat`: `false` (default) uses optimized flowchart routing and compact sequence participant boxes. `true` preserves Mermaid-compatible geometry. Font, fill and readability fixes apply in both modes.
+  - `design`: `true` draws flowcharts in the design mode: ferrigura's own look, with hairline outlines, color by a node's role, rounded corners and soft shadows. It changes paint only. Other diagram types and the combination with `compat` throw.
   - `colorScheme`: `'light'`, `'dark'` or `'auto'`. `'auto'` writes each color that differs as `light-dark(light, dark)`: inline in a page the diagram follows the page's `color-scheme`, and as a standalone file it follows the viewer's. By default the configured theme decides the colors.
 
 ```js

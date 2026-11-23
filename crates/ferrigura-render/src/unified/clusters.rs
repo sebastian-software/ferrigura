@@ -101,11 +101,20 @@ fn rect(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
     })?;
     let frame = frame(node, title.bbox, title_top_margin(config))?;
 
-    let palette = style::palette(config.globals, config.theme);
+    let palette = style::palette_of(config);
     let slot = palette
         .as_ref()
         .and_then(|palette| style::palette_slot(node.color_index, palette));
-    let (fill, stroke) = presentation_colors(node, config.theme, palette.as_ref(), slot);
+    let (fill, mut stroke) = presentation_colors(node, config.theme, palette.as_ref(), slot);
+    // The design mode frames a group with the group's own border and rounds its corners.
+    let mut radius = String::new();
+    if config.section.design.is_some() {
+        stroke = config.theme.cluster_border.text();
+        radius = format!(
+            " rx=\"{0}\" ry=\"{0}\"",
+            number(crate::design::GROUP_RADIUS)
+        );
+    }
     let color_id = slot.map_or_else(String::new, |slot| {
         format!(" data-color-id=\"color-{slot}\"")
     });
@@ -123,7 +132,7 @@ fn rect(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
     let title_box = title.bbox.translate(frame.title.x, frame.title.y);
     let svg = format!(
         "<g class=\"cluster {classes}\" id=\"{id}\" data-look=\"{look}\"{color_id}>\
-         <rect{style} x=\"{x}\" y=\"{y}\" width=\"{width}\" height=\"{height}\"{fill}{stroke}/>\
+         <rect{style}{radius} x=\"{x}\" y=\"{y}\" width=\"{width}\" height=\"{height}\"{fill}{stroke}/>\
          <g class=\"cluster-label \" transform=\"translate({tx}, {ty})\">{title}</g>\
          </g>",
         classes = escape(&node.css_classes),
@@ -149,7 +158,7 @@ fn rect(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
 /// (`stampColorSlot`, `colorThemeGate.ts`): the attribute is written only when the theme has a
 /// palette and the container has a slot.
 fn colour_slot(node: &Node, config: &Config<'_>) -> (Option<usize>, String) {
-    let palette = style::palette(config.globals, config.theme);
+    let palette = style::palette_of(config);
     let slot = palette
         .as_ref()
         .and_then(|palette| style::palette_slot(node.color_index, palette));
