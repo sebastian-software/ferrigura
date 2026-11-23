@@ -19,7 +19,7 @@ use crate::core::data::enums::{Direction, EdgeLabelPlacement, NodeType, PortSide
 use crate::core::math::{ElkRectangle, KVector};
 use crate::java::sort;
 use crate::layered::labelcell::{HorizontalLabelAlignment, LabelCell, VerticalLabelAlignment};
-use crate::layered::labels::{LabelSide, label_side};
+use crate::layered::labels::LabelSide;
 use crate::layered::lgraph::{LGraph, LLabel, LabelId};
 use crate::layered::options;
 
@@ -276,7 +276,7 @@ fn place_port_labels(graph: &LGraph, port: usize, cell: &mut LabelCell, edge_lab
     };
     let thickness = port_data.max_edge_thickness.unwrap_or(0.0);
     let mut rect = cell.rect;
-    let above = label_side(&graph.labels[cell.labels[0]]) == LabelSide::ABOVE;
+    let above = graph.labels[cell.labels[0]].side == LabelSide::ABOVE;
     match port_data.side {
         PortSide::NORTH => {
             cell.set_vertical_alignment(VerticalLabelAlignment::Bottom);

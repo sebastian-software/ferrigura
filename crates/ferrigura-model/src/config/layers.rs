@@ -56,6 +56,9 @@ pub struct SiteConfig {
     settings: Value,
     /// The defaults with the settings on top: the reference's `site_config`.
     merged: Value,
+    /// `merged` merged onto an empty object, the first layer of every diagram's configuration. It
+    /// does not depend on the diagram, so it is merged once and copied for each one.
+    first_layer: Value,
     /// The keys that a diagram may not set, from the merged `secure` list.
     secure: Vec<String>,
 }
@@ -70,9 +73,12 @@ impl SiteConfig {
         assign_with_depth(&mut merged, cached_defaults(), 2);
         assign_with_depth(&mut merged, &settings, 2);
         let secure = secure_keys(&merged);
+        let mut first_layer = Value::Object(Map::new());
+        assign_with_depth(&mut first_layer, &merged, 2);
         Self {
             settings,
             merged,
+            first_layer,
             secure,
         }
     }
@@ -96,8 +102,7 @@ impl SiteConfig {
         let mut sum = Value::Object(Map::new());
         assign_with_depth(&mut sum, &directive, 2);
 
-        let mut config = Value::Object(Map::new());
-        assign_with_depth(&mut config, &self.merged, 2);
+        let mut config = self.first_layer.clone();
         assign_with_depth(&mut config, &sum, 2);
         resolve_appearance(
             &mut config,

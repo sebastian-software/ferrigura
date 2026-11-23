@@ -343,7 +343,7 @@ pub fn effective_minimum_size(properties: &PropertyHolder) -> KVector {
         return KVector::default();
     }
     let mut minimum = match properties.value_or_default(options::NODE_SIZE_MINIMUM) {
-        Some(OptionValue::Vector(vector)) => vector,
+        Some(OptionValue::Vector(vector)) => *vector,
         _ => KVector::default(),
     };
     // Unset, `nodeSize.options` is `EnumSet.of(DEFAULT_MINIMUM_SIZE)`, which the registry's default

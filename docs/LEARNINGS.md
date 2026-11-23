@@ -107,7 +107,7 @@ A layout engine amplifies the last bit of a number into positions that differ by
 
 For the same input bits, the platform's `sin`, `cos` and `log` give another last bit than V8's for a few percent of inputs. A port that calls them has that share of its radial start coordinates one ulp away from the first placement on, and a tolerance would hide that where a zero tolerance fails. `ferrigura-jsmath` computes the functions as Chromium does:
 
-- `sin`, `cos`, `tan`, `asin`, `acos`, `log` and `log10` are correctly rounded, by Ziv's method (256 fraction bits, rounding when both bounds agree). Chromium's results are correctly rounded on every input probed, so the two agree.
+- `sin`, `cos`, `tan`, `asin`, `acos`, `log` and `log10` are correctly rounded, by Ziv's method (256 fraction bits, rounding when both bounds agree). `sin`, `cos` and `acos` first try a double-double evaluation with a proven error bound and use it when its whole interval rounds to one double, which is the same result much faster. Chromium's results are correctly rounded on every input probed, so the two agree.
 - `atan` and `atan2` are ported from llvm-libc, which Chromium's V8 takes them from; they are not correctly rounded.
 - `pow` is the platform's, with V8's special cases, and `hypot` is V8's two-argument formula. Both runtimes agree on these two, and only macOS was checked for `pow`.
 - The `node` module has Node 24's functions (V8's fdlibm port), because the parser differentials run in Node and Node and Chromium disagree on `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `log` and `log10` for 0.5 to 11 percent of inputs.

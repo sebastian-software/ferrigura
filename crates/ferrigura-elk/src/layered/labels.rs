@@ -19,11 +19,11 @@ use std::cmp::Ordering;
 use std::collections::VecDeque;
 
 use crate::core::data::JavaEnum;
-use crate::core::data::OptionValue;
 use crate::core::data::enums::{
     Alignment, CenterEdgeLabelPlacementStrategy, Direction, EdgeLabelPlacement,
     EdgeLabelSideSelection, EdgeRouting, NodeType, PortSide,
 };
+use crate::core::data::{OptionId, OptionValue};
 use crate::core::math::KVector;
 use crate::java::sort;
 use crate::layered::LayoutError;
@@ -73,33 +73,6 @@ impl JavaEnum for LabelSide {
             LabelSide::INLINE => "INLINE",
         }
     }
-}
-
-/// The id under which an edge label holds `InternalProperties.LABEL_SIDE`. `LLabel` has no field
-/// for it: its literals elsewhere do not take one, so it lives in the label's properties, as it
-/// does in Java's property map.
-const LABEL_SIDE: &str = "labelSide";
-
-/// The id under which an edge label holds `LabelDummySwitcher.INCLUDE_LABEL`, in the same way.
-const INCLUDE_LABEL: &str = "edgelabelcenterednessanalysis.includelabel";
-
-/// `label.getProperty(InternalProperties.LABEL_SIDE)` of an edge label, `UNKNOWN` when it was never set.
-pub(crate) fn label_side(label: &LLabel) -> LabelSide {
-    match label.properties.get(LABEL_SIDE) {
-        Some(OptionValue::Enum { name, .. }) => LabelSide::from_java_text(name).unwrap_or_default(),
-        _ => LabelSide::UNKNOWN,
-    }
-}
-
-/// `label.setProperty(InternalProperties.LABEL_SIDE, side)` for an edge label.
-fn set_label_side(label: &mut LLabel, side: LabelSide) {
-    label.properties.set(
-        LABEL_SIDE,
-        Some(OptionValue::Enum {
-            class: "LabelSide",
-            name: side.java_name().to_string(),
-        }),
-    );
 }
 
 type Placement = CenterEdgeLabelPlacementStrategy;
@@ -163,8 +136,8 @@ fn required<T>(value: Option<T>, what: &str) -> Result<T, LayoutError> {
     value.ok_or_else(|| LayoutError::Format(format!("{what} is missing")))
 }
 
-fn graph_double(graph: &LGraph, id: &str) -> Result<f64, LayoutError> {
-    required(graph.properties.double_of(id), id)
+fn graph_double(graph: &LGraph, id: OptionId) -> Result<f64, LayoutError> {
+    required(graph.properties.double_of(id), id.name())
 }
 
 fn layer_id(graph: &LGraph, node: usize) -> Result<usize, LayoutError> {
@@ -600,9 +573,7 @@ impl LabelDummySwitcher {
             graph.nodes[info.label_dummy].size.x,
         );
         for id in graph.nodes[info.label_dummy].represented_labels.clone() {
-            graph.labels[id]
-                .properties
-                .set(INCLUDE_LABEL, Some(OptionValue::Boolean(true)));
+            graph.labels[id].include_label = true;
         }
         Ok(())
     }
@@ -1242,14 +1213,14 @@ fn apply_label_side_to_node(
 /// `applyLabelSide(LEdge, side)`: every label of the edge gets `side`.
 fn apply_label_side_to_edge(graph: &mut LGraph, edge: usize, side: LabelSide) {
     for label in graph.edges[edge].labels.clone() {
-        set_label_side(&mut graph.labels[label], side);
+        graph.labels[label].side = side;
     }
 }
 
 /// `applyLabelSide(List<LLabel>, side)`: every label in the list gets `side`.
 fn apply_label_side_to_refs(graph: &mut LGraph, labels: &[LabelId], side: LabelSide) {
     for &label in labels {
-        set_label_side(&mut graph.labels[label], side);
+        graph.labels[label].side = side;
     }
 }
 
@@ -1420,19 +1391,11 @@ mod tests {
 
     /// `LABEL_SIDE` of an edge label, `UNKNOWN` when it was never set.
     fn label_side_of(label: &LLabel) -> LabelSide {
-        match label.properties.get(LABEL_SIDE) {
-            Some(OptionValue::Enum { name, .. }) => {
-                LabelSide::from_java_text(name).unwrap_or_default()
-            }
-            _ => LabelSide::UNKNOWN,
-        }
+        label.side
     }
 
     fn is_included(label: &LLabel) -> bool {
-        matches!(
-            label.properties.get(INCLUDE_LABEL),
-            Some(OptionValue::Boolean(true))
-        )
+        label.include_label
     }
 
     fn enum_value(class: &'static str, name: &str) -> Option<OptionValue> {

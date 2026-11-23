@@ -25,8 +25,9 @@
 //!
 //! **Correct rounding.** The seven functions computed in `correct.rs` return the correctly rounded value by
 //! Ziv's method: their fixed-point paths compute to 256 fraction bits with an error bound of `(|v| + 1) * 2^-180`, and round
-//! when both bounds round to the same double. `acos` first tries a CORE-MATH interval test and
-//! falls back to fixed point when its bounds do not agree. Chromium's results are correctly rounded on every input the
+//! when both bounds round to the same double. `sin` and `cos` first try a double-double evaluation with a
+//! proven error bound (for arguments up to `2^30`), and `acos` a CORE-MATH interval test; each falls back to
+//! fixed point when its bounds do not round alike. Chromium's results are correctly rounded on every input the
 //! probe checked (about 270,000 inputs, against mpmath at 300 bits; `log10` on 200,000, against Python's
 //! `decimal` at 80 digits), so the two agree.
 //!
@@ -62,6 +63,7 @@ mod log;
 mod pow;
 mod rem_pio2;
 mod trig;
+mod trig_fast;
 mod words;
 
 pub use atan::{atan, atan2};

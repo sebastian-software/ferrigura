@@ -16,6 +16,17 @@ use napi::bindgen_prelude::Uint8Array;
 use napi::{Error, Result, Status};
 use napi_derive::napi;
 
+// A render makes many small allocations, which mimalloc serves faster than the system allocator. The
+// targets are the ones of the `mimalloc` dependency in Cargo.toml. The default features are off, so
+// mimalloc does not replace the process's malloc, which Node and V8 share.
+#[cfg(any(
+    target_os = "macos",
+    all(target_os = "linux", target_env = "gnu"),
+    all(target_os = "windows", target_env = "msvc")
+))]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 /// One host-supplied face. The JavaScript facade reads local files before calling the addon.
 #[napi(object)]
 pub struct FontInput {
