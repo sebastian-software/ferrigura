@@ -513,11 +513,11 @@ impl<'a> Renderer<'a> {
         // before the drawing, then the rest (the reference's order in the DOM, `sequenceRenderer`).
         let mut content = String::new();
         for element in self.front.iter().rev() {
-            content.push_str(&element.render());
+            element.render_into(&mut content);
         }
         let mut rest = String::new();
         for element in &self.back {
-            rest.push_str(&element.render());
+            element.render_into(&mut rest);
         }
         let mut text = String::new();
         for element in self.children() {

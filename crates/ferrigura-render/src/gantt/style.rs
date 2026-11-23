@@ -5,6 +5,8 @@
 //! The rules are the reference's, in its order (`styles.js:1-290`): the order decides which rule
 //! wins for an element that two rules color, and the attributes take the winner's color.
 
+use std::fmt::Write as _;
+
 use ferrigura_model::theme::{ThemeTokens, Token};
 
 use crate::context::ThemeView;
@@ -202,17 +204,20 @@ pub(crate) fn style_element(id: &str, theme: ThemeView<'_>, family: &str, faces:
         .text()
         .unwrap_or_else(|| "16px".to_owned());
     let root = format!("#{id}{{font-family: {font};font-size: {size};fill: var(--textColor);}}");
-    let rules: String = rules(&font)
-        .into_iter()
-        .map(|(selectors, body)| {
-            let scoped: Vec<String> = selectors
-                .split(',')
-                .map(|selector| format!("#{id} {}", selector.trim()))
-                .collect();
-            format!("{}{{{body}}}", scoped.join(", "))
-        })
-        .collect();
-    format!("<style>{}{tokens}{root}{rules}</style>", css_text(faces))
+    let mut scoped_rules = String::new();
+    for (selectors, body) in rules(&font) {
+        for (index, selector) in selectors.split(',').enumerate() {
+            if index > 0 {
+                scoped_rules.push_str(", ");
+            }
+            let _ = write!(scoped_rules, "#{id} {}", selector.trim());
+        }
+        let _ = write!(scoped_rules, "{{{body}}}");
+    }
+    format!(
+        "<style>{}{tokens}{root}{scoped_rules}</style>",
+        css_text(faces)
+    )
 }
 
 /// The custom property declarations of the color tokens a set gives.

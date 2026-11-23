@@ -126,10 +126,22 @@ impl Value {
 /// that read back as the number, in plain notation from `1e-6` up to `1e21` and in exponent
 /// notation outside that (`1.8369701987210297e-14`, `1e+21`). Both zeros are `0`, and the others
 /// that are not finite are `NaN`, `Infinity` and `-Infinity`. This is `svg::number` of
-/// `ferrigura-render`, which calls it.
+/// `ferrigura-render`, which calls it; [`NumberText`] writes the same text into a buffer.
 #[must_use]
 pub fn number_text(value: f64) -> String {
     ryu_js::Buffer::new().format(value).to_owned()
+}
+
+/// A number that displays as [`number_text`] writes it, for a `write!` or `format!` template: the
+/// digits go straight into the destination, without a `String` of their own.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct NumberText(pub f64);
+
+impl std::fmt::Display for NumberText {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // `pad`, as a `String` argument writes itself, so a width or fill in a template applies.
+        formatter.pad(ryu_js::Buffer::new().format(self.0))
+    }
 }
 
 /// The value of a key of an object, or `null` when it has none, as `serde_json` indexes them.

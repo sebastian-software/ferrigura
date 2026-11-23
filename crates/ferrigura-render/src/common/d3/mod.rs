@@ -26,7 +26,7 @@ pub mod treemap;
 pub use array::{max_by, min_by, sum_by};
 pub use line::{linear_path, link_horizontal};
 pub use math::{math_max, math_min};
-pub use number::{d3_number, interpolate_number, js_number, js_round, js_to_number};
+pub use number::{d3_number, d3_rounded, interpolate_number, js_number, js_round, js_to_number};
 pub use ordinal::{OrdinalScale, SCHEME_TABLEAU10};
 pub use scale::{BandScale, LinearScale, normalize};
 pub use sort::sort_js;

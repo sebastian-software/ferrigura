@@ -2,7 +2,7 @@
 //! written by Node (see `tools/port/number-text-table.ts`): the special values, the limits of the
 //! plain notation, every decimal exponent, random bit patterns and the short decimals of diagrams.
 
-use ferrigura_model::value::number_text;
+use ferrigura_model::value::{NumberText, number_text};
 
 #[test]
 fn numbers_are_written_as_javascript_writes_them() {
@@ -12,9 +12,16 @@ fn numbers_are_written_as_javascript_writes_them() {
     for line in table.lines().filter(|line| !line.starts_with('#')) {
         let (bits, expected) = line.split_once(' ').expect("bits and text");
         let bits = u64::from_str_radix(bits.trim_start_matches("0x"), 16).expect("hex bits");
-        let actual = number_text(f64::from_bits(bits));
+        let value = f64::from_bits(bits);
+        let actual = number_text(value);
         if actual != expected {
             wrong.push(format!("{bits:#018x}: {actual} != {expected}"));
+        }
+        let displayed = NumberText(value).to_string();
+        if displayed != expected {
+            wrong.push(format!(
+                "{bits:#018x}: NumberText {displayed} != {expected}"
+            ));
         }
         checked += 1;
     }

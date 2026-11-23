@@ -337,7 +337,6 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
         .as_deref()
         .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
 
-    let body = format!("{shape_svg}{label_svg}{after_label}");
     match node.link.as_deref() {
         // The state diagram wraps a clicked node after its render (`stateRenderer-v3-unified.ts`
         // 80-133): the anchor has no transform, and the tooltip is on the anchor and on the node.
@@ -347,7 +346,7 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
                 .as_deref()
                 .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
             format!(
-                "<a xlink:href=\"{}\"{tooltip}><g class=\"{}\" id=\"{}\"{colour_slot}{data_look} transform=\"{transform}\"{tooltip}>{body}</g></a>",
+                "<a xlink:href=\"{}\"{tooltip}><g class=\"{}\" id=\"{}\"{colour_slot}{data_look} transform=\"{transform}\"{tooltip}>{shape_svg}{label_svg}{after_label}</g></a>",
                 escape(link),
                 escape(&class),
                 escape(&id),
@@ -360,14 +359,14 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
                 .as_deref()
                 .map_or_else(String::new, |target| util::attribute("target", target));
             format!(
-                "<a xlink:href=\"{}\"{target}{data_look} transform=\"{transform}\"><g class=\"{}\" id=\"{}\"{colour_slot}{group_attributes}{title}>{body}</g></a>",
+                "<a xlink:href=\"{}\"{target}{data_look} transform=\"{transform}\"><g class=\"{}\" id=\"{}\"{colour_slot}{group_attributes}{title}>{shape_svg}{label_svg}{after_label}</g></a>",
                 escape(link),
                 escape(&class),
                 escape(&id),
             )
         }
         None => format!(
-            "<g class=\"{}\" id=\"{}\"{colour_slot}{data_look}{group_attributes} transform=\"{transform}\"{title}>{body}</g>",
+            "<g class=\"{}\" id=\"{}\"{colour_slot}{data_look}{group_attributes} transform=\"{transform}\"{title}>{shape_svg}{label_svg}{after_label}</g>",
             escape(&class),
             escape(&id),
         ),

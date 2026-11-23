@@ -20,7 +20,14 @@ pub fn js_round(value: f64) -> f64 {
 /// A coordinate as `d3-path` writes it with three digits: `Math.round(v * 1000) / 1000`.
 #[must_use]
 pub fn d3_number(value: f64) -> String {
-    js_number(js_round(value * 1000.0) / 1000.0)
+    js_number(d3_rounded(value))
+}
+
+/// The number [`d3_number`] writes: the coordinate rounded to three digits, for a template that
+/// writes it with [`ferrigura_model::value::NumberText`].
+#[must_use]
+pub fn d3_rounded(value: f64) -> f64 {
+    js_round(value * 1000.0) / 1000.0
 }
 
 /// `interpolateNumber(a, b)(t)` of `d3-interpolate` 3.0.1 (`number.js`): `a * (1 - t) + b * t`. The

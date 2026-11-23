@@ -13,11 +13,13 @@
 //! `docs/diagrams/flowchart.md#edges`.
 
 use std::f64::consts::PI;
+use std::fmt::Write as _;
 
 use ferrigura_jsmath::{acos, atan, atan2, cos, hypot, pow, sin};
+use ferrigura_model::value::NumberText;
 
 use super::geom::{BBox, Point};
-
+use crate::common::d3::number::d3_rounded;
 pub use crate::common::d3::number::{d3_number, js_number, js_round};
 
 /// The radius of the rounded corners: `generateRoundedPath(…, 5)` in `insertEdge`.
@@ -58,6 +60,11 @@ fn js_min3(a: f64, b: f64, c: f64) -> f64 {
     }
 }
 
+/// A coordinate of the pen, written as [`d3_number`] writes it.
+fn coordinate(value: f64) -> NumberText {
+    NumberText(d3_rounded(value))
+}
+
 /// The path writer of `d3-path` with three digits (`new Path(3)`).
 #[derive(Debug, Default)]
 struct Pen {
@@ -66,25 +73,24 @@ struct Pen {
 
 impl Pen {
     fn move_to(&mut self, x: f64, y: f64) {
-        self.out
-            .push_str(&format!("M{},{}", d3_number(x), d3_number(y)));
+        let _ = write!(self.out, "M{},{}", coordinate(x), coordinate(y));
     }
 
     fn line_to(&mut self, x: f64, y: f64) {
-        self.out
-            .push_str(&format!("L{},{}", d3_number(x), d3_number(y)));
+        let _ = write!(self.out, "L{},{}", coordinate(x), coordinate(y));
     }
 
     fn bezier_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {
-        self.out.push_str(&format!(
+        let _ = write!(
+            self.out,
             "C{},{},{},{},{},{}",
-            d3_number(x1),
-            d3_number(y1),
-            d3_number(x2),
-            d3_number(y2),
-            d3_number(x),
-            d3_number(y)
-        ));
+            coordinate(x1),
+            coordinate(y1),
+            coordinate(x2),
+            coordinate(y2),
+            coordinate(x),
+            coordinate(y)
+        );
     }
 
     fn close(&mut self) {
@@ -809,27 +815,29 @@ pub fn generate_rounded_path(points: &[Point], radius: f64) -> String {
     for i in 0..size {
         let curr = points[i];
         if i == 0 {
-            path.push_str(&format!("M{},{}", js_number(curr.x), js_number(curr.y)));
+            let _ = write!(path, "M{},{}", NumberText(curr.x), NumberText(curr.y));
         } else if i == size - 1 {
-            path.push_str(&format!("L{},{}", js_number(curr.x), js_number(curr.y)));
+            let _ = write!(path, "L{},{}", NumberText(curr.x), NumberText(curr.y));
         } else {
             match rounded_corner(points[i - 1], curr, points[i + 1], radius) {
                 Some(corner) => {
-                    path.push_str(&format!(
+                    let _ = write!(
+                        path,
                         "L{},{}",
-                        js_number(corner.start.x),
-                        js_number(corner.start.y)
-                    ));
-                    path.push_str(&format!(
+                        NumberText(corner.start.x),
+                        NumberText(corner.start.y)
+                    );
+                    let _ = write!(
+                        path,
                         "Q{},{} {},{}",
-                        js_number(curr.x),
-                        js_number(curr.y),
-                        js_number(corner.end.x),
-                        js_number(corner.end.y)
-                    ));
+                        NumberText(curr.x),
+                        NumberText(curr.y),
+                        NumberText(corner.end.x),
+                        NumberText(corner.end.y)
+                    );
                 }
                 None => {
-                    path.push_str(&format!("L{},{}", js_number(curr.x), js_number(curr.y)));
+                    let _ = write!(path, "L{},{}", NumberText(curr.x), NumberText(curr.y));
                 }
             }
         }
