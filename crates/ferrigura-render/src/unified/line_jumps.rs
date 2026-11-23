@@ -6,9 +6,7 @@
 //! style, which the reference recomputes from the new length.
 
 use super::geom::Point;
-use super::path::{
-    ROUNDED_RADIUS, RoundedCorner, apply_marker_offsets, d3_number, path_length, rounded_corner,
-};
+use super::path::{RoundedCorner, apply_marker_offsets, d3_number, path_length, rounded_corner};
 
 /// The radius of a hop, `JUMP_RADIUS` in `elk/lineHops.ts`.
 pub const JUMP_RADIUS: f64 = 6.0;
@@ -56,6 +54,8 @@ pub struct EdgeGeom {
     pub arrow_type_end: String,
     /// The `style` the path currently has.
     pub style: String,
+    /// The radius of the edge's rounded corners: the reference's, or the design mode's.
+    pub corner_radius: f64,
 }
 
 /// A place where two edges cross, with the edge that gives way (`jump_edge`) and the one it hops
@@ -133,7 +133,7 @@ fn crossing_sits_in_rounded_corner(edge: &EdgeGeom, seg_index: usize, t: f64) ->
     let seg_len = a.distance(b);
     let d = t * seg_len;
     let entering = if seg_index > 0 {
-        rounded_corner(points[seg_index - 1], a, b, ROUNDED_RADIUS)
+        rounded_corner(points[seg_index - 1], a, b, edge.corner_radius)
     } else {
         None
     };
@@ -143,7 +143,7 @@ fn crossing_sits_in_rounded_corner(edge: &EdgeGeom, seg_index: usize, t: f64) ->
         return true;
     }
     let leaving = if seg_index + 2 < points.len() {
-        rounded_corner(a, b, points[seg_index + 2], ROUNDED_RADIUS)
+        rounded_corner(a, b, points[seg_index + 2], edge.corner_radius)
     } else {
         None
     };
@@ -293,7 +293,7 @@ pub fn rewrite_edge_path(edge: &EdgeGeom, jumps: &[Crossing], config: &LineJumpC
         if rounded
             && i > 0
             && let Some(corner) =
-                rounded_corner(points[i - 1], points[i], points[i + 1], ROUNDED_RADIUS)
+                rounded_corner(points[i - 1], points[i], points[i + 1], edge.corner_radius)
         {
             consumed = corner.cut_len;
         }
@@ -301,7 +301,7 @@ pub fn rewrite_edge_path(edge: &EdgeGeom, jumps: &[Crossing], config: &LineJumpC
         let mut stop = seg_len;
         let mut upcoming: Option<RoundedCorner> = None;
         if rounded && i + 1 < segs.len() {
-            upcoming = rounded_corner(points[i], points[i + 1], points[i + 2], ROUNDED_RADIUS);
+            upcoming = rounded_corner(points[i], points[i + 1], points[i + 2], edge.corner_radius);
             if let Some(corner) = upcoming {
                 stop = seg_len - corner.cut_len;
             }
@@ -575,6 +575,7 @@ mod tests {
             arrow_type_start: "none".to_owned(),
             arrow_type_end: "none".to_owned(),
             style: String::new(),
+            corner_radius: crate::unified::path::ROUNDED_RADIUS,
         }
     }
 

@@ -32,6 +32,13 @@ The renderer that flowchart, class, state, ER and requirement share, and that ot
 **Compatibility mode**:
 The per-render choice between optimized geometry (`compat: false`, the default) and Mermaid-compatible geometry (`compat: true`). It controls adaptive flowchart ports and compact sequence participant boxes. Font, color and readability fixes apply in either mode ([0019](./0019-adaptive-flowchart-mode.md)).
 
+**Design mode**:
+The per-render option (`design: true`) that draws a diagram in ferrigura's own look instead of the reference's: hairline outlines, color by a node's role, rounded corners and soft shadows. It also has its own measures (roomier nodes, spacings and group paddings), laid out by the same engines, and excludes `compat` ([0023](./0023-design-mode.md)).
+_Avoid_: modern mode; theme or look (a theme sets colors, a look is Mermaid's `look` configuration)
+
+**Role**:
+What a node stands for in the design mode, read from its shape: `terminal`, `decision` or `data`. A role gives the node its color ([0023](./0023-design-mode.md)).
+
 **Flowchart routing policy**:
 The choice of how a flowchart attaches its edges to nodes: adaptive centering with label-aware spacing, or the pinned Mermaid reference's attachment behavior ([0019](./0019-adaptive-flowchart-mode.md)). Necessary bends remain in either policy.
 

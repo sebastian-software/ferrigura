@@ -30,6 +30,7 @@ pub fn style_sheet(
         classes,
         families,
         crate::flowchart::policy::FlowchartRouting::Mermaid,
+        None,
     );
     css.push_str(&css_text(&lane_rules(id, theme, globals)));
     css

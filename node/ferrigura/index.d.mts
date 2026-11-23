@@ -11,6 +11,8 @@ export type Animation = {
 export type RenderOptions = {
   /** True selects Mermaid geometry. False (default) enables optimized routing and compact participants. */
   compat?: boolean;
+  /** True draws flowcharts in the design mode: ferrigura's own look, with roomier nodes and spacing. Not with `compat`. */
+  design?: boolean;
   /** An empty object enables draw animation with the defaults. Omit to keep static output. */
   animation?: Animation;
   /** SVG namespace; starts with an ASCII letter and contains letters, digits, - or _. */

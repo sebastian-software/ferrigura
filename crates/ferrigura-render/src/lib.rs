@@ -17,6 +17,7 @@ pub mod class;
 pub mod common;
 pub mod context;
 pub mod cynefin;
+pub mod design;
 pub mod er;
 pub mod event_modeling;
 pub mod flowchart;

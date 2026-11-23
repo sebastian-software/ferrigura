@@ -44,6 +44,18 @@ fn animation_is_optional_and_has_validated_speed_and_order() {
 }
 
 #[test]
+fn design_draws_the_design_mode_and_excludes_compat() {
+    let text = "flowchart TD\n A([Start]) --> B{Review}\n B --> C[Done]\n";
+    let designed = run(&["--id", "look", "--design"], text);
+    assert!(designed.status.success(), "{}", stderr(&designed));
+    assert!(stdout(&designed).contains("data-role=\"terminal\""));
+    assert!(!stdout(&run(&["--id", "look"], text)).contains("data-role"));
+    let both = run(&["--design", "--compat"], text);
+    assert!(!both.status.success());
+    assert!(stderr(&both).contains("cannot be combined with compat"));
+}
+
+#[test]
 fn compat_selects_reference_routing_and_the_removed_option_is_rejected() {
     let text = "flowchart TD\n A[Draft] --> B{Review}\n B -->|Changes| A\n B --> C[Publish]\n";
     let adaptive = run(&["--id", "routing"], text);

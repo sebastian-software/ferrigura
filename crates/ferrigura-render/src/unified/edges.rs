@@ -339,7 +339,7 @@ pub fn label_size(label: &LabelLayout) -> (f64, f64) {
 /// The `d` of an edge, as `insertEdge` builds it for the points after layout: `rounded` through
 /// `generateRoundedPath`, otherwise the d3 curve with the marker accessors on the corner-fixed
 /// points. `None` when the curve has no points.
-fn path_data(edge: &Edge, curve_name: &str) -> Option<String> {
+fn path_data(edge: &Edge, curve_name: &str, radius: f64) -> Option<String> {
     let line_data: Vec<Point> = edge
         .points
         .iter()
@@ -349,7 +349,7 @@ fn path_data(edge: &Edge, curve_name: &str) -> Option<String> {
     let (start, end) = (&edge.arrow_type_start, &edge.arrow_type_end);
     if curve_name == "rounded" {
         let offset = apply_marker_offsets(&line_data, start, end);
-        return Some(generate_rounded_path(&offset, ROUNDED_RADIUS));
+        return Some(generate_rounded_path(&offset, radius));
     }
     let fixed = fix_corners(&line_data);
     let accessor = line_with_offset(&fixed, start, end);
@@ -524,10 +524,27 @@ pub(crate) fn prepare_paths(
     jumps: Option<JumpStyle>,
 ) -> Vec<Painted> {
     let default_curve = section.flowchart.curve.clone();
+    // The design mode turns an edge on a wider radius and draws its own arrowheads.
+    let design = section.design.is_some();
+    let radius = if design {
+        crate::design::EDGE_RADIUS
+    } else {
+        ROUNDED_RADIUS
+    };
     let mut created = std::collections::HashSet::new();
     let mut painted: Vec<Painted> = edges
         .iter()
-        .map(|edge| paint_edge(edge, svg_id, diagram_type, &default_curve, &mut created))
+        .map(|edge| {
+            paint_edge(
+                edge,
+                svg_id,
+                diagram_type,
+                &default_curve,
+                radius,
+                design,
+                &mut created,
+            )
+        })
         .collect();
 
     if let Some(style) = jumps {
@@ -546,6 +563,7 @@ pub(crate) fn prepare_paths(
                 arrow_type_start: edges[index].arrow_type_start.clone(),
                 arrow_type_end: edges[index].arrow_type_end.clone(),
                 style: painted[index].style.clone(),
+                corner_radius: radius,
             })
             .collect();
         let config = LineJumpConfig {
@@ -587,10 +605,12 @@ fn paint_edge(
     svg_id: &str,
     diagram_type: &str,
     default_curve: &str,
+    radius: f64,
+    design: bool,
     created: &mut std::collections::HashSet<String>,
 ) -> Painted {
     let curve_name = edge.curve.as_deref().unwrap_or(default_curve);
-    let d = path_data(edge, curve_name);
+    let d = path_data(edge, curve_name, radius);
 
     let stroke = stroke_classes(&edge.thickness, &edge.pattern);
     let animation = if edge.animate == Some(true) {
@@ -678,13 +698,14 @@ fn paint_edge(
             Some(colour) => {
                 let colored = markers::coloured_id(&id, colour);
                 if created.insert(colored.clone()) {
-                    markers_out.push_str(&markers::coloured_marker(
+                    markers_out.push_str(&markers::coloured_marker_for(
                         svg_id,
                         diagram_type,
                         kind,
                         start,
                         margin,
                         colour,
+                        design,
                     ));
                 }
                 Some(format!("url(#{colored})"))
@@ -758,6 +779,22 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
     let y = edge.y.unwrap_or(0.0) + margin / 2.0;
     let text = label.bbox;
     let (text_x, text_y) = (text.x + text.width / 2.0, text.y + text.height / 2.0);
+    // The design mode draws the background as a chip: wider than the text, with round corners.
+    let chip = label
+        .background
+        .filter(|_| section.design.is_some())
+        .map(|background| {
+            let padding = crate::design::CHIP_PADDING;
+            (
+                BBox::new(
+                    background.x - padding,
+                    background.y,
+                    background.width + 2.0 * padding,
+                    background.height,
+                ),
+                crate::design::CHIP_RADIUS,
+            )
+        });
     let inner = match label.background {
         // `createText` restyles the background and the text of a label that has a background,
         // which an edge label with text has; without one it leaves both as they are.
@@ -767,12 +804,12 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
             // over the half-opacity rules of individual types without replacing the theme fill
             // (including its explicit alpha) or a later authored declaration. Reference patch 12
             // applies the same paint-only correction to `createText`.
-            label.svg_with_background(&text, &format!("opacity:1;{background}"))
+            label.svg_with_background_in(&text, &format!("opacity:1;{background}"), chip)
         }
         None => label.svg(&label_style_text(edge)),
     };
     let group = match label.background {
-        Some(background) => text.union(background),
+        Some(background) => text.union(chip.map_or(background, |(chip, _)| chip)),
         None => text,
     };
     let absolute = group.translate(x - text_x, y - text_y);
@@ -790,10 +827,157 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
     }
 }
 
+/// The edge paths of a diagram in the design mode, with a gap under every edge label
+/// (`docs/decisions/0023-design-mode.md`): a mask over the whole drawing that hides the edges in the
+/// rounded box of each label. `drawn` is the box the diagram covers; the mask reaches beyond it, so
+/// that a stroke or an arrowhead at its border is not cut.
+#[must_use]
+pub(crate) fn with_label_gaps(
+    edge_paths: &str,
+    svg_id: &str,
+    drawn: BBox,
+    gaps: &[BBox],
+) -> String {
+    const BEYOND: f64 = 100.0;
+    let (x, y) = (drawn.x - BEYOND, drawn.y - BEYOND);
+    let (width, height) = (drawn.width + 2.0 * BEYOND, drawn.height + 2.0 * BEYOND);
+    let area = format!(
+        "x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"",
+        js_number(x),
+        js_number(y),
+        js_number(width),
+        js_number(height)
+    );
+    let radius = js_number(crate::design::CHIP_RADIUS);
+    let holes: String = gaps
+        .iter()
+        .map(|gap| {
+            format!(
+                "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" rx=\"{radius}\" ry=\"{radius}\" fill=\"black\"/>",
+                js_number(gap.x),
+                js_number(gap.y),
+                js_number(gap.width),
+                js_number(gap.height)
+            )
+        })
+        .collect();
+    let id = escape(svg_id);
+    format!(
+        "<mask id=\"{id}-label-gaps\" maskUnits=\"userSpaceOnUse\" {area}><rect {area} fill=\"white\"/>{holes}</mask><g mask=\"url(#{id}-label-gaps)\">{edge_paths}</g>"
+    )
+}
+
+/// The center of an edge label in the design mode, moved off the frame of a group
+/// (`docs/decisions/0023-design-mode.md`). The layout places a label on its edge without regard to a
+/// frame that is pulled in afterwards, so a chip can sit on a frame's line. The label then slides
+/// along the straight part of the edge it sits on, the shorter way, until its chip is
+/// [`CHIP_MARGIN`](crate::design::CHIP_MARGIN) clear of the line. It stays where it is when it
+/// sits on no axis-parallel part, or when that part is too short for the move.
+#[must_use]
+pub(crate) fn label_clear_of_frames(edge: &Edge, label: &LabelLayout, frames: &[BBox]) -> Point {
+    let centre = Point::new(edge.x.unwrap_or(0.0), edge.y.unwrap_or(0.0));
+    let (width, height) = label_size(label);
+    let half = Point::new(width / 2.0 + crate::design::CHIP_PADDING, height / 2.0);
+    let margin = crate::design::CHIP_MARGIN;
+    const ON_LINE: f64 = 0.5;
+
+    // The straight part of the edge the label sits on: a run of points on one axis-parallel line
+    // that passes through the label's center.
+    let mut part: Option<(bool, f64, f64)> = None;
+    for horizontal in [true, false] {
+        // Along the run and across it, for a point.
+        let split = |point: Point| {
+            if horizontal {
+                (point.x, point.y)
+            } else {
+                (point.y, point.x)
+            }
+        };
+        let (along, across) = split(centre);
+        let mut run: Option<(f64, f64)> = None;
+        for pair in edge.points.windows(2) {
+            let ((a, a_across), (b, b_across)) = (split(pair[0]), split(pair[1]));
+            let on_line =
+                (a_across - across).abs() < ON_LINE && (b_across - across).abs() < ON_LINE;
+            if on_line {
+                let (low, high) = run.unwrap_or((a.min(b), a.max(b)));
+                run = Some((low.min(a.min(b)), high.max(a.max(b))));
+                continue;
+            }
+            if run.is_some_and(|(low, high)| low <= along && along <= high) {
+                break;
+            }
+            run = None;
+        }
+        if let Some((low, high)) = run.filter(|(low, high)| *low <= along && along <= *high) {
+            part = Some((horizontal, low, high));
+            break;
+        }
+    }
+    let Some((horizontal, from, to)) = part else {
+        return centre;
+    };
+    // Along the part: the label's place and half its length. Across it: its place and half its width.
+    let (mut along, half_along, across, half_across) = if horizontal {
+        (centre.x, half.x, centre.y, half.y)
+    } else {
+        (centre.y, half.y, centre.x, half.x)
+    };
+    for frame in frames {
+        let (lines, low, high) = if horizontal {
+            (
+                [frame.x, frame.x + frame.width],
+                frame.y,
+                frame.y + frame.height,
+            )
+        } else {
+            (
+                [frame.y, frame.y + frame.height],
+                frame.x,
+                frame.x + frame.width,
+            )
+        };
+        // A frame whose side does not reach the label's row cannot cross the chip.
+        if across + half_across < low || across - half_across > high {
+            continue;
+        }
+        for line in lines {
+            if line <= along - half_along - margin || line >= along + half_along + margin {
+                continue;
+            }
+            let forward = line + margin + half_along;
+            let backward = line - margin - half_along;
+            let fits = |place: f64| place - half_along >= from && place + half_along <= to;
+            let nearer_forward = (forward - along).abs() <= (backward - along).abs();
+            let (first, second) = if nearer_forward {
+                (forward, backward)
+            } else {
+                (backward, forward)
+            };
+            if fits(first) {
+                along = first;
+            } else if fits(second) {
+                along = second;
+            }
+        }
+    }
+    if horizontal {
+        Point::new(along, centre.y)
+    } else {
+        Point::new(centre.x, along)
+    }
+}
+
 /// The marker definitions the flowchart uses, as `insertMarkers` writes them for `flowchart-v2`.
 #[must_use]
 pub fn markers(svg_id: &str) -> String {
     markers::markers(svg_id, markers::FLOWCHART)
+}
+
+/// [`markers()`], with the arrowheads of the design mode when `design` is set.
+#[must_use]
+pub fn markers_for(svg_id: &str, design: bool) -> String {
+    markers::markers_for(svg_id, markers::FLOWCHART, design)
 }
 
 #[cfg(test)]
@@ -859,6 +1043,113 @@ mod tests {
 
     /// `btoa(JSON.stringify(points))` in Node 24 for the points of a reference edge, and with a
     /// coordinate that JSON writes as `null`.
+    /// An edge from (0, 0) to (200, 0) with its label at `x` on it, and the label, 40 wide.
+    fn labelled(x: f64) -> (Edge, LabelLayout) {
+        let edge = Edge {
+            points: vec![Point::new(0.0, 0.0), Point::new(200.0, 0.0)],
+            x: Some(x),
+            y: Some(0.0),
+            ..Edge::default()
+        };
+        let label = LabelLayout::of_box(BBox::new(0.0, 0.0, 40.0, 20.0));
+        (edge, label)
+    }
+
+    #[test]
+    fn a_design_label_slides_off_the_frame_it_sits_on() {
+        // The chip is 40 wide and 5 wider on each side: it reaches 25 to each side of its center.
+        let frame = [BBox::new(-100.0, -50.0, 200.0, 100.0)];
+        // On the frame's right side at 100: the shorter way out is forward, 6 clear of the line.
+        let (edge, label) = labelled(110.0);
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(131.0, 0.0)
+        );
+        // The shorter way is back into the frame.
+        let (edge, label) = labelled(90.0);
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(69.0, 0.0)
+        );
+        // Clear of the line already, or beside a frame whose side does not reach its row.
+        let (edge, label) = labelled(150.0);
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(150.0, 0.0)
+        );
+        let (edge, label) = labelled(110.0);
+        let below = [BBox::new(-100.0, 40.0, 200.0, 100.0)];
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &below),
+            Point::new(110.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn a_design_label_at_a_bend_slides_back_along_the_whole_straight_run() {
+        let frame = [BBox::new(-100.0, -50.0, 200.0, 100.0)];
+        let (mut edge, label) = labelled(120.0);
+        // Two parts on one line up to the bend at 120, where the label sits; then the edge turns.
+        edge.points = vec![
+            Point::new(0.0, 0.0),
+            Point::new(90.0, 0.0),
+            Point::new(120.0, 0.0),
+            Point::new(120.0, -80.0),
+        ];
+        // Forward there is no straight part left, so the chip moves back, 6 inside the frame's side.
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(69.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn a_design_label_stays_when_its_part_of_the_edge_is_too_short() {
+        let frame = [BBox::new(-100.0, -50.0, 200.0, 100.0)];
+        let (mut edge, label) = labelled(110.0);
+        // The straight part ends at 140 and starts at 80: neither way has room for the chip.
+        edge.points = vec![
+            Point::new(80.0, 0.0),
+            Point::new(140.0, 0.0),
+            Point::new(140.0, 60.0),
+        ];
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(110.0, 0.0)
+        );
+        // A label on a slanted part is left alone.
+        edge.points = vec![Point::new(0.0, -50.0), Point::new(200.0, 50.0)];
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(110.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn a_rounded_edge_turns_on_the_radius_it_is_given() {
+        let edge = Edge {
+            points: vec![
+                Point::new(0.0, 0.0),
+                Point::new(0.0, 50.0),
+                Point::new(50.0, 50.0),
+            ],
+            ..Edge::default()
+        };
+        // How far before the corner at (0, 50) the turn starts.
+        let cut = |radius: f64| -> f64 {
+            let d = path_data(&edge, "rounded", radius).expect("a path");
+            let start = d
+                .strip_prefix("M0,0L0,")
+                .and_then(|rest| rest.split_once('Q'))
+                .map(|(y, _)| y.parse::<f64>().expect("a number"))
+                .expect("a turn");
+            50.0 - start
+        };
+        // `generateRoundedPath` cuts a right angle at the radius times the square root of two.
+        assert!((cut(ROUNDED_RADIUS) - 5.0 * std::f64::consts::SQRT_2).abs() < 1e-9);
+        assert!((cut(crate::design::EDGE_RADIUS) - 10.0 * std::f64::consts::SQRT_2).abs() < 1e-9);
+    }
+
     #[test]
     fn the_data_points_are_the_points_as_json_in_base64() {
         assert_eq!(

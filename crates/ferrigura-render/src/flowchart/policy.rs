@@ -150,3 +150,78 @@ fn apply_centering(
         path.pop();
     }
 }
+
+/// Gives a flowchart in the design mode more room than the reference's spacings do
+/// (`docs/decisions/0023-design-mode.md`): a wider base value at the root, and a group padding with a
+/// row for the title. The options are ELK's own; the engine lays the graph out as it does any other.
+pub(crate) fn relax(graph: &mut JsonNode) {
+    graph.layout_options.get_or_insert_default().insert(
+        "spacing.baseValue".to_owned(),
+        crate::design::ROOT_SPACING.into(),
+    );
+    for child in &mut graph.children {
+        relax_groups(child);
+    }
+}
+
+/// Sets the design mode's padding on every group below a node.
+fn relax_groups(node: &mut JsonNode) {
+    if node.children.is_empty() {
+        return;
+    }
+    node.layout_options.get_or_insert_default().insert(
+        "elk.padding".to_owned(),
+        crate::design::GROUP_PADDING.into(),
+    );
+    for child in &mut node.children {
+        relax_groups(child);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn relaxing_sets_the_root_spacing_and_the_padding_of_every_group() {
+        let leaf = |id: &str| JsonNode {
+            id: id.to_owned(),
+            ..JsonNode::default()
+        };
+        let group = |id: &str, children: Vec<JsonNode>| JsonNode {
+            id: id.to_owned(),
+            children,
+            ..JsonNode::default()
+        };
+        let mut graph = group(
+            "root",
+            vec![
+                leaf("a"),
+                group("outer", vec![leaf("b"), group("inner", vec![leaf("c")])]),
+            ],
+        );
+        relax(&mut graph);
+        let option = |node: &JsonNode, name: &str| {
+            node.layout_options
+                .as_ref()
+                .and_then(|options| options.get(name))
+                .cloned()
+        };
+        assert_eq!(
+            option(&graph, "spacing.baseValue"),
+            Some(crate::design::ROOT_SPACING.into())
+        );
+        assert_eq!(option(&graph, "elk.padding"), None);
+        assert_eq!(option(&graph.children[0], "elk.padding"), None);
+        let outer = &graph.children[1];
+        assert_eq!(
+            option(outer, "elk.padding"),
+            Some(crate::design::GROUP_PADDING.into())
+        );
+        assert_eq!(
+            option(&outer.children[1], "elk.padding"),
+            Some(crate::design::GROUP_PADDING.into())
+        );
+        assert_eq!(option(&outer.children[0], "elk.padding"), None);
+    }
+}

@@ -20,6 +20,43 @@ To preserve the pinned Mermaid reference's routing, choose the per-render compat
 
 Use `Adaptive` in Rust or `adaptive` in Node.js and the CLI to select the default explicitly. The option affects only flowcharts, including the `graph` and `flowchart-elk` headers. Other diagram types keep their output. It is a render option, not a front-matter or init configuration key. `elk.straightenEdges` remains a separate post-processing setting for both policies.
 
+## Design mode
+
+The design mode draws a flowchart in ferrigura's own look ([0023](../decisions/0023-design-mode.md)). It has its own look and its own measures: a node grows to give its edges room, spacings are wider, and a subgraph's title has a row of its own. The layout engine is the default rendering's; the mode changes what the engine is given.
+
+- Rust: `RenderOptions { design: true, ..RenderOptions::default() }`.
+- Node.js: `renderer.render(text, { design: true })` or `render(text, config, { design: true })`.
+- CLI: `ferrigura --design diagram.mmd`.
+
+| Element                        | Design mode                                                                                                                                                                                                                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node outline                   | 1.25 px in the node border color                                                                                                                                                                                                                                                                              |
+| Edge                           | 1.5 px in a dark gray, so that nodes stand in front of their connections                                                                                                                                                                                                                                      |
+| Rectangle                      | Corner radius 8                                                                                                                                                                                                                                                                                               |
+| Subgraph frame                 | Neutral fill, its own border, corner radius 12, no shadow; the theme's palette is not used                                                                                                                                                                                                                    |
+| Subgraph title                 | In a row of its own, 12 below the frame's top and 16 from its left, and moved right past every edge that crosses its row                                                                                                                                                                                      |
+| Subgraph padding               | 32 around the members, 44 at the top                                                                                                                                                                                                                                                                          |
+| Node size                      | A node grows along the side its edges meet until its busiest side has 20 for each edge and 12 at both ends; shapes that take no size of their own stay as they are                                                                                                                                            |
+| Spacing                        | The root's base value is 48 where the default has 40                                                                                                                                                                                                                                                          |
+| Shadow                         | 1 px down, blurred by 1.5                                                                                                                                                                                                                                                                                     |
+| Edge corner                    | Radius 10 on a rounded edge; a line hop uses it too                                                                                                                                                                                                                                                           |
+| Arrowhead                      | The `point` arrowhead of the neo look is 10 long and 9 wide with a notch at the back; circles and crosses are the default's                                                                                                                                                                                   |
+| Thick edge                     | 3 px                                                                                                                                                                                                                                                                                                          |
+| Edge label                     | The title's muted color in a gap of its edge: the edges are masked in the label's box (5 wider on each side than the text's, corner radius 6), and the label has no background; the layout reserves the box's width and 6 at both ends; a box on a subgraph's frame slides along its edge until it is 6 clear |
+| Stadium, circle, double circle | Role `terminal`: filled with the accent color, with light text                                                                                                                                                                                                                                                |
+| Diamond                        | Role `decision`: a warm tint with its own outline and text color                                                                                                                                                                                                                                              |
+| Cylinder                       | Role `data`: a green tint with its own outline and text color                                                                                                                                                                                                                                                 |
+
+A node with a role carries `data-role` on its group, which the style sheet matches. The mode's rules come before the `classDef` rules, so a class or a `style` statement of the diagram overrides a role's colors. The user's `themeVariables` override the mode's colors key by key: `mainBkg`, `nodeBorder`, `lineColor`, `textColor`, `nodeTextColor`, `titleColor`, `clusterBkg`, `clusterBorder`, `edgeLabelBackground` and `background`. The role colors are fixed.
+
+With `colorScheme: auto` the SVG carries the light and the dark set as `light-dark()` values, as the default rendering does. Without a color scheme, a configured theme whose name ends in `dark` selects the dark set.
+
+`design` and `compat` cannot be combined. The draw animation works in the design mode. The mode is a render option, not a front-matter or init configuration key.
+
+Both color sets are held to contrast ratios by a test: 4.5 to 1 for text on its ground, 3 to 1 for outlines and edges on the mode's `background` and inside a subgraph.
+
+The subroutine and the other polygons keep the default look's outline.
+
 ## Draw animation
 
 `RenderOptions::animation` optionally adds a one-time draw effect ([0021](../decisions/0021-optional-svg-draw-animation.md)).

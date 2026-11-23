@@ -7,7 +7,7 @@ use super::util::{Part, attribute, label_helper, styles2string};
 use super::{Intersect, ShapeInput};
 use crate::svg::number;
 use crate::unified::geom::{BBox, Point};
-use crate::unified::palette::{palette, palette_slot};
+use crate::unified::palette::{palette_of, palette_slot};
 
 /// The space under the title, where the separator is drawn.
 const SEPARATOR_GAP: f64 = 8.0;
@@ -27,7 +27,7 @@ const DOT_SPACING: f64 = 10.0;
 /// the node's group before the look (`collapsedGroup.ts` 73-77), for every container type. Empty
 /// when the theme has no palette or the node has no slot.
 pub(super) fn color_attribute(input: &ShapeInput<'_>) -> String {
-    let Some(palette) = palette(input.config.globals, input.config.theme) else {
+    let Some(palette) = palette_of(input.config) else {
         return String::new();
     };
     palette_slot(input.node.color_index, &palette).map_or_else(String::new, |slot| {

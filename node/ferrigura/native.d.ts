@@ -91,6 +91,11 @@ export interface RenderOptionsInput {
    */
   compat?: boolean
   /**
+   * The design mode when true: ferrigura's own look for flowcharts, with roomier nodes and spacing. Other diagram
+   * types and the combination with `compat` are rejected.
+   */
+  design?: boolean
+  /**
    * The id of the SVG element, which scopes its styles. By default it is derived from the text and
    * the configuration, so the same input gives the same id.
    */

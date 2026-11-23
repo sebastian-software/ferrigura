@@ -17,7 +17,13 @@ pub(super) fn square_rect(input: &ShapeInput<'_>) -> Part {
         (2.0 * node.padding, node.padding)
     };
     let label = label_helper(input, false);
-    draw_rect(input, label, pad_x, pad_y, None)
+    // The design mode rounds the corners; the box and its intersection stay the rectangle's.
+    let radius = input
+        .config
+        .section
+        .design
+        .map(|_| crate::design::NODE_RADIUS);
+    draw_rect(input, label, pad_x, pad_y, radius)
 }
 
 /// `roundedRect.ts`: a rectangle with corners of the theme's radius (5 when the theme has none).

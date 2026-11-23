@@ -266,9 +266,10 @@ impl<'a> Layout<'a> {
             let max_y = ys.iter().copied().fold(f64::NEG_INFINITY, f64::max);
 
             // Only ever pull a frame in: ELK sized it to hold everything it put there.
-            let left = origin.x.max(min_x - SUBGRAPH_PADDING);
-            let right = (origin.x + group_width).min(max_x + SUBGRAPH_PADDING);
-            let bottom = (origin.y + group_height).min(max_y + SUBGRAPH_PADDING);
+            let padding = self.state.group_padding.unwrap_or(SUBGRAPH_PADDING);
+            let left = origin.x.max(min_x - padding);
+            let right = (origin.x + group_width).min(max_x + padding);
+            let bottom = (origin.y + group_height).min(max_y + padding);
             let top = origin.y;
 
             // The title floor reserved before routing; still never past ELK's own frame.

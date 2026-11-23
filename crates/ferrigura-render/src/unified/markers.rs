@@ -374,14 +374,68 @@ fn definition_xml(
     )
 }
 
+/// The arrowheads of the design mode (`docs/decisions/0023-design-mode.md`), in the place of the
+/// neo `point` markers of the same names: slimmer than the reference's, with a notch at the back.
+/// The tip stays on the end of the path, so the path and its dash array are the reference's.
+const DESIGN_POINTS: [Definition; 2] = [
+    Definition {
+        name: "pointEnd-margin",
+        kind: Kind::Point,
+        view_box: "0 0 10 9",
+        ref_x: "10",
+        ref_y: "4.5",
+        width: "10",
+        height: "9",
+        child: Child::Path("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"),
+        stroke_width: "0",
+        dash: true,
+    },
+    Definition {
+        name: "pointStart-margin",
+        kind: Kind::Point,
+        view_box: "0 0 10 9",
+        ref_x: "0",
+        ref_y: "4.5",
+        width: "10",
+        height: "9",
+        child: Child::Polygon("0,4.5 10,9 7.75,4.5 10,0"),
+        stroke_width: "0",
+        dash: true,
+    },
+];
+
+/// The definition of a marker by its name: the design mode's for the two arrowheads it draws
+/// itself, else the reference's.
+fn definition_of(name: &str, design: bool) -> Option<&'static Definition> {
+    design
+        .then(|| {
+            DESIGN_POINTS
+                .iter()
+                .find(|definition| definition.name == name)
+        })
+        .flatten()
+        .or_else(|| {
+            DEFINITIONS
+                .iter()
+                .find(|definition| definition.name == name)
+        })
+}
+
 /// The marker definitions of a flowchart, as `insertMarkers(element, ['point', 'circle', 'cross'])`
 /// writes them: twelve markers, each with its id under the SVG's id.
 #[must_use]
 pub fn markers(svg_id: &str, diagram_type: &str) -> String {
+    markers_for(svg_id, diagram_type, false)
+}
+
+/// [`markers`], with the arrowheads of the design mode when `design` is set.
+#[must_use]
+pub fn markers_for(svg_id: &str, diagram_type: &str, design: bool) -> String {
     DEFINITIONS
         .iter()
         .map(|definition| {
             let id = format!("{svg_id}_{diagram_type}-{}", definition.name);
+            let definition = definition_of(definition.name, design).unwrap_or(definition);
             definition_xml(&id, diagram_type, definition, None)
         })
         .collect()
@@ -444,13 +498,24 @@ pub fn coloured_marker(
     margin: bool,
     colour: &str,
 ) -> String {
+    coloured_marker_for(svg_id, diagram_type, kind, start, margin, colour, false)
+}
+
+/// [`coloured_marker`], as a copy of the design mode's arrowhead when `design` is set.
+#[must_use]
+pub fn coloured_marker_for(
+    svg_id: &str,
+    diagram_type: &str,
+    kind: Kind,
+    start: bool,
+    margin: bool,
+    colour: &str,
+    design: bool,
+) -> String {
     let name = definition_name(kind, start, margin);
     let original = marker_id(svg_id, diagram_type, kind, start, margin);
     let id = coloured_id(&original, colour);
-    let definition = DEFINITIONS
-        .iter()
-        .find(|definition| definition.name == name)
-        .unwrap_or(&DEFINITIONS[0]);
+    let definition = definition_of(&name, design).unwrap_or(&DEFINITIONS[0]);
     definition_xml(&id, diagram_type, definition, Some(colour))
 }
 

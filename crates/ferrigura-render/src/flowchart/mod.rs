@@ -146,6 +146,7 @@ pub fn render_with_animation(
         &diagram.classes,
         &families,
         input.section.flowchart_routing,
+        input.section.design,
     );
     let header = format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"flowchart\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>",
@@ -156,8 +157,8 @@ pub fn render_with_animation(
         w = number(view_width),
         h = number(view_height),
     );
-    let markers = edges::markers(id);
-    let defs = style::look_defs(id, input.theme, input.globals);
+    let markers = edges::markers_for(id, input.section.design.is_some());
+    let defs = style::look_defs_for(id, input.theme, input.globals, input.section.design);
     let before = [
         header.as_str(),
         &accessibility,

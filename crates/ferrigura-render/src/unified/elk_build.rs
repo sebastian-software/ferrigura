@@ -48,6 +48,9 @@ pub struct ElkState {
     /// Choices the port made that the reference does not: a layout algorithm that ferrigura does not
     /// run, and the reference's own warnings about unknown algorithm names.
     pub warnings: Vec<String>,
+    /// The padding a group's frame keeps around its members when the post-processing pulls the
+    /// frame in: the design mode's, or `None` for the reference's.
+    pub group_padding: Option<f64>,
 }
 
 /// The graph for elkjs and the state for the post-processing.
@@ -123,6 +126,10 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         && section.flowchart_routing == crate::flowchart::policy::FlowchartRouting::Adaptive
     {
         crate::flowchart::policy::center_ports(&mut graph);
+    }
+    if data.diagram_type == super::markers::FLOWCHART && section.design.is_some() {
+        crate::flowchart::policy::relax(&mut graph);
+        state.group_padding = Some(crate::design::GROUP_SIDE_PADDING);
     }
     ElkInput { graph, state }
 }

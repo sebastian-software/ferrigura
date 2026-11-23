@@ -15,6 +15,7 @@ use ferrigura_text::EmbeddedFamily;
 
 use super::policy::FlowchartRouting;
 use crate::context::{Globals, ThemeView};
+use crate::design::{self, Tone};
 use crate::svg::{css_text, css_text_owned, escape, font_faces};
 use crate::unified::palette::{Palette, palette};
 
@@ -51,7 +52,7 @@ pub fn style_sheet(
     classes: &[FlowClass],
     mode: FlowchartRouting,
 ) -> String {
-    style_sheet_with_fonts(svg_id, theme, globals, classes, &[], mode)
+    style_sheet_with_fonts(svg_id, theme, globals, classes, &[], mode, None)
 }
 
 /// [`style_sheet`] for a diagram whose text is set in embedded font subsets. The rules name the first
@@ -65,6 +66,7 @@ pub fn style_sheet_with_fonts(
     classes: &[FlowClass],
     families: &[EmbeddedFamily],
     _mode: FlowchartRouting,
+    design: Option<Tone>,
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
@@ -82,12 +84,21 @@ pub fn style_sheet_with_fonts(
         "{}px",
         tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned())
     );
+    // The design mode draws hairlines: an outline lighter than an edge, both lighter than the theme's.
+    let (stroke_width, edge_width, thick_width) = match design {
+        Some(_) => (
+            design::NODE_STROKE_WIDTH.to_owned(),
+            design::EDGE_STROKE_WIDTH.to_owned(),
+            design::THICK_EDGE_STROKE_WIDTH,
+        ),
+        None => (stroke_width.clone(), stroke_width, "3.5px"),
+    };
     let text_colour = if tokens.node_text_color.is_absent() {
         "textColor"
     } else {
         "nodeTextColor"
     };
-    let palette = palette(globals, tokens);
+    let palette = design.map_or_else(|| palette(globals, tokens), |_| None);
     let look = safe_look(&globals.look);
     let neo_stroke = if tokens.use_gradient.truthy() {
         format!("url(#{svg_id}-gradient)")
@@ -123,11 +134,11 @@ pub fn style_sheet_with_fonts(
         ),
         rule(
             &format!("{id} .edge-thickness-normal"),
-            &format!("stroke-width:{stroke_width};"),
+            &format!("stroke-width:{edge_width};"),
         ),
         rule(
             &format!("{id} .edge-thickness-thick"),
-            "stroke-width:3.5px;",
+            &format!("stroke-width:{thick_width};"),
         ),
         rule(&format!("{id} .edge-pattern-solid"), "stroke-dasharray:0;"),
         rule(
@@ -234,6 +245,9 @@ pub fn style_sheet_with_fonts(
             "flood-color:var(--floodColor);",
         ),
     ]);
+    if design.is_some() {
+        rules.push(design_rules(&id));
+    }
     rules.push(class_rules(&id, classes));
     rules.push(rule(&format!("{id} text"), "white-space:pre;"));
 
@@ -244,7 +258,7 @@ pub fn style_sheet_with_fonts(
     };
     css_text_owned(format!(
         "{faces}{}{}",
-        custom_properties(svg_id, theme, globals),
+        custom_properties_for(svg_id, theme, globals, design),
         rules.concat()
     ))
 }
@@ -254,7 +268,21 @@ pub fn style_sheet_with_fonts(
 /// The shadows' flood is black, or white for a dark theme; the style sheet sets it per scheme.
 #[must_use]
 pub fn look_defs(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
+    look_defs_for(svg_id, theme, globals, None)
+}
+
+/// [`look_defs`] for a flowchart, which draws the design mode's shadows in that mode.
+#[must_use]
+pub fn look_defs_for(
+    svg_id: &str,
+    theme: ThemeView<'_>,
+    globals: &Globals,
+    design: Option<Tone>,
+) -> String {
     let tokens = theme.light;
+    if let Some(tone) = design {
+        return design_defs(svg_id, tone);
+    }
     let flood = match theme.dark {
         None => flood_color(globals),
         Some(_) => LIGHT_FLOOD,
@@ -278,6 +306,57 @@ pub fn look_defs(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> Strin
         ));
     }
     defs
+}
+
+/// The shadows of the design mode: short and soft, under the same ids as the look's, so that the
+/// look's rules refer to them. The style sheet sets the flood per scheme.
+fn design_defs(svg_id: &str, tone: Tone) -> String {
+    let (flood, opacity) = design::flood_attributes(tone);
+    let shadow = |id: &str, size: &str, blur: &str| {
+        format!(
+            "<defs><filter id=\"{}\" height=\"{size}\" width=\"{size}\"><feDropShadow dx=\"0\" dy=\"1\" stdDeviation=\"{blur}\" flood-opacity=\"{opacity}\" flood-color=\"{flood}\"/></filter></defs>",
+            escape(id)
+        )
+    };
+    let mut defs = shadow(&format!("{svg_id}-drop-shadow"), "130%", "1.5");
+    defs.push_str(&shadow(&format!("{svg_id}-drop-shadow-small"), "150%", "1"));
+    defs
+}
+
+/// The rules of the design mode, after the look's and before the `classDef` rules, which keep the
+/// last word: a group frame without the node's outline and shadow, an edge label in the title's
+/// muted color, and the fill, outline and text of each role.
+fn design_rules(id: &str) -> String {
+    let mut css = rule(
+        &format!("{id} [data-look=\"neo\"].cluster rect"),
+        "stroke:var(--clusterBorder);filter:none;",
+    );
+    css.push_str(&rule(
+        &format!("{id} .edgeLabel .label text"),
+        "fill:var(--titleColor);",
+    ));
+    // The edge is masked under its label, so the label has no background of its own.
+    css.push_str(&rule(
+        &format!("{id} .edgeLabel rect.background"),
+        "fill:none;stroke:none;",
+    ));
+    css.push_str(&rule(
+        &format!("{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow"),
+        "flood-opacity:1;",
+    ));
+    for role in design::ROLES {
+        let (fill, stroke, text) = role.properties();
+        let node = format!("{id} [data-role=\"{}\"].node", role.name());
+        css.push_str(&rule(
+            &format!("{node} rect,{node} circle,{node} ellipse,{node} polygon,{node} path"),
+            &format!("fill:var(--{fill});stroke:var(--{stroke});"),
+        ));
+        css.push_str(&rule(
+            &format!("{node} .label text"),
+            &format!("fill:var(--{text});color:var(--{text});"),
+        ));
+    }
+    css
 }
 
 /// The look a stylesheet is written for: a bare word, else `classic` (`safeLook` in `colorThemeGate.ts`).
@@ -307,8 +386,30 @@ pub(crate) fn rule(selector: &str, declarations: &str) -> String {
 /// are written as they are; with a light and a dark set, the values that differ are
 /// `light-dark()` pairs, so one SVG follows the page's or the viewer's scheme.
 pub(crate) fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
+    custom_properties_for(svg_id, theme, globals, None)
+}
+
+/// [`custom_properties`] for a flowchart: in the design mode, the theme's colors with the mode's own
+/// properties in the place of the palette and the look's flood.
+fn custom_properties_for(
+    svg_id: &str,
+    theme: ThemeView<'_>,
+    globals: &Globals,
+    design: Option<Tone>,
+) -> String {
     let id = format!("#{svg_id}");
     let light = theme.light;
+    if let Some(tone) = design {
+        let set = |tokens: &ThemeTokens, tone: Tone| {
+            let mut out = color_declarations(tokens);
+            out.push_str(design::declarations(tone));
+            rule(&id, &out)
+        };
+        return match theme.dark {
+            None => set(light, tone),
+            Some(dark) => crate::scheme::both(&set(light, Tone::Light), &set(dark, Tone::Dark)),
+        };
+    }
     let slots = palette(globals, light).map(|palette| slot_counts(&palette));
     match theme.dark {
         None => rule(&id, &declarations(light, flood_color(globals), slots)),
@@ -328,12 +429,7 @@ fn slot_counts(palette: &Palette) -> (usize, usize) {
 /// cluster background, so that a palette of the other scheme fills a cluster as this scheme's own rules
 /// would.
 fn declarations(tokens: &ThemeTokens, flood: &str, slots: Option<(usize, usize)>) -> String {
-    let mut out = String::new();
-    for (name, token) in color_tokens(tokens) {
-        if let Some(colour) = token.text() {
-            out.push_str(&format!("--{name}:{};", css_text(&colour)));
-        }
-    }
+    let mut out = color_declarations(tokens);
     if let Some((borders, fills)) = slots {
         let border_list = tokens.border_color_array.texts();
         let fill_list = tokens.bkg_color_array.texts();
@@ -352,6 +448,17 @@ fn declarations(tokens: &ThemeTokens, flood: &str, slots: Option<(usize, usize)>
         }
     }
     out.push_str(&format!("--floodColor:{flood};"));
+    out
+}
+
+/// The declarations of the color tokens of one set.
+fn color_declarations(tokens: &ThemeTokens) -> String {
+    let mut out = String::new();
+    for (name, token) in color_tokens(tokens) {
+        if let Some(colour) = token.text() {
+            out.push_str(&format!("--{name}:{};", css_text(&colour)));
+        }
+    }
     out
 }
 
@@ -713,6 +820,7 @@ mod tests {
             &[],
             std::slice::from_ref(&family),
             FlowchartRouting::Mermaid,
+            None,
         );
         assert!(
             sheet.starts_with("@font-face{font-family:\"fg-0123456789abcdef-sans\";"),
