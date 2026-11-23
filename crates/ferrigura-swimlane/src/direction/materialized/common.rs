@@ -20,6 +20,7 @@ pub(super) use crate::direction::geometry::{
     port_for_rect_side, rect_of_node_bounds, same_axis_segment_overlap_length, same_point, same_x,
     same_y, segment_hits_any_rect, simplify_polyline, truthy_text,
 };
+use crate::js::{FixedKey, to_fixed_key};
 use crate::math::{js_max, js_min, js_sign_order};
 use crate::model::{Direction, Edge, Extra, LayoutData, Node, Point, Rect};
 
@@ -293,19 +294,15 @@ pub(super) fn node_rect_entries(view: &View) -> (Vec<RectEntry>, Vec<RectEntry>)
     collect_node_rect_entries(&view.node_values())
 }
 
-/// The key of a path for the dedup of the candidates: `x.toFixed(3),y.toFixed(3)` of each point, joined by `|`.
-pub(super) fn path_key(points: &[Point]) -> String {
+/// The key of a path for the dedup of the candidates: one pair of [`to_fixed_key`]s, for `x` and `y`, per point.
+/// Two paths have equal keys exactly when their `x.toFixed(3),y.toFixed(3)` strings, joined by `|`, are equal.
+pub(super) type PathKey = Box<[(FixedKey, FixedKey)]>;
+
+pub(super) fn path_key(points: &[Point]) -> PathKey {
     points
         .iter()
-        .map(|point| {
-            format!(
-                "{},{}",
-                crate::js::to_fixed(point.x, 3),
-                crate::js::to_fixed(point.y, 3)
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("|")
+        .map(|point| (to_fixed_key(point.x, 3), to_fixed_key(point.y, 3)))
+        .collect()
 }
 
 /// `simplifyPolyline(dedupeConsecutivePoints(points))`.
