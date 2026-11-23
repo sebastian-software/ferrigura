@@ -1,0 +1,8 @@
+flowchart TD
+  S([Start]) --> V{Valid?}
+  V -- yes --> P[Process]
+  V -- no --> R[Reject]
+  P --> M[Merge results]
+  R --> M
+  M --> N[Notify]
+  N --> E([End])
