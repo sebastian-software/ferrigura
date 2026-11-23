@@ -6,6 +6,7 @@
 [![docs.rs](https://img.shields.io/docsrs/ferrigura?style=flat-square&logo=docsdotrs&label=docs.rs)](https://docs.rs/ferrigura)
 [![CI](https://img.shields.io/github/actions/workflow/status/sebastian-software/ferrigura/ci.yml?branch=main&style=flat-square&logo=github&label=CI)](https://github.com/sebastian-software/ferrigura/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
+[![Node.js 22 (22.13.0 or later), 24, and 26](https://img.shields.io/badge/Node.js-22%20%7C%2024%20%7C%2026-339933?logo=nodedotjs&logoColor=white)](./node/ferrigura/README.md#platforms)
 
 ferrigura renders [Mermaid](https://github.com/mermaid-js/mermaid) diagram text to SVG in Rust, without a browser. It is a port of Mermaid 12.2.0 with all 33 of its diagram types, checked against Mermaid run in Chromium. Flowcharts use adaptive port alignment and full-opacity edge-label backgrounds by default; an explicit [Mermaid-compatible rendering option](./docs/diagrams/flowchart.md#rendering-mode) preserves the reference's output.
 
