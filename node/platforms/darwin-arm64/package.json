@@ -1,6 +1,6 @@
 {
   "name": "@ferrigura/darwin-arm64",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "private": false,
   "description": "Native aarch64-apple-darwin binary for ferrigura",
   "license": "MIT",
