@@ -61,6 +61,9 @@ pub struct SiteConfig {
     first_layer: Value,
     /// The keys that a diagram may not set, from the merged `secure` list.
     secure: Vec<String>,
+    /// The `themeVariables` of the site alone: the site's theme with the site's overrides. A
+    /// directive that neither sets nor changes the theme starts from these, so they are computed once.
+    site_variables: Value,
 }
 
 impl SiteConfig {
@@ -75,11 +78,14 @@ impl SiteConfig {
         let secure = secure_keys(&merged);
         let mut first_layer = Value::Object(Map::new());
         assign_with_depth(&mut first_layer, &merged, 2);
+        let site_variables = Theme::from_name(&theme_name(&merged, "default"))
+            .variables(Some(&site_overrides(&settings)));
         Self {
             settings,
             merged,
             first_layer,
             secure,
+            site_variables,
         }
     }
 
@@ -112,11 +118,38 @@ impl SiteConfig {
             defaults,
             diagram_key,
         );
-        let variables = theme_variables(&self.merged, &self.settings, &sum, &config);
+        let variables = self.theme_variables(&sum, &config);
         if let Value::Object(map) = &mut config {
             map.insert("themeVariables".to_owned(), variables);
         }
         config
+    }
+
+    /// The `themeVariables` of the configuration, as `updateCurrentConfig` computes them. When the
+    /// theme is set or changed by a directive, the theme's variables are computed again from the
+    /// user's overrides and the directive's overrides. Otherwise the site's variables stay, with the
+    /// directive's overrides merged on top, as `assignWithDepth` merges them.
+    fn theme_variables(&self, sum: &Value, config: &Value) -> Value {
+        let directive_overrides = sum.get("themeVariables");
+        let site_theme = theme_name(&self.merged, "default");
+        let resolved_theme = theme_name(config, &site_theme);
+        let theme_set_by_directive = sum
+            .get("theme")
+            .and_then(Value::as_str)
+            .is_some_and(|name| !name.is_empty());
+        if theme_set_by_directive || resolved_theme != site_theme {
+            let mut overrides = site_overrides(&self.settings);
+            if let Some(directive) = directive_overrides {
+                assign_with_depth(&mut overrides, directive, 2);
+            }
+            Theme::from_name(&resolved_theme).variables(Some(&overrides))
+        } else {
+            let mut variables = self.site_variables.clone();
+            if let Some(directive) = directive_overrides {
+                assign_with_depth(&mut variables, directive, 2);
+            }
+            variables
+        }
     }
 
     /// The user's theme overrides of a diagram with the directive given, as
@@ -127,35 +160,12 @@ impl SiteConfig {
     }
 }
 
-/// The `themeVariables` of the configuration, as `updateCurrentConfig` computes them. When the theme
-/// is set or changed by a directive, the theme's variables are computed again from the user's
-/// overrides and the directive's overrides. Otherwise the site's variables stay, with the
-/// directive's overrides merged on top, as `assignWithDepth` merges them.
-fn theme_variables(site_config: &Value, site_delta: &Value, sum: &Value, config: &Value) -> Value {
-    let site_overrides = site_delta
+/// The `themeVariables` of the site configuration: the `initialize` overrides, or an empty object.
+fn site_overrides(site_delta: &Value) -> Value {
+    site_delta
         .get("themeVariables")
         .cloned()
-        .unwrap_or_else(Value::empty_object);
-    let directive_overrides = sum.get("themeVariables");
-    let site_theme = theme_name(site_config, "default");
-    let resolved_theme = theme_name(config, &site_theme);
-    let theme_set_by_directive = sum
-        .get("theme")
-        .and_then(Value::as_str)
-        .is_some_and(|name| !name.is_empty());
-    if theme_set_by_directive || resolved_theme != site_theme {
-        let mut overrides = site_overrides;
-        if let Some(directive) = directive_overrides {
-            assign_with_depth(&mut overrides, directive, 2);
-        }
-        Theme::from_name(&resolved_theme).variables(Some(&overrides))
-    } else {
-        let mut variables = Theme::from_name(&site_theme).variables(Some(&site_overrides));
-        if let Some(directive) = directive_overrides {
-            assign_with_depth(&mut variables, directive, 2);
-        }
-        variables
-    }
+        .unwrap_or_else(Value::empty_object)
 }
 
 fn theme_name(config: &Value, fallback: &str) -> String {
@@ -678,6 +688,60 @@ mod tests {
                 assert_eq!(
                     resolved.user_theme_variables(directive),
                     user_theme_variables(Some(&site), directive),
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_site_theme_variables_computed_once_are_those_of_each_directive() {
+        // `SiteConfig::new` computes the site theme's variables once; each directive must still get
+        // the variables computed from scratch: the directive's theme with all overrides when it sets
+        // or changes the theme, the site's theme with its overrides and the directive's on top
+        // otherwise. One resolved site serves all directives in turn, so a directive cannot leave
+        // anything behind for the next.
+        let sites = [
+            json!({ "theme": "dark" }),
+            json!({ "theme": "dark", "themeVariables": { "primaryColor": "#336699" } }),
+            json!({}),
+            json!({ "themeVariables": { "primaryColor": "#336699", "fontFamily": "Georgia" } }),
+        ];
+        let changes_theme =
+            json!({ "theme": "forest", "themeVariables": { "lineColor": "#ff00aa" } });
+        let overrides_a_variable = json!({ "themeVariables": { "primaryColor": "#aa0000" } });
+        let touches_neither = json!({ "fontSize": 20 });
+        let directives = [
+            &changes_theme,
+            &overrides_a_variable,
+            &touches_neither,
+            &changes_theme,
+        ];
+        for site in &sites {
+            let resolved = SiteConfig::new(Some(site));
+            let site_theme = site["theme"].as_str().unwrap_or("default");
+            let site_overrides = site_overrides(site);
+            for directive in directives {
+                let expected = if directive.get("theme").is_some() {
+                    let mut overrides = site_overrides.clone();
+                    assign_with_depth(&mut overrides, &directive["themeVariables"], 2);
+                    Theme::from_name("forest").variables(Some(&overrides))
+                } else {
+                    let mut variables =
+                        Theme::from_name(site_theme).variables(Some(&site_overrides));
+                    if let Some(directive) = directive.get("themeVariables") {
+                        assign_with_depth(&mut variables, directive, 2);
+                    }
+                    variables
+                };
+                let config = resolved.effective(Some("pie"), directive);
+                assert_eq!(
+                    config["themeVariables"], expected,
+                    "{site:?} with {directive:?}"
+                );
+                assert_eq!(
+                    config,
+                    effective(Some(site), Some("pie"), directive),
+                    "{site:?} with {directive:?}"
                 );
             }
         }

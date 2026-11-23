@@ -338,16 +338,16 @@ impl Renderer {
             )
         } else {
             (
-                Cow::Owned(scheme_tokens(
+                scheme_tokens(
                     Theme::ReduxColor,
                     matches!(scheme, Some(ColorScheme::Light | ColorScheme::Auto)),
                     &overrides,
-                )),
-                Cow::Owned(scheme_tokens(
+                ),
+                scheme_tokens(
                     Theme::ReduxDarkColor,
                     matches!(scheme, Some(ColorScheme::Dark | ColorScheme::Auto)),
                     &overrides,
-                )),
+                ),
             )
         };
         Ok(Prepared {
@@ -850,12 +850,16 @@ fn user_sets_layout(site: Option<&Value>, directive: &Value) -> bool {
 }
 
 /// The tokens of a color scheme, when the render draws it. A scheme that is not drawn is not
-/// computed: the configured theme decides the colors then, and the scheme gives no tokens.
-fn scheme_tokens(theme: Theme, drawn: bool, overrides: &Value) -> ThemeTokens {
+/// computed: the configured theme decides the colors then, and the scheme gives the empty tokens,
+/// which are made once per process.
+fn scheme_tokens(theme: Theme, drawn: bool, overrides: &Value) -> Cow<'static, ThemeTokens> {
+    static UNDRAWN: OnceLock<ThemeTokens> = OnceLock::new();
     if drawn {
-        ThemeTokens::from_value(&theme.variables_shared(Some(overrides)))
+        Cow::Owned(ThemeTokens::from_value(
+            &theme.variables_shared(Some(overrides)),
+        ))
     } else {
-        ThemeTokens::from_value(&Value::empty_object())
+        Cow::Borrowed(UNDRAWN.get_or_init(|| ThemeTokens::from_value(&Value::empty_object())))
     }
 }
 
