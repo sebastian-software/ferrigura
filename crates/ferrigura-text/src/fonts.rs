@@ -11,6 +11,7 @@ use std::sync::OnceLock;
 use harfrust::font::Font;
 
 use crate::error::TextError;
+use crate::measure::ShapePlans;
 
 /// The bundled family selector, or the marker for a host-registered family.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -115,6 +116,8 @@ pub struct Face {
     pub(crate) data_fingerprint: Option<u64>,
     /// Parsed on first use, then shared by every measurement of this face.
     pub(crate) font: OnceLock<Option<Font>>,
+    /// Built on first use for each script a run of this face is written in.
+    pub(crate) plans: ShapePlans,
     pub(crate) data: FontData,
 }
 
@@ -251,6 +254,7 @@ static UNRESOLVED_REGISTERED: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(&[]),
 };
 
@@ -264,6 +268,7 @@ static LEXICA_REGULAR: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-Regular.ttf")),
 };
 
@@ -277,6 +282,7 @@ static LEXICA_ITALIC: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-Italic.ttf")),
 };
 
@@ -290,6 +296,7 @@ static LEXICA_BOLD: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-Bold.ttf")),
 };
 
@@ -303,6 +310,7 @@ static LEXICA_BOLD_ITALIC: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!("../fonts/LexicaUltralegible-BoldItalic.ttf")),
 };
 
@@ -316,6 +324,7 @@ static ATKINSON_MONO_REGULAR: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/AtkinsonHyperlegibleMono-Regular.ttf"
     )),
@@ -331,6 +340,7 @@ static ATKINSON_MONO_ITALIC: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/AtkinsonHyperlegibleMono-Italic.ttf"
     )),
@@ -346,6 +356,7 @@ static ATKINSON_MONO_BOLD: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!("../fonts/AtkinsonHyperlegibleMono-Bold.ttf")),
 };
 
@@ -359,6 +370,7 @@ static ATKINSON_MONO_BOLD_ITALIC: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/AtkinsonHyperlegibleMono-BoldItalic.ttf"
     )),
@@ -377,6 +389,7 @@ static NOTO_MATH_ARROWS: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!("../fonts/NotoSansMath-Regular-Arrows.ttf")),
 };
 
@@ -392,6 +405,7 @@ static NOTO_SANS_SYMBOLS2_TEXT: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!(
         "../fonts/NotoSansSymbols2-Regular-TextSymbols.ttf"
     )),
@@ -409,6 +423,7 @@ static TWEMOJI_EMOJI: Face = Face {
     variable: OnceLock::new(),
     data_fingerprint: None,
     font: OnceLock::new(),
+    plans: ShapePlans::new(),
     data: FontData::Bundled(include_bytes!("../fonts/TwemojiMozilla-COLRv0-Emoji.ttf")),
 };
 
