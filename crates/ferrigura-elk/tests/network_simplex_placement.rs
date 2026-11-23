@@ -50,8 +50,11 @@ fn network_simplex_cases_match_elkjs() {
         match ferrigura_elk::layout(&input, false) {
             Err(error) => failures.push(format!("{name}: does not lay out: {error}")),
             Ok(layout) => match largest_difference(&layout.graph, &case["output"]) {
-                Ok(difference) if difference == 0.0 => {}
-                Ok(difference) => failures.push(format!("{name}: differs by {difference}")),
+                Ok(difference) => {
+                    if difference != 0.0 {
+                        failures.push(format!("{name}: differs by {difference}"));
+                    }
+                }
                 Err(reason) => failures.push(format!("{name}: {reason}")),
             },
         }
