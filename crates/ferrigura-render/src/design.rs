@@ -1,10 +1,12 @@
 //! The design mode: ferrigura's own look for a diagram, beside the reference's
 //! (`docs/decisions/0023-design-mode.md`).
 //!
-//! The mode changes paint, and the place of a group's title. Its colors are theme variables that the facade lays under the user's
-//! own, so that every element keeps reading its colors from the theme tokens; the roles, the stroke
-//! widths, the radii and the shadow are written by the style sheet and the shapes of a diagram type
-//! that supports the mode. Layout input, node sizes and routes are those of the default rendering.
+//! The mode has its own look and its own measures. Its colors are theme variables that the facade
+//! lays under the user's own, so that every element keeps reading its colors from the theme tokens;
+//! the roles, the stroke widths, the radii and the shadow are written by the style sheet and the
+//! shapes of a diagram type that supports the mode. Its measures (the room a node gives the edges
+//! of its busiest side, the spacing, the padding of a group) change what the layout engine is
+//! given, never the engine.
 
 use ferrigura_model::value::Value;
 
@@ -36,8 +38,33 @@ pub const GROUP_RADIUS: f64 = 12.0;
 /// The corner radius of a rounded edge: twice the reference's, so that a turn reads as a curve.
 pub const EDGE_RADIUS: f64 = 10.0;
 
+/// The distance the mode wants between two edges that meet a node on the same side. A node grows
+/// along that side until its busiest side has this much room for each of its edges.
+pub const PORT_PITCH: f64 = 20.0;
+
+/// The room a node keeps free at each end of a side, as the layout's `portsSurrounding` does.
+pub const PORT_MARGIN: f64 = 12.0;
+
+/// The base value of the layout's spacings at the root, where the reference has 40.
+pub const ROOT_SPACING: f64 = 48.0;
+
+/// The padding of a group around its members at the left, the right and the bottom, where the
+/// reference has 24.
+pub const GROUP_SIDE_PADDING: f64 = 32.0;
+
+/// The padding of a group as the layout's option: [`GROUP_SIDE_PADDING`], and a row for the title
+/// at the top.
+pub const GROUP_PADDING: &str = "[top=44,left=32,bottom=32,right=32]";
+
+/// The distance of a group's title from the top of its frame.
+pub const GROUP_TITLE_TOP: f64 = 12.0;
+
 /// The room an edge label's chip adds to the left and the right of its background.
 pub const CHIP_PADDING: f64 = 5.0;
+
+/// The room the layout keeps free at the left and the right of an edge label's chip, so that a
+/// chip does not touch the frame of a group or a node beside it.
+pub const CHIP_MARGIN: f64 = 6.0;
 
 /// The corner radius of an edge label's chip.
 pub const CHIP_RADIUS: f64 = 6.0;
@@ -81,6 +108,18 @@ pub fn theme_variables(tone: Tone) -> Value {
         }
     }
     object
+}
+
+/// The length a node needs along the side its edges meet, for the number of edges on its busiest
+/// side: [`PORT_PITCH`] between neighbors and [`PORT_MARGIN`] at both ends. A node with one edge
+/// or none needs nothing.
+#[must_use]
+pub fn side_length(edges: usize) -> f64 {
+    if edges < 2 {
+        0.0
+    } else {
+        (edges - 1) as f64 * PORT_PITCH + 2.0 * PORT_MARGIN
+    }
 }
 
 /// What a node stands for, read from its shape. A role gives the node its color, so that color
@@ -227,6 +266,14 @@ mod tests {
             let ratio = contrast(of("clusterBorder"), of("background"));
             assert!(ratio >= 3.0, "{tone:?}: clusterBorder is {ratio:.2}");
         }
+    }
+
+    #[test]
+    fn a_side_has_room_for_each_of_its_edges() {
+        assert_eq!(side_length(0), 0.0);
+        assert_eq!(side_length(1), 0.0);
+        assert_eq!(side_length(2), 44.0);
+        assert_eq!(side_length(4), 84.0);
     }
 
     #[test]

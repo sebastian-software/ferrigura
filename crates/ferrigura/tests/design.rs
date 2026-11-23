@@ -1,6 +1,5 @@
-//! The design mode (`docs/decisions/0023-design-mode.md`): ferrigura's own look for a flowchart. It
-//! changes paint and leaves the geometry of the default rendering as it is, except for the place
-//! of a group's title.
+//! The design mode (`docs/decisions/0023-design-mode.md`): ferrigura's own look and measures for a
+//! flowchart, laid out by the engine of the default rendering.
 
 use ferrigura::{ColorScheme, Error, RenderOptions, Renderer, Value};
 
@@ -37,20 +36,6 @@ fn attribute_values<'a>(svg: &'a str, name: &str) -> Vec<&'a str> {
         .collect()
 }
 
-/// An SVG without the transforms of its group titles, which the design mode places itself.
-fn without_title_transforms(svg: &str) -> String {
-    let marker = "<g class=\"cluster-label \" transform=\"";
-    let mut out = String::new();
-    let mut rest = svg;
-    while let Some(at) = rest.find(marker) {
-        let value = at + marker.len();
-        out.push_str(&rest[..value]);
-        rest = &rest[value + rest[value..].find('"').expect("the attribute's end")..];
-    }
-    out.push_str(rest);
-    out
-}
-
 /// The horizontal place of the first group title of an SVG.
 fn title_x(svg: &str) -> f64 {
     let marker = "<g class=\"cluster-label \" transform=\"translate(";
@@ -75,17 +60,6 @@ fn nodes(svg: &str) -> &str {
     &svg[svg.find("<g class=\"nodes\">").expect("the nodes")..]
 }
 
-/// The part of an SVG that holds its edge paths.
-fn edges(svg: &str) -> &str {
-    let from = svg
-        .find("<g class=\"edges edgePaths\">")
-        .expect("the edges");
-    &svg[from..from
-        + svg[from..]
-            .find("<g class=\"edgeLabels\">")
-            .expect("the labels")]
-}
-
 /// The style sheet of an SVG.
 fn style_sheet(svg: &str) -> &str {
     let start = svg.find("<style>").expect("a style sheet") + "<style>".len();
@@ -93,73 +67,72 @@ fn style_sheet(svg: &str) -> &str {
     &svg[start..end]
 }
 
-#[test]
-fn the_design_mode_keeps_the_nodes_and_routes_of_the_default_rendering() {
-    let renderer = Renderer::new(&Value::empty_object());
-    for scheme in [
-        None,
-        Some(ColorScheme::Light),
-        Some(ColorScheme::Dark),
-        Some(ColorScheme::Auto),
-    ] {
-        let plain = renderer.render_with(FLOW, &default(scheme)).unwrap();
-        let designed = renderer.render_with(FLOW, &design(scheme)).unwrap();
-        assert_ne!(plain, designed);
-        let (plain, designed) = (
-            without_title_transforms(&plain),
-            without_title_transforms(&designed),
-        );
-        // The drawing's box, every position, and the points of every route.
-        assert_eq!(
-            attribute_values(&plain, "viewBox")[0],
-            attribute_values(&designed, "viewBox")[0],
-            "the box with {scheme:?}"
-        );
-        for name in ["transform", "data-points"] {
-            assert_eq!(
-                attribute_values(&plain, name),
-                attribute_values(&designed, name),
-                "{name} with {scheme:?}"
-            );
-        }
-        // The outline of every node.
-        let (plain, designed) = (nodes(&plain), nodes(&designed));
-        for name in ["d", "points", "x", "y", "width", "height", "r"] {
-            assert_eq!(
-                attribute_values(plain, name),
-                attribute_values(designed, name),
-                "{name} of the nodes with {scheme:?}"
-            );
-        }
-    }
+/// The size of the outline of the node with the given id: the `rect` of its group.
+fn node_size(svg: &str, id: &str) -> (f64, f64) {
+    let group = &svg[svg
+        .find(&format!("id=\"d-flowchart-{id}-"))
+        .expect("the node")..];
+    let rect = &group[group
+        .find("<rect class=\"basic label-container\"")
+        .expect("its rect")..];
+    let rect = &rect[..rect.find("/>").expect("the rect's end")];
+    let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+    (number("width"), number("height"))
 }
 
 #[test]
-fn an_edge_turns_on_a_wider_radius_through_the_same_points() {
+fn a_node_gives_the_edges_of_its_busiest_side_room() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // Four edges meet `E` on one side, three leave `A`, one meets `F`.
+    let across = "flowchart LR\n  A[Alpha] --> E[Echo]\n  B[Beta] --> E\n  C[Gamma] --> E\n  D[Delta] --> E\n  A --> F[Foxtrot]\n  A --> G[Golf]\n";
+    let plain = renderer.render_with(across, &default(None)).unwrap();
+    let designed = renderer.render_with(across, &design(None)).unwrap();
+    let (width, height) = node_size(&plain, "E");
+    // 20 for each edge after the first, and 12 at both ends of the side.
+    assert_eq!(node_size(&designed, "E"), (width, 84.0));
+    assert_eq!(node_size(&designed, "A"), (width, 64.0));
+    assert_eq!(node_size(&designed, "F"), (width, height));
+    assert!(height < 64.0);
+
+    // From top to bottom the side runs along the width, which a node usually has already.
+    let down = across.replace("flowchart LR", "flowchart TD");
+    let plain = renderer.render_with(&down, &default(None)).unwrap();
+    let designed = renderer.render_with(&down, &design(None)).unwrap();
+    assert_eq!(node_size(&designed, "E"), node_size(&plain, "E"));
+    let many = "flowchart TD\n  A --> Z[Sink]\n  B --> Z\n  C --> Z\n  D --> Z\n  E --> Z\n  F --> Z\n  G --> Z\n  H --> Z\n  I --> Z\n";
+    let plain = renderer.render_with(many, &default(None)).unwrap();
+    let designed = renderer.render_with(many, &design(None)).unwrap();
+    let (width, height) = node_size(&plain, "Z");
+    assert!(width < 184.0);
+    assert_eq!(node_size(&designed, "Z"), (184.0, height));
+}
+
+#[test]
+fn the_mode_sets_a_diagram_with_more_room() {
     let renderer = Renderer::new(&Value::empty_object());
     let plain = renderer.render_with(FLOW, &default(None)).unwrap();
     let designed = renderer.render_with(FLOW, &design(None)).unwrap();
-    let (plain, designed) = (edges(&plain), edges(&designed));
-    assert_eq!(
-        attribute_values(plain, "data-points"),
-        attribute_values(designed, "data-points")
-    );
-    // The first edge turns twice: its corners start 5 before the turn by default, 10 in the mode.
-    let turn = |svg: &str| attribute_values(svg, "d")[0].matches('Q').count();
-    assert_eq!(turn(plain), 2);
-    assert_eq!(turn(designed), 2);
-    assert_ne!(
-        attribute_values(plain, "d"),
-        attribute_values(designed, "d")
-    );
-    // A straight edge is the same path.
-    let straight = "flowchart TD\n  A --> B\n";
-    let plain = renderer.render_with(straight, &default(None)).unwrap();
-    let designed = renderer.render_with(straight, &design(None)).unwrap();
-    assert_eq!(
-        attribute_values(edges(&plain), "d"),
-        attribute_values(edges(&designed), "d")
-    );
+    let size = |svg: &str| -> (f64, f64) {
+        let view_box: Vec<f64> = attribute_values(svg, "viewBox")[0]
+            .split(' ')
+            .map(|number| number.parse().unwrap())
+            .collect();
+        (view_box[2], view_box[3])
+    };
+    let ((width, height), (roomy_width, roomy_height)) = (size(&plain), size(&designed));
+    assert!(roomy_width >= width && roomy_height > height);
+    // A node without a busy side keeps its size.
+    assert_eq!(node_size(&plain, "C"), node_size(&designed, "C"));
+    // The group pads its members by 32, and by 44 at the top.
+    let frame = |svg: &str| -> (f64, f64) {
+        let group = &svg[svg.find("<g class=\"cluster ").expect("a group")..];
+        let rect = &group[..group.find("/>").expect("the frame's end")];
+        let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+        (number("width"), number("height"))
+    };
+    let ((width, height), (roomy_width, roomy_height)) = (frame(&plain), frame(&designed));
+    assert!((roomy_width - (width + 2.0 * (32.0 - 24.0))).abs() < 1e-6);
+    assert!((roomy_height - (height + (44.0 - 24.0) + (32.0 - 24.0))).abs() < 1e-6);
 }
 
 #[test]
@@ -227,13 +200,20 @@ fn an_edge_label_sits_in_a_chip() {
 #[test]
 fn a_group_title_sits_at_the_left_and_clear_of_the_edges() {
     let renderer = Renderer::new(&Value::empty_object());
-    let plain = renderer.render_with(FLOW, &default(None)).unwrap();
     let designed = renderer.render_with(FLOW, &design(None)).unwrap();
-    // The default centers the title of `Billing` on its frame, where the edge from `Load profile`
-    // enters; the design mode sets it 16 from the frame's left.
-    assert_eq!(frame_x(&plain), frame_x(&designed));
+    // The title of `Billing` is 16 from the frame's left and 12 below its top.
     assert_eq!(title_x(&designed), frame_x(&designed) + 16.0);
-    assert!(title_x(&plain) > title_x(&designed));
+    let frame_y: f64 = {
+        let group = &designed[designed.find("<g class=\"cluster ").expect("a group")..];
+        attribute_values(group, "y")[0].parse().unwrap()
+    };
+    let marker = "<g class=\"cluster-label \" transform=\"translate(";
+    let title = &designed[designed.find(marker).expect("a title") + marker.len()..];
+    let title_y: f64 = title
+        [title.find(", ").expect("the y") + 2..title.find(')').expect("the end")]
+        .parse()
+        .unwrap();
+    assert!((title_y - (frame_y + 12.0)).abs() < 1e-6);
 
     // An edge that enters where the title would sit moves the title past it.
     let crossed = "flowchart TD\n  A[Start] --> B[One]\n  A --> C[Two]\n  subgraph G [A long group title]\n    B\n    C\n  end\n";

@@ -22,27 +22,30 @@ Use `Adaptive` in Rust or `adaptive` in Node.js and the CLI to select the defaul
 
 ## Design mode
 
-The design mode draws a flowchart in ferrigura's own look ([0023](../decisions/0023-design-mode.md)). Node sizes, positions, routes and edge-label positions are those of the default rendering; the mode changes paint, and the place of a subgraph's title.
+The design mode draws a flowchart in ferrigura's own look ([0023](../decisions/0023-design-mode.md)). It has its own look and its own measures: a node grows to give its edges room, spacings are wider, and a subgraph's title has a row of its own. The layout engine is the default rendering's; the mode changes what the engine is given.
 
 - Rust: `RenderOptions { design: true, ..RenderOptions::default() }`.
 - Node.js: `renderer.render(text, { design: true })` or `render(text, config, { design: true })`.
 - CLI: `ferrigura --design diagram.mmd`.
 
-| Element                        | Design mode                                                                                                                 |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| Node outline                   | 1.25 px in the node border color                                                                                            |
-| Edge                           | 1.5 px in a dark gray, so that nodes stand in front of their connections                                                    |
-| Rectangle                      | Corner radius 8                                                                                                             |
-| Subgraph frame                 | Neutral fill, its own border, corner radius 12, no shadow; the theme's palette is not used                                  |
-| Subgraph title                 | At the left of the frame, 16 from its edge, and moved right past every edge that crosses its row                            |
-| Shadow                         | 1 px down, blurred by 1.5                                                                                                   |
-| Edge corner                    | Radius 10 on a rounded edge, through the same points; a line hop uses it too                                                |
-| Arrowhead                      | The `point` arrowhead of the neo look is 10 long and 9 wide with a notch at the back; circles and crosses are the default's |
-| Thick edge                     | 3 px                                                                                                                        |
-| Edge label                     | The title's muted color in a chip: the background 5 wider on each side, corner radius 6, a thin outline                     |
-| Stadium, circle, double circle | Role `terminal`: filled with the accent color, with light text                                                              |
-| Diamond                        | Role `decision`: a warm tint with its own outline and text color                                                            |
-| Cylinder                       | Role `data`: a green tint with its own outline and text color                                                               |
+| Element                        | Design mode                                                                                                                                                                                                                              |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node outline                   | 1.25 px in the node border color                                                                                                                                                                                                         |
+| Edge                           | 1.5 px in a dark gray, so that nodes stand in front of their connections                                                                                                                                                                 |
+| Rectangle                      | Corner radius 8                                                                                                                                                                                                                          |
+| Subgraph frame                 | Neutral fill, its own border, corner radius 12, no shadow; the theme's palette is not used                                                                                                                                               |
+| Subgraph title                 | In a row of its own, 12 below the frame's top and 16 from its left, and moved right past every edge that crosses its row                                                                                                                 |
+| Subgraph padding               | 32 around the members, 44 at the top                                                                                                                                                                                                     |
+| Node size                      | A node grows along the side its edges meet until its busiest side has 20 for each edge and 12 at both ends; shapes that take no size of their own stay as they are                                                                       |
+| Spacing                        | The root's base value is 48 where the default has 40                                                                                                                                                                                     |
+| Shadow                         | 1 px down, blurred by 1.5                                                                                                                                                                                                                |
+| Edge corner                    | Radius 10 on a rounded edge; a line hop uses it too                                                                                                                                                                                      |
+| Arrowhead                      | The `point` arrowhead of the neo look is 10 long and 9 wide with a notch at the back; circles and crosses are the default's                                                                                                              |
+| Thick edge                     | 3 px                                                                                                                                                                                                                                     |
+| Edge label                     | The title's muted color in a chip: the background 5 wider on each side, corner radius 6, a thin outline; the layout reserves the chip's width and 6 at both ends; a chip on a subgraph's frame slides along its edge until it is 6 clear |
+| Stadium, circle, double circle | Role `terminal`: filled with the accent color, with light text                                                                                                                                                                           |
+| Diamond                        | Role `decision`: a warm tint with its own outline and text color                                                                                                                                                                         |
+| Cylinder                       | Role `data`: a green tint with its own outline and text color                                                                                                                                                                            |
 
 A node with a role carries `data-role` on its group, which the style sheet matches. The mode's rules come before the `classDef` rules, so a class or a `style` statement of the diagram overrides a role's colors. The user's `themeVariables` override the mode's colors key by key: `mainBkg`, `nodeBorder`, `lineColor`, `textColor`, `nodeTextColor`, `titleColor`, `clusterBkg`, `clusterBorder`, `edgeLabelBackground` and `background`. The role colors are fixed.
 

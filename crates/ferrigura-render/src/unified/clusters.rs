@@ -115,6 +115,7 @@ fn rect(node: &Node, config: &Config<'_>, edges: &[Edge]) -> Result<Cluster, Ren
     })?;
     let mut frame = frame(node, title.bbox, title_top_margin(config))?;
     if config.section.design.is_some() {
+        frame.title.y += crate::design::GROUP_TITLE_TOP;
         frame.title.x = design_title_x(&frame, title.bbox, edges);
     }
 

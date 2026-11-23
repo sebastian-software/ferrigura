@@ -151,6 +151,38 @@ fn node_dir<'a>(
     Some(data.direction.as_str()).filter(|dir| !dir.is_empty())
 }
 
+/// For each node, the length its busiest side needs in the design mode
+/// ([`crate::design::side_length`]) and whether that side runs along the node's height: it does in
+/// a layout from left to right, where edges meet the left and the right side, and it runs along
+/// the width in a layout from top to bottom. The edges into a node meet one side and the edges out
+/// of it the other; a self-loop is left out.
+fn busiest_sides(data: &LayoutData) -> Vec<(f64, bool)> {
+    let by_id: HashMap<&str, &Node> = data
+        .nodes
+        .iter()
+        .map(|node| (node.id.as_str(), node))
+        .collect();
+    let mut degrees: HashMap<&str, (usize, usize)> = HashMap::new();
+    for edge in &data.edges {
+        if edge.start == edge.end {
+            continue;
+        }
+        degrees.entry(edge.start.as_str()).or_default().1 += 1;
+        degrees.entry(edge.end.as_str()).or_default().0 += 1;
+    }
+    data.nodes
+        .iter()
+        .enumerate()
+        .map(|(index, node)| {
+            let (into, out) = degrees.get(node.id.as_str()).copied().unwrap_or_default();
+            // `node_dir` gives a node without a parent no direction; the diagram's is meant here.
+            let direction = node_dir(data, index, &by_id).unwrap_or(data.direction.as_str());
+            let along_height = matches!(direction, "LR" | "RL");
+            (crate::design::side_length(into.max(out)), along_height)
+        })
+        .collect()
+}
+
 /// The edge render data and the measure step of `createGraphWithElements`, for the layout data
 /// of a diagram's `getData`, laid out by ELK. `config` gives the sections and the globals, and the
 /// theme's tokens give the sizes.
@@ -200,6 +232,11 @@ pub fn measure_for(
         Vec::new()
     };
     let anchor = node_anchor(&data.diagram_type);
+    let busiest = if config.section.design.is_some() {
+        busiest_sides(&data)
+    } else {
+        Vec::new()
+    };
     let mut shapes = HashMap::new();
     for index in 0..data.nodes.len() {
         let node = &data.nodes[index];
@@ -227,12 +264,41 @@ pub fn measure_for(
             anchor
         };
         let label = shapes::node_label(node, config, None, label_anchor)?;
-        let shape = shapes::draw(&ShapeInput {
+        let mut shape = shapes::draw(&ShapeInput {
             node,
             label: label.as_ref(),
             config,
             dir: directions.get(index).and_then(Option::as_deref),
         })?;
+        // The design mode gives a node room for the edges of its busiest side: it draws the shape
+        // again with that length as its size along the side, and keeps the larger drawing.
+        if let Some(grown) = busiest.get(index).and_then(|&(length, along_height)| {
+            let current = if along_height {
+                shape.bbox.height
+            } else {
+                shape.bbox.width
+            };
+            (length > current).then(|| {
+                let mut grown = node.clone();
+                if along_height {
+                    grown.height = Some(length);
+                } else {
+                    grown.width = Some(length);
+                }
+                grown
+            })
+        }) {
+            let label = shapes::node_label(&grown, config, None, label_anchor)?;
+            let redrawn = shapes::draw(&ShapeInput {
+                node: &grown,
+                label: label.as_ref(),
+                config,
+                dir: directions.get(index).and_then(Option::as_deref),
+            })?;
+            if redrawn.bbox.width * redrawn.bbox.height > shape.bbox.width * shape.bbox.height {
+                shape = redrawn;
+            }
+        }
         let id = node.id.clone();
         // `insertMeasuredNode` takes the node's size from the `getBBox` of its group (createGraph.ts
         // 61-71, line 67), so it is a float32 value.
@@ -246,7 +312,12 @@ pub fn measure_for(
     let font_size = config.theme.font_size.px().unwrap_or(DEFAULT_FONT_SIZE);
     for edge in &mut data.edges {
         if let Some(label) = edges::label(edge, font_size, &config.fonts)? {
-            let (width, height) = edges::label_size(&label);
+            let (mut width, height) = edges::label_size(&label);
+            // The design mode draws the label in a chip; the layout is given the chip's width and
+            // the room around it.
+            if config.section.design.is_some() {
+                width += 2.0 * (crate::design::CHIP_PADDING + crate::design::CHIP_MARGIN);
+            }
             edge.width = Some(width);
             edge.height = Some(height);
             edge_labels.insert(edge.id.clone(), label);
@@ -463,6 +534,20 @@ pub(crate) fn paint_with_animation<'a>(
     let mut edge_labels = String::new();
     for (index, edge) in data.edges.iter().enumerate() {
         if let Some(label) = measured.edge_labels.get(&edge.id) {
+            // The design mode keeps a label's chip off the frame of a group.
+            let moved = config.section.design.map(|_| {
+                let frames: Vec<BBox> = painted_clusters
+                    .iter()
+                    .map(|cluster| cluster.bbox)
+                    .collect();
+                let place = edges::label_clear_of_frames(edge, label, &frames);
+                Edge {
+                    x: Some(place.x),
+                    y: Some(place.y),
+                    ..edge.clone()
+                }
+            });
+            let edge = moved.as_ref().unwrap_or(edge);
             let painted = edges::paint_label(edge, label, &config.section);
             cover(&mut bounds, painted.bbox);
             match &mut animator {
@@ -529,6 +614,46 @@ const DEFAULT_FONT_SIZE: f64 = 16.0;
 #[cfg(test)]
 mod direction_tests {
     use super::*;
+
+    #[test]
+    fn the_busiest_side_counts_the_edges_into_and_out_of_a_node() {
+        let node = |id: &str, parent: Option<&str>, dir: Option<&str>| Node {
+            id: id.into(),
+            parent_id: parent.map(str::to_owned),
+            dir: dir.map(str::to_owned),
+            is_group: dir.is_some(),
+            ..Node::default()
+        };
+        let edge = |start: &str, end: &str| Edge {
+            start: start.into(),
+            end: end.into(),
+            ..Edge::default()
+        };
+        let data = LayoutData {
+            direction: "LR".into(),
+            nodes: vec![
+                node("a", None, None),
+                node("b", None, None),
+                node("group", None, Some("TB")),
+                node("c", Some("group"), None),
+            ],
+            edges: vec![
+                edge("a", "b"),
+                edge("a", "b"),
+                edge("a", "c"),
+                edge("c", "b"),
+                edge("b", "b"),
+            ],
+            ..LayoutData::default()
+        };
+        let sides = busiest_sides(&data);
+        // `a` has three edges out: 2 * 20 + 2 * 12 along its height, from left to right.
+        assert_eq!(sides[0], (64.0, true));
+        // `b` has three edges in; its self-loop does not count.
+        assert_eq!(sides[1], (64.0, true));
+        // `c` has one edge on each side and needs nothing; its group runs from top to bottom.
+        assert_eq!(sides[3], (0.0, false));
+    }
 
     #[test]
     fn node_direction_preserves_parent_lookup_and_fallbacks() {

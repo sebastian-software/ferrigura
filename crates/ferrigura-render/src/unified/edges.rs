@@ -821,6 +821,107 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
     }
 }
 
+/// The center of an edge label in the design mode, moved off the frame of a group
+/// (`docs/decisions/0023-design-mode.md`). The layout places a label on its edge without regard to a
+/// frame that is pulled in afterwards, so a chip can sit on a frame's line. The label then slides
+/// along the straight part of the edge it sits on, the shorter way, until its chip is
+/// [`CHIP_MARGIN`](crate::design::CHIP_MARGIN) clear of the line. It stays where it is when it
+/// sits on no axis-parallel part, or when that part is too short for the move.
+#[must_use]
+pub(crate) fn label_clear_of_frames(edge: &Edge, label: &LabelLayout, frames: &[BBox]) -> Point {
+    let centre = Point::new(edge.x.unwrap_or(0.0), edge.y.unwrap_or(0.0));
+    let (width, height) = label_size(label);
+    let half = Point::new(width / 2.0 + crate::design::CHIP_PADDING, height / 2.0);
+    let margin = crate::design::CHIP_MARGIN;
+    const ON_LINE: f64 = 0.5;
+
+    // The straight part of the edge the label sits on: a run of points on one axis-parallel line
+    // that passes through the label's center.
+    let mut part: Option<(bool, f64, f64)> = None;
+    for horizontal in [true, false] {
+        // Along the run and across it, for a point.
+        let split = |point: Point| {
+            if horizontal {
+                (point.x, point.y)
+            } else {
+                (point.y, point.x)
+            }
+        };
+        let (along, across) = split(centre);
+        let mut run: Option<(f64, f64)> = None;
+        for pair in edge.points.windows(2) {
+            let ((a, a_across), (b, b_across)) = (split(pair[0]), split(pair[1]));
+            let on_line =
+                (a_across - across).abs() < ON_LINE && (b_across - across).abs() < ON_LINE;
+            if on_line {
+                let (low, high) = run.unwrap_or((a.min(b), a.max(b)));
+                run = Some((low.min(a.min(b)), high.max(a.max(b))));
+                continue;
+            }
+            if run.is_some_and(|(low, high)| low <= along && along <= high) {
+                break;
+            }
+            run = None;
+        }
+        if let Some((low, high)) = run.filter(|(low, high)| *low <= along && along <= *high) {
+            part = Some((horizontal, low, high));
+            break;
+        }
+    }
+    let Some((horizontal, from, to)) = part else {
+        return centre;
+    };
+    // Along the part: the label's place and half its length. Across it: its place and half its width.
+    let (mut along, half_along, across, half_across) = if horizontal {
+        (centre.x, half.x, centre.y, half.y)
+    } else {
+        (centre.y, half.y, centre.x, half.x)
+    };
+    for frame in frames {
+        let (lines, low, high) = if horizontal {
+            (
+                [frame.x, frame.x + frame.width],
+                frame.y,
+                frame.y + frame.height,
+            )
+        } else {
+            (
+                [frame.y, frame.y + frame.height],
+                frame.x,
+                frame.x + frame.width,
+            )
+        };
+        // A frame whose side does not reach the label's row cannot cross the chip.
+        if across + half_across < low || across - half_across > high {
+            continue;
+        }
+        for line in lines {
+            if line <= along - half_along - margin || line >= along + half_along + margin {
+                continue;
+            }
+            let forward = line + margin + half_along;
+            let backward = line - margin - half_along;
+            let fits = |place: f64| place - half_along >= from && place + half_along <= to;
+            let nearer_forward = (forward - along).abs() <= (backward - along).abs();
+            let (first, second) = if nearer_forward {
+                (forward, backward)
+            } else {
+                (backward, forward)
+            };
+            if fits(first) {
+                along = first;
+            } else if fits(second) {
+                along = second;
+            }
+        }
+    }
+    if horizontal {
+        Point::new(along, centre.y)
+    } else {
+        Point::new(centre.x, along)
+    }
+}
+
 /// The marker definitions the flowchart uses, as `insertMarkers` writes them for `flowchart-v2`.
 #[must_use]
 pub fn markers(svg_id: &str) -> String {
@@ -896,6 +997,113 @@ mod tests {
 
     /// `btoa(JSON.stringify(points))` in Node 24 for the points of a reference edge, and with a
     /// coordinate that JSON writes as `null`.
+    /// An edge from (0, 0) to (200, 0) with its label at `x` on it, and the label, 40 wide.
+    fn labelled(x: f64) -> (Edge, LabelLayout) {
+        let edge = Edge {
+            points: vec![Point::new(0.0, 0.0), Point::new(200.0, 0.0)],
+            x: Some(x),
+            y: Some(0.0),
+            ..Edge::default()
+        };
+        let label = LabelLayout::of_box(BBox::new(0.0, 0.0, 40.0, 20.0));
+        (edge, label)
+    }
+
+    #[test]
+    fn a_design_label_slides_off_the_frame_it_sits_on() {
+        // The chip is 40 wide and 5 wider on each side: it reaches 25 to each side of its center.
+        let frame = [BBox::new(-100.0, -50.0, 200.0, 100.0)];
+        // On the frame's right side at 100: the shorter way out is forward, 6 clear of the line.
+        let (edge, label) = labelled(110.0);
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(131.0, 0.0)
+        );
+        // The shorter way is back into the frame.
+        let (edge, label) = labelled(90.0);
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(69.0, 0.0)
+        );
+        // Clear of the line already, or beside a frame whose side does not reach its row.
+        let (edge, label) = labelled(150.0);
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(150.0, 0.0)
+        );
+        let (edge, label) = labelled(110.0);
+        let below = [BBox::new(-100.0, 40.0, 200.0, 100.0)];
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &below),
+            Point::new(110.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn a_design_label_at_a_bend_slides_back_along_the_whole_straight_run() {
+        let frame = [BBox::new(-100.0, -50.0, 200.0, 100.0)];
+        let (mut edge, label) = labelled(120.0);
+        // Two parts on one line up to the bend at 120, where the label sits; then the edge turns.
+        edge.points = vec![
+            Point::new(0.0, 0.0),
+            Point::new(90.0, 0.0),
+            Point::new(120.0, 0.0),
+            Point::new(120.0, -80.0),
+        ];
+        // Forward there is no straight part left, so the chip moves back, 6 inside the frame's side.
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(69.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn a_design_label_stays_when_its_part_of_the_edge_is_too_short() {
+        let frame = [BBox::new(-100.0, -50.0, 200.0, 100.0)];
+        let (mut edge, label) = labelled(110.0);
+        // The straight part ends at 140 and starts at 80: neither way has room for the chip.
+        edge.points = vec![
+            Point::new(80.0, 0.0),
+            Point::new(140.0, 0.0),
+            Point::new(140.0, 60.0),
+        ];
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(110.0, 0.0)
+        );
+        // A label on a slanted part is left alone.
+        edge.points = vec![Point::new(0.0, -50.0), Point::new(200.0, 50.0)];
+        assert_eq!(
+            label_clear_of_frames(&edge, &label, &frame),
+            Point::new(110.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn a_rounded_edge_turns_on_the_radius_it_is_given() {
+        let edge = Edge {
+            points: vec![
+                Point::new(0.0, 0.0),
+                Point::new(0.0, 50.0),
+                Point::new(50.0, 50.0),
+            ],
+            ..Edge::default()
+        };
+        // How far before the corner at (0, 50) the turn starts.
+        let cut = |radius: f64| -> f64 {
+            let d = path_data(&edge, "rounded", radius).expect("a path");
+            let start = d
+                .strip_prefix("M0,0L0,")
+                .and_then(|rest| rest.split_once('Q'))
+                .map(|(y, _)| y.parse::<f64>().expect("a number"))
+                .expect("a turn");
+            50.0 - start
+        };
+        // `generateRoundedPath` cuts a right angle at the radius times the square root of two.
+        assert!((cut(ROUNDED_RADIUS) - 5.0 * std::f64::consts::SQRT_2).abs() < 1e-9);
+        assert!((cut(crate::design::EDGE_RADIUS) - 10.0 * std::f64::consts::SQRT_2).abs() < 1e-9);
+    }
+
     #[test]
     fn the_data_points_are_the_points_as_json_in_base64() {
         assert_eq!(
