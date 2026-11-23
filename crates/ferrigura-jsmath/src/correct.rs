@@ -9,13 +9,17 @@
 //! Chromium's `sin`, `cos`, `tan`, `asin`, `acos` and `log` are correctly rounded on every input checked
 //! (about 270,000 against mpmath at 300 bits, and a million against this module), and so is its `log10`
 //! (200,000 against Python's `decimal` at 80 digits, and a million against this module), so these results
-//! are Chromium's. The results do not depend on the target's fused multiply-adds: nothing here is rounded
-//! except by the final conversion, and Rust does not contract.
+//! are Chromium's. The fixed-point results do not depend on the target's fused multiply-adds: nothing here
+//! is rounded except by the final conversion, and Rust does not contract.
 //!
 //! The constants are in `constants.rs` (`CR_*`), computed with mpmath from `2/pi`, `pi/2` and `ln 2`, and
 //! with Python's `decimal` from `1/ln 10`.
-//! The `acos` fast path is adapted from CORE-MATH; ambiguous results use this module’s
-//! fixed-point evaluator. The other evaluators here are independently written.
+//!
+//! Two fast paths come first and return a value only when their own error interval rounds to one
+//! double, so they give the same results; the rest take this module's fixed-point evaluator. `sin`, `cos`
+//! and `sin_cos` try a double-double evaluation for arguments up to `2^30` (`trig_fast.rs`, written for
+//! this crate, without fused multiply-adds), and `acos` a CORE-MATH interval test (`acos_fast.rs`). The
+//! other evaluators here are independently written.
 
 use crate::constants::{CR_INV_LN10, CR_LN2, CR_PI_OVER_2, CR_TWO_OVER_PI};
 
@@ -539,8 +543,18 @@ pub fn sin_cos(x: f64) -> (f64, f64) {
     if x.abs() < TINY {
         return (x, 1.);
     }
-    let (s, c) = sin_cos_of(x.abs());
-    (sign_of(x, round_value(s)), round_value(c))
+    let ax = x.abs();
+    let (s, c) = match crate::trig_fast::sin_cos(ax) {
+        (Some(s), Some(c)) => (s, c),
+        (s, c) => {
+            let (fs, fc) = sin_cos_of(ax);
+            (
+                s.unwrap_or_else(|| round_value(fs)),
+                c.unwrap_or_else(|| round_value(fc)),
+            )
+        }
+    };
+    (sign_of(x, s), c)
 }
 
 /// `sin(x)`, correctly rounded.
@@ -552,8 +566,9 @@ pub fn sin(x: f64) -> f64 {
     if x == 0.0 || x.abs() < TINY {
         return x;
     }
-    let (s, _) = sin_cos_of(x.abs());
-    sign_of(x, round_value(s))
+    let ax = x.abs();
+    let s = crate::trig_fast::sin(ax).unwrap_or_else(|| round_value(sin_cos_of(ax).0));
+    sign_of(x, s)
 }
 
 /// `cos(x)`, correctly rounded.
@@ -565,8 +580,8 @@ pub fn cos(x: f64) -> f64 {
     if x.abs() < TINY {
         return 1.0;
     }
-    let (_, c) = sin_cos_of(x.abs());
-    round_value(c)
+    let ax = x.abs();
+    crate::trig_fast::cos(ax).unwrap_or_else(|| round_value(sin_cos_of(ax).1))
 }
 
 /// `tan(x)`, correctly rounded.
@@ -973,5 +988,285 @@ mod tests {
         }
         assert_eq!(asin(0.5), std::f64::consts::FRAC_PI_6);
         assert_eq!(tan(0.5), 0.5463024898437905);
+    }
+
+    /// The fast path's constants are what its error analysis assumes: `pi/2` in three parts within
+    /// `2^-163`, and each series coefficient the nearest double (and its rest the nearest double).
+    #[test]
+    fn trig_fast_constants_match_fixed_point() {
+        use crate::trig_fast::{COS_DD, COS_TAIL, PIO2, SIN_DD, SIN_TAIL};
+        let delta = PIO2
+            .iter()
+            .fold(Fx(CR_PI_OVER_2), |rest, &part| rest.sub(Fx::from_f64(part)));
+        let bound = Fx([0, 1 << 29, 0, 0, 0, 0]); // 2^-163
+        assert!(!bound.sub(delta.abs()).is_neg(), "pi/2 - parts = {delta:?}");
+        // (-1)^n / k! for the even and odd k from `first`, one division at a time.
+        let check = |first: u64, dd: &[(f64, f64)], tail: &[f64]| {
+            let mut value = Fx::one();
+            for i in 2..first {
+                value = value.div_int(i);
+            }
+            let mut k = first;
+            for (n, &(hi, lo)) in dd.iter().enumerate() {
+                value = value.div_int(k).neg();
+                assert_eq!(
+                    hi.to_bits(),
+                    value.to_f64().to_bits(),
+                    "hi of 1/{k}!, n={n}"
+                );
+                let rest = value.sub(Fx::from_f64(hi)).to_f64();
+                assert_eq!(lo.to_bits(), rest.to_bits(), "lo of 1/{k}!");
+                value = value.div_int(k + 1);
+                k += 2;
+            }
+            for &c in tail {
+                value = value.div_int(k).neg();
+                assert_eq!(c.to_bits(), value.to_f64().to_bits(), "1/{k}!");
+                value = value.div_int(k + 1);
+                k += 2;
+            }
+        };
+        check(3, &SIN_DD, &SIN_TAIL);
+        check(2, &COS_DD, &COS_TAIL);
+    }
+
+    /// The public functions as they were before the fast path: the oracle of the tests below.
+    fn sin_cos_fixed(x: f64) -> (f64, f64) {
+        if !x.is_finite() {
+            return (f64::NAN, f64::NAN);
+        }
+        if x == 0.0 || x.abs() < TINY {
+            return (x, 1.0);
+        }
+        let (s, c) = sin_cos_of(x.abs());
+        (sign_of(x, round_value(s)), round_value(c))
+    }
+
+    /// A seeded SplitMix64 generator.
+    struct Rng(u64);
+
+    impl Rng {
+        fn next(&mut self) -> u64 {
+            self.0 = self.0.wrapping_add(0x9e37_79b9_7f4a_7c15);
+            let mut z = self.0;
+            z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+            z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+            z ^ (z >> 31)
+        }
+
+        fn below(&mut self, n: u64) -> u64 {
+            self.next() % n
+        }
+
+        /// A double with a random sign and mantissa and an exponent in `[low, high)`.
+        fn with_exponent(&mut self, low: i64, high: i64) -> f64 {
+            let exponent = low + self.below((high - low) as u64) as i64;
+            let bits = ((exponent + 1023) as u64) << 52 | (self.next() & ((1 << 52) - 1));
+            f64::from_bits(bits | (self.next() & (1 << 63)))
+        }
+
+        /// `x` moved by up to `ulps` units in the last place either way, keeping its sign.
+        fn around(&mut self, x: f64, ulps: u64) -> f64 {
+            let offset = self.below(2 * ulps + 1);
+            let bits = x
+                .abs()
+                .to_bits()
+                .saturating_add(offset)
+                .saturating_sub(ulps);
+            let moved = f64::from_bits(bits);
+            if self.next() & 1 == 1 { -moved } else { moved }
+        }
+    }
+
+    /// The input families of the comparison: name, generator.
+    type Family = (&'static str, fn(&mut Rng) -> f64);
+
+    const FAMILIES: [Family; 6] = [
+        // Every bit pattern: mostly huge arguments, NaNs and subnormals, which take the fixed path.
+        ("uniform bits", |rng| f64::from_bits(rng.next())),
+        // Uniform in the exponent over the fast path's range, from 2^-100 to 2^30.
+        ("2^-100..2^30", |rng| rng.with_exponent(-100, 30)),
+        // The doubles nearest to k pi/2 and their neighbors, where r cancels.
+        ("near k pi/2", |rng| {
+            let bits = 1 + rng.below(30);
+            let k = rng.below(1 << bits) + 1;
+            let ulps = rng.below(4096);
+            rng.around(k as f64 * std::f64::consts::FRAC_PI_2, ulps)
+        }),
+        // Small arguments, and the neighbors of 2^-100 where `correct.rs` stops returning x.
+        ("near 0", |rng| {
+            if rng.next() & 1 == 0 {
+                rng.with_exponent(-100, -20)
+            } else {
+                rng.around(TINY, 1 << 12)
+            }
+        }),
+        // Both sides of the fast path's limit, 2^30.
+        ("near 2^30", |rng| rng.around(1_073_741_824.0, 1 << 20)),
+        // Below pi/4, where no reduction happens, and the first quadrants.
+        ("0..8", |rng| {
+            (rng.next() >> 11) as f64 * (8.0 / (1u64 << 53) as f64)
+        }),
+    ];
+
+    /// What the comparison saw: arguments in the fast path's range, how many of them fell back, and
+    /// the largest ratio of the actual error of the unrounded value to its bound `eps`.
+    #[derive(Clone, Copy, Default)]
+    struct Tally {
+        fast_range: u64,
+        sin_fallback: u64,
+        cos_fallback: u64,
+        worst_ratio: f64,
+    }
+
+    impl Tally {
+        fn merge(self, other: Tally) -> Tally {
+            Tally {
+                fast_range: self.fast_range + other.fast_range,
+                sin_fallback: self.sin_fallback + other.sin_fallback,
+                cos_fallback: self.cos_fallback + other.cos_fallback,
+                worst_ratio: self.worst_ratio.max(other.worst_ratio),
+            }
+        }
+    }
+
+    /// Checks `sin`, `cos` and `sin_cos` of `x` bit for bit against the fixed-point oracle, and, in
+    /// the fast path's range, the fast path's unrounded values against the oracle's fixed-point ones.
+    fn check_trig(x: f64, tally: &mut Tally) {
+        let ax = x.abs();
+        let parts = crate::trig_fast::sin_cos_parts(ax).filter(|_| ax >= TINY);
+        let (s, c) = match parts {
+            Some((sin_parts, cos_parts)) => {
+                let (fs, fc) = sin_cos_of(ax);
+                tally.fast_range += 1;
+                tally.sin_fallback += u64::from(crate::trig_fast::sin(ax).is_none());
+                tally.cos_fallback += u64::from(crate::trig_fast::cos(ax).is_none());
+                // Below 2^-60 the oracle's own bound (2^-180) is no longer far below `eps`.
+                if ax >= 2f64.powi(-60) {
+                    for ([hi, lo, eps], exact) in [(sin_parts, fs), (cos_parts, fc)] {
+                        let value = Fx::from_f64(hi).add(Fx::from_f64(lo));
+                        let ratio = value.sub(exact).abs().approx_f64() / eps;
+                        tally.worst_ratio = tally.worst_ratio.max(ratio);
+                    }
+                }
+                (sign_of(x, round_value(fs)), round_value(fc))
+            }
+            None => sin_cos_fixed(x),
+        };
+        let bits = x.to_bits();
+        assert_eq!(sin(x).to_bits(), s.to_bits(), "sin({x:e}), bits {bits:#x}");
+        assert_eq!(cos(x).to_bits(), c.to_bits(), "cos({x:e}), bits {bits:#x}");
+        let (ps, pc) = sin_cos(x);
+        assert_eq!(
+            ps.to_bits(),
+            s.to_bits(),
+            "sin_cos({x:e}).0, bits {bits:#x}"
+        );
+        assert_eq!(
+            pc.to_bits(),
+            c.to_bits(),
+            "sin_cos({x:e}).1, bits {bits:#x}"
+        );
+    }
+
+    /// Runs [`check_trig`] on `per_family` inputs of each family, spread over every core.
+    fn compare_trig_with_fixed_point(per_family: u64) -> Vec<(&'static str, Tally)> {
+        let threads = std::thread::available_parallelism().map_or(4, |n| n.get()) as u64;
+        let mut report = Vec::new();
+        for (index, &(name, generate)) in FAMILIES.iter().enumerate() {
+            let tally = std::thread::scope(|scope| {
+                let workers: Vec<_> = (0..threads)
+                    .map(|thread| {
+                        scope.spawn(move || {
+                            let mut rng = Rng(0x5eed_0000 + (index as u64) * 1000 + thread);
+                            let mut tally = Tally::default();
+                            for _ in 0..per_family / threads {
+                                check_trig(generate(&mut rng), &mut tally);
+                            }
+                            tally
+                        })
+                    })
+                    .collect();
+                workers
+                    .into_iter()
+                    .map(|worker| worker.join().expect("worker"))
+                    .fold(Tally::default(), Tally::merge)
+            });
+            eprintln!(
+                "{name}: {} of {per_family} in the fast range; sin fell back on {}, cos on {}; \
+                 largest error / eps {:.3e}",
+                tally.fast_range, tally.sin_fallback, tally.cos_fallback, tally.worst_ratio
+            );
+            report.push((name, tally));
+        }
+        report
+    }
+
+    #[test]
+    fn trig_fast_special_values() {
+        let mut cases = vec![
+            0.0,
+            -0.0,
+            f64::from_bits(1),
+            f64::from_bits(0x000f_ffff_ffff_ffff),
+            f64::MIN_POSITIVE,
+            TINY,
+            f64::from_bits(TINY.to_bits() - 1),
+            f64::from_bits(TINY.to_bits() + 1),
+            1_073_741_824.0,
+            f64::from_bits(1_073_741_824.0f64.to_bits() + 1),
+            f64::MAX,
+            f64::INFINITY,
+            f64::NAN,
+            -f64::NAN,
+            std::f64::consts::PI,
+            std::f64::consts::FRAC_PI_2,
+            std::f64::consts::FRAC_PI_4,
+            std::f64::consts::TAU,
+            1.0,
+        ];
+        cases.extend((1..=64).map(|k| f64::from(k) * std::f64::consts::FRAC_PI_4));
+        cases.extend((0..64).map(|e| 2f64.powi(e - 32)));
+        let mut tally = Tally::default();
+        for x in cases
+            .clone()
+            .into_iter()
+            .chain(cases.into_iter().map(|x| -x))
+        {
+            check_trig(x, &mut tally);
+        }
+        assert!(tally.worst_ratio < 0.5);
+        // Chromium's values for the most common arguments of the charts.
+        assert_eq!(sin(std::f64::consts::PI), 1.2246467991473532e-16);
+        assert_eq!(cos(std::f64::consts::FRAC_PI_2), 6.123233995736766e-17);
+    }
+
+    #[test]
+    fn trig_fast_matches_fixed_point() {
+        for (name, tally) in compare_trig_with_fixed_point(600_000) {
+            let fallbacks = tally.sin_fallback + tally.cos_fallback;
+            assert!(
+                fallbacks <= tally.fast_range / 1000,
+                "{name}: the fast path falls back too often"
+            );
+            // The bound holds, with the margin its derivation claims.
+            assert!(
+                tally.worst_ratio < 0.5,
+                "{name}: error / eps up to {}",
+                tally.worst_ratio
+            );
+        }
+    }
+
+    #[test]
+    #[ignore = "diagnostic: 60 million inputs per family against the fixed-point evaluator"]
+    fn trig_fast_matches_fixed_point_large() {
+        for (name, tally) in compare_trig_with_fixed_point(60_000_000) {
+            assert!(
+                tally.worst_ratio < 0.5,
+                "{name}: error / eps up to {}",
+                tally.worst_ratio
+            );
+        }
     }
 }
