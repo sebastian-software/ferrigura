@@ -8,7 +8,8 @@ import config from '../native-npm.config.mjs';
 // Compile the same public API examples against the installed tarball, not the checkout's types.
 const fixture = new URL('../ferrigura/test/types.mts', import.meta.url);
 const compiler = fileURLToPath(import.meta.resolve('typescript/bin/tsc'));
-await verifyPackedConsumer({
+const archiveDirectory = process.argv[2];
+const consumerConfig = {
   ...config,
   consumer: {
     ...config.consumer,
@@ -48,4 +49,5 @@ await verifyPackedConsumer({
       console.log('Packed consumer TypeScript examples passed');
     },
   },
-});
+};
+await verifyPackedConsumer(consumerConfig, undefined, { archiveDirectory });
