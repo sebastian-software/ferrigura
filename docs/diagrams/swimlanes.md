@@ -66,7 +66,7 @@ The **lane** (`swimlane_lane.rs`) is two rectangles, a title band and a body, wi
 
 **JavaScript semantics.** Each expression keeps the operand order of its source, the sort comparisons and the insertion orders (`indexmap` where the reference uses `Map`, `Set` or object key order), and the output agrees with the reference bit for bit.
 
-- `to_fixed` is `Number.prototype.toFixed` by the specification, deciding on the exact binary value and rounding ties up in magnitude. The router uses its results as keys.
+- `to_fixed` is `Number.prototype.toFixed` by the specification, deciding on the exact binary value and rounding ties up in magnitude. The router dedups its candidate paths by `to_fixed_key`, an integer key that is equal exactly when the strings are.
 - `js_round` is `Math.round`, half toward `+Infinity`, with V8's sign of zero.
 - `locale_compare` is `localeCompare` for printable ASCII, as ICU's root collation at tertiary strength, written as a table of the 95 characters in ICU order.
 - `js_sort_by` is `Array.prototype.sort` as Chromium runs it (see Learnings).

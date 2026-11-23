@@ -2,6 +2,8 @@
 //!
 //! - [`to_fixed`]: `Number.prototype.toFixed`, by the specification (ECMA-262), with the decision taken on
 //!   the exact binary value and ties rounded up in magnitude.
+//! - [`to_fixed_key`]: an integer key of `to_fixed(_, 3)`, equal exactly when the strings are equal, for the
+//!   dedup of candidate paths without building strings.
 //! - [`js_round`]: `Math.round`, half toward +infinity, with V8's sign of zero.
 //! - [`locale_compare`] and [`try_locale_compare`]: `a.localeCompare(b)` in V8 with the default locale (en-US),
 //!   for printable ASCII. It is ICU's root collation at tertiary strength, written as a table of the 95
@@ -65,29 +67,10 @@ pub fn to_fixed(x: f64, digits: u32) -> String {
         return format!("{sign}{}", exponent_form(magnitude));
     }
 
-    // For the routing precisions, round the exact binary value as an integer. The
-    // significand times 1000 fits in 63 bits, and values below 1e21 need at
-    // most 80 bits after shifting. No floating-point multiplication is involved.
+    // The routing precisions print an integer: `round_to_scale` decides the rounding on the binary value.
     if digits <= 3 {
-        let bits = magnitude.to_bits();
-        let exponent = ((bits >> 52) & 0x7ff) as i32;
-        let fraction = bits & ((1_u64 << 52) - 1);
-        let significand = if exponent == 0 {
-            fraction
-        } else {
-            fraction | (1_u64 << 52)
-        };
-        let shift = exponent.max(1) - 1023 - 52;
+        let rounded = round_to_scale(magnitude, digits);
         let scale = 10_u128.pow(digits);
-        let scaled = u128::from(significand) * scale;
-        let rounded = if shift >= 0 {
-            scaled << shift
-        } else if shift <= -128 {
-            0
-        } else {
-            // The highest discarded bit decides rounding, including exact ties.
-            (scaled >> -shift) + ((scaled >> (-shift - 1)) & 1)
-        };
         let integer = rounded / scale;
         if digits == 0 {
             return format!("{sign}{integer}");
@@ -122,6 +105,82 @@ pub fn to_fixed(x: f64, digits: u32) -> String {
         out.push_str(ascii(&kept[split..]));
     }
     out
+}
+
+/// The integer that `to_fixed(x, digits)` prints in units of `10^-digits`, for a finite `magnitude` below 1e21
+/// and `digits <= 3`: the exact binary value times `10^digits`, rounded half up. The significand times
+/// `10^digits` fits in 63 bits and a value below 1e21 needs at most 80 bits after shifting, so the arithmetic is
+/// exact in `u128`, and no floating-point multiplication is involved.
+fn round_to_scale(magnitude: f64, digits: u32) -> u128 {
+    let bits = magnitude.to_bits();
+    let exponent = ((bits >> 52) & 0x7ff) as i32;
+    let fraction = bits & ((1_u64 << 52) - 1);
+    let significand = if exponent == 0 {
+        fraction
+    } else {
+        fraction | (1_u64 << 52)
+    };
+    let shift = exponent.max(1) - 1023 - 52;
+    let scaled = u128::from(significand) * 10_u128.pow(digits);
+    if shift >= 0 {
+        scaled << shift
+    } else if shift <= -128 {
+        0
+    } else {
+        // The highest discarded bit decides rounding, including exact ties.
+        (scaled >> -shift) + ((scaled >> (-shift - 1)) & 1)
+    }
+}
+
+/// The key of `to_fixed(x, digits)` for `digits <= 3`, an integer key in place of the string: two values have
+/// equal keys exactly when their `to_fixed` strings are equal, so a set of keys dedups the strings.
+///
+/// A finite value below 1e21 is its sign and the integer its digits print. The sign is `x < 0`, as in
+/// `to_fixed`, so `-0.0001` and `0.0001` differ (`"-0.000"` and `"0.000"`), while `-0.0` and `0.0` agree. Every
+/// NaN prints `"NaN"`. A magnitude of 1e21 or more prints in exponent form, which the bits of `x` identify.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum FixedKey {
+    /// A finite value below 1e21: `to_fixed` prints `rounded / 10^digits`, with a `-` when `negative`.
+    Decimal {
+        negative: bool,
+        rounded: u128,
+    },
+    /// A finite value of magnitude 1e21 or more, by its bits.
+    Exponent(u64),
+    NotANumber,
+    Infinity,
+    NegativeInfinity,
+}
+
+/// The [`FixedKey`] of `to_fixed(x, digits)`.
+///
+/// # Panics
+///
+/// Panics if `digits > 3`: the integer key is defined for the routing precisions only.
+#[must_use]
+pub fn to_fixed_key(x: f64, digits: u32) -> FixedKey {
+    assert!(
+        digits <= 3,
+        "to_fixed_key takes at most 3 fraction digits, not {digits}"
+    );
+    if x.is_nan() {
+        return FixedKey::NotANumber;
+    }
+    if x.is_infinite() {
+        return if x < 0.0 {
+            FixedKey::NegativeInfinity
+        } else {
+            FixedKey::Infinity
+        };
+    }
+    let magnitude = x.abs();
+    if magnitude >= 1e21 {
+        return FixedKey::Exponent(x.to_bits());
+    }
+    FixedKey::Decimal {
+        negative: x < 0.0,
+        rounded: round_to_scale(magnitude, digits),
+    }
 }
 
 /// `Number::toString` of a finite positive double of at least 1e21: the shortest round-trip digits, in the
@@ -1074,6 +1133,84 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn to_fixed_key_is_equal_exactly_when_the_strings_are() {
+        // Special values, both signs, the zeros, the 1e21 boundary, and the rounding ties of three digits.
+        let mut values = vec![
+            f64::NAN,
+            -f64::NAN,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            0.0,
+            -0.0,
+            f64::from_bits(1),
+            -f64::from_bits(1),
+            0.0001,
+            -0.0001,
+            0.0005,
+            -0.0005,
+            1.0005,
+            -2.5005,
+            2.5005,
+            1e21,
+            -1e21,
+            1e21_f64.next_down(),
+            -1e21_f64.next_down(),
+            1e22,
+            f64::MAX,
+            f64::MIN,
+        ];
+        // The ties and their neighbors on a grid of 0.0005, which makes many strings coincide.
+        for k in -500_i32..=500 {
+            let base = f64::from(k) * 0.0005;
+            values.extend([base, base.next_up(), base.next_down()]);
+        }
+        // Deterministic values spread over [-2000, 2000).
+        let mut state = 0x2545_f491_4f6c_dd1d_u64;
+        for _ in 0..1000 {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            let unit = (state >> 11) as f64 / (1_u64 << 53) as f64;
+            values.push((unit - 0.5) * 4000.0);
+        }
+
+        let strings: Vec<String> = values.iter().map(|&x| to_fixed(x, 3)).collect();
+        let keys: Vec<FixedKey> = values.iter().map(|&x| to_fixed_key(x, 3)).collect();
+        let mut equal_pairs = 0_usize;
+        for i in 0..values.len() {
+            for j in i + 1..values.len() {
+                let same_string = strings[i] == strings[j];
+                assert_eq!(
+                    keys[i] == keys[j],
+                    same_string,
+                    "{:e} and {:e}: strings {:?} and {:?}",
+                    values[i],
+                    values[j],
+                    strings[i],
+                    strings[j]
+                );
+                equal_pairs += usize::from(same_string);
+            }
+        }
+        // The sample must contain equal strings, or the check above proves nothing about equality.
+        assert!(equal_pairs > 1000, "only {equal_pairs} equal pairs");
+    }
+
+    #[test]
+    fn to_fixed_key_keeps_the_sign_of_a_value_that_rounds_to_zero() {
+        assert_ne!(to_fixed_key(-0.0001, 3), to_fixed_key(0.0001, 3));
+        assert_eq!(to_fixed_key(-0.0, 3), to_fixed_key(0.0, 3));
+        assert_eq!(to_fixed(-0.0, 3), "0.000");
+        assert_eq!(to_fixed(-0.0001, 3), "-0.000");
+    }
+
+    #[test]
+    #[should_panic(expected = "at most 3 fraction digits")]
+    fn to_fixed_key_rejects_more_than_three_digits() {
+        let _ = to_fixed_key(1.0, 4);
     }
 
     #[test]
