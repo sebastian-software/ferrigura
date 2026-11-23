@@ -19,8 +19,8 @@ use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use super::line_jumps::{self, EdgeGeom, JUMP_RADIUS, JumpStyle, LineJumpConfig};
 use super::markers::{self, Kind};
 use super::path::{
-    Curve, ROUNDED_RADIUS, apply_marker_offsets, curve_path, fix_corners, generate_rounded_path,
-    js_number, line_with_offset, marker_offset2, path_bounds, path_length,
+    Curve, PathGeometry, ROUNDED_RADIUS, apply_marker_offsets, curve_path, fix_corners,
+    generate_rounded_path, js_number, line_with_offset, marker_offset2, path_bounds,
 };
 use crate::RenderError;
 use crate::svg::escape;
@@ -479,6 +479,8 @@ pub(crate) struct Painted {
     /// The attributes after the markers, each with its leading space.
     path_attributes: String,
     pub(crate) d: Option<String>,
+    /// The tight box of `d`, taken when `d` is set.
+    bbox: BBox,
     pub(crate) style: String,
     pub(crate) class: String,
     look: String,
@@ -572,6 +574,7 @@ pub(crate) fn prepare_paths(
         };
         for rewrite in line_jumps::apply_jumps(&geometries, &config) {
             let target = &mut painted[indices[rewrite.index]];
+            target.bbox = path_bounds(&rewrite.d).unwrap_or_default();
             target.d = Some(rewrite.d);
             if let Some(style) = rewrite.style {
                 target.style = style;
@@ -584,16 +587,11 @@ pub(crate) fn prepare_paths(
 
 /// Finishes a path, optionally with an animated serialization of the same geometry.
 pub(crate) fn finish_path(painted: Painted, svg: Option<String>) -> EdgePath {
-    let bbox = painted
-        .d
-        .as_deref()
-        .and_then(path_bounds)
-        .unwrap_or_default();
     let svg = svg.unwrap_or_else(|| format_path(&painted));
     EdgePath {
         id: painted.id,
         svg,
-        bbox,
+        bbox: painted.bbox,
         markers: painted.markers,
     }
 }
@@ -611,6 +609,7 @@ fn paint_edge(
 ) -> Painted {
     let curve_name = edge.curve.as_deref().unwrap_or(default_curve);
     let d = path_data(edge, curve_name, radius);
+    let geometry = d.as_deref().map(PathGeometry::parse).unwrap_or_default();
 
     let stroke = stroke_classes(&edge.thickness, &edge.pattern);
     let animation = if edge.animate == Some(true) {
@@ -655,7 +654,7 @@ fn paint_edge(
 
     let mut style = path_style.clone();
     if edge.look == "neo" && !animated {
-        let length = d.as_deref().map_or(0.0, path_length);
+        let length = geometry.length();
         let start_offset = marker_offset2(&edge.arrow_type_start).unwrap_or(0.0);
         let end_offset = marker_offset2(&edge.arrow_type_end).unwrap_or(0.0);
         let dash = if matches!(edge.pattern.as_str(), "dotted" | "dashed") {
@@ -725,6 +724,7 @@ fn paint_edge(
         points: data_points(&edge.points),
         path_attributes: edge.path_attributes.clone(),
         d,
+        bbox: geometry.bounds().unwrap_or_default(),
         style,
         class,
         look: edge.look.clone(),
