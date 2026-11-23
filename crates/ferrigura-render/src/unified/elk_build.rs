@@ -70,6 +70,44 @@ pub struct ElkInput {
 /// `keepEntryNodeOnTop`).
 #[must_use]
 pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
+    build_with(data, config, &HashSet::new())
+}
+
+/// The nodes the placement of the design mode may stretch, so that their edges run straight: a
+/// node whose shape can be drawn at any size, with two edges or more on a side. A node with one
+/// edge on each side has nothing to gain, and it stays in the middle of its edges. A node with a
+/// self-loop keeps its size: ELK's placement throws for a flexible node that has one.
+pub(super) fn stretching(data: &LayoutData) -> HashSet<&str> {
+    let mut degrees: HashMap<&str, (usize, usize)> = HashMap::new();
+    let mut looped = HashSet::new();
+    for edge in &data.edges {
+        if edge.start == edge.end {
+            looped.insert(edge.start.as_str());
+        } else {
+            degrees.entry(edge.start.as_str()).or_default().1 += 1;
+            degrees.entry(edge.end.as_str()).or_default().0 += 1;
+        }
+    }
+    data.nodes
+        .iter()
+        .filter(|node| !node.is_group && super::shapes::stretches(node))
+        .filter(|node| !looped.contains(node.id.as_str()))
+        .filter(|node| {
+            let (into, out) = degrees.get(node.id.as_str()).copied().unwrap_or_default();
+            into.max(out) >= 2
+        })
+        .map(|node| node.id.as_str())
+        .collect()
+}
+
+/// [`build`], for the design mode: the nodes of `rigid` keep their size, whatever
+/// [`stretching`] says.
+#[must_use]
+pub(super) fn build_with(
+    data: &LayoutData,
+    config: &Config<'_>,
+    rigid: &HashSet<String>,
+) -> ElkInput {
     let section = &config.section;
     let mut state = ElkState::default();
     let algorithm = root_algorithm(&config.globals.layout, &mut state.warnings);
@@ -130,7 +168,11 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
     if data.diagram_type == super::markers::FLOWCHART && section.design.is_some() {
         // A placement strategy the configuration names is the user's choice.
         let place = section.elk.node_placement_strategy.is_none();
-        crate::flowchart::policy::relax(&mut graph, place);
+        let stretches = stretching(data)
+            .into_iter()
+            .filter(|id| !rigid.contains(*id))
+            .collect();
+        crate::flowchart::policy::relax(&mut graph, place, &stretches);
         state.group_padding = Some(crate::design::GROUP_SIDE_PADDING);
     }
     ElkInput { graph, state }
@@ -1162,6 +1204,54 @@ mod tests {
     fn build(data: &LayoutData, config: &MermaidConfig) -> ElkInput {
         let fixture = Fixture::new(config.clone(), &Value::empty_object());
         super::build(data, &fixture.config())
+    }
+
+    #[test]
+    fn a_rectangle_with_two_edges_on_a_side_may_stretch() {
+        let node = |id: &str, shape: &str| Node {
+            id: id.into(),
+            shape: shape.into(),
+            ..Node::default()
+        };
+        let edge = |start: &str, end: &str| Edge {
+            start: start.into(),
+            end: end.into(),
+            ..Edge::default()
+        };
+        let data = LayoutData {
+            nodes: vec![
+                node("fork", "rect"),
+                node("chain", "rect"),
+                node("choice", "diamond"),
+                node("looped", "rect"),
+                node("sink", "rect"),
+                Node {
+                    is_group: true,
+                    ..node("group", "rect")
+                },
+            ],
+            edges: vec![
+                edge("fork", "chain"),
+                edge("fork", "choice"),
+                edge("chain", "sink"),
+                edge("choice", "sink"),
+                edge("choice", "looped"),
+                edge("fork", "looped"),
+                edge("looped", "looped"),
+                edge("fork", "group"),
+                edge("chain", "group"),
+            ],
+            ..LayoutData::default()
+        };
+        // `chain` has one edge in and two out; `choice` is no rectangle; `looped` has a self-loop;
+        // `group` is no leaf.
+        assert_eq!(stretching(&data), HashSet::from(["fork", "chain", "sink"]));
+        let only_chains = LayoutData {
+            nodes: vec![node("a", "rect"), node("b", "rect"), node("c", "rect")],
+            edges: vec![edge("a", "b"), edge("b", "c")],
+            ..LayoutData::default()
+        };
+        assert!(stretching(&only_chains).is_empty());
     }
 
     /// The configuration with the given `elk` settings.

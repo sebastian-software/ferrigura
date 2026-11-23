@@ -168,12 +168,70 @@ fn the_mode_places_nodes_so_that_edges_run_straight() {
 }
 
 #[test]
+fn a_node_stretches_so_that_its_edges_run_straight() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "flowchart LR\n  A[Alpha] --> D[Delta]\n  B[Beta] --> C[Gamma]\n  A --> C\n  B --> D\n  A -- sync --> E[Echo]\n  B == bulk ==> E\n  C <--> E\n  D --o E\n  D --x F[Foxtrot]\n";
+    let straight = |svg: &str, id: &str| {
+        let points = route(svg, id);
+        points
+            .iter()
+            .all(|point| (point.1 - points[0].1).abs() < 1e-6)
+    };
+    let config = Value::from(serde_json::json!({
+        "elk": { "nodePlacementStrategy": "NETWORK_SIMPLEX" }
+    }));
+    // The placement alone leaves a step between `D` and `F`, which do not overlap along the layer.
+    let placed = Renderer::new(&config)
+        .render_with(text, &design(None))
+        .unwrap();
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    assert!(!straight(&placed, "L_D_F_0"));
+    assert!(straight(&designed, "L_D_F_0"));
+    // A configured placement is the user's and stretches nothing: `A` has the height its three
+    // edges need. The mode's own placement makes it higher, and no more than 2.5 times as high.
+    assert_eq!(node_size(&placed, "A").1, 64.0);
+    let alpha = node_size(&designed, "A").1;
+    assert!(alpha > 64.0 && alpha <= 2.5 * 64.0, "{alpha}");
+    // `E` would be nearly four times as high with every edge straight: it keeps its height.
+    assert_eq!(node_size(&designed, "E").1, 84.0);
+    // `F` has one edge and keeps its size.
+    assert_eq!(node_size(&designed, "F"), node_size(&placed, "F"));
+}
+
+#[test]
+fn a_chain_and_a_shape_that_is_no_rectangle_keep_their_size() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let config = Value::from(serde_json::json!({
+        "elk": { "nodePlacementStrategy": "NETWORK_SIMPLEX" }
+    }));
+    // Only chains: no node has two edges on a side, so the layout is the placement's own.
+    let chains = "flowchart TD\n  A[Start] --> B[Pack order]\n  B --> C[Ship]\n  D[Other] --> E[Backorder]\n";
+    let placed = Renderer::new(&config)
+        .render_with(chains, &design(None))
+        .unwrap();
+    assert_eq!(renderer.render_with(chains, &design(None)).unwrap(), placed);
+    // A decision with two edges out is drawn at its own size.
+    let choice =
+        "flowchart TD\n  A{Choice} --> B[Left]\n  A --> C[Right]\n  B --> D[End]\n  C --> D\n";
+    let placed = Renderer::new(&config)
+        .render_with(choice, &design(None))
+        .unwrap();
+    let designed = renderer.render_with(choice, &design(None)).unwrap();
+    let diamond = |svg: &str| {
+        let group = &svg[svg.find("id=\"d-flowchart-A-").expect("the node")..];
+        let polygon = &group[group.find("<polygon").expect("its outline")..];
+        polygon[..polygon.find("/>").expect("the outline's end")].to_owned()
+    };
+    assert_eq!(diamond(&designed), diamond(&placed));
+}
+
+#[test]
 fn the_mode_sets_a_diagram_with_more_room() {
     let renderer = Renderer::new(&Value::empty_object());
     let plain = renderer.render_with(FLOW, &default(None)).unwrap();
     let designed = renderer.render_with(FLOW, &design(None)).unwrap();
-    // A node without a busy side keeps its size.
-    assert_eq!(node_size(&plain, "C"), node_size(&designed, "C"));
+    // A node with one edge on each side keeps its size.
+    assert_eq!(node_size(&plain, "D"), node_size(&designed, "D"));
     // The group pads its members by 32, and by 44 at the top.
     let frame = |svg: &str| -> (f64, f64) {
         let group = &svg[svg.find("<g class=\"cluster ").expect("a group")..];

@@ -5,8 +5,8 @@
 //! lays under the user's own, so that every element keeps reading its colors from the theme tokens;
 //! the roles, the stroke widths, the radii and the shadow are written by the style sheet and the
 //! shapes of a diagram type that supports the mode. Its measures (the room a node gives the edges
-//! of its busiest side, the spacing, the padding of a group) change what the layout engine is
-//! given, never the engine.
+//! of its busiest side, the spacing, the padding of a group, the node placement and how far a node
+//! may stretch) change what the layout engine is given, never the engine.
 
 use ferrigura_model::value::Value;
 
@@ -44,6 +44,10 @@ pub const PORT_PITCH: f64 = 20.0;
 
 /// The room a node keeps free at each end of a side, as the layout's `portsSurrounding` does.
 pub const PORT_MARGIN: f64 = 12.0;
+
+/// How far the layout may stretch a node so that its edges run straight: to this many times the
+/// length the node was drawn with. A node the layout stretches further keeps its own size.
+pub const STRETCH_LIMIT: f64 = 2.5;
 
 /// The base value of the layout's spacings at the root, where the reference has 40.
 pub const ROOT_SPACING: f64 = 48.0;
