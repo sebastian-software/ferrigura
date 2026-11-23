@@ -16,6 +16,7 @@ use ferrigura::{Animation, ColorScheme, FontStyle, FontWeight, RenderOptions, Re
 use ferrigura_model::value::Value;
 
 mod font_catalog;
+mod protected;
 
 const USAGE: &str = "\
 Renders Mermaid diagrams to SVG.
