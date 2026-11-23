@@ -1,6 +1,7 @@
 //! SVG text helpers: escaping, numbers, the paths of arc segments and the embedded font faces.
 
 use std::f64::consts::PI;
+use std::fmt::Write as _;
 
 use ferrigura_jsmath::{cos, sin};
 use ferrigura_syntax::decode_entities;
@@ -136,6 +137,24 @@ pub fn css_text(css: &str) -> String {
         .replace('>', "&gt;")
 }
 
+/// Appends the style text to `out`, escaped as [`css_text`] escapes it. The runs between the
+/// characters that need a replacement are copied whole.
+pub(crate) fn css_text_into(out: &mut String, css: &str) {
+    let mut start = 0;
+    for (at, byte) in css.bytes().enumerate() {
+        let replacement = match byte {
+            b'&' => "&amp;",
+            b'<' => "&lt;",
+            b'>' => "&gt;",
+            _ => continue,
+        };
+        out.push_str(&css[start..at]);
+        out.push_str(replacement);
+        start = at + 1;
+    }
+    out.push_str(&css[start..]);
+}
+
 /// Escape owned style text, retaining its allocation when no XML escaping is needed.
 pub(crate) fn css_text_owned(css: String) -> String {
     if memchr::memchr3(b'&', b'<', b'>', css.as_bytes()).is_some() {
@@ -155,20 +174,30 @@ pub fn number(value: f64) -> String {
 /// The `@font-face` rules of the embedded families, in the order given.
 #[must_use]
 pub fn font_faces(id: &str, families: &[EmbeddedFamily]) -> String {
-    let mut css = families
-        .iter()
-        .map(|family| family.css.as_str())
-        .collect::<Vec<_>>()
-        .join("\n");
-    let variables: String = families
+    let mut css = String::new();
+    font_faces_into(&mut css, id, families);
+    css
+}
+
+/// Appends the `@font-face` rules of [`font_faces`] to `css`.
+pub(crate) fn font_faces_into(css: &mut String, id: &str, families: &[EmbeddedFamily]) {
+    for (index, family) in families.iter().enumerate() {
+        if index > 0 {
+            css.push('\n');
+        }
+        css.push_str(&family.css);
+    }
+    let mut variables = families
         .iter()
         .flat_map(|family| &family.variables)
-        .map(|(name, value)| format!("{name}:{value};"))
-        .collect();
-    if !variables.is_empty() {
-        css.push_str(&format!("#{id}{{font-synthesis:none;{variables}}}"));
+        .peekable();
+    if variables.peek().is_some() {
+        let _ = write!(css, "#{id}{{font-synthesis:none;");
+        for (name, value) in variables {
+            let _ = write!(css, "{name}:{value};");
+        }
+        css.push('}');
     }
-    css
 }
 
 /// The path of an annular sector, as `d3-shape`'s `arc` writes it: the outer arc from `start` to
