@@ -14,6 +14,7 @@
 //! option's type. [`string_val`] reproduces that conversion, including the
 //! JavaScript number format, so `40` becomes `"40"` and an integer option parses.
 
+use std::borrow::Cow;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
@@ -191,15 +192,16 @@ fn id_text(value: &Value) -> Result<String, JsonError> {
 /// Strings are taken as they are, numbers go through the JavaScript number
 /// format (`40` becomes `"40"`, `0.5` stays `"0.5"`), and booleans become
 /// `"true"` or `"false"`. Arrays, objects and `null` are rejected, as elkjs
-/// rejects them with an internal error.
-pub fn string_val(value: &Value) -> Result<String, JsonError> {
+/// rejects them with an internal error. A string value is borrowed, because
+/// every element of a graph reads its options through here.
+pub fn string_val(value: &Value) -> Result<Cow<'_, str>, JsonError> {
     match value {
-        Value::String(text) => Ok(text.clone()),
+        Value::String(text) => Ok(Cow::Borrowed(text)),
         Value::Number(number) => number
             .as_f64()
-            .map(js_number_string)
+            .map(|float| Cow::Owned(js_number_string(float)))
             .ok_or_else(|| JsonError::new("Unsupported number in a layout option.")),
-        Value::Bool(flag) => Ok(flag.to_string()),
+        Value::Bool(flag) => Ok(Cow::Borrowed(if *flag { "true" } else { "false" })),
         other => Err(JsonError::new(format!(
             "Unsupported layout option value: {other}."
         ))),
@@ -219,36 +221,6 @@ pub fn js_number_string(value: f64) -> String {
         return format!("{value:.0}");
     }
     format!("{value}")
-}
-
-/// Ordered key and string pairs of one `layoutOptions` object, as elkjs reads them.
-pub type OptionPairs = Vec<(String, String)>;
-
-/// Turns a `layoutOptions` (or `properties`) object into key and string pairs.
-pub fn option_strings(options: &LayoutOptions) -> Result<OptionPairs, JsonError> {
-    let mut pairs = Vec::with_capacity(options.len());
-    for (key, value) in options {
-        pairs.push((key.clone(), string_val(value)?));
-    }
-    Ok(pairs)
-}
-
-impl JsonNode {
-    /// The option pairs of this node, from `layoutOptions`, falling back to `properties`.
-    pub fn option_pairs(&self) -> Result<OptionPairs, JsonError> {
-        option_pairs_of(self.layout_options.as_ref(), self.properties.as_ref())
-    }
-}
-
-/// Shared rule of `transformProperties`: `layoutOptions`, else `properties`.
-pub fn option_pairs_of(
-    layout_options: Option<&LayoutOptions>,
-    properties: Option<&LayoutOptions>,
-) -> Result<OptionPairs, JsonError> {
-    match layout_options.or(properties) {
-        Some(options) => option_strings(options),
-        None => Ok(Vec::new()),
-    }
 }
 
 #[cfg(test)]
@@ -280,19 +252,5 @@ mod tests {
         assert_eq!(node.id, "7");
         assert_eq!(node.width, Some(50.0));
         assert_eq!(node.children[0].x, Some(1.5));
-    }
-
-    #[test]
-    fn option_pairs_prefer_layout_options_over_properties() {
-        let node: JsonNode = serde_json::from_value(json!({
-            "id": "root",
-            "layoutOptions": { "spacing.baseValue": 40 },
-            "properties": { "spacing.baseValue": 10 }
-        }))
-        .unwrap();
-        assert_eq!(
-            node.option_pairs().unwrap(),
-            vec![("spacing.baseValue".to_string(), "40".to_string())]
-        );
     }
 }
