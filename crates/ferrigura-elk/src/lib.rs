@@ -30,6 +30,32 @@ pub struct Layout {
     pub trace: core::util::progress::TraceNode,
 }
 
+thread_local! {
+    /// Whether the layouts of this thread run the calm node placement after the network simplex
+    /// one.
+    static SETTLING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Runs `run` with the calm node placement switched on for the layouts it makes on this thread:
+/// where a graph places its nodes with network simplex, `layered::p4nodes::settle` places them
+/// anew. An experiment, not a part of ELK; no layout option names it, because the option registry
+/// holds what elkjs registers.
+pub fn settled<T>(run: impl FnOnce() -> T) -> T {
+    struct Reset(bool);
+    impl Drop for Reset {
+        fn drop(&mut self) {
+            SETTLING.with(|flag| flag.set(self.0));
+        }
+    }
+    let _reset = Reset(SETTLING.with(|flag| flag.replace(true)));
+    run()
+}
+
+/// Whether [`settled`] is running a layout on this thread.
+pub(crate) fn settling() -> bool {
+    SETTLING.with(std::cell::Cell::get)
+}
+
 /// Lays out an elkjs JSON graph the way `elk.layout(graph, { logging })` does.
 pub fn layout(graph: &json::JsonNode, logging: bool) -> Result<Layout, LayoutError> {
     layout_impl(std::borrow::Cow::Borrowed(graph), logging)

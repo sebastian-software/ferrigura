@@ -223,6 +223,94 @@ fn the_mode_places_nodes_so_that_edges_run_straight() {
     assert!(edges.iter().any(|edge| !straight(&kept, edge)));
 }
 
+/// The middle of the node with the given id.
+fn node_middle(svg: &str, id: &str) -> (f64, f64) {
+    let group = &svg[svg
+        .find(&format!("id=\"d-flowchart-{id}-"))
+        .expect("the node")..];
+    let marker = "transform=\"translate(";
+    let rest = &group[group.find(marker).expect("its place") + marker.len()..];
+    let (x, y) = rest[..rest.find(')').expect("the place's end")]
+        .split_once(", ")
+        .expect("two numbers");
+    (x.parse().unwrap(), y.parse().unwrap())
+}
+
+/// Whether the route of the edge with the given id has one place across the flow, for a flow
+/// from top to bottom.
+fn runs_straight_down(svg: &str, id: &str) -> bool {
+    let points = route(svg, id);
+    points
+        .iter()
+        .all(|point| (point.0 - points[0].0).abs() < 1e-6)
+}
+
+#[test]
+fn the_main_flow_stands_on_one_axis_and_a_fan_around_it() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // A decision with two branches that meet again.
+    let text = "flowchart TD\n  S([Start]) --> V{Valid?}\n  V -- yes --> P[Process]\n  V -- no --> R[Reject]\n  P --> M[Merge results]\n  R --> M\n  M --> N[Notify]\n  N --> E([End])\n";
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    for edge in ["L_S_V_0", "L_M_N_0", "L_N_E_0"] {
+        assert!(runs_straight_down(&designed, edge), "{edge} bends");
+    }
+    // The decision and the node the branches meet in stand in the middle of the two branches,
+    // and on one line with the start and the end.
+    let x = |id: &str| node_middle(&designed, id).0;
+    let between = (x("P") + x("R")) / 2.0;
+    for node in ["S", "V", "M", "N", "E"] {
+        assert!((x(node) - between).abs() <= 1.0, "{node} at {}", x(node));
+    }
+    // ELK's network simplex placement, which a configuration can name, puts the decision over
+    // one branch.
+    let config = Value::from(serde_json::json!({
+        "elk": { "nodePlacementStrategy": "NETWORK_SIMPLEX" }
+    }));
+    let placed = Renderer::new(&config)
+        .render_with(text, &design(None))
+        .unwrap();
+    let off = (node_middle(&placed, "V").0
+        - (node_middle(&placed, "P").0 + node_middle(&placed, "R").0) / 2.0)
+        .abs();
+    assert!(off > 1.0, "{off}");
+}
+
+#[test]
+fn a_chain_stays_straight_beside_an_edge_that_skips_it() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // `A --> D` skips two nodes, and `B --> A` runs against the flow.
+    let text = "flowchart TD\n  A[Checkout] --> B[Payment]\n  B --> C[Fulfil]\n  C --> D[Ship]\n  A --> D\n  B -- declined --> A\n  D --> E([Done])\n";
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    for edge in ["L_A_B_0", "L_B_C_0", "L_C_D_0", "L_D_E_0"] {
+        assert!(runs_straight_down(&designed, edge), "{edge} bends");
+    }
+    assert!(!runs_straight_down(&designed, "L_A_D_0"));
+    let x = |id: &str| node_middle(&designed, id).0;
+    for node in ["B", "C", "D", "E"] {
+        assert!((x(node) - x("A")).abs() <= 1.0, "{node} at {}", x(node));
+    }
+}
+
+#[test]
+fn an_even_bundle_moves_so_that_its_straight_edge_leaves_from_the_middle() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // `B` has two edges out: one to `E` below it, and one that runs past `E` to `D`.
+    let text = "flowchart TD\n  A --> B\n  A --> C\n  B --> E\n  B --> D\n  C --> D\n  C --> F\n  E --> D\n  F --> D\n";
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let x = |id: &str| node_middle(&designed, id).0;
+    for (edge, from, to) in [("L_B_E_0", "B", "E"), ("L_C_F_0", "C", "F")] {
+        assert!(runs_straight_down(&designed, edge), "{edge} bends");
+        assert!((x(from) - x(to)).abs() <= 1.0);
+        // The edge leaves from the middle of its node, and the other edge 20 beside it.
+        assert!((route(&designed, edge)[0].0 - x(from)).abs() <= 1.0);
+    }
+    assert!(((route(&designed, "L_B_D_0")[0].0 - x("B")).abs() - 20.0).abs() <= 1.0);
+    // The whole is symmetric: `A` and `D` stand between `B` and `C`.
+    let between = (x("B") + x("C")) / 2.0;
+    assert!((x("A") - between).abs() <= 1.0);
+    assert!((x("D") - between).abs() <= 1.0);
+}
+
 #[test]
 fn the_mode_sets_a_diagram_with_more_room() {
     let renderer = Renderer::new(&Value::empty_object());

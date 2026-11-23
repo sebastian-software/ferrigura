@@ -111,7 +111,11 @@ impl PhaseStep {
             return crate::layered::p4nodes::bk::place(graph, progress, monitor);
         }
         if self == PhaseStep::NodePlacement(NodePlacementStrategy::NETWORK_SIMPLEX) {
-            return crate::layered::p4nodes::network_simplex::place(graph, progress, monitor);
+            crate::layered::p4nodes::network_simplex::place(graph, progress, monitor)?;
+            if crate::settling() {
+                crate::layered::p4nodes::settle::settle(graph);
+            }
+            return Ok(());
         }
         let name = self.task_name(graph)?;
         progress.begin(monitor, &name, 1.0);
