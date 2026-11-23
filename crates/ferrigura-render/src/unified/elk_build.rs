@@ -128,7 +128,9 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
         crate::flowchart::policy::center_ports(&mut graph);
     }
     if data.diagram_type == super::markers::FLOWCHART && section.design.is_some() {
-        crate::flowchart::policy::relax(&mut graph);
+        // A placement strategy the configuration names is the user's choice.
+        let place = section.elk.node_placement_strategy.is_none();
+        crate::flowchart::policy::relax(&mut graph, place);
         state.group_padding = Some(crate::design::GROUP_SIDE_PADDING);
     }
     ElkInput { graph, state }

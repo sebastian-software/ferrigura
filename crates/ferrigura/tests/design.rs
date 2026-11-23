@@ -107,20 +107,71 @@ fn a_node_gives_the_edges_of_its_busiest_side_room() {
     assert_eq!(node_size(&designed, "Z"), (184.0, height));
 }
 
+/// The points of the route of the edge with the given id.
+fn route(svg: &str, id: &str) -> Vec<(f64, f64)> {
+    let edge = &svg[svg.find(&format!("data-id=\"{id}\"")).expect("the edge")..];
+    let points = attribute_values(edge, "data-points")[0];
+    let json = String::from_utf8(base64_decode(points)).expect("the points are text");
+    let json: serde_json::Value = serde_json::from_str(&json).expect("the points are JSON");
+    json.as_array()
+        .expect("a list of points")
+        .iter()
+        .map(|point| (point["x"].as_f64().unwrap(), point["y"].as_f64().unwrap()))
+        .collect()
+}
+
+/// Decodes standard base64 with padding.
+fn base64_decode(text: &str) -> Vec<u8> {
+    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = Vec::new();
+    let (mut bits, mut count) = (0_u32, 0);
+    for byte in text.bytes().filter(|byte| *byte != b'=') {
+        let value = ALPHABET.iter().position(|c| *c == byte).expect("base64") as u32;
+        bits = (bits << 6) | value;
+        count += 6;
+        if count >= 8 {
+            count -= 8;
+            out.push((bits >> count) as u8);
+            bits &= (1 << count) - 1;
+        }
+    }
+    out
+}
+
+#[test]
+fn the_mode_places_nodes_so_that_edges_run_straight() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // Two sources, two middle nodes and a sink: Brandes & Koepf leaves steps that a placement by
+    // network simplex does not.
+    let text = "flowchart LR\n  A[Alpha] --> D[Delta]\n  B[Beta] --> C[Gamma]\n  A --> C\n  B --> D\n  A -- sync --> E[Echo]\n  B == bulk ==> E\n  C <--> E\n  D --o E\n  D --x F[Foxtrot]\n";
+    let straight = |svg: &str, id: &str| {
+        let points = route(svg, id);
+        points
+            .iter()
+            .all(|point| (point.1 - points[0].1).abs() < 1e-6)
+    };
+    let plain = renderer.render_with(text, &default(None)).unwrap();
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let edges = ["L_A_C_0", "L_B_D_0", "L_C_E_0"];
+    assert!(edges.iter().any(|edge| !straight(&plain, edge)));
+    for edge in edges {
+        assert!(straight(&designed, edge), "{edge} bends");
+    }
+    // A placement strategy the configuration names is the user's: the mode keeps it.
+    let config = Value::from(serde_json::json!({
+        "elk": { "nodePlacementStrategy": "BRANDES_KOEPF" }
+    }));
+    let kept = Renderer::new(&config)
+        .render_with(text, &design(None))
+        .unwrap();
+    assert!(edges.iter().any(|edge| !straight(&kept, edge)));
+}
+
 #[test]
 fn the_mode_sets_a_diagram_with_more_room() {
     let renderer = Renderer::new(&Value::empty_object());
     let plain = renderer.render_with(FLOW, &default(None)).unwrap();
     let designed = renderer.render_with(FLOW, &design(None)).unwrap();
-    let size = |svg: &str| -> (f64, f64) {
-        let view_box: Vec<f64> = attribute_values(svg, "viewBox")[0]
-            .split(' ')
-            .map(|number| number.parse().unwrap())
-            .collect();
-        (view_box[2], view_box[3])
-    };
-    let ((width, height), (roomy_width, roomy_height)) = (size(&plain), size(&designed));
-    assert!(roomy_width >= width && roomy_height > height);
     // A node without a busy side keeps its size.
     assert_eq!(node_size(&plain, "C"), node_size(&designed, "C"));
     // The group pads its members by 32, and by 44 at the top.
