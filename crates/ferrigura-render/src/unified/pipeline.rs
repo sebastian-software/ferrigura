@@ -361,8 +361,12 @@ pub fn node_anchor(diagram_type: &str) -> Anchor {
 /// Returns an error if the layout fails.
 pub fn lay_out(measured: &mut Measured, config: &Config<'_>) -> Result<ElkStages, RenderError> {
     let elk = elk_build::build(&measured.data, config);
-    let layout = with_placement(config, || ferrigura_elk::layout(&elk.graph, false))
-        .map_err(|error| RenderError::Layout(error.to_string()))?;
+    let layout = if own_placement(config) {
+        ferrigura_elk::placement::layout_with(&elk.graph, false, crate::flowchart::placement::Axes)
+    } else {
+        ferrigura_elk::layout(&elk.graph, false)
+    }
+    .map_err(|error| RenderError::Layout(error.to_string()))?;
     apply_layout(measured, config, &layout.graph, &elk.state);
     Ok(ElkStages {
         input: elk.graph,
@@ -375,22 +379,21 @@ pub(crate) fn lay_out_for_render(
     measured: &mut Measured,
     config: &Config<'_>,
 ) -> Result<(), RenderError> {
+    if own_placement(config) {
+        return lay_out(measured, config).map(|_| ());
+    }
     let elk = elk_build::build(&measured.data, config);
-    let layout = with_placement(config, || ferrigura_elk::layout_owned(elk.graph, false))
+    let layout = ferrigura_elk::layout_owned(elk.graph, false)
         .map_err(|error| RenderError::Layout(error.to_string()))?;
     apply_layout(measured, config, &layout.graph, &elk.state);
     Ok(())
 }
 
-/// Runs a layout with the node placement the configuration asks for: the design mode's own, a
-/// calm placement on the layers and the order ELK decided (`ferrigura_elk::settled`), unless the
-/// configuration names a placement strategy, which is the user's choice.
-fn with_placement<T>(config: &Config<'_>, run: impl FnOnce() -> T) -> T {
-    if config.section.design.is_some() && config.section.elk.node_placement_strategy.is_none() {
-        ferrigura_elk::settled(run)
-    } else {
-        run()
-    }
+/// Whether the layout runs with the design mode's own node placement, on the layers and the order
+/// ELK decided (`crate::flowchart::placement`): in the design mode, unless the configuration
+/// names a placement strategy, which is the user's choice.
+fn own_placement(config: &Config<'_>) -> bool {
+    config.section.design.is_some() && config.section.elk.node_placement_strategy.is_none()
 }
 
 fn apply_layout(
