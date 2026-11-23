@@ -1,7 +1,0 @@
-flowchart TD
-  A[Checkout] --> B[Payment]
-  B --> C[Fulfil]
-  C --> D[Ship]
-  A --> D
-  B -- declined --> A
-  D --> E([Done])
