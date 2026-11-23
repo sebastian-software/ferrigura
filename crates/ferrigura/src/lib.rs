@@ -55,8 +55,8 @@ pub struct RenderOptions {
     /// their labels. Font, color and readability fixes apply in both modes.
     pub compat: bool,
     /// Draw in the design mode: ferrigura's own look, with hairline outlines, color by the role of
-    /// a node, rounded corners and soft shadows. The mode changes paint only: sizes, positions and
-    /// routes stay those of the default rendering. Flowcharts support it; other diagram types
+    /// a node, rounded corners and soft shadows. Node sizes, positions and routes stay those of the
+    /// default rendering; a group title moves to the left of its frame. Flowcharts support it; other diagram types
     /// return an option error, and so does the combination with `compat`. The user's
     /// `themeVariables` and `classDef` styles still apply on top.
     pub design: bool,

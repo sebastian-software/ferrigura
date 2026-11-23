@@ -11,7 +11,7 @@ use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::theme::ThemeTokens;
 
 use super::Config;
-use super::data::Node;
+use super::data::{Edge, Node};
 use super::geom::{BBox, Point};
 use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use super::palette::{self as style, Palette};
@@ -51,6 +51,20 @@ pub struct Cluster {
 /// Returns an error if the subgraph has no position or size after the layout, or if a bundled font
 /// cannot be read.
 pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
+    paint_among(node, config, &[])
+}
+
+/// [`paint`] with the laid-out edges of the diagram, which the title of a `rect` frame moves aside
+/// from in the design mode (`docs/decisions/0023-design-mode.md`).
+///
+/// # Errors
+///
+/// Returns the errors of [`paint`].
+pub fn paint_among(
+    node: &Node,
+    config: &Config<'_>,
+    edges: &[Edge],
+) -> Result<Cluster, RenderError> {
     match node.shape.as_str() {
         "roundedWithTitle" => rounded_with_title(node, config),
         "noteGroup" => Ok(note_group(node)),
@@ -58,7 +72,7 @@ pub fn paint(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
         "flowGroup" => super::flow_group::paint(node, config),
         "usecaseSystemBoundary" => super::shapes::usecase_boundary::paint(node, config),
         "swimlane" => super::swimlane_lane::paint(node, config),
-        _ => rect(node, config),
+        _ => rect(node, config, edges),
     }
 }
 
@@ -79,7 +93,7 @@ pub fn is_cluster_kind(shape: &str) -> bool {
 }
 
 /// The `rect` cluster: the frame of a flowchart subgraph, with its title.
-fn rect(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
+fn rect(node: &Node, config: &Config<'_>, edges: &[Edge]) -> Result<Cluster, RenderError> {
     let styles = style::style_list(&node.label_style);
     let width = match node.label_type {
         LabelType::Markdown => node.width.unwrap_or(MARKDOWN_TITLE_WIDTH),
@@ -99,7 +113,10 @@ fn rect(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
         font_size: config.theme.font_size.px().unwrap_or(DEFAULT_FONT_SIZE),
         title: false,
     })?;
-    let frame = frame(node, title.bbox, title_top_margin(config))?;
+    let mut frame = frame(node, title.bbox, title_top_margin(config))?;
+    if config.section.design.is_some() {
+        frame.title.x = design_title_x(&frame, title.bbox, edges);
+    }
 
     let palette = style::palette_of(config);
     let slot = palette
@@ -323,6 +340,47 @@ fn frame(node: &Node, title: BBox, title_top_margin: f64) -> Result<Frame, Rende
     })
 }
 
+/// The distance of a title from the left edge of its frame in the design mode.
+const DESIGN_TITLE_INSET: f64 = 16.0;
+
+/// The room a title keeps from an edge that crosses its row in the design mode.
+const DESIGN_TITLE_CLEARANCE: f64 = 8.0;
+
+/// The left edge of a frame's title in the design mode: at the left of the frame, and moved right
+/// past every edge that crosses the title's row, so that no edge runs through the text. When the
+/// row has no free place that is wide enough, the title stays at the left.
+fn design_title_x(frame: &Frame, title: BBox, edges: &[Edge]) -> f64 {
+    let left = frame.bbox.x;
+    let right = left + frame.bbox.width;
+    let inset = DESIGN_TITLE_INSET
+        .min((frame.bbox.width - title.width) / 2.0)
+        .max(0.0);
+    let start = left + inset;
+    let last = right - inset - title.width;
+    let (top, bottom) = (frame.title.y, frame.title.y + title.height);
+
+    // The spans of the row that an edge covers, each with its clearance.
+    let mut covered: Vec<(f64, f64)> = Vec::new();
+    for edge in edges {
+        for pair in edge.points.windows(2) {
+            let (a, b) = (pair[0], pair[1]);
+            let (low, high) = (a.x.min(b.x), a.x.max(b.x));
+            if a.y.min(b.y) < bottom && a.y.max(b.y) > top && low < right && high > left {
+                covered.push((low - DESIGN_TITLE_CLEARANCE, high + DESIGN_TITLE_CLEARANCE));
+            }
+        }
+    }
+    covered.sort_by(|a, b| a.0.total_cmp(&b.0));
+
+    let mut x = start;
+    for (low, high) in covered {
+        if x < high && x + title.width > low {
+            x = high;
+        }
+    }
+    if x <= last { x } else { start }
+}
+
 /// The top margin of a subgraph title (`getSubGraphTitleMargins`): zero unless the configuration sets it.
 fn title_top_margin(config: &Config<'_>) -> f64 {
     config
@@ -532,5 +590,60 @@ mod tests {
             presentation_colors(&node, &ThemeTokens::from_value(&theme), None, None),
             (Some("#F9F9FB".to_owned()), None)
         );
+    }
+
+    /// A frame 200 wide at the origin with a title 50 wide and 20 tall in its top row.
+    fn design_frame() -> (Frame, BBox) {
+        let frame = Frame {
+            bbox: BBox::new(0.0, 0.0, 200.0, 100.0),
+            title: Point::new(75.0, 0.0),
+        };
+        (frame, BBox::new(0.0, 0.0, 50.0, 20.0))
+    }
+
+    /// An edge through the given points.
+    fn edge_through(points: &[(f64, f64)]) -> Edge {
+        Edge {
+            points: points.iter().map(|&(x, y)| Point::new(x, y)).collect(),
+            ..Edge::default()
+        }
+    }
+
+    #[test]
+    fn a_design_title_sits_at_the_left_of_its_frame() {
+        let (frame, title) = design_frame();
+        assert_eq!(design_title_x(&frame, title, &[]), 16.0);
+        // An edge that crosses the row elsewhere, or passes below it, leaves the title there.
+        let clear = [
+            edge_through(&[(100.0, -40.0), (100.0, 50.0)]),
+            edge_through(&[(30.0, 40.0), (30.0, 90.0)]),
+        ];
+        assert_eq!(design_title_x(&frame, title, &clear), 16.0);
+    }
+
+    #[test]
+    fn a_design_title_moves_past_the_edges_that_cross_its_row() {
+        let (frame, title) = design_frame();
+        let one = [edge_through(&[(40.0, -40.0), (40.0, 50.0)])];
+        assert_eq!(design_title_x(&frame, title, &one), 48.0);
+        let two = [
+            edge_through(&[(90.0, -40.0), (90.0, 50.0)]),
+            edge_through(&[(40.0, -40.0), (40.0, 50.0)]),
+        ];
+        assert_eq!(design_title_x(&frame, title, &two), 98.0);
+    }
+
+    #[test]
+    fn a_design_title_without_a_free_place_stays_at_the_left() {
+        let (frame, title) = design_frame();
+        let crowded = [
+            edge_through(&[(40.0, -40.0), (40.0, 50.0)]),
+            edge_through(&[(100.0, -40.0), (100.0, 50.0)]),
+            edge_through(&[(160.0, -40.0), (160.0, 50.0)]),
+        ];
+        assert_eq!(design_title_x(&frame, title, &crowded), 16.0);
+        // A title as wide as its frame has no inset.
+        let wide = BBox::new(0.0, 0.0, 200.0, 20.0);
+        assert_eq!(design_title_x(&frame, wide, &[]), 0.0);
     }
 }

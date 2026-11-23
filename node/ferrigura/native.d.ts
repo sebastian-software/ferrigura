@@ -91,7 +91,7 @@ export interface RenderOptionsInput {
    */
   compat?: boolean
   /**
-   * The design mode when true: ferrigura's own look for flowcharts, paint only. Other diagram
+   * The design mode when true: ferrigura's own look for flowcharts, with the nodes and routes of the default rendering. Other diagram
    * types and the combination with `compat` are rejected.
    */
   design?: boolean

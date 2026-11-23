@@ -1,5 +1,6 @@
 //! The design mode (`docs/decisions/0023-design-mode.md`): ferrigura's own look for a flowchart. It
-//! changes paint and leaves the geometry of the default rendering as it is.
+//! changes paint and leaves the geometry of the default rendering as it is, except for the place
+//! of a group's title.
 
 use ferrigura::{ColorScheme, Error, RenderOptions, Renderer, Value};
 
@@ -36,6 +37,39 @@ fn attribute_values<'a>(svg: &'a str, name: &str) -> Vec<&'a str> {
         .collect()
 }
 
+/// An SVG without the transforms of its group titles, which the design mode places itself.
+fn without_title_transforms(svg: &str) -> String {
+    let marker = "<g class=\"cluster-label \" transform=\"";
+    let mut out = String::new();
+    let mut rest = svg;
+    while let Some(at) = rest.find(marker) {
+        let value = at + marker.len();
+        out.push_str(&rest[..value]);
+        rest = &rest[value + rest[value..].find('"').expect("the attribute's end")..];
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The horizontal place of the first group title of an SVG.
+fn title_x(svg: &str) -> f64 {
+    let marker = "<g class=\"cluster-label \" transform=\"translate(";
+    let rest = &svg[svg.find(marker).expect("a group title") + marker.len()..];
+    rest[..rest.find(',').expect("the x")]
+        .parse()
+        .expect("a number")
+}
+
+/// The left edge of the first group frame of an SVG.
+fn frame_x(svg: &str) -> f64 {
+    let group = &svg[svg.find("<g class=\"cluster ").expect("a group")..];
+    let marker = " x=\"";
+    let rest = &group[group.find(marker).expect("the frame's x") + marker.len()..];
+    rest[..rest.find('"').expect("the x's end")]
+        .parse()
+        .expect("a number")
+}
+
 /// The style sheet of an SVG.
 fn style_sheet(svg: &str) -> &str {
     let start = svg.find("<style>").expect("a style sheet") + "<style>".len();
@@ -55,6 +89,10 @@ fn the_design_mode_keeps_the_geometry_of_the_default_rendering() {
         let plain = renderer.render_with(FLOW, &default(scheme)).unwrap();
         let designed = renderer.render_with(FLOW, &design(scheme)).unwrap();
         assert_ne!(plain, designed);
+        let (plain, designed) = (
+            without_title_transforms(&plain),
+            without_title_transforms(&designed),
+        );
         for name in [
             "viewBox",
             "transform",
@@ -74,6 +112,27 @@ fn the_design_mode_keeps_the_geometry_of_the_default_rendering() {
             );
         }
     }
+}
+
+#[test]
+fn a_group_title_sits_at_the_left_and_clear_of_the_edges() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let plain = renderer.render_with(FLOW, &default(None)).unwrap();
+    let designed = renderer.render_with(FLOW, &design(None)).unwrap();
+    // The default centers the title of `Billing` on its frame, where the edge from `Load profile`
+    // enters; the design mode sets it 16 from the frame's left.
+    assert_eq!(frame_x(&plain), frame_x(&designed));
+    assert_eq!(title_x(&designed), frame_x(&designed) + 16.0);
+    assert!(title_x(&plain) > title_x(&designed));
+
+    // An edge that enters where the title would sit moves the title past it.
+    let crossed = "flowchart TD\n  A[Start] --> B[One]\n  A --> C[Two]\n  subgraph G [A long group title]\n    B\n    C\n  end\n";
+    let designed = renderer.render_with(crossed, &design(None)).unwrap();
+    assert!(title_x(&designed) > frame_x(&designed) + 16.0);
+    // A short title has room before that edge and stays at the left.
+    let short = crossed.replace("A long group title", "Group");
+    let designed = renderer.render_with(&short, &design(None)).unwrap();
+    assert_eq!(title_x(&designed), frame_x(&designed) + 16.0);
 }
 
 #[test]
@@ -131,7 +190,7 @@ fn a_group_is_neutral_and_takes_no_palette_slot() {
     assert!(plain.contains("data-color-id=\"color-0\""));
     assert!(!designed.contains("data-color-id"));
     assert!(!style_sheet(&designed).contains("--borderColor0"));
-    assert!(designed.contains("fill=\"#F2F4F8\" stroke=\"#D6DCE5\""));
+    assert!(designed.contains("fill=\"#F2F4F8\" stroke=\"#8891A2\""));
     assert!(
         style_sheet(&designed).contains(
             "#d [data-look=\"neo\"].cluster rect{stroke:var(--clusterBorder);filter:none;}"
@@ -154,9 +213,9 @@ fn the_color_scheme_chooses_the_tone() {
     assert!(style_sheet(&light).contains("--mainBkg:#FFFFFF;"));
     assert!(style_sheet(&light).contains("--terminalBkg:#2F54D6;"));
     assert!(style_sheet(&dark).contains("--mainBkg:#1D212A;"));
-    assert!(style_sheet(&dark).contains("--terminalBkg:#4F70F0;"));
+    assert!(style_sheet(&dark).contains("--terminalBkg:#4263EB;"));
     assert!(style_sheet(&auto).contains("--mainBkg:light-dark(#FFFFFF,#1D212A);"));
-    assert!(style_sheet(&auto).contains("--terminalBkg:light-dark(#2F54D6,#4F70F0);"));
+    assert!(style_sheet(&auto).contains("--terminalBkg:light-dark(#2F54D6,#4263EB);"));
     // Without a color scheme the render is light.
     assert_eq!(
         style_sheet(&renderer.render_with(FLOW, &design(None)).unwrap()),
@@ -170,7 +229,7 @@ fn a_configured_dark_theme_chooses_the_dark_tone() {
     let renderer = Renderer::new(&config);
     let svg = renderer.render_with(FLOW, &design(None)).unwrap();
     assert!(style_sheet(&svg).contains("--mainBkg:#1D212A;"));
-    assert!(style_sheet(&svg).contains("--terminalBkg:#4F70F0;"));
+    assert!(style_sheet(&svg).contains("--terminalBkg:#4263EB;"));
     // A directive that sets the theme does the same.
     let text = format!("%%{{init: {{\"theme\": \"redux-dark-color\"}}}}%%\n{FLOW}");
     let directed = Renderer::new(&Value::empty_object())
@@ -189,7 +248,7 @@ fn the_users_theme_variables_and_classes_keep_the_last_word() {
     let sheet = style_sheet(&svg);
     assert!(sheet.contains("--mainBkg:#fafafa;"));
     assert!(sheet.contains("--lineColor:#ff0000;"));
-    assert!(sheet.contains("--nodeBorder:#C4CBD6;"));
+    assert!(sheet.contains("--nodeBorder:#7C8698;"));
 
     let classed = format!("{FLOW}  classDef hot fill:#f96,stroke:#333\n  class A hot\n");
     let svg = Renderer::new(&Value::empty_object())

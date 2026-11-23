@@ -376,7 +376,7 @@ pub(crate) fn paint_with_animation<'a>(
             dom_id: format!("{id}-{}", node.dom_id),
             ..node.clone()
         };
-        let cluster = clusters::paint(&prefixed, config)?;
+        let cluster = clusters::paint_among(&prefixed, config, &data.edges)?;
         if matches!(measured.layout, Layout::Swimlane(_)) {
             lanes.insert(node.id.clone(), (cluster.bbox.width, cluster.bbox.height));
         }

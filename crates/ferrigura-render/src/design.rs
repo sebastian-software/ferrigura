@@ -1,7 +1,7 @@
 //! The design mode: ferrigura's own look for a diagram, beside the reference's
 //! (`docs/decisions/0023-design-mode.md`).
 //!
-//! The mode changes paint only. Its colors are theme variables that the facade lays under the user's
+//! The mode changes paint, and the place of a group's title. Its colors are theme variables that the facade lays under the user's
 //! own, so that every element keeps reading its colors from the theme tokens; the roles, the stroke
 //! widths, the radii and the shadow are written by the style sheet and the shapes of a diagram type
 //! that supports the mode. Layout input, node sizes and routes are those of the default rendering.
@@ -38,27 +38,27 @@ pub fn theme_variables(tone: Tone) -> Value {
         Tone::Light => &[
             ("background", "#FFFFFF"),
             ("mainBkg", "#FFFFFF"),
-            ("nodeBorder", "#C4CBD6"),
-            ("lineColor", "#8791A3"),
-            ("arrowheadColor", "#8791A3"),
+            ("nodeBorder", "#7C8698"),
+            ("lineColor", "#5B6577"),
+            ("arrowheadColor", "#5B6577"),
             ("textColor", "#1A1F2B"),
             ("nodeTextColor", "#1A1F2B"),
-            ("titleColor", "#5F6878"),
+            ("titleColor", "#4A5364"),
             ("clusterBkg", "#F2F4F8"),
-            ("clusterBorder", "#D6DCE5"),
+            ("clusterBorder", "#8891A2"),
             ("edgeLabelBackground", "#FFFFFF"),
         ],
         Tone::Dark => &[
             ("background", "#12141A"),
             ("mainBkg", "#1D212A"),
-            ("nodeBorder", "#3A4150"),
-            ("lineColor", "#6E788A"),
-            ("arrowheadColor", "#6E788A"),
+            ("nodeBorder", "#667085"),
+            ("lineColor", "#8E98AA"),
+            ("arrowheadColor", "#8E98AA"),
             ("textColor", "#E7E9EE"),
             ("nodeTextColor", "#E7E9EE"),
-            ("titleColor", "#98A1B2"),
+            ("titleColor", "#A3ACBC"),
             ("clusterBkg", "#171A22"),
-            ("clusterBorder", "#2C313D"),
+            ("clusterBorder", "#5E677A"),
             ("edgeLabelBackground", "#12141A"),
         ],
     };
@@ -115,14 +115,14 @@ pub fn declarations(tone: Tone) -> &'static str {
     match tone {
         Tone::Light => {
             "--terminalBkg:#2F54D6;--terminalBorder:#2F54D6;--terminalText:#FFFFFF;\
-             --decisionBkg:#FFF5DB;--decisionBorder:#E2B54A;--decisionText:#684700;\
-             --dataBkg:#E5F5F0;--dataBorder:#79C4B1;--dataText:#0E5243;\
+             --decisionBkg:#FFF5DB;--decisionBorder:#B7791F;--decisionText:#684700;\
+             --dataBkg:#E5F5F0;--dataBorder:#2E957B;--dataText:#0E5243;\
              --floodColor:rgba(20, 28, 45, 0.14);"
         }
         Tone::Dark => {
-            "--terminalBkg:#4F70F0;--terminalBorder:#4F70F0;--terminalText:#FFFFFF;\
-             --decisionBkg:#2A2310;--decisionBorder:#7C6422;--decisionText:#F0CB6E;\
-             --dataBkg:#10271F;--dataBorder:#2F6F5E;--dataText:#9BDDCB;\
+            "--terminalBkg:#4263EB;--terminalBorder:#4263EB;--terminalText:#FFFFFF;\
+             --decisionBkg:#2A2310;--decisionBorder:#92752A;--decisionText:#F0CB6E;\
+             --dataBkg:#10271F;--dataBorder:#37856F;--dataText:#9BDDCB;\
              --floodColor:rgba(0, 0, 0, 0.5);"
         }
     }
@@ -140,6 +140,82 @@ pub const fn flood_attributes(tone: Tone) -> (&'static str, &'static str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The relative luminance of a `#RRGGBB` color (WCAG 2).
+    fn luminance(colour: &str) -> f64 {
+        let channel = |at: usize| {
+            let value = f64::from(u8::from_str_radix(&colour[at..at + 2], 16).unwrap()) / 255.0;
+            if value <= 0.04045 {
+                value / 12.92
+            } else {
+                ferrigura_jsmath::pow((value + 0.055) / 1.055, 2.4)
+            }
+        };
+        0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5)
+    }
+
+    /// The contrast ratio of two colors (WCAG 2).
+    fn contrast(a: &str, b: &str) -> f64 {
+        let (a, b) = (luminance(a), luminance(b));
+        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+    }
+
+    /// The colors of a tone by name: its theme variables and its role properties.
+    fn colours(tone: Tone) -> std::collections::BTreeMap<String, String> {
+        let mut colours = std::collections::BTreeMap::new();
+        if let Value::Object(map) = theme_variables(tone) {
+            for (name, value) in map {
+                colours.insert(name, value.as_str().unwrap().to_owned());
+            }
+        }
+        for declaration in declarations(tone).split(';') {
+            if let Some((name, value)) = declaration.trim().split_once(':')
+                && value.starts_with('#')
+            {
+                colours.insert(name.trim_start_matches("--").to_owned(), value.to_owned());
+            }
+        }
+        colours
+    }
+
+    #[test]
+    fn text_and_lines_keep_their_contrast_in_both_tones() {
+        // WCAG 2.1: 4.5 for text (1.4.3), 3 for the lines a reader needs to tell shapes and
+        // connections apart (1.4.11). A line is checked on the page and inside a group.
+        const TEXT: [(&str, &str); 7] = [
+            ("textColor", "background"),
+            ("nodeTextColor", "mainBkg"),
+            ("titleColor", "clusterBkg"),
+            ("titleColor", "edgeLabelBackground"),
+            ("terminalText", "terminalBkg"),
+            ("decisionText", "decisionBkg"),
+            ("dataText", "dataBkg"),
+        ];
+        const LINES: [&str; 6] = [
+            "lineColor",
+            "arrowheadColor",
+            "nodeBorder",
+            "terminalBorder",
+            "decisionBorder",
+            "dataBorder",
+        ];
+        for tone in [Tone::Light, Tone::Dark] {
+            let colours = colours(tone);
+            let of = |name: &str| colours[name].as_str();
+            for (text, ground) in TEXT {
+                let ratio = contrast(of(text), of(ground));
+                assert!(ratio >= 4.5, "{tone:?}: {text} on {ground} is {ratio:.2}");
+            }
+            for line in LINES {
+                for ground in ["background", "clusterBkg"] {
+                    let ratio = contrast(of(line), of(ground));
+                    assert!(ratio >= 3.0, "{tone:?}: {line} on {ground} is {ratio:.2}");
+                }
+            }
+            let ratio = contrast(of("clusterBorder"), of("background"));
+            assert!(ratio >= 3.0, "{tone:?}: clusterBorder is {ratio:.2}");
+        }
+    }
 
     #[test]
     fn the_theme_variables_of_both_tones_name_the_same_variables() {
