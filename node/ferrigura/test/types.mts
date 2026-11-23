@@ -39,6 +39,7 @@ const catalogOptions: CatalogFontOptions = {
   families: ['Lexica Ultralegible', { family: 'Mono', alias: 'monospace' }],
   cacheDir: '/cache/fonts',
   fallbacks: ['monospace'],
+  protectedDownloads: true,
 };
 const resolvedFonts: Promise<FontOptions> = resolveCatalogFonts(catalogOptions);
 void resolvedFonts;
@@ -48,3 +49,6 @@ resolveCatalogFonts({
   // @ts-expect-error The immutable catalog override needs a SHA-256 pin.
   catalog: { manifestUrl: 'https://x.test/c.json', assetBase: 'https://x.test/' },
 });
+
+// @ts-expect-error Protected downloads are an explicit boolean option.
+resolveCatalogFonts({ families: ['X'], cacheDir: '/cache', protectedDownloads: 'yes' });

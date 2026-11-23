@@ -14,6 +14,9 @@ const DEFAULT_CATALOG = {
 const HASH = /^[a-f0-9]{64}$/;
 const MAX_MANIFEST = 2 * 1024 * 1024;
 const MAX_FONT = 16 * 1024 * 1024;
+const MAX_ISSUER_RESPONSE = 16 * 1024;
+const ISSUER = 'https://downloads.ferrigura.dev/v1/downloads';
+const PROTECTED_ORIGIN = 'https://protected-assets.ferrigura.dev';
 const fold = (value) => value.replace(/[A-Z]/g, (letter) => letter.toLowerCase());
 
 function digest(bytes) {
@@ -74,7 +77,111 @@ function assetUrl(base, path) {
     throw new TypeError('catalog font path escapes asset base');
   return url;
 }
-async function verifiedBytes({ cacheDir, hash, size, limit, url, offline }) {
+async function fetchWithoutSecrets(url, options, message) {
+  try {
+    return await fetch(url, options);
+  } catch {
+    // Fetch errors may contain a signed URL or authorization details in their cause.
+    throw new Error(message);
+  }
+}
+
+async function readBounded(response, limit, expectedSize, label) {
+  if (!response.body) throw new Error(`${label} response has no body`);
+  const chunks = [];
+  let total = 0;
+  const reader = response.body.getReader();
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > limit || (expectedSize != null && total > expectedSize))
+        throw new Error(`${label} response is too large`);
+      chunks.push(value);
+    }
+  } catch (error) {
+    // Network stream exceptions can contain a signed URL in their message or cause.
+    if (error instanceof Error && error.message === `${label} response is too large`) throw error;
+    throw new Error(`${label} response could not be read`);
+  } finally {
+    try {
+      await reader.cancel().catch(() => {});
+    } finally {
+      reader.releaseLock();
+    }
+  }
+  return Buffer.concat(chunks, total);
+}
+
+async function protectedUrl(publicUrl, hash, expectedSize, limit) {
+  const token = process.env.FERRIGURA_DOWNLOAD_TOKEN;
+  if (typeof token !== 'string' || !/^[\x21-\x7e]{1,4096}$/.test(token))
+    throw new Error('FERRIGURA_DOWNLOAD_TOKEN must be set to a valid bearer token');
+  const path = publicUrl.pathname;
+  if (!(path.startsWith('/ferrigura/fonts/') || path.startsWith('/ferrigura/catalogs/')))
+    throw new Error('invalid protected catalog object path');
+  const response = await fetchWithoutSecrets(
+    ISSUER,
+    {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ path, sha256: hash }),
+      redirect: 'manual',
+      signal: AbortSignal.timeout(30_000),
+    },
+    'protected download issuer request failed'
+  );
+  if (!response.ok) {
+    await response.body?.cancel().catch(() => {});
+    throw new Error(`protected download issuer returned HTTP ${response.status}`);
+  }
+  const bytes = await readBounded(
+    response,
+    MAX_ISSUER_RESPONSE,
+    undefined,
+    'protected download issuer'
+  );
+  let result;
+  try {
+    result = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  } catch {
+    throw new Error('invalid protected download issuer response');
+  }
+  if (
+    !result ||
+    typeof result.url !== 'string' ||
+    result.sha256 !== hash ||
+    !Number.isSafeInteger(result.bytes) ||
+    result.bytes < 1 ||
+    result.bytes > limit ||
+    (expectedSize != null && result.bytes !== expectedSize)
+  )
+    throw new Error('invalid protected download issuer response');
+  let signed;
+  try {
+    signed = new URL(result.url);
+  } catch {
+    throw new Error('invalid protected download URL');
+  }
+  const keys = [...signed.searchParams.keys()];
+  if (
+    signed.origin !== PROTECTED_ORIGIN ||
+    signed.username ||
+    signed.password ||
+    signed.hash ||
+    signed.pathname !== path ||
+    keys.length !== 2 ||
+    signed.searchParams.getAll('token').length !== 1 ||
+    !signed.searchParams.get('token') ||
+    signed.searchParams.getAll('expires').length !== 1 ||
+    !/^\d+$/.test(signed.searchParams.get('expires') ?? '')
+  )
+    throw new Error('invalid protected download URL');
+  return { url: signed, size: result.bytes };
+}
+
+async function verifiedBytes({ cacheDir, hash, size, limit, url, offline, protectedDownloads }) {
   const dir = join(cacheDir, 'sha256');
   const path = join(dir, hash);
   let handle;
@@ -103,34 +210,23 @@ async function verifiedBytes({ cacheDir, hash, size, limit, url, offline }) {
     await handle?.close();
   }
   if (offline) throw new Error(`offline cache miss for ${hash}`);
-  const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(30_000) });
+  const signed = protectedDownloads ? await protectedUrl(url, hash, size, limit) : undefined;
+  const expectedSize = signed?.size ?? size;
+  const response = await fetchWithoutSecrets(
+    signed?.url ?? url,
+    {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(30_000),
+    },
+    'font catalog request failed'
+  );
   if (!response.ok) {
     await response.body?.cancel().catch(() => {});
-    throw new Error(`font catalog request failed: HTTP ${response.status} for ${url}`);
+    throw new Error(`font catalog request failed: HTTP ${response.status}`);
   }
-  if (!response.body) throw new Error(`font catalog response has no body for ${url}`);
-  const chunks = [];
-  let total = 0;
-  const reader = response.body.getReader();
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > limit || (size != null && total > size))
-        throw new Error(`font catalog response is too large for ${url}`);
-      chunks.push(value);
-    }
-  } finally {
-    try {
-      await reader.cancel().catch(() => {});
-    } finally {
-      reader.releaseLock();
-    }
-  }
-  const bytes = Buffer.concat(chunks, total);
-  if ((size != null && total !== size) || digest(bytes) !== hash)
-    throw new Error(`font catalog object failed size or SHA-256 verification for ${url}`);
+  const bytes = await readBounded(response, limit, expectedSize, 'font catalog');
+  if ((expectedSize != null && bytes.length !== expectedSize) || digest(bytes) !== hash)
+    throw new Error('font catalog object failed size or SHA-256 verification');
   await mkdir(dir, { recursive: true });
   const temporary = join(dir, `.${hash}.${randomUUID()}.tmp`);
   try {
@@ -141,7 +237,15 @@ async function verifiedBytes({ cacheDir, hash, size, limit, url, offline }) {
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
       // Another process won the race. Never trust or overwrite its object without verifying it.
-      return await verifiedBytes({ cacheDir, hash, size, limit, url, offline: true });
+      return await verifiedBytes({
+        cacheDir,
+        hash,
+        size,
+        limit,
+        url,
+        offline: true,
+        protectedDownloads,
+      });
     }
   } finally {
     await unlink(temporary).catch((error) => {
@@ -159,6 +263,10 @@ export async function resolveCatalogFonts(options) {
     throw new TypeError('at least one family is required');
   if (options.offline != null && typeof options.offline !== 'boolean')
     throw new TypeError('offline must be a boolean');
+  if (options.protectedDownloads != null && typeof options.protectedDownloads !== 'boolean')
+    throw new TypeError('protectedDownloads must be a boolean');
+  if (options.protectedDownloads && options.catalog != null)
+    throw new TypeError('protectedDownloads is only supported with the built-in catalog');
   const catalog = options.catalog ?? DEFAULT_CATALOG;
   const origin = originOf(catalog.manifestUrl);
   const manifestUrl = checkedUrl(catalog.manifestUrl, origin, 'manifestUrl');
@@ -172,6 +280,7 @@ export async function resolveCatalogFonts(options) {
     limit: MAX_MANIFEST,
     url: manifestUrl,
     offline: options.offline,
+    protectedDownloads: options.protectedDownloads,
   });
   let parsed;
   try {
@@ -263,6 +372,7 @@ export async function resolveCatalogFonts(options) {
         limit: MAX_FONT,
         url: assetUrl(base, face.renderer.path),
         offline: options.offline,
+        protectedDownloads: options.protectedDownloads,
       });
       fonts.push({ family: alias, weight: face.weight, style: face.style, data });
     }
