@@ -1,5 +1,53 @@
 # Changelog
 
+## [0.9.0](https://github.com/sebastian-software/ferrigura/compare/v0.8.2...v0.9.0) (2026-11-23)
+
+
+### Features
+
+* add a design mode for flowcharts ([#210](https://github.com/sebastian-software/ferrigura/issues/210)) ([b07ee57](https://github.com/sebastian-software/ferrigura/commit/b07ee57355d70b138d9f681a3e58f2cda761a0b2))
+* **cli:** fetch pinned catalog fonts ([#185](https://github.com/sebastian-software/ferrigura/issues/185)) ([362faf2](https://github.com/sebastian-software/ferrigura/commit/362faf2464a608809b6154c9efe09c3a338e7c4d))
+* **cli:** support protected font downloads ([#208](https://github.com/sebastian-software/ferrigura/issues/208)) ([2127f8e](https://github.com/sebastian-software/ferrigura/commit/2127f8e01e8301a9b87a8ea85733ada19848deeb))
+* **elk:** port the network simplex node placement and use it in the design mode ([#222](https://github.com/sebastian-software/ferrigura/issues/222)) ([bfa668d](https://github.com/sebastian-software/ferrigura/commit/bfa668dd2a740fb460e975c48851e1f2e26de834))
+* expand the static font catalog ([#186](https://github.com/sebastian-software/ferrigura/issues/186)) ([c49f2ab](https://github.com/sebastian-software/ferrigura/commit/c49f2aba3023b0b9cce8565251788d088f52f7c1))
+* **node:** resolve pinned catalog fonts ([#189](https://github.com/sebastian-software/ferrigura/issues/189)) ([0cbe74d](https://github.com/sebastian-software/ferrigura/commit/0cbe74df8b42a3c9f61fa0d31c8b88a139615d5a))
+* **node:** support protected font downloads ([#209](https://github.com/sebastian-software/ferrigura/issues/209)) ([a3dddb1](https://github.com/sebastian-software/ferrigura/commit/a3dddb12b82404027aa35ee89f59cf601e235a6e))
+* place the nodes of the design mode on axes and bundle the edges of a side ([#227](https://github.com/sebastian-software/ferrigura/issues/227)) ([7dbc32b](https://github.com/sebastian-software/ferrigura/commit/7dbc32b8578e8aea1d27f3da63243b2f69ca3c09))
+
+
+### Bug Fixes
+
+* accept binary content type for font downloads ([#179](https://github.com/sebastian-software/ferrigura/issues/179)) ([7af2b41](https://github.com/sebastian-software/ferrigura/commit/7af2b41551700455db50ee6d054cb68da12c907d))
+* **deps:** update rust crates ([#101](https://github.com/sebastian-software/ferrigura/issues/101)) ([85eed85](https://github.com/sebastian-software/ferrigura/commit/85eed855f3b3f2c910eaef92d7f7bc327122d812))
+* **port:** do not walk into dependency folders of the reference checkout ([#231](https://github.com/sebastian-software/ferrigura/issues/231)) ([78c6915](https://github.com/sebastian-software/ferrigura/commit/78c6915740f7bf49dde3e33cfe0203506f2b9570))
+
+
+### Performance Improvements
+
+* batch cubic length samples ([#183](https://github.com/sebastian-software/ferrigura/issues/183)) ([3a092cb](https://github.com/sebastian-software/ferrigura/commit/3a092cb9ea8096be28d8eb1e78fdf86ab6448d94))
+* **elk:** key property holders by a dense option index ([#212](https://github.com/sebastian-software/ferrigura/issues/212)) ([4c4438a](https://github.com/sebastian-software/ferrigura/commit/4c4438a010358940fd244b0ae912ba6214ff0ffb))
+* **elk:** read layout options without intermediate string pairs ([#229](https://github.com/sebastian-software/ferrigura/issues/229)) ([cd6a6d9](https://github.com/sebastian-software/ferrigura/commit/cd6a6d9b2bd0ab039103e7122fbac43f790fa6ed))
+* **elk:** skip unused ordering log formatting ([#198](https://github.com/sebastian-software/ferrigura/issues/198)) ([5ffd2ab](https://github.com/sebastian-software/ferrigura/commit/5ffd2ab078e5531b0ec2078db784f6243e7910f1))
+* **ferrigura:** resolve directive configurations with less work ([#214](https://github.com/sebastian-software/ferrigura/issues/214)) ([343532c](https://github.com/sebastian-software/ferrigura/commit/343532c3d30d501cabb0627cbc6e87bb0eccf252))
+* **jsmath:** add a double-double fast path for sin and cos ([#213](https://github.com/sebastian-software/ferrigura/issues/213)) ([ab31e97](https://github.com/sebastian-software/ferrigura/commit/ab31e9731f6e9e813b14569e53eafa357a56e815))
+* **model:** reduce number formatting allocations ([#182](https://github.com/sebastian-software/ferrigura/issues/182)) ([2e22739](https://github.com/sebastian-software/ferrigura/commit/2e227391209f39f36ef552aeae76278c5f333d27))
+* **render:** avoid line-jump segment allocations ([#190](https://github.com/sebastian-software/ferrigura/issues/190)) ([4b60958](https://github.com/sebastian-software/ferrigura/commit/4b609583a696049596e5efda0fcb4a9aef67ce45))
+* **render:** avoid resolving direction for every node ([#192](https://github.com/sebastian-software/ferrigura/issues/192)) ([ae0c4a9](https://github.com/sebastian-software/ferrigura/commit/ae0c4a9280c94d2f0763414ae5aeb24f1221b20e))
+* **render:** borrow measured outlines during layout ([#201](https://github.com/sebastian-software/ferrigura/issues/201)) ([f3e61bf](https://github.com/sebastian-software/ferrigura/commit/f3e61bf03495cd727472bde00588097a7e17af2a))
+* **render:** consume finished ELK arena nodes ([#202](https://github.com/sebastian-software/ferrigura/issues/202)) ([9ec9bbb](https://github.com/sebastian-software/ferrigura/commit/9ec9bbb4ddc99e90579469e25a0abbdd48a3253f))
+* **render:** format coordinates without a heap string ([#223](https://github.com/sebastian-software/ferrigura/issues/223)) ([c8db1cb](https://github.com/sebastian-software/ferrigura/commit/c8db1cbc52c42daa7f88373d53fe19d5d471e737))
+* **render:** parse an edge's path once for its length and bounds ([#224](https://github.com/sebastian-software/ferrigura/issues/224)) ([6e12a57](https://github.com/sebastian-software/ferrigura/commit/6e12a57cbfcd3b24e9e28062c858edde2bfb73aa))
+* **render:** reduce flowchart SVG assembly allocations ([#207](https://github.com/sebastian-software/ferrigura/issues/207)) ([3ba6b01](https://github.com/sebastian-software/ferrigura/commit/3ba6b01fd674346ad2e9182921fb04f2d3330752))
+* **render:** reuse ELK input when rendering ([#206](https://github.com/sebastian-software/ferrigura/issues/206)) ([eb1dbca](https://github.com/sebastian-software/ferrigura/commit/eb1dbca6c13e4967d692965d7a4e70a3655d60d1))
+* **render:** reuse flowchart stylesheet buffer ([#195](https://github.com/sebastian-software/ferrigura/issues/195)) ([3a598b3](https://github.com/sebastian-software/ferrigura/commit/3a598b32e053d7d63de031b9fccd958828979060))
+* **render:** write SVG text into its buffer instead of through format! ([#218](https://github.com/sebastian-software/ferrigura/issues/218)) ([caacd52](https://github.com/sebastian-software/ferrigura/commit/caacd52fa4357dcb371035c4b2bb475baaeae06a))
+* **render:** write the flowchart style sheet into one buffer ([#226](https://github.com/sebastian-software/ferrigura/issues/226)) ([b0e43a4](https://github.com/sebastian-software/ferrigura/commit/b0e43a4f7fbc1b6bad633cf08db506b2baa343e8))
+* **swimlane:** dedup candidate paths by integer keys ([#211](https://github.com/sebastian-software/ferrigura/issues/211)) ([1d09e51](https://github.com/sebastian-software/ferrigura/commit/1d09e514d8bffb374ef78bf61d0c1efc71d1a5a4))
+* **swimlane:** hash the candidate-path dedup sets with a local hasher ([#217](https://github.com/sebastian-software/ferrigura/issues/217)) ([ee3aa20](https://github.com/sebastian-software/ferrigura/commit/ee3aa205db69250d19814859c69a2d5128747956))
+* **text:** reuse registered CFF font bytes ([#196](https://github.com/sebastian-software/ferrigura/issues/196)) ([e2e9666](https://github.com/sebastian-software/ferrigura/commit/e2e9666639a8e0ba36b94d223eac082722c710d7))
+* **text:** reuse shape plans per face ([#216](https://github.com/sebastian-software/ferrigura/issues/216)) ([d3fb6e2](https://github.com/sebastian-software/ferrigura/commit/d3fb6e2d9942f0fcc1d2186389d662e4a36800be))
+* use mimalloc in the CLI and the Node.js addon ([#215](https://github.com/sebastian-software/ferrigura/issues/215)) ([c9e655c](https://github.com/sebastian-software/ferrigura/commit/c9e655c8f12d219362c853dc027b390a2174b0eb))
+
 ## [0.8.2](https://github.com/sebastian-software/ferrigura/compare/v0.8.1...v0.8.2) (2026-11-21)
 
 
