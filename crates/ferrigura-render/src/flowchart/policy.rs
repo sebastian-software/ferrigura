@@ -155,37 +155,33 @@ fn apply_centering(
 /// that edges run straight where the reference's Brandes & Koepf placement leaves a step.
 const DESIGN_PLACEMENT: &str = "NETWORK_SIMPLEX";
 
-/// Gives a flowchart in the design mode more room than the reference's spacings do, and straighter
-/// edges (`docs/decisions/0023-design-mode.md`): a wider base value at the root, a group padding with
-/// a row for the title, and, when `place` is set, the network simplex node placement in every
-/// graph. The options are ELK's own; the engine lays the graph out as it does any other.
+/// Gives a flowchart in the design mode more room than the reference's spacings do, straighter
+/// edges, and edges that meet a node around the middle of its side
+/// (`docs/decisions/0023-design-mode.md`): a wider base value at the root, a group padding with a
+/// row for the title, the mode's distance between the ports of a side in every graph and the
+/// center alignment of the ports of every node, and, when `place` is set, the network simplex node
+/// placement in every graph. The options are ELK's own; the engine lays the graph out as it does
+/// any other.
 pub(crate) fn relax(graph: &mut JsonNode, place: bool) {
     let options = graph.layout_options.get_or_insert_default();
     options.insert(
         "spacing.baseValue".to_owned(),
         crate::design::ROOT_SPACING.into(),
     );
-    if place {
-        options.insert(
-            "elk.layered.nodePlacement.strategy".to_owned(),
-            DESIGN_PLACEMENT.into(),
-        );
-    }
+    relax_graph(graph, place);
     for child in &mut graph.children {
-        relax_groups(child, place);
+        relax_below(child, place);
     }
 }
 
-/// Sets the design mode's padding, and its node placement when `place` is set, on every group below
-/// a node.
-fn relax_groups(node: &mut JsonNode, place: bool) {
-    if node.children.is_empty() {
-        return;
-    }
-    let options = node.layout_options.get_or_insert_default();
+/// Sets what every graph of the design mode has, the root and the groups: the distance between
+/// the ports of a side, which replaces the label-aware one of [`center_ports`], and the node
+/// placement when `place` is set.
+fn relax_graph(graph: &mut JsonNode, place: bool) {
+    let options = graph.layout_options.get_or_insert_default();
     options.insert(
-        "elk.padding".to_owned(),
-        crate::design::GROUP_PADDING.into(),
+        "elk.spacing.portPort".to_owned(),
+        crate::design::PORT_PITCH.into(),
     );
     if place {
         options.insert(
@@ -193,8 +189,24 @@ fn relax_groups(node: &mut JsonNode, place: bool) {
             DESIGN_PLACEMENT.into(),
         );
     }
+}
+
+/// Sets the design mode's padding on every group at or below a node, with what every graph has,
+/// and the center alignment of the ports on every node without children.
+fn relax_below(node: &mut JsonNode, place: bool) {
+    if node.children.is_empty() {
+        node.layout_options
+            .get_or_insert_default()
+            .insert("elk.portAlignment.default".to_owned(), "CENTER".into());
+        return;
+    }
+    node.layout_options.get_or_insert_default().insert(
+        "elk.padding".to_owned(),
+        crate::design::GROUP_PADDING.into(),
+    );
+    relax_graph(node, place);
     for child in &mut node.children {
-        relax_groups(child, place);
+        relax_below(child, place);
     }
 }
 
@@ -203,7 +215,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn relaxing_sets_the_root_spacing_and_the_padding_of_every_group() {
+    fn relaxing_sets_the_spacing_the_padding_the_placement_and_the_ports() {
         let leaf = |id: &str| JsonNode {
             id: id.to_owned(),
             ..JsonNode::default()
@@ -239,6 +251,21 @@ mod tests {
             option(&graph.children[1], placement),
             Some("NETWORK_SIMPLEX".into())
         );
+        // Every graph has the mode's distance between ports, and every leaf centers its ports.
+        let (pitch, alignment) = ("elk.spacing.portPort", "elk.portAlignment.default");
+        assert_eq!(option(&graph, pitch), Some(20.0.into()));
+        assert_eq!(option(&graph.children[1], pitch), Some(20.0.into()));
+        assert_eq!(
+            option(&graph.children[1].children[1], pitch),
+            Some(20.0.into())
+        );
+        assert_eq!(option(&graph.children[0], pitch), None);
+        assert_eq!(option(&graph.children[0], alignment), Some("CENTER".into()));
+        assert_eq!(
+            option(&graph.children[1].children[1].children[0], alignment),
+            Some("CENTER".into())
+        );
+        assert_eq!(option(&graph.children[1], alignment), None);
         // A configured placement strategy is the user's: the mode leaves it alone.
         let mut kept = group("root", vec![group("outer", vec![leaf("b")])]);
         relax(&mut kept, false);

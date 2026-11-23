@@ -5,8 +5,8 @@
 //! lays under the user's own, so that every element keeps reading its colors from the theme tokens;
 //! the roles, the stroke widths, the radii and the shadow are written by the style sheet and the
 //! shapes of a diagram type that supports the mode. Its measures (the room a node gives the edges
-//! of its busiest side, the spacing, the padding of a group) change what the layout engine is
-//! given, never the engine.
+//! of its busiest side, the place of the edges on a side, the spacing, the padding of a group)
+//! change what the layout engine is given, never the engine.
 
 use ferrigura_model::value::Value;
 
@@ -38,12 +38,14 @@ pub const GROUP_RADIUS: f64 = 12.0;
 /// The corner radius of a rounded edge: twice the reference's, so that a turn reads as a curve.
 pub const EDGE_RADIUS: f64 = 10.0;
 
-/// The distance the mode wants between two edges that meet a node on the same side. A node grows
-/// along that side until its busiest side has this much room for each of its edges.
+/// The distance between two edges that meet a node on the same side: the layout is given it as the
+/// spacing of ports, which sit around the middle of the side. A node grows along that side until
+/// its busiest side has this much room for each of its edges.
 pub const PORT_PITCH: f64 = 20.0;
 
-/// The room a node keeps free at each end of a side, as the layout's `portsSurrounding` does.
-pub const PORT_MARGIN: f64 = 12.0;
+/// The room a node keeps free at each end of its busiest side, so that no edge meets the node
+/// where its corner turns.
+pub const PORT_MARGIN: f64 = 24.0;
 
 /// The base value of the layout's spacings at the root, where the reference has 40.
 pub const ROOT_SPACING: f64 = 48.0;
@@ -273,8 +275,8 @@ mod tests {
     fn a_side_has_room_for_each_of_its_edges() {
         assert_eq!(side_length(0), 0.0);
         assert_eq!(side_length(1), 0.0);
-        assert_eq!(side_length(2), 44.0);
-        assert_eq!(side_length(4), 84.0);
+        assert_eq!(side_length(2), 68.0);
+        assert_eq!(side_length(4), 108.0);
     }
 
     #[test]

@@ -5,9 +5,11 @@
 //! `NETWORK_SIMPLEX`: at the root only (`ns-root`, what Mermaid's `modelOrder` and `depthFirst`
 //! presets give), in every graph (`ns-all`), and with
 //! `elk.layered.nodePlacement.networkSimplex.nodeFlexibility.default` set to `PORT_POSITION`
-//! (`ns-ports`), `NODE_SIZE` (`ns-size`) or `NODE_SIZE_WHERE_SPACE_PERMITS` (`ns-where`). `FERRIGURA_NS_FILTER` narrows the run to the cases whose
-//! name contains its value, and `FERRIGURA_NS_CASES` names another directory of case files to
-//! compare in place of the corpus, as the random sets have theirs.
+//! (`ns-ports`), `NODE_SIZE` (`ns-size`) or `NODE_SIZE_WHERE_SPACE_PERMITS` (`ns-where`), or with
+//! `elk.layered.nodePlacement.networkSimplex.nodeFlexibility` set to `NODE_SIZE` on every second node
+//! without children (`ns-node`). `FERRIGURA_NS_FILTER` narrows the run to the cases whose name
+//! contains its value, and `FERRIGURA_NS_CASES` names another directory of case files to compare in
+//! place of the corpus, as the random sets have theirs.
 
 use std::path::PathBuf;
 

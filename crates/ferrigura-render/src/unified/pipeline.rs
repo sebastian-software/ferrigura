@@ -361,8 +361,12 @@ pub fn node_anchor(diagram_type: &str) -> Anchor {
 /// Returns an error if the layout fails.
 pub fn lay_out(measured: &mut Measured, config: &Config<'_>) -> Result<ElkStages, RenderError> {
     let elk = elk_build::build(&measured.data, config);
-    let layout = ferrigura_elk::layout(&elk.graph, false)
-        .map_err(|error| RenderError::Layout(error.to_string()))?;
+    let layout = if own_placement(config) {
+        ferrigura_elk::placement::layout_with(&elk.graph, false, crate::flowchart::placement::Axes)
+    } else {
+        ferrigura_elk::layout(&elk.graph, false)
+    }
+    .map_err(|error| RenderError::Layout(error.to_string()))?;
     apply_layout(measured, config, &layout.graph, &elk.state);
     Ok(ElkStages {
         input: elk.graph,
@@ -375,11 +379,21 @@ pub(crate) fn lay_out_for_render(
     measured: &mut Measured,
     config: &Config<'_>,
 ) -> Result<(), RenderError> {
+    if own_placement(config) {
+        return lay_out(measured, config).map(|_| ());
+    }
     let elk = elk_build::build(&measured.data, config);
     let layout = ferrigura_elk::layout_owned(elk.graph, false)
         .map_err(|error| RenderError::Layout(error.to_string()))?;
     apply_layout(measured, config, &layout.graph, &elk.state);
     Ok(())
+}
+
+/// Whether the layout runs with the design mode's own node placement, on the layers and the order
+/// ELK decided (`crate::flowchart::placement`): in the design mode, unless the configuration
+/// names a placement strategy, which is the user's choice.
+fn own_placement(config: &Config<'_>) -> bool {
+    config.section.design.is_some() && config.section.elk.node_placement_strategy.is_none()
 }
 
 fn apply_layout(
@@ -658,10 +672,10 @@ mod direction_tests {
             ..LayoutData::default()
         };
         let sides = busiest_sides(&data);
-        // `a` has three edges out: 2 * 20 + 2 * 12 along its height, from left to right.
-        assert_eq!(sides[0], (64.0, true));
+        // `a` has three edges out: 2 * 20 + 2 * 24 along its height, from left to right.
+        assert_eq!(sides[0], (88.0, true));
         // `b` has three edges in; its self-loop does not count.
-        assert_eq!(sides[1], (64.0, true));
+        assert_eq!(sides[1], (88.0, true));
         // `c` has one edge on each side and needs nothing; its group runs from top to bottom.
         assert_eq!(sides[3], (0.0, false));
     }

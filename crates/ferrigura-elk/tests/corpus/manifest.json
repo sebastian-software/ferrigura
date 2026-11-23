@@ -1928,6 +1928,134 @@
    "edges": 17,
    "compound": true,
    "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__er-diagram__a-cyclical-er-diagram-elk-layout__0",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__edges-cycle-3",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__ns-node__node-labels-direction-right",
+   "fixture": null,
+   "nodes": 3,
+   "edges": 3,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__ns-node__model-order-first-try-nodes-and-edges",
+   "fixture": null,
+   "nodes": 4,
+   "edges": 4,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__ns-node__edges-prefer-edges",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__ns-node__model-order-labels-prefer-edges",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__er-diagram__should-render-a-not-so-simple-er-diagram__0",
+   "fixture": null,
+   "nodes": 7,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__class-diagram__2-should-render-a-simple-class-diagrams-with-cardinality-3__0",
+   "fixture": null,
+   "nodes": 12,
+   "edges": 8,
+   "compound": false,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__state-diagram-v2__v2-handle-transition-from-one-state-in-a-composite-state-to-a-composite-state__0",
+   "fixture": null,
+   "nodes": 5,
+   "edges": 3,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__state-diagram-v2__elk-notes-keep-their-layout__0",
+   "fixture": null,
+   "nodes": 6,
+   "edges": 3,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__compound-unswept-parent-port-order",
+   "fixture": null,
+   "nodes": 7,
+   "edges": 5,
+   "compound": true,
+   "edgeLabels": false
+  },
+  {
+   "name": "synthetic__ns-node__state-diagram-v2__v2-should-render-composite-states__0",
+   "fixture": null,
+   "nodes": 8,
+   "edges": 7,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__flowchart__3-layout-elk-subgraphs__0",
+   "fixture": null,
+   "nodes": 9,
+   "edges": 5,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__compound-hierarchical-offset-order",
+   "fixture": null,
+   "nodes": 9,
+   "edges": 12,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__state-diagram-v2__elk-composite-entry-default-centering__0",
+   "fixture": null,
+   "nodes": 12,
+   "edges": 11,
+   "compound": true,
+   "edgeLabels": true
+  },
+  {
+   "name": "synthetic__ns-node__compound-marked-cross-hierarchy-edge",
+   "fixture": null,
+   "nodes": 12,
+   "edges": 17,
+   "compound": true,
+   "edgeLabels": true
   }
  ]
 }

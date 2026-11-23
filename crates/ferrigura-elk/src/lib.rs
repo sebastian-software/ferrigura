@@ -18,6 +18,7 @@ pub mod graph;
 pub mod java;
 pub mod json;
 pub mod layered;
+pub mod placement;
 
 pub use error::LayoutError;
 

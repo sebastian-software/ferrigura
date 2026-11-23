@@ -8,6 +8,7 @@
 //! `docs/diagrams/flowchart.md#the-pipeline`.
 
 pub mod data;
+pub(crate) mod placement;
 pub mod policy;
 pub mod style;
 
