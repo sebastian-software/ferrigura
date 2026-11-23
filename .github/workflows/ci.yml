@@ -320,6 +320,41 @@ jobs:
       - name: Test native addon on Node 26
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         run: node --test ferrigura/test/*.test.mjs
+      # Pack under the build toolchain before switching to the consumer runtimes.
+      - name: Pack the Linux consumer for Node baseline tests
+        id: baseline-packs
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          mkdir -p "$RUNNER_TEMP/ferrigura-packs"
+          pnpm --dir ferrigura pack --pack-destination "$RUNNER_TEMP/ferrigura-packs"
+          pnpm --dir platforms/linux-x64-gnu pack --pack-destination "$RUNNER_TEMP/ferrigura-packs"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        id: node-22
+        if: ${{ !cancelled() && steps.baseline-packs.outcome == 'success' }}
+        with:
+          node-version: '22.0.0'
+      - name: Test packed consumer and runtime on Node 22.0.0
+        if: ${{ !cancelled() && steps.node-22.outcome == 'success' }}
+        env:
+          # Probe below the currently published minimum of 22.13.0.
+          npm_config_engine_strict: 'false'
+        run: node scripts/verify-consumer.mjs "$RUNNER_TEMP/ferrigura-packs" && node --test ferrigura/test/*.test.mjs
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        id: node-24
+        if: ${{ !cancelled() && steps.baseline-packs.outcome == 'success' }}
+        with:
+          node-version: '24.0.0'
+      - name: Test packed consumer and runtime on Node 24.0.0
+        if: ${{ !cancelled() && steps.node-24.outcome == 'success' }}
+        run: node scripts/verify-consumer.mjs "$RUNNER_TEMP/ferrigura-packs" && node --test ferrigura/test/*.test.mjs
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        id: node-26
+        if: ${{ !cancelled() && steps.baseline-packs.outcome == 'success' }}
+        with:
+          node-version: '26.0.0'
+      - name: Test packed consumer and runtime on Node 26.0.0
+        if: ${{ !cancelled() && steps.node-26.outcome == 'success' }}
+        run: node scripts/verify-consumer.mjs "$RUNNER_TEMP/ferrigura-packs" && node --test ferrigura/test/*.test.mjs
       - name: Exercise the musl addon in Alpine
         if: matrix.libc == 'musl'
         run: |
