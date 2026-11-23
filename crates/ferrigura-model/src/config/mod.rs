@@ -9,8 +9,8 @@
 //!
 //! [`typed`] reads a whole configuration into [`MermaidConfig`]. A renderer reads the top level
 //! with [`typed_top`] and each section it needs with [`typed_section`] instead: the result is the
-//! same, and a program that draws few diagram types then links the reading code of their sections
-//! only (decision 0020).
+//! same but for the theme variables, which it reads as theme tokens, and a program that draws few
+//! diagram types then links the reading code of their sections only (decision 0020).
 
 mod generated {
     include!(concat!(env!("OUT_DIR"), "/config_schema.rs"));
@@ -98,8 +98,11 @@ pub fn typed_with_warnings(value: &Value) -> Result<TypedConfig, serde_json::Err
     Ok(TypedConfig { config, warnings })
 }
 
-/// The top level of a configuration value, typed: every option that is not a section. It reads as
-/// [`typed`] reads the same options, and never fails for a value of the wrong type.
+/// The top level of a configuration value, typed: every option that is not a section, except
+/// `themeVariables`, which is left `None`. It reads as [`typed`] reads the same options, and never
+/// fails for a value of the wrong type. The theme variables are read as
+/// [`ThemeTokens`](crate::theme::ThemeTokens) instead; copying and typing them here would cost as
+/// much as the rest of the top level.
 ///
 /// # Errors
 ///
@@ -109,6 +112,7 @@ pub fn typed_top(value: &Value) -> Result<MermaidConfigTop, serde_json::Error> {
         Value::Object(map) => Value::Object(
             TOP_KEYS
                 .iter()
+                .filter(|key| **key != "themeVariables")
                 .filter_map(|key| {
                     map.get(*key)
                         .map(|option| ((*key).to_owned(), option.clone()))
@@ -324,6 +328,7 @@ mod tests {
             "sequence": "not a section",
             "elk": { "mergeEdges": "no", "nodePlacementStrategy": "SIMPLE" },
             "gantt": { "barHeight": "30", "axisFormat": 7 },
+            "themeVariables": { "primaryColor": "#336699" },
         });
         let mut merged = defaults();
         deep_merge(&mut merged, &odd);
@@ -342,7 +347,7 @@ mod tests {
             assert_eq!(top.security_level, whole.security_level);
             assert_eq!(top.layout, whole.layout);
             assert_eq!(top.html_labels, whole.html_labels);
-            assert_eq!(top.theme_variables, whole.theme_variables);
+            assert_eq!(top.theme_variables, None);
             assert_eq!(
                 typed_section::<FlowchartDiagramConfig>(&value, "flowchart").unwrap(),
                 whole.flowchart

@@ -86,7 +86,8 @@ pub struct RenderOptions {
 /// it merged onto the defaults and typed, and the light and the dark theme with the user's
 /// `themeVariables`, as typed tokens. Its renders merge only the diagram's own front matter and directives on
 /// top, and only when there are any: a text without them is drawn with the resolved configuration as
-/// it is. The typed view of a diagram type is resolved at its first render and kept after that.
+/// it is. The typed view of a diagram type is resolved at its first render and kept after that, and
+/// so are the views of the last few front matters and directives it rendered.
 ///
 /// The configuration of a renderer does not change once it is made, and the renderer is `Send` and
 /// `Sync`, so one renderer can serve renders on several threads at once. For the same configuration,
@@ -121,6 +122,10 @@ pub struct Renderer {
     /// The views of the diagram types, made at their first render. A view that cannot be resolved
     /// keeps its error, which the render reports as it always has.
     views: Mutex<HashMap<DiagramType, Result<Arc<View>, String>>>,
+    /// The views of the last few directives, least recently used first: diagrams that carry the
+    /// same front matter or `init` directive share their view. A view that cannot be resolved is
+    /// not kept, so its error is resolved again at each render.
+    directive_views: Mutex<Vec<DirectiveView>>,
     /// The diagram types this renderer draws, one plugin per kind.
     plugins: Vec<Plugin>,
     /// Explicit host fonts; `None` preserves the bundled defaults.
@@ -253,8 +258,9 @@ impl Renderer {
     /// schemes that the render draws.
     ///
     /// A text without front matter or directives uses the view of its diagram type and the tokens
-    /// of the renderer as they are. Otherwise the directive is merged on top here, and the tokens are
-    /// computed again only when the directive changes the user's overrides.
+    /// of the renderer as they are. Otherwise the directive is merged on top, unless the renderer
+    /// kept the view of the same directive, and the tokens are computed again only when the
+    /// directive changes the user's overrides.
     fn prepare(
         &self,
         text: &str,
@@ -285,8 +291,7 @@ impl Renderer {
                 fonts: self.fonts.as_ref(),
             });
         }
-        let view = View::resolve(&self.site, plugin, &directive, self.fonts.is_some())
-            .map_err(RenderError::Config)?;
+        let view = self.directive_view(plugin, &directive)?;
         let overrides = self.site.user_theme_variables(&directive);
         let (light_tokens, dark_tokens) = if overrides == self.overrides {
             (
@@ -313,12 +318,52 @@ impl Renderer {
             id,
             max_text,
             max_edges,
-            view: Arc::new(view),
+            view,
             light_tokens,
             dark_tokens,
             scheme,
             fonts: self.fonts.as_ref(),
         })
+    }
+
+    /// The view of a diagram type with a directive: a kept one, or one resolved now and kept. The
+    /// view depends on the site configuration, the supplied fonts, the diagram type and the
+    /// directive; the first two are the renderer's, so the type and the directive are the key.
+    fn directive_view(&self, plugin: Plugin, directive: &Value) -> Result<Arc<View>, RenderError> {
+        let kind = plugin.kind();
+        {
+            let mut kept = lock(&self.directive_views);
+            if let Some(at) = kept
+                .iter()
+                .position(|entry| entry.kind == kind && identical(&entry.directive, directive))
+            {
+                let entry = kept.remove(at);
+                let view = Arc::clone(&entry.view);
+                kept.push(entry);
+                return Ok(view);
+            }
+        }
+        // Two threads that miss at once keep two equal views for a while; that costs memory only.
+        let plain = self.view(plugin).ok();
+        let view = View::resolve(
+            &self.site,
+            plugin,
+            directive,
+            self.fonts.is_some(),
+            plain.as_deref(),
+        )
+        .map(Arc::new)
+        .map_err(RenderError::Config)?;
+        let mut kept = lock(&self.directive_views);
+        if kept.len() == DIRECTIVE_VIEWS_CAPACITY {
+            kept.remove(0);
+        }
+        kept.push(DirectiveView {
+            kind,
+            directive: directive.clone(),
+            view: Arc::clone(&view),
+        });
+        Ok(view)
     }
 
     /// The view of a diagram type with no directive, resolved at its first render.
@@ -333,6 +378,7 @@ impl Renderer {
                     plugin,
                     &Value::empty_object(),
                     self.fonts.is_some(),
+                    None,
                 )
                 .map(Arc::new);
                 lock(&self.views).entry(kind).or_insert(resolved).clone()
@@ -545,6 +591,7 @@ impl RendererBuilder {
             overrides,
             site,
             views: Mutex::new(HashMap::new()),
+            directive_views: Mutex::new(Vec::new()),
             plugins: self.plugins,
             fonts: self.fonts.map(Arc::new),
             subset_cache: Arc::default(),
@@ -594,14 +641,17 @@ struct View {
     /// The sections of the same configuration that the diagram type's renderer reads, typed; the
     /// other sections keep their defaults, and the top level is read into `globals`.
     config: MermaidConfig,
-    /// The tokens of the configured theme: the `themeVariables` of the configuration.
-    configured_tokens: ThemeTokens,
+    /// The tokens of the configured theme: the `themeVariables` of the configuration. A view whose
+    /// theme variables are those of the view without a directive shares that view's tokens.
+    configured_tokens: Arc<ThemeTokens>,
     /// The global options of the configuration, as the view resolves them.
     globals: Globals,
 }
 
 impl View {
     /// The view of a diagram type, with the directive merged on top of the site configuration.
+    /// `plain` is the view of the same type without a directive, when it is resolved: what the view
+    /// computes from the same inputs as `plain` is taken from it instead of computed again.
     ///
     /// # Errors
     ///
@@ -611,6 +661,7 @@ impl View {
         plugin: Plugin,
         directive: &Value,
         supplied_fonts: bool,
+        plain: Option<&Self>,
     ) -> Result<Self, String> {
         let kind = plugin.kind();
         let mut effective = site.effective(Some(kind.config_key()), directive);
@@ -645,11 +696,18 @@ impl View {
         plugin
             .read(&effective, &mut config)
             .map_err(|error| error.to_string())?;
-        let configured_tokens = ThemeTokens::from_value(
-            effective
-                .get("themeVariables")
-                .unwrap_or(&Value::empty_object()),
-        );
+        // The tokens are a function of the theme variables alone, so equal variables give equal
+        // tokens. Most directives leave the theme alone, and making the tokens is a large part of
+        // a resolution.
+        let variables = effective.get("themeVariables");
+        let configured_tokens = match plain {
+            Some(plain) if identical_option(variables, plain.effective.get("themeVariables")) => {
+                Arc::clone(&plain.configured_tokens)
+            }
+            _ => Arc::new(ThemeTokens::from_value(
+                variables.unwrap_or(&Value::empty_object()),
+            )),
+        };
         Ok(Self {
             globals: Globals::of_top(&top),
             configured_tokens,
@@ -835,6 +893,18 @@ fn with_flowchart<T>(
     })
 }
 
+/// How many views of directives a renderer keeps. One that is not kept is resolved again at its next
+/// render; the output does not depend on it.
+const DIRECTIVE_VIEWS_CAPACITY: usize = 8;
+
+/// A view a renderer keeps, with the diagram type and the directive it was resolved for.
+#[derive(Debug)]
+struct DirectiveView {
+    kind: DiagramType,
+    directive: Value,
+    view: Arc<View>,
+}
+
 /// The renderers of [`RendererBuilder::shared`], which [`render`] and [`render_with`] use with every
 /// plugin, each with the configuration and the kinds it was made from, least recently used first.
 static SHORTHAND: Mutex<Vec<Shared>> = Mutex::new(Vec::new());
@@ -881,6 +951,15 @@ fn identical(a: &Value, b: &Value) -> bool {
                     .zip(b)
                     .all(|((key_a, a), (key_b, b))| key_a == key_b && identical(a, b))
         }
+        _ => false,
+    }
+}
+
+/// Whether two values that may be absent are both absent or [`identical`].
+fn identical_option(a: Option<&Value>, b: Option<&Value>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => identical(a, b),
         _ => false,
     }
 }
@@ -1127,5 +1206,161 @@ mod subset_cache_tests {
                 });
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod view_tests {
+    use super::*;
+
+    fn json(value: serde_json::Value) -> Value {
+        Value::from(value)
+    }
+
+    /// Two resolutions are the same view, or fail with the same message.
+    fn assert_same(shared: &Result<View, String>, full: &Result<View, String>, case: &str) {
+        match (shared, full) {
+            (Ok(shared), Ok(full)) => {
+                assert!(identical(&shared.effective, &full.effective), "{case}");
+                assert_eq!(shared.config, full.config, "{case}");
+                assert_eq!(*shared.configured_tokens, *full.configured_tokens, "{case}");
+                assert_eq!(shared.globals, full.globals, "{case}");
+            }
+            (Err(shared), Err(full)) => assert_eq!(shared, full, "{case}"),
+            _ => panic!("{case}: one resolution failed and the other did not"),
+        }
+    }
+
+    #[test]
+    fn a_view_that_shares_with_the_plain_view_equals_the_one_resolved_in_full() {
+        let sites = [
+            (json(serde_json::json!({})), false),
+            (
+                json(serde_json::json!({
+                    "theme": "neutral",
+                    "themeVariables": { "primaryColor": "#336699" },
+                    "flowchart": { "curve": "linear" },
+                    "layout": "dagre",
+                })),
+                false,
+            ),
+            (
+                json(serde_json::json!({
+                    "fontFamily": "Fixture",
+                    "themeVariables": { "fontFamily": "Fixture" },
+                    "journey": { "taskFontFamily": "Open Sans" },
+                })),
+                true,
+            ),
+        ];
+        let directives = [
+            serde_json::json!({}),
+            serde_json::json!({ "logLevel": 1, "htmlLabels": false }),
+            serde_json::json!({ "pie": { "textPosition": 0.9 }, "gantt": { "topAxis": true } }),
+            serde_json::json!({ "theme": "dark" }),
+            serde_json::json!({ "flowchart": { "theme": "redux-dark-color" } }),
+            serde_json::json!({ "themeVariables": { "primaryColor": "#ff0000" } }),
+            serde_json::json!({ "fontFamily": "courier" }),
+            serde_json::json!({ "journey": { "taskFontFamily": "courier" } }),
+            serde_json::json!({
+                "flowchart": { "subGraphTitleMargin": { "top": 5 } },
+                "themeVariables": { "xyChart": { "titleColor": "#123456" } },
+            }),
+            serde_json::json!({ "layout": "elk", "look": "handDrawn" }),
+            serde_json::json!({ "securityLevel": "loose", "secure": [] }),
+            serde_json::json!({ "fontSize": "big", "pie": "round", "themeVariables": 3 }),
+        ];
+        for (site, supplied_fonts) in &sites {
+            let site = SiteConfig::new(Some(site));
+            for plugin in diagrams::all() {
+                let empty = Value::empty_object();
+                let plain = View::resolve(&site, plugin, &empty, *supplied_fonts, None);
+                for directive in &directives {
+                    let directive = json(directive.clone());
+                    let case = format!("{:?} with {directive:?}", plugin.kind());
+                    let full = View::resolve(&site, plugin, &directive, *supplied_fonts, None);
+                    let shared = View::resolve(
+                        &site,
+                        plugin,
+                        &directive,
+                        *supplied_fonts,
+                        plain.as_ref().ok(),
+                    );
+                    assert_same(&shared, &full, &case);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_directive_that_leaves_the_theme_alone_shares_the_tokens_of_the_plain_view() {
+        let renderer = Renderer::new(&Value::empty_object());
+        let plugin = diagrams::pie();
+        let plain = renderer.view(plugin).unwrap();
+        let resolve = |directive: serde_json::Value| {
+            View::resolve(
+                &renderer.site,
+                plugin,
+                &json(directive),
+                false,
+                Some(&plain),
+            )
+            .unwrap()
+        };
+        let untouched = resolve(serde_json::json!({ "pie": { "textPosition": 0.9 } }));
+        assert!(Arc::ptr_eq(
+            &untouched.configured_tokens,
+            &plain.configured_tokens
+        ));
+        let themed = resolve(serde_json::json!({ "theme": "dark" }));
+        assert!(!Arc::ptr_eq(
+            &themed.configured_tokens,
+            &plain.configured_tokens
+        ));
+    }
+
+    #[test]
+    fn kept_views_of_directives_render_as_fresh_renderers_do() {
+        // More distinct directives than the renderer keeps, each rendered again after the others
+        // pushed it out and on several threads at once, against a renderer that has kept nothing.
+        let mut texts: Vec<String> = (0..DIRECTIVE_VIEWS_CAPACITY + 3)
+            .map(|index| {
+                format!(
+                    "---\nconfig:\n  pie:\n    textPosition: 0.{index}5\n---\npie\n  \"A\" : 1\n  \"B\" : 2\n"
+                )
+            })
+            .collect();
+        texts.push("%%{init: {'theme': 'dark'}}%%\npie\n  \"A\" : 1\n".to_owned());
+        texts.push("%%{init: {'fontFamily': 'courier'}}%%\nflowchart LR\n  A --> B\n".to_owned());
+        texts
+            .push("%%{init: {'fontFamily': 'courier'}}%%\nstateDiagram-v2\n  A --> B\n".to_owned());
+        let options = RenderOptions {
+            id: Some("test".into()),
+            now: Some(1_700_000_000_000),
+            ..RenderOptions::default()
+        };
+        let expected: Vec<_> = texts
+            .iter()
+            .map(|text| Renderer::new(&Value::empty_object()).render_with(text, &options))
+            .map(|svg| svg.map_err(|error| error.to_string()))
+            .collect();
+        assert!(expected.iter().all(Result::is_ok));
+        let renderer = Renderer::new(&Value::empty_object());
+        std::thread::scope(|scope| {
+            for _ in 0..4 {
+                let (renderer, options, texts, expected) = (&renderer, &options, &texts, &expected);
+                scope.spawn(move || {
+                    for _ in 0..2 {
+                        for (text, expected) in texts.iter().zip(expected) {
+                            let svg = renderer
+                                .render_with(text, options)
+                                .map_err(|error| error.to_string());
+                            assert_eq!(&svg, expected, "{text}");
+                        }
+                    }
+                });
+            }
+        });
+        assert!(lock(&renderer.directive_views).len() <= DIRECTIVE_VIEWS_CAPACITY);
     }
 }
