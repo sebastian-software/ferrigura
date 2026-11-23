@@ -26,7 +26,7 @@ ferrigura aims at Mermaid's output, not a look of its own:
 
 ## Speed and size
 
-Measured here (the [overview](./README.md) has the method, in the run of 2026-10-24): Mermaid takes 7.75 ms per diagram in the median over 215 fixtures and 33.3 ms at the 90th percentile, against 0.70 ms and 2.01 ms for ferrigura's Node addon. `mermaid.min.js` is 5.5 MB, 1.57 MB gzipped.
+Measured here (the [overview](./README.md) has the method, in the run of 2026-11-23): Mermaid takes 8.65 ms per diagram in the median over 215 fixtures and 35.6 ms at the 90th percentile, against 0.15 ms and 0.45 ms for ferrigura's Node addon. `mermaid.min.js` is 5.5 MB, 1.57 MB gzipped.
 
 Chromium's profiler puts 57 percent of Mermaid's render time into `assignWithDepth`: `getConfig()` returns a deep copy of the whole configuration, theme variables included, and the renderers, shapes and labels call it again and again. The layouts take 17 percent, DOMPurify 10, and the DOM measurement with the layout it forces only 4. A change to Mermaid that hands out the configuration once per render, or as a frozen object, would be worth more than measuring text another way. ferrigura had the same weakness in a smaller form: on 2026-10-17, 84 percent of a small render went into resolving its configuration and theme. Since decision 0008, step 2, the configuration no longer shows in the profile of a render without a directive (the overview has the profile).
 
