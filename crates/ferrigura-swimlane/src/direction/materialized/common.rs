@@ -7,6 +7,8 @@
 //! `undefined` included.
 
 use std::cmp::Ordering;
+use std::collections::HashSet;
+use std::hash::{BuildHasherDefault, Hasher};
 
 use indexmap::IndexMap;
 use serde_json::Value;
@@ -297,6 +299,60 @@ pub(super) fn node_rect_entries(view: &View) -> (Vec<RectEntry>, Vec<RectEntry>)
 /// The key of a path for the dedup of the candidates: one pair of [`to_fixed_key`]s, for `x` and `y`, per point.
 /// Two paths have equal keys exactly when their `x.toFixed(3),y.toFixed(3)` strings, joined by `|`, are equal.
 pub(super) type PathKey = Box<[(FixedKey, FixedKey)]>;
+
+/// The set of the [`PathKey`]s seen so far in one pass. A set is only asked `contains` and `insert`, never
+/// iterated, drained or turned into a `Vec`, so the order its hasher gives the keys never reaches the output.
+/// The three sets that use it (`candidates.rs`, `crossings.rs`, `jogs.rs`) keep that property.
+pub(super) type PathSet = HashSet<PathKey, BuildHasherDefault<PathHasher>>;
+
+/// A multiply-and-rotate hasher, the FxHash scheme of rustc, for [`PathSet`]. SipHash is built to resist hash
+/// flooding, and a local set of the layout's own candidate paths has no adversary choosing the keys, so the speed
+/// is what counts: a path hashes some dozens of words. The scheme is not flood-resistant, which is fine here.
+#[derive(Default)]
+pub(super) struct PathHasher {
+    hash: u64,
+}
+
+impl PathHasher {
+    /// The 64-bit multiplier of rustc's FxHash.
+    const FOLD: u64 = 0x51_7c_c1_b7_27_22_0a_95;
+
+    fn add(&mut self, word: u64) {
+        self.hash = (self.hash.rotate_left(5) ^ word).wrapping_mul(Self::FOLD);
+    }
+}
+
+impl Hasher for PathHasher {
+    fn write(&mut self, bytes: &[u8]) {
+        for chunk in bytes.chunks(8) {
+            let mut word = [0_u8; 8];
+            word[..chunk.len()].copy_from_slice(chunk);
+            self.add(u64::from_le_bytes(word));
+        }
+    }
+
+    fn write_u8(&mut self, i: u8) {
+        self.add(u64::from(i));
+    }
+
+    fn write_u64(&mut self, i: u64) {
+        self.add(i);
+    }
+
+    fn write_u128(&mut self, i: u128) {
+        self.add(i as u64);
+        self.add((i >> 64) as u64);
+    }
+
+    fn write_usize(&mut self, i: usize) {
+        self.add(i as u64);
+    }
+
+    fn finish(&self) -> u64 {
+        // The multiply leaves the entropy in the high bits, and the table takes its index from the low ones.
+        self.hash.rotate_left(26)
+    }
+}
 
 pub(super) fn path_key(points: &[Point]) -> PathKey {
     points
