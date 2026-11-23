@@ -11,6 +11,7 @@ use read_fonts::FontRef;
 use read_fonts::types::Tag;
 
 use crate::fonts::FontData;
+use crate::measure::ShapePlans;
 use crate::{Face, FontFamily, FontStyle, FontWeight, TextError};
 
 /// An explicit set of local fonts and fallback family names. An empty registry has no defaults.
@@ -81,6 +82,7 @@ impl FontRegistry {
             style,
             file_name: Cow::Borrowed(""),
             font: OnceLock::new(),
+            plans: ShapePlans::new(),
             data: FontData::Registered {
                 bytes: data.into(),
                 embed_whole,

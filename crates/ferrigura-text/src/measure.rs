@@ -6,9 +6,10 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::sync::{Arc, OnceLock, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use harfrust::font::Font;
-use harfrust::{Buffer, ShapeOptions, ShaperFont, shape};
+use harfrust::{Buffer, Direction, ShapeOptions, ShapePlan, ShapePlanKey, ShaperFont, shape};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::error::TextError;
@@ -208,7 +209,7 @@ pub fn measure_line(runs: &[Run<'_, '_>], size: f64) -> Result<f64, TextError> {
 }
 
 fn advance(font: &Font, text: &str, size: f64) -> Result<f64, TextError> {
-    let shaped = shape_run(font, text)?;
+    let shaped = shape_run(font, None, text)?;
     Ok(shaped.advance as f64 * size / f64::from(font.units_per_em()))
 }
 
@@ -295,7 +296,7 @@ pub(crate) fn shape_face(face: &Face, text: &str) -> Result<Shaped, TextError> {
     }) {
         return Ok(Shaped::Shared(hit));
     }
-    let shaped = shape_run(face.font()?, text)?;
+    let shaped = shape_run(face.font()?, Some(&face.plans), text)?;
     Ok(CACHE.with(|cache| {
         if let Some(cache) = cache.borrow_mut().as_mut() {
             let bytes = 256usize.saturating_add(text.len()).saturating_add(
@@ -324,13 +325,91 @@ pub(crate) fn shape_face(face: &Face, text: &str) -> Result<Shaped, TextError> {
     }))
 }
 
-/// Shapes `text` with the font's default features, and reports where each glyph is drawn.
-pub(crate) fn shape_run(font: &Font, text: &str) -> Result<ShapedRun, TextError> {
+/// The most shape plans one face keeps. Labels need one plan per script they are written in, so a
+/// few cover every diagram; text in further scripts is shaped with a plan built for the run.
+const MAX_PLANS: usize = 8;
+
+/// The shape plans of one face, kept with the face for as long as it lives.
+///
+/// A plan holds the features and lookups HarfRust selected for the font and a buffer's segment
+/// properties, and compiling it is a large part of shaping a short label. It borrows nothing, so it
+/// is reused across renders and threads. A plan is picked by HarfRust's own [`ShapePlanKey`] for the
+/// buffer's script, direction and language and no user features, so a run is shaped with the plan
+/// that [`shape`] would have built for it; the font's variation position is part of that key too.
+///
+/// The clones of a face share its plans: a registered face is cloned whenever it is resolved, and
+/// every clone keeps the font of the face it was cloned from.
+pub(crate) struct ShapePlans(OnceLock<Arc<RwLock<Vec<Arc<ShapePlan>>>>>);
+
+impl ShapePlans {
+    pub(crate) const fn new() -> Self {
+        Self(OnceLock::new())
+    }
+
+    fn shared(&self) -> &Arc<RwLock<Vec<Arc<ShapePlan>>>> {
+        self.0.get_or_init(Arc::default)
+    }
+
+    // A panic cannot leave the list half written (a plan is pushed whole), so a poisoned lock
+    // still holds valid plans.
+    fn read(&self) -> RwLockReadGuard<'_, Vec<Arc<ShapePlan>>> {
+        self.shared().read().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn write(&self) -> RwLockWriteGuard<'_, Vec<Arc<ShapePlan>>> {
+        self.shared()
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// The plan for shaping `buffer` in `font`, which must be the font of the face these plans
+    /// belong to. `None` leaves building the plan to [`shape`].
+    fn plan(&self, font: &Font, buffer: &Buffer) -> Option<Arc<ShapePlan>> {
+        let (direction, script, language) =
+            (buffer.direction(), buffer.script(), buffer.language());
+        if direction == Direction::Invalid {
+            return None;
+        }
+        let key = ShapePlanKey::new(font, script, direction).language(language);
+        if let Some(plan) = self.read().iter().find(|plan| key.matches(plan)) {
+            return Some(Arc::clone(plan));
+        }
+        let plan = Arc::new(ShapePlan::new(font, direction, script, language, &[]));
+        let mut plans = self.write();
+        if let Some(plan) = plans.iter().find(|plan| key.matches(plan)) {
+            return Some(Arc::clone(plan));
+        }
+        if plans.len() < MAX_PLANS {
+            plans.push(Arc::clone(&plan));
+        }
+        Some(plan)
+    }
+}
+
+impl Clone for ShapePlans {
+    fn clone(&self) -> Self {
+        Self(OnceLock::from(Arc::clone(self.shared())))
+    }
+}
+
+/// Shapes `text` with the font's default features, and reports where each glyph is drawn. `plans`
+/// are the shape plans of the face `font` belongs to; without them the plan is built for this run.
+pub(crate) fn shape_run(
+    font: &Font,
+    plans: Option<&ShapePlans>,
+    text: &str,
+) -> Result<ShapedRun, TextError> {
     let shaper = ShaperFont::new(font);
     let mut buffer = Buffer::new();
     buffer.push_str(text);
     buffer.guess_segment_properties();
-    shape(&shaper, &mut buffer, ShapeOptions::new()).map_err(TextError::Shape)?;
+    let plan = plans.and_then(|plans| plans.plan(font, &buffer));
+    shape(
+        &shaper,
+        &mut buffer,
+        ShapeOptions::new().plan(plan.as_deref()),
+    )
+    .map_err(TextError::Shape)?;
     let mut pen: i64 = 0;
     let mut glyphs = Vec::with_capacity(buffer.len());
     for (info, position) in buffer.glyph_infos().iter().zip(buffer.glyph_positions()) {
@@ -381,34 +460,184 @@ mod tests {
 
     #[test]
     fn scoped_results_match_direct_shapes_across_faces_and_threads() {
-        use super::{Run, fallback_runs, render_scope, shape_face, shape_run};
+        use super::{Run, ShapePlans, fallback_runs, render_scope, shape_face, shape_run};
         use crate::fonts::{FontFamily, FontStyle, FontWeight, face};
+        // A copy of the regular face with no plans yet, so the threads build its plans at the
+        // same time; the bundled faces share the plans every other test builds.
+        let mut cold = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal).clone();
+        cold.plans = ShapePlans::new();
+        let cold = &cold;
         std::thread::scope(|scope| {
-            for _ in 0..2 {
-                scope.spawn(|| {
-                    render_scope(|| {
-                        for style in [FontStyle::Normal, FontStyle::Italic] {
-                            let face = face(FontFamily::Sans, FontWeight::Normal, style);
-                            for stretch in fallback_runs(Run {
-                                face,
-                                text: "office → ☀",
-                            }) {
-                                let expected =
-                                    shape_run(stretch.face.font().unwrap(), stretch.text).unwrap();
-                                assert_eq!(
-                                    *shape_face(stretch.face, stretch.text).unwrap(),
-                                    expected
-                                );
-                                assert_eq!(
-                                    *shape_face(stretch.face, stretch.text).unwrap(),
-                                    expected
-                                );
+            for thread in 0..4 {
+                scope.spawn(move || {
+                    let check = || {
+                        let faces = [
+                            face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal),
+                            face(FontFamily::Sans, FontWeight::Normal, FontStyle::Italic),
+                            cold,
+                        ];
+                        for face in faces {
+                            for text in ["office → ☀", "שלום → 😀", "αβγ 12"] {
+                                for stretch in fallback_runs(Run { face, text }) {
+                                    let expected =
+                                        shape_run(stretch.face.font().unwrap(), None, stretch.text)
+                                            .unwrap();
+                                    for _ in 0..2 {
+                                        assert_eq!(
+                                            *shape_face(stretch.face, stretch.text).unwrap(),
+                                            expected
+                                        );
+                                    }
+                                }
                             }
                         }
-                    })
+                    };
+                    // Half the threads shape inside a render, half outside one, where only the
+                    // plans are reused.
+                    if thread % 2 == 0 {
+                        render_scope(check);
+                    } else {
+                        check();
+                    }
                 });
             }
         });
+    }
+
+    /// Glyph ids, clusters, advances and offsets of `text` shaped with HarfRust's `shape`, with
+    /// the plan taken from `plans`, or without them as plain `shape`, which builds its plan for the
+    /// call.
+    fn raw_shape(
+        font: &harfrust::font::Font,
+        plans: Option<&super::ShapePlans>,
+        text: &str,
+    ) -> Vec<(u32, u32, i32, i32, i32, i32)> {
+        use harfrust::{Buffer, ShapeOptions, ShaperFont, shape};
+        let shaper = ShaperFont::new(font);
+        let mut buffer = Buffer::new();
+        buffer.push_str(text);
+        buffer.guess_segment_properties();
+        let plan = plans.map(|plans| {
+            plans
+                .plan(font, &buffer)
+                .expect("a guessed buffer has a plan")
+        });
+        shape(
+            &shaper,
+            &mut buffer,
+            ShapeOptions::new().plan(plan.as_deref()),
+        )
+        .unwrap();
+        buffer
+            .glyph_infos()
+            .iter()
+            .zip(buffer.glyph_positions())
+            .map(|(info, position)| {
+                (
+                    info.glyph_id,
+                    info.cluster,
+                    position.x_advance,
+                    position.y_advance,
+                    position.x_offset,
+                    position.y_offset,
+                )
+            })
+            .collect()
+    }
+
+    const VARIED_TEXTS: [&str; 22] = [
+        "",
+        " ",
+        "  \t ",
+        "Hello, World!",
+        "0123456789 +-*/=().,;:!?\"'%&#@",
+        "AV To Wa ffi fl Ty",
+        "office → ☀",
+        "←↑→↓⇒⇔",
+        "♥ ☂ ✓ ★",
+        "😀👍🏽 🇩🇪 ❤️",
+        "a→b😀c♥d",
+        "Ünïcödé façade naïve",
+        "αβγ δέλτα",
+        "кириллица",
+        "مرحبا بالعالم",
+        "שלום עולם",
+        "漢字とかな",
+        "ไทย",
+        "देवनागरी",
+        "\u{FB02}°name¶ß",
+        "x\u{301}y\u{200D}z",
+        "line\nbreak",
+    ];
+
+    #[test]
+    fn planned_shapes_match_plain_shapes_in_every_bundled_face() {
+        use super::{Run, fallback_runs, render_scope, shape_face, shape_run};
+        use crate::fonts::FACES;
+        for face in FACES {
+            let font = face.font().unwrap();
+            for text in VARIED_TEXTS {
+                // Twice, so the second shape reuses the plan the first one built.
+                for _ in 0..2 {
+                    assert_eq!(
+                        raw_shape(font, Some(&face.plans), text),
+                        raw_shape(font, None, text),
+                        "{} {text:?}",
+                        face.file_name()
+                    );
+                }
+                let expected = shape_run(font, None, text).unwrap();
+                assert_eq!(shape_run(font, Some(&face.plans), text).unwrap(), expected);
+                assert_eq!(*shape_face(face, text).unwrap(), expected);
+                render_scope(|| assert_eq!(*shape_face(face, text).unwrap(), expected));
+                // The stretches a measurement shapes, in the fallback faces as well.
+                for stretch in fallback_runs(Run { text, face }) {
+                    let font = stretch.face.font().unwrap();
+                    assert_eq!(
+                        raw_shape(font, Some(&stretch.face.plans), stretch.text),
+                        raw_shape(font, None, stretch.text),
+                        "{} {:?}",
+                        stretch.face.file_name(),
+                        stretch.text
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_face_keeps_a_bounded_number_of_plans() {
+        use super::{MAX_PLANS, ShapePlans};
+        use crate::fonts::{FontFamily, FontStyle, FontWeight, face};
+        let mut fresh = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal).clone();
+        fresh.plans = ShapePlans::new();
+        let font = fresh.font().unwrap();
+        // More scripts than the face keeps plans for; the ones past the bound still shape alike.
+        for text in VARIED_TEXTS
+            .iter()
+            .chain(&["ᚠᚢᚦ", "ქართული", "Հայերեն", "ᎠᎡᎢ", "ㄅㄆㄇ"])
+        {
+            assert_eq!(
+                raw_shape(font, Some(&fresh.plans), text),
+                raw_shape(font, None, text)
+            );
+        }
+        assert_eq!(fresh.plans.read().len(), MAX_PLANS);
+    }
+
+    #[test]
+    fn clones_of_a_face_share_its_plans() {
+        use super::{ShapePlans, shape_face};
+        use crate::fonts::{FontFamily, FontStyle, FontWeight, face};
+        let mut original = face(FontFamily::Sans, FontWeight::Normal, FontStyle::Normal).clone();
+        original.plans = ShapePlans::new();
+        let copy = original.clone();
+        shape_face(&copy, "shared").unwrap();
+        assert_eq!(original.plans.read().len(), 1);
+        assert!(std::sync::Arc::ptr_eq(
+            original.plans.shared(),
+            copy.plans.shared()
+        ));
     }
 
     #[test]
