@@ -1,0 +1,11 @@
+flowchart LR
+  A[Alpha] --> D[Delta]
+  B[Beta] --> C[Gamma]
+  A --> C
+  B --> D
+  A -- sync --> E[Echo]
+  B == bulk ==> E
+  C <--> E
+  D --o E
+  D --x F[Foxtrot]
+  linkStyle 0 stroke:#d33,stroke-width:2px
