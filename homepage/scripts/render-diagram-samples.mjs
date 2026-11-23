@@ -1,7 +1,8 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Paths are a fresh temporary directory and fixed files in this repository. */
 // Renders every homepage diagram from the current Rust source. The generated
 // files are checked against the same source; callers use the single compat
-// option for optimized and Mermaid-compatible drawings.
+// option for optimized and Mermaid-compatible drawings, and the design option
+// for the design mode.
 // Coordinates may differ by 0.01 on another architecture (published-output.mjs).
 import assert from 'node:assert/strict';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -135,6 +136,60 @@ const modeSource = `flowchart TD
 const modeDescription =
   'A guide is written and reviewed. Approval publishes it and the release is announced; requested changes send it back to writing.';
 
+/** The design mode: three flowcharts, each drawn in the default and in the design mode. */
+const designSamples = [
+  {
+    id: 'pipeline',
+    label: 'Pipeline',
+    // A chart from left to right needs the width: its two drawings stand one above the other.
+    stacked: true,
+    description:
+      'Diagram text is parsed and its labels measured. One of three layouts follows, the SVG is painted and written to a file; a syntax error is reported instead.',
+    source: `flowchart LR
+  text([Diagram text]) --> parse[Parse]
+  parse --> measure[Measure the labels]
+  measure --> flow[Lay out a flowchart]
+  measure --> sequence[Lay out a sequence]
+  measure --> other[Lay out another type]
+  flow --> paint[Paint the SVG]
+  sequence --> paint
+  other --> paint
+  paint --> file[(SVG file)]
+  parse -. syntax error .-> report[Report the line]
+`,
+  },
+  {
+    id: 'decision',
+    label: 'Decision',
+    stacked: false,
+    description:
+      'A reader opens a page. A page in the cache is taken from there, another one is rendered first; either way the page is sent and shown.',
+    source: `flowchart TD
+  open([Reader opens a page]) --> cached{In the cache?}
+  cached -->|yes| stored[Take the stored page]
+  cached -->|no| render[Render the page]
+  stored --> send[Send the page]
+  render --> send
+  send --> shown([Page shown])
+`,
+  },
+  {
+    id: 'review',
+    label: 'Review',
+    stacked: false,
+    description:
+      'A guide is written, reviewed, approved and published, and the release is announced. Requested changes send it back to writing, and a typo fix is published at once.',
+    source: `flowchart TD
+  write[Write the guide] --> review[Review it]
+  review --> approve[Approve it]
+  approve --> publish[Publish it]
+  write -->|typo fix| publish
+  review -->|changes requested| write
+  publish --> announce([Announce the release])
+`,
+  },
+];
+
 const renderer = await createSourceRenderer();
 try {
   const svgs = new Map();
@@ -169,6 +224,26 @@ try {
     svgs.get(modes.mermaid),
     'The two flowchart modes must differ on the compared source'
   );
+  const design = {
+    samples: designSamples.map((sample) => ({
+      ...sample,
+      plain: render(`design-${sample.id}-default`, sample.source, { design: false }),
+      designed: render(`design-${sample.id}`, sample.source, { design: true }),
+    })),
+    // The second sample again, on a dark ground.
+    dark: render(`design-${designSamples[1].id}-dark`, designSamples[1].source, {
+      design: true,
+      colorScheme: 'dark',
+    }),
+  };
+  for (const sample of design.samples) {
+    assert.notEqual(
+      svgs.get(sample.plain),
+      svgs.get(sample.designed),
+      `The design mode must change ${sample.id}`
+    );
+    assert.match(svgs.get(sample.designed), /data-role="/, `${sample.id} carries no role`);
+  }
   const sequence = gallery.find(({ id }) => id === 'sequence');
   const schemes = {
     source: sequence.source,
@@ -207,6 +282,7 @@ try {
     platform: check ? recorded.platform : platform,
     samples,
     modes,
+    design,
     schemes,
     file,
   };

@@ -1,6 +1,6 @@
 {
   "renderedWith": { "ferrigura": "repository source" },
-  "platform": "darwin-arm64",
+  "platform": "linux-x64",
   "samples": [
     {
       "id": "flowchart",
@@ -50,6 +50,38 @@
     "description": "A guide is written and reviewed. Approval publishes it and the release is announced; requested changes send it back to writing.",
     "adaptive": "mode-adaptive.svg",
     "mermaid": "mode-mermaid.svg"
+  },
+  "design": {
+    "samples": [
+      {
+        "id": "pipeline",
+        "label": "Pipeline",
+        "stacked": true,
+        "description": "Diagram text is parsed and its labels measured. One of three layouts follows, the SVG is painted and written to a file; a syntax error is reported instead.",
+        "source": "flowchart LR\n  text([Diagram text]) --> parse[Parse]\n  parse --> measure[Measure the labels]\n  measure --> flow[Lay out a flowchart]\n  measure --> sequence[Lay out a sequence]\n  measure --> other[Lay out another type]\n  flow --> paint[Paint the SVG]\n  sequence --> paint\n  other --> paint\n  paint --> file[(SVG file)]\n  parse -. syntax error .-> report[Report the line]\n",
+        "plain": "design-pipeline-default.svg",
+        "designed": "design-pipeline.svg"
+      },
+      {
+        "id": "decision",
+        "label": "Decision",
+        "stacked": false,
+        "description": "A reader opens a page. A page in the cache is taken from there, another one is rendered first; either way the page is sent and shown.",
+        "source": "flowchart TD\n  open([Reader opens a page]) --> cached{In the cache?}\n  cached -->|yes| stored[Take the stored page]\n  cached -->|no| render[Render the page]\n  stored --> send[Send the page]\n  render --> send\n  send --> shown([Page shown])\n",
+        "plain": "design-decision-default.svg",
+        "designed": "design-decision.svg"
+      },
+      {
+        "id": "review",
+        "label": "Review",
+        "stacked": false,
+        "description": "A guide is written, reviewed, approved and published, and the release is announced. Requested changes send it back to writing, and a typo fix is published at once.",
+        "source": "flowchart TD\n  write[Write the guide] --> review[Review it]\n  review --> approve[Approve it]\n  approve --> publish[Publish it]\n  write -->|typo fix| publish\n  review -->|changes requested| write\n  publish --> announce([Announce the release])\n",
+        "plain": "design-review-default.svg",
+        "designed": "design-review.svg"
+      }
+    ],
+    "dark": "design-decision-dark.svg"
   },
   "schemes": {
     "source": "sequenceDiagram\n  actor Reader\n  participant Site as Documentation site\n  participant Build\n  Reader->>Site: Open the guide\n  Site->>Build: Page not cached\n  Build-->>Site: HTML with inline SVG\n  Site-->>Reader: The page, diagrams included\n",

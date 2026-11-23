@@ -2,10 +2,11 @@ import { ArdoLink as Link } from 'ardo/runtime';
 import { MonoPassage, MonoSection } from 'ferramenta-family/monografie';
 
 import samples from '../data/diagram-samples.json';
+import { DesignSchemeSheets, DesignSheets } from './design-specimens';
 import { DiagramGallery, FileContents, ModeSheets, SchemeSheets } from './homepage-specimens';
 
-/* The homepage's first chapters: what Ferrigura is, its text and fonts, the
-   flowchart modes and the color schemes. The published anchor #example stays
+/* The homepage's first chapters: what Ferrigura is, the design mode, its text
+   and fonts, the flowchart modes and the color schemes. The published anchor #example stays
    where links expect it. */
 
 export function Explainer() {
@@ -114,6 +115,52 @@ export function Text() {
         <Link to="/architecture/decisions/0010-text-measurement-and-fonts/">
           How the text is measured
         </Link>
+      </p>
+    </MonoSection>
+  );
+}
+
+export function Design() {
+  return (
+    <MonoSection
+      id="design-mode"
+      title="A flowchart that looks designed."
+      standfirst="Ferrigura draws a flowchart the way Mermaid does, so that nothing moves when you switch. One option draws it Ferrigura’s own way: calm, with room, and with color that means something."
+    >
+      <MonoPassage
+        note={{
+          term: 'Layer',
+          children:
+            'The boxes a flowchart puts side by side: one row in a chart from top to bottom, one column in a chart from left to right.',
+        }}
+      >
+        <p>
+          A layout engine decides where a box stands in its layer by keeping the arrows short. By
+          that measure a step of a few pixels in an arrow costs almost nothing, and it is the first
+          thing the eye catches. A box with two arrows out stands over one of them, not between
+          them. And an arrow that runs back to the start can take the straight line from the main
+          flow.
+        </p>
+      </MonoPassage>
+      <p>
+        With <code>design: true</code>, Ferrigura places the boxes itself, in the layers and the
+        order the same engine decided. A chain stands on one line. A decision stands between its
+        branches, and the box where they meet again stands under it. The arrows of a box leave
+        together from the middle of its side, and the one that carries the main flow runs straight.
+      </p>
+      <DesignSheets />
+      <p>
+        The look changes with the layout. Outlines are thin, corners are round, and the boxes have
+        room. A label sits in a gap of its arrow and needs no background. Color follows what a shape
+        stands for, not the order of the boxes: where a flow starts and ends, where it decides,
+        where data is kept. The mode has a light and a dark set of colors.
+      </p>
+      <DesignSchemeSheets />
+      <p>
+        The design mode draws flowcharts; another diagram type reports an error when the mode is
+        asked for. It is an option of each render, like <code>compat</code>, and the two exclude
+        each other. Your theme variables and class definitions keep the last word.{' '}
+        <Link to="/architecture/decisions/0023-design-mode/">How the design mode decides</Link>
       </p>
     </MonoSection>
   );
