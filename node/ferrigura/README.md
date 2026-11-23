@@ -88,6 +88,13 @@ same HTTPS origin as `manifestUrl`; credentials, query strings, fragments and re
 and checked by SHA-256, with font length checked too. The cache stores both kinds of object as
 `sha256/<digest>`. The renderer never fetches fonts or interprets URLs from diagram text.
 
+For protected Ferrigura downloads, set `FERRIGURA_DOWNLOAD_TOKEN` in the host environment and pass
+`protectedDownloads: true`. On a cache miss the helper requests a signed download from Ferrigura's
+issuer and verifies its path, origin, length and SHA-256. It never sends the bearer token to the
+asset server and does not fall back to the public catalog if authorization fails. Warm-cache and
+`offline: true` resolution need no token. Protected downloads apply only to the built-in catalog;
+custom catalogs never receive this token.
+
 ## Draw animation
 
 ```js

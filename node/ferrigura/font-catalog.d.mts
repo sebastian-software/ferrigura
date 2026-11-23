@@ -15,6 +15,8 @@ export type CatalogFontOptions = {
   /** Explicit ordered aliases for fallback; defaults to none. */
   fallbacks?: readonly string[];
   offline?: boolean;
+  /** Use protected Ferrigura downloads on cache misses; reads FERRIGURA_DOWNLOAD_TOKEN. */
+  protectedDownloads?: boolean;
   /** Omit to use the pinned public catalog. */
   catalog?: FontCatalog;
 };
