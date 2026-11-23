@@ -1,5 +1,7 @@
 # @ferrigura/core
 
+[![Node.js 22 (22.13.0 or later), 24, and 26](https://img.shields.io/badge/Node.js-22%20%7C%2024%20%7C%2026-339933?logo=nodedotjs&logoColor=white)](https://github.com/sebastian-software/ferrigura/blob/main/node/ferrigura/README.md#platforms)
+
 Render Mermaid diagram text to SVG in Node.js without a browser. The engine runs
 in Rust. npm installs the matching optional platform package; keep optional
 dependencies enabled. No browser or WASM runtime is required.
