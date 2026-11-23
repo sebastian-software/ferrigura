@@ -1,0 +1,13 @@
+flowchart LR
+  U([Visitor]) --> LB{{Load balancer}}
+  LB --> W1[Web 1]
+  LB --> W2[Web 2]
+  subgraph Services
+    W1 --> API[Orders API]
+    W2 --> API
+    API --> Q[/Job queue/]
+  end
+  API --> DB[(Postgres)]
+  Q -.-> Wk[Worker]
+  Wk --> DB
+  API -- cache miss --> R[(Redis)]
