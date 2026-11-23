@@ -821,6 +821,46 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
     }
 }
 
+/// The edge paths of a diagram in the design mode, with a gap under every edge label
+/// (`docs/decisions/0023-design-mode.md`): a mask over the whole drawing that hides the edges in the
+/// rounded box of each label. `drawn` is the box the diagram covers; the mask reaches beyond it, so
+/// that a stroke or an arrowhead at its border is not cut.
+#[must_use]
+pub(crate) fn with_label_gaps(
+    edge_paths: &str,
+    svg_id: &str,
+    drawn: BBox,
+    gaps: &[BBox],
+) -> String {
+    const BEYOND: f64 = 100.0;
+    let (x, y) = (drawn.x - BEYOND, drawn.y - BEYOND);
+    let (width, height) = (drawn.width + 2.0 * BEYOND, drawn.height + 2.0 * BEYOND);
+    let area = format!(
+        "x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"",
+        js_number(x),
+        js_number(y),
+        js_number(width),
+        js_number(height)
+    );
+    let radius = js_number(crate::design::CHIP_RADIUS);
+    let holes: String = gaps
+        .iter()
+        .map(|gap| {
+            format!(
+                "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" rx=\"{radius}\" ry=\"{radius}\" fill=\"black\"/>",
+                js_number(gap.x),
+                js_number(gap.y),
+                js_number(gap.width),
+                js_number(gap.height)
+            )
+        })
+        .collect();
+    let id = escape(svg_id);
+    format!(
+        "<mask id=\"{id}-label-gaps\" maskUnits=\"userSpaceOnUse\" {area}><rect {area} fill=\"white\"/>{holes}</mask><g mask=\"url(#{id}-label-gaps)\">{edge_paths}</g>"
+    )
+}
+
 /// The center of an edge label in the design mode, moved off the frame of a group
 /// (`docs/decisions/0023-design-mode.md`). The layout places a label on its edge without regard to a
 /// frame that is pulled in afterwards, so a chip can sit on a frame's line. The label then slides

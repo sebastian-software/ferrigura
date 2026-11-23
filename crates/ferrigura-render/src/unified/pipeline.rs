@@ -532,6 +532,8 @@ pub(crate) fn paint_with_animation<'a>(
         coloured_markers.push_str(&path.markers);
     }
     let mut edge_labels = String::new();
+    // The boxes of the edge labels in the design mode, where each interrupts its edge.
+    let mut label_gaps: Vec<BBox> = Vec::new();
     for (index, edge) in data.edges.iter().enumerate() {
         if let Some(label) = measured.edge_labels.get(&edge.id) {
             // The design mode keeps a label's chip off the frame of a group.
@@ -550,6 +552,9 @@ pub(crate) fn paint_with_animation<'a>(
             let edge = moved.as_ref().unwrap_or(edge);
             let painted = edges::paint_label(edge, label, &config.section);
             cover(&mut bounds, painted.bbox);
+            if config.section.design.is_some() && label.background.is_some() {
+                label_gaps.push(painted.bbox);
+            }
             match &mut animator {
                 Some(animator) => edge_labels.push_str(&animator.label(index, &painted.svg)),
                 None => edge_labels.push_str(&painted.svg),
@@ -586,6 +591,12 @@ pub(crate) fn paint_with_animation<'a>(
     let animation = animator
         .map(crate::animation::Animator::finish)
         .unwrap_or_default();
+
+    // The design mode leaves a gap in an edge where its label sits: the edges are masked there, so
+    // the label needs no background and reads on any ground.
+    if let (false, Some(drawn)) = (label_gaps.is_empty(), bounds) {
+        edge_paths = edges::with_label_gaps(&edge_paths, id, drawn, &label_gaps);
+    }
 
     Ok(PaintedParts {
         root: RootParts {

@@ -165,7 +165,7 @@ fn the_arrowheads_are_the_modes_own() {
 }
 
 #[test]
-fn an_edge_label_sits_in_a_chip() {
+fn an_edge_label_interrupts_its_edge() {
     let renderer = Renderer::new(&Value::empty_object());
     let plain = renderer.render_with(FLOW, &default(None)).unwrap();
     let designed = renderer.render_with(FLOW, &design(None)).unwrap();
@@ -183,18 +183,31 @@ fn an_edge_label_sits_in_a_chip() {
                 .map(str::to_owned),
         )
     };
+    // The label's box is 5 wider on each side than the default's background, with round corners.
     let (x, width, height, radius) = background(&plain);
-    let (chip_x, chip_width, chip_height, chip_radius) = background(&designed);
+    let (gap_x, gap_width, gap_height, gap_radius) = background(&designed);
     assert_eq!(radius, None);
-    assert_eq!(chip_radius.as_deref(), Some("6"));
-    assert_eq!(chip_x, x - 5.0);
-    assert_eq!(chip_width, width + 10.0);
-    assert_eq!(chip_height, height);
+    assert_eq!(gap_radius.as_deref(), Some("6"));
+    assert_eq!(gap_x, x - 5.0);
+    assert_eq!(gap_width, width + 10.0);
+    assert_eq!(gap_height, height);
+    // The box is not painted: the edges are masked there, with one hole for each of the two labels.
     assert!(
-        style_sheet(&designed).contains(
-            "#d .edgeLabel rect.background{stroke:var(--clusterBorder);stroke-width:1px;}"
-        )
+        style_sheet(&designed).contains("#d .edgeLabel rect.background{fill:none;stroke:none;}")
     );
+    let mask = &designed[designed
+        .find("<mask id=\"d-label-gaps\"")
+        .expect("the mask")..];
+    let mask = &mask[..mask.find("</mask>").expect("the mask's end")];
+    assert_eq!(mask.matches("fill=\"black\"").count(), 2);
+    assert_eq!(mask.matches("fill=\"white\"").count(), 1);
+    assert!(designed.contains("</mask><g mask=\"url(#d-label-gaps)\"><path "));
+    assert!(!plain.contains("<mask"));
+    // A diagram without edge labels has no mask.
+    let bare = renderer
+        .render_with("flowchart TD\n  A --> B\n", &design(None))
+        .unwrap();
+    assert!(!bare.contains("<mask"));
 }
 
 #[test]

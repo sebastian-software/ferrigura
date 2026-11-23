@@ -59,14 +59,15 @@ pub const GROUP_PADDING: &str = "[top=44,left=32,bottom=32,right=32]";
 /// The distance of a group's title from the top of its frame.
 pub const GROUP_TITLE_TOP: f64 = 12.0;
 
-/// The room an edge label's chip adds to the left and the right of its background.
+/// The room the box of an edge label adds to the left and the right of its text's box. The edge
+/// is masked in that box, so the label sits in a gap of its edge.
 pub const CHIP_PADDING: f64 = 5.0;
 
-/// The room the layout keeps free at the left and the right of an edge label's chip, so that a
-/// chip does not touch the frame of a group or a node beside it.
+/// The room the layout keeps free at the left and the right of an edge label's box, so that the
+/// box does not touch the frame of a group or a node beside it.
 pub const CHIP_MARGIN: f64 = 6.0;
 
-/// The corner radius of an edge label's chip.
+/// The corner radius of an edge label's box.
 pub const CHIP_RADIUS: f64 = 6.0;
 
 /// The theme variables of the mode for a tone, as an object of `themeVariables`. The user's own

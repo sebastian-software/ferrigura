@@ -335,9 +335,10 @@ fn design_rules(id: &str) -> String {
         &format!("{id} .edgeLabel .label text"),
         "fill:var(--titleColor);",
     ));
+    // The edge is masked under its label, so the label has no background of its own.
     css.push_str(&rule(
         &format!("{id} .edgeLabel rect.background"),
-        "stroke:var(--clusterBorder);stroke-width:1px;",
+        "fill:none;stroke:none;",
     ));
     css.push_str(&rule(
         &format!("{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow"),
