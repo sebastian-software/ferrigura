@@ -9,6 +9,9 @@
 //! out, each for a stated reason; `docs/diagrams/flowchart.md#style-sheet-looks-and-the-svg-root` says why, and
 //! `tests/flowchart_styles.rs` checks every other rule in Mermaid mode against the reference's compiled CSS.
 
+use std::borrow::Cow;
+use std::fmt::{self, Write as _};
+
 use ferrigura_model::flowchart::FlowClass;
 use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
@@ -16,7 +19,7 @@ use ferrigura_text::EmbeddedFamily;
 use super::policy::FlowchartRouting;
 use crate::context::{Globals, ThemeView};
 use crate::design::{self, Tone};
-use crate::svg::{css_text, css_text_owned, escape, font_faces};
+use crate::svg::{css_text_into, css_text_owned, escape, font_faces_into};
 use crate::unified::palette::{Palette, palette};
 
 /// The color tokens of the rules, each declared as a custom property on the diagram's id, in the order
@@ -40,6 +43,10 @@ const LIGHT_FLOOD: &str = "#000000";
 
 /// The flood of the drop shadows in a dark scheme (`insertLookDefs.ts:30`).
 const DARK_FLOOD: &str = "#FFFFFF";
+
+/// Room for the rules of a style sheet besides its font faces: those of a palette theme under a
+/// generated id take about 11 KiB.
+const RULES_CAPACITY: usize = 12 * 1024;
 
 /// The `<style>` element's content for a flowchart with the id `svg_id`, escaped for XML so that it can
 /// be written as the element's text. The look is read from the globals, the palette and the shadow from
@@ -70,28 +77,28 @@ pub fn style_sheet_with_fonts(
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
-    let font = families.first().map_or_else(
-        || {
+    let font: Cow<'_, str> = match families.first() {
+        Some(family) => Cow::Borrowed(&family.css_family),
+        None => Cow::Owned(
             tokens
                 .font_family
                 .text()
-                .unwrap_or_else(|| "sans-serif".to_owned())
-        },
-        |family| family.css_family.clone(),
-    );
+                .unwrap_or_else(|| "sans-serif".to_owned()),
+        ),
+    };
     let font_size = tokens.font_size.text().unwrap_or_else(|| "16px".to_owned());
-    let stroke_width = format!(
+    let theme_width = format!(
         "{}px",
         tokens.stroke_width.text().unwrap_or_else(|| "1".to_owned())
     );
     // The design mode draws hairlines: an outline lighter than an edge, both lighter than the theme's.
     let (stroke_width, edge_width, thick_width) = match design {
         Some(_) => (
-            design::NODE_STROKE_WIDTH.to_owned(),
-            design::EDGE_STROKE_WIDTH.to_owned(),
+            design::NODE_STROKE_WIDTH,
+            design::EDGE_STROKE_WIDTH,
             design::THICK_EDGE_STROKE_WIDTH,
         ),
-        None => (stroke_width.clone(), stroke_width, "3.5px"),
+        None => (theme_width.as_str(), theme_width.as_str(), "3.5px"),
     };
     let text_colour = if tokens.node_text_color.is_absent() {
         "textColor"
@@ -100,167 +107,82 @@ pub fn style_sheet_with_fonts(
     };
     let palette = design.map_or_else(|| palette(globals, tokens), |_| None);
     let look = safe_look(&globals.look);
-    let neo_stroke = if tokens.use_gradient.truthy() {
-        format!("url(#{svg_id}-gradient)")
+    let neo_stroke: Cow<'_, str> = if tokens.use_gradient.truthy() {
+        Cow::Owned(format!("url(#{svg_id}-gradient)"))
     } else {
-        "var(--nodeBorder)".to_owned()
+        Cow::Borrowed("var(--nodeBorder)")
     };
-    let shadow = match tokens.drop_shadow.text() {
-        Some(shadow) if !shadow.is_empty() => shadow.replacen(
+    let shadow: Cow<'_, str> = match tokens.drop_shadow.text() {
+        Some(shadow) if !shadow.is_empty() => Cow::Owned(shadow.replacen(
             "url(#drop-shadow)",
             &format!("url(#{svg_id}-drop-shadow)"),
             1,
-        ),
-        _ => "none".to_owned(),
+        )),
+        _ => Cow::Borrowed("none"),
     };
     // Match Mermaid's normally opaque HTML paragraph backgrounds in the SVG-only default.
     // Routing never changes readability: SVG labels mask the line in both modes.
     // Keep explicitly authored theme colors, including their alpha channel.
     let label_opacity = "1";
 
-    let mut rules = vec![
-        rule(
-            &id,
-            &format!("font-family:{font};font-size:{font_size};fill:var(--textColor);"),
-        ),
-        "@keyframes dash{to{stroke-dashoffset:0;}}".to_owned(),
-        rule(
-            &format!("{id} .edge-animation-slow"),
-            "stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;",
-        ),
-        rule(
-            &format!("{id} .edge-animation-fast"),
-            "stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;",
-        ),
-        rule(
-            &format!("{id} .edge-thickness-normal"),
-            &format!("stroke-width:{edge_width};"),
-        ),
-        rule(
-            &format!("{id} .edge-thickness-thick"),
-            &format!("stroke-width:{thick_width};"),
-        ),
-        rule(&format!("{id} .edge-pattern-solid"), "stroke-dasharray:0;"),
-        rule(
-            &format!("{id} .edge-thickness-invisible"),
-            "stroke-width:0;fill:none;",
-        ),
-        rule(&format!("{id} .edge-pattern-dashed"), "stroke-dasharray:3;"),
-        rule(&format!("{id} .edge-pattern-dotted"), "stroke-dasharray:2;"),
-        rule(
-            &format!("{id} .marker"),
-            "fill:var(--lineColor);stroke:var(--lineColor);",
-        ),
-        rule(&format!("{id} .marker.cross"), "stroke:var(--lineColor);"),
-    ];
+    let faces: usize = families.iter().map(|family| family.css.len() + 1).sum();
+    let mut css = String::with_capacity(faces + RULES_CAPACITY);
+    font_faces_into(&mut css, svg_id, families);
+    write_custom_properties(&mut css, &id, theme, globals, design, palette.as_ref());
+    let _ = write!(
+        css,
+        "{id}{{font-family:{font};font-size:{font_size};fill:var(--textColor);}}\
+@keyframes dash{{to{{stroke-dashoffset:0;}}}}\
+{id} .edge-animation-slow{{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}}\
+{id} .edge-animation-fast{{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}}\
+{id} .edge-thickness-normal{{stroke-width:{edge_width};}}\
+{id} .edge-thickness-thick{{stroke-width:{thick_width};}}\
+{id} .edge-pattern-solid{{stroke-dasharray:0;}}\
+{id} .edge-thickness-invisible{{stroke-width:0;fill:none;}}\
+{id} .edge-pattern-dashed{{stroke-dasharray:3;}}\
+{id} .edge-pattern-dotted{{stroke-dasharray:2;}}\
+{id} .marker{{fill:var(--lineColor);stroke:var(--lineColor);}}\
+{id} .marker.cross{{stroke:var(--lineColor);}}"
+    );
     if let Some(palette) = &palette {
-        rules.push(palette_rules(&id, look, palette));
+        write_palette_rules(&mut css, &id, look, palette);
     }
-    rules.extend([
-        rule(
-            &format!("{id} .label"),
-            &format!("font-family:{font};color:var(--{text_colour});"),
-        ),
-        rule(&format!("{id} .cluster-label text"), "fill:var(--titleColor);"),
-        rule(
-            &format!("{id} .label text"),
-            &format!("fill:var(--{text_colour});color:var(--{text_colour});"),
-        ),
-        rule(
-            &format!("{id} .node rect,{id} .node circle,{id} .node ellipse,{id} .node polygon,{id} .node path"),
-            &format!("fill:var(--mainBkg);stroke:var(--nodeBorder);stroke-width:{stroke_width};"),
-        ),
-        rule(
-            &format!("{id} .node .label text,{id} .image-shape .label,{id} .icon-shape .label"),
-            "text-anchor:middle;",
-        ),
-        rule(
-            &format!("{id} .node .label,{id} .image-shape .label,{id} .icon-shape .label"),
-            "text-align:center;",
-        ),
-        rule(&format!("{id} .node.clickable"), "cursor:pointer;"),
-        rule(
-            &format!("{id} .flowchart-link"),
-            "stroke:var(--lineColor);fill:none;",
-        ),
-        rule(
-            &format!("{id} .edgeLabel"),
-            "background-color:var(--edgeLabelBackground);text-align:center;",
-        ),
-        rule(
-            &format!("{id} .edgeLabel rect"),
-            &format!("opacity:{label_opacity};background-color:var(--edgeLabelBackground);fill:var(--edgeLabelBackground);"),
-        ),
-        rule(
-            &format!("{id} .cluster rect"),
-            "fill:var(--clusterBkg);stroke:var(--clusterBorder);stroke-width:1px;",
-        ),
-        rule(&format!("{id} .cluster text"), "fill:var(--titleColor);"),
-        rule(
-            &format!("{id} .node .collapsed-indicator"),
-            "fill:var(--clusterBorder);stroke:none;opacity:0.6;",
-        ),
-        rule(
-            &format!("{id} .node .collapsed-separator"),
-            "stroke:var(--clusterBorder);stroke-width:0.75px;",
-        ),
-        rule(
-            &format!("{id} .flowchartTitleText"),
-            "text-anchor:middle;font-size:18px;fill:var(--textColor);",
-        ),
-        rule(&format!("{id} rect.text"), "fill:none;stroke-width:0;"),
-        rule(
-            &format!("{id} .icon-shape,{id} .image-shape"),
-            "background-color:var(--edgeLabelBackground);text-align:center;",
-        ),
-        rule(
-            &format!("{id} .icon-shape .label rect,{id} .image-shape .label rect"),
-            "opacity:0.5;background-color:var(--edgeLabelBackground);fill:var(--edgeLabelBackground);",
-        ),
-    ]);
-
+    let _ = write!(
+        css,
+        "{id} .label{{font-family:{font};color:var(--{text_colour});}}\
+{id} .cluster-label text{{fill:var(--titleColor);}}\
+{id} .label text{{fill:var(--{text_colour});color:var(--{text_colour});}}\
+{id} .node rect,{id} .node circle,{id} .node ellipse,{id} .node polygon,{id} .node path{{fill:var(--mainBkg);stroke:var(--nodeBorder);stroke-width:{stroke_width};}}\
+{id} .node .label text,{id} .image-shape .label,{id} .icon-shape .label{{text-anchor:middle;}}\
+{id} .node .label,{id} .image-shape .label,{id} .icon-shape .label{{text-align:center;}}\
+{id} .node.clickable{{cursor:pointer;}}\
+{id} .flowchart-link{{stroke:var(--lineColor);fill:none;}}\
+{id} .edgeLabel{{background-color:var(--edgeLabelBackground);text-align:center;}}\
+{id} .edgeLabel rect{{opacity:{label_opacity};background-color:var(--edgeLabelBackground);fill:var(--edgeLabelBackground);}}\
+{id} .cluster rect{{fill:var(--clusterBkg);stroke:var(--clusterBorder);stroke-width:1px;}}\
+{id} .cluster text{{fill:var(--titleColor);}}\
+{id} .node .collapsed-indicator{{fill:var(--clusterBorder);stroke:none;opacity:0.6;}}\
+{id} .node .collapsed-separator{{stroke:var(--clusterBorder);stroke-width:0.75px;}}\
+{id} .flowchartTitleText{{text-anchor:middle;font-size:18px;fill:var(--textColor);}}\
+{id} rect.text{{fill:none;stroke-width:0;}}\
+{id} .icon-shape,{id} .image-shape{{background-color:var(--edgeLabelBackground);text-align:center;}}\
+{id} .icon-shape .label rect,{id} .image-shape .label rect{{opacity:0.5;background-color:var(--edgeLabelBackground);fill:var(--edgeLabelBackground);}}"
+    );
     // The look's rules. They match only the elements of their look, so both looks carry them.
-    let filter = format!("filter:{shadow};");
-    rules.extend([
-        rule(
-            &format!(
-                "{id} [data-look=\"neo\"].node rect,{id} [data-look=\"neo\"].cluster rect,{id} [data-look=\"neo\"].node polygon"
-            ),
-            &format!("stroke:{neo_stroke};{filter}"),
-        ),
-        rule(
-            &format!("{id} [data-look=\"neo\"].node path"),
-            &format!("stroke:{neo_stroke};stroke-width:{stroke_width};"),
-        ),
-        rule(
-            &format!("{id} [data-look=\"neo\"].node .outer-path"),
-            &filter,
-        ),
-        rule(
-            &format!("{id} [data-look=\"neo\"].node circle"),
-            &format!("stroke:{neo_stroke};{filter}"),
-        ),
-        rule(
-            &format!("{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow"),
-            "flood-color:var(--floodColor);",
-        ),
-    ]);
+    let _ = write!(
+        css,
+        "{id} [data-look=\"neo\"].node rect,{id} [data-look=\"neo\"].cluster rect,{id} [data-look=\"neo\"].node polygon{{stroke:{neo_stroke};filter:{shadow};}}\
+{id} [data-look=\"neo\"].node path{{stroke:{neo_stroke};stroke-width:{stroke_width};}}\
+{id} [data-look=\"neo\"].node .outer-path{{filter:{shadow};}}\
+{id} [data-look=\"neo\"].node circle{{stroke:{neo_stroke};filter:{shadow};}}\
+{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow{{flood-color:var(--floodColor);}}"
+    );
     if design.is_some() {
-        rules.push(design_rules(&id));
+        write_design_rules(&mut css, &id);
     }
-    rules.push(class_rules(&id, classes));
-    rules.push(rule(&format!("{id} text"), "white-space:pre;"));
-
-    let faces = if families.is_empty() {
-        String::new()
-    } else {
-        font_faces(svg_id, families)
-    };
-    css_text_owned(format!(
-        "{faces}{}{}",
-        custom_properties_for(svg_id, theme, globals, design),
-        rules.concat()
-    ))
+    write_class_rules(&mut css, &id, classes);
+    let _ = write!(css, "{id} text{{white-space:pre;}}");
+    css_text_owned(css)
 }
 
 /// The `<defs>` that the look's rules refer to, as `insertLookDefs.ts` appends them: the two drop
@@ -326,37 +248,27 @@ fn design_defs(svg_id: &str, tone: Tone) -> String {
 /// The rules of the design mode, after the look's and before the `classDef` rules, which keep the
 /// last word: a group frame without the node's outline and shadow, an edge label in the title's
 /// muted color, and the fill, outline and text of each role.
-fn design_rules(id: &str) -> String {
-    let mut css = rule(
-        &format!("{id} [data-look=\"neo\"].cluster rect"),
-        "stroke:var(--clusterBorder);filter:none;",
+fn write_design_rules(css: &mut String, id: &str) {
+    let _ = write!(
+        css,
+        "{id} [data-look=\"neo\"].cluster rect{{stroke:var(--clusterBorder);filter:none;}}\
+{id} .edgeLabel .label text{{fill:var(--titleColor);}}"
     );
-    css.push_str(&rule(
-        &format!("{id} .edgeLabel .label text"),
-        "fill:var(--titleColor);",
-    ));
     // The edge is masked under its label, so the label has no background of its own.
-    css.push_str(&rule(
-        &format!("{id} .edgeLabel rect.background"),
-        "fill:none;stroke:none;",
-    ));
-    css.push_str(&rule(
-        &format!("{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow"),
-        "flood-opacity:1;",
-    ));
+    let _ = write!(
+        css,
+        "{id} .edgeLabel rect.background{{fill:none;stroke:none;}}\
+{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow{{flood-opacity:1;}}"
+    );
     for role in design::ROLES {
         let (fill, stroke, text) = role.properties();
         let node = format!("{id} [data-role=\"{}\"].node", role.name());
-        css.push_str(&rule(
-            &format!("{node} rect,{node} circle,{node} ellipse,{node} polygon,{node} path"),
-            &format!("fill:var(--{fill});stroke:var(--{stroke});"),
-        ));
-        css.push_str(&rule(
-            &format!("{node} .label text"),
-            &format!("fill:var(--{text});color:var(--{text});"),
-        ));
+        let _ = write!(
+            css,
+            "{node} rect,{node} circle,{node} ellipse,{node} polygon,{node} path{{fill:var(--{fill});stroke:var(--{stroke});}}\
+{node} .label text{{fill:var(--{text});color:var(--{text});}}"
+        );
     }
-    css
 }
 
 /// The look a stylesheet is written for: a bare word, else `classic` (`safeLook` in `colorThemeGate.ts`).
@@ -383,40 +295,58 @@ pub(crate) fn rule(selector: &str, declarations: &str) -> String {
 }
 
 /// The custom properties of the colors, declared on the diagram's id. With one set of variables they
-/// are written as they are; with a light and a dark set, the values that differ are
-/// `light-dark()` pairs, so one SVG follows the page's or the viewer's scheme.
+/// are written as they are; with a light and a dark set, the values that differ are `light-dark()`
+/// pairs, so one SVG follows the page's or the viewer's scheme.
 pub(crate) fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
-    custom_properties_for(svg_id, theme, globals, None)
+    let mut css = String::new();
+    let palette = palette(globals, theme.light);
+    write_custom_properties(
+        &mut css,
+        &format!("#{svg_id}"),
+        theme,
+        globals,
+        None,
+        palette.as_ref(),
+    );
+    css
 }
 
-/// [`custom_properties`] for a flowchart: in the design mode, the theme's colors with the mode's own
-/// properties in the place of the palette and the look's flood.
-fn custom_properties_for(
-    svg_id: &str,
+/// Appends [`custom_properties`] to `css`, on `id` (`#` and the SVG's id), with the palette of the
+/// light (or only) scheme. In the design mode, the mode's own properties take the place of the
+/// palette and the look's flood.
+fn write_custom_properties(
+    css: &mut String,
+    id: &str,
     theme: ThemeView<'_>,
     globals: &Globals,
     design: Option<Tone>,
-) -> String {
-    let id = format!("#{svg_id}");
+    palette: Option<&Palette>,
+) {
     let light = theme.light;
+    // With both schemes, the merge reads the two blocks whole, so each is written on its own first.
     if let Some(tone) = design {
-        let set = |tokens: &ThemeTokens, tone: Tone| {
-            let mut out = color_declarations(tokens);
-            out.push_str(design::declarations(tone));
-            rule(&id, &out)
-        };
-        return match theme.dark {
-            None => set(light, tone),
-            Some(dark) => crate::scheme::both(&set(light, Tone::Light), &set(dark, Tone::Dark)),
-        };
+        match theme.dark {
+            None => write_design_block(css, id, light, tone),
+            Some(dark) => {
+                let mut light_block = String::new();
+                write_design_block(&mut light_block, id, light, Tone::Light);
+                let mut dark_block = String::new();
+                write_design_block(&mut dark_block, id, dark, Tone::Dark);
+                css.push_str(&crate::scheme::both(&light_block, &dark_block));
+            }
+        }
+        return;
     }
-    let slots = palette(globals, light).map(|palette| slot_counts(&palette));
+    let slots = palette.map(slot_counts);
     match theme.dark {
-        None => rule(&id, &declarations(light, flood_color(globals), slots)),
-        Some(dark) => crate::scheme::both(
-            &rule(&id, &declarations(light, LIGHT_FLOOD, slots)),
-            &rule(&id, &declarations(dark, DARK_FLOOD, slots)),
-        ),
+        None => write_declaration_block(css, id, light, flood_color(globals), slots),
+        Some(dark) => {
+            let mut light_block = String::new();
+            write_declaration_block(&mut light_block, id, light, LIGHT_FLOOD, slots);
+            let mut dark_block = String::new();
+            write_declaration_block(&mut dark_block, id, dark, DARK_FLOOD, slots);
+            css.push_str(&crate::scheme::both(&light_block, &dark_block));
+        }
     }
 }
 
@@ -425,17 +355,25 @@ fn slot_counts(palette: &Palette) -> (usize, usize) {
     (palette.border.len(), palette.background.len())
 }
 
-/// The declarations of the custom properties of one set. A set without fills gives every fill slot its
-/// cluster background, so that a palette of the other scheme fills a cluster as this scheme's own rules
-/// would.
-fn declarations(tokens: &ThemeTokens, flood: &str, slots: Option<(usize, usize)>) -> String {
-    let mut out = color_declarations(tokens);
+/// The custom properties of one set, as one rule on `id`. A set without fills gives every fill slot
+/// its cluster background, so that a palette of the other scheme fills a cluster as this scheme's own
+/// rules would.
+fn write_declaration_block(
+    css: &mut String,
+    id: &str,
+    tokens: &ThemeTokens,
+    flood: &str,
+    slots: Option<(usize, usize)>,
+) {
+    css.push_str(id);
+    css.push('{');
+    write_color_declarations(css, tokens);
     if let Some((borders, fills)) = slots {
         let border_list = tokens.border_color_array.texts();
         let fill_list = tokens.bkg_color_array.texts();
         for index in 0..borders {
             if let Some(colour) = cyclic(&border_list, index) {
-                out.push_str(&format!("--borderColor{index}:{};", css_text(colour)));
+                write_property(css, format_args!("--borderColor{index}"), colour);
             }
         }
         for index in 0..fills {
@@ -443,23 +381,38 @@ fn declarations(tokens: &ThemeTokens, flood: &str, slots: Option<(usize, usize)>
                 .map(str::to_owned)
                 .or_else(|| tokens.cluster_bkg.text());
             if let Some(colour) = colour {
-                out.push_str(&format!("--bkgColor{index}:{};", css_text(&colour)));
+                write_property(css, format_args!("--bkgColor{index}"), &colour);
             }
         }
     }
-    out.push_str(&format!("--floodColor:{flood};"));
-    out
+    let _ = write!(css, "--floodColor:{flood};}}");
+}
+
+/// The custom properties of one set in the design mode, as one rule on `id`: the theme's colors and
+/// the mode's own properties for `tone`.
+fn write_design_block(css: &mut String, id: &str, tokens: &ThemeTokens, tone: Tone) {
+    css.push_str(id);
+    css.push('{');
+    write_color_declarations(css, tokens);
+    css.push_str(design::declarations(tone));
+    css.push('}');
 }
 
 /// The declarations of the color tokens of one set.
-fn color_declarations(tokens: &ThemeTokens) -> String {
-    let mut out = String::new();
+fn write_color_declarations(css: &mut String, tokens: &ThemeTokens) {
     for (name, token) in color_tokens(tokens) {
         if let Some(colour) = token.text() {
-            out.push_str(&format!("--{name}:{};", css_text(&colour)));
+            write_property(css, format_args!("--{name}"), &colour);
         }
     }
-    out
+}
+
+/// One custom property whose value is a theme's text. The value is escaped for XML here, and the
+/// whole sheet once more when it is complete.
+fn write_property(css: &mut String, name: fmt::Arguments<'_>, value: &str) {
+    let _ = write!(css, "{name}:");
+    css_text_into(css, value);
+    css.push(';');
 }
 
 /// The entry of a list at an index, wrapped around; `None` for an empty list.
@@ -475,50 +428,40 @@ fn cyclic(list: &[String], index: usize) -> Option<&str> {
 /// takes the slot's border and fill, and so do the collapsed group and its indicator and separator.
 /// Lanes (`:not(.swimlane)`) and the `path` forms of clusters are left out, since a flowchart
 /// cluster is a `rect`.
-fn palette_rules(id: &str, look: &str, palette: &Palette) -> String {
+fn write_palette_rules(css: &mut String, id: &str, look: &str, palette: &Palette) {
     let fills = palette.background.len();
-    let mut css = String::new();
+    let mut slot = String::new();
     for index in 0..palette.border.len() {
-        let slot = format!("{id} [data-look=\"{look}\"][data-color-id=\"color-{index}\"]");
-        let stroke = format!("stroke:var(--borderColor{index});");
-        let fill = if fills == 0 {
-            String::new()
-        } else {
-            format!("fill:var(--bkgColor{});", index % fills)
-        };
-        css.push_str(&rule(
-            &format!("{slot}.cluster:not(.swimlane) rect"),
-            &format!("{stroke}{fill}"),
-        ));
-        css.push_str(&rule(
-            &format!("{slot}.node .collapsed-group"),
-            &format!("{stroke}{fill}"),
-        ));
-        css.push_str(&rule(
-            &format!("{slot}.node .collapsed-indicator"),
-            &format!("fill:var(--borderColor{index});"),
-        ));
-        css.push_str(&rule(
-            &format!("{slot}.node .collapsed-separator"),
-            &format!("stroke:var(--borderColor{index});"),
-        ));
+        slot.clear();
+        let _ = write!(
+            slot,
+            "{id} [data-look=\"{look}\"][data-color-id=\"color-{index}\"]"
+        );
+        for frame in [".cluster:not(.swimlane) rect", ".node .collapsed-group"] {
+            let _ = write!(css, "{slot}{frame}{{stroke:var(--borderColor{index});");
+            if fills > 0 {
+                let _ = write!(css, "fill:var(--bkgColor{});", index % fills);
+            }
+            css.push('}');
+        }
+        let _ = write!(
+            css,
+            "{slot}.node .collapsed-indicator{{fill:var(--borderColor{index});}}\
+{slot}.node .collapsed-separator{{stroke:var(--borderColor{index});}}"
+        );
     }
-    css
 }
 
 /// The `classDef` rules of the classes (`createCssStyles` in `mermaidAPI.ts`): each class styles the
 /// shapes of its nodes with `!important`, and the text of its labels when it has a color. A class
 /// whose styles hold braces is left out: the reference would scope such text under the id, which is
 /// not worth reproducing for a style that could only be an attack.
-fn class_rules(id: &str, classes: &[FlowClass]) -> String {
-    let mut css = String::new();
+fn write_class_rules(css: &mut String, id: &str, classes: &[FlowClass]) {
     for class in classes {
+        let class_id = &class.id;
         if let Some(declarations) = important(&class.styles) {
             for element in ["rect", "polygon", "ellipse", "circle", "path"] {
-                css.push_str(&rule(
-                    &format!("{id} .{} {element}", class.id),
-                    &declarations,
-                ));
+                let _ = write!(css, "{id} .{class_id} {element}{{{declarations}}}");
             }
         }
         // The DB keeps the entries with a color as text styles, with `fill` renamed `bgFill`; the
@@ -534,20 +477,20 @@ fn class_rules(id: &str, classes: &[FlowClass]) -> String {
             })
             .collect();
         if let Some(declarations) = important(&text) {
-            css.push_str(&rule(&format!("{id} .{} tspan", class.id), &declarations));
+            let _ = write!(css, "{id} .{class_id} tspan{{{declarations}}}");
         }
     }
-    css
 }
 
 /// The declarations of a `classDef` with `!important`, or `None` when there are none or they hold braces.
 fn important(styles: &[String]) -> Option<String> {
-    let declarations: String = styles
-        .iter()
-        .map(|style| style.trim())
-        .filter(|style| !style.is_empty())
-        .map(|style| format!("{style} !important;"))
-        .collect();
+    let mut declarations = String::new();
+    for style in styles.iter().map(|style| style.trim()) {
+        if !style.is_empty() {
+            declarations.push_str(style);
+            declarations.push_str(" !important;");
+        }
+    }
     if declarations.is_empty() || declarations.chars().any(|c| c == '{' || c == '}') {
         None
     } else {
