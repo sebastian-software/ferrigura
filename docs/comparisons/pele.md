@@ -10,7 +10,7 @@ The API is synchronous. `render(source, options)` returns the SVG as a string wi
 
 ## Why it is fast
 
-Pele reports 0.05 to 0.3 ms per diagram, against 6 to 82 ms for Mermaid.js, and 230 kB against 1.6 MB gzipped (its own figures). Measured here (the [overview](./README.md) has the method, in the run of 2026-10-24): 0.05 ms in the median over 215 fixtures in Node, 0.15 ms at the 90th percentile, against 7.75 ms for Mermaid in Chromium and 0.70 ms for ferrigura's Node addon; `pele.js` with every diagram type is 702 kB, 261 kB gzipped. The sources show where the time goes, or rather does not:
+Pele reports 0.05 to 0.3 ms per diagram, against 6 to 82 ms for Mermaid.js, and 230 kB against 1.6 MB gzipped (its own figures). Measured here (the [overview](./README.md) has the method, in the run of 2026-11-23): 0.05 ms in the median over 215 fixtures in Node, 0.15 ms at the 90th percentile, against 8.65 ms for Mermaid in Chromium and 0.15 ms for ferrigura's Node addon; `pele.js` with every diagram type is 702 kB, 261 kB gzipped. The sources show where the time goes, or rather does not:
 
 - **No DOM while rendering.** The SVG is built as a string (`src/svg/builder.ts`). Mermaid inserts every label into the page and measures it with `getBBox()` or `getComputedTextLength()`, which makes the browser lay out the page each time; that is the largest cost Pele avoids.
 - **Cheap text measurement.** A browser measures with the 2D canvas's `measureText`, which needs no layout. Elsewhere, a built-in table of Arial advances for the 95 printable ASCII characters estimates the width, with a fixed width for wide (CJK) and other characters (`src/text/measurer.ts`). An app can pass its own measurer.
