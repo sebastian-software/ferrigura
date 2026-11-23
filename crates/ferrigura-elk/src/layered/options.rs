@@ -26,6 +26,10 @@ pub const NODE_PLACEMENT_STRATEGY: OptionId =
     OptionId::of("org.eclipse.elk.layered.nodePlacement.strategy");
 pub const NODE_PLACEMENT_FAVOR_STRAIGHT_EDGES: OptionId =
     OptionId::of("org.eclipse.elk.layered.nodePlacement.favorStraightEdges");
+pub const NODE_PLACEMENT_NETWORK_SIMPLEX_NODE_FLEXIBILITY: OptionId =
+    OptionId::of("org.eclipse.elk.layered.nodePlacement.networkSimplex.nodeFlexibility");
+pub const NODE_PLACEMENT_NETWORK_SIMPLEX_NODE_FLEXIBILITY_DEFAULT: OptionId =
+    OptionId::of("org.eclipse.elk.layered.nodePlacement.networkSimplex.nodeFlexibility.default");
 pub const EDGE_ROUTING: OptionId = OptionId::of("org.eclipse.elk.edgeRouting");
 pub const CONSIDER_MODEL_ORDER_NO_MODEL_ORDER: OptionId =
     OptionId::of("org.eclipse.elk.layered.considerModelOrder.noModelOrder");
@@ -75,6 +79,8 @@ pub const NODE_SIZE_MINIMUM: OptionId = OptionId::of("org.eclipse.elk.nodeSize.m
 pub const CONTENT_ALIGNMENT: OptionId = OptionId::of("org.eclipse.elk.contentAlignment");
 pub const NO_LAYOUT: OptionId = OptionId::of("org.eclipse.elk.noLayout");
 pub const PORT_CONSTRAINTS: OptionId = OptionId::of("org.eclipse.elk.portConstraints");
+pub const SPACING_PORTS_SURROUNDING: OptionId =
+    OptionId::of("org.eclipse.elk.spacing.portsSurrounding");
 pub const SPACING_EDGE_LABEL: OptionId = OptionId::of("org.eclipse.elk.spacing.edgeLabel");
 pub const SPACING_LABEL_LABEL: OptionId = OptionId::of("org.eclipse.elk.spacing.labelLabel");
 pub const EDGE_LABELS_PLACEMENT: OptionId = OptionId::of("org.eclipse.elk.edgeLabels.placement");
@@ -186,6 +192,9 @@ mod tests {
             PORT_SIDE,
             PORT_ANCHOR,
             ALLOW_NON_FLOW_PORTS_TO_SWITCH_SIDES,
+            NODE_PLACEMENT_NETWORK_SIMPLEX_NODE_FLEXIBILITY,
+            NODE_PLACEMENT_NETWORK_SIMPLEX_NODE_FLEXIBILITY_DEFAULT,
+            SPACING_PORTS_SURROUNDING,
         ] {
             assert_eq!(
                 option_by_id(id.name()),

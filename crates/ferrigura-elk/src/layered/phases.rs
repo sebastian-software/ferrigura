@@ -79,6 +79,9 @@ impl PhaseStep {
             PhaseStep::NodePlacement(NodePlacementStrategy::BRANDES_KOEPF) => {
                 "Brandes & Koepf node placement"
             }
+            PhaseStep::NodePlacement(NodePlacementStrategy::NETWORK_SIMPLEX) => {
+                "Network simplex node placement"
+            }
             PhaseStep::NodePlacement(other) => {
                 return Err(LayoutError::Unsupported(format!(
                     "node placement {} is not ported yet",
@@ -106,6 +109,9 @@ impl PhaseStep {
     ) -> Result<(), LayoutError> {
         if self == PhaseStep::NodePlacement(NodePlacementStrategy::BRANDES_KOEPF) {
             return crate::layered::p4nodes::bk::place(graph, progress, monitor);
+        }
+        if self == PhaseStep::NodePlacement(NodePlacementStrategy::NETWORK_SIMPLEX) {
+            return crate::layered::p4nodes::network_simplex::place(graph, progress, monitor);
         }
         let name = self.task_name(graph)?;
         progress.begin(monitor, &name, 1.0);
@@ -157,7 +163,8 @@ impl PhaseStep {
                     .add_after(P5, S::LONG_EDGE_JOINER);
             }
             PhaseStep::NodePlacement(_) => {
-                // `BKNodePlacer.HIERARCHY_PROCESSING_ADDITIONS`, only for graphs with external ports.
+                // `BKNodePlacer.HIERARCHY_PROCESSING_ADDITIONS`, the same table as
+                // `NetworkSimplexPlacer.HIERARCHY_PROCESSING_ADDITIONS`; only for graphs with external ports.
                 if graph
                     .graph_properties
                     .contains(&GraphProperties::EXTERNAL_PORTS)

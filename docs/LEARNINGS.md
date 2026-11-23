@@ -214,6 +214,10 @@ Mermaid runs elkjs 0.9.3, which GWT compiled from ELK's Java, so the port follow
 
 The comparison is layered on purpose. The processor trace with its logs is compared before the coordinates, so an error in the order of processors shows as a name, not as a shifted node; the corpus is backed by 1,200 random flat and 900 random compound graphs that the generators write, which reach what no fixture does; and every fix starts as a synthetic corpus case. **Where:** `crates/ferrigura-elk` and its README.
 
+### Network simplex placement writes the sizes of resizable nodes back
+
+`ElkGraphLayoutTransferrer` sets a node's width and height from the layout when the graph places its nodes with network simplex and the node may resize where space permits (`NODE_SIZE` or `NODE_SIZE_WHERE_SPACE_PERMITS`), as it does for size constraints and nested graphs. Without it a resized node keeps its input size. **Where:** `crates/ferrigura-elk/src/layered/transfer.rs`, `p4nodes/network_simplex.rs`.
+
 ### Mermaid's ELK integration is ported as well as ELK
 
 What Mermaid does around elkjs is part of the layout: it builds the ELK graph from the layout data (`buildElkGraphFromLayoutData`), and after the layout it applies the positions, evens group frames, clips edges to the shapes' outlines, straightens the port-to-channel jogs at the ends of routes and places terminal labels. These steps decide where an edge ends, so they are ported function for function, with their thresholds. The reference's patch 07 gives the harness each ELK input and layout (`globalThis.__mermaidElkCapture`), so the harness compares the graph ferrigura hands to ELK with the reference's before it compares any geometry: the two are equal for all 298 comparable flowchart fixtures. The Mermaid option `layout: dagre` is laid out with ELK as well; the geometry runs leave such fixtures out. **Where:** `ferrigura-render`, `unified/elk_build.rs`, `elk_apply.rs`, `elk_geometry.rs`, `elk_straighten.rs`, `terminal.rs`; [flowchart](./diagrams/flowchart.md).

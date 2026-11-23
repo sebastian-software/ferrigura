@@ -22,7 +22,7 @@ pub mod compactor;
 pub mod neighborhood;
 pub mod threshold;
 
-mod access;
+pub(super) mod access;
 
 use indexmap::{IndexMap, IndexSet};
 
