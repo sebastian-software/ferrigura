@@ -163,8 +163,15 @@ fn busiest_sides(data: &LayoutData) -> Vec<(f64, bool)> {
         .map(|node| (node.id.as_str(), node))
         .collect();
     let mut degrees: HashMap<&str, (usize, usize)> = HashMap::new();
+    // The connector of a state's note is no transition: the note stands beside its state, and its
+    // connector meets a side that no transition does.
+    let is_note = |id: &str| {
+        by_id
+            .get(id)
+            .is_some_and(|node| node.css_classes.contains("statediagram-note"))
+    };
     for edge in &data.edges {
-        if edge.start == edge.end {
+        if edge.start == edge.end || is_note(&edge.start) || is_note(&edge.end) {
             continue;
         }
         degrees.entry(edge.start.as_str()).or_default().1 += 1;
