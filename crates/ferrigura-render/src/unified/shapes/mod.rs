@@ -537,6 +537,12 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
     })
 }
 
+/// Whether a node is drawn as a decision: the diamond (`question`) of the registry.
+#[must_use]
+pub fn is_decision(node: &Node) -> bool {
+    !node.is_group && registry::resolve_node(node) == Some(Kind::Question)
+}
+
 /// The `data-role` of a node in the design mode, with its leading space: the meaning its shape
 /// carries, which the style sheet colors (`docs/decisions/0023-design-mode.md`). Empty outside the
 /// mode and for a shape without a role.
