@@ -908,3 +908,116 @@ fn an_edge_meets_a_group_in_the_middle_of_its_side() {
         }
     }
 }
+
+/// Two concurrency regions, each with two labeled transitions between the same two states.
+const REGIONS: &str = "stateDiagram-v2\n  [*] --> Active\n  state Active {\n    [*] --> NumLockOff\n    NumLockOff --> NumLockOn : EvNumLockPressed\n    NumLockOn --> NumLockOff : EvNumLockPressed\n    --\n    [*] --> CapsLockOff\n    CapsLockOff --> CapsLockOn : EvCapsLockPressed\n    CapsLockOn --> CapsLockOff : EvCapsLockPressed\n  }\n  Active --> [*]\n";
+
+/// The frames of the concurrency regions of a state diagram: their `x`, `y`, width and height.
+fn region_frames(svg: &str) -> Vec<(f64, f64, f64, f64)> {
+    svg.match_indices("<rect class=\"divider\"")
+        .map(|(at, _)| {
+            let rect = &svg[at..];
+            let rect = &rect[..rect.find("/>").expect("the rect's end")];
+            let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+            (number("x"), number("y"), number("width"), number("height"))
+        })
+        .collect()
+}
+
+/// The middle of the state with the given id.
+fn state_middle(svg: &str, id: &str) -> (f64, f64) {
+    let group = &svg[svg.find(&format!("id=\"d-state-{id}-")).expect("the state")..];
+    let marker = "transform=\"translate(";
+    let rest = &group[group.find(marker).expect("its place") + marker.len()..];
+    let (x, y) = rest[..rest.find(')').expect("the place's end")]
+        .split_once(", ")
+        .expect("two numbers");
+    (x.parse().unwrap(), y.parse().unwrap())
+}
+
+#[test]
+fn concurrency_regions_stand_side_by_side_around_their_states() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(REGIONS, &design(None)).unwrap();
+    let frames = region_frames(&svg);
+    assert_eq!(frames.len(), 2);
+    // Side by side across the flow, as the default puts them, not one above the other.
+    let (left, right) = (frames[0], frames[1]);
+    assert_eq!(left.1, right.1);
+    assert!(left.0 + left.2 < right.0, "{frames:?}");
+    // The states stand in the middle of their region.
+    for (frame, states) in [
+        (left, ["NumLockOff", "NumLockOn"]),
+        (right, ["CapsLockOff", "CapsLockOn"]),
+    ] {
+        let middle = frame.0 + frame.2 / 2.0;
+        for state in states {
+            let x = state_middle(&svg, state).0;
+            assert!((x - middle).abs() < 1.0, "{state}: {x} against {middle}");
+        }
+    }
+    // Three regions stand in one row too, where the default starts a second row.
+    let three = "stateDiagram-v2\n  state Active {\n    [*] --> A\n    --\n    [*] --> B\n    --\n    [*] --> C\n  }\n";
+    let rows = |svg: &str| {
+        let mut tops: Vec<f64> = region_frames(svg).iter().map(|frame| frame.1).collect();
+        tops.sort_by(f64::total_cmp);
+        tops.dedup();
+        tops.len()
+    };
+    assert_eq!(
+        rows(&renderer.render_with(three, &design(None)).unwrap()),
+        1
+    );
+    assert_eq!(
+        rows(&renderer.render_with(three, &default(None)).unwrap()),
+        2
+    );
+}
+
+#[test]
+fn regions_whose_states_run_from_left_to_right_stand_one_above_the_other() {
+    let text = "stateDiagram-v2\n  state Active {\n    direction LR\n    [*] --> A\n    A --> B\n    --\n    direction LR\n    [*] --> C\n    C --> D\n  }\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let mut frames = region_frames(&svg);
+    frames.sort_by(|a, b| a.1.total_cmp(&b.1));
+    assert_eq!(frames.len(), 2);
+    assert_eq!(frames[0].0, frames[1].0);
+    assert!(frames[0].1 + frames[0].3 < frames[1].1, "{frames:?}");
+}
+
+#[test]
+fn two_labeled_transitions_between_two_states_stand_on_both_sides_of_them() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // Short labels leave room for both transitions to run straight.
+    let text = "stateDiagram-v2\n  a --> b : Start\n  a --> b : Stop\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let middle = state_middle(&svg, "a").0;
+    assert_eq!(middle, state_middle(&svg, "b").0);
+    let mut lines = Vec::new();
+    for edge in ["edge0", "edge1"] {
+        let points = route(&svg, edge);
+        assert!(
+            points
+                .iter()
+                .all(|point| (point.0 - points[0].0).abs() < 1e-6),
+            "{edge} bends: {points:?}"
+        );
+        lines.push(points[0].0 - middle);
+    }
+    lines.sort_by(f64::total_cmp);
+    assert!((lines[0] + lines[1]).abs() < 1e-6, "{lines:?}");
+    assert!(lines[1] > 10.0, "{lines:?}");
+    // Long labels: the transitions turn out around the states alike, neither runs straight past
+    // the other's label.
+    let svg = renderer.render_with(REGIONS, &design(None)).unwrap();
+    let middle = state_middle(&svg, "NumLockOff").0;
+    let reach = |edge: &str| {
+        route(&svg, edge)
+            .iter()
+            .map(|point| (point.0 - middle).abs())
+            .fold(0.0_f64, f64::max)
+    };
+    assert!((reach("edge2") - reach("edge3")).abs() < 1.0);
+}

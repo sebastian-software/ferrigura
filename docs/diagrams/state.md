@@ -15,11 +15,15 @@ The design mode draws a state diagram in ferrigura's own look ([0023](../decisio
 | Choice             | Role `decision`: the warm tint and outline; it keeps its size of 28 and does not grow with its edges                                             |
 | Fork, join         | Role `junction`: filled with the line color                                                                                                      |
 | Composite state    | Neutral: `compositeBackground` with a `stateBorder` outline of 1 px, corner radius 12, no shadow; the title in a row of its own, as a subgraph's |
-| Concurrency region | A dashed frame (4 on, 4 off) without a fill, corner radius 8, padded by 32 on every side                                                         |
+| Concurrency region | A dashed frame (4 on, 4 off) without a fill, corner radius 8, padded by 32 on every side; the regions of a composite stand in one row            |
 | Note               | Flat: `noteBkgColor` gray, a hairline outline, square corners, `noteTextColor` text at the left, no shadow                                       |
 | Transition label   | `transitionLabelColor`, muted, in a gap of its edge                                                                                              |
 
 The mode lays values for the state's own tokens under the user's `themeVariables`, in the light and the dark set: `stateBorder`, `stateLabelColor`, `transitionLabelColor`, `labelBackgroundColor`, `compositeBackground`, `compositeTitleBackground`, `altBackground`, `noteBkgColor`, `noteBorderColor` and `noteTextColor`; `transitionColor` and `stateBkg` follow `lineColor` and `mainBkg` as the theme derives them. The state rules keep reading these tokens, so a user's value for any of them wins, and a `classDef` keeps the last word over the roles. Both sets are held to the contrast ratios of the flowchart's.
+
+The regions of a composite stand side by side across their flow, in one row however many there are: stacked along the flow, they would read as one after the other. Where the states of every region run from left to right or back, the regions stand in one column. The default leaves the choice to ELK, which starts a new row when the row grows wider than 1.6 times the square root of the regions' area, so that two regions stand side by side or one above the other depending on a few points of their size, and three stand two and one.
+
+Two transitions between the same two states that both carry a label, such as a toggle's `A --> B : press` and `B --> A : press`, stand on both sides of the states, and their ends spread along the states' sides as far as the labels stand apart: with short labels both run straight, with long ones both turn out alike, and the states stay in the middle of their region ([0023](../decisions/0023-design-mode.md)).
 
 The note's place is the reference's: the note and its state form a group laid out from top to bottom, so a note stands below its state, and the group's direction cannot be turned while transitions cross it.
 

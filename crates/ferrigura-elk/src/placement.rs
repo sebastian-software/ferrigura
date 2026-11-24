@@ -108,6 +108,24 @@ pub struct Layers {
 }
 
 impl Layers {
+    /// Layers built by hand, as a placement's tests build them, with the effort of ELK's default
+    /// thoroughness.
+    #[must_use]
+    pub fn new(
+        layers: Vec<Vec<usize>>,
+        nodes: Vec<Node>,
+        ports: Vec<Port>,
+        edges: Vec<Edge>,
+    ) -> Self {
+        Self {
+            layers,
+            nodes,
+            ports,
+            edges,
+            thoroughness: 7,
+        }
+    }
+
     /// How far the source end of an edge is past its target end along the layer.
     #[must_use]
     pub fn step(&self, edge: usize) -> f64 {

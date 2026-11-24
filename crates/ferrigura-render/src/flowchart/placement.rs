@@ -21,6 +21,13 @@
 //!
 //! Before the steps, every side's bundle moves into the middle of its node: ELK leaves the ports
 //! of a group at the start of its side, and a leaf's are already in the middle.
+//!
+//! After the steps, **twins** are set apart: two edges between the same two nodes, through the
+//! same layers, that are the only edges of their sides. The axis makes one of them straight and
+//! sends the other around the label beside it. Where both carry a label, they are equals: they
+//! stand on both sides of the nodes' line instead, and their ports spread along the sides as far
+//! as the nodes allow, so that the edges run straight where the labels leave room. Where one of
+//! them has no label, it stays the axis.
 
 use std::collections::BTreeSet;
 
@@ -71,6 +78,152 @@ impl Placement for Axes {
             if !choose_straight_middles(layers, &mut chosen) {
                 break;
             }
+        }
+        spread_twins(layers);
+    }
+}
+
+/// The way of an edge from a port of a node through the bends and labels of the layers after it:
+/// the dummies it passes and the port at which it arrives at the next node. `None` where a dummy
+/// does not lead on.
+fn way(layers: &Layers, port: usize) -> Option<(Vec<usize>, usize)> {
+    let mut dummies = Vec::new();
+    let mut from = port;
+    loop {
+        let [edge] = layers.ports[from].edges.as_slice() else {
+            return None;
+        };
+        let arrival = layers.edges[*edge].target;
+        let node = layers.ports[arrival].node;
+        if layers.nodes[node].kind == Kind::Node {
+            return Some((dummies, arrival));
+        }
+        if !matches!(layers.nodes[node].kind, Kind::Bend | Kind::Label) {
+            return None;
+        }
+        dummies.push(node);
+        from = layers.nodes[node]
+            .ports
+            .iter()
+            .copied()
+            .find(|&next| layers.ports[next].side == Side::After)?;
+    }
+}
+
+/// Sets twins apart: two edges that leave a node as the only two edges of its side and arrive at
+/// one other node as the only two edges of that side, through dummies that stand next to each
+/// other in each layer, where both nodes or both bundles have their middles on one line. Their
+/// dummies move to both sides of that line, as close as their layer allows, where it has room for
+/// that; and the ports of both sides spread around the line as far as the dummies are apart, with
+/// [`END_ROOM`] left at the ends of the sides. Only twins that both carry a label are set apart.
+fn spread_twins(layers: &mut Layers) {
+    let mut position = vec![(0, 0); layers.nodes.len()];
+    for (layer, members) in layers.layers.iter().enumerate() {
+        for (index, &node) in members.iter().enumerate() {
+            position[node] = (layer, index);
+        }
+    }
+    for node in 0..layers.nodes.len() {
+        if layers.nodes[node].kind != Kind::Node {
+            continue;
+        }
+        let ports = side_ports(layers, node, Side::After);
+        let [first, second] = ports.as_slice() else {
+            continue;
+        };
+        let (Some((left, arrive_left)), Some((right, arrive_right))) =
+            (way(layers, *first), way(layers, *second))
+        else {
+            continue;
+        };
+        let other = layers.ports[arrive_left].node;
+        if left.is_empty()
+            || left.len() != right.len()
+            || other != layers.ports[arrive_right].node
+            || side_ports(layers, other, Side::Before) != [arrive_left, arrive_right]
+        {
+            continue;
+        }
+        // The line of the twins: through the middles of both nodes where they stand on one, else
+        // through the middles of both bundles.
+        let middle = |node: usize| layers.nodes[node].place + layers.nodes[node].size / 2.0;
+        let absolute =
+            |port: usize| layers.nodes[layers.ports[port].node].place + layers.ports[port].at;
+        let bundles = (
+            (absolute(*first) + absolute(*second)) / 2.0,
+            (absolute(arrive_left) + absolute(arrive_right)) / 2.0,
+        );
+        let line = if (middle(node) - middle(other)).abs() <= 0.5 {
+            middle(node)
+        } else if (bundles.0 - bundles.1).abs() <= 0.5 {
+            bundles.0
+        } else {
+            continue;
+        };
+        // The pairs of dummies stand next to each other, the left one first.
+        let next_to = left.iter().zip(&right).all(|(&a, &b)| {
+            let ((layer_a, index_a), (layer_b, index_b)) = (position[a], position[b]);
+            layer_a == layer_b && index_b == index_a + 1
+        });
+        if !next_to {
+            continue;
+        }
+        // The least distance of the middles of two dummies of a layer, the widest over the layers.
+        let apart = left
+            .iter()
+            .zip(&right)
+            .map(|(&a, &b)| {
+                layers.nodes[b].gap + layers.nodes[b].size / 2.0 - layers.nodes[a].size / 2.0
+            })
+            .fold(0.0_f64, f64::max)
+            .ceil();
+        let half = apart / 2.0;
+        let places: Vec<(usize, f64)> = left
+            .iter()
+            .map(|&a| (a, line - half - layers.nodes[a].size / 2.0))
+            .chain(
+                right
+                    .iter()
+                    .map(|&b| (b, line + half - layers.nodes[b].size / 2.0)),
+            )
+            .collect();
+        let room = places.iter().all(|&(dummy, place)| {
+            let (layer, index) = position[dummy];
+            let members = &layers.layers[layer];
+            let before = index
+                .checked_sub(1)
+                .map(|at| members[at])
+                .filter(|other| !left.contains(other));
+            let after = members
+                .get(index + 1)
+                .copied()
+                .filter(|other| !right.contains(other));
+            before.is_none_or(|other| place - layers.nodes[other].place >= layers.nodes[dummy].gap)
+                && after.is_none_or(|other| {
+                    layers.nodes[other].place - place >= layers.nodes[other].gap
+                })
+        });
+        // An edge without a label stays the axis: twins are equals only when both carry a label.
+        let labeled = |dummies: &[usize]| {
+            dummies
+                .iter()
+                .any(|&dummy| layers.nodes[dummy].kind == Kind::Label)
+        };
+        if !room || !labeled(&left) || !labeled(&right) {
+            continue;
+        }
+        for &(dummy, place) in &places {
+            layers.nodes[dummy].place = place;
+        }
+        for (a, b) in [(*first, *second), (arrive_left, arrive_right)] {
+            let owner = layers.ports[a].node;
+            let middle = line - layers.nodes[owner].place;
+            let reach = (middle - END_ROOM).min(layers.nodes[owner].size - END_ROOM - middle);
+            let spread = half
+                .min(reach)
+                .max((layers.ports[b].at - layers.ports[a].at) / 2.0);
+            layers.ports[a].at = middle - spread;
+            layers.ports[b].at = middle + spread;
         }
     }
 }
@@ -519,5 +672,93 @@ mod tests {
         assert!((middle - 20.0).abs() < 1e-9, "{middle}");
         // A heavier pull wins.
         assert_eq!(minimum(&mut [term(0.0, 8.0), term(40.0, 1.0)]), 0.0);
+    }
+
+    /// Two edges from a node 136 long to another below it, each through a dummy 100 long of the
+    /// given kinds, as the axis leaves them: the second edge straight down the middle, the first
+    /// beside it.
+    fn twins(kinds: [Kind; 2]) -> Layers {
+        use ferrigura_elk::placement::{Edge, Node, Port};
+        let node = |kind, size, place, gap| Node {
+            kind,
+            size,
+            place,
+            gap,
+            ports: Vec::new(),
+        };
+        let mut nodes = vec![
+            node(Kind::Node, 136.0, 0.0, 0.0),
+            node(kinds[0], 100.0, -102.0, 0.0),
+            node(kinds[1], 100.0, 18.0, 120.0),
+            node(Kind::Node, 136.0, 0.0, 0.0),
+        ];
+        let mut ports = Vec::new();
+        let mut port = |nodes: &mut Vec<Node>, node: usize, side, at| {
+            nodes[node].ports.push(ports.len());
+            ports.push(Port {
+                node,
+                side,
+                at,
+                edges: Vec::new(),
+                inside: false,
+            });
+            ports.len() - 1
+        };
+        let ends = [
+            (
+                port(&mut nodes, 0, Side::After, 58.0),
+                port(&mut nodes, 1, Side::Before, 50.0),
+            ),
+            (
+                port(&mut nodes, 1, Side::After, 50.0),
+                port(&mut nodes, 3, Side::Before, 58.0),
+            ),
+            (
+                port(&mut nodes, 0, Side::After, 78.0),
+                port(&mut nodes, 2, Side::Before, 50.0),
+            ),
+            (
+                port(&mut nodes, 2, Side::After, 50.0),
+                port(&mut nodes, 3, Side::Before, 78.0),
+            ),
+        ];
+        let edges: Vec<Edge> = ends
+            .iter()
+            .map(|&(source, target)| Edge {
+                source,
+                target,
+                reversed: false,
+            })
+            .collect();
+        for (index, &(source, target)) in ends.iter().enumerate() {
+            ports[source].edges.push(index);
+            ports[target].edges.push(index);
+        }
+        Layers::new(vec![vec![0], vec![1, 2], vec![3]], nodes, ports, edges)
+    }
+
+    #[test]
+    fn labeled_twins_stand_on_both_sides_of_their_nodes() {
+        let mut layers = twins([Kind::Label, Kind::Label]);
+        spread_twins(&mut layers);
+        // The middles of the labels 120 apart, 60 on each side of the nodes' middle at 68.
+        assert_eq!(layers.nodes[1].place + 50.0, 8.0);
+        assert_eq!(layers.nodes[2].place + 50.0, 128.0);
+        // The ports spread as far as the room at the ends of the sides lets them: 56 each way.
+        let at: Vec<f64> = layers.ports.iter().map(|port| port.at).collect();
+        assert_eq!(at, [12.0, 50.0, 50.0, 12.0, 124.0, 50.0, 50.0, 124.0]);
+    }
+
+    #[test]
+    fn twins_of_which_one_has_no_label_keep_their_axis() {
+        let mut layers = twins([Kind::Label, Kind::Bend]);
+        let before = layers.clone();
+        spread_twins(&mut layers);
+        for (node, kept) in layers.nodes.iter().zip(&before.nodes) {
+            assert_eq!(node.place, kept.place);
+        }
+        for (port, kept) in layers.ports.iter().zip(&before.ports) {
+            assert_eq!(port.at, kept.at);
+        }
     }
 }
