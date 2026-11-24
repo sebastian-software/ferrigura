@@ -1,9 +1,10 @@
 //! ferrigura's own output, pinned (`docs/decisions/0015-differential-testing.md`). Every `.mmd` of the corpus is
 //! rendered under three configurations and four color schemes, and one hash over its twelve SVGs (or
 //! errors) is compared with `snapshots/svg.tsv`. Flowcharts and sequences have a third column that independently
-//! pins the twelve Mermaid-compatible renders. Flowcharts have a fourth column that pins the twelve renders
-//! of the design mode (`docs/decisions/0023-design-mode.md`). Any change of the output fails the test, the
-//! ones the geometry check cannot see included (markup, styles, embedded fonts).
+//! pins the twelve Mermaid-compatible renders. Flowcharts and state diagrams have one more column, the last,
+//! that pins the twelve renders of the design mode (`docs/decisions/0023-design-mode.md`): a flowchart's
+//! line has four columns, a state diagram's three. Any change of the output fails the test, the ones the
+//! geometry check cannot see included (markup, styles, embedded fonts).
 //!
 //! An intended change rewrites the manifest in the same commit:
 //!
@@ -13,7 +14,7 @@
 //!
 //! and `tools/snapshots/diff.sh` shows which renders of the changed files moved. When the test fails,
 //! the new renders of the changed files are in `target/snapshots/head/` (the design renders of a
-//! flowchart with a `design-` prefix).
+//! flowchart or a state diagram with a `design-` prefix).
 //!
 //! The output depends on the machine: `ferrigura_jsmath` rounds as V8 does there, with fused
 //! multiply-adds on aarch64 and without them on x86-64. The manifest holds the aarch64 renders, so
@@ -182,15 +183,19 @@ enum Mode {
 }
 
 /// Which of the optional columns of a file's line the file has: the compatibility hash for a flowchart
-/// or a sequence, and the design hash for a flowchart. The test and the review renders use this one
-/// rule.
+/// or a sequence, and the design hash for a flowchart or a state diagram, the types the design mode
+/// draws. The test and the review renders use this one rule; `tools/snapshots/diff.sh` asks the
+/// renderer instead, as the number of columns does not tell a sequence from a state diagram.
 fn columns(text: &str) -> (bool, bool) {
     let kind = ferrigura_syntax::detect(text);
     let compat = matches!(
         kind,
         Some(ferrigura_syntax::DiagramType::Flowchart | ferrigura_syntax::DiagramType::Sequence)
     );
-    let design = matches!(kind, Some(ferrigura_syntax::DiagramType::Flowchart));
+    let design = matches!(
+        kind,
+        Some(ferrigura_syntax::DiagramType::Flowchart | ferrigura_syntax::DiagramType::State)
+    );
     (compat, design)
 }
 
@@ -290,8 +295,8 @@ fn the_output_of_the_corpus_is_unchanged() {
                         .replace('\\', "/");
                     let mut hash = hash(&renders(&text, &renderers, Mode::Default));
                     let (compat, design) = columns(&text);
-                    // A third column pins the compatibility mode separately, so updating the new
-                    // default cannot silently bless a change in Mermaid-compatible output. A fourth
+                    // A further column pins the compatibility mode separately, so updating the new
+                    // default cannot silently bless a change in Mermaid-compatible output. The last
                     // pins the design mode the same way.
                     if compat {
                         hash.push('\t');
