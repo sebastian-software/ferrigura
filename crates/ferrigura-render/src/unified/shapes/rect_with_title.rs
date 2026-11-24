@@ -85,20 +85,58 @@ pub(super) fn rect_with_title(
     } else {
         (title_width - line_width) / 2.0
     };
-    let rows_y = title.bbox.height + half_padding + 5.0;
+    let design = input.config.section.design.is_some();
+    let room = crate::design::DESCRIBED_STATE_ROOM;
+    let title_height = title.bbox.height;
+    let rows_height = rows_layout.bbox.height;
+    let rows_y = if design {
+        title_height + 2.0 * room
+    } else {
+        title_height + half_padding + 5.0
+    };
     let label_box = title
         .bbox
         .translate(title_x, 0.0)
         .union(rows_layout.bbox.translate(rows_x, rows_y));
 
-    let outer = BBox::new(
-        -label_box.width / 2.0 - half_padding,
-        -label_box.height / 2.0 - half_padding,
-        label_box.width + padding,
-        label_box.height + padding,
-    );
-    let divider_y = -label_box.height / 2.0 - half_padding + title.bbox.height + half_padding;
-    let divider_end = label_box.width / 2.0 + half_padding;
+    // The design mode gives the label at least the width of a plain state's label, the state's
+    // minimum width, as `labelHelper` does unless the state has its own width. The title and the
+    // rows stay centered in it, and the box keeps the state's padding at both sides.
+    let (outer, divider_y, divider_end, group_origin, title_x, rows_x) = if design {
+        let minimum_width = if !node.label.is_empty() && node.width.unwrap_or(0.0) == 0.0 {
+            node.min_width.unwrap_or(0.0)
+        } else {
+            0.0
+        };
+        let label_width = label_box.width.max(minimum_width);
+        let shift = (label_width - label_box.width) / 2.0;
+        let width = (label_width + 2.0 * padding).max(node.width.unwrap_or(0.0));
+        let height = (title_height + rows_height + 4.0 * room).max(node.height.unwrap_or(0.0));
+        let outer = BBox::new(-width / 2.0, -height / 2.0, width, height);
+        let divider_y = outer.y + room + title_height + room;
+        (
+            outer,
+            divider_y,
+            outer.x + outer.width,
+            (-label_width / 2.0, outer.y + room),
+            title_x + shift,
+            rows_x + shift,
+        )
+    } else {
+        let outer = BBox::new(
+            -label_box.width / 2.0 - half_padding,
+            -label_box.height / 2.0 - half_padding,
+            label_box.width + padding,
+            label_box.height + padding,
+        );
+        let divider_y = -label_box.height / 2.0 - half_padding + title_height + half_padding;
+        let divider_end = label_box.width / 2.0 + half_padding;
+        let group_origin = (
+            -label_box.width / 2.0,
+            -label_box.height / 2.0 - half_padding + 3.0,
+        );
+        (outer, divider_y, divider_end, group_origin, title_x, rows_x)
+    };
     let node_style = attribute("style", &styles.node);
 
     let frame = format!(
@@ -114,8 +152,8 @@ pub(super) fn rect_with_title(
     );
     let label_group = format!(
         "<g class=\"label\"{node_style} transform=\"translate({}, {})\">{}{}</g>",
-        number(-label_box.width / 2.0),
-        number(-label_box.height / 2.0 - half_padding + 3.0),
+        number(group_origin.0),
+        number(group_origin.1),
         title.svg_parts(
             &text_style,
             "",

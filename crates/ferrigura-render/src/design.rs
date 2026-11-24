@@ -69,6 +69,11 @@ pub const REGION_PADDING: &str = "[top=32,left=32,bottom=32,right=32]";
 /// The distance of a group's title from the top of its frame.
 pub const GROUP_TITLE_TOP: f64 = 12.0;
 
+/// The room of a state with descriptions above its title, between the title and its divider,
+/// between the divider and its rows, and below its last row. Its sides keep the state's padding,
+/// as a plain state's do.
+pub const DESCRIBED_STATE_ROOM: f64 = 10.0;
+
 /// The room the box of an edge label adds to the left and the right of its text's box. The edge
 /// is masked in that box, so the label sits in a gap of its edge.
 pub const CHIP_PADDING: f64 = 5.0;

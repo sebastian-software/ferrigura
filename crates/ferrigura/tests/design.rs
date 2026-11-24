@@ -1041,3 +1041,46 @@ fn two_labeled_transitions_between_two_states_stand_on_both_sides_of_them() {
     };
     assert!((reach("edge2") - reach("edge3")).abs() < 1.0);
 }
+
+#[test]
+fn a_state_with_descriptions_keeps_its_room_in_the_design_mode() {
+    // The title and the rows keep the state's padding of 8 from the outline at the left, the box
+    // is at least as wide as a plain state (120 plus 8 on each side), 10 lies above the title, and
+    // the divider runs from edge to edge.
+    let text = "stateDiagram-v2\n  state \"Waiting for input\" as W\n  W : entry / reset timer\n  W : exit / stop timer\n  [*] --> W\n";
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let state = &svg[svg.find("-state-W-").expect("the state")..];
+    let outline = &state[state
+        .find("class=\"outer title-state\"")
+        .expect("the outline")..];
+    let outline = &outline[..outline.find("/>").expect("the outline's end")];
+    let number =
+        |part: &str, name: &str| -> f64 { attribute_values(part, name)[0].parse().unwrap() };
+    let (x, y, width) = (
+        number(outline, "x"),
+        number(outline, "y"),
+        number(outline, "width"),
+    );
+    let label = &state[state.find("class=\"label\"").expect("the label")..];
+    let place = &label[label.find("translate(").expect("its place") + "translate(".len()..];
+    let place = &place[..place.find(')').expect("the place's end")];
+    let (label_x, label_y): (f64, f64) = {
+        let (a, b) = place.split_once(", ").expect("two numbers");
+        (a.parse().unwrap(), b.parse().unwrap())
+    };
+    assert!(
+        (label_x - x - 8.0).abs() < 1e-6,
+        "left room: {}",
+        label_x - x
+    );
+    assert!(
+        (label_y - y - 10.0).abs() < 1e-6,
+        "room above: {}",
+        label_y - y
+    );
+    assert!(width >= 136.0, "width: {width}");
+    let divider = &state[state.find("class=\"divider\"").expect("the divider")..];
+    assert!((number(divider, "x1") - x).abs() < 1e-6);
+    assert!((number(divider, "x2") - (x + width)).abs() < 1e-6);
+}
