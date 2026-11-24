@@ -3,6 +3,7 @@
 //! `styles.js`). See `docs/diagrams/state.md#layout-and-rendering`.
 
 pub mod data;
+mod notes;
 pub mod style;
 
 use ferrigura_model::state::{Link, StateDiagram};
@@ -69,6 +70,39 @@ fn split_end_states(data: &mut LayoutData) {
     data.nodes.extend(copies);
 }
 
+/// Lays a diagram out in the design mode, with each note beside its state at the state's height
+/// (`notes`). Where the notes of a state cannot stand there, its transitions do not leave it
+/// straight or a note would touch anything it does not belong to, the diagram is laid out again
+/// with that state's notes where the reference puts them.
+fn lay_out_with_notes_beside(
+    measured: &mut Measured,
+    config: &Config<'_>,
+) -> Result<(), RenderError> {
+    let original = measured.data.clone();
+    let mut kept = std::collections::HashSet::new();
+    while let Some(notes) = notes::take_out(&mut measured.data, &kept) {
+        let mut failed = None;
+        let laid = pipeline::lay_out_adjusted(measured, config, |graph, data, state| {
+            notes
+                .put_back(graph, data, state)
+                .map_err(|host| failed = Some(host))
+                .is_ok()
+        })?;
+        if laid {
+            failed = notes.blocked(&measured.data);
+            if failed.is_none() {
+                return Ok(());
+            }
+        }
+        measured.data.clone_from(&original);
+        if !failed.is_some_and(|host| kept.insert(host)) {
+            break;
+        }
+    }
+    measured.data = original;
+    pipeline::lay_out_for_render(measured, config)
+}
+
 /// Renders a state diagram as an SVG document (`stateRenderer-v3-unified.ts`, `draw`): the layout
 /// of the unified renderer, the barb markers of the look, the title and the viewport.
 ///
@@ -79,7 +113,11 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
     let config = Config::of(input);
     let mut measured = measure(input, &config)?;
     apply_links(&mut measured.data, &input.diagram.links);
-    pipeline::lay_out_for_render(&mut measured, &config)?;
+    if input.section.design.is_some() {
+        lay_out_with_notes_beside(&mut measured, &config)?;
+    } else {
+        pipeline::lay_out_for_render(&mut measured, &config)?;
+    }
     let id = input.id;
     let painted = pipeline::paint(&measured, id, &config)?;
     let mut bounds = painted.bounds;

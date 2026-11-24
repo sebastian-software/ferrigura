@@ -131,7 +131,7 @@ impl Painted<'_> {
 
 /// The nearest `dir` of the node or one of its subgraphs, else the diagram's direction, as
 /// `resolveNodeDir` in `createGraph.ts` finds it.
-fn node_dir<'a>(
+pub(crate) fn node_dir<'a>(
     data: &'a LayoutData,
     index: usize,
     by_id: &HashMap<&str, &'a Node>,
@@ -402,6 +402,34 @@ pub(crate) fn lay_out_for_render(
         .map_err(|error| RenderError::Layout(error.to_string()))?;
     apply_layout(measured, config, &layout.graph, &elk.state);
     Ok(())
+}
+
+/// Lays out a diagram as [`lay_out_for_render`] does, with a step of the caller's between ELK's
+/// layout and its application: `adjust` gets ELK's result, the layout data and the side tables,
+/// and may change all three. When it returns `false`, nothing is applied and the result is
+/// `false`; the caller then lays the diagram out another way.
+///
+/// # Errors
+///
+/// Returns an error if the layout fails.
+pub(crate) fn lay_out_adjusted(
+    measured: &mut Measured,
+    config: &Config<'_>,
+    adjust: impl FnOnce(&mut JsonNode, &mut LayoutData, &mut elk_build::ElkState) -> bool,
+) -> Result<bool, RenderError> {
+    let elk = elk_build::build(&measured.data, config);
+    let mut layout = if own_placement(config) {
+        ferrigura_elk::placement::layout_with(&elk.graph, false, crate::flowchart::placement::Axes)
+    } else {
+        ferrigura_elk::layout_owned(elk.graph, false)
+    }
+    .map_err(|error| RenderError::Layout(error.to_string()))?;
+    let mut state = elk.state;
+    if !adjust(&mut layout.graph, &mut measured.data, &mut state) {
+        return Ok(false);
+    }
+    apply_layout(measured, config, &layout.graph, &state);
+    Ok(true)
 }
 
 /// Whether the layout runs with the design mode's own node placement, on the layers and the order

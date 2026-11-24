@@ -874,7 +874,9 @@ fn root_layout_options(elk: &MermaidConfigElk, algorithm: &str) -> LayoutOptions
 
 /// The parent lookup of the subgraphs (`addSubGraphs`): each node's subgraph, and each subgraph's
 /// members in layout-data order. A subgraph without members has no entry in `childrenById`.
-fn sub_graphs(data: &LayoutData) -> (HashMap<String, String>, HashMap<String, Vec<String>>) {
+pub(crate) fn sub_graphs(
+    data: &LayoutData,
+) -> (HashMap<String, String>, HashMap<String, Vec<String>>) {
     let mut parent_by_id = HashMap::new();
     let mut children_by_id: HashMap<String, Vec<String>> = HashMap::new();
     for subgraph in data.nodes.iter().filter(|node| node.is_group) {

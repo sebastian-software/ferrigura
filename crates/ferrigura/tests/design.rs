@@ -1084,3 +1084,138 @@ fn a_state_with_descriptions_keeps_its_room_in_the_design_mode() {
     assert!((number(divider, "x1") - x).abs() < 1e-6);
     assert!((number(divider, "x2") - (x + width)).abs() < 1e-6);
 }
+
+/// A chain of three states with a note on each side.
+const NOTES: &str = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Paid : pay\n  note right of Pending\n    Waits for the payment\n    for at most 7 days.\n  end note\n  Paid --> Shipped : ship\n  note left of Shipped : Tracked by the carrier\n  Shipped --> [*]\n";
+
+/// The box of the state with the given id: its `x`, `y`, width and height.
+fn state_box(svg: &str, id: &str) -> (f64, f64, f64, f64) {
+    let prefix = format!("id=\"d-state-{id}-");
+    let at = svg
+        .match_indices(&prefix)
+        .map(|(at, _)| at)
+        .find(|&at| {
+            let rest = &svg[at + prefix.len()..];
+            let digits = rest.find('"').expect("the id's end");
+            rest[..digits].bytes().all(|byte| byte.is_ascii_digit())
+        })
+        .expect("the state");
+    let group = &svg[at..];
+    let (x, y) = state_middle(group, id);
+    let rect = &group[group.find("<rect").expect("its outline")..];
+    let rect = &rect[..rect.find("/>").expect("the rect's end")];
+    let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+    let (width, height) = (number("width"), number("height"));
+    (x - width / 2.0, y - height / 2.0, width, height)
+}
+
+/// The box of the notes of the state with the given id: the frame of their group.
+fn note_box(svg: &str, id: &str) -> (f64, f64, f64, f64) {
+    let group = &svg[svg
+        .find(&format!(
+            "<g class=\"note-cluster\" id=\"d-state-{id}----parent-"
+        ))
+        .expect("the note's group")..];
+    let rect = &group[group.find("<rect").expect("its frame")..];
+    let rect = &rect[..rect.find("/>").expect("the rect's end")];
+    let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+    (number("x"), number("y"), number("width"), number("height"))
+}
+
+#[test]
+fn a_note_stands_beside_its_state_and_the_chain_on_one_axis() {
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(NOTES, &design(None))
+        .unwrap();
+    let chain = ["Pending", "Paid", "Shipped"].map(|id| state_box(&svg, id));
+    let axis = chain[0].0 + chain[0].2 / 2.0;
+    for state in chain {
+        assert!((state.0 + state.2 / 2.0 - axis).abs() < 1e-6, "{chain:?}");
+    }
+    // The transitions of the chain run straight down the axis.
+    for edge in ["edge1", "edge3"] {
+        for (x, _) in route(&svg, edge) {
+            assert!((x - axis).abs() < 1e-6, "{edge} bends");
+        }
+    }
+    // `right of` to the right of its state, `left of` to the left, both at the state's height and
+    // clear of every state and transition.
+    let (pending, shipped) = (chain[0], chain[2]);
+    let right = note_box(&svg, "Pending");
+    assert!(right.0 > pending.0 + pending.2 + 8.0, "{right:?}");
+    let left = note_box(&svg, "Shipped");
+    assert!(left.0 + left.2 < shipped.0 - 8.0, "{left:?}");
+    for (note, state) in [(right, pending), (left, shipped)] {
+        let middle = note.1 + note.3 / 2.0;
+        assert!((middle - (state.1 + state.3 / 2.0)).abs() < 1e-6);
+        for other in chain {
+            let apart = note.0 + note.2 < other.0
+                || other.0 + other.2 < note.0
+                || note.1 + note.3 < other.1
+                || other.1 + other.3 < note.1;
+            assert!(apart, "{note:?} touches {other:?}");
+        }
+        for edge in ["edge0", "edge1", "edge3", "edge5"] {
+            for (x, _) in route(&svg, edge) {
+                assert!(x < note.0 || x > note.0 + note.2, "{edge} meets {note:?}");
+            }
+        }
+    }
+    // The connector runs straight across from the state to its note.
+    let id = attribute_values(&svg, "data-id")
+        .into_iter()
+        .find(|id| id.starts_with("Pending-Pending----note-"))
+        .expect("the connector");
+    let connector = route(&svg, id);
+    assert_eq!(connector.len(), 2, "{connector:?}");
+    assert_eq!(connector[0].1, connector[1].1);
+    assert_eq!(connector[0].0, pending.0 + pending.2);
+    assert_eq!(connector[1].0, right.0);
+    // The default keeps the reference's place: the note stands below its state.
+    let plain = Renderer::new(&Value::empty_object())
+        .render_with(NOTES, &default(None))
+        .unwrap();
+    let below = note_box(&plain, "Pending");
+    let state = state_box(&plain, "Pending");
+    assert!(below.1 > state.1 + state.3, "{below:?}");
+}
+
+#[test]
+fn a_note_stands_below_or_above_its_state_from_left_to_right() {
+    let text = NOTES.replace("stateDiagram-v2\n", "stateDiagram-v2\n  direction LR\n");
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(&text, &design(None))
+        .unwrap();
+    let (pending, shipped) = (state_box(&svg, "Pending"), state_box(&svg, "Shipped"));
+    let axis = pending.1 + pending.3 / 2.0;
+    assert!((shipped.1 + shipped.3 / 2.0 - axis).abs() < 1e-6);
+    // `right of` below, `left of` above, centered on the state.
+    let below = note_box(&svg, "Pending");
+    assert!(below.1 > pending.1 + pending.3 + 8.0, "{below:?}");
+    assert!((below.0 + below.2 / 2.0 - (pending.0 + pending.2 / 2.0)).abs() < 1e-6);
+    let above = note_box(&svg, "Shipped");
+    assert!(above.1 + above.3 < shipped.1 - 8.0, "{above:?}");
+}
+
+#[test]
+fn a_composite_state_holds_the_notes_of_its_states() {
+    let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n    note right of Load : Reads the input\n  }\n  Work --> [*]\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let group = &svg[svg.find("statediagram-cluster").expect("the composite")..];
+    let outer = &group[group.find("<rect class=\"outer\"").expect("its frame")..];
+    let number = |name: &str| -> f64 { attribute_values(outer, name)[0].parse().unwrap() };
+    let frame = (number("x"), number("y"), number("width"), number("height"));
+    let note = note_box(&svg, "Load");
+    let load = state_box(&svg, "Load");
+    assert!(note.0 > load.0 + load.2, "{note:?}");
+    assert!(
+        note.0 >= frame.0 && note.0 + note.2 <= frame.0 + frame.2,
+        "{note:?} {frame:?}"
+    );
+    assert!(
+        note.1 >= frame.1 && note.1 + note.3 <= frame.1 + frame.3,
+        "{note:?} {frame:?}"
+    );
+}
