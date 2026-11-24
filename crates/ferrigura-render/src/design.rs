@@ -69,9 +69,22 @@ pub const REGION_PADDING: &str = "[top=32,left=32,bottom=32,right=32]";
 /// The distance of a group's title from the top of its frame.
 pub const GROUP_TITLE_TOP: f64 = 12.0;
 
+/// The room between the text of a state and its outline at each side, the flowchart's node's.
+pub const STATE_SIDE_ROOM: f64 = 16.0;
+
+/// The padding at each side of a state whose text is `text` wide in a label `label` wide: the
+/// text widened to the state's least width. A short text keeps the state's own padding `least`
+/// around that label, so the state keeps its least width; a text that fills the label gets
+/// [`STATE_SIDE_ROOM`].
+#[must_use]
+pub fn state_side_padding(text: f64, label: f64, least: f64) -> f64 {
+    let least = least.min(STATE_SIDE_ROOM);
+    ((text + 2.0 * STATE_SIDE_ROOM - label) / 2.0).clamp(least, STATE_SIDE_ROOM)
+}
+
 /// The room of a state with descriptions above its title, between the title and its divider,
-/// between the divider and its rows, and below its last row. Its sides keep the state's padding,
-/// as a plain state's do.
+/// between the divider and its rows, and below its last row. Its sides have
+/// [`STATE_SIDE_ROOM`].
 pub const DESCRIBED_STATE_ROOM: f64 = 10.0;
 
 /// The room the box of an edge label adds to the left and the right of its text's box. The edge

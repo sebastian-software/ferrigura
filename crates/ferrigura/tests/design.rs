@@ -796,7 +796,7 @@ fn a_state_diagram_draws_in_the_design_mode() {
     let sheet = style_sheet(&svg);
     for rule in [
         "#d .edge-thickness-normal,#d .transition{stroke-width:1.5px;}",
-        "#d .statediagram-state rect.basic{rx:8px;ry:8px;}",
+        "#d .statediagram-state rect.basic,#d .statediagram-state rect.title-state{rx:8px;ry:8px;}",
         "#d [data-look].statediagram-cluster rect.inner{fill:none;stroke:none;}",
         "stroke-dasharray:4 4;",
         "#d [data-role=\"junction\"].node path{fill:var(--lineColor);",
@@ -1044,9 +1044,9 @@ fn two_labeled_transitions_between_two_states_stand_on_both_sides_of_them() {
 
 #[test]
 fn a_state_with_descriptions_keeps_its_room_in_the_design_mode() {
-    // The title and the rows keep the state's padding of 8 from the outline at the left, the box
-    // is at least as wide as a plain state (120 plus 8 on each side), 10 lies above the title, and
-    // the divider runs from edge to edge.
+    // The rows start 16 from the outline at the left, the box is at least as wide as a plain
+    // state (120 plus 8 on each side), 10 lies above the title, and the divider runs from edge to
+    // edge.
     let text = "stateDiagram-v2\n  state \"Waiting for input\" as W\n  W : entry / reset timer\n  W : exit / stop timer\n  [*] --> W\n";
     let renderer = Renderer::new(&Value::empty_object());
     let svg = renderer.render_with(text, &design(None)).unwrap();
@@ -1070,7 +1070,7 @@ fn a_state_with_descriptions_keeps_its_room_in_the_design_mode() {
         (a.parse().unwrap(), b.parse().unwrap())
     };
     assert!(
-        (label_x - x - 8.0).abs() < 1e-6,
+        (label_x - x - 16.0).abs() < 1e-6,
         "left room: {}",
         label_x - x
     );

@@ -276,7 +276,7 @@ fn design_rules(id: &str) -> String {
         "{id} .edge-thickness-normal,{id} .transition{{stroke-width:{edge_width};}}\
 {id} .edge-thickness-thick{{stroke-width:{thick_width};}}\
 {id} .node rect,{id} .node polygon,{id} [data-look=\"neo\"].node path{{stroke-width:{node_width};}}\
-{id} .statediagram-state rect.basic{{rx:{radius}px;ry:{radius}px;}}\
+{id} .statediagram-state rect.basic,{id} .statediagram-state rect.title-state{{rx:{radius}px;ry:{radius}px;}}\
 {id} .edgeLabel rect,{id} .edgeLabel .label rect{{fill:none;stroke:none;}}\
 {id} defs [id$=\"-barbEnd\"],{id} defs [id$=\"-barbEnd-margin\"]{{fill:var(--transitionColor);stroke:none;}}\
 {id} [data-look].statediagram-cluster rect.outer{{fill:var(--compositeBackground);stroke:var(--stateBorder);stroke-width:1px;rx:{group_radius}px;ry:{group_radius}px;filter:none;}}\

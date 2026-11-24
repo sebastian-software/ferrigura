@@ -99,28 +99,31 @@ pub(super) fn rect_with_title(
         .translate(title_x, 0.0)
         .union(rows_layout.bbox.translate(rows_x, rows_y));
 
-    // The design mode gives the label at least the width of a plain state's label, the state's
-    // minimum width, as `labelHelper` does unless the state has its own width. The title and the
-    // rows stay centered in it, and the box keeps the state's padding at both sides.
+    // The design mode pads the sides by the room of a state's text, and makes the box at least
+    // as wide as a plain state: the state's minimum width and its padding, as `labelHelper` and
+    // `drawRect` give it unless the state has its own width. The title stays centered, and the
+    // rows start at the left.
     let (outer, divider_y, divider_end, group_origin, title_x, rows_x) = if design {
-        let minimum_width = if !node.label.is_empty() && node.width.unwrap_or(0.0) == 0.0 {
-            node.min_width.unwrap_or(0.0)
+        let side = crate::design::STATE_SIDE_ROOM;
+        let least = if !node.label.is_empty() && node.width.unwrap_or(0.0) == 0.0 {
+            node.min_width.unwrap_or(0.0) + 2.0 * padding
         } else {
             0.0
         };
-        let label_width = label_box.width.max(minimum_width);
-        let shift = (label_width - label_box.width) / 2.0;
-        let width = (label_width + 2.0 * padding).max(node.width.unwrap_or(0.0));
+        let width = (label_box.width + 2.0 * side)
+            .max(least)
+            .max(node.width.unwrap_or(0.0));
         let height = (title_height + rows_height + 4.0 * room).max(node.height.unwrap_or(0.0));
         let outer = BBox::new(-width / 2.0, -height / 2.0, width, height);
         let divider_y = outer.y + room + title_height + room;
+        let origin_x = outer.x + side;
         (
             outer,
             divider_y,
             outer.x + outer.width,
-            (-label_width / 2.0, outer.y + room),
-            title_x + shift,
-            rows_x + shift,
+            (origin_x, outer.y + room),
+            -title_width / 2.0 - origin_x,
+            0.0,
         )
     } else {
         let outer = BBox::new(
