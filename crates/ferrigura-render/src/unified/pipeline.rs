@@ -19,7 +19,9 @@ use crate::unified::geom::BBox;
 use crate::unified::label::{Anchor, LabelLayout};
 use crate::unified::line_jumps::JumpStyle;
 use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
-use crate::unified::{Config, clusters, edges, elk_apply, elk_build, swimlane_layout, terminal};
+use crate::unified::{
+    Config, clusters, edges, elk_apply, elk_build, markers, swimlane_layout, terminal,
+};
 
 /// The layout that placed the nodes of a diagram. It decides how the paint clips the edges and which
 /// line hops it draws: `insertEdge` takes the swimlane branch for the `swimlane` layout (`edges.js`
@@ -415,6 +417,10 @@ fn apply_layout(
         &crossing,
         config.section.elk.straighten_edges,
     );
+    // The design mode takes a decision's branch to a node beside it out of the side tip.
+    if config.section.design.is_some() && measured.data.diagram_type == markers::FLOWCHART {
+        crate::flowchart::turns::side_exits(&mut measured.data);
+    }
 }
 
 /// Paints a laid-out diagram in the order of `paintLayoutData`: the clusters in the order

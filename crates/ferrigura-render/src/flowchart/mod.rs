@@ -11,6 +11,7 @@ pub mod data;
 pub(crate) mod placement;
 pub mod policy;
 pub mod style;
+pub(crate) mod turns;
 
 use ferrigura_model::flowchart::FlowchartDiagram;
 use ferrigura_model::value::NumberText;

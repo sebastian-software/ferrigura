@@ -13,6 +13,9 @@ use crate::unified::label::LabelLayout;
 /// `question.ts`: a square turned on its corner, with the label in it. The outline is drawn half
 /// a unit to the right of the box it is measured with (`question.ts:55-56`).
 pub(super) fn question(input: &ShapeInput<'_>) -> Part {
+    if input.config.section.design.is_some() {
+        return flat_question(input);
+    }
     let node = input.node;
     let label = label_helper(input, false);
     let width = label.bbox.width + node.padding;
@@ -33,6 +36,67 @@ pub(super) fn question(input: &ShapeInput<'_>) -> Part {
         .unwrap_or_default()
         .translate(translate_x, translate_y);
     Part::with_centered_label(svg, bbox, Intersect::Question, label)
+}
+
+/// The decision of the design mode: a flat rhombus, wider than tall, around the label
+/// (`docs/decisions/0023-design-mode.md`). Its size is [`flat_diamond_size`]; the label keeps its
+/// own width, not the node's minimum, which the rhombus sets as its least width instead. It takes
+/// no size of its own, as the reference's diamond does not.
+fn flat_question(input: &ShapeInput<'_>) -> Part {
+    let node = input.node;
+    let label = label_helper(input, true);
+    let least_width = node.min_width.unwrap_or(0.0) + 2.0 * FLAT_DIAMOND_PAD_X;
+    let (width, height) = flat_diamond_size(label.bbox.width, label.bbox.height, least_width);
+    let points = flat_diamond_points(width, height);
+    let styles = styles2string(node);
+    let style = attribute_if(&styles.node);
+    let svg = format!(
+        "<polygon points=\"{}\" class=\"label-container\"{style}/>",
+        util::points_attribute(&points),
+    );
+    let bbox = BBox::new(-width / 2.0, -height / 2.0, width, height);
+    Part::with_centered_label(
+        svg,
+        bbox,
+        Intersect::Polygon {
+            points: points.to_vec(),
+        },
+        label,
+    )
+}
+
+/// The room the design mode's decision keeps at the left and the right of its label, beside the
+/// room the slanted sides need.
+pub(super) const FLAT_DIAMOND_PAD_X: f64 = 16.0;
+
+/// The room above and below the label of the design mode's decision: its height is twice the
+/// label's and this.
+pub(super) const FLAT_DIAMOND_PAD_Y: f64 = 26.0;
+
+/// The width and the height of the design mode's decision for a label of `width` by `height`.
+///
+/// A box of `w` by `h` centered in a rhombus of `W` by `H` fits when `w / W + h / H <= 1`. The
+/// height is `2 h + 16`, so the label takes a little less than half of it; the width follows from
+/// the fit for the label widened by [`FLAT_DIAMOND_PAD_X`] on each side, and is at least
+/// `least_width`, so that a short label does not make a narrow decision.
+#[must_use]
+pub(super) fn flat_diamond_size(width: f64, height: f64, least_width: f64) -> (f64, f64) {
+    let diamond_height = 2.0 * height + FLAT_DIAMOND_PAD_Y;
+    let room = width + 2.0 * FLAT_DIAMOND_PAD_X;
+    let diamond_width = room * diamond_height / (diamond_height - height);
+    (diamond_width.max(least_width), diamond_height)
+}
+
+/// The corners of the design mode's decision of `width` by `height`, around its center: the top,
+/// the right, the bottom and the left tip.
+#[must_use]
+pub(super) fn flat_diamond_points(width: f64, height: f64) -> [Point; 4] {
+    [
+        Point::new(0.0, -height / 2.0),
+        Point::new(width / 2.0, 0.0),
+        Point::new(0.0, height / 2.0),
+        Point::new(-width / 2.0, 0.0),
+    ]
 }
 
 /// The corners of the diamond of side `size` (`question.ts`), in the shape's own coordinates.
@@ -503,6 +567,117 @@ mod tests {
             "{:?}",
             shape.bbox
         );
+    }
+
+    /// The decision of the design mode for a label box.
+    fn flat(label: BBox) -> crate::unified::shapes::ShapeOutput {
+        use crate::unified::Fixture;
+        use ferrigura_model::config::MermaidConfig;
+        let fixture = Fixture::new(
+            MermaidConfig::default(),
+            &super::super::test_support::theme(),
+        );
+        let mut config = fixture.config();
+        config.section.design = Some(crate::design::Tone::Light);
+        let mut node = node("question", "neo");
+        node.label = "Valid?".to_owned();
+        crate::unified::shapes::draw(&ShapeInput {
+            node: &node,
+            label: Some(&LabelLayout::of_box(label)),
+            config: &config,
+            dir: Some("TB"),
+        })
+        .expect("the shape is known")
+    }
+
+    /// The corners of the outline that the polygon of a shape's SVG draws.
+    fn drawn_points(svg: &str) -> Vec<Point> {
+        let marker = "points=\"";
+        let rest = &svg[svg.find(marker).expect("a polygon") + marker.len()..];
+        rest[..rest.find('"').expect("the points' end")]
+            .split(' ')
+            .map(|pair| {
+                let (x, y) = pair.split_once(',').expect("a pair");
+                Point::new(x.parse().unwrap(), y.parse().unwrap())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_design_decision_is_a_flat_rhombus_that_holds_its_label() {
+        for (width, height) in [(45.0, 17.0), (93.0, 17.0), (180.0, 34.0), (200.0, 51.0)] {
+            let shape = flat(BBox::new(-width / 2.0, 0.0, width, height));
+            let bbox = shape.bbox;
+            assert!(bbox.width > bbox.height, "{bbox:?}");
+            assert_eq!(bbox.height, 2.0 * height + FLAT_DIAMOND_PAD_Y);
+            // The label's box fits: w / W + h / H stays below 1.
+            assert!(width / bbox.width + height / bbox.height < 1.0, "{bbox:?}");
+            // At least as wide as a box of the minimum width.
+            assert!(bbox.width >= 120.0 + 2.0 * FLAT_DIAMOND_PAD_X);
+            // The outline is the box's rhombus: its tips are the middles of the box's sides.
+            // The SVG writes the points to float32 precision.
+            let points = drawn_points(&shape.svg);
+            let drawn = BBox::from_points(points.iter().copied()).expect("points");
+            for (a, b) in [
+                (drawn.x, bbox.x),
+                (drawn.y, bbox.y),
+                (drawn.width, bbox.width),
+                (drawn.height, bbox.height),
+            ] {
+                assert!((a - b).abs() < 1e-4, "{drawn:?} {bbox:?}");
+            }
+            for (drawn, corner) in points
+                .iter()
+                .zip(flat_diamond_points(bbox.width, bbox.height))
+            {
+                assert!(drawn.distance(corner) < 1e-4, "{drawn:?} {corner:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn an_edge_is_clipped_on_the_outline_of_the_design_decision() {
+        let shape = flat(BBox::new(-50.0, 0.0, 100.0, 17.0));
+        let (width, height) = (shape.bbox.width, shape.bbox.height);
+        let node = CenterBox::new(300.0, 200.0, width, height);
+        let on_outline = |point: Point| {
+            ((point.x - 300.0).abs() / (width / 2.0) + (point.y - 200.0).abs() / (height / 2.0)
+                - 1.0)
+                .abs()
+                < 1e-9
+        };
+        for probe in [
+            Point::new(300.0, 500.0),
+            Point::new(310.0, 500.0),
+            Point::new(0.0, 200.0),
+            Point::new(700.0, 150.0),
+            Point::new(260.0, -40.0),
+        ] {
+            let point = shape.intersect.intersect(node, probe);
+            assert!(on_outline(point), "{probe:?} -> {point:?}");
+        }
+        // Straight down and straight across meet the tips.
+        for (probe, tip) in [
+            (
+                Point::new(300.0, 500.0),
+                Point::new(300.0, 200.0 + height / 2.0),
+            ),
+            (
+                Point::new(900.0, 200.0),
+                Point::new(300.0 + width / 2.0, 200.0),
+            ),
+        ] {
+            let point = shape.intersect.intersect(node, probe);
+            assert!(point.distance(tip) < 1e-9, "{point:?}");
+        }
+    }
+
+    #[test]
+    fn the_default_decision_stays_the_reference_square() {
+        let label = LabelLayout::of_box(BBox::new(-60.0, 0.0, 120.0, 17.0));
+        let shape = draw_box(&node("question", "neo"), &label);
+        assert_eq!(shape.bbox.width, shape.bbox.height);
+        assert_eq!(shape.intersect, Intersect::Question);
     }
 
     #[test]

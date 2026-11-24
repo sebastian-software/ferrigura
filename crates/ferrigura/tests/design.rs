@@ -505,6 +505,120 @@ fn an_absent_option_leaves_the_output_unchanged() {
     assert_eq!(renderer.render(FLOW).unwrap(), plain);
 }
 
+/// The width and the height of the outline of the decision with the given id: its `polygon`.
+fn decision_size(svg: &str, id: &str) -> (f64, f64) {
+    let group = &svg[svg
+        .find(&format!("id=\"d-flowchart-{id}-"))
+        .expect("the node")..];
+    let points = attribute_values(group, "points")[0];
+    let corners: Vec<(f64, f64)> = points
+        .split(' ')
+        .map(|pair| {
+            let (x, y) = pair.split_once(',').expect("a pair");
+            (x.parse().unwrap(), y.parse().unwrap())
+        })
+        .collect();
+    let extent = |pick: fn(&(f64, f64)) -> f64| {
+        let values: Vec<f64> = corners.iter().map(pick).collect();
+        values.iter().copied().fold(f64::MIN, f64::max)
+            - values.iter().copied().fold(f64::MAX, f64::min)
+    };
+    (extent(|p| p.0), extent(|p| p.1))
+}
+
+/// The middle of the label of the edge with the given id.
+fn label_middle(svg: &str, id: &str) -> (f64, f64) {
+    let at = svg
+        .find(&format!("<g class=\"label\" data-id=\"{id}\""))
+        .expect("the label");
+    let marker = "<g class=\"edgeLabel\" transform=\"translate(";
+    let start = svg[..at].rfind(marker).expect("its place") + marker.len();
+    let (x, y) = svg[start..start + svg[start..].find(')').expect("the place's end")]
+        .split_once(", ")
+        .expect("two numbers");
+    (x.parse().unwrap(), y.parse().unwrap())
+}
+
+#[test]
+fn a_decision_is_a_flat_diamond() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "flowchart TD\n  A{Valid?} --> B[Process]\n  B --> C{\"Is the customer allowed<br/>to order on credit?\"}\n";
+    let plain = renderer.render_with(text, &default(None)).unwrap();
+    let designed = renderer.render_with(text, &design(None)).unwrap();
+    let (_, box_height) = node_size(&designed, "B");
+    for id in ["A", "C"] {
+        let (width, height) = decision_size(&designed, id);
+        let (square, _) = decision_size(&plain, id);
+        // Wider than tall, and far smaller than the reference's square; a label of one line
+        // makes it more than twice as wide.
+        assert!(width > height, "{id}: {width} by {height}");
+        assert!(id != "A" || width > 2.0 * height, "{width} by {height}");
+        assert!(height < square * 0.65, "{id}: {height} of {square}");
+        assert!(height > box_height, "{id}: {height}");
+    }
+    // The edge into it and out of it meet its tips.
+    let (x, y) = node_middle(&designed, "A");
+    let (_, height) = decision_size(&designed, "A");
+    let out = route(&designed, "L_A_B_0");
+    assert!((out[0].0 - x).abs() < 1e-6 && (out[0].1 - (y + height / 2.0)).abs() < 1e-3);
+    let (x, y) = node_middle(&designed, "C");
+    let (_, height) = decision_size(&designed, "C");
+    let into = route(&designed, "L_B_C_0");
+    let end = into[into.len() - 1];
+    // The layout puts the port on a whole unit, which a decision of a fractional width is not.
+    assert!((end.0 - x).abs() < 0.5 && (end.1 - (y - height / 2.0)).abs() < 0.5);
+}
+
+/// A decision with three labeled branches, the middle one on its axis.
+const THREE: &str = "flowchart TD\n  A[Order] --> B{Size?}\n  B -->|small| C[Envelope]\n  B -->|medium| D[Box]\n  B -->|large| E[Crate]\n  C --> F[Ship]\n  D --> F\n  E --> F\n";
+
+#[test]
+fn a_branch_beside_a_decision_leaves_from_its_side_tip() {
+    let renderer = Renderer::new(&Value::empty_object());
+    for direction in ["TD", "BT", "LR", "RL"] {
+        let text = THREE.replace("TD", direction);
+        let svg = renderer.render_with(&text, &design(None)).unwrap();
+        let across_y = matches!(direction, "LR" | "RL");
+        // Across the flow, and along it.
+        let split = |p: (f64, f64)| if across_y { (p.1, p.0) } else { p };
+        let middle = split(node_middle(&svg, "B"));
+        let (width, height) = decision_size(&svg, "B");
+        let half = if across_y { height } else { width } / 2.0;
+        for (edge, target, side) in [("L_B_C_0", "C", -1.0), ("L_B_E_0", "E", 1.0)] {
+            let points: Vec<(f64, f64)> = route(&svg, edge).into_iter().map(split).collect();
+            // Out of the tip, across, one turn, and into the target along the flow.
+            assert_eq!(points.len(), 3, "{direction} {edge}: {points:?}");
+            assert!((points[0].0 - (middle.0 + side * half)).abs() < 1e-3);
+            assert!((points[0].1 - middle.1).abs() < 1e-3);
+            assert!((points[1].1 - middle.1).abs() < 1e-3);
+            assert!((points[1].0 - points[2].0).abs() < 1e-6);
+            let goal = split(node_middle(&svg, target));
+            assert!((points[2].0 - goal.0).abs() <= 1.0, "{direction} {edge}");
+            // The label sits on the last part, where the edge has a gap for it.
+            let label = split(label_middle(&svg, edge));
+            assert!((label.0 - points[2].0).abs() <= 2.0, "{direction} {edge}");
+            let (low, high) = (points[1].1.min(points[2].1), points[1].1.max(points[2].1));
+            assert!(low < label.1 && label.1 < high, "{direction} {edge}");
+        }
+        // The branch on the axis goes straight on from the tip facing the flow.
+        let straight: Vec<(f64, f64)> = route(&svg, "L_B_D_0").into_iter().map(split).collect();
+        assert!(straight.iter().all(|p| (p.0 - middle.0).abs() < 1e-6));
+        assert!(svg.contains("-label-gaps\""));
+    }
+}
+
+#[test]
+fn a_branch_that_passes_a_layer_keeps_its_route() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // `Express` stands a layer below `Queue`: its branch passes the layer of `Queue`.
+    let text = "flowchart TD\n  A{Route?} -->|fast| B[Express]\n  A -->|slow| C[Queue]\n  C --> D[Batch]\n  D --> E[Deliver]\n  A --> E\n  B --> E\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let points = route(&svg, "L_A_B_0");
+    assert!(points.len() > 3, "{points:?}");
+    let (x, y) = node_middle(&svg, "A");
+    assert!(points[0].1 > y && (points[0].0 - x).abs() < decision_size(&svg, "A").0 / 4.0);
+}
+
 #[test]
 fn a_shape_with_a_meaning_carries_its_role() {
     let renderer = Renderer::new(&Value::empty_object());
