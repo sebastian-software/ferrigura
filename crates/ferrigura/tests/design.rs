@@ -988,6 +988,26 @@ fn regions_whose_states_run_from_left_to_right_stand_one_above_the_other() {
 }
 
 #[test]
+fn a_branch_beside_a_choice_leaves_from_its_side_tip() {
+    let text = "stateDiagram-v2\n  state check <<choice>>\n  [*] --> Received\n  Received --> check\n  check --> Accepted : valid\n  check --> Rejected : invalid\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let (x, y) = state_middle(&svg, "check");
+    for (edge, target, side) in [("edge2", "Accepted", -1.0), ("edge3", "Rejected", 1.0)] {
+        // Out of the tip of a choice 28 wide, across, one turn, and down into the state.
+        let points = route(&svg, edge);
+        assert_eq!(points.len(), 3, "{edge}: {points:?}");
+        assert!((points[0].0 - (x + side * 14.0)).abs() < 1e-3, "{edge}");
+        assert!((points[0].1 - y).abs() < 1e-3, "{edge}");
+        assert!((points[1].1 - y).abs() < 1e-3, "{edge}");
+        assert!((points[1].0 - points[2].0).abs() < 1e-6, "{edge}");
+        let goal = state_middle(&svg, target).0;
+        assert!((points[2].0 - goal).abs() <= 1.0, "{edge}");
+    }
+}
+
+#[test]
 fn two_labeled_transitions_between_two_states_stand_on_both_sides_of_them() {
     let renderer = Renderer::new(&Value::empty_object());
     // Short labels leave room for both transitions to run straight.

@@ -6,24 +6,26 @@ A state diagram draws states, the transitions between them, composite states wit
 
 The design mode draws a state diagram in ferrigura's own look ([0023](../decisions/0023-design-mode.md)), with the options of the [flowchart's](./flowchart.md#design-mode): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. A state diagram is laid out by the flowchart's pipeline and engine, so the measures carry over unchanged: a node grows to give the edges of its busiest side room, the edges of a side meet it as a bundle around its middle, spacings are wider, the mode's own node placement puts chains on one line, and an edge label sits in a gap of its edge. Edges, outlines, shadows and arrowheads are the flowchart's. The parts that only a state diagram has are drawn so:
 
-| Element            | Design mode                                                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| State              | The flowchart's rectangle: 1.25 px outline in `stateBorder`, corner radius 8, the soft shadow; the label is centered                             |
-| State with a body  | The title centered above the divider, the rows at the left                                                                                       |
-| Start state        | Role `terminal`: the accent color                                                                                                                |
-| End state          | Role `terminal`: an accent ring around an accent dot; each transition into an end state meets an end state of its own, which stands beside it    |
-| Choice             | Role `decision`: the warm tint and outline; it keeps its size of 28 and does not grow with its edges                                             |
-| Fork, join         | Role `junction`: filled with the line color                                                                                                      |
-| Composite state    | Neutral: `compositeBackground` with a `stateBorder` outline of 1 px, corner radius 12, no shadow; the title in a row of its own, as a subgraph's |
-| Concurrency region | A dashed frame (4 on, 4 off) without a fill, corner radius 8, padded by 32 on every side; the regions of a composite stand in one row            |
-| Note               | Flat: `noteBkgColor` gray, a hairline outline, square corners, `noteTextColor` text at the left, no shadow                                       |
-| Transition label   | `transitionLabelColor`, muted, in a gap of its edge                                                                                              |
+| Element            | Design mode                                                                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| State              | The flowchart's rectangle: 1.25 px outline in `stateBorder`, corner radius 8, the soft shadow; the label is centered                                         |
+| State with a body  | The title centered above the divider, the rows at the left                                                                                                   |
+| Start state        | Role `terminal`: the accent color                                                                                                                            |
+| End state          | Role `terminal`: an accent ring around an accent dot; each transition into an end state meets an end state of its own, which stands beside it                |
+| Choice             | Role `decision`: the warm tint and outline; it keeps its size of 28 and does not grow with its edges; a branch to a state beside it leaves from its side tip |
+| Fork, join         | Role `junction`: filled with the line color                                                                                                                  |
+| Composite state    | Neutral: `compositeBackground` with a `stateBorder` outline of 1 px, corner radius 12, no shadow; the title in a row of its own, as a subgraph's             |
+| Concurrency region | A dashed frame (4 on, 4 off) without a fill, corner radius 8, padded by 32 on every side; the regions of a composite stand in one row                        |
+| Note               | Flat: `noteBkgColor` gray, a hairline outline, square corners, `noteTextColor` text at the left, no shadow                                                   |
+| Transition label   | `transitionLabelColor`, muted, in a gap of its edge                                                                                                          |
 
 The mode lays values for the state's own tokens under the user's `themeVariables`, in the light and the dark set: `stateBorder`, `stateLabelColor`, `transitionLabelColor`, `labelBackgroundColor`, `compositeBackground`, `compositeTitleBackground`, `altBackground`, `noteBkgColor`, `noteBorderColor` and `noteTextColor`; `transitionColor` and `stateBkg` follow `lineColor` and `mainBkg` as the theme derives them. The state rules keep reading these tokens, so a user's value for any of them wins, and a `classDef` keeps the last word over the roles. Both sets are held to the contrast ratios of the flowchart's.
 
 The regions of a composite stand side by side across their flow, in one row however many there are: stacked along the flow, they would read as one after the other. Where the states of every region run from left to right or back, the regions stand in one column. The default leaves the choice to ELK, which starts a new row when the row grows wider than 1.6 times the square root of the regions' area, so that two regions stand side by side or one above the other depending on a few points of their size, and three stand two and one.
 
-Two transitions between the same two states that both carry a label, such as a toggle's `A --> B : press` and `B --> A : press`, stand on both sides of the states, and their ends spread along the states' sides as far as the labels stand apart: with short labels both run straight, with long ones both turn out alike, and the states stay in the middle of their region ([0023](../decisions/0023-design-mode.md)).
+Two transitions between the same two states that both carry a label, such as a toggle's `A --> B : press` and `B --> A : press`, stand on both sides of the states: with short labels their ends spread along the states' sides and both run straight, with long ones both leave the middle of the sides and turn out alike, and the states stay in the middle of their region ([0023](../decisions/0023-design-mode.md)).
+
+A choice's branch to a state that stands beside it leaves from the side tip of the choice and turns once, as the branch of a flowchart's decision does.
 
 The note's place is the reference's: the note and its state form a group laid out from top to bottom, so a note stands below its state, and the group's direction cannot be turned while transitions cross it.
 

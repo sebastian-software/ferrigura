@@ -25,9 +25,10 @@
 //! After the steps, **twins** are set apart: two edges between the same two nodes, through the
 //! same layers, that are the only edges of their sides. The axis makes one of them straight and
 //! sends the other around the label beside it. Where both carry a label, they are equals: they
-//! stand on both sides of the nodes' line instead, and their ports spread along the sides as far
-//! as the nodes allow, so that the edges run straight where the labels leave room. Where one of
-//! them has no label, it stays the axis.
+//! stand on both sides of the nodes' line instead. Where the sides have room for it, their ports
+//! spread as far as the labels stand apart, and both edges run straight; where not, the ports stay
+//! a bundle in the middle, and both edges turn out alike. Where one of them has no label, it
+//! stays the axis.
 
 use std::collections::BTreeSet;
 
@@ -114,8 +115,11 @@ fn way(layers: &Layers, port: usize) -> Option<(Vec<usize>, usize)> {
 /// one other node as the only two edges of that side, through dummies that stand next to each
 /// other in each layer, where both nodes or both bundles have their middles on one line. Their
 /// dummies move to both sides of that line, as close as their layer allows, where it has room for
-/// that; and the ports of both sides spread around the line as far as the dummies are apart, with
-/// [`END_ROOM`] left at the ends of the sides. Only twins that both carry a label are set apart.
+/// that. Where both sides have room for it with [`END_ROOM`] left at their ends, the ports spread
+/// around the line as far as the dummies are apart, and both edges run straight; where one has
+/// not, the ports stay a bundle around the line, and both edges turn out alike: ports that spread
+/// without making their edges straight would only move the turns to the corners of the nodes.
+/// Only twins that both carry a label are set apart.
 fn spread_twins(layers: &mut Layers) {
     let mut position = vec![(0, 0); layers.nodes.len()];
     for (layer, members) in layers.layers.iter().enumerate() {
@@ -215,13 +219,18 @@ fn spread_twins(layers: &mut Layers) {
         for &(dummy, place) in &places {
             layers.nodes[dummy].place = place;
         }
-        for (a, b) in [(*first, *second), (arrive_left, arrive_right)] {
-            let owner = layers.ports[a].node;
-            let middle = line - layers.nodes[owner].place;
-            let reach = (middle - END_ROOM).min(layers.nodes[owner].size - END_ROOM - middle);
-            let spread = half
-                .min(reach)
-                .max((layers.ports[b].at - layers.ports[a].at) / 2.0);
+        // The middle of each end's side, from its node's place, and the room from there to
+        // [`END_ROOM`] before the nearer end of the side.
+        let ends = [(*first, *second), (arrive_left, arrive_right)].map(|(a, b)| {
+            let owner = &layers.nodes[layers.ports[a].node];
+            let middle = line - owner.place;
+            let reach = (middle - END_ROOM).min(owner.size - END_ROOM - middle);
+            (a, b, middle, reach)
+        });
+        let straight = ends.iter().all(|&(_, _, _, reach)| half <= reach);
+        for (a, b, middle, _) in ends {
+            let bundle = (layers.ports[b].at - layers.ports[a].at) / 2.0;
+            let spread = if straight { half.max(bundle) } else { bundle };
             layers.ports[a].at = middle - spread;
             layers.ports[b].at = middle + spread;
         }
@@ -744,9 +753,35 @@ mod tests {
         // The middles of the labels 120 apart, 60 on each side of the nodes' middle at 68.
         assert_eq!(layers.nodes[1].place + 50.0, 8.0);
         assert_eq!(layers.nodes[2].place + 50.0, 128.0);
-        // The ports spread as far as the room at the ends of the sides lets them: 56 each way.
+        // The sides have no room for ports 120 apart, so the bundles stay, around the middle.
         let at: Vec<f64> = layers.ports.iter().map(|port| port.at).collect();
-        assert_eq!(at, [12.0, 50.0, 50.0, 12.0, 124.0, 50.0, 50.0, 124.0]);
+        assert_eq!(at, [58.0, 50.0, 50.0, 58.0, 78.0, 50.0, 50.0, 78.0]);
+    }
+
+    #[test]
+    fn labeled_twins_run_straight_where_the_sides_have_room() {
+        let mut layers = twins([Kind::Label, Kind::Label]);
+        // Labels 40 long, 60 apart at least: 30 on each side of the middle of sides 136 long.
+        for (dummy, place) in [(1, -22.0), (2, 38.0)] {
+            layers.nodes[dummy].size = 40.0;
+            layers.nodes[dummy].place = place;
+            for port in layers.nodes[dummy].ports.clone() {
+                layers.ports[port].at = 20.0;
+            }
+        }
+        layers.nodes[2].gap = 60.0;
+        spread_twins(&mut layers);
+        assert_eq!(layers.nodes[1].place + 20.0, 38.0);
+        assert_eq!(layers.nodes[2].place + 20.0, 98.0);
+        let at: Vec<f64> = layers.ports.iter().map(|port| port.at).collect();
+        assert_eq!(at, [38.0, 20.0, 20.0, 38.0, 98.0, 20.0, 20.0, 98.0]);
+        assert!(
+            layers
+                .edges
+                .iter()
+                .enumerate()
+                .all(|(edge, _)| layers.step(edge) == 0.0)
+        );
     }
 
     #[test]

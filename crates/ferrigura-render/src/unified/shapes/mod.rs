@@ -67,7 +67,7 @@ pub(super) fn uses_direction(node: &Node) -> bool {
 }
 
 /// Whether the shape is the state diagram's choice, a pseudostate whose size is its own.
-pub(super) fn is_choice(node: &Node) -> bool {
+pub(crate) fn is_choice(node: &Node) -> bool {
     registry::resolve_node(node) == Some(Kind::Choice)
 }
 
