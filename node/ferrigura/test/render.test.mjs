@@ -22,7 +22,7 @@ test('errors propagate and leave a reused renderer usable', () => {
   assert.match(renderer.render(diagram, { id: 'after' }), /<svg/);
 });
 
-void test('design draws flowcharts in the design mode and rejects what it does not support', () => {
+void test('design draws flowcharts and state diagrams in the design mode and rejects what it does not support', () => {
   const renderer = new Renderer();
   const flow = 'flowchart TD\n A([Start]) --> B{Review}\n B --> C[(Store)]\n';
   const designed = renderer.render(flow, { design: true });
@@ -32,6 +32,13 @@ void test('design draws flowcharts in the design mode and rejects what it does n
   assert.equal(renderer.render(flow, { design: false }), renderer.render(flow));
   assert.doesNotMatch(renderer.render(flow), /data-role/);
   assert.throws(() => renderer.render(flow, { design: true, compat: true }), /compat/);
+  const states =
+    'stateDiagram-v2\n [*] --> Open\n state pick <<choice>>\n Open --> pick\n pick --> [*]\n';
+  const designedStates = renderer.render(states, { design: true });
+  assert.match(designedStates, /data-role="terminal"/);
+  assert.match(designedStates, /data-role="decision"/);
+  assert.doesNotMatch(renderer.render(states), /data-role/);
+  assert.throws(() => renderer.render(states, { design: true, compat: true }), /compat/);
   assert.throws(() => renderer.render('pie\n "a" : 1\n', { design: true }), /design mode/);
 });
 

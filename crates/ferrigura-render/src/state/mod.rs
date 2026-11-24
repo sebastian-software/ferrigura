@@ -32,7 +32,41 @@ fn measure(
     let mut data = data::get_data(input.diagram, input.section, input.globals);
     // `stateRenderer-v3-unified.ts` 59 sets the diagram type on the layout data after `getData`.
     data.diagram_type = DIAGRAM_TYPE.to_owned();
+    if input.section.design.is_some() {
+        split_end_states(&mut data);
+    }
     pipeline::measure(data, unified)
+}
+
+/// Gives each transition into an end state an end state of its own, in the design mode
+/// (`docs/decisions/0023-design-mode.md`). The end of a scope is one node in the layout data, and
+/// every transition that ends the scope would otherwise cross the drawing to meet the others at a
+/// circle too small to hold their arrowheads. A final state may be drawn more than once; each copy
+/// stands beside the state it ends. The first transition keeps the node, and a copy takes the
+/// node's id and DOM id with `-<k>` added, for the k-th transition after the first.
+fn split_end_states(data: &mut LayoutData) {
+    let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    let mut copies = Vec::new();
+    for edge in &mut data.edges {
+        let Some(end) = data
+            .nodes
+            .iter()
+            .find(|node| node.id == edge.end && !node.is_group && node.shape == "stateEnd")
+        else {
+            continue;
+        };
+        let count = seen.entry(edge.end.clone()).or_default();
+        *count += 1;
+        if *count == 1 {
+            continue;
+        }
+        let mut copy = end.clone();
+        copy.id = format!("{}-{count}", end.id);
+        copy.dom_id = format!("{}-{count}", end.dom_id);
+        edge.end.clone_from(&copy.id);
+        copies.push(copy);
+    }
+    data.nodes.extend(copies);
 }
 
 /// Renders a state diagram as an SVG document (`stateRenderer-v3-unified.ts`, `draw`): the layout
@@ -118,14 +152,27 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
     let accessibility = a11y::children(id, &diagram.acc_title, &diagram.acc_descr);
     let accessible_attributes =
         a11y::root_attributes(id, "stateDiagram", &diagram.acc_title, &diagram.acc_descr);
-    let style = style::style_sheet(id, input.theme, input.globals, &diagram.classes, &families);
+    let design = input.section.design;
+    let style = style::style_sheet(
+        id,
+        input.theme,
+        input.globals,
+        &diagram.classes,
+        &families,
+        design,
+    );
     let transition = input
         .theme
         .light
         .transition_color
         .text()
         .unwrap_or_default();
-    let markers = markers::barb_markers(id, DIAGRAM_TYPE, input.globals.look == "neo", &transition);
+    let neo = input.globals.look == "neo";
+    let markers = if design.is_some() {
+        markers::design_barb_markers(id, DIAGRAM_TYPE, neo)
+    } else {
+        markers::barb_markers(id, DIAGRAM_TYPE, neo, &transition)
+    };
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\"{xlink} id=\"{id}\" {size_attributes} class=\"statediagram\" viewBox=\"{x} {y} {w} {h}\"{accessible_attributes}>{accessibility}<style>{style}</style><g>{markers}{root}{coloured_markers}</g>{title_svg}{defs}</svg>",
         id = escape(id),
@@ -137,7 +184,8 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
         root = painted.root,
         coloured_markers = painted.coloured_markers,
         // `insertLookDefs` is shared with the flowchart: the drop shadows and the gradient.
-        defs = crate::flowchart::style::look_defs(id, input.theme, input.globals),
+        // The design mode draws its own shadows under the same ids.
+        defs = crate::flowchart::style::look_defs_for(id, input.theme, input.globals, design),
     ))
 }
 
@@ -168,3 +216,61 @@ const TITLE_FONT_SIZE: f64 = 18.0;
 
 /// The padding of the viewport: `setupViewPortForSVG(svg, 8, ...)` (`stateRenderer-v3-unified.ts` 77).
 const VIEWPORT_PADDING: f64 = 8.0;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::unified::data::{Edge, Node};
+
+    fn node(id: &str, shape: &str) -> Node {
+        Node {
+            id: id.to_owned(),
+            dom_id: format!("state-{id}-3"),
+            shape: shape.to_owned(),
+            ..Node::default()
+        }
+    }
+
+    fn edge(start: &str, end: &str) -> Edge {
+        Edge {
+            id: format!("{start}-{end}"),
+            start: start.to_owned(),
+            end: end.to_owned(),
+            ..Edge::default()
+        }
+    }
+
+    #[test]
+    fn each_transition_into_an_end_state_gets_one_of_its_own() {
+        let mut data = LayoutData {
+            nodes: vec![
+                node("A", "rect"),
+                node("B", "rect"),
+                node("C", "rect"),
+                node("root_end", "stateEnd"),
+            ],
+            edges: vec![
+                edge("A", "root_end"),
+                edge("A", "B"),
+                edge("B", "root_end"),
+                edge("C", "root_end"),
+            ],
+            ..LayoutData::default()
+        };
+        split_end_states(&mut data);
+        let ends: Vec<&str> = data.edges.iter().map(|edge| edge.end.as_str()).collect();
+        assert_eq!(ends, ["root_end", "B", "root_end-2", "root_end-3"]);
+        let copies: Vec<(&str, &str)> = data.nodes[4..]
+            .iter()
+            .map(|node| (node.id.as_str(), node.dom_id.as_str()))
+            .collect();
+        assert_eq!(
+            copies,
+            [
+                ("root_end-2", "state-root_end-3-2"),
+                ("root_end-3", "state-root_end-3-3")
+            ]
+        );
+        assert!(data.nodes[4..].iter().all(|node| node.shape == "stateEnd"));
+    }
+}

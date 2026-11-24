@@ -233,7 +233,12 @@ pub fn measure_for(
     } else {
         Vec::new()
     };
-    let anchor = node_anchor(&data.diagram_type);
+    // The design mode centers the label of a node in every diagram type it draws.
+    let anchor = if config.section.design.is_some() {
+        Anchor::Middle
+    } else {
+        node_anchor(&data.diagram_type)
+    };
     let busiest = if config.section.design.is_some() {
         busiest_sides(&data)
     } else {
@@ -260,7 +265,10 @@ pub fn measure_for(
         }
         // A `labelRect` is the label of a swimlane edge, which the stylesheet does not center: its lines start
         // at the origin, and `labelRect.ts` moves the label by half its width (`shapes/rect.rs`).
-        let label_anchor = if node.shape == "labelRect" {
+        // A note of a state diagram is a block of text, which the design mode keeps at the left.
+        let label_anchor = if node.shape == "labelRect"
+            || (node.shape == "note" && config.section.roles == crate::design::Roles::State)
+        {
             Anchor::Start
         } else {
             anchor
@@ -274,22 +282,29 @@ pub fn measure_for(
         })?;
         // The design mode gives a node room for the edges of its busiest side: it draws the shape
         // again with that length as its size along the side, and keeps the larger drawing.
-        if let Some(grown) = busiest.get(index).and_then(|&(length, along_height)| {
-            let current = if along_height {
-                shape.bbox.height
-            } else {
-                shape.bbox.width
-            };
-            (length > current).then(|| {
-                let mut grown = node.clone();
-                if along_height {
-                    grown.height = Some(length);
-                } else {
-                    grown.width = Some(length);
-                }
-                grown
-            })
-        }) {
+        let grows =
+            !(config.section.roles == crate::design::Roles::State && shapes::is_choice(node));
+        if let Some(grown) =
+            busiest
+                .get(index)
+                .filter(|_| grows)
+                .and_then(|&(length, along_height)| {
+                    let current = if along_height {
+                        shape.bbox.height
+                    } else {
+                        shape.bbox.width
+                    };
+                    (length > current).then(|| {
+                        let mut grown = node.clone();
+                        if along_height {
+                            grown.height = Some(length);
+                        } else {
+                            grown.width = Some(length);
+                        }
+                        grown
+                    })
+                })
+        {
             let label = shapes::node_label(&grown, config, None, label_anchor)?;
             let redrawn = shapes::draw(&ShapeInput {
                 node: &grown,

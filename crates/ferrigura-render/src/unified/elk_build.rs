@@ -127,13 +127,62 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
     {
         crate::flowchart::policy::center_ports(&mut graph);
     }
-    if data.diagram_type == super::markers::FLOWCHART && section.design.is_some() {
+    if section.design.is_some() {
         // A placement strategy the configuration names is the user's choice.
         let place = section.elk.node_placement_strategy.is_none();
+        // A group that draws no title has no row for one: a concurrency region is padded alike on
+        // every side, and a note's group, which draws nothing, keeps its own padding.
+        let shapes: HashMap<&str, &str> = data
+            .nodes
+            .iter()
+            .filter(|node| node.is_group)
+            .map(|node| (node.id.as_str(), node.shape.as_str()))
+            .collect();
+        let mut kept = Vec::new();
+        paddings_of(&graph, &shapes, &mut kept);
         crate::flowchart::policy::relax(&mut graph, place);
+        pad_untitled_groups(&mut graph, &shapes, &kept);
         state.group_padding = Some(crate::design::GROUP_SIDE_PADDING);
     }
     ElkInput { graph, state }
+}
+
+/// The padding a note's group has before the design mode relaxes the graph, by the group's id.
+fn paddings_of(node: &JsonNode, shapes: &HashMap<&str, &str>, kept: &mut Vec<(String, Json)>) {
+    for child in &node.children {
+        if shapes.get(child.id.as_str()) == Some(&"noteGroup")
+            && let Some(padding) = child
+                .layout_options
+                .as_ref()
+                .and_then(|options| options.get("elk.padding"))
+        {
+            kept.push((child.id.clone(), padding.clone()));
+        }
+        paddings_of(child, shapes, kept);
+    }
+}
+
+/// Gives the groups that draw no title the design mode's padding without a title row: a
+/// concurrency region the mode's side padding on every side, and a note's group the padding it
+/// had before (`kept`).
+fn pad_untitled_groups(node: &mut JsonNode, shapes: &HashMap<&str, &str>, kept: &[(String, Json)]) {
+    for child in &mut node.children {
+        let padding = match shapes.get(child.id.as_str()) {
+            Some(&"divider") => Some(Json::from(crate::design::REGION_PADDING)),
+            Some(&"noteGroup") => kept
+                .iter()
+                .find(|(id, _)| *id == child.id)
+                .map(|(_, padding)| padding.clone()),
+            _ => None,
+        };
+        if let Some(padding) = padding {
+            child
+                .layout_options
+                .get_or_insert_default()
+                .insert("elk.padding".to_owned(), padding);
+        }
+        pad_untitled_groups(child, shapes, kept);
+    }
 }
 
 /// A node of the reference's `nodeDb`: the ELK node under construction, with the fields of the

@@ -76,6 +76,9 @@ pub struct Port {
     pub at: f64,
     /// Its edges, as indices into [`Layers::edges`].
     pub edges: Vec<usize>,
+    /// Whether an edge continues from it into the node's own graph: the port of a group that an
+    /// edge crosses. The inner layout has placed the edge's way on, so the port stays.
+    pub inside: bool,
 }
 
 /// An edge between two layers.
@@ -295,6 +298,7 @@ fn view(graph: &LGraph) -> Option<(Layers, Vec<usize>, Vec<usize>)> {
                     side,
                     at: graph.ports[port].position.y + graph.ports[port].anchor.y,
                     edges: Vec::new(),
+                    inside: graph.ports[port].inside_connections,
                 });
             }
             Some(index_of_port[port])

@@ -34,7 +34,7 @@ use ferrigura_model::config::{
 use ferrigura_model::theme::ThemeTokens;
 
 use crate::context::{Context, Globals};
-use crate::design::Tone;
+use crate::design::{Roles, Tone};
 use crate::flowchart::policy::FlowchartRouting;
 
 /// The sections of the configuration that the unified renderer reads, borrowed from the view that the
@@ -49,6 +49,8 @@ pub struct Section<'a> {
     pub flowchart_routing: FlowchartRouting,
     /// The tone of the design mode, when the render draws in it (`docs/decisions/0023-design-mode.md`).
     pub design: Option<Tone>,
+    /// The shapes that carry a role in the design mode: the flowchart's, or the state diagram's.
+    pub roles: Roles,
     /// The `flowchart` section.
     pub flowchart: &'a FlowchartDiagramConfig,
     /// The `elk` section.
@@ -69,6 +71,7 @@ impl<'a> Section<'a> {
         Self {
             flowchart_routing: FlowchartRouting::Mermaid,
             design: None,
+            roles: Roles::Flowchart,
             flowchart: &config.flowchart,
             elk: &config.elk,
             class: &config.class,

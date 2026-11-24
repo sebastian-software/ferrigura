@@ -1,5 +1,5 @@
 //! The design mode (`docs/decisions/0023-design-mode.md`): ferrigura's own look and measures for a
-//! flowchart, laid out by the engine of the default rendering.
+//! flowchart and a state diagram, laid out by the engine of the default rendering.
 
 use ferrigura::{ColorScheme, Error, RenderOptions, Renderer, Value};
 
@@ -756,8 +756,155 @@ fn the_mode_excludes_compat_and_other_diagram_types() {
         Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
         other => panic!("expected an option error, got {other:?}"),
     }
-    match renderer.render_with("pie\n \"a\" : 1\n", &design(None)) {
-        Err(Error::Options(message)) => assert!(message.contains("design mode"), "{message}"),
+    match renderer.render_with(STATES, &both) {
+        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
         other => panic!("expected an option error, got {other:?}"),
+    }
+    for other in [
+        "pie\n \"a\" : 1\n",
+        "classDiagram\n  A <|-- B\n",
+        "erDiagram\n  A ||--o{ B : has\n",
+    ] {
+        match renderer.render_with(other, &design(None)) {
+            Err(Error::Options(message)) => assert!(message.contains("design mode"), "{message}"),
+            result => panic!("expected an option error, got {result:?}"),
+        }
+    }
+}
+
+/// A state diagram with every role, a labeled transition, two transitions into the end, a
+/// composite state, concurrent regions and a note.
+const STATES: &str = "stateDiagram-v2\n  state check <<choice>>\n  state split <<fork>>\n  state merge <<join>>\n  [*] --> Draft\n  Draft --> check : submit\n  check --> Published : approve\n  check --> Rejected : reject\n  Published --> split\n  split --> Indexing\n  split --> Mailing\n  Indexing --> merge\n  Mailing --> merge\n  merge --> Live\n  state Live {\n    [*] --> Shown\n    Shown --> Hidden\n    --\n    [*] --> Counted\n  }\n  Live --> [*]\n  Rejected --> [*]\n  note right of Draft : Written by the author\n";
+
+#[test]
+fn a_state_diagram_draws_in_the_design_mode() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(STATES, &design(None)).unwrap();
+    let default = renderer.render_with(STATES, &default(None)).unwrap();
+    assert_ne!(svg, default);
+    assert!(svg.contains("class=\"statediagram\""));
+    // The roles: the start states, the end states, the choice, the fork and the join.
+    let nodes = nodes(&svg);
+    assert_eq!(nodes.matches("data-role=\"terminal\"").count(), 3 + 2);
+    assert_eq!(nodes.matches("data-role=\"decision\"").count(), 1);
+    assert_eq!(nodes.matches("data-role=\"junction\"").count(), 2);
+    assert!(!default.contains("data-role="));
+    // The mode's own arrowhead under the barb's ids, no palette, and the soft shadow.
+    assert!(svg.contains("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"));
+    assert!(!svg.contains("data-color-id"));
+    assert!(svg.contains("stdDeviation=\"1.5\""));
+    let sheet = style_sheet(&svg);
+    for rule in [
+        "#d .edge-thickness-normal,#d .transition{stroke-width:1.5px;}",
+        "#d .statediagram-state rect.basic{rx:8px;ry:8px;}",
+        "#d [data-look].statediagram-cluster rect.inner{fill:none;stroke:none;}",
+        "stroke-dasharray:4 4;",
+        "#d [data-role=\"junction\"].node path{fill:var(--lineColor);",
+        "--terminalBkg:#2F54D6;",
+        "--titleColor:#4A5364;",
+        "--noteBkgColor:#F6F7F9;",
+        "--stateBorder:#7C8698;",
+    ] {
+        assert!(sheet.contains(rule), "{rule}");
+    }
+}
+
+#[test]
+fn each_transition_into_an_end_state_meets_one_of_its_own() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(STATES, &design(None)).unwrap();
+    assert_eq!(
+        nodes(&svg).matches("-state-root_end-").count(),
+        2,
+        "one end state for each of the two transitions"
+    );
+    let default = renderer.render_with(STATES, &default(None)).unwrap();
+    assert_eq!(nodes(&default).matches("-state-root_end-").count(), 1);
+}
+
+#[test]
+fn a_composite_state_has_its_title_at_the_left_in_a_row_of_its_own() {
+    let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n  }\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let group = &svg[svg.find("statediagram-cluster").expect("the composite")..];
+    let outer = &group[group.find("<rect class=\"outer\"").expect("its frame")..];
+    let number = |name: &str| -> f64 { attribute_values(outer, name)[0].parse().unwrap() };
+    let (x, y) = (number("x"), number("y"));
+    let marker = "<g class=\"cluster-label\" transform=\"translate(";
+    let rest = &group[group.find(marker).expect("the title") + marker.len()..];
+    let (tx, rest) = rest.split_once(", ").unwrap();
+    let ty = &rest[..rest.find(')').unwrap()];
+    assert_eq!(tx.parse::<f64>().unwrap() - x, 16.0);
+    assert_eq!(ty.parse::<f64>().unwrap() - y, 12.0);
+}
+
+#[test]
+fn a_state_label_is_centered_in_the_design_mode() {
+    let text = "stateDiagram-v2\n  [*] --> Idle\n";
+    let renderer = Renderer::new(&Value::empty_object());
+    let first_x = |svg: &str| -> f64 {
+        let idle = &svg[svg.find("-state-Idle-").expect("the state")..];
+        let tspan = &idle[idle.find("<tspan").expect("its text")..];
+        attribute_values(tspan, "x")[0].parse().unwrap()
+    };
+    // The default starts the line at the label's origin; the mode centers it on the node.
+    assert_eq!(
+        first_x(&renderer.render_with(text, &default(None)).unwrap()),
+        0.0
+    );
+    assert!(first_x(&renderer.render_with(text, &design(None)).unwrap()) < 0.0);
+}
+
+#[test]
+fn the_state_diagrams_dark_set_and_user_styles_apply() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer
+        .render_with(STATES, &design(Some(ColorScheme::Dark)))
+        .unwrap();
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--terminalBkg:#4263EB;"));
+    assert!(sheet.contains("--compositeBackground:#171A22;"));
+    let both = renderer
+        .render_with(STATES, &design(Some(ColorScheme::Auto)))
+        .unwrap();
+    assert!(style_sheet(&both).contains("light-dark("));
+
+    let config = Value::from(serde_json::json!({
+        "themeVariables": { "transitionColor": "#ff0000", "noteBkgColor": "#ffffcc" }
+    }));
+    let svg = Renderer::new(&config)
+        .render_with(STATES, &design(None))
+        .unwrap();
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--transitionColor:#ff0000;"));
+    assert!(sheet.contains("--noteBkgColor:#ffffcc;"));
+
+    let classed = format!("{STATES}  classDef hot fill:#f96\n  class Draft hot\n");
+    let svg = renderer.render_with(&classed, &design(None)).unwrap();
+    let sheet = style_sheet(&svg);
+    let role = sheet.find("[data-role=").expect("a role's rule");
+    let class = sheet.find("#d .hot &gt; *{").expect("the class's rule");
+    assert!(role < class, "the class rule comes after the roles'");
+}
+
+#[test]
+fn an_edge_meets_a_group_in_the_middle_of_its_side() {
+    // ELK keeps the ports of a group at the start of its side; the mode's placement moves them to
+    // the middle, so that the edges into and out of the group run straight down its axis.
+    let text = "flowchart TB\n  S((start)) --> G\n  subgraph G [Group]\n    A --> B\n  end\n  G --> E[End]\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let frame = &svg[svg.find("<g class=\"cluster ").expect("the group")..];
+    let rect = &frame[frame.find("<rect").expect("its frame")..];
+    let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+    let middle = number("x") + number("width") / 2.0;
+    for id in ["L_S_G_0", "L_G_E_0"] {
+        // The circle's outline meets the edge a hair off its axis.
+        for (x, _) in route(&svg, id) {
+            assert!((x - middle).abs() <= 1e-3, "{id}: {x} against {middle}");
+        }
     }
 }

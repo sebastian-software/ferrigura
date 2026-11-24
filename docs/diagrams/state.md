@@ -2,6 +2,27 @@
 
 A state diagram draws states, the transitions between them, composite states with concurrent regions, forks, joins, choices and notes. It starts with `stateDiagram` or `stateDiagram-v2`; both headers are one diagram type with one configuration section, `state`. ferrigura parses it with a hand-written scanner and recursive-descent parser in `ferrigura-syntax` (`src/state/`), draws it with the unified renderer in `ferrigura-render` (`src/state/`, with the state shapes and cluster kinds under `src/unified/`) and lays it out with ELK Layered. The shared machinery is in [flowchart.md](./flowchart.md); this page covers what is specific to states.
 
+## Design mode
+
+The design mode draws a state diagram in ferrigura's own look ([0023](../decisions/0023-design-mode.md)), with the options of the [flowchart's](./flowchart.md#design-mode): `RenderOptions { design: true, .. }`, `{ design: true }` in Node.js, `--design` on the command line. A state diagram is laid out by the flowchart's pipeline and engine, so the measures carry over unchanged: a node grows to give the edges of its busiest side room, the edges of a side meet it as a bundle around its middle, spacings are wider, the mode's own node placement puts chains on one line, and an edge label sits in a gap of its edge. Edges, outlines, shadows and arrowheads are the flowchart's. The parts that only a state diagram has are drawn so:
+
+| Element            | Design mode                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| State              | The flowchart's rectangle: 1.25 px outline in `stateBorder`, corner radius 8, the soft shadow; the label is centered                             |
+| State with a body  | The title centered above the divider, the rows at the left                                                                                       |
+| Start state        | Role `terminal`: the accent color                                                                                                                |
+| End state          | Role `terminal`: an accent ring around an accent dot; each transition into an end state meets an end state of its own, which stands beside it    |
+| Choice             | Role `decision`: the warm tint and outline; it keeps its size of 28 and does not grow with its edges                                             |
+| Fork, join         | Role `junction`: filled with the line color                                                                                                      |
+| Composite state    | Neutral: `compositeBackground` with a `stateBorder` outline of 1 px, corner radius 12, no shadow; the title in a row of its own, as a subgraph's |
+| Concurrency region | A dashed frame (4 on, 4 off) without a fill, corner radius 8, padded by 32 on every side                                                         |
+| Note               | Flat: `noteBkgColor` gray, a hairline outline, square corners, `noteTextColor` text at the left, no shadow                                       |
+| Transition label   | `transitionLabelColor`, muted, in a gap of its edge                                                                                              |
+
+The mode lays values for the state's own tokens under the user's `themeVariables`, in the light and the dark set: `stateBorder`, `stateLabelColor`, `transitionLabelColor`, `labelBackgroundColor`, `compositeBackground`, `compositeTitleBackground`, `altBackground`, `noteBkgColor`, `noteBorderColor` and `noteTextColor`; `transitionColor` and `stateBkg` follow `lineColor` and `mainBkg` as the theme derives them. The state rules keep reading these tokens, so a user's value for any of them wins, and a `classDef` keeps the last word over the roles. Both sets are held to the contrast ratios of the flowchart's.
+
+The note's place is the reference's: the note and its state form a group laid out from top to bottom, so a note stands below its state, and the group's direction cannot be turned while transitions cross it.
+
 ## Model
 
 `ferrigura_model::state::StateDiagram` is the Diagram DB after parsing (`stateDb.ts`), read before `getData()` runs, because `getData()` translates the document once more.

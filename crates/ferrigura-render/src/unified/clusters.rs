@@ -67,7 +67,7 @@ pub fn paint_among(
     edges: &[Edge],
 ) -> Result<Cluster, RenderError> {
     match node.shape.as_str() {
-        "roundedWithTitle" => rounded_with_title(node, config),
+        "roundedWithTitle" => rounded_with_title(node, config, edges),
         "noteGroup" => Ok(note_group(node)),
         "divider" => Ok(divider(node, config)),
         "flowGroup" => super::flow_group::paint(node, config),
@@ -190,8 +190,14 @@ fn colour_slot(node: &Node, config: &Config<'_>) -> (Option<usize>, String) {
 /// The composite state (`roundedWithTitle`, `clusters.js` 175-306, classic and neo looks): an outer
 /// rect in its own group, the title's label, and an inner rect for the body, under the title. The
 /// title is `createLabel`, the plain text with the `row` class, and it is placed at the subgraph's
-/// left edge plus the title's offset.
-fn rounded_with_title(node: &Node, config: &Config<'_>) -> Result<Cluster, RenderError> {
+/// left edge plus the title's offset. The design mode puts the title in a row of its own, as it
+/// does a subgraph's: at the left, 12 below the top, and moved right past the edges that cross its
+/// row (`docs/decisions/0023-design-mode.md`).
+fn rounded_with_title(
+    node: &Node,
+    config: &Config<'_>,
+    edges: &[Edge],
+) -> Result<Cluster, RenderError> {
     let (_, color_id) = colour_slot(node, config);
     let title = label::layout(&LabelSpec {
         fonts: config.fonts.clone(),
@@ -227,9 +233,17 @@ fn rounded_with_title(node: &Node, config: &Config<'_>) -> Result<Cluster, Rende
     let outer_x = x - width / 2.0;
     let outer_y = y - height / 2.0;
     let inner_y = y - layout_height / 2.0 + title.bbox.height + 2.0;
-    let label_x = x - text_width / 2.0;
-    let label_y = outer_y + 1.0 - 3.0;
     let outer = BBox::new(outer_x, outer_y, width, height);
+    let (label_x, label_y) = if config.section.design.is_some() {
+        let mut frame = Frame {
+            bbox: outer,
+            title: Point::new(0.0, outer_y + crate::design::GROUP_TITLE_TOP),
+        };
+        frame.title.x = design_title_x(&frame, title.bbox, edges);
+        (frame.title.x, frame.title.y)
+    } else {
+        (x - text_width / 2.0, outer_y + 1.0 - 3.0)
+    };
     let svg = format!(
         "<g class=\"{classes}\" id=\"{id}\" data-id=\"{node_id}\" data-look=\"{look}\"{color_id}>\
          <g><rect class=\"outer\" x=\"{outer_x}\" y=\"{outer_y}\" width=\"{width}\" height=\"{height}\" data-look=\"{look}\"/></g>\

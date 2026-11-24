@@ -157,9 +157,9 @@ export function Design() {
       </p>
       <DesignSchemeSheets />
       <p>
-        The design mode draws flowcharts; another diagram type reports an error when the mode is
-        asked for. It is an option of each render, like <code>compat</code>, and the two exclude
-        each other. Your theme variables and class definitions keep the last word.{' '}
+        The design mode draws flowcharts and state diagrams; another diagram type reports an error
+        when the mode is asked for. It is an option of each render, like <code>compat</code>, and
+        the two exclude each other. Your theme variables and class definitions keep the last word.{' '}
         <Link to="/architecture/decisions/0023-design-mode/">How the design mode decides</Link>
       </p>
     </MonoSection>

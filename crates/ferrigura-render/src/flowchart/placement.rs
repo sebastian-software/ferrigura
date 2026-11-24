@@ -18,6 +18,9 @@
 //! 4. **Middles.** Where the lengths leave a choice, the method takes one end of it. A group of
 //!    nodes on one axis then moves to where the squares of the steps are least: into the middle
 //!    of an even fan.
+//!
+//! Before the steps, every side's bundle moves into the middle of its node: ELK leaves the ports
+//! of a group at the start of its side, and a leaf's are already in the middle.
 
 use std::collections::BTreeSet;
 
@@ -52,6 +55,7 @@ impl Placement for Axes {
     fn place(&self, layers: &mut Layers) {
         // The ports a later pass puts in the middle of an even side, and the sides whose bundle
         // moved.
+        center_bundles(layers);
         let mut chosen = BTreeSet::new();
         let mut moved = BTreeSet::new();
         for _ in 0..PASSES {
@@ -237,6 +241,33 @@ fn axis_edges(
         .iter()
         .map(|edge| middle[edge.source] && middle[edge.target])
         .collect()
+}
+
+/// Moves the bundle of every side whose middle is not the middle of its node there: the ports of
+/// a group, which ELK keeps at the start of the side. ELK centers the bundle of a leaf on whole
+/// units, so a bundle less than one unit off the middle is centered already and stays. A side
+/// with a port that an edge crosses into the group stays too: the group's inner layout placed the
+/// way on.
+fn center_bundles(layers: &mut Layers) {
+    for node in 0..layers.nodes.len() {
+        if layers.nodes[node].kind != Kind::Node {
+            continue;
+        }
+        for side in [Side::Before, Side::After] {
+            let ports = side_ports(layers, node, side);
+            if ports.is_empty() || ports.iter().any(|&port| layers.ports[port].inside) {
+                continue;
+            }
+            let off = layers.nodes[node].size / 2.0 - bundle_middle(layers, &ports);
+            let shift = off.round();
+            if off.abs() < 1.0 || !fits(layers, &ports, shift) {
+                continue;
+            }
+            for port in ports {
+                layers.ports[port].at += shift;
+            }
+        }
+    }
 }
 
 /// Moves the bundle of a side so that the port of its axis edge is in the middle of the side: by
