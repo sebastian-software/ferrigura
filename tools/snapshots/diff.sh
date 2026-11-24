@@ -8,8 +8,9 @@
 #
 # Each changed file is rendered under the test's three configurations and four color schemes, with
 # the base's renderer and with the working tree's, into target/snapshots/{base,head}/<file>/
-# <configuration>-<scheme>.svg, and the renders that differ are listed. Compare them side by side,
-# or check the new output against the reference with `pnpm -C tools/port port:geometry <type> --filter <file>`.
+# <configuration>-<scheme>.svg, and the renders that differ are listed. A flowchart also has its design
+# renders, named design-<configuration>-<scheme>.svg. Compare them side by side, or check the new output
+# against the reference with `pnpm -C tools/port port:geometry <type> --filter <file>`.
 set -euo pipefail
 
 base="${1:-main}"
@@ -32,6 +33,9 @@ cleanup() {
 }
 trap cleanup EXIT
 git worktree add --quiet --detach "$work/base" "$base"
+if ! git show "$base:$manifest" >"$work/base.tsv" 2>/dev/null; then
+  : >"$work/base.tsv"
+fi
 
 echo "building the renderer of $base and of the working tree" >&2
 CARGO_TARGET_DIR="$root/target/snapshots/build-base" \
@@ -51,25 +55,38 @@ while IFS= read -r file; do
   [ -n "$file" ] || continue
   count=$((count + 1))
   moved=""
-  for config in none override dark; do
-    for scheme in none light dark auto; do
-      args=(--now "$now" --config "$work/$config.json")
-      if [ "$scheme" != none ]; then
-        args+=(--scheme "$scheme")
-      fi
-      for side in base head; do
-        mkdir -p "$out/$side/$file"
-        if [ "$side" = base ]; then bin="$base_bin" src="$work/base/$file"; else bin="$head_bin" src="$file"; fi
-        target="$out/$side/$file/$config-$scheme.svg"
-        if [ -f "$src" ]; then
-          "$bin" "${args[@]}" <"$src" >"$target" 2>&1 || true
-        else
-          echo "(no such file at $side)" >"$target"
+  # The design renders exist for a flowchart, which has a fourth column in the manifest of either side.
+  modes=(default)
+  if awk -F'\t' -v f="$file" '$1 == f && NF >= 4 { found = 1 } END { exit !found }' "$work/base.tsv" "$manifest"; then
+    modes+=(design)
+  fi
+  for mode in "${modes[@]}"; do
+    prefix=""
+    design=false
+    if [ "$mode" = design ]; then
+      prefix="design-"
+      design=true
+    fi
+    for config in none override dark; do
+      for scheme in none light dark auto; do
+        args=(--now "$now" --config "$work/$config.json" --design "$design")
+        if [ "$scheme" != none ]; then
+          args+=(--scheme "$scheme")
+        fi
+        for side in base head; do
+          mkdir -p "$out/$side/$file"
+          if [ "$side" = base ]; then bin="$base_bin" src="$work/base/$file"; else bin="$head_bin" src="$file"; fi
+          target="$out/$side/$file/$prefix$config-$scheme.svg"
+          if [ -f "$src" ]; then
+            "$bin" "${args[@]}" <"$src" >"$target" 2>&1 || true
+          else
+            echo "(no such file at $side)" >"$target"
+          fi
+        done
+        if ! cmp -s "$out/base/$file/$prefix$config-$scheme.svg" "$out/head/$file/$prefix$config-$scheme.svg"; then
+          moved="$moved $prefix$config-$scheme"
         fi
       done
-      if ! cmp -s "$out/base/$file/$config-$scheme.svg" "$out/head/$file/$config-$scheme.svg"; then
-        moved="$moved $config-$scheme"
-      fi
     done
   done
   echo "$file:${moved:- no render differs (only the hash input changed)}"

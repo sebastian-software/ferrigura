@@ -1,8 +1,9 @@
 //! ferrigura's own output, pinned (`docs/decisions/0015-differential-testing.md`). Every `.mmd` of the corpus is
 //! rendered under three configurations and four color schemes, and one hash over its twelve SVGs (or
 //! errors) is compared with `snapshots/svg.tsv`. Flowcharts and sequences have a third column that independently
-//! pins the twelve Mermaid-compatible renders. Any change of the output fails the test, the ones the
-//! geometry check cannot see included (markup, styles, embedded fonts).
+//! pins the twelve Mermaid-compatible renders. Flowcharts have a fourth column that pins the twelve renders
+//! of the design mode (`docs/decisions/0023-design-mode.md`). Any change of the output fails the test, the
+//! ones the geometry check cannot see included (markup, styles, embedded fonts).
 //!
 //! An intended change rewrites the manifest in the same commit:
 //!
@@ -11,12 +12,15 @@
 //! ```
 //!
 //! and `tools/snapshots/diff.sh` shows which renders of the changed files moved. When the test fails,
-//! the new renders of the changed files are in `target/snapshots/head/`.
+//! the new renders of the changed files are in `target/snapshots/head/` (the design renders of a
+//! flowchart with a `design-` prefix).
 //!
 //! The output depends on the machine: `ferrigura_jsmath` rounds as V8 does there, with fused
 //! multiply-adds on aarch64 and without them on x86-64. The manifest holds the aarch64 renders, so
-//! the test runs on aarch64 (CI: macOS) and is ignored elsewhere. It takes about a minute in a
-//! release build and several in a debug build, so it runs in release builds only.
+//! the test runs on aarch64 (CI: a Linux arm64 runner) and is ignored elsewhere. Someone on another
+//! architecture takes the new manifest from the log or the artifact of the failed CI job, which
+//! regenerates it there. It takes about a minute in a release build and several in a debug build, so
+//! it runs in release builds only.
 
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
@@ -169,11 +173,33 @@ fn fnv1a(hash: u64, bytes: &[u8]) -> u64 {
     })
 }
 
-/// The twelve renders of one text, labeled `<configuration>-<scheme>`: the SVG, or the error.
+/// The render mode of a hash: the default, the Mermaid-compatible one, or the design mode.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    Default,
+    Compat,
+    Design,
+}
+
+/// Which of the optional columns of a file's line the file has: the compatibility hash for a flowchart
+/// or a sequence, and the design hash for a flowchart. The test and the review renders use this one
+/// rule.
+fn columns(text: &str) -> (bool, bool) {
+    let kind = ferrigura_syntax::detect(text);
+    let compat = matches!(
+        kind,
+        Some(ferrigura_syntax::DiagramType::Flowchart | ferrigura_syntax::DiagramType::Sequence)
+    );
+    let design = matches!(kind, Some(ferrigura_syntax::DiagramType::Flowchart));
+    (compat, design)
+}
+
+/// The twelve renders of one text in one mode, labeled `<configuration>-<scheme>`: the SVG, or the
+/// error.
 fn renders(
     text: &str,
     renderers: &[(&'static str, Renderer, String)],
-    compat: bool,
+    mode: Mode,
 ) -> Vec<(String, String)> {
     let mut out = Vec::with_capacity(renderers.len() * SCHEMES.len());
     for (config, renderer, original_config) in renderers {
@@ -189,7 +215,8 @@ fn renders(
                 now: Some(NOW),
                 id: Some(id.clone()),
                 color_scheme,
-                compat,
+                compat: mode == Mode::Compat,
+                design: mode == Mode::Design,
                 ..RenderOptions::default()
             };
             let result = match renderer.render_with(text, &options) {
@@ -261,18 +288,18 @@ fn the_output_of_the_corpus_is_unchanged() {
                         .expect("a corpus file in the repository")
                         .to_string_lossy()
                         .replace('\\', "/");
-                    let mut hash = hash(&renders(&text, &renderers, false));
+                    let mut hash = hash(&renders(&text, &renderers, Mode::Default));
+                    let (compat, design) = columns(&text);
                     // A third column pins the compatibility mode separately, so updating the new
-                    // default cannot silently bless a change in Mermaid-compatible output.
-                    if matches!(
-                        ferrigura_syntax::detect(&text),
-                        Some(
-                            ferrigura_syntax::DiagramType::Flowchart
-                                | ferrigura_syntax::DiagramType::Sequence
-                        )
-                    ) {
+                    // default cannot silently bless a change in Mermaid-compatible output. A fourth
+                    // pins the design mode the same way.
+                    if compat {
                         hash.push('\t');
-                        hash.push_str(&self::hash(&renders(&text, &renderers, true)));
+                        hash.push_str(&self::hash(&renders(&text, &renderers, Mode::Compat)));
+                    }
+                    if design {
+                        hash.push('\t');
+                        hash.push_str(&self::hash(&renders(&text, &renderers, Mode::Design)));
                     }
                     hashes.lock().expect("hashes").push((name, hash));
                 }
@@ -326,8 +353,14 @@ fn the_output_of_the_corpus_is_unchanged() {
         let text = std::fs::read_to_string(root.join(name)).expect("a corpus file");
         let folder = head.join(name);
         std::fs::create_dir_all(&folder).expect("the review folder");
-        for (label, result) in renders(&text, &renderers, false) {
+        for (label, result) in renders(&text, &renderers, Mode::Default) {
             std::fs::write(folder.join(format!("{label}.svg")), result).expect("a review render");
+        }
+        if columns(&text).1 {
+            for (label, result) in renders(&text, &renderers, Mode::Design) {
+                std::fs::write(folder.join(format!("design-{label}.svg")), result)
+                    .expect("a review render");
+            }
         }
     }
 

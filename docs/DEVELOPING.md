@@ -87,6 +87,8 @@ On an aarch64 machine (CI uses a Linux arm64 runner), the output of the whole co
 cargo test --release --test snapshots
 ```
 
+Each file has one hash, and flowcharts and sequences have a column for the Mermaid-compatible renders; flowcharts have one more for the design mode. When this job fails, its log shows the diff of the manifest that the runner produces, and the `snapshot-manifest` artifact holds the two manifests. Someone on another architecture takes the new manifest from there.
+
 The native matrix also captures the replay test's representative SVGs and publishes a report comparing each target with Linux arm64. The report records ordered elements, labels, embedded font styles and data hashes, and numeric geometry differences without applying a cross-target tolerance. A pull request includes macOS when it has the `ci:macos` label; a main or manually dispatched run includes all seven targets. The individual `native-replay-*` artifacts contain the captured SVGs.
 
 A release build links with fat LTO in one codegen unit and takes minutes where a debug build takes seconds; iterate with the dev profile and reserve `--release` for the snapshots and the artifacts.
@@ -104,6 +106,8 @@ A release build links with fat LTO in one codegen unit and takes minutes where a
 ```bash
 UPDATE_SNAPSHOTS=1 cargo test --release --test snapshots
 ```
+
+On another architecture the rewrite gives hashes that CI does not accept. Commit the manifests from the `snapshot-manifest` artifact of the failed CI run instead, and review them with the `git diff` in its log.
 
 [tools/port/README.md](../tools/port/README.md) lists every command of the harness, the run types, and the scripts that regenerate the corpora and fixtures.
 
