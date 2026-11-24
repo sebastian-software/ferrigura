@@ -17,6 +17,7 @@ mod block_arrow;
 mod braces;
 mod circle;
 mod class_box;
+mod class_design;
 mod collapsed_group;
 mod composite;
 mod containers;
@@ -505,15 +506,23 @@ pub fn draw(input: &ShapeInput<'_>) -> Result<ShapeOutput, RenderError> {
         Kind::ClassBox => {
             // `classBox` stamps the class's palette slot as the collapsed group does
             // (`classBox.ts` 29).
-            colour_slot = collapsed_group::color_attribute(input);
-            let class_box::ClassBox {
-                part,
-                covered,
-                texts: rows,
-            } = class_box::class_box(input)?;
-            extent = Some(covered);
-            texts = rows;
-            part
+            // The design mode colors a class by its role, not by a slot.
+            if input.config.section.design.is_some() {
+                let class_design::DesignClassBox { part, texts: rows } =
+                    class_design::class_box(input)?;
+                texts = rows;
+                part
+            } else {
+                colour_slot = collapsed_group::color_attribute(input);
+                let class_box::ClassBox {
+                    part,
+                    covered,
+                    texts: rows,
+                } = class_box::class_box(input)?;
+                extent = Some(covered);
+                texts = rows;
+                part
+            }
         }
     };
     // The node group's box is the shape's and the label's together. The label group's box is the
@@ -561,6 +570,12 @@ fn role_attribute(input: &ShapeInput<'_>, kind: Kind) -> String {
         (Roles::Flowchart, Kind::Question) | (Roles::State, Kind::Choice) => Role::Decision,
         (Roles::Flowchart, Kind::Cylinder) => Role::Data,
         (Roles::State, Kind::ForkJoin) => Role::Junction,
+        (Roles::Class, Kind::ClassBox) => {
+            match input.node.class.as_ref().and_then(class_design::role) {
+                Some(role) => role,
+                None => return String::new(),
+            }
+        }
         _ => return String::new(),
     };
     format!(" data-role=\"{}\"", role.name())

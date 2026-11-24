@@ -1241,6 +1241,91 @@ pub fn class_markers(svg_id: &str) -> String {
     out
 }
 
+/// The relation markers of a class diagram in the design mode (`docs/decisions/0023-design-mode.md`),
+/// under the ids of [`class_markers`], so that the edges keep their paths. Each is drawn in user
+/// space around the end of its path: the edge is pulled back from the box by the marker's offset
+/// (`utils/lineWithOffset.ts`), and the marker fills that gap with its tip on the box's outline.
+/// The hollow triangle of an inheritance or a realization, the diamonds of an aggregation (hollow)
+/// and a composition (filled), the open arrow of an association or a dependency (with the few
+/// points of line under it that the offset takes off) and the ring of a lollipop. The style sheet
+/// gives them the hairline of an outline and their colors.
+#[must_use]
+pub fn design_class_markers(svg_id: &str) -> String {
+    let mut out = String::new();
+    for kind in [
+        ClassKind::Aggregation,
+        ClassKind::Extension,
+        ClassKind::Composition,
+        ClassKind::Dependency,
+        ClassKind::Lollipop,
+    ] {
+        for (start, margin) in [(true, false), (false, false), (true, true), (false, true)] {
+            // A start marker points away from its box: its shape is the end's, mirrored.
+            let sign = if start { -1.0 } else { 1.0 };
+            let x = |value: f64| number(sign * value);
+            let child = match kind {
+                ClassKind::Extension => format!(
+                    "<path class=\"design-hollow\" d=\"M {},-{half} L {},0 L {},{half} Z\"/>",
+                    x(0.0),
+                    x(DESIGN_CLASS_OFFSET),
+                    x(0.0),
+                    half = number(DESIGN_TRIANGLE_HALF_WIDTH),
+                ),
+                ClassKind::Aggregation | ClassKind::Composition => format!(
+                    "<path class=\"{}\" d=\"M {},0 L {},-{half} L {},0 L {},{half} Z\"/>",
+                    if kind == ClassKind::Composition {
+                        "design-filled"
+                    } else {
+                        "design-hollow"
+                    },
+                    x(0.0),
+                    x(DESIGN_CLASS_OFFSET / 2.0),
+                    x(DESIGN_CLASS_OFFSET),
+                    x(DESIGN_CLASS_OFFSET / 2.0),
+                    half = number(DESIGN_DIAMOND_HALF_WIDTH),
+                ),
+                ClassKind::Dependency => format!(
+                    "<path class=\"design-open\" d=\"M {},-4.5 L {},0 L {},4.5 M 0,0 L {},0\"/>",
+                    x(DESIGN_DEPENDENCY_OFFSET - DESIGN_ARROW_LENGTH),
+                    x(DESIGN_DEPENDENCY_OFFSET),
+                    x(DESIGN_DEPENDENCY_OFFSET - DESIGN_ARROW_LENGTH),
+                    x(DESIGN_DEPENDENCY_OFFSET),
+                ),
+                ClassKind::Lollipop => format!(
+                    "<circle class=\"design-hollow\" cx=\"{}\" cy=\"0\" r=\"{}\"/>",
+                    x(DESIGN_LOLLIPOP_OFFSET / 2.0),
+                    number(DESIGN_LOLLIPOP_OFFSET / 2.0),
+                ),
+            };
+            out.push_str(&format!(
+                "<defs><marker id=\"{}\" class=\"marker {} {CLASS}\" viewBox=\"-20 -10 40 20\" refX=\"0\" refY=\"0\" markerWidth=\"40\" markerHeight=\"20\" orient=\"auto\" markerUnits=\"userSpaceOnUse\">{child}</marker></defs>",
+                escape(&class_marker_id(svg_id, kind, start, margin)),
+                kind.name(),
+            ));
+        }
+    }
+    out
+}
+
+/// How far a class relation is pulled back for a triangle or a diamond (`markerOffsets`): the
+/// length of the design mode's triangle and diamonds.
+const DESIGN_CLASS_OFFSET: f64 = 17.25;
+
+/// Half the base of the design mode's triangle.
+const DESIGN_TRIANGLE_HALF_WIDTH: f64 = 7.5;
+
+/// Half the width of the design mode's diamonds.
+const DESIGN_DIAMOND_HALF_WIDTH: f64 = 5.5;
+
+/// How far a class relation is pulled back for its arrow (`markerOffsets`).
+const DESIGN_DEPENDENCY_OFFSET: f64 = 6.0;
+
+/// The length of the design mode's open arrow, from its back to its tip.
+const DESIGN_ARROW_LENGTH: f64 = 9.0;
+
+/// How far a class relation is pulled back for a lollipop (`markerOffsets`): the ring's diameter.
+const DESIGN_LOLLIPOP_OFFSET: f64 = 13.5;
+
 /// The id of a use case's extension marker: `<svgId>_usecase-extensionStart|End`, with `-margin` for the
 /// neo variant (`markers.js` 12-75, named by the use case diagram).
 #[must_use]

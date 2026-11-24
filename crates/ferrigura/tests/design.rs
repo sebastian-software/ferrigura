@@ -1,5 +1,5 @@
 //! The design mode (`docs/decisions/0023-design-mode.md`): ferrigura's own look and measures for a
-//! flowchart and a state diagram, laid out by the engine of the default rendering.
+//! flowchart, a state diagram and a class diagram, laid out by the engine of the default rendering.
 
 use ferrigura::{ColorScheme, Error, RenderOptions, Renderer, Value};
 
@@ -760,9 +760,13 @@ fn the_mode_excludes_compat_and_other_diagram_types() {
         Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
         other => panic!("expected an option error, got {other:?}"),
     }
+    match renderer.render_with(CLASSES, &both) {
+        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
+        other => panic!("expected an option error, got {other:?}"),
+    }
     for other in [
         "pie\n \"a\" : 1\n",
-        "classDiagram\n  A <|-- B\n",
+        "sequenceDiagram\n  A->>B: hi\n",
         "erDiagram\n  A ||--o{ B : has\n",
     ] {
         match renderer.render_with(other, &design(None)) {
@@ -1217,5 +1221,187 @@ fn a_composite_state_holds_the_notes_of_its_states() {
     assert!(
         note.1 >= frame.1 && note.1 + note.3 <= frame.1 + frame.3,
         "{note:?} {frame:?}"
+    );
+}
+
+/// A class diagram with an interface, an abstract class, an enumeration, a class without members,
+/// an inheritance tree, a composition with cardinalities and a dependency.
+const CLASSES: &str = "classDiagram\n  class Shape {\n    <<interface>>\n    +area() double\n  }\n  class Polygon {\n    <<abstract>>\n    #List~Point~ vertices\n    +area()* double\n    +count()$ int\n  }\n  class Kind {\n    <<enumeration>>\n    PLAIN\n    FANCY\n  }\n  class Square\n  Shape <|.. Polygon\n  Polygon <|-- Square\n  Polygon <|-- Triangle\n  Polygon \"1\" *-- \"3..*\" Point : corners\n  Polygon ..> Kind\n";
+
+/// The middle of the class box with the given name.
+fn class_middle(svg: &str, name: &str) -> (f64, f64) {
+    let group = &svg[svg.find(&format!("-classId-{name}\"")).expect("the class")..];
+    let marker = "transform=\"translate(";
+    let rest = &group[group.find(marker).expect("its place") + marker.len()..];
+    let (x, rest) = rest.split_once(", ").expect("x");
+    let y = &rest[..rest.find(')').expect("y")];
+    (x.parse().unwrap(), y.parse().unwrap())
+}
+
+/// The part of an SVG that draws the class box with the given name, up to the next node.
+fn class_box(svg: &str, name: &str) -> String {
+    let start = svg.find(&format!("-classId-{name}\"")).expect("the class");
+    let rest = &svg[start..];
+    let end = rest[1..]
+        .find("<g class=\"node ")
+        .map_or(rest.len(), |end| end + 1);
+    rest[..end].to_owned()
+}
+
+#[test]
+fn a_class_diagram_draws_in_the_design_mode() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
+    let default = renderer.render_with(CLASSES, &default(None)).unwrap();
+    assert!(svg.contains("class=\"classDiagram\""));
+    // The roles: an interface and an abstract class are one role, an enumeration another; other
+    // classes are neutral and take no palette slot.
+    let nodes = nodes(&svg);
+    assert_eq!(nodes.matches("data-role=\"interface\"").count(), 2);
+    assert_eq!(nodes.matches("data-role=\"enumeration\"").count(), 1);
+    assert!(!svg.contains("data-color-id"));
+    assert!(!default.contains("data-role="));
+    assert!(default.contains("data-color-id"));
+    // The mode's markers under the reference's ids, and the soft shadow.
+    assert!(svg.contains("class=\"design-hollow\""));
+    assert!(svg.contains("class=\"design-filled\""));
+    assert!(svg.contains("class=\"design-open\""));
+    assert!(svg.contains("stdDeviation=\"1.5\""));
+    let sheet = style_sheet(&svg);
+    for rule in [
+        "#d .edge-thickness-normal,#d .relation{stroke-width:1.5px;}",
+        "#d .node line.divider{stroke:var(--nodeBorder);stroke-width:1px;}",
+        "#d [data-role=\"interface\"].node rect.outline{fill:var(--interfaceBkg);stroke:var(--interfaceBorder);}",
+        "#d .annotation-group text,#d .visibility text{fill:var(--titleColor);}",
+        "--interfaceBkg:#F3F6FE;",
+        "--enumerationBorder:#3F8F79;",
+    ] {
+        assert!(sheet.contains(rule), "{rule}");
+    }
+}
+
+#[test]
+fn a_class_box_draws_only_the_compartments_it_has() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
+    let dividers = |name: &str| {
+        class_box(&svg, name)
+            .matches("<line class=\"divider\"")
+            .count()
+    };
+    // A class without members is its name alone; an interface with methods only has one
+    // compartment below its name; a class with both has two.
+    assert_eq!(dividers("Square"), 0);
+    assert_eq!(dividers("Shape"), 1);
+    assert_eq!(dividers("Polygon"), 2);
+    let square = class_box(&svg, "Square");
+    let height: f64 = attribute_values(&square, "height")[0].parse().unwrap();
+    assert!(height < 50.0, "{height}");
+    // The corners are round.
+    assert!(square.contains("rx=\"8\""));
+    // The default draws two empty compartments.
+    let plain = renderer.render_with(CLASSES, &default(None)).unwrap();
+    assert_eq!(
+        class_box(&plain, "Square")
+            .matches("class=\"divider")
+            .count(),
+        2
+    );
+}
+
+#[test]
+fn a_member_shows_its_visibility_static_and_abstract_marks() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
+    let polygon = class_box(&svg, "Polygon");
+    // The annotation is a line of its own above the name, and the generic type shows.
+    assert!(polygon.contains("class=\"annotation-group text\""));
+    assert!(polygon.contains("«abstract»"));
+    assert!(polygon.contains(">List&lt;Point&gt;</tspan>"));
+    // The marks stand in a column of their own.
+    assert_eq!(polygon.matches("<g class=\"visibility\"").count(), 3);
+    // An abstract member is set in italics, a static one underlined.
+    assert!(polygon.contains("font-style=\"italic\""));
+    assert!(polygon.contains("text-decoration:underline"));
+    // An enumeration's values have no marks, so no column.
+    assert!(!class_box(&svg, "Kind").contains("class=\"visibility\""));
+}
+
+#[test]
+fn the_general_end_of_a_relation_stands_above() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let text = "classDiagram\n  Dog --|> Animal\n  Wheel --* Car\n  Car --o Fleet\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    assert!(class_middle(&svg, "Animal").1 < class_middle(&svg, "Dog").1);
+    assert!(class_middle(&svg, "Car").1 < class_middle(&svg, "Wheel").1);
+    assert!(class_middle(&svg, "Fleet").1 < class_middle(&svg, "Car").1);
+    // The default lays them out as written.
+    let plain = renderer.render_with(text, &default(None)).unwrap();
+    assert!(class_middle(&plain, "Animal").1 > class_middle(&plain, "Dog").1);
+}
+
+#[test]
+fn the_children_of_a_class_share_one_triangle() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
+    let square = route(&svg, "id_Polygon_Square_2");
+    let triangle = route(&svg, "id_Polygon_Triangle_3");
+    // Both start at one point of the parent's side, the triangle's tip, near its middle.
+    assert_eq!(square[0], triangle[0]);
+    let (x, _) = class_middle(&svg, "Polygon");
+    assert!((square[0].0 - x).abs() <= 10.0, "{square:?} {x}");
+    let plain = renderer.render_with(CLASSES, &default(None)).unwrap();
+    assert_ne!(
+        route(&plain, "id_Polygon_Square_2")[0],
+        route(&plain, "id_Polygon_Triangle_3")[0]
+    );
+}
+
+#[test]
+fn a_cardinality_stands_beside_its_end() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(CLASSES, &design(None)).unwrap();
+    let points = route(&svg, "id_Polygon_Point_4");
+    let marker = "<g class=\"edgeTerminals\" transform=\"translate(";
+    let centres: Vec<(f64, f64)> = svg
+        .match_indices(marker)
+        .map(|(at, _)| {
+            let rest = &svg[at + marker.len()..];
+            let (x, rest) = rest.split_once(", ").unwrap();
+            (
+                x.parse().unwrap(),
+                rest[..rest.find(')').unwrap()].parse().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(centres.len(), 2);
+    for end in [points[0], points[points.len() - 1]] {
+        let distance = |p: (f64, f64)| (p.0 - end.0).hypot(p.1 - end.1);
+        let (x, y) = centres
+            .iter()
+            .copied()
+            .min_by(|a, b| distance(*a).total_cmp(&distance(*b)))
+            .unwrap();
+        // Near the end, beside the line and its diamond, not on them.
+        assert!((y - end.1).abs() < 20.0, "{end:?} {x},{y}");
+        assert!((x - end.0).abs() > 5.5 + 4.0, "{end:?} {x},{y}");
+        assert!((x - end.0).abs() < 30.0, "{end:?} {x},{y}");
+    }
+}
+
+#[test]
+fn the_class_diagrams_dark_set_and_user_styles_apply() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer
+        .render_with(CLASSES, &design(Some(ColorScheme::Dark)))
+        .unwrap();
+    assert!(style_sheet(&svg).contains("--interfaceBkg:#1B2131;"));
+    let styled = format!("{CLASSES}  style Square fill:#FFE4E1,stroke:#C0392B\n");
+    let svg = renderer.render_with(&styled, &design(None)).unwrap();
+    let square = class_box(&svg, "Square");
+    assert!(
+        square.contains("class=\"outline\"")
+            && square.contains("style=\"fill:#FFE4E1;stroke:#C0392B\""),
+        "{square}"
     );
 }

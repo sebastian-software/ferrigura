@@ -168,7 +168,7 @@ fn add_text(
 /// The fill the tspans of the box take from a `color` declaration of its styles
 /// (`classBox.ts` 264-276): `color: x` becomes `fill: x`, as the regex match is rewritten. The
 /// regex is `color\s*:\s*([^;]*)`, the first match in the joined styles.
-fn tspan_style(styles: &str) -> Option<String> {
+pub(super) fn tspan_style(styles: &str) -> Option<String> {
     let mut from = 0;
     while let Some(found) = styles[from..].find("color") {
         let start = from + found;
