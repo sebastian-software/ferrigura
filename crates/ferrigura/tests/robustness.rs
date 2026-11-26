@@ -450,4 +450,16 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
         );
         assert_eq!(renderer.render(CONTROL).unwrap(), control, "after {name}");
     }
+
+    // Blank lines after the opening fence and indented fences keep accurate YAML line and column.
+    // On line 3 (`  a: &x [*x]`), `[` is at 1-based column 9.
+    let indented_with_blank = "  ---\n\n  a: &x [*x]\n  ---\nflowchart LR\nA --> B\n";
+    let indented_err = renderer
+        .render(indented_with_blank)
+        .expect_err("indented cyclic front matter must fail")
+        .to_string();
+    assert!(
+        indented_err.starts_with("line 3, column 9:"),
+        "expected line 3, column 9 for indented cyclic front matter, got {indented_err}"
+    );
 }

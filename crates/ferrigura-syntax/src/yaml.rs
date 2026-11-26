@@ -1490,6 +1490,14 @@ impl State {
             // Reusing an existing arena handle allocates and copies zero bytes; retained keys are
             // charged against `ExpandBudget` when `to_yaml_on` clones them into the public tree.
             Node::String(id) => id,
+            Node::Sequence(seq_id)
+                if matches!(self.sequences[seq_id].as_slice(), [Node::String(_)]) =>
+            {
+                let [Node::String(id)] = self.sequences[seq_id].as_slice() else {
+                    unreachable!()
+                };
+                *id
+            }
             other => {
                 let name = key_string(
                     &self.strings,
@@ -1497,7 +1505,18 @@ impl State {
                     &mut self.remaining_key_bytes,
                     other,
                 )
-                .map_err(|message| self.error(message))?;
+                .map_err(|message| {
+                    if let Node::Sequence(seq_id) = other {
+                        let (line, column) = self.sequence_spans[seq_id];
+                        YamlError {
+                            line,
+                            column,
+                            message: message.to_owned(),
+                        }
+                    } else {
+                        self.error(message)
+                    }
+                })?;
                 let id = self.strings.len();
                 self.strings.push(name);
                 id

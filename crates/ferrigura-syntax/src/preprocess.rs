@@ -39,7 +39,11 @@ pub fn prepare(raw: &str) -> Result<Prepared, ParseError> {
     };
 
     let removed = &chars[..front_matter.length];
-    let fields = front_matter_fields(&dedent(&front_matter.body, &front_matter.indent))?;
+    let fields = front_matter_fields(
+        &front_matter.body,
+        &front_matter.indent,
+        front_matter.body_line_offset,
+    )?;
     let title = fields
         .iter()
         .find(|(key, _)| key == "title")
@@ -55,16 +59,32 @@ pub fn prepare(raw: &str) -> Result<Prepared, ParseError> {
 
 /// The fields of the front matter's YAML: the pairs of its mapping, or none when the document is
 /// empty or is not a mapping.
-fn front_matter_fields(body: &str) -> Result<Vec<(String, Yaml)>, ParseError> {
-    match yaml::load(body) {
+fn front_matter_fields(
+    raw_body: &str,
+    indent: &str,
+    body_line_offset: usize,
+) -> Result<Vec<(String, Yaml)>, ParseError> {
+    let body = dedent(raw_body, indent);
+    match yaml::load(&body) {
         Ok(Some(Yaml::Mapping(pairs))) => Ok(pairs),
         Ok(_) => Ok(Vec::new()),
-        Err(error) => Err(ParseError {
-            // `error.line` is 1-based inside the body, which starts on line 2 after the opening fence.
-            line: error.line + 1,
-            column: error.column + 1,
-            message: format!("invalid front matter: {}", error.message),
-        }),
+        Err(error) => {
+            let indent_offset = if !indent.is_empty()
+                && raw_body
+                    .split('\n')
+                    .nth(error.line.saturating_sub(1))
+                    .is_some_and(|line| line.starts_with(indent))
+            {
+                indent.encode_utf16().count()
+            } else {
+                0
+            };
+            Err(ParseError {
+                line: error.line + body_line_offset,
+                column: error.column + indent_offset + 1,
+                message: format!("invalid front matter: {}", error.message),
+            })
+        }
     }
 }
 
@@ -131,6 +151,7 @@ fn quote_attributes(attributes: &[char]) -> String {
 struct FrontMatter {
     indent: String,
     body: String,
+    body_line_offset: usize,
     length: usize,
 }
 
@@ -211,11 +232,13 @@ fn match_front_matter(text: &[char]) -> Option<FrontMatter> {
     }
 
     let body_start = opening_end + 1;
+    let body_line_offset = text[..body_start].iter().filter(|&&c| is_cr_lf(c)).count();
     for i in body_start..=last_closing_fence {
         if let Some(match_end) = closing_end(i) {
             return Some(FrontMatter {
                 indent,
                 body: text[body_start..i].iter().collect(),
+                body_line_offset,
                 length: match_end + 1,
             });
         }

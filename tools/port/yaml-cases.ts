@@ -299,6 +299,7 @@ export const yamlCases: string[] = [
   // Aliased string reused as a key inside complex mapping keys whose outer key becomes
   // `[object Object]`: the expanded output stays small and both parsers must accept it.
   `label: &label "${'a'.repeat(10_000)}"\nrows:\n${'  - { ? { *label : 1 } : ok }\n'.repeat(110)}`,
+  `label: &label "${'a'.repeat(10_000)}"\nrows:\n${'  - { ? { [*label] : 1 } : ok }\n'.repeat(110)}`,
   // Safely sized 15-level alias DAG (~131k expanded nodes): js-yaml shares references in JS,
   // whereas ferrigura rejects excessive alias expansion to prevent Billion Laughs DoS.
   [
