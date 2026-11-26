@@ -524,6 +524,9 @@ fn within_lossy_decode_budget(trimmed: &str, max_passes: usize) -> bool {
 /// `@braintree/sanitize-url` decoded spelling.
 fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<String> {
     let trimmed = js_trim(url);
+    if !trimmed.contains(['%', '&', '\\']) && !trimmed.chars().any(is_ctrl) {
+        return Some(trimmed.to_owned());
+    }
     let mut decoded = decode_uri(trimmed);
     let mut passes_used = usize::from(decoded != trimmed);
     while passes_used < max_passes {
@@ -534,6 +537,9 @@ fn decode_url_obfuscations_bounded(url: &str, max_passes: usize) -> Option<Strin
         }
         decoded = next;
         if !needs_another_pass(&decoded) {
+            if !decoded.contains('%') {
+                return Some(decoded);
+            }
             return within_lossy_decode_budget(trimmed, max_passes).then_some(decoded);
         }
         if !changed {

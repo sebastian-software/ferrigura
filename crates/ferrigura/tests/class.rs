@@ -97,3 +97,43 @@ fn class_click_tooltip_respects_html_labels_and_security_level() {
         assert!(!svg_coerced.contains("&amp;equals;"), "{svg_coerced}");
     }
 }
+
+#[test]
+fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
+    let entity_https = render(
+        "classDiagram\n  class A\n  click A href \"https#58;//example.org/\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        entity_https.contains("xlink:href=\"https://example.org/\""),
+        "{entity_https}"
+    );
+
+    for unsafe_url in [
+        "javascript#58;alert(1)",
+        "javascript#colon;alert(1)",
+        "notes#58;meeting",
+    ] {
+        let svg = render(
+            &format!("classDiagram\n  class A\n  click A href \"{unsafe_url}\"\n"),
+            &Value::empty_object(),
+        )
+        .expect("renders");
+        assert!(
+            svg.contains("xlink:href=\"about:blank\""),
+            "url={unsafe_url:?}: {svg}"
+        );
+    }
+
+    let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
+    let loose = render(
+        "classDiagram\n  class A\n  click A href \"javascript#58;alert(1)\"\n",
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        loose.contains("xlink:href=\"javascript:alert(1)\""),
+        "{loose}"
+    );
+}
