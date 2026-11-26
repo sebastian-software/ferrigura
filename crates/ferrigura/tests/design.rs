@@ -1415,13 +1415,14 @@ enum LoopSide {
 }
 
 /// Checks the self-loop with the given edge id against the middle `(x, y)` of its node: it leaves
-/// and enters `side` 20 apart around the middle of the side, stands 32 out, and its label stands
+/// and enters `side` `apart` around the middle of the side, stands 32 out, and its label stands
 /// beside it, centered on it, clear of the loop. Returns the loop's box and the label's middle.
 fn assert_loop_beside(
     svg: &str,
     id: &str,
     middle: (f64, f64),
     side: LoopSide,
+    apart: f64,
 ) -> ((f64, f64, f64, f64), (f64, f64)) {
     let points = route(svg, id);
     assert_eq!(points.len(), 4, "{id}: {points:?}");
@@ -1439,7 +1440,7 @@ fn assert_loop_beside(
     match side {
         LoopSide::Right | LoopSide::Left => {
             assert!((first.0 - last.0).abs() < 1e-6, "{id}: {points:?}");
-            assert!((last.1 - first.1 - 20.0).abs() < 1e-6, "{id}: {points:?}");
+            assert!((last.1 - first.1 - apart).abs() < 1e-6, "{id}: {points:?}");
             assert!(((first.1 + last.1) / 2.0 - middle.1).abs() < 1e-6, "{id}");
             assert!((right - left - 32.0).abs() < 1e-6, "{id}: {points:?}");
             assert!((label.1 - middle.1).abs() < 1e-6, "{id}: {label:?}");
@@ -1458,7 +1459,7 @@ fn assert_loop_beside(
         }
         LoopSide::Top => {
             assert!((first.1 - last.1).abs() < 1e-6, "{id}: {points:?}");
-            assert!((last.0 - first.0 - 20.0).abs() < 1e-6, "{id}: {points:?}");
+            assert!((last.0 - first.0 - apart).abs() < 1e-6, "{id}: {points:?}");
             assert!(((first.0 + last.0) / 2.0 - middle.0).abs() < 1e-6, "{id}");
             assert!((bottom - top - 32.0).abs() < 1e-6, "{id}: {points:?}");
             assert!(first.1 < middle.1, "{id}: {points:?}");
@@ -1486,7 +1487,7 @@ fn a_self_loop_stands_on_the_free_side_of_its_node() {
     let svg = renderer.render_with(LOOP, &design(None)).unwrap();
     let (x, y) = node_middle(&svg, "A");
     let (width, _) = node_size(&svg, "A");
-    let (loop_box, _) = assert_loop_beside(&svg, "L_A_A_0", (x, y), LoopSide::Right);
+    let (loop_box, _) = assert_loop_beside(&svg, "L_A_A_0", (x, y), LoopSide::Right, 20.0);
     assert!(
         (loop_box.0 - (x + width / 2.0)).abs() < 1e-6,
         "{loop_box:?}"
@@ -1502,7 +1503,7 @@ fn a_self_loop_stands_on_the_free_side_of_its_node() {
     // From left to right, the loop stands on the top with its label at its right.
     let across = LOOP.replace("flowchart TD", "flowchart LR");
     let svg = renderer.render_with(&across, &design(None)).unwrap();
-    assert_loop_beside(&svg, "L_A_A_0", node_middle(&svg, "A"), LoopSide::Top);
+    assert_loop_beside(&svg, "L_A_A_0", node_middle(&svg, "A"), LoopSide::Top, 20.0);
     // The default keeps ELK's loop.
     let plain = renderer.render_with(LOOP, &default(None)).unwrap();
     let points = route(&plain, "L_A_A_0");
@@ -1516,8 +1517,8 @@ fn two_self_loops_stand_on_both_free_sides() {
         .render_with(text, &design(None))
         .unwrap();
     let middle = node_middle(&svg, "W");
-    assert_loop_beside(&svg, "L_W_W_0", middle, LoopSide::Right);
-    assert_loop_beside(&svg, "L_W_W_2", middle, LoopSide::Left);
+    assert_loop_beside(&svg, "L_W_W_0", middle, LoopSide::Right, 20.0);
+    assert_loop_beside(&svg, "L_W_W_2", middle, LoopSide::Left, 20.0);
     assert!(runs_straight_down(&svg, "L_A_W_0") && runs_straight_down(&svg, "L_W_D_0"));
 }
 
@@ -1528,10 +1529,11 @@ fn a_state_loops_beside_itself_and_beside_its_note() {
     let svg = renderer.render_with(text, &design(None)).unwrap();
     let pending = state_box(&svg, "Pending");
     let middle = (pending.0 + pending.2 / 2.0, pending.1 + pending.3 / 2.0);
-    let (loop_box, _) = assert_loop_beside(&svg, "edge1", middle, LoopSide::Right);
+    // The state keeps its height, as high as its neighbor, and the ends of the loop are half its
+    // side apart.
+    assert_eq!(pending.3, state_box(&svg, "Paid").3);
+    let (loop_box, _) = assert_loop_beside(&svg, "edge1", middle, LoopSide::Right, pending.3 / 2.0);
     assert!((loop_box.0 - (pending.0 + pending.2)).abs() < 1e-6);
-    // The state is tall enough for the loop to meet its side clear of the corners.
-    assert!(pending.3 >= 44.0, "{pending:?}");
     // A note on the right puts the loop on the left; the note keeps its place beside the state.
     let noted = text.replace(
         "Paid --> [*]\n",
@@ -1540,7 +1542,7 @@ fn a_state_loops_beside_itself_and_beside_its_note() {
     let svg = renderer.render_with(&noted, &design(None)).unwrap();
     let pending = state_box(&svg, "Pending");
     let middle = (pending.0 + pending.2 / 2.0, pending.1 + pending.3 / 2.0);
-    let (loop_box, _) = assert_loop_beside(&svg, "edge1", middle, LoopSide::Left);
+    let (loop_box, _) = assert_loop_beside(&svg, "edge1", middle, LoopSide::Left, pending.3 / 2.0);
     let note = note_box(&svg, "Pending");
     assert!(note.0 > pending.0 + pending.2, "{note:?}");
     assert!(!boxes_meet(loop_box, note));
@@ -1554,7 +1556,7 @@ fn a_class_loops_beside_itself_with_its_cardinalities_at_its_ends() {
         .unwrap();
     let middle = class_middle(&svg, "Employee");
     let id = "id_Employee_Employee_2";
-    let (loop_box, label) = assert_loop_beside(&svg, id, middle, LoopSide::Right);
+    let (loop_box, label) = assert_loop_beside(&svg, id, middle, LoopSide::Right, 20.0);
     let points = route(&svg, id);
     let marker = "<g class=\"edgeTerminals\" transform=\"translate(";
     let centres: Vec<(f64, f64)> = svg
