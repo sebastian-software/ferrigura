@@ -34,7 +34,7 @@ Quirks kept on purpose, because the reference's DB holds them:
 - **Connectors.** A connector is a vertex with `isConnector`, titled by its text or its id; declaring it again keeps the first record and takes a non-empty title; declaring it over a vertex replaces the record.
 - **Metadata.** A single-line block is wrapped in braces and a multi-line one is read as it is; a block that fails to read is read again without the trailing commas of its lines. A value that is not an object spreads as JavaScript's spread does, and `0`, `""` and `NaN` are not truthy.
 - **Lexer at the end of the text.** Jison reads the end with every rule of its state, so an open `accTitle:`, `accDescr {`, callback or click gives one empty token there.
-- **Labels and links** are sanitized with the strict `sanitizeText` and links with `formatUrl`. The security level is the default, so a click sets the class `clickable` and runs no callback.
+- **Labels and links** are sanitized with strict `sanitizeText`, and click links are formatted with `formatUrl` using the host's `securityLevel` (default `strict`; `parse_prepared_with_security` accepts the host's level). Click callbacks do not run, so a click only sets the class `clickable` and its link.
 
 Errors are ferrigura's own texts; the differential run compares acceptance and the models of accepted inputs.
 
@@ -53,7 +53,7 @@ Configuration read: the `agentflow` section's `titleTopMargin` (25), `diagramPad
 ## Differences from Mermaid
 
 - Labels are SVG text, and the output is checked with `htmlLabels: false` ([0009](../decisions/0009-svg-text-labels.md)).
-- Click callbacks do not exist and `securityLevel` is not read by the parser ([0006](../decisions/0006-rust-only-no-browser.md)); a click sets `clickable` and the link, and `call` binds nothing.
+- Click callbacks do not exist ([0006](../decisions/0006-rust-only-no-browser.md)); a click sets `clickable` and the link, and `call` binds nothing. The host's `securityLevel` controls click URL formatting and render-sink URL validation (default `strict`; `loose` preserves raw URLs), while front matter and directives cannot relax it.
 - Only ELK Layered runs. `layout:` values and container `algorithm` metadata that name another ELK algorithm fall back to Layered, and the geometry run leaves such fixtures out ([0012](../decisions/0012-layout-engines-ported-exactly.md)). `look: handDrawn` is out of scope; the geometry run leaves those fixtures out too.
 - Error messages are ferrigura's own ([0007](../decisions/0007-hand-written-parsers.md)).
 

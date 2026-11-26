@@ -271,6 +271,7 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
             "my%20notes#A%2525252525252525252541",
             "my%20notes#A%2525252525252525252541",
         ),
+        ("%20", "%20"),
     ] {
         let fragment = render(
             &format!("stateDiagram-v2\n  s1\n  click s1 href \"{raw}\"\n"),

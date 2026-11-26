@@ -129,7 +129,9 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
             return BLANK_URL;
         };
         if !(decoded_before.ends_with('&') && starts_with_sink_entity_body(&head[idx + 1..])) {
-            return if decoded_before.is_empty() || is_allowed_sink_candidate(&decoded_before) {
+            return if decoded_before.chars().all(is_sink_ignored)
+                || is_allowed_sink_candidate(&decoded_before)
+            {
                 url
             } else {
                 BLANK_URL
@@ -141,7 +143,11 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
         }
     }
     match decode_sink_prefix_bounded(head, MAX_DECODE_PASSES) {
-        Some(decoded) if is_allowed_sink_candidate(&decoded) => url,
+        Some(decoded)
+            if decoded.chars().all(is_sink_ignored) || is_allowed_sink_candidate(&decoded) =>
+        {
+            url
+        }
         _ => BLANK_URL,
     }
 }
@@ -160,15 +166,16 @@ pub fn guard_image_url(url: &str, loose: bool) -> &str {
     guard_url(url, false)
 }
 
-/// Whether `url` starts with `data:` at offset 0 followed by a raster `image/<subtype>` media
-/// type (ignoring MIME whitespace around the media type and subtype, matching data-URL parsing
-/// and DOMPurify's `data:` check for `DEFAULT_DATA_URI_TAGS`, restricted to non-scriptable raster
-/// image subtypes).
+/// Whether `url` starts (after optional leading whitespace) with `data:` followed by a raster
+/// `image/<subtype>` media type (ignoring MIME whitespace around the media type and subtype,
+/// matching data-URL parsing and DOMPurify's trimmed `data:` check for `DEFAULT_DATA_URI_TAGS`,
+/// restricted to non-scriptable raster image subtypes).
 fn is_safe_raster_data_image_url(url: &str) -> bool {
-    let Some(after_scheme) = url
+    let trimmed = url.trim_start_matches(is_js_space);
+    let Some(after_scheme) = trimmed
         .get(..5)
         .filter(|prefix| prefix.eq_ignore_ascii_case("data:"))
-        .map(|_| &url[5..])
+        .map(|_| &trimmed[5..])
     else {
         return false;
     };
@@ -1682,6 +1689,8 @@ mod tests {
             "R&D%23123%2525252525252525252541",
             "/images/logo.png",
             "./relative:path.png",
+            "%20",
+            "%20#section",
         ] {
             assert_eq!(guard_url(safe_url, false), safe_url, "{safe_url:?}");
             assert_eq!(
@@ -1737,6 +1746,8 @@ mod tests {
     fn guard_image_url_allows_safe_raster_data_uris_but_blocks_active_payloads() {
         for safe_data_url in [
             "data:image/png;base64,iVBORw0KGgo=",
+            " data:image/png;base64,iVBORw0KGgo=",
+            "\tdata:image/png;base64,iVBORw0KGgo=",
             "data: image/png;base64,iVBORw0KGgo=",
             "data:\timage/png ;base64,iVBORw0KGgo=",
             "data:image/png ;base64,iVBORw0KGgo=",
@@ -1765,10 +1776,10 @@ mod tests {
 
         for unsafe_data_url in [
             "data:image/svg+xml,<svg onload=alert(1)>",
+            " data:image/svg+xml,<svg onload=alert(1)>",
             "data:image/svg+xml;base64,PHN2Zz4=",
             "data:text/html,<script>alert(1)</script>",
             "data:image/png",
-            " data:image/png;base64,iVBORw0KGgo=",
             "javascript:alert(1)",
         ] {
             assert_eq!(
