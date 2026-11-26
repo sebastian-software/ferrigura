@@ -12,7 +12,7 @@ when the viewer requests reduced motion.
 
 ## Model
 
-`GitGraphDiagram` (`crates/ferrigura-model/src/git_graph.rs`), version 1, is the DB's state after parsing.
+`GitGraphDiagram` (`crates/ferrigura-model/src/git_graph.rs`), version 2, is the DB's state after parsing.
 
 - `title`, `accTitle`, `accDescr`: the header texts after the sanitizer, `""` when absent. The grammar's `title` wins when it is not empty, else the front matter's title.
 - `direction`: `LR`, `TB` or `BT`.

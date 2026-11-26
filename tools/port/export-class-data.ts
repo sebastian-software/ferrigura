@@ -58,6 +58,7 @@ interface Modules {
   preprocess: {
     preprocessDiagram(code: string): { code: { cleaned: string }; config?: Json };
   };
+  encode: { encodeEntities(text: string): string };
   parser: { default: { parser: { yy: unknown }; parse(text: string): unknown } };
   classDb: { ClassDB: new () => ClassDb };
 }
@@ -65,16 +66,17 @@ interface Modules {
 async function loadModules(reference: Reference): Promise<Modules> {
   provideDomForSanitizing();
   await registerDetectors(reference);
-  const [config, detectType, preprocess, parser, classDb] = await Promise.all([
+  const [config, detectType, preprocess, encode, parser, classDb] = await Promise.all([
     reference.load<Modules['config']>('/packages/mermaid/src/config.ts'),
     reference.load<Modules['detectType']>('/packages/mermaid/src/diagram-api/detectType.ts'),
     reference.load<Modules['preprocess']>('/packages/mermaid/src/preprocess.ts'),
+    reference.load<Modules['encode']>('/packages/mermaid/src/utils.ts'),
     reference.load<Modules['parser']>(
       '/packages/mermaid/src/diagrams/class/parser/classDiagram.jison'
     ),
     reference.load<Modules['classDb']>('/packages/mermaid/src/diagrams/class/classDb.ts'),
   ]);
-  return { config, detectType, preprocess, parser, classDb };
+  return { config, detectType, preprocess, encode, parser, classDb };
 }
 
 /** A string or a number as the reference holds it, or `null` for an undefined field. */
@@ -188,7 +190,7 @@ function edgeModel(edge: Json): Json {
  * again afterwards, as `mermaidAPI` does at the end of a render.
  */
 function layoutOf(text: string, modules: Modules): Json {
-  const { config, detectType, preprocess, parser, classDb } = modules;
+  const { config, detectType, preprocess, encode, parser, classDb } = modules;
 
   config.setSiteConfig({});
   config.reset();
@@ -205,7 +207,7 @@ function layoutOf(text: string, modules: Modules): Json {
     const db = new classDb.ClassDB();
     db.clear();
     parser.default.parser.yy = db;
-    parser.default.parse(processed.code.cleaned);
+    parser.default.parse(encode.encodeEntities(processed.code.cleaned));
 
     const { nodes, edges } = db.getData();
     return {

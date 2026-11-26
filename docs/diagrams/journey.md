@@ -4,7 +4,7 @@ A user journey diagram draws the steps of a person's path through a process, gro
 
 ## Model
 
-`JourneyDiagram` (`crates/ferrigura-model/src/journey.rs`), version 1.
+`JourneyDiagram` (`crates/ferrigura-model/src/journey.rs`), version 2.
 
 - `title`, `accTitle`, `accDescr`: the header texts after the sanitizer, `""` when absent. The last `title` line of the body wins, even when it sanitizes to empty, and replaces the front matter title.
 - `sections`: every section statement in order, duplicates kept.

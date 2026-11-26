@@ -4,7 +4,7 @@ An event modeling diagram draws a timeline of frames as boxes in swimlanes: user
 
 ## Model
 
-`ferrigura_model::event_modeling::EventModelingDiagram` is the DB state after the parse, without the geometry and the measured box texts, version 1:
+`ferrigura_model::event_modeling::EventModelingDiagram` is the DB state after the parse, without the geometry and the measured box texts, version 2:
 
 | Field          | Holds                                                                                                                         |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------- |

@@ -3,8 +3,8 @@
 //! `docs/diagrams/class.md#parsing`.
 //!
 //! The text goes through the same steps as the reference before the grammar sees it: front matter
-//! (the shared preparation), directives, and comment lines. The class grammar takes no other
-//! change: no entity encoding and no line break at the end.
+//! (the shared preparation), directives, comment lines, and `encodeEntities`. The class grammar
+//! takes no other change: no closing-brace rewrite and no trailing line break.
 
 mod db;
 mod grammar;
@@ -20,8 +20,7 @@ use ferrigura_model::class::{ClassDiagram, ClassMember};
 
 use crate::error::ParseError;
 use crate::flowchart::clean_comments;
-use crate::preprocess::prepare;
-use crate::preprocess::remove_directives;
+use crate::preprocess::{encode_entities, prepare, remove_directives};
 
 /// The options of the parser, which change how the DB sanitizes its texts. The defaults are the
 /// reference's defaults: `htmlLabels` is on and `securityLevel` is `strict`.
@@ -59,24 +58,8 @@ pub fn parse_prepared(
     prepared: &crate::preprocess::Prepared,
     options: Options,
 ) -> Result<ClassDiagram, ParseError> {
-    parse_prepared_with_db(prepared, db::ClassDb::new(options))
-}
-
-/// Parses an already prepared source for rendering: encodes Mermaid `#...;` entities on click
-/// links before `formatUrl` runs (matching Mermaid's `Diagram.fromText` `encodeEntities` order
-/// without affecting the differential parser model of [`parse_prepared`]).
-pub fn parse_prepared_for_render(
-    prepared: &crate::preprocess::Prepared,
-    options: Options,
-) -> Result<ClassDiagram, ParseError> {
-    parse_prepared_with_db(prepared, db::ClassDb::new_for_render(options))
-}
-
-fn parse_prepared_with_db(
-    prepared: &crate::preprocess::Prepared,
-    mut db: db::ClassDb,
-) -> Result<ClassDiagram, ParseError> {
-    let cleaned = clean_comments(&remove_directives(&prepared.text));
+    let cleaned = encode_entities(&clean_comments(&remove_directives(&prepared.text)));
+    let mut db = db::ClassDb::new(options);
     // `Diagram.ts` sets the front matter's title before the parser runs, and only when it is set.
     if let Some(title) = prepared.title.as_deref().filter(|title| !title.is_empty()) {
         db.set_diagram_title(title);

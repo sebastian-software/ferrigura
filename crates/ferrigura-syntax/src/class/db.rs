@@ -90,7 +90,6 @@ pub(crate) struct RawRelation {
 #[derive(Debug, Clone)]
 pub(crate) struct ClassDb {
     options: Options,
-    encode_link_entities: bool,
     title: String,
     acc_title: String,
     acc_descr: String,
@@ -107,20 +106,8 @@ pub(crate) struct ClassDb {
 impl ClassDb {
     /// An empty DB, as `clear()` leaves it, with the sanitizing options of the parse.
     pub(crate) fn new(options: Options) -> Self {
-        Self::with_link_encoding(options, false)
-    }
-
-    /// An empty DB for render-time parsing, encoding Mermaid `#...;` entities on click links
-    /// before `formatUrl` runs (matching `Diagram.fromText`'s `encodeEntities` step before
-    /// `classDb.setLink`).
-    pub(crate) fn new_for_render(options: Options) -> Self {
-        Self::with_link_encoding(options, true)
-    }
-
-    fn with_link_encoding(options: Options, encode_link_entities: bool) -> Self {
         Self {
             options,
-            encode_link_entities,
             title: String::new(),
             acc_title: String::new(),
             acc_descr: String::new(),
@@ -462,14 +449,7 @@ impl ClassDb {
         } else {
             "_blank".to_owned()
         };
-        let encoded;
-        let raw_link = if self.encode_link_entities {
-            encoded = crate::preprocess::encode_hash_entities(link);
-            encoded.as_str()
-        } else {
-            link
-        };
-        let formatted = format_url(raw_link, loose);
+        let formatted = format_url(link, loose);
         for piece in ids.split(',') {
             let id = prefixed_if_digit(piece);
             let (name, _) = self.split(&id);

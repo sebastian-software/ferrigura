@@ -4,7 +4,7 @@ A Wardley map plots components of a value chain on two axes, visibility (up) and
 
 ## Model
 
-`ferrigura_model::wardley::WardleyDiagram` is the DB state after the parse (`getWardleyData`), version 1:
+`ferrigura_model::wardley::WardleyDiagram` is the DB state after the parse (`getWardleyData`), version 2:
 
 | Field                                     | Holds                                                                                                                                                                                                        |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

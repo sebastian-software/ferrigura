@@ -4,7 +4,7 @@ An architecture diagram draws a cloud or system architecture: services and junct
 
 ## Model
 
-`ferrigura_model::architecture::ArchitectureDiagram` is the DB state after the parse (`architectureDb.ts`) with the derived block that the layout reads, version 1:
+`ferrigura_model::architecture::ArchitectureDiagram` is the DB state after the parse (`architectureDb.ts`) with the derived block that the layout reads, version 2:
 
 | Field                           | Holds                                                                                                     |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------- |

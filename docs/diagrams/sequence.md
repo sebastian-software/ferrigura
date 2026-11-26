@@ -4,7 +4,7 @@ A sequence diagram draws participants as columns and the messages between them a
 
 ## Model
 
-`SequenceDiagram` (`crates/ferrigura-model/src/sequence.rs`), version 1, is the DB's state after parsing. Field names are the DB's, in camelCase; a field the DB leaves `undefined` is `null`.
+`SequenceDiagram` (`crates/ferrigura-model/src/sequence.rs`), version 2, is the DB's state after parsing. Field names are the DB's, in camelCase; a field the DB leaves `undefined` is `null`.
 
 - `title`, `accTitle`, `accDescr`: the DB's values after the sanitizer, with the DB's whitespace rules. A body `title` replaces the front matter title even when it is blank.
 - `actors`: in the DB's order, each with `id`; `name`, the id as written (an alias sets only the description); `description`, the alias or the text after `as`, else the name; `type`, `participant`, `actor` or the `type` of the `@{ … }` metadata as YAML gives it (a number stays a number); `wrap`; `box`, the index into `boxes` or `null`; `prevActor` and `nextActor`; `links`, in the key order of a JavaScript object; and `properties`.

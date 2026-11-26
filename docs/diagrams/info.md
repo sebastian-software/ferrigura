@@ -4,7 +4,7 @@ An info diagram draws the Mermaid version, as `v12.2.0`. It starts with the keyw
 
 ## Model
 
-`InfoDiagram` (`crates/ferrigura-model/src/info.rs`), version 1, with `title`, `accTitle` and `accDescr`, each `""` when absent. The texts are what the grammar gives, as in the pie ([canonical-model.md](../canonical-model.md#info)).
+`InfoDiagram` (`crates/ferrigura-model/src/info.rs`), version 2, with `title`, `accTitle` and `accDescr`, each `""` when absent. The texts are what the grammar gives, as in the pie ([canonical-model.md](../canonical-model.md#info)).
 
 The model leaves out two things:
 

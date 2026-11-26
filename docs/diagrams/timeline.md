@@ -4,7 +4,7 @@ A timeline diagram draws periods (a year, an era) with the events that happened 
 
 ## Model
 
-`TimelineDiagram` (`crates/ferrigura-model/src/timeline.rs`), version 1, is the DB's state after parsing.
+`TimelineDiagram` (`crates/ferrigura-model/src/timeline.rs`), version 2, is the DB's state after parsing.
 
 - `direction`: `"LR"` or `"TD"`. A plain `timeline` keeps `LR`.
 - `title`, `accTitle`, `accDescr`: the header texts, sanitized, `""` when absent.

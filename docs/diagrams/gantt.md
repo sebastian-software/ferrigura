@@ -12,7 +12,7 @@ when the viewer requests reduced motion.
 
 ## Model
 
-`GanttDiagram` (`crates/ferrigura-model/src/gantt.rs`), version 1, is the DB's state after `getTasks()`, with the dates resolved.
+`GanttDiagram` (`crates/ferrigura-model/src/gantt.rs`), version 2, is the DB's state after `getTasks()`, with the dates resolved.
 
 - `title`, `accTitle`, `accDescr`: sanitized, with the DB's whitespace rules. A `title` statement replaces the front matter title even when it sanitizes to empty. `title` keeps its blanks.
 - `dateFormat`, `axisFormat`, `todayMarker`: the text after the keyword, blanks included. `tickInterval` is that text, or `null` when the statement is absent.

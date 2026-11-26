@@ -397,7 +397,7 @@ fn render_class(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<Str
     section.roles = ferrigura_render::design::Roles::Class;
     class_render::render(&Context {
         fonts: prepared.fonts,
-        diagram: &class::parse_prepared_for_render(
+        diagram: &class::parse_prepared(
             &prepared.source,
             class::Options {
                 html_labels: effective_html_labels(&prepared.view.effective),

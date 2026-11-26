@@ -4,7 +4,7 @@ A Cynefin diagram draws the Cynefin sensemaking framework: four quadrants (compl
 
 ## Model
 
-`ferrigura_model::cynefin::CynefinDiagram` is the DB state after the parse (`cynefinDb.ts`), version 1:
+`ferrigura_model::cynefin::CynefinDiagram` is the DB state after the parse (`cynefinDb.ts`), version 2:
 
 | Field         | Holds                                                                                |
 | ------------- | ------------------------------------------------------------------------------------ |

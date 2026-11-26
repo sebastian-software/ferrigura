@@ -4,7 +4,7 @@ An ishikawa (fishbone) diagram draws a cause tree: the effect is the head of a f
 
 ## Model
 
-`ferrigura_model::ishikawa::IshikawaDiagram` is the DB state after the parse (`ishikawaDb.ts`), version 1:
+`ferrigura_model::ishikawa::IshikawaDiagram` is the DB state after the parse (`ishikawaDb.ts`), version 2:
 
 | Field      | Holds                                                                                    |
 | ---------- | ---------------------------------------------------------------------------------------- |

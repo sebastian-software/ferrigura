@@ -55,7 +55,7 @@ The model leaves out what only rendering needs or what follows from other fields
 
 ## Parsing
 
-The text goes through the shared preparation (front matter, directives) and whole-line comment removal. The class parser takes no other step: no entity encoding, no closing-brace rewrite and no trailing line break. `parse_grammar` runs the lexer and grammar alone, as the ported specs call the reference's parser.
+The text goes through the shared preparation (front matter, directives), whole-line comment removal, and `encodeEntities`. The class parser takes no other step: no closing-brace rewrite and no trailing line break. `parse_grammar` runs the lexer and grammar alone, as the ported specs call the reference's parser.
 
 **Lexer** (`class/lexer.rs`). The rules of `classDiagram.jison` run in their written order on a state stack (`scan.rs`, [0007](../decisions/0007-hand-written-parsers.md)): first match wins, a keyword ending in a word character gets Jison's implicit word boundary, and `begin`, `popState` and `less(0)` behave as in Jison. The states are INITIAL, `string`, `bqstring`, `generic`, the three accessibility states, `callback_name`, `callback_args`, `namespace`, `namespace-body`, `class` and `class-body`. No action of the grammar changes a state, so the lexer runs over the whole text before the parser, and a lexical error anywhere rejects the input. At the end of the input the rules run once more on the empty rest, as Jison's `next()` does, so a still-open `string` state yields an empty `STR` before `EOF`.
 
