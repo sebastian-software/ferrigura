@@ -102,7 +102,9 @@ export function DesignSheets() {
         {credit}, the same diagram text rendered twice. Only the option differs.
       </MonoCaption>
       <MonoTableView summary="Show the diagram text">
-        <Source label={`${sample.label}: the diagram text for both drawings`}>{sample.source}</Source>
+        <Source label={`${sample.label}: the diagram text for both drawings`}>
+          {sample.source}
+        </Source>
       </MonoTableView>
     </figure>
   );

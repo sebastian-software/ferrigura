@@ -126,10 +126,10 @@ function DesignScope() {
     <>
       <p>
         A state diagram and a class diagram are drawn by the same rules, with what only they have. A
-        note stands beside its state, so the states keep their line. Two transitions between the same
-        two states run side by side. A class shows the compartments it has and no empty ones, the
-        general class stands above the specific one, and the children of a class share one arrowhead.
-        Only an interface and an enumeration carry color.
+        note stands beside its state, so the states keep their line. Two transitions between the
+        same two states run side by side. A class shows the compartments it has and no empty ones,
+        the general class stands above the specific one, and the children of a class share one
+        arrowhead. Only an interface and an enumeration carry color.
       </p>
       <p>
         The design mode draws flowcharts, state diagrams and class diagrams; another diagram type
