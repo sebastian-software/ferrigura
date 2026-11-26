@@ -12,7 +12,8 @@
 //! As in `js-yaml`, a collection is an object while it is read: an alias to a collection that is
 //! still open sees the entries it gets later. The finished document is converted to a tree; a
 //! collection that contains itself has no tree, and `js-yaml`'s canonical form of it does not end,
-//! so it is an error here too.
+//! so it is an error here too. Expansion is bounded in node count, string bytes, and collection
+//! nesting depth so aliased DAGs cannot exhaust memory or stack space.
 //!
 //! The typing is the JSON schema's, as `js-yaml` gives it (`lib/type/null.js`, `bool.js`, `int.js`,
 //! `float.js`, `schema/json.js`):
@@ -30,10 +31,8 @@
 //! surrogate (a `\u` escape of one) is not a character, and a Rust string cannot hold it: it is read
 //! as U+FFFD, which is what the reference's output (UTF-8) writes for it.
 
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
-use std::rc::Rc;
 
 use ferrigura_model::value::Value;
 use ferroni::Regex;
@@ -163,7 +162,7 @@ pub fn load(text: &str) -> Result<Option<Yaml>, YamlError> {
             message: "null byte is not allowed in input".to_owned(),
         });
     }
-    let mut state = State::new(input);
+    let mut state = State::new(input, text.len());
     while state.at(state.position) == SPACE {
         state.line_indent += 1;
         state.position += 1;
@@ -175,16 +174,18 @@ pub fn load(text: &str) -> Result<Option<Yaml>, YamlError> {
         0 => Ok(None),
         1 => {
             let document = state.documents.pop().unwrap_or(Node::Null);
-            document
-                .to_yaml()
+            state
+                .to_yaml(document)
                 .map(Some)
-                .ok_or_else(|| state.error(CYCLIC))
+                .map_err(|message| state.error(message))
         }
         _ => Err(state.error("expected a single document in the stream, but found more")),
     }
 }
 
 const CYCLIC: &str = "a collection that contains itself has no tree";
+const EXPANSION_LIMIT: &str = "YAML alias expansion exceeded size limit";
+const EXPANSION_DEPTH_LIMIT: &str = "YAML alias expansion exceeded nesting limit";
 
 const TAB: u16 = 0x09;
 const LF: u16 = 0x0A;
@@ -193,6 +194,27 @@ const SPACE: u16 = 0x20;
 
 /// `MAX_DEPTH` of `js-yaml`: the nesting of nodes.
 const MAX_DEPTH: usize = 100;
+
+/// Maximum number of `Yaml` nodes produced when expanding a document tree.
+const MAX_EXPANDED_NODES: usize = 50_000;
+
+/// Minimum expanded string and key byte budget; larger inputs scale linearly with input size.
+const MIN_EXPANDED_BYTES: usize = 1024 * 1024;
+
+/// Multiplier on input bytes for the expanded string and key byte budget.
+const EXPANDED_BYTES_PER_INPUT_BYTE: usize = 8;
+
+/// Maximum collection depth when expanding a document tree. A non-aliased document at `MAX_DEPTH`
+/// can nest at most two collections per level (a flow sequence and a single-pair mapping inside
+/// it), so `2 * MAX_DEPTH` accepts every valid non-aliased document while bounding deep alias
+/// chains.
+const MAX_EXPANDED_DEPTH: usize = MAX_DEPTH * 2;
+
+fn expanded_byte_budget(input_bytes: usize) -> usize {
+    input_bytes
+        .saturating_mul(EXPANDED_BYTES_PER_INPUT_BYTE)
+        .max(MIN_EXPANDED_BYTES)
+}
 
 fn unit(c: u8) -> u16 {
     u16::from(c)
@@ -236,63 +258,53 @@ enum Chomping {
     Keep,
 }
 
-/// A node while it is read. A collection is shared, as `js-yaml`'s object is: the reader fills it
-/// in place, and an alias to it gets the same object.
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum CollectionId {
+    Sequence(usize),
+    Mapping(usize),
+}
+
+struct ExpandBudget {
+    remaining_nodes: usize,
+    remaining_bytes: usize,
+}
+
+impl ExpandBudget {
+    fn new(input_bytes: usize) -> Self {
+        Self {
+            remaining_nodes: MAX_EXPANDED_NODES,
+            remaining_bytes: expanded_byte_budget(input_bytes),
+        }
+    }
+
+    fn take_node(&mut self) -> Result<(), &'static str> {
+        self.remaining_nodes = self.remaining_nodes.checked_sub(1).ok_or(EXPANSION_LIMIT)?;
+        Ok(())
+    }
+
+    fn take_bytes(&mut self, bytes: usize) -> Result<(), &'static str> {
+        self.remaining_bytes = self
+            .remaining_bytes
+            .checked_sub(bytes)
+            .ok_or(EXPANSION_LIMIT)?;
+        Ok(())
+    }
+}
+
+/// A node while it is read. Strings and collections live in flat arenas on `State` so an alias
+/// shares the same handle without reference cycles, string duplication, or leaks when dropped.
+#[derive(Clone, Copy)]
 enum Node {
     Null,
     Bool(bool),
     Number(f64),
-    String(String),
-    Sequence(Rc<RefCell<Vec<Node>>>),
-    Mapping(Rc<RefCell<Vec<(String, Node)>>>),
+    String(usize),
+    Sequence(usize),
+    Mapping(usize),
 }
 
 impl Node {
-    /// The tree of a finished node, or `None` when a collection contains itself.
-    fn to_yaml(&self) -> Option<Yaml> {
-        self.to_yaml_on(&mut Vec::new())
-    }
-
-    /// `path` holds the collections being converted, outermost first.
-    fn to_yaml_on(&self, path: &mut Vec<*const ()>) -> Option<Yaml> {
-        Some(match self {
-            Self::Null => Yaml::Null,
-            Self::Bool(flag) => Yaml::Bool(*flag),
-            Self::Number(number) => Yaml::Number(*number),
-            Self::String(text) => Yaml::String(text.clone()),
-            Self::Sequence(items) => {
-                let id = Rc::as_ptr(items).cast::<()>();
-                if path.contains(&id) {
-                    return None;
-                }
-                path.push(id);
-                let converted = items
-                    .borrow()
-                    .iter()
-                    .map(|item| item.to_yaml_on(path))
-                    .collect::<Option<Vec<_>>>()?;
-                path.pop();
-                Yaml::Sequence(converted)
-            }
-            Self::Mapping(pairs) => {
-                let id = Rc::as_ptr(pairs).cast::<()>();
-                if path.contains(&id) {
-                    return None;
-                }
-                path.push(id);
-                let converted = pairs
-                    .borrow()
-                    .iter()
-                    .map(|(key, value)| value.to_yaml_on(path).map(|value| (key.clone(), value)))
-                    .collect::<Option<Vec<_>>>()?;
-                path.pop();
-                Yaml::Mapping(converted)
-            }
-        })
-    }
-
-    fn is_null(&self) -> bool {
+    fn is_null(self) -> bool {
         matches!(self, Self::Null)
     }
 }
@@ -358,54 +370,11 @@ fn find_type(tag: &str, kind: Option<Kind>) -> Option<TypeId> {
     candidates.iter().copied().find(|t| t.tag() == tag)
 }
 
-/// `resolve` then `construct` of a type for the data of a node: `None` when the type does not
-/// accept the data. The string type and the collections take an empty node as their empty value.
-fn construct(t: TypeId, data: &Node) -> Option<Node> {
-    match t {
-        TypeId::Str => Some(match data {
-            Node::Null => Node::String(String::new()),
-            other => other.clone(),
-        }),
-        TypeId::Seq => Some(match data {
-            Node::Null => Node::Sequence(Rc::new(RefCell::new(Vec::new()))),
-            other => other.clone(),
-        }),
-        TypeId::Map => Some(match data {
-            Node::Null => Node::Mapping(Rc::new(RefCell::new(Vec::new()))),
-            other => other.clone(),
-        }),
-        TypeId::Null => match data {
-            Node::Null => Some(Node::Null),
-            Node::String(text) if resolve_null(text) => Some(Node::Null),
-            _ => None,
-        },
-        TypeId::Bool => match data {
-            Node::String(text) => resolve_bool(text).map(Node::Bool),
-            _ => None,
-        },
-        TypeId::Int => match data {
-            Node::String(text) => resolve_integer(text).map(Node::Number),
-            _ => None,
-        },
-        TypeId::Float => match data {
-            Node::String(text) => resolve_float(text).map(Node::Number),
-            _ => None,
-        },
-    }
-}
-
-/// The implicit types of a plain scalar that has no tag, in the order of the schema: the first one
-/// that resolves the data gives the value and its tag.
-fn implicit_resolve(data: &Node) -> Option<(TypeId, Node)> {
-    [TypeId::Null, TypeId::Bool, TypeId::Int, TypeId::Float]
-        .into_iter()
-        .find_map(|t| construct(t, data).map(|value| (t, value)))
-}
-
 /// The state of `js-yaml`'s reader: the input in UTF-16 code units (so that columns and
 /// indentation count as they do in JavaScript), and the position, the line and the node being read.
 struct State {
     input: Vec<u16>,
+    input_bytes: usize,
     length: usize,
     position: usize,
     line: usize,
@@ -417,6 +386,10 @@ struct State {
     tag_map: HashMap<String, String>,
     anchor_map: HashMap<String, Node>,
     transactions: Vec<Vec<(String, Option<Node>)>>,
+    strings: Vec<String>,
+    sequences: Vec<Vec<Node>>,
+    mappings: Vec<Vec<(String, Node)>>,
+    remaining_key_bytes: usize,
     documents: Vec<Node>,
     tag: Option<String>,
     anchor: Option<String>,
@@ -442,11 +415,12 @@ type Res<T> = Result<T, YamlError>;
 
 impl State {
     /// `input` ends with the line break that `load` adds; the terminating NUL is read past its end.
-    fn new(mut input: Vec<u16>) -> Self {
+    fn new(mut input: Vec<u16>, input_bytes: usize) -> Self {
         let length = input.len();
         input.push(0);
         Self {
             input,
+            input_bytes,
             length,
             position: 0,
             line: 0,
@@ -458,12 +432,142 @@ impl State {
             tag_map: HashMap::new(),
             anchor_map: HashMap::new(),
             transactions: Vec::new(),
+            strings: Vec::new(),
+            sequences: Vec::new(),
+            mappings: Vec::new(),
+            remaining_key_bytes: expanded_byte_budget(input_bytes),
             documents: Vec::new(),
             tag: None,
             anchor: None,
             kind: None,
             result: Node::Null,
         }
+    }
+
+    fn intern_string(&mut self, text: String) -> Node {
+        let id = self.strings.len();
+        self.strings.push(text);
+        Node::String(id)
+    }
+
+    fn alloc_sequence(&mut self) -> usize {
+        let id = self.sequences.len();
+        self.sequences.push(Vec::new());
+        id
+    }
+
+    fn alloc_mapping(&mut self) -> usize {
+        let id = self.mappings.len();
+        self.mappings.push(Vec::new());
+        id
+    }
+
+    /// `resolve` then `construct` of a type for the data of a node: `None` when the type does not
+    /// accept the data. The string type and the collections take an empty node as their empty
+    /// value.
+    fn construct(&mut self, t: TypeId, data: Node) -> Option<Node> {
+        match t {
+            TypeId::Str => Some(match data {
+                Node::Null => self.intern_string(String::new()),
+                other => other,
+            }),
+            TypeId::Seq => Some(match data {
+                Node::Null => Node::Sequence(self.alloc_sequence()),
+                other => other,
+            }),
+            TypeId::Map => Some(match data {
+                Node::Null => Node::Mapping(self.alloc_mapping()),
+                other => other,
+            }),
+            TypeId::Null => match data {
+                Node::Null => Some(Node::Null),
+                Node::String(id) if resolve_null(&self.strings[id]) => Some(Node::Null),
+                _ => None,
+            },
+            TypeId::Bool => match data {
+                Node::String(id) => resolve_bool(&self.strings[id]).map(Node::Bool),
+                _ => None,
+            },
+            TypeId::Int => match data {
+                Node::String(id) => resolve_integer(&self.strings[id]).map(Node::Number),
+                _ => None,
+            },
+            TypeId::Float => match data {
+                Node::String(id) => resolve_float(&self.strings[id]).map(Node::Number),
+                _ => None,
+            },
+        }
+    }
+
+    /// The implicit types of a plain scalar that has no tag, in the order of the schema: the first
+    /// one that resolves the data gives the value and its tag.
+    fn implicit_resolve(&mut self, data: Node) -> Option<(TypeId, Node)> {
+        [TypeId::Null, TypeId::Bool, TypeId::Int, TypeId::Float]
+            .into_iter()
+            .find_map(|t| self.construct(t, data).map(|value| (t, value)))
+    }
+
+    /// The tree of a finished node, or an error message when a collection contains itself or
+    /// exceeds expansion limits.
+    fn to_yaml(&self, node: Node) -> Result<Yaml, &'static str> {
+        let mut path = Vec::new();
+        let mut budget = ExpandBudget::new(self.input_bytes);
+        self.to_yaml_on(node, &mut path, &mut budget)
+    }
+
+    /// `path` holds the collections being converted, outermost first.
+    fn to_yaml_on(
+        &self,
+        node: Node,
+        path: &mut Vec<CollectionId>,
+        budget: &mut ExpandBudget,
+    ) -> Result<Yaml, &'static str> {
+        budget.take_node()?;
+        Ok(match node {
+            Node::Null => Yaml::Null,
+            Node::Bool(flag) => Yaml::Bool(flag),
+            Node::Number(number) => Yaml::Number(number),
+            Node::String(id) => {
+                let text = &self.strings[id];
+                budget.take_bytes(text.len())?;
+                Yaml::String(text.clone())
+            }
+            Node::Sequence(id) => {
+                let collection = CollectionId::Sequence(id);
+                if path.contains(&collection) {
+                    return Err(CYCLIC);
+                }
+                if path.len() >= MAX_EXPANDED_DEPTH {
+                    return Err(EXPANSION_DEPTH_LIMIT);
+                }
+                path.push(collection);
+                let items = &self.sequences[id];
+                let mut converted = Vec::with_capacity(items.len().min(budget.remaining_nodes));
+                for &item in items {
+                    converted.push(self.to_yaml_on(item, path, budget)?);
+                }
+                path.pop();
+                Yaml::Sequence(converted)
+            }
+            Node::Mapping(id) => {
+                let collection = CollectionId::Mapping(id);
+                if path.contains(&collection) {
+                    return Err(CYCLIC);
+                }
+                if path.len() >= MAX_EXPANDED_DEPTH {
+                    return Err(EXPANSION_DEPTH_LIMIT);
+                }
+                path.push(collection);
+                let pairs = &self.mappings[id];
+                let mut converted = Vec::with_capacity(pairs.len().min(budget.remaining_nodes));
+                for (key, value) in pairs {
+                    budget.take_bytes(key.len())?;
+                    converted.push((key.clone(), self.to_yaml_on(*value, path, budget)?));
+                }
+                path.pop();
+                Yaml::Mapping(converted)
+            }
+        })
     }
 
     /// The code unit at `index`; past the input it is the NUL that ends it.
@@ -499,7 +603,7 @@ impl State {
             tag: self.tag.clone(),
             anchor: self.anchor.clone(),
             kind: self.kind,
-            result: self.result.clone(),
+            result: self.result,
         }
     }
 
@@ -520,7 +624,7 @@ impl State {
         if let Some(transaction) = self.transactions.last_mut()
             && !transaction.iter().any(|(recorded, _)| recorded == name)
         {
-            transaction.push((name.to_owned(), self.anchor_map.get(name).cloned()));
+            transaction.push((name.to_owned(), self.anchor_map.get(name).copied()));
         }
         self.anchor_map.insert(name.to_owned(), value);
     }
@@ -528,7 +632,7 @@ impl State {
     /// Stores the node that holds the anchor of the current node, if it has one.
     fn store_current_anchor(&mut self) {
         if let Some(name) = self.anchor.clone() {
-            self.store_anchor(&name, self.result.clone());
+            self.store_anchor(&name, self.result);
         }
     }
 
@@ -907,7 +1011,7 @@ impl State {
                         self.error("unacceptable node kind for !<?> tag; it should be \"scalar\"")
                     );
                 }
-                if let Some((t, value)) = implicit_resolve(&self.result) {
+                if let Some((t, value)) = self.implicit_resolve(self.result) {
                     self.result = value;
                     self.tag = Some(t.tag().to_owned());
                     self.store_current_anchor();
@@ -925,7 +1029,7 @@ impl State {
                         t.kind()
                     )));
                 }
-                let Some(value) = construct(t, &self.result) else {
+                let Some(value) = self.construct(t, self.result) else {
                     return Err(
                         self.error(&format!("cannot resolve a node with !<{tag}> explicit tag"))
                     );
@@ -1089,10 +1193,10 @@ impl State {
             return Err(self.error("name of an alias node must contain at least one character"));
         }
         let name = String::from_utf16_lossy(&self.input[start..self.position]);
-        let Some(node) = self.anchor_map.get(&name) else {
+        let Some(&node) = self.anchor_map.get(&name) else {
             return Err(self.error(&format!("unidentified alias \"{name}\"")));
         };
-        self.result = node.clone();
+        self.result = node;
         self.skip_separation_space(true);
         Ok(true)
     }
@@ -1107,9 +1211,9 @@ impl State {
         if self.first_tab_in_line.is_some() {
             return Ok(false);
         }
-        let items: Rc<RefCell<Vec<Node>>> = Rc::new(RefCell::new(Vec::new()));
+        let items = self.alloc_sequence();
         if let Some(name) = self.anchor.clone() {
-            self.store_anchor(&name, Node::Sequence(Rc::clone(&items)));
+            self.store_anchor(&name, Node::Sequence(items));
         }
 
         let mut ch = self.ch();
@@ -1125,7 +1229,7 @@ impl State {
             self.position += 1;
 
             if self.skip_separation_space(true) > 0 && self.line_indent <= node_indent {
-                items.borrow_mut().push(Node::Null);
+                self.sequences[items].push(Node::Null);
                 ch = self.ch();
                 continue;
             }
@@ -1133,7 +1237,7 @@ impl State {
             let line = self.line;
             self.compose_node(node_indent, Context::BlockIn, false, true)?;
             let item = std::mem::replace(&mut self.result, Node::Null);
-            items.borrow_mut().push(item);
+            self.sequences[items].push(item);
             self.skip_separation_space(true);
             ch = self.ch();
 
@@ -1166,9 +1270,9 @@ impl State {
         if self.first_tab_in_line.is_some() {
             return Ok(false);
         }
-        let pairs: Rc<RefCell<Vec<(String, Node)>>> = Rc::new(RefCell::new(Vec::new()));
+        let pairs = self.alloc_mapping();
         if let Some(name) = self.anchor.clone() {
-            self.store_anchor(&name, Node::Mapping(Rc::clone(&pairs)));
+            self.store_anchor(&name, Node::Mapping(pairs));
         }
         let mut key_node = Node::Null;
         let mut value_node = Node::Null;
@@ -1186,7 +1290,7 @@ impl State {
             if (ch == unit(b'?') || ch == unit(b':')) && is_ws_or_eol(following) {
                 if ch == unit(b'?') {
                     if at_explicit_key {
-                        self.store_pair(&pairs, &key_node, Node::Null)?;
+                        self.store_pair(pairs, key_node, Node::Null)?;
                         key_node = Node::Null;
                         value_node = Node::Null;
                     }
@@ -1222,13 +1326,13 @@ impl State {
                             ));
                         }
                         if at_explicit_key {
-                            self.store_pair(&pairs, &key_node, Node::Null)?;
+                            self.store_pair(pairs, key_node, Node::Null)?;
                             value_node = Node::Null;
                         }
                         detected = true;
                         at_explicit_key = false;
                         allow_compact = false;
-                        key_node = self.result.clone();
+                        key_node = self.result;
                     } else if detected {
                         return Err(
                             self.error("can not read an implicit mapping pair; a colon is missed")
@@ -1260,7 +1364,7 @@ impl State {
                     }
                 }
                 if !at_explicit_key {
-                    self.store_pair(&pairs, &key_node, value_node)?;
+                    self.store_pair(pairs, key_node, value_node)?;
                     key_node = Node::Null;
                     value_node = Node::Null;
                 }
@@ -1276,7 +1380,7 @@ impl State {
         }
 
         if at_explicit_key {
-            self.store_pair(&pairs, &key_node, Node::Null)?;
+            self.store_pair(pairs, key_node, Node::Null)?;
         }
         if detected {
             self.tag = saved_tag;
@@ -1288,17 +1392,19 @@ impl State {
     }
 
     /// `storeMappingPair`: the key as a string, and the pair if the key is new.
-    fn store_pair(
-        &self,
-        pairs: &Rc<RefCell<Vec<(String, Node)>>>,
-        key: &Node,
-        value: Node,
-    ) -> Res<()> {
-        let name = key_string(key).map_err(|message| self.error(message))?;
-        if pairs.borrow().iter().any(|(existing, _)| *existing == name) {
+    fn store_pair(&mut self, pairs: usize, key: Node, value: Node) -> Res<()> {
+        let name = key_string(
+            &self.strings,
+            &self.sequences,
+            &mut self.remaining_key_bytes,
+            key,
+        )
+        .map_err(|message| self.error(message))?;
+        let entries = &mut self.mappings[pairs];
+        if entries.iter().any(|(existing, _)| *existing == name) {
             return Err(self.error("duplicated mapping key"));
         }
-        pairs.borrow_mut().push((name, value));
+        entries.push((name, value));
         Ok(())
     }
 
@@ -1311,16 +1417,19 @@ impl State {
             c if c == unit(b'{') => (unit(b'}'), true),
             _ => return Ok(false),
         };
-        let items: Rc<RefCell<Vec<Node>>> = Rc::new(RefCell::new(Vec::new()));
-        let pairs: Rc<RefCell<Vec<(String, Node)>>> = Rc::new(RefCell::new(Vec::new()));
-        if let Some(name) = self.anchor.clone() {
-            let node = if is_mapping {
-                Node::Mapping(Rc::clone(&pairs))
-            } else {
-                Node::Sequence(Rc::clone(&items))
-            };
-            self.store_anchor(&name, node);
-        }
+        let collection = if is_mapping {
+            let pairs = self.alloc_mapping();
+            if let Some(name) = self.anchor.clone() {
+                self.store_anchor(&name, Node::Mapping(pairs));
+            }
+            CollectionId::Mapping(pairs)
+        } else {
+            let items = self.alloc_sequence();
+            if let Some(name) = self.anchor.clone() {
+                self.store_anchor(&name, Node::Sequence(items));
+            }
+            CollectionId::Sequence(items)
+        };
 
         self.position += 1;
         let mut ch = self.ch();
@@ -1339,10 +1448,9 @@ impl State {
                 } else {
                     Kind::Sequence
                 });
-                self.result = if is_mapping {
-                    Node::Mapping(pairs)
-                } else {
-                    Node::Sequence(items)
+                self.result = match collection {
+                    CollectionId::Mapping(pairs) => Node::Mapping(pairs),
+                    CollectionId::Sequence(items) => Node::Sequence(items),
                 };
                 return Ok(true);
             } else if !read_next {
@@ -1375,15 +1483,19 @@ impl State {
                 value_node = std::mem::replace(&mut self.result, Node::Null);
             }
 
-            if is_mapping {
-                self.store_pair(&pairs, &key_node, value_node)?;
-            } else if is_pair {
-                // A pair in a sequence is a mapping of its own.
-                let single: Rc<RefCell<Vec<(String, Node)>>> = Rc::new(RefCell::new(Vec::new()));
-                self.store_pair(&single, &key_node, value_node)?;
-                items.borrow_mut().push(Node::Mapping(single));
-            } else {
-                items.borrow_mut().push(key_node);
+            match collection {
+                CollectionId::Mapping(pairs) => {
+                    self.store_pair(pairs, key_node, value_node)?;
+                }
+                CollectionId::Sequence(items) if is_pair => {
+                    // A pair in a sequence is a mapping of its own.
+                    let single = self.alloc_mapping();
+                    self.store_pair(single, key_node, value_node)?;
+                    self.sequences[items].push(Node::Mapping(single));
+                }
+                CollectionId::Sequence(items) => {
+                    self.sequences[items].push(key_node);
+                }
             }
 
             self.skip_separation_space(true);
@@ -1556,7 +1668,8 @@ impl State {
             self.capture(&mut out, start, self.position, false)?;
         }
 
-        self.result = Node::String(self.text(&out));
+        let text = self.text(&out);
+        self.result = self.intern_string(text);
         Ok(true)
     }
 
@@ -1585,7 +1698,8 @@ impl State {
                     self.position += 1;
                     capture_end = self.position;
                 } else {
-                    self.result = Node::String(self.text(&out));
+                    let text = self.text(&out);
+                    self.result = self.intern_string(text);
                     return Ok(true);
                 }
             } else if is_eol(ch) {
@@ -1627,7 +1741,8 @@ impl State {
             if ch == unit(b'"') {
                 self.capture(&mut out, capture_start, self.position, true)?;
                 self.position += 1;
-                self.result = Node::String(self.text(&out));
+                let text = self.text(&out);
+                self.result = self.intern_string(text);
                 return Ok(true);
             } else if ch == unit(b'\\') {
                 self.capture(&mut out, capture_start, self.position, true)?;
@@ -1677,7 +1792,7 @@ impl State {
     /// `readPlainScalar`: a scalar that may run over several lines, as far as its indentation goes.
     fn read_plain_scalar(&mut self, node_indent: isize, within_flow: bool) -> Res<bool> {
         let saved_kind = self.kind;
-        let saved_result = self.result.clone();
+        let saved_result = self.result;
         let mut ch = self.ch();
 
         if is_ws_or_eol(ch)
@@ -1759,7 +1874,8 @@ impl State {
 
         self.capture(&mut out, capture_start, capture_end, false)?;
         if !out.is_empty() {
-            self.result = Node::String(self.text(&out));
+            let text = self.text(&out);
+            self.result = self.intern_string(text);
             return Ok(true);
         }
         self.kind = saved_kind;
@@ -1873,26 +1989,75 @@ fn code_units(value: i32) -> Vec<u16> {
 
 /// The string a mapping key becomes, as `storeMappingPair` makes it with `String(keyNode)`: an
 /// array joins its items, and an object is `[object Object]`.
-fn key_string(key: &Node) -> Result<String, &'static str> {
+fn key_string(
+    strings: &[String],
+    sequences: &[Vec<Node>],
+    remaining_bytes: &mut usize,
+    key: Node,
+) -> Result<String, &'static str> {
+    let take = |remaining: &mut usize, len: usize| -> Result<(), &'static str> {
+        *remaining = remaining.checked_sub(len).ok_or(EXPANSION_LIMIT)?;
+        Ok(())
+    };
     Ok(match key {
-        Node::Null => "null".to_owned(),
-        Node::Bool(flag) => flag.to_string(),
-        Node::Number(number) => js_number_string(*number),
-        Node::String(text) => text.clone(),
-        Node::Mapping(_) => "[object Object]".to_owned(),
-        Node::Sequence(items) => {
-            let mut parts = Vec::new();
-            for item in items.borrow().iter() {
-                parts.push(match item {
+        Node::Null => {
+            take(remaining_bytes, 4)?;
+            "null".to_owned()
+        }
+        Node::Bool(flag) => {
+            let text = if flag { "true" } else { "false" };
+            take(remaining_bytes, text.len())?;
+            text.to_owned()
+        }
+        Node::Number(number) => {
+            let text = js_number_string(number);
+            take(remaining_bytes, text.len())?;
+            text
+        }
+        Node::String(id) => {
+            let text = &strings[id];
+            take(remaining_bytes, text.len())?;
+            text.clone()
+        }
+        Node::Mapping(_) => {
+            take(remaining_bytes, "[object Object]".len())?;
+            "[object Object]".to_owned()
+        }
+        Node::Sequence(id) => {
+            let items = &sequences[id];
+            let mut out = String::new();
+            for (index, &item) in items.iter().enumerate() {
+                if index > 0 {
+                    take(remaining_bytes, 1)?;
+                    out.push(',');
+                }
+                match item {
                     Node::Sequence(_) => {
                         return Err("nested arrays are not supported inside keys");
                     }
-                    Node::Null => String::new(),
-                    Node::Mapping(_) => "[object Object]".to_owned(),
-                    other => key_string(other)?,
-                });
+                    Node::Null => {}
+                    Node::Bool(flag) => {
+                        let text = if flag { "true" } else { "false" };
+                        take(remaining_bytes, text.len())?;
+                        out.push_str(text);
+                    }
+                    Node::Number(number) => {
+                        let text = js_number_string(number);
+                        take(remaining_bytes, text.len())?;
+                        out.push_str(&text);
+                    }
+                    Node::String(str_id) => {
+                        let text = &strings[str_id];
+                        take(remaining_bytes, text.len())?;
+                        out.push_str(text);
+                    }
+                    Node::Mapping(_) => {
+                        take(remaining_bytes, "[object Object]".len())?;
+                        out.push_str("[object Object]");
+                    }
+                }
             }
-            parts.join(",")
+            out
         }
     })
 }
@@ -2236,6 +2401,70 @@ mod tests {
             value("&x\n  *x : 1"),
             pair("[object Object]", Yaml::Number(1.0))
         );
+    }
+
+    #[test]
+    fn billion_laughs_alias_dag_is_rejected() {
+        let mut yaml = String::from("a0: &a0 [1, 1]\n");
+        for i in 1..30 {
+            yaml.push_str(&format!("a{i}: &a{i} [*a{}, *a{}]\n", i - 1, i - 1));
+        }
+        let error = load(&yaml).expect_err("30-level alias DAG must fail");
+        assert_eq!(error.message, EXPANSION_LIMIT);
+    }
+
+    #[test]
+    fn small_alias_dag_within_budget_loads() {
+        let mut yaml = String::from("a0: &a0 [1, 1]\n");
+        for i in 1..8 {
+            yaml.push_str(&format!("a{i}: &a{i} [*a{}, *a{}]\n", i - 1, i - 1));
+        }
+        let Yaml::Mapping(pairs) = value(&yaml) else {
+            panic!("a mapping");
+        };
+        assert_eq!(pairs.len(), 8);
+    }
+
+    #[test]
+    fn string_alias_amplification_is_rejected() {
+        let payload = "x".repeat(40_000);
+        let mut yaml = format!("s: &s \"{payload}\"\na: &a [*s, *s, *s, *s]\n");
+        yaml.push_str("b: &b [*a, *a, *a, *a]\n");
+        yaml.push_str("c: [*b, *b, *b, *b]\n");
+        let error = load(&yaml).expect_err("string amplification DAG must fail");
+        assert_eq!(error.message, EXPANSION_LIMIT);
+    }
+
+    #[test]
+    fn mapping_key_alias_amplification_is_rejected() {
+        let payload = "k".repeat(40_000);
+        let refs = vec!["*s"; 40].join(", ");
+        let yaml = format!("s: &s \"{payload}\"\nk: &k [{refs}]\nm:\n  *k : 1\n");
+        let error = load(&yaml).expect_err("mapping key amplification must fail");
+        assert_eq!(error.message, EXPANSION_LIMIT);
+    }
+
+    #[test]
+    fn deep_alias_chain_is_rejected_without_stack_overflow() {
+        let mut yaml = String::from("a0: &a0 [1]\n");
+        for i in 1..=250 {
+            yaml.push_str(&format!("a{i}: &a{i} [*a{}]\n", i - 1));
+        }
+        let error = load(&yaml).expect_err("deep alias chain must fail");
+        assert_eq!(error.message, EXPANSION_DEPTH_LIMIT);
+    }
+
+    #[test]
+    fn cyclic_anchors_reject_without_reference_cycles() {
+        let payload = "a".repeat(40_000);
+        let seq_cycle = format!("a: &x [*x, \"{payload}\"]\n");
+        let map_cycle = format!("a: &x {{self: *x, data: \"{payload}\"}}\n");
+        let mutual_cycle = "a: &x [b: &y [*x]]\n";
+        for _ in 0..32 {
+            assert_eq!(load(&seq_cycle).unwrap_err().message, CYCLIC);
+            assert_eq!(load(&map_cycle).unwrap_err().message, CYCLIC);
+            assert_eq!(load(mutual_cycle).unwrap_err().message, CYCLIC);
+        }
     }
 
     #[test]

@@ -358,3 +358,55 @@ fn small_and_moderate_nesting_stays_isolated() {
         }
     }
 }
+
+#[test]
+fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let control = renderer.render(CONTROL).expect("control renders");
+
+    let mut billion_laughs = String::from("---\na0: &a0 [1, 1]\n");
+    for i in 1..30 {
+        billion_laughs.push_str(&format!("a{i}: &a{i} [*a{}, *a{}]\n", i - 1, i - 1));
+    }
+    billion_laughs.push_str("---\nflowchart LR\nA --> B\n");
+
+    let payload = "x".repeat(40_000);
+    let string_bomb = format!(
+        "---\ns: &s \"{payload}\"\na: &a [*s, *s, *s, *s]\nb: &b [*a, *a, *a, *a]\nc: [*b, *b, *b, *b]\n---\nflowchart LR\nA --> B\n"
+    );
+
+    let mut deep_chain = String::from("---\na0: &a0 [1]\n");
+    for i in 1..=250 {
+        deep_chain.push_str(&format!("a{i}: &a{i} [*a{}]\n", i - 1));
+    }
+    deep_chain.push_str("---\nflowchart LR\nA --> B\n");
+
+    let cyclic_seq = format!("---\na: &x [*x, \"{payload}\"]\n---\nflowchart LR\nA --> B\n");
+    let cyclic_map =
+        format!("---\na: &x {{self: *x, data: \"{payload}\"}}\n---\nflowchart LR\nA --> B\n");
+
+    let mut shape_bomb = String::from("flowchart LR\nA@{ a0: &a0 [1, 1]");
+    for i in 1..30 {
+        shape_bomb.push_str(&format!(", a{i}: &a{i} [*a{}, *a{}]", i - 1, i - 1));
+    }
+    shape_bomb.push_str(" }\n");
+
+    for (name, input) in [
+        ("billion laughs front matter", billion_laughs.as_str()),
+        ("string amplification front matter", string_bomb.as_str()),
+        ("deep alias chain front matter", deep_chain.as_str()),
+        ("cyclic sequence front matter", cyclic_seq.as_str()),
+        ("cyclic mapping front matter", cyclic_map.as_str()),
+        ("billion laughs shape data", shape_bomb.as_str()),
+    ] {
+        let error = renderer
+            .render(input)
+            .expect_err(&format!("{name} must be rejected"));
+        let message = error.to_string();
+        assert!(
+            !message.contains("maxTextSize"),
+            "{name} should fail in YAML expansion, not input size limit: {message}"
+        );
+        assert_eq!(renderer.render(CONTROL).unwrap(), control, "after {name}");
+    }
+}
