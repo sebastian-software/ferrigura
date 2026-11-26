@@ -322,6 +322,22 @@ pub fn node_svg_with_security(
     links: LinkForm,
     loose: bool,
 ) -> String {
+    let dom_id = crate::common::resolve_entity_placeholders(&node.dom_id);
+    node_svg_with_resolved(node, shape, svg_id, links, loose, &dom_id, None)
+}
+
+/// [`node_svg_with_security`] using an already-resolved, disambiguated `dom_id` (emitted verbatim
+/// without a second placeholder decode) and an optional pre-remapped fragment link.
+#[must_use]
+pub(crate) fn node_svg_with_resolved(
+    node: &Node,
+    shape: &ShapeOutput,
+    svg_id: &str,
+    links: LinkForm,
+    loose: bool,
+    dom_id: &str,
+    remapped_link: Option<&str>,
+) -> String {
     let kind = registry::resolve_node(node);
     let styles = util::styles2string(node);
     let shape_svg = shape.svg.replace(
@@ -355,7 +371,6 @@ pub fn node_svg_with_security(
 
     let raw_class = kind.map_or_else(|| util::node_classes(node), |kind| kind.group_class(node));
     let class = crate::common::resolve_entity_placeholders(&raw_class);
-    let dom_id = crate::common::resolve_entity_placeholders(&node.dom_id);
     let id = format!("{svg_id}-{dom_id}");
     let x = node.x.unwrap_or(0.0);
     let y = node.y.unwrap_or(0.0);
@@ -368,11 +383,16 @@ pub fn node_svg_with_security(
         format!(" title=\"{}\"", escape_url_attr(&resolved))
     });
 
-    let resolved_link = node
-        .link
-        .as_deref()
-        .map(crate::common::resolve_entity_placeholders);
-    let link = resolved_link.as_deref().map(|link| guard_url(link, loose));
+    let resolved_link = if remapped_link.is_some() {
+        None
+    } else {
+        node.link
+            .as_deref()
+            .map(crate::common::resolve_entity_placeholders)
+    };
+    let link = remapped_link
+        .or(resolved_link.as_deref())
+        .map(|link| guard_url(link, loose));
     match link {
         // The state diagram wraps a clicked node after its render (`stateRenderer-v3-unified.ts`
         // 80-133): the anchor has no transform, and the tooltip is on the anchor and on the node.

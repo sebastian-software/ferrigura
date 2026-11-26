@@ -28,89 +28,6 @@ const VIEWPORT_PADDING: f64 = 8.0;
 /// The font size of the title: `.classTitleText` in the class styles.
 const TITLE_FONT_SIZE: f64 = 18.0;
 
-/// Normalizes XML 1.0 attribute-value whitespace (`\r\n`, `\t`, `\n`, `\r` -> `' '`) on a resolved
-/// DOM ID so collision detection, emitted IDs, and fragment links agree with parsed XML values.
-fn canonical_dom_id(raw: &str) -> String {
-    let resolved = crate::common::resolve_entity_placeholders(raw);
-    if !resolved.contains(['\t', '\n', '\r']) {
-        return resolved.into_owned();
-    }
-    let mut out = String::with_capacity(resolved.len());
-    let mut chars = resolved.chars().peekable();
-    while let Some(ch) = chars.next() {
-        match ch {
-            '\r' => {
-                if chars.peek() == Some(&'\n') {
-                    chars.next();
-                }
-                out.push(' ');
-            }
-            '\t' | '\n' => out.push(' '),
-            other => out.push(other),
-        }
-    }
-    out
-}
-
-/// Ensures rendered class DOM IDs stay unique after Mermaid entity placeholder resolution and XML
-/// attribute normalization (for example `Foo-Bar` vs. `` `Foo#45;Bar` `` or `Foo Bar` vs.
-/// `` `Foo#9;Bar` ``), and rewrites matching raw fragment links to each canonical unique ID.
-fn disambiguate_resolved_dom_ids(data: &mut crate::unified::data::LayoutData, svg_id: &str) {
-    if !data
-        .nodes
-        .iter()
-        .any(|node| node.dom_id.contains("ﬂ°") || node.dom_id.contains(['\t', '\n', '\r']))
-    {
-        return;
-    }
-    let reserved: std::collections::HashSet<String> = data
-        .nodes
-        .iter()
-        .map(|node| canonical_dom_id(&node.dom_id))
-        .collect();
-    let mut seen: std::collections::HashSet<String> =
-        std::collections::HashSet::with_capacity(data.nodes.len());
-    let mut next_suffix: std::collections::HashMap<String, usize> =
-        std::collections::HashMap::new();
-    let mut remapped_fragments: std::collections::HashMap<String, String> =
-        std::collections::HashMap::new();
-    for node in &mut data.nodes {
-        let had_placeholder = node.dom_id.contains("ﬂ°");
-        let resolved = crate::common::resolve_entity_placeholders(&node.dom_id);
-        let canonical = canonical_dom_id(&node.dom_id);
-        let collided = !seen.insert(canonical.clone());
-        let final_id = if !collided {
-            canonical
-        } else {
-            let suffix = next_suffix.entry(canonical.clone()).or_insert(1);
-            loop {
-                let candidate = format!("{canonical}-{}", *suffix);
-                *suffix += 1;
-                if !reserved.contains(&candidate) && seen.insert(candidate.clone()) {
-                    break candidate;
-                }
-            }
-        };
-        if collided || had_placeholder {
-            if final_id != resolved.as_ref() {
-                let raw_fragment = format!("#{svg_id}-{}", node.dom_id);
-                let new_fragment = format!("#{svg_id}-{final_id}");
-                remapped_fragments.insert(raw_fragment, new_fragment);
-            }
-            node.dom_id = final_id;
-        }
-    }
-    if !remapped_fragments.is_empty() {
-        for node in &mut data.nodes {
-            if let Some(link) = &mut node.link
-                && let Some(replacement) = remapped_fragments.get(link.as_str())
-            {
-                *link = replacement.clone();
-            }
-        }
-    }
-}
-
 /// Renders the diagram to an SVG document.
 ///
 /// # Errors
@@ -122,7 +39,6 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
     let diagram = input.diagram;
 
     let mut data = data::get_data(diagram, input.section, input.globals, input.theme.light);
-    disambiguate_resolved_dom_ids(&mut data, id);
     // `classRenderer-v3-unified.ts` 59: the diagram type names the markers and their class.
     data.diagram_type = markers::CLASS.to_owned();
     let design = input.section.design;

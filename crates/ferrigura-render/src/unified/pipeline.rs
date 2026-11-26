@@ -8,7 +8,7 @@
 //! with its own markers, style sheet and title.
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use ferrigura_elk::json::JsonNode;
 use ferrigura_model::flowchart::LabelType;
@@ -561,6 +561,153 @@ pub fn paint<'a>(
     })
 }
 
+/// Normalizes XML 1.0 attribute-value whitespace (`\r\n`, `\t`, `\n`, `\r` -> `' '`) on a
+/// single-pass resolved ID so collision checks, emitted IDs, and fragment links agree with parsed
+/// XML values.
+fn canonical_attr_id(raw: &str) -> String {
+    let resolved = crate::common::resolve_entity_placeholders(raw);
+    if !resolved.contains(['\t', '\n', '\r']) {
+        return resolved.into_owned();
+    }
+    let mut out = String::with_capacity(resolved.len());
+    let mut chars = resolved.chars().peekable();
+    while let Some(ch) = chars.next() {
+        match ch {
+            '\r' => {
+                if chars.peek() == Some(&'\n') {
+                    chars.next();
+                }
+                out.push(' ');
+            }
+            '\t' | '\n' => out.push(' '),
+            other => out.push(other),
+        }
+    }
+    out
+}
+
+/// Pre-resolved, XML-normalized, collision-free DOM and edge IDs for one unified render pass.
+struct ResolvedDomIds {
+    nodes: Vec<String>,
+    edge_ids: Vec<String>,
+    edge_path_ids: Vec<String>,
+    remapped_fragments: HashMap<String, String>,
+}
+
+impl ResolvedDomIds {
+    /// Resolves and disambiguates node/cluster DOM IDs and edge IDs across the entire diagram in a
+    /// single pass. Returns `None` without allocating when no ID contains a Mermaid entity
+    /// placeholder or XML-normalizable whitespace.
+    fn resolve(data: &LayoutData, svg_id: &str) -> Option<Self> {
+        let needs_pass = data
+            .nodes
+            .iter()
+            .any(|node| node.dom_id.contains("ﬂ°") || node.dom_id.contains(['\t', '\n', '\r']))
+            || data.edges.iter().any(|edge| {
+                edge.id.contains("ﬂ°")
+                    || edge.id.contains(['\t', '\n', '\r'])
+                    || edge
+                        .path_id
+                        .as_deref()
+                        .is_some_and(|p| p.contains("ﬂ°") || p.contains(['\t', '\n', '\r']))
+            });
+        if !needs_pass {
+            return None;
+        }
+
+        let mut reserved: HashSet<String> =
+            HashSet::with_capacity(data.nodes.len() + data.edges.len());
+        for node in &data.nodes {
+            reserved.insert(format!("{svg_id}-{}", canonical_attr_id(&node.dom_id)));
+        }
+        for edge in &data.edges {
+            let raw_path = edge
+                .path_id
+                .clone()
+                .unwrap_or_else(|| format!("{svg_id}-{}", edge.id));
+            reserved.insert(canonical_attr_id(&raw_path));
+        }
+
+        let mut seen: HashSet<String> = HashSet::with_capacity(reserved.len());
+        let mut next_suffix: HashMap<String, usize> = HashMap::new();
+        let mut remapped_fragments: HashMap<String, String> = HashMap::new();
+
+        let mut nodes = Vec::with_capacity(data.nodes.len());
+        for node in &data.nodes {
+            let had_placeholder = node.dom_id.contains("ﬂ°");
+            let canonical_local = canonical_attr_id(&node.dom_id);
+            let canonical_full = format!("{svg_id}-{canonical_local}");
+            let collided = !seen.insert(canonical_full.clone());
+            let final_local = if !collided {
+                canonical_local
+            } else {
+                let suffix = next_suffix.entry(canonical_full).or_insert(1);
+                loop {
+                    let candidate_local = format!("{canonical_local}-{}", *suffix);
+                    let candidate_full = format!("{svg_id}-{candidate_local}");
+                    *suffix += 1;
+                    if !reserved.contains(&candidate_full) && seen.insert(candidate_full) {
+                        break candidate_local;
+                    }
+                }
+            };
+            if collided || had_placeholder {
+                remapped_fragments.insert(
+                    format!("#{svg_id}-{}", node.dom_id),
+                    format!("#{svg_id}-{final_local}"),
+                );
+                nodes.push(final_local);
+            } else {
+                nodes.push(node.dom_id.clone());
+            }
+        }
+
+        let mut edge_ids = Vec::with_capacity(data.edges.len());
+        let mut edge_path_ids = Vec::with_capacity(data.edges.len());
+        for edge in &data.edges {
+            let edge_had_placeholder = edge.id.contains("ﬂ°");
+            let canonical_edge_id = canonical_attr_id(&edge.id);
+            let raw_path = edge
+                .path_id
+                .clone()
+                .unwrap_or_else(|| format!("{svg_id}-{}", edge.id));
+            let path_had_placeholder = raw_path.contains("ﬂ°");
+            let canonical_path = canonical_attr_id(&raw_path);
+            let collided = !seen.insert(canonical_path.clone());
+            let final_path = if !collided {
+                canonical_path
+            } else {
+                let suffix = next_suffix.entry(canonical_path.clone()).or_insert(1);
+                loop {
+                    let candidate = format!("{canonical_path}-{}", *suffix);
+                    *suffix += 1;
+                    if !reserved.contains(&candidate) && seen.insert(candidate.clone()) {
+                        break candidate;
+                    }
+                }
+            };
+            if collided || path_had_placeholder {
+                remapped_fragments.insert(format!("#{raw_path}"), format!("#{final_path}"));
+                edge_path_ids.push(final_path);
+            } else {
+                edge_path_ids.push(raw_path);
+            }
+            if edge_had_placeholder {
+                edge_ids.push(canonical_edge_id);
+            } else {
+                edge_ids.push(edge.id.clone());
+            }
+        }
+
+        Some(Self {
+            nodes,
+            edge_ids,
+            edge_path_ids,
+            remapped_fragments,
+        })
+    }
+}
+
 pub(crate) fn paint_with_animation<'a>(
     measured: &'a Measured,
     id: &str,
@@ -568,6 +715,7 @@ pub(crate) fn paint_with_animation<'a>(
     animation: Option<crate::animation::Animation>,
 ) -> Result<PaintedParts<'a>, RenderError> {
     let data = &measured.data;
+    let resolved_ids = ResolvedDomIds::resolve(data, id);
     let mut bounds: Option<BBox> = None;
     let mut labels: Vec<&LabelLayout> = Vec::new();
 
@@ -576,9 +724,16 @@ pub(crate) fn paint_with_animation<'a>(
     // The size of each lane once its shape has drawn it: the swimlane edges clip to it (`node.width`
     // and `node.height` after `swimlane.js`).
     let mut lanes: HashMap<String, (f64, f64)> = HashMap::new();
-    for node in data.nodes.iter().filter(|node| node.is_group) {
+    for (index, node) in data
+        .nodes
+        .iter()
+        .enumerate()
+        .filter(|(_, node)| node.is_group)
+    {
         // `render` prefixes every node's DOM id with the diagram's id before the layout runs.
-        let dom_id = crate::common::resolve_entity_placeholders(&node.dom_id);
+        let dom_id = resolved_ids
+            .as_ref()
+            .map_or(node.dom_id.as_str(), |ids| ids.nodes[index].as_str());
         let prefixed = Node {
             dom_id: format!("{id}-{dom_id}"),
             ..node.clone()
@@ -624,7 +779,23 @@ pub(crate) fn paint_with_animation<'a>(
         } else {
             shapes::LinkForm::Flowchart
         };
-        let svg = shapes::node_svg_with_security(node, shape, id, link_form, loose);
+        let dom_id = resolved_ids
+            .as_ref()
+            .map_or(node.dom_id.as_str(), |ids| ids.nodes[index].as_str());
+        let remapped_link = resolved_ids.as_ref().and_then(|ids| {
+            node.link
+                .as_deref()
+                .and_then(|link| ids.remapped_fragments.get(link).map(String::as_str))
+        });
+        let svg = shapes::node_svg_with_resolved(
+            node,
+            shape,
+            id,
+            link_form,
+            loose,
+            dom_id,
+            remapped_link,
+        );
         if animation.is_some() {
             node_parts.push((index, svg));
         } else {
@@ -636,7 +807,7 @@ pub(crate) fn paint_with_animation<'a>(
 
     // The swimlane engine's edges are clipped to the outlines of their ends (`insertEdge`'s swimlane
     // branch) before they are drawn, and so are the line hops that follow from their points.
-    let (path_edges, jumps): (Cow<'_, [Edge]>, Option<JumpStyle>) = match measured.layout {
+    let (mut path_edges, jumps): (Cow<'_, [Edge]>, Option<JumpStyle>) = match measured.layout {
         Layout::Elk => (
             Cow::Borrowed(data.edges.as_slice()),
             edges::jump_style(&config.section),
@@ -651,6 +822,13 @@ pub(crate) fn paint_with_animation<'a>(
             jumps,
         ),
     };
+    if let Some(ids) = &resolved_ids {
+        let edges_mut = path_edges.to_mut();
+        for (index, edge) in edges_mut.iter_mut().enumerate() {
+            edge.id.clone_from(&ids.edge_ids[index]);
+            edge.path_id = Some(ids.edge_path_ids[index].clone());
+        }
+    }
     let mut edge_paths = String::new();
     let mut coloured_markers = String::new();
     let paths = edges::prepare_paths(&path_edges, id, &data.diagram_type, &config.section, jumps);
@@ -672,20 +850,29 @@ pub(crate) fn paint_with_animation<'a>(
     // The boxes of the edge labels in the design mode, where each interrupts its edge.
     let mut label_gaps: Vec<BBox> = Vec::new();
     for (index, edge) in data.edges.iter().enumerate() {
+        let resolved_edge_id = resolved_ids
+            .as_ref()
+            .map_or(edge.id.as_str(), |ids| ids.edge_ids[index].as_str());
         if let Some(label) = measured.edge_labels.get(&edge.id) {
             // The design mode keeps a label's chip off the frame of a group.
-            let moved = config.section.design.map(|_| {
-                let frames: Vec<BBox> = painted_clusters
-                    .iter()
-                    .map(|cluster| cluster.bbox)
-                    .collect();
-                let place = edges::label_clear_of_frames(edge, label, &frames);
-                Edge {
-                    x: Some(place.x),
-                    y: Some(place.y),
-                    ..edge.clone()
+            let moved = if config.section.design.is_some() || resolved_edge_id != edge.id {
+                let mut cloned = edge.clone();
+                if config.section.design.is_some() {
+                    let frames: Vec<BBox> = painted_clusters
+                        .iter()
+                        .map(|cluster| cluster.bbox)
+                        .collect();
+                    let place = edges::label_clear_of_frames(edge, label, &frames);
+                    cloned.x = Some(place.x);
+                    cloned.y = Some(place.y);
                 }
-            });
+                if resolved_edge_id != edge.id {
+                    cloned.id = resolved_edge_id.to_owned();
+                }
+                Some(cloned)
+            } else {
+                None
+            };
             let edge = moved.as_ref().unwrap_or(edge);
             let painted = edges::paint_label(edge, label, &config.section);
             cover(&mut bounds, painted.bbox);
@@ -701,10 +888,9 @@ pub(crate) fn paint_with_animation<'a>(
         // `insertEdgeLabel` runs for an edge with a label or a terminal label (`hasEdgeLabel`,
         // `edges.js` 55-62): without text, the label has no position, and its background sits beside it.
         if edge.label.is_empty() && !edge.terminals.is_empty() {
-            let edge_id = crate::common::resolve_entity_placeholders(&edge.id);
             edge_labels.push_str(&format!(
                 "<g class=\"edgeLabel\"><g class=\"label\" data-id=\"{}\" transform=\"translate(0, 0)\"><text y=\"-10.1\" text-anchor=\"middle\"><tspan class=\"text-outer-tspan row\" x=\"0\" y=\"-0.1em\" dy=\"1.1em\" text-anchor=\"middle\"></tspan></text></g></g><g><rect class=\"background\" style=\"stroke: none\"></rect></g>",
-                crate::svg::escape(&edge_id),
+                crate::svg::escape(resolved_edge_id),
             ));
         }
         // The terminal labels of an edge follow its center label in `edgeLabels` (`insertEdgeLabel`).

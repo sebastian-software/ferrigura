@@ -760,14 +760,12 @@ fn paint_edge(
     let marker_start = marker(&edge.arrow_type_start, true, &mut markers_out);
     let marker_end = marker(&edge.arrow_type_end, false, &mut markers_out);
 
-    let edge_id = crate::common::resolve_entity_placeholders(&edge.id);
-    let path_id = edge.path_id.as_deref().map_or_else(
-        || format!("{svg_id}-{edge_id}"),
-        |path_id| crate::common::resolve_entity_placeholders(path_id).into_owned(),
-    );
     Painted {
-        id: edge_id.into_owned(),
-        path_id,
+        id: edge.id.clone(),
+        path_id: edge
+            .path_id
+            .clone()
+            .unwrap_or_else(|| format!("{svg_id}-{}", edge.id)),
         points: data_points(&edge.points),
         path_attributes: edge.path_attributes.clone(),
         d,
@@ -860,12 +858,11 @@ pub fn paint_label(edge: &Edge, label: &LabelLayout, section: &Section<'_>) -> E
         None => text,
     };
     let absolute = group.translate(x - text_x, y - text_y);
-    let edge_id = crate::common::resolve_entity_placeholders(&edge.id);
     let svg = format!(
         "<g class=\"edgeLabel\" transform=\"translate({}, {})\"><g class=\"label\" data-id=\"{}\" transform=\"translate({}, {})\">{inner}</g></g>",
         js_number(x),
         js_number(y),
-        escape(&edge_id),
+        escape(&edge.id),
         js_number(-text_x),
         js_number(-text_y),
     );

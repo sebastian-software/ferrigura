@@ -346,4 +346,74 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         "{term_only}"
     );
     assert!(!term_only.contains("ﬂ°"), "{term_only}");
+
+    // Class DOM IDs resolve Mermaid placeholders only once (no double decode to `©`), matching
+    // their fragment links.
+    let single_decode = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Foo#64258;°copy;`\n  click `Foo#64258;°copy;` href \"#graph-classId-Foo#64258;°copy;\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let single_doc = roxmltree::Document::parse(&single_decode).expect("well-formed SVG XML");
+    assert!(
+        single_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-classId-Fooﬂ°copy;")),
+        "{single_decode}"
+    );
+    assert!(
+        single_doc.descendants().any(|node| {
+            node.attribute(("http://www.w3.org/1999/xlink", "href"))
+                == Some("#graph-classId-Fooﬂ°copy;")
+        }),
+        "{single_decode}"
+    );
+
+    // Relation IDs with entity tabs normalize identically across path IDs, label data-ids, and
+    // fragment links in parsed XML.
+    let tab_rel = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  `Invoice#9;Item` --> Account : owns\n  click Account href \"#graph-id_Invoice#9;Item_Account_1\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let tab_rel_doc = roxmltree::Document::parse(&tab_rel).expect("well-formed SVG XML");
+    assert!(
+        tab_rel_doc
+            .descendants()
+            .any(|node| node.attribute("id") == Some("graph-id_Invoice Item_Account_1")),
+        "{tab_rel}"
+    );
+    assert!(
+        tab_rel_doc.descendants().any(|node| {
+            node.attribute(("http://www.w3.org/1999/xlink", "href"))
+                == Some("#graph-id_Invoice Item_Account_1")
+        }),
+        "{tab_rel}"
+    );
+
+    // Colliding resolved DOM IDs are disambiguated across all unified diagrams (e.g. requirement).
+    let req_collide = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "requirementDiagram\n  requirement \"Order-Item\" {\n    id: 1\n  }\n  requirement \"Order#45;Item\" {\n    id: 2\n  }\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    let req_doc = roxmltree::Document::parse(&req_collide).expect("well-formed SVG XML");
+    let req_ids: Vec<&str> = req_doc
+        .descendants()
+        .filter_map(|node| node.attribute("id"))
+        .filter(|id| id.starts_with("graph-Order-Item"))
+        .collect();
+    assert_eq!(req_ids, vec!["graph-Order-Item", "graph-Order-Item-1"]);
 }
