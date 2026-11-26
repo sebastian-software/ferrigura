@@ -389,10 +389,30 @@ fn find_scheme_delimiter_end(text: &str) -> Option<usize> {
     None
 }
 
+/// Whether `text` contains a scheme delimiter (`/`, `?`, `:`, `&colon;`, or a `#` fragment
+/// marker that cannot form a numeric character reference with its surroundings).
+fn has_scheme_delimiter(text: &str) -> bool {
+    if find_scheme_delimiter_end(text).is_some() {
+        return true;
+    }
+    let mut has_escape_or_ctrl = false;
+    for (idx, ch) in text.char_indices() {
+        if ch == '#' {
+            if !starts_with_sink_entity_body(&text[idx + 1..]) || !has_escape_or_ctrl {
+                return true;
+            }
+        } else if matches!(ch, '&' | '%' | '\\') || is_ctrl(ch) {
+            has_escape_or_ctrl = true;
+        }
+    }
+    false
+}
+
 /// Whether `before` (the slice immediately preceding `#`) can decode to end with `&` within
 /// `max_passes` modifying steps. Returns `None` (fail-closed) if `before` itself exceeds
-/// `max_passes`. Stops early with `Some(false)` if decoding reveals a `/`, `?`, `:`, or `&colon;`
-/// delimiter, since nothing after such a delimiter can participate in a URI scheme.
+/// `max_passes`. Stops early with `Some(false)` if decoding reveals a `/`, `?`, `:`, `&colon;`,
+/// or non-entity `#` delimiter, since nothing after such a delimiter can participate in a URI
+/// scheme.
 fn prefix_can_end_with_amp(before: &str, max_passes: usize) -> Option<bool> {
     if before.ends_with('&') {
         return Some(true);
@@ -405,12 +425,12 @@ fn prefix_can_end_with_amp(before: &str, max_passes: usize) -> Option<bool> {
     if passes_used > max_passes {
         return None;
     }
-    if find_scheme_delimiter_end(&decoded).is_some() {
+    if has_scheme_delimiter(&decoded) {
         return Some(false);
     }
     while passes_used < max_passes {
         let next = decode_sink_step_untrimmed(&decoded);
-        if find_scheme_delimiter_end(&next).is_some() {
+        if has_scheme_delimiter(&next) {
             return Some(false);
         }
         if next == decoded && !needs_another_sink_pass(&next) {
@@ -1720,7 +1740,9 @@ mod tests {
             "item%3Fq=A%2525252525252525252541#123",
             "item%252525252525253Fq=A%2525252525252525252541#123",
             "item%23section%2525252525252525252541",
+            "item%23section%2525252525252525252541#123",
             "item%23123%2525252525252525252541",
+            "item%23123%2525252525252525252541#123",
             "rate%25x%23123%2525252525252525252541",
             "rate%25%23123%2525252525252525252541",
             "foo%2525252525252523123%2525252525252525252541",

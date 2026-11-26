@@ -180,4 +180,44 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
         .expect_err("invalid token fails");
     assert_eq!(err.line, 2);
     assert_eq!(err.column, 17);
+
+    // Fragment links to class IDs containing Mermaid entities match the emitted element ID.
+    let entity_id = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Invoice#45;Item`\n  click `Invoice#45;Item` href \"#graph-classId-Invoice#45;Item\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        entity_id.contains("id=\"graph-classId-Invoice-Item\""),
+        "{entity_id}"
+    );
+    assert!(
+        entity_id.contains("xlink:href=\"#graph-classId-Invoice-Item\""),
+        "{entity_id}"
+    );
+
+    // Decoded line breaks and tabs in tooltips round-trip through XML attribute parsing.
+    let nl_tooltip = render(
+        "classDiagram\n  class A\n  click A href \"https://example.org\" \"First#10;Second#9;End\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let doc = roxmltree::Document::parse(&nl_tooltip).expect("well-formed SVG XML");
+    let tooltip_val = doc
+        .descendants()
+        .find_map(|node| node.attribute("title"))
+        .expect("title attribute");
+    assert_eq!(tooltip_val, "First\nSecond\tEnd");
+
+    // Color-semicolon stripping respects JS line terminators (U+2028/U+2029) and never crosses them.
+    let ls_title = render(
+        "classDiagram\n  accTitle: style fill:#fff\u{2028}Cost #36;\n  class A\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(ls_title.contains("Cost $</title>"), "{ls_title}");
 }

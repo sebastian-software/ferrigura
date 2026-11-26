@@ -422,6 +422,9 @@ pub(crate) fn remap_encoded_error(
     error
 }
 
+/// JavaScript line terminators that `.` in a regex does not cross (`\n`, `\r`, U+2028, U+2029).
+const JS_LINE_TERMINATORS: [char; 4] = ['\n', '\r', '\u{2028}', '\u{2029}'];
+
 /// Maps a 1-based column in `encode_entities(orig_line)` back to its 1-based column in `orig_line`.
 fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
     let mut chars: Vec<(char, usize)> = orig_line
@@ -431,9 +434,17 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
         .collect();
     for word in ["style", "classDef"] {
         let current: String = chars.iter().map(|&(c, _)| c).collect();
-        if let Some(semi_byte) = color_semicolon_byte(&current, word) {
-            let semi_char = current[..semi_byte].chars().count();
-            chars.remove(semi_char);
+        let mut to_remove = Vec::new();
+        let mut char_offset = 0usize;
+        for segment in current.split_inclusive(JS_LINE_TERMINATORS) {
+            let content = segment.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(segment);
+            if let Some(semi_byte) = color_semicolon_byte(content, word) {
+                to_remove.push(char_offset + content[..semi_byte].chars().count());
+            }
+            char_offset += segment.chars().count();
+        }
+        for idx in to_remove.into_iter().rev() {
+            chars.remove(idx);
         }
     }
     let current: String = chars.iter().map(|&(c, _)| c).collect();
@@ -493,12 +504,13 @@ fn color_semicolon_byte(line: &str, word: &str) -> Option<usize> {
     has_colon_hash(&line[after_word..semicolon]).then_some(semicolon)
 }
 
-/// `<word>.*:\S*#.*;` with the semicolon removed: the last semicolon of each line, when a colon
-/// followed by non-blank text and a `#` come after the first occurrence of `word` on that line.
+/// `<word>.*:\S*#.*;` with the semicolon removed: the last semicolon of each JavaScript line, when
+/// a colon followed by non-blank text and a `#` come after the first occurrence of `word` on that
+/// line.
 fn drop_color_semicolons(text: &str, word: &str) -> String {
     let mut out = String::with_capacity(text.len());
-    for line in text.split_inclusive('\n') {
-        let content = line.strip_suffix('\n').unwrap_or(line);
+    for line in text.split_inclusive(JS_LINE_TERMINATORS) {
+        let content = line.strip_suffix(JS_LINE_TERMINATORS).unwrap_or(line);
         if let Some(semicolon) = color_semicolon_byte(content, word) {
             out.push_str(&line[..semicolon]);
             out.push_str(&line[semicolon + 1..]);

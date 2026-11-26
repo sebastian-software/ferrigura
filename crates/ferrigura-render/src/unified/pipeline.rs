@@ -578,8 +578,9 @@ pub(crate) fn paint_with_animation<'a>(
     let mut lanes: HashMap<String, (f64, f64)> = HashMap::new();
     for node in data.nodes.iter().filter(|node| node.is_group) {
         // `render` prefixes every node's DOM id with the diagram's id before the layout runs.
+        let dom_id = crate::common::resolve_entity_placeholders(&node.dom_id);
         let prefixed = Node {
-            dom_id: format!("{id}-{}", node.dom_id),
+            dom_id: format!("{id}-{dom_id}"),
             ..node.clone()
         };
         let cluster = clusters::paint_among(&prefixed, config, &data.edges)?;

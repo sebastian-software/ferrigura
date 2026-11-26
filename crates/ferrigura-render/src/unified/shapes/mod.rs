@@ -354,7 +354,8 @@ pub fn node_svg_with_security(
     }
 
     let class = kind.map_or_else(|| util::node_classes(node), |kind| kind.group_class(node));
-    let id = format!("{svg_id}-{}", node.dom_id);
+    let dom_id = crate::common::resolve_entity_placeholders(&node.dom_id);
+    let id = format!("{svg_id}-{dom_id}");
     let x = node.x.unwrap_or(0.0);
     let y = node.y.unwrap_or(0.0);
     let transform = format!("translate({}, {})", number(x), number(y));
@@ -363,7 +364,7 @@ pub fn node_svg_with_security(
     let colour_slot = &shape.colour_slot;
     let title = node.tooltip.as_deref().map_or_else(String::new, |tooltip| {
         let resolved = crate::common::resolve_entity_placeholders(tooltip);
-        util::attribute("title", &resolved)
+        format!(" title=\"{}\"", escape_url_attr(&resolved))
     });
 
     let resolved_link = node
