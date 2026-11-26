@@ -155,6 +155,8 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         "notes://do-your-thing/id",
         "notes%25253Adoc",
         "notes%3Afoo%FF",
+        "notes#58;meeting",
+        "javascript#58;alert(1)",
     ] {
         let unsupported_scheme = render(
             &format!("stateDiagram-v2\n  s1\n  click s1 href \"{unsupported}\"\n"),
@@ -166,6 +168,16 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
             "url={unsupported:?}: {unsupported_scheme}"
         );
     }
+
+    let opaque_cid = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"cid:asset%2525252525252525252541@example.com\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        opaque_cid.contains("xlink:href=\"cid:asset%2525252525252525252541@example.com\""),
+        "{opaque_cid}"
+    );
 
     for (raw, escaped) in [
         ("R&#section:1", "R&amp;#section:1"),

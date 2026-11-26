@@ -115,7 +115,7 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
     if !is_allowed_sink_candidate(url) {
         return BLANK_URL;
     }
-    let head = match url.find(['/', '?']) {
+    let head = match url.find(['/', '?', ':']) {
         Some(pos) => &url[..=pos],
         None => url,
     };
@@ -160,14 +160,23 @@ pub fn guard_image_url(url: &str, loose: bool) -> &str {
     guard_url(url, false)
 }
 
-/// Whether `url` starts with a raster `data:image/<subtype>` URI immediately followed by `;` or
-/// `,` (matching DOMPurify's `data:` check at offset 0 for `DEFAULT_DATA_URI_TAGS`, restricted to
-/// non-scriptable raster image subtypes).
+/// Whether `url` starts with `data:` at offset 0 followed by a raster `image/<subtype>` media
+/// type (ignoring MIME whitespace around the media type and subtype, matching data-URL parsing
+/// and DOMPurify's `data:` check for `DEFAULT_DATA_URI_TAGS`, restricted to non-scriptable raster
+/// image subtypes).
 fn is_safe_raster_data_image_url(url: &str) -> bool {
-    let Some(rest) = url
-        .get(..11)
-        .filter(|prefix| prefix.eq_ignore_ascii_case("data:image/"))
-        .map(|_| &url[11..])
+    let Some(after_scheme) = url
+        .get(..5)
+        .filter(|prefix| prefix.eq_ignore_ascii_case("data:"))
+        .map(|_| &url[5..])
+    else {
+        return false;
+    };
+    let media = after_scheme.trim_start_matches([' ', '\t', '\n', '\r']);
+    let Some(rest) = media
+        .get(..6)
+        .filter(|prefix| prefix.eq_ignore_ascii_case("image/"))
+        .map(|_| &media[6..])
     else {
         return false;
     };
@@ -1520,6 +1529,8 @@ mod tests {
             "https://example.com/files?q=A%26B",
             "https://tickets.example.com/browse/A%2526B",
             "mailto:user@user.user",
+            "mailto:user%2525252525252525252541@example.com",
+            "cid:asset%2525252525252525252541@example.com",
             "tel:+1234567",
             "ftp://example.com/file",
             "data/chart.svg?time=12:30",
@@ -1557,6 +1568,8 @@ mod tests {
     fn guard_image_url_allows_safe_raster_data_uris_but_blocks_active_payloads() {
         for safe_data_url in [
             "data:image/png;base64,iVBORw0KGgo=",
+            "data: image/png;base64,iVBORw0KGgo=",
+            "data:\timage/png ;base64,iVBORw0KGgo=",
             "data:image/png ;base64,iVBORw0KGgo=",
             "data:image/png  ,raw",
             "data:image/apng;base64,iVBORw0KGgo=",
