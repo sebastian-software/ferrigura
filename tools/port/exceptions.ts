@@ -71,6 +71,28 @@ export const exceptions: Record<string, PortException[]> = {
         'ferrigura bounds YAML alias expansion to prevent Billion Laughs memory exhaustion; js-yaml shares JS object references without materializing the tree',
       expectedError: 'YAML alias expansion exceeded size limit',
     },
+    {
+      text: [
+        `s: &s "${'x'.repeat(40_000)}"`,
+        'a: &a [*s, *s, *s, *s]',
+        'b: &b [*a, *a, *a, *a]',
+        'c: [*b, *b, *b, *b]',
+      ].join('\n'),
+      kind: 'unsupported',
+      reason:
+        'ferrigura bounds expanded YAML string bytes to prevent alias memory amplification; js-yaml shares JS string references without copying',
+      expectedError: 'YAML alias expansion exceeded size limit',
+    },
+    {
+      text: [
+        'a0: &a0 [1]',
+        ...Array.from({ length: 250 }, (_, i) => `a${i + 1}: &a${i + 1} [*a${i}]`),
+      ].join('\n'),
+      kind: 'unsupported',
+      reason:
+        'ferrigura bounds expanded YAML alias nesting depth to prevent stack overflow during tree conversion; js-yaml shares JS object references without deep expansion',
+      expectedError: 'YAML alias expansion exceeded nesting limit',
+    },
   ],
 };
 

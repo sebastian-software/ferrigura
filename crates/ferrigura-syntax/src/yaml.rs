@@ -398,7 +398,7 @@ struct State {
     transactions: Vec<Vec<(String, Option<Node>)>>,
     strings: Vec<String>,
     sequences: Vec<Vec<Node>>,
-    mappings: Vec<Vec<(String, Node)>>,
+    mappings: Vec<Vec<(usize, Node)>>,
     remaining_key_bytes: usize,
     documents: Vec<Node>,
     tag: Option<String>,
@@ -585,9 +585,10 @@ impl State {
                 path.push(collection);
                 let pairs = &self.mappings[id];
                 let mut converted = Vec::with_capacity(pairs.len().min(budget.remaining_nodes));
-                for (key, value) in pairs {
+                for &(key_id, value) in pairs {
+                    let key = &self.strings[key_id];
                     budget.take_bytes(key.len())?;
-                    converted.push((key.clone(), self.to_yaml_on(*value, path, budget)?));
+                    converted.push((key.clone(), self.to_yaml_on(value, path, budget)?));
                 }
                 path.pop();
                 Yaml::Mapping(converted)
@@ -1442,20 +1443,38 @@ impl State {
         Ok(detected)
     }
 
-    /// `storeMappingPair`: the key as a string, and the pair if the key is new.
+    /// `storeMappingPair`: the key as an interned string ID, and the pair if the key is new.
     fn store_pair(&mut self, pairs: usize, key: Node, value: Node) -> Res<()> {
-        let name = key_string(
-            &self.strings,
-            &self.sequences,
-            &mut self.remaining_key_bytes,
-            key,
-        )
-        .map_err(|message| self.error(message))?;
-        let entries = &mut self.mappings[pairs];
-        if entries.iter().any(|(existing, _)| *existing == name) {
+        let key_id = match key {
+            Node::String(id) => {
+                let len = self.strings[id].len();
+                self.remaining_key_bytes = self
+                    .remaining_key_bytes
+                    .checked_sub(len)
+                    .ok_or_else(|| self.error(EXPANSION_LIMIT))?;
+                id
+            }
+            other => {
+                let name = key_string(
+                    &self.strings,
+                    &self.sequences,
+                    &mut self.remaining_key_bytes,
+                    other,
+                )
+                .map_err(|message| self.error(message))?;
+                let id = self.strings.len();
+                self.strings.push(name);
+                id
+            }
+        };
+        let key_text = &self.strings[key_id];
+        if self.mappings[pairs]
+            .iter()
+            .any(|&(existing, _)| self.strings[existing] == *key_text)
+        {
             return Err(self.error("duplicated mapping key"));
         }
-        entries.push((name, value));
+        self.mappings[pairs].push((key_id, value));
         Ok(())
     }
 

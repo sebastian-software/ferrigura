@@ -393,22 +393,63 @@ fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
     }
     shape_bomb.push_str(" }\n");
 
-    for (name, input) in [
-        ("billion laughs front matter", billion_laughs.as_str()),
-        ("string amplification front matter", string_bomb.as_str()),
-        ("deep alias chain front matter", deep_chain.as_str()),
-        ("cyclic sequence front matter", cyclic_seq.as_str()),
-        ("cyclic mapping front matter", cyclic_map.as_str()),
-        ("billion laughs shape data", shape_bomb.as_str()),
+    for (name, input, expected_error, is_front_matter) in [
+        (
+            "billion laughs front matter",
+            billion_laughs.as_str(),
+            "YAML alias expansion exceeded size limit",
+            true,
+        ),
+        (
+            "string amplification front matter",
+            string_bomb.as_str(),
+            "YAML alias expansion exceeded size limit",
+            true,
+        ),
+        (
+            "deep alias chain front matter",
+            deep_chain.as_str(),
+            "YAML alias expansion exceeded nesting limit",
+            true,
+        ),
+        (
+            "cyclic sequence front matter",
+            cyclic_seq.as_str(),
+            "a collection that contains itself has no tree",
+            true,
+        ),
+        (
+            "cyclic mapping front matter",
+            cyclic_map.as_str(),
+            "a collection that contains itself has no tree",
+            true,
+        ),
+        (
+            "billion laughs shape data",
+            shape_bomb.as_str(),
+            "YAML alias expansion exceeded size limit",
+            false,
+        ),
     ] {
+        if is_front_matter {
+            let prep_error = ferrigura_syntax::preprocess::prepare(input).expect_err(&format!(
+                "{name} must fail during front matter preprocessing"
+            ));
+            assert!(
+                prep_error.to_string().contains(expected_error),
+                "{name}: expected {expected_error:?}, got {prep_error}"
+            );
+        }
         let error = renderer
             .render(input)
             .expect_err(&format!("{name} must be rejected"));
         let message = error.to_string();
-        assert!(
-            !message.contains("maxTextSize"),
-            "{name} should fail in YAML expansion, not input size limit: {message}"
-        );
+        if !is_front_matter {
+            assert!(
+                message.contains(expected_error),
+                "{name}: expected {expected_error:?}, got {message}"
+            );
+        }
         assert_eq!(renderer.render(CONTROL).unwrap(), control, "after {name}");
     }
 }

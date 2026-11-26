@@ -302,4 +302,15 @@ export const yamlCases: string[] = [
     'a0: &a0 [1, 1]',
     ...Array.from({ length: 14 }, (_, i) => `a${i + 1}: &a${i + 1} [*a${i}, *a${i}]`),
   ].join('\n'),
+  // Safely sized string alias amplification (~2.56 MiB expanded bytes with <100 nodes).
+  [
+    `s: &s "${'x'.repeat(40_000)}"`,
+    'a: &a [*s, *s, *s, *s]',
+    'b: &b [*a, *a, *a, *a]',
+    'c: [*b, *b, *b, *b]',
+  ].join('\n'),
+  // Safely sized deep alias chain (250 levels, exceeding MAX_EXPANDED_DEPTH = 200 with ~500 nodes).
+  ['a0: &a0 [1]', ...Array.from({ length: 250 }, (_, i) => `a${i + 1}: &a${i + 1} [*a${i}]`)].join(
+    '\n'
+  ),
 ];
