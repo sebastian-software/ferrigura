@@ -223,48 +223,29 @@ pub fn arc_path(inner: f64, outer: f64, start: f64, end: f64) -> String {
 
     let mut path = String::new();
     if da > TAU - EPSILON {
-        let middle = a0 + if clockwise { PI } else { -PI };
         let (x0, y0) = point(outer, a0);
-        let (xm, ym) = point(outer, middle);
         let sweep = u8::from(clockwise);
-        path.push_str(&format!(
-            "M{},{}A{},{},0,1,{},{},{},{}A{},{},0,1,{},{},{},{}",
-            d3_number(x0),
-            d3_number(y0),
-            d3_number(outer),
-            d3_number(outer),
-            sweep,
-            d3_number(xm),
-            d3_number(ym),
-            d3_number(outer),
-            d3_number(outer),
-            sweep,
-            d3_number(x0),
-            d3_number(y0),
-            d3_number(outer),
-            d3_number(outer),
-        ));
+        let r_outer = d3_number(outer);
+        let x0_s = d3_number(x0);
+        let y0_s = d3_number(y0);
+        let _ = write!(
+            path,
+            "M{x0_s},{y0_s}A{r_outer},{r_outer},0,1,{sweep},{},{}A{r_outer},{r_outer},0,1,{sweep},{x0_s},{y0_s}",
+            d3_number(-x0),
+            d3_number(-y0),
+        );
         if inner > EPSILON {
-            let (xi, yi) = point(inner, a0);
-            let (xim, yim) = point(inner, middle);
+            let (xi, yi) = point(inner, a1);
             let back = 1 - sweep;
-            path.push_str(&format!(
-                "M{},{}A{},{},0,1,{},{},{},{}A{},{},0,1,{},{},{},{}Z",
-                d3_number(xi),
-                d3_number(yi),
-                d3_number(inner),
-                d3_number(inner),
-                back,
-                d3_number(xim),
-                d3_number(yim),
-                d3_number(inner),
-                d3_number(inner),
-                back,
-                d3_number(xi),
-                d3_number(yi),
-                d3_number(inner),
-                d3_number(inner),
-            ));
+            let r_inner = d3_number(inner);
+            let xi_s = d3_number(xi);
+            let yi_s = d3_number(yi);
+            let _ = write!(
+                path,
+                "M{xi_s},{yi_s}A{r_inner},{r_inner},0,1,{back},{},{}A{r_inner},{r_inner},0,1,{back},{xi_s},{yi_s}Z",
+                d3_number(-xi),
+                d3_number(-yi),
+            );
         } else {
             path.push('Z');
         }
@@ -378,7 +359,90 @@ mod tests {
 
     #[test]
     fn a_full_circle_is_two_half_arcs() {
-        let path = arc_path(0.0, 10.0, 0.0, 2.0 * PI);
-        assert_eq!(path.matches('A').count(), 2, "{path}");
+        let clockwise = arc_path(0.0, 10.0, 0.0, 2.0 * PI);
+        assert_eq!(clockwise, "M0,-10A10,10,0,1,1,0,10A10,10,0,1,1,0,-10Z");
+        assert_eq!(
+            ferrigura_path::bounding_box(&clockwise),
+            ferrigura_path::Rect {
+                x: -10.0,
+                y: -10.0,
+                width: 20.0,
+                height: 20.0,
+            }
+        );
+
+        let counter_clockwise = arc_path(0.0, 10.0, 0.0, -2.0 * PI);
+        assert_eq!(
+            counter_clockwise,
+            "M0,-10A10,10,0,1,0,0,10A10,10,0,1,0,0,-10Z"
+        );
+        assert_eq!(
+            ferrigura_path::bounding_box(&counter_clockwise),
+            ferrigura_path::Rect {
+                x: -10.0,
+                y: -10.0,
+                width: 20.0,
+                height: 20.0,
+            }
+        );
+    }
+
+    #[test]
+    fn a_full_donut_has_two_half_arcs_on_each_ring() {
+        let clockwise = arc_path(5.0, 10.0, 0.0, 2.0 * PI);
+        assert_eq!(
+            clockwise,
+            "M0,-10A10,10,0,1,1,0,10A10,10,0,1,1,0,-10M0,-5A5,5,0,1,0,0,5A5,5,0,1,0,0,-5Z"
+        );
+        assert_eq!(
+            ferrigura_path::bounding_box(&clockwise),
+            ferrigura_path::Rect {
+                x: -10.0,
+                y: -10.0,
+                width: 20.0,
+                height: 20.0,
+            }
+        );
+        let inner = &clockwise[clockwise.rfind('M').expect("inner subpath")..];
+        assert_eq!(
+            ferrigura_path::bounding_box(inner),
+            ferrigura_path::Rect {
+                x: -5.0,
+                y: -5.0,
+                width: 10.0,
+                height: 10.0,
+            }
+        );
+
+        let counter_clockwise = arc_path(5.0, 10.0, 0.0, -2.0 * PI);
+        assert_eq!(
+            counter_clockwise,
+            "M0,-10A10,10,0,1,0,0,10A10,10,0,1,0,0,-10M0,-5A5,5,0,1,1,0,5A5,5,0,1,1,0,-5Z"
+        );
+        assert_eq!(
+            ferrigura_path::bounding_box(&counter_clockwise),
+            ferrigura_path::Rect {
+                x: -10.0,
+                y: -10.0,
+                width: 20.0,
+                height: 20.0,
+            }
+        );
+        let inner_ccw = &counter_clockwise[counter_clockwise.rfind('M').expect("inner subpath")..];
+        assert_eq!(
+            ferrigura_path::bounding_box(inner_ccw),
+            ferrigura_path::Rect {
+                x: -5.0,
+                y: -5.0,
+                width: 10.0,
+                height: 10.0,
+            }
+        );
+
+        // Matches `d3-shape`: the inner ring starts at `endAngle`, even when `da > 2π`.
+        assert_eq!(
+            arc_path(5.0, 10.0, 0.0, 3.0 * PI),
+            "M0,-10A10,10,0,1,1,0,10A10,10,0,1,1,0,-10M0,5A5,5,0,1,0,0,-5A5,5,0,1,0,0,5Z"
+        );
     }
 }

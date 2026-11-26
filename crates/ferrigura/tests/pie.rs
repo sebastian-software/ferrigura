@@ -53,3 +53,21 @@ fn should_embed_the_font_as_a_subset_family() {
     assert!(out.contains("@font-face{font-family:\"fg-"), "{out}");
     assert!(out.contains("text{white-space: pre;}"), "{out}");
 }
+
+#[test]
+fn should_emit_valid_full_circle_arc_paths_for_single_slice_pie_and_donut() {
+    let pie = svg("pie\n  \"Only\" : 100\n");
+    assert!(
+        pie.contains("d=\"M0,-185A185,185,0,1,1,0,185A185,185,0,1,1,0,-185Z\""),
+        "{pie}"
+    );
+
+    let donut_config = Value::from(serde_json::json!({ "pie": { "donutHole": 0.5 } }));
+    let donut = render("pie\n  \"Only\" : 100\n", &donut_config).expect("the donut renders");
+    assert!(
+        donut.contains(
+            "d=\"M0,-185A185,185,0,1,1,0,185A185,185,0,1,1,0,-185M0,-92.5A92.5,92.5,0,1,0,0,92.5A92.5,92.5,0,1,0,0,-92.5Z\""
+        ),
+        "{donut}"
+    );
+}
