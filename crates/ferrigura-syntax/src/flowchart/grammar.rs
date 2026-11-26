@@ -52,7 +52,7 @@ pub(crate) fn parse_text(
         source,
         tokens,
         pos: 0,
-        db: Db::new(options.max_edges),
+        db: Db::new(options),
     };
     parser.graph_config()?;
     parser.document(false)?;

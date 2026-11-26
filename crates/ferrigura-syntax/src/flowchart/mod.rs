@@ -18,18 +18,22 @@ use ferrigura_model::flowchart::FlowchartDiagram;
 use crate::error::ParseError;
 use crate::preprocess::{cleanup_comments, encode_entities, prepare, remove_directives};
 use crate::text::is_js_space;
+pub use crate::url::SecurityLevel;
 
 /// Options of the parser. The defaults are the reference's defaults.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Options {
     /// The most edges a diagram may have; more is an error (`maxEdges`, 500 by default).
     pub max_edges: usize,
+    /// `securityLevel`, `strict` by default.
+    pub security_level: SecurityLevel,
 }
 
 impl Default for Options {
     fn default() -> Self {
         Self {
             max_edges: db::DEFAULT_MAX_EDGES,
+            security_level: SecurityLevel::Strict,
         }
     }
 }

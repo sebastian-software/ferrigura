@@ -14,9 +14,9 @@
  * - the fields that only the layout sets (sizes, positions, points, the arrowhead) are not written,
  *   as they are not serialized on the Rust side.
  *
- * The reference's `sanitizeText` runs as it does (DOMPurify, with a window from
- * `provideDomForSanitizing`), so the labels are the sanitized texts that the Rust DB produces with
- * `ferrigura-syntax`'s `sanitize`. A link is only trimmed; `formatUrl` needs no DOM for these inputs.
+ * The reference's `sanitizeText` and `formatUrl` run as they do (DOMPurify, with a window from
+ * `provideDomForSanitizing`, and `@braintree/sanitize-url`), matching `ferrigura-syntax`'s
+ * `sanitize` and `url`.
  *
  * Usage: `tsx tools/port/export-flowchart-data.ts inputs.json outputs.json`
  */
@@ -52,28 +52,23 @@ interface Modules {
   flowParser: { default: { parser: { yy: unknown }; parse(text: string): unknown } };
   flowDb: { FlowDB: new () => FlowDb };
   common: { default: { sanitizeText: (text: string, config: unknown) => string } };
-  utils: { default: { formatUrl: (link: string, config: unknown) => string | undefined } };
 }
 
 async function loadModules(reference: Reference): Promise<Modules> {
   provideDomForSanitizing();
   await registerDetectors(reference);
-  const [config, detectType, preprocess, encode, flowParser, flowDb, common, utils] =
-    await Promise.all([
-      reference.load<Modules['config']>('/packages/mermaid/src/config.ts'),
-      reference.load<Modules['detectType']>('/packages/mermaid/src/diagram-api/detectType.ts'),
-      reference.load<Modules['preprocess']>('/packages/mermaid/src/preprocess.ts'),
-      reference.load<Modules['encode']>('/packages/mermaid/src/utils.ts'),
-      reference.load<Modules['flowParser']>(
-        '/packages/mermaid/src/diagrams/flowchart/parser/flowParser.ts'
-      ),
-      reference.load<Modules['flowDb']>('/packages/mermaid/src/diagrams/flowchart/flowDb.ts'),
-      reference.load<Modules['common']>('/packages/mermaid/src/diagrams/common/common.ts'),
-      reference.load<Modules['utils']>('/packages/mermaid/src/utils.ts'),
-    ]);
-  // A link is only trimmed; see the header.
-  utils.default.formatUrl = (link: string) => link.trim() || undefined;
-  return { config, detectType, preprocess, encode, flowParser, flowDb, common, utils };
+  const [config, detectType, preprocess, encode, flowParser, flowDb, common] = await Promise.all([
+    reference.load<Modules['config']>('/packages/mermaid/src/config.ts'),
+    reference.load<Modules['detectType']>('/packages/mermaid/src/diagram-api/detectType.ts'),
+    reference.load<Modules['preprocess']>('/packages/mermaid/src/preprocess.ts'),
+    reference.load<Modules['encode']>('/packages/mermaid/src/utils.ts'),
+    reference.load<Modules['flowParser']>(
+      '/packages/mermaid/src/diagrams/flowchart/parser/flowParser.ts'
+    ),
+    reference.load<Modules['flowDb']>('/packages/mermaid/src/diagrams/flowchart/flowDb.ts'),
+    reference.load<Modules['common']>('/packages/mermaid/src/diagrams/common/common.ts'),
+  ]);
+  return { config, detectType, preprocess, encode, flowParser, flowDb, common };
 }
 
 /** A string or a number as the reference holds it, or `null` for an undefined field. */

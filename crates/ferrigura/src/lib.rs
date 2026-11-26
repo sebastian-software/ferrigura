@@ -951,6 +951,9 @@ fn with_flowchart<T>(
         &prepared.source,
         ferrigura_syntax::flowchart::Options {
             max_edges: prepared.max_edges,
+            security_level: ferrigura_syntax::url::SecurityLevel::from_config(
+                &prepared.view.globals.security_level,
+            ),
         },
     )
     .map_err(|ferrigura_syntax::flowchart::FlowchartError::Syntax(error)| error)?;

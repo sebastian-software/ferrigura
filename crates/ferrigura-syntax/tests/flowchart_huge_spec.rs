@@ -18,7 +18,10 @@ fn huge_input() -> String {
 
 /// `maxEdges` raised above the input's edge count.
 fn raised_limit() -> Options {
-    Options { max_edges: 100_000 }
+    Options {
+        max_edges: 100_000,
+        ..Options::default()
+    }
 }
 
 mod text {

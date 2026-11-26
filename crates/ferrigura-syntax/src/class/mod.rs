@@ -14,28 +14,14 @@ mod member;
 /// `parseGenericTypes` of `diagrams/common/common.ts`, which the ER and class renderers share.
 pub use member::parse_generic_types;
 
+pub use crate::url::SecurityLevel;
+
 use ferrigura_model::class::{ClassDiagram, ClassMember};
 
 use crate::error::ParseError;
 use crate::flowchart::clean_comments;
 use crate::preprocess::prepare;
 use crate::preprocess::remove_directives;
-
-/// The `securityLevel` of the configuration, as far as the class DB looks at it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum SecurityLevel {
-    /// `strict`, the default.
-    #[default]
-    Strict,
-    /// `antiscript`.
-    Antiscript,
-    /// `sandbox`: link targets are `_top`.
-    Sandbox,
-    /// `loose`: URLs are not sanitized.
-    Loose,
-    /// Any other value: the reference treats it as neither strict nor loose.
-    Other,
-}
 
 /// The options of the parser, which change how the DB sanitizes its texts. The defaults are the
 /// reference's defaults: `htmlLabels` is on and `securityLevel` is `strict`.

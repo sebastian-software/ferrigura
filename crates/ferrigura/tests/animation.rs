@@ -45,7 +45,7 @@ fn enabling_animation_preserves_geometry_styles_links_and_font_subsets() {
             assert!(animated.contains("prefers-reduced-motion:no-preference"));
             assert!(animated.contains("data-draw-duration="));
             assert!(animated.contains("data:font/ttf;base64,"));
-            assert!(animated.contains("href=\"https://example.com\""));
+            assert!(animated.contains("href=\"https://example.com/\""));
             assert!(!animated.contains("<script"));
             let draw_style = animated_xml
                 .descendants()

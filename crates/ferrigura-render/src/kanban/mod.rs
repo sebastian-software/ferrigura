@@ -18,6 +18,7 @@ use ferrigura_model::flowchart::LabelType;
 use ferrigura_model::kanban::KanbanDiagram;
 use ferrigura_model::value::Value;
 use ferrigura_syntax::sanitize::sanitize_text;
+use ferrigura_syntax::url::format_url;
 use ferrigura_text::{EmbeddedFamily, Run, embed_runs};
 
 use crate::RenderError;
@@ -30,7 +31,7 @@ use crate::context::Context;
 use crate::svg::{XLINK_NAMESPACE, number};
 use crate::unified::geom::BBox;
 use crate::unified::label::{self, Anchor, LabelLayout, LabelSpec};
-use crate::unified::shapes::kanban_item::{ItemPaint, KanbanItem, kanban_item};
+use crate::unified::shapes::kanban_item::{ItemPaint, KanbanItem, kanban_item_with_security};
 use crate::unified::shapes::kanban_section::{KanbanSection, SectionPaint, kanban_section};
 use data::DataNode;
 use style::Schemes;
@@ -137,6 +138,7 @@ pub fn render(
     let mut links = false;
     let mut root_bounds: Option<BBox> = None;
     let mut heights = Vec::with_capacity(sections.len());
+    let loose = input.globals.security_level == "loose";
     for section in &sections {
         let mut y = item_top;
         for item in nodes.iter().filter(|node| {
@@ -144,25 +146,28 @@ pub fn render(
         }) {
             let labels = item_labels_of(&fonts, item, item_width, text_size)?;
             let priority: Option<&Value> = item.priority.as_ref();
-            let link = ticket_link(item, &input.section.kanban.ticket_base_url);
+            let link = ticket_link(item, &input.section.kanban.ticket_base_url, loose);
             links |= link.is_some();
-            let shape = kanban_item(&KanbanItem {
-                dom_id: &format!("{id}-{}", item.id),
-                title: &labels.title,
-                ticket: &labels.ticket,
-                assigned: &labels.assigned,
-                width: item_width,
-                padding: ITEM_PADDING,
-                corner_radius: item.corner_radius.unwrap_or(CORNER_RADIUS),
-                priority,
-                label_style: ITEM_LABEL_STYLE,
-                ticket_link: link.as_deref(),
-                paint: ItemPaint {
-                    background: &palette.background,
-                    node_border: &palette.node_border,
-                    text: &palette.text_color,
+            let shape = kanban_item_with_security(
+                &KanbanItem {
+                    dom_id: &format!("{id}-{}", item.id),
+                    title: &labels.title,
+                    ticket: &labels.ticket,
+                    assigned: &labels.assigned,
+                    width: item_width,
+                    padding: ITEM_PADDING,
+                    corner_radius: item.corner_radius.unwrap_or(CORNER_RADIUS),
+                    priority,
+                    label_style: ITEM_LABEL_STYLE,
+                    ticket_link: link.as_deref(),
+                    paint: ItemPaint {
+                        background: &palette.background,
+                        node_border: &palette.node_border,
+                        text: &palette.text_color,
+                    },
                 },
-            });
+                loose,
+            );
             // `item.y = y + bbox.height / 2`, from the box of the item's group (`:81-82`).
             let item_y = y + shape.bbox.height / 2.0;
             item_groups.push_str(&shape.group(section.x, item_y));
@@ -355,10 +360,14 @@ fn layout_label(
 }
 
 /// The link of an item's ticket (`kanbanItem.ts` 46-47): the ticket base URL with the first
-/// `#TICKET#` replaced by the ticket. The item needs a ticket and the configuration a base URL.
-fn ticket_link(item: &DataNode, base_url: &str) -> Option<String> {
+/// `#TICKET#` replaced by the ticket, routed through `formatUrl`. The item needs a ticket and the
+/// configuration a base URL.
+fn ticket_link(item: &DataNode, base_url: &str, loose: bool) -> Option<String> {
     let ticket = item.ticket.as_deref().filter(|ticket| !ticket.is_empty())?;
-    (!base_url.is_empty()).then(|| replace_first(base_url, "#TICKET#", ticket))
+    if base_url.is_empty() {
+        return None;
+    }
+    format_url(&replace_first(base_url, "#TICKET#", ticket), loose)
 }
 
 /// `String.prototype.replace` with a string pattern: the first occurrence is replaced, and the

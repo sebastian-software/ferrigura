@@ -13,6 +13,7 @@
 //! `data-look`, as `insertNode` writes it from the look of the node, which the item does not have.
 
 use ferrigura_model::value::Value;
+use ferrigura_syntax::url::format_url;
 
 use crate::svg::{escape, number};
 use crate::unified::geom::BBox;
@@ -86,9 +87,16 @@ impl KanbanItemShape {
     }
 }
 
-/// Draws an item (`kanbanItem`).
+/// Draws an item (`kanbanItem`), sanitizing any ticket link under strict security.
 #[must_use]
 pub fn kanban_item(item: &KanbanItem<'_>) -> KanbanItemShape {
+    kanban_item_with_security(item, false)
+}
+
+/// Draws an item (`kanbanItem`), routing any ticket link through `formatUrl` (`loose` is
+/// `securityLevel === 'loose'`).
+#[must_use]
+pub fn kanban_item_with_security(item: &KanbanItem<'_>, loose: bool) -> KanbanItemShape {
     // The box of each label's group, as `getBBox` returns it (float32): the text, and the background
     // rectangle when the label has one (`labelHelper` gives the title one for an item with an icon).
     let title = label_group_box(item.title);
@@ -130,12 +138,12 @@ pub fn kanban_item(item: &KanbanItem<'_>) -> KanbanItemShape {
     // inserted before the title (`kanbanItem.ts` 46-53), and the ticket's label goes into it.
     let mut inner = String::new();
     inner.push_str(&rectangle(item, rect_x, rect_y, total_width, total_height));
-    match item.ticket_link {
+    match item.ticket_link.and_then(|link| format_url(link, loose)) {
         Some(link) => {
             // `target` is not in the markup: the sanitizer of the reference's output drops it.
             inner.push_str(&format!(
                 "<a class=\"kanban-ticket-link\" xlink:href=\"{}\">{}</a>",
-                escape(link),
+                escape(&link),
                 label_group(item.ticket, ticket_at, item),
             ));
             inner.push_str(&label_group(item.title, title_at, item));
@@ -241,5 +249,66 @@ fn is_truthy(value: &Value) -> bool {
         Value::Number(number) => *number != 0.0 && !number.is_nan(),
         Value::String(text) => !text.is_empty(),
         Value::Array(_) | Value::Object(_) => true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn draw_with_link(link: Option<&str>, loose: bool) -> String {
+        let empty = LabelLayout::of_box(BBox::default());
+        let item = KanbanItem {
+            dom_id: "kanban-1",
+            title: &empty,
+            ticket: &empty,
+            assigned: &empty,
+            width: 185.0,
+            padding: 10.0,
+            corner_radius: 5.0,
+            priority: None,
+            label_style: "text-align:left !important",
+            ticket_link: link,
+            paint: ItemPaint {
+                background: "#fff",
+                node_border: "#000",
+                text: "#000",
+            },
+        };
+        let shape = if loose {
+            kanban_item_with_security(&item, true)
+        } else {
+            kanban_item(&item)
+        };
+        shape.group(0.0, 0.0)
+    }
+
+    #[test]
+    fn kanban_item_sanitizes_ticket_links_by_default_and_respects_loose_mode() {
+        for unsafe_url in [
+            "javascript:alert(1)",
+            "vbscript:msgbox(1)",
+            "&#106;avascript:alert(1)",
+            "javascript&colon;alert(1)",
+            "%6aavascript:alert(1)",
+        ] {
+            let svg = draw_with_link(Some(unsafe_url), false);
+            assert!(
+                svg.contains("xlink:href=\"about:blank\""),
+                "url={unsafe_url:?}: {svg}"
+            );
+        }
+
+        let valid = draw_with_link(Some("https://tickets.example.com/browse/MC-1"), false);
+        assert!(
+            valid.contains("xlink:href=\"https://tickets.example.com/browse/MC-1\""),
+            "{valid}"
+        );
+
+        let loose = draw_with_link(Some("javascript:alert(1)"), true);
+        assert!(
+            loose.contains("xlink:href=\"javascript:alert(1)\""),
+            "{loose}"
+        );
     }
 }

@@ -7,6 +7,7 @@ mod notes;
 pub mod style;
 
 use ferrigura_model::state::{Link, StateDiagram};
+use ferrigura_syntax::url::format_url;
 use ferrigura_text::{
     FontStyle, FontWeight, Run, embed_runs, measure as measure_text, measure_box, text_box,
 };
@@ -114,7 +115,11 @@ fn lay_out_with_notes_beside(
 pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, RenderError> {
     let config = Config::of(input);
     let mut measured = measure(input, &config)?;
-    apply_links(&mut measured.data, &input.diagram.links);
+    apply_links(
+        &mut measured.data,
+        &input.diagram.links,
+        &input.globals.security_level,
+    );
     if input.section.design.is_some() {
         lay_out_with_notes_beside(&mut measured, &config)?;
     } else {
@@ -231,8 +236,9 @@ pub fn render(input: &Context<'_, StateDiagram, Section<'_>>) -> Result<String, 
 
 /// The links of the clicked states (`stateRenderer-v3-unified.ts` 80-133): each link wraps the node of
 /// its state, if that node is a state and not a composite. The quotes around an address and a tooltip
-/// are removed, as the reference removes them.
-fn apply_links(data: &mut LayoutData, links: &[Link]) {
+/// are removed, as the reference removes them, and the address is routed through `formatUrl`.
+fn apply_links(data: &mut LayoutData, links: &[Link], security_level: &str) {
+    let loose = security_level == "loose";
     for link in links {
         let Some(node) = data.nodes.iter_mut().find(|node| node.id == link.id) else {
             continue;
@@ -240,7 +246,7 @@ fn apply_links(data: &mut LayoutData, links: &[Link]) {
         if node.is_group {
             continue;
         }
-        node.link = Some(unquote(&link.url));
+        node.link = format_url(&unquote(&link.url), loose);
         let tooltip = unquote(&link.tooltip);
         node.tooltip = (!tooltip.is_empty()).then_some(tooltip);
     }
@@ -312,5 +318,35 @@ mod tests {
             ]
         );
         assert!(data.nodes[4..].iter().all(|node| node.shape == "stateEnd"));
+    }
+
+    #[test]
+    fn apply_links_sanitizes_unsafe_urls_unless_security_level_is_loose() {
+        let mut data = LayoutData {
+            nodes: vec![node("s1", "rect"), node("s2", "rect")],
+            ..LayoutData::default()
+        };
+        let links = vec![
+            Link {
+                id: "s1".to_owned(),
+                url: "\"javascript:alert(1)\"".to_owned(),
+                tooltip: "\"tip\"".to_owned(),
+            },
+            Link {
+                id: "s2".to_owned(),
+                url: "\"https://example.com/page\"".to_owned(),
+                tooltip: String::new(),
+            },
+        ];
+        apply_links(&mut data, &links, "strict");
+        assert_eq!(data.nodes[0].link.as_deref(), Some("about:blank"));
+        assert_eq!(data.nodes[0].tooltip.as_deref(), Some("tip"));
+        assert_eq!(
+            data.nodes[1].link.as_deref(),
+            Some("https://example.com/page")
+        );
+
+        apply_links(&mut data, &links, "loose");
+        assert_eq!(data.nodes[0].link.as_deref(), Some("javascript:alert(1)"));
     }
 }

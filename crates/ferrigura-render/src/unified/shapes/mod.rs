@@ -49,6 +49,7 @@ mod util;
 mod wave;
 
 use ferrigura_syntax::sanitize::sanitize_text;
+use ferrigura_syntax::url::format_url;
 
 use super::Config;
 use super::clusters;
@@ -305,9 +306,22 @@ pub fn node_label(
 
 /// The node's `<g>` for the diagram `svg_id`, positioned at its center, as `insertNode` and
 /// `positionNode` leave it: the shape's elements, then the label; inside an `<a>` when the node
-/// has a link.
+/// has a link (sanitized under strict security).
 #[must_use]
 pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm) -> String {
+    node_svg_with_security(node, shape, svg_id, links, false)
+}
+
+/// [`node_svg`], routing the node's link through `formatUrl` (`loose` is
+/// `securityLevel === 'loose'`).
+#[must_use]
+pub fn node_svg_with_security(
+    node: &Node,
+    shape: &ShapeOutput,
+    svg_id: &str,
+    links: LinkForm,
+    loose: bool,
+) -> String {
     let kind = registry::resolve_node(node);
     let styles = util::styles2string(node);
     let shape_svg = shape.svg.replace(SVG_ID_TOKEN, svg_id);
@@ -349,7 +363,11 @@ pub fn node_svg(node: &Node, shape: &ShapeOutput, svg_id: &str, links: LinkForm)
         .as_deref()
         .map_or_else(String::new, |tooltip| util::attribute("title", tooltip));
 
-    match node.link.as_deref() {
+    let link = node
+        .link
+        .as_deref()
+        .and_then(|link| format_url(link, loose));
+    match link.as_deref() {
         // The state diagram wraps a clicked node after its render (`stateRenderer-v3-unified.ts`
         // 80-133): the anchor has no transform, and the tooltip is on the anchor and on the node.
         Some(link) if links == LinkForm::PostRender => {
@@ -714,5 +732,39 @@ mod tests {
             error.to_string().contains("No such shape: no-such-shape"),
             "{error}"
         );
+    }
+
+    #[test]
+    fn node_svg_sanitizes_unsafe_links_by_default_and_respects_loose_mode() {
+        for form in [LinkForm::Flowchart, LinkForm::PostRender] {
+            for unsafe_url in [
+                "javascript:alert(1)",
+                "vbscript:msgbox(1)",
+                "data:text/html,<script>alert(1)</script>",
+                "&#106;avascript:alert(1)",
+                "javascript&colon;alert(1)",
+                "%6aavascript:alert(1)",
+            ] {
+                let mut node = node("f-circ", "neo");
+                node.dom_id = "flowchart-A-0".to_owned();
+                node.link = Some(unsafe_url.to_owned());
+                let shape = draw_box(&node, &LabelLayout::of_box(BBox::default()));
+                let svg = node_svg(&node, &shape, "svg-id", form);
+                assert!(
+                    svg.contains("xlink:href=\"about:blank\""),
+                    "form={form:?} url={unsafe_url:?}: {svg}"
+                );
+            }
+
+            let mut loose_node = node("f-circ", "neo");
+            loose_node.dom_id = "flowchart-A-0".to_owned();
+            loose_node.link = Some("javascript:alert(1)".to_owned());
+            let shape = draw_box(&loose_node, &LabelLayout::of_box(BBox::default()));
+            let loose_svg = node_svg_with_security(&loose_node, &shape, "svg-id", form, true);
+            assert!(
+                loose_svg.contains("xlink:href=\"javascript:alert(1)\""),
+                "form={form:?}: {loose_svg}"
+            );
+        }
     }
 }

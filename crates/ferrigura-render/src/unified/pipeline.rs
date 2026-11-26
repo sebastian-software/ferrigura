@@ -601,6 +601,7 @@ pub(crate) fn paint_with_animation<'a>(
     let mut nodes = String::new();
     let mut node_parts = Vec::new();
     let mut links = false;
+    let loose = config.globals.security_level == "loose";
     for (index, node) in data
         .nodes
         .iter()
@@ -610,7 +611,10 @@ pub(crate) fn paint_with_animation<'a>(
         let Some(shape) = measured.shapes.get(&node.id) else {
             continue;
         };
-        links |= node.link.is_some();
+        links |= node
+            .link
+            .as_deref()
+            .is_some_and(|link| ferrigura_syntax::url::format_url(link, loose).is_some());
         let (x, y) = (node.x.unwrap_or(0.0), node.y.unwrap_or(0.0));
         cover(
             &mut bounds,
@@ -622,7 +626,7 @@ pub(crate) fn paint_with_animation<'a>(
         } else {
             shapes::LinkForm::Flowchart
         };
-        let svg = shapes::node_svg(node, shape, id, link_form);
+        let svg = shapes::node_svg_with_security(node, shape, id, link_form, loose);
         if animation.is_some() {
             node_parts.push((index, svg));
         } else {

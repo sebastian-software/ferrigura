@@ -1,8 +1,8 @@
 //! `sanitizeUrl` of `@braintree/sanitize-url` 7.1.2 and `formatUrl` of the reference (`utils.ts`).
 //!
-//! The one port of `sanitizeUrl`: the class DB (`formatUrl`) and the gantt DB (`setLink`) call it,
-//! and so do the renderers for the `href` of an image (`drawImage`, `drawEmbeddedImage`) and of a
-//! sequence actor's menu link.
+//! The one port of `sanitizeUrl`: the flowchart, class, agentflow and gantt DBs call it, and so do
+//! the renderers for state and kanban links, image shapes (`imageSquare`, `drawImage`,
+//! `drawEmbeddedImage`), node anchors and sequence actor menu links.
 //!
 //! The reference is `index.js` and `constants.js` of the package. Each regular expression of
 //! `constants.js` is a function that finds its match at a position, and each global `replace` is a
@@ -10,6 +10,42 @@
 //! the ASCII word set, `\s` is the JavaScript whitespace, and `.` excludes the line terminators.
 
 use crate::text::{is_js_space, is_line_term, is_word, js_trim};
+
+/// The `securityLevel` of the configuration, as far as URL and text sanitization look at it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SecurityLevel {
+    /// `strict`, the default.
+    #[default]
+    Strict,
+    /// `antiscript`.
+    Antiscript,
+    /// `sandbox`: link targets are `_top` in class diagrams.
+    Sandbox,
+    /// `loose`: URLs are not sanitized.
+    Loose,
+    /// Any other value: the reference treats it as neither strict nor loose.
+    Other,
+}
+
+impl SecurityLevel {
+    /// Reads the `securityLevel` configuration value as Mermaid reads it.
+    #[must_use]
+    pub fn from_config(value: &str) -> Self {
+        match value {
+            "strict" => Self::Strict,
+            "antiscript" => Self::Antiscript,
+            "sandbox" => Self::Sandbox,
+            "loose" => Self::Loose,
+            _ => Self::Other,
+        }
+    }
+
+    /// Whether URL sanitization is skipped (`securityLevel === 'loose'`).
+    #[must_use]
+    pub const fn is_loose(self) -> bool {
+        matches!(self, Self::Loose)
+    }
+}
 
 /// What `sanitizeUrl` returns for an empty, unsafe or invalid URL.
 const BLANK_URL: &str = "about:blank";
@@ -19,7 +55,8 @@ const BLANK_URL: &str = "about:blank";
 /// The link is trimmed with JavaScript's `trim`, and an empty result gives `None`. `loose` is
 /// `securityLevel === 'loose'`: the trimmed link is returned as it is, and otherwise it goes
 /// through [`sanitize_url`].
-pub(crate) fn format_url(link: &str, loose: bool) -> Option<String> {
+#[must_use]
+pub fn format_url(link: &str, loose: bool) -> Option<String> {
     let url = js_trim(link);
     if url.is_empty() {
         None

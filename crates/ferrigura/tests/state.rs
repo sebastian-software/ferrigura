@@ -88,3 +88,57 @@ fn the_nested_text_rule_of_a_state_note_is_written_flat() {
     let svg = render("stateDiagram-v2\n  A --> B\n", &Value::empty_object()).expect("renders");
     assert!(svg.contains(" .state-note text{"), "{svg}");
 }
+
+#[test]
+fn state_click_urls_are_sanitized_under_default_security_level() {
+    for unsafe_url in [
+        "javascript:alert(1)",
+        "JAVASCRIPT:alert(1)",
+        "vbscript:msgbox(1)",
+        "data:text/html,<script>alert(1)</script>",
+        "javascript&colon;alert(1)",
+        "%6aavascript:alert(1)",
+        "java\tscript:alert(1)",
+        "java\\tscript:alert(1)",
+    ] {
+        let href_input = format!("stateDiagram-v2\n  s1\n  click s1 href \"{unsafe_url}\"\n");
+        let href_svg = render(&href_input, &Value::empty_object()).expect("renders");
+        assert!(
+            href_svg.contains("xlink:href=\"about:blank\""),
+            "href url={unsafe_url:?}: {href_svg}"
+        );
+        assert!(
+            !href_svg.contains("javascript:") && !href_svg.contains("vbscript:"),
+            "href url={unsafe_url:?}: {href_svg}"
+        );
+
+        let tooltip_input =
+            format!("stateDiagram-v2\n  s1\n  click s1 \"{unsafe_url}\" \"Open\"\n");
+        let tooltip_svg = render(&tooltip_input, &Value::empty_object()).expect("renders");
+        assert!(
+            tooltip_svg.contains("xlink:href=\"about:blank\""),
+            "tooltip url={unsafe_url:?}: {tooltip_svg}"
+        );
+    }
+
+    let valid = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"https://example.com/state\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        valid.contains("xlink:href=\"https://example.com/state\""),
+        "{valid}"
+    );
+
+    let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
+    let loose = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"javascript:alert(1)\"\n",
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        loose.contains("xlink:href=\"javascript:alert(1)\""),
+        "{loose}"
+    );
+}

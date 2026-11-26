@@ -25,10 +25,17 @@ pub fn parse(text: &str) -> Result<SwimlanesDiagram, ParseError> {
     flowchart::parse(text).map_err(|FlowchartError::Syntax(error)| error)
 }
 
-/// Parses an already prepared swimlane source.
+/// Parses an already prepared swimlane source with the default flowchart options.
 pub fn parse_prepared(
     prepared: &crate::preprocess::Prepared,
 ) -> Result<SwimlanesDiagram, ParseError> {
-    flowchart::parse_prepared(prepared, flowchart::Options::default())
-        .map_err(|FlowchartError::Syntax(error)| error)
+    parse_prepared_with(prepared, flowchart::Options::default())
+}
+
+/// Parses an already prepared swimlane source with the given flowchart options.
+pub fn parse_prepared_with(
+    prepared: &crate::preprocess::Prepared,
+    options: flowchart::Options,
+) -> Result<SwimlanesDiagram, ParseError> {
+    flowchart::parse_prepared(prepared, options).map_err(|FlowchartError::Syntax(error)| error)
 }

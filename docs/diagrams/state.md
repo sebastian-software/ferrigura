@@ -82,7 +82,7 @@ Quirks of the reference that are kept on purpose:
 
 **Style sheet** (`state/style.rs`, `styles.js` and the shared rules). Colors are custom properties on the diagram id ([0011](../decisions/0011-themes-as-css-variables.md)); the palette rules of `genColor` come first, for the two color themes. The selectors that match nothing in the reference (`g.stateGroup`) are not written, and neither are the reference's `//` comments, which are not CSS; the nested `text {}` inside `.state-note` is written flat as `.state-note text`, as stylis writes it. The sheet has no rule for a node's paths, so the rough outlines of a note, a choice and an end state carry their colors as presentation attributes, as the reference's shapes write them: the note's `noteBkgColor` and `noteBorderColor`, the choice's `mainBkg` and `nodeBorder`, and the end state's `mainBkg` ring stroked with `lineColor` around a `stateBorder` dot.
 
-**Links.** After the render, a clicked state's node is wrapped as `<a xlink:href title>` around its `<g>`, with no transform on the anchor and the surrounding quotes stripped; only leaves are wrapped.
+**Links.** After the render, a clicked state's node is wrapped as `<a xlink:href title>` around its `<g>`, with no transform on the anchor, the surrounding quotes stripped, and the URL routed through `formatUrl` (respecting `securityLevel`); only leaves are wrapped.
 
 ## Differences from Mermaid
 

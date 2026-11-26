@@ -122,4 +122,48 @@ mod interactions_when_parsing {
         assert_eq!(vertex(&diagram, "A").link_target.as_deref(), Some("_blank"));
         assert!(has_tooltip(&diagram, "A", "tooltip"));
     }
+
+    #[test]
+    fn should_sanitize_unsafe_click_urls_by_default_and_allow_them_when_loose() {
+        use ferrigura_syntax::flowchart::{Options, SecurityLevel, parse_with};
+
+        for unsafe_url in [
+            "javascript:alert(1)",
+            "JAVASCRIPT:alert(1)",
+            "vbscript:msgbox(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "javascript&colon;alert(1)",
+            "%6aavascript:alert(1)",
+            "java\tscript:alert(1)",
+            "java\\tscript:alert(1)",
+        ] {
+            let input = format!("flowchart TD\nA[x]\nclick A \"{unsafe_url}\"");
+            let diagram = parse(&input).expect("parses");
+            assert_eq!(
+                vertex(&diagram, "A").link.as_deref(),
+                Some("about:blank"),
+                "unsafe url {unsafe_url:?}"
+            );
+        }
+
+        let valid =
+            parse("flowchart TD\nA[x]\nclick A \"https://example.com/docs\"").expect("parses");
+        assert_eq!(
+            vertex(&valid, "A").link.as_deref(),
+            Some("https://example.com/docs")
+        );
+
+        let loose = parse_with(
+            "flowchart TD\nA[x]\nclick A \"javascript:alert(1)\"",
+            Options {
+                security_level: SecurityLevel::Loose,
+                ..Options::default()
+            },
+        )
+        .expect("parses");
+        assert_eq!(
+            vertex(&loose, "A").link.as_deref(),
+            Some("javascript:alert(1)")
+        );
+    }
 }

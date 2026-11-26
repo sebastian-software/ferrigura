@@ -412,3 +412,137 @@ flowchart LR
         "height is {height}, the reference has 164"
     );
 }
+
+#[test]
+fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
+    for unsafe_url in [
+        "javascript:alert(1)",
+        "JAVASCRIPT:alert(1)",
+        "vbscript:msgbox(1)",
+        "data:text/html,<script>alert(1)</script>",
+        "javascript&colon;alert(1)",
+        "%6aavascript:alert(1)",
+        "java\tscript:alert(1)",
+        "java\\tscript:alert(1)",
+    ] {
+        let click_input = format!("flowchart TD\nA[x]\nclick A \"{unsafe_url}\"\n");
+        let svg = render(&click_input, &Value::empty_object()).expect("renders");
+        assert!(
+            svg.contains("xlink:href=\"about:blank\""),
+            "click url={unsafe_url:?}: {svg}"
+        );
+        assert!(
+            !svg.contains("javascript:") && !svg.contains("vbscript:"),
+            "click url={unsafe_url:?}: {svg}"
+        );
+
+        let image_input = format!("flowchart TD\nA@{{ img: \"{unsafe_url}\", w: 48, h: 48 }}\n");
+        let img_svg = render(&image_input, &Value::empty_object()).expect("renders");
+        assert!(
+            img_svg.contains("<image href=\"about:blank\""),
+            "img url={unsafe_url:?}: {img_svg}"
+        );
+        assert!(
+            !img_svg.contains("javascript:") && !img_svg.contains("vbscript:"),
+            "img url={unsafe_url:?}: {img_svg}"
+        );
+    }
+
+    // Valid https URLs continue to work.
+    let valid_click = render(
+        "flowchart TD\nA[x]\nclick A \"https://example.com/docs\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        valid_click.contains("xlink:href=\"https://example.com/docs\""),
+        "{valid_click}"
+    );
+    let valid_image = render(
+        "flowchart TD\nA@{ img: \"https://example.com/logo.png\", w: 48, h: 48 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        valid_image.contains("<image href=\"https://example.com/logo.png\""),
+        "{valid_image}"
+    );
+
+    // Untrusted front matter cannot bypass default strict securityLevel.
+    let fm_bypass = render(
+        "---\nconfig:\n  securityLevel: loose\n---\nflowchart TD\nA[x]\nclick A \"javascript:alert(1)\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        fm_bypass.contains("xlink:href=\"about:blank\""),
+        "{fm_bypass}"
+    );
+
+    // Explicit host securityLevel: loose preserves raw URLs.
+    let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
+    let loose_click = render(
+        "flowchart TD\nA[x]\nclick A \"javascript:alert(1)\"\n",
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        loose_click.contains("xlink:href=\"javascript:alert(1)\""),
+        "{loose_click}"
+    );
+    let loose_img = render(
+        "flowchart TD\nA@{ img: \"javascript:alert(1)\", w: 48, h: 48 }\n",
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        loose_img.contains("<image href=\"javascript:alert(1)\""),
+        "{loose_img}"
+    );
+}
+
+#[test]
+fn kanban_ticket_links_are_sanitized_under_default_security_level() {
+    for (base_url, ticket) in [
+        ("javascript:alert(1)//#TICKET#", "MC-1"),
+        ("vbscript:msgbox(1)//#TICKET#", "MC-1"),
+        ("javascript&colon;alert(1)//#TICKET#", "MC-1"),
+        ("%6aavascript:alert(1)//#TICKET#", "MC-1"),
+        ("&#106;avascript:alert(1)//#TICKET#", "MC-1"),
+        ("#TICKET#", "javascript:alert(1)"),
+    ] {
+        let input = format!(
+            "%%{{init: {{\"kanban\": {{\"ticketBaseUrl\": \"{base_url}\"}}}}}}%%\nkanban\n  Todo\n    Task@{{ ticket: '{ticket}' }}\n"
+        );
+        let svg = render(&input, &Value::empty_object()).expect("renders");
+        assert!(
+            svg.contains("xlink:href=\"about:blank\""),
+            "base={base_url:?} ticket={ticket:?}: {svg}"
+        );
+        assert!(
+            !svg.contains("xlink:href=\"javascript:") && !svg.contains("xlink:href=\"vbscript:"),
+            "base={base_url:?} ticket={ticket:?}: {svg}"
+        );
+    }
+
+    let valid = render(
+        "%%{init: {\"kanban\": {\"ticketBaseUrl\": \"https://tickets.example.com/browse/#TICKET#\"}}}%%\nkanban\n  Todo\n    Task@{ ticket: MC-42 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        valid.contains("xlink:href=\"https://tickets.example.com/browse/MC-42\""),
+        "{valid}"
+    );
+
+    let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
+    let loose = render(
+        "%%{init: {\"kanban\": {\"ticketBaseUrl\": \"javascript:alert(1)//#TICKET#\"}}}%%\nkanban\n  Todo\n    Task@{ ticket: MC-42 }\n",
+        &loose_cfg,
+    )
+    .expect("renders");
+    assert!(
+        loose.contains("xlink:href=\"javascript:alert(1)//MC-42\""),
+        "{loose}"
+    );
+}
