@@ -24,8 +24,6 @@ pub mod path;
 pub mod pipeline;
 pub(crate) mod room;
 pub mod shapes;
-pub mod swimlane_lane;
-pub mod swimlane_layout;
 pub mod terminal;
 pub mod tidy_tree;
 

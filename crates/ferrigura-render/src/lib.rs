@@ -40,7 +40,6 @@ mod scheme;
 pub mod sequence;
 pub mod state;
 pub mod svg;
-pub mod swimlanes;
 pub mod timeline;
 pub mod tree_view;
 pub mod treemap;

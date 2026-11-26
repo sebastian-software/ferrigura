@@ -2,7 +2,7 @@
 //! decide it: `pieDetector.ts`, `infoDetector.ts`, `flowDetector-v2.ts`, `stateDetector-V2.ts` and
 //! the P2 and P3 detectors named in each test (`packages/mermaid/src/diagrams/<type>/`).
 
-use ferrigura_syntax::{Diagram, DiagramType, detect, parse};
+use ferrigura_syntax::{Diagram, DiagramType, detect, detect_unsupported, parse};
 
 #[test]
 fn detects_pie_info_and_flowchart_at_the_first_content_line() {
@@ -202,7 +202,6 @@ fn detects_every_header_of_the_p3_types() {
         ("railroad-peg-beta\n  rule", DiagramType::Railroad),
         ("RAILROAD-BETA\n  rule", DiagramType::Railroad),
         ("Railroad-Peg-Beta\n  rule", DiagramType::Railroad),
-        ("swimlane-beta\n  lane A", DiagramType::Swimlanes),
         ("treeView-beta\n  root", DiagramType::TreeView),
         ("usecase-beta\n  actor A", DiagramType::UseCase),
         ("venn-beta\n  set A", DiagramType::Venn),
@@ -229,8 +228,8 @@ fn the_word_boundary_headers_reject_a_word_character_after_the_keyword() {
     }
     assert_eq!(detect("agentflow-beta-x\n"), Some(DiagramType::Agentflow));
     assert_eq!(detect("agentflow-beta"), Some(DiagramType::Agentflow));
-    assert_eq!(detect("swimlane-beta-x\n"), Some(DiagramType::Swimlanes));
-    assert_eq!(detect("swimlane-beta"), Some(DiagramType::Swimlanes));
+    assert_eq!(detect_unsupported("swimlane-beta-x\n"), Some("swimlane"));
+    assert_eq!(detect_unsupported("swimlane-beta"), Some("swimlane"));
 }
 
 #[test]
@@ -285,8 +284,8 @@ fn the_p3_headers_are_taken_only_at_the_start_of_the_text() {
     // The agentflow and swimlane headers come before the flowchart detector in the reference, and a
     // header in the body of another diagram never takes the diagram.
     assert_eq!(
-        detect("swimlane-beta\n  graph TD\n  a-->b"),
-        Some(DiagramType::Swimlanes)
+        detect_unsupported("swimlane-beta\n  graph TD\n  a-->b"),
+        Some("swimlane")
     );
     assert_eq!(
         detect("agentflow-beta\n  graph LR"),
@@ -325,4 +324,13 @@ fn the_four_railroad_headers_are_each_taken_and_none_is_a_prefix_of_another() {
     assert_eq!(detect("railroad\n  rule"), None);
     assert_eq!(detect("railroad-ebnf\n  rule"), None);
     assert_eq!(detect("railroad-x-beta\n"), None);
+}
+
+#[test]
+fn the_swimlanes_headers_name_a_type_that_ferrigura_does_not_draw() {
+    let texts = ["swimlane-beta\n  lane A"];
+    for text in texts {
+        assert_eq!(detect(text), None, "{text:?}");
+        assert_eq!(detect_unsupported(text), Some("swimlane"), "{text:?}");
+    }
 }

@@ -23,6 +23,7 @@ mod lexer;
 pub mod preprocess;
 mod scan;
 mod text;
+mod unsupported;
 pub mod url;
 
 pub mod agentflow;
@@ -49,7 +50,6 @@ pub mod sanitize;
 pub mod sankey;
 pub mod sequence;
 pub mod state;
-pub mod swimlanes;
 pub mod timeline;
 pub mod tree_view;
 pub mod treemap;
@@ -84,7 +84,6 @@ use ferrigura_model::requirement::RequirementDiagram;
 use ferrigura_model::sankey::SankeyDiagram;
 use ferrigura_model::sequence::SequenceDiagram;
 use ferrigura_model::state::StateDiagram;
-use ferrigura_model::swimlanes::SwimlanesDiagram;
 use ferrigura_model::timeline::TimelineDiagram;
 use ferrigura_model::tree_view::TreeViewDiagram;
 use ferrigura_model::treemap::TreemapDiagram;
@@ -157,8 +156,6 @@ pub enum DiagramType {
     /// The railroad diagram, written `railroad-beta`, `railroad-ebnf-beta`, `railroad-abnf-beta` or
     /// `railroad-peg-beta`, in any letter case.
     Railroad,
-    /// The swimlane diagram, written `swimlane-beta`.
-    Swimlanes,
     /// The tree view, written `treeView-beta`.
     TreeView,
     /// The use case diagram, written `usecase-beta`.
@@ -219,7 +216,6 @@ impl DiagramType {
             Self::Cynefin => "cynefin",
             Self::Radar => "radar",
             Self::Railroad => "railroad",
-            Self::Swimlanes => "swimlane",
             Self::TreeView => "tree view",
             Self::UseCase => "use case",
             Self::Venn => "venn",
@@ -259,7 +255,6 @@ impl DiagramType {
             Self::Cynefin => "cynefin",
             Self::Radar => "radar",
             Self::Railroad => "railroad",
-            Self::Swimlanes => "swimlane",
             Self::TreeView => "treeView",
             Self::UseCase => "usecase",
             Self::Venn => "venn",
@@ -327,8 +322,6 @@ pub enum Diagram {
     Radar(RadarDiagram),
     /// A railroad diagram.
     Railroad(RailroadDiagram),
-    /// A swimlane diagram.
-    Swimlanes(SwimlanesDiagram),
     /// A tree view.
     TreeView(TreeViewDiagram),
     /// A use case diagram.
@@ -354,12 +347,22 @@ pub fn detect(text: &str) -> Option<DiagramType> {
 /// Detects a diagram from an already prepared source.
 #[must_use]
 pub fn detect_prepared(prepared: &preprocess::Prepared) -> Option<DiagramType> {
+    with_header(prepared, detect_header)
+}
+
+/// Calls `read` with the text from the diagram's header on: the prepared text without its
+/// directives, comment lines and front matter, from its first line that is not one of them.
+fn with_header<T>(prepared: &preprocess::Prepared, read: impl FnOnce(&str) -> T) -> T {
     // `preprocessDiagram` removes the directives and the comment lines and trims the start
     // (`preprocess.ts` 58-65); `detectType` then strips a front matter block once more
     // (`detectType.ts` 15-18), which finds one that blank lines or comments kept from the start.
     let cleaned = preprocess::cleanup_comments(&preprocess::remove_directives(&prepared.text));
     let body = preprocess::strip_front_matter(&cleaned);
-    let rest = skip_hidden_prefix(&body);
+    read(skip_hidden_prefix(&body))
+}
+
+/// The diagram type whose detector takes the text from the header on.
+fn detect_header(rest: &str) -> Option<DiagramType> {
     if rest.starts_with("mindmap") {
         Some(DiagramType::Mindmap)
     } else if rest.starts_with("architecture") {
@@ -384,8 +387,6 @@ pub fn detect_prepared(prepared: &preprocess::Prepared) -> Option<DiagramType> {
         Some(DiagramType::Requirement)
     } else if rest.starts_with("sequenceDiagram") {
         Some(DiagramType::Sequence)
-    } else if has_keyword_at_word_boundary(rest, "swimlane-beta") {
-        Some(DiagramType::Swimlanes)
     } else if rest.starts_with("graph") || rest.starts_with("flowchart") {
         Some(DiagramType::Flowchart)
     } else if rest.starts_with("timeline") {
@@ -467,7 +468,7 @@ fn is_ishikawa_header(text: &str) -> bool {
 /// `^\s*<keyword>\b`, the header test of the agentflow and swimlane detectors: the keyword ends at a
 /// word boundary, so an ASCII letter, a digit or `_` after it is not taken, while a hyphen, a space
 /// or a non-ASCII character is.
-fn has_keyword_at_word_boundary(text: &str, keyword: &str) -> bool {
+pub(crate) fn has_keyword_at_word_boundary(text: &str, keyword: &str) -> bool {
     text.strip_prefix(keyword).is_some_and(|after| {
         !matches!(after.as_bytes().first(), Some(&byte) if byte.is_ascii_alphanumeric() || byte == b'_')
     })
@@ -521,9 +522,14 @@ fn keyword_followed_by(text: &str, keyword: &str, follows: impl Fn(char) -> bool
 /// facade names the type in its error.
 #[must_use]
 pub fn detect_unsupported(text: &str) -> Option<&'static str> {
-    detect(text)
-        .filter(|kind| !DiagramType::ALL.contains(kind))
-        .map(DiagramType::name)
+    let prepared = preprocess::prepare(text).ok()?;
+    with_header(&prepared, |rest| {
+        unsupported::name(rest).or_else(|| {
+            detect_header(rest)
+                .filter(|kind| !DiagramType::ALL.contains(kind))
+                .map(DiagramType::name)
+        })
+    })
 }
 
 /// Preprocesses `text` and detects its diagram type, one of [`DiagramType::ALL`], surfacing YAML
@@ -585,7 +591,6 @@ pub fn parse(text: &str) -> Result<Diagram, ParseError> {
         DiagramType::Cynefin => cynefin::parse(text).map(Diagram::Cynefin),
         DiagramType::Radar => radar::parse(text).map(Diagram::Radar),
         DiagramType::Railroad => railroad::parse(text).map(Diagram::Railroad),
-        DiagramType::Swimlanes => swimlanes::parse(text).map(Diagram::Swimlanes),
         DiagramType::TreeView => tree_view::parse(text).map(Diagram::TreeView),
         DiagramType::UseCase => use_case::parse(text).map(Diagram::UseCase),
         DiagramType::Venn => venn::parse(text).map(Diagram::Venn),

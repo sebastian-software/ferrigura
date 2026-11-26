@@ -30,7 +30,7 @@ pub enum Layout {
 
 /// The layout of a layout name. `swimlane` and the names that are not registered fall back to
 /// cose-bilkent (`getRegisteredLayoutAlgorithm`, `render.ts` 113-129); `swimlane` is registered in the
-/// reference, but the port does not lay out with it, which is the one difference of the name rule.
+/// reference for the swimlane diagram, and a mindmap that names it is laid out with cose-bilkent.
 #[must_use]
 pub fn of(name: &str) -> Layout {
     match name {

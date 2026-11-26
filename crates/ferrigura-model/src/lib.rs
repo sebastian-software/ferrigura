@@ -36,7 +36,6 @@ pub mod requirement;
 pub mod sankey;
 pub mod sequence;
 pub mod state;
-pub mod swimlanes;
 pub mod theme;
 pub mod timeline;
 pub mod tree_view;

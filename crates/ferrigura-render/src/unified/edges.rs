@@ -440,70 +440,14 @@ fn stroke_color(style: &str) -> Option<&str> {
     None
 }
 
-/// The line hops of the ELK layout: `elk.lineHops` (`elk/lineHops.ts`).
+/// The line hops of the ELK layout, `elk.lineHops` (`elk/lineHops.ts`): `None` when it is `false`;
+/// otherwise the style, `gap` for `'gap'` and `arc` for anything else.
 pub fn jump_style(section: &Section<'_>) -> Option<JumpStyle> {
-    jump_style_of(section.elk.line_hops.as_ref())
-}
-
-/// The line hops that a `lineHops` option gives: `None` when it is `false`; otherwise the style, `gap`
-/// for `'gap'` and `arc` for anything else. The same reading serves `elk.lineHops` and
-/// `swimlane.lineHops` (`applySwimlaneLineJumps`, `adjustLayout.ts` 9-14).
-#[must_use]
-pub fn jump_style_of(line_hops: Option<&Value>) -> Option<JumpStyle> {
-    match line_hops {
+    match section.elk.line_hops.as_ref() {
         Some(Value::Bool(false)) => None,
         Some(value) if value.as_str() == Some("gap") => Some(JumpStyle::Gap),
         _ => Some(JumpStyle::Arc),
     }
-}
-
-/// The tolerance of the swimlane clipping, `TOLERANCE` in `insertEdge` (`edges.js` 675).
-const SWIMLANE_TOLERANCE: f64 = 0.5;
-
-/// The points of a swimlane edge once its ends are clipped to the outlines of its nodes: the swimlane
-/// branch of `insertEdge` (`edges.js` 654-680). A straight edge has both of its ends clipped. A longer
-/// edge keeps its inner bends, and only its first and last segments are clipped: an end that lands on
-/// its inner point within the tolerance is dropped, so that no segment is left with no length.
-///
-/// `tail` and `head` are the outlines of the start and end nodes (`node.intersect`). `points` has at
-/// least two points.
-#[must_use]
-pub fn swimlane_points(
-    points: &[Point],
-    tail: impl Fn(Point) -> Point,
-    head: impl Fn(Point) -> Point,
-) -> Vec<Point> {
-    if let [first, last] = points {
-        return vec![tail(*first), head(*last)];
-    }
-    let inner = &points[1..points.len() - 1];
-    let (first_inner, last_inner) = (inner[0], inner[inner.len() - 1]);
-    let end = points[points.len() - 1];
-
-    let last_is_pinned = near(end, last_inner);
-    let new_first = tail(first_inner);
-    let new_last = if last_is_pinned {
-        last_inner
-    } else {
-        head(last_inner)
-    };
-    let first_is_duplicate = near(new_first, first_inner);
-    let last_is_duplicate = near(new_last, last_inner);
-
-    let mut clipped = Vec::with_capacity(points.len());
-    if !first_is_duplicate {
-        clipped.push(new_first);
-    }
-    clipped.extend_from_slice(inner);
-    if !last_is_duplicate {
-        clipped.push(new_last);
-    }
-    clipped
-}
-
-/// Whether two points are within the swimlane tolerance on both axes (`insertEdge`'s `Math.abs(...) < TOLERANCE`).
-fn near(a: Point, b: Point) -> bool {
-    (a.x - b.x).abs() < SWIMLANE_TOLERANCE && (a.y - b.y).abs() < SWIMLANE_TOLERANCE
 }
 
 /// What the paint of an edge holds before the line hops, and what the hops may change.
@@ -536,20 +480,7 @@ pub fn paint_paths(
     diagram_type: &str,
     section: &Section<'_>,
 ) -> Vec<EdgePath> {
-    paint_paths_with(edges, svg_id, diagram_type, section, jump_style(section))
-}
-
-/// [`paint_paths`], with the line hops given: the swimlane layout's come from `swimlane.lineHops`, not
-/// from `elk.lineHops`. `section` still gives the default curve.
-#[must_use]
-pub fn paint_paths_with(
-    edges: &[Edge],
-    svg_id: &str,
-    diagram_type: &str,
-    section: &Section<'_>,
-    jumps: Option<JumpStyle>,
-) -> Vec<EdgePath> {
-    prepare_paths(edges, svg_id, diagram_type, section, jumps)
+    prepare_paths(edges, svg_id, diagram_type, section, jump_style(section))
         .into_iter()
         .map(|painted| finish_path(painted, None))
         .collect()

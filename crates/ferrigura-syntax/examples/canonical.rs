@@ -1,7 +1,7 @@
 //! Parses inputs with a ferrigura parser and writes the canonical JSON of each result. The
 //! differential harness (`pnpm -C tools/port port:diff`) runs this against the JS exporters of `tools/port/`.
 //!
-//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling|agentflow|cynefin|radar|railroad|swimlanes|treeView|usecase|venn|wardley> <inputs.json> <outputs.json>`
+//! Usage: `cargo run -p ferrigura-syntax --example canonical -- <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling|agentflow|cynefin|radar|railroad|treeView|usecase|venn|wardley> <inputs.json> <outputs.json>`
 //!
 //! Inputs are `[{"id": 0, "text": "…"}]`. Each output is `{"id": 0, "ok": true, "model": {…}}`,
 //! `{"id": 0, "ok": false, "error": {"line": 1, "column": 1, "message": "…"}}`.
@@ -21,8 +21,8 @@ use ferrigura_syntax::sequence::{self, Options};
 use ferrigura_syntax::{
     DiagramType, ParseError, agentflow, architecture, block, c4, class, config, cynefin, detect,
     er, event_modeling, git_graph, info, ishikawa, journey, kanban, mindmap, packet, pie,
-    quadrant_chart, radar, railroad, requirement, sankey, state, swimlanes, timeline, tree_view,
-    treemap, use_case, venn, wardley, xychart,
+    quadrant_chart, radar, railroad, requirement, sankey, state, timeline, tree_view, treemap,
+    use_case, venn, wardley, xychart,
 };
 use serde_json::{Value, json};
 
@@ -87,22 +87,6 @@ fn cynefin_outcome(text: &str) -> Outcome {
         });
     }
     match cynefin::parse(text) {
-        Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
-        Err(error) => Outcome::Rejected(error),
-    }
-}
-
-/// The swimlane diagram. The text must first be detected as one, as `detectType` does before the
-/// parser runs, so that a text of another type is a rejection (`/^\s*swimlane-beta\b/`).
-fn swimlanes_outcome(text: &str) -> Outcome {
-    if detect(text) != Some(DiagramType::Swimlanes) {
-        return Outcome::Rejected(ParseError {
-            line: 1,
-            column: 1,
-            message: "no swimlane diagram detected".to_owned(),
-        });
-    }
-    match swimlanes::parse(text) {
         Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
         Err(error) => Outcome::Rejected(error),
     }
@@ -327,7 +311,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     let [_, kind, input, output] = args.as_slice() else {
         return Err(
-            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling|agentflow|cynefin|radar|railroad|swimlanes|treeView|usecase|venn|wardley> <inputs.json> <outputs.json>".into(),
+            "usage: canonical <pie|info|flowchart|timeline|journey|gitgraph|er|class|sequence|state|gantt|mindmap|block|packet|xychart|sankey|quadrantChart|requirement|c4|kanban|architecture|treemap|ishikawa|eventmodeling|agentflow|cynefin|radar|railroad|treeView|usecase|venn|wardley> <inputs.json> <outputs.json>".into(),
         );
     };
 
@@ -436,7 +420,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => Outcome::Rejected(error),
             },
             "railroad" => railroad_outcome(text),
-            "swimlanes" => swimlanes_outcome(text),
             "treeView" => match tree_view::parse(text) {
                 Ok(model) => Outcome::Model(serde_json::to_value(model).unwrap_or_default()),
                 Err(error) => Outcome::Rejected(error),
