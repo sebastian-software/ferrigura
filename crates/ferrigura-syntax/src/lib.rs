@@ -459,49 +459,70 @@ fn keyword_followed_by(text: &str, keyword: &str, follows: impl Fn(char) -> bool
         })
 }
 
-/// Parses a diagram of any type this crate covers, detecting its type first.
-pub fn parse(text: &str) -> Result<Diagram, ParseError> {
-    match detect(text) {
-        Some(DiagramType::Er) => er::parse(text).map(Diagram::Er),
-        Some(DiagramType::Pie) => pie::parse(text).map(Diagram::Pie),
-        Some(DiagramType::Info) => info::parse(text).map(Diagram::Info),
-        Some(DiagramType::Flowchart) => flowchart::parse(text)
-            .map(Diagram::Flowchart)
-            .map_err(|flowchart::FlowchartError::Syntax(error)| error),
-        Some(DiagramType::Timeline) => timeline::parse(text).map(Diagram::Timeline),
-        Some(DiagramType::Journey) => journey::parse(text).map(Diagram::Journey),
-        Some(DiagramType::GitGraph) => git_graph::parse(text).map(Diagram::GitGraph),
-        Some(DiagramType::Class) => class::parse(text).map(Diagram::Class),
-        Some(DiagramType::Sequence) => sequence::parse(text).map(Diagram::Sequence),
-        Some(DiagramType::State) => state::parse(text).map(Diagram::State),
-        Some(DiagramType::Gantt) => gantt::parse(text).map(Diagram::Gantt),
-        Some(DiagramType::Mindmap) => mindmap::parse(text).map(Diagram::Mindmap),
-        Some(DiagramType::Block) => block::parse(text).map(Diagram::Block),
-        Some(DiagramType::Packet) => packet::parse(text).map(Diagram::Packet),
-        Some(DiagramType::XyChart) => xychart::parse(text).map(Diagram::XyChart),
-        Some(DiagramType::Sankey) => sankey::parse(text).map(Diagram::Sankey),
-        Some(DiagramType::QuadrantChart) => quadrant_chart::parse(text).map(Diagram::QuadrantChart),
-        Some(DiagramType::Requirement) => requirement::parse(text).map(Diagram::Requirement),
-        Some(DiagramType::C4) => c4::parse(text).map(Diagram::C4),
-        Some(DiagramType::Kanban) => kanban::parse(text).map(Diagram::Kanban),
-        Some(DiagramType::Architecture) => architecture::parse(text).map(Diagram::Architecture),
-        Some(DiagramType::Treemap) => treemap::parse(text).map(Diagram::Treemap),
-        Some(DiagramType::Ishikawa) => ishikawa::parse(text).map(Diagram::Ishikawa),
-        Some(DiagramType::EventModeling) => event_modeling::parse(text).map(Diagram::EventModeling),
-        Some(DiagramType::Agentflow) => agentflow::parse(text).map(Diagram::Agentflow),
-        Some(DiagramType::Cynefin) => cynefin::parse(text).map(Diagram::Cynefin),
-        Some(DiagramType::Radar) => radar::parse(text).map(Diagram::Radar),
-        Some(DiagramType::Railroad) => railroad::parse(text).map(Diagram::Railroad),
-        Some(DiagramType::Swimlanes) => swimlanes::parse(text).map(Diagram::Swimlanes),
-        Some(DiagramType::TreeView) => tree_view::parse(text).map(Diagram::TreeView),
-        Some(DiagramType::UseCase) => use_case::parse(text).map(Diagram::UseCase),
-        Some(DiagramType::Venn) => venn::parse(text).map(Diagram::Venn),
-        Some(DiagramType::Wardley) => wardley::parse(text).map(Diagram::Wardley),
-        None => Err(ParseError {
+/// Preprocesses `text` and detects its diagram type, surfacing YAML alias-expansion limit and
+/// cyclic-anchor errors from front matter directly instead of folding them into an unrecognized
+/// diagram header.
+pub fn prepare_and_detect(text: &str) -> Result<(preprocess::Prepared, DiagramType), ParseError> {
+    let source = match preprocess::prepare(text) {
+        Ok(source) => source,
+        Err(error) if yaml::is_limit_or_cycle_error(&error.message) => return Err(error),
+        Err(_) => {
+            return Err(ParseError {
+                line: 1,
+                column: 1,
+                message: "no diagram type detected".to_owned(),
+            });
+        }
+    };
+    let Some(kind) = detect_prepared(&source) else {
+        return Err(ParseError {
             line: 1,
             column: 1,
             message: "no diagram type detected".to_owned(),
-        }),
+        });
+    };
+    Ok((source, kind))
+}
+
+/// Parses a diagram of any type this crate covers, detecting its type first.
+pub fn parse(text: &str) -> Result<Diagram, ParseError> {
+    let (_, kind) = prepare_and_detect(text)?;
+    match kind {
+        DiagramType::Er => er::parse(text).map(Diagram::Er),
+        DiagramType::Pie => pie::parse(text).map(Diagram::Pie),
+        DiagramType::Info => info::parse(text).map(Diagram::Info),
+        DiagramType::Flowchart => flowchart::parse(text)
+            .map(Diagram::Flowchart)
+            .map_err(|flowchart::FlowchartError::Syntax(error)| error),
+        DiagramType::Timeline => timeline::parse(text).map(Diagram::Timeline),
+        DiagramType::Journey => journey::parse(text).map(Diagram::Journey),
+        DiagramType::GitGraph => git_graph::parse(text).map(Diagram::GitGraph),
+        DiagramType::Class => class::parse(text).map(Diagram::Class),
+        DiagramType::Sequence => sequence::parse(text).map(Diagram::Sequence),
+        DiagramType::State => state::parse(text).map(Diagram::State),
+        DiagramType::Gantt => gantt::parse(text).map(Diagram::Gantt),
+        DiagramType::Mindmap => mindmap::parse(text).map(Diagram::Mindmap),
+        DiagramType::Block => block::parse(text).map(Diagram::Block),
+        DiagramType::Packet => packet::parse(text).map(Diagram::Packet),
+        DiagramType::XyChart => xychart::parse(text).map(Diagram::XyChart),
+        DiagramType::Sankey => sankey::parse(text).map(Diagram::Sankey),
+        DiagramType::QuadrantChart => quadrant_chart::parse(text).map(Diagram::QuadrantChart),
+        DiagramType::Requirement => requirement::parse(text).map(Diagram::Requirement),
+        DiagramType::C4 => c4::parse(text).map(Diagram::C4),
+        DiagramType::Kanban => kanban::parse(text).map(Diagram::Kanban),
+        DiagramType::Architecture => architecture::parse(text).map(Diagram::Architecture),
+        DiagramType::Treemap => treemap::parse(text).map(Diagram::Treemap),
+        DiagramType::Ishikawa => ishikawa::parse(text).map(Diagram::Ishikawa),
+        DiagramType::EventModeling => event_modeling::parse(text).map(Diagram::EventModeling),
+        DiagramType::Agentflow => agentflow::parse(text).map(Diagram::Agentflow),
+        DiagramType::Cynefin => cynefin::parse(text).map(Diagram::Cynefin),
+        DiagramType::Radar => radar::parse(text).map(Diagram::Radar),
+        DiagramType::Railroad => railroad::parse(text).map(Diagram::Railroad),
+        DiagramType::Swimlanes => swimlanes::parse(text).map(Diagram::Swimlanes),
+        DiagramType::TreeView => tree_view::parse(text).map(Diagram::TreeView),
+        DiagramType::UseCase => use_case::parse(text).map(Diagram::UseCase),
+        DiagramType::Venn => venn::parse(text).map(Diagram::Venn),
+        DiagramType::Wardley => wardley::parse(text).map(Diagram::Wardley),
     }
 }
 

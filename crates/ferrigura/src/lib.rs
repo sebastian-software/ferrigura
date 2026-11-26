@@ -205,16 +205,7 @@ impl Renderer {
         options: &RenderOptions,
     ) -> Result<String, RenderError> {
         let (max_text, max_edges) = self.limits(text)?;
-        let Some((source, kind)) = preprocess::prepare(text)
-            .ok()
-            .and_then(|source| detect_prepared(&source).map(|kind| (source, kind)))
-        else {
-            return Err(RenderError::Parse(ParseError {
-                line: 1,
-                column: 1,
-                message: "no diagram type detected".to_owned(),
-            }));
-        };
+        let (source, kind) = ferrigura_syntax::prepare_and_detect(text)?;
         let plugin = self.plugin(kind)?;
         if options.animation.is_some()
             && !matches!(

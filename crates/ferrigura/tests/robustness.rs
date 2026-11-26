@@ -358,3 +358,172 @@ fn small_and_moderate_nesting_stays_isolated() {
         }
     }
 }
+
+#[test]
+fn yaml_alias_bombs_and_cyclic_anchors_fail_cleanly() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let control = renderer.render(CONTROL).expect("control renders");
+
+    // 15 levels (a0..a14) expand to ~131k nodes: exceeds the 50,000-node expansion cap while
+    // staying safe to materialize if the guard ever regresses.
+    let mut billion_laughs = String::from("---\na0: &a0 [1, 1]\n");
+    for i in 1..15 {
+        billion_laughs.push_str(&format!("a{i}: &a{i} [*a{}, *a{}]\n", i - 1, i - 1));
+    }
+    billion_laughs.push_str("---\nflowchart LR\nA --> B\n");
+
+    let payload = "x".repeat(40_000);
+    let string_bomb = format!(
+        "---\ns: &s \"{payload}\"\na: &a [*s, *s, *s, *s]\nb: &b [*a, *a, *a, *a]\nc: [*b, *b, *b, *b]\n---\nflowchart LR\nA --> B\n"
+    );
+
+    let mut deep_chain = String::from("---\na0: &a0 [1]\n");
+    for i in 1..=250 {
+        deep_chain.push_str(&format!("a{i}: &a{i} [*a{}]\n", i - 1));
+    }
+    deep_chain.push_str("---\nflowchart LR\nA --> B\n");
+
+    let cyclic_seq = format!("---\na: &x [*x, \"{payload}\"]\n---\nflowchart LR\nA --> B\n");
+    let cyclic_map =
+        format!("---\na: &x {{self: *x, data: \"{payload}\"}}\n---\nflowchart LR\nA --> B\n");
+
+    let mut shape_bomb = String::from("flowchart LR\nA@{ a0: &a0 [1, 1]");
+    for i in 1..15 {
+        shape_bomb.push_str(&format!(", a{i}: &a{i} [*a{}, *a{}]", i - 1, i - 1));
+    }
+    shape_bomb.push_str(" }\n");
+
+    for (name, input, expected_error, max_yaml_line) in [
+        (
+            "billion laughs front matter",
+            billion_laughs.as_str(),
+            "YAML alias expansion exceeded size limit",
+            16usize,
+        ),
+        (
+            "string amplification front matter",
+            string_bomb.as_str(),
+            "YAML alias expansion exceeded size limit",
+            5usize,
+        ),
+        (
+            "deep alias chain front matter",
+            deep_chain.as_str(),
+            "YAML alias expansion exceeded nesting limit",
+            252usize,
+        ),
+        (
+            "cyclic sequence front matter",
+            cyclic_seq.as_str(),
+            "a collection that contains itself has no tree",
+            2usize,
+        ),
+        (
+            "cyclic mapping front matter",
+            cyclic_map.as_str(),
+            "a collection that contains itself has no tree",
+            2usize,
+        ),
+        (
+            "billion laughs shape data",
+            shape_bomb.as_str(),
+            "YAML alias expansion exceeded size limit",
+            2usize,
+        ),
+    ] {
+        let error = renderer
+            .render(input)
+            .expect_err(&format!("{name} must be rejected"));
+        let message = error.to_string();
+        assert!(
+            message.contains(expected_error),
+            "{name}: expected {expected_error:?}, got {message}"
+        );
+        let reported_line: usize = message
+            .strip_prefix("line ")
+            .and_then(|rest| rest.split(',').next())
+            .and_then(|digits| digits.parse().ok())
+            .unwrap_or_else(|| panic!("{name}: expected leading line number in {message:?}"));
+        assert!(
+            (2..=max_yaml_line).contains(&reported_line),
+            "{name}: expected error line in 2..={max_yaml_line}, got {message}"
+        );
+        assert_eq!(renderer.render(CONTROL).unwrap(), control, "after {name}");
+    }
+
+    // Blank lines after the opening fence and indented fences keep accurate YAML line and column.
+    // On line 3 (`  a: &x [*x]`), the cyclic alias `*x` starts at 1-based column 10.
+    let indented_with_blank = "  ---\n\n  a: &x [*x]\n  ---\nflowchart LR\nA --> B\n";
+    let indented_err = renderer
+        .render(indented_with_blank)
+        .expect_err("indented cyclic front matter must fail")
+        .to_string();
+    assert!(
+        indented_err.starts_with("line 3, column 10:"),
+        "expected line 3, column 10 for indented cyclic front matter, got {indented_err}"
+    );
+
+    // A later mapping entry that crosses the byte budget blames that entry's line (line 6), not
+    // the leading `title:` line (line 2), across both `Renderer::render` and `ferrigura_syntax::parse`.
+    let titled_bomb = format!(
+        "---\ntitle: Demo\ns: &s \"{payload}\"\na: &a [*s, *s, *s, *s]\nb: &b [*a, *a, *a, *a]\nc: [*b, *b, *b, *b]\n---\nflowchart LR\nA --> B\n"
+    );
+    let render_err = renderer
+        .render(&titled_bomb)
+        .expect_err("titled string bomb must fail in render")
+        .to_string();
+    assert!(
+        render_err.starts_with("line 6,")
+            && render_err.contains("YAML alias expansion exceeded size limit"),
+        "expected line 6 size limit error from render, got {render_err}"
+    );
+    let parse_err = ferrigura_syntax::parse(&titled_bomb)
+        .expect_err("titled string bomb must fail in syntax::parse")
+        .to_string();
+    assert!(
+        parse_err.starts_with("line 6,")
+            && parse_err.contains("YAML alias expansion exceeded size limit"),
+        "expected line 6 size limit error from parse, got {parse_err}"
+    );
+
+    // Value spans, flow-sequence pair spans, and non-BMP character columns stay exact.
+    let multiline_value_cycle = "---\nx: &x\n  self:\n    *x\n---\nflowchart LR\nA --> B\n";
+    let value_err = renderer
+        .render(multiline_value_cycle)
+        .expect_err("multiline mapping value cycle must fail")
+        .to_string();
+    assert!(
+        value_err.starts_with("line 4, column 5:"),
+        "expected line 4, column 5 for multiline value cycle, got {value_err}"
+    );
+
+    let flow_pair_cycle = "---\nx: &x [key: *x\n]\n---\nflowchart LR\nA --> B\n";
+    let flow_err = renderer
+        .render(flow_pair_cycle)
+        .expect_err("flow pair cycle must fail")
+        .to_string();
+    assert!(
+        flow_err.starts_with("line 2, column 13:"),
+        "expected line 2, column 13 for flow pair cycle, got {flow_err}"
+    );
+
+    let emoji_cycle = "---\nemoji: &x [\"😀\", *x]\n---\nflowchart LR\nA --> B\n";
+    let emoji_err = renderer
+        .render(emoji_cycle)
+        .expect_err("emoji cyclic front matter must fail")
+        .to_string();
+    assert!(
+        emoji_err.starts_with("line 2, column 17:"),
+        "expected line 2, column 17 for emoji cycle, got {emoji_err}"
+    );
+
+    let bom_cycle = "---\n\u{FEFF}a: &x [*x]\n---\nflowchart LR\nA --> B\n";
+    let bom_err = renderer
+        .render(bom_cycle)
+        .expect_err("BOM cyclic front matter must fail")
+        .to_string();
+    assert!(
+        bom_err.starts_with("line 2, column 9:"),
+        "expected line 2, column 9 for BOM cycle, got {bom_err}"
+    );
+}

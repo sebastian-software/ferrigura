@@ -294,4 +294,28 @@ export const yamlCases: string[] = [
   '{a}',
   '{a: }',
   '{? a}',
+  // Alias-free sequence above the minimum alias-expansion node budget (50,000 nodes).
+  `series: [${Array.from({ length: 50_000 }, () => '1').join(',')}]`,
+  // Aliased string reused as a key inside complex mapping keys whose outer key becomes
+  // `[object Object]`: the expanded output stays small and both parsers must accept it.
+  `label: &label "${'a'.repeat(10_000)}"\nrows:\n${'  - { ? { *label : 1 } : ok }\n'.repeat(110)}`,
+  `label: &label "${'a'.repeat(10_000)}"\nrows:\n${'  - { ? { [*label] : 1 } : ok }\n'.repeat(110)}`,
+  `label: &label "${'a'.repeat(10_000)}"\nkey: &key [prefix, *label]\nrows:\n${'  - { ? { *key : 1 } : ok }\n'.repeat(110)}`,
+  // Safely sized 15-level alias DAG (~131k expanded nodes): js-yaml shares references in JS,
+  // whereas ferrigura rejects excessive alias expansion to prevent Billion Laughs DoS.
+  [
+    'a0: &a0 [1, 1]',
+    ...Array.from({ length: 14 }, (_, i) => `a${i + 1}: &a${i + 1} [*a${i}, *a${i}]`),
+  ].join('\n'),
+  // Safely sized string alias amplification (~2.56 MiB expanded bytes with <100 nodes).
+  [
+    `s: &s "${'x'.repeat(40_000)}"`,
+    'a: &a [*s, *s, *s, *s]',
+    'b: &b [*a, *a, *a, *a]',
+    'c: [*b, *b, *b, *b]',
+  ].join('\n'),
+  // Safely sized deep alias chain (250 levels, exceeding MAX_EXPANDED_DEPTH = 200 with ~500 nodes).
+  ['a0: &a0 [1]', ...Array.from({ length: 250 }, (_, i) => `a${i + 1}: &a${i + 1} [*a${i}]`)].join(
+    '\n'
+  ),
 ];

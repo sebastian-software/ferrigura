@@ -39,7 +39,11 @@ pub fn prepare(raw: &str) -> Result<Prepared, ParseError> {
     };
 
     let removed = &chars[..front_matter.length];
-    let fields = front_matter_fields(&dedent(&front_matter.body, &front_matter.indent))?;
+    let fields = front_matter_fields(
+        &front_matter.body,
+        &front_matter.indent,
+        front_matter.body_line_offset,
+    )?;
     let title = fields
         .iter()
         .find(|(key, _)| key == "title")
@@ -55,17 +59,57 @@ pub fn prepare(raw: &str) -> Result<Prepared, ParseError> {
 
 /// The fields of the front matter's YAML: the pairs of its mapping, or none when the document is
 /// empty or is not a mapping.
-fn front_matter_fields(body: &str) -> Result<Vec<(String, Yaml)>, ParseError> {
-    match yaml::load(body) {
+fn front_matter_fields(
+    raw_body: &str,
+    indent: &str,
+    body_line_offset: usize,
+) -> Result<Vec<(String, Yaml)>, ParseError> {
+    let body = dedent(raw_body, indent);
+    match yaml::load(&body) {
         Ok(Some(Yaml::Mapping(pairs))) => Ok(pairs),
         Ok(_) => Ok(Vec::new()),
-        Err(error) => Err(ParseError {
-            // The body starts on the line after the opening fence.
-            line: error.line + 2,
-            column: error.column + 1,
-            message: format!("invalid front matter: {}", error.message),
-        }),
+        Err(error) => {
+            let line_index = error.line.saturating_sub(1);
+            let bom_stripped = line_index == 0 && body.starts_with('\u{FEFF}');
+            let yaml_body = body.strip_prefix('\u{FEFF}').unwrap_or(&body);
+            let char_column = yaml_body
+                .split('\n')
+                .nth(line_index)
+                .map_or(error.column, |line| {
+                    utf16_offset_to_chars(line, error.column)
+                })
+                + usize::from(bom_stripped);
+            let indent_offset = if !indent.is_empty()
+                && raw_body
+                    .split('\n')
+                    .nth(line_index)
+                    .is_some_and(|line| line.starts_with(indent))
+            {
+                indent.chars().count()
+            } else {
+                0
+            };
+            Err(ParseError {
+                line: error.line + body_line_offset,
+                column: char_column + indent_offset + 1,
+                message: format!("invalid front matter: {}", error.message),
+            })
+        }
     }
+}
+
+/// Converts a 0-based UTF-16 code-unit offset on `line` into a 0-based Unicode scalar count.
+fn utf16_offset_to_chars(line: &str, utf16_offset: usize) -> usize {
+    let mut units = 0usize;
+    let mut chars = 0usize;
+    for ch in line.chars() {
+        if units >= utf16_offset {
+            break;
+        }
+        units += ch.len_utf16();
+        chars += 1;
+    }
+    chars
 }
 
 /// Removes the captured indent from the start of each line that has it, as `extractFrontMatter`
@@ -131,6 +175,7 @@ fn quote_attributes(attributes: &[char]) -> String {
 struct FrontMatter {
     indent: String,
     body: String,
+    body_line_offset: usize,
     length: usize,
 }
 
@@ -211,11 +256,13 @@ fn match_front_matter(text: &[char]) -> Option<FrontMatter> {
     }
 
     let body_start = opening_end + 1;
+    let body_line_offset = text[..body_start].iter().filter(|&&c| is_cr_lf(c)).count();
     for i in body_start..=last_closing_fence {
         if let Some(match_end) = closing_end(i) {
             return Some(FrontMatter {
                 indent,
                 body: text[body_start..i].iter().collect(),
+                body_line_offset,
                 length: match_end + 1,
             });
         }
