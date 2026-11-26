@@ -1,5 +1,5 @@
 //! The design mode (`docs/decisions/0023-design-mode.md`): ferrigura's own look and measures for a
-//! flowchart, laid out by the engine of the default rendering.
+//! flowchart and a state diagram, laid out by the engine of the default rendering.
 
 use ferrigura::{ColorScheme, Error, RenderOptions, Renderer, Value};
 
@@ -756,8 +756,466 @@ fn the_mode_excludes_compat_and_other_diagram_types() {
         Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
         other => panic!("expected an option error, got {other:?}"),
     }
-    match renderer.render_with("pie\n \"a\" : 1\n", &design(None)) {
-        Err(Error::Options(message)) => assert!(message.contains("design mode"), "{message}"),
+    match renderer.render_with(STATES, &both) {
+        Err(Error::Options(message)) => assert!(message.contains("compat"), "{message}"),
         other => panic!("expected an option error, got {other:?}"),
     }
+    for other in [
+        "pie\n \"a\" : 1\n",
+        "classDiagram\n  A <|-- B\n",
+        "erDiagram\n  A ||--o{ B : has\n",
+    ] {
+        match renderer.render_with(other, &design(None)) {
+            Err(Error::Options(message)) => assert!(message.contains("design mode"), "{message}"),
+            result => panic!("expected an option error, got {result:?}"),
+        }
+    }
+}
+
+/// A state diagram with every role, a labeled transition, two transitions into the end, a
+/// composite state, concurrent regions and a note.
+const STATES: &str = "stateDiagram-v2\n  state check <<choice>>\n  state split <<fork>>\n  state merge <<join>>\n  [*] --> Draft\n  Draft --> check : submit\n  check --> Published : approve\n  check --> Rejected : reject\n  Published --> split\n  split --> Indexing\n  split --> Mailing\n  Indexing --> merge\n  Mailing --> merge\n  merge --> Live\n  state Live {\n    [*] --> Shown\n    Shown --> Hidden\n    --\n    [*] --> Counted\n  }\n  Live --> [*]\n  Rejected --> [*]\n  note right of Draft : Written by the author\n";
+
+#[test]
+fn a_state_diagram_draws_in_the_design_mode() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(STATES, &design(None)).unwrap();
+    let default = renderer.render_with(STATES, &default(None)).unwrap();
+    assert_ne!(svg, default);
+    assert!(svg.contains("class=\"statediagram\""));
+    // The roles: the start states, the end states, the choice, the fork and the join.
+    let nodes = nodes(&svg);
+    assert_eq!(nodes.matches("data-role=\"terminal\"").count(), 3 + 2);
+    assert_eq!(nodes.matches("data-role=\"decision\"").count(), 1);
+    assert_eq!(nodes.matches("data-role=\"junction\"").count(), 2);
+    assert!(!default.contains("data-role="));
+    // The mode's own arrowhead under the barb's ids, no palette, and the soft shadow.
+    assert!(svg.contains("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"));
+    assert!(!svg.contains("data-color-id"));
+    assert!(svg.contains("stdDeviation=\"1.5\""));
+    let sheet = style_sheet(&svg);
+    for rule in [
+        "#d .edge-thickness-normal,#d .transition{stroke-width:1.5px;}",
+        "#d .statediagram-state rect.basic,#d .statediagram-state rect.title-state{rx:8px;ry:8px;}",
+        "#d [data-look].statediagram-cluster rect.inner{fill:none;stroke:none;}",
+        "stroke-dasharray:4 4;",
+        "#d [data-role=\"junction\"].node path{fill:var(--lineColor);",
+        "--terminalBkg:#2F54D6;",
+        "--titleColor:#4A5364;",
+        "--noteBkgColor:#F6F7F9;",
+        "--stateBorder:#7C8698;",
+    ] {
+        assert!(sheet.contains(rule), "{rule}");
+    }
+}
+
+#[test]
+fn each_transition_into_an_end_state_meets_one_of_its_own() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(STATES, &design(None)).unwrap();
+    assert_eq!(
+        nodes(&svg).matches("-state-root_end-").count(),
+        2,
+        "one end state for each of the two transitions"
+    );
+    let default = renderer.render_with(STATES, &default(None)).unwrap();
+    assert_eq!(nodes(&default).matches("-state-root_end-").count(), 1);
+}
+
+#[test]
+fn a_composite_state_has_its_title_at_the_left_in_a_row_of_its_own() {
+    let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n  }\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let group = &svg[svg.find("statediagram-cluster").expect("the composite")..];
+    let outer = &group[group.find("<rect class=\"outer\"").expect("its frame")..];
+    let number = |name: &str| -> f64 { attribute_values(outer, name)[0].parse().unwrap() };
+    let (x, y) = (number("x"), number("y"));
+    let marker = "<g class=\"cluster-label\" transform=\"translate(";
+    let rest = &group[group.find(marker).expect("the title") + marker.len()..];
+    let (tx, rest) = rest.split_once(", ").unwrap();
+    let ty = &rest[..rest.find(')').unwrap()];
+    assert_eq!(tx.parse::<f64>().unwrap() - x, 16.0);
+    assert_eq!(ty.parse::<f64>().unwrap() - y, 12.0);
+}
+
+#[test]
+fn a_state_label_is_centered_in_the_design_mode() {
+    let text = "stateDiagram-v2\n  [*] --> Idle\n";
+    let renderer = Renderer::new(&Value::empty_object());
+    let first_x = |svg: &str| -> f64 {
+        let idle = &svg[svg.find("-state-Idle-").expect("the state")..];
+        let tspan = &idle[idle.find("<tspan").expect("its text")..];
+        attribute_values(tspan, "x")[0].parse().unwrap()
+    };
+    // The default starts the line at the label's origin; the mode centers it on the node.
+    assert_eq!(
+        first_x(&renderer.render_with(text, &default(None)).unwrap()),
+        0.0
+    );
+    assert!(first_x(&renderer.render_with(text, &design(None)).unwrap()) < 0.0);
+}
+
+#[test]
+fn the_state_diagrams_dark_set_and_user_styles_apply() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer
+        .render_with(STATES, &design(Some(ColorScheme::Dark)))
+        .unwrap();
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--terminalBkg:#4263EB;"));
+    assert!(sheet.contains("--compositeBackground:#171A22;"));
+    let both = renderer
+        .render_with(STATES, &design(Some(ColorScheme::Auto)))
+        .unwrap();
+    assert!(style_sheet(&both).contains("light-dark("));
+
+    let config = Value::from(serde_json::json!({
+        "themeVariables": { "transitionColor": "#ff0000", "noteBkgColor": "#ffffcc" }
+    }));
+    let svg = Renderer::new(&config)
+        .render_with(STATES, &design(None))
+        .unwrap();
+    let sheet = style_sheet(&svg);
+    assert!(sheet.contains("--transitionColor:#ff0000;"));
+    assert!(sheet.contains("--noteBkgColor:#ffffcc;"));
+
+    let classed = format!("{STATES}  classDef hot fill:#f96\n  class Draft hot\n");
+    let svg = renderer.render_with(&classed, &design(None)).unwrap();
+    let sheet = style_sheet(&svg);
+    let role = sheet.find("[data-role=").expect("a role's rule");
+    let class = sheet.find("#d .hot &gt; *{").expect("the class's rule");
+    assert!(role < class, "the class rule comes after the roles'");
+}
+
+#[test]
+fn an_edge_meets_a_group_in_the_middle_of_its_side() {
+    // ELK keeps the ports of a group at the start of its side; the mode's placement moves them to
+    // the middle, so that the edges into and out of the group run straight down its axis.
+    let text = "flowchart TB\n  S((start)) --> G\n  subgraph G [Group]\n    A --> B\n  end\n  G --> E[End]\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let frame = &svg[svg.find("<g class=\"cluster ").expect("the group")..];
+    let rect = &frame[frame.find("<rect").expect("its frame")..];
+    let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+    let middle = number("x") + number("width") / 2.0;
+    for id in ["L_S_G_0", "L_G_E_0"] {
+        // The circle's outline meets the edge a hair off its axis.
+        for (x, _) in route(&svg, id) {
+            assert!((x - middle).abs() <= 1e-3, "{id}: {x} against {middle}");
+        }
+    }
+}
+
+/// Two concurrency regions, each with two labeled transitions between the same two states.
+const REGIONS: &str = "stateDiagram-v2\n  [*] --> Active\n  state Active {\n    [*] --> NumLockOff\n    NumLockOff --> NumLockOn : EvNumLockPressed\n    NumLockOn --> NumLockOff : EvNumLockPressed\n    --\n    [*] --> CapsLockOff\n    CapsLockOff --> CapsLockOn : EvCapsLockPressed\n    CapsLockOn --> CapsLockOff : EvCapsLockPressed\n  }\n  Active --> [*]\n";
+
+/// The frames of the concurrency regions of a state diagram: their `x`, `y`, width and height.
+fn region_frames(svg: &str) -> Vec<(f64, f64, f64, f64)> {
+    svg.match_indices("<rect class=\"divider\"")
+        .map(|(at, _)| {
+            let rect = &svg[at..];
+            let rect = &rect[..rect.find("/>").expect("the rect's end")];
+            let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+            (number("x"), number("y"), number("width"), number("height"))
+        })
+        .collect()
+}
+
+/// The middle of the state with the given id.
+fn state_middle(svg: &str, id: &str) -> (f64, f64) {
+    let group = &svg[svg.find(&format!("id=\"d-state-{id}-")).expect("the state")..];
+    let marker = "transform=\"translate(";
+    let rest = &group[group.find(marker).expect("its place") + marker.len()..];
+    let (x, y) = rest[..rest.find(')').expect("the place's end")]
+        .split_once(", ")
+        .expect("two numbers");
+    (x.parse().unwrap(), y.parse().unwrap())
+}
+
+#[test]
+fn concurrency_regions_stand_side_by_side_around_their_states() {
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(REGIONS, &design(None)).unwrap();
+    let frames = region_frames(&svg);
+    assert_eq!(frames.len(), 2);
+    // Side by side across the flow, as the default puts them, not one above the other.
+    let (left, right) = (frames[0], frames[1]);
+    assert_eq!(left.1, right.1);
+    assert!(left.0 + left.2 < right.0, "{frames:?}");
+    // The states stand in the middle of their region.
+    for (frame, states) in [
+        (left, ["NumLockOff", "NumLockOn"]),
+        (right, ["CapsLockOff", "CapsLockOn"]),
+    ] {
+        let middle = frame.0 + frame.2 / 2.0;
+        for state in states {
+            let x = state_middle(&svg, state).0;
+            assert!((x - middle).abs() < 1.0, "{state}: {x} against {middle}");
+        }
+    }
+    // Three regions stand in one row too, where the default starts a second row.
+    let three = "stateDiagram-v2\n  state Active {\n    [*] --> A\n    --\n    [*] --> B\n    --\n    [*] --> C\n  }\n";
+    let rows = |svg: &str| {
+        let mut tops: Vec<f64> = region_frames(svg).iter().map(|frame| frame.1).collect();
+        tops.sort_by(f64::total_cmp);
+        tops.dedup();
+        tops.len()
+    };
+    assert_eq!(
+        rows(&renderer.render_with(three, &design(None)).unwrap()),
+        1
+    );
+    assert_eq!(
+        rows(&renderer.render_with(three, &default(None)).unwrap()),
+        2
+    );
+}
+
+#[test]
+fn regions_whose_states_run_from_left_to_right_stand_one_above_the_other() {
+    let text = "stateDiagram-v2\n  state Active {\n    direction LR\n    [*] --> A\n    A --> B\n    --\n    direction LR\n    [*] --> C\n    C --> D\n  }\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let mut frames = region_frames(&svg);
+    frames.sort_by(|a, b| a.1.total_cmp(&b.1));
+    assert_eq!(frames.len(), 2);
+    assert_eq!(frames[0].0, frames[1].0);
+    assert!(frames[0].1 + frames[0].3 < frames[1].1, "{frames:?}");
+}
+
+#[test]
+fn a_branch_beside_a_choice_leaves_from_its_side_tip() {
+    let text = "stateDiagram-v2\n  state check <<choice>>\n  [*] --> Received\n  Received --> check\n  check --> Accepted : valid\n  check --> Rejected : invalid\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let (x, y) = state_middle(&svg, "check");
+    for (edge, target, side) in [("edge2", "Accepted", -1.0), ("edge3", "Rejected", 1.0)] {
+        // Out of the tip of a choice 28 wide, across, one turn, and down into the state.
+        let points = route(&svg, edge);
+        assert_eq!(points.len(), 3, "{edge}: {points:?}");
+        assert!((points[0].0 - (x + side * 14.0)).abs() < 1e-3, "{edge}");
+        assert!((points[0].1 - y).abs() < 1e-3, "{edge}");
+        assert!((points[1].1 - y).abs() < 1e-3, "{edge}");
+        assert!((points[1].0 - points[2].0).abs() < 1e-6, "{edge}");
+        let goal = state_middle(&svg, target).0;
+        assert!((points[2].0 - goal).abs() <= 1.0, "{edge}");
+    }
+}
+
+#[test]
+fn two_labeled_transitions_between_two_states_stand_on_both_sides_of_them() {
+    let renderer = Renderer::new(&Value::empty_object());
+    // Short labels leave room for both transitions to run straight.
+    let text = "stateDiagram-v2\n  a --> b : Start\n  a --> b : Stop\n";
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let middle = state_middle(&svg, "a").0;
+    assert_eq!(middle, state_middle(&svg, "b").0);
+    let mut lines = Vec::new();
+    for edge in ["edge0", "edge1"] {
+        let points = route(&svg, edge);
+        assert!(
+            points
+                .iter()
+                .all(|point| (point.0 - points[0].0).abs() < 1e-6),
+            "{edge} bends: {points:?}"
+        );
+        lines.push(points[0].0 - middle);
+    }
+    lines.sort_by(f64::total_cmp);
+    assert!((lines[0] + lines[1]).abs() < 1e-6, "{lines:?}");
+    assert!(lines[1] > 10.0, "{lines:?}");
+    // Long labels: the transitions turn out around the states alike, neither runs straight past
+    // the other's label.
+    let svg = renderer.render_with(REGIONS, &design(None)).unwrap();
+    let middle = state_middle(&svg, "NumLockOff").0;
+    let reach = |edge: &str| {
+        route(&svg, edge)
+            .iter()
+            .map(|point| (point.0 - middle).abs())
+            .fold(0.0_f64, f64::max)
+    };
+    assert!((reach("edge2") - reach("edge3")).abs() < 1.0);
+}
+
+#[test]
+fn a_state_with_descriptions_keeps_its_room_in_the_design_mode() {
+    // The rows start 16 from the outline at the left, the box is at least as wide as a plain
+    // state (120 plus 8 on each side), 10 lies above the title, and the divider runs from edge to
+    // edge.
+    let text = "stateDiagram-v2\n  state \"Waiting for input\" as W\n  W : entry / reset timer\n  W : exit / stop timer\n  [*] --> W\n";
+    let renderer = Renderer::new(&Value::empty_object());
+    let svg = renderer.render_with(text, &design(None)).unwrap();
+    let state = &svg[svg.find("-state-W-").expect("the state")..];
+    let outline = &state[state
+        .find("class=\"outer title-state\"")
+        .expect("the outline")..];
+    let outline = &outline[..outline.find("/>").expect("the outline's end")];
+    let number =
+        |part: &str, name: &str| -> f64 { attribute_values(part, name)[0].parse().unwrap() };
+    let (x, y, width) = (
+        number(outline, "x"),
+        number(outline, "y"),
+        number(outline, "width"),
+    );
+    let label = &state[state.find("class=\"label\"").expect("the label")..];
+    let place = &label[label.find("translate(").expect("its place") + "translate(".len()..];
+    let place = &place[..place.find(')').expect("the place's end")];
+    let (label_x, label_y): (f64, f64) = {
+        let (a, b) = place.split_once(", ").expect("two numbers");
+        (a.parse().unwrap(), b.parse().unwrap())
+    };
+    assert!(
+        (label_x - x - 16.0).abs() < 1e-6,
+        "left room: {}",
+        label_x - x
+    );
+    assert!(
+        (label_y - y - 10.0).abs() < 1e-6,
+        "room above: {}",
+        label_y - y
+    );
+    assert!(width >= 136.0, "width: {width}");
+    let divider = &state[state.find("class=\"divider\"").expect("the divider")..];
+    assert!((number(divider, "x1") - x).abs() < 1e-6);
+    assert!((number(divider, "x2") - (x + width)).abs() < 1e-6);
+}
+
+/// A chain of three states with a note on each side.
+const NOTES: &str = "stateDiagram-v2\n  [*] --> Pending\n  Pending --> Paid : pay\n  note right of Pending\n    Waits for the payment\n    for at most 7 days.\n  end note\n  Paid --> Shipped : ship\n  note left of Shipped : Tracked by the carrier\n  Shipped --> [*]\n";
+
+/// The box of the state with the given id: its `x`, `y`, width and height.
+fn state_box(svg: &str, id: &str) -> (f64, f64, f64, f64) {
+    let prefix = format!("id=\"d-state-{id}-");
+    let at = svg
+        .match_indices(&prefix)
+        .map(|(at, _)| at)
+        .find(|&at| {
+            let rest = &svg[at + prefix.len()..];
+            let digits = rest.find('"').expect("the id's end");
+            rest[..digits].bytes().all(|byte| byte.is_ascii_digit())
+        })
+        .expect("the state");
+    let group = &svg[at..];
+    let (x, y) = state_middle(group, id);
+    let rect = &group[group.find("<rect").expect("its outline")..];
+    let rect = &rect[..rect.find("/>").expect("the rect's end")];
+    let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+    let (width, height) = (number("width"), number("height"));
+    (x - width / 2.0, y - height / 2.0, width, height)
+}
+
+/// The box of the notes of the state with the given id: the frame of their group.
+fn note_box(svg: &str, id: &str) -> (f64, f64, f64, f64) {
+    let group = &svg[svg
+        .find(&format!(
+            "<g class=\"note-cluster\" id=\"d-state-{id}----parent-"
+        ))
+        .expect("the note's group")..];
+    let rect = &group[group.find("<rect").expect("its frame")..];
+    let rect = &rect[..rect.find("/>").expect("the rect's end")];
+    let number = |name: &str| -> f64 { attribute_values(rect, name)[0].parse().unwrap() };
+    (number("x"), number("y"), number("width"), number("height"))
+}
+
+#[test]
+fn a_note_stands_beside_its_state_and_the_chain_on_one_axis() {
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(NOTES, &design(None))
+        .unwrap();
+    let chain = ["Pending", "Paid", "Shipped"].map(|id| state_box(&svg, id));
+    let axis = chain[0].0 + chain[0].2 / 2.0;
+    for state in chain {
+        assert!((state.0 + state.2 / 2.0 - axis).abs() < 1e-6, "{chain:?}");
+    }
+    // The transitions of the chain run straight down the axis.
+    for edge in ["edge1", "edge3"] {
+        for (x, _) in route(&svg, edge) {
+            assert!((x - axis).abs() < 1e-6, "{edge} bends");
+        }
+    }
+    // `right of` to the right of its state, `left of` to the left, both at the state's height and
+    // clear of every state and transition.
+    let (pending, shipped) = (chain[0], chain[2]);
+    let right = note_box(&svg, "Pending");
+    assert!(right.0 > pending.0 + pending.2 + 8.0, "{right:?}");
+    let left = note_box(&svg, "Shipped");
+    assert!(left.0 + left.2 < shipped.0 - 8.0, "{left:?}");
+    for (note, state) in [(right, pending), (left, shipped)] {
+        let middle = note.1 + note.3 / 2.0;
+        assert!((middle - (state.1 + state.3 / 2.0)).abs() < 1e-6);
+        for other in chain {
+            let apart = note.0 + note.2 < other.0
+                || other.0 + other.2 < note.0
+                || note.1 + note.3 < other.1
+                || other.1 + other.3 < note.1;
+            assert!(apart, "{note:?} touches {other:?}");
+        }
+        for edge in ["edge0", "edge1", "edge3", "edge5"] {
+            for (x, _) in route(&svg, edge) {
+                assert!(x < note.0 || x > note.0 + note.2, "{edge} meets {note:?}");
+            }
+        }
+    }
+    // The connector runs straight across from the state to its note.
+    let id = attribute_values(&svg, "data-id")
+        .into_iter()
+        .find(|id| id.starts_with("Pending-Pending----note-"))
+        .expect("the connector");
+    let connector = route(&svg, id);
+    assert_eq!(connector.len(), 2, "{connector:?}");
+    assert_eq!(connector[0].1, connector[1].1);
+    assert_eq!(connector[0].0, pending.0 + pending.2);
+    assert_eq!(connector[1].0, right.0);
+    // The default keeps the reference's place: the note stands below its state.
+    let plain = Renderer::new(&Value::empty_object())
+        .render_with(NOTES, &default(None))
+        .unwrap();
+    let below = note_box(&plain, "Pending");
+    let state = state_box(&plain, "Pending");
+    assert!(below.1 > state.1 + state.3, "{below:?}");
+}
+
+#[test]
+fn a_note_stands_below_or_above_its_state_from_left_to_right() {
+    let text = NOTES.replace("stateDiagram-v2\n", "stateDiagram-v2\n  direction LR\n");
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(&text, &design(None))
+        .unwrap();
+    let (pending, shipped) = (state_box(&svg, "Pending"), state_box(&svg, "Shipped"));
+    let axis = pending.1 + pending.3 / 2.0;
+    assert!((shipped.1 + shipped.3 / 2.0 - axis).abs() < 1e-6);
+    // `right of` below, `left of` above, centered on the state.
+    let below = note_box(&svg, "Pending");
+    assert!(below.1 > pending.1 + pending.3 + 8.0, "{below:?}");
+    assert!((below.0 + below.2 / 2.0 - (pending.0 + pending.2 / 2.0)).abs() < 1e-6);
+    let above = note_box(&svg, "Shipped");
+    assert!(above.1 + above.3 < shipped.1 - 8.0, "{above:?}");
+}
+
+#[test]
+fn a_composite_state_holds_the_notes_of_its_states() {
+    let text = "stateDiagram-v2\n  [*] --> Work\n  state Work {\n    [*] --> Load\n    Load --> Save\n    note right of Load : Reads the input\n  }\n  Work --> [*]\n";
+    let svg = Renderer::new(&Value::empty_object())
+        .render_with(text, &design(None))
+        .unwrap();
+    let group = &svg[svg.find("statediagram-cluster").expect("the composite")..];
+    let outer = &group[group.find("<rect class=\"outer\"").expect("its frame")..];
+    let number = |name: &str| -> f64 { attribute_values(outer, name)[0].parse().unwrap() };
+    let frame = (number("x"), number("y"), number("width"), number("height"));
+    let note = note_box(&svg, "Load");
+    let load = state_box(&svg, "Load");
+    assert!(note.0 > load.0 + load.2, "{note:?}");
+    assert!(
+        note.0 >= frame.0 && note.0 + note.2 <= frame.0 + frame.2,
+        "{note:?} {frame:?}"
+    );
+    assert!(
+        note.1 >= frame.1 && note.1 + note.3 <= frame.1 + frame.3,
+        "{note:?} {frame:?}"
+    );
 }

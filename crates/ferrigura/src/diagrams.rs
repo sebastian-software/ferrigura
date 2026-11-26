@@ -432,7 +432,9 @@ fn read_state(value: &Value, config: &mut MermaidConfig) -> Result<(), serde_jso
 
 fn render_state(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<String, RenderError> {
     let id = prepared.id.as_str();
-    let section = Section::of(&prepared.view.config);
+    let mut section = Section::of(&prepared.view.config);
+    section.design = prepared.design;
+    section.roles = ferrigura_render::design::Roles::State;
     state_render::render(&Context {
         fonts: prepared.fonts,
         diagram: &state::parse_prepared(&prepared.source)?,

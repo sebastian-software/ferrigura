@@ -31,7 +31,16 @@ pub(super) fn rounded_rect(input: &ShapeInput<'_>) -> Part {
     let node = input.node;
     let radius = util::theme_number(&input.config.theme.radius).unwrap_or(5.0);
     let label = label_helper(input, false);
-    draw_rect(input, label, node.padding, node.padding, Some(radius))
+    // The design mode gives the text of a state the room of a flowchart's node at its sides.
+    let state = input.config.section.design.is_some()
+        && input.config.section.roles == crate::design::Roles::State;
+    let pad_x = if state {
+        let text = input.label.map_or(0.0, |label| label.bbox.width);
+        crate::design::state_side_padding(text, label.bbox.width, node.padding)
+    } else {
+        node.padding
+    };
+    draw_rect(input, label, pad_x, node.padding, Some(radius))
 }
 
 /// `drawRect.ts`: the `rect.basic.label-container` around the label, padded on each side, at

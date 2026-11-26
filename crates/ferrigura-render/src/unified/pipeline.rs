@@ -19,9 +19,7 @@ use crate::unified::geom::BBox;
 use crate::unified::label::{Anchor, LabelLayout};
 use crate::unified::line_jumps::JumpStyle;
 use crate::unified::shapes::{self, ShapeInput, ShapeOutput};
-use crate::unified::{
-    Config, clusters, edges, elk_apply, elk_build, markers, swimlane_layout, terminal,
-};
+use crate::unified::{Config, clusters, edges, elk_apply, elk_build, swimlane_layout, terminal};
 
 /// The layout that placed the nodes of a diagram. It decides how the paint clips the edges and which
 /// line hops it draws: `insertEdge` takes the swimlane branch for the `swimlane` layout (`edges.js`
@@ -133,7 +131,7 @@ impl Painted<'_> {
 
 /// The nearest `dir` of the node or one of its subgraphs, else the diagram's direction, as
 /// `resolveNodeDir` in `createGraph.ts` finds it.
-fn node_dir<'a>(
+pub(crate) fn node_dir<'a>(
     data: &'a LayoutData,
     index: usize,
     by_id: &HashMap<&str, &'a Node>,
@@ -165,8 +163,15 @@ fn busiest_sides(data: &LayoutData) -> Vec<(f64, bool)> {
         .map(|node| (node.id.as_str(), node))
         .collect();
     let mut degrees: HashMap<&str, (usize, usize)> = HashMap::new();
+    // The connector of a state's note is no transition: the note stands beside its state, and its
+    // connector meets a side that no transition does.
+    let is_note = |id: &str| {
+        by_id
+            .get(id)
+            .is_some_and(|node| node.css_classes.contains("statediagram-note"))
+    };
     for edge in &data.edges {
-        if edge.start == edge.end {
+        if edge.start == edge.end || is_note(&edge.start) || is_note(&edge.end) {
             continue;
         }
         degrees.entry(edge.start.as_str()).or_default().1 += 1;
@@ -233,7 +238,12 @@ pub fn measure_for(
     } else {
         Vec::new()
     };
-    let anchor = node_anchor(&data.diagram_type);
+    // The design mode centers the label of a node in every diagram type it draws.
+    let anchor = if config.section.design.is_some() {
+        Anchor::Middle
+    } else {
+        node_anchor(&data.diagram_type)
+    };
     let busiest = if config.section.design.is_some() {
         busiest_sides(&data)
     } else {
@@ -260,7 +270,10 @@ pub fn measure_for(
         }
         // A `labelRect` is the label of a swimlane edge, which the stylesheet does not center: its lines start
         // at the origin, and `labelRect.ts` moves the label by half its width (`shapes/rect.rs`).
-        let label_anchor = if node.shape == "labelRect" {
+        // A note of a state diagram is a block of text, which the design mode keeps at the left.
+        let label_anchor = if node.shape == "labelRect"
+            || (node.shape == "note" && config.section.roles == crate::design::Roles::State)
+        {
             Anchor::Start
         } else {
             anchor
@@ -274,22 +287,29 @@ pub fn measure_for(
         })?;
         // The design mode gives a node room for the edges of its busiest side: it draws the shape
         // again with that length as its size along the side, and keeps the larger drawing.
-        if let Some(grown) = busiest.get(index).and_then(|&(length, along_height)| {
-            let current = if along_height {
-                shape.bbox.height
-            } else {
-                shape.bbox.width
-            };
-            (length > current).then(|| {
-                let mut grown = node.clone();
-                if along_height {
-                    grown.height = Some(length);
-                } else {
-                    grown.width = Some(length);
-                }
-                grown
-            })
-        }) {
+        let grows =
+            !(config.section.roles == crate::design::Roles::State && shapes::is_choice(node));
+        if let Some(grown) =
+            busiest
+                .get(index)
+                .filter(|_| grows)
+                .and_then(|&(length, along_height)| {
+                    let current = if along_height {
+                        shape.bbox.height
+                    } else {
+                        shape.bbox.width
+                    };
+                    (length > current).then(|| {
+                        let mut grown = node.clone();
+                        if along_height {
+                            grown.height = Some(length);
+                        } else {
+                            grown.width = Some(length);
+                        }
+                        grown
+                    })
+                })
+        {
             let label = shapes::node_label(&grown, config, None, label_anchor)?;
             let redrawn = shapes::draw(&ShapeInput {
                 node: &grown,
@@ -391,6 +411,34 @@ pub(crate) fn lay_out_for_render(
     Ok(())
 }
 
+/// Lays out a diagram as [`lay_out_for_render`] does, with a step of the caller's between ELK's
+/// layout and its application: `adjust` gets ELK's result, the layout data and the side tables,
+/// and may change all three. When it returns `false`, nothing is applied and the result is
+/// `false`; the caller then lays the diagram out another way.
+///
+/// # Errors
+///
+/// Returns an error if the layout fails.
+pub(crate) fn lay_out_adjusted(
+    measured: &mut Measured,
+    config: &Config<'_>,
+    adjust: impl FnOnce(&mut JsonNode, &mut LayoutData, &mut elk_build::ElkState) -> bool,
+) -> Result<bool, RenderError> {
+    let elk = elk_build::build(&measured.data, config);
+    let mut layout = if own_placement(config) {
+        ferrigura_elk::placement::layout_with(&elk.graph, false, crate::flowchart::placement::Axes)
+    } else {
+        ferrigura_elk::layout_owned(elk.graph, false)
+    }
+    .map_err(|error| RenderError::Layout(error.to_string()))?;
+    let mut state = elk.state;
+    if !adjust(&mut layout.graph, &mut measured.data, &mut state) {
+        return Ok(false);
+    }
+    apply_layout(measured, config, &layout.graph, &state);
+    Ok(true)
+}
+
 /// Whether the layout runs with the design mode's own node placement, on the layers and the order
 /// ELK decided (`crate::flowchart::placement`): in the design mode, unless the configuration
 /// names a placement strategy, which is the user's choice.
@@ -417,8 +465,9 @@ fn apply_layout(
         &crossing,
         config.section.elk.straighten_edges,
     );
-    // The design mode takes a decision's branch to a node beside it out of the side tip.
-    if config.section.design.is_some() && measured.data.diagram_type == markers::FLOWCHART {
+    // The design mode takes the branch of a decision or a choice to a node beside it out of the
+    // side tip.
+    if config.section.design.is_some() {
         crate::flowchart::turns::side_exits(&mut measured.data);
     }
 }

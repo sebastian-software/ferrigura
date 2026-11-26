@@ -35,6 +35,10 @@ pub const NODE_RADIUS: f64 = 8.0;
 /// The corner radius of a group frame.
 pub const GROUP_RADIUS: f64 = 12.0;
 
+/// The corner radius of a concurrency region of a state diagram, a dashed frame inside its
+/// composite state's.
+pub const REGION_RADIUS: f64 = 8.0;
+
 /// The corner radius of a rounded edge: twice the reference's, so that a turn reads as a curve.
 pub const EDGE_RADIUS: f64 = 10.0;
 
@@ -58,8 +62,30 @@ pub const GROUP_SIDE_PADDING: f64 = 32.0;
 /// at the top.
 pub const GROUP_PADDING: &str = "[top=44,left=32,bottom=32,right=32]";
 
+/// The padding of a group that draws no title, as the layout's option: [`GROUP_SIDE_PADDING`] on
+/// every side. A concurrency region of a state diagram has it.
+pub const REGION_PADDING: &str = "[top=32,left=32,bottom=32,right=32]";
+
 /// The distance of a group's title from the top of its frame.
 pub const GROUP_TITLE_TOP: f64 = 12.0;
+
+/// The room between the text of a state and its outline at each side, the flowchart's node's.
+pub const STATE_SIDE_ROOM: f64 = 16.0;
+
+/// The padding at each side of a state whose text is `text` wide in a label `label` wide: the
+/// text widened to the state's least width. A short text keeps the state's own padding `least`
+/// around that label, so the state keeps its least width; a text that fills the label gets
+/// [`STATE_SIDE_ROOM`].
+#[must_use]
+pub fn state_side_padding(text: f64, label: f64, least: f64) -> f64 {
+    let least = least.min(STATE_SIDE_ROOM);
+    ((text + 2.0 * STATE_SIDE_ROOM - label) / 2.0).clamp(least, STATE_SIDE_ROOM)
+}
+
+/// The room of a state with descriptions above its title, between the title and its divider,
+/// between the divider and its rows, and below its last row. Its sides have
+/// [`STATE_SIDE_ROOM`].
+pub const DESCRIBED_STATE_ROOM: f64 = 10.0;
 
 /// The room the box of an edge label adds to the left and the right of its text's box. The edge
 /// is masked in that box, so the label sits in a gap of its edge.
@@ -89,6 +115,17 @@ pub fn theme_variables(tone: Tone) -> Value {
             ("clusterBkg", "#F2F4F8"),
             ("clusterBorder", "#8891A2"),
             ("edgeLabelBackground", "#FFFFFF"),
+            // The state diagram's own tokens, which its rules read.
+            ("stateBorder", "#7C8698"),
+            ("stateLabelColor", "#1A1F2B"),
+            ("transitionLabelColor", "#4A5364"),
+            ("labelBackgroundColor", "#FFFFFF"),
+            ("compositeBackground", "#F2F4F8"),
+            ("compositeTitleBackground", "#F2F4F8"),
+            ("altBackground", "#F2F4F8"),
+            ("noteBkgColor", "#F6F7F9"),
+            ("noteBorderColor", "#7C8698"),
+            ("noteTextColor", "#3D4555"),
         ],
         Tone::Dark => &[
             ("background", "#12141A"),
@@ -102,6 +139,17 @@ pub fn theme_variables(tone: Tone) -> Value {
             ("clusterBkg", "#171A22"),
             ("clusterBorder", "#5E677A"),
             ("edgeLabelBackground", "#12141A"),
+            // The state diagram's own tokens, which its rules read.
+            ("stateBorder", "#667085"),
+            ("stateLabelColor", "#E7E9EE"),
+            ("transitionLabelColor", "#A3ACBC"),
+            ("labelBackgroundColor", "#12141A"),
+            ("compositeBackground", "#171A22"),
+            ("compositeTitleBackground", "#171A22"),
+            ("altBackground", "#171A22"),
+            ("noteBkgColor", "#191C24"),
+            ("noteBorderColor", "#667085"),
+            ("noteTextColor", "#B4BCCB"),
         ],
     };
     let mut object = Value::empty_object();
@@ -135,6 +183,20 @@ pub enum Role {
     Decision,
     /// A data store: the cylinder.
     Data,
+    /// A point where transitions split or meet: the fork and the join bar of a state diagram. It
+    /// takes the color of the lines it joins.
+    Junction,
+}
+
+/// Which shapes carry a role: the flowchart's, or the state diagram's. A shape that both diagram
+/// types can draw keeps the role of the type it is drawn in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Roles {
+    /// The flowchart's: the stadium and the circles, the diamond, the cylinder.
+    #[default]
+    Flowchart,
+    /// The state diagram's: the start and the end state, the choice, the fork and the join.
+    State,
 }
 
 impl Role {
@@ -145,6 +207,7 @@ impl Role {
             Self::Terminal => "terminal",
             Self::Decision => "decision",
             Self::Data => "data",
+            Self::Junction => "junction",
         }
     }
 
@@ -155,12 +218,16 @@ impl Role {
             Self::Terminal => ("terminalBkg", "terminalBorder", "terminalText"),
             Self::Decision => ("decisionBkg", "decisionBorder", "decisionText"),
             Self::Data => ("dataBkg", "dataBorder", "dataText"),
+            Self::Junction => ("lineColor", "lineColor", "textColor"),
         }
     }
 }
 
-/// The roles, in the order of their rules.
+/// The roles of a flowchart, in the order of their rules.
 pub const ROLES: [Role; 3] = [Role::Terminal, Role::Decision, Role::Data];
+
+/// The roles of a state diagram, in the order of their rules.
+pub const STATE_ROLES: [Role; 3] = [Role::Terminal, Role::Decision, Role::Junction];
 
 /// The custom properties of the mode that no theme variable carries, for a tone: the role colors
 /// and the flood of the shadow, as declarations.
@@ -235,8 +302,9 @@ mod tests {
     #[test]
     fn text_and_lines_keep_their_contrast_in_both_tones() {
         // WCAG 2.1: 4.5 for text (1.4.3), 3 for the lines a reader needs to tell shapes and
-        // connections apart (1.4.11). A line is checked on the page and inside a group.
-        const TEXT: [(&str, &str); 7] = [
+        // connections apart (1.4.11). A line is checked on the page and inside a group: a
+        // subgraph, a composite state and a concurrency region.
+        const TEXT: [(&str, &str); 13] = [
             ("textColor", "background"),
             ("nodeTextColor", "mainBkg"),
             ("titleColor", "clusterBkg"),
@@ -244,14 +312,22 @@ mod tests {
             ("terminalText", "terminalBkg"),
             ("decisionText", "decisionBkg"),
             ("dataText", "dataBkg"),
+            ("stateLabelColor", "mainBkg"),
+            ("titleColor", "compositeBackground"),
+            ("transitionLabelColor", "background"),
+            ("transitionLabelColor", "compositeBackground"),
+            ("transitionLabelColor", "altBackground"),
+            ("noteTextColor", "noteBkgColor"),
         ];
-        const LINES: [&str; 6] = [
+        const LINES: [&str; 8] = [
             "lineColor",
             "arrowheadColor",
             "nodeBorder",
             "terminalBorder",
             "decisionBorder",
             "dataBorder",
+            "stateBorder",
+            "noteBorderColor",
         ];
         for tone in [Tone::Light, Tone::Dark] {
             let colours = colours(tone);
@@ -261,7 +337,12 @@ mod tests {
                 assert!(ratio >= 4.5, "{tone:?}: {text} on {ground} is {ratio:.2}");
             }
             for line in LINES {
-                for ground in ["background", "clusterBkg"] {
+                for ground in [
+                    "background",
+                    "clusterBkg",
+                    "compositeBackground",
+                    "altBackground",
+                ] {
                     let ratio = contrast(of(line), of(ground));
                     assert!(ratio >= 3.0, "{tone:?}: {line} on {ground} is {ratio:.2}");
                 }

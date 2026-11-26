@@ -76,6 +76,9 @@ pub struct Port {
     pub at: f64,
     /// Its edges, as indices into [`Layers::edges`].
     pub edges: Vec<usize>,
+    /// Whether an edge continues from it into the node's own graph: the port of a group that an
+    /// edge crosses. The inner layout has placed the edge's way on, so the port stays.
+    pub inside: bool,
 }
 
 /// An edge between two layers.
@@ -105,6 +108,24 @@ pub struct Layers {
 }
 
 impl Layers {
+    /// Layers built by hand, as a placement's tests build them, with the effort of ELK's default
+    /// thoroughness.
+    #[must_use]
+    pub fn new(
+        layers: Vec<Vec<usize>>,
+        nodes: Vec<Node>,
+        ports: Vec<Port>,
+        edges: Vec<Edge>,
+    ) -> Self {
+        Self {
+            layers,
+            nodes,
+            ports,
+            edges,
+            thoroughness: 7,
+        }
+    }
+
     /// How far the source end of an edge is past its target end along the layer.
     #[must_use]
     pub fn step(&self, edge: usize) -> f64 {
@@ -295,6 +316,7 @@ fn view(graph: &LGraph) -> Option<(Layers, Vec<usize>, Vec<usize>)> {
                     side,
                     at: graph.ports[port].position.y + graph.ports[port].anchor.y,
                     edges: Vec::new(),
+                    inside: graph.ports[port].inside_connections,
                 });
             }
             Some(index_of_port[port])

@@ -386,7 +386,7 @@ const DESIGN_POINTS: [Definition; 2] = [
         ref_y: "4.5",
         width: "10",
         height: "9",
-        child: Child::Path("M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z"),
+        child: Child::Path(DESIGN_HEAD),
         stroke_width: "0",
         dash: true,
     },
@@ -474,6 +474,30 @@ pub fn barb_markers(svg_id: &str, diagram_type: &str, neo: bool, transition_colo
         escape(transition_color),
     )
 }
+
+/// The barb markers of the state diagram in the design mode (`docs/decisions/0023-design-mode.md`):
+/// the mode's arrowhead under the ids of [`barb_markers`], so that the edges keep their paths. The
+/// path of an edge in the neo look ends 2 before the reference's barb tip and is hidden under its
+/// last 5.5 (`arrow_barb_neo`), so the margin variant puts its tip where the barb's is, 2 past the
+/// end; the path in the classic look ends at the tip. The color comes from the style sheet.
+#[must_use]
+pub fn design_barb_markers(svg_id: &str, diagram_type: &str, neo: bool) -> String {
+    let id = format!("{svg_id}_{diagram_type}-barbEnd");
+    let marker = |id: &str, ref_x: &str| {
+        format!(
+            "<defs><marker id=\"{id}\" viewBox=\"0 0 10 9\" refX=\"{ref_x}\" refY=\"4.5\" markerWidth=\"10\" markerHeight=\"9\" markerUnits=\"userSpaceOnUse\" orient=\"auto\"><path d=\"{DESIGN_HEAD}\"></path></marker></defs>"
+        )
+    };
+    let mut out = marker(&id, "10");
+    if neo {
+        out.push_str(&marker(&format!("{id}-margin"), "8"));
+    }
+    out
+}
+
+/// The outline of the design mode's arrowhead in its box of 10 by 9: the tip at the right, notched
+/// at the back.
+const DESIGN_HEAD: &str = "M 0 0 L 10 4.5 L 0 9 L 2.25 4.5 z";
 
 /// The name of a marker in `markers.js` (`pointEnd-margin`, `crossStart`, ...), from its kind,
 /// its end and whether it is the neo margin variant.

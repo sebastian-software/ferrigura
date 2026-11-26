@@ -353,6 +353,19 @@ impl<'a> Layout<'a> {
                         .map(|p| Point::new(p.x + offset.x, p.y + offset.y)),
                 );
             }
+            // The design mode keeps the box of an inner edge's label inside the frame: the box
+            // holds the label's own room, so the frame does not cross it.
+            if is_internal && self.state.group_padding.is_some() {
+                for label in &edge.labels {
+                    let (Some(x), Some(y), Some(width), Some(height)) =
+                        (label.x, label.y, label.width, label.height)
+                    else {
+                        continue;
+                    };
+                    points.push(Point::new(x + offset.x, y + offset.y));
+                    points.push(Point::new(x + offset.x + width, y + offset.y + height));
+                }
+            }
         }
         points
     }

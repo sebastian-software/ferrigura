@@ -1,6 +1,7 @@
 //! The side exits of a decision in the design mode (`docs/decisions/0023-design-mode.md`): a
 //! branch to a node beside the decision leaves from the decision's side tip and turns once, where
 //! the layout's route leaves from the tip facing the flow and turns twice.
+//! A state diagram's choice is a decision here.
 //!
 //! ELK routes every edge out of a node from the node's side towards the next layer. A branch to a
 //! node that stands beside the decision's axis then runs down, across and down again: a Z with two
@@ -289,7 +290,8 @@ fn candidate(
     }
     let decision = *by_id.get(edge.start.as_str())?;
     let target = *by_id.get(edge.end.as_str())?;
-    if !shapes::is_decision(decision) || target.is_group || decision.parent_id != target.parent_id {
+    let decides = shapes::is_decision(decision) || shapes::is_choice(decision);
+    if !decides || target.is_group || decision.parent_id != target.parent_id {
         return None;
     }
     // A group with a direction of its own lays its members out in another flow.

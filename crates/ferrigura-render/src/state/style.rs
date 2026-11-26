@@ -16,6 +16,7 @@ use ferrigura_model::theme::{ThemeTokens, Token};
 use ferrigura_text::EmbeddedFamily;
 
 use crate::context::{Globals, ThemeView};
+use crate::design::{self, Tone};
 use crate::svg::{css_text, font_faces};
 use crate::unified::palette::{Palette, palette};
 
@@ -62,7 +63,9 @@ const ALT_BACKGROUND: &str = "#efefef";
 
 /// The `<style>` element's content for a state diagram with the id `svg_id`, escaped for XML so that
 /// it can be written as the element's text. `families` are the embedded font subsets of the text,
-/// whose `@font-face` rules come first, as for the flowchart.
+/// whose `@font-face` rules come first, as for the flowchart. In the design mode (`design`), the
+/// mode's rules follow the state rules, and the mode's own properties take the place of the
+/// palette and the look's flood (`docs/decisions/0023-design-mode.md`).
 #[must_use]
 pub fn style_sheet(
     svg_id: &str,
@@ -70,6 +73,7 @@ pub fn style_sheet(
     globals: &Globals,
     classes: &[ClassDef],
     families: &[EmbeddedFamily],
+    design: Option<Tone>,
 ) -> String {
     let tokens = theme.light;
     let id = format!("#{svg_id}");
@@ -219,9 +223,15 @@ pub fn style_sheet(
         &format!("stroke:{stroke_neo};filter:{shadow};"),
     ));
 
-    // styles.js: the palette rules of each container slot, then the state rules.
-    rules.push_str(&palette_rules(&id, globals, tokens));
+    // styles.js: the palette rules of each container slot, then the state rules. The design mode
+    // uses no palette: its groups are neutral.
+    if design.is_none() {
+        rules.push_str(&palette_rules(&id, globals, tokens));
+    }
     rules.push_str(&state_rules(&id, tokens, &stroke_width, &radius, &shadow));
+    if design.is_some() {
+        rules.push_str(&design_rules(&id));
+    }
 
     // The diagram's `classDef` rules: the classes' declarations, on every state of the class.
     for class in classes {
@@ -247,8 +257,55 @@ pub fn style_sheet(
     };
     css_text(&format!(
         "{faces}{}{rules}",
-        custom_properties(svg_id, theme, globals)
+        custom_properties(svg_id, theme, globals, design)
     ))
+}
+
+/// The rules of the design mode, after the state rules and before the `classDef` rules, which keep
+/// the last word (`docs/decisions/0023-design-mode.md`): hairlines, rounder states, an edge label
+/// without a background, a neutral composite state with its title in a row of its own, a
+/// concurrency region as a dashed frame without a fill, a flat note, and the colors of the roles.
+fn design_rules(id: &str) -> String {
+    let node_width = design::NODE_STROKE_WIDTH;
+    let edge_width = design::EDGE_STROKE_WIDTH;
+    let thick_width = design::THICK_EDGE_STROKE_WIDTH;
+    let radius = design::NODE_RADIUS;
+    let group_radius = design::GROUP_RADIUS;
+    let region_radius = design::REGION_RADIUS;
+    let mut out = format!(
+        "{id} .edge-thickness-normal,{id} .transition{{stroke-width:{edge_width};}}\
+{id} .edge-thickness-thick{{stroke-width:{thick_width};}}\
+{id} .node rect,{id} .node polygon,{id} [data-look=\"neo\"].node path{{stroke-width:{node_width};}}\
+{id} .statediagram-state rect.basic,{id} .statediagram-state rect.title-state{{rx:{radius}px;ry:{radius}px;}}\
+{id} .edgeLabel rect,{id} .edgeLabel .label rect{{fill:none;stroke:none;}}\
+{id} defs [id$=\"-barbEnd\"],{id} defs [id$=\"-barbEnd-margin\"]{{fill:var(--transitionColor);stroke:none;}}\
+{id} [data-look].statediagram-cluster rect.outer{{fill:var(--compositeBackground);stroke:var(--stateBorder);stroke-width:1px;rx:{group_radius}px;ry:{group_radius}px;filter:none;}}\
+{id} [data-look].statediagram-cluster rect.inner{{fill:none;stroke:none;}}\
+{id} .statediagram-cluster .cluster-label text{{fill:var(--titleColor);}}\
+{id} [data-look].statediagram-cluster rect.divider{{fill:none;stroke:var(--stateBorder);stroke-width:1px;stroke-dasharray:4 4;rx:{region_radius}px;ry:{region_radius}px;}}\
+{id} .statediagram-note .outer-path,{id} .statediagram-note path{{filter:none;}}\
+{id}-drop-shadow feDropShadow,{id}-drop-shadow-small feDropShadow{{flood-color:var(--floodColor);flood-opacity:1;}}"
+    );
+    for role in design::STATE_ROLES {
+        let (fill, stroke, text) = role.properties();
+        let node = format!("{id} [data-role=\"{}\"].node", role.name());
+        let _ = write!(
+            out,
+            "{node} rect,{node} circle,{node} polygon,{node} path{{fill:var(--{fill});stroke:var(--{stroke});}}\
+{node} .label text{{fill:var(--{text});}}"
+        );
+    }
+    // The end state is a ring around a dot: the ring takes the role's outline around the ground of
+    // a state, the dot the role's fill.
+    let (fill, stroke, _) = design::Role::Terminal.properties();
+    let end = format!("{id} [data-role=\"terminal\"].node .outer-path");
+    let _ = write!(
+        out,
+        "{end} > path[stroke=\"none\"]{{fill:var(--mainBkg);}}\
+{end} > path[fill=\"none\"]{{fill:none;stroke:var(--{stroke});}}\
+{end} g path{{fill:var(--{fill});stroke:var(--{fill});}}"
+    );
+    out
 }
 
 /// The state rules of `styles.js` `getStyles`, in the reference's order, after the palette rules.
@@ -572,14 +629,32 @@ fn rule(selector: &str, declarations: &str) -> String {
 
 /// The custom properties of the colors, declared on the diagram's id. With one set of variables they
 /// are written as they are; with a light and a dark set, the values that differ are
-/// `light-dark()` pairs, as the flowchart writes them.
-fn custom_properties(svg_id: &str, theme: ThemeView<'_>, globals: &Globals) -> String {
+/// `light-dark()` pairs, as the flowchart writes them. In the design mode, the mode's own
+/// properties for the tone of each set take the place of the look's flood.
+fn custom_properties(
+    svg_id: &str,
+    theme: ThemeView<'_>,
+    globals: &Globals,
+    design: Option<Tone>,
+) -> String {
     let id = format!("#{svg_id}");
+    let block = |tokens: &ThemeTokens, flood: &str, tone: Tone| match design {
+        Some(_) => {
+            let mut declarations = colour_declarations(tokens);
+            // The title of a composite state reads the title color, which the state rules do not.
+            if let Some(colour) = tokens.title_color.text() {
+                let _ = write!(declarations, "--titleColor:{};", css_text(&colour));
+            }
+            declarations.push_str(design::declarations(tone));
+            rule(&id, &declarations)
+        }
+        None => rule(&id, &declarations(tokens, flood)),
+    };
     match theme.dark {
-        None => rule(&id, &declarations(theme.light, flood(globals))),
+        None => block(theme.light, flood(globals), design.unwrap_or(Tone::Light)),
         Some(dark) => crate::scheme::both(
-            &rule(&id, &declarations(theme.light, LIGHT_FLOOD)),
-            &rule(&id, &declarations(dark, DARK_FLOOD)),
+            &block(theme.light, LIGHT_FLOOD, Tone::Light),
+            &block(dark, DARK_FLOOD, Tone::Dark),
         ),
     }
 }
@@ -595,12 +670,18 @@ fn flood(globals: &Globals) -> &'static str {
 
 /// The declarations of the custom properties of one set of variables.
 fn declarations(tokens: &ThemeTokens, flood: &str) -> String {
+    let mut out = colour_declarations(tokens);
+    out.push_str(&format!("--floodColor:{flood};"));
+    out
+}
+
+/// The declarations of the color tokens of one set of variables.
+fn colour_declarations(tokens: &ThemeTokens) -> String {
     let mut out = String::new();
     for (name, token) in color_tokens(tokens) {
         if let Some(colour) = token.text() {
             out.push_str(&format!("--{name}:{};", css_text(&colour)));
         }
     }
-    out.push_str(&format!("--floodColor:{flood};"));
     out
 }

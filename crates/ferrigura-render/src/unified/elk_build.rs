@@ -127,14 +127,96 @@ pub fn build(data: &LayoutData, config: &Config<'_>) -> ElkInput {
     {
         crate::flowchart::policy::center_ports(&mut graph);
     }
-    if data.diagram_type == super::markers::FLOWCHART && section.design.is_some() {
+    if section.design.is_some() {
         // A placement strategy the configuration names is the user's choice.
         let place = section.elk.node_placement_strategy.is_none();
+        // A group that draws no title has no row for one: a concurrency region is padded alike on
+        // every side, and a note's group, which draws nothing, keeps its own padding.
+        let shapes: HashMap<&str, &str> = data
+            .nodes
+            .iter()
+            .filter(|node| node.is_group)
+            .map(|node| (node.id.as_str(), node.shape.as_str()))
+            .collect();
+        let mut kept = Vec::new();
+        paddings_of(&graph, &shapes, &mut kept);
         crate::flowchart::policy::relax(&mut graph, place);
+        pad_untitled_groups(&mut graph, &shapes, &kept);
         state.group_padding = Some(crate::design::GROUP_SIDE_PADDING);
     }
     ElkInput { graph, state }
 }
+
+/// The padding a note's group has before the design mode relaxes the graph, by the group's id.
+fn paddings_of(node: &JsonNode, shapes: &HashMap<&str, &str>, kept: &mut Vec<(String, Json)>) {
+    for child in &node.children {
+        if shapes.get(child.id.as_str()) == Some(&"noteGroup")
+            && let Some(padding) = child
+                .layout_options
+                .as_ref()
+                .and_then(|options| options.get("elk.padding"))
+        {
+            kept.push((child.id.clone(), padding.clone()));
+        }
+        paddings_of(child, shapes, kept);
+    }
+}
+
+/// Gives the groups that draw no title the design mode's padding without a title row: a
+/// concurrency region the mode's side padding on every side, and a note's group the padding it
+/// had before (`kept`).
+fn pad_untitled_groups(node: &mut JsonNode, shapes: &HashMap<&str, &str>, kept: &[(String, Json)]) {
+    if let Some(ratio) = regions_ratio(node, shapes) {
+        node.layout_options
+            .get_or_insert_default()
+            .insert("elk.aspectRatio".to_owned(), Json::from(ratio));
+    }
+    for child in &mut node.children {
+        let padding = match shapes.get(child.id.as_str()) {
+            Some(&"divider") => Some(Json::from(crate::design::REGION_PADDING)),
+            Some(&"noteGroup") => kept
+                .iter()
+                .find(|(id, _)| *id == child.id)
+                .map(|(_, padding)| padding.clone()),
+            _ => None,
+        };
+        if let Some(padding) = padding {
+            child
+                .layout_options
+                .get_or_insert_default()
+                .insert("elk.padding".to_owned(), padding);
+        }
+        pad_untitled_groups(child, shapes, kept);
+    }
+}
+
+/// The aspect ratio that sets the concurrency regions of a composite state, its children, across
+/// their flow: in one row, unless the states of every region run from left to right or back, then
+/// in one column. ELK places the separate parts of a graph in rows no wider than the square root
+/// of their area times the ratio, so a ratio without bound keeps them in one row and a ratio of
+/// zero gives each a row of its own. `None` for a group without regions.
+fn regions_ratio(node: &JsonNode, shapes: &HashMap<&str, &str>) -> Option<f64> {
+    let mut regions = node
+        .children
+        .iter()
+        .filter(|child| shapes.get(child.id.as_str()) == Some(&"divider"))
+        .peekable();
+    regions.peek()?;
+    let across = regions.all(|region| {
+        matches!(
+            region
+                .layout_options
+                .as_ref()
+                .and_then(|options| options.get("elk.direction"))
+                .and_then(Json::as_str),
+            Some("RIGHT" | "LEFT")
+        )
+    });
+    Some(if across { 0.0 } else { REGIONS_IN_A_ROW })
+}
+
+/// An aspect ratio no row of concurrency regions reaches.
+const REGIONS_IN_A_ROW: f64 = 1.0e6;
 
 /// A node of the reference's `nodeDb`: the ELK node under construction, with the fields of the
 /// layout data that the later steps read.
@@ -792,7 +874,9 @@ fn root_layout_options(elk: &MermaidConfigElk, algorithm: &str) -> LayoutOptions
 
 /// The parent lookup of the subgraphs (`addSubGraphs`): each node's subgraph, and each subgraph's
 /// members in layout-data order. A subgraph without members has no entry in `childrenById`.
-fn sub_graphs(data: &LayoutData) -> (HashMap<String, String>, HashMap<String, Vec<String>>) {
+pub(crate) fn sub_graphs(
+    data: &LayoutData,
+) -> (HashMap<String, String>, HashMap<String, Vec<String>>) {
     let mut parent_by_id = HashMap::new();
     let mut children_by_id: HashMap<String, Vec<String>> = HashMap::new();
     for subgraph in data.nodes.iter().filter(|node| node.is_group) {
@@ -2290,5 +2374,49 @@ mod tests {
         #[test]
         #[ignore = "port: the layout is covered by the ELK input run and the geometry run"]
         fn centers_the_initial_transition_to_tv_with_defaults_and_keeps_the_entry_straight() {}
+    }
+
+    mod regions_ratio {
+        use super::*;
+
+        /// A composite with two regions in the given directions.
+        fn composite(directions: [Option<&str>; 2]) -> JsonNode {
+            let region = |id: &str, direction: Option<&str>| JsonNode {
+                id: id.to_owned(),
+                layout_options: direction.map(|direction| {
+                    let mut options = LayoutOptions::default();
+                    options.insert("elk.direction".to_owned(), text(direction));
+                    options
+                }),
+                ..JsonNode::default()
+            };
+            JsonNode {
+                id: "Active".to_owned(),
+                children: vec![region("r1", directions[0]), region("r2", directions[1])],
+                ..JsonNode::default()
+            }
+        }
+
+        fn shapes() -> HashMap<&'static str, &'static str> {
+            HashMap::from([
+                ("Active", "roundedWithTitle"),
+                ("r1", "divider"),
+                ("r2", "divider"),
+            ])
+        }
+
+        #[test]
+        fn regions_stand_in_a_row_unless_all_run_across() {
+            let shapes = shapes();
+            let ratio = |directions| super::super::regions_ratio(&composite(directions), &shapes);
+            assert_eq!(ratio([Some("DOWN"), None]), Some(REGIONS_IN_A_ROW));
+            assert_eq!(ratio([Some("RIGHT"), Some("DOWN")]), Some(REGIONS_IN_A_ROW));
+            assert_eq!(ratio([Some("RIGHT"), Some("LEFT")]), Some(0.0));
+            let leaf = JsonNode {
+                id: "r1".to_owned(),
+                ..JsonNode::default()
+            };
+            assert_eq!(super::super::regions_ratio(&leaf, &shapes), None);
+        }
     }
 }

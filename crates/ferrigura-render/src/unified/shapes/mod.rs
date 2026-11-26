@@ -56,7 +56,7 @@ use super::geom::{BBox, CenterBox, Point};
 use super::label::{self, Anchor, LabelLayout, LabelSpec};
 use crate::RenderError;
 use crate::common::decode_entities;
-use crate::design::Role;
+use crate::design::{Role, Roles};
 use crate::svg::{escape, number};
 use registry::Kind;
 pub(crate) use util::styles_from_array;
@@ -64,6 +64,11 @@ pub(crate) use util::styles_from_array;
 /// Whether the shape uses its resolved layout direction.
 pub(super) fn uses_direction(node: &Node) -> bool {
     registry::resolve_node(node) == Some(Kind::ForkJoin)
+}
+
+/// Whether the shape is the state diagram's choice, a pseudostate whose size is its own.
+pub(crate) fn is_choice(node: &Node) -> bool {
+    registry::resolve_node(node) == Some(Kind::Choice)
 }
 
 /// Stands for the diagram's id in a shape's markup, for the inline filter of a small shape. The
@@ -550,10 +555,12 @@ fn role_attribute(input: &ShapeInput<'_>, kind: Kind) -> String {
     if input.config.section.design.is_none() {
         return String::new();
     }
-    let role = match kind {
-        Kind::Stadium | Kind::Circle | Kind::DoubleCircle => Role::Terminal,
-        Kind::Question => Role::Decision,
-        Kind::Cylinder => Role::Data,
+    let role = match (input.config.section.roles, kind) {
+        (Roles::Flowchart, Kind::Stadium | Kind::Circle | Kind::DoubleCircle)
+        | (Roles::State, Kind::StateStart | Kind::StateEnd) => Role::Terminal,
+        (Roles::Flowchart, Kind::Question) | (Roles::State, Kind::Choice) => Role::Decision,
+        (Roles::Flowchart, Kind::Cylinder) => Role::Data,
+        (Roles::State, Kind::ForkJoin) => Role::Junction,
         _ => return String::new(),
     };
     format!(" data-role=\"{}\"", role.name())
