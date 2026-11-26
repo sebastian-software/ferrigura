@@ -658,7 +658,7 @@ e2e/diagrams/flowchart/nightly-check/handdrawn/fontawesome-icons-in-edge-labels-
 e2e/diagrams/flowchart/nightly-check/handdrawn/fontawesome-icons-in-edge-labels-3.mmd	4aab7d76ff891c4a	4aab7d76ff891c4a	44dca01adb42d765
 e2e/diagrams/flowchart/nightly-check/handdrawn/fontawesome-icons-in-edge-labels-4.mmd	1ce04b652cc92ab9	1ce04b652cc92ab9	482f5d0c57b7b0b1
 e2e/diagrams/flowchart/nightly-check/handdrawn/fontawesome-icons-in-edge-labels.mmd	a10ff6b1f13db713	a10ff6b1f13db713	356f87ad764daf6f
-e2e/diagrams/flowchart/nightly-check/handdrawn/handle-link-click-events-link-anchor-mailto-other-protocol-script.mmd	76ab55f66afc5b9d	76ab55f66afc5b9d	5ab03d1345caab9f
+e2e/diagrams/flowchart/nightly-check/handdrawn/handle-link-click-events-link-anchor-mailto-other-protocol-script.mmd	3c40c6756da56e3d	3c40c6756da56e3d	c8f3ae257de625ef
 e2e/diagrams/flowchart/nightly-check/handdrawn/handle-styling-for-all-node-shapes.mmd	730dc5e20fd31b9b	730dc5e20fd31b9b	bd14bdabb32a7533
 e2e/diagrams/flowchart/nightly-check/handdrawn/handle-styling-with-style-expressions.mmd	19415df8990cfe27	19415df8990cfe27	58f41d7f5043372d
 e2e/diagrams/flowchart/nightly-check/handdrawn/keep-node-label-text-if-already-defined-when-a-style-is-applied.mmd	62be80d8b791a165	62be80d8b791a165	da778ce3ef7552a5
@@ -863,7 +863,7 @@ e2e/diagrams/flowchart/visual-check/22-render-a-simple-flowchart-with-nodespacin
 e2e/diagrams/flowchart/visual-check/23-render-a-simple-flowchart-with-rankspacing-set-to-100.mmd	aa900c96b03ccafb	bfcf8aadbbee8361	f983d7b73c2fd3a3
 e2e/diagrams/flowchart/visual-check/2388-handling-default-in-the-node-name.mmd	8f19d4bfdf81980f	8f19d4bfdf81980f	a00a40f672b76db5
 e2e/diagrams/flowchart/visual-check/24-keep-node-label-text-if-already-defined-when-a-style-is-applied.mmd	3fd2d6b9398247eb	3fd2d6b9398247eb	a9cd8ebb25b9b37f
-e2e/diagrams/flowchart/visual-check/25-handle-link-click-events-link-anchor-mailto-other-protocol-script.mmd	8676d1d7ca93054f	8676d1d7ca93054f	f7f2e3388d95e36f
+e2e/diagrams/flowchart/visual-check/25-handle-link-click-events-link-anchor-mailto-other-protocol-script.mmd	898d0dd419407bf7	898d0dd419407bf7	d3ea42295ba8d4bf
 e2e/diagrams/flowchart/visual-check/26-set-text-color-of-nodes-and-links-according-to-styles-when-html-labels-are-enabled.mmd	eab1de94f4579af1	eab1de94f4579af1	ae96acf6eaedf4f3
 e2e/diagrams/flowchart/visual-check/27-set-text-color-of-nodes-and-links-according-to-styles-when-html-labels-are-disabled.mmd	cd13133c77a0ca85	cd13133c77a0ca85	f093a439dcae2d45
 e2e/diagrams/flowchart/visual-check/28-apply-default-class-to-all-nodes-which-do-not-have-another-class-assigned-htmllabels-enabled.mmd	50c728f6ce95be81	50c728f6ce95be81	24202836728e3417

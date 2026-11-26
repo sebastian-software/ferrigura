@@ -50,6 +50,11 @@ impl SecurityLevel {
 /// What `sanitizeUrl` returns for an empty, unsafe or invalid URL.
 const BLANK_URL: &str = "about:blank";
 
+/// Schemes permitted by DOMPurify's default `IS_ALLOWED_URI` (`purify.cjs.js`).
+const ALLOWED_SINK_SCHEMES: &[&str] = &[
+    "http", "https", "ftp", "ftps", "mailto", "tel", "callto", "sms", "cid", "xmpp", "matrix",
+];
+
 /// `formatUrl` of the reference.
 ///
 /// The link is trimmed with JavaScript's `trim`, and an empty result gives `None`. `loose` is
@@ -70,20 +75,82 @@ pub fn format_url(link: &str, loose: bool) -> Option<String> {
 /// Validates `url` at an SVG rendering sink without altering accepted URLs.
 ///
 /// When `loose` is `true` (`securityLevel === 'loose'`), `url` is returned unchanged. Otherwise
-/// [`sanitize_url`] checks the scheme; if it rejects `url` (producing `about:blank`),
-/// `"about:blank"` is returned. Accepted URLs are returned verbatim so already-sanitized parser
-/// links are not decoded a second time and percent-encoded delimiters (such as `%23` or `%26`) in
-/// image or link URLs are preserved.
+/// both `url` and its obfuscation-decoded form must either be a relative URL (no scheme before a
+/// path, query, or fragment delimiter) or use one of DOMPurify's permitted schemes (`http`,
+/// `https`, `ftp`, `ftps`, `mailto`, `tel`, `callto`, `sms`, `cid`, `xmpp`, `matrix`). Rejected
+/// or empty URLs become `"about:blank"`. Accepted URLs are returned verbatim so already-sanitized
+/// parser links are not decoded a second time and percent-encoded delimiters (such as `%23` or
+/// `%26`) in image or link URLs are preserved.
 #[must_use]
 pub fn guard_url(url: &str, loose: bool) -> &str {
     if loose {
         return url;
     }
-    if sanitize_url(url) == BLANK_URL {
-        BLANK_URL
-    } else {
+    if is_allowed_sink_candidate(url) && is_allowed_sink_candidate(&decode_url_obfuscations(url)) {
         url
+    } else {
+        BLANK_URL
     }
+}
+
+/// DOMPurify's `ATTR_WHITESPACE` plus `sanitizeUrl`'s control characters (`is_ctrl`).
+fn is_sink_ignored(c: char) -> bool {
+    is_ctrl(c)
+        || matches!(
+            c,
+            ' ' | '\u{00A0}' | '\u{1680}' | '\u{180E}' | '\u{2000}'
+                ..='\u{2029}' | '\u{205F}' | '\u{3000}'
+        )
+}
+
+/// Whether `candidate` is non-empty after stripping ignored whitespace/controls and has either no
+/// RFC-3986 scheme or a scheme in [`ALLOWED_SINK_SCHEMES`].
+///
+/// Colons after path, query, or fragment delimiters (for example `data/chart.svg?time=12:30`) do
+/// not form a scheme. A `&colon;` entity immediately after a scheme-shaped prefix is rejected.
+fn is_allowed_sink_candidate(candidate: &str) -> bool {
+    let stripped: String = candidate.chars().filter(|&c| !is_sink_ignored(c)).collect();
+    if stripped.is_empty() {
+        return false;
+    }
+    let bytes = stripped.as_bytes();
+    if !bytes[0].is_ascii_alphabetic() {
+        return true;
+    }
+    let mut end = 1;
+    while end < bytes.len()
+        && (bytes[end].is_ascii_alphanumeric() || matches!(bytes[end], b'+' | b'-' | b'.'))
+    {
+        end += 1;
+    }
+    let rest = &stripped[end..];
+    if rest.starts_with(':') {
+        let scheme = &stripped[..end];
+        ALLOWED_SINK_SCHEMES
+            .iter()
+            .any(|allowed| scheme.eq_ignore_ascii_case(allowed))
+    } else {
+        !rest
+            .get(.."&colon;".len())
+            .is_some_and(|head| head.eq_ignore_ascii_case("&colon;"))
+    }
+}
+
+/// Decodes percent-escapes, numeric HTML entities, `&newline;`/`&tab;`, control characters, and
+/// whitespace escapes in the same fixpoint loop as [`sanitize_url`].
+fn decode_url_obfuscations(url: &str) -> String {
+    let mut decoded = decode_uri(js_trim(url));
+    loop {
+        let entities = decode_html_characters(&decoded);
+        let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
+        let without_controls = remove_ctrl(&without_newlines);
+        let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
+        decoded = decode_uri(js_trim(&without_escapes));
+        if !needs_another_pass(&decoded) {
+            break;
+        }
+    }
+    decoded
 }
 
 /// `sanitizeUrl` of `@braintree/sanitize-url` 7.1.2.
@@ -99,17 +166,7 @@ pub fn sanitize_url(url: &str) -> String {
     if url.is_empty() {
         return BLANK_URL.to_owned();
     }
-    let mut decoded = decode_uri(js_trim(url));
-    loop {
-        let entities = decode_html_characters(&decoded);
-        let without_newlines = remove_matches(&entities, html_ctrl_entity_at);
-        let without_controls = remove_ctrl(&without_newlines);
-        let without_escapes = remove_matches(&without_controls, whitespace_escape_at);
-        decoded = decode_uri(js_trim(&without_escapes));
-        if !needs_another_pass(&decoded) {
-            break;
-        }
-    }
+    let decoded = decode_url_obfuscations(url);
 
     if decoded.is_empty() {
         return BLANK_URL.to_owned();
@@ -1155,15 +1212,23 @@ mod tests {
     #[test]
     fn guard_url_blocks_unsafe_schemes_without_rewriting_accepted_urls() {
         for unsafe_url in [
+            "",
+            "   ",
             "javascript:alert(1)",
             "JAVASCRIPT:alert(1)",
             "vbscript:msgbox(1)",
             "data:text/html,<script>alert(1)</script>",
+            "notes://do-your-thing/id",
+            "file:///etc/passwd",
+            "custom:thing",
+            "a:b",
+            "a%3Ab",
             "&#106;avascript:alert(1)",
             "javascript&colon;alert(1)",
             "%6aavascript:alert(1)",
             "java\tscript:alert(1)",
             "java\\tscript:alert(1)",
+            "java script:alert(1)",
         ] {
             assert_eq!(
                 guard_url(unsafe_url, false),
@@ -1178,8 +1243,15 @@ mod tests {
             "https://example.com/A%23B.png",
             "https://example.com/files?q=A%26B",
             "https://tickets.example.com/browse/A%2526B",
+            "mailto:user@user.user",
+            "tel:+1234567",
+            "ftp://example.com/file",
+            "data/chart.svg?time=12:30",
+            "javascript/docs.html?t=1:2",
+            "dir/a%3Ab.png",
             "#section",
             "/images/logo.png",
+            "./relative:path.png",
         ] {
             assert_eq!(guard_url(safe_url, false), safe_url, "{safe_url:?}");
             assert_eq!(

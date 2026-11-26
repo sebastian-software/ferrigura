@@ -141,6 +141,26 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         "{encoded}"
     );
 
+    let relative_colon = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"data/chart.svg?time=12:30\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        relative_colon.contains("xlink:href=\"data/chart.svg?time=12:30\""),
+        "{relative_colon}"
+    );
+
+    let unsupported_scheme = render(
+        "stateDiagram-v2\n  s1\n  click s1 href \"notes://do-your-thing/id\"\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        unsupported_scheme.contains("xlink:href=\"about:blank\""),
+        "{unsupported_scheme}"
+    );
+
     let loose_cfg = Value::from(serde_json::json!({ "securityLevel": "loose" }));
     let loose = render(
         "stateDiagram-v2\n  s1\n  click s1 href \"javascript:alert(1)\"\n",
@@ -151,4 +171,12 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         loose.contains("xlink:href=\"javascript:alert(1)\""),
         "{loose}"
     );
+
+    // An empty state link still declares xmlns:xlink whenever an anchor is emitted.
+    for config in [Value::empty_object(), loose_cfg] {
+        let empty =
+            render("stateDiagram-v2\n  s1\n  click s1 href \"\"\n", &config).expect("renders");
+        assert!(empty.contains("xmlns:xlink="), "{empty}");
+        roxmltree::Document::parse(&empty).expect("well-formed SVG XML");
+    }
 }

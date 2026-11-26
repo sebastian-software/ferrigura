@@ -611,10 +611,7 @@ pub(crate) fn paint_with_animation<'a>(
         let Some(shape) = measured.shapes.get(&node.id) else {
             continue;
         };
-        links |= node
-            .link
-            .as_deref()
-            .is_some_and(|link| ferrigura_syntax::url::format_url(link, loose).is_some());
+        links |= node.link.is_some();
         let (x, y) = (node.x.unwrap_or(0.0), node.y.unwrap_or(0.0));
         cover(
             &mut bounds,

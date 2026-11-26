@@ -420,6 +420,8 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
         "JAVASCRIPT:alert(1)",
         "vbscript:msgbox(1)",
         "data:text/html,<script>alert(1)</script>",
+        "notes://do-your-thing/id",
+        "a%3Ab",
         "javascript&colon;alert(1)",
         "%6aavascript:alert(1)",
         "java\tscript:alert(1)",
@@ -485,6 +487,15 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
     assert!(
         encoded_image.contains("<image href=\"https://example.com/A%23B.png\""),
         "{encoded_image}"
+    );
+    let relative_colon_image = render(
+        "flowchart TD\nA@{ img: \"data/chart.svg?time=12:30\", w: 48, h: 48 }\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    assert!(
+        relative_colon_image.contains("<image href=\"data/chart.svg?time=12:30\""),
+        "{relative_colon_image}"
     );
 
     // Untrusted front matter cannot bypass default strict securityLevel.
