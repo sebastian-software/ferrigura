@@ -70,7 +70,10 @@ function useDesignSample() {
   };
 }
 
-/** Three flowcharts, each in the default drawing and in the design mode. */
+/**
+     Three flowcharts, a state diagram and a class diagram, each in the default drawing and in the
+    design mode.
+ */
 export function DesignSheets() {
   const { sample, choose, plain, designed } = useDesignSample();
   return (
@@ -99,7 +102,7 @@ export function DesignSheets() {
         {credit}, the same diagram text rendered twice. Only the option differs.
       </MonoCaption>
       <MonoTableView summary="Show the diagram text">
-        <Source label={`${sample.label} flowchart text for both drawings`}>{sample.source}</Source>
+        <Source label={`${sample.label}: the diagram text for both drawings`}>{sample.source}</Source>
       </MonoTableView>
     </figure>
   );

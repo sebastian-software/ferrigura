@@ -120,12 +120,34 @@ export function Text() {
   );
 }
 
+/** What the design mode does for the other two types it draws, and where it ends. */
+function DesignScope() {
+  return (
+    <>
+      <p>
+        A state diagram and a class diagram are drawn by the same rules, with what only they have. A
+        note stands beside its state, so the states keep their line. Two transitions between the same
+        two states run side by side. A class shows the compartments it has and no empty ones, the
+        general class stands above the specific one, and the children of a class share one arrowhead.
+        Only an interface and an enumeration carry color.
+      </p>
+      <p>
+        The design mode draws flowcharts, state diagrams and class diagrams; another diagram type
+        reports an error when the mode is asked for. It is an option of each render, like{' '}
+        <code>compat</code>, and the two exclude each other. Your theme variables and class
+        definitions keep the last word.{' '}
+        <Link to="/architecture/decisions/0023-design-mode/">How the design mode decides</Link>
+      </p>
+    </>
+  );
+}
+
 export function Design() {
   return (
     <MonoSection
       id="design-mode"
-      title="A flowchart that looks designed."
-      standfirst="Ferrigura draws a flowchart the way Mermaid does, so that nothing moves when you switch. One option draws it Ferrigura’s own way: calm, with room, and with color that means something."
+      title="A diagram that looks designed."
+      standfirst="Ferrigura draws a diagram the way Mermaid does, so that nothing moves when you switch. For flowcharts, state diagrams and class diagrams, one option draws it Ferrigura’s own way: calm, with room, and with color that means something."
     >
       <MonoPassage
         note={{
@@ -156,13 +178,7 @@ export function Design() {
         where data is kept. The mode has a light and a dark set of colors.
       </p>
       <DesignSchemeSheets />
-      <p>
-        The design mode draws flowcharts, state diagrams and class diagrams; another diagram type
-        reports an error when the mode is asked for. It is an option of each render, like{' '}
-        <code>compat</code>, and the two exclude each other. Your theme variables and class
-        definitions keep the last word.{' '}
-        <Link to="/architecture/decisions/0023-design-mode/">How the design mode decides</Link>
-      </p>
+      <DesignScope />
     </MonoSection>
   );
 }
