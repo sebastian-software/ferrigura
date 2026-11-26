@@ -568,7 +568,7 @@ impl<'a> Renderer<'a> {
             &diagram.acc_descr,
         ));
         open.push('>');
-        let accessibility = a11y::children(input.id, &diagram.acc_title, &diagram.acc_descr);
+        let accessibility = a11y::children_raw(input.id, &diagram.acc_title, &diagram.acc_descr);
         let svg = format!("{open}{accessibility}{content}<style>{style}</style><g/>{rest}</svg>");
         // The entities the parser encoded are decoded in the whole document, as the reference
         // does after rendering (`mermaidAPI.ts:359`), and the references XML does not define are

@@ -50,6 +50,29 @@ pub fn root_attributes(
     out
 }
 
+/// The `<title>` and `<desc>` children of the root element without decoding Mermaid entity
+/// placeholders, for renderers (such as sequence diagrams) that decode entities once across the
+/// complete SVG output.
+#[must_use]
+pub(crate) fn children_raw(base_id: &str, title: &str, description: &str) -> String {
+    let mut out = String::new();
+    if !title.is_empty() {
+        out.push_str(&format!(
+            "<title id=\"{}\">{}</title>",
+            title_id(base_id),
+            escape(title)
+        ));
+    }
+    if !description.is_empty() {
+        out.push_str(&format!(
+            "<desc id=\"{}\">{}</desc>",
+            description_id(base_id),
+            escape(description)
+        ));
+    }
+    out
+}
+
 /// The `<title>` and `<desc>` children of the root element, the title first, for the texts that are
 /// not empty.
 #[must_use]

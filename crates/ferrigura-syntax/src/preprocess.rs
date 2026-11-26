@@ -443,8 +443,19 @@ fn remap_encoded_line_column(orig_line: &str, encoded_column: usize) -> usize {
             }
             char_offset += segment.chars().count();
         }
-        for idx in to_remove.into_iter().rev() {
-            chars.remove(idx);
+        if !to_remove.is_empty() {
+            let mut drop_iter = to_remove.into_iter().peekable();
+            let mut idx = 0usize;
+            chars.retain(|_| {
+                let keep = if drop_iter.peek() == Some(&idx) {
+                    drop_iter.next();
+                    false
+                } else {
+                    true
+                };
+                idx += 1;
+                keep
+            });
         }
     }
     let current: String = chars.iter().map(|&(c, _)| c).collect();

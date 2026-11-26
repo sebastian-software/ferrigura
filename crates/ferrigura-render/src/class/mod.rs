@@ -28,6 +28,51 @@ const VIEWPORT_PADDING: f64 = 8.0;
 /// The font size of the title: `.classTitleText` in the class styles.
 const TITLE_FONT_SIZE: f64 = 18.0;
 
+/// Ensures rendered class DOM IDs stay unique after Mermaid entity placeholder resolution (for
+/// example when a diagram defines both `Foo-Bar` and `` `Foo#45;Bar` ``), and rewrites matching
+/// raw fragment links so each fragment targets its disambiguated node.
+fn disambiguate_resolved_dom_ids(data: &mut crate::unified::data::LayoutData, svg_id: &str) {
+    if !data.nodes.iter().any(|node| node.dom_id.contains("ﬂ°")) {
+        return;
+    }
+    let reserved: std::collections::HashSet<String> = data
+        .nodes
+        .iter()
+        .map(|node| crate::common::resolve_entity_placeholders(&node.dom_id).into_owned())
+        .collect();
+    let mut seen: std::collections::HashSet<String> =
+        std::collections::HashSet::with_capacity(data.nodes.len());
+    let mut remapped_fragments: std::collections::HashMap<String, String> =
+        std::collections::HashMap::new();
+    for node in &mut data.nodes {
+        let resolved = crate::common::resolve_entity_placeholders(&node.dom_id).into_owned();
+        if seen.insert(resolved.clone()) {
+            continue;
+        }
+        let mut suffix = 1usize;
+        let unique = loop {
+            let candidate = format!("{resolved}-{suffix}");
+            if !reserved.contains(&candidate) && seen.insert(candidate.clone()) {
+                break candidate;
+            }
+            suffix += 1;
+        };
+        let raw_fragment = format!("#{svg_id}-{}", node.dom_id);
+        let new_fragment = format!("#{svg_id}-{unique}");
+        remapped_fragments.insert(raw_fragment, new_fragment);
+        node.dom_id = unique;
+    }
+    if !remapped_fragments.is_empty() {
+        for node in &mut data.nodes {
+            if let Some(link) = &mut node.link
+                && let Some(replacement) = remapped_fragments.get(link.as_str())
+            {
+                *link = replacement.clone();
+            }
+        }
+    }
+}
+
 /// Renders the diagram to an SVG document.
 ///
 /// # Errors
@@ -39,6 +84,7 @@ pub fn render(input: &Context<'_, ClassDiagram, Section<'_>>) -> Result<String, 
     let diagram = input.diagram;
 
     let mut data = data::get_data(diagram, input.section, input.globals, input.theme.light);
+    disambiguate_resolved_dom_ids(&mut data, id);
     // `classRenderer-v3-unified.ts` 59: the diagram type names the markers and their class.
     data.diagram_type = markers::CLASS.to_owned();
     let design = input.section.design;

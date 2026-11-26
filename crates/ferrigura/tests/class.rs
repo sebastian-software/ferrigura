@@ -220,4 +220,75 @@ fn class_click_urls_resolve_mermaid_entities_and_enforce_security_level() {
     )
     .expect("renders");
     assert!(ls_title.contains("Cost $</title>"), "{ls_title}");
+
+    // Relation IDs resolve Mermaid entities consistently with fragment links.
+    let relation_id = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  `Invoice#45;Item` --> Account : owns\n  click Account href \"#graph-id_Invoice#45;Item_Account_1\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        relation_id.contains("id=\"graph-id_Invoice-Item_Account_1\""),
+        "{relation_id}"
+    );
+    assert!(
+        relation_id.contains("data-id=\"id_Invoice-Item_Account_1\""),
+        "{relation_id}"
+    );
+    assert!(
+        relation_id.contains("xlink:href=\"#graph-id_Invoice-Item_Account_1\""),
+        "{relation_id}"
+    );
+
+    // Colliding resolved DOM IDs (`Foo-Bar` vs `Foo#45;Bar`) are disambiguated along with their
+    // fragment links so no duplicate IDs are emitted.
+    let colliding = ferrigura::Renderer::new(&Value::empty_object())
+        .render_with(
+            "classDiagram\n  class `Foo-Bar`\n  class `Foo#45;Bar`\n  click `Foo-Bar` href \"#graph-classId-Foo-Bar\"\n  click `Foo#45;Bar` href \"#graph-classId-Foo#45;Bar\"\n",
+            &ferrigura::RenderOptions {
+                id: Some("graph".to_owned()),
+                ..ferrigura::RenderOptions::default()
+            },
+        )
+        .expect("renders");
+    assert!(
+        colliding.contains("id=\"graph-classId-Foo-Bar\""),
+        "{colliding}"
+    );
+    assert!(
+        colliding.contains("id=\"graph-classId-Foo-Bar-1\""),
+        "{colliding}"
+    );
+    assert!(
+        colliding.contains("xlink:href=\"#graph-classId-Foo-Bar\""),
+        "{colliding}"
+    );
+    assert!(
+        colliding.contains("xlink:href=\"#graph-classId-Foo-Bar-1\""),
+        "{colliding}"
+    );
+
+    // Sequence accessibility text decodes placeholders only once (no double decoding).
+    let seq_a11y = render(
+        "sequenceDiagram\n  accTitle: #64258;°copy;\n  accDescr: #64258;°copy;\n  A->>B: hi\n",
+        &Value::empty_object(),
+    )
+    .expect("renders");
+    let seq_doc = roxmltree::Document::parse(&seq_a11y).expect("well-formed SVG XML");
+    let seq_title = seq_doc
+        .descendants()
+        .find(|node| node.has_tag_name("title"))
+        .and_then(|node| node.text())
+        .expect("title text");
+    let seq_desc = seq_doc
+        .descendants()
+        .find(|node| node.has_tag_name("desc"))
+        .and_then(|node| node.text())
+        .expect("desc text");
+    assert_eq!(seq_title, "ﬂ°copy;");
+    assert_eq!(seq_desc, "ﬂ°copy;");
 }
