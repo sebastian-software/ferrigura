@@ -106,7 +106,7 @@ Quirks of the reference's grammar that are kept on purpose, because a fix would 
 
 ## Known gaps
 
-- The facade forwards `securityLevel` from the resolved configuration to the class DB; `htmlLabels` stays at its default (`true`). The other branches of `sanitizeText` are written from the source and are not in a differential run; `dompurifyConfig` is not supported.
+- The facade forwards `securityLevel` and `htmlLabels` from the resolved configuration to the class DB. The other branches of `sanitizeText` are written from the source and are not in a differential run; `dompurifyConfig` is not supported.
 - The ported specs leave out the callback tests, the reference's `it.skip` and the JavaScript own-property test.
 - Fixtures with `look: handDrawn` and with scripts the bundled faces do not cover are not compared in the geometry run.
 

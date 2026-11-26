@@ -373,10 +373,10 @@ fn render_class(prepared: &Prepared<'_>, _options: &RenderOptions) -> Result<Str
         diagram: &class::parse_prepared(
             &prepared.source,
             class::Options {
+                html_labels: prepared.view.globals.html_labels.unwrap_or(true),
                 security_level: ferrigura_syntax::url::SecurityLevel::from_config(
                     &prepared.view.globals.security_level,
                 ),
-                ..class::Options::default()
             },
         )?,
         section: &section,

@@ -240,6 +240,7 @@ fn state_click_urls_are_sanitized_under_default_security_level() {
         "item%23section%2525252525252525252541",
         "rate%25x%23123%2525252525252525252541",
         "rate%25%23123%2525252525252525252541",
+        "foo%2525252525252523123%2525252525252525252541",
     ] {
         let rendered = render(
             &format!("stateDiagram-v2\n  s1\n  click s1 href \"{encoded_rel}\"\n"),

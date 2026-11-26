@@ -59,9 +59,11 @@ const ALLOWED_SINK_SCHEMES: &[&str] = &[
 /// Excludes active formats such as `svg+xml`.
 const SAFE_DATA_IMAGE_SUBTYPES: &[&str] = &[
     "png",
+    "x-png",
     "apng",
     "jpeg",
     "jpg",
+    "pjpeg",
     "gif",
     "webp",
     "avif",
@@ -71,6 +73,7 @@ const SAFE_DATA_IMAGE_SUBTYPES: &[&str] = &[
     "heic",
     "heif",
     "bmp",
+    "x-ms-bmp",
     "x-icon",
     "vnd.microsoft.icon",
 ];
@@ -132,9 +135,9 @@ pub fn guard_url(url: &str, loose: bool) -> &str {
 /// Validates an image URL at an SVG `<image href>` sink without altering accepted URLs.
 ///
 /// Permits everything [`guard_url`] permits, plus embedded raster `data:image/...` URIs (`png`,
-/// `apng`, `jpeg`, `jpg`, `gif`, `webp`, `avif`, `jxl`, `tiff`, `tif`, `heic`, `heif`, `bmp`,
-/// `x-icon`, `vnd.microsoft.icon`). Active `data:` payloads such as `data:image/svg+xml` and
-/// `data:text/html` are rejected to `"about:blank"`.
+/// `x-png`, `apng`, `jpeg`, `jpg`, `pjpeg`, `gif`, `webp`, `avif`, `jxl`, `tiff`, `tif`, `heic`,
+/// `heif`, `bmp`, `x-ms-bmp`, `x-icon`, `vnd.microsoft.icon`). Active `data:` payloads such as
+/// `data:image/svg+xml` and `data:text/html` are rejected to `"about:blank"`.
 #[must_use]
 pub fn guard_image_url(url: &str, loose: bool) -> &str {
     if loose || is_safe_raster_data_image_url(url) {
@@ -409,7 +412,10 @@ fn truncate_at_scheme_delimiter_bounded(text: &str, max_passes: usize) -> Option
         if before.ends_with('&') {
             continue;
         }
-        if non_trivial_checks >= max_passes {
+        if !before.contains(['&', '%', '\\']) && !before.chars().any(is_ctrl) {
+            return Some(&head[..=idx]);
+        }
+        if non_trivial_checks >= MAX_DECODE_PASSES {
             continue;
         }
         non_trivial_checks += 1;
@@ -1668,6 +1674,7 @@ mod tests {
             "item%23123%2525252525252525252541",
             "rate%25x%23123%2525252525252525252541",
             "rate%25%23123%2525252525252525252541",
+            "foo%2525252525252523123%2525252525252525252541",
             "foo\\n#123%2525252525252525252541",
             "&%20#123%2525252525252525252541",
             "R&D%23123%2525252525252525252541",
@@ -1738,6 +1745,9 @@ mod tests {
     fn guard_image_url_allows_safe_raster_data_uris_but_blocks_active_payloads() {
         for safe_data_url in [
             "data:image/png;base64,iVBORw0KGgo=",
+            "data:image/x-png;base64,iVBORw0KGgo=",
+            "data:image/pjpeg;base64,/9j/4AAQ",
+            "data:image/x-ms-bmp;base64,Qk0=",
             " data:image/png;base64,iVBORw0KGgo=",
             "\tdata:image/png;base64,iVBORw0KGgo=",
             "data: image/png;base64,iVBORw0KGgo=",

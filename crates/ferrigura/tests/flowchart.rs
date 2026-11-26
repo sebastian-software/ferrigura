@@ -500,6 +500,8 @@ fn flowchart_click_and_image_urls_are_sanitized_under_default_security_level() {
     );
     for raster_url in [
         "data:image/png;base64,iVBORw0KGgo=",
+        "data:image/x-png;base64,iVBORw0KGgo=",
+        "data:image/pjpeg;base64,/9j/4AAQ",
         " data:image/png;base64,iVBORw0KGgo=",
         "data: image/png;base64,iVBORw0KGgo=",
         "data:image/png ;base64,iVBORw0KGgo=",

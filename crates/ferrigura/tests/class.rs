@@ -38,3 +38,25 @@ fn a_class_relation_is_as_wide_as_the_theme_stroke() {
     );
     assert!(!svg.contains("var(--strokeWidth)"), "{svg}");
 }
+
+#[test]
+fn class_click_tooltip_respects_html_labels_and_security_level() {
+    let source = "classDiagram\n  class A\n  click A href \"https://example.org\" \"x=y\"\n";
+    let html_false = Value::from(serde_json::json!({
+        "htmlLabels": false,
+        "securityLevel": "custom",
+    }));
+    let svg_plain = render(source, &html_false).expect("renders");
+    assert!(svg_plain.contains("title=\"x=y\""), "{svg_plain}");
+    assert!(!svg_plain.contains("&amp;equals;"), "{svg_plain}");
+
+    let html_true = Value::from(serde_json::json!({
+        "htmlLabels": true,
+        "securityLevel": "custom",
+    }));
+    let svg_escaped = render(source, &html_true).expect("renders");
+    assert!(
+        svg_escaped.contains("title=\"x&amp;equals;y\""),
+        "{svg_escaped}"
+    );
+}
